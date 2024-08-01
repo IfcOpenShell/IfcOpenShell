@@ -173,7 +173,7 @@ def generate_space(ifc: tool.Ifc, model: tool.Model, root: tool.Root, spatial: t
             relating_type = None
 
     if selected_objects and active_obj:
-        x, y, z, h, mat = spatial.get_x_y_z_h_mat_from_active_obj(active_obj)
+        x, y, z, h, mat = spatial.get_x_y_z_h_mat_from_obj(active_obj)
         element = ifc.get_entity(active_obj)
     else:
         x, y, z, h, mat = spatial.get_x_y_z_h_mat_from_cursor()

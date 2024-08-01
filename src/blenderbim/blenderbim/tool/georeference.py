@@ -21,6 +21,9 @@ import json
 import numpy as np
 import ifcopenshell
 import ifcopenshell.api.georeference
+import ifcopenshell.util.geolocation
+import ifcopenshell.util.placement
+import ifcopenshell.util.unit
 import blenderbim.core.tool
 import blenderbim.tool as tool
 import blenderbim.bim.helper

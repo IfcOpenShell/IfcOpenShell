@@ -32,7 +32,7 @@ class AddInstanceFlooringCoveringFromCursor(bpy.types.Operator, tool.Ifc.Operato
 
     @classmethod
     def poll(cls, context):
-        relating_type_id = int(bpy.data.scenes["Scene"].BIMModelProperties.relating_type_id)
+        relating_type_id = int(bpy.context.scene.BIMModelProperties.relating_type_id)
         relating_type = ifcopenshell.util.element.get_predefined_type(tool.Ifc.get().by_id(relating_type_id))
         return relating_type == "FLOORING"
 
@@ -51,7 +51,7 @@ class AddInstanceCeilingCoveringFromCursor(bpy.types.Operator, tool.Ifc.Operator
 
     @classmethod
     def poll(cls, context):
-        relating_type_id = int(bpy.data.scenes["Scene"].BIMModelProperties.relating_type_id)
+        relating_type_id = int(bpy.context.scene.BIMModelProperties.relating_type_id)
         relating_type = ifcopenshell.util.element.get_predefined_type(tool.Ifc.get().by_id(relating_type_id))
         return relating_type == "CEILING"
 
@@ -91,7 +91,7 @@ class AddInstanceFlooringCoveringsFromWalls(bpy.types.Operator, tool.Ifc.Operato
     @classmethod
     def poll(cls, context):
         element = tool.Ifc.get_entity(bpy.context.active_object)
-        relating_type_id = int(bpy.data.scenes["Scene"].BIMModelProperties.relating_type_id)
+        relating_type_id = int(bpy.context.scene.BIMModelProperties.relating_type_id)
         relating_type = ifcopenshell.util.element.get_predefined_type(tool.Ifc.get().by_id(relating_type_id))
         if element and element.is_a("IfcWall") and tool.Model.get_usage_type(element) == "LAYER2":
             return context.selected_objects and relating_type == "FLOORING"
@@ -119,7 +119,7 @@ class AddInstanceCeilingCoveringsFromWalls(bpy.types.Operator, tool.Ifc.Operator
     @classmethod
     def poll(cls, context):
         element = tool.Ifc.get_entity(bpy.context.active_object)
-        relating_type_id = int(bpy.data.scenes["Scene"].BIMModelProperties.relating_type_id)
+        relating_type_id = int(bpy.context.scene.BIMModelProperties.relating_type_id)
         relating_type = ifcopenshell.util.element.get_predefined_type(tool.Ifc.get().by_id(relating_type_id))
         if element and element.is_a("IfcWall") and tool.Model.get_usage_type(element) == "LAYER2":
             return context.selected_objects and relating_type == "CEILING"
