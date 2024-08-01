@@ -65,10 +65,12 @@ class Demo:
 
 @interface
 class Aggregate:
-    def can_aggregate(cls, relating_object, related_object): pass
+    def can_aggregate(cls, relating_obj, related_obj): pass
+    def has_physical_body_representation(cls, element): pass
     def disable_editing(cls, obj): pass
     def enable_editing(cls, obj): pass
     def get_container(cls, element): pass
+    def get_relating_object(cls, related_element): pass
 
 
 @interface
