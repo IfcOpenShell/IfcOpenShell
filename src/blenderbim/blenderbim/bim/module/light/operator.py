@@ -84,6 +84,7 @@ class ExportOBJ(bpy.types.Operator):
         else:
             elements = ifc_file.by_type("IfcElement")
 
+        elements += ifc_file.by_type("IfcSite")
         elements = [e for e in elements if not e.is_a("IfcFeatureElement") or e.is_a("IfcSurfaceFeature")]
 
         iterator = ifcopenshell.geom.iterator(settings, ifc_file, multiprocessing.cpu_count(), include=elements)
@@ -126,6 +127,7 @@ class RadianceRender(bpy.types.Operator):
             return {"CANCELLED"}
 
         # Get the resolution from the user input
+        
         props = context.scene.radiance_exporter_properties
         resolution_x, resolution_y = props.radiance_resolution_x, props.radiance_resolution_y
         quality = props.radiance_quality.upper()
@@ -134,6 +136,7 @@ class RadianceRender(bpy.types.Operator):
         output_dir = props.output_dir
         output_file_name = props.output_file_name
         output_file_format = props.output_file_format
+        os.chdir(output_dir)
 
         obj_file_path = os.path.join(output_dir, "model.obj")
 
@@ -165,14 +168,87 @@ class RadianceRender(bpy.types.Operator):
             longitude=longitude,
             timezone=timezone,
             sunny_with_sun=True,
+            sunny_without_sun=False,
+            cloudy=True,
             ground_reflectance=0.2,
             turbidity=3.0
             )
 
         sky_description_str = sky_description.decode('utf-8')
 
+        # Write all this to file
+        # skyfunc glow sky_glow
+        # 0
+        # 0
+        # 4 .9 .9 1.15 0
+
+        # sky_glow source sky
+        # 0
+        # 0
+        # 4 0 0 1 180
+
+        # skyfunc glow ground_glow
+        # 0
+        # 0
+        # 4 1.4 .9 .6 0
+
+        # ground_glow source ground
+        # 0
+        # 0
+        # 4 0 0 -1 180
         with open(sky_file_path, 'w') as f:
             f.write(sky_description_str)
+            f.write("\n")
+            # f.write("skyfunc glow sky_glow\n0\n0\n4 .9 .9 1.15 0\n")
+            # f.write("sky_glow source sky\n0\n0\n4 0 0 1 180\n")
+            # f.write("skyfunc glow ground_glow\n0\n0\n4 1.4 .9 .6 0\n")
+            # f.write("ground_glow source ground\n0\n0\n4 0 0 -1 180\n")
+            # File write 
+            # 2k version is packaged with the repo
+
+            f.write("""void colorpict env_map
+7 red green blue noon_grass_16k.hdr skymap.cal map_u map_v
+0
+1 0.5
+ 
+# This is a multiplier to colour balance the env map
+# In this case, it provides a rough ground luminance from 3k-5k
+env_map colorfunc env_colour
+4 100 100 100 .
+0
+0
+ 
+# .37 .57 1.5 is measured from a HDRI image
+# It is multiplied by a factor such that grey(r,g,b) = 1
+skyfunc colorfunc sky_colour
+4 .64 .99 2.6 .
+0
+0
+ 
+void mixpict composite
+7 env_colour sky_colour grey noon_grass_2k_mask.hdr skymap.cal map_u map_v
+0
+2 0.5 1
+ 
+composite glow env_map_glow
+0
+0
+4 1 1 1 0
+ 
+env_map_glow source sky
+0
+0
+4 0 0 1 180
+ 
+env_colour glow ground_glow
+0
+0
+4 1 1 1 0
+ 
+ground_glow source ground
+0
+0
+4 0 0 -1 180""")
 
 
         props = context.scene.radiance_exporter_properties
@@ -231,16 +307,23 @@ class RadianceRender(bpy.types.Operator):
             detail=detail,
             variability=variability,
         )
-
-        output_path = os.path.join(output_dir, f"{output_file_name}.{output_file_format.lower()}")
+        
+        hdr_path = os.path.join(output_dir, f"render123.{output_file_format.lower()}")
 
         if output_file_format == "HDR":
-            with open(output_path, "wb") as wtr:
+            with open(hdr_path, "wb") as wtr:
                 wtr.write(image)
         else:
             pass
 
-        self.report({"INFO"}, "Radiance rendering completed. Output: {}".format(output_path))
+        pcond_image = pr.pcond(hdr=hdr_path, human=True)
+        
+        tiff_path = os.path.join(output_dir, f"{output_file_name}.tiff")
+
+        pr.ra_tiff(inp = pcond_image, out = tiff_path, lzw=True)
+
+
+        self.report({"INFO"}, "Radiance rendering completed. Output: {}".format(tiff_path))
         return {"FINISHED"}
 
     def get_active_camera(self, context):
