@@ -47,6 +47,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install xmlschema xsdata numpy lxml pytest isodate lark networkx tabulate python-dateutil shapely
+          pip install mathutils
           pip install src/bcf --no-deps
           pip install https://github.com/Andrej730/aud/archive/refs/heads/master-reduced-size.zip
 
@@ -125,4 +126,9 @@ jobs:
           python tests.py
           cd ../src/ifcopenshell-python
           mv ifcopenshell ifcopenshell-local # Force testing on installed module
-          make test-safe
+          make test
+          cd ../bcf && make test
+          pip install requests
+          cd ../bsdd && make test
+          cd ../ifcpatch && make test
+          cd ../ifctester && make test
