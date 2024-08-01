@@ -22,4 +22,6 @@ include ../common.mk
 
 .PHONY: test
 test:
-	pytest -p no:pytest-blender test
+# Using python -m pytest vs just using pytest is important here.
+# As just using pytest does not add current directory to PATH.
+	python -m pytest -p no:pytest-blender tests
