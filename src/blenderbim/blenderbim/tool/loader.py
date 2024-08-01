@@ -91,6 +91,8 @@ class Loader(blenderbim.core.tool.Loader):
 
     @classmethod
     def get_name(cls, element: ifcopenshell.entity_instance) -> str:
+        if element.is_a("IfcGridAxis"):
+            return "{}/{}".format(element.is_a(), element.AxisTag)
         return "{}/{}".format(element.is_a(), getattr(element, "Name", "None"))
 
     @classmethod
