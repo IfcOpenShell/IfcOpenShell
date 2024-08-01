@@ -116,7 +116,7 @@ class GeoreferenceDecorator:
             arc_mid = angle_half @ arc_start
             self.draw_text_at_position(context, f"{self.tn_angle}deg", arc_mid)
 
-        if (wcs := GeoreferenceData.data["world_coordinate_system"]) and ["has_transformation"]:
+        if (wcs := GeoreferenceData.data["world_coordinate_system"]) and wcs["has_transformation"]:
             text = "WCS"
             if props.has_blender_offset:
                 text += f"\nBlender Coordinates ({GeoreferenceData.data['local_unit_symbol']}) X: {wcs['blender_x']}, Y: {wcs['blender_y']}, Z: {wcs['blender_z']}"
@@ -281,7 +281,7 @@ class GeoreferenceDecorator:
             verts, edges = arc_segments
             self.draw_batch("LINES", verts, decorator_color_special, edges)
 
-        if (wcs := GeoreferenceData.data["world_coordinate_system"]) and ["has_transformation"]:
+        if (wcs := GeoreferenceData.data["world_coordinate_system"]) and wcs["has_transformation"]:
             if wcs["blender_location"].length < 1000:
                 verts = [Vector((0, 0, 0)), wcs["blender_location"]]
                 edges = [[0, 1]]
