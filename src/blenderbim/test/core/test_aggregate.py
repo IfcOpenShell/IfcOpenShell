@@ -36,6 +36,7 @@ class TestAssignObject:
     def test_run(self, ifc, aggregate, collector):
         aggregate.can_aggregate("relating_obj", "related_obj").should_be_called().will_return(True)
         ifc.get_entity("relating_obj").should_be_called().will_return("relating_object")
+        aggregate.has_physical_body_representation("relating_object").should_be_called().will_return(False)
         ifc.get_entity("related_obj").should_be_called().will_return("related_object")
         ifc.run(
             "aggregate.assign_object", products=["related_object"], relating_object="relating_object"
