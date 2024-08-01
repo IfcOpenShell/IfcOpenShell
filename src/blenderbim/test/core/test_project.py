@@ -18,13 +18,13 @@
 
 
 import blenderbim.core.project as subject
-from test.core.bootstrap import ifc, project
+from test.core.bootstrap import ifc, project, spatial, georeference
 
 
 class TestCreateProject:
-    def test_do_nothing_if_a_project_already_exists(self, ifc, project):
+    def test_do_nothing_if_a_project_already_exists(self, ifc, georeference, project, spatial):
         ifc.get().should_be_called().will_return("ifc")
-        subject.create_project(ifc, project, schema="IFC4", template=None)
+        subject.create_project(ifc, georeference, project, spatial, schema="IFC4", template=None)
 
     def check_contexts(self, project):
         project.run_context_add_context(
@@ -67,7 +67,7 @@ class TestCreateProject:
             context_type="Plan", context_identifier="Annotation", target_view="PLAN_VIEW", parent="plan"
         ).should_be_called()
 
-    def test_create_an_ifc4_project(self, ifc, project):
+    def test_create_an_ifc4_project(self, ifc, georeference, project, spatial):
         ifc.get().should_be_called().will_return(None)
         ifc.run("project.create_file", version="IFC4").should_be_called().will_return("ifc")
         ifc.set("ifc").should_be_called()
@@ -92,14 +92,17 @@ class TestCreateProject:
         project.run_aggregate_assign_object(relating_obj="building", related_obj="storey").should_be_called()
 
         project.set_context("body").should_be_called()
+        spatial.run_spatial_import_spatial_decomposition().should_be_called()
+        spatial.guess_default_container().should_be_called().will_return(None)
 
         project.load_default_thumbnails().should_be_called()
         project.set_default_context().should_be_called()
         project.set_default_modeling_dimensions().should_be_called()
+        georeference.set_model_origin().should_be_called()
 
-        subject.create_project(ifc, project, schema="IFC4", template=None)
+        subject.create_project(ifc, georeference, project, spatial, schema="IFC4", template=None)
 
-    def test_appending_project_template_types_if_specified(self, ifc, project):
+    def test_create_an_ifc4_project_with_guessing_default_container(self, ifc, georeference, project, spatial):
         ifc.get().should_be_called().will_return(None)
         ifc.run("project.create_file", version="IFC4").should_be_called().will_return("ifc")
         ifc.set("ifc").should_be_called()
@@ -124,16 +127,55 @@ class TestCreateProject:
         project.run_aggregate_assign_object(relating_obj="building", related_obj="storey").should_be_called()
 
         project.set_context("body").should_be_called()
+        spatial.run_spatial_import_spatial_decomposition().should_be_called()
+        spatial.guess_default_container().should_be_called().will_return("default_container")
+        spatial.set_default_container("default_container").should_be_called()
+
+        project.load_default_thumbnails().should_be_called()
+        project.set_default_context().should_be_called()
+        project.set_default_modeling_dimensions().should_be_called()
+        georeference.set_model_origin().should_be_called()
+
+        subject.create_project(ifc, georeference, project, spatial, schema="IFC4", template=None)
+
+    def test_appending_project_template_types_if_specified(self, ifc, georeference, project, spatial):
+        ifc.get().should_be_called().will_return(None)
+        ifc.run("project.create_file", version="IFC4").should_be_called().will_return("ifc")
+        ifc.set("ifc").should_be_called()
+
+        project.create_empty("My Project").should_be_called().will_return("project")
+        project.create_empty("My Site").should_be_called().will_return("site")
+        project.create_empty("My Building").should_be_called().will_return("building")
+        project.create_empty("My Storey").should_be_called().will_return("storey")
+        project.run_root_assign_class(
+            obj="project", ifc_class="IfcProject", should_add_representation=False
+        ).should_be_called()
+        project.run_unit_assign_scene_units().should_be_called()
+
+        self.check_contexts(project)
+
+        project.run_root_assign_class(obj="site", ifc_class="IfcSite", context="body").should_be_called()
+        project.run_root_assign_class(obj="building", ifc_class="IfcBuilding", context="body").should_be_called()
+        project.run_root_assign_class(obj="storey", ifc_class="IfcBuildingStorey", context="body").should_be_called()
+
+        project.run_aggregate_assign_object(relating_obj="project", related_obj="site").should_be_called()
+        project.run_aggregate_assign_object(relating_obj="site", related_obj="building").should_be_called()
+        project.run_aggregate_assign_object(relating_obj="building", related_obj="storey").should_be_called()
+
+        project.set_context("body").should_be_called()
+        spatial.run_spatial_import_spatial_decomposition().should_be_called()
+        spatial.guess_default_container().should_be_called().will_return(None)
 
         project.append_all_types_from_template("template").should_be_called()
 
         project.load_default_thumbnails().should_be_called()
         project.set_default_context().should_be_called()
         project.set_default_modeling_dimensions().should_be_called()
+        georeference.set_model_origin().should_be_called()
 
-        subject.create_project(ifc, project, schema="IFC4", template="template")
+        subject.create_project(ifc, georeference, project, spatial, schema="IFC4", template="template")
 
-    def test_create_an_ifc2x3_project_with_owner_defaults(self, ifc, project):
+    def test_create_an_ifc2x3_project_with_owner_defaults(self, ifc, georeference, project, spatial):
         ifc.get().should_be_called().will_return(None)
         ifc.run("project.create_file", version="IFC2X3").should_be_called().will_return("ifc")
         ifc.set("ifc").should_be_called()
@@ -165,9 +207,12 @@ class TestCreateProject:
         project.run_aggregate_assign_object(relating_obj="building", related_obj="storey").should_be_called()
 
         project.set_context("body").should_be_called()
+        spatial.run_spatial_import_spatial_decomposition().should_be_called()
+        spatial.guess_default_container().should_be_called().will_return(None)
 
         project.load_default_thumbnails().should_be_called()
         project.set_default_context().should_be_called()
         project.set_default_modeling_dimensions().should_be_called()
+        georeference.set_model_origin().should_be_called()
 
-        subject.create_project(ifc, project, schema="IFC2X3", template=None)
+        subject.create_project(ifc, georeference, project, spatial, schema="IFC2X3", template=None)
