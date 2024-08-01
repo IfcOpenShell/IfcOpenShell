@@ -450,6 +450,7 @@ class Georeference:
     def set_cursor_location(cls, coordinates): pass
     def set_ifc_grid_north(cls): pass
     def set_ifc_true_north(cls): pass
+    def set_model_origin(cls): pass
     def set_vector_coordinates(cls, vector_coordinates, type): pass
     def set_wcs(cls, matrix): pass
     def xyz2enh(cls, coordinates): pass
