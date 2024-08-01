@@ -1,7 +1,34 @@
 [tool.black]
 line-length = 120
-include = 'src/(bcf|bcfserver|blenderbim|bsdd|foundationserver|ifc2ca|ifc4d|ifc5d|ifcbimtester|ifcblender|ifccityjson|ifcclash|ifccsv|ifcdiff|ifcfm|ifcpatch|ifctester|ifcopenshell-python|ifcsverchok|opencdeserver)/.*.py$'
-extend-exclude = '(src/ifcopenshell-python/ifcopenshell/express/*|src/ifc2ca/templates/*)'
+include = '''
+    src/(
+        bcf
+        |bcfserver
+        |blenderbim
+        |bsdd
+        |foundationserver
+        |ifc2ca
+        |ifc4d
+        |ifc5d
+        |ifcbimtester
+        |ifcblender
+        |ifccityjson
+        |ifcclash
+        |ifccsv
+        |ifcdiff
+        |ifcfm
+        |ifcpatch
+        |ifctester
+        |ifcopenshell-python
+        |ifcsverchok
+        |opencdeserver
+    )/.*.py$
+'''
+extend-exclude = '''
+    src/ifcopenshell-python/ifcopenshell/express/*
+    |src/ifcopenshell-python/ifcopenshell/mvd/*
+    |src/ifc2ca/templates/*
+'''
 
 [tool.pyright]
 reportInvalidTypeForm = false

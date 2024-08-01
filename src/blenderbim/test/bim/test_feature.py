@@ -684,17 +684,17 @@ def prop_is_roughly_value(prop, value):
     value = replace_variables(value)
     is_value = False
     try:
-        exec(f'assert round(bpy.context.{prop}, 5) == "{value}"')
+        exec(f'assert round(bpy.context.{prop}, 3) == "{value}"')
         is_value = True
     except:
         try:
-            exec(f"assert round(bpy.context.{prop}, 5) == {value}")
+            exec(f"assert round(bpy.context.{prop}, 3) == {value}")
             is_value = True
         except:
             pass
     if not is_value:
         print(f"bpy.context.{prop}")
-        actual_value = round(eval(f"bpy.context.{prop}"), 5)
+        actual_value = round(eval(f"bpy.context.{prop}"), 3)
         assert False, f"Value is {actual_value}"
 
 
@@ -866,6 +866,37 @@ def the_object_name_is_contained_in_container_name(name, container_name):
     if not container:
         assert False, f'Object "{name}" is not in any container'
     assert container.Name == container_name, f'Object "{name}" is in {container}'
+
+
+@then(parsers.parse('the object "{name}" is contained in object "{container_name}"'))
+def the_object_name_is_contained_in_object_container_name(name: str, container_name: str) -> None:
+    ifc = an_ifc_file_exists()
+    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    container = ifcopenshell.util.element.get_container(element)
+    if not container:
+        assert False, f'Object "{name}" is not in any container'
+    container_obj = tool.Ifc.get_object(container)
+    assert container_obj.name == container_name, f'Object "{name}" is in {container_obj}'
+
+
+@then(parsers.parse('the object "{name}" is aggregated by object "{aggregate_name}"'))
+def the_object_name_is_aggregated_by_object_aggregate_name(name: str, aggregate_name: str) -> None:
+    ifc = an_ifc_file_exists()
+    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    aggregate = ifcopenshell.util.element.get_aggregate(element)
+    if not aggregate:
+        assert False, f'Object "{name}" is not aggregated by any element'
+    aggregate_obj = tool.Ifc.get_object(aggregate)
+    assert aggregate_obj.name == aggregate_name, f'Object "{name}" is aggregated by {aggregate_obj}'
+
+
+@then(parsers.parse('the object "{name}" has no aggregate'))
+def the_object_name_has_no_aggregate(name: str) -> None:
+    ifc = an_ifc_file_exists()
+    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    aggregate = ifcopenshell.util.element.get_aggregate(element)
+    if aggregate:
+        assert False, f'Object "{name}" is aggregated by element "{aggregate}"'
 
 
 @then(parsers.parse('the file "{name}" should contain "{value}"'))

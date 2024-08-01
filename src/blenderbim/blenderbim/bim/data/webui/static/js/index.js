@@ -42,6 +42,10 @@ function handleBlenderDisconnect(blenderId) {
     delete connectedClients[blenderId];
     removeTableElement(blenderId);
   }
+
+  $("#blender-count").text(function (i, text) {
+    return parseInt(text, 10) - 1;
+  });
 }
 
 // Function to handle 'csv_data' event
@@ -81,6 +85,10 @@ function handleDefaultData(data) {
 
 // Function to add a new table with data and filename
 function addTableElement(blenderId, csvData, filename) {
+  $("#blender-count").text(function (i, text) {
+    return parseInt(text, 10) + 1;
+  });
+
   // store headers of the csv data
   const firstLine = csvData.indexOf("\n");
   const csvHeaders = csvData.substring(0, firstLine).split(",");
@@ -273,4 +281,67 @@ function toggleTheme() {
   } else {
     setTheme("dark");
   }
+}
+
+function toggleClientList() {
+  var clientList = $("#client-list");
+
+  if (clientList.hasClass("show")) {
+    clientList.removeClass("show");
+    return;
+  }
+
+  clientList.empty();
+
+  $.each(connectedClients, function (id, client) {
+    if (!client.shown) return;
+
+    const dropdownIcon = $("<i>")
+      .addClass("fas fa-chevron-down")
+      .css("margin-left", "0.5rem");
+
+    const clientDiv = $("<div>").addClass("client").text(client.ifc_file);
+
+    clientDiv.append(dropdownIcon);
+
+    const clientDetailsDiv = $("<div>").addClass("client-details");
+
+    if (id) {
+      const clientId = $("<div>")
+        .addClass("client-detail")
+        .text(`Blender ID: ${id}`);
+      clientDetailsDiv.append(clientId);
+    }
+
+    if (client.headers && client.headers.length) {
+      const clientHeaders = $("<div>")
+        .addClass("client-detail")
+        .text(`Table Headers: ${client.headers.join(", ")}`);
+
+      const scrollButton = $("<button>")
+        .addClass("scroll-button")
+        .text("Scroll to Table")
+        .on("click", function () {
+          $("html, body").animate(
+            {
+              scrollTop: $("#table-" + id).offset().top,
+            },
+            600
+          );
+          clientList.removeClass("show");
+        });
+
+      clientDetailsDiv.append(clientHeaders);
+      clientDetailsDiv.append(scrollButton);
+    }
+
+    clientDiv.append(clientDetailsDiv);
+
+    clientDiv.on("click", function () {
+      clientDetailsDiv.toggleClass("show");
+    });
+
+    clientList.append(clientDiv);
+  });
+  clientList.addClass("show");
 }

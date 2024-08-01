@@ -170,6 +170,11 @@ def subscribe_to(obj, data_path, callback):
 
 
 def refresh_ui_data():
+    """Refresh cached UI data.
+
+    Note that calling non-ifc-operators by itself doesn't refresh the UI data
+    and it need to be refreshed manually if needed.
+    """
     from blenderbim.bim import modules
 
     for name, value in modules.items():

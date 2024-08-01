@@ -41,11 +41,23 @@
       <ul>
         <li><a href="/" class="active">IFC Data</a></li>
         <li><a href="/gantt">Gantt Chart</a></li>
+        <li><a href="/drawings">Drawings</a></li>
       </ul>
       <button id="toggle-theme" onclick="toggleTheme()">
         <i class="fas fa-moon"></i>
       </button>
     </nav>
+    <div id="connected-list-div">
+      <button id="show-connected-button" onclick="toggleClientList()">
+        Connected Blenders:
+        <span id="blender-count">0</span>
+        <i class="fas fa-chevron-down"></i>
+      </button>
+      <div id="client-list"></div>
+    </div>
     <div id="container"></div>
+    <footer>
+      <p>BlenderBIM Version: {{version}}</p>
+    </footer>
   </body>
 </html>

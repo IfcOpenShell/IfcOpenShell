@@ -18,25 +18,28 @@
 
 import bpy
 import bmesh
+from typing import Callable
 
 
-def calculate_height(obj):
+def calculate_height(obj: bpy.types.Object) -> float:
     return obj.dimensions[2]
 
 
-def calculate_edges_lengths(objs, context):
+def calculate_edges_lengths(objs: list[bpy.types.Object], context: bpy.types.Context):
     return calculate_mesh_quantity(objs, context, lambda bm: sum((e.calc_length() for e in bm.edges if e.select)))
 
 
-def calculate_faces_areas(objs, context):
+def calculate_faces_areas(objs: list[bpy.types.Object], context: bpy.types.Context) -> float:
     return calculate_mesh_quantity(objs, context, lambda bm: sum((f.calc_area() for f in bm.faces if f.select)))
 
 
-def calculate_volumes(objs, context):
+def calculate_volumes(objs: list[bpy.types.Object], context: bpy.types.Context) -> float:
     return calculate_mesh_quantity(objs, context, lambda bm: bm.calc_volume())
 
 
-def calculate_mesh_quantity(objs: bpy.types.Object, context, operation):
+def calculate_mesh_quantity(
+    objs: list[bpy.types.Object], context: bpy.types.Context, operation: Callable[[bmesh.types.BMesh], float]
+) -> float:
     """Get the sum of the target quantity on all passed mesh objects
 
     :param objs: iterable of mesh object
@@ -58,7 +61,7 @@ def calculate_mesh_quantity(objs: bpy.types.Object, context, operation):
     return result
 
 
-def calculate_formwork_area(objs, context):
+def calculate_formwork_area(objs: list[bpy.types.Object], context: bpy.types.Context) -> float:
     """
     Formwork is defined as the surface area required to cover all exposed
     surfaces of one or more objects, excluding top surfaces (i.e. that have a
@@ -85,6 +88,7 @@ def calculate_formwork_area(objs, context):
     copied_obj.name = "Formwork"
     copied_obj.BIMObjectProperties.ifc_definition_id = 0
     modifier = copied_obj.modifiers.new("Formwork", "REMESH")
+    assert isinstance(modifier, bpy.types.RemeshModifier)
     modifier.mode = "SHARP"
     # This hardcoded value may be optimised through a better understanding of the octree division.
     # These values are based off some trial and error heuristics I've learned through experience.
@@ -108,7 +112,7 @@ def calculate_formwork_area(objs, context):
     return result
 
 
-def calculate_side_formwork_area(objs, context):
+def calculate_side_formwork_area(objs: list[bpy.types.Object], context: bpy.types.Context) -> float:
     """
     Side formwork is defined as the surface area required to cover all exposed
     surfaces of one or more objects, excluding top and bottom surfaces (i.e.

@@ -36,6 +36,10 @@ class BIM_PT_spatial(Panel):
         return SpatialData.data["poll"]
 
     def draw(self, context):
+        # TODO: expose relating_container_object so users could
+        # assign container without switching default container back and forth
+        # just for 1 operation.
+
         if not SpatialData.is_loaded:
             SpatialData.load()
 
@@ -77,9 +81,15 @@ class BIM_PT_spatial(Panel):
             else:
                 row.label(text="No Spatial Container")
                 row.operator("bim.enable_editing_container", icon="GREASEPENCIL", text="")
-            for reference in SpatialData.data["references"]:
+
+        references = SpatialData.data["references"]
+        if references:
+            self.layout.label(text="Referenced In Structures:")
+            for reference in references:
                 row = self.layout.row()
                 row.label(text=reference, icon="LINKED")
+        else:
+            self.layout.label(text="No References In Structures")
 
 
 class BIM_PT_spatial_decomposition(Panel):
