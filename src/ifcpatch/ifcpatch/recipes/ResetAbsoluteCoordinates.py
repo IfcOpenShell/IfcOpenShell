@@ -30,14 +30,15 @@ class Patcher:
         file: ifcopenshell.file,
         logger: logging.Logger,
         mode: Literal[
-            "geometry",
-            "placement",
-            "both",
-        ] = "geometry",
-        a: Optional[float] = None,
-        b: Optional[float] = None,
-        c: Optional[float] = None,
-        d: Optional[float] = None,
+            "Geometry",
+            "Placement",
+            "Both",
+        ] = "Geometry",
+        automatic_offset_point: bool = True,
+        threshold: float = 1000000,  # Arbitrary default threshold based on experience
+        x: Union[str, float] = "0",
+        y: Union[str, float] = "0",
+        z: Union[str, float] = "0",
     ):
         """Reset any large coordinates to smaller coordinates based on a threshold
 
@@ -53,47 +54,34 @@ class Patcher:
         ordinate is larger than a threshold) and offsets it back down to a small
         number.
 
-        You may either manually specify the offset to apply to any large
-        coordinate, or an offset will be automatically determined arbitrarily
-        based on the first large number we encounter.
+        You may either let Blender BIM determine the offset to apply to any large
+        coordinate automatically, arbitrarily based on the first large number we
+        encounter, or manually specify this offset.
 
         Note that if your model inconsistently mixes coordinates between large
         and small (such as if your model mixes both local and map coordinates)
         then the results of this function may be poor. Provide a bug report back
         to your BIM application to get it fixed.
 
-        You may specify up to 4 arguments, a, b, c, and d.
-
-        If you specify no arguments, then the threshold is set to 1000000. The
-        offset is auto detected.
-
-        If you only specify 1 parameter (i.e. a), then this is treated as the
-        threshold beyond which an ordinate is considered to be large. The offset
-        is auto detected.
-
-        If you specify 3 parameters, (i.e. a, b, c) then your three numbers are
-        treated as the X, Y, Z offset to apply. Typically your numbers will be
-        negative to bring the numbers smaller. The threshold is set to 1000000.
-
-        If you specify 4 parameters (i.e. a, b, c, d), then the first three
-        numbers are treated as the X, Y, Z offset to apply (a, b, c). The fourth
-        (d) will be treated as the threshold.
-
-        :param mode: Choose from "geometry", "placement", or "both". Choosing
-            "geometry" will only replace cartesian points used in shape
-            representations. Choosing "placement" will only replace cartesian
-            points used in object placements. Choosing "both" will replace all
+        :param mode: Choose from "Geometry", "Placement", or "Both". Choosing
+            "Geometry" will only replace cartesian points used in shape
+            representations. Choosing "Placement" will only replace cartesian
+            points used in object placements. Choosing "Both" will replace all
             cartesian points regardless of use (useful if the model has both
             large placement offsets and large geometry offsets).
         :type mode: str
-        :param a: The first parameter
-        :type a: float,optional
-        :param b: The second parameter
-        :type b: float,optional
-        :param c: The third parameter
-        :type c: float,optional
-        :param d: The fourth parameter
-        :type d: float,optional
+        :param automatic_offset_point: Choose, whether the offset should be
+            determined automatically or specified manually.
+        :type automatic_offset_point: bool
+        :param threshold: The threshold for deciding, whether a coordinate is
+            treated as a large coordinate.
+        :type threshold: float
+        :param x: The x-ordinate of the manually specified offset point.
+        :type x: Union[str, float]
+        :param y: The y-ordinate of the manually specified offset point.
+        :type y: Union[str, float]
+        :param z: The z-ordinate of the manually specified offset point.
+        :type z: Union[str, float]
 
         Example:
 
@@ -103,39 +91,33 @@ class Patcher:
             ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "ResetAbsoluteCoordinates", "arguments": []})
 
             # Reset all coordinates with an ordinate larger than 1000 arbitrarily
-            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "ResetAbsoluteCoordinates", "arguments": [1000]})
+            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "ResetAbsoluteCoordinates", "arguments": [True, 1000]})
 
             # Reset all coordinates with an ordinate larger than 1000000 by -50000,-20000,0
-            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "ResetAbsoluteCoordinates", "arguments": [-50000,-20000,0]})
+            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "ResetAbsoluteCoordinates", "arguments": [False, 1000000, -50000,-20000,0]})
 
             # Reset all coordinates with an ordinate larger than 1000 by -500,-200,0
-            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "ResetAbsoluteCoordinates", "arguments": [-500,-200,0,1000]})
+            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "ResetAbsoluteCoordinates", "arguments": [False, 1000, -500,-200,0]})
         """
         self.src = src
         self.file = file
         self.logger = logger
-        self.mode = mode
-        self.args = [x for x in [a, b, c, d] if x is not None]
+        self.mode = mode.lower()
+        self.threshold = threshold
+        if automatic_offset_point:
+            self.offset_point = None
+        else:
+            self.offset_point = (float(x), float(y), float(z))
 
     def patch(self):
         placement_coord_ids = set()
         for placement in self.file.by_type("IfcObjectPlacement"):
             [placement_coord_ids.add(e.id()) for e in self.file.traverse(placement) if e.is_a("IfcCartesianPoint")]
 
-        # Arbitrary threshold based on experience
-        self.threshold = 1000000
-        if self.args and len(self.args) == 1:
-            self.threshold = float(self.args[0])
-        elif self.args and len(self.args) == 4:
-            self.threshold = float(self.args[3])
-
         # This method will not work all the time, but will catch most issues. It
         # assumes that absolute coordinates are easily recognisable based on
         # having a large absolute value above a threshold. This is not always
         # the case, but is very fast to run, and works for most cases.
-        offset_point = None
-        if self.args and len(self.args) >= 3:
-            offset_point = (float(self.args[0]), float(self.args[1]), float(self.args[2]))
         try:
             point_lists = self.file.by_type("IfcCartesianPointList3D")
         except:
@@ -147,10 +129,14 @@ class Patcher:
                 if len(point) == 2 or not self.is_point_far_away(point):
                     coord_list[i] = point
                     continue
-                if not offset_point:
-                    offset_point = (-point[0], -point[1], -point[2])
+                if not self.offset_point:
+                    self.offset_point = (-point[0], -point[1], -point[2])
                     self.logger.info(f"Resetting absolute coordinates by {point}")
-                point = (point[0] + offset_point[0], point[1] + offset_point[1], point[2] + offset_point[2])
+                point = (
+                    point[0] + self.offset_point[0],
+                    point[1] + self.offset_point[1],
+                    point[2] + self.offset_point[2],
+                )
                 coord_list[i] = point
             point_list.CoordList = coord_list
         for point in self.file.by_type("IfcCartesianPoint"):
@@ -162,13 +148,13 @@ class Patcher:
             elif self.mode == "placement":
                 if point.id() not in placement_coord_ids:
                     continue
-            if not offset_point:
-                offset_point = (-point.Coordinates[0], -point.Coordinates[1], -point.Coordinates[2])
+            if not self.offset_point:
+                self.offset_point = (-point.Coordinates[0], -point.Coordinates[1], -point.Coordinates[2])
                 self.logger.info(f"Resetting absolute coordinates by {point}")
             point.Coordinates = (
-                point.Coordinates[0] + offset_point[0],
-                point.Coordinates[1] + offset_point[1],
-                point.Coordinates[2] + offset_point[2],
+                point.Coordinates[0] + self.offset_point[0],
+                point.Coordinates[1] + self.offset_point[1],
+                point.Coordinates[2] + self.offset_point[2],
             )
 
     def is_point_far_away(self, point: Union[ifcopenshell.entity_instance, npt.NDArray[np.float64]]) -> bool:
