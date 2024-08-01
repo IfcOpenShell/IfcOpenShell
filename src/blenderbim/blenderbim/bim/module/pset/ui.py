@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import bpy
 import blenderbim.tool as tool
 from bpy.types import Panel
 from blenderbim.bim.ifc import IfcStore
@@ -34,16 +35,21 @@ from blenderbim.bim.module.pset.data import (
     ProfilePsetsData,
     WorkSchedulePsetsData,
 )
+from typing import Any, Optional
 
 
-def draw_property(prop, layout, copy_operator=None):
+def draw_property(
+    prop: bpy.types.PropertyGroup, layout: bpy.types.UILayout, copy_operator: Optional[str] = None
+) -> None:
     if prop.value_type == "IfcPropertySingleValue":
         draw_single_property(prop, layout, copy_operator)
     elif prop.value_type == "IfcPropertyEnumeratedValue":
         draw_enumerated_property(prop, layout, copy_operator)
 
 
-def draw_single_property(prop, layout, copy_operator=None):
+def draw_single_property(
+    prop: bpy.types.PropertyGroup, layout: bpy.types.UILayout, copy_operator: Optional[str] = None
+) -> None:
     value_name = prop.metadata.get_value_name(display_only=True)
     if not value_name:
         layout.label(text=prop["Name"])
@@ -63,7 +69,9 @@ def draw_single_property(prop, layout, copy_operator=None):
         op.name = prop.metadata.name
 
 
-def draw_enumerated_property(prop, layout, copy_operator=None):
+def draw_enumerated_property(
+    prop: bpy.types.PropertyGroup, layout: bpy.types.UILayout, copy_operator: Optional[str] = None
+) -> None:
     value_name = prop.metadata.get_value_name()
     if not value_name:
         layout.label(text=prop.metadata.name)
@@ -78,13 +86,21 @@ def draw_enumerated_property(prop, layout, copy_operator=None):
         op.name = prop.metadata.name
 
 
-def get_active_pset_obj_name(context, obj_type):
+def get_active_pset_obj_name(context: bpy.types.Context, obj_type: tool.Ifc.OBJECT_TYPE) -> str:
     if obj_type in ("Object", "MaterialSet", "MaterialSetItem"):
         return context.active_object.name
     return ""
 
 
-def draw_psetqto_ui(context, pset_id, pset, props, layout, obj_type, allow_removing=True):
+def draw_psetqto_ui(
+    context: bpy.types.Context,
+    pset_id: int,
+    pset: dict[str, Any],
+    props: bpy.types.PropertyGroup,
+    layout: bpy.types.UILayout,
+    obj_type: tool.Ifc.OBJECT_TYPE,
+    allow_removing: bool = True,
+) -> None:
     box = layout.box()
     row = box.row(align=True)
     if "is_expanded" not in pset:
@@ -147,7 +163,7 @@ def draw_psetqto_ui(context, pset_id, pset, props, layout, obj_type, allow_remov
                 row.scale_y = 0.8
                 row.label(text=prop["Name"])
                 op = row.operator("bim.select_similar", text=str(prop["NominalValue"]), icon="NONE", emboss=False)
-                op.key = pset['Name']
+                op.key = pset["Name"]
 
             if not has_props_displayed:
                 row = box.row()
@@ -155,7 +171,9 @@ def draw_psetqto_ui(context, pset_id, pset, props, layout, obj_type, allow_remov
                 row.label(text="No Properties Set")
 
 
-def draw_psetqto_editable_ui(box, props, prop):
+def draw_psetqto_editable_ui(
+    box: bpy.types.UILayout, props: bpy.types.PropertyGroup, prop: bpy.types.PropertyGroup
+) -> None:
     row = box.row(align=True)
     draw_property(prop, row, copy_operator="bim.copy_property_to_selection")
 

@@ -117,6 +117,7 @@ class AssignParameterizedProfile(bpy.types.Operator, tool.Ifc.Operator):
 class AddMaterial(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_material"
     bl_label = "Add Material"
+    bl_description = "Create a new IfcMaterial"
     bl_options = {"REGISTER", "UNDO"}
     name: bpy.props.StringProperty(default="Default")
     category: bpy.props.StringProperty(default="")
@@ -146,18 +147,7 @@ class DuplicateMaterial(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         material = tool.Ifc.get().by_id(self.material)
-        new = tool.Ifc.run("material.copy_material", material=material)
-
-        blender_material = tool.Ifc.get_object(material)
-        new_blender = blender_material.copy()
-        new_blender.use_fake_user = True
-        tool.Ifc.link(new, new_blender)
-
-        if not new.is_a("IfcMaterialList"):
-            name = new[0] + " Copy"
-            new[0] = name
-            new_blender.name = name
-
+        tool.Material.duplicate_material(material)
         material_prop_purge()
         bpy.ops.bim.load_materials()
 
@@ -196,12 +186,50 @@ class RemoveMaterialSet(bpy.types.Operator, tool.Ifc.Operator):
         core.remove_material_set(tool.Ifc, tool.Material, material=tool.Ifc.get().by_id(self.material))
 
 
+class AssignMaterialToSelected(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.assign_material_to_selected"
+    bl_label = "Assign Material To Selected"
+    bl_description = "Assign currently selected material in Materials UI to the selected objects"
+    bl_options = {"REGISTER", "UNDO"}
+    material: bpy.props.IntProperty(name="Material IFC ID")
+
+    @classmethod
+    def poll(cls, context):
+        if not context.selected_objects:
+            cls.poll_message_set("No objects selected")
+            return False
+        return True
+
+    def _execute(self, context):
+        material = tool.Ifc.get().by_id(self.material)
+        objects = tool.Blender.get_selected_objects()
+        core.assign_material(
+            tool.Ifc,
+            tool.Material,
+            material_type=tool.Material.get_active_material_type(),
+            objects=objects,
+            material=material,
+        )
+
+
 class AssignMaterial(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_material"
     bl_label = "Assign Material"
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     material_type: bpy.props.StringProperty()
+
+    @classmethod
+    def description(cls, context, properties):
+        if not (material_type := properties.material_type):
+            if not (obj := context.active_object):
+                return ""
+            material_type = obj.BIMObjectMaterialProperties.material_type
+
+        description = "Assign current IfcMaterial to the selected objects"
+        if material_type != "IfcMaterial":
+            description += f" as part of a new {material_type}"
+        return description
 
     def _execute(self, context):
         objects = [bpy.data.objects.get(self.obj)] if self.obj else tool.Blender.get_selected_objects()

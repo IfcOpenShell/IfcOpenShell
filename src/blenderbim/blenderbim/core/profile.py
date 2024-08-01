@@ -16,8 +16,20 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+from typing import TYPE_CHECKING, Optional
 
-def purge_unused_profiles(ifc, profile):
+if TYPE_CHECKING:
+    import bpy
+    import ifcopenshell
+    import blenderbim.tool as tool
+
+
+def purge_unused_profiles(ifc: tool.Ifc, profile: tool.Profile) -> int:
+    """Purge profiles that have no invserses.
+
+    :return: Number of removed profiles.
+    """
     purged_profiles = 0
     for element_profile in profile.get_model_profiles():
         if ifc.get().get_total_inverses(element_profile) > 0:

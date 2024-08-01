@@ -40,6 +40,8 @@ class Patcher:
         :param filepath: The filepath of the second IFC model to merge into the
             first. The first model is already specified as the input to
             IfcPatch.
+        :type filepath: Union[str, ifcopenshell.file]
+        :filter_glob filepath: *.ifc;*.ifczip;*.ifcxml
 
         Example:
 
@@ -53,26 +55,53 @@ class Patcher:
         self.filepath = filepath
 
     def patch(self):
-        if isinstance(self.filepath, ifcopenshell.file):
-            other = self.filepath
-        else:
-            other = ifcopenshell.open(self.filepath)
+        for filepath in self.filepath:
+            if isinstance(filepath, ifcopenshell.file):
+                other = filepath
+            else:
+                other = ifcopenshell.open(filepath)
 
+            self.merge(other)
+
+    def merge(self, other):
         if (main_unit := self.get_unit_name(self.file)) != self.get_unit_name(other):
             other = ifcopenshell.util.unit.convert_file_length_units(other, main_unit)
 
-        existing_enh = np.array(
+        existing_origin = np.array(
             ifcopenshell.util.geolocation.auto_xyz2enh(self.file, 0, 0, 0, should_return_in_map_units=False)
         )
-        other_enh = np.array(
+        other_origin = np.array(
             ifcopenshell.util.geolocation.auto_xyz2enh(other, 0, 0, 0, should_return_in_map_units=False)
         )
 
-        if not np.allclose(existing_enh, other_enh):
-            x, y, z = ifcopenshell.util.geolocation.auto_enh2xyz(other, *existing_enh, is_specified_in_map_units=False)
-            e, n, h = existing_enh
-            # For now don't handle rotation because my brain is going to explode
-            SetFalseOrigin("", other, self.logger, name="", x=x, y=y, z=z, e=e, n=n, h=h).patch()
+        existing_angle = ifcopenshell.util.geolocation.get_grid_north(self.file)
+        other_angle = ifcopenshell.util.geolocation.get_grid_north(other)
+
+        model_rotation = existing_angle - other_angle
+        if model_rotation > 180:
+            model_rotation = (360 - model_rotation) * -1
+        elif model_rotation < -180:
+            model_rotation = (model_rotation * -1) - 360
+
+        if not np.allclose(existing_origin, other_origin) or not np.isclose(existing_angle, other_angle):
+            x, y, z = ifcopenshell.util.geolocation.auto_enh2xyz(
+                other, *existing_origin, is_specified_in_map_units=False
+            )
+            e, n, h = existing_origin
+            SetFalseOrigin(
+                "",
+                other,
+                self.logger,
+                name="",
+                x=x,
+                y=y,
+                z=z,
+                e=e,
+                n=n,
+                h=h,
+                gn_angle=existing_angle,
+                rotate_angle=model_rotation,
+            ).patch()
 
         self.existing_contexts: list[ifcopenshell.entity_instance] = self.file.by_type(
             "IfcGeometricRepresentationContext"

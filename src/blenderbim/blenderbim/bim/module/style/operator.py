@@ -535,14 +535,22 @@ class RemoveTextureMap(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class EnableAddingPresentationStyle(bpy.types.Operator, tool.Ifc.Operator):
+class EnableAddingPresentationStyle(bpy.types.Operator):
     bl_idname = "bim.enable_adding_presentation_style"
     bl_label = "Enable Add Presentation Style"
     bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
-        props = bpy.context.scene.BIMStylesProperties
-        props.is_adding = True
+    @classmethod
+    def poll(cls, context):
+        style_type = tool.Style.get_active_style_type()
+        if style_type != "IfcSurfaceStyle":
+            cls.poll_message_set(f"Adding {style_type} is not currently supported.")
+            return False
+        return True
+
+    def execute(self, context):
+        tool.Style.enable_adding_presentation_style()
+        return {"FINISHED"}
 
 
 class DuplicateStyle(bpy.types.Operator, tool.Ifc.Operator):
@@ -561,14 +569,14 @@ class DuplicateStyle(bpy.types.Operator, tool.Ifc.Operator):
         bpy.ops.bim.load_styles(style_type=style_type)
 
 
-class DisableAddingPresentationStyle(bpy.types.Operator, tool.Ifc.Operator):
+class DisableAddingPresentationStyle(bpy.types.Operator):
     bl_idname = "bim.disable_adding_presentation_style"
     bl_label = "Disable Add Presentation Style"
     bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
-        props = bpy.context.scene.BIMStylesProperties
-        props.is_adding = False
+    def execute(self, context):
+        tool.Style.disable_adding_presentation_style()
+        return {"FINISHED"}
 
 
 class AddPresentationStyle(bpy.types.Operator, tool.Ifc.Operator):
@@ -621,7 +629,7 @@ class AddPresentationStyle(bpy.types.Operator, tool.Ifc.Operator):
         else:
             self.report({"INFO"}, f"Adding style of type {props.style_type} is not yet supported.")
 
-        props.is_adding = False
+        tool.Style.disable_adding_presentation_style()
         core.load_styles(tool.Style, style_type=props.style_type)
 
 

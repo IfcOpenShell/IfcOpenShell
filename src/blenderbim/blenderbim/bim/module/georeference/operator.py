@@ -20,6 +20,7 @@ import bpy
 
 import blenderbim.tool as tool
 import blenderbim.core.georeference as core
+from blenderbim.bim.module.georeference.decorator import GeoreferenceDecorator
 
 
 class AddGeoreferencing(bpy.types.Operator, tool.Ifc.Operator):
@@ -72,26 +73,6 @@ class DisableEditingGeoreferencing(bpy.types.Operator, tool.Ifc.Operator):
         core.disable_editing_georeferencing(tool.Georeference)
 
 
-class SetIfcGridNorth(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.set_ifc_grid_north"
-    bl_label = "Set IFC Grid North"
-    bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Set IFC grid north based on current Blender North Offset"
-
-    def _execute(self, context):
-        core.set_ifc_grid_north(tool.Georeference)
-
-
-class SetBlenderGridNorth(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.set_blender_grid_north"
-    bl_label = "Set Blender Grid North"
-    bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Set Blender North Offset based on current IFC grid north"
-
-    def _execute(self, context):
-        core.set_blender_grid_north(tool.Georeference)
-
-
 class GetCursorLocation(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.get_cursor_location"
     bl_label = "Get Cursor Location"
@@ -105,57 +86,6 @@ class GetCursorLocation(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         core.get_cursor_location(tool.Georeference)
 
-
-class SetIfcTrueNorth(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.set_ifc_true_north"
-    bl_label = "Set IFC True North"
-    bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Set IFC true north based on current Blender North Offset"
-
-    def _execute(self, context):
-        core.set_ifc_true_north(tool.Georeference)
-
-
-class SetBlenderTrueNorth(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.set_blender_true_north"
-    bl_label = "Set Blender True North"
-    bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Set Blender North Offset based on current IFC true north"
-
-    def _execute(self, context):
-        core.set_blender_true_north(tool.Georeference)
-
-
-class ConvertLocalToGlobal(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.convert_local_to_global"
-    bl_label = "Convert Local To Global"
-    bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Convert local coordinate to global coordinate"
-
-    @classmethod
-    def poll(cls, context):
-        file = tool.Ifc.get()
-        props = context.scene.BIMGeoreferenceProperties
-        return file and props.local_coordinates.count(",") == 2
-
-    def _execute(self, context):
-        core.convert_local_to_global(tool.Georeference)
-
-
-class ConvertGlobalToLocal(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.convert_global_to_local"
-    bl_label = "Convert Global To Local"
-    bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Convert global coordinate to local coordinate"
-
-    @classmethod
-    def poll(cls, context):
-        file = tool.Ifc.get()
-        props = context.scene.BIMGeoreferenceProperties
-        return file and file.by_type("IfcUnitAssignment") and props.local_coordinates.count(",") == 2
-
-    def _execute(self, context):
-        core.convert_global_to_local(tool.Georeference)
 
 class ConvertAngleToCoordinates(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.convert_angle_to_coord"

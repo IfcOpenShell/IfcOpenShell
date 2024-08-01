@@ -168,8 +168,16 @@ class Search(Operator):
     bl_idname = "bim.search"
     bl_label = "Search"
 
+    property_group: bpy.props.StringProperty(name="Property Group", default="")
+
     def execute(self, context):
-        props = context.scene.BIMSearchProperties
+        if self.property_group == "CsvProperties":
+            props = context.scene.CsvProperties
+        elif self.property_group == "BIMSearchProperties":
+            props = context.scene.BIMSearchProperties
+        else:
+            raise Exception(f"bim.search - unexpected property group name '{self.property_group}'.")
+
         results = ifcopenshell.util.selector.filter_elements(
             tool.Ifc.get(), tool.Search.export_filter_query(props.filter_groups)
         )
@@ -356,9 +364,7 @@ class SaveColourscheme(Operator, tool.Ifc.Operator):
             description["colourscheme_query"] = query
             group.Description = json.dumps(description)
         else:
-            description = json.dumps(
-                {"type": "BBIM_Search", "colourscheme": colourscheme, "colourscheme_query": query}
-            )
+            description = json.dumps({"type": "BBIM_Search", "colourscheme": colourscheme, "colourscheme_query": query})
             group = ifcopenshell.api.run("group.add_group", tool.Ifc.get(), name=self.name, description=description)
 
     def invoke(self, context, event):

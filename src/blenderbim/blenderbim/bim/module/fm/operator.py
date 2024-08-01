@@ -26,30 +26,6 @@ import ifcopenshell
 import blenderbim.tool as tool
 
 
-class SelectFMIfcFile(bpy.types.Operator):
-    bl_idname = "bim.select_fm_ifc_file"
-    bl_label = "Select FM IFC File"
-    bl_options = {"REGISTER", "UNDO"}
-    filename_ext = ".ifc"
-    filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
-    files: bpy.props.CollectionProperty(name="File Path", type=bpy.types.OperatorFileListElement)
-
-    def execute(self, context):
-        props = context.scene.BIMFMProperties
-        props.ifc_files.clear()
-        dirname = os.path.dirname(self.filepath)
-        for f in self.files:
-            new = props.ifc_files.add()
-            new.name = os.path.join(dirname, f.name)
-        props.ifc_file = self.filepath
-        return {"FINISHED"}
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
-
-
 class ExecuteIfcFM(bpy.types.Operator):
     bl_idname = "bim.execute_ifcfm"
     bl_label = "Execute IfcFM"
@@ -60,7 +36,7 @@ class ExecuteIfcFM(bpy.types.Operator):
     @classmethod
     def poll(cls, context):
         props = context.scene.BIMFMProperties
-        return props.should_load_from_memory or props.ifc_file
+        return props.should_load_from_memory or props.ifc_files.single_file
 
     def invoke(self, context, event):
         props = context.scene.BIMFMProperties
@@ -73,14 +49,13 @@ class ExecuteIfcFM(bpy.types.Operator):
         props = context.scene.BIMFMProperties
         ifc_file = tool.Ifc.get()
         filepaths = []
-        if not (ifc_file and props.should_load_from_memory):
-            if len(props.ifc_files):
-                ifc_files = [ifcopenshell.open(f.name) for f in props.ifc_files]
-                filepaths = [f.name for f in props.ifc_files]
-            else:
-                ifc_files = [ifcopenshell.open(props.ifc_file)]
-        else:
+        if ifc_file and props.should_load_from_memory:
             ifc_files = [ifc_file]
+        else:
+            ifc_files = [ifcopenshell.open(f.name) for f in props.ifc_files.file_list]
+
+            if len(ifc_files) > 1:
+                filepaths = [f.name for f in props.ifc_files.file_list]
 
         for i, ifc_file in enumerate(ifc_files):
             if filepaths:

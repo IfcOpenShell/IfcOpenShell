@@ -52,7 +52,8 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSectionedSolidHorizontal* in
 	auto pwf = taxonomy::dcast<taxonomy::piecewise_function>(dir);
 	if (!pwf) {
 		// Only implement on alignment curves
-		return nullptr;
+        Logger::Warning("IfcSectionedSolidHorizontal is only implemented for piecewise function Directrix curves", inst);
+        return nullptr;
 	}
 
 	{	
@@ -111,6 +112,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSectionedSolidHorizontal* in
 	loft->axis = nullptr;
 
 	// @todo currently only the case is handled where directrix returns a piecewise_function
+	// @todo this "if" statement is not really required because the function returns at the start if the Directrix is not a piecewise function
 	if (pwf) {
 		double start = std::max(0., cross_sections.front().dist_along);
 		double end = std::min(pwf->length(), cross_sections.back().dist_along);

@@ -38,9 +38,8 @@ from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.model.data import AuthoringData
 from mathutils import Vector, Matrix
 from bpy_extras.object_utils import AddObjectHelper
-from . import prop
 import json
-from typing import Any, Union, Optional, assert_never
+from typing import Any, Union, Optional
 
 
 class EnableAddType(bpy.types.Operator, tool.Ifc.Operator):
@@ -145,6 +144,10 @@ class AddConstrTypeInstance(bpy.types.Operator):
         if self.from_invoke and str(self.relating_type_id) in AuthoringData.data["relating_type_id"]:
             props.relating_type_id = str(self.relating_type_id)
 
+        self.container_obj = None
+        if container := tool.Root.get_default_container():
+            self.container_obj = tool.Ifc.get_object(container)
+
         relating_type = tool.Ifc.get().by_id(int(relating_type_id))
         ifc_class = relating_type.is_a()
         instance_class = ifcopenshell.util.type.get_applicable_entities(ifc_class, tool.Ifc.get().schema)[0]
@@ -193,10 +196,6 @@ class AddConstrTypeInstance(bpy.types.Operator):
 
         obj.location = context.scene.cursor.location
 
-        self.container_obj = None
-        if container := tool.Root.get_default_container():
-            self.container_obj = tool.Ifc.get_object(container)
-
         bpy.ops.bim.assign_class(obj=obj.name, ifc_class=instance_class)
         tool.Blender.remove_data_block(mesh)  # Remove "Instance" mesh
 
@@ -226,9 +225,8 @@ class AddConstrTypeInstance(bpy.types.Operator):
             else:
                 parent = ifcopenshell.util.element.get_container(building_element)
                 if parent:
-                    parent_obj = tool.Ifc.get_object(parent)
                     blenderbim.core.spatial.assign_container(
-                        tool.Ifc, tool.Collector, tool.Spatial, structure_obj=parent_obj, element_obj=obj
+                        tool.Ifc, tool.Collector, tool.Spatial, container=parent, element_obj=obj
                     )
 
         # set occurrences properties for the types defined with modifiers
@@ -511,54 +509,3 @@ def regenerate_profile_usage(usecase_path, ifc_file, settings):
                 is_global=True,
                 should_sync_changes_first=False,
             )
-
-
-def ensure_material_assigned(usecase_path: str, ifc_file: ifcopenshell.file, settings: dict[str, Any]) -> None:
-    return  # TODO ensure this now works with the new approach of styles
-    elements = settings["products"]
-    material = settings.get("material")
-    if material:
-        assigned_material = settings["material"]
-    else:
-        material_type: ifcopenshell.util.element.MATERIAL_TYPE = settings["type"]
-        element = elements[0]
-        if material_type == "IfcMaterial":
-            assigned_material = ifcopenshell.util.element.get_material(element, should_inherit=False)
-            assert assigned_material  # Type checker.
-        # Material usages just inherit the style from the type material, so can't override it.
-        elif material_type in ("IfcMaterialLayerSetUsage", "IfcMaterialProfileSetUsage"):
-            return
-        # If type is Set and no material argument were provided, then Set was just created
-        # and not yet have any IfcMaterials.
-        elif material_type in ("IfcMaterialConstituentSet", "IfcMaterialLayerSet", "IfcMaterialProfileSet"):
-            return
-        elif material_type == "IfcMaterialList":
-            assert False, "Current assign_material implementation requires 'material' argument for IfcMaterialList."
-        else:
-            assert_never(material_type)
-
-    for element in elements[:]:
-        if element.is_a("IfcElementType"):
-            elements.extend(tool.Model.get_occurrences_without_material_override(element))
-
-    tool.Model.apply_ifc_material_changes(elements, assigned_material=settings["material"])
-
-
-def ensure_material_unassigned(usecase_path: str, ifc_file: ifcopenshell.file, settings: dict[str, Any]) -> None:
-    return  # TODO ensure this now works with the new approach of styles
-    elements = settings["products"]
-
-    # unassign_material could be called when product is about to get removed
-    # and representation might be already removed.
-    elements = [
-        e
-        for e in elements
-        if (obj := tool.Ifc.get_object(e))
-        and obj.data
-        and tool.Ifc.get_entity_by_id(obj.data.BIMMeshProperties.ifc_definition_id)
-    ]
-
-    for element in elements[:]:
-        if element.is_a("IfcElementType"):
-            elements.extend(tool.Model.get_occurrences_without_material_override(element))
-    tool.Model.apply_ifc_material_changes(elements)

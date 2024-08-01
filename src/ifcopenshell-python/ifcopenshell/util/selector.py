@@ -31,6 +31,7 @@ import ifcopenshell.util.geolocation
 import ifcopenshell.util.classification
 import ifcopenshell.util.schema
 import ifcopenshell.util.shape
+import ifcopenshell.util.system
 from decimal import Decimal
 from typing import Optional, Any, Union, Iterable
 
@@ -322,7 +323,7 @@ def _get_element_value(element: ifcopenshell.entity_instance, keys: list[str]) -
             elif isinstance(value, (list, tuple)):
                 value = len(value)
             else:
-                value = 1
+                value = int(1)
         elif key == "class":
             value = value.is_a()
         elif key == "predefined_type":
@@ -331,6 +332,10 @@ def _get_element_value(element: ifcopenshell.entity_instance, keys: list[str]) -
             value = value.id()
         elif key == "classification":
             value = ifcopenshell.util.classification.get_references(value)
+        elif key == "group":
+            value = ifcopenshell.util.element.get_groups(value)
+        elif key == "system":
+            value = ifcopenshell.util.system.get_element_systems(value)
         elif key in ("x", "y", "z", "easting", "northing", "elevation") and hasattr(value, "ObjectPlacement"):
             if getattr(value, "ObjectPlacement", None):
                 matrix = ifcopenshell.util.placement.get_local_placement(value.ObjectPlacement)

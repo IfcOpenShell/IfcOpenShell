@@ -20,12 +20,15 @@ import bpy
 import mathutils
 import blenderbim.core.tool
 import blenderbim.tool as tool
-from blenderbim.bim.module.geometry.helper import Helper
+from mathutils import Matrix, Vector
+from typing import Any, Sequence
 
 
 class Boundary(blenderbim.core.tool.Boundary):
     @classmethod
-    def get_assign_connection_geometry_settings(cls, obj):
+    def get_assign_connection_geometry_settings(cls, obj: bpy.types.Object) -> dict[str, Any]:
+        from blenderbim.bim.module.geometry.helper import Helper
+
         ifc = tool.Ifc.get()
         helper = Helper(ifc)
         mesh = obj.data
@@ -55,16 +58,16 @@ class Boundary(blenderbim.core.tool.Boundary):
         }
 
     @classmethod
-    def polyline_from_indexes(cls, mesh, indexes):
+    def polyline_from_indexes(cls, mesh: bpy.types.Mesh, indexes: Sequence[int]) -> tuple[Vector, ...]:
         return tuple(mesh.vertices[i].co for i in indexes)
 
     @classmethod
-    def polyline_to_2d(cls, polyline, placement_matrix):
+    def polyline_to_2d(cls, polyline: Sequence[Vector], placement_matrix: Matrix) -> tuple[Vector, ...]:
         matrix_inv = placement_matrix.inverted()
         return tuple((matrix_inv @ v).to_2d() for v in polyline)
 
     @classmethod
-    def move_origin_to_space_origin(cls, obj):
+    def move_origin_to_space_origin(cls, obj: bpy.types.Object) -> None:
         boundary = tool.Ifc.get_entity(obj)
         space = tool.Ifc.get_object(boundary.RelatingSpace)
         translation = obj.matrix_world.translation - space.matrix_world.translation

@@ -244,7 +244,9 @@ class LibraryGenerator:
             polyline = builder.polyline((V(0, 0), V(width, 0)))
             _, _, first_semicircle = builder.create_transition_arc_ifc(width, depth, create_ifc_curve=True)
 
-            _, _, second_semicircle = builder.create_transition_arc_ifc(second_arc_width, second_arc_depth, create_ifc_curve=True)
+            _, _, second_semicircle = builder.create_transition_arc_ifc(
+                second_arc_width, second_arc_depth, create_ifc_curve=True
+            )
             builder.translate(second_semicircle, V((width - second_arc_width) / 2, 0))
 
             builder.translate([polyline, first_semicircle, second_semicircle], shift_to_center)
@@ -934,34 +936,46 @@ class LibraryGenerator:
 
         overall_width, overall_depth, overall_height = (900.0, 750.0, 2100.0)
         representation_3d, representation_2d = create_shower_or_bathtube(overall_width, overall_depth, overall_height)
-        self.create_explicit_type("IfcSanitaryTerminalType", "Neufert Shower 75x90", representation_3d, representation_2d)
+        self.create_explicit_type(
+            "IfcSanitaryTerminalType", "Neufert Shower 75x90", representation_3d, representation_2d
+        )
 
         overall_width, overall_depth, overall_height = (800.0, 800.0, 2100.0)
         representation_3d, representation_2d = create_shower_or_bathtube(overall_width, overall_depth, overall_height)
-        self.create_explicit_type("IfcSanitaryTerminalType", "Neufert Shower 80x80", representation_3d, representation_2d)
+        self.create_explicit_type(
+            "IfcSanitaryTerminalType", "Neufert Shower 80x80", representation_3d, representation_2d
+        )
 
         overall_width, overall_depth, overall_height = (900.0, 900.0, 2100.0)
         representation_3d, representation_2d = create_shower_or_bathtube(overall_width, overall_depth, overall_height)
-        self.create_explicit_type("IfcSanitaryTerminalType", "Neufert Shower 90x90", representation_3d, representation_2d)
+        self.create_explicit_type(
+            "IfcSanitaryTerminalType", "Neufert Shower 90x90", representation_3d, representation_2d
+        )
 
         # bathtubs
         overall_width, overall_depth, overall_height = (1600.0, 700.0, 550.0)
         representation_3d, representation_2d = create_shower_or_bathtube(
             overall_width, overall_depth, overall_height, bathtube=True
         )
-        self.create_explicit_type("IfcSanitaryTerminalType", "Neufert Small Bathtub", representation_3d, representation_2d)
+        self.create_explicit_type(
+            "IfcSanitaryTerminalType", "Neufert Small Bathtub", representation_3d, representation_2d
+        )
 
         overall_width, overall_depth, overall_height = (1700.0, 750.0, 550.0)
         representation_3d, representation_2d = create_shower_or_bathtube(
             overall_width, overall_depth, overall_height, bathtube=True
         )
-        self.create_explicit_type("IfcSanitaryTerminalType", "Neufert Medium Bathtub", representation_3d, representation_2d)
+        self.create_explicit_type(
+            "IfcSanitaryTerminalType", "Neufert Medium Bathtub", representation_3d, representation_2d
+        )
 
         overall_width, overall_depth, overall_height = (1800.0, 800.0, 550.0)
         representation_3d, representation_2d = create_shower_or_bathtube(
             overall_width, overall_depth, overall_height, bathtube=True
         )
-        self.create_explicit_type("IfcSanitaryTerminalType", "Neufert Large Bathtub", representation_3d, representation_2d)
+        self.create_explicit_type(
+            "IfcSanitaryTerminalType", "Neufert Large Bathtub", representation_3d, representation_2d
+        )
 
         def create_toilet(width, depth, height, seat_level=0):
             shift_to_center = V(-width / 2, 0)
@@ -1130,9 +1144,7 @@ class LibraryGenerator:
             back_wall = builder.rectangle(V(width, height))
             # example of rotating and extruding by Y axis btw
             back_wall_extruded = builder.extrude(
-                back_wall,
-                back_wall_depth + back_wall_border_mask_depth,
-                **builder.extrude_kwargs("Y")
+                back_wall, back_wall_depth + back_wall_border_mask_depth, **builder.extrude_kwargs("Y")
             )
             items_3d_to_center.append(back_wall_extruded)
 
@@ -1202,15 +1214,21 @@ class LibraryGenerator:
 
         overall_width, overall_depth, overall_height = (350.0, 350.0, 650.0)
         representation_3d, representation_2d = create_urinal(overall_width, overall_depth, overall_height)
-        self.create_explicit_type("IfcSanitaryTerminalType", "Neufert Small Urinal", representation_3d, representation_2d)
+        self.create_explicit_type(
+            "IfcSanitaryTerminalType", "Neufert Small Urinal", representation_3d, representation_2d
+        )
 
         overall_width, overall_depth, overall_height = (400.0, 400.0, 650.0)
         representation_3d, representation_2d = create_urinal(overall_width, overall_depth, overall_height)
-        self.create_explicit_type("IfcSanitaryTerminalType", "Neufert Medium Urinal", representation_3d, representation_2d)
+        self.create_explicit_type(
+            "IfcSanitaryTerminalType", "Neufert Medium Urinal", representation_3d, representation_2d
+        )
 
         overall_width, overall_depth, overall_height = (450.0, 450.0, 650.0)
         representation_3d, representation_2d = create_urinal(overall_width, overall_depth, overall_height)
-        self.create_explicit_type("IfcSanitaryTerminalType", "Neufert Large Urinal", representation_3d, representation_2d)
+        self.create_explicit_type(
+            "IfcSanitaryTerminalType", "Neufert Large Urinal", representation_3d, representation_2d
+        )
 
         def create_basin(width, depth, height):
             second_width = 0.9 * width
@@ -1251,19 +1269,27 @@ class LibraryGenerator:
 
         overall_width, overall_depth, overall_height = (450.0, 400.0, 250.0)
         representation_3d, representation_2d = create_basin(overall_width, overall_depth, overall_height)
-        self.create_explicit_type("IfcSanitaryTerminalType", "Neufert Extra Small Basin", representation_3d, representation_2d)
+        self.create_explicit_type(
+            "IfcSanitaryTerminalType", "Neufert Extra Small Basin", representation_3d, representation_2d
+        )
 
         overall_width, overall_depth, overall_height = (500.0, 450.0, 250.0)
         representation_3d, representation_2d = create_basin(overall_width, overall_depth, overall_height)
-        self.create_explicit_type("IfcSanitaryTerminalType", "Neufert Small Basin", representation_3d, representation_2d)
+        self.create_explicit_type(
+            "IfcSanitaryTerminalType", "Neufert Small Basin", representation_3d, representation_2d
+        )
 
         overall_width, overall_depth, overall_height = (550.0, 500.0, 250.0)
         representation_3d, representation_2d = create_basin(overall_width, overall_depth, overall_height)
-        self.create_explicit_type("IfcSanitaryTerminalType", "Neufert Medium Basin", representation_3d, representation_2d)
+        self.create_explicit_type(
+            "IfcSanitaryTerminalType", "Neufert Medium Basin", representation_3d, representation_2d
+        )
 
         overall_width, overall_depth, overall_height = (600.0, 550.0, 250.0)
         representation_3d, representation_2d = create_basin(overall_width, overall_depth, overall_height)
-        self.create_explicit_type("IfcSanitaryTerminalType", "Neufert Large Basin", representation_3d, representation_2d)
+        self.create_explicit_type(
+            "IfcSanitaryTerminalType", "Neufert Large Basin", representation_3d, representation_2d
+        )
 
         def create_desk(width, depth, height, return_representations=False):
             leg_width = 50.0
@@ -1421,7 +1447,9 @@ class LibraryGenerator:
 
         overall_width, overall_depth, overall_height = (500.0, 570.0, 820.0)
         representation_3d, representation_2d = create_dishwasher(overall_width, overall_depth, overall_height)
-        self.create_explicit_type("IfcElectricApplianceType", "Neufert Dishwasher", representation_3d, representation_2d)
+        self.create_explicit_type(
+            "IfcElectricApplianceType", "Neufert Dishwasher", representation_3d, representation_2d
+        )
 
         def create_cooktop(width, depth, height):
             items_3d, items_2d = create_box_objects(width, depth, height)
@@ -1442,15 +1470,21 @@ class LibraryGenerator:
 
         overall_width, overall_depth, overall_height = (580.0, 510.0, 50.0)
         representation_3d, representation_2d = create_cooktop(overall_width, overall_depth, overall_height)
-        self.create_explicit_type("IfcElectricApplianceType", "Neufert Cooktop 58x51", representation_3d, representation_2d)
+        self.create_explicit_type(
+            "IfcElectricApplianceType", "Neufert Cooktop 58x51", representation_3d, representation_2d
+        )
 
         overall_width, overall_depth, overall_height = (750.0, 510.0, 50.0)
         representation_3d, representation_2d = create_cooktop(overall_width, overall_depth, overall_height)
-        self.create_explicit_type("IfcElectricApplianceType", "Neufert Cooktop 75x51", representation_3d, representation_2d)
+        self.create_explicit_type(
+            "IfcElectricApplianceType", "Neufert Cooktop 75x51", representation_3d, representation_2d
+        )
 
         overall_width, overall_depth, overall_height = (890.0, 510.0, 50.0)
         representation_3d, representation_2d = create_cooktop(overall_width, overall_depth, overall_height)
-        self.create_explicit_type("IfcElectricApplianceType", "Neufert Cooktop 89x51", representation_3d, representation_2d)
+        self.create_explicit_type(
+            "IfcElectricApplianceType", "Neufert Cooktop 89x51", representation_3d, representation_2d
+        )
 
         overall_width, overall_depth, overall_height = (1750.0, 600.0, 850.0)
         representation_3d, representation_2d = create_box_objects(
@@ -1520,7 +1554,9 @@ class LibraryGenerator:
         representation_3d, representation_2d = create_box_objects(
             overall_width, overall_depth, overall_height, return_representations=True
         )
-        self.create_explicit_type("IfcElectricApplianceType", "Generic Small Fridge Zone", representation_3d, representation_2d)
+        self.create_explicit_type(
+            "IfcElectricApplianceType", "Generic Small Fridge Zone", representation_3d, representation_2d
+        )
 
         overall_width, overall_depth, overall_height = (900.0, 700.0, 1900.0)
         representation_3d, representation_2d = create_box_objects(
@@ -1534,7 +1570,9 @@ class LibraryGenerator:
         representation_3d, representation_2d = create_box_objects(
             overall_width, overall_depth, overall_height, return_representations=True
         )
-        self.create_explicit_type("IfcElectricApplianceType", "Generic Large Fridge Zone", representation_3d, representation_2d)
+        self.create_explicit_type(
+            "IfcElectricApplianceType", "Generic Large Fridge Zone", representation_3d, representation_2d
+        )
 
         def create_sink(width, depth, height, add_table):
             shift_to_center = V(-width / 2, -depth)
@@ -1670,7 +1708,9 @@ class LibraryGenerator:
 
         overall_width, overall_depth, overall_height = (595.0, 680.0, 850.0)
         representation_3d, representation_2d = create_washing_machine(overall_width, overall_depth, overall_height)
-        self.create_explicit_type("IfcElectricApplianceType", "Neufert Washing Machine", representation_3d, representation_2d)
+        self.create_explicit_type(
+            "IfcElectricApplianceType", "Neufert Washing Machine", representation_3d, representation_2d
+        )
 
         def create_dryer_machine(width, depth, height):
             items_3d, items_2d = create_box_objects(width, depth, height)
@@ -1797,13 +1837,17 @@ class LibraryGenerator:
         ifcopenshell.api.run(
             "geometry.assign_representation", self.file, product=element, representation=representation_2d
         )
-        ifcopenshell.api.run("project.assign_declaration", self.file, definitions=[element], relating_context=self.library)
+        ifcopenshell.api.run(
+            "project.assign_declaration", self.file, definitions=[element], relating_context=self.library
+        )
         return element
 
     def create_layer_set_type(self, name, data):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class=data["type"], name=name)
         element.Description = data["Description"]
-        rel = ifcopenshell.api.run("material.assign_material", self.file, products=[element], type="IfcMaterialLayerSet")
+        rel = ifcopenshell.api.run(
+            "material.assign_material", self.file, products=[element], type="IfcMaterialLayerSet"
+        )
         layer_set = rel.RelatingMaterial
         for layer_data in data["Layers"]:
             layer = ifcopenshell.api.run(
@@ -1811,33 +1855,43 @@ class LibraryGenerator:
             )
             layer.Name = layer_data[0]
             layer.LayerThickness = layer_data[2]
-        ifcopenshell.api.run("project.assign_declaration", self.file, definitions=[element], relating_context=self.library)
+        ifcopenshell.api.run(
+            "project.assign_declaration", self.file, definitions=[element], relating_context=self.library
+        )
         return element
 
     def create_layer_type(self, ifc_class, name, thickness):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class=ifc_class, name=name)
-        rel = ifcopenshell.api.run("material.assign_material", self.file, products=[element], type="IfcMaterialLayerSet")
+        rel = ifcopenshell.api.run(
+            "material.assign_material", self.file, products=[element], type="IfcMaterialLayerSet"
+        )
         layer_set = rel.RelatingMaterial
         layer = ifcopenshell.api.run(
             "material.add_layer", self.file, layer_set=layer_set, material=self.materials["TBD"]["ifc"]
         )
         layer.LayerThickness = thickness
-        ifcopenshell.api.run("project.assign_declaration", self.file, definitions=[element], relating_context=self.library)
+        ifcopenshell.api.run(
+            "project.assign_declaration", self.file, definitions=[element], relating_context=self.library
+        )
         return element
 
     def create_profile_type(self, ifc_class, name, profile):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class=ifc_class, name=name)
-        rel = ifcopenshell.api.run("material.assign_material", self.file, products=[element], type="IfcMaterialProfileSet")
+        rel = ifcopenshell.api.run(
+            "material.assign_material", self.file, products=[element], type="IfcMaterialProfileSet"
+        )
         profile_set = rel.RelatingMaterial
         material_profile = ifcopenshell.api.run(
             "material.add_profile",
             self.file,
             profile_set=profile_set,
-            material=self.material
+            material=self.material,
             # material=self.materials["TBD"]["ifc"]
         )
         ifcopenshell.api.run("material.assign_profile", self.file, material_profile=material_profile, profile=profile)
-        ifcopenshell.api.run("project.assign_declaration", self.file, definitions=[element], relating_context=self.library)
+        ifcopenshell.api.run(
+            "project.assign_declaration", self.file, definitions=[element], relating_context=self.library
+        )
 
     def create_type(self, ifc_class, name, representations):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class=ifc_class, name=name)
@@ -1869,7 +1923,9 @@ class LibraryGenerator:
             ifcopenshell.api.run(
                 "geometry.assign_representation", self.file, product=element, representation=representation
             )
-        ifcopenshell.api.run("project.assign_declaration", self.file, definitions=[element], relating_context=self.library)
+        ifcopenshell.api.run(
+            "project.assign_declaration", self.file, definitions=[element], relating_context=self.library
+        )
 
 
 if __name__ == "__main__":

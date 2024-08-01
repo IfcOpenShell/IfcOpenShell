@@ -18,6 +18,7 @@
 
 import bpy
 import ifcopenshell.util.geolocation
+import blenderbim.tool as tool
 from blenderbim.bim.prop import Attribute
 from bpy.types import PropertyGroup
 from bpy.props import (
@@ -31,6 +32,7 @@ from bpy.props import (
     CollectionProperty,
 )
 from blenderbim.bim.module.georeference.data import GeoreferenceData
+from blenderbim.bim.module.georeference.decorator import GeoreferenceDecorator
 
 
 def get_coordinate_operation_class(self, context):
@@ -93,6 +95,81 @@ def update_grid_north_vector(self, context):
     self.is_changing_angle = False
 
 
+def update_should_visualise(self, context):
+    if self.should_visualise:
+        GeoreferenceDecorator.install(bpy.context)
+    else:
+        GeoreferenceDecorator.uninstall()
+
+
+def update_blender_coordinates(self, context):
+    props = bpy.context.scene.BIMGeoreferenceProperties
+    if props.is_updating_coordinates:
+        return
+    props.is_updating_coordinates = True
+    blender_coordinates = tool.Georeference.get_coordinates("blender")
+    local_coordinates = ifcopenshell.util.geolocation.xyz2enh(
+        *blender_coordinates,
+        float(props.blender_offset_x),
+        float(props.blender_offset_y),
+        float(props.blender_offset_z),
+        float(props.blender_x_axis_abscissa),
+        float(props.blender_x_axis_ordinate),
+    )
+    tool.Georeference.set_coordinates("local", local_coordinates)
+    tool.Georeference.set_coordinates(
+        "map", ifcopenshell.util.geolocation.auto_xyz2enh(tool.Ifc.get(), *local_coordinates)
+    )
+    props.is_updating_coordinates = False
+
+
+def update_local_coordinates(self, context):
+    props = bpy.context.scene.BIMGeoreferenceProperties
+    if props.is_updating_coordinates:
+        return
+    props.is_updating_coordinates = True
+    local_coordinates = tool.Georeference.get_coordinates("local")
+    tool.Georeference.set_coordinates(
+        "map", ifcopenshell.util.geolocation.auto_xyz2enh(tool.Ifc.get(), *local_coordinates)
+    )
+    if props.has_blender_offset:
+        tool.Georeference.set_coordinates(
+            "blender",
+            ifcopenshell.util.geolocation.enh2xyz(
+                *local_coordinates,
+                float(props.blender_offset_x),
+                float(props.blender_offset_y),
+                float(props.blender_offset_z),
+                float(props.blender_x_axis_abscissa),
+                float(props.blender_x_axis_ordinate),
+            ),
+        )
+    props.is_updating_coordinates = False
+
+
+def update_map_coordinates(self, context):
+    props = bpy.context.scene.BIMGeoreferenceProperties
+    if props.is_updating_coordinates:
+        return
+    props.is_updating_coordinates = True
+    map_coordinates = tool.Georeference.get_coordinates("map")
+    local_coordinates = ifcopenshell.util.geolocation.auto_enh2xyz(tool.Ifc.get(), *map_coordinates)
+    tool.Georeference.set_coordinates("local", local_coordinates)
+    if props.has_blender_offset:
+        tool.Georeference.set_coordinates(
+            "blender",
+            ifcopenshell.util.geolocation.enh2xyz(
+                *local_coordinates,
+                float(props.blender_offset_x),
+                float(props.blender_offset_y),
+                float(props.blender_offset_z),
+                float(props.blender_x_axis_abscissa),
+                float(props.blender_x_axis_ordinate),
+            ),
+        )
+    props.is_updating_coordinates = False
+
+
 class BIMGeoreferenceProperties(PropertyGroup):
     coordinate_operation_class: bpy.props.EnumProperty(
         items=get_coordinate_operation_class, name="Coordinate Operation Class"
@@ -103,27 +180,60 @@ class BIMGeoreferenceProperties(PropertyGroup):
     is_editing_true_north: BoolProperty(name="Is Editing True North")
     coordinate_operation: CollectionProperty(name="Coordinate Operation", type=Attribute)
     projected_crs: CollectionProperty(name="Projected CRS", type=Attribute)
+    is_updating_coordinates: BoolProperty(name="Is Updating Coordinates", default=False)
+    blender_coordinates: StringProperty(
+        name="Blender Coordinates",
+        description='Formatted "x,y,z" (without quotes)',
+        default="0,0,0",
+        update=update_blender_coordinates,
+    )
     local_coordinates: StringProperty(
-        name="Local Coordinates", description='Formatted "x,y,z" (without quotes)', default="0,0,0"
+        name="Local Coordinates",
+        description='Formatted "x,y,z" (without quotes)',
+        default="0,0,0",
+        update=update_local_coordinates,
     )
     map_coordinates: StringProperty(
-        name="Map Coordinates", description='Formatted "x,y,z" (without quotes)', default="0,0,0"
+        name="Map Coordinates",
+        description='Formatted "x,y,z" (without quotes)',
+        default="0,0,0",
+        update=update_map_coordinates,
+    )
+    should_visualise: BoolProperty(
+        name="Should Visualise",
+        description="Displays a visualisation of all georeferencing data at the origin",
+        default=False,
+        update=update_should_visualise,
     )
     grid_north_angle: StringProperty(name="Grid North Angle", update=update_grid_north_angle)
     x_axis_abscissa: StringProperty(name="X Axis Abscissa", update=update_grid_north_vector)
     x_axis_ordinate: StringProperty(name="X Axis Ordinate", update=update_grid_north_vector)
     x_axis_is_null: BoolProperty(name="X Axis Is Null")
+
+    # These are only for reference to capture data about a host model from a linked model
+    # If you relink a model from a new host origin, we can autodetect it in theory with this
     host_model_origin: StringProperty(name="Host Model Origin")
+    host_model_origin_si: StringProperty(name="Host Model Origin SI")
+    host_model_project_north: StringProperty(name="Host Model Angle to Grid North")
+
+    # This is the ENH in project units and SI units of the Blender session's 0,0,0.
+    # These are only for reference, using tool.Georeference.set_model_origin on
+    # project load, project create, and when linking for the first time from an
+    # empty Blender session.
     model_origin: StringProperty(name="Model Origin")
+    model_origin_si: StringProperty(name="Model Origin SI")
+    model_project_north: StringProperty(name="Model Angle to Grid North")
+
+    # True if there is a temporary Blender session coordinate system
     has_blender_offset: BoolProperty(name="Has Blender Offset")
-    blender_eastings: StringProperty(name="Blender Eastings", default="0")
-    blender_northings: StringProperty(name="Blender Northings", default="0")
-    blender_orthogonal_height: StringProperty(name="Blender Orthogonal Height", default="0")
-    blender_x_axis_abscissa: StringProperty(name="Blender X Axis Abscissa", default="1")
-    blender_x_axis_ordinate: StringProperty(name="Blender X Axis Ordinate", default="0")
+
+    # These are the helmert transformation parameters of the Blender session
     blender_offset_x: StringProperty(name="Blender Offset X", default="0")
     blender_offset_y: StringProperty(name="Blender Offset Y", default="0")
     blender_offset_z: StringProperty(name="Blender Offset Z", default="0")
+    blender_x_axis_abscissa: StringProperty(name="Blender X Axis Abscissa", default="1")
+    blender_x_axis_ordinate: StringProperty(name="Blender X Axis Ordinate", default="0")
+
     true_north_angle: StringProperty(name="True North Angle", update=update_true_north_angle)
     true_north_abscissa: StringProperty(name="True North Abscissa", update=update_true_north_vector)
     true_north_ordinate: StringProperty(name="True North Ordinate", update=update_true_north_vector)

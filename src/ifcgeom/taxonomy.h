@@ -356,10 +356,10 @@ typedef item const* ptr;
 
 				using spans = std::vector<std::pair<double, std::function<Eigen::Matrix4d(double u)>>>;
 
-            piecewise_function(const spans& s, ifcopenshell::geometry::Settings* settings = nullptr, const IfcUtil::IfcBaseInterface* instance = nullptr) : 
-					implicit_item(instance), settings_(settings), spans_(s){};
-            piecewise_function(const std::vector<piecewise_function::ptr>& pwfs, ifcopenshell::geometry::Settings* settings = nullptr, const IfcUtil::IfcBaseInterface* instance = nullptr) : 
-					implicit_item(instance), settings_(settings)
+            piecewise_function(double start,const spans& s, ifcopenshell::geometry::Settings* settings = nullptr, const IfcUtil::IfcBaseInterface* instance = nullptr) : 
+					implicit_item(instance), start_(start), settings_(settings), spans_(s){};
+            piecewise_function(double start,const std::vector<piecewise_function::ptr>& pwfs, ifcopenshell::geometry::Settings* settings = nullptr, const IfcUtil::IfcBaseInterface* instance = nullptr) : 
+					implicit_item(instance), start_(start), settings_(settings)
 				{
                 for (auto& pwf : pwfs) {
                     spans_.insert(spans_.end(), pwf->spans_.begin(), pwf->spans_.end());
@@ -371,6 +371,14 @@ typedef item const* ptr;
 				const ifcopenshell::geometry::Settings* settings_ = nullptr;
 
 				bool is_empty() const { return spans_.empty(); }
+
+				double start() const {
+                    return start_;
+                }
+
+				double end() const {
+                    return start_ + length();
+				}
 
 				double length() const {
 					if (!length_.has_value()) {
@@ -387,35 +395,43 @@ typedef item const* ptr;
 					return boost::hash<decltype(v)>{}(v);
 				}
 
-				item::ptr evaluate() const override;
-            std::pair<item::ptr,std::vector<double>> evaluate2() const;
+				/// @brief returns a vector of "distance along" points where the evaluate function computes loop points
+				std::vector<double> evaluation_points() const;
+
+				/// @brief returns a vector of "distance along" points between ustart and uend
+            /// @param ustart starting location
+            /// @param uend ending location
+            /// @param nsteps number of steps to evaluate
+            std::vector<double> evaluation_points(double ustart, double uend, unsigned nsteps) const;
+
+            /// @brief evaluates the piecewise function between start and end
+				/// evaluation point step size is taken from the settings object
+            item::ptr evaluate() const override;
 
             /// @brief evaluates the piecewise function between ustart and uend
-            /// @param ustart starting location - taken as 0.0 if before start
-            /// @param uend ending location - taken as length if beyond end
+				/// if ustart and uend are out of range, the range of values evaluated
+				/// are constrained to start_ and start_+length_
+            /// @param ustart starting location
+            /// @param uend ending location
             /// @param nsteps number of steps to evaluate
             /// @return taxonomy::loop::ptr
             item::ptr evaluate(double ustart, double uend, unsigned nsteps) const;
 
-            /// @brief evaluates the piecewise function between ustart and uend
-            /// @param ustart starting location - taken as 0.0 if before start
-            /// @param uend ending location - taken as length if beyond end
-            /// @param nsteps number of steps to evaluate
-            /// @return taxonomy::loop::ptr and vector of u values
-            std::pair<item::ptr, std::vector<double>> evaluate2(double ustart, double uend, unsigned nsteps) const;
-
 				/// @brief evaluates the piecewise function at u
-				/// @param u u is constrained to be between 0 and length
+				/// @param u u is constrained to be between start_ and start_+length
 				/// @return 4x4 placement matrix
 				Eigen::Matrix4d evaluate(double u) const;
 
             private:
-               std::tuple<double, double, const std::function<Eigen::Matrix4d(double u)>*> get_span(double u) const;
+                item::ptr evaluate(const std::vector<double>& dist) const;
+                std::tuple<double, double, const std::function<Eigen::Matrix4d(double u)>*> get_span(double u) const;
+               double start_ = 0.0; // starting value of the pwf
                spans spans_;
                mutable double current_span_start_ = 0;
 				   mutable double current_span_end_ = 0;
 				   mutable const std::function<Eigen::Matrix4d(double u)>* current_span_fn_ = nullptr;
                mutable boost::optional<double> length_;
+               mutable boost::optional<std::vector<double>> eval_points_;
 			};
 
 #ifdef TAXONOMY_USE_SHARED_PTR
@@ -1341,7 +1357,7 @@ typedef item const* ptr;
 									};
 									spans.emplace_back(l, fn);
 								}
-								pwf_ = taxonomy::make<taxonomy::piecewise_function>(spans);
+								pwf_ = taxonomy::make<taxonomy::piecewise_function>(0.0,spans);
 								loop->pwf = pwf_;
 							}
 						}

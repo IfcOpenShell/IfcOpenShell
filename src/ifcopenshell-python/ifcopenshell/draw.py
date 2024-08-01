@@ -26,7 +26,7 @@ import ifcopenshell
 import ifcopenshell.geom
 
 from xml.dom.minidom import parseString
-from dataclasses import dataclass, fields
+from dataclasses import dataclass, fields, field
 from typing import Callable, Sequence
 
 import numpy
@@ -55,11 +55,20 @@ class draw_settings:
     storey_heights: str = "none"
     include_entities: str = ""
     exclude_entities: str = "IfcOpeningElement"
-    drawing_guid: str = ""
+    drawing_guid: str = field(
+        default="",
+        metadata={
+            "doc": "Use a drawing with the provided GlobalId. Setting takes priority over 'drawing_object_type'."
+        },
+    )
+    drawing_object_type: str = field(
+        default="", metadata={"doc": 'Use IfcAnnotations with provided ObjectType for drawings (e.g. "DRAWING").'}
+    )
     profile_threshold: int = -1
     cells: bool = True
     merge_cells: bool = False
     include_projection: bool = True
+    hlr_poly: bool = False
     prefilter: bool = True
     include_curves: bool = False
     unify_inputs: bool = True
@@ -113,11 +122,15 @@ def main(
     if settings.auto_floorplan:
         sr.setSectionHeightsFromStoreys()
 
-    if settings.drawing_guid:
-        sr.setElevationRefGuid(settings.drawing_guid)
+    # setElevationRefGuid and setElevationRef are also mutually exclusive in C-code.
+    # Note that guid or object type are not checked anywhere to be valid,
+    # it's up to user to keep them valid for the provided projects.
+    if settings.drawing_guid or settings.drawing_object_type:
+        if settings.drawing_guid:
+            sr.setElevationRefGuid(settings.drawing_guid)
+        elif settings.drawing_object_type:
+            sr.setElevationRef(settings.drawing_object_type)
         sr.setWithoutStoreys(True)
-        # If you want to filter by IfcAnnotation ObjectType named "DRAWING"
-        # sr.setElevationRef("DRAWING")
 
     # required for svgfill
     sr.setPolygonal(True)
@@ -137,6 +150,7 @@ def main(
     if settings.subtract_before_hlr:
         sr.setSubtractionSettings(W.ALWAYS)
 
+    sr.setUseHlrPoly(settings.hlr_poly)
     sr.setUsePrefiltering(settings.prefilter)
     sr.setUnifyInputs(settings.unify_inputs)
 
@@ -419,16 +433,27 @@ if __name__ == "__main__":
     )
 
     for field in fields(draw_settings):
+        name = field.name.replace("_", "-")
+        description = field.metadata.get("doc") or ""
+        description += " " if description else ""
+        description += f"Default: {repr(field.default)}."
         if field.type == bool:
-            parser.add_argument("--" + field.name.replace("_", "-"), dest=field.name, action="store_true")
-            parser.add_argument("--no-" + field.name.replace("_", "-"), dest=field.name, action="store_false")
+            parser.add_argument(
+                f"--{name}",
+                help=description,
+                dest=field.name,
+                action="store_true",
+            )
+            parser.add_argument(f"--no-{name}", dest=field.name, action="store_false")
             parser.set_defaults(**{field.name: field.default})
         else:
-            parser.add_argument(
-                "--" + field.name.replace("_", "-"), dest=field.name, type=field.type, default=field.default
-            )
+            parser.add_argument(f"--{name}", help=description, dest=field.name, type=field.type, default=field.default)
 
     args = vars(parser.parse_args())
+
+    if len(args["files"]) < 2:
+        parser.error("At least 2 files are required: one or more input files and one output file.")
+
     files = args.pop("files")
     output = files.pop()
 

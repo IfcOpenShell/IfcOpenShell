@@ -50,20 +50,16 @@ Scenario: Enable pset editing - object
 
 Scenario: Enable pset editing - material
     Given an empty IFC project
-    And I add a cube
-    And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
-    And I press "bim.add_material(obj='')"
-    And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterial"
-    And I press "bim.assign_material"
-    And the object "IfcWall/Cube" is selected
-    And I press "bim.add_pset(obj='Default', obj_type='Material')"
-    And I set "active_object.active_material.PsetProperties.properties[0].metadata.float_value" to "0.42"
-    And I press "bim.edit_pset(obj='Default', obj_type='Material')"
+    And I press "bim.add_material()"
+    And I press "bim.load_materials"
+    And I press "bim.expand_material_category(category='Uncategorised')"
+    And I set "scene.BIMMaterialProperties.active_material_index" to "1"
+    And I set "scene.MaterialPsetProperties.pset_name" to "Pset_MaterialCommon"
+    And I press "bim.add_pset(obj='', obj_type='Material')"
+    And I set "scene.MaterialPsetProperties.properties[0].metadata.float_value" to "0.42"
+    And I press "bim.edit_pset(obj='', obj_type='Material')"
     And the variable "pset" is "{ifc}.by_type('IfcMaterialProperties')[-1].id()"
-    When I press "bim.enable_pset_editing(pset_id={pset}, obj='Default', obj_type='Material')"
+    When I press "bim.enable_pset_editing(pset_id={pset}, obj='', obj_type='Material')"
     Then nothing happens
 
 Scenario: Enable pset editing - profile
@@ -143,15 +139,10 @@ Scenario: Disable pset editing - object
 
 Scenario: Disable pset editing - material
     Given an empty IFC project
-    And I add a cube
-    And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
-    And I press "bim.add_material(obj='')"
-    And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterial"
-    And I press "bim.assign_material"
-    And the object "IfcWall/Cube" is selected
+    And I press "bim.add_material()"
+    And I press "bim.load_materials"
+    And I press "bim.expand_material_category(category='Uncategorised')"
+    And I set "scene.BIMMaterialProperties.active_material_index" to "1"
     And I press "bim.add_pset(obj='Default', obj_type='Material')"
     When I press "bim.disable_pset_editing(obj='Default', obj_type='Material')"
     Then nothing happens
@@ -236,17 +227,12 @@ Scenario: Edit qto - object
 
 Scenario: Edit pset - material
     Given an empty IFC project
-    And I add a cube
-    And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
-    And I press "bim.add_material(obj='')"
-    And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterial"
-    And I press "bim.assign_material"
-    And the object "IfcWall/Cube" is selected
-    And I press "bim.add_pset(obj='Default', obj_type='Material')"
-    When I press "bim.edit_pset(obj='Default', obj_type='Material')"
+    And I press "bim.add_material()"
+    And I press "bim.load_materials"
+    And I press "bim.expand_material_category(category='Uncategorised')"
+    And I set "scene.BIMMaterialProperties.active_material_index" to "1"
+    And I press "bim.add_pset(obj='', obj_type='Material')"
+    When I press "bim.edit_pset(obj='', obj_type='Material')"
     Then nothing happens
 
 Scenario: Edit pset - profile
@@ -394,15 +380,15 @@ Scenario: Edit pset length property
 Scenario: Edit qset length property
     Given an empty IFC project
     And I press "mesh.add_clever_stair"
-    And I press "bim.calculate_all_quantities"
+    And I press "bim.perform_quantity_take_off"
     And the variable "pset" is "tool.Pset.get_element_pset(tool.Ifc.get_entity(bpy.context.active_object), 'Qto_StairFlightBaseQuantities').id()"
     And the variable "si_conversion" is "ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())"
     And I press "bim.enable_pset_editing(pset_id={pset}, obj='IfcStairFlight/StairFlight', obj_type='Object')"
 
     # Testing Q_LENGTH type of prop
     Then "active_object.PsetProperties.properties['Length'].metadata.special_type" is "LENGTH"
-    And "active_object.PsetProperties.properties['Length'].metadata.float_value" is roughly "2492.57397"
-    And "active_object.PsetProperties.properties['Length'].metadata.length_value" is roughly "2.49257"
+    And "active_object.PsetProperties.properties['Length'].metadata.float_value" is roughly "2156.485"
+    And "active_object.PsetProperties.properties['Length'].metadata.length_value" is roughly "2.156"
 
     When I set "active_object.PsetProperties.properties['Length'].metadata.float_value" to "350"
     Then "active_object.PsetProperties.properties['Length'].metadata.length_value" is roughly "0.35"

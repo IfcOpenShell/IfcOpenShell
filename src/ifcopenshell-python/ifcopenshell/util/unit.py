@@ -417,16 +417,12 @@ def get_project_unit(ifc_file: ifcopenshell.file, unit_type: str) -> Union[ifcop
     """Get the default project unit of a particular unit type
 
     :param ifc_file: The IFC file.
-    :type ifc_file: ifcopenshell.file
     :param unit_type: The type of unit, taken from the list of IFC unit types,
         such as "LENGTHUNIT".
-    :type unit_type: str
     :return: The IFC unit entity, or nothing if there is no default project
         unit defined.
-    :rtype: Union[ifcopenshell.entity_instance, None]
     """
-    unit_assignment = get_unit_assignment(ifc_file)
-    if unit_assignment:
+    if unit_assignment := get_unit_assignment(ifc_file):
         for unit in unit_assignment.Units or []:
             if getattr(unit, "UnitType", None) == unit_type:
                 return unit
@@ -591,13 +587,9 @@ def convert_unit(value: float, from_unit: ifcopenshell.entity_instance, to_unit:
     """Convert from one unit to another unit
 
     :param value: The numeric value you want to convert
-    :type value: float
     :param from_unit: The IfcNamedUnit to confirm from.
-    :type from_unit: ifcopenshell.entity_instance
     :param to_unit: The IfcNamedUnit to confirm from.
-    :type to_unit: ifcopenshell.entity_instance
     :return: The converted value.
-    :rtype: float
     """
     return convert(
         value, getattr(from_unit, "Prefix", None), from_unit.Name, getattr(to_unit, "Prefix", None), to_unit.Name
@@ -612,17 +604,11 @@ def convert(value: float, from_prefix: Optional[str], from_unit: str, to_prefix:
     already available as IFC entities, consider using convert_unit() instead.
 
     :param value: The numeric value you want to convert
-    :type value: float
     :param from_prefix: A prefix from IfcSIPrefix. Can be None
-    :type from_prefix: str, optional
     :param from_unit: IfcSIUnitName or IfcConversionBasedUnit.Name
-    :type from_unit: str
     :param to_prefix: A prefix from IfcSIPrefix. Can be None
-    :type to_prefix: str, optional
     :param to_unit: IfcSIUnitName or IfcConversionBasedUnit.Name
-    :type to_unit: str
     :return: The converted value.
-    :rtype: float
     """
     if from_unit.lower() in si_conversions:
         value *= si_conversions[from_unit.lower()]
@@ -656,11 +642,8 @@ def calculate_unit_scale(ifc_file: ifcopenshell.file, unit_type: str = "LENGTHUN
         si_meters / unit_scale = ifc_project_length
 
     :param ifc_file: The IFC file.
-    :type ifc_file: ifcopenshell.file
     :param unit_type: The type of SI unit, defaults to "LENGTHUNIT"
-    :type unit_type: str
     :returns: The scale factor
-    :rtype: float
     """
     if not ifc_file.by_type("IfcUnitAssignment"):
         return 1
@@ -690,24 +673,19 @@ def format_length(
 
     :param value: The value in meters if metric, or either decimal feet or
         inches if imperial depending on input_unit.
-    :type value: float
     :param precision: How precise the format should be. I.e. round to nearest.
         For imperial, it is 1/Nth. E.g. 12 means to the nearest 1/12th of an
         inch.
-    :type precision: float
     :param decimal_places: How many decimal places to display. Defaults to 2.
-    :type decimal_places: int
     :param suppress_zero_inches: If imperial, whether or not to supress the
         inches if the inches is zero.
-    :type suppress_zero_inches: bool
     :param unit_system: Choose whether your value is "metric" or "imperial"
-    :type unit_system: str
     :param input_unit: If imperial, specify whether your value is "foot" or
         "inch".
-    :type input_unit: str
     :param output_unit: If imperial, specify whether your value is "foot" to
         format as both feet and inches, or "inch" if only inches should be
         shown.
+    :returns: The formatted string, such as 1' - 5 1/2".
     """
     if unit_system == "imperial":
         if input_unit == "foot":
@@ -747,9 +725,7 @@ def format_length(
 
 
 def is_attr_type(
-    content_type: ifcopenshell_wrapper.parameter_type,
-    ifc_unit_type_name: str,
-    include_select_types: bool = True
+    content_type: ifcopenshell_wrapper.parameter_type, ifc_unit_type_name: str, include_select_types: bool = True
 ) -> Union[ifcopenshell_wrapper.type_declaration, None]:
     cur_decl = content_type
 
@@ -795,7 +771,7 @@ def is_attr_type(
 def iter_element_and_attributes_per_type(
     ifc_file: ifcopenshell.file, attr_type_name: str
 ) -> Iterable[tuple[ifcopenshell.entity_instance, ifcopenshell_wrapper.attribute, Any]]:
-    schema: ifcopenshell_wrapper.schema_definition = ifcopenshell_wrapper.schema_by_name(ifc_file.schema)
+    schema: ifcopenshell_wrapper.schema_definition = ifcopenshell_wrapper.schema_by_name(ifc_file.schema_identifier)
 
     for element in ifc_file:
         entity = schema.declaration_by_name(element.is_a())
@@ -821,15 +797,16 @@ def iter_element_and_attributes_per_type(
 
 def convert_file_length_units(ifc_file: ifcopenshell.file, target_units: str = "METER") -> ifcopenshell.file:
     """Converts all units in an IFC file to the specified target units. Returns a new file."""
+    import ifcopenshell.util.element
+    import ifcopenshell.util.geolocation
+
     prefix = get_prefix(target_units)
     si_unit = get_unit_name(target_units)
 
     # Copy all elements from the original file to the patched file
     file_patched = ifcopenshell.file.from_string(ifc_file.wrapped_data.to_string())
 
-    unit_assignment = get_unit_assignment(file_patched)
-
-    old_length = next(u for u in unit_assignment.Units if getattr(u, "UnitType", None) == "LENGTHUNIT")
+    old_length = get_project_unit(file_patched, "LENGTHUNIT")
     if si_unit:
         new_length = ifcopenshell.api.unit.add_si_unit(file_patched, unit_type="LENGTHUNIT", prefix=prefix)
     else:
@@ -856,7 +833,29 @@ def convert_file_length_units(ifc_file: ifcopenshell.file, target_units: str = "
             new_value = convert_value(val)
             setattr(element, attr.name(), new_value)
 
-    file_patched.remove(old_length)
-    unit_assignment.Units = tuple([new_length, *unit_assignment.Units])
+    has_map_unit = False
+    if (
+        ifc_file.schema == "IFC2X3"
+        and (crs := ifcopenshell.util.element.get_pset(ifc_file.by_type("IfcProject")[0], name="ePSet_ProjectedCRS"))
+        and crs.get("MapUnit")
+    ) or (ifc_file.schema != "IFC2X3" and (crs := ifc_file.by_type("IfcProjectedCRS")) and crs[0].MapUnit):
+        has_map_unit = True
+
+    if has_map_unit:
+        parameters = ifcopenshell.util.geolocation.get_helmert_transformation_parameters(ifc_file)
+        ifcopenshell.api.georeference.edit_georeferencing(
+            file_patched,
+            coordinate_operation={
+                "Eastings": parameters.e,
+                "Northings": parameters.n,
+                "OrthogonalHeight": parameters.h,
+                "Scale": parameters.scale / convert_value(1),
+            },
+        )
+
+    unit_assignment = get_unit_assignment(file_patched)
+    unit_assignment.Units = [new_length, *(u for u in unit_assignment.Units if u.UnitType != new_length.UnitType)]
+    if not file_patched.get_total_inverses(old_length):
+        ifcopenshell.util.element.remove_deep2(file_patched, old_length)
 
     return file_patched

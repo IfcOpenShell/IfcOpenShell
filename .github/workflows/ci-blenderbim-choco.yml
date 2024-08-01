@@ -28,26 +28,17 @@ jobs:
 
   build:
     needs: activate
-    name: ${{ matrix.config.name }}-${{ matrix.pyver }}
+    name: "choco_release"
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      matrix:
-        pyver: [py312]
-        config:
-          - {
-            name: "Windows Build",
-            short_name: win,
-          }
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2 # https://github.com/actions/setup-python
+      - uses: actions/checkout@v4
         with:
-          python-version: '3.12.4' # Version range or exact version of a Python version to use, using SemVer's version range syntax
-          architecture: 'x64' # optional x64 or x86. Defaults to x64 if not specified
+          fetch-tags: true
+          fetch-depth: 0
       - run: echo ${{ env.DATE }}
-
-      - name: Check in release tags if we should do a choco release and perform release if needed
+      - name: Check in release tags if we should do a choco release and perform the release if needed
         id: do_choco_release
         run: |
           cd /home/runner/work/IfcOpenShell/IfcOpenShell/choco/blenderbim/ &&

@@ -19,6 +19,7 @@
 from __future__ import annotations
 import bpy
 import ifcopenshell
+import ifcopenshell.api.material
 import blenderbim.core.tool
 import blenderbim.core.material
 import blenderbim.tool as tool
@@ -26,7 +27,7 @@ import blenderbim.bim.helper
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
 from collections import defaultdict
-from typing import Union, Any, TYPE_CHECKING
+from typing import Union, Any, TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     # Avoid circular imports.
@@ -37,6 +38,19 @@ class Material(blenderbim.core.tool.Material):
     @classmethod
     def disable_editing_materials(cls) -> None:
         bpy.context.scene.BIMMaterialProperties.is_editing = False
+
+    @classmethod
+    def duplicate_material(cls, material: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+        new = tool.Ifc.run("material.copy_material", material=material)
+
+        # Doesn't have a name.
+        if new.is_a("IfcMaterialList"):
+            return new
+
+        name_index = 1 if new.is_a("IfcMaterialLayerSet") else 0
+        name = (new[name_index] or "Unnamed") + " Copy"
+        new[name_index] = name
+        return new
 
     @classmethod
     def enable_editing_materials(cls) -> None:
@@ -78,6 +92,7 @@ class Material(blenderbim.core.tool.Material):
             get_name = lambda x: "Unnamed"
         materials = sorted(tool.Ifc.get().by_type(material_type), key=get_name)
         categories = defaultdict(list)
+
         if material_type == "IfcMaterial":
             category_index_to_reselect = None
 
@@ -98,8 +113,9 @@ class Material(blenderbim.core.tool.Material):
 
                 for material in mats if cat.is_expanded else []:
                     new = props.materials.add()
-                    new.ifc_definition_id = material.id()
+                    # Assign name before assigning ifc_definition_id to avoid triggering IFC update.
                     new.name = get_name(material)
+                    new.ifc_definition_id = material.id()
                     new.total_elements = len(
                         ifcopenshell.util.element.get_elements_by_material(tool.Ifc.get(), material)
                     )
@@ -110,8 +126,9 @@ class Material(blenderbim.core.tool.Material):
             return
         for material in materials:
             new = props.materials.add()
-            new.ifc_definition_id = material.id()
+            # Assign name before assigning ifc_definition_id to avoid triggering IFC update.
             new.name = get_name(material)
+            new.ifc_definition_id = material.id()
             new.total_elements = len(ifcopenshell.util.element.get_elements_by_material(tool.Ifc.get(), material))
 
     @classmethod
@@ -153,18 +170,26 @@ class Material(blenderbim.core.tool.Material):
         props.editing_material_type = ""
 
     @classmethod
+    def get_default_material(cls) -> ifcopenshell.entity_instance:
+        """Return first found IfcMaterial in IFC file or create a new default material."""
+        ifc_file = tool.Ifc.get()
+        material = next(iter(ifc_file.by_type("IfcMaterial")), None)
+        if material:
+            return material
+        material = ifcopenshell.api.material.add_material(ifc_file, name="Default")
+        return material
+
+    @classmethod
     def get_type(cls, element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
         return ifcopenshell.util.element.get_type(element)
 
     @classmethod
-    def get_active_object_material(cls) -> Union[str, None]:
+    def get_object_ui_material_type(cls) -> str:
         active_obj = bpy.context.active_object
-        if not active_obj:
-            return
         return active_obj.BIMObjectMaterialProperties.material_type
 
     @classmethod
-    def get_active_material(cls) -> ifcopenshell.entity_instance:
+    def get_object_ui_active_material(cls) -> ifcopenshell.entity_instance:
         return tool.Ifc.get().by_id(int(bpy.context.active_object.BIMObjectMaterialProperties.material))
 
     @classmethod
@@ -264,19 +289,6 @@ class Material(blenderbim.core.tool.Material):
         tool.Geometry.reload_representation(objects)
 
     @classmethod
-    def sync_blender_material_name(cls, material: ifcopenshell.entity_instance) -> None:
-        name = material.Name or "Unnamed"
-        obj = tool.Ifc.get_object(material)
-        if obj:
-            obj.name = name
-        style = tool.Style.get_style(obj)
-        if style:
-            style.Name = name
-            obj = tool.Ifc.get_object(style)
-            if obj:
-                obj.name = name
-
-    @classmethod
     def get_style(cls, material: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
         for material_representation in material.HasRepresentation:
             for representation in material_representation.Representations:
@@ -284,3 +296,59 @@ class Material(blenderbim.core.tool.Material):
                     for style in item.Styles:
                         if style.is_a("IfcSurfaceStyle"):
                             return style
+
+    @classmethod
+    def ensure_material_unassigned(cls, elements: list[ifcopenshell.entity_instance]) -> None:
+        """Ensure blender materials are updated after a material unassignment.
+
+        E.g. during a material unassignment some material style may not apply anymore
+        or some other may be applied now since it's no longer overridden,
+        therefore we need to make sure blender materials reflect correct styles.
+
+        Designed to be called after material.unassign_material API call."""
+        elements = elements.copy()  # Avoid argument mutation.
+        for element in elements[:]:
+            if element.is_a("IfcElementType"):
+                elements.extend(tool.Model.get_occurrences_without_material_override(element))
+        tool.Model.apply_ifc_material_changes(elements)
+
+    @classmethod
+    def ensure_material_assigned(
+        cls,
+        elements: list[ifcopenshell.entity_instance],
+        material_type: ifcopenshell.util.element.MATERIAL_TYPE = "IfcMaterial",
+        material: Optional[ifcopenshell.entity_instance] = None,
+    ) -> None:
+        """Ensure blender materials are updated after a material assignment.
+
+        Designed to be called after material.assign_material API call.
+        For material sets it should be called after some item is already added to the material set."""
+
+        # NOTE: adding/editing/removing layers/profiles/constituents is not supported.
+        # Adding support for profiles/layers it only will be possible when we'll be adding styles
+        # to the representations generated from layer and profile sets.
+
+        if material:
+            assigned_material = material
+        else:
+            element = elements[0]
+            if material_type == "IfcMaterial":
+                assigned_material = ifcopenshell.util.element.get_material(element, should_inherit=False)
+                assert assigned_material  # Type checker.
+            # Material usages just inherit the style from the type material, so can't override it.
+            elif material_type in ("IfcMaterialLayerSetUsage", "IfcMaterialProfileSetUsage"):
+                return
+            # If type is Set and no material argument were provided, then Set was just created
+            # and not yet have any IfcMaterials.
+            elif material_type in ("IfcMaterialConstituentSet", "IfcMaterialLayerSet", "IfcMaterialProfileSet"):
+                return
+            elif material_type == "IfcMaterialList":
+                assert False, "Current assign_material implementation requires 'material' argument for IfcMaterialList."
+            else:
+                assert False, f"Invalid material type found: {material_type}"
+
+        for element in elements[:]:
+            if element.is_a("IfcElementType"):
+                elements.extend(tool.Model.get_occurrences_without_material_override(element))
+
+        tool.Model.apply_ifc_material_changes(elements, assigned_material=assigned_material)

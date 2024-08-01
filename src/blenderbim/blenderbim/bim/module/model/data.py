@@ -50,10 +50,11 @@ class AuthoringData:
         cls.props = bpy.context.scene.BIMModelProperties
         if ifc_element_type:
             cls.ifc_element_type = None if ifc_element_type == "all" else ifc_element_type
+        cls.data["default_container"] = cls.default_container()
         cls.data["ifc_element_type"] = cls.ifc_element_type
         cls.data["ifc_classes"] = cls.ifc_classes()
         cls.data["relating_type_id"] = cls.relating_type_id()  # only after .ifc_classes()
-        cls.data["predefined_type"] = cls.predefined_type() # only after .relating_type_id()
+        cls.data["predefined_type"] = cls.predefined_type()  # only after .relating_type_id()
         cls.data["type_class"] = cls.type_class()
 
         # only after .type_class()
@@ -73,6 +74,15 @@ class AuthoringData:
         cls.data["active_representation_type"] = cls.active_representation_type()
         cls.data["boundary_class"] = cls.boundary_class()
         cls.data["selected_material_usages"] = cls.selected_material_usages()
+
+    @classmethod
+    def default_container(cls) -> str | None:
+        props = bpy.context.scene.BIMSpatialDecompositionProperties
+        if props.default_container:
+            try:
+                return tool.Ifc.get().by_id(props.default_container).Name
+            except:
+                pass
 
     @classmethod
     def boundary_class(cls):
@@ -245,7 +255,7 @@ class AuthoringData:
         if not ifc_class and ifc_classes:
             ifc_class = ifc_classes[0][0]
         if ifc_class:
-            elements = sorted(tool.Ifc.get().by_type(ifc_class), key=lambda s: s.Name or "Unnamed")
+            elements = sorted(tool.Ifc.get().by_type(ifc_class), key=lambda s: (s.Name or "Unnamed").lower())
             results.extend(elements)
             return [(str(e.id()), e.Name or "Unnamed", e.Description or "") for e in results]
         return []

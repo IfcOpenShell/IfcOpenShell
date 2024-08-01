@@ -127,7 +127,9 @@ class CreateProject(bpy.types.Operator):
                 bpy.data.meshes.remove(mesh)
             for mat in bpy.data.materials:
                 bpy.data.materials.remove(mat)
-        core.create_project(tool.Ifc, tool.Project, tool.Spatial, schema=props.export_schema, template=template)
+        core.create_project(
+            tool.Ifc, tool.Georeference, tool.Project, tool.Spatial, schema=props.export_schema, template=template
+        )
         blenderbim.bim.schema.reload(tool.Ifc.get().schema_identifier)
         tool.Blender.register_toolbar()
 
@@ -728,12 +730,12 @@ class LoadProject(bpy.types.Operator, IFCFileSelector):
             if not self.is_existing_ifc_file():
                 return {"FINISHED"}
 
-            if tool.Blender.is_default_scene():
+            if self.should_start_fresh_session and tool.Blender.is_default_scene():
                 for obj in bpy.data.objects:
                     bpy.data.objects.remove(obj)
 
             filepath = Path(self.get_filepath())
-            context.scene.BIMProperties.ifc_file = str(filepath)
+            context.scene.BIMProperties.ifc_file = filepath.as_posix()
             context.scene.BIMProjectProperties.is_loading = True
             context.scene.BIMProjectProperties.total_elements = len(tool.Ifc.get().by_type("IfcElement"))
             tool.Blender.register_toolbar()
@@ -741,6 +743,8 @@ class LoadProject(bpy.types.Operator, IFCFileSelector):
 
             if not self.is_advanced:
                 bpy.ops.bim.load_project_elements()
+                if not self.should_start_fresh_session:
+                    bpy.ops.bim.convert_to_blender()
         except:
             blenderbim.last_error = traceback.format_exc()
             raise
@@ -918,6 +922,8 @@ class LinkIfc(bpy.types.Operator):
         if pprops.false_origin_mode == "MANUAL":
             row = self.layout.row()
             row.prop(pprops, "false_origin")
+            row = self.layout.row()
+            row.prop(pprops, "project_north")
 
     def execute(self, context):
         start = time.time()
@@ -1050,7 +1056,7 @@ class LoadLink(bpy.types.Operator):
         if not os.path.exists(blend_filepath):
             pprops = bpy.context.scene.BIMProjectProperties
             gprops = bpy.context.scene.BIMGeoreferenceProperties
-            tool.Loader.calculate_model_origin(tool.Ifc.get())
+
             code = f"""
 import bpy
 
@@ -1058,10 +1064,9 @@ def run():
     gprops = bpy.context.scene.BIMGeoreferenceProperties
     # Our model origin becomes their host model origin
     gprops.host_model_origin = "{gprops.model_origin}"
+    gprops.host_model_origin_si = "{gprops.model_origin_si}"
+    gprops.host_model_project_north = "{gprops.model_project_north}"
     gprops.has_blender_offset = {gprops.has_blender_offset}
-    gprops.blender_eastings = "{gprops.blender_eastings}"
-    gprops.blender_northings = "{gprops.blender_northings}"
-    gprops.blender_orthogonal_height = "{gprops.blender_orthogonal_height}"
     gprops.blender_offset_x = "{gprops.blender_offset_x}"
     gprops.blender_offset_y = "{gprops.blender_offset_y}"
     gprops.blender_offset_z = "{gprops.blender_offset_z}"
@@ -1071,6 +1076,7 @@ def run():
     pprops.distance_limit = {pprops.distance_limit}
     pprops.false_origin_mode = "{pprops.false_origin_mode}"
     pprops.false_origin = "{pprops.false_origin}"
+    pprops.project_north = "{pprops.project_north}"
     bpy.ops.bim.load_linked_project(filepath="{self.filepath}")
     bpy.ops.wm.save_as_mainfile(filepath="{blend_filepath}")
 
@@ -1107,7 +1113,7 @@ except Exception as e:
             data = json.load(f)
 
         gprops = bpy.context.scene.BIMGeoreferenceProperties
-        for prop in ("model_origin", "blender_x_axis_abscissa", "blender_x_axis_ordinate"):
+        for prop in ("model_origin", "model_origin_si", "model_project_north"):
             if (value := data.get(prop, None)) is not None:
                 setattr(gprops, prop, value)
 
@@ -1231,6 +1237,10 @@ class ExportIFCBase:
         if bpy.data.is_saved:
             layout.prop(self, "use_relative_path")
 
+        layout.separator()
+        layout.label(text="Supported formats for export:")
+        layout.label(text=".ifc, .ifczip, .ifcjson")
+
     def invoke(self, context, event):
         if not tool.Ifc.get():
             bpy.ops.wm.save_mainfile("INVOKE_DEFAULT")
@@ -1329,18 +1339,6 @@ class ExportIFC(ExportIFCBase, bpy.types.Operator):
     pass
 
 
-# TODO: remove as deprecated, better wait couple releases since
-# this operator is used for saving IFC files in user scripts.
-class ExportIFCDeprecated(ExportIFCBase, bpy.types.Operator):
-    bl_idname = "export_ifc.bim"
-
-    def execute(self, context):
-        msg = f"'{ExportIFCDeprecated.bl_idname}' operator name is deprecated, use '{ExportIFC.bl_idname}'."
-        self.report({"WARNING"}, msg)
-        print(msg)
-        return super().execute(context)
-
-
 class LoadLinkedProject(bpy.types.Operator):
     bl_idname = "bim.load_linked_project"
     bl_label = "Load a project for viewing only."
@@ -1362,6 +1360,7 @@ class LoadLinkedProject(bpy.types.Operator):
 
         self.collection = bpy.data.collections.new("IfcProject/" + os.path.basename(self.filepath))
         self.file = ifcopenshell.open(self.filepath)
+        tool.Ifc.set(self.file)
         print("Finished opening")
 
         self.db_filepath = self.filepath + ".cache.sqlite"
@@ -1377,6 +1376,7 @@ class LoadLinkedProject(bpy.types.Operator):
         tool.Loader.set_settings(import_ifc.IfcImportSettings.factory(context, IfcStore.path, logger))
         tool.Loader.settings.contexts = ifcopenshell.util.representation.get_prioritised_contexts(self.file)
         tool.Loader.settings.context_settings = tool.Loader.create_settings()
+        tool.Loader.settings.gross_context_settings = tool.Loader.create_settings(is_gross=True)
 
         self.elements = set(self.file.by_type("IfcElement"))
         if self.file.schema in ("IFC2X3", "IFC4"):
@@ -1390,21 +1390,24 @@ class LoadLinkedProject(bpy.types.Operator):
         if tool.Loader.settings.false_origin_mode == "MANUAL" and tool.Loader.settings.false_origin:
             tool.Loader.set_manual_blender_offset(self.file)
         elif tool.Loader.settings.false_origin_mode == "AUTOMATIC":
-            if gprops.host_model_origin:
-                tool.Loader.settings.false_origin = list(map(float, gprops.host_model_origin.split(",")))
+            if host_model_origin_si := gprops.host_model_origin_si:
+                host_model_origin_si = [float(o) / self.unit_scale for o in host_model_origin_si.split(",")]
+                tool.Loader.settings.false_origin = host_model_origin_si
+                tool.Loader.settings.project_north = float(gprops.host_model_project_north)
                 tool.Loader.set_manual_blender_offset(self.file)
             else:
                 tool.Loader.guess_false_origin(self.file)
 
-        tool.Loader.calculate_model_origin(self.file)
+        tool.Georeference.set_model_origin()
         self.json_filepath = self.filepath + ".cache.json"
         data = {
             "host_model_origin": gprops.host_model_origin,
+            "host_model_origin_si": gprops.host_model_origin_si,
+            "host_model_project_north": gprops.host_model_project_north,
             "model_origin": gprops.model_origin,
+            "model_origin_si": gprops.model_origin_si,
+            "model_project_north": gprops.model_project_north,
             "has_blender_offset": gprops.has_blender_offset,
-            "blender_eastings": gprops.blender_eastings,
-            "blender_northings": gprops.blender_northings,
-            "blender_orthogonal_height": gprops.blender_orthogonal_height,
             "blender_offset_x": gprops.blender_offset_x,
             "blender_offset_y": gprops.blender_offset_y,
             "blender_offset_z": gprops.blender_offset_z,
@@ -1413,6 +1416,7 @@ class LoadLinkedProject(bpy.types.Operator):
             "distance_limit": pprops.distance_limit,
             "false_origin_mode": pprops.false_origin_mode,
             "false_origin": pprops.false_origin,
+            "project_north": pprops.project_north,
         }
         with open(self.json_filepath, "w") as f:
             json.dump(data, f)
@@ -1629,7 +1633,7 @@ class LoadLinkedProject(bpy.types.Operator):
                 if material.has_transparency and material.transparency > 0:
                     alpha = 1.0 - material.transparency
                 if material.instance_id():
-                    diffuse = material.diffuse + (alpha,)
+                    diffuse = (material.diffuse.r(), material.diffuse.g(), material.diffuse.b(), alpha)
                 else:
                     diffuse = (0.8, 0.8, 0.8, 1)  # Blender's default material
                 material_name = f"{diffuse[0]}-{diffuse[1]}-{diffuse[2]}-{diffuse[3]}"

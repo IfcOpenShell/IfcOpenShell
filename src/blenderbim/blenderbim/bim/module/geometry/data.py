@@ -152,12 +152,12 @@ class RepresentationItemsData:
         cls.is_loaded = True
 
     @classmethod
-    def total_items(cls):
-        active_representation_id = None
+    def total_items(cls) -> int:
         result = 0
-        if bpy.context.active_object.data and hasattr(bpy.context.active_object.data, "BIMMeshProperties"):
-            active_representation_id = bpy.context.active_object.data.BIMMeshProperties.ifc_definition_id
-            element = tool.Ifc.get().by_id(active_representation_id)
+        obj = bpy.context.active_object
+        assert obj
+        element = tool.Geometry.get_active_representation(obj)
+        if element:
             if not element.is_a("IfcShapeRepresentation"):
                 return 0
             queue = list(element.Items)
@@ -383,9 +383,9 @@ class PlacementData:
             obj.matrix_world[0][3],
             obj.matrix_world[1][3],
             obj.matrix_world[2][3],
-            float(props.blender_eastings) * unit_scale,
-            float(props.blender_northings) * unit_scale,
-            float(props.blender_orthogonal_height) / unit_scale,
+            float(props.blender_offset_x) * unit_scale,
+            float(props.blender_offset_y) * unit_scale,
+            float(props.blender_offset_z) * unit_scale,
             float(props.blender_x_axis_abscissa),
             float(props.blender_x_axis_ordinate),
             1.0,

@@ -171,6 +171,11 @@ class BIMProjectProperties(PropertyGroup):
         description="False origin in project units that the Blender origin will correlate to",
         default="0,0,0",
     )
+    project_north: StringProperty(
+        name="Angle to Grid North",
+        description="The angle (postive is anticlockwise) pointing to grid north relative to project north",
+        default="0",
+    )
     element_offset: IntProperty(name="Element Offset", default=0)
     element_limit: IntProperty(name="Element Offset", default=30000)
     should_disable_undo_on_save: BoolProperty(

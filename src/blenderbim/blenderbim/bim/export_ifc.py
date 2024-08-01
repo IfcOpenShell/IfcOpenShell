@@ -167,21 +167,6 @@ class IfcExporter:
     def get_application_name(self) -> str:
         return "BlenderBIM"
 
-    def get_application_version(self) -> str:
-        version = ".".join(
-            [
-                str(x)
-                for x in [
-                    addon.bl_info.get("version", (-1, -1, -1))
-                    for addon in addon_utils.modules()
-                    if addon.bl_info["name"] == "BlenderBIM"
-                ][0]
-            ]
-        )
-        if blenderbim.bim.last_commit_hash != "8888888":
-            version += f"-{blenderbim.bim.last_commit_hash[:7]}"
-        return version
-
 
 class IfcExportSettings:
     def __init__(self):

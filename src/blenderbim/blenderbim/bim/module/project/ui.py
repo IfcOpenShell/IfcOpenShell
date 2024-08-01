@@ -25,6 +25,11 @@ from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.project.data import ProjectData, LinksData
 
 
+def file_import_menu(self, context):
+    op = self.layout.operator("bim.load_project", text="IFC (Geometry Only) (.ifc/.ifczip/.ifcxml)")
+    op.should_start_fresh_session = False
+
+
 class BIM_MT_project(Menu):
     bl_idname = "BIM_MT_project"
     bl_label = "New IFC Project"
@@ -175,6 +180,8 @@ class BIM_PT_project(Panel):
         if pprops.false_origin_mode == "MANUAL":
             row = self.layout.row()
             row.prop(pprops, "false_origin")
+            row = self.layout.row()
+            row.prop(pprops, "project_north")
 
         row = self.layout.row()
         row.label(text="Element Range")
@@ -292,9 +299,8 @@ class BIM_PT_new_project_wizard(Panel):
         row.prop(props, "volume_unit", text="Volume Unit")
         prop_with_search(self.layout, pprops, "template_file", text="Template")
 
-        row = self.layout.row(align=True)
+        row = self.layout.row()
         row.operator("bim.create_project")
-        row.operator("bim.load_project").should_start_fresh_session = False
 
 
 class BIM_PT_project_library(Panel):

@@ -25,7 +25,7 @@ import blenderbim.core.tool
 import blenderbim.tool as tool
 import blenderbim.bim.helper
 from mathutils import Color
-from typing import Union, Any, Optional, Literal, assert_never
+from typing import Union, Any, Optional, Literal
 
 # fmt: off
 TEXTURE_MAPS_BY_METHODS = {
@@ -56,6 +56,18 @@ class Style(blenderbim.core.tool.Style):
         tool.Blender.remove_data_block(obj)
 
     @classmethod
+    def enable_adding_presentation_style(cls) -> None:
+        props = bpy.context.scene.BIMStylesProperties
+        props.is_adding = True
+        props.update_graph = False
+
+    @classmethod
+    def disable_adding_presentation_style(cls) -> None:
+        props = bpy.context.scene.BIMStylesProperties
+        props.is_adding = False
+        props.update_graph = True
+
+    @classmethod
     def disable_editing(cls) -> None:
         bpy.context.scene.BIMStylesProperties.is_editing_style = 0
 
@@ -66,7 +78,14 @@ class Style(blenderbim.core.tool.Style):
     @classmethod
     def duplicate_style(cls, style: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
         new_style = ifcopenshell.util.element.copy_deep(tool.Ifc.get(), style)
-        new_style.Name = style.Name + "_copy"
+        name = (style.Name or "Unnamed") + "_copy"
+        new_style.Name = name
+
+        blender_material = tool.Ifc.get_object(style).copy()
+        blender_material.use_fake_user = True
+        blender_material.name = name
+        tool.Ifc.link(new_style, blender_material)
+
         return new_style
 
     @classmethod
@@ -655,4 +674,11 @@ class Style(blenderbim.core.tool.Style):
             if rendering_style and texture_style:
                 tool.Loader.create_surface_style_with_textures(blender_material, rendering_style, texture_style)
         else:
-            assert_never(style_type)
+            assert False, f"Invalid style type found: {style_type}"
+
+    @classmethod
+    def rename_style(cls, style: ifcopenshell.entity_instance, name: str) -> None:
+        """Rename style and related blender material."""
+        blender_material = tool.Ifc.get_object(style)
+        # Will implicitly update the style name using handler.
+        blender_material.name = name

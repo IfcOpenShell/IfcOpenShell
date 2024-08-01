@@ -371,6 +371,7 @@ class DocProperties(PropertyGroup):
     shadingstyle_default: StringProperty(default="Blender Default", name="Default Shading Style")
     drawing_font: StringProperty(default="OpenGost Type B TT.ttf", name="Drawing Font")
     magic_font_scale: bpy.props.FloatProperty(default=0.004118616, name="Font Scale Factor")
+    imperial_precision: StringProperty(default="1/32", name="Imperial Precision")
 
 
 class BIMCameraProperties(PropertyGroup):
@@ -506,31 +507,9 @@ class BIMAssignedProductProperties(PropertyGroup):
     relating_product: PointerProperty(name="Relating Product", type=bpy.types.Object)
 
 
-# ObjectType: annotation_name, description, icon, data_type
-# fmt: off
-ANNOTATION_TYPES_DATA = {
-    "DIMENSION":     ("Dimension",        "Add dimensions annotation.\nMeasurement values can be hidden through ShowDescriptionOnly property\nof BBIM_Dimension property set", "FIXED_SIZE", "curve"),
-    "ANGLE":         ("Angle",            "", "DRIVER_ROTATIONAL_DIFFERENCE", "curve"),
-    "RADIUS":        ("Radius",           "", "FORWARD", "curve"),
-    "DIAMETER":      ("Diameter",         "Add diameter annotation.\nMeasurement values can be hidden through ShowDescriptionOnly property\nof BBIM_Dimension property set", "ARROW_LEFTRIGHT", "curve"),
-    "TEXT":          ("Text",             "", "SMALL_CAPS", "empty"),
-    "TEXT_LEADER":   ("Leader",           "", "TRACKING_BACKWARDS", "curve"),
-    "STAIR_ARROW":   ("Stair Arrow",      "Add stair arrow annotation.\nIf you have IfcStairFlight object selected, it will be used as a reference for the annotation", "SCREEN_BACK", "curve"),
-    "PLAN_LEVEL":    ("Level (Plan)",     "", "SORTBYEXT", "curve"),
-    "SECTION_LEVEL": ("Level (Section)",  "", "TRIA_DOWN", "curve"),
-    "BREAKLINE":     ("Breakline",        "", "FCURVE", "mesh"),
-    "SYMBOL":        ("Symbol",           "", "KEYFRAME", "empty"),
-    "MULTI_SYMBOL":  ("Multi-Symbol",     "", "OUTLINER_DATA_POINTCLOUD", "mesh"),
-    "LINEWORK":      ("Line",             "", "SNAP_MIDPOINT", "mesh"),
-    "BATTING":       ("Batting",          "Add batting annotation.\nThickness could be changed through Thickness property of BBIM_Batting property set", "FORCE_FORCE", "mesh"),
-    "REVISION_CLOUD":("Revision Cloud",   "Add revision cloud", "VOLUME_DATA", "mesh"),
-    "FILL_AREA":     ("Fill Area",        "", "NODE_TEXTURE", "mesh"),
-    "FALL":          ("Fall",             "", "SORT_ASC", "curve"),
-    "IMAGE":         ("Image",            "Add reference image attached to the drawing", "TEXTURE", "mesh"),
-}
-# fmt: on
-
-annotation_classes = [(x, *ANNOTATION_TYPES_DATA[x][:3], i) for i, x in enumerate(ANNOTATION_TYPES_DATA)]
+annotation_classes = [
+    (x, *tool.Drawing.ANNOTATION_TYPES_DATA[x][:3], i) for i, x in enumerate(tool.Drawing.ANNOTATION_TYPES_DATA)
+]
 
 
 def get_relating_type_id(self, context):

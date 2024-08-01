@@ -5,6 +5,12 @@ let socket;
 
 // Document ready function
 $(document).ready(function () {
+  var systemTheme = window.matchMedia("(prefers-color-scheme: light)").matches
+    ? "light"
+    : "dark";
+  var theme = localStorage.getItem("theme") || systemTheme;
+  setTheme(theme);
+
   connectSocket();
 });
 
@@ -18,6 +24,7 @@ function connectSocket() {
   socket.on("blender_connect", handleBlenderConnect);
   socket.on("blender_disconnect", handleBlenderDisconnect);
   socket.on("csv_data", handleCsvData);
+  socket.on("default_data", handleDefaultData);
 }
 
 // Function to handle 'blender_connect' event
@@ -35,13 +42,17 @@ function handleBlenderDisconnect(blenderId) {
     delete connectedClients[blenderId];
     removeTableElement(blenderId);
   }
+
+  $("#blender-count").text(function (i, text) {
+    return parseInt(text, 10) - 1;
+  });
 }
 
 // Function to handle 'csv_data' event
 function handleCsvData(data) {
   const blenderId = data["blenderId"];
-  const csvData = data["data"]["data"];
-  const filename = data["data"]["IFC_File"];
+  const csvData = data["data"]["csv_data"];
+  const filename = data["data"]["ifc_file"];
   console.log(data);
 
   if (connectedClients.hasOwnProperty(blenderId)) {
@@ -65,8 +76,19 @@ function handleCsvData(data) {
   }
 }
 
+function handleDefaultData(data) {
+  const blenderId = data["blenderId"];
+  const isDirty = data["data"]["is_dirty"];
+  showWarning(blenderId, isDirty);
+  console.log(data);
+}
+
 // Function to add a new table with data and filename
 function addTableElement(blenderId, csvData, filename) {
+  $("#blender-count").text(function (i, text) {
+    return parseInt(text, 10) + 1;
+  });
+
   // store headers of the csv data
   const firstLine = csvData.indexOf("\n");
   const csvHeaders = csvData.substring(0, firstLine).split(",");
@@ -82,11 +104,19 @@ function addTableElement(blenderId, csvData, filename) {
     .text(filename)
     .css("margin-bottom", "10px");
 
+  const warning = $("<div></div>")
+    .attr("id", "warning-" + blenderId)
+    .html(
+      "&#9888; Warning: This table may contain outdated data due to recent changes in Blender."
+    )
+    .addClass("warning");
+
   const tableDiv = $("<div></div>")
     .addClass("csv-table")
     .attr("id", "table-" + blenderId);
 
   tableContainer.append(tableTitle);
+  tableContainer.append(warning);
   tableContainer.append(tableDiv);
   $("#container").append(tableContainer);
 
@@ -167,10 +197,11 @@ function addTableElement(blenderId, csvData, filename) {
     var tableId = row.getTable().element.id.substr(6);
 
     const msg = {
+      sourcePage: "csv",
       blenderId: tableId,
       operator: {
         type: "selection",
-        GlobalId: index,
+        globalId: index,
       },
     };
     socket.emit("web_operator", msg);
@@ -198,12 +229,17 @@ function updateTableElement(blenderId, csvData, filename) {
       connectedClients[blenderId].headers = newHeaders;
     }
     $("#title-" + blenderId).text(filename);
+    $("#warning-" + blenderId).css("display", "none");
   }
 }
 
 // Function to remove table element
 function removeTableElement(blenderId) {
   $("#container-" + blenderId).remove();
+}
+
+function showWarning(blenderId, isDirty) {
+  $("#warning-" + blenderId).css("display", "block");
 }
 
 // Utility function to compare two csv header
@@ -217,4 +253,95 @@ function compareHeaders(headers1, headers2) {
     }
   }
   return true;
+}
+
+function setTheme(theme) {
+  var stylesheet = $("#tabulator-stylesheet");
+  if (theme === "light") {
+    stylesheet.attr(
+      "href",
+      "https://unpkg.com/tabulator-tables/dist/css/tabulator_site.min.css"
+    );
+    $("html").removeClass("dark").addClass("light");
+    $("#toggle-theme").html('<i class="fas fa-sun"></i>');
+  } else {
+    stylesheet.attr(
+      "href",
+      "https://unpkg.com/tabulator-tables/dist/css/tabulator_site_dark.min.css"
+    );
+    $("html").removeClass("light").addClass("dark");
+    $("#toggle-theme").html('<i class="fas fa-moon"></i>');
+  }
+  localStorage.setItem("theme", theme);
+}
+
+function toggleTheme() {
+  if ($("html").hasClass("dark")) {
+    setTheme("light");
+  } else {
+    setTheme("dark");
+  }
+}
+
+function toggleClientList() {
+  var clientList = $("#client-list");
+
+  if (clientList.hasClass("show")) {
+    clientList.removeClass("show");
+    return;
+  }
+
+  clientList.empty();
+
+  $.each(connectedClients, function (id, client) {
+    if (!client.shown) return;
+
+    const dropdownIcon = $("<i>")
+      .addClass("fas fa-chevron-down")
+      .css("margin-left", "0.5rem");
+
+    const clientDiv = $("<div>").addClass("client").text(client.ifc_file);
+
+    clientDiv.append(dropdownIcon);
+
+    const clientDetailsDiv = $("<div>").addClass("client-details");
+
+    if (id) {
+      const clientId = $("<div>")
+        .addClass("client-detail")
+        .text(`Blender ID: ${id}`);
+      clientDetailsDiv.append(clientId);
+    }
+
+    if (client.headers && client.headers.length) {
+      const clientHeaders = $("<div>")
+        .addClass("client-detail")
+        .text(`Table Headers: ${client.headers.join(", ")}`);
+
+      const scrollButton = $("<button>")
+        .addClass("scroll-button")
+        .text("Scroll to Table")
+        .on("click", function () {
+          $("html, body").animate(
+            {
+              scrollTop: $("#table-" + id).offset().top,
+            },
+            600
+          );
+          clientList.removeClass("show");
+        });
+
+      clientDetailsDiv.append(clientHeaders);
+      clientDetailsDiv.append(scrollButton);
+    }
+
+    clientDiv.append(clientDetailsDiv);
+
+    clientDiv.on("click", function () {
+      clientDetailsDiv.toggleClass("show");
+    });
+
+    clientList.append(clientDiv);
+  });
+  clientList.addClass("show");
 }

@@ -1,9 +1,10 @@
-# commands to run and test it on a generic ubuntu 2404 oci container:
+# commands to run it on a generic ubuntu 2404 oci container:
 """
 apt update && apt install git wget curl ptpython mono-devel micro
 mkdir -p /home/runner/work/IfcOpenShell && cd /home/runner/work/IfcOpenShell
 git clone https://github.com/IfcOpenShell/IfcOpenShell
 cd /home/runner/work/IfcOpenShell/IfcOpenShell/choco/blenderbim/
+micro choco_release.py # paste this script, comment out push command
 export CHOCO_TOKEN="secret_choco_release_token"
 python3 choco_release.py
 """
@@ -17,13 +18,9 @@ from urllib import request
 
 def get_repo_tag_names():
     git_return = os.popen("git tag -l").read()
-    return [tag_name for tag_name in git_return.split("\n") if tag_name]
-
-
-def set_github_env_var(key: str, value: str):
-    env_file_path = os.getenv('GITHUB_ENV')
-    with open(env_file_path, "a") as env_file:
-        _ = env_file.write(f"{key}={value}" + "\n")
+    tag_names = [tag_name for tag_name in git_return.split("\n") if tag_name]
+    print(f"{len(tag_names)} tag_names found in repo")
+    return tag_names
 
 
 def request_repo_info(url: str):
@@ -41,7 +38,7 @@ def get_choco_package_info() -> str:
     return html_txt
 
 
-def get_latest_blender_version() -> list:
+def get_latest_choco_blender_version() -> list:
     html_txt = get_choco_package_info()
     return re.findall(RE_BLENDER_VERSION_MIN_MAJ_PAT, html_txt)
 
@@ -73,14 +70,22 @@ RE_BLENDER_VERSION_MIN_MAJ        = r"Latest Version.+<span>Blender (\d+\.\d+)\.
 RE_BLENDER_VERSION_MIN_MAJ_PAT    = r"Latest Version.+<span>Blender (\d+\.\d+\.\d+)</span>"
 RE_BLENDER_PYTHON_VERSION_MAJ_MIN = r"\(_PYTHON_VERSION_SUPPORTED (\d+\.\d+)\)"
 
+BLENDERBIM_DIR = pathlib.Path("/home/runner/work/IfcOpenShell/IfcOpenShell/choco/blenderbim/")
+
 print("_____ check choco release needed?")
+
+os.chdir(BLENDERBIM_DIR)
 
 blenderbim_date_yesterday = (datetime.datetime.now() - datetime.timedelta(days=1)).strftime("%y%m%d")
 should_release = False
 target_release_tag = ""
 target_os = "win"
 
+git_status = os.popen("git status").read()
+print(git_status)
+
 for tag_name in get_repo_tag_names():
+    print(tag_name)
     if blenderbim_date_yesterday in tag_name:
         should_release = True
         target_release_tag = tag_name
@@ -98,22 +103,17 @@ choco_token = os.environ["CHOCO_TOKEN"]
 
 print("\n_____ get blender info")
 # blender_version_min_maj_pat - from chocolatey.org
-latest_blender_release_maj_min_pat = get_latest_blender_version()
+latest_blender_release_maj_min_pat = get_latest_choco_blender_version()
 if not latest_blender_release_maj_min_pat:
     quit_with_error_message("could not determine blender_version_min_maj_pat")
 latest_blender_release_maj_min_pat = latest_blender_release_maj_min_pat[0]
 print(f"{latest_blender_release_maj_min_pat=}")
 
 # blender_version_min_maj - from chocolatey.org
-html_txt = get_choco_package_info()
-blender_version_min_maj = re.findall(RE_BLENDER_VERSION_MIN_MAJ, html_txt)
-if not blender_version_min_maj:
-    quit_with_error_message("could not determine blender_version_min_maj")
-blender_version_min_maj = blender_version_min_maj [0]
+blender_version_min_maj = latest_blender_release_maj_min_pat.rsplit(".", 1)[0]
 print(f"{blender_version_min_maj=}")
 
 # blender_python_version_maj_min - from blender repo
-# pyver
 python_version = ""
 latest_blender_version_tag = f"v{latest_blender_release_maj_min_pat}"
 resp = request_repo_info(URL_BLENDER_CMAKE.format(latest_blender_version_tag))
@@ -127,13 +127,13 @@ print(f"{blender_python_version_maj_min=}")
 python_version = f"py{found[0].replace('.', '')}"
 print(f"{python_version=}")
 
-blenderbim_build_version = f"0.0.{blenderbim_date_yesterday}"
+blenderbim_build_version = target_release_tag.replace("blenderbim-", "")
 
 # url_blenderbim_py3x_win_zip
 release_zip_file_name = f"{target_release_tag}-{python_version}-{target_os}.zip"
 
+# download release
 url_blenderbim_py3x_win_zip = f"{URL_IFCOS_RELEASES}{target_release_tag}/{release_zip_file_name}"
-
 os.popen(f"wget {url_blenderbim_py3x_win_zip} --no-verbose").read()
 
 # sha256sum_blenderbim_py310_win_zip
@@ -185,7 +185,7 @@ for topic, info in topics.items():
 print("[INFO] inserting dynamic chocolatey package parameters successful")
 
 
-print("\n_____ build choco with mono")
+print("\n_____ build choco.exe with mono")
 
 choco_version = "1.1.0"
 os.popen(f"wget https://github.com/chocolatey/choco/archive/refs/tags/{choco_version}.tar.gz --quiet").read()
@@ -195,7 +195,7 @@ os.chdir("choco-1.1.0")
 os.popen("./build.sh").read()
 
 os.popen("cp -r build_output/chocolatey /opt/chocolatey").read()
-os.chdir("/home/runner/work/IfcOpenShell/IfcOpenShell/choco/blenderbim/")
+os.chdir(BLENDERBIM_DIR)
 
 if pathlib.Path("/opt/chocolatey/choco.exe").exists():
     print("choco build successful")

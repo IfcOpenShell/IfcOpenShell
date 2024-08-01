@@ -503,6 +503,7 @@ class BimToolUI:
     def draw_type_selection_interface(cls):
         # shared by both sidebar and header
         row = cls.layout.row(align=True)
+        row.label(text=f"Container: {AuthoringData.data['default_container']}", icon="OUTLINER_COLLECTION")
         if AuthoringData.data["ifc_classes"]:
             if not AuthoringData.data["ifc_element_type"]:
                 row.label(text="", icon="FILE_VOLUME")

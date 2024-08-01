@@ -48,14 +48,21 @@ with open(os.path.join(cwd, "..", "..", "..", "VERSION"), "r") as f:
 from docutils import nodes
 
 
-def versioned_link_role(name, rawtext, text, lineno, inliner, options={}, content=[]):
+def ios_python_url(name, rawtext, text, lineno, inliner, options={}, content=[]):
     url = f"https://github.com/IfcOpenShell/IfcOpenShell/releases/download/ifcopenshell-python-{release}/ifcopenshell-python-{release}-{text}.zip"
     node = nodes.reference(rawtext, text, refuri=url, **options)
     return [node], []
 
 
+def ifcconvert_url(name, rawtext, text, lineno, inliner, options={}, content=[]):
+    url = f"https://github.com/IfcOpenShell/IfcOpenShell/releases/download/ifcconvert-{release}/ifcconvert-{release}-{text}.zip"
+    node = nodes.reference(rawtext, text, refuri=url, **options)
+    return [node], []
+
+
 def setup(app):
-    app.add_role("ios_python_url", versioned_link_role)
+    app.add_role("ios_python_url", ios_python_url)
+    app.add_role("ifcconvert_url", ifcconvert_url)
 
 
 # -- General configuration ---------------------------------------------------
@@ -81,13 +88,21 @@ autoapi_add_toctree_entry = True
 autoapi_type = "python"
 
 # autoapi works by reading source code instead of importing modules
-autoapi_dirs = ['../ifcopenshell', '../../bcf/src', '../../bsdd', '../../ifccsv', '../../ifcdiff', '../../ifcpatch/ifcpatch', '../../ifctester/ifctester']
+autoapi_dirs = [
+    "../ifcopenshell",
+    "../../bcf/bcf",
+    "../../bsdd",
+    "../../ifccsv",
+    "../../ifcdiff",
+    "../../ifcpatch/ifcpatch",
+    "../../ifctester/ifctester",
+]
 # autoapi_dirs = ['../../ifcdiff']
 # autoapi_dirs = ['../../ifcdiff', '../ifcopenshell/util']
-# autoapi_dirs = ['../../bcf/src', '../../bsdd', '../../ifccsv', '../../ifcdiff', '../../ifcpatch/ifcpatch', '../../ifctester/ifctester']
+# autoapi_dirs = ['../../bcf/bcf', '../../bsdd', '../../ifccsv', '../../ifcdiff', '../../ifcpatch/ifcpatch', '../../ifctester/ifctester']
 
 # These are auto-generated based on the IFC schema, so exclude them
-autoapi_ignore = ['*ifcopenshell/express/rules*']
+autoapi_ignore = ["*ifcopenshell/express/rules*"]
 
 # Custom autoapi templates to make it easier to read our docs
 autoapi_template_dir = "_autoapi_templates"

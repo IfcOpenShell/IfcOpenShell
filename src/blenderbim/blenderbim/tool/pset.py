@@ -18,14 +18,18 @@
 
 import bpy
 import ifcopenshell
+import ifcopenshell.util.attribute
 import ifcopenshell.util.element
 import blenderbim.core.tool
 import blenderbim.tool as tool
 import blenderbim.bim.schema
-from typing import Union
+from typing import Union, Literal, Any
+from typing_extensions import assert_never
 
 
 class Pset(blenderbim.core.tool.Pset):
+    PSET_TYPE = Literal["PSET", "QTO"]
+
     @classmethod
     def get_element_pset(
         cls, element: ifcopenshell.entity_instance, pset_name: str
@@ -35,7 +39,7 @@ class Pset(blenderbim.core.tool.Pset):
             return tool.Ifc.get().by_id(pset["id"])
 
     @classmethod
-    def get_pset_props(cls, obj, obj_type):
+    def get_pset_props(cls, obj: str, obj_type: tool.Ifc.OBJECT_TYPE) -> bpy.types.PropertyGroup:
         if obj_type == "Object":
             return bpy.data.objects.get(obj).PsetProperties
         elif obj_type == "Material":
@@ -54,9 +58,10 @@ class Pset(blenderbim.core.tool.Pset):
             return bpy.context.scene.WorkSchedulePsetProperties
         elif obj_type == "Group":
             return bpy.context.scene.GroupPsetProperties
+        assert_never(obj_type)
 
     @classmethod
-    def get_pset_name(cls, obj, obj_type, pset_type="PSET"):
+    def get_pset_name(cls, obj: str, obj_type: tool.Ifc.OBJECT_TYPE, pset_type: PSET_TYPE = "PSET") -> str:
         props = cls.get_pset_props(obj, obj_type)
         name = props.pset_name if pset_type == "PSET" else props.qto_name
         if name == "BBIM_CUSTOM":
@@ -73,7 +78,7 @@ class Pset(blenderbim.core.tool.Pset):
         )
 
     @classmethod
-    def is_pset_empty(cls, pset):
+    def is_pset_empty(cls, pset: ifcopenshell.entity_instance) -> bool:
         pset_dict = ifcopenshell.util.element.get_property_definition(pset)
         del pset_dict["id"]
         for value in pset_dict.values():
@@ -82,14 +87,16 @@ class Pset(blenderbim.core.tool.Pset):
         return True
 
     @classmethod
-    def enable_pset_editing(cls, pset_id=None, pset_name=None, pset_type=None, obj=None, obj_type=None):
-        # TODO REFACTOR ONCE toll/CORE functions are available
+    def enable_pset_editing(
+        cls, pset_id: int, pset_name: str, pset_type: PSET_TYPE, obj: str, obj_type: tool.Ifc.OBJECT_TYPE
+    ) -> None:
+        # TODO REFACTOR ONCE tool/CORE functions are available
         bpy.ops.bim.enable_pset_editing(
             pset_id=0, pset_name=cls.get_pset_name(obj, obj_type), pset_type="PSET", obj=obj, obj_type=obj_type
         )
 
     @classmethod
-    def import_pset_from_existing(cls, pset, props):
+    def import_pset_from_existing(cls, pset: ifcopenshell.entity_instance, props: bpy.types.PropertyGroup) -> None:
         pset_props = []
         if pset.is_a("IfcElementQuantity"):
             pset_props = pset.Quantities
@@ -98,7 +105,7 @@ class Pset(blenderbim.core.tool.Pset):
         elif pset.is_a("IfcMaterialProperties") or pset.is_a("IfcProfileProperties"):
             pset_props = pset.Properties
 
-        for prop in pset_props:
+        for prop in sorted(pset_props, key=lambda p: p.Name):
             if props.properties.get(prop.Name):
                 continue  # This property has already been added from a template
             if prop.is_a("IfcPropertyEnumeratedValue"):
@@ -134,7 +141,7 @@ class Pset(blenderbim.core.tool.Pset):
                 metadata.set_value(metadata.get_value_default() if metadata.is_null else value)
 
     @classmethod
-    def get_prop_template_primitive_type(cls, prop_template):
+    def get_prop_template_primitive_type(cls, prop_template: ifcopenshell.entity_instance) -> str:
         if prop_template.TemplateType in ["Q_LENGTH", "Q_AREA", "Q_VOLUME", "Q_WEIGHT", "Q_TIME"]:
             return "float"
         elif prop_template.TemplateType == "Q_COUNT":
@@ -144,7 +151,9 @@ class Pset(blenderbim.core.tool.Pset):
         )
 
     @classmethod
-    def import_enumerated_value_from_template(cls, prop_template, data, props):
+    def import_enumerated_value_from_template(
+        cls, prop_template: ifcopenshell.entity_instance, data: dict[str, Any], props: bpy.types.PropertyGroup
+    ) -> None:
         enum_items = [v.wrappedValue for v in prop_template.Enumerators.EnumerationValues]
         selected_enum_items = data.get(prop_template.Name, []) or []
 
@@ -167,7 +176,13 @@ class Pset(blenderbim.core.tool.Pset):
             new.is_selected = enum in selected_enum_items
 
     @classmethod
-    def import_single_value_from_template(cls, pset_template, prop_template, data, props):
+    def import_single_value_from_template(
+        cls,
+        pset_template: ifcopenshell.entity_instance,
+        prop_template: ifcopenshell.entity_instance,
+        data: dict[str, Any],
+        props: bpy.types.PropertyGroup,
+    ) -> None:
         prop = props.properties.add()
         prop.name = prop_template.Name
         prop.value_type = "IfcPropertySingleValue"
@@ -207,13 +222,18 @@ class Pset(blenderbim.core.tool.Pset):
         blenderbim.bim.helper.add_attribute_description(metadata, prop_template)
 
     @classmethod
-    def import_pset_from_template(cls, pset_template, pset, props):
+    def import_pset_from_template(
+        cls,
+        pset_template: ifcopenshell.entity_instance,
+        pset: Union[ifcopenshell.entity_instance, None],
+        props: bpy.types.PropertyGroup,
+    ) -> None:
         if pset:
             data = ifcopenshell.util.element.get_property_definition(pset)
             del data["id"]
         else:
             data = {}
-        for prop_template in pset_template.HasPropertyTemplates:
+        for prop_template in sorted(pset_template.HasPropertyTemplates, key=lambda p: p.Name):
             if not prop_template.is_a("IfcSimplePropertyTemplate"):
                 continue  # Other types not yet supported
             if prop_template.TemplateType == "P_SINGLEVALUE":
@@ -231,28 +251,32 @@ class Pset(blenderbim.core.tool.Pset):
                 pass
 
     @classmethod
-    def clear_blender_pset_properties(cls, props):
+    def clear_blender_pset_properties(cls, props: bpy.types.PropertyGroup) -> None:
         props.properties.clear()
 
     @classmethod
-    def set_active_pset(cls, props, pset, has_template):
+    def set_active_pset(
+        cls, props: bpy.types.PropertyGroup, pset: ifcopenshell.entity_instance, has_template: bool
+    ) -> None:
         props.active_pset_id = pset.id()
         props.active_pset_name = pset.Name
         props.active_pset_has_template = has_template
 
     @classmethod
-    def enable_proposed_pset(cls, props, pset_name, pset_type, has_template):
+    def enable_proposed_pset(
+        cls, props: bpy.types.PropertyGroup, pset_name: str, pset_type: PSET_TYPE, has_template: bool
+    ) -> None:
         props.active_pset_id = 0
         props.active_pset_name = pset_name or "My_Data"
         props.active_pset_type = pset_type
         props.active_pset_has_template = has_template
 
     @classmethod
-    def get_pset_template(cls, name):
+    def get_pset_template(cls, name: str) -> Union[ifcopenshell.entity_instance, None]:
         return blenderbim.bim.schema.ifc.psetqto.get_by_name(name)
 
     @classmethod
-    def add_proposed_property(cls, name, value, props):
+    def add_proposed_property(cls, name: str, value: Any, props: bpy.types.PropertyGroup) -> None:
         if props.properties.get(name):
             return
         prop = props.properties.add()
@@ -265,7 +289,7 @@ class Pset(blenderbim.core.tool.Pset):
         metadata.set_value(metadata.get_value_default() if metadata.is_null else value)
 
     @classmethod
-    def cast_string_to_primitive(cls, value: str):
+    def cast_string_to_primitive(cls, value: str) -> Any:
         value = value.strip()
         if value.lower() == "true":
             return True

@@ -28,7 +28,6 @@ from blenderbim.bim.module.drawing.data import (
     ElementFiltersData,
     DecoratorData,
 )
-from blenderbim.bim.module.drawing.prop import ANNOTATION_TYPES_DATA
 
 
 class BIM_PT_camera(Panel):
@@ -124,18 +123,18 @@ class BIM_PT_element_filters(Panel):
                 self.layout, props.include_filter_groups, ElementFiltersData, "drawing_include"
             )
             row = self.layout.row(align=True)
-            row.operator(
-                "bim.edit_element_filter", icon="CHECKMARK", text="Save Include Filter"
-            ).filter_mode = "INCLUDE"
+            row.operator("bim.edit_element_filter", icon="CHECKMARK", text="Save Include Filter").filter_mode = (
+                "INCLUDE"
+            )
             row.operator("bim.enable_editing_element_filter", icon="CANCEL", text="").filter_mode = "NONE"
         elif props.filter_mode == "EXCLUDE":
             blenderbim.bim.helper.draw_filter(
                 self.layout, props.exclude_filter_groups, ElementFiltersData, "drawing_exclude"
             )
             row = self.layout.row(align=True)
-            row.operator(
-                "bim.edit_element_filter", icon="CHECKMARK", text="Save Exclude Filter"
-            ).filter_mode = "EXCLUDE"
+            row.operator("bim.edit_element_filter", icon="CHECKMARK", text="Save Exclude Filter").filter_mode = (
+                "EXCLUDE"
+            )
             row.operator("bim.enable_editing_element_filter", icon="CANCEL", text="").filter_mode = "NONE"
         else:
             row = self.layout.row(align=True)
@@ -261,9 +260,9 @@ class BIM_PT_drawings(Panel):
                 row2 = col.row(align=True)
                 row2.operator("bim.remove_drawing", icon="X", text="").drawing = active_drawing.ifc_definition_id
 
-                row2.operator(
-                    "bim.duplicate_drawing", icon="COPYDOWN", text=""
-                ).drawing = active_drawing.ifc_definition_id
+                row2.operator("bim.duplicate_drawing", icon="COPYDOWN", text="").drawing = (
+                    active_drawing.ifc_definition_id
+                )
 
                 col = row.column()
                 col.alignment = "RIGHT"
@@ -340,9 +339,9 @@ class BIM_PT_schedules(Panel):
                 row = self.layout.row(align=True)
                 row.alignment = "RIGHT"
                 row.operator("bim.open_schedule", icon="URL", text="").schedule = active_schedule.ifc_definition_id
-                row.operator(
-                    "bim.build_schedule", icon="LINENUMBERS_ON", text=""
-                ).schedule = active_schedule.ifc_definition_id
+                row.operator("bim.build_schedule", icon="LINENUMBERS_ON", text="").schedule = (
+                    active_schedule.ifc_definition_id
+                )
                 row.operator("bim.remove_schedule", icon="X", text="").schedule = active_schedule.ifc_definition_id
 
             self.layout.template_list(
@@ -613,13 +612,13 @@ class BIM_UL_sheets(bpy.types.UIList):
         row = layout.row(align=True)
         if item.is_sheet:
             if item.is_expanded:
-                row.operator(
-                    "bim.contract_sheet", text="", emboss=False, icon="DISCLOSURE_TRI_DOWN"
-                ).sheet = item.ifc_definition_id
+                row.operator("bim.contract_sheet", text="", emboss=False, icon="DISCLOSURE_TRI_DOWN").sheet = (
+                    item.ifc_definition_id
+                )
             else:
-                row.operator(
-                    "bim.expand_sheet", text="", emboss=False, icon="DISCLOSURE_TRI_RIGHT"
-                ).sheet = item.ifc_definition_id
+                row.operator("bim.expand_sheet", text="", emboss=False, icon="DISCLOSURE_TRI_RIGHT").sheet = (
+                    item.ifc_definition_id
+                )
 
             row.label(text=f"{item.identification} - {item.name}")
         else:

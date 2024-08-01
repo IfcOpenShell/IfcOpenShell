@@ -85,7 +85,7 @@ class Cad:
         return math.degrees(a) if degrees else a
 
     @classmethod
-    def is_x(cls, value, x, tolerance=None):
+    def is_x(cls, value: float, x: float, tolerance: float | None = None) -> bool:
         """
         > takes a value and a target of x, either as a single value x or an interable of values
         < returns if the value is equivalent to x within a tolerance
@@ -100,7 +100,16 @@ class Cad:
         return (x + tolerance) > value > (x - tolerance)
 
     @classmethod
-    def are_vectors_equal(cls, v1: Vector, v2: Vector, tolerance: float = None):
+    def normalise_angle(cls, angle: float) -> float:
+        """Normalise an angle between -179 and 180"""
+        angle = angle % 360
+        angle = (angle + 360) % 360
+        if angle > 180:
+            angle -= 360
+        return angle
+
+    @classmethod
+    def are_vectors_equal(cls, v1: Vector, v2: Vector, tolerance: float | None = None) -> bool:
         return cls.is_x((v2 - v1).length, 0, tolerance)
 
     @classmethod

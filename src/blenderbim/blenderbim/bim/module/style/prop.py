@@ -51,8 +51,13 @@ def get_reflectance_methods(self, context):
     return StylesData.data["reflectance_methods"]
 
 
+def update_style_name(self: "Style", context: bpy.types.Context) -> None:
+    style = tool.Ifc.get().by_id(self.ifc_definition_id)
+    tool.Style.rename_style(style, self.name)
+
+
 class Style(PropertyGroup):
-    name: StringProperty(name="Name")
+    name: StringProperty(name="Name", update=update_style_name)
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     total_elements: IntProperty(name="Total Elements")
     style_classes: CollectionProperty(name="Style Classes", type=StrProperty)

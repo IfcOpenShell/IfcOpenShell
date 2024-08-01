@@ -21,6 +21,7 @@ import bpy
 import numpy as np
 import blenderbim.tool as tool
 import ifcopenshell.util.geolocation
+from mathutils import Matrix, Vector
 from ifcopenshell.util.doc import get_entity_doc
 
 
@@ -35,7 +36,6 @@ class GeoreferenceData:
     @classmethod
     def load(cls):
         cls.data["coordinate_operation_class"] = cls.coordinate_operation_class()
-        cls.data["blender_derived_angle"] = cls.blender_derived_angle()
         cls.data["coordinate_operation"] = cls.coordinate_operation()
         cls.data["map_derived_angle"] = cls.map_derived_angle()
         cls.data["projected_crs"] = cls.projected_crs()
@@ -44,6 +44,7 @@ class GeoreferenceData:
         cls.data["local_unit_symbol"] = cls.local_unit_symbol()
         cls.data["map_unit_symbol"] = cls.map_unit_symbol()
         cls.data["world_coordinate_system"] = cls.world_coordinate_system()
+        cls.data["local_origin"] = cls.local_origin()
         cls.is_loaded = True
 
     @classmethod
@@ -55,19 +56,6 @@ class GeoreferenceData:
         names = [d.name() for d in declarations]
         version = tool.Ifc.get_schema()
         return [(c, c, get_entity_doc(version, c).get("description", "")) for c in sorted(names)]
-
-    @classmethod
-    def blender_derived_angle(cls):
-        props = bpy.context.scene.BIMGeoreferenceProperties
-        if props.has_blender_offset:
-            return str(
-                round(
-                    ifcopenshell.util.geolocation.xaxis2angle(
-                        float(props.blender_x_axis_abscissa), float(props.blender_x_axis_ordinate)
-                    ),
-                    3,
-                )
-            )
 
     @classmethod
     def coordinate_operation(cls):
@@ -132,16 +120,11 @@ class GeoreferenceData:
     def true_north(cls):
         ifc = tool.Ifc.get()
         true_north = {}
-
-        if ifc.schema == "IFC2X3":
-            return
-
         for context in ifc.by_type("IfcGeometricRepresentationContext", include_subtypes=False):
             if not context.TrueNorth:
                 continue
             true_north = context.TrueNorth.DirectionRatios
             break
-
         return true_north
 
     @classmethod
@@ -176,7 +159,44 @@ class GeoreferenceData:
         if np.allclose(wcs, np.eye(4)):
             result["has_transformation"] = False
         else:
+            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
             result["has_transformation"] = True
             result["rotation"] = str(round(ifcopenshell.util.geolocation.yaxis2angle(*wcs[:, 1][:2]), 3))
             result["x"], result["y"], result["z"] = wcs[:, 3][:3]
+
+            props = bpy.context.scene.BIMGeoreferenceProperties
+            if props.has_blender_offset:
+                blender_xyz = ifcopenshell.util.geolocation.enh2xyz(
+                    result["x"],
+                    result["y"],
+                    result["z"],
+                    float(props.blender_offset_x),
+                    float(props.blender_offset_y),
+                    float(props.blender_offset_z),
+                    float(props.blender_x_axis_abscissa),
+                    float(props.blender_x_axis_ordinate),
+                )
+            else:
+                blender_xyz = wcs[:, 3][:3]
+
+            result["blender_x"], result["blender_y"], result["blender_z"] = blender_xyz
+            result["blender_location"] = Vector([co * unit_scale for co in blender_xyz])
+
+            wcs[0][3] *= unit_scale
+            wcs[1][3] *= unit_scale
+            wcs[2][3] *= unit_scale
+            result["matrix"] = Matrix(wcs)
         return result
+
+    @classmethod
+    def local_origin(cls):
+        props = bpy.context.scene.BIMGeoreferenceProperties
+        if not props.has_blender_offset:
+            return
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        x = float(props.blender_offset_x) * -1
+        y = float(props.blender_offset_y) * -1
+        z = float(props.blender_offset_z) * -1
+        enh = ifcopenshell.util.geolocation.auto_xyz2enh(tool.Ifc.get(), 0, 0, 0)
+        xyz_si = Vector([x * unit_scale, y * unit_scale, z * unit_scale])
+        return {"x": x, "y": y, "z": z, "enh": enh, "location": xyz_si}

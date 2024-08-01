@@ -28,13 +28,6 @@ from blenderbim.bim.ifc import IfcStore
 from mathutils import Vector, Matrix, Euler
 
 
-class Operator:
-    def execute(self, context):
-        IfcStore.execute_ifc_operator(self, context)
-        blenderbim.bim.handler.refresh_ui_data()
-        return {"FINISHED"}
-
-
 class SetOverrideColour(bpy.types.Operator):
     bl_idname = "bim.set_override_colour"
     bl_label = "Set Override Colour"
@@ -49,25 +42,6 @@ class SetOverrideColour(bpy.types.Operator):
             obj.color = context.scene.BIMMiscProperties.override_colour
         area = next(area for area in context.screen.areas if area.type == "VIEW_3D")
         area.spaces[0].shading.color_type = "OBJECT"
-        return {"FINISHED"}
-
-
-class SetViewportShadowFromSun(bpy.types.Operator):
-    bl_idname = "bim.set_viewport_shadow_from_sun"
-    bl_label = "Set Viewport Shadow from Sun"
-    bl_options = {"REGISTER", "UNDO"}
-
-    @classmethod
-    def poll(cls, context):
-        return context.active_object
-
-    def execute(self, context):
-        # Does this belong in the drawing module? Perhaps.
-        # The vector used for the light direction is a bit funny
-        mat = Matrix(((-1.0, 0.0, 0.0, 0.0), (0.0, 0, 1.0, 0.0), (-0.0, -1.0, 0, 0.0), (0.0, 0.0, 0.0, 1.0)))
-        context.scene.display.light_direction = mat.inverted() @ (
-            context.active_object.matrix_world.to_quaternion() @ Vector((0, 0, -1))
-        )
         return {"FINISHED"}
 
 
@@ -117,7 +91,7 @@ class SnapSpacesTogether(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class ResizeToStorey(bpy.types.Operator, Operator):
+class ResizeToStorey(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.resize_to_storey"
     bl_label = "Resize To Storey"
     bl_options = {"REGISTER", "UNDO"}
@@ -132,7 +106,7 @@ class ResizeToStorey(bpy.types.Operator, Operator):
             core.resize_to_storey(tool.Misc, obj=obj, total_storeys=self.total_storeys)
 
 
-class SplitAlongEdge(bpy.types.Operator, Operator):
+class SplitAlongEdge(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.split_along_edge"
     bl_label = "Split Along Edge"
     bl_description = (
@@ -206,7 +180,7 @@ class SplitAlongEdge(bpy.types.Operator, Operator):
         self.report({"INFO"}, f"Splitting finished, {len(new_objs)} new objects created.")
 
 
-class GetConnectedSystemElements(bpy.types.Operator, Operator):
+class GetConnectedSystemElements(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.get_connected_system_elements"
     bl_label = "Get Connected System Elements"
     bl_options = {"REGISTER", "UNDO"}
@@ -258,7 +232,7 @@ class GetConnectedSystemElements(bpy.types.Operator, Operator):
                 obj.select_set(True)
 
 
-class DrawSystemArrows(bpy.types.Operator, Operator):
+class DrawSystemArrows(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.draw_system_arrows"
     bl_label = "Draw System Arrows"
     bl_options = {"REGISTER", "UNDO"}
@@ -319,9 +293,9 @@ class DrawSystemArrows(bpy.types.Operator, Operator):
             matrix = np.array(
                 ifcopenshell.util.geolocation.global2local(
                     matrix,
-                    float(props.blender_eastings),
-                    float(props.blender_northings),
-                    float(props.blender_orthogonal_height),
+                    float(props.blender_offset_x),
+                    float(props.blender_offset_y),
+                    float(props.blender_offset_z),
                     float(props.blender_x_axis_abscissa),
                     float(props.blender_x_axis_ordinate),
                 )

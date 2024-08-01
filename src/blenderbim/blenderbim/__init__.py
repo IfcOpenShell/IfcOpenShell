@@ -27,41 +27,67 @@ import sys
 IN_BLENDER = sys.modules.get("bpy", None)
 if IN_BLENDER:
     import bpy
-    import addon_utils
+
+import re
 import platform
 import traceback
 import webbrowser
+import uuid
+import shutil
 from collections import deque
+from pathlib import Path
+from typing import Union, Any, Generator
 
-# NOTE: bl_info is superseded by blender_manifest.toml
-# if addon is installed as an extension (Blender 4.2+)
-bl_info = {
-    "name": "BlenderBIM",
-    "description": "Transforms Blender into a native Building Information Model authoring platform using IFC.",
-    "author": "IfcOpenShell Contributors",
-    "blender": (3, 1, 0),
-    "version": (0, 0, 0),
-    "location": "File Menu, Scene Properties Tab. See documentation for more.",
-    "doc_url": "https://docs.blenderbim.org/",
-    "tracker_url": "https://github.com/IfcOpenShell/IfcOpenShell/issues",
-    "category": "System",
-}
 
+last_commit_hash = "8888888"
+
+
+def get_last_commit_hash() -> Union[str, None]:
+    # Using this weird way to write 8888888,
+    # so makefile won't accidentally replace it here
+    # we'll be able to distinguish commit hash from placeholder value.
+    if last_commit_hash == str(8_888888):
+        return None
+    return last_commit_hash[:7]
+
+
+# Accessed from blenderbim extension:
+bbim_semver: dict[str, Any] = {}
+
+# Accessed from blenderbim dependency:
 last_error = None
 last_actions: deque = deque(maxlen=10)
+FIRST_INSTALLED_BBIM_VERSION: Union[str, None] = None
+REINSTALLED_BBIM_VERSION: Union[str, None] = None
+
+
+def initialize_bbim_semver():
+    """Initialize `bbim_semver` dictionary.
+
+    Blender doesn't seem to store a full extension version (only major-minor-patch)
+    in `addon_utils.modules()->bl_info['version']`,
+    therefore we just parse it from .toml.
+    """
+    import tomllib
+
+    toml_path = Path(__file__).parent / "blender_manifest.toml"
+    with open(toml_path, "rb") as f:
+        manifest = tomllib.load(f)
+    semver_pattern = r"^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+(?P<buildmetadata>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$"
+    version_str = manifest["version"]
+    re_version = re.match(semver_pattern, version_str)
+    assert re_version
+    global bbim_semver
+    bbim_semver = re_version.groupdict()
+    bbim_semver["version"] = version_str
+
+
+initialize_bbim_semver()
 
 
 def get_debug_info():
-    version = ".".join(
-        [
-            str(x)
-            for x in [
-                addon.bl_info.get("version", (-1, -1, -1))
-                for addon in addon_utils.modules()
-                if addon.bl_info["name"] == "BlenderBIM"
-            ][0]
-        ]
-    )
+    bbim_version = bbim_semver["version"]
+
     return {
         "os": platform.system(),
         "os_version": platform.version(),
@@ -70,7 +96,8 @@ def get_debug_info():
         "machine": platform.machine(),
         "processor": platform.processor(),
         "blender_version": bpy.app.version_string,
-        "blenderbim_version": version,
+        "blenderbim_version": bbim_version,
+        "blenderbim_commit_hash": get_last_commit_hash(),
         "last_actions": last_actions,
         "last_error": last_error,
     }
@@ -87,11 +114,113 @@ def format_debug_info(info: dict):
     return text.strip()
 
 
+def get_binaries(path: Path) -> Generator[Path, None, None]:
+    yield from path.glob("**/*.pyd")
+    yield from path.glob("**/*.dll")
+    # pyradiance is using .so files on windows for some reason.
+    yield from path.glob("**/*.so")
+
+
+def safe_link_dlls() -> None:
+    # Blender 4.2+ has a problem on Windows for disabling/enabling/reinstalling extensions
+    # with loaded binary dependencies (on Windows you can't remove a binary if it's loaded by some program).
+    # To avoid this issue we temporary hard link dlls to our temp directory on unregister()
+    # (unregister is executed before Blender will try to uninstall dependencies and the issue will arise).
+    # Then, Blender won't have a problem unlinking unloaded dlls as they are still linked somewhere.
+    # On register() we clean up our temp directory with binaries.
+    #
+    # TODO: If user uninstalls BlenderBIM to never use it again, temporary directory won't be cleared.
+    #
+    # See: https://projects.blender.org/blender/blender/issues/125049
+    import bpy
+
+    ext_path = Path(bpy.utils.user_resource("EXTENSIONS"))
+    local_path = ext_path / ".local"
+
+    # We use random hash subfolder as user may try to enable/disable addon multiple times.
+    random_hash = uuid.uuid4().hex[:8]
+    temp_local = ext_path / ".local_temp" / random_hash
+    temp_local.mkdir(parents=True)
+
+    for filepath in get_binaries(local_path):
+        dest_path = temp_local / filepath.relative_to(local_path)
+        dest_path.parent.mkdir(exist_ok=True, parents=True)
+        os.link(filepath, dest_path)
+
+
+def clean_up_dlls_safe_links() -> None:
+    import bpy
+
+    ext_path = Path(bpy.utils.user_resource("EXTENSIONS"))
+    temp_path = ext_path / ".local_temp"
+    if not temp_path.exists():
+        return
+
+    for filepath in get_binaries(temp_path):
+        try:
+            os.unlink(filepath)
+        except PermissionError:
+            pass
+
+    def is_empty_directory(directory: Path) -> bool:
+        return not any(directory.iterdir())
+
+    def remove_empty_folders(folder: Path) -> None:
+        for subfolder in folder.iterdir():
+            if subfolder.is_dir():
+                remove_empty_folders(subfolder)
+
+        if is_empty_directory(folder):
+            folder.rmdir()
+
+    remove_empty_folders(temp_path)
+
+
 if IN_BLENDER:
-    # Process *.pth in /libs/site/packages to setup globally importable modules
-    # This is 3 levels deep as required by the static RPATH of ../../ from dependencies taken from Anaconda
-    # site.addsitedir(os.path.join(os.path.dirname(os.path.realpath(__file__)), "libs", "site", "packages"))
-    sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "libs", "site", "packages"))
+
+    def get_binary_info() -> dict[str, Any]:
+        info = {}
+        py_version = sys.version_info
+        site_path = (
+            Path(bpy.utils.user_resource("EXTENSIONS"))
+            / ".local"
+            / "lib"
+            / f"python{py_version.major}.{py_version.minor}"
+            / "site-packages"
+        )
+        lib = site_path / "ifcopenshell"
+        binary = next((i for i in lib.glob("_ifcopenshell_wrapper.*")), None)
+        if binary is None:
+            info["binary_error"] = "Couldn't find ifcopenshell wrapper binary."
+            return info
+
+        # Examples:
+        # _ifcopenshell_wrapper.cp311-win_amd64.pyd
+        # _ifcopenshell_wrapper.cpython-311-darwin.so
+        # _ifcopenshell_wrapper.cpython-311-x86_64-linux-gnu.so
+        binary = binary.name
+        info["binary_file_name"] = binary
+        pattern = re.compile(r"cp(\d+)|cpython-(\d+)")
+        match = pattern.search(binary)
+        if not match:
+            info["binary_error"] = f"Couldn't parse binary version from '{binary}'."
+            return info
+
+        version = match.group(1) or match.group(2)
+        version = f"{version[0]}.{version[1:]}"
+        info["binary_python_version"] = version
+        return info
+
+    try:
+        import git
+
+        # We can't just use __file__ as blenderbim/__init__.py is typically not symlinked
+        # as Blender have errors symlinking main addon package file.
+        path = Path(__file__).resolve().parent
+        repo = git.Repo(str(path), search_parent_directories=True)
+        last_commit_hash = repo.head.object.hexsha
+    except:
+        pass
 
     try:
         import ifcopenshell.api
@@ -108,24 +237,43 @@ if IN_BLENDER:
         ifcopenshell.api.add_pre_listener("*", "action_logger", log_api)
 
         def register():
-            global BLENDER_PACKAGE_NAME, __name__, __package__
-            BLENDER_PACKAGE_NAME = __name__
-            if bpy.app.version >= (4, 2, 0):
-                sys.modules["blenderbim"] = sys.modules[__name__]
-                __name__ = "blenderbim"
-                # Only renaming __name__ is actually required to make imports work.
-                # We renaming __package__ just for consistency.
-                __package__ = "blenderbim"
+            if platform.system() == "Windows":
+                clean_up_dlls_safe_links()
+
             import blenderbim.bim
+
+            current_version = bbim_semver["version"]
+            if blenderbim.FIRST_INSTALLED_BBIM_VERSION is None:
+                blenderbim.FIRST_INSTALLED_BBIM_VERSION = current_version
+            elif not blenderbim.REINSTALLED_BBIM_VERSION and blenderbim.FIRST_INSTALLED_BBIM_VERSION != current_version:
+                blenderbim.REINSTALLED_BBIM_VERSION = current_version
 
             blenderbim.bim.register()
 
         def unregister():
+            if platform.system() == "Windows":
+                safe_link_dlls()
+
             import blenderbim.bim
 
             blenderbim.bim.unregister()
 
     except:
+
+        def show_scene_properties() -> None:
+            # By default in Blender object properties are selected.
+            # Or user may have some other properties selected in their startup file.
+            # Select scene properties to ensure user will see our error handler.
+            for area in bpy.context.screen.areas:
+                if area.type != "PROPERTIES":
+                    continue
+                space = area.spaces.active
+                assert isinstance(space, bpy.types.SpaceProperties)
+                space.context = "SCENE"
+
+        # Use a timer as we're not allowed to make changes to data during register().
+        bpy.app.timers.register(show_scene_properties, first_interval=0.1)
+
         last_error = traceback.format_exc()
 
         print(last_error)
@@ -152,26 +300,48 @@ if IN_BLENDER:
                 box = layout.box()
                 py = ".".join(info["python_version"].split(".")[0:2])
                 b3d = ".".join(info["blender_version"].split(".")[0:2])
+                box.label(text="System Information:")
                 box.label(text=f"Blender {b3d} {info['os']} {info['machine']}", icon="BLENDER")
+                blenderbim_version = info["blenderbim_version"]
+                if commit_hash := info.get("blenderbim_commit_hash"):
+                    blenderbim_version += f"-{commit_hash}"
                 box.label(text=f"Python {py} BBIM {info['blenderbim_version']}", icon="SCRIPTPLUGINS")
+
+                binary_py = get_binary_info().get("binary_python_version")
+                if binary_py and py != binary_py:
+                    box.separator()
+                    # From wrong-platform-build issues we're guarded by Blender extension installation.
+                    # But Blender currently doesn't support separate builds for different Python version,
+                    # so those issues might still slip in.
+                    box.label(text="BlenderBIM installed for wrong Python version.")
+                    box.label(text=f"Expected: {py}. Got: {binary_py}.")
+                    # On reinstallation, dependencies versions doesn't change, so Blender will just ignore new dependencies.
+                    # So, we need to make user will disable an extension (just uninstallation won't remove dependencies).
+                    # Blender restart doesn't seem to be required in that case
+                    # as dependencies failed to load due to Python version mismatch.
+                    box.label(text="Try reinstalling with the correct Python version.")
+                    box.label(text="Before reinstallation make sure to")
+                    box.label(text="DISABLE BlenderBIM (uninstallation won't help).")
+                    box.label(text="You can download correct version below.")
+
                 layout.operator("bim.copy_debug_information", text="Copy Error Message To Clipboard")
                 op = layout.operator("bim.open_uri", text="How Can I Fix This?")
                 op.uri = "https://docs.blenderbim.org/users/troubleshooting.html#installation-issues"
 
                 layout.label(text="Try Reinstalling:", icon="IMPORT")
                 op = layout.operator("bim.open_uri", text="Re-download Add-on")
-                bbim_date = info["blenderbim_version"].split(".")[-1]
+                bbim_version = info["blenderbim_version"]
                 py_tag = py.replace(".", "")
                 if "Linux" in info["os"]:
-                    os = "linux"
+                    os = "linux-x64"
                 elif "Darwin" in info["os"]:
                     if "arm64" in info["machine"]:
-                        os = "macosm1"
+                        os = "macos-arm64"
                     else:
-                        os = "macos"
+                        os = "macos-x64"
                 else:
-                    os = "win"
-                op.uri = f"https://github.com/IfcOpenShell/IfcOpenShell/releases/download/blenderbim-{bbim_date}/blenderbim-{bbim_date}-py{py_tag}-{os}.zip"
+                    os = "windows-x64"
+                op.uri = f"https://github.com/IfcOpenShell/IfcOpenShell/releases/download/blenderbim-{bbim_version}/blenderbim_py{py_tag}-{bbim_version}-{os}.zip"
 
         class OpenUri(bpy.types.Operator):
             bl_idname = "bim.open_uri"
@@ -188,7 +358,9 @@ if IN_BLENDER:
             bl_description = "Copies debugging information to your clipboard for use in bugreports"
 
             def execute(self, context):
-                info = format_debug_info(get_debug_info())
+                info = get_debug_info()
+                info.update(get_binary_info())
+                info = format_debug_info(info)
                 context.window_manager.clipboard = info
                 return {"FINISHED"}
 

@@ -496,4 +496,3 @@ class SelectSmartGroup(bpy.types.Operator):
         with bpy.context.temp_override(**context_override):
             bpy.ops.view3d.view_selected()
         return {"FINISHED"}
-

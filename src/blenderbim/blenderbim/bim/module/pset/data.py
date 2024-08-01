@@ -51,13 +51,13 @@ class Data:
         psetqtos = ifcopenshell.util.element.get_psets(
             element, psets_only=psets_only, qtos_only=qtos_only, should_inherit=False
         )
-        for name, data in psetqtos.items():
+        for name, data in sorted(psetqtos.items()):
             results.append(
                 {
                     "id": data["id"],
                     "Name": name,
                     "is_expanded": is_expanded.get(data["id"], True),
-                    "Properties": [{"Name": k, "NominalValue": v} for k, v in data.items() if k != "id"],
+                    "Properties": [{"Name": k, "NominalValue": v} for k, v in sorted(data.items()) if k != "id"],
                 }
             )
         return sorted(results, key=lambda v: v["Name"])

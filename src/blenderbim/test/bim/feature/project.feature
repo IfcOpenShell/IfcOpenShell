@@ -342,9 +342,7 @@ Scenario: Load project elements - all georeferencing coordinate situations - aut
     When I set "scene.BIMProjectProperties.distance_limit" to "5"
     And I press "bim.load_project_elements"
     Then "scene.BIMGeoreferenceProperties.has_blender_offset" is "True"
-    And "scene.BIMGeoreferenceProperties.blender_eastings" is "13000.0"
-    And "scene.BIMGeoreferenceProperties.blender_northings" is "4000.0"
-    And "scene.BIMGeoreferenceProperties.blender_orthogonal_height" is "-1000.0"
+    And "scene.BIMGeoreferenceProperties.model_origin" is "13000.0,4000.0,-1000.0"
     And "scene.BIMGeoreferenceProperties.blender_offset_x" is "13000.0"
     And "scene.BIMGeoreferenceProperties.blender_offset_y" is "4000.0"
     And "scene.BIMGeoreferenceProperties.blender_offset_z" is "-1000.0"
@@ -371,9 +369,7 @@ Scenario: Load project elements - all georeferencing coordinate situations - man
     When I set "scene.BIMProjectProperties.distance_limit" to "5"
     And I press "bim.load_project_elements"
     Then "scene.BIMGeoreferenceProperties.has_blender_offset" is "True"
-    And "scene.BIMGeoreferenceProperties.blender_eastings" is "10000.0"
-    And "scene.BIMGeoreferenceProperties.blender_northings" is "0.0"
-    And "scene.BIMGeoreferenceProperties.blender_orthogonal_height" is "0.0"
+    And "scene.BIMGeoreferenceProperties.model_origin" is "10000.0,0.0,0.0"
     And "scene.BIMGeoreferenceProperties.blender_offset_x" is "10000.0"
     And "scene.BIMGeoreferenceProperties.blender_offset_y" is "0.0"
     And "scene.BIMGeoreferenceProperties.blender_offset_z" is "0.0"
@@ -430,9 +426,7 @@ Scenario: Load project elements - all georeferencing coordinate situations with 
     When I set "scene.BIMProjectProperties.distance_limit" to "5"
     And I press "bim.load_project_elements"
     Then "scene.BIMGeoreferenceProperties.has_blender_offset" is "True"
-    And "scene.BIMGeoreferenceProperties.blender_eastings" is "0.0"
-    And "scene.BIMGeoreferenceProperties.blender_northings" is "10000.0"
-    And "scene.BIMGeoreferenceProperties.blender_orthogonal_height" is "0.0"
+    And "scene.BIMGeoreferenceProperties.model_origin" is "0.0,10000.0,0.0"
     And "scene.BIMGeoreferenceProperties.blender_offset_x" is "0.0"
     And "scene.BIMGeoreferenceProperties.blender_offset_y" is "10000.0"
     And "scene.BIMGeoreferenceProperties.blender_offset_z" is "0.0"
@@ -454,14 +448,12 @@ Scenario: Load project elements - all georeferencing coordinate situations with 
 Scenario: Load project elements - all georeferencing coordinate situations with an offset site - manual false origin mode
     Given an empty Blender session
     And I press "bim.load_project(filepath='{cwd}/test/files/geolocation-offsetsite.ifc', is_advanced=True)"
-    When I set "scene.BIMProjectProperties.false_origin_mode" to "MANUAL"
-    When I set "scene.BIMProjectProperties.false_origin" to "0,10000,0"
-    When I set "scene.BIMProjectProperties.distance_limit" to "5"
-    And I press "bim.load_project_elements"
+    And I set "scene.BIMProjectProperties.false_origin_mode" to "MANUAL"
+    And I set "scene.BIMProjectProperties.false_origin" to "0,10000,0"
+    And I set "scene.BIMProjectProperties.distance_limit" to "5"
+    When I press "bim.load_project_elements"
     Then "scene.BIMGeoreferenceProperties.has_blender_offset" is "True"
-    And "scene.BIMGeoreferenceProperties.blender_eastings" is "0.0"
-    And "scene.BIMGeoreferenceProperties.blender_northings" is "10000.0"
-    And "scene.BIMGeoreferenceProperties.blender_orthogonal_height" is "0.0"
+    And "scene.BIMGeoreferenceProperties.model_origin" is "0.0,10000.0,0.0"
     And "scene.BIMGeoreferenceProperties.blender_offset_x" is "0.0"
     And "scene.BIMGeoreferenceProperties.blender_offset_y" is "10000.0"
     And "scene.BIMGeoreferenceProperties.blender_offset_z" is "0.0"
@@ -488,6 +480,34 @@ Scenario: Load project elements - all georeferencing coordinate situations with 
     And the object "IfcActuator/G" has a vertex at "15.385,8.264,-1"
     And the object "IfcActuator/J" has a vertex at "10.366,3.813,-1"
     And the object "IfcActuator/J" has a vertex at "12.298,4.331,-1"
+
+Scenario: Load project elements - all georeferencing coordinate situations with an offset site - manual false origin mode - with custom project north
+    Given an empty Blender session
+    And I press "bim.load_project(filepath='{cwd}/test/files/geolocation-offsetsite.ifc', is_advanced=True)"
+    And I set "scene.BIMProjectProperties.false_origin_mode" to "MANUAL"
+    And I set "scene.BIMProjectProperties.false_origin" to "0,10000,0"
+    And I set "scene.BIMProjectProperties.project_north" to "-15"
+    And I set "scene.BIMProjectProperties.distance_limit" to "5"
+    When I press "bim.load_project_elements"
+    Then "scene.BIMGeoreferenceProperties.has_blender_offset" is "True"
+    And "scene.BIMGeoreferenceProperties.model_origin" is "0.0,10000.0,0.0"
+    And "scene.BIMGeoreferenceProperties.blender_offset_x" is "0.0"
+    And "scene.BIMGeoreferenceProperties.blender_offset_y" is "10000.0"
+    And "scene.BIMGeoreferenceProperties.blender_offset_z" is "0.0"
+    And the object "IfcSite/My Site" is at "0,0,0"
+    And the object "IfcBuilding/My Building" is at "0,0,0"
+    And the object "IfcBuildingStorey/My Storey" is at "0,0,0"
+    And the object "IfcActuator/A" is at "7,3,0"
+    And the object "IfcActuator/B" is at "6,1,0"
+    And the object "IfcActuator/C" is at "0,0,0"
+    And the object "IfcActuator/D" is at "13,4,-1"
+    And the object "IfcActuator/E" is at "6,3,0"
+    And the object "IfcActuator/F" is at "3,3,0"
+    And the object "IfcActuator/G" is at "15,6,-1"
+    And the object "IfcActuator/H" is at "9,2,0"
+    And the object "IfcActuator/I" is at "3,3,0"
+    And the object "IfcActuator/J" is at "11,3,-1"
+    And the object "IfcActuator/K" is at "10,0,0"
 
 Scenario: Load project elements - all georeferencing coordinate situations with a map conversion - disabled false origin mode (this should be identical to the situation with no map conversion)
     Given an empty Blender session
@@ -518,9 +538,7 @@ Scenario: Load project elements - all georeferencing coordinate situations with 
     When I set "scene.BIMProjectProperties.distance_limit" to "5"
     And I press "bim.load_project_elements"
     Then "scene.BIMGeoreferenceProperties.has_blender_offset" is "True"
-    And "scene.BIMGeoreferenceProperties.blender_eastings" is "28000.0"
-    And "scene.BIMGeoreferenceProperties.blender_northings" is "4000.0"
-    And "scene.BIMGeoreferenceProperties.blender_orthogonal_height" is "-1000.0"
+    And "scene.BIMGeoreferenceProperties.model_origin" is "28000.0,4000.0,-1000.0"
     And "scene.BIMGeoreferenceProperties.blender_offset_x" is "13000.0"
     And "scene.BIMGeoreferenceProperties.blender_offset_y" is "4000.0"
     And "scene.BIMGeoreferenceProperties.blender_offset_z" is "-1000.0"
@@ -547,9 +565,7 @@ Scenario: Load project elements - all georeferencing coordinate situations with 
     When I set "scene.BIMProjectProperties.distance_limit" to "5"
     And I press "bim.load_project_elements"
     Then "scene.BIMGeoreferenceProperties.has_blender_offset" is "True"
-    And "scene.BIMGeoreferenceProperties.blender_eastings" is "25000.0"
-    And "scene.BIMGeoreferenceProperties.blender_northings" is "0.0"
-    And "scene.BIMGeoreferenceProperties.blender_orthogonal_height" is "0.0"
+    And "scene.BIMGeoreferenceProperties.model_origin" is "25000.0,0.0,0.0"
     And "scene.BIMGeoreferenceProperties.blender_offset_x" is "10000.0"
     And "scene.BIMGeoreferenceProperties.blender_offset_y" is "0.0"
     And "scene.BIMGeoreferenceProperties.blender_offset_z" is "0.0"
@@ -606,9 +622,7 @@ Scenario: Load project elements - all georeferencing coordinate situations with 
     When I set "scene.BIMProjectProperties.distance_limit" to "5"
     And I press "bim.load_project_elements"
     Then "scene.BIMGeoreferenceProperties.has_blender_offset" is "True"
-    And "scene.BIMGeoreferenceProperties.blender_eastings" is "15000.0"
-    And "scene.BIMGeoreferenceProperties.blender_northings" is "10000.0"
-    And "scene.BIMGeoreferenceProperties.blender_orthogonal_height" is "0.0"
+    And "scene.BIMGeoreferenceProperties.model_origin" is "15000.0,10000.0,0.0"
     And "scene.BIMGeoreferenceProperties.blender_offset_x" is "0.0"
     And "scene.BIMGeoreferenceProperties.blender_offset_y" is "10000.0"
     And "scene.BIMGeoreferenceProperties.blender_offset_z" is "0.0"
@@ -635,9 +649,7 @@ Scenario: Load project elements - all georeferencing coordinate situations with 
     When I set "scene.BIMProjectProperties.distance_limit" to "5"
     And I press "bim.load_project_elements"
     Then "scene.BIMGeoreferenceProperties.has_blender_offset" is "True"
-    And "scene.BIMGeoreferenceProperties.blender_eastings" is "15000.0"
-    And "scene.BIMGeoreferenceProperties.blender_northings" is "10000.0"
-    And "scene.BIMGeoreferenceProperties.blender_orthogonal_height" is "0.0"
+    And "scene.BIMGeoreferenceProperties.model_origin" is "15000.0,10000.0,0.0"
     And "scene.BIMGeoreferenceProperties.blender_offset_x" is "0.0"
     And "scene.BIMGeoreferenceProperties.blender_offset_y" is "10000.0"
     And "scene.BIMGeoreferenceProperties.blender_offset_z" is "0.0"
@@ -672,6 +684,98 @@ Scenario: Link IFC
     And the collection "IfcProject/basic.ifc" exists
     And the object "Chunk" exists
     And the object "Chunk" is placed in the collection "IfcProject/basic.ifc"
+
+Scenario: Link IFC - disabled false origin mode
+    Given an empty IFC project
+    # Not currently possible via UI
+    And I set "scene.BIMProjectProperties.distance_limit" to "5"
+    And I set "scene.BIMProjectProperties.false_origin_mode" to "DISABLED"
+    When I press "bim.link_ifc(filepath='{cwd}/test/files/geolocation.ifc', use_cache=False)"
+    Then the object "Chunk" exists
+    And the object "Chunk" has a vertex at "2,2,-1"
+    And the object "Chunk" has a vertex at "9,-1,-1"
+    And the object "Chunk" has a vertex at "17,4,-1"
+
+Scenario: Link IFC - from an empty IFC project - automatic false origin mode (0,0,0 will be the false origin)
+    Given an empty IFC project
+    # Not currently possible via UI
+    And I set "scene.BIMProjectProperties.distance_limit" to "5"
+    And I set "scene.BIMProjectProperties.false_origin_mode" to "AUTOMATIC"
+    When I press "bim.link_ifc(filepath='{cwd}/test/files/geolocation.ifc', use_cache=False)"
+    Then the object "Chunk" exists
+    And the object "Chunk" has a vertex at "2,2,-1"
+    And the object "Chunk" has a vertex at "9,-1,-1"
+    And the object "Chunk" has a vertex at "17,4,-1"
+
+Scenario: Link IFC - from an empty Blender session - automatic false origin mode (a new false origin will be detected)
+    Given an empty Blender session
+    # Not currently possible via UI
+    And I set "scene.BIMProjectProperties.distance_limit" to "5"
+    And I set "scene.BIMProjectProperties.false_origin_mode" to "AUTOMATIC"
+    When I press "bim.link_ifc(filepath='{cwd}/test/files/geolocation.ifc', use_cache=False)"
+    Then the object "Chunk" exists
+    And the object "Chunk" has a vertex at "-11,-2,0"
+    And the object "Chunk" has a vertex at "-4,-5,0"
+    And the object "Chunk" has a vertex at "4,0,0"
+
+Scenario: Link IFC - manual false origin mode
+    Given an empty Blender session
+    # Not currently possible via UI
+    And I set "scene.BIMProjectProperties.distance_limit" to "5"
+    And I set "scene.BIMProjectProperties.false_origin_mode" to "MANUAL"
+    And I set "scene.BIMProjectProperties.false_origin" to "10000,0,0"
+    When I press "bim.link_ifc(filepath='{cwd}/test/files/geolocation.ifc', use_cache=False)"
+    Then the object "Chunk" exists
+    And the object "Chunk" has a vertex at "-8,2,-1"
+    And the object "Chunk" has a vertex at "-1,-1,-1"
+    And the object "Chunk" has a vertex at "7,4,-1"
+
+Scenario: Link IFC - automatic false origin mode - two different false origins and project norths - grid north is up because we start with geolocation.ifc
+    Given an empty Blender session
+    # Not currently possible via UI
+    And I set "scene.BIMProjectProperties.distance_limit" to "5"
+    And I set "scene.BIMProjectProperties.false_origin_mode" to "AUTOMATIC"
+    When I press "bim.link_ifc(filepath='{cwd}/test/files/geolocation.ifc', use_cache=False)"
+    And I press "bim.link_ifc(filepath='{cwd}/test/files/geolocation-mapconversion-angle.ifc', use_cache=False)"
+    Then the object "Col:IfcProject/geolocation.ifc:Chunk" exists
+    And the object "Col:IfcProject/geolocation-mapconversion-angle.ifc:Chunk" exists
+    And the object "Col:IfcProject/geolocation.ifc:Chunk" has a vertex at "-11,-2,0"
+    And the object "Col:IfcProject/geolocation.ifc:Chunk" has a vertex at "-4,-5,0"
+    And the object "Col:IfcProject/geolocation.ifc:Chunk" has a vertex at "4,0,0"
+    And the object "Col:IfcProject/geolocation-mapconversion-angle.ifc:Chunk" has a vertex at "4.732,-3.268,0"
+    And the object "Col:IfcProject/geolocation-mapconversion-angle.ifc:Chunk" has a vertex at "9.294,-9.366,0"
+    And the object "Col:IfcProject/geolocation-mapconversion-angle.ifc:Chunk" has a vertex at "18.722,-9.036,0"
+
+Scenario: Link IFC - automatic false origin mode - two different false origins and project norths - project north is up because we start with geolocation-mapconversion-angle.ifc
+    Given an empty Blender session
+    # Not currently possible via UI
+    And I set "scene.BIMProjectProperties.distance_limit" to "5"
+    And I set "scene.BIMProjectProperties.false_origin_mode" to "AUTOMATIC"
+    When I press "bim.link_ifc(filepath='{cwd}/test/files/geolocation-mapconversion-angle.ifc', use_cache=False)"
+    And I press "bim.link_ifc(filepath='{cwd}/test/files/geolocation.ifc', use_cache=False)"
+    Then the object "Col:IfcProject/geolocation.ifc:Chunk" exists
+    And the object "Col:IfcProject/geolocation-mapconversion-angle.ifc:Chunk" exists
+    And the object "Col:IfcProject/geolocation-mapconversion-angle.ifc:Chunk" has a vertex at "-11,-2,0"
+    And the object "Col:IfcProject/geolocation-mapconversion-angle.ifc:Chunk" has a vertex at "-4,-5,0"
+    And the object "Col:IfcProject/geolocation-mapconversion-angle.ifc:Chunk" has a vertex at "4,0,0"
+    And the object "Col:IfcProject/geolocation.ifc:Chunk" has a vertex at "-25.258,-8.768,0"
+    And the object "Col:IfcProject/geolocation.ifc:Chunk" has a vertex at "-17.696,-7.866,0"
+    And the object "Col:IfcProject/geolocation.ifc:Chunk" has a vertex at "-13.268,0.464,0"
+
+Scenario: Link IFC - automatic false origin mode - three identical false origins but different project and map units
+    Given an empty Blender session
+    # Not currently possible via UI
+    And I set "scene.BIMProjectProperties.distance_limit" to "5"
+    And I set "scene.BIMProjectProperties.false_origin_mode" to "AUTOMATIC"
+    When I press "bim.link_ifc(filepath='{cwd}/test/files/geolocation-unit1.ifc', use_cache=False)"
+    And I press "bim.link_ifc(filepath='{cwd}/test/files/geolocation-unit2.ifc', use_cache=False)"
+    And I press "bim.link_ifc(filepath='{cwd}/test/files/geolocation-unit3.ifc', use_cache=False)"
+    Then the object "Col:IfcProject/geolocation-unit1.ifc:Chunk" exists
+    And the object "Col:IfcProject/geolocation-unit2.ifc:Chunk" exists
+    And the object "Col:IfcProject/geolocation-unit3.ifc:Chunk" exists
+    And the object "Col:IfcProject/geolocation-unit1.ifc:Chunk" has a vertex at "7.294,-5.366,-1"
+    And the object "Col:IfcProject/geolocation-unit2.ifc:Chunk" has a vertex at "7.294,-5.366,-1"
+    And the object "Col:IfcProject/geolocation-unit3.ifc:Chunk" has a vertex at "7.294,-5.366,-1"
 
 Scenario: Toggle link visibility - wireframe mode
     Given an empty IFC project
@@ -729,31 +833,31 @@ Scenario: Unlink IFC
 
 Scenario: Export IFC - blank project
     Given an empty IFC project
-    When I press "export_ifc.bim(filepath='{cwd}/test/files/temp/export.ifc')"
+    When I press "bim.save_project(filepath='{cwd}/test/files/temp/export.ifc')"
     Then nothing happens
 
 Scenario: Export IFC - with basic contents
     Given an empty Blender session
     And I press "bim.load_project(filepath='{cwd}/test/files/basic.ifc')"
-    When I press "export_ifc.bim(filepath='{cwd}/test/files/temp/export.ifc')"
+    When I press "bim.save_project(filepath='{cwd}/test/files/temp/export.ifc')"
     Then "scene.BIMProperties.ifc_file" is "{cwd}/test/files/temp/export.ifc"
 
 Scenario: Export IFC - with basic contents and saving as another file
     Given an empty Blender session
     And I press "bim.load_project(filepath='{cwd}/test/files/basic.ifc')"
-    When I press "export_ifc.bim(filepath='{cwd}/test/files/temp/export.ifc', should_save_as=True)"
+    When I press "bim.save_project(filepath='{cwd}/test/files/temp/export.ifc', should_save_as=True)"
     Then "scene.BIMProperties.ifc_file" is "{cwd}/test/files/temp/export.ifc"
 
 Scenario: Export IFC - with basic contents and saving as IfcJSON where import is not supported
     Given an empty Blender session
     And I press "bim.load_project(filepath='{cwd}/test/files/basic.ifc')"
-    When I press "export_ifc.bim(filepath='{cwd}/test/files/temp/export.ifcjson', should_save_as=True)"
+    When I press "bim.save_project(filepath='{cwd}/test/files/temp/export.ifcjson', should_save_as=True)"
     Then "scene.BIMProperties.ifc_file" is "{cwd}/test/files/basic.ifc"
 
 Scenario: Export IFC - with basic contents and round-tripping an IfcZip
     Given an empty Blender session
     And I press "bim.load_project(filepath='{cwd}/test/files/basic.ifc')"
-    When I press "export_ifc.bim(filepath='{cwd}/test/files/temp/export.ifczip', should_save_as=True)"
+    When I press "bim.save_project(filepath='{cwd}/test/files/temp/export.ifczip', should_save_as=True)"
     Then "scene.BIMProperties.ifc_file" is "{cwd}/test/files/basic.ifc"
     When an empty Blender session is started
     And I press "bim.load_project(filepath='{cwd}/test/files/temp/export.ifczip')"
@@ -763,14 +867,14 @@ Scenario: Export IFC - with basic contents and saving as a relative path
     Given an empty Blender session
     And I press "bim.load_project(filepath='{cwd}/test/files/basic.ifc')"
     When I press "wm.save_mainfile(filepath='{cwd}/test/files/temp/export.blend')"
-    And I press "export_ifc.bim(filepath='{cwd}/test/files/temp/export.ifc', use_relative_path=True, save_as_invoked=True)"
+    And I press "bim.save_project(filepath='{cwd}/test/files/temp/export.ifc', use_relative_path=True, save_as_invoked=True)"
     Then "scene.BIMProperties.ifc_file" is "export.ifc"
 
 Scenario: Export IFC - with deleted objects synchronised
     Given an empty IFC project
     When the object "IfcBuildingStorey/My Storey" is selected
     And I delete the selected objects
-    And I press "export_ifc.bim(filepath='{cwd}/test/files/temp/export.ifc')"
+    And I press "bim.save_project(filepath='{cwd}/test/files/temp/export.ifc')"
     And an empty Blender session is started
     And I press "bim.load_project(filepath='{cwd}/test/files/temp/export.ifc')"
     Then the object "IfcBuildingStorey/My Storey" does not exist
@@ -778,7 +882,7 @@ Scenario: Export IFC - with deleted objects synchronised
 Scenario: Export IFC - with moved object location synchronised
     Given an empty IFC project
     When the object "IfcBuildingStorey/My Storey" is moved to "0,0,1"
-    And I press "export_ifc.bim(filepath='{cwd}/test/files/temp/export.ifc')"
+    And I press "bim.save_project(filepath='{cwd}/test/files/temp/export.ifc')"
     And an empty Blender session is started
     And I press "bim.load_project(filepath='{cwd}/test/files/temp/export.ifc')"
     Then the object "IfcBuildingStorey/My Storey" is at "0,0,1"
@@ -787,7 +891,7 @@ Scenario: Export IFC - with moved grid axis location synchronised
     Given an empty IFC project
     And I press "mesh.add_grid"
     When the object "IfcGridAxis/01" is moved to "1,0,0"
-    And I press "export_ifc.bim(filepath='{cwd}/test/files/temp/export.ifc')"
+    And I press "bim.save_project(filepath='{cwd}/test/files/temp/export.ifc')"
     And an empty Blender session is started
     And I press "bim.load_project(filepath='{cwd}/test/files/temp/export.ifc')"
     Then the object "IfcGridAxis/01" bottom left corner is at "1,-2,0"
@@ -801,23 +905,7 @@ Scenario: Export IFC - with changed object scale synchronised
     And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected
     When the object "IfcWall/Cube" is scaled to "2"
-    And I press "export_ifc.bim(filepath='{cwd}/test/files/temp/export.ifc')"
+    And I press "bim.save_project(filepath='{cwd}/test/files/temp/export.ifc')"
     And an empty Blender session is started
     And I press "bim.load_project(filepath='{cwd}/test/files/temp/export.ifc')"
     Then the object "IfcWall/Cube" dimensions are "4,4,4"
-
-Scenario: Export IFC - with changed style element synchronised
-    Given an empty IFC project
-    And I add a cube
-    And the object "Cube" is selected
-    And I add a material
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
-    And the object "IfcWall/Cube" is selected
-    When I add a material
-    And the material "Material.001" colour is set to "1,0,0,1"
-    And I press "export_ifc.bim(filepath='{cwd}/test/files/temp/export.ifc')"
-    And an empty Blender session is started
-    And I press "bim.load_project(filepath='{cwd}/test/files/temp/export.ifc', should_start_fresh_session=False)"
-    Then the material "Material.001" colour is "1,0,0,1"

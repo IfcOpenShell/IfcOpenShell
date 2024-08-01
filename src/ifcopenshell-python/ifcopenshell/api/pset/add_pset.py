@@ -95,7 +95,7 @@ def add_pset(file: ifcopenshell.file, product: ifcopenshell.entity_instance, nam
                 "GlobalId": ifcopenshell.guid.new(),
                 "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
                 "Name": settings["name"],
-            }
+            },
         )
         file.create_entity(
             "IfcRelDefinesByProperties",
@@ -104,7 +104,7 @@ def add_pset(file: ifcopenshell.file, product: ifcopenshell.entity_instance, nam
                 "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
                 "RelatedObjects": [settings["product"]],
                 "RelatingPropertyDefinition": pset,
-            }
+            },
         )
         return pset
     elif settings["product"].is_a("IfcTypeObject"):
@@ -118,7 +118,7 @@ def add_pset(file: ifcopenshell.file, product: ifcopenshell.entity_instance, nam
                 "GlobalId": ifcopenshell.guid.new(),
                 "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
                 "Name": settings["name"],
-            }
+            },
         )
         has_property_sets = list(settings["product"].HasPropertySets or [])
         has_property_sets.append(pset)
@@ -142,7 +142,7 @@ def add_pset(file: ifcopenshell.file, product: ifcopenshell.entity_instance, nam
             **{
                 "Name": settings["name"],
                 "Material": settings["product"],
-            }
+            },
         )
     elif settings["product"].is_a("IfcProfileDef"):
         # in IFC2X3 IfcProfileProperties doesn't have Name and we cannot identify them

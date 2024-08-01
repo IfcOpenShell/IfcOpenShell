@@ -18,6 +18,7 @@
 
 import bpy
 import blenderbim.tool as tool
+<<<<<<< HEAD
 
 class BIM_PT_radiance_exporter(bpy.types.Panel):
     """Creates a Panel in the render properties window"""
@@ -26,6 +27,22 @@ class BIM_PT_radiance_exporter(bpy.types.Panel):
     bl_options = {'DEFAULT_CLOSED'}
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
+=======
+from blenderbim.bim.module.light.data import SolarData
+
+
+sun_position = tool.Blender.get_sun_position_addon()
+
+
+class BIM_PT_radiance_exporter(bpy.types.Panel):
+    """Creates a Panel in the render properties window"""
+
+    bl_label = "Radiance Exporter"
+    bl_idname = "BIM_PT_radiance_exporter"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+>>>>>>> v0.8.0
     bl_context = "scene"
     bl_parent_id = "BIM_PT_tab_lighting"
 
@@ -38,6 +55,7 @@ class BIM_PT_radiance_exporter(bpy.types.Panel):
         if tool.Ifc.get():
             row = self.layout.row()
             row.prop(props, "should_load_from_memory")
+<<<<<<< HEAD
         
         if not tool.Ifc.get() or not props.should_load_from_memory:
             row = self.layout.row(align=True)
@@ -72,3 +90,173 @@ class BIM_PT_radiance_exporter(bpy.types.Panel):
 
         row = layout.row()
         row.operator("render_scene.radiance", text="Radiance Render")
+=======
+
+        if not tool.Ifc.get() or not props.should_load_from_memory:
+            row = self.layout.row(align=True)
+            row.prop(props, "ifc_file")
+
+        row = layout.row()
+        row.prop(props, "output_dir")
+
+        row = layout.row()
+        layout.prop(props, "use_json_file")
+
+        if props.use_json_file:
+            row = layout.row()
+            row.prop(props, "json_file")
+        else:
+            # Material Mappings UI
+            layout.label(text="Material Mappings:")
+            for item in props.material_mappings:
+                row = layout.row(align=True)
+                row.label(text=item.name)
+                row.prop(item, '["radiance_material"]', text="")
+
+            layout.operator("bim.refresh_ifc_materials")
+
+        layout.separator()
+        row = layout.row()
+        row.label(text="Resolution")
+        row.prop(props, "radiance_resolution_x", text="X")
+
+        row = layout.row()
+        row.label(text="")
+        row.prop(props, "radiance_resolution_y", text="Y")
+
+        row = layout.row()
+        row.prop(props, "radiance_quality")
+
+        row = layout.row()
+        row.prop(props, "radiance_detail")
+
+        row = layout.row()
+        row.prop(props, "radiance_variability")
+
+        layout.separator()
+
+        row = layout.row()
+        row.prop(props, "output_file_name")
+
+        row = layout.row()
+        row.prop(props, "output_file_format")
+        layout.separator()
+
+        row = layout.row()
+        row.operator("export_scene.radiance", text="Export Geometry for Simulation")
+
+        row = layout.row()
+        row.operator("render_scene.radiance", text="Radiance Render")
+        row.enabled = not props.is_exporting
+
+
+class BIM_PT_solar(bpy.types.Panel):
+    """Creates a Panel in the render properties window"""
+
+    bl_label = "Solar Access / Shadow"
+    bl_idname = "BIM_PT_solar"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_tab_solar_analysis"
+    bl_options = {"HIDE_HEADER"}
+
+    def draw(self, context):
+        if sun_position is None:
+            self.layout.label(text="Enable 'Sun Position' addon to continue.")
+            return
+
+        if not SolarData.is_loaded:
+            SolarData.load()
+
+        props = context.scene.BIMSolarProperties
+
+        if SolarData.data["sites"]:
+            row = self.layout.row(align=True)
+            row.prop(props, "sites")
+            row.operator("bim.import_lat_long", icon="IMPORT", text="")
+        else:
+            row = self.layout.row(align=True)
+            row.label(text="No Sites With Lat/Longs Found", icon="ERROR")
+
+        sun_props = context.scene.sun_pos_properties
+
+        row = self.layout.row()
+        row.prop(sun_props, "coordinates", icon="URL")
+        row = self.layout.row(align=True)
+        row.prop(props, "latitude")
+        row.prop(props, "longitude")
+
+        row = self.layout.row(align=True)
+        row.prop(props, "true_north")
+        if SolarData.data["true_north"] is not None:
+            row.operator("bim.import_true_north", icon="IMPORT", text="")
+
+        row = self.layout.row(align=True)
+        row.prop(
+            props,
+            "month",
+            text={
+                1: "January",
+                2: "February",
+                3: "March",
+                4: "April",
+                5: "May",
+                6: "June",
+                7: "July",
+                8: "August",
+                9: "September",
+                10: "October",
+                11: "November",
+                12: "December",
+            }[props.month],
+        )
+        row.prop(props, "day")
+
+        row = self.layout.row(align=True)
+        row.prop(props, "hour")
+        row.prop(props, "minute")
+
+        col = self.layout.column(align=True)
+        box = col.box()
+        row = box.row()
+        row.alignment = "CENTER"
+        row.label(text=props.timezone)
+
+        row = col.row(align=True)
+        box = row.box()
+
+        local_time = sun_position.sun_calc.format_time(sun_props.time, sun_props.use_daylight_savings)
+        utc_time = sun_position.sun_calc.format_time(sun_props.time, sun_props.use_daylight_savings, sun_props.UTC_zone)
+
+        row2 = box.row()
+        row2.label(text=f"Local Time: {local_time}")
+        row2 = box.row()
+        row2.label(text=f"UTC Time: {utc_time}")
+
+        box = row.box()
+
+        sunrise = sun_position.sun_calc.format_hms(sun_position.sun_calc.sun.sunrise)
+        sunset = sun_position.sun_calc.format_hms(sun_position.sun_calc.sun.sunset)
+
+        row2 = box.row()
+        row2.label(text=f"Sunrise: {sunrise}")
+        row2 = box.row()
+        row2.label(text=f"Sunset: {sunset}")
+
+        col = self.layout.column(align=True)
+        row = col.row(align=True)
+        row.prop(props, "display_sun_path", icon="LIGHT_SUN")
+        row.prop(props, "sun_path_size")
+
+        if props.display_sun_path:
+            row = col.row()
+            row.operator("bim.move_sun_path_to_3d_cursor")
+
+        row = self.layout.row(align=True)
+        row.prop(props, "display_shadows", icon="SHADING_RENDERED")
+        row.prop(context.scene.display.shading, "shadow_intensity", text="Shadow Intensity")
+
+        row = self.layout.row(align=True)
+        row.operator("bim.view_from_sun", icon="LIGHT_HEMI")
+>>>>>>> v0.8.0

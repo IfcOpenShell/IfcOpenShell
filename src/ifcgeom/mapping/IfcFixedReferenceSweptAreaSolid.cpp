@@ -65,7 +65,8 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcFixedReferenceSweptAreaSolid
 			num_steps = (size_t) std::ceil(param);
 		}
 		for (size_t i = 0; i <= num_steps; ++i) {
-			auto m4 = pwf->evaluate(start + curve_length / num_steps * i);
+			auto distalong = start + curve_length / num_steps * i;
+			auto m4 = pwf->evaluate(distalong);
 			
 			/*
 			std::stringstream ss;
@@ -96,10 +97,19 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcFixedReferenceSweptAreaSolid
 				proj.normalize();
 				auto ref = proj.cross(tangent);
 
-				m4b.col(0).head<3>() = ref;
-				m4b.col(1).head<3>() = proj;
+				m4b.col(0).head<3>() = proj;
+				m4b.col(1).head<3>() = ref;
 				m4b.col(2).head<3>() = tangent;
 				m4b.col(3).head<3>() = pos;
+
+				/*
+				Eigen::JacobiSVD<decltype(m4b)> svd(m4b);
+				auto condition_number = svd.singularValues()(0)
+					/ svd.singularValues()(svd.singularValues().size() - 1);
+				if (condition_number > 1.e10) {
+					Logger::Error("Non-invertible matrix at " + std::to_string(distalong) + " conversion will likely fail.");
+				}
+				*/
 			}
 
 			// @todo taxonomy::clone() does not actually clone. That's really confusing.

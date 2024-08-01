@@ -23,6 +23,7 @@ import bpy
 import bmesh
 import ifcopenshell.geom
 import ifcopenshell.util.element
+import ifcopenshell.util.shape
 import ifcopenshell.util.unit
 import blenderbim.core.tool
 import blenderbim.tool as tool
@@ -564,19 +565,34 @@ class Loader(blenderbim.core.tool.Loader):
 
     @classmethod
     def set_manual_blender_offset(cls, ifc_file: ifcopenshell.file) -> None:
-        model_origin = np.array(ifcopenshell.util.geolocation.auto_xyz2enh(ifc_file, 0, 0, 0))
         false_origin = np.array(cls.settings.false_origin)
-        model_offset = false_origin - model_origin
+        model_offset = np.array(
+            ifcopenshell.util.geolocation.auto_enh2xyz(
+                ifc_file, *cls.settings.false_origin, is_specified_in_map_units=False
+            )
+        )
         zero_origin = np.array((0, 0, 0))
-        has_model_offset = not np.allclose(model_offset, zero_origin)
-        if has_model_offset:
+        has_offset = not np.allclose(model_offset, zero_origin)
+
+        model_north = ifcopenshell.util.geolocation.get_grid_north(ifc_file)
+        project_north = cls.settings.project_north
+        model_rotation = tool.Cad.normalise_angle(project_north - model_north)
+        has_rotation = not np.isclose(model_north, project_north)
+
+        if not has_offset:
+            model_offset = false_origin = (0, 0, 0)
+
+        if np.isclose(project_north, 0):
+            project_north = 0
+
+        if has_offset or has_rotation:
             props = bpy.context.scene.BIMGeoreferenceProperties
             props.blender_offset_x = str(model_offset[0])
             props.blender_offset_y = str(model_offset[1])
             props.blender_offset_z = str(model_offset[2])
-            props.blender_eastings = str(false_origin[0])
-            props.blender_northings = str(false_origin[1])
-            props.blender_orthogonal_height = str(false_origin[2])
+            xaa, xao = ifcopenshell.util.geolocation.angle2xaxis(model_rotation)
+            props.blender_x_axis_abscissa = str(xaa)
+            props.blender_x_axis_ordinate = str(xao)
             props.has_blender_offset = True
 
     @classmethod
@@ -587,15 +603,19 @@ class Loader(blenderbim.core.tool.Loader):
             return
         placement = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
         offset_point = [placement[0][3], placement[1][3], placement[2][3]]
-        cls.settings.false_origin = ifcopenshell.util.geolocation.auto_xyz2enh(ifc_file, *offset_point)
+        cls.settings.false_origin = ifcopenshell.util.geolocation.auto_xyz2enh(
+            ifc_file, *offset_point, should_return_in_map_units=False
+        )
+
+        # Prioritise coordinate operation angles
+        angle = ifcopenshell.util.geolocation.get_grid_north(ifc_file)
+        if np.isclose(angle, 0.0):
+            # Fallback to the placement angle as a good guess
+            xaa, xao = placement[:, 0][0:2]
+            angle = ifcopenshell.util.geolocation.xaxis2angle(xaa, xao)
+
+        cls.settings.project_north = 0 if np.isclose(angle, 0) else angle
         cls.set_manual_blender_offset(ifc_file)
-        props = bpy.context.scene.BIMGeoreferenceProperties
-        x_axis = Vector(placement[:, 0][0:3])
-        default_x_axis = Vector((1, 0, 0))
-        if (default_x_axis - x_axis).length > 0.01:
-            props.blender_x_axis_abscissa = str(placement[0][0])
-            props.blender_x_axis_ordinate = str(placement[1][0])
-        props.has_blender_offset = True
 
     @classmethod
     def find_decomposed_ifc_class(
@@ -630,7 +650,24 @@ class Loader(blenderbim.core.tool.Loader):
         # absolutely positioned. We check more than 1 because sometimes users
         # try to be clever and put "origin marker" objects.
         element_checking_threshold = 3
-        for element in ifc_file.by_type("IfcElement"):
+        elements = ifc_file.by_type("IfcElement")
+
+        if ifc_file.schema not in ("IFC2X3", "IFC4"):
+            if not elements:
+                elements = ifc_file.by_type("IfcLinearPositioningElement")
+            if not elements:
+                elements = ifc_file.by_type("IfcReferent")
+            if not elements:
+                elements = ifc_file.by_type("IfcGrid")
+
+        if ifc_file.schema == "IFC2X3":
+            if not elements:
+                elements = ifc_file.by_type("IfcSpatialStructureElement")
+        else:
+            if not elements:
+                elements = ifc_file.by_type("IfcSpatialElement")
+
+        for element in elements:
             if elements_checked > element_checking_threshold:
                 return
             if not element.Representation:
@@ -655,7 +692,11 @@ class Loader(blenderbim.core.tool.Loader):
         offset_point = cls.get_offset_point(ifc_file)
         if offset_point is None:
             return
-        cls.settings.false_origin = ifcopenshell.util.geolocation.auto_xyz2enh(ifc_file, *offset_point)
+        cls.settings.false_origin = ifcopenshell.util.geolocation.auto_xyz2enh(
+            ifc_file, *offset_point, should_return_in_map_units=False
+        )
+        if (angle := ifcopenshell.util.geolocation.get_grid_north(ifc_file)) and not tool.Cad.is_x(angle, 0):
+            cls.settings.project_north = angle
         cls.set_manual_blender_offset(ifc_file)
 
     @classmethod
@@ -710,17 +751,3 @@ class Loader(blenderbim.core.tool.Loader):
                 float(props.blender_x_axis_ordinate),
             )
         return Matrix(matrix.tolist())
-
-    @classmethod
-    def calculate_model_origin(cls, ifc_file: ifcopenshell.file | None) -> None:
-        if not ifc_file:
-            return
-        gprops = bpy.context.scene.BIMGeoreferenceProperties
-        if gprops.has_blender_offset:
-            gprops.model_origin = (
-                f"{gprops.blender_eastings},{gprops.blender_northings},{gprops.blender_orthogonal_height}"
-            )
-        else:
-            gprops.model_origin = ",".join(
-                map(str, ifcopenshell.util.geolocation.auto_xyz2enh(ifc_file, 0, 0, 0))
-            )

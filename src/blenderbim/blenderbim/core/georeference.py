@@ -42,38 +42,15 @@ def edit_georeferencing(ifc, georeference):
         coordinate_operation=georeference.get_coordinate_operation_attributes(),
     )
     georeference.disable_editing()
-
-
-def set_ifc_grid_north(georeference):
-    georeference.set_ifc_grid_north()
-
-
-def set_blender_grid_north(georeference):
-    georeference.set_blender_grid_north()
-
-
-def set_ifc_true_north(georeference):
-    georeference.set_ifc_true_north()
-
-
-def set_blender_true_north(georeference):
-    georeference.set_blender_true_north()
+    georeference.set_model_origin()
 
 
 def get_cursor_location(georeference):
-    georeference.set_coordinates("local", georeference.get_cursor_location())
-
-
-def convert_local_to_global(georeference):
-    coordinates = georeference.xyz2enh(georeference.get_coordinates("local"))
-    georeference.set_coordinates("map", coordinates)
-    georeference.set_cursor_location()
-
-
-def convert_global_to_local(georeference):
-    coordinates = georeference.enh2xyz(georeference.get_coordinates("map"))
-    georeference.set_coordinates("local", coordinates)
-    georeference.set_cursor_location()
+    location = georeference.get_cursor_location()
+    if georeference.has_blender_offset:
+        georeference.set_coordinates("blender", location)
+    else:
+        georeference.set_coordinates("local", location)
 
 
 def convert_angle_to_coord(georeference, type):
@@ -98,6 +75,7 @@ def edit_wcs(ifc, georeference):
     wcs = georeference.export_wcs()
     georeference.set_wcs(wcs)
     georeference.disable_editing_wcs()
+    georeference.set_model_origin()
 
 
 def enable_editing_true_north(georeference):

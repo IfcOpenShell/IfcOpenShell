@@ -21,18 +21,12 @@ import json
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.guid
+import ifcopenshell.util.element
 import blenderbim.bim.helper
 import blenderbim.bim.handler
 import blenderbim.tool as tool
 import blenderbim.core.attribute as core
 from blenderbim.bim.ifc import IfcStore
-
-
-class Operator:
-    def execute(self, context):
-        IfcStore.execute_ifc_operator(self, context)
-        blenderbim.bim.handler.refresh_ui_data()
-        return {"FINISHED"}
 
 
 class EnableEditingAttributes(bpy.types.Operator):
@@ -43,7 +37,7 @@ class EnableEditingAttributes(bpy.types.Operator):
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        obj = bpy.data.objects.get(self.obj)
+        obj = bpy.data.objects[self.obj]
         props = obj.BIMAttributeProperties
         props.attributes.clear()
 
@@ -89,7 +83,7 @@ class DisableEditingAttributes(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class EditAttributes(bpy.types.Operator, Operator):
+class EditAttributes(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_attributes"
     bl_label = "Edit Attributes"
     bl_options = {"REGISTER", "UNDO"}
@@ -118,7 +112,7 @@ class EditAttributes(bpy.types.Operator, Operator):
         return {"FINISHED"}
 
 
-class GenerateGlobalId(bpy.types.Operator, Operator):
+class GenerateGlobalId(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.generate_global_id"
     bl_label = "Regenerate GlobalId"
     bl_description = "Regenerate GlobalId\n\nSHIFT+CLICK to regenerate GlobalIds for all selected objects"
@@ -161,7 +155,7 @@ class GenerateGlobalId(bpy.types.Operator, Operator):
         return {"FINISHED"}
 
 
-class CopyAttributeToSelection(bpy.types.Operator, Operator):
+class CopyAttributeToSelection(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.copy_attribute_to_selection"
     bl_label = "Copy Attribute To Selection"
     name: bpy.props.StringProperty()

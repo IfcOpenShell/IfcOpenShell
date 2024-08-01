@@ -51,9 +51,7 @@ class TestDereferenceStructure(test.bootstrap.IFC4):
         subelement1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         subelement2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         subelement3 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
-        ifcopenshell.api.spatial.reference_structure(
-            self.file, products=[subelement1], relating_structure=element
-        )
+        ifcopenshell.api.spatial.reference_structure(self.file, products=[subelement1], relating_structure=element)
         ifcopenshell.api.spatial.reference_structure(
             self.file, products=[subelement2, subelement3], relating_structure=element
         )

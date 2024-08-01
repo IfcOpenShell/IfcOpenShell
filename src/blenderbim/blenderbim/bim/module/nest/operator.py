@@ -26,14 +26,7 @@ import blenderbim.bim.handler
 from blenderbim.bim.ifc import IfcStore
 
 
-class Operator:
-    def execute(self, context):
-        IfcStore.execute_ifc_operator(self, context)
-        blenderbim.bim.handler.refresh_ui_data()
-        return {"FINISHED"}
-
-
-class BIM_OT_nest_assign_object(bpy.types.Operator, Operator):
+class BIM_OT_nest_assign_object(bpy.types.Operator, tool.Ifc.Operator):
     """Create nest relationship between two ifc elements"""
 
     bl_idname = "bim.nest_assign_object"
@@ -67,7 +60,7 @@ class BIM_OT_nest_assign_object(bpy.types.Operator, Operator):
                 self.report({"ERROR"}, f" Cannot nest {obj.name} to {relating_obj.name}")
 
 
-class BIM_OT_nest_unassign_object(bpy.types.Operator, Operator):
+class BIM_OT_nest_unassign_object(bpy.types.Operator, tool.Ifc.Operator):
     """Remove nest relationship between two ifc elements"""
 
     bl_idname = "bim.nest_unassign_object"
@@ -91,7 +84,7 @@ class BIM_OT_nest_unassign_object(bpy.types.Operator, Operator):
             )
 
 
-class BIM_OT_enable_editing_nest(bpy.types.Operator, Operator):
+class BIM_OT_enable_editing_nest(bpy.types.Operator, tool.Ifc.Operator):
     """Enable editing nest relationship"""
 
     bl_idname = "bim.enable_editing_nest"
@@ -102,7 +95,7 @@ class BIM_OT_enable_editing_nest(bpy.types.Operator, Operator):
         core.enable_editing_nest(tool.Nest, obj=context.active_object)
 
 
-class BIM_OT_disable_editing_nest(bpy.types.Operator, Operator):
+class BIM_OT_disable_editing_nest(bpy.types.Operator, tool.Ifc.Operator):
     """Disable editing nest relationship"""
 
     bl_idname = "bim.disable_editing_nest"

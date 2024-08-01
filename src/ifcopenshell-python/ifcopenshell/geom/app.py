@@ -204,7 +204,6 @@ class application(QtWidgets.QApplication):
     with two tree views and a graphical 3d view"""
 
     class abstract_treeview(QtWidgets.QTreeWidget):
-
         """Base class for the two treeview controls"""
 
         instanceSelected = QtCore.pyqtSignal([object])
@@ -255,7 +254,6 @@ class application(QtWidgets.QApplication):
             )
 
     class decomposition_treeview(abstract_treeview):
-
         """Treeview with typical IFC decomposition relationships"""
 
         ATTRIBUTES = ["Entity", "GlobalId", "Name"]
@@ -301,7 +299,6 @@ class application(QtWidgets.QApplication):
             self.expandAll()
 
     class type_treeview(abstract_treeview):
-
         """Treeview with typical IFC decomposition relationships"""
 
         ATTRIBUTES = ["Name"]

@@ -24,7 +24,6 @@ classes = (
     operator.GetConnectedSystemElements,
     operator.ResizeToStorey,
     operator.SetOverrideColour,
-    operator.SetViewportShadowFromSun,
     operator.SnapSpacesTogether,
     operator.SplitAlongEdge,
     prop.BIMMiscProperties,

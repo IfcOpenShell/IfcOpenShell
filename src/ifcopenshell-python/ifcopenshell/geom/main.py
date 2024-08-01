@@ -28,7 +28,12 @@ from ..entity_instance import entity_instance
 
 from . import has_occ
 
-from typing import TypeVar, Union, Optional, Generator, Any, Literal, overload
+from typing import TypeVar, Union, Optional, Generator, Any, Literal, overload, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from OCC.Core import TopoDS
+
+    IteratorOutput = Union["ShapeElementType", "utils.shape_tuple"]
 
 T = TypeVar("T")
 ShapeElementType = Union[
@@ -270,7 +275,7 @@ class iterator(ifcopenshell_wrapper.Iterator):
         def get(self):
             return wrap_shape_creation(self.settings, ifcopenshell_wrapper.Iterator.get(self))
 
-    def __iter__(self) -> Generator[ShapeElementType, None, None]:
+    def __iter__(self) -> Generator[IteratorOutput, None, None]:
         if self.initialize():
             while True:
                 yield self.get()
@@ -356,7 +361,7 @@ def create_shape(
     inst: entity_instance,
     repr: Optional[entity_instance] = None,
     geometry_library: GEOMETRY_LIBRARY = "opencascade",
-) -> Union[ShapeType, ShapeElementType, ifcopenshell_wrapper.Transformation]:
+) -> Union[ShapeType, ShapeElementType, ifcopenshell_wrapper.Transformation, utils.shape_tuple, TopoDS.TopoDS_Shape]:
     """
     Return a geometric representation from STEP-based IFCREPRESENTATIONSHAPE
     or
@@ -368,14 +373,18 @@ def create_shape(
     :raises RuntimeError: If failed to process shape. You can turn detailed logging to get more details.
 
     :return:
-        - `inst` is IfcProduct and `repr` provided / None -> ShapeElementType
-        - `inst` is IfcRepresentation and `repr` is None -> ShapeType
-        - `inst` is IfcRepresentationItem and `repr` is None -> ShapeType
-        - `inst` is IfcProfileDef and `repr` is None -> ShapeType
-        - `inst` is IfcPlacement / IfcObjectPlacement -> Transformation
-        - `inst` is IfcTypeProduct and `repr` is None -> None
+        - `inst` is IfcProduct and `repr` provided / None -> ShapeElementType\n
+        - `inst` is IfcRepresentation and `repr` is None -> ShapeType\n
+        - `inst` is IfcRepresentationItem and `repr` is None -> ShapeType\n
+        - `inst` is IfcProfileDef and `repr` is None -> ShapeType\n
+        - `inst` is IfcPlacement / IfcObjectPlacement -> Transformation\n
+        - `inst` is IfcTypeProduct and `repr` is None -> None\n
         - `inst` is IfcTypeProduct and `repr` is provided -> RuntimeError
-        (for IfcTypeProducts provide just IfcRepresentation as `inst`).
+        (for IfcTypeProducts provide just IfcRepresentation as `inst`).\n
+
+        If 'use-python-opencascade' is enabled in settings then\n
+        - instead of ShapeElementType it returns shape_tuple, \n
+        - instead of ShapeType it returns TopoDS.TopoDS_Shape.
 
     Example:
 
@@ -405,7 +414,19 @@ def create_shape(
     )
 
 
-def consume_iterator(it, with_progress=False):
+@overload
+def consume_iterator(it: iterator, with_progress: Literal[False] = False) -> Generator[IteratorOutput, None, None]: ...
+@overload
+def consume_iterator(
+    it: iterator, with_progress: Literal[True]
+) -> Generator[tuple[int, IteratorOutput], None, None]: ...
+@overload
+def consume_iterator(
+    it: iterator, with_progress: bool
+) -> Generator[Union[IteratorOutput, tuple[int, IteratorOutput]], None, None]: ...
+def consume_iterator(
+    it: iterator, with_progress: bool = False
+) -> Generator[Union[IteratorOutput, tuple[int, IteratorOutput]], None, None]:
     if it.initialize():
         while True:
             if with_progress:
@@ -416,16 +437,49 @@ def consume_iterator(it, with_progress=False):
                 break
 
 
+@overload
 def iterate(
-    settings,
-    file_or_filename,
-    num_threads=1,
-    include=None,
-    exclude=None,
-    with_progress=False,
-    cache=None,
+    settings: settings,
+    file_or_filename: Union[file, str],
+    num_threads: int = 1,
+    include: Optional[Union[list[entity_instance], list[str]]] = None,
+    exclude: Optional[Union[list[entity_instance], list[str]]] = None,
+    with_progress: Literal[False] = False,
+    cache: Optional[serializers.hdf5] = None,
     geometry_library: GEOMETRY_LIBRARY = "opencascade",
-):
+) -> Generator[IteratorOutput, None, None]: ...
+@overload
+def iterate(
+    settings: settings,
+    file_or_filename: Union[file, str],
+    num_threads: int = 1,
+    include: Optional[Union[list[entity_instance], list[str]]] = None,
+    exclude: Optional[Union[list[entity_instance], list[str]]] = None,
+    with_progress: Literal[True] = True,
+    cache: Optional[serializers.hdf5] = None,
+    geometry_library: GEOMETRY_LIBRARY = "opencascade",
+) -> Generator[tuple[int, IteratorOutput], None, None]: ...
+@overload
+def iterate(
+    settings: settings,
+    file_or_filename: Union[file, str],
+    num_threads: int = 1,
+    include: Optional[Union[list[entity_instance], list[str]]] = None,
+    exclude: Optional[Union[list[entity_instance], list[str]]] = None,
+    with_progress: bool = False,
+    cache: Optional[serializers.hdf5] = None,
+    geometry_library: GEOMETRY_LIBRARY = "opencascade",
+) -> Generator[Union[IteratorOutput, tuple[int, IteratorOutput]], None, None]: ...
+def iterate(
+    settings: settings,
+    file_or_filename: Union[file, str],
+    num_threads: int = 1,
+    include: Optional[Union[list[entity_instance], list[str]]] = None,
+    exclude: Optional[Union[list[entity_instance], list[str]]] = None,
+    with_progress: bool = False,
+    cache: Optional[serializers.hdf5] = None,
+    geometry_library: GEOMETRY_LIBRARY = "opencascade",
+) -> Generator[Union[IteratorOutput, tuple[int, IteratorOutput]], None, None]:
     it = iterator(settings, file_or_filename, num_threads, include, exclude, geometry_library)
     if cache:
         hdf5_cache = serializers.hdf5(cache, settings)

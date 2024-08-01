@@ -128,7 +128,7 @@ public:
 	{}
 
 	bool convert(const ifcopenshell::geometry::taxonomy::extrusion::ptr, TopoDS_Shape&);
-	bool convert(const ifcopenshell::geometry::taxonomy::face::ptr, TopoDS_Shape&);
+	bool convert(const ifcopenshell::geometry::taxonomy::face::ptr, TopoDS_Shape&, bool reversed_surface = false);
 	bool convert(const ifcopenshell::geometry::taxonomy::loop::ptr, TopoDS_Wire&);
 	bool convert(const ifcopenshell::geometry::taxonomy::matrix4::ptr, gp_GTrsf&);
 	bool convert(const ifcopenshell::geometry::taxonomy::shell::ptr, TopoDS_Shape&);
@@ -143,6 +143,7 @@ public:
 	virtual bool convert_impl(const ifcopenshell::geometry::taxonomy::solid::ptr, IfcGeom::ConversionResults&);
 	virtual bool convert_impl(const ifcopenshell::geometry::taxonomy::shell::ptr, IfcGeom::ConversionResults&);
 	virtual bool convert_impl(const ifcopenshell::geometry::taxonomy::extrusion::ptr, IfcGeom::ConversionResults&);
+	virtual bool convert_impl(const ifcopenshell::geometry::taxonomy::revolve::ptr, IfcGeom::ConversionResults&);
 	virtual bool convert_impl(const ifcopenshell::geometry::taxonomy::boolean_result::ptr, IfcGeom::ConversionResults&);
 	virtual bool convert_impl(const ifcopenshell::geometry::taxonomy::loft::ptr, IfcGeom::ConversionResults&);
 	virtual bool convert_impl(const ifcopenshell::geometry::taxonomy::sweep_along_curve::ptr, IfcGeom::ConversionResults&);

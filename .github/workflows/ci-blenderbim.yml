@@ -1,5 +1,10 @@
 name: ci-blenderbim
 
+# Differences from ci-blenderbim-daily.yml:
+# - make has IS_STABLE=TRUE
+# - action is never triggered and executed only manually
+# - doesn't add a current date to the release and tag
+
 on:
   workflow_dispatch:
 
@@ -48,15 +53,20 @@ jobs:
         run: echo "version=$(cat VERSION)" >> $GITHUB_OUTPUT
       - name: Compile
         run: |
-          cp -r src/blenderbim src/blenderbim_${{ matrix.config.short_name }}_${{ matrix.pyver }} &&
-          cd src/blenderbim_${{ matrix.config.short_name }}_${{ matrix.pyver }} &&
+          cd src/blenderbim &&
           make dist PLATFORM=${{ matrix.config.short_name }} PYVERSION=${{ matrix.pyver }} IS_STABLE=TRUE
+      - name: Find zip file name
+        id: find_zip
+        run: |
+          filepath=$(ls src/blenderbim/dist/blenderbim_*.zip)
+          echo "filepath=$filepath" >> $GITHUB_OUTPUT
+          echo "filename=$(basename $filepath)" >> $GITHUB_OUTPUT
       - name: Upload zip file to release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: src/blenderbim_${{ matrix.config.short_name }}_${{ matrix.pyver }}/dist/blenderbim-${{steps.version.outputs.version}}-${{ matrix.pyver }}-${{ matrix.config.short_name }}.zip
-          asset_name: blenderbim-${{steps.version.outputs.version}}-${{ matrix.pyver }}-${{ matrix.config.short_name }}.zip
+          file: ${{ steps.find_zip.outputs.filepath }}
+          asset_name: ${{ steps.find_zip.outputs.filename }}
           release_name: "blenderbim-${{steps.version.outputs.version}}"
           tag: "blenderbim-${{steps.version.outputs.version}}"
           overwrite: true

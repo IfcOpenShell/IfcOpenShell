@@ -43,14 +43,7 @@ from ifcopenshell.util.shape_builder import ShapeBuilder
 from typing import Any
 
 
-class Operator:
-    def execute(self, context):
-        IfcStore.execute_ifc_operator(self, context)
-        blenderbim.bim.handler.refresh_ui_data()
-        return {"FINISHED"}
-
-
-class EditObjectPlacement(bpy.types.Operator, Operator):
+class EditObjectPlacement(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_object_placement"
     bl_label = "Edit Object Placement"
     bl_description = (
@@ -66,7 +59,7 @@ class EditObjectPlacement(bpy.types.Operator, Operator):
             core.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
 
 
-class OverrideMeshSeparate(bpy.types.Operator, Operator):
+class OverrideMeshSeparate(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.override_mesh_separate"
     bl_label = "IFC Mesh Separate"
     bl_options = {"REGISTER", "UNDO"}
@@ -102,7 +95,7 @@ class OverrideMeshSeparate(bpy.types.Operator, Operator):
             bpy.ops.bim.update_representation(obj=new_obj.name)
 
 
-class OverrideOriginSet(bpy.types.Operator, Operator):
+class OverrideOriginSet(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.override_origin_set"
     bl_label = "IFC Origin Set"
     bl_options = {"REGISTER", "UNDO"}
@@ -127,7 +120,7 @@ class OverrideOriginSet(bpy.types.Operator, Operator):
             bpy.ops.bim.update_representation(obj=obj.name)
 
 
-class AddRepresentation(bpy.types.Operator, Operator):
+class AddRepresentation(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_representation"
     bl_label = "Add Representation"
     bl_options = {"REGISTER", "UNDO"}
@@ -142,7 +135,14 @@ class AddRepresentation(bpy.types.Operator, Operator):
                 "for Profile - 2D bounding box by local XZ axes.\n"
                 "For other contexts - bounding box is 3d.",
             ),
-            ("OBJECT", "From Object", "Copies geometry from another object"),
+            (
+                "OBJECT",
+                "From Object",
+                (
+                    "Copies geometry from another object.\n"
+                    "Final version of the geometry will be used (e.g. with all modifiers, shape keys applied)"
+                ),
+            ),
             ("PROJECT", "Full Representation", "Reuses the current representation"),
             (
                 "CUBE",
@@ -195,13 +195,13 @@ class AddRepresentation(bpy.types.Operator, Operator):
             tool.Geometry.change_object_data(obj, data, is_global=True)
         elif conversion_method in ("OBJECT", "CUBE"):
             if conversion_method == "OBJECT":
-                if not props.representation_from_object:
+                if not (source_obj := props.representation_from_object):
                     self.report({"ERROR"}, "No object is selected to copy a representation from.")
                     return {"FINISHED"}
 
-                data_ = tool.Geometry.duplicate_object_data(props.representation_from_object)
-                assert isinstance(data_, bpy.types.Mesh)  # Type checker.
-                data = data_
+                depsgraph = context.evaluated_depsgraph_get()
+                eval_obj = source_obj.evaluated_get(depsgraph)
+                data = bpy.data.meshes.new_from_object(eval_obj)
             else:  # CUBE
                 data = bpy.data.meshes.new("Cube")
                 bm = tool.Blender.get_bmesh_for_mesh(data)
@@ -246,7 +246,7 @@ class AddRepresentation(bpy.types.Operator, Operator):
             row.prop(context.scene.BIMGeometryProperties, "representation_from_object", text="")
 
 
-class SelectConnection(bpy.types.Operator, Operator):
+class SelectConnection(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.select_connection"
     bl_label = "Select Connection"
     bl_options = {"REGISTER", "UNDO"}
@@ -256,7 +256,7 @@ class SelectConnection(bpy.types.Operator, Operator):
         core.select_connection(tool.Geometry, connection=tool.Ifc.get().by_id(self.connection))
 
 
-class RemoveConnection(bpy.types.Operator, Operator):
+class RemoveConnection(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_connection"
     bl_label = "Remove Connection"
     bl_options = {"REGISTER", "UNDO"}
@@ -266,7 +266,7 @@ class RemoveConnection(bpy.types.Operator, Operator):
         core.remove_connection(tool.Geometry, connection=tool.Ifc.get().by_id(self.connection))
 
 
-class SwitchRepresentation(bpy.types.Operator, Operator):
+class SwitchRepresentation(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.switch_representation"
     bl_label = "Switch Representation"
     bl_options = {"REGISTER", "UNDO"}
@@ -315,7 +315,7 @@ class SwitchRepresentation(bpy.types.Operator, Operator):
             )
 
 
-class RemoveRepresentation(bpy.types.Operator, Operator):
+class RemoveRepresentation(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_representation"
     bl_label = "Remove Representation"
     bl_options = {"REGISTER", "UNDO"}
@@ -330,7 +330,7 @@ class RemoveRepresentation(bpy.types.Operator, Operator):
         )
 
 
-class PurgeUnusedRepresentations(bpy.types.Operator, Operator):
+class PurgeUnusedRepresentations(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.purge_unused_representations"
     bl_label = "Purge Unused Representations"
     bl_options = {"REGISTER", "UNDO"}
@@ -340,7 +340,7 @@ class PurgeUnusedRepresentations(bpy.types.Operator, Operator):
         self.report({"INFO"}, f"{purged_representations} representations were purged.")
 
 
-class UpdateRepresentation(bpy.types.Operator, Operator):
+class UpdateRepresentation(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.update_representation"
     bl_label = "Update Representation"
     bl_description = (
@@ -356,8 +356,9 @@ class UpdateRepresentation(bpy.types.Operator, Operator):
             # Ensure mode is object to prevent invalid mesh data causing CTD
             bpy.ops.object.mode_set(mode="OBJECT", toggle=False)
 
-        objs = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
-        self.file = IfcStore.get_file()
+        obj_name: str = self.obj
+        objs = [bpy.data.objects[obj_name]] if obj_name else context.selected_objects
+        self.file = tool.Ifc.get()
 
         for obj in objs:
             # TODO: write unit tests to see how this bulk operation handles
@@ -369,7 +370,7 @@ class UpdateRepresentation(bpy.types.Operator, Operator):
             tool.Ifc.finish_edit(obj)
         return {"FINISHED"}
 
-    def update_obj_mesh_representation(self, context, obj):
+    def update_obj_mesh_representation(self, context: bpy.types.Context, obj: bpy.types.Object) -> None:
         product = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         material = ifcopenshell.util.element.get_material(product, should_skip_usage=True)
 
@@ -399,7 +400,9 @@ class UpdateRepresentation(bpy.types.Operator, Operator):
                 element_type = ifcopenshell.util.element.get_type(product)
                 if element_type:  # Some invalid IFCs use material sets without a type.
                     ifcopenshell.api.run("material.unassign_material", tool.Ifc.get(), products=[element_type])
+                    tool.Material.ensure_material_unassigned([element_type])
                 ifcopenshell.api.run("material.unassign_material", tool.Ifc.get(), products=[product])
+                tool.Material.ensure_material_unassigned([product])
             else:
                 # These objects are parametrically based on an axis and should not be modified as a mesh
                 return
@@ -518,7 +521,7 @@ class UpdateParametricRepresentation(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class GetRepresentationIfcParameters(bpy.types.Operator, Operator):
+class GetRepresentationIfcParameters(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.get_representation_ifc_parameters"
     bl_label = "Get Representation IFC Parameters"
     bl_options = {"REGISTER", "UNDO"}
@@ -529,7 +532,7 @@ class GetRepresentationIfcParameters(bpy.types.Operator, Operator):
         self.report({"INFO"}, f"{len(parameters)} parameters found.")
 
 
-class CopyRepresentation(bpy.types.Operator, Operator):
+class CopyRepresentation(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.copy_representation"
     bl_label = "Copy Representation"
     bl_options = {"REGISTER", "UNDO"}
@@ -997,7 +1000,8 @@ class OverrideDuplicateMove(bpy.types.Operator):
                     if r.is_a("IfcRelAssignsToGroup")
                     if "BBIM_Linked_Aggregate" in r.RelatingGroup.Name
                 ]
-                tool.Ifc.run("group.unassign_group", group=linked_aggregate_group[0], products=[new[0]])
+                if linked_aggregate_group:
+                    tool.Ifc.run("group.unassign_group", group=linked_aggregate_group[0], products=[new[0]])
 
 
 class OverrideDuplicateMoveLinkedMacro(bpy.types.Macro):
@@ -1279,8 +1283,9 @@ class RefreshLinkedAggregate(bpy.types.Operator):
                             pset = ifcopenshell.util.element.get_pset(part, self.pset_name)
                         except:
                             continue
-                        index = pset["Index"]
-                        original_names[group][index] = tool.Ifc.get_object(part).name
+                        if pset:
+                            index = pset["Index"]
+                            original_names[group][index] = tool.Ifc.get_object(part).name
 
             return original_names
 
@@ -1447,7 +1452,7 @@ class RefreshLinkedAggregate(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class OverrideJoin(bpy.types.Operator, Operator):
+class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.override_object_join"
     bl_label = "IFC Join"
     bl_options = {"REGISTER", "UNDO"}
@@ -1648,6 +1653,7 @@ class OverrideModeSetEdit(bpy.types.Operator):
                         should_sync_changes_first=False,
                         apply_openings=False,
                     )
+                tool.Geometry.apply_item_ids_as_vertex_groups(obj)
                 tool.Geometry.dissolve_triangulated_edges(obj)
                 obj.data.BIMMeshProperties.mesh_checksum = tool.Geometry.get_mesh_checksum(obj.data)
             else:
@@ -1811,7 +1817,7 @@ class FlipObject(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class EnableEditingRepresentationItems(bpy.types.Operator, Operator):
+class EnableEditingRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_representation_items"
     bl_label = "Enable Editing Representation Items"
     bl_options = {"REGISTER", "UNDO"}
@@ -1862,7 +1868,7 @@ class EnableEditingRepresentationItems(bpy.types.Operator, Operator):
                 props.items.move(props.items[:].index(item), i)
 
 
-class DisableEditingRepresentationItems(bpy.types.Operator, Operator):
+class DisableEditingRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.disable_editing_representation_items"
     bl_label = "Disable Editing Representation Items"
     bl_options = {"REGISTER", "UNDO"}
@@ -1872,7 +1878,7 @@ class DisableEditingRepresentationItems(bpy.types.Operator, Operator):
         obj.BIMGeometryProperties.is_editing = False
 
 
-class RemoveRepresentationItem(bpy.types.Operator, Operator):
+class RemoveRepresentationItem(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_representation_item"
     bl_label = "Remove Representation Item"
     bl_options = {"REGISTER", "UNDO"}
@@ -1930,7 +1936,7 @@ def poll_editing_representaiton_item_style(cls, context):
     return True
 
 
-class EnableEditingRepresentationItemStyle(bpy.types.Operator, Operator):
+class EnableEditingRepresentationItemStyle(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_representation_item_style"
     bl_label = "Enable Editing Representation Item Style"
     bl_options = {"REGISTER", "UNDO"}
@@ -1952,7 +1958,7 @@ class EnableEditingRepresentationItemStyle(bpy.types.Operator, Operator):
             props.representation_item_style = str(style.id())
 
 
-class EditRepresentationItemStyle(bpy.types.Operator, Operator):
+class EditRepresentationItemStyle(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_representation_item_style"
     bl_label = "Edit Representation Item Style"
     bl_options = {"REGISTER", "UNDO"}
@@ -1974,7 +1980,7 @@ class EditRepresentationItemStyle(bpy.types.Operator, Operator):
         bpy.ops.bim.enable_editing_representation_items()
 
 
-class DisableEditingRepresentationItemStyle(bpy.types.Operator, Operator):
+class DisableEditingRepresentationItemStyle(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.disable_editing_representation_item_style"
     bl_label = "Disable Editing Representation Item Style"
     bl_options = {"REGISTER", "UNDO"}
@@ -1984,7 +1990,7 @@ class DisableEditingRepresentationItemStyle(bpy.types.Operator, Operator):
         props.is_editing_item_style = False
 
 
-class UnassignRepresentationItemStyle(bpy.types.Operator, Operator):
+class UnassignRepresentationItemStyle(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unassign_representation_item_style"
     bl_label = "Unassign Representation Item Style"
     bl_options = {"REGISTER", "UNDO"}
@@ -2012,7 +2018,7 @@ class UnassignRepresentationItemStyle(bpy.types.Operator, Operator):
         bpy.ops.bim.enable_editing_representation_items()
 
 
-class EnableEditingRepresentationItemShapeAspect(bpy.types.Operator, Operator):
+class EnableEditingRepresentationItemShapeAspect(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_representation_item_shape_aspect"
     bl_label = "Enable Editing Representation Item Shape Aspect"
     bl_options = {"REGISTER", "UNDO"}
@@ -2027,7 +2033,7 @@ class EnableEditingRepresentationItemShapeAspect(bpy.types.Operator, Operator):
             props.representation_item_shape_aspect = str(shape_aspect_id)
 
 
-class EditRepresentationItemShapeAspect(bpy.types.Operator, Operator):
+class EditRepresentationItemShapeAspect(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_representation_item_shape_aspect"
     bl_label = "Edit Representation Item Shape Aspect"
     bl_options = {"REGISTER", "UNDO"}
@@ -2083,7 +2089,7 @@ class EditRepresentationItemShapeAspect(bpy.types.Operator, Operator):
         bpy.ops.bim.enable_editing_representation_items()
 
 
-class DisableEditingRepresentationItemShapeAspect(bpy.types.Operator, Operator):
+class DisableEditingRepresentationItemShapeAspect(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.disable_editing_representation_item_shape_aspect"
     bl_label = "Disable Editing Representation Item Shape Aspect"
     bl_options = {"REGISTER", "UNDO"}
@@ -2093,7 +2099,7 @@ class DisableEditingRepresentationItemShapeAspect(bpy.types.Operator, Operator):
         props.is_editing_item_shape_aspect = False
 
 
-class RemoveRepresentationItemFromShapeAspect(bpy.types.Operator, Operator):
+class RemoveRepresentationItemFromShapeAspect(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_representation_item_from_shape_aspect"
     bl_label = "Remove Representation Item From Shape Aspect"
     bl_options = {"REGISTER", "UNDO"}

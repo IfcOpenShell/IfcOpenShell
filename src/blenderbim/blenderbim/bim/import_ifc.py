@@ -36,7 +36,6 @@ import blenderbim.tool as tool
 from itertools import chain, accumulate
 from blenderbim.bim.ifc import IfcStore, IFC_CONNECTED_TYPE
 from blenderbim.tool.loader import OBJECT_DATA_TYPE
-from blenderbim.bim.module.drawing.prop import ANNOTATION_TYPES_DATA
 from typing import Dict, Union, Optional, Any
 
 
@@ -78,6 +77,7 @@ class MaterialCreator:
         self.load_texture_maps()
         self.assign_material_slots_to_faces()
         tool.Geometry.record_object_materials(obj)
+        del self.mesh["ios_materials"]
 
     def load_existing_materials(self) -> None:
         for material in bpy.data.materials:
@@ -110,7 +110,7 @@ class MaterialCreator:
                 tool.Loader.load_indexed_texture_map(coords, self.mesh)
 
     def assign_material_slots_to_faces(self) -> None:
-        if "ios_materials" not in self.mesh or not self.mesh["ios_materials"]:
+        if not self.mesh["ios_materials"]:
             return
 
         ios_materials = self.mesh["ios_materials"]
@@ -509,6 +509,7 @@ class IfcImporter:
         elif self.ifc_import_settings.false_origin_mode == "AUTOMATIC":
             if not props.has_blender_offset:
                 tool.Loader.guess_false_origin(self.file)
+        tool.Georeference.set_model_origin()
 
     def create_positioning_elements(self):
         self.create_grids()
@@ -1262,9 +1263,12 @@ class IfcImporter:
             if isinstance(obj, bpy.types.Object):
                 tool.Collector.assign(obj)
 
-    def is_curve_annotation(self, element):
+    def is_curve_annotation(self, element: ifcopenshell.entity_instance) -> bool:
         object_type = element.ObjectType
-        return object_type in ANNOTATION_TYPES_DATA and ANNOTATION_TYPES_DATA[object_type][3] == "curve"
+        return (
+            object_type in tool.Drawing.ANNOTATION_TYPES_DATA
+            and tool.Drawing.ANNOTATION_TYPES_DATA[object_type][3] == "curve"
+        )
 
     def get_drawing_group(self, element):
         for rel in element.HasAssignments or []:
@@ -1384,6 +1388,7 @@ class IfcImporter:
                 #
                 # we do `.tolist()` because Blender can't assign `np.int32` to it's custom attributes
                 mesh["ios_edges"] = list(set(tuple(e) for e in ifcopenshell.util.shape.get_edges(geometry).tolist()))
+                mesh["ios_item_ids"] = ifcopenshell.util.shape.get_representation_item_ids(geometry).tolist()
 
                 mesh.vertices.add(num_vertices)
                 mesh.vertices.foreach_set("co", verts)
@@ -1496,6 +1501,7 @@ class IfcImportSettings:
         self.distance_limit = 1000
         self.false_origin_mode = "AUTOMATIC"
         self.false_origin = None
+        self.project_north = None
         self.element_offset = 0
         self.element_limit = 30000
         self.has_filter = None
@@ -1531,6 +1537,10 @@ class IfcImportSettings:
             settings.false_origin = [float(o) for o in props.false_origin.split(",")[:3]]
         except:
             settings.false_origin = [0, 0, 0]
+        try:
+            settings.project_north = float(props.project_north)
+        except:
+            settings.project_north = 0
         settings.element_offset = props.element_offset
         settings.element_limit = props.element_limit
         return settings

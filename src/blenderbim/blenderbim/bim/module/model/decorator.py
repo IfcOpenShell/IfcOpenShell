@@ -26,10 +26,6 @@ from gpu_extras.batch import batch_for_shader
 from typing import Union
 
 
-ERROR_ELEMENTS_COLOR = (1, 0.2, 0.322, 1)  # RED
-UNSPECIAL_ELEMENT_COLOR = (0.2, 0.2, 0.2, 1)  # GREY
-
-
 def transparent_color(color, alpha=0.1):
     color = [i for i in color]
     color[3] = alpha
@@ -82,6 +78,8 @@ class ProfileDecorator:
         selected_elements_color = self.addon_prefs.decorator_color_selected
         unselected_elements_color = self.addon_prefs.decorator_color_unselected
         special_elements_color = self.addon_prefs.decorator_color_special
+        error_elements_color = self.addon_prefs.decorator_color_error
+        background_elements_color = self.addon_prefs.decorator_color_background
 
         obj = context.active_object
 
@@ -200,12 +198,12 @@ class ProfileDecorator:
 
         self.draw_batch("LINES", all_vertices, transparent_color(unselected_elements_color), unselected_edges)
         self.draw_batch("LINES", all_vertices, selected_elements_color, selected_edges)
-        self.draw_batch("LINES", all_vertices, UNSPECIAL_ELEMENT_COLOR, arc_edges)
+        self.draw_batch("LINES", all_vertices, background_elements_color, arc_edges)
         self.draw_batch("LINES", all_vertices, special_elements_color, preview_edges)
         self.draw_batch("LINES", all_vertices, special_elements_color, roof_angle_edges)
 
         self.draw_batch("POINTS", unselected_vertices, transparent_color(unselected_elements_color, 0.5))
-        self.draw_batch("POINTS", error_vertices, ERROR_ELEMENTS_COLOR)
+        self.draw_batch("POINTS", error_vertices, error_elements_color)
         self.draw_batch("POINTS", special_vertices, special_elements_color)
         self.draw_batch("POINTS", selected_vertices, selected_elements_color)
 
@@ -232,7 +230,7 @@ class ProfileDecorator:
                 arc_centroids.append(tuple(centroid))
             arc_segments.append(tool.Cad.create_arc_segments(pts=points, num_verts=17, make_edges=True))
 
-        self.draw_batch("POINTS", arc_centroids, UNSPECIAL_ELEMENT_COLOR)
+        self.draw_batch("POINTS", arc_centroids, background_elements_color)
         for verts, edges in arc_segments:
             self.draw_batch("LINES", verts, special_elements_color, edges)
 
@@ -253,7 +251,7 @@ class ProfileDecorator:
             segments = [[list(matrix @ Vector(v)) for v in segments[0]], segments[1]]
             circle_segments.append(segments)
 
-        self.draw_batch("POINTS", circle_centroids, UNSPECIAL_ELEMENT_COLOR)
+        self.draw_batch("POINTS", circle_centroids, background_elements_color)
         for verts, edges in circle_segments:
             self.draw_batch("LINES", verts, special_elements_color, edges)
 

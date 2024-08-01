@@ -19,23 +19,14 @@
 
 import os
 import bpy
+import blenderbim.core.type
 import blenderbim.tool as tool
 from blenderbim.bim.helper import prop_with_search
 from bpy.types import WorkSpaceTool
 
-from blenderbim.bim.module.drawing.prop import ANNOTATION_TYPES_DATA
 from blenderbim.bim.module.drawing.data import DecoratorData, AnnotationData
 from blenderbim.bim.ifc import IfcStore
 import blenderbim.bim.handler
-
-
-# TODO: Fix circular import.
-# Declaring it here to avoid circular import problems
-class Operator:
-    def execute(self, context):
-        IfcStore.execute_ifc_operator(self, context)
-        blenderbim.bim.handler.refresh_ui_data()
-        return {"FINISHED"}
 
 
 class LaunchAnnotationTypeManager(bpy.types.Operator):
@@ -196,7 +187,9 @@ def create_annotation():
         create_annotation_occurrence(bpy.context)
     else:
         object_type = props.object_type
-        bpy.ops.bim.add_annotation(object_type=object_type, data_type=ANNOTATION_TYPES_DATA[object_type][-1])
+        bpy.ops.bim.add_annotation(
+            object_type=object_type, data_type=tool.Drawing.ANNOTATION_TYPES_DATA[object_type][-1]
+        )
         if props.object_type == "IMAGE":
             bpy.ops.bim.add_reference_image(
                 "INVOKE_DEFAULT", use_existing_object_by_name=bpy.context.active_object.name
@@ -266,7 +259,7 @@ class AnnotationToolUI:
             )
 
 
-class Hotkey(bpy.types.Operator, Operator):
+class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.annotation_hotkey"
     bl_label = "Hotkey"
     bl_options = {"REGISTER", "UNDO"}

@@ -41,9 +41,9 @@ class Surveyor(blenderbim.core.tool.Surveyor):
             matrix = np.array(
                 ifcopenshell.util.geolocation.local2global(
                     matrix,
-                    float(props.blender_eastings) * unit_scale,
-                    float(props.blender_northings) * unit_scale,
-                    float(props.blender_orthogonal_height) * unit_scale,
+                    float(props.blender_offset_x) * unit_scale,
+                    float(props.blender_offset_y) * unit_scale,
+                    float(props.blender_offset_z) * unit_scale,
                     float(props.blender_x_axis_abscissa),
                     float(props.blender_x_axis_ordinate),
                 )

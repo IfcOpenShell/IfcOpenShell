@@ -74,7 +74,5 @@ def add_cost_item(
             },
         )
     elif settings["cost_item"]:
-        ifcopenshell.api.nest.assign_object(
-            file, related_objects=[cost_item], relating_object=settings["cost_item"]
-        )
+        ifcopenshell.api.nest.assign_object(file, related_objects=[cost_item], relating_object=settings["cost_item"])
     return cost_item

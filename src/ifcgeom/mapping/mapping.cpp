@@ -299,14 +299,45 @@ const IfcUtil::IfcBaseEntity* mapping::get_single_material_association(const Ifc
             single_material = associated_material->as<IfcSchema::IfcMaterial>();
             // NB: Single-layer layersets are also considered, regardless of --enable-layerset-slicing, this
             // in accordance with other viewers.
-            if (!single_material && associated_material->as<IfcSchema::IfcMaterialLayerSetUsage>()) {
-                IfcSchema::IfcMaterialLayerSet* layerset = associated_material->as<IfcSchema::IfcMaterialLayerSetUsage>()->ForLayerSet();
-                if (settings_.get<settings::LayersetFirst>().value ? layerset->MaterialLayers()->size() >= 1 : layerset->MaterialLayers()->size() == 1) {
-                    IfcSchema::IfcMaterialLayer* layer = (*layerset->MaterialLayers()->begin());
-                    if (layer->Material()) {
-                        single_material = layer->Material();
+            if (!single_material) {
+                if (associated_material->as<IfcSchema::IfcMaterialLayerSetUsage>() || associated_material->as<IfcSchema::IfcMaterialLayerSet>()) {
+                    IfcSchema::IfcMaterialLayerSet* layerset;
+                    if (auto *m = associated_material->as<IfcSchema::IfcMaterialLayerSetUsage>()) {
+                        if (m->get("ForLayerSet")->isNull()) {
+                            Logger::Warning("Missing ForLayerSet for:", m);
+                            return nullptr;
+                        }
+                        layerset = m->ForLayerSet();
+                    } else {
+                        layerset = associated_material->as<IfcSchema::IfcMaterialLayerSet>();
+                    }
+                    if (settings_.get<settings::LayersetFirst>().value ? layerset->MaterialLayers()->size() >= 1 : layerset->MaterialLayers()->size() == 1) {
+                        IfcSchema::IfcMaterialLayer* layer = (*layerset->MaterialLayers()->begin());
+                        if (auto *m_ = layer->Material()) {
+                            single_material = m_;
+                        }
                     }
                 }
+#ifdef SCHEMA_HAS_IfcMaterialProfileSet
+                if (associated_material->as<IfcSchema::IfcMaterialProfileSetUsage>() || associated_material->as<IfcSchema::IfcMaterialProfileSet>()) {
+                    IfcSchema::IfcMaterialProfileSet* profileset;
+                    if (auto* m = associated_material->as<IfcSchema::IfcMaterialProfileSetUsage>()) {
+                        if (m->get("ForProfileSet")->isNull()) {
+                            Logger::Warning("Missing ForProfileSet for:", m);
+                            return nullptr;
+                        }
+                        profileset = m->ForProfileSet();
+                    } else {
+                        profileset = associated_material->as<IfcSchema::IfcMaterialProfileSet>();
+                    }
+                    if (settings_.get<settings::LayersetFirst>().value ? profileset->MaterialProfiles()->size() >= 1 : profileset->MaterialProfiles()->size() == 1) {
+                        IfcSchema::IfcMaterialProfile* profile = (*profileset->MaterialProfiles()->begin());
+                        if (auto *m_ = profile->Material()) {
+                            single_material = m_;
+                        }
+                    }
+                }
+#endif
             }
         }
     }
@@ -341,10 +372,10 @@ namespace {
             return item;
         }
 
-        while (item->declaration().is(IfcSchema::IfcBooleanClippingResult::Class())) {
+        while (auto booleanresult = item->as<IfcSchema::IfcBooleanClippingResult>()) {
             // All instantiations of IfcBooleanOperand (type of FirstOperand) are subtypes of
             // IfcGeometricRepresentationItem
-            item = (IfcSchema::IfcGeometricRepresentationItem*) ((IfcSchema::IfcBooleanClippingResult*) item)->FirstOperand();
+            item = booleanresult->FirstOperand()->as<IfcSchema::IfcRepresentationItem>();
             if (item->StyledByItem()->size()) {
                 return item;
             }
@@ -399,9 +430,10 @@ namespace {
         }
 #endif
 
+        IfcSchema::IfcSurfaceStyle *surface_style = nullptr;
         for (auto& style : prs_styles) {
             if (style->declaration().is(IfcSchema::IfcSurfaceStyle::Class())) {
-                IfcSchema::IfcSurfaceStyle* surface_style = (IfcSchema::IfcSurfaceStyle*)style;
+                surface_style = (IfcSchema::IfcSurfaceStyle*)style;
                 if (surface_style->Side() != IfcSchema::IfcSurfaceSide::IfcSurfaceSide_NEGATIVE) {
                     auto styles_elements = surface_style->Styles();
                     for (auto mt = styles_elements->begin(); mt != styles_elements->end(); ++mt) {
@@ -412,8 +444,7 @@ namespace {
                 }
             }
         }
-
-        return std::make_pair<IfcSchema::IfcSurfaceStyle*, T*>(nullptr, nullptr);
+        return std::make_pair(surface_style, nullptr);
     }
 
     bool process_colour(IfcSchema::IfcColourRgb* colour, double* rgb) {
@@ -473,7 +504,16 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcMaterial* material) {
             styles->push((**it).Items()->as<IfcSchema::IfcStyledItem>());
         }
         if (styles->size() == 1) {
-            return map(*styles->begin());
+            IfcSchema::IfcStyledItem *styled_item = *styles->begin();
+            auto mapped_item = map(styled_item);
+            if (mapped_item) {
+                return mapped_item;
+            }
+            // Check if it's failed or just some unsupported case.
+            if (failed_on_purpose_.find(styled_item) == failed_on_purpose_.end()) {
+                return nullptr;
+            }
+            Logger::Warning("Skipping unsupported material style for material: ", material);
         }
     }
 
@@ -500,25 +540,32 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcStyledItem* inst) {
     IfcSchema::IfcSurfaceStyleShading* shading = style_pair.second;
 
     if (style == nullptr) {
-        // @todo we should probably log something that the kind of style,
-        // such as IfcCurveStyle, in this collections are unsupported.
+        // E.g. IfcCurveStyle is skipped as unsupported.
+        Logger::Warning("Only IfcSurfaceStyle is supported, couldn't find it in IfcStyledItem: ", inst);
         failed_on_purpose_.insert(inst);
         return nullptr;
     }
 
-    static taxonomy::colour white = taxonomy::colour(1., 1., 1.);
-
     taxonomy::style::ptr surface_style = taxonomy::make<taxonomy::style>();
-
     surface_style->instance = style;
     if (settings_.get<settings::UseMaterialNames>().get() && style->Name()) {
         surface_style->name = *style->Name();
     } else {
         std::ostringstream oss;
-        oss << shading->declaration().name() << "-" << shading->data().id();
+        if (shading) {
+            oss << shading->declaration().name() << "-" << shading->data().id();
+        } else {
+            oss << "-";
+        }
         surface_style->name = oss.str();
     }
-    
+
+    if (shading == nullptr) {
+        // E.g. IfcSurface style has only IfcExternallyDefinedSurfaceStyle.
+        return surface_style;
+    }
+
+    static taxonomy::colour white = taxonomy::colour(1., 1., 1.);
     double rgb[3];
     if (process_colour(shading->SurfaceColour(), rgb)) {
         surface_style->diffuse.components() << rgb[0], rgb[1], rgb[2];
@@ -681,12 +728,22 @@ void mapping::initialize_units_() {
     angle_unit_ = -1.;
     length_unit_name_ = "METER";
     
-    auto unit_assignments = file_->instances_by_type<IfcSchema::IfcUnitAssignment>();
-    if (unit_assignments->size() != 1) {
-        Logger::Warning("Not a single unit assignment in file");
+#ifdef SCHEMA_HAS_IfcContext
+    auto projects = file_->instances_by_type<IfcSchema::IfcContext>();
+#else
+    auto projects = file_->instances_by_type<IfcSchema::IfcProject>();
+#endif
+    IfcSchema::IfcUnitAssignment* unit_assignment = nullptr;
+    if (projects->size() == 1) {
+        auto* project = *projects->begin();
+        unit_assignment = project->UnitsInContext();
+    } else {
+        Logger::Warning("Not a single project or context in file");
+    }
+    if (unit_assignment == nullptr) {
+        Logger::Warning("Unable to detect unit information");
         return;
     }
-    auto unit_assignment = *unit_assignments->begin();
 
     bool length_unit_encountered = false, angle_unit_encountered = false;
 
@@ -739,6 +796,14 @@ void mapping::initialize_units_() {
 
     if (!angle_unit_encountered) {
         Logger::Warning("No plane angle unit encountered");
+    }
+
+    // @todo move to a more descriptive function
+    if (settings_.get<settings::BuildingLocalPlacement>().get()) {
+        placement_rel_to_type_ = file_->schema()->declaration_by_name("IfcBuilding");
+    }
+    if (settings_.get<settings::SiteLocalPlacement>().get()) {
+        placement_rel_to_type_ = file_->schema()->declaration_by_name("IfcSite");
     }
 }
 

@@ -543,7 +543,9 @@ def xaxis2angle(x: float, y: float) -> float:
     the page?". See the diagram on the IfcGeometricRepresentationContext
     documentation for clarification.
 
-    The angle indicates "how do I rotate grid east to get to project east?".
+    The angle indicates "how do I rotate project east to get to grid east?".
+    Alternatively: "how do I rotate project north to get to grid north?".
+    Positive angles are anticlockwise.
 
     :param x: The X axis abscissa
     :param y: The X axis ordinate
@@ -562,6 +564,7 @@ def yaxis2angle(x: float, y: float) -> float:
     documentation for clarification.
 
     The angle indicates "how do I rotate project north to get to true north?".
+    Positive angles are anticlockwise.
 
     :param x: The Y axis abscissa
     :param y: The Y axis ordinate

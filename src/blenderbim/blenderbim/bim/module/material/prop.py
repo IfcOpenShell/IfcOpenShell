@@ -119,8 +119,23 @@ def get_contexts(self, context):
     return MaterialsData.data["contexts"]
 
 
+def update_material_name(self: "Material", context: bpy.types.Context) -> None:
+    # No need to update anything if it's either category
+    # or ifc_definition_id is not yet set
+    # (which occurs when Material still in the process of creation).
+    if self.is_category or not self.ifc_definition_id:
+        return
+    ifc_file = tool.Ifc.get()
+    name = self.name
+    material = ifc_file.by_id(self.ifc_definition_id)
+    if material.is_a("IfcMaterialLayerSet"):
+        material.LayerSetName = name
+    else:
+        material.Name = name
+
+
 class Material(PropertyGroup):
-    name: StringProperty(name="Name")
+    name: StringProperty(name="Name", update=update_material_name)
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     is_category: BoolProperty(name="Is Category", default=False)
     is_expanded: BoolProperty(name="Is Expanded", default=False)
@@ -143,7 +158,7 @@ class BIMMaterialProperties(PropertyGroup):
 
 class BIMObjectMaterialProperties(PropertyGroup):
     material_type: EnumProperty(items=get_object_material_type, name="Material Type")
-    material: EnumProperty(items=get_materials, name="Material")
+    material: EnumProperty(items=get_materials, name="Material", description="Currently selected IfcMaterial")
     is_editing: BoolProperty(name="Is Editing", default=False)
     material_set_usage_attributes: CollectionProperty(name="Material Set Usage Attributes", type=Attribute)
     material_set_attributes: CollectionProperty(name="Material Set Attributes", type=Attribute)

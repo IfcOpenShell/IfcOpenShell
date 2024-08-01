@@ -30,15 +30,34 @@ bl_info = {
 
 import importlib
 import logging
+import types
+import bpy
 
 logger = logging.getLogger("sverchok.ifc")
+
+
+def get_blender_addon_package_name(addon_name: str) -> types.ModuleType:
+    # Check for legacy addons.
+    if addon_name in bpy.context.preferences.addons:
+        return importlib.import_module(addon_name)
+    elif bpy.app.version < (4, 2, 0):
+        raise ModuleNotFoundError
+
+    # Check for Blender extensions.
+    bbim_package_name = None
+    for package_name in bpy.context.preferences.addons.keys():
+        if package_name.endswith(f".{addon_name}"):
+            bbim_package_name = package_name
+    if bbim_package_name is None:
+        raise ModuleNotFoundError
+    return importlib.import_module(bbim_package_name)
 
 
 def ensure_addons_are_enabled(*addon_names: str) -> None:
     errors = []
     for addon_name in addon_names:
         try:
-            module = importlib.import_module(addon_name)
+            module = get_blender_addon_package_name(addon_name)
             # `__addon_enabled__` is not present if addon wasn't enabled before
             if not getattr(module, "__addon_enabled__", False):
                 errors.append(f"- Addon {addon_name} appears to be disabled, it should be enabled before IFC Sverchok.")
@@ -115,7 +134,6 @@ imported_modules = make_node_list()
 
 reload_event = False
 
-import bpy
 from os.path import splitext
 import ifcopenshell
 import ifcopenshell.api

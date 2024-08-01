@@ -23,6 +23,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.doc
 import ifcopenshell.util.schema
 import blenderbim.tool as tool
+from blenderbim.bim.module.drawing.helper import format_distance
 
 
 def refresh():
@@ -251,7 +252,16 @@ class ObjectMaterialData:
                     else:
                         data["name"] = "No Profile"
                 if item.is_a("IfcMaterialLayer"):
-                    data["name"] += f" ({item.LayerThickness})"
+                    total_thickness = item.LayerThickness
+                    unit_system = bpy.context.scene.unit_settings.system
+                    if unit_system == "IMPERIAL":
+                        precision = bpy.context.scene.DocProperties.imperial_precision
+                    else:
+                        precision = None
+                    formatted_thickness = format_distance(
+                        total_thickness, precision=precision, suppress_zero_inches=True, in_unit_length=True
+                    )
+                    data["name"] = f"{formatted_thickness} - {data['name']}"
                 if item.is_a("IfcMaterial"):
                     data["material"] = item.Name or "Unnamed"
                 else:
@@ -289,9 +299,14 @@ class ObjectMaterialData:
             return getattr(material, "Name", None) or "Unnamed"
 
     @classmethod
-    def materials(cls):
+    def materials(cls) -> list[tool.Blender.BLENDER_ENUM_ITEM]:
+        is_ifc2x3 = tool.Ifc.get_schema() == "IFC2X3"
         return sorted(
-            [(str(m.id()), m.Name or "Unnamed", "") for m in tool.Ifc.get().by_type("IfcMaterial")], key=lambda x: x[1]
+            [
+                (str(m.id()), m.Name or "Unnamed", "" if is_ifc2x3 else (m.Description or ""))
+                for m in tool.Ifc.get().by_type("IfcMaterial")
+            ],
+            key=lambda x: x[1],
         )
 
     @classmethod
@@ -342,4 +357,4 @@ class ObjectMaterialData:
         # so we check occurrence material explicitly
         element = tool.Ifc.get_entity(bpy.context.active_object)
         occurrence_material = ifcopenshell.util.element.get_material(element, should_inherit=False)
-        return bool(occurrence_material)
+        return bool(occurrence_material) and "Usage" not in occurrence_material.is_a()

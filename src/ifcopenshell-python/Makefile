@@ -1,10 +1,18 @@
+IS_STABLE:=FALSE
 VERSION:=$(shell cat ../../VERSION)
+VERSION_DATE:=$(shell date '+%y%m%d')
 PYVERSION:=py311
 PLATFORM:=linux64
 
+PYTHON:=python3.11
+PIP:=pip3.11
 SED:=sed -i
+VENV_ACTIVATE:=bin/activate
+
 ifeq ($(OS),Windows_NT)
 HOSTOS:=win
+PYTHON:=python
+VENV_ACTIVATE:=Scripts/activate
 else
 UNAME_S:=$(shell uname -s)
 ifeq ($(UNAME_S),Linux)
@@ -44,7 +52,8 @@ ifeq ($(PLATFORM), win64)
 PLATFORMTAG:=win_amd64
 endif
 
-IOS_URL:=https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v$(VERSION)-42b96d6-$(PLATFORM).zip
+IOS_URL:=https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v0.7.11-d51fa2c-$(PLATFORM).zip
+IFCCONVERT_URL:=https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v0.7.11-d51fa2c-$(PLATFORM).zip
 
 .PHONY: test
 test:
@@ -81,6 +90,15 @@ coverage:
 clean:
 	rm -rf htmlcov
 
+.PHONY: zip-ifcconvert
+zip-ifcconvert:
+ifndef PLATFORM
+	$(error PLATFORM is not set)
+endif
+	mkdir -p dist
+	cd dist && wget $(IFCCONVERT_URL)
+	cd dist && mv *.zip ifcconvert-$(VERSION)-$(PLATFORM).zip
+
 .PHONY: zip
 zip:
 ifndef PLATFORM
@@ -93,14 +111,7 @@ endif
 
 	cd dist/working && wget $(IOS_URL)
 	cd dist/working && unzip ifcopenshell-python*
-	cp -r dist/working/ifcopenshell/ifcopenshell_wrapper.py dist/ifcopenshell/
-ifeq ($(PLATFORM), win64)
-	cp -r dist/working/ifcopenshell/_ifcopenshell_wrapper.pyd dist/ifcopenshell/
-else ifeq ($(PLATFORM), win32)
-	cp -r dist/working/ifcopenshell/_ifcopenshell_wrapper.pyd dist/ifcopenshell/
-else
-	cp -r dist/working/ifcopenshell/_ifcopenshell_wrapper.so dist/ifcopenshell/
-endif
+	cp -r dist/working/ifcopenshell/*ifcopenshell_wrapper* dist/ifcopenshell/
 	rm -rf dist/working
 	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' dist/ifcopenshell/__init__.py
 	cd dist && zip -r ifcopenshell-python-$(VERSION)-$(PYVERSION)-$(PLATFORM).zip ifcopenshell
@@ -111,32 +122,30 @@ dist:
 ifndef PLATFORM
 	$(error PLATFORM is not set)
 endif
-	rm -rf dist
-	mkdir -p dist/working
-	mkdir -p dist/ifcopenshell
-	cp -r ifcopenshell/* dist/ifcopenshell/
+	rm -rf build
+	mkdir -p build
+	mkdir -p dist
+	cp -r ifcopenshell build/
 
-	cd dist/working && wget $(IOS_URL)
-	cd dist/working && unzip ifcopenshell-python*
-	cp -r dist/working/ifcopenshell/ifcopenshell_wrapper.py dist/ifcopenshell/
-ifeq ($(PLATFORM), win64)
-	cp -r dist/working/ifcopenshell/_ifcopenshell_wrapper.pyd dist/ifcopenshell/
-else ifeq ($(PLATFORM), win32)
-	cp -r dist/working/ifcopenshell/_ifcopenshell_wrapper.pyd dist/ifcopenshell/
+	mkdir build/botbuild
+	cd build/botbuild && wget $(IOS_URL) && unzip ifcopenshell-python*
+	cp -r build/botbuild/ifcopenshell/*ifcopenshell_wrapper* build/ifcopenshell/
+	cp ../../README.md build/
+	cp pyproject.toml build/
+ifeq ($(IS_STABLE), TRUE)
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' build/pyproject.toml
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' build/ifcopenshell/__init__.py
 else
-	cp -r dist/working/ifcopenshell/_ifcopenshell_wrapper.so dist/ifcopenshell/
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION)a$(VERSION_DATE)"/' build/pyproject.toml
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION)-alpha$(VERSION_DATE)"/' build/ifcopenshell/__init__.py
 endif
-	rm -rf dist/working
-	# distutils cannot access anything outside the cwd, so hackishly swap out the README.md
-	cp README.md ../README.bak
-	cp ../../README.md README.md
-	cp pyproject.toml pyproject.toml.bak
-	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' pyproject.toml
-	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' dist/ifcopenshell/__init__.py
-	python -m build
-	mv pyproject.toml.bak pyproject.toml
-	mv ../README.bak README.md
-	cd dist && mv ifcopenshell-$(VERSION)-py3-none-any.whl ifcopenshell-$(VERSION)-$(PYVERSION)-none-$(PLATFORMTAG).whl
-	rm -rf dist/ifcopenshell
-	rm -rf dist/ifcopenshell.egg-info
-	rm -rf dist/ifcopenshell-$(VERSION).tar.gz
+
+	cd build && $(PYTHON) -m venv env && . env/$(VENV_ACTIVATE) && $(PIP) install build
+	cd build && . env/$(VENV_ACTIVATE) && $(PYTHON) -m build
+
+ifeq ($(IS_STABLE), TRUE)
+	mv build/dist/ifcopenshell-*.whl dist/ifcopenshell-$(VERSION)-$(PYVERSION)-none-$(PLATFORMTAG).whl
+else
+	cp build/dist/ifcopenshell-*.whl dist/ifcopenshell-$(VERSION)a$(VERSION_DATE)-$(PYVERSION)-none-$(PLATFORMTAG).whl
+endif
+	rm -rf build

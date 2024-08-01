@@ -1147,7 +1147,11 @@ std::string IfcEntityInstanceData::toString(bool upper) const {
             ss << ",";
         }
         if (attributes_[i] == 0) {
-            ss << "$";
+            if (type_->as_entity() != nullptr && type_->as_entity()->derived()[i]) {
+               ss << "*";
+            } else {
+               ss << "$";
+	    }
         } else {
             ss << attributes_[i]->toString(upper);
         }

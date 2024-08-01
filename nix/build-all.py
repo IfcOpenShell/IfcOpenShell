@@ -53,6 +53,7 @@ import logging
 import os
 import re
 import sys
+import glob
 import subprocess as sp
 import shutil
 import tarfile
@@ -971,7 +972,7 @@ if "IfcOpenShell-Python" in targets:
             if platform.system() != "Darwin":
                 if BUILD_CFG == "Release":
                     # TODO: This symbol name depends on the Python version?
-                    run([strip, "-s", "-K", "PyInit__ifcopenshell_wrapper", "_ifcopenshell_wrapper.so"], cwd=module_dir)
+                    run([strip, "-s", "-K", "PyInit__ifcopenshell_wrapper", glob.glob(os.path.join(module_dir, "_ifcopenshell_wrapper*.so"))[0]], cwd=module_dir)
 
             return module_dir
 

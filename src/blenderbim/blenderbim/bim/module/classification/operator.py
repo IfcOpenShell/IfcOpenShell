@@ -118,16 +118,28 @@ class AddClassificationFromBSDD(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         props = context.scene.BIMBSDDProperties
-        domain = [d for d in props.domains if d.name == props.active_domain][0]
+        domain = next((d for d in props.domains if d.name == props.active_domain and d.uri == props.active_uri), None)
+
+        # Maybe user loaded preview domains, set it as active
+        # and then reloaded them without preview domains.
+        if not domain:
+            self.report(
+                {"INFO"},
+                f"Couldn't find domain '{props.active_domain}' ({props.active_uri}). Try to reload bSDD dictionaries.",
+            )
+            return
+
         for element in tool.Ifc.get().by_type("IfcClassification"):
-            if element.Name == props.active_domain or element.Location == domain.uri:
+            if element.Name == props.active_domain or (tool.Classification.get_location(element) == domain.uri):
+                self.report({"INFO"}, f"Classification '{props.active_domain}' is already added to the project.")
                 return
+
         classification = ifcopenshell.api.run(
             "classification.add_classification", tool.Ifc.get(), classification=props.active_domain
         )
         classification.Source = domain.organization_name_owner
-        classification.Location = domain.uri
         classification.Edition = domain.version
+        tool.Classification.set_location(classification, domain.uri)
 
 
 class EnableAddingManualClassification(bpy.types.Operator):
@@ -411,9 +423,8 @@ class AddClassificationReferenceFromBSDD(bpy.types.Operator, tool.Ifc.Operator):
 
         classification = None
         for element in tool.Ifc.get().by_type("IfcClassification"):
-            if (
-                element.Name == bsdd_classification.domain_name
-                or element.Location == bsdd_classification.domain_namespace_uri
+            if element.Name == bsdd_classification.domain_name or (
+                tool.Classification.get_location(element) == bsdd_classification.domain_namespace_uri
             ):
                 classification = element
                 break
@@ -422,7 +433,7 @@ class AddClassificationReferenceFromBSDD(bpy.types.Operator, tool.Ifc.Operator):
             classification = ifcopenshell.api.run(
                 "classification.add_classification", tool.Ifc.get(), classification=bsdd_classification.domain_name
             )
-            classification.Location = bsdd_classification.domain_namespace_uri
+            tool.Classification.set_location(classification, bsdd_classification.domain_namespace_uri)
 
         for obj in objects:
             ifc_definition_id = tool.Blender.get_obj_ifc_definition_id(obj, self.obj_type, context)

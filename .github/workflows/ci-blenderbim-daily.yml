@@ -3,10 +3,10 @@ name: ci-blenderbim-daily
 on:
   push:
     paths:
-      - '.github/workflows/ci-blenderbim-matrix.yml'
+      - '.github/workflows/ci-blenderbim-daily.yml'
       - 'src/blenderbim/**'
       - 'src/ifcopenshell-python/ifcopenshell/**'
-      - 'src/bcf/src/bcf/**'
+      - 'src/bcf/bcf/**'
       - 'src/ifcclash/ifcclash/**'
       - 'src/ifccobie/**'
       - 'src/ifcdiff/**'
@@ -43,15 +43,15 @@ jobs:
           }
           - {
             name: "Linux Build",
-            short_name: linux
+            short_name: linux,
           }
           - {
             name: "MacOS Build",
-            short_name: macos
+            short_name: macos,
           }
           - {
             name: "MacOS ARM Build",
-            short_name: macosm1
+            short_name: macosm1,
           }
     steps:
       - uses: actions/checkout@v2
@@ -67,15 +67,19 @@ jobs:
         run: echo "date=$(date +'%y%m%d')" >> $GITHUB_OUTPUT
       - name: Compile
         run: |
-          cp -r src/blenderbim src/blenderbim_${{ matrix.config.short_name }}_${{ matrix.pyver }} &&
-          cd src/blenderbim_${{ matrix.config.short_name }}_${{ matrix.pyver }} &&
-          make dist PLATFORM=${{ matrix.config.short_name }} PYVERSION=${{ matrix.pyver }}
+          cd src/blenderbim && make dist PLATFORM=${{ matrix.config.short_name }} PYVERSION=${{ matrix.pyver }}
+      - name: Find zip file name
+        id: find_zip
+        run: |
+          filepath=$(ls src/blenderbim/dist/blenderbim_*.zip)
+          echo "filepath=$filepath" >> $GITHUB_OUTPUT
+          echo "filename=$(basename $filepath)" >> $GITHUB_OUTPUT
       - name: Upload zip file to release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: src/blenderbim_${{ matrix.config.short_name }}_${{ matrix.pyver }}/dist/blenderbim-${{steps.version.outputs.version}}.${{steps.date.outputs.date}}-${{ matrix.pyver }}-${{ matrix.config.short_name }}.zip
-          asset_name: blenderbim-${{steps.version.outputs.version}}.${{steps.date.outputs.date}}-${{ matrix.pyver }}-${{ matrix.config.short_name }}.zip
-          release_name: "blenderbim-${{steps.version.outputs.version}}.${{steps.date.outputs.date}} (unstable)"
-          tag: "blenderbim-${{steps.version.outputs.version}}.${{steps.date.outputs.date}}"
+          file: ${{ steps.find_zip.outputs.filepath }}
+          asset_name: ${{ steps.find_zip.outputs.filename }}
+          release_name: "blenderbim-${{steps.version.outputs.version}}-alpha${{steps.date.outputs.date}} (unstable)"
+          tag: "blenderbim-${{steps.version.outputs.version}}-alpha${{steps.date.outputs.date}}"
           overwrite: true

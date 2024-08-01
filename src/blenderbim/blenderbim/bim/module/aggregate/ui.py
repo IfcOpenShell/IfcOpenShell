@@ -99,7 +99,7 @@ class BIM_PT_aggregate(Panel):
             op = row.operator("bim.select_parts", icon="RESTRICT_SELECT_OFF", text="")
             op.obj = context.active_object.name
 
-            
+
 class BIM_PT_linked_aggregate(Panel):
     bl_label = "Linked Aggregates"
     bl_idname = "BIM_PT_linked_aggregate"
@@ -133,9 +133,8 @@ class BIM_PT_linked_aggregate(Panel):
         props = obj.BIMObjectAggregateProperties
         row = layout.row(align=True)
 
-
         if element.Decomposes:
-            Number_Linked_Aggregates = AggregateData.data['total_linked_aggregate']
+            Number_Linked_Aggregates = AggregateData.data["total_linked_aggregate"]
             if not Number_Linked_Aggregates:
                 row.label(text="Not a Linked Aggregate")
             else:
@@ -151,6 +150,3 @@ class BIM_PT_linked_aggregate(Panel):
                     op = row.operator("bim.break_link_to_other_aggregates", text="", icon="X")
         else:
             row.label(text="Not an Aggregate")
-            
-        
-

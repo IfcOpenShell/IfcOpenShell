@@ -86,9 +86,7 @@ class TestGetElementValue(test.bootstrap.IFC4):
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         material = ifcopenshell.api.material.add_material(self.file, name="CON01")
         material2 = ifcopenshell.api.material.add_material(self.file, name="CON02")
-        material_set = ifcopenshell.api.material.add_material_set(
-            self.file, name="FOO", set_type="IfcMaterialLayerSet"
-        )
+        material_set = ifcopenshell.api.material.add_material_set(self.file, name="FOO", set_type="IfcMaterialLayerSet")
         layer = ifcopenshell.api.material.add_layer(self.file, layer_set=material_set, material=material)
         layer.Name = "L1"
         layer = ifcopenshell.api.material.add_layer(self.file, layer_set=material_set, material=material)
@@ -113,9 +111,7 @@ class TestGetElementValue(test.bootstrap.IFC4):
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         material = ifcopenshell.api.material.add_material(self.file, name="CON01")
         material2 = ifcopenshell.api.material.add_material(self.file, name="CON02")
-        material_set = ifcopenshell.api.material.add_material_set(
-            self.file, name="FOO", set_type="IfcMaterialLayerSet"
-        )
+        material_set = ifcopenshell.api.material.add_material_set(self.file, name="FOO", set_type="IfcMaterialLayerSet")
         layer = ifcopenshell.api.material.add_layer(self.file, layer_set=material_set, material=material)
         layer.Name = "L1"
         ifcopenshell.api.material.assign_material(self.file, products=[element], material=material_set)

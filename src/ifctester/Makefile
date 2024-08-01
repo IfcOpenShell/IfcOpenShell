@@ -16,23 +16,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcTester.  If not, see <http://www.gnu.org/licenses/>.
 
-VERSION:=$(shell cat ../../VERSION)
-SED:=sed -i
-ifeq ($(UNAME_S),Darwin)
-SED:=sed -i '' -e
-endif
+PACKAGE_NAME:=ifctester
+include ../common.mk
 
 .PHONY: test
 test:
 	pytest -p no:pytest-blender test
-
-.PHONY: dist
-dist:
-	rm -rf dist
-	cp pyproject.toml pyproject.toml.bak
-	cp ifctester/__init__.py __init__.py.bak
-	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' pyproject.toml
-	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' ifctester/__init__.py
-	python -m build
-	mv pyproject.toml.bak pyproject.toml
-	mv __init__.py.bak ifctester/__init__.py

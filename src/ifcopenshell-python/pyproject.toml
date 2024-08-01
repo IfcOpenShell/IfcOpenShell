@@ -15,9 +15,18 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
 ]
-dependencies = ["shapely", "numpy", "isodate", "python-dateutil", "lark"]
+dependencies = [
+    "shapely",
+    "numpy",
+    "isodate",
+    "python-dateutil",
+    "lark",
+    "typing-extensions",
+]
 
 [project.optional-dependencies]
+# mathutils is broken on Python < 3.10.
+# See: https://gitlab.com/ideasman42/blender-mathutils/-/merge_requests/3
 geometry = ["mathutils"]
 dev = ["pytest"]
 
@@ -26,9 +35,7 @@ dev = ["pytest"]
 "Bug Tracker" = "https://github.com/ifcopenshell/ifcopenshell/issues"
 
 [tool.setuptools.packages.find]
-where = ["dist"]
 include = ["ifcopenshell*"]
 
 [tool.setuptools.package-data]
-ifcopenshell = ["*.pyd", "*.so", "*.json"]
-"ifcopenshell.util" = ["*.json", "schema/*.ifc"]
+"*" = ["*.*"]

@@ -19,7 +19,6 @@
 import os
 import bpy
 import bpy.utils.previews
-import blenderbim
 import importlib
 from pathlib import Path
 from . import handler, ui, prop, operator, helper
@@ -75,7 +74,6 @@ modules = {
     "clash": None,
     "csv": None,
     "tester": None,
-    "bimtester": None,
     "diff": None,
     "patch": None,
     "gis": None,
@@ -100,10 +98,10 @@ classes = [
     operator.AddIfcFile,
     operator.BIM_OT_add_section_plane,
     operator.BIM_OT_delete_object,
-    operator.BIM_OT_open_webbrowser,
     operator.BIM_OT_remove_section_plane,
     operator.BIM_OT_select_object,
     operator.BIM_OT_show_description,
+    operator.BIM_OT_multiple_file_selector,
     operator.ClippingPlaneCutWithCappings,
     operator.CloseError,
     operator.EditBlenderCollection,
@@ -123,6 +121,7 @@ classes = [
     prop.StrProperty,
     operator.BIM_OT_enum_property_search,  # /!\ Register AFTER prop.StrProperty
     prop.ObjProperty,
+    prop.MultipleFileSelect,
     prop.Attribute,
     prop.BIMAreaProperties,
     prop.BIMTabProperties,
@@ -170,6 +169,8 @@ classes = [
     ui.BIM_PT_tab_services,
     ui.BIM_PT_tab_lighting,
     ui.BIM_PT_tab_zones,
+    ui.BIM_PT_tab_solar_analysis,
+    ui.BIM_PT_tab_lighting,
     # Structural analysis
     ui.BIM_PT_tab_structural,
     # Construction scheduling
@@ -197,7 +198,6 @@ for mod in modules.values():
 addon_keymaps = []
 icons = None
 is_registering = False
-last_commit_hash = "8888888"
 original_scene_panels_polls: dict[bpy.types.Panel, Union[Callable, None]] = dict()
 
 
@@ -254,17 +254,6 @@ def register():
             icon_preview.load(icon_name, icon_path, "IMAGE")
 
     icons = icon_preview
-
-    global last_commit_hash
-    try:
-        import git
-
-        path = Path(__file__).resolve().parent
-        repo = git.Repo(str(path), search_parent_directories=True)
-        last_commit_hash = repo.head.object.hexsha
-    except:
-        pass
-
     bpy.app.translations.register("blenderbim", translations_dict)
 
 

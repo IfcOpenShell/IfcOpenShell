@@ -448,7 +448,9 @@ class TestUsingArrays(NewFile):
 class TestApplyIfcMaterialChanges(NewFile):
     def get_used_styles(self, obj: bpy.types.Object) -> set[ifcopenshell.entity_instance]:
         ifc_file = tool.Ifc.get()
-        return {ifc_file.by_id(s.material.BIMStyleProperties.ifc_definition_id) for s in obj.material_slots if s.material}
+        return {
+            ifc_file.by_id(s.material.BIMStyleProperties.ifc_definition_id) for s in obj.material_slots if s.material
+        }
 
     def get_mesh(self, obj: bpy.types.Object) -> bpy.types.Mesh:
         mesh = obj.data
@@ -523,6 +525,7 @@ class TestApplyIfcMaterialChanges(NewFile):
         ifcopenshell.api.material.assign_material(
             ifc_file, products=[tool.Ifc.get_entity(with_material)], material=blue_material
         )
+        tool.Material.ensure_material_assigned([tool.Ifc.get_entity(with_material)], material=blue_material)
 
         assert self.get_used_styles(element_type_obj) == set()
         for element in ifc_file.by_type("IfcActuator"):
@@ -539,6 +542,7 @@ class TestApplyIfcMaterialChanges(NewFile):
         blue_style = next((i for i in ifc_file.by_type("IfcSurfaceStyle") if i.Name == "Blue"))
 
         ifcopenshell.api.material.assign_material(ifc_file, material=red_material, products=[element_type])
+        tool.Material.ensure_material_assigned([element_type], material=red_material)
         assert self.get_used_styles(tool.Ifc.get_object(element_type)) == {red_style}
         for element in ifc_file.by_type("IfcActuator"):
             obj = tool.Ifc.get_object(element)
@@ -546,6 +550,7 @@ class TestApplyIfcMaterialChanges(NewFile):
             assert self.get_used_styles(obj) == expected
 
         ifcopenshell.api.material.unassign_material(ifc_file, products=[element_type])
+        tool.Material.ensure_material_unassigned([element_type])
         assert self.get_used_styles(tool.Ifc.get_object(element_type)) == set()
         for element in ifc_file.by_type("IfcActuator"):
             obj = tool.Ifc.get_object(element)
@@ -567,12 +572,14 @@ class TestApplyIfcMaterialChanges(NewFile):
         bpy.ops.bim.assign_style_to_selected(style_id=green_style.id())
 
         ifcopenshell.api.material.assign_material(ifc_file, material=red_material, products=[element_type])
+        tool.Material.ensure_material_assigned([element_type], material=red_material)
         assert self.get_used_styles(tool.Ifc.get_object(element_type)) == {green_style}
         for element in ifc_file.by_type("IfcActuator"):
             obj = tool.Ifc.get_object(element)
             assert self.get_used_styles(obj) == {green_style}
 
         ifcopenshell.api.material.unassign_material(ifc_file, products=[element_type])
+        tool.Material.ensure_material_unassigned([element_type])
         assert self.get_used_styles(tool.Ifc.get_object(element_type)) == {green_style}
         for element in ifc_file.by_type("IfcActuator"):
             obj = tool.Ifc.get_object(element)
@@ -611,8 +618,10 @@ class TestApplyIfcMaterialChanges(NewFile):
         assert set(mesh.materials) == {bpy.data.materials["Green"], None}
 
         ifcopenshell.api.material.assign_material(ifc_file, products=[element], material=red_material)
+        tool.Material.ensure_material_assigned([element], material=red_material)
         assert self.get_used_styles(obj) == {green_style, red_style}
         ifcopenshell.api.material.unassign_material(ifc_file, products=[element])
+        tool.Material.ensure_material_unassigned([element])
         mesh = self.get_mesh(obj)
         assert len(mesh.materials) == 2
         assert set(mesh.materials) == {bpy.data.materials["Green"], None}
@@ -625,11 +634,13 @@ class TestApplyIfcMaterialChanges(NewFile):
         assert set(mesh.materials) == {bpy.data.materials["Red"], None}
 
         ifcopenshell.api.material.assign_material(ifc_file, products=[element], material=red_material)
+        tool.Material.ensure_material_assigned([element], material=red_material)
         assert mesh.materials[:] == [bpy.data.materials["Red"]]
         # All polygons are just reassigned to the existing material.
         assert set(get_material_indices(mesh)) == {mesh.materials.find("Red")}
 
         ifcopenshell.api.material.unassign_material(ifc_file, products=[element])
+        tool.Material.ensure_material_unassigned([element])
         mesh = self.get_mesh(obj)
         assert len(mesh.materials) == 2
         assert set(mesh.materials) == {bpy.data.materials["Red"], None}
@@ -645,10 +656,13 @@ class TestApplyIfcMaterialChanges(NewFile):
         element = tool.Ifc.get_entity(obj)
 
         ifcopenshell.api.material.assign_material(ifc_file, material=red_material, products=[element_type])
+        tool.Material.ensure_material_assigned([element_type], material=red_material)
 
         # Override type material.
         ifcopenshell.api.material.assign_material(ifc_file, material=no_style_material, products=[element])
+        tool.Material.ensure_material_assigned([element], material=no_style_material)
         assert self.get_mesh(obj).materials[:] == []
 
         ifcopenshell.api.material.unassign_material(ifc_file, products=[element])
+        tool.Material.ensure_material_unassigned([element])
         assert self.get_mesh(obj).materials[:] == [bpy.data.materials["Red"]]

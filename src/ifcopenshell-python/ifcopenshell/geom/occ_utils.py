@@ -17,11 +17,14 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from __future__ import annotations
 import random
 import operator
 import warnings
+import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
 
-from collections import namedtuple
+from typing import NamedTuple, Any, Union
+from typing_extensions import assert_never
 from collections.abc import Iterable
 
 import OCC
@@ -35,7 +38,15 @@ except ImportError:
 
     USE_OCCT_HANDLE = True
 
-shape_tuple = namedtuple("shape_tuple", ("data", "geometry", "styles", "style_ids"))
+
+class shape_tuple(NamedTuple):
+    """A tuple containing IfcOpenShell serialized element/shape and pythonOCC shape."""
+
+    data: Union[ifcopenshell_wrapper.SerializedElement, ifcopenshell_wrapper.Serialization]
+    geometry: TopoDS.TopoDS_Shape
+    styles: tuple[tuple[float, float, float, float], ...]
+    style_ids: tuple[int, ...]
+
 
 handle, main_loop, add_menu, add_function_to_menu = None, None, None, None
 
@@ -217,22 +228,26 @@ def serialize_shape(shape):
     return shapes.WriteToString()
 
 
-def create_shape_from_serialization(brep_object):
+def create_shape_from_serialization(
+    brep_object: Union[ifcopenshell_wrapper.SerializedElement, ifcopenshell_wrapper.Serialization]
+) -> Union[shape_tuple, TopoDS.TopoDS_Shape]:
     brep_data, occ_shape, styles, style_ids = None, None, (), ()
 
     is_product_shape = True
-    try:
+    if isinstance(brep_object, ifcopenshell_wrapper.SerializedElement):
         brep_data = brep_object.geometry.brep_data
         styles = brep_object.geometry.surface_styles
         style_ids = brep_object.geometry.surface_style_ids
-    except BaseException:
+    elif isinstance(brep_object, ifcopenshell_wrapper.Serialization):
         try:
             brep_data = brep_object.brep_data
             styles = brep_object.surface_styles
             style_ids = brep_object.surface_style_ids
             is_product_shape = False
-        except BaseException:
-            pass
+        except BaseException as e:
+            print("Error occurred creating a shape:", e)
+    else:
+        assert_never(brep_object)
 
     styles = tuple(styles[i : i + 4] for i in range(0, len(styles), 4))
 
@@ -240,11 +255,15 @@ def create_shape_from_serialization(brep_object):
         return shape_tuple(brep_object, None, styles, style_ids)
 
     try:
-        ss = BRepTools.BRepTools_ShapeSet()
-        ss.ReadFromString(brep_data)
-        occ_shape = ss.Shape(ss.NbShapes())
-    except BaseException:
-        pass
+        if OCC.VERSION < "7.8":
+            ss = BRepTools.BRepTools_ShapeSet()
+            ss.ReadFromString(brep_data)
+            occ_shape = ss.Shape(ss.NbShapes())
+        else:
+            ss = BRepTools.breptools()
+            occ_shape = ss.ReadFromString(brep_data)
+    except BaseException as e:
+        print("Error occurred parsing a shape from a string:", e)
 
     if is_product_shape:
         return shape_tuple(brep_object, occ_shape, styles, style_ids)

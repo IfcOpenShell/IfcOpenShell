@@ -279,7 +279,6 @@ class BIM_PT_structural_connection(Panel):
 class BIM_PT_structural_analysis_models(Panel):
     bl_label = "Structural Analysis Models"
     bl_idname = "BIM_PT_structural_analysis_models"
-    bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -354,7 +353,6 @@ class BIM_UL_structural_analysis_models(UIList):
 class BIM_PT_structural_load_cases(Panel):
     bl_label = "Structural Load Cases"
     bl_idname = "BIM_PT_structural_load_cases"
-    bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -390,9 +388,9 @@ class BIM_PT_structural_load_cases(Panel):
         elif self.props.active_load_case_id:
             row.operator("bim.remove_structural_load_case", text="", icon="X").load_case = load_case["id"]
         else:
-            row.operator(
-                "bim.enable_editing_structural_load_case_groups", text="", icon="GHOST_ENABLED"
-            ).load_case = load_case["id"]
+            row.operator("bim.enable_editing_structural_load_case_groups", text="", icon="GHOST_ENABLED").load_case = (
+                load_case["id"]
+            )
             row.operator("bim.enable_editing_structural_load_case", text="", icon="GREASEPENCIL").load_case = load_case[
                 "id"
             ]
@@ -450,7 +448,6 @@ class BIM_UL_structural_activities(UIList):
 class BIM_PT_structural_loads(Panel):
     bl_label = "Structural Loads"
     bl_idname = "BIM_PT_structural_loads"
-    bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -520,7 +517,6 @@ class BIM_UL_structural_loads(UIList):
 class BIM_PT_boundary_conditions(Panel):
     bl_label = "Boundary Conditions"
     bl_idname = "BIM_PT_boundary_conditions"
-    bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -551,9 +547,9 @@ class BIM_PT_boundary_conditions(Panel):
 
             row = self.layout.row(align=True)
             prop_with_search(row, self.props, "boundary_condition_types", text="")
-            row.operator(
-                "bim.add_boundary_condition", text="", icon="ADD"
-            ).ifc_class = self.props.boundary_condition_types
+            row.operator("bim.add_boundary_condition", text="", icon="ADD").ifc_class = (
+                self.props.boundary_condition_types
+            )
         else:
             row.operator("bim.load_boundary_conditions", text="", icon="GREASEPENCIL")
 

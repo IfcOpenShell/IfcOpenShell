@@ -37,7 +37,8 @@ class SpatialData:
         if cls.data["poll"]:
             cls.data.update(
                 {
-                    "parent_container_id": cls.parent_container_id(),
+                    "default_container": cls.default_container(),
+                    "selected_containers": cls.selected_containers(),
                     "is_directly_contained": cls.is_directly_contained(),
                     "label": cls.label(),
                     "references": cls.references(),
@@ -56,14 +57,17 @@ class SpatialData:
         return False
 
     @classmethod
-    def parent_container_id(cls):
-        container_id = bpy.context.scene.BIMSpatialProperties.active_container_id
-        if not container_id:
-            return
-        container = tool.Ifc.get_entity_by_id(container_id)
-        if not container or container.is_a("IfcProject"):
-            return
-        return container.Decomposes[0].RelatingObject.id()
+    def default_container(cls) -> str | None:
+        props = bpy.context.scene.BIMSpatialDecompositionProperties
+        if props.default_container:
+            try:
+                return tool.Ifc.get().by_id(props.default_container).Name
+            except:
+                pass
+
+    @classmethod
+    def selected_containers(cls):
+        return sorted([e.Name or "Unnamed" for e in tool.Spatial.get_selected_containers()])
 
     @classmethod
     def label(cls):
@@ -97,7 +101,7 @@ class SpatialDecompositionData:
         }
 
     @classmethod
-    def default_container(cls) -> str:
+    def default_container(cls) -> str | None:
         props = bpy.context.scene.BIMSpatialDecompositionProperties
         if props.default_container:
             try:

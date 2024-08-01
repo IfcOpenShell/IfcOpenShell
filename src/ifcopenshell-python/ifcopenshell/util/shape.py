@@ -33,6 +33,8 @@ VECTOR_3D = tuple[float, float, float]
 MatrixType = npt.NDArray[np.float64]
 """`npt.NDArray[np.float64]`"""
 
+# NOTE: See IfcGeomRepresentation.h for ShapeType buffer types.
+
 
 def is_x(value: float, x: float, tolerance: Optional[float] = None) -> bool:
     """Checks whether a value is equivalent to X given a tolerance
@@ -72,6 +74,7 @@ def get_volume(geometry: ShapeType) -> float:
         v123 = p1[0] * p2[1] * p3[2]
         return (1.0 / 6.0) * (-v321 + v231 + v312 - v132 - v213 + v123)
 
+    # Can't optimize it using buffers - performance seems to get only worse.
     verts = geometry.verts
     faces = geometry.faces
     grouped_verts = [[verts[i], verts[i + 1], verts[i + 2]] for i in range(0, len(verts), 3)]
@@ -90,8 +93,8 @@ def get_x(geometry: ShapeType) -> float:
     :return: The X dimension
     :rtype: float
     """
-    x_values = [geometry.verts[i] for i in range(0, len(geometry.verts), 3)]
-    return max(x_values) - min(x_values)
+    verts_flat = get_vertices(geometry).ravel()
+    return np.max(verts_flat[0::3]) - np.min(verts_flat[0::3])
 
 
 def get_y(geometry: ShapeType) -> float:
@@ -102,8 +105,8 @@ def get_y(geometry: ShapeType) -> float:
     :return: The Y dimension
     :rtype: float
     """
-    y_values = [geometry.verts[i + 1] for i in range(0, len(geometry.verts), 3)]
-    return max(y_values) - min(y_values)
+    verts_flat = get_vertices(geometry).ravel()
+    return np.max(verts_flat[1::3]) - np.min(verts_flat[1::3])
 
 
 def get_z(geometry: ShapeType) -> float:
@@ -114,8 +117,8 @@ def get_z(geometry: ShapeType) -> float:
     :return: The Z dimension
     :rtype: float
     """
-    z_values = [geometry.verts[i + 2] for i in range(0, len(geometry.verts), 3)]
-    return max(z_values) - min(z_values)
+    verts_flat = get_vertices(geometry).ravel()
+    return np.max(verts_flat[2::3]) - np.min(verts_flat[2::3])
 
 
 def get_max_xy(geometry: ShapeType) -> float:
@@ -172,19 +175,18 @@ def get_bbox_centroid(geometry: ShapeType) -> tuple[float, float, float]:
     :return: A tuple representing the XYZ centroid
     :rtype: tuple[float, float, float]
     """
-    x_values = [geometry.verts[i] for i in range(0, len(geometry.verts), 3)]
-    y_values = [geometry.verts[i + 1] for i in range(0, len(geometry.verts), 3)]
-    z_values = [geometry.verts[i + 2] for i in range(0, len(geometry.verts), 3)]
-    x_values: list[float]
-    y_values: list[float]
-    z_values: list[float]
+    verts_flat = get_vertices(geometry).ravel()
+    x_values = verts_flat[0::3]
+    y_values = verts_flat[1::3]
+    z_values = verts_flat[2::3]
     minx = min(x_values)
     maxx = max(x_values)
     miny = min(y_values)
     maxy = max(y_values)
     minz = min(z_values)
     maxz = max(z_values)
-    return (minx + ((maxx - minx) / 2), miny + ((maxy - miny) / 2), minz + ((maxz - minz) / 2))
+    res = np.array((minx + ((maxx - minx) / 2), miny + ((maxy - miny) / 2), minz + ((maxz - minz) / 2)))
+    return res.tolist()
 
 
 def get_element_bbox_centroid(element: ifcopenshell.entity_instance, geometry) -> npt.NDArray[np.float64]:
@@ -236,8 +238,7 @@ def get_vertices(geometry: ShapeType) -> npt.NDArray[np.float64]:
     :return: A numpy array listing all the vertices. Each vertex is a numpy array with XYZ coordinates.
     :rtype: np.array[np.array[float]]
     """
-    verts = geometry.verts
-    return np.array([np.array([verts[i], verts[i + 1], verts[i + 2]]) for i in range(0, len(verts), 3)])
+    return np.frombuffer(geometry.verts_buffer, "d").reshape(-1, 3)
 
 
 def get_edges(geometry: ShapeType) -> npt.NDArray[np.int32]:
@@ -254,8 +255,7 @@ def get_edges(geometry: ShapeType) -> npt.NDArray[np.int32]:
     :return: A numpy array listing all the edges. Each edge is a numpy array with two vertex indices.
     :rtype: np.array[np.array[int]]
     """
-    edges = geometry.edges
-    return np.array([[edges[i], edges[i + 1]] for i in range(0, len(edges), 2)])
+    return np.frombuffer(geometry.edges_buffer, dtype="i").reshape(-1, 2)
 
 
 def get_faces(geometry: ShapeType) -> npt.NDArray[np.int32]:
@@ -271,8 +271,12 @@ def get_faces(geometry: ShapeType) -> npt.NDArray[np.int32]:
     :return: A numpy array listing all the faces. Each face is a numpy array with three vertex indices.
     :rtype: np.array[np.array[int]]
     """
-    faces = geometry.faces
-    return np.array([[faces[i], faces[i + 1], faces[i + 2]] for i in range(0, len(faces), 3)])
+    return np.frombuffer(geometry.faces_buffer, dtype="i").reshape(-1, 3)
+
+
+def get_representation_item_ids(geometry: ShapeType) -> npt.NDArray[np.int32]:
+    """Get representation item ids for the geometry faces."""
+    return np.frombuffer(geometry.item_ids_buffer, dtype="i")
 
 
 def get_shape_vertices(shape: ShapeType, geometry: ShapeType) -> npt.NDArray[np.float64]:
@@ -337,8 +341,8 @@ def get_top_elevation(geometry: ShapeType) -> float:
     :return: The Z value
     :rtype: float
     """
-    z_values = [geometry.verts[i + 2] for i in range(0, len(geometry.verts), 3)]
-    return max(z_values)
+    verts_flat = get_vertices(geometry).ravel()
+    return np.max(verts_flat[2::3])
 
 
 def get_shape_bottom_elevation(shape: ShapeType, geometry: ShapeType) -> float:
@@ -460,10 +464,8 @@ def get_area(geometry: ShapeType) -> float:
     :return: The surface area.
     :rtype: float
     """
-    verts = geometry.verts
-    faces = geometry.faces
-    vertices = np.array([[verts[i], verts[i + 1], verts[i + 2]] for i in range(0, len(verts), 3)])
-    faces = np.array([[faces[i], faces[i + 1], faces[i + 2]] for i in range(0, len(faces), 3)])
+    vertices = get_vertices(geometry)
+    faces = get_faces(geometry)
     return get_area_vf(vertices, faces)
 
 
@@ -496,10 +498,8 @@ def get_side_area(
     if direction is None:
         direction = {"X": (1.0, 0.0, 0.0), "Y": (0.0, 1.0, 0.0), "Z": (0.0, 0.0, 1.0)}[axis]
 
-    verts = geometry.verts
-    faces = geometry.faces
-    vertices = np.array([[verts[i], verts[i + 1], verts[i + 2]] for i in range(0, len(verts), 3)])
-    faces = np.array([[faces[i], faces[i + 1], faces[i + 2]] for i in range(0, len(faces), 3)])
+    vertices = get_vertices(geometry)
+    faces = get_faces(geometry)
 
     # Calculate the triangle normal vectors
     v1 = vertices[faces[:, 1]] - vertices[faces[:, 0]]
@@ -563,10 +563,8 @@ def get_footprint_area(
     if direction is None:
         direction = {"X": (1.0, 0.0, 0.0), "Y": (0.0, 1.0, 0.0), "Z": (0.0, 0.0, 1.0)}[axis]
 
-    verts = geometry.verts
-    faces = geometry.faces
-    vertices = np.array([[verts[i], verts[i + 1], verts[i + 2]] for i in range(0, len(verts), 3)])
-    faces = np.array([[faces[i], faces[i + 1], faces[i + 2]] for i in range(0, len(faces), 3)])
+    vertices = get_vertices(geometry)
+    faces = get_faces(geometry)
 
     # Calculate the triangle normal vectors
     v1 = vertices[faces[:, 1]] - vertices[faces[:, 0]]
@@ -585,6 +583,7 @@ def get_footprint_area(
     filtered_faces = faces[filtered_face_indices]
 
     # Flatten vertices along the direction
+    vertices = vertices.copy()  # Buffers are read-only.
     for idx in range(len(vertices)):
         vertices[idx] = vertices[idx] - np.dot(vertices[idx], direction) * direction
 
@@ -627,10 +626,8 @@ def get_outer_surface_area(geometry: ShapeType) -> float:
     :return: The surface area.
     :rtype: float
     """
-    verts = geometry.verts
-    faces = geometry.faces
-    vertices = np.array([[verts[i], verts[i + 1], verts[i + 2]] for i in range(0, len(verts), 3)])
-    faces = np.array([[faces[i], faces[i + 1], faces[i + 2]] for i in range(0, len(faces), 3)])
+    vertices = get_vertices(geometry)
+    faces = get_faces(geometry)
 
     # Calculate the triangle normal vectors
     v1 = vertices[faces[:, 1]] - vertices[faces[:, 0]]
@@ -657,10 +654,8 @@ def get_footprint_perimeter(geometry: ShapeType) -> float:
     :return: The perimeter length
     :rtype: float
     """
-    verts = geometry.verts
-    faces = geometry.faces
-    vertices = np.array([[verts[i], verts[i + 1], verts[i + 2]] for i in range(0, len(verts), 3)])
-    faces = np.array([[faces[i], faces[i + 1], faces[i + 2]] for i in range(0, len(faces), 3)])
+    vertices = get_vertices(geometry)
+    faces = get_faces(geometry)
 
     # Calculate the triangle normal vectors
     v1 = vertices[faces[:, 1]] - vertices[faces[:, 0]]
@@ -735,3 +730,16 @@ def get_extrusions(element: ifcopenshell.entity_instance) -> list[ifcopenshell.e
             else:
                 break
     return extrusions
+
+
+def get_total_edge_length(geometry: ShapeType) -> float:
+    """Calculates the total length of edges in a given geometry.
+
+    :param geometry: Geometry output calculated by IfcOpenShell
+    :type geometry: geometry
+    :return: The total length of all edges in the geometry.
+    :rtype: float
+    """
+    vertices = get_vertices(geometry)
+    vertices = vertices[get_edges(geometry)]
+    return np.linalg.norm(vertices[:, 1] - vertices[:, 0], axis=1).sum()

@@ -18,6 +18,7 @@
 
 import bpy
 import blenderbim.tool as tool
+import os
 
 
 def refresh():
@@ -31,10 +32,16 @@ class WebData:
     @classmethod
     def load(cls):
         cls.data = {
-            "IFC_File": cls.ifc_file_name(),
+            "ifc_file": cls.get_ifc_file_name(),
+            "is_dirty": cls.get_is_dirty(),
         }
         cls.is_loaded = True
 
     @classmethod
-    def ifc_file_name(cls):
-        return bpy.context.scene.BIMProperties.ifc_file
+    def get_ifc_file_name(cls):
+        filename = os.path.basename(bpy.context.scene.BIMProperties.ifc_file)
+        return filename
+
+    @classmethod
+    def get_is_dirty(cls):
+        return bpy.context.scene.BIMProperties.is_dirty

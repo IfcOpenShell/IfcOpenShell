@@ -233,14 +233,19 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 
 	std::string context_string = "";
 
-	/*
-	// @todo
-	if (representation->RepresentationIdentifier()) {
-		context_string = *representation->RepresentationIdentifier();
-	} else if (representation->ContextOfItems()->ContextType()) {
-		context_string = *representation->ContextOfItems()->ContextType();
+	// IfcShapeRepresentation.
+	const IfcUtil::IfcBaseEntity *representation = representation_node->instance->as<IfcUtil::IfcBaseEntity>();
+	auto representation_identifier = representation->get("RepresentationIdentifier");
+	if (!representation_identifier->isNull()) {
+		context_string = (std::string) *representation_identifier;
 	}
-	*/
+	else {
+		IfcUtil::IfcBaseClass *context = (IfcUtil::IfcBaseClass *) *representation->get("ContextOfItems");
+		auto context_type = context->as<IfcUtil::IfcBaseEntity>()->get("ContextType");
+		if (!context_type->isNull()) {
+			context_string = (std::string) *context_type;
+		}
+	}
 
 	auto elem = new IfcGeom::BRepElement(
 		product->data().id(),
@@ -343,17 +348,8 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_process
 
 	const std::string guid = product->get_value<std::string>("GlobalId");
 	const std::string name = product->get_value<std::string>("Name", "");
-
-	/*
-	std::string context_string = "";
-	if (representation->hasRepresentationIdentifier()) {
-		context_string = representation->RepresentationIdentifier();
-	} else if (representation->ContextOfItems()->hasContextType()) {
-		context_string = representation->ContextOfItems()->ContextType();
-	}
-	*/
-
 	const std::string product_type = product->declaration().name();
+	const std::string context_string = brep->context();
 
 	return new IfcGeom::BRepElement(
 		product->data().id(),
@@ -361,8 +357,7 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_process
 		name,
 		product_type,
 		guid,
-		// @todo
-		"",
+		context_string,
 		place,
 		brep->geometry_pointer(),
 		product

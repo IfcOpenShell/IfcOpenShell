@@ -18,7 +18,6 @@
 
 import os
 import bpy
-import addon_utils
 import platform
 from pathlib import Path
 from bpy.types import Panel
@@ -240,7 +239,25 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         min=0.0,
         max=1.0,
         size=4,
-        description="Color of special selected verts/edges (openings, preview verts/edges in roof editing, verts with arcs/circles in profile editing)",
+        description="Color of derived, parametric, or invisible geometry",
+    )
+    decorator_color_error: bpy.props.FloatVectorProperty(
+        name="Warning Elements Color",
+        subtype="COLOR",
+        default=(1, 0.2, 0.322, 1),  # red
+        min=0.0,
+        max=1.0,
+        size=4,
+        description="Color of warning, error, or problem overlays",
+    )
+    decorator_color_background: bpy.props.FloatVectorProperty(
+        name="Background Elements Color",
+        subtype="COLOR",
+        default=(0.2, 0.2, 0.2, 1),  # grey
+        min=0.0,
+        max=1.0,
+        size=4,
+        description="Color of background overlays",
     )
 
     def draw(self, context):
@@ -315,6 +332,10 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row.prop(self, "decorator_color_unselected")
         row = self.layout.row()
         row.prop(self, "decorator_color_special")
+        row = self.layout.row()
+        row.prop(self, "decorator_color_error")
+        row = self.layout.row()
+        row.prop(self, "decorator_color_background")
 
         row = self.layout.row(align=True)
         row.prop(context.scene.BIMProperties, "schema_dir")
@@ -349,6 +370,8 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row = self.layout.row()
         row.prop(context.scene.DocProperties, "drawing_font")
         row.prop(context.scene.DocProperties, "magic_font_scale")
+        row = self.layout.row()
+        row.prop(context.scene.DocProperties, "imperial_precision")
 
 
 # Scene panel groups
@@ -410,6 +433,16 @@ class BIM_PT_tabs(Panel):
 
             row = self.layout.row(align=True)
             row.prop(aprops, "tab", text="")
+
+            if blenderbim.REINSTALLED_BBIM_VERSION:
+                box = self.layout.box()
+                box.alert = True
+
+                box.label(text="BlenderBIM requires Blender to restart.", icon="ERROR")
+                box.label(text="BlenderBIM was reinstalled in the current session:")
+                box.label(text=f"{blenderbim.FIRST_INSTALLED_BBIM_VERSION} -> {blenderbim.REINSTALLED_BBIM_VERSION}")
+                box.label(text="Please restart Blender to avoid potential issues.")
+                box.operator("bim.restart_blender", text="Restart Blender", icon="BLENDER")
 
             if blenderbim.last_error:
                 box = self.layout.box()
@@ -683,8 +716,36 @@ class BIM_PT_tab_lighting(Panel):
         pass
 
 
+class BIM_PT_tab_lighting(Panel):
+    bl_label = "Lighting"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "SERVICES") and tool.Ifc.get()
+
+    def draw(self, context):
+        pass
+
+
 class BIM_PT_tab_zones(Panel):
     bl_label = "Zones"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "SERVICES") and tool.Ifc.get()
+
+    def draw(self, context):
+        pass
+
+
+class BIM_PT_tab_solar_analysis(Panel):
+    bl_label = "Solar Analysis"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -1062,5 +1123,5 @@ def draw_custom_context_menu(self, context):
             url = docs.get("spec_url", "")
             if url:
                 layout.separator()
-                url_op = layout.operator("bim.open_webbrowser", icon="URL", text="Online IFC Documentation")
-                url_op.url = url
+                url_op = layout.operator("bim.open_uri", icon="URL", text="Online IFC Documentation")
+                url_op.uri = url

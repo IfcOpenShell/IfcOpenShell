@@ -16,10 +16,19 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 import ifcopenshell
+from typing import Literal
+
+
+MATERIAL_SET_TYPE = Literal[
+    "IfcMaterialLayerSet",
+    "IfcMaterialProfileSet",
+    "IfcMaterialConstituentSet",
+    "IfcMaterialList",
+]
 
 
 def add_material_set(
-    file: ifcopenshell.file, name: str = "Unnamed", set_type: str = "IfcMaterialConstituentSet"
+    file: ifcopenshell.file, name: str = "Unnamed", set_type: MATERIAL_SET_TYPE = "IfcMaterialConstituentSet"
 ) -> ifcopenshell.entity_instance:
     """Adds a new material set
 
@@ -104,7 +113,7 @@ def add_material_set(
         # Great! Let's assign our material set to our wall type.
         ifcopenshell.api.material.assign_material(model, products=[wall_type], material=material_set)
     """
-    settings = {"name": name or "Unnamed", "set_type": set_type or "IfcMaterialConstituentSet"}
+    settings = {"name": name or "Unnamed", "set_type": set_type}
 
     if settings["set_type"] == "IfcMaterialLayerSet":
         return file.create_entity("IfcMaterialLayerSet", LayerSetName=settings["name"] or "Unnamed")
