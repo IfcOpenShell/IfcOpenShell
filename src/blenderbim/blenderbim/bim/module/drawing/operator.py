@@ -1472,12 +1472,9 @@ class ActivateModel(bpy.types.Operator):
 
         CutDecorator.uninstall()
 
-        # save current visibility statuses for Views and Types collections
+        # save current visibility statuses
         visibility_status: dict[bpy.types.Object, bool] = {}
-        for col in bpy.data.collections["Views"].children:
-            for obj in col.objects:
-                visibility_status[obj] = obj.hide_get()
-        for obj in bpy.data.collections["Types"].objects:
+        for obj in bpy.data.objects:
             visibility_status[obj] = obj.hide_get()
 
         if not bpy.app.background:
@@ -1508,6 +1505,7 @@ class ActivateModel(bpy.types.Operator):
             obj.hide_set(hide_status)
 
         tool.Blender.update_viewport()
+        blenderbim.bim.handler.refresh_ui_data()
         return {"FINISHED"}
 
 
