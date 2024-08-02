@@ -535,15 +535,13 @@ class DrawPolylineWall(bpy.types.Operator):
     
         
     def modal(self, context, event):
-        # NOTE Blender seem to have a bug where some event types are triggered twice.
-        # The use of self.action_count is to prevent that. However, it's necessary to
-        # check if this behavior happens in every OS. Reference: https://blender.stackexchange.com/questions/30985/modal-operator-double-keytrigger-release-triggered-twice-on-ubuntu
         
         if event.type == 'MOUSEMOVE':
             self.mousemove_count += 1
             tool.Blender.update_viewport()
             WallPolylineDecorator.set_mouse_position(context, event)
-            WallPolylineDecorator.calculate_distance_and_angle(context)
+            self.input_panel = WallPolylineDecorator.calculate_distance_and_angle(context, self.is_input_on)
+            self.is_input_on = False
         else:
             self.mousemove_count = 0
         
@@ -568,7 +566,6 @@ class DrawPolylineWall(bpy.types.Operator):
             tool.Blender.update_viewport()
 
         if event.value == 'PRESS' and event.type == 'I': 
-            self.input_panel = {'X': '', 'Y': '', 'D': '', 'A': ''}
             self.is_input_on = True
 
         if self.is_input_on:
@@ -583,23 +580,15 @@ class DrawPolylineWall(bpy.types.Operator):
                 self.number_input.append(event.ascii)
                 self.number_output = ''.join(self.number_input) 
                 self.input_panel[self.input_type] = self.number_output
-                print("PANEL", self.input_panel)
                 WallPolylineDecorator.set_input_panel(self.input_panel, self.input_type)
+                self.input_panel = WallPolylineDecorator.calculate_distance_and_angle(context, self.is_input_on)
                 tool.Blender.update_viewport()
                 print(self.number_output)
 
         if event.value == 'PRESS' and event.type in {'RET', 'NUMPAD_ENTER'}:
-            if not None in self.input_value_xy:
-                tool.Snaping.insert_polyline_point(self.input_value_xy[0], self.input_value_xy[1])
-                tool.Blender.update_viewport()
-                self.is_input_on = False
-            if self.number_output and self.input_type == 'X':
-                print("-> ", float(self.number_output))
-                self.input_value_xy[0] = float(self.number_output)
-            if self.number_output and self.input_type == 'Y':
-                print("-> ", float(self.number_output))
-                self.input_value_xy[1] = float(self.number_output)
-                
+            tool.Snaping.insert_polyline_point(float(self.input_panel['X']), float(self.input_panel['Y']))
+            tool.Blender.update_viewport()
+            self.is_input_on = False
             
         if event.type in {'MIDDLEMOUSE', 'WHEELUPMOUSE', 'WHEELDOWNMOUSE'}:
             return {'PASS_THROUGH'}
@@ -623,7 +612,6 @@ class DrawPolylineWall(bpy.types.Operator):
             self.visible_objs = self.get_visible_objects(context)
             for obj in self.visible_objs: # TODO check if matrix is needed here
                 self.objs_2d_bbox.append(self.get_objects_2d_bounding_boxes(context, obj))
-                # self.objs_bvhs.append(self.get_bvh_objects_bounding_boxes(obj))
             context.window_manager.modal_handler_add(self)
             return {'RUNNING_MODAL'}
         else:
