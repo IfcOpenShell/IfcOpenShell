@@ -351,9 +351,15 @@ endif
 
 .PHONY: test
 test:
-	-make test-core
-	-make test-tool
-	-make test-bim
+	@echo "Running all tests..."
+	@ERROR=0; \
+	make test-core || ERROR=1; \
+	make test-tool || ERROR=1; \
+	make test-bim || ERROR=1; \
+	if [ $$ERROR -ne 0 ]; then \
+		echo "One or more tests failed"; \
+		exit 1; \
+	fi
 
 .PHONY: test-core
 test-core:
