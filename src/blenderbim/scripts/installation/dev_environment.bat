@@ -1,16 +1,31 @@
 @echo off
 
-echo SETUP BLENDERBIM ADD-ON LIVE DEVELOPMENT ENVIRONMENT
-echo Update REPO_PATH, BLENDER_PATH, PACKAGE_PATH, BLENDERBIM_PATH in the script below.
-echo This script needs to be run as administrator (to create symbolic links)
-echo Make sure you have followed these steps before proceeding :)
+setlocal
 
-pause
 
-SET REPO_PATH=%HOMEDRIVE%\Users\%USERNAME%\Where\Your\Git\Repository\Is\Cloned\IfcOpenShell
+rem Uncomment setting REPO_PATH to use custom path for IfcOpenShell repository.
+rem Otherwise by default it is assumed script is executed from IfcOpenShell directory.
+rem SET REPO_PATH=%HOMEDRIVE%\Users\%USERNAME%\Where\Your\Git\Repository\Is\Cloned\IfcOpenShell
 SET BLENDER_PATH=%HOMEDRIVE%\Users\%USERNAME%\AppData\Roaming\Blender Foundation\Blender\4.2
 SET PACKAGE_PATH=%BLENDER_PATH%\extensions\.local\lib\python3.11\site-packages
 SET BLENDERBIM_PATH=%BLENDER_PATH%\extensions\user_default\blenderbim
+
+
+echo SETUP BLENDERBIM ADD-ON LIVE DEVELOPMENT ENVIRONMENT
+echo Update REPO_PATH, BLENDER_PATH, PACKAGE_PATH, BLENDERBIM_PATH in the script above.
+echo This script needs to be run as administrator (to create symbolic links)
+echo Make sure you have followed these steps before proceeding :)
+echo.
+echo Currently set paths:
+if not defined REPO_PATH (
+    echo REPO_PATH is not set, assuming we're already in IfcOpenShell directory.
+    set REPO_PATH=%cd%
+)
+echo REPO_PATH=%REPO_PATH%
+echo BLENDER_PATH=%BLENDER_PATH%
+echo PACKAGE_PATH=%PACKAGE_PATH%
+echo BLENDERBIM_PATH=%BLENDERBIM_PATH%
+pause
 
 echo Changing to the Git repository directory...
 cd %REPO_PATH%
