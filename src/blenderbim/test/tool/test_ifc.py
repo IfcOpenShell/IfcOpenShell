@@ -21,6 +21,7 @@ import ifcopenshell
 import test.bim.bootstrap
 import blenderbim.core.tool
 import blenderbim.tool as tool
+import pytest
 from blenderbim.tool.ifc import Ifc as subject
 
 
@@ -69,28 +70,32 @@ class TestIsMoved(test.bim.bootstrap.NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
         subject.set(ifc)
+
         obj = bpy.data.objects.new("Object", None)
-        element = ifc.createIfcWall()
+        element = ifc.create_entity("IfcWall")
         subject.link(element, obj)
-        obj.BIMObjectProperties.ifc_definition_id = element.id()
         assert subject.is_moved(obj) is True
+
         tool.Geometry.record_object_position(obj)
         assert subject.is_moved(obj) is False
+
         obj.matrix_world[0][2] += 1
         assert subject.is_moved(obj) is True
 
     def test_that_a_type_or_project_never_moves_but_a_grid_axis_does(self):
         ifc = ifcopenshell.file()
         subject.set(ifc)
+
         obj = bpy.data.objects.new("Object", None)
-        element = ifc.createIfcWallType()
-        subject.link(element, obj)
-        obj.BIMObjectProperties.ifc_definition_id = element.id()
-        assert subject.is_moved(obj) is False
-        element = ifc.createIfcProject()
+        element = ifc.create_entity("IfcWallType")
         subject.link(element, obj)
         assert subject.is_moved(obj) is False
-        element = ifc.createIfcGridAxis()
+
+        element = ifc.create_entity("IfcProject")
+        subject.link(element, obj)
+        assert subject.is_moved(obj) is False
+
+        element = ifc.create_entity("IfcGridAxis")
         subject.link(element, obj)
         assert subject.is_moved(obj) is True
 
@@ -100,8 +105,8 @@ class TestGetEntity(test.bim.bootstrap.NewFile):
         ifc = ifcopenshell.file()
         subject.set(ifc)
         obj = bpy.data.objects.new("Object", None)
-        element = ifc.createIfcWall()
-        obj.BIMObjectProperties.ifc_definition_id = element.id()
+        element = ifc.create_entity("IfcWall")
+        subject.link(element, obj)
         assert subject.get_entity(obj) == element
 
     def test_attempting_to_get_an_unlinked_object(self):
@@ -122,11 +127,19 @@ class TestGetEntity(test.bim.bootstrap.NewFile):
 
 
 class TestGetObject(test.bim.bootstrap.NewFile):
-    def test_run(self):
+    def test_get_object(self):
         ifc = ifcopenshell.file()
         subject.set(ifc)
-        element = ifc.createIfcWall()
+        element = ifc.create_entity("IfcWall")
         obj = bpy.data.objects.new("Object", None)
+        subject.link(element, obj)
+        assert subject.get_object(element) == obj
+
+    def test_get_material(self):
+        ifc = ifcopenshell.file()
+        subject.set(ifc)
+        element = ifc.create_entity("IfcSurfaceStyle")
+        obj = bpy.data.materials.new("Style")
         subject.link(element, obj)
         assert subject.get_object(element) == obj
 
@@ -135,17 +148,8 @@ class TestLink(test.bim.bootstrap.NewFile):
     def test_link_an_object(self):
         ifc = ifcopenshell.file()
         subject.set(ifc)
-        element = ifc.createIfcWall()
+        element = ifc.create_entity("IfcWall")
         obj = bpy.data.objects.new("Object", None)
-        subject.link(element, obj)
-        assert subject.get_entity(obj) == element
-        assert subject.get_object(element) == obj
-
-    def test_link_a_material(self):
-        ifc = ifcopenshell.file()
-        subject.set(ifc)
-        element = ifc.createIfcMaterial()
-        obj = bpy.data.materials.new("Material")
         subject.link(element, obj)
         assert subject.get_entity(obj) == element
         assert subject.get_object(element) == obj
@@ -153,86 +157,67 @@ class TestLink(test.bim.bootstrap.NewFile):
     def test_link_a_style(self):
         ifc = ifcopenshell.file()
         subject.set(ifc)
-        element = ifc.createIfcSurfaceStyle()
+        element = ifc.create_entity("IfcSurfaceStyle")
         obj = bpy.data.materials.new("Material")
         subject.link(element, obj)
+        assert subject.get_entity(obj) == element
         assert subject.get_object(element) == obj
 
-    def test_link_a_material_and_style(self):
+    def test_link_not_a_style_to_blender_material(self):
         ifc = ifcopenshell.file()
         subject.set(ifc)
-        style = ifc.createIfcSurfaceStyle()
-        material = ifc.createIfcMaterial()
+        element = ifc.create_entity("IfcMaterial")
         obj = bpy.data.materials.new("Material")
-        subject.link(style, obj)
-        subject.link(material, obj)
-        assert subject.get_entity(obj) == material
-        assert subject.get_object(style) == obj
-        assert subject.get_object(material) == obj
+        with pytest.raises(AttributeError):
+            subject.link(element, obj)
+
+    def test_link_a_mesh(self):
+        ifc = ifcopenshell.file()
+        subject.set(ifc)
+        element = ifc.create_entity("IfcShapeRepresentation")
+        obj = bpy.data.meshes.new("Material")
+        subject.link(element, obj)
+        assert obj.BIMMeshProperties.ifc_definition_id == element.id()
 
 
 class TestUnlink(test.bim.bootstrap.NewFile):
     def test_unlink_an_object(self):
         ifc = ifcopenshell.file()
         subject.set(ifc)
-        element = ifc.createIfcWall()
+        element = ifc.create_entity("IfcWall")
         obj = bpy.data.objects.new("Object", None)
         subject.link(element, obj)
-        subject.unlink(element, obj)
-        assert subject.get_entity(obj) is None
-        assert subject.get_object(element) is None
-
-    def test_unlink_a_material(self):
-        ifc = ifcopenshell.file()
-        subject.set(ifc)
-        element = ifc.createIfcMaterial()
-        obj = bpy.data.materials.new("Material")
-        subject.link(element, obj)
-        subject.unlink(element, obj)
+        subject.unlink(element)
         assert subject.get_entity(obj) is None
         assert subject.get_object(element) is None
 
     def test_unlink_a_style(self):
         ifc = ifcopenshell.file()
         subject.set(ifc)
-        element = ifc.createIfcSurfaceStyle()
+        element = ifc.create_entity("IfcSurfaceStyle")
         obj = bpy.data.materials.new("Material")
         subject.link(element, obj)
-        subject.unlink(element, obj)
-        assert subject.get_object(element) is None
-
-    def test_unlink_a_style_and_material(self):
-        ifc = ifcopenshell.file()
-        subject.set(ifc)
-        style = ifc.createIfcSurfaceStyle()
-        material = ifc.createIfcMaterial()
-        obj = bpy.data.materials.new("Material")
-        subject.link(style, obj)
-        subject.link(material, obj)
-        subject.unlink(element=style, obj=obj)
-        assert subject.get_entity(obj) == material
-        assert subject.get_object(material) == obj
-        assert subject.get_object(style) is None
-        subject.unlink(element=material, obj=obj)
+        subject.unlink(element)
         assert subject.get_entity(obj) is None
-        assert subject.get_object(material) is None
+        assert subject.get_object(element) is None
 
     def test_unlinking_using_an_object(self):
         ifc = ifcopenshell.file()
         subject.set(ifc)
-        element = ifc.createIfcWall()
+        element = ifc.create_entity("IfcWall")
         obj = bpy.data.objects.new("Object", None)
         subject.link(element, obj)
         subject.unlink(obj=obj)
         assert subject.get_entity(obj) is None
-        assert subject.get_object(element) is None
+        assert subject.get_object(element) is obj
 
-    def test_unlinking_using_an_element(self):
+    def test_unlinking_using_both_arguments(self):
         ifc = ifcopenshell.file()
         subject.set(ifc)
-        element = ifc.createIfcWall()
+        element = ifc.create_entity("IfcWall")
         obj = bpy.data.objects.new("Object", None)
         subject.link(element, obj)
-        subject.unlink(element=element)
-        assert subject.get_entity(obj) is None
-        assert subject.get_object(element) is None
+        with pytest.raises(TypeError):
+            subject.unlink(element=element, obj=obj)
+        assert subject.get_entity(obj) == element
+        assert subject.get_object(element) == obj

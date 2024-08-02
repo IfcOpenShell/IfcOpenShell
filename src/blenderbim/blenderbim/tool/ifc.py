@@ -94,10 +94,18 @@ class Ifc(blenderbim.core.tool.Ifc):
         Return None if object is not linked to IFC or it's linked to non-existent element.
         """
         ifc = IfcStore.get_file()
-        props = getattr(obj, "BIMObjectProperties", None)
-        if ifc and props and props.ifc_definition_id:
+        if not ifc:
+            return
+
+        props = None
+        if isinstance(obj, bpy.types.Object):
+            props = obj.BIMObjectProperties
+        elif isinstance(obj, bpy.types.Material):
+            props = obj.BIMStyleProperties
+
+        if props and (ifc_definition_id := props.ifc_definition_id):
             try:
-                return ifc.by_id(props.ifc_definition_id)
+                return ifc.by_id(ifc_definition_id)
             except RuntimeError:
                 pass
 
