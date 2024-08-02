@@ -29,8 +29,8 @@ Installation issues
 -------------------
 
 If you are unable to install the BlenderBIM Add-on, make sure you are using
-**Blender 4.1** installed from https://blender.org/ and are installing the
-latest version from https://blenderbim.org.
+**Blender 4.2** installed from https://blender.org/ and have
+:ref:`updated to the latest version <users/quickstart/installation:Updating>`.
 
 Other common solutions are listed below. If none of these fix the problem, you
 can `report a bug <https://github.com/ifcopenshell/ifcopenshell/issues>`_ or
@@ -44,50 +44,43 @@ can `report a bug <https://github.com/ifcopenshell/ifcopenshell/issues>`_ or
    enabled with factory settings.
 
    To quickly test in a clean environment, first :ref:`find your Blender
-   configuration folder<installation_location>`.
-   Rename the folder from ``X.XX`` to something else like ``X.XX_backup``, then
-   restart Blender and try follow the :doc:`installation
+   configuration folder<users/quickstart/installation:Where is the add-on
+   installed?>`.  Rename the folder from ``X.XX`` to something else like
+   ``X.XX_backup``, then restart Blender and try follow the :doc:`installation
    instructions</users/quickstart/installation>` again.
 
    If this fixes your issue, consider disabling other add-ons one by one until
    you find a conflict as a next step to isolating the issue.
 
-2. **I get an error similar to "ImportError: IfcOpenShell not built for 'linux/64bit/python3.10'"**
-
-   If you are using a Mac, be sure to use the Mac Silicon version if you have a
-   newer Mac. The only exception is if you have installed Blender using Steam
-   on a Mac, in which case you need to use the Mac Intel download.
-
-   For all other scenarios, check the BlenderBIM Add-on zip file which you
-   downloaded. The zip will have either ``py39``, ``py310``, or ``py311`` in
-   the name. See the instructions in the :ref:`devs/installation:unstable
-   installation` section to check that you have installed the correct version.
-
-3. **I am on Ubuntu and get an error similar to "ImportError:
+2. **I am on Ubuntu and get an error similar to "ImportError:
    /lib/x86_64-linux-gnu/libm.so.6: version GLIBC_2.29 not found"**
 
    Our latest package which uses IfcOpenShell v0.8.0 is built using Ubuntu 20 LTS.
    If you have an older Ubuntu version, you can either upgrade to 19.10 or above,
    or you'll need to compile IfcOpenShell yourself.
 
-4. **I get an error saying "ModuleNotFoundError: No module named 'numpy'"**"
+3. **I get an error saying "ModuleNotFoundError: No module named 'numpy'"**"
 
    If you have installed Blender from another source instead of from
    `Blender.org <https://www.blender.org/download/>`__, such as from your
    distro's package repositories, then you may be missing some modules like
    ``numpy``. Try installing it manually like ``apt install python-numpy``.
 
-Common issues
--------------
+Saving and loading blend files
+------------------------------
 
-1. **I get an error similar to RuntimeError: Instance #1234 not found**
+The BlenderBIM Add-on transform Blender into a native IFC authoring platform.
+This means that you can open and save IFC files directly without using
+Blender's ``.blend`` format.
 
-   Blender saves and loads projects to a ``.blend`` file. However. the
-   BlenderBIM Add-on works with native IFC, and this means instead of saving
-   and loading ``.blend`` files, you should instead save and load the ``.ifc``
-   project.
+All data about your model is saved in your IFC. No data is stored in the
+``.blend`` format. This means that if you save or open a ``.blend`` file, you
+are **not** saving and loading your model. At best, you are saving and loading
+Blender geometry that represents what the model might've looked at at some
+point. At worst, you might be looking at a completely wrong model.
 
-   If you have opened a ``.blend`` file, there is a risk that the contents of
-   the ``.blend`` session do not correlate to the contents of the ``.ifc``,
-   which can cause this error. Unless you are an advanced user, only save and
-   load ``.ifc`` files.
+If you continue to open and save ``.blend`` files, you will run the risk of
+editing something that doesn't actually exist in your IFC model. This will
+create unpredictable, and sometimes unrecoverable errors.
+
+To avoid this issue, only open and save IFCs.
