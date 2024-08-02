@@ -20,7 +20,8 @@ import sys
 import json
 import pytest
 import blenderbim.core.tool
-from typing import Any, Self, Optional
+from typing import Any, Optional
+from typing_extensions import Self
 
 
 @pytest.fixture
