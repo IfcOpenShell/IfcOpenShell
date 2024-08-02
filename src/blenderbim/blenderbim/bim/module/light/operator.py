@@ -127,7 +127,7 @@ class RadianceRender(bpy.types.Operator):
             return {"CANCELLED"}
 
         # Get the resolution from the user input
-        
+
         props = context.scene.radiance_exporter_properties
         resolution_x, resolution_y = props.radiance_resolution_x, props.radiance_resolution_y
         quality = props.radiance_quality.upper()
@@ -138,7 +138,7 @@ class RadianceRender(bpy.types.Operator):
         output_file_format = props.output_file_format
         use_hdr = props.use_hdr
         choose_hdr_image = props.choose_hdr_image
-        if(use_hdr):
+        if use_hdr:
             hdr_image = "noon_grass_2k.hdr"
             hdr_mask = "noon_grass_2k_mask.hdr"
             sky_map_cal = "skymap.cal"
@@ -159,7 +159,6 @@ class RadianceRender(bpy.types.Operator):
         hour = sun_props.hour
         minute = sun_props.minute
 
-        
         camera = self.get_active_camera(context)
         if camera is None:
             self.report({"ERROR"}, "No active camera found in the scene. Please add a camera and set it as active.")
@@ -167,7 +166,6 @@ class RadianceRender(bpy.types.Operator):
 
         # Get camera position and direction
         camera_position, camera_direction = self.get_camera_data(camera)
-
 
         dt = datetime(2024, month, day, hour, minute)
 
@@ -180,10 +178,10 @@ class RadianceRender(bpy.types.Operator):
             sunny_without_sun=False,
             cloudy=True,
             ground_reflectance=0.2,
-            turbidity=3.0
-            )
+            turbidity=3.0,
+        )
 
-        sky_description_str = sky_description.decode('utf-8')
+        sky_description_str = sky_description.decode("utf-8")
 
         # Write all this to file
         # skyfunc glow sky_glow
@@ -206,9 +204,9 @@ class RadianceRender(bpy.types.Operator):
         # 0
         # 4 0 0 -1 180
 
-        if(choose_hdr_image == "Noon"):
+        if choose_hdr_image == "Noon":
 
-            with open(sky_file_path, 'w') as f:
+            with open(sky_file_path, "w") as f:
                 f.write(sky_description_str)
                 f.write("\n")
                 # f.write("skyfunc glow sky_glow\n0\n0\n4 .9 .9 1.15 0\n")
@@ -216,8 +214,13 @@ class RadianceRender(bpy.types.Operator):
                 # f.write("skyfunc glow ground_glow\n0\n0\n4 1.4 .9 .6 0\n")
                 # f.write("ground_glow source ground\n0\n0\n4 0 0 -1 180\n")
 
-                f.write('''void colorpict env_map
-7 red green blue "'''+hdr_image_path+'''"  "'''+ sky_map_cal_path +'''" map_u map_v
+                f.write(
+                    '''void colorpict env_map
+7 red green blue "'''
+                    + hdr_image_path
+                    + '''"  "'''
+                    + sky_map_cal_path
+                    + '''" map_u map_v
 0
 1 0.5
  
@@ -236,7 +239,11 @@ skyfunc colorfunc sky_colour
 0
  
 void mixpict composite
-7 env_colour sky_colour grey "'''+ hdr_mask_path +'''"  "'''+ sky_map_cal_path +'''" map_u map_v
+7 env_colour sky_colour grey "'''
+                    + hdr_mask_path
+                    + '''"  "'''
+                    + sky_map_cal_path
+                    + """" map_u map_v
 0
 2 0.5 1
  
@@ -258,10 +265,11 @@ env_colour glow ground_glow
 ground_glow source ground
 0
 0
-4 0 0 -1 180''')
+4 0 0 -1 180"""
+                )
 
         else:
-            with open(sky_file_path, 'w') as f:
+            with open(sky_file_path, "w") as f:
                 f.write(sky_description_str)
                 f.write("\n")
                 f.write("skyfunc glow sky_glow\n0\n0\n4 .9 .9 1.15 0\n")
@@ -276,7 +284,7 @@ ground_glow source ground
                 data = json.load(file)
         else:
             data = props.get_mappings_dict()
-        
+
         materials_file = os.path.join(output_dir, "materials.rad")
         with open(materials_file, "w") as file:
             file.write("void plastic white\n0\n0\n5 0.8 0.8 0.8 0 0\n")
@@ -325,7 +333,7 @@ ground_glow source ground
             detail=detail,
             variability=variability,
         )
-        
+
         output_hdr_path = os.path.join(output_dir, f"render123.{output_file_format.lower()}")
 
         if output_file_format == "HDR":
@@ -335,11 +343,10 @@ ground_glow source ground
             pass
 
         pcond_image = pr.pcond(hdr=output_hdr_path, human=True)
-        
+
         tiff_path = os.path.join(output_dir, f"{output_file_name}.tiff")
 
-        pr.ra_tiff(inp = pcond_image, out = tiff_path, lzw=True)
-
+        pr.ra_tiff(inp=pcond_image, out=tiff_path, lzw=True)
 
         self.report({"INFO"}, "Radiance rendering completed. Output: {}".format(tiff_path))
         return {"FINISHED"}
