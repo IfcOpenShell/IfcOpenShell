@@ -173,7 +173,7 @@ class Root(blenderbim.core.tool.Root):
 
     @classmethod
     def is_containable(cls, element: ifcopenshell.entity_instance) -> bool:
-        return element.is_a("IfcElement") or element.is_a("IfcGrid")
+        return element.is_a("IfcElement") or element.is_a("IfcAnnotation") or element.is_a("IfcGrid")
 
     @classmethod
     def is_element_a(cls, element: ifcopenshell.entity_instance, ifc_class: str) -> bool:
