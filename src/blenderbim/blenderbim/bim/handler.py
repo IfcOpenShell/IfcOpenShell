@@ -304,3 +304,6 @@ def load_post(scene):
             continue
         tool.Blender.override_scene_panel(panel)
     tool.Blender.setup_tabs()
+
+    if tool.Ifc.get() and bpy.data.is_saved:
+        bpy.context.scene.BIMProperties.has_blend_warning = True

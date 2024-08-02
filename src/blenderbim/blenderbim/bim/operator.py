@@ -106,6 +106,21 @@ class CloseError(bpy.types.Operator):
         return context.window_manager.invoke_props_dialog(self)
 
 
+class CloseBlendWarning(bpy.types.Operator):
+    bl_idname = "bim.close_blend_warning"
+    bl_label = "Close Blend Warning"
+
+    def execute(self, context):
+        bpy.context.scene.BIMProperties.has_blend_warning = False
+        return {"FINISHED"}
+
+    def draw(self, context):
+        self.layout.label(text="Warning: you may experience errors. Really continue?")
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
+
 class SelectURIAttribute(bpy.types.Operator):
     bl_idname = "bim.select_uri_attribute"
     bl_label = "Select URI Attribute"

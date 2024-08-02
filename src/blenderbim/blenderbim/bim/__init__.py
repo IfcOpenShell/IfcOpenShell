@@ -103,6 +103,7 @@ classes = [
     operator.BIM_OT_show_description,
     operator.BIM_OT_multiple_file_selector,
     operator.ClippingPlaneCutWithCappings,
+    operator.CloseBlendWarning,
     operator.CloseError,
     operator.EditBlenderCollection,
     operator.FileAssociate,
