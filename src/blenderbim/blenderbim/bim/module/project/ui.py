@@ -128,6 +128,15 @@ class BIM_PT_project(Panel):
         if pprops.is_loading:
             self.draw_advanced_loading_ui(context)
         elif self.file or props.ifc_file:
+            if props.has_blend_warning:
+                box = self.layout.box()
+                box.alert = True
+                row = box.row(align=True)
+                row.label(text="Your Model May Be Outdated", icon="ERROR")
+                op = row.operator("bim.open_uri", text="", icon="QUESTION")
+                op.uri = "https://docs.blenderbim.org/users/troubleshooting.html#saving-and-loading-blend-files"
+                row.operator("bim.close_blend_warning", text="", icon="CANCEL")
+
             if props.ifc_file:
                 self.draw_loaded_project_ui(context)
             else:
