@@ -96,6 +96,12 @@ class BIM_PT_radiance_exporter(bpy.types.Panel):
         layout.separator()
 
         row = layout.row()
+        row.prop(props, "use_hdr")
+
+        row = layout.row()
+        row.prop(props, "choose_hdr_image")
+
+        row = layout.row()
         row.operator("export_scene.radiance", text="Export Geometry for Simulation")
 
         row = layout.row()

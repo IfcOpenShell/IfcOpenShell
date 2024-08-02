@@ -247,9 +247,24 @@ class RadianceExporterProperties(PropertyGroup):
         name="Output File Format",
         description="Format of the output image file",
         items=[
-            ("HDR", "HDR", "High Dynamic Range"),
+            ("HDR", "HDR + Tiff", "High Dynamic Range"),
         ],
         default="HDR",
+    )
+
+    use_hdr: BoolProperty(
+        name="Use HDR",
+        description="Use HDR image format",
+        default=True,
+    )
+
+    choose_hdr_image: EnumProperty(
+        name="HDR Image",
+        description="Choose an HDR image to use",
+        items = [
+            ("Noon", "Noon", "Noon"),
+        ],
+        default="Noon",
     )
 
 
