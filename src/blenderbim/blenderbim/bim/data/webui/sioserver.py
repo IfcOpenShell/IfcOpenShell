@@ -34,6 +34,7 @@ sio.attach(app)
 
 # represents a caching for blender messages
 blender_messages = {}
+blender_them_data = {}
 
 
 # Web namespace
@@ -45,6 +46,7 @@ class WebNamespace(socketio.AsyncNamespace):
         print(f"Web client connected: {sid}")
         if blender_messages:
             await sio.emit("connected_clients", list(blender_messages.keys()), namespace="/web", room=sid)
+            await sio.emit("theme_data", blender_them_data, namespace="/web", room=sid)
             await self.send_cached_messages(sid)
 
     async def on_disconnect(self, sid):
@@ -113,6 +115,12 @@ class BlenderNamespace(socketio.AsyncNamespace):
         print(data)
         blender_messages[sid]["drwings_data"] = data
         await sio.emit("drawings_data", {"blenderId": sid, "data": data}, namespace="/web")
+
+    async def on_theme_data(self, sid, data):
+        global blender_theme
+        print(f"Blender theme data")
+        blender_theme = data
+        await sio.emit("theme_data", data, namespace="/web")
 
 
 # Attach namespaces
