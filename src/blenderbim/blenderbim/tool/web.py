@@ -380,19 +380,25 @@ class Web(blenderbim.core.tool.Web):
         def get_color(theme, attribute) -> tuple[Any, ...]:
             return tuple(getattr(theme, attribute)[:])
 
+        def mix_colors(color1, color2):
+            alpha1, alpha2 = color1[3] * 255, color2[3] * 255
+            alpha = 255 - ((255 - alpha1) * (255 - alpha2) / 255)
+            red = (color1[0] * (255 - alpha2) + color2[0] * alpha2) / 255
+            green = (color1[1] * (255 - alpha2) + color2[1] * alpha2) / 255
+            blue = (color1[2] * (255 - alpha2) + color2[2] * alpha2) / 255
+            return red, green, blue, alpha / 255
+
         prefs = bpy.context.preferences.themes[0].preferences.space
         panel = prefs.panelcolors
         view_3d = bpy.context.preferences.themes[0].view_3d
         theme = {
             "window_background": get_color(prefs, "back"),
-            # "title": get_color(prefs, "title"),
             "text": get_color(prefs, "text"),
-            # "header": get_color(prefs, "header"),
-            # "header_text": get_color(prefs, "header_text"),
-            # "header_text_highlight": get_color(prefs, "header_text_hi"),
+            "tab_background": get_color(prefs, "tab_back"),
+            "tab_outline": get_color(prefs, "tab_outline"),
             "navigation_bar": get_color(prefs, "navigation_bar"),
             "panel_header": get_color(panel, "header"),
-            "panel_background": get_color(panel, "back"),
+            "panel_background_color": mix_colors(get_color(panel, "back"), get_color(panel, "sub_back")),
             "active_object": get_color(view_3d, "object_active"),
         }
         cls.send_webui_data(theme, "theme", "theme_data", use_web_data=False)
