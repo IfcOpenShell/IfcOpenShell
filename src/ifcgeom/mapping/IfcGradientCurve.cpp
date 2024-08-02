@@ -84,7 +84,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcGradientCurve* inst) {
       return m;
 	};
 
-	taxonomy::piecewise_function::spans spans;
+	taxonomy::piecewise_function::spans_t spans;
    spans.emplace_back(length, composition);
    auto pwf = taxonomy::make<taxonomy::piecewise_function>(start, spans, &settings_, inst);
    return pwf;

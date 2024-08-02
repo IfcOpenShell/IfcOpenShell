@@ -551,7 +551,7 @@ class IfcImporter:
         for axis in axes:
             shape = tool.Loader.create_generic_shape(axis.AxisCurve)
             mesh = self.create_mesh(axis, shape)
-            obj = bpy.data.objects.new(f"IfcGridAxis/{axis.AxisTag}", mesh)
+            obj = bpy.data.objects.new(tool.Loader.get_name(axis), mesh)
             if tool.Blender.get_addon_preferences().lock_grids_on_import:
                 obj.lock_location = (True, True, True)
                 obj.lock_rotation = (True, True, True)
@@ -781,7 +781,7 @@ class IfcImporter:
             mesh = bpy.data.meshes.new(mesh_name)
             mesh.from_pydata([mathutils.Vector(vertex) * self.unit_scale], [], [])
 
-            obj = bpy.data.objects.new("{}/{}".format(product.is_a(), product.Name), mesh)
+            obj = bpy.data.objects.new(tool.Loader.get_name(product), mesh)
             self.set_matrix_world(obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, placement_matrix))
             self.link_element(product, obj)
 
@@ -847,7 +847,7 @@ class IfcImporter:
         mesh.from_pydata(vertex_list, [], [])
         tool.Ifc.link(representation, mesh)
 
-        obj = bpy.data.objects.new("{}/{}".format(product.is_a(), product.Name), mesh)
+        obj = bpy.data.objects.new(tool.Loader.get_name(product), mesh)
         self.set_matrix_world(obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, placement_matrix))
         self.link_element(product, obj)
         return product

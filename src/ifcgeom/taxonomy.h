@@ -351,46 +351,30 @@ typedef item const* ptr;
 				virtual item::ptr evaluate() const = 0;
 			};
 
+			struct piecewise_function_impl; // forward declaration
 			struct piecewise_function : public implicit_item {
             DECLARE_PTR(piecewise_function)
 
-				using spans = std::vector<std::pair<double, std::function<Eigen::Matrix4d(double u)>>>;
+				using spans_t = std::vector<std::pair<double, std::function<Eigen::Matrix4d(double u)>>>;
 
-            piecewise_function(double start,const spans& s, ifcopenshell::geometry::Settings* settings = nullptr, const IfcUtil::IfcBaseInterface* instance = nullptr) : 
-					implicit_item(instance), start_(start), settings_(settings), spans_(s){};
-            piecewise_function(double start,const std::vector<piecewise_function::ptr>& pwfs, ifcopenshell::geometry::Settings* settings = nullptr, const IfcUtil::IfcBaseInterface* instance = nullptr) : 
-					implicit_item(instance), start_(start), settings_(settings)
-				{
-                for (auto& pwf : pwfs) {
-                    spans_.insert(spans_.end(), pwf->spans_.begin(), pwf->spans_.end());
-                }
-				};
+            piecewise_function(double start, const spans_t& s, ifcopenshell::geometry::Settings* settings = nullptr, const IfcUtil::IfcBaseInterface* instance = nullptr);
+            piecewise_function(double start, const std::vector<piecewise_function::ptr>& pwfs, ifcopenshell::geometry::Settings* settings = nullptr, const IfcUtil::IfcBaseInterface* instance = nullptr);
             piecewise_function(piecewise_function&&) = default;
-            piecewise_function(const piecewise_function&) = default;
+            piecewise_function(const piecewise_function&);
+            virtual ~piecewise_function();
 
 				const ifcopenshell::geometry::Settings* settings_ = nullptr;
 
-				bool is_empty() const { return spans_.empty(); }
-
-				double start() const {
-                    return start_;
-                }
-
-				double end() const {
-                    return start_ + length();
-				}
-
-				double length() const {
-					if (!length_.has_value()) {
-						length_ = std::accumulate(spans_.begin(), spans_.end(), 0.0, [](const auto& v, const auto& s) { return v + s.first; });
-					}
-               return *length_;
-            }
+				const spans_t& spans() const;
+				bool is_empty() const;
+				double start() const;
+				double end() const;
+				double length() const;
 
 				virtual piecewise_function* clone_() const { return new piecewise_function(*this); }
 				virtual kinds kind() const { return PIECEWISE_FUNCTION; }
 
-				virtual size_t calc_hash() const {
+				virtual size_t calc_hash() const	{
 					auto v = std::make_tuple(static_cast<size_t>(PIECEWISE_FUNCTION), 0);
 					return boost::hash<decltype(v)>{}(v);
 				}
@@ -423,15 +407,10 @@ typedef item const* ptr;
 				Eigen::Matrix4d evaluate(double u) const;
 
             private:
-                item::ptr evaluate(const std::vector<double>& dist) const;
-                std::tuple<double, double, const std::function<Eigen::Matrix4d(double u)>*> get_span(double u) const;
-               double start_ = 0.0; // starting value of the pwf
-               spans spans_;
-               mutable double current_span_start_ = 0;
-				   mutable double current_span_end_ = 0;
-				   mutable const std::function<Eigen::Matrix4d(double u)>* current_span_fn_ = nullptr;
-               mutable boost::optional<double> length_;
-               mutable boost::optional<std::vector<double>> eval_points_;
+				    // note: it would be better if this were a std::unique_ptr, but that requires having the full definition
+					 // of piecewise_function_impl in this header file, which defeats the purpose of the PIMPL idiom.
+					 // if this is a std::unique_ptr, then the _ifcopenshell_wrapper library doesn't compile
+                piecewise_function_impl* impl_ = nullptr;
 			};
 
 #ifdef TAXONOMY_USE_SHARED_PTR
@@ -1329,14 +1308,14 @@ typedef item const* ptr;
                 boost::optional<taxonomy::piecewise_function::ptr> pwf_;
 
               public:
-                loop_to_piecewise_function_upgrade(taxonomy::ptr item) {
+               loop_to_piecewise_function_upgrade(taxonomy::ptr item) {
 					if constexpr (std::is_same_v<T, piecewise_function>) {
 						auto loop = taxonomy::dcast<taxonomy::loop>(item);
 						if (loop) {
 							if (loop->pwf.is_initialized()) {
 								pwf_ = loop->pwf;
 							} else {
-								taxonomy::piecewise_function::spans spans;
+                        taxonomy::piecewise_function::spans_t spans;
 								spans.reserve(loop->children.size());
 								for (auto& edge : loop->children) {
 									// the edge could be an arc or trimmed circle in the case of IfcIndexPolyCurve - support for this isn't implemented yet
