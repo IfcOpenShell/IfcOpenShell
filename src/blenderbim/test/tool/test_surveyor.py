@@ -47,9 +47,9 @@ class TestGetGlobalMatrix(test.bim.bootstrap.NewFile):
         tool.Ifc.set(ifc)
         props = bpy.context.scene.BIMGeoreferenceProperties
         props.has_blender_offset = True
-        props.blender_eastings = "1000"
-        props.blender_northings = "2000"
-        props.blender_orthogonal_height = "3000"
+        props.blender_offset_x = "1000"
+        props.blender_offset_y = "2000"
+        props.blender_offset_z = "3000"
         props.blender_x_axis_abscissa = "0"
         props.blender_x_axis_ordinate = "1"
         obj = bpy.data.objects.new("Object", None)
