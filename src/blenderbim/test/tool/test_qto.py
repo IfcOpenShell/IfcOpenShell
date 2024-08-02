@@ -24,6 +24,7 @@ import test.bim.bootstrap
 import blenderbim.core.tool
 import blenderbim.core.root
 import blenderbim.tool as tool
+import blenderbim.bim.import_ifc as import_ifc
 import blenderbim.bim.module.qto.calculator as calculator
 from blenderbim.tool.qto import Qto as subject
 
@@ -53,9 +54,17 @@ class TestGetRoundedValue(test.bim.bootstrap.NewFile):
 
 class TestGetCalculatedObjectQuantities(test.bim.bootstrap.NewFile):
     def setup_file(self):
+        import logging
+
         self.ifc = ifcopenshell.file()
         tool.Ifc.set(self.ifc)
         ifcopenshell.api.run("root.create_entity", self.ifc, ifc_class="IfcProject", name="My Project")
+        ifc_import_settings = import_ifc.IfcImportSettings.factory(
+            bpy.context, tool.Ifc.get_path(), logging.getLogger("ImportIFC")
+        )
+        ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
+        ifc_importer.file = self.ifc
+        ifc_importer.create_project()
 
     def setup_units(self, units):
         ifcopenshell.api.run("unit.assign_unit", self.ifc, **units)

@@ -230,16 +230,14 @@ class TestImportSystems(NewFile):
 
 class TestLoadPorts(NewFile):
     def test_run(self):
-        ifc = ifcopenshell.api.run("project.create_file")
-        ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
-        ifcopenshell.api.run("unit.assign_unit", ifc)
-        tool.Ifc().set(ifc)
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
 
-        element = ifc.createIfcChiller()
+        element = ifc.create_entity("IfcChiller")
         obj = bpy.data.objects.new("Object", None)
         tool.Ifc.link(element, obj)
 
-        port = ifc.createIfcDistributionPort()
+        port = ifc.create_entity("IfcDistributionPort")
         subject.load_ports(element, [port])
         obj = tool.Ifc.get_object(port)
         assert obj
