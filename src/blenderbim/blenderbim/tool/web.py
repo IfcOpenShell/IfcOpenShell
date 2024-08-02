@@ -391,6 +391,7 @@ class Web(blenderbim.core.tool.Web):
         prefs = bpy.context.preferences.themes[0].preferences.space
         panel = prefs.panelcolors
         view_3d = bpy.context.preferences.themes[0].view_3d
+        top_bar = bpy.context.preferences.themes[0].topbar.space
         theme = {
             "window_background": get_color(prefs, "back"),
             "text": get_color(prefs, "text"),
@@ -399,7 +400,10 @@ class Web(blenderbim.core.tool.Web):
             "navigation_bar": get_color(prefs, "navigation_bar"),
             "panel_header": get_color(panel, "header"),
             "panel_background_color": mix_colors(get_color(panel, "back"), get_color(panel, "sub_back")),
+            "top_bar_header": get_color(top_bar, "header"),
+            "top_bar_header_text": get_color(top_bar, "header_text"),
             "active_object": get_color(view_3d, "object_active"),
+            "selected_object": get_color(view_3d, "object_selected"),
         }
         cls.send_webui_data(theme, "theme", "theme_data", use_web_data=False)
 

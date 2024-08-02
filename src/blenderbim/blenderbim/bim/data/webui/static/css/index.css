@@ -42,8 +42,8 @@ html {
 }
 
 body {
-    background-color: var(--bg-color);
-    color: var(--text-color);
+    background-color: var(--blender-window-background, var(--bg-color));
+    color: var(--blender-text, var(--text-color));
     margin: 0;
     font-family: var(--font-family);
     display: flex;
@@ -64,13 +64,13 @@ h3 {
 }
 
 nav {
-    background-color: var(--nav-bg-color);
+    background-color: var(--blender-top-bar-header, var(--nav-bg-color));
     height: var(--nav-height);
     padding: var(--padding-medium) 0;
     display: flex;
     align-items: center;
     position: relative;
-    border-bottom: 2px solid var(--nav-border-color);
+    border-bottom: 2px solid var(--blender-tab-outline, var(--nav-border-color));
 }
 
 nav .logo {
@@ -93,13 +93,13 @@ nav ul li {
 
 nav ul li a {
     text-decoration: none;
-    color: var(--nav-link-color);
+    color: var(--blender-text, var(--nav-link-color));
     font-size: var(--font-size-large);
 }
 
 nav ul li a:hover,
 nav ul li a.active {
-    color: var(--nav-link-hover-color);
+    color: var(--blender-selected-object, var(--nav-link-hover-color));
 }
 
 .warning {
@@ -127,8 +127,8 @@ nav ul li a.active {
     overflow-y: auto;
     overflow: hidden;
     transition: opacity 0.3s ease-out, visibility 0.3s ease-out;
-    border: 1px solid var(--table-border-color);
-    background-color: var(--nav-bg-color);
+    border: 1px solid var(--blender-tab-outline, var(--table-border-color));
+    background-color: var(--blender-panel-background-color, var(--nav-bg-color));
     z-index: 1;
     opacity: 0;
     visibility: hidden;
@@ -146,7 +146,7 @@ nav ul li a.active {
 
 .client {
     padding: var(--margin-small);
-    border-bottom: 1px solid var(--table-border-color);
+    border-bottom: 1px solid var(--blender-tab-outline, var(--table-border-color));
     cursor: pointer;
 }
 
@@ -155,7 +155,7 @@ nav ul li a.active {
     overflow: hidden;
     padding-left: var(--padding-small);
     transition: max-height 0.2s ease-out, padding 0.2s ease-out, opacity 0.1s ease-out;
-    background-color: var(--nav-bg-color);
+    background-color: var(--blender-panel-background-color, var(--nav-bg-color));
     margin-top: var(--margin-tiny);
     opacity: 0;
 }
@@ -166,15 +166,16 @@ nav ul li a.active {
 }
 
 .client-detail {
-    border-bottom: 1px solid var(--table-border-color);
+    border-bottom: 1px solid var(--blender-tab-outline, var(--table-border-color));
     padding: var(--padding-small);
 }
 
 #show-connected-button {
     width: auto;
-    background-color: var(--bg-color);
+    background-color: var(--blender-panel-header, var(--bg-color));
     border: none;
     font-size: var(--base-font-size);
+    color: var(--blender-text, var(--text-color))
 }
 
 #show-connected-button:hover,
@@ -189,15 +190,15 @@ nav ul li a.active {
 }
 
 footer {
-    background-color: var(--nav-bg-color);
+    background-color: var(--blender-top-bar-header, var(--nav-bg-color));
     text-align: right;
     padding: var(--padding-tiny);
-    border-top: 1px solid var(--nav-border-color);
+    border-top: 1px solid var(--blender-tab-outline, var(--nav-border-color));
 }
 
 footer p {
     margin: 0;
-    color: var(--text-color);
+    color: var(--blender-text, var(--nav-link-color));
     margin-right: var(--margin-small);
     font-size: 0.8rem;
 }
