@@ -612,6 +612,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcStyledItem* inst) {
 taxonomy::ptr mapping::map(const IfcBaseInterface* inst) {
     auto iden = inst->as<IfcUtil::IfcBaseClass>()->identity();
     if (use_caching_) {
+        std::lock_guard<std::mutex> guard(cache_guard_);
         auto it = cache_.find(iden);
         if (it != cache_.end()) {
             return it->second;
@@ -629,7 +630,8 @@ taxonomy::ptr mapping::map(const IfcBaseInterface* inst) {
 
     if (item) {
         if (use_caching_) {
-            cache_.insert({ iden, item });
+            std::lock_guard<std::mutex> guard(cache_guard_);
+            cache_.insert({iden, item});
         }
     } else if (!matched) {
         Logger::Message(Logger::LOG_ERROR, "No operation defined for:", inst);

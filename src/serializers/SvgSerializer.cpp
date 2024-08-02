@@ -461,7 +461,7 @@ namespace {
 
 		TopExp_Explorer it(shell, TopAbs_FACE);
 		for (; it.More(); it.Next()) {
-			const auto& face = TopoDS::Face(it.Value());
+			const auto& face = TopoDS::Face(it.Current());
 			auto surf = BRep_Tool::Surface(face);
 			if (surf->DynamicType() != STANDARD_TYPE(Geom_Plane)) {
 				return boost::none;
