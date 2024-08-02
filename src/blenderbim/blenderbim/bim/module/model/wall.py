@@ -542,6 +542,8 @@ class DrawPolylineWall(bpy.types.Operator):
         if event.type == 'MOUSEMOVE':
             self.mousemove_count += 1
             tool.Blender.update_viewport()
+            WallPolylineDecorator.set_mouse_position(context, event)
+            WallPolylineDecorator.calculate_distance_and_angle(context)
         else:
             self.mousemove_count = 0
         
@@ -566,6 +568,7 @@ class DrawPolylineWall(bpy.types.Operator):
             tool.Blender.update_viewport()
 
         if event.value == 'PRESS' and event.type == 'I': 
+            self.input_panel = {'X': '', 'Y': '', 'D': '', 'A': ''}
             self.is_input_on = True
 
         if self.is_input_on:
@@ -579,6 +582,10 @@ class DrawPolylineWall(bpy.types.Operator):
                 print(self.input_type)
                 self.number_input.append(event.ascii)
                 self.number_output = ''.join(self.number_input) 
+                self.input_panel[self.input_type] = self.number_output
+                print("PANEL", self.input_panel)
+                WallPolylineDecorator.set_input_panel(self.input_panel, self.input_type)
+                tool.Blender.update_viewport()
                 print(self.number_output)
 
         if event.value == 'PRESS' and event.type in {'RET', 'NUMPAD_ENTER'}:
@@ -610,15 +617,14 @@ class DrawPolylineWall(bpy.types.Operator):
     def invoke(self, context, event):
         if context.space_data.type == 'VIEW_3D':
             WallPolylineDecorator.install(context)
-            start_time = time()
+            self.input_panel = {'X': '', 'Y': '', 'D': '', 'A': ''}
+            WallPolylineDecorator.set_input_panel(self.input_panel, self.input_type)
             self.objs_2d_bbox = []
             self.visible_objs = self.get_visible_objects(context)
             for obj in self.visible_objs: # TODO check if matrix is needed here
                 self.objs_2d_bbox.append(self.get_objects_2d_bounding_boxes(context, obj))
                 # self.objs_bvhs.append(self.get_bvh_objects_bounding_boxes(obj))
             context.window_manager.modal_handler_add(self)
-            operator_time = time() - start_time
-            print(f"invoke was finished in {operator_time:.2f} seconds")
             return {'RUNNING_MODAL'}
         else:
             self.report({'WARNING'}, "Active space must be a View3d")
