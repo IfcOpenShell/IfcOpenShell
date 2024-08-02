@@ -173,18 +173,14 @@ class TestGetCartesianPointCoordinateOffset(NewFile):
         obj.BIMObjectProperties.blender_offset_type = "CARTESIAN_POINT"
         props = bpy.context.scene.BIMGeoreferenceProperties
         props.has_blender_offset = True
-        props.blender_eastings = "1"
-        props.blender_northings = "2"
-        props.blender_orthogonal_height = "3"
+        obj.BIMObjectProperties.cartesian_point_offset = "1,2,3"
         assert subject.get_cartesian_point_coordinate_offset(obj) == Vector((1.0, 2.0, 3.0))
 
     def test_get_null_if_not_a_cartesian_point_offset_type(self):
         obj = bpy.data.objects.new("Object", None)
         props = bpy.context.scene.BIMGeoreferenceProperties
         props.has_blender_offset = True
-        props.blender_eastings = "1"
-        props.blender_northings = "2"
-        props.blender_orthogonal_height = "3"
+        obj.BIMObjectProperties.cartesian_point_offset = "1,2,3"
         assert subject.get_cartesian_point_coordinate_offset(obj) is None
 
     def test_get_null_if_no_blender_offset(self):
@@ -242,8 +238,9 @@ class TestImportRepresentation(NewFile):
         material.BIMStyleProperties.ifc_definition_id = 101
         element = ifc.by_type("IfcWall")[0]
         tool.Ifc.link(element, obj)
-        representation = element.Representation.Representations[0]
+        representation = element.Representation.Representations[1]
         mesh = subject.import_representation(obj, representation)
+        assert isinstance(mesh, bpy.types.Mesh)
         assert len(mesh.polygons) == 12
         assert mesh.materials[0] == material
 
