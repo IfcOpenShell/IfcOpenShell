@@ -33,8 +33,8 @@ class BimTool(WorkSpaceTool):
     bl_context_mode = "OBJECT"
 
     bl_idname = "bim.bim_tool"
-    bl_label = "Create Element"
-    bl_description = "Gives you BIM authoring related superpowers"
+    bl_label = "BIM Tool"
+    bl_description = "Create and edit elements by construction class"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.bim")
     bl_widget = None
     bl_keymap = tool.Blender.get_default_selection_keypmap() + (
@@ -73,7 +73,7 @@ class WallTool(BimTool):
     bl_space_type = "VIEW_3D"
     bl_context_mode = "OBJECT"
     bl_idname = "bim.wall_tool"
-    bl_label = "Create Wall"
+    bl_label = "Wall Tool"
     bl_description = "Create and edit walls"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.wall")
     bl_widget = None
@@ -88,7 +88,7 @@ class SlabTool(BimTool):
     bl_space_type = "VIEW_3D"
     bl_context_mode = "OBJECT"
     bl_idname = "bim.slab_tool"
-    bl_label = "Create Slab"
+    bl_label = "Slab Tool"
     bl_description = "Create and edit slabs"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.slab")
     bl_widget = None
@@ -103,7 +103,7 @@ class DoorTool(BimTool):
     bl_space_type = "VIEW_3D"
     bl_context_mode = "OBJECT"
     bl_idname = "bim.door_tool"
-    bl_label = "Create Door"
+    bl_label = "Door Tool"
     bl_description = "Create and edit doors"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.door")
     bl_widget = None
@@ -118,7 +118,7 @@ class WindowTool(BimTool):
     bl_space_type = "VIEW_3D"
     bl_context_mode = "OBJECT"
     bl_idname = "bim.window_tool"
-    bl_label = "Create Window"
+    bl_label = "Window Tool"
     bl_description = "Create and edit windows"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.window")
     bl_widget = None
@@ -133,7 +133,7 @@ class ColumnTool(BimTool):
     bl_space_type = "VIEW_3D"
     bl_context_mode = "OBJECT"
     bl_idname = "bim.column_tool"
-    bl_label = "Create Column"
+    bl_label = "Column Tool"
     bl_description = "Create and edit columns"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.column")
     bl_widget = None
@@ -148,7 +148,7 @@ class BeamTool(BimTool):
     bl_space_type = "VIEW_3D"
     bl_context_mode = "OBJECT"
     bl_idname = "bim.beam_tool"
-    bl_label = "Create Beam"
+    bl_label = "Beam Tool"
     bl_description = "Create and edit beams"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.beam")
     bl_widget = None
@@ -163,7 +163,7 @@ class DuctTool(BimTool):
     bl_space_type = "VIEW_3D"
     bl_context_mode = "OBJECT"
     bl_idname = "bim.duct_tool"
-    bl_label = "Create Duct"
+    bl_label = "Duct Tool"
     bl_description = "Create and edit ducks"  # No, not a typo.
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.duct")
     bl_widget = None
@@ -178,7 +178,7 @@ class CableCarrierTool(BimTool):
     bl_space_type = "VIEW_3D"
     bl_context_mode = "OBJECT"
     bl_idname = "bim.cable_carrier_tool"
-    bl_label = "Create Cable Carrier"
+    bl_label = "Cable Carrier Tool"
     bl_description = "Create and edit cable carriers"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.cablecarrier")
     bl_widget = None
@@ -193,7 +193,7 @@ class PipeTool(BimTool):
     bl_space_type = "VIEW_3D"
     bl_context_mode = "OBJECT"
     bl_idname = "bim.pipe_tool"
-    bl_label = "Create Pipe"
+    bl_label = "Pipe Tool"
     bl_description = "Create and edit pipes"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.pipe")
     bl_widget = None
@@ -208,7 +208,7 @@ class CableTool(BimTool):
     bl_space_type = "VIEW_3D"
     bl_context_mode = "OBJECT"
     bl_idname = "bim.cable_tool"
-    bl_label = "Create Cable"
+    bl_label = "Cable Tool"
     bl_description = "Create and edit cables"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.cable")
     bl_widget = None
