@@ -189,6 +189,10 @@ else ifeq ($(PLATFORM), macos)
 else
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pyradiance $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
 endif
+	# tomllib replacement for < Python 3.11, used to parse blender_manifest
+ifeq ($(PYVERSION), py310)
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download tomli --dest=./wheels
+endif
 
 	# Provides jsgantt-improved supports for web-based construction sequencing gantt charts
 	cd build/blenderbim/bim/data/gantt/ && wget https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.js
