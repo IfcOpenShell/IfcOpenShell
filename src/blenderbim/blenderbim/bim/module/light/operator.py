@@ -136,7 +136,16 @@ class RadianceRender(bpy.types.Operator):
         output_dir = props.output_dir
         output_file_name = props.output_file_name
         output_file_format = props.output_file_format
-        os.chdir(output_dir)
+        use_hdr = props.use_hdr
+        choose_hdr_image = props.choose_hdr_image
+        if(use_hdr):
+            hdr_image = "noon_grass_2k.hdr"
+            hdr_mask = "noon_grass_2k_mask.hdr"
+            sky_map_cal = "skymap.cal"
+            hdr_image_path = os.path.join(os.path.dirname(__file__), "HDRs", hdr_image)
+            hdr_mask_path = os.path.join(os.path.dirname(__file__), "HDRs", hdr_mask)
+            sky_map_cal_path = os.path.join(os.path.dirname(__file__), "HDRs", sky_map_cal)
+        # os.chdir(output_dir)
 
         obj_file_path = os.path.join(output_dir, "model.obj")
 
@@ -196,18 +205,19 @@ class RadianceRender(bpy.types.Operator):
         # 0
         # 0
         # 4 0 0 -1 180
-        with open(sky_file_path, 'w') as f:
-            f.write(sky_description_str)
-            f.write("\n")
-            # f.write("skyfunc glow sky_glow\n0\n0\n4 .9 .9 1.15 0\n")
-            # f.write("sky_glow source sky\n0\n0\n4 0 0 1 180\n")
-            # f.write("skyfunc glow ground_glow\n0\n0\n4 1.4 .9 .6 0\n")
-            # f.write("ground_glow source ground\n0\n0\n4 0 0 -1 180\n")
-            # File write 
-            # 2k version is packaged with the repo
 
-            f.write("""void colorpict env_map
-7 red green blue noon_grass_16k.hdr skymap.cal map_u map_v
+        if(choose_hdr_image == "Noon"):
+
+            with open(sky_file_path, 'w') as f:
+                f.write(sky_description_str)
+                f.write("\n")
+                # f.write("skyfunc glow sky_glow\n0\n0\n4 .9 .9 1.15 0\n")
+                # f.write("sky_glow source sky\n0\n0\n4 0 0 1 180\n")
+                # f.write("skyfunc glow ground_glow\n0\n0\n4 1.4 .9 .6 0\n")
+                # f.write("ground_glow source ground\n0\n0\n4 0 0 -1 180\n")
+
+                f.write('''void colorpict env_map
+7 red green blue "'''+hdr_image_path+'''"  "'''+ sky_map_cal_path +'''" map_u map_v
 0
 1 0.5
  
@@ -226,7 +236,7 @@ skyfunc colorfunc sky_colour
 0
  
 void mixpict composite
-7 env_colour sky_colour grey noon_grass_2k_mask.hdr skymap.cal map_u map_v
+7 env_colour sky_colour grey "'''+ hdr_mask_path +'''"  "'''+ sky_map_cal_path +'''" map_u map_v
 0
 2 0.5 1
  
@@ -248,8 +258,16 @@ env_colour glow ground_glow
 ground_glow source ground
 0
 0
-4 0 0 -1 180""")
+4 0 0 -1 180''')
 
+        else:
+            with open(sky_file_path, 'w') as f:
+                f.write(sky_description_str)
+                f.write("\n")
+                f.write("skyfunc glow sky_glow\n0\n0\n4 .9 .9 1.15 0\n")
+                f.write("sky_glow source sky\n0\n0\n4 0 0 1 180\n")
+                f.write("skyfunc glow ground_glow\n0\n0\n4 1.4 .9 .6 0\n")
+                f.write("ground_glow source ground\n0\n0\n4 0 0 -1 180\n")
 
         props = context.scene.radiance_exporter_properties
 
@@ -270,7 +288,7 @@ ground_glow source ground
             file.write("void trans olive_trans\n0\n0\n7 0.6 0.7 0.4 0.05 0.05 0.7 0.2\n")
 
             for style_id, radiance_material in data.items():
-                print(style_id, radiance_material)
+                # print(style_id, radiance_material)
                 file.write("inherit alias " + style_id + " " + data.get(style_id, "white") + "\n")
 
         self.report({"INFO"}, "Exported Materials Rad file to: {}".format(materials_file))
@@ -308,15 +326,15 @@ ground_glow source ground
             variability=variability,
         )
         
-        hdr_path = os.path.join(output_dir, f"render123.{output_file_format.lower()}")
+        output_hdr_path = os.path.join(output_dir, f"render123.{output_file_format.lower()}")
 
         if output_file_format == "HDR":
-            with open(hdr_path, "wb") as wtr:
+            with open(output_hdr_path, "wb") as wtr:
                 wtr.write(image)
         else:
             pass
 
-        pcond_image = pr.pcond(hdr=hdr_path, human=True)
+        pcond_image = pr.pcond(hdr=output_hdr_path, human=True)
         
         tiff_path = os.path.join(output_dir, f"{output_file_name}.tiff")
 
