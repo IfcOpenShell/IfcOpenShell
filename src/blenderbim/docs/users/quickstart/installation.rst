@@ -28,10 +28,6 @@ Installation
 
    `Download BlenderBIM Add-on <https://blenderbim.org/download.html>`__
 
-.. warning::
-
-   If you are not using Blender version >=4.1, please follow the **Unstable installation** instructions. :doc:`Read more </devs/installation>`
-
 3. **Install the BlenderBIM Add-on**
 
    Open up Blender, and click on ``Edit > Preferences``.
@@ -89,14 +85,10 @@ installed>`.
     If you do not restart Blender, the add-on will fail to remove correctly, and you
     will need to uninstall manually.
 
-
-.. _installation_location:
-
 Where is the add-on installed?
 ------------------------------
 
-Upon installation, the BlenderBIM Add-on is stored in the
-``scripts/addons/blenderbim/`` directory, within your Blender configuration
+Upon installation, the BlenderBIM Add-on is stored in Blender configuration
 folder. However, the location of your Blender configuration folder depends on
 how you have installed Blender.
 
@@ -106,7 +98,7 @@ is the Blender version:
 
 ::
 
-    /path/to/blender/X.XX/scripts/addons/blenderbim/
+    /path/to/blender/X.XX/
 
 Otherwise, if you installed Blender using an installation package, the Blender
 configuration folder depends on which operating system you use.
@@ -115,29 +107,34 @@ On Linux, if you are installing the add-on as a user:
 
 ::
 
-    ~/.config/blender/X.XX/scripts/addons/blenderbim/
+    ~/.config/blender/X.XX/
 
 On Linux, if you are deploying the add-on system-wide (this may also depend on
 your Linux distribution):
 
 ::
 
-    /usr/share/blender/X.XX/scripts/addons/blenderbim/
+    /usr/share/blender/X.XX/
 
 On Mac, if you are installing the add-on as a user:
 
 ::
 
-    /Users/{YOUR_USER}/Library/Application Support/Blender/X.XX/scripts/addons/blenderbim/
+    /Users/{YOUR_USER}/Library/Application Support/Blender/X.XX/
 
 On Mac, if you are deploying the add-on system-wide:
 
 ::
 
-    /Library/Application Support/Blender/X.XX/scripts/addons/blenderbim/
+    /Library/Application Support/Blender/X.XX/
 
 On Windows:
 
 ::
 
-    C:\Users\{YOUR_USER}\AppData\Roaming\Blender Foundation\X.XX\scripts\addons\blenderbim\
+    C:\Users\{YOUR_USER}\AppData\Roaming\Blender Foundation\X.XX\
+
+Inside the Blender configuration folder, the BlenderBIM Add-on is stored in two
+different locations. The extension itself is stored in
+``extensions/blender_org/blenderbim`` whereas the Python packages are installed
+into ``extensions/.local/lib/pythonX.XX/site-packages/``.
