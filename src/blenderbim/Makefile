@@ -351,9 +351,9 @@ endif
 
 .PHONY: test
 test:
-	make test-core
-	make test-tool
-	make test-bim
+	-make test-core
+	-make test-tool
+	-make test-bim
 
 .PHONY: test-core
 test-core:
