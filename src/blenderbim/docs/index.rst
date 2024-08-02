@@ -195,11 +195,6 @@ suggesting new features, or contributing code, your involvement is highly encour
 
       .. container:: card
 
-         :doc:`/devs/system_support`
-            Multiplatform compatibility.
-
-      .. container:: card
-
          :doc:`/devs/ux_guidelines`
             User experience and interface guidelines.
 
@@ -216,5 +211,4 @@ suggesting new features, or contributing code, your involvement is highly encour
       devs/undo_system
       devs/code_style
       devs/running_tests
-      devs/system_support
       devs/ux_guidelines

@@ -14,19 +14,29 @@ Unstable installation
 **Unstable installation** is almost the same as **Stable installation**, except
 that they are typically updated every day. Simply download a daily build from
 the `GitHub releases page
-<https://github.com/IfcOpenShell/IfcOpenShell/releases>`__, then follow the
-usual :doc:`installation instructions</users/quickstart/installation>`.
+<https://github.com/IfcOpenShell/IfcOpenShell/releases?q=blenderbim&expanded=true>`__,
+then follow the usual :doc:`installation
+instructions</users/quickstart/installation>`.
 
-You will need to choose which build to download.
+The BlenderBIM Add-on officially supports all major 64-bit platforms, as well as
+the Python version shipped by the Blender Foundation for the most recent three
+major Blender versions:
 
-- If you are on Blender >=4.1, choose py311
-- If you are on Blender >=3.1 and <=4.0, choose py310
-- If you are on Blender >=2.93 and <3.1, choose py39
-- Choose ``linux-x64``, ``macos-x64`` (Apple Intel), ``macos-arm64`` (Apple Silicon), or
-  ``windows-x64`` depending on your operating system
+- 64-bit Linux (``linux-x64``)
+- 64-bit MacOS Intel (``macos-x64``)
+- 64-bit MacOS Silicon (``macos-arm64``)
+- 64-bit Windows (``windows-x64``)
+- Blender 4.2 with Python 3.11
 
-For users who don't follow the `VFX Platform <https://vfxplatform.com/>`_
-standard, we also provide py312 builds.
+Due to significant changes in the Blender extensions system, Blender versions
+<4.2 are not supported.
+
+Developer builds may exist for different versions of Python but there will be
+no guarantee of the uptime or stability of these builds.
+
+Other system specifications match the `Blender Requirements
+<https://www.blender.org/download/requirements/>`_ and the `VFX Platform
+<https://vfxplatform.com/>`_ standard.
 
 Sometimes, a build may be delayed, or contain broken code. We try to avoid this,
 but it happens.
@@ -46,7 +56,9 @@ compile IfcOpenShell is out of scope of this document.
 
 You can create your own package by using the Makefile as shown below. You can
 choose between a ``PLATFORM`` of ``linux``, ``macos``, ``macosm1``, and ``win``.
-You can choose between a ``PYVERSION`` of ``py311``, ``py310``, or ``py39``.
+You can choose between a ``PYVERSION`` of ``py312``, ``py311``, ``py310``, or
+``py39``.
+
 .. code-block:: bash
 
     cd src/blenderbim
@@ -60,18 +72,17 @@ Live development environment
 ----------------------------
 
 One option for developers who want to actively develop from source is to follow
-the instructions from **Bundling for Blender**. However, creating a build,
-uninstalling the old add-on, and installing a new build is a slow process.
-Although it works, it is very slow, so we do not recommend it.
+the instructions from :ref:`devs/installation:Bundling for Blender`. However,
+creating a build, uninstalling the old add-on, and installing a new build is a
+slow process.  Although it works, it is very slow, so we do not recommend it.
 
-A more rapid approach is to follow the **Unstable installation** method, as this
-provides all dependencies for you out of the box.
+A more rapid approach is to follow the :ref:`devs/installation:Unstable
+installation` method, as this provides all dependencies for you out of the box.
 
 Once you've done this, you can replace certain Python files that tend to be
 updated frequently with those from the Git repository. We're going to use
-symlinks (Windows users can use ``mklink``), so we can code in our Git
-repository, and see the changes in our Blender installation (you will need to
-restart Blender to see changes).
+symbolic links, so we can code in our Git repository, and see the changes in
+our Blender installation (you will need to restart Blender to see changes).
 
 For Linux or Mac:
 
@@ -117,19 +128,17 @@ Packaged installation
 Tips for package managers
 -------------------------
 
-If you are interested in packaging the BlenderBIM Add-on for a packaging
-manager, read on.
-
 The BlenderBIM Add-on is fully contained in the ``blenderbim/`` subfolder of the
 Blender add-ons directory. This is typically distributed as a zipfile as per
 Blender add-on conventions. Within this folder, you'll find the following file
 structure:
 ::
 
-    core/ (Blender agnostic core code)
-    tool/ (Blender specific logic)
+    core/ (Blender agnostic core logic)
+    tool/ (Blender specific shared functionality)
     bim/ (Blender specific UI)
-    libs/ (dependencies)
+    libs/ (other assets)
+    wheels/ (dependencies)
     __init__.py
 
 This corresponds to the structure found in the source code `here
@@ -142,50 +151,29 @@ dependencies are bundled with the add-on for convenience.
 If you choose to install the BlenderBIM Add-on and use your own system
 dependencies, the source of truth for how dependencies are bundled are found in
 the `Makefile
-<https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.8.0/src/blenderbim/Makefile>`__.
+<https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.8.0/src/blenderbim/Makefile>`__
+in the ``dist`` target.
 
-Required Python modules to be stored in ``libs/site/packages/`` are:
-::
+Add-on compatibility
+--------------------
 
-    ifcopenshell
-    bcf
-    ifcclash
-    ifccobie
-    ifccsv
-    ifcdiff
-    ifc4d
-    ifc5d
-    ifcpatch
-    ifctester
-    pystache
-    svgwrite
-    dateutil
-    isodate
-    networkx
-    https://github.com/Andrej730/aud/archive/refs/heads/master-reduced-size.zip
-    deepdiff
-    jsonpickle
-    ordered_set
-    pyparsing
-    xmlschema
-    elementpath
-    six
-    lark-parser
-    parse
-    parse_type
-    xlsxwriter
-    odfpy
-    defusedxml
-    jmespath
-    ifcjson
+The BlenderBIM Add-on is a non-trivial add-on. By turning Blender into a
+graphical front-end to a native IFC authoring platform, some fundamental Blender
+features (such as hotkeys for basic functionality like object deletion or
+duplication) have been patched and many dependencies have been introduced.
 
-Notes:
+Other add-ons may no longer work as intended when the BlenderBIM Add-on is
+enabled, or vice versa, the BlenderBIM Add-on may no longer work as intended
+when other add-ons are enabled.
 
-1. ``ifcopenshell`` almost always requires the latest version due to the fast paced nature of the add-on development.
-2. ``ifcjson`` can be found `here <https://github.com/IFCJSON-Team/IFC2JSON_python/tree/master/file_converters>`__.
+Known scenarios which will lead to add-on incompatibility include:
 
-Required static assets are:
-::
-
-    bim/data/gantt/jsgantt.js (from jsgantt-improved)
-    bim/data/gantt/jsgantt.css (from jsgantt-improved)
+- The add-on also overrides the same hotkeys. For example, if an add-on
+  overrides the "X" key to delete an object, you will need to manually trigger
+  (either via menu or custom hotkey) the BlenderBIM Add-on equivalent operator
+  (e.g. IFC Delete).
+- The add-on uses object deletion or duplication macros with dictionary
+  override. Note that this is also deprecated in Blender, so the other add-on
+  should be updated to fix this.
+- The add-on requires a conflicting dependency, or a conflicting version of the
+  same dependency. Neither add-on may work simultaneously.
