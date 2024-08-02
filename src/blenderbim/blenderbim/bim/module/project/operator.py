@@ -1874,8 +1874,7 @@ class AppendInspectedLinkedElement(AppendLibraryElement):
         )
         self.import_product_from_ifc(element, context)
         element_type = ifcopenshell.util.element.get_type(element)
-        obj = tool.Ifc.get_object(element_type)
-        if obj is None:
+        if element_type and tool.Ifc.get_object(element_type) is None:
             self.import_type_from_ifc(element_type, context)
 
         return {"FINISHED"}
