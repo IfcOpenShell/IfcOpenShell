@@ -49,11 +49,6 @@ LAST_COMMIT_HASH:=$(shell git rev-parse HEAD)
 PYVERSION:=py310
 PYPI_IMP:=cp
 
-ifeq ($(PYVERSION), py39)
-PYLIBDIR:=python3.9
-PYNUMBER:=39
-PYPI_VERSION:=3.9
-endif
 ifeq ($(PYVERSION), py310)
 PYLIBDIR:=python3.10
 PYNUMBER:=310
