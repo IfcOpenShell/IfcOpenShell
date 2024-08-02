@@ -76,6 +76,7 @@ class ResultsSpecification(TypedDict):
     description: str
     instructions: str
     status: bool
+    is_ifc_version: bool
     total_applicable: int
     total_applicable_pass: int
     total_applicable_fail: int
@@ -359,6 +360,7 @@ class Json(Reporter):
             description=specification.description,
             instructions=specification.instructions,
             status=specification.status,
+            is_ifc_version=specification.is_ifc_version,
             total_applicable=total_applicable,
             total_applicable_pass=total_applicable_pass,
             total_applicable_fail=total_applicable - total_applicable_pass,
