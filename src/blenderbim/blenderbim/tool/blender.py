@@ -822,7 +822,9 @@ class Blender(blenderbim.core.tool.Blender):
 
         @classmethod
         def is_eligible_for_stair_modifier(cls, obj):
-            return tool.Blender.is_object_an_ifc_class(obj, ("IfcStairFlight", "IfcStairFlightType"))
+            return tool.Blender.is_object_an_ifc_class(
+                obj, ("IfcStairFlight", "IfcStairFlightType", "IfcMember", "IfcMemberType")
+            )
 
         @classmethod
         def is_eligible_for_window_modifier(cls, obj):
