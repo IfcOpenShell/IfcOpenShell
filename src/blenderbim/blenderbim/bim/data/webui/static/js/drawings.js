@@ -31,6 +31,7 @@ function connectSocket() {
   socket.on("blender_disconnect", handleBlenderDisconnect);
   socket.on("connect", handleWebConnect);
   socket.on("connected_clients", handleConnectedClients);
+  socket.on("theme_data", handleThemeData);
   socket.on("drawings_data", handleDrawingsData);
   socket.on("svg_data", handleSvgData);
 }
@@ -94,6 +95,38 @@ function handleConnectedClients(data) {
       has_drawings: false,
     };
   });
+}
+
+function handleThemeData(themeData) {
+  console.log(themeData);
+
+  function arrayToRgbString(arr) {
+    const [r, g, b, a] = arr.map((num) => Math.round(num * 255));
+    if (a !== undefined) {
+      return `rgba(${r}, ${g}, ${b}, ${a})`;
+    }
+    return `rgb(${r}, ${g}, ${b})`;
+  }
+
+  function generateCssVariableRule(theme) {
+    let cssVariables = ":root.blender {\n";
+    for (const key in theme) {
+      const cssVariableName = `--blend-${key.replace(/_/g, "-")}`;
+      const cssVariableValue = arrayToRgbString(theme[key]);
+      cssVariables += `    ${cssVariableName}: ${cssVariableValue};\n`;
+    }
+    cssVariables += "}";
+    return cssVariables;
+  }
+
+  const cssRule = generateCssVariableRule(themeData.theme);
+  console.log(cssRule);
+
+  var styleElement = $("#index-stylesheet")[0];
+  if (styleElement) {
+    var sheet = styleElement.sheet || styleElement.styleSheet;
+    sheet.insertRule(cssRule, sheet.cssRules.length);
+  }
 }
 
 function handleDrawingsData(data) {
