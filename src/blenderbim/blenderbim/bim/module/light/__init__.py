@@ -25,8 +25,9 @@ from pathlib import Path
 import importlib
 import pyradiance
 
+
 def get_pyradiance_path():
-    return importlib.util.find_spec('pyradiance').submodule_search_locations[0]
+    return importlib.util.find_spec("pyradiance").submodule_search_locations[0]
 
 
 classes = (

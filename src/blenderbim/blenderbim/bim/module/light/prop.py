@@ -23,7 +23,15 @@ import datetime
 import blenderbim.tool as tool
 from math import radians, pi
 from mathutils import Euler, Vector, Matrix, Quaternion
-from bpy.props import IntProperty, StringProperty, EnumProperty, FloatProperty, FloatVectorProperty, BoolProperty, CollectionProperty
+from bpy.props import (
+    IntProperty,
+    StringProperty,
+    EnumProperty,
+    FloatProperty,
+    FloatVectorProperty,
+    BoolProperty,
+    CollectionProperty,
+)
 from bpy.types import PropertyGroup
 from blenderbim.bim.module.light.data import SolarData
 from blenderbim.bim.module.light.decorator import SolarDecorator
@@ -261,7 +269,7 @@ class RadianceExporterProperties(PropertyGroup):
     choose_hdr_image: EnumProperty(
         name="HDR Image",
         description="Choose an HDR image to use",
-        items = [
+        items=[
             ("Noon", "Noon", "Noon"),
         ],
         default="Noon",
