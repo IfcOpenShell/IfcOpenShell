@@ -167,6 +167,11 @@
                                     <td>{{global_id}}</td>
                                     <td>{{tag}}</td>
                                 </tr>
+                                {{#extra_of_type}}
+                                <tr>
+                                    <td colspan="7">... {{extra_of_type}} more of the same element type ({{type_name}} with Tag {{type_tag}} and GlobalId {{type_global_id}}) not shown ...</td>
+                                </tr>
+                                {{/extra_of_type}}
                                 {{/passed_entities}}
                                 {{#has_omitted_passes}}
                                 <tr>
@@ -200,6 +205,11 @@
                                     <td>{{global_id}}</td>
                                     <td>{{tag}}</td>
                                 </tr>
+                                {{#extra_of_type}}
+                                <tr>
+                                    <td colspan="7">... {{extra_of_type}} more of the same element type ({{type_name}} with Tag {{type_tag}} and GlobalId {{type_global_id}}) not shown ...</td>
+                                </tr>
+                                {{/extra_of_type}}
                                 {{/failed_entities}}
                                 {{#has_omitted_failures}}
                                 <tr>
