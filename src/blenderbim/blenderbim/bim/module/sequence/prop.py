@@ -20,6 +20,7 @@ import bpy
 import isodate
 import ifcopenshell.api
 import ifcopenshell.util.attribute
+import ifcopenshell.util.date
 from ifcopenshell.util.doc import get_predefined_type_doc
 import blenderbim.tool as tool
 import blenderbim.core.sequence as core

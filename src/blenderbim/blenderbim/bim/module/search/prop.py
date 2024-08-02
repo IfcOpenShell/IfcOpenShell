@@ -18,7 +18,7 @@
 
 import bpy
 import blenderbim.tool as tool
-from ifcopenshell import util
+import ifcopenshell.util.schema
 from blenderbim.bim.prop import ObjProperty, BIMFilterGroup
 from blenderbim.bim.module.search.data import SearchData, ColourByPropertyData, SelectSimilarData
 from bpy.types import PropertyGroup
@@ -134,6 +134,6 @@ class BIMSearchProperties(PropertyGroup):
 
 def get_classes(self, ifc_product):
     declaration = tool.Ifc.schema().declaration_by_name(ifc_product)
-    declarations = util.schema.get_subtypes(declaration)
+    declarations = ifcopenshell.util.schema.get_subtypes(declaration)
     names = [d.name() for d in declarations]
     return [(c, c, "") for c in sorted(names)]

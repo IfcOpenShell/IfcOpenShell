@@ -26,6 +26,7 @@ import numpy as np
 import tempfile
 import webbrowser
 import ifcopenshell
+import ifcopenshell.util.geolocation
 import ifcopenshell.util.unit
 import blenderbim.bim.module.bcf.prop as bcf_prop
 from . import bcfstore

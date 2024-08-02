@@ -18,6 +18,7 @@
 
 import bpy
 import ifcopenshell
+import ifcopenshell.util.element
 import ifcopenshell.util.schema
 import blenderbim.tool as tool
 from blenderbim.bim.module.root.data import IfcClassData

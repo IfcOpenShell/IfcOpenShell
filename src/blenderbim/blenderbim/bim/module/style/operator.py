@@ -25,6 +25,7 @@ import blenderbim.core.style as core
 import ifcopenshell.api
 import ifcopenshell.api.style
 import ifcopenshell.util.representation
+import ifcopenshell.util.unit
 from pathlib import Path
 from mathutils import Vector
 

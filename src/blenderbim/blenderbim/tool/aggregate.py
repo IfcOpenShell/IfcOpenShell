@@ -20,6 +20,7 @@ import bpy
 import blenderbim.core.tool
 import blenderbim.tool as tool
 import ifcopenshell.util.element
+import ifcopenshell.util.representation
 from typing import Union
 
 

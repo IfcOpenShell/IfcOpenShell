@@ -24,7 +24,6 @@ import numpy as np
 import datetime
 import zipfile
 import tempfile
-import addon_utils
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.placement

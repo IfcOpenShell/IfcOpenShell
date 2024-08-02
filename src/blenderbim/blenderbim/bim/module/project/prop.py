@@ -18,6 +18,7 @@
 
 import os
 import bpy
+import ifcopenshell.util.element
 import ifcopenshell.util.placement
 from blenderbim.bim.module.project.data import ProjectData
 from blenderbim.bim.ifc import IfcStore

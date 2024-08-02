@@ -20,7 +20,10 @@
 import bpy
 import numpy as np
 import blenderbim.tool as tool
+import ifcopenshell.util.element
 import ifcopenshell.util.geolocation
+import ifcopenshell.util.schema
+import ifcopenshell.util.unit
 from mathutils import Matrix, Vector
 from ifcopenshell.util.doc import get_entity_doc
 

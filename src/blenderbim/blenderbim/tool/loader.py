@@ -23,6 +23,8 @@ import bpy
 import bmesh
 import ifcopenshell.geom
 import ifcopenshell.util.element
+import ifcopenshell.util.geolocation
+import ifcopenshell.util.placement
 import ifcopenshell.util.shape
 import ifcopenshell.util.unit
 import blenderbim.core.tool

@@ -25,6 +25,7 @@ import bmesh
 import shapely
 import ifcopenshell
 import ifcopenshell.util.element
+import ifcopenshell.util.unit
 import blenderbim.tool as tool
 import blenderbim.bim.module.drawing.helper as helper
 from math import pi, sin, cos, tan, acos, atan, degrees, radians, ceil
