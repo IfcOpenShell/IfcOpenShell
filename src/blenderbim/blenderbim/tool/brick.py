@@ -21,6 +21,8 @@ import bpy
 import ifcopenshell
 import ifcopenshell.guid
 import ifcopenshell.util.brick
+import ifcopenshell.util.element
+import ifcopenshell.util.system
 import blenderbim.core.tool
 import blenderbim.tool as tool
 from contextlib import contextmanager

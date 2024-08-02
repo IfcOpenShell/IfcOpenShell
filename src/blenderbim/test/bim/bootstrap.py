@@ -24,6 +24,7 @@ import pytest
 import webbrowser
 import blenderbim
 import ifcopenshell
+import ifcopenshell.util.element
 import ifcopenshell.util.representation
 from blenderbim.bim.ifc import IfcStore
 from mathutils import Vector

@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import ifcopenshell.util.element
 import ifcopenshell.util.type
 from blenderbim.bim.module.type.data import TypeData
 from blenderbim.bim.prop import StrProperty, Attribute

@@ -18,14 +18,12 @@
 
 import os
 import bpy
-import json
 import string
 import random
 import shutil
 import requests
 import tempfile
 import datetime
-import addon_utils
 import blenderbim.tool as tool
 
 

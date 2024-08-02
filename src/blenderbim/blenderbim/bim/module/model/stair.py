@@ -21,6 +21,7 @@ import json
 import bmesh
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
 import blenderbim.core.root

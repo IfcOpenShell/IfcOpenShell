@@ -21,6 +21,7 @@ import math
 import json
 import ifcopenshell
 import ifcopenshell.util.element
+import ifcopenshell.util.schema
 from ifcopenshell.util.doc import get_entity_doc, get_predefined_type_doc
 import blenderbim.tool as tool
 from math import degrees

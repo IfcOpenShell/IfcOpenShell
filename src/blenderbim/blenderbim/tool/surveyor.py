@@ -21,11 +21,12 @@ import ifcopenshell.api
 import blenderbim.core.tool
 import blenderbim.tool as tool
 import numpy as np
+from mathutils import Matrix
 
 
 class Surveyor(blenderbim.core.tool.Surveyor):
     @classmethod
-    def get_absolute_matrix(cls, obj):
+    def get_absolute_matrix(cls, obj: bpy.types.Object) -> Matrix:
         matrix = np.array(obj.matrix_world)
         props = bpy.context.scene.BIMGeoreferenceProperties
         if props.has_blender_offset and obj.BIMObjectProperties.blender_offset_type != "NOT_APPLICABLE":

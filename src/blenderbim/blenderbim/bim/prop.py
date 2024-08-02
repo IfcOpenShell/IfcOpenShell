@@ -23,6 +23,7 @@ import json
 import importlib
 import ifcopenshell
 import ifcopenshell.util.pset
+import ifcopenshell.util.unit
 from ifcopenshell.util.doc import (
     get_entity_doc,
     get_attribute_doc,

@@ -23,6 +23,7 @@ import math
 import ifcopenshell
 import ifcopenshell.util.attribute
 import ifcopenshell.util.element
+import ifcopenshell.util.unit
 from ifcopenshell.util.doc import get_attribute_doc, get_predefined_type_doc, get_property_doc
 from mathutils import geometry
 from mathutils import Vector

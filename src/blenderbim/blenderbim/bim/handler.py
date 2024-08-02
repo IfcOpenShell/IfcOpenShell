@@ -18,10 +18,9 @@
 
 import os
 import bpy
-import json
-import addon_utils
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
+import ifcopenshell.util.unit
 import ifcopenshell.api.owner.settings
 import blenderbim.bim
 import blenderbim.tool as tool

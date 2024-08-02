@@ -22,6 +22,7 @@ import ifcopenshell.api
 import ifcopenshell.util.element
 import ifcopenshell.util.attribute
 import ifcopenshell.util.representation
+import ifcopenshell.util.unit
 import blenderbim.bim.helper
 import blenderbim.tool as tool
 import blenderbim.core.style

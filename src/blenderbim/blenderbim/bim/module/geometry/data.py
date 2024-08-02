@@ -18,8 +18,11 @@
 
 import bpy
 import ifcopenshell.util.element
-import blenderbim.tool as tool
+import ifcopenshell.util.geolocation
 import ifcopenshell.util.placement
+import ifcopenshell.util.schema
+import ifcopenshell.util.unit
+import blenderbim.tool as tool
 from mathutils import Vector
 
 

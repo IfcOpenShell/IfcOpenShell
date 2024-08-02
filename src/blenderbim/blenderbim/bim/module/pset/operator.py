@@ -19,9 +19,10 @@
 import bpy
 import json
 import ifcopenshell.api
-import ifcopenshell.util.unit
-import ifcopenshell.util.pset
 import ifcopenshell.util.attribute
+import ifcopenshell.util.element
+import ifcopenshell.util.pset
+import ifcopenshell.util.unit
 import blenderbim.bim.schema
 import blenderbim.bim.helper
 import blenderbim.bim.handler

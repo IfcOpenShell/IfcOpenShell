@@ -23,6 +23,7 @@ import webbrowser
 import numpy as np
 import ifcopenshell
 import ifcopenshell.util.element
+import ifcopenshell.util.representation
 import blenderbim.tool as tool
 import blenderbim.bim
 from blenderbim.bim.ifc import IfcStore

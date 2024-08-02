@@ -19,6 +19,9 @@
 import bpy
 import blenderbim.tool as tool
 import ifcopenshell
+import ifcopenshell.util.constraint
+import ifcopenshell.util.cost
+import ifcopenshell.util.date
 import ifcopenshell.util.resource
 
 

@@ -21,6 +21,8 @@ import bpy
 import json
 import enum
 import ifcopenshell
+import ifcopenshell.api
+import ifcopenshell.util.element
 import blenderbim.tool as tool
 import blenderbim.core.drawing as core
 import blenderbim.bim.module.drawing.annotation as annotation
