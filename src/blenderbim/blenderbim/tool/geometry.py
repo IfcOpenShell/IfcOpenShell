@@ -700,7 +700,7 @@ class Geometry(blenderbim.core.tool.Geometry):
 
     @classmethod
     def link(cls, element: ifcopenshell.entity_instance, obj: bpy.types.Mesh) -> None:
-        obj.BIMMeshProperties.ifc_definition_id = element.id()
+        tool.Ifc.link(element, obj)
 
     @classmethod
     def record_object_materials(cls, obj: bpy.types.Object) -> None:
