@@ -161,7 +161,7 @@ operating systems. GCC (4.7 or newer) or Clang (any version) is required.
               -DMPFR_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu \
               -DJSON_INCLUDE_DIR=/usr/include \
               -DEIGEN_DIR=/usr/include/eigen3
-        # Replace X with number of CPU cores + 1
+        # Replace X with number of CPU cores + 1. Reduce when running out of memory. Compiling the code generated from the schemas is resource intensive.
         make -j X
         # Optionally install to the system
         sudo make install
