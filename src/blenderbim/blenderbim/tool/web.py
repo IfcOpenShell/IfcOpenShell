@@ -376,6 +376,28 @@ class Web(blenderbim.core.tool.Web):
         webbrowser.open(f"http://127.0.0.1:{port}/")
 
     @classmethod
+    def send_theme_data(cls) -> None:
+        def get_color(theme, attribute) -> tuple[Any, ...]:
+            return tuple(getattr(theme, attribute)[:])
+
+        prefs = bpy.context.preferences.themes[0].preferences.space
+        panel = prefs.panelcolors
+        view_3d = bpy.context.preferences.themes[0].view_3d
+        theme = {
+            "window_background": get_color(prefs, "back"),
+            # "title": get_color(prefs, "title"),
+            "text": get_color(prefs, "text"),
+            # "header": get_color(prefs, "header"),
+            # "header_text": get_color(prefs, "header_text"),
+            # "header_text_highlight": get_color(prefs, "header_text_hi"),
+            "navigation_bar": get_color(prefs, "navigation_bar"),
+            "panel_header": get_color(panel, "header"),
+            "panel_background": get_color(panel, "back"),
+            "active_object": get_color(view_3d, "object_active"),
+        }
+        cls.send_webui_data(theme, "theme", "theme_data", use_web_data=False)
+
+    @classmethod
     async def sio_connect(cls, url: str) -> None:
         await sio.connect(url, transports=["websocket"], namespaces="/blender")
         sio.on("web_operator", cls.sio_listen_web_operator, namespace="/blender")
