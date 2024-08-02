@@ -111,7 +111,7 @@ function handleThemeData(themeData) {
   function generateCssVariableRule(theme) {
     let cssVariables = ":root.blender {\n";
     for (const key in theme) {
-      const cssVariableName = `--blend-${key.replace(/_/g, "-")}`;
+      const cssVariableName = `--blender-${key.replace(/_/g, "-")}`;
       const cssVariableValue = arrayToRgbString(theme[key]);
       cssVariables += `    ${cssVariableName}: ${cssVariableValue};\n`;
     }
