@@ -82,9 +82,6 @@ def initialize_bbim_semver():
     bbim_semver["version"] = version_str
 
 
-initialize_bbim_semver()
-
-
 def get_debug_info():
     bbim_version = bbim_semver["version"]
 
@@ -177,6 +174,7 @@ def clean_up_dlls_safe_links() -> None:
 
 
 if IN_BLENDER:
+    initialize_bbim_semver()
 
     def get_binary_info() -> dict[str, Any]:
         info = {}
