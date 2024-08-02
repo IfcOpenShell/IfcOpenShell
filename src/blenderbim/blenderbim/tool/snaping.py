@@ -81,19 +81,14 @@ class Snaping(blenderbim.core.tool.Snaping):
         polyline_data = bpy.context.scene.BIMModelProperties.polyline_point
             
         polyline_point = bpy.context.scene.BIMModelProperties.polyline_point.add()
-        print(type(x))
-        print(type(y))
         if x is not None and y is not None:
-            print("Foi")
             polyline_point.x = x
             polyline_point.y = y
             polyline_point.z = 0 # TODO Update to the the default container height
-            print("PL", polyline_point.x, polyline_point.y)
         else:
             polyline_point.x = snap_vertex.x
             polyline_point.y = snap_vertex.y
             polyline_point.z = 0 # TODO Update to the the default container height
-            print("PL", polyline_point.x, polyline_point.y)
 
     @classmethod
     def clear_polyline(cls):

@@ -16,7 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import blf
 import gpu
+import gpu_extras
 import bmesh
 import blenderbim.tool as tool
 from math import sin, cos, radians
@@ -294,30 +296,86 @@ class ProfileDecorator:
 
 
 class WallPolylineDecorator:
-    installed = False
+    is_installed = False
+    handlers = []
+    mouse_pos = None
+    input_panel = None
+    input_type = None
 
     
     @classmethod
     def install(cls, context):
-        if cls.installed:
+        if cls.is_installed:
             cls.uninstall()
         handler = cls()
-        cls.installed = SpaceView3D.draw_handler_add(handler, (context,), "WINDOW", "POST_VIEW")
+        cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_text, (context,), "WINDOW", "POST_PIXEL"))
+        cls.handlers.append(SpaceView3D.draw_handler_add(handler, (context,), "WINDOW", "POST_VIEW"))
+        cls.is_installed = True
 
     @classmethod
     def uninstall(cls):
-        try:
-            SpaceView3D.draw_handler_remove(cls.installed, "WINDOW")
-        except ValueError:
-            pass
-        cls.installed = None
+        for handler in cls.handlers:
+            try:
+                SpaceView3D.draw_handler_remove(handler, "WINDOW")
+            except ValueError:
+                pass
+        cls.is_installed = False
 
+    
+    @classmethod
+    def set_mouse_position(cls, context, event):
+        cls.mouse_pos = event.mouse_region_x, event.mouse_region_y
+        
+    @classmethod
+    def set_input_panel(cls, input_panel, input_type):
+        cls.input_panel = input_panel
+        cls.input_type = input_type
+
+    @classmethod
+    def calculate_distance_and_angle(cls, context):
+        try:
+            polyline_data = context.scene.BIMModelProperties.polyline_point
+            snap_prop = context.scene.BIMModelProperties.snap_mouse_point[0]
+            last_point_data = polyline_data[len(polyline_data) - 1]
+        except:
+            return
+        last_point = Vector((last_point_data.x, last_point_data.y, last_point_data.z))
+        snap_vector = Vector((snap_prop.x, snap_prop.y, 0))
+        
+        distance = (snap_vector - last_point).length # TODO get height from default container
+        x_axis_edge = (Vector((0, 0, 0,)), Vector((1, 0, 0,)))
+        current_axis = (last_point, snap_vector) # TODO get height from default container
+        if distance > 0:
+            angle = tool.Cad.angle_edges(x_axis_edge, current_axis, degrees=True)
+            if cls.input_panel:
+                cls.input_panel['X'] = str(round(snap_vector.x, 4))
+                cls.input_panel['Y'] = str(round(snap_vector.y, 4))
+                cls.input_panel['D'] = str(round(distance, 4))
+                cls.input_panel['A'] = str(round(angle, 4))
+        
+        
     def draw_batch(self, shader_type, content_pos, color, indices=None):
         shader = self.line_shader if shader_type == "LINES" else self.shader
         batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
         shader.uniform_float("color", color)
         batch.draw(shader)
 
+    
+    def draw_text(self, context):
+        texts = ['X coord:', 'Y coord:', 'Distance:', 'Angle:']
+        self.addon_prefs = tool.Blender.get_addon_preferences()
+        self.font_id = 0
+        blf.size(self.font_id, 12)
+        color = self.addon_prefs.decorations_colour
+        blf.color(self.font_id, *color)
+        offset = 20
+        new_line = 20
+        keys = list(self.input_panel.keys())
+        for i, text in enumerate(texts):
+            blf.position(self.font_id, self.mouse_pos[0] + offset, self.mouse_pos[1] + offset - (new_line * i), 0)
+            blf.draw(self.font_id, text + self.input_panel[keys[i]])
+
+        
     def __call__(self, context):
 
         self.addon_prefs = tool.Blender.get_addon_preferences()
@@ -325,6 +383,8 @@ class WallPolylineDecorator:
         decorator_color_special = self.addon_prefs.decorator_color_special
         decorator_color_selected = self.addon_prefs.decorator_color_selected
         decorator_color_error = self.addon_prefs.decorator_color_error
+        decorator_color_unselected = self.addon_prefs.decorator_color_unselected
+        decorator_color_background = self.addon_prefs.decorator_color_background
 
         
         gpu.state.blend_set("ALPHA")
@@ -338,19 +398,25 @@ class WallPolylineDecorator:
         gpu.state.point_size_set(10)
 
         snap_prop = context.scene.BIMModelProperties.snap_mouse_point[0]
-        point = [Vector((snap_prop.x, snap_prop.y, snap_prop.z))]
+        
+        # Point related to the mouse
+        mouse_point = [Vector((snap_prop.x, snap_prop.y, snap_prop.z))]
         if snap_prop.snap_type in ["Face", "Plane"]:
-            self.draw_batch("POINTS", point, decorator_color_special)
+            self.draw_batch("POINTS", mouse_point, decorator_color_unselected)
         else:
-            self.draw_batch("POINTS", point, decorator_color_selected)
+            self.draw_batch("POINTS", mouse_point, (1.0, 0.6, 0.0, 1.0))
 
-        if snap_prop.snap_type != "Plane":
-            projection_point = [Vector((snap_prop.x, snap_prop.y, 0))] # TODO get height from default container
-            self.draw_batch("POINTS", projection_point, decorator_color_special)
-            edges = [[0, 1]]
-            self.draw_batch("LINES", point + projection_point, decorator_color_selected, edges)
+
+        # When a point is above the plane it projects the point
+        # to the plane and creates a line
+        if snap_prop.snap_type != "Plane" and snap_prop.z != 0:
             self.line_shader.uniform_float("lineWidth", 0.5)
+            projection_point = [Vector((snap_prop.x, snap_prop.y, 0))] # TODO get height from default container
+            self.draw_batch("POINTS", projection_point, decorator_color_unselected)
+            edges = [[0, 1]]
+            self.draw_batch("LINES", mouse_point + projection_point, (1.0, 0.6, 0.0, 1.0), edges)
             
+        # Polyline with selected points
         polyline_data = context.scene.BIMModelProperties.polyline_point
         polyline_points = []
         polyline_edges = []
@@ -361,9 +427,13 @@ class WallPolylineDecorator:
         for i in range(len(polyline_points) - 1):
             polyline_edges.append([i, i+1])
             
+        self.line_shader.uniform_float("lineWidth", 2.0)
         self.draw_batch("POINTS", polyline_points, decorator_color_selected)
         if len(polyline_points) > 1:
             self.draw_batch("LINES", polyline_points, decorator_color_selected, polyline_edges)
             
-        self.line_shader.uniform_float("lineWidth", 2.0)
             
+        # Line between last polyline point and mouse
+        
+        edges = [[0, 1]]
+        self.draw_batch("LINES", [polyline_points[-1]] + mouse_point, decorator_color_unselected, edges)
