@@ -18,6 +18,7 @@
 
 import bpy
 import blenderbim.core.tool
+import math
 import mathutils
 from mathutils import Matrix, Vector
 
@@ -98,3 +99,30 @@ class Snaping(blenderbim.core.tool.Snaping):
     def remove_last_polyline_point(cls):
         polyline_data = bpy.context.scene.BIMModelProperties.polyline_point
         polyline_data.remove(len(polyline_data) - 1)
+
+    def snap_on_axis(intersection):
+        polyline_data = bpy.context.scene.BIMModelProperties.polyline_point
+        if polyline_data:
+            last_point_data =polyline_data[-1]
+            last_point = Vector((last_point_data.x, last_point_data.y, last_point_data.z))
+        else:
+            last_point = Vector((0, 0, 0))
+            
+        # translates intersection point based on last_point
+        translated_intersection = intersection - last_point
+        for i in range(12):
+            angle = 30 * i
+            rot_mat = Matrix.Rotation(math.radians(360 - angle), 3, 'Z')
+            rot_intersection = rot_mat @ translated_intersection
+            print("ROT_INT", rot_intersection)
+            is_on_rot_axis = abs(rot_intersection.y) <= 0.60
+            if is_on_rot_axis:
+                # snap to axis
+                rot_intersection = Vector((rot_intersection.x, 0, rot_intersection.z))
+                # convert it back
+                snap_intersection =  rot_mat.inverted() @ rot_intersection + last_point
+                print('SNAP', snap_intersection)
+                return snap_intersection
+            
+        return None
+        
