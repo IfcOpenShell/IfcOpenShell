@@ -34,9 +34,14 @@ class SolarData:
     def load(cls):
         cls.is_loaded = True
         cls.data = {
+            "sun_position": cls.sun_position(),
             "sites": cls.sites(),
             "true_north": cls.true_north(),
         }
+
+    @classmethod
+    def sun_position(cls):
+        return tool.Blender.get_sun_position_addon()
 
     @classmethod
     def sites(cls):

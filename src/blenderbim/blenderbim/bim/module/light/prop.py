@@ -36,8 +36,6 @@ from bpy.types import PropertyGroup
 from blenderbim.bim.module.light.data import SolarData
 from blenderbim.bim.module.light.decorator import SolarDecorator
 
-sun_position = tool.Blender.get_sun_position_addon()
-
 
 def get_sites(self, context):
     if not SolarData.is_loaded:
@@ -103,6 +101,12 @@ def update_display_sun_path(self, context):
 
 
 def update_sun_path():
+    if not SolarData.is_loaded:
+        SolarData.load()
+
+    if (sun_position := SolarData.data["sun_position"]) is None:
+        return
+
     props = bpy.context.scene.BIMSolarProperties
     sun_props = bpy.context.scene.sun_pos_properties
     props.timezone = tzfpy.get_tz(props.longitude, props.latitude)
