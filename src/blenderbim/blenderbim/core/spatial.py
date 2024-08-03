@@ -62,6 +62,7 @@ def assign_container(
 
 
 def enable_editing_container(spatial: tool.Spatial, obj: bpy.types.Object) -> None:
+    spatial.set_target_container_as_default()
     spatial.enable_editing(obj)
 
 

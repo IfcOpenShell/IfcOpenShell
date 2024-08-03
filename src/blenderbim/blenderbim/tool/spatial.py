@@ -887,3 +887,13 @@ class Spatial(blenderbim.core.tool.Spatial):
             if (element := tool.Ifc.get_entity(obj)) and not tool.Root.is_spatial_element(element):
                 results.append(obj)
         return results
+
+    @classmethod
+    def set_target_container_as_default(cls) -> None:
+        if (
+            (container := tool.Root.get_default_container())
+            and (obj := tool.Ifc.get_object(container))
+            and bpy.context.active_object
+        ):
+            props = bpy.context.active_object.BIMObjectSpatialProperties
+            props.container_obj = obj

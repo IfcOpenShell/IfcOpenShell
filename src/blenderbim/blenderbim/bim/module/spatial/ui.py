@@ -36,10 +36,6 @@ class BIM_PT_spatial(Panel):
         return SpatialData.data["poll"]
 
     def draw(self, context):
-        # TODO: expose relating_container_object so users could
-        # assign container without switching default container back and forth
-        # just for 1 operation.
-
         if not SpatialData.is_loaded:
             SpatialData.load()
 
@@ -48,8 +44,8 @@ class BIM_PT_spatial(Panel):
         if osprops.is_editing:
             if SpatialData.data["default_container"]:
                 row = self.layout.row(align=True)
-                row.label(text=f"Target: {SpatialData.data['default_container']}", icon="OUTLINER_COLLECTION")
-                row.operator("bim.assign_container", icon="CHECKMARK", text="Reassign Container")
+                row.prop(osprops, "container_obj", text="", icon="OUTLINER_COLLECTION")
+                row.operator("bim.assign_container", icon="CHECKMARK", text="")
                 row.operator("bim.disable_editing_container", icon="CANCEL", text="")
 
             if SpatialData.data["selected_containers"]:
@@ -82,14 +78,14 @@ class BIM_PT_spatial(Panel):
                 row.label(text="No Spatial Container")
                 row.operator("bim.enable_editing_container", icon="GREASEPENCIL", text="")
 
-        references = SpatialData.data["references"]
-        if references:
-            self.layout.label(text="Referenced In Structures:")
+            if references := SpatialData.data["references"]:
+                self.layout.label(text=f"{len(references)} References:")
+            else:
+                self.layout.label(text="No References Found")
+
             for reference in references:
                 row = self.layout.row()
                 row.label(text=reference, icon="LINKED")
-        else:
-            self.layout.label(text="No References In Structures")
 
 
 class BIM_PT_spatial_decomposition(Panel):
