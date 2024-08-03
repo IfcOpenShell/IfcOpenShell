@@ -301,6 +301,8 @@ class WallPolylineDecorator:
     mouse_pos = None
     input_panel = None
     input_type = None
+    angle_snap_mat = None
+    angle_snap_loc = None
 
     
     @classmethod
@@ -330,6 +332,11 @@ class WallPolylineDecorator:
     def set_input_panel(cls, input_panel, input_type):
         cls.input_panel = input_panel
         cls.input_type = input_type
+
+    @classmethod
+    def set_angle_axis_line(cls, angle_snap_mat, angle_snap_loc):
+        cls.angle_snap_mat = angle_snap_mat
+        cls.angle_snap_loc = angle_snap_loc
 
     @classmethod
     def calculate_distance_and_angle(cls, context, is_input_on):
@@ -476,9 +483,22 @@ class WallPolylineDecorator:
             
             
         # Line between last polyline point and mouse
-        
         edges = [[0, 1]]
         if snap_prop.snap_type != "Plane" and snap_prop.z != 0:
             self.draw_batch("LINES", [polyline_points[-1]] + projection_point, decorator_color_unselected, edges)
         else:
             self.draw_batch("LINES", [polyline_points[-1]] + mouse_point, decorator_color_unselected, edges)
+
+        # Line for angle axis snap
+        print("TYPE", snap_prop.snap_type)
+        if snap_prop.snap_type == 'Axis':
+            length = 1000
+            direction = Vector((1, 0, 0))
+            rot_dir = self.angle_snap_mat.inverted() @ direction
+            start = self.angle_snap_loc + rot_dir * length
+            end = self.angle_snap_loc - rot_dir * length
+            print("START", start)
+            print("END", end)
+            self.line_shader.uniform_float("lineWidth", 1.0)
+            self.draw_batch("LINES", [start, end], decorator_color_unselected, [(0,1)])
+        
