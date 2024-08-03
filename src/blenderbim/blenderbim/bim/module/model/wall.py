@@ -540,8 +540,6 @@ class DrawPolylineWall(bpy.types.Operator):
         if event.type == 'MOUSEMOVE':
             self.mousemove_count += 1
             tool.Blender.update_viewport()
-            WallPolylineDecorator.set_mouse_position(context, event)
-            self.input_panel = WallPolylineDecorator.calculate_distance_and_angle(context, self.is_input_on)
             self.is_input_on = False
         else:
             self.mousemove_count = 0
@@ -553,6 +551,8 @@ class DrawPolylineWall(bpy.types.Operator):
 
         if self.mousemove_count > 3:
             self.snaping_movement(context, event)
+            WallPolylineDecorator.set_mouse_position(context, event)
+            self.input_panel = WallPolylineDecorator.calculate_distance_and_angle(context, self.is_input_on)
             return {'RUNNING_MODAL'}
 
         if event.value == 'RELEASE' and event.type == 'LEFTMOUSE':
