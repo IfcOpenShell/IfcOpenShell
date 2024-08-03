@@ -32,45 +32,17 @@ Scenario: Disable editing georeferencing
     When I press "bim.disable_editing_georeferencing"
     Then nothing happens
 
-Scenario: Set IFC grid north
-    Given an empty IFC project
-    And I press "bim.add_georeferencing"
-    And I press "bim.enable_editing_georeferencing"
-    When I press "bim.set_ifc_grid_north"
-    Then nothing happens
-
-Scenario: Set Blender grid north
-    Given an empty IFC project
-    And I press "bim.add_georeferencing"
-    And I press "bim.enable_editing_georeferencing"
-    And I press "bim.set_ifc_grid_north"
-    When I press "bim.set_blender_grid_north"
-    Then nothing happens
-
 Scenario: Get cursor location
     Given an empty IFC project
     When I press "bim.get_cursor_location"
     Then nothing happens
 
-Scenario: Set IFC true north
-    Given an empty IFC project
-    When I press "bim.set_ifc_true_north"
-    Then nothing happens
-
-Scenario: Set Blender true north
-    Given an empty IFC project
-    And I press "bim.set_ifc_true_north"
-    When I press "bim.set_blender_true_north"
-    Then nothing happens
-
-Scenario: Convert local to global
+Scenario: Convert local to map
     Given an empty IFC project
     When I set "scene.BIMGeoreferenceProperties.local_coordinates" to "0,0,0"
-    And I press "bim.convert_local_to_global"
     Then "scene.BIMGeoreferenceProperties.map_coordinates" is "0.0,0.0,0.0"
 
-Scenario: Convert global to local
+Scenario: Convert map to local
     Given an empty IFC project
     When I set "scene.BIMGeoreferenceProperties.map_coordinates" to "0,0,0"
-    And I press "bim.convert_global_to_local"
     Then "scene.BIMGeoreferenceProperties.local_coordinates" is "0.0,0.0,0.0"

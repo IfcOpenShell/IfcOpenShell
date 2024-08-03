@@ -87,23 +87,6 @@ class GetCursorLocation(bpy.types.Operator, tool.Ifc.Operator):
         core.get_cursor_location(tool.Georeference)
 
 
-class ConvertAngleToCoordinates(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.convert_angle_to_coord"
-    bl_label = "Convert Angle To Y Axis"
-    bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Convert angle to Y axis"
-    type: bpy.props.StringProperty()
-
-    @classmethod
-    def poll(cls, context):
-        file = tool.Ifc.get()
-        props = context.scene.BIMGeoreferenceProperties
-        return file and (props.angle_degree_input_x or props.angle_degree_input_y)
-
-    def _execute(self, context):
-        core.convert_angle_to_coord(tool.Georeference, type=self.type)
-
-
 class ImportPlot(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.import_plot"
     bl_label = "Import Plot"
@@ -138,7 +121,7 @@ class EditWCS(bpy.types.Operator, tool.Ifc.Operator):
     bl_description = "Edit the WCS"
 
     def _execute(self, context):
-        core.edit_wcs(tool.Ifc, tool.Georeference)
+        core.edit_wcs(tool.Georeference)
 
 
 class DisableEditingWCS(bpy.types.Operator, tool.Ifc.Operator):

@@ -38,8 +38,8 @@ def disable_editing_georeferencing(georeference):
 def edit_georeferencing(ifc, georeference):
     ifc.run(
         "georeference.edit_georeferencing",
-        projected_crs=georeference.get_projected_crs_attributes(),
-        coordinate_operation=georeference.get_coordinate_operation_attributes(),
+        projected_crs=georeference.export_projected_crs(),
+        coordinate_operation=georeference.export_coordinate_operation(),
     )
     georeference.disable_editing()
     georeference.set_model_origin()
@@ -47,15 +47,10 @@ def edit_georeferencing(ifc, georeference):
 
 def get_cursor_location(georeference):
     location = georeference.get_cursor_location()
-    if georeference.has_blender_offset:
+    if georeference.has_blender_offset():
         georeference.set_coordinates("blender", location)
     else:
         georeference.set_coordinates("local", location)
-
-
-def convert_angle_to_coord(georeference, type):
-    vector_coordinates = georeference.angle2coords(georeference.get_angle(type), type)
-    georeference.set_vector_coordinates(vector_coordinates, type)
 
 
 def import_plot(georeference, filepath):
@@ -71,7 +66,7 @@ def disable_editing_wcs(georeference):
     georeference.disable_editing_wcs()
 
 
-def edit_wcs(ifc, georeference):
+def edit_wcs(georeference):
     wcs = georeference.export_wcs()
     georeference.set_wcs(wcs)
     georeference.disable_editing_wcs()

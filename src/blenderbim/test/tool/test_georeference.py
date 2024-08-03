@@ -75,17 +75,17 @@ class TestImportProjectedCRS(NewFile):
         assert len(props.projected_crs) == 0
 
 
-class TestImportMapConversion(NewFile):
+class TestImportCoordinateOperation(NewFile):
     def test_importing_nothing_with_no_georeferencing(self):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
         ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
         ifcopenshell.api.run("context.add_context", ifc, context_type="Model")
-        subject.import_map_conversion()
+        subject.import_coordinate_operation()
         props = bpy.context.scene.BIMGeoreferenceProperties
-        assert len(props.map_conversion) == 0
+        assert len(props.coordinate_operation) == 0
 
-    def test_importing_map_conversion(self):
+    def test_importing_coordinate_operation(self):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
         ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
@@ -98,21 +98,22 @@ class TestImportMapConversion(NewFile):
         map_conversion.XAxisAbscissa = 4
         map_conversion.XAxisOrdinate = 5
         map_conversion.Scale = 6
-        subject.import_map_conversion()
+        subject.import_coordinate_operation()
         props = bpy.context.scene.BIMGeoreferenceProperties
-        assert props.map_conversion.get("Eastings").string_value == "1.0"
-        assert props.map_conversion.get("Northings").string_value == "2.0"
-        assert props.map_conversion.get("OrthogonalHeight").string_value == "3.0"
-        assert props.map_conversion.get("XAxisAbscissa").string_value == "4.0"
-        assert props.map_conversion.get("XAxisOrdinate").string_value == "5.0"
-        assert props.map_conversion.get("Scale").string_value == "6.0"
+        assert props.coordinate_operation.get("Eastings").string_value == "1.0"
+        assert props.coordinate_operation.get("Northings").string_value == "2.0"
+        assert props.coordinate_operation.get("OrthogonalHeight").string_value == "3.0"
+        assert props.x_axis_abscissa == "4.0"
+        assert props.x_axis_ordinate == "5.0"
+        assert props.grid_north_angle == "-51.3401917"
+        assert props.coordinate_operation.get("Scale").string_value == "6.0"
 
     def test_run_ifc2x3(self):
         ifc = ifcopenshell.file(schema="IFC2X3")
         tool.Ifc.set(ifc)
-        subject.import_map_conversion()
+        subject.import_coordinate_operation()
         props = bpy.context.scene.BIMGeoreferenceProperties
-        assert len(props.map_conversion) == 0
+        assert len(props.coordinate_operation) == 0
 
 
 class TestImportTrueNorth(NewFile):
@@ -120,10 +121,12 @@ class TestImportTrueNorth(NewFile):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
         ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
-        context = ifcopenshell.api.run("context.add_context", ifc, context_type="Model")
+        ifcopenshell.api.run("context.add_context", ifc, context_type="Model")
         subject.import_true_north()
         props = bpy.context.scene.BIMGeoreferenceProperties
-        assert props.has_true_north is False
+        assert props.true_north_abscissa == "0"
+        assert props.true_north_ordinate == "1"
+        assert props.true_north_angle == "0"
 
     def test_run(self):
         ifc = ifcopenshell.file()
@@ -135,13 +138,13 @@ class TestImportTrueNorth(NewFile):
         props = bpy.context.scene.BIMGeoreferenceProperties
         assert props.true_north_abscissa == "1.0"
         assert props.true_north_ordinate == "2.0"
-        assert props.has_true_north is True
+        assert props.true_north_angle == "-26.5650512"
 
 
-class TestGetProjectedCRSAttributes(NewFile):
+class TestExportProjectedCRS(NewFile):
     def test_run(self):
         TestImportProjectedCRS().test_importing_projected_crs()
-        assert subject.get_projected_crs_attributes() == {
+        assert subject.export_projected_crs() == {
             "Name": "Name",
             "Description": "Description",
             "GeodeticDatum": "GeodeticDatum",
@@ -152,10 +155,10 @@ class TestGetProjectedCRSAttributes(NewFile):
         }
 
 
-class TestGetMapConversionAttributes(NewFile):
+class TestExportCoordinateOperation(NewFile):
     def test_run(self):
-        TestImportMapConversion().test_importing_map_conversion()
-        assert subject.get_map_conversion_attributes() == {
+        TestImportCoordinateOperation().test_importing_coordinate_operation()
+        assert subject.export_coordinate_operation() == {
             "Eastings": 1.0,
             "Northings": 2.0,
             "OrthogonalHeight": 3.0,
@@ -187,18 +190,22 @@ class TestDisableEditing(NewFile):
 
 class TestSetCoordinates(NewFile):
     def test_run(self):
-        subject.set_coordinates("input", [1.0, 2.0, 3.0])
-        assert bpy.context.scene.BIMGeoreferenceProperties.coordinate_input == "1.0,2.0,3.0"
-        subject.set_coordinates("output", [4.0, 5.0, 6.0])
-        assert bpy.context.scene.BIMGeoreferenceProperties.coordinate_output == "4.0,5.0,6.0"
+        subject.set_coordinates("local", [1.0, 2.0, 3.0])
+        assert bpy.context.scene.BIMGeoreferenceProperties.local_coordinates == "1.0,2.0,3.0"
+        subject.set_coordinates("blender", [4.0, 5.0, 6.0])
+        assert bpy.context.scene.BIMGeoreferenceProperties.blender_coordinates == "4.0,5.0,6.0"
+        subject.set_coordinates("map", [7.0, 8.0, 9.0])
+        assert bpy.context.scene.BIMGeoreferenceProperties.map_coordinates == "7.0,8.0,9.0"
 
 
 class TestGetCoordinates(NewFile):
     def test_run(self):
-        bpy.context.scene.BIMGeoreferenceProperties.coordinate_input = "1.0,2.0,3.0"
-        assert subject.get_coordinates("input") == [1.0, 2.0, 3.0]
-        bpy.context.scene.BIMGeoreferenceProperties.coordinate_output = "4.0,5.0,6.0"
-        assert subject.get_coordinates("output") == [4.0, 5.0, 6.0]
+        bpy.context.scene.BIMGeoreferenceProperties.local_coordinates = "1.0,2.0,3.0"
+        assert subject.get_coordinates("local") == [1.0, 2.0, 3.0]
+        bpy.context.scene.BIMGeoreferenceProperties.blender_coordinates = "4.0,5.0,6.0"
+        assert subject.get_coordinates("blender") == [4.0, 5.0, 6.0]
+        bpy.context.scene.BIMGeoreferenceProperties.map_coordinates = "7.0,8.0,9.0"
+        assert subject.get_coordinates("map") == [7.0, 8.0, 9.0]
 
 
 class TestGetCursorLocation(NewFile):
@@ -211,41 +218,6 @@ class TestGetCursorLocation(NewFile):
         ifcopenshell.api.run("unit.assign_unit", ifc, units=[unit])
         bpy.context.scene.cursor.location = (1.0, 2.0, 3.0)
         assert subject.get_cursor_location() == [1000.0, 2000.0, 3000.0]
-
-
-class TestSetCursorLocation(NewFile):
-    def test_run(self):
-        ifc = ifcopenshell.file()
-        tool.Ifc.set(ifc)
-        ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
-        ifcopenshell.api.run("context.add_context", ifc, context_type="Model")
-        unit = ifcopenshell.api.run("unit.add_si_unit", ifc, unit_type="LENGTHUNIT", prefix="MILLI")
-        ifcopenshell.api.run("unit.assign_unit", ifc, units=[unit])
-        subject.set_cursor_location([1000.0, 2000.0, 3000.0])
-        assert list(bpy.context.scene.cursor.location) == [1.0, 2.0, 3.0]
-
-
-class TestSetIfcTrueNorth(NewFile):
-    def test_run(self):
-        subject.set_ifc_true_north()
-        assert round(float(bpy.context.scene.BIMGeoreferenceProperties.true_north_abscissa), 3) == 0.0
-        assert round(float(bpy.context.scene.BIMGeoreferenceProperties.true_north_ordinate), 3) == 1.0
-        bpy.context.scene.sun_pos_properties.north_offset = math.radians(45)
-        subject.set_ifc_true_north()
-        assert round(float(bpy.context.scene.BIMGeoreferenceProperties.true_north_abscissa), 3) == 0.707
-        assert round(float(bpy.context.scene.BIMGeoreferenceProperties.true_north_ordinate), 3) == 0.707
-
-
-class TestSetBlenderTrueNorth(NewFile):
-    def test_run(self):
-        bpy.context.scene.BIMGeoreferenceProperties.true_north_abscissa = "0.0"
-        bpy.context.scene.BIMGeoreferenceProperties.true_north_ordinate = "1.0"
-        subject.set_blender_true_north()
-        assert bpy.context.scene.sun_pos_properties.north_offset == 0
-        bpy.context.scene.BIMGeoreferenceProperties.true_north_abscissa = "0.707"
-        bpy.context.scene.BIMGeoreferenceProperties.true_north_ordinate = "0.707"
-        subject.set_blender_true_north()
-        assert round(math.degrees(bpy.context.scene.sun_pos_properties.north_offset)) == 45
 
 
 class TestXyz2Enh(NewFile):
@@ -261,7 +233,7 @@ class TestXyz2Enh(NewFile):
         tool.Ifc.set(ifc)
         props = bpy.context.scene.BIMGeoreferenceProperties
         props.has_blender_offset = True
-        props.blender_eastings = "1.0"
+        props.blender_offset_x = "1.0"
         assert subject.xyz2enh([0.0, 0.0, 0.0]) == (1.0, 0.0, 0.0)
 
     def test_using_the_map_conversion(self):
@@ -277,7 +249,7 @@ class TestXyz2Enh(NewFile):
     def test_applying_both_blender_offset_and_map_conversion(self):
         props = bpy.context.scene.BIMGeoreferenceProperties
         props.has_blender_offset = True
-        props.blender_eastings = "1.0"
+        props.blender_offset_x = "1.0"
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
         ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
@@ -301,7 +273,7 @@ class TestEnh2Xyz(NewFile):
         tool.Ifc.set(ifc)
         props = bpy.context.scene.BIMGeoreferenceProperties
         props.has_blender_offset = True
-        props.blender_eastings = "1.0"
+        props.blender_offset_x = "1.0"
         assert subject.enh2xyz([0.0, 0.0, 0.0]) == (-1.0, 0.0, 0.0)
 
     def test_using_the_map_conversion(self):
@@ -317,7 +289,7 @@ class TestEnh2Xyz(NewFile):
     def test_applying_both_blender_offset_and_map_conversion(self):
         props = bpy.context.scene.BIMGeoreferenceProperties
         props.has_blender_offset = True
-        props.blender_eastings = "1.0"
+        props.blender_offset_x = "1.0"
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
         ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
@@ -326,60 +298,3 @@ class TestEnh2Xyz(NewFile):
         map_conversion = ifc.by_type("IfcMapConversion")[0]
         map_conversion.Northings = 1.0
         assert subject.enh2xyz([0.0, 0.0, 0.0]) == (-1.0, -1.0, 0.0)
-
-
-class TestSetIfcGridNorth(NewFile):
-    def test_run(self):
-        props = bpy.context.scene.BIMGeoreferenceProperties
-        new = props.map_conversion.add()
-        new.name = "XAxisAbscissa"
-        new = props.map_conversion.add()
-        new.name = "XAxisOrdinate"
-        subject.set_ifc_grid_north()
-        assert round(float(props.map_conversion.get("XAxisAbscissa").string_value), 3) == 1.0
-        assert round(float(props.map_conversion.get("XAxisOrdinate").string_value), 3) == 0.0
-        bpy.context.scene.sun_pos_properties.north_offset = math.radians(-45)
-        subject.set_ifc_grid_north()
-        assert round(float(props.map_conversion.get("XAxisAbscissa").string_value), 3) == 0.707
-        assert round(float(props.map_conversion.get("XAxisOrdinate").string_value), 3) == -0.707
-        bpy.context.scene.sun_pos_properties.north_offset = math.radians(45)
-        subject.set_ifc_grid_north()
-        assert round(float(props.map_conversion.get("XAxisAbscissa").string_value), 3) == 0.707
-        assert round(float(props.map_conversion.get("XAxisOrdinate").string_value), 3) == 0.707
-        bpy.context.scene.sun_pos_properties.north_offset = math.radians(135)
-        subject.set_ifc_grid_north()
-        assert round(float(props.map_conversion.get("XAxisAbscissa").string_value), 3) == -0.707
-        assert round(float(props.map_conversion.get("XAxisOrdinate").string_value), 3) == 0.707
-        bpy.context.scene.sun_pos_properties.north_offset = math.radians(-135)
-        subject.set_ifc_grid_north()
-        assert round(float(props.map_conversion.get("XAxisAbscissa").string_value), 3) == -0.707
-        assert round(float(props.map_conversion.get("XAxisOrdinate").string_value), 3) == -0.707
-
-
-class TestSetBlenderGridNorth(NewFile):
-    def test_run(self):
-        props = bpy.context.scene.BIMGeoreferenceProperties
-        new = props.map_conversion.add()
-        new.name = "XAxisAbscissa"
-        new = props.map_conversion.add()
-        new.name = "XAxisOrdinate"
-        props.map_conversion.get("XAxisAbscissa").string_value = "1.0"
-        props.map_conversion.get("XAxisOrdinate").string_value = "0.0"
-        subject.set_blender_grid_north()
-        assert bpy.context.scene.sun_pos_properties.north_offset == 0
-        props.map_conversion.get("XAxisAbscissa").string_value = "0.707"
-        props.map_conversion.get("XAxisOrdinate").string_value = "-0.707"
-        subject.set_blender_grid_north()
-        assert round(math.degrees(bpy.context.scene.sun_pos_properties.north_offset)) == -45
-        props.map_conversion.get("XAxisAbscissa").string_value = "0.707"
-        props.map_conversion.get("XAxisOrdinate").string_value = "0.707"
-        subject.set_blender_grid_north()
-        assert round(math.degrees(bpy.context.scene.sun_pos_properties.north_offset)) == 45
-        props.map_conversion.get("XAxisAbscissa").string_value = "-0.707"
-        props.map_conversion.get("XAxisOrdinate").string_value = "0.707"
-        subject.set_blender_grid_north()
-        assert round(math.degrees(bpy.context.scene.sun_pos_properties.north_offset)) == 135
-        props.map_conversion.get("XAxisAbscissa").string_value = "-0.707"
-        props.map_conversion.get("XAxisOrdinate").string_value = "-0.707"
-        subject.set_blender_grid_north()
-        assert round(math.degrees(bpy.context.scene.sun_pos_properties.north_offset)) == -135

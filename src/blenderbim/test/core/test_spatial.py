@@ -52,6 +52,7 @@ class TestAssignContainer:
 
 class TestEnableEditingContainer:
     def test_run(self, spatial):
+        spatial.set_target_container_as_default().should_be_called()
         spatial.enable_editing("obj").should_be_called()
         subject.enable_editing_container(spatial, obj="obj")
 
