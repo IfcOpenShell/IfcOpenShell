@@ -343,21 +343,46 @@ class WallPolylineDecorator:
         last_point = Vector((last_point_data.x, last_point_data.y, last_point_data.z))
         
         if is_input_on:
-            print("****", cls.input_panel)
             snap_vector = Vector((float(cls.input_panel['X']), float(cls.input_panel['Y']), 0))
         else:
             snap_vector = Vector((snap_prop.x, snap_prop.y, 0))
         
         distance = (snap_vector - last_point).length # TODO get height from default container
-        x_axis_edge = (Vector((0, 0, 0,)), Vector((1, 0, 0,)))
-        current_axis = (last_point, snap_vector) # TODO get height from default container
+        x_axis_edge = (Vector((0, 0, )), Vector((1, 0, )))
+        current_axis = (Vector((last_point.x, last_point.y)), Vector((snap_vector.x, snap_vector.y))) # TODO get height from default container
         if distance > 0:
-            angle = tool.Cad.angle_edges(x_axis_edge, current_axis, degrees=True)
+            angle = tool.Cad.angle_edges(x_axis_edge, current_axis, degrees=True, signed=True)
+            print("ANGLE", angle, radians(angle))
             if cls.input_panel:
                 cls.input_panel['X'] = str(round(snap_vector.x, 4))
                 cls.input_panel['Y'] = str(round(snap_vector.y, 4))
                 cls.input_panel['D'] = str(round(distance, 4))
                 cls.input_panel['A'] = str(round(angle, 4))
+
+                return cls.input_panel
+        
+        return cls.input_panel
+
+    @classmethod
+    def calculate_x_and_y(cls, context, is_input_on):
+        try:
+            polyline_data = context.scene.BIMModelProperties.polyline_point
+            snap_prop = context.scene.BIMModelProperties.snap_mouse_point[0]
+            last_point_data = polyline_data[len(polyline_data) - 1]
+        except:
+            return
+        
+        last_point = Vector((last_point_data.x, last_point_data.y, last_point_data.z))
+        distance = float(cls.input_panel['D'])
+        
+        if distance < 0 or distance > 0:
+            angle_degrees = float(cls.input_panel['A'])
+            angle_radians = radians(360 - angle_degrees) # Substracting from 360 to make it clockwise
+            x = last_point[0] + distance * cos(angle_radians)
+            y = last_point[1] + distance * sin(angle_radians)
+            if cls.input_panel:
+                cls.input_panel['X'] = str(round(x, 4))
+                cls.input_panel['Y'] = str(round(y, 4))
 
                 return cls.input_panel
         
