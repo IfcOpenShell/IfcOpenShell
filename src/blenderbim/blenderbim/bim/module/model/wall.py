@@ -564,6 +564,9 @@ class DrawPolylineWall(bpy.types.Operator):
                 self.input_type = event.type
                 self.number_input = []
                 self.number_output = ''
+                WallPolylineDecorator.set_input_panel(self.input_panel, self.input_type)
+                tool.Blender.update_viewport()
+
 
             if event.value == 'PRESS' and event.type in {'RIGHTMOUSE', 'ESC'}:
                 self.is_input_on = False
@@ -604,8 +607,10 @@ class DrawPolylineWall(bpy.types.Operator):
 
         if event.value == 'PRESS' and event.type in {'RET', 'NUMPAD_ENTER'}:
             tool.Snaping.insert_polyline_point(float(self.input_panel['X']), float(self.input_panel['Y']))
-            tool.Blender.update_viewport()
             self.is_input_on = False
+            self.input_type = None
+            WallPolylineDecorator.set_input_panel(self.input_panel, self.input_type)
+            tool.Blender.update_viewport()
             
         if event.type in {'MIDDLEMOUSE', 'WHEELUPMOUSE', 'WHEELDOWNMOUSE'}:
             return {'PASS_THROUGH'}
