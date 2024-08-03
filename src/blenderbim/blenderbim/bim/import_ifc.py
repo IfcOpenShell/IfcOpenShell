@@ -1261,7 +1261,7 @@ class IfcImporter:
     def place_objects_in_collections(self) -> None:
         for ifc_definition_id, obj in self.added_data.items():
             if isinstance(obj, bpy.types.Object):
-                tool.Collector.assign(obj)
+                tool.Collector.assign(obj, should_clean_users_collection=False)
 
     def is_curve_annotation(self, element: ifcopenshell.entity_instance) -> bool:
         object_type = element.ObjectType

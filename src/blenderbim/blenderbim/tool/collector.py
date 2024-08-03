@@ -25,8 +25,20 @@ from typing import Union
 
 class Collector(blenderbim.core.tool.Collector):
     @classmethod
-    def assign(cls, obj: bpy.types.Object) -> None:
+    def assign(cls, obj: bpy.types.Object, should_clean_users_collection=True) -> None:
         """Links an object to an appropriate Blender collection."""
+        if should_clean_users_collection:
+            for users_collection in obj.users_collection:
+                if obj.BIMObjectProperties.collection == users_collection:
+                    continue
+                # Users are free to user extra collections for their own
+                # purposes except for the reserved keyword "Ifc" and
+                # "Collection" (which is the default collection that comes with
+                # a Blender session)
+                if "Ifc" in users_collection.name or users_collection.name == "Collection":
+                    print('removing', users_collection, 'from', obj)
+                    users_collection.objects.unlink(obj)
+
         element = tool.Ifc.get_entity(obj)
 
         if element.is_a("IfcGridAxis"):
