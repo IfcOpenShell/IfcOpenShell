@@ -363,7 +363,6 @@ class WallPolylineDecorator:
         current_axis = (Vector((last_point.x, last_point.y)), Vector((snap_vector.x, snap_vector.y))) # TODO get height from default container
         if distance > 0:
             angle = tool.Cad.angle_edges(x_axis_edge, current_axis, degrees=True, signed=True)
-            print("ANGLE", angle, radians(angle))
             if cls.input_panel:
                 cls.input_panel['X'] = str(round(snap_vector.x, 4))
                 cls.input_panel['Y'] = str(round(snap_vector.y, 4))
@@ -490,15 +489,12 @@ class WallPolylineDecorator:
             self.draw_batch("LINES", [polyline_points[-1]] + mouse_point, decorator_color_unselected, edges)
 
         # Line for angle axis snap
-        print("TYPE", snap_prop.snap_type)
         if snap_prop.snap_type == 'Axis':
             length = 1000
             direction = Vector((1, 0, 0))
             rot_dir = self.angle_snap_mat.inverted() @ direction
             start = self.angle_snap_loc + rot_dir * length
             end = self.angle_snap_loc - rot_dir * length
-            print("START", start)
-            print("END", end)
-            self.line_shader.uniform_float("lineWidth", 1.0)
+            self.line_shader.uniform_float("lineWidth", 0.75)
             self.draw_batch("LINES", [start, end], decorator_color_unselected, [(0,1)])
         

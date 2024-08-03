@@ -44,6 +44,20 @@ class Snaping(blenderbim.core.tool.Snaping):
 
         return snap_points
 
+    
+    @classmethod
+    def get_snap_points_on_polyline(cls):
+        snap_points = {}
+        polyline_data = bpy.context.scene.BIMModelProperties.polyline_point
+        polyline_points = []
+        for point_data in polyline_data:
+            point = Vector((point_data.x, point_data.y, point_data.z))
+            polyline_points.append(point)
+        snap_points.update({tuple(point): "Polyline Point" for point in polyline_points})
+        
+        return snap_points
+
+    
     @classmethod
     def select_snap_point(cls, snap_points, hit, threshold):
         shortest_distance = None
@@ -116,14 +130,12 @@ class Snaping(blenderbim.core.tool.Snaping):
             rot_mat = Matrix.Rotation(math.radians(360 - angle), 3, 'Z')
             WallPolylineDecorator.set_angle_axis_line(rot_mat, last_point)
             rot_intersection = rot_mat @ translated_intersection
-            print("ROT_INT", rot_intersection)
             is_on_rot_axis = abs(rot_intersection.y) <= 0.60
             if is_on_rot_axis:
                 # snap to axis
                 rot_intersection = Vector((rot_intersection.x, 0, rot_intersection.z))
                 # convert it back
                 snap_intersection =  rot_mat.inverted() @ rot_intersection + last_point
-                print('SNAP', snap_intersection)
                 return snap_intersection
             
         return None
