@@ -21,9 +21,6 @@ import blenderbim.tool as tool
 from blenderbim.bim.module.light.data import SolarData
 
 
-sun_position = tool.Blender.get_sun_position_addon()
-
-
 class BIM_PT_radiance_exporter(bpy.types.Panel):
     """Creates a Panel in the render properties window"""
 
@@ -121,12 +118,12 @@ class BIM_PT_solar(bpy.types.Panel):
     bl_options = {"HIDE_HEADER"}
 
     def draw(self, context):
-        if sun_position is None:
-            self.layout.label(text="Enable 'Sun Position' addon to continue.")
-            return
-
         if not SolarData.is_loaded:
             SolarData.load()
+
+        if (sun_position := SolarData.data["sun_position"]) is None:
+            self.layout.label(text="Enable 'Sun Position' Add-on To Continue", icon="ERROR")
+            return
 
         props = context.scene.BIMSolarProperties
 

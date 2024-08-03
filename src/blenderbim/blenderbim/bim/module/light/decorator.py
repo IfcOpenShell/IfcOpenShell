@@ -28,8 +28,6 @@ from gpu_extras.batch import batch_for_shader
 from bpy_extras.view3d_utils import location_3d_to_region_2d
 from blenderbim.bim.module.light.data import SolarData
 
-sun_position = tool.Blender.get_sun_position_addon()
-
 
 class SolarDecorator:
     is_installed = False
@@ -149,7 +147,7 @@ class SolarDecorator:
         indices = []
         coord_offset = 0
         for h in range(24):
-            analemma_verts = sun_position.sun_calc.calc_analemma(context, h)
+            analemma_verts = SolarData.data["sun_position"].sun_calc.calc_analemma(context, h)
             coords.extend([origin @ v for v in analemma_verts])
             for i in range(len(analemma_verts) - 1):
                 indices.append((coord_offset + i, coord_offset + i + 1))
