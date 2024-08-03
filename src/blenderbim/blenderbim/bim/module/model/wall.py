@@ -429,18 +429,13 @@ class DrawPolylineWall(bpy.types.Operator):
                     
             in_viewport = []
             objs_to_raycast = []
-            start_time = time()
             
             for obj, bbox_2d in self.objs_2d_bbox:
                 if obj.type == 'MESH' and bbox_2d:
                     if in_view_2d_bounding_box(obj, bbox_2d):
                         objs_to_raycast.append(obj)
                     
-            operator_time = time() - start_time
-            print(f"raycast bound box was finished in {operator_time:.2f} seconds")
-            print("Len to raycast: ", len(objs_to_raycast))
             
-            start_time = time()
             for obj in objs_to_raycast:
                 hit, normal, face_index = obj_ray_cast(obj)
                 if hit is None:
@@ -462,8 +457,6 @@ class DrawPolylineWall(bpy.types.Operator):
                         best_face_index = face_index
                             
 
-            operator_time = time() - start_time
-            print(f"raycast objects was finished in {operator_time:.2f} seconds")
             
             if best_obj is not None:
                 return best_obj, best_hit, best_face_index
@@ -539,7 +532,6 @@ class DrawPolylineWall(bpy.types.Operator):
         
         if event.type == 'MOUSEMOVE':
             self.mousemove_count += 1
-            tool.Blender.update_viewport()
             self.is_input_on = False
         else:
             self.mousemove_count = 0
@@ -553,12 +545,13 @@ class DrawPolylineWall(bpy.types.Operator):
             self.snaping_movement(context, event)
             WallPolylineDecorator.set_mouse_position(context, event)
             self.input_panel = WallPolylineDecorator.calculate_distance_and_angle(context, self.is_input_on)
+            tool.Blender.update_viewport()
             return {'RUNNING_MODAL'}
 
         if event.value == 'RELEASE' and event.type == 'LEFTMOUSE':
             tool.Snaping.insert_polyline_point()
 
-        if self.is_input_on:
+        if not self.is_input_on:
             if event.value == 'RELEASE' and event.type == 'BACK_SPACE': 
                 tool.Snaping.remove_last_polyline_point()
                 tool.Blender.update_viewport()
@@ -577,16 +570,22 @@ class DrawPolylineWall(bpy.types.Operator):
                 self.input_type = None
 
         if self.input_type:
-            if event.ascii and event.ascii in self.number_options:
+            if (event.ascii in self.number_options) or (event.value == 'RELEASE' and event.type == 'BACK_SPACE'):
                 if event.ascii == '-':
-                    print(self.number_is_negative)
                     if self.number_is_negative:
                         self.number_is_negative = False
                     else:
                         self.number_is_negative = True
                 else:
-                    self.number_input.append(event.ascii)
-                    self.number_output = ''.join(self.number_input) 
+                    if event.ascii == '.' and self.number_output.count('.') == 1:
+                        pass
+                    elif event.type == 'BACK_SPACE': 
+                        self.number_input = self.number_input[:-1]
+                        self.number_output = ''.join(self.number_input) 
+                    else:
+                        self.number_input.append(event.ascii)
+                        self.number_output = ''.join(self.number_input) 
+
 
                     
                 if self.number_is_negative:
@@ -594,7 +593,6 @@ class DrawPolylineWall(bpy.types.Operator):
                 if not self.number_is_negative and self.number_output.startswith('-'):
                     self.number_output = self.number_output[1:]
                     
-                print("NO", self.number_output)
                 self.input_panel[self.input_type] = self.number_output
                 WallPolylineDecorator.set_input_panel(self.input_panel, self.input_type)
                 if self.input_type in {'X', 'Y'}:
