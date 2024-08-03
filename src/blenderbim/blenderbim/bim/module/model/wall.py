@@ -464,51 +464,12 @@ class DrawPolylineWall(bpy.types.Operator):
             else:
                 return None, None, None
                 
-
-        def get_snap_points(obj, face_index):
-            snap_points = {}
-            matrix = obj.matrix_world.copy()
-            face = obj.data.polygons[face_index]
-            vertices = []
-            for i in face.vertices:
-                vertices.append(matrix @ obj.data.vertices[i].co)
-            
-            edges_center = []
-            for v1, v2 in zip(vertices, vertices[1:] + [vertices[0]]):
-                middle_dist = (v2-v1) / 2
-                edges_center.append(v1 + middle_dist)
-
-            snap_points.update({tuple(vertex): "Vertices" for vertex in vertices})
-            snap_points.update({tuple(edge_center): "Edge Center" for edge_center in edges_center})
-
-            return snap_points
-
-
-        def select_snap_point(snap_points, hit, threshold):
-            shortest_distance = None
-            snap_point = None
-            for point, snap_type in snap_points.items():
-                point = Vector(point)
-                distance = (point - hit).length
-                if distance > threshold:
-                    continue
-                if shortest_distance and distance < shortest_distance:
-                    shortest_distance = distance
-                    snap_point = (point, snap_type)
-
-                elif not shortest_distance:
-                    shortest_distance = distance
-                    snap_point = (point, snap_type)
-                else:
-                    pass
-                
-            return snap_point
-
         
         snap_threshold = 0.3
         ray_origin, ray_target, ray_direction = get_viewport_ray_data()
         obj, hit, face_index = cast_rays_and_get_best_object()
         intersection = ray_cast_to_plane(context, plane_origin, plane_normal)
+        rot_intersection = tool.Snaping.snap_on_axis(intersection)
         
             
         if obj is not None:
@@ -524,7 +485,10 @@ class DrawPolylineWall(bpy.types.Operator):
                 tool.Snaping.update_snaping_point(hit, "Face")
 
         else:
-            tool.Snaping.update_snaping_point(intersection, "Plane")
+            if rot_intersection:
+                tool.Snaping.update_snaping_point(rot_intersection, "Plane")
+            else:
+                tool.Snaping.update_snaping_point(intersection, "Plane")
 
     
         
