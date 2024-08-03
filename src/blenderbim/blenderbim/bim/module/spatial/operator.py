@@ -83,7 +83,8 @@ class AssignContainer(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        if container := tool.Root.get_default_container():
+        props = context.active_object.BIMObjectSpatialProperties
+        if (container_obj := props.container_obj) and (container := tool.Ifc.get_entity(container_obj)):
             for element_obj in context.selected_objects:
                 core.assign_container(
                     tool.Ifc, tool.Collector, tool.Spatial, container=container, element_obj=element_obj

@@ -64,34 +64,32 @@ def update_should_include_children(self, context):
     tool.Spatial.load_contained_elements()
 
 
-def update_relating_container_from_object(self, context):
-    if self.relating_container_object is None or context.active_object is None:
+def update_container_obj(self, context):
+    if self.container_obj is None or not (obj := context.active_object):
         return
-    element = tool.Ifc.get_entity(self.relating_container_object)
-    if not element:
+    if not (element := tool.Ifc.get_entity(self.container_obj)):
+        self.container_obj = None
         return
-    container = ifcopenshell.util.element.get_container(element)
-    if container:
-        # TODO: currently broken and relating_container_object is not used in UI.
-        bpy.ops.bim.assign_container(structure=container.id())
-    else:
-        bpy.ops.bim.disable_editing_container()
-        bpy.ops.bim.remove_container()
+    if tool.Spatial.can_contain(element, obj):
+        return
+    if (
+        (container := ifcopenshell.util.element.get_container(element))
+        and (container_obj := tool.Ifc.get_object(container))
+        and tool.Spatial.can_contain(container, obj)
+    ):
+        self.container_obj = container_obj
+        return
+    self.container_obj = None
 
 
-def is_object_applicable(self, obj):
-    element = tool.Ifc.get_entity(obj)
-    return bool(element)
+def poll_container_obj(self, obj):
+    return obj is None or tool.Ifc.get_entity(obj)
 
 
 class BIMObjectSpatialProperties(PropertyGroup):
     is_editing: BoolProperty(name="Is Editing")
-    relating_container_object: PointerProperty(
-        type=bpy.types.Object,
-        name="Copy Container",
-        update=update_relating_container_from_object,
-        poll=is_object_applicable,
-        description="Copy the target object's container to the active object",
+    container_obj: PointerProperty(
+        type=bpy.types.Object, name="Container", update=update_container_obj, poll=poll_container_obj
     )
 
 
