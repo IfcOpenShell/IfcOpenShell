@@ -335,12 +335,16 @@ class WallPolylineDecorator:
     def calculate_distance_and_angle(cls, context, is_input_on):
         try:
             polyline_data = context.scene.BIMModelProperties.polyline_point
-            snap_prop = context.scene.BIMModelProperties.snap_mouse_point[0]
             last_point_data = polyline_data[len(polyline_data) - 1]
         except:
-            return
+            last_point_data = None
         
-        last_point = Vector((last_point_data.x, last_point_data.y, last_point_data.z))
+        snap_prop = context.scene.BIMModelProperties.snap_mouse_point[0]
+        
+        if last_point_data:
+            last_point = Vector((last_point_data.x, last_point_data.y, last_point_data.z))
+        else:
+            last_point = Vector((0, 0, 0,))
         
         if is_input_on:
             snap_vector = Vector((float(cls.input_panel['X']), float(cls.input_panel['Y']), 0))
