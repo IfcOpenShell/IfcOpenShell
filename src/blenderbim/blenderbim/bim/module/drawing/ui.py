@@ -430,6 +430,19 @@ class BIM_PT_sheets(Panel):
             active_sheet = self.props.sheets[self.props.active_sheet_index]
             row = self.layout.row(align=True)
             row.alignment = "RIGHT"
+
+            if active_sheet.reference_type == "DRAWING":
+                drawingnamesvg = active_sheet.name
+                drawingname = drawingnamesvg.split('.')[0]
+                ifc_file = tool.Ifc.get()
+                ifc_annotations = ifc_file.by_type('IfcAnnotation')
+                for annotation in ifc_annotations:
+                    if annotation.Name == drawingname:
+                        drawingid = annotation.id()
+                drawing_button = row.row(align=True)
+                op = drawing_button.operator("bim.activate_drawing", icon="OUTLINER_OB_CAMERA", text="")
+                op.drawing = drawingid
+
             row.operator("bim.edit_sheet", icon="GREASEPENCIL", text="")
             row.operator("bim.open_sheet", icon="URL", text="")
             row.operator("bim.add_drawing_to_sheet", icon="IMAGE_PLANE", text="")
