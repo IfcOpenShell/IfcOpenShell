@@ -25,9 +25,9 @@ Scenario: Assign container
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected
-    And I press "bim.enable_editing_container"
     And the variable "site" is "tool.Ifc.get().by_type('IfcSite')[0].id()"
     And I press "bim.set_default_container(container={site})"
+    And I press "bim.enable_editing_container"
     When I press "bim.assign_container()"
     Then the object "IfcWall/Cube" is in the collection "IfcSite/My Site"
 

@@ -21,16 +21,15 @@ from test.core.bootstrap import ifc, georeference
 
 
 class TestAddGeoreferencing:
-    def test_run(self, ifc):
-        ifc.run("georeference.add_georeferencing").should_be_called()
-        subject.add_georeferencing(ifc)
+    def test_run(self, georeference):
+        georeference.add_georeferencing().should_be_called()
+        subject.add_georeferencing(georeference)
 
 
-class TestEnableGeoreferencing:
+class TestEnableEditingGeoreferencing:
     def test_run(self, georeference):
         georeference.import_projected_crs().should_be_called()
-        georeference.import_map_conversion().should_be_called()
-        georeference.import_true_north().should_be_called()
+        georeference.import_coordinate_operation().should_be_called()
         georeference.enable_editing().should_be_called()
         subject.enable_editing_georeferencing(georeference)
 
@@ -41,72 +40,84 @@ class TestRemoveGeoreferencing:
         subject.remove_georeferencing(ifc)
 
 
+class TestDisableEditingGeoreferencing:
+    def test_run(self, georeference):
+        georeference.disable_editing().should_be_called()
+        subject.disable_editing_georeferencing(georeference)
+
+
 class TestEditGeoreferencing:
     def test_run(self, ifc, georeference):
-        georeference.get_projected_crs_attributes().should_be_called().will_return("projected_crs_attributes")
-        georeference.get_map_conversion_attributes().should_be_called().will_return("map_conversion_attributes")
-        georeference.get_true_north_attributes().should_be_called().will_return("true_north_attributes")
+        georeference.export_projected_crs().should_be_called().will_return("projected_crs_attributes")
+        georeference.export_coordinate_operation().should_be_called().will_return("coordinate_operation_attributes")
         ifc.run(
             "georeference.edit_georeferencing",
             projected_crs="projected_crs_attributes",
-            map_conversion="map_conversion_attributes",
-            true_north="true_north_attributes",
+            coordinate_operation="coordinate_operation_attributes",
         ).should_be_called()
         georeference.disable_editing().should_be_called()
+        georeference.set_model_origin().should_be_called()
         subject.edit_georeferencing(ifc, georeference)
-
-
-class TestSetIfcGridNorth:
-    def test_run(self, georeference):
-        georeference.set_ifc_grid_north().should_be_called()
-        subject.set_ifc_grid_north(georeference)
-
-
-class TestSetBlenderGridNorth:
-    def test_run(self, georeference):
-        georeference.set_blender_grid_north().should_be_called()
-        subject.set_blender_grid_north(georeference)
-
-
-class TestSetIfcTrueNorth:
-    def test_run(self, georeference):
-        georeference.set_ifc_true_north().should_be_called()
-        subject.set_ifc_true_north(georeference)
-
-
-class TestSetBlenderTrueNorth:
-    def test_run(self, georeference):
-        georeference.set_blender_true_north().should_be_called()
-        subject.set_blender_true_north(georeference)
 
 
 class TestGetCursorLocation:
     def test_run(self, georeference):
         georeference.get_cursor_location().should_be_called().will_return("coordinates")
-        georeference.set_coordinates("input", "coordinates").should_be_called()
+        georeference.has_blender_offset().should_be_called().will_return(False)
+        georeference.set_coordinates("local", "coordinates").should_be_called()
+        subject.get_cursor_location(georeference)
+
+    def test_with_a_blender_offset(self, georeference):
+        georeference.get_cursor_location().should_be_called().will_return("coordinates")
+        georeference.has_blender_offset().should_be_called().will_return(True)
+        georeference.set_coordinates("blender", "coordinates").should_be_called()
         subject.get_cursor_location(georeference)
 
 
-class TestSetCursorLocation:
+class TestEnableEditingWCS:
     def test_run(self, georeference):
-        georeference.get_coordinates("output").should_be_called().will_return("coordinates")
-        georeference.set_cursor_location("coordinates").should_be_called()
-        subject.set_cursor_location(georeference)
+        georeference.import_wcs().should_be_called()
+        georeference.enable_editing_wcs().should_be_called()
+        subject.enable_editing_wcs(georeference)
 
 
-class TestConvertLocalToGlobal:
+class TestDisableEditingWCS:
     def test_run(self, georeference):
-        georeference.get_coordinates("input").should_be_called().will_return("coordinates")
-        georeference.xyz2enh("coordinates").should_be_called().will_return("enh")
-        georeference.set_coordinates("output", "enh").should_be_called()
-        georeference.set_cursor_location("enh").should_be_called()
-        subject.convert_local_to_global(georeference)
+        georeference.disable_editing_wcs().should_be_called()
+        subject.disable_editing_wcs(georeference)
 
 
-class TestConvertGlobalToLocal:
+class TestEditWCS:
     def test_run(self, georeference):
-        georeference.get_coordinates("input").should_be_called().will_return("coordinates")
-        georeference.enh2xyz("coordinates").should_be_called().will_return("xyz")
-        georeference.set_coordinates("output", "xyz").should_be_called()
-        georeference.set_cursor_location("xyz").should_be_called()
-        subject.convert_global_to_local(georeference)
+        georeference.export_wcs().should_be_called().will_return("wcs")
+        georeference.set_wcs("wcs").should_be_called()
+        georeference.disable_editing_wcs().should_be_called()
+        georeference.set_model_origin().should_be_called()
+        subject.edit_wcs(georeference)
+
+
+class TestEnableEditingTrueNorth:
+    def test_run(self, georeference):
+        georeference.import_true_north().should_be_called()
+        georeference.enable_editing_true_north().should_be_called()
+        subject.enable_editing_true_north(georeference)
+
+
+class TestDisableEditingTrueNorth:
+    def test_run(self, georeference):
+        georeference.disable_editing_true_north().should_be_called()
+        subject.disable_editing_true_north(georeference)
+
+
+class TestEditTrueNorth:
+    def test_run(self, ifc, georeference):
+        georeference.get_true_north_attributes().should_be_called().will_return("true_north")
+        ifc.run("georeference.edit_true_north", true_north="true_north").should_be_called()
+        georeference.disable_editing_true_north().should_be_called()
+        subject.edit_true_north(ifc, georeference)
+
+
+class TestRemoveTrueNorth:
+    def test_run(self, ifc):
+        ifc.run("georeference.edit_true_north", true_north=None).should_be_called()
+        subject.remove_true_north(ifc)

@@ -21,7 +21,6 @@ from . import ui, prop, operator
 
 classes = (
     operator.AddGeoreferencing,
-    operator.ConvertAngleToCoordinates,
     operator.DisableEditingGeoreferencing,
     operator.DisableEditingTrueNorth,
     operator.DisableEditingWCS,
