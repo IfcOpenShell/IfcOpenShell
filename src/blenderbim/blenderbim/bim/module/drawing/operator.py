@@ -1526,6 +1526,8 @@ class ActivateDrawing(bpy.types.Operator):
         return self.execute(context)
 
     def execute(self, context):
+        if bpy.context.scene.DocProperties.is_editing_drawings == False:
+            bpy.ops.bim.load_drawings()
         drawing = tool.Ifc.get().by_id(self.drawing)
         dprops = bpy.context.scene.DocProperties
 
