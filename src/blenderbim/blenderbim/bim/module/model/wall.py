@@ -304,6 +304,7 @@ class DrawPolylineWall(bpy.types.Operator):
                                '4', '5', '6', '7', '8', '9', '.', '-'}
         self.number_input = []
         self.number_output = ''
+        self.number_is_negative = False
         self.is_input_on = False
         self.input_options = {'X', 'Y', 'D', 'A'}
         self.input_type = ''
@@ -551,19 +552,16 @@ class DrawPolylineWall(bpy.types.Operator):
                 self.objs_2d_bbox.append(self.get_objects_2d_bounding_boxes(context, obj))
 
         if self.mousemove_count > 3:
-            start_time = time()
             self.snaping_movement(context, event)
-            operator_time = time() - start_time
-            print(f"main function was finished in {operator_time:.2f} seconds")
-            print(len(bpy.context.scene.BIMModelProperties.polyline_point))            
             return {'RUNNING_MODAL'}
 
         if event.value == 'RELEASE' and event.type == 'LEFTMOUSE':
             tool.Snaping.insert_polyline_point()
 
-        if event.value == 'RELEASE' and event.type == 'BACK_SPACE': 
-            tool.Snaping.remove_last_polyline_point()
-            tool.Blender.update_viewport()
+        if self.is_input_on:
+            if event.value == 'RELEASE' and event.type == 'BACK_SPACE': 
+                tool.Snaping.remove_last_polyline_point()
+                tool.Blender.update_viewport()
 
         if event.value == 'PRESS' and event.type == 'I': 
             self.is_input_on = True
@@ -574,16 +572,37 @@ class DrawPolylineWall(bpy.types.Operator):
                 self.number_input = []
                 self.number_output = ''
 
+            if event.value == 'PRESS' and event.type in {'RIGHTMOUSE', 'ESC'}:
+                self.is_input_on = False
+                self.input_type = None
+
         if self.input_type:
             if event.ascii and event.ascii in self.number_options:
-                print(self.input_type)
-                self.number_input.append(event.ascii)
-                self.number_output = ''.join(self.number_input) 
+                if event.ascii == '-':
+                    print(self.number_is_negative)
+                    if self.number_is_negative:
+                        self.number_is_negative = False
+                    else:
+                        self.number_is_negative = True
+                else:
+                    self.number_input.append(event.ascii)
+                    self.number_output = ''.join(self.number_input) 
+
+                    
+                if self.number_is_negative:
+                    self.number_output = '-' + self.number_output
+                if not self.number_is_negative and self.number_output.startswith('-'):
+                    self.number_output = self.number_output[1:]
+                    
+                print("NO", self.number_output)
                 self.input_panel[self.input_type] = self.number_output
                 WallPolylineDecorator.set_input_panel(self.input_panel, self.input_type)
-                self.input_panel = WallPolylineDecorator.calculate_distance_and_angle(context, self.is_input_on)
+                if self.input_type in {'X', 'Y'}:
+                    self.input_panel = WallPolylineDecorator.calculate_distance_and_angle(context, self.is_input_on)
+                elif self.input_type in {'D', 'A'}:
+                    self.input_panel = WallPolylineDecorator.calculate_x_and_y(context, self.is_input_on)
                 tool.Blender.update_viewport()
-                print(self.number_output)
+                
 
         if event.value == 'PRESS' and event.type in {'RET', 'NUMPAD_ENTER'}:
             tool.Snaping.insert_polyline_point(float(self.input_panel['X']), float(self.input_panel['Y']))
