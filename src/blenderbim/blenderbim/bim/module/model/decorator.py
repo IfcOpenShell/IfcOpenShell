@@ -405,11 +405,15 @@ class WallPolylineDecorator:
         self.font_id = 0
         blf.size(self.font_id, 12)
         color = self.addon_prefs.decorations_colour
-        blf.color(self.font_id, *color)
+        color_highlight = self.addon_prefs.decorator_color_special
         offset = 20
         new_line = 20
         keys = list(self.input_panel.keys())
         for i, text in enumerate(texts):
+            if keys[i] == self.input_type:
+                blf.color(self.font_id, *color_highlight)
+            else:
+                blf.color(self.font_id, *color)
             blf.position(self.font_id, self.mouse_pos[0] + offset, self.mouse_pos[1] + offset - (new_line * i), 0)
             blf.draw(self.font_id, text + self.input_panel[keys[i]])
 
