@@ -103,7 +103,7 @@ nav ul li a.active {
 }
 
 .warning {
-    color: var(--warning-color);
+    color: var(--blender-info-warning, var(--warning-color));
     margin-bottom: var(--margin-small);
     padding: var(--padding-tiny);
     display: none;
@@ -128,7 +128,7 @@ nav ul li a.active {
     overflow: hidden;
     transition: opacity 0.3s ease-out, visibility 0.3s ease-out;
     border: 1px solid var(--blender-tab-outline, var(--table-border-color));
-    background-color: var(--blender-panel-background-color, var(--nav-bg-color));
+    background-color: var(--blender-panel-background, var(--nav-bg-color));
     z-index: 1;
     opacity: 0;
     visibility: hidden;
@@ -155,7 +155,7 @@ nav ul li a.active {
     overflow: hidden;
     padding-left: var(--padding-small);
     transition: max-height 0.2s ease-out, padding 0.2s ease-out, opacity 0.1s ease-out;
-    background-color: var(--blender-panel-background-color, var(--nav-bg-color));
+    background-color: var(--blender-panel-background, var(--nav-bg-color));
     margin-top: var(--margin-tiny);
     opacity: 0;
 }
@@ -173,7 +173,6 @@ nav ul li a.active {
 #show-connected-button {
     width: auto;
     background-color: var(--blender-panel-header, var(--bg-color));
-    border: none;
     font-size: var(--base-font-size);
     color: var(--blender-text, var(--text-color))
 }
@@ -211,6 +210,17 @@ footer p {
     margin-top: var(--margin-small);
 }
 
+:root.blender button {
+    background-color: var(--blender-panel-header);
+    color: var(--blender-text);
+    border-color: var(--blender-tab-outline);
+    transition: filter 0.2s ease;
+}
+
+:root.blender button:hover {
+    filter: brightness(1.2);
+}
+
 /* ------------ Overwriting Tabulator CSS rules ------------ */
 
 :root.light .tabulator-header,
@@ -222,4 +232,67 @@ footer p {
 :root.light .tabulator {
     border-top: 1px solid var(--table-border-color);
     border-bottom: 2px solid var(--table-border-color);
+}
+
+:root.blender .tabulator-table-holder,
+:root.blender .tabulator {
+    background-color: var(--blender-panel-background) !important;
+}
+
+:root.blender .tabulator-header {
+    border-bottom-color: var(--blender-tab-outline);
+    color: var(--blender-text);
+}
+
+:root.blender .tabulator-header,
+:root.blender .tabulator .tabulator-header .tabulator-col {
+    background-color: var(--blender-panel-header) !important;
+}
+
+:root.blender .tabulator {
+    border-top-color: var(--blender-tab-outline);
+    border-bottom-color: var(--blender-tab-outline);
+    color: var(--blender-text);
+}
+
+:root.blender .tabulator-row-odd .tabulator-cell {
+    background-color: var(--blender-odd-row);
+    transition: filter 0.2s ease;
+}
+
+:root.blender .tabulator-row-even .tabulator-cell {
+    background-color: var(--blender-even-row);
+    transition: filter 0.2s ease;
+}
+
+:root.blender .tabulator-row-odd:hover .tabulator-cell,
+:root.blender .tabulator-row-even:hover .tabulator-cell {
+    filter: brightness(1.4);
+}
+
+:root.blender .tabulator-row,
+:root.blender .tabulator-cell {
+    color: var(--blender-text);
+}
+
+
+
+:root.blender .tabulator-selected .tabulator-cell {
+    background-color: var(--blender-selected-object) !important;
+}
+
+
+:root.blender .tabulator-selected:hover .tabulator-cell {
+    background-color: var(--blender-active-object) !important;
+    filter: brightness(1)
+}
+
+.tabulator-menu-item {
+    color: var(--blender-text) !important;
+    background-color: var(--blender-panel-background) !important;
+    transition: filter 0.1s ease;
+}
+
+.tabulator-menu-item:hover {
+    filter: brightness(1.4);
 }
