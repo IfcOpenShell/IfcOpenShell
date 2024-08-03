@@ -381,7 +381,9 @@ class Web(blenderbim.core.tool.Web):
             return tuple(getattr(theme, attribute)[:])
 
         def mix_colors(color1, color2):
-            alpha1, alpha2 = color1[3] * 255, color2[3] * 255
+            alpha1 = color1[3] * 255 if len(color1) > 3 else 255
+            alpha2 = color2[3] * 255 if len(color2) > 3 else 255
+
             alpha = 255 - ((255 - alpha1) * (255 - alpha2) / 255)
             red = (color1[0] * (255 - alpha2) + color2[0] * alpha2) / 255
             green = (color1[1] * (255 - alpha2) + color2[1] * alpha2) / 255
@@ -392,6 +394,9 @@ class Web(blenderbim.core.tool.Web):
         panel = prefs.panelcolors
         view_3d = bpy.context.preferences.themes[0].view_3d
         top_bar = bpy.context.preferences.themes[0].topbar.space
+        info = bpy.context.preferences.themes[0].info
+        file_browser = bpy.context.preferences.themes[0].file_browser
+
         theme = {
             "window_background": get_color(prefs, "back"),
             "text": get_color(prefs, "text"),
@@ -399,11 +404,14 @@ class Web(blenderbim.core.tool.Web):
             "tab_outline": get_color(prefs, "tab_outline"),
             "navigation_bar": get_color(prefs, "navigation_bar"),
             "panel_header": get_color(panel, "header"),
-            "panel_background_color": mix_colors(get_color(panel, "back"), get_color(panel, "sub_back")),
+            "panel_background": mix_colors(get_color(panel, "back"), get_color(panel, "sub_back")),
             "top_bar_header": get_color(top_bar, "header"),
             "top_bar_header_text": get_color(top_bar, "header_text"),
             "active_object": get_color(view_3d, "object_active"),
             "selected_object": get_color(view_3d, "object_selected"),
+            "info_warning": get_color(info, "info_warning"),
+            "odd_row": get_color(file_browser.space, "back"),
+            "even_row": mix_colors(get_color(file_browser.space, "back"), get_color(file_browser, "row_alternate")),
         }
         cls.send_webui_data(theme, "theme", "theme_data", use_web_data=False)
 

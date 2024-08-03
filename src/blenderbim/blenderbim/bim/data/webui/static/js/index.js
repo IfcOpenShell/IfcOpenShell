@@ -8,7 +8,8 @@ $(document).ready(function () {
   var systemTheme = window.matchMedia("(prefers-color-scheme: light)").matches
     ? "light"
     : "dark";
-  var theme = localStorage.getItem("theme") || systemTheme;
+  var defaultTheme = "blender";
+  var theme = localStorage.getItem("theme") || defaultTheme;
   setTheme(theme);
 
   connectSocket();
@@ -297,30 +298,33 @@ function compareHeaders(headers1, headers2) {
 }
 
 function setTheme(theme) {
+  $("html").removeClass("light dark blender").addClass(theme);
   var stylesheet = $("#tabulator-stylesheet");
   if (theme === "light") {
     stylesheet.attr(
       "href",
       "https://unpkg.com/tabulator-tables/dist/css/tabulator_site.min.css"
     );
-    $("html").removeClass("dark").addClass("light");
     $("#toggle-theme").html('<i class="fas fa-sun"></i>');
-  } else {
+  } else if (theme === "dark") {
     stylesheet.attr(
       "href",
       "https://unpkg.com/tabulator-tables/dist/css/tabulator_site_dark.min.css"
     );
-    $("html").removeClass("light").addClass("dark");
     $("#toggle-theme").html('<i class="fas fa-moon"></i>');
+  } else if (theme === "blender") {
+    $("#toggle-theme").html('<i class="fas fa-adjust"></i>');
   }
   localStorage.setItem("theme", theme);
 }
 
 function toggleTheme() {
-  if ($("html").hasClass("dark")) {
-    setTheme("light");
-  } else {
+  if ($("html").hasClass("light")) {
     setTheme("dark");
+  } else if ($("html").hasClass("dark")) {
+    setTheme("blender");
+  } else {
+    setTheme("light");
   }
 }
 
