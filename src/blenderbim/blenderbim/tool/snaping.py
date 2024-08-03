@@ -18,6 +18,7 @@
 
 import bpy
 import blenderbim.core.tool
+from blenderbim.bim.module.model.decorator import WallPolylineDecorator
 import math
 import mathutils
 from mathutils import Matrix, Vector
@@ -113,6 +114,7 @@ class Snaping(blenderbim.core.tool.Snaping):
         for i in range(12):
             angle = 30 * i
             rot_mat = Matrix.Rotation(math.radians(360 - angle), 3, 'Z')
+            WallPolylineDecorator.set_angle_axis_line(rot_mat, last_point)
             rot_intersection = rot_mat @ translated_intersection
             print("ROT_INT", rot_intersection)
             is_on_rot_axis = abs(rot_intersection.y) <= 0.60

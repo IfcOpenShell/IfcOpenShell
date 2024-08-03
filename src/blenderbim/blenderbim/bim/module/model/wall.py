@@ -486,7 +486,7 @@ class DrawPolylineWall(bpy.types.Operator):
 
         else:
             if rot_intersection:
-                tool.Snaping.update_snaping_point(rot_intersection, "Plane")
+                tool.Snaping.update_snaping_point(rot_intersection, "Axis")
             else:
                 tool.Snaping.update_snaping_point(intersection, "Plane")
 
