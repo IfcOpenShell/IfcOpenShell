@@ -100,7 +100,11 @@ class CloseError(bpy.types.Operator):
         return {"FINISHED"}
 
     def draw(self, context):
-        self.layout.label(text="Warning: your model may be damaged. Really continue?")
+        col = self.layout.column()
+        col.label(text="Warning: your model may be damaged.")
+        col.label(text="Really continue?")
+
+
 
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self)
