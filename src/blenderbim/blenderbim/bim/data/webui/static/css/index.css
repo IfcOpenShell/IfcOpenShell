@@ -278,13 +278,13 @@ footer p {
 
 
 :root.blender .tabulator-selected .tabulator-cell {
-    background-color: var(--blender-selected-object) !important;
+    background-color: var(--blender-active-highlight) !important;
+    color: var(--blender-active-text-highlight) !important;
 }
 
 
 :root.blender .tabulator-selected:hover .tabulator-cell {
-    background-color: var(--blender-active-object) !important;
-    filter: brightness(1)
+    filter: brightness(1.2)
 }
 
 .tabulator-menu-item {

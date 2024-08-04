@@ -502,9 +502,10 @@ footer p {
 
 
 /* Highlight row */
-:root.blender .gitemhighlight td {
-    background-color: var(--blender-panel-background);
-    color: var(--blender-text);
+:root.blender .gitemhighlight td,
+:root.blender .gitemhighlight .gantt-inputtable {
+    background-color: var(--blender-active-highlight) !important;
+    color: var(--blender-active-text-highlight) !important;
 }
 
 /* Differentiate Group, Milestone and Ordinary task items (applied to row) */
@@ -553,8 +554,8 @@ footer p {
 
 :root.blender span.gformlabel:hover,
 :root.blender span.gselected {
-    background-color: var(--blender-panel-header);
-    color: var(--blender-text-highlight);
+    background-color: var(--blender-active-highlight);
+    color: var(--blender-active-text-highlight);
     border-color: var(--blender-tab-outline);
 }
 

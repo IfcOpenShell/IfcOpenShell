@@ -411,7 +411,8 @@ class Web(blenderbim.core.tool.Web):
             "info_warning": get_color(info, "info_warning"),
             "odd_row": get_color(outliner.space, "back"),
             "even_row": mix_colors(get_color(outliner.space, "back"), get_color(outliner, "row_alternate")),
-            "text_highlight": get_color(outliner, "active"),
+            "active_highlight": get_color(outliner, "active"),
+            "active_text_highlight": get_color(outliner, "active_object"),
         }
         cls.send_webui_data(theme, "theme", "theme_data", use_web_data=False)
 
