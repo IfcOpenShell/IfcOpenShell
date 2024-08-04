@@ -1372,7 +1372,7 @@ class Drawing(blenderbim.core.tool.Drawing):
             mat.translation = xyz
             annotation_offset = mathutils.Vector((0, 0, -camera.data.clip_start - 0.05))
             annotation_offset = camera.matrix_world.to_quaternion() @ annotation_offset
-            mat.translation += xyz
+            mat.translation += annotation_offset
             return mat
 
         if cls.is_perpendicular(camera, reference_obj) and cls.is_intersecting(camera, reference_obj):
