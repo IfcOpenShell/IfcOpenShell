@@ -395,14 +395,13 @@ class Web(blenderbim.core.tool.Web):
         view_3d = bpy.context.preferences.themes[0].view_3d
         top_bar = bpy.context.preferences.themes[0].topbar.space
         info = bpy.context.preferences.themes[0].info
-        file_browser = bpy.context.preferences.themes[0].file_browser
+        outliner = bpy.context.preferences.themes[0].outliner
 
         theme = {
             "window_background": get_color(prefs, "back"),
             "text": get_color(prefs, "text"),
             "tab_background": get_color(prefs, "tab_back"),
             "tab_outline": get_color(prefs, "tab_outline"),
-            "navigation_bar": get_color(prefs, "navigation_bar"),
             "panel_header": get_color(panel, "header"),
             "panel_background": mix_colors(get_color(panel, "back"), get_color(panel, "sub_back")),
             "top_bar_header": get_color(top_bar, "header"),
@@ -410,8 +409,9 @@ class Web(blenderbim.core.tool.Web):
             "active_object": get_color(view_3d, "object_active"),
             "selected_object": get_color(view_3d, "object_selected"),
             "info_warning": get_color(info, "info_warning"),
-            "odd_row": get_color(file_browser.space, "back"),
-            "even_row": mix_colors(get_color(file_browser.space, "back"), get_color(file_browser, "row_alternate")),
+            "odd_row": get_color(outliner.space, "back"),
+            "even_row": mix_colors(get_color(outliner.space, "back"), get_color(outliner, "row_alternate")),
+            "text_highlight": get_color(outliner, "active"),
         }
         cls.send_webui_data(theme, "theme", "theme_data", use_web_data=False)
 

@@ -22,7 +22,9 @@ $(document).ready(function () {
   var systemTheme = window.matchMedia("(prefers-color-scheme: light)").matches
     ? "light"
     : "dark";
-  var theme = localStorage.getItem("theme") || systemTheme;
+  $(":root").css("color-scheme", systemTheme);
+  var defaultTheme = "blender";
+  var theme = localStorage.getItem("theme") || defaultTheme;
   setTheme(theme);
 
   connectSocket();
@@ -109,7 +111,7 @@ function handleThemeData(themeData) {
   const cssRule = generateCssVariableRule(themeData.theme);
   console.log(cssRule);
 
-  var styleElement = $("#index-stylesheet")[0];
+  var styleElement = $("#gantt-stylesheet")[0];
   if (styleElement) {
     var sheet = styleElement.sheet || styleElement.styleSheet;
     sheet.insertRule(cssRule, sheet.cssRules.length);
@@ -420,21 +422,24 @@ function editValue(list, task, event, cell, column) {
 }
 
 function setTheme(theme) {
+  $("html").removeClass("light dark blender").addClass(theme);
   if (theme === "light") {
-    $("html").removeClass("dark").addClass("light");
     $("#toggle-theme").html('<i class="fas fa-sun"></i>');
-  } else {
-    $("html").removeClass("light").addClass("dark");
+  } else if (theme === "dark") {
     $("#toggle-theme").html('<i class="fas fa-moon"></i>');
+  } else if (theme === "blender") {
+    $("#toggle-theme").html('<i class="fas fa-adjust"></i>');
   }
   localStorage.setItem("theme", theme);
 }
 
 function toggleTheme() {
-  if ($("html").hasClass("dark")) {
-    setTheme("light");
-  } else {
+  if ($("html").hasClass("light")) {
     setTheme("dark");
+  } else if ($("html").hasClass("dark")) {
+    setTheme("blender");
+  } else {
+    setTheme("light");
   }
 }
 

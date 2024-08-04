@@ -99,7 +99,7 @@ nav ul li a {
 
 nav ul li a:hover,
 nav ul li a.active {
-    color: var(--blender-selected-object, var(--nav-link-hover-color));
+    color: var(--blender-text-highlight, var(--nav-link-hover-color));
 }
 
 .warning {
