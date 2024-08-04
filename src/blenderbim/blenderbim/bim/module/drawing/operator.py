@@ -1524,7 +1524,7 @@ class ActivateDrawing(bpy.types.Operator):
         # make sure to use SKIP_SAVE on property, otherwise it might get stuck
         if event.type == "LEFTMOUSE" and event.alt:
             self.camera_view_point = False
-        # Only activates the camera view on alt+shift.  Does not turn on/off objects in scene
+        # Only activates the camera view on shift+click.  Does not turn on/off objects in scene
         if event.type == "LEFTMOUSE" and event.shift:
             self.switch_camera_only = True
         return self.execute(context)
@@ -1535,9 +1535,8 @@ class ActivateDrawing(bpy.types.Operator):
         drawing = tool.Ifc.get().by_id(self.drawing)
         dprops = bpy.context.scene.DocProperties
 
-        camera = tool.Drawing.import_drawing(drawing)
-
         if self.switch_camera_only:
+            camera = tool.Drawing.import_drawing(drawing)
             tool.Blender.activate_camera(camera)
         else:
             if not self.camera_view_point:
