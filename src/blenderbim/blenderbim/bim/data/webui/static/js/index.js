@@ -8,6 +8,7 @@ $(document).ready(function () {
   var systemTheme = window.matchMedia("(prefers-color-scheme: light)").matches
     ? "light"
     : "dark";
+  $(":root").css("color-scheme", systemTheme);
   var defaultTheme = "blender";
   var theme = localStorage.getItem("theme") || defaultTheme;
   setTheme(theme);
