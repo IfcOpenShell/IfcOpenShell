@@ -48,6 +48,67 @@ variables = {
 webbrowser.open = lambda x: True
 
 
+class PanelSpy:
+    def __init__(self, panel):
+        self.is_spy_dirty = True
+        self.panel = panel
+
+    def refresh_spy(self):
+        if self.is_spy_dirty:
+            self.is_spy_dirty = False
+            self.spied_attr = None
+            self.spied_labels = []
+            self.spied_props = []
+            self.spied_operators = []
+            self.panel.draw(self, bpy.context)
+
+    def __getattr__(self, attr):
+        self.spied_attr = attr
+        if attr == "layout":
+            return self
+        return self
+
+    def __call__(self, *args, **kwargs):
+        if self.spied_attr in ("row", "column"):
+            return self
+        elif self.spied_attr == "label":
+            self.spied_labels.append(kwargs["text"])
+            return self
+        elif self.spied_attr == "prop":
+            props, name = args
+            text = kwargs.get("text", props.bl_rna.properties[name].name)
+            icon = kwargs.get("icon", None)
+            value = getattr(props, name)
+            spied_prop = {"props": props, "name": name, "text": text, "icon": icon, "value": value}
+            self.spied_props.append(spied_prop)
+        elif self.spied_attr == "operator":
+            operator = args[0]
+            prefix, op_name = operator.split(".")
+            operator = getattr(getattr(bpy.ops, prefix), op_name)
+            bl_idname = operator.idname()
+            bl_label = getattr(bpy.types, bl_idname).bl_label
+            text = kwargs.get("text", bl_label)
+            icon = kwargs.get("icon", None)
+            spied_operator = {"operator": operator, "icon": icon, "text": text, "kwargs": {}}
+            self.spied_operators.append(spied_operator)
+            return OperatorSpy(spied_operator)
+        else:
+            getattr(self.panel, self.spied_attr)(self, *args, **kwargs)
+
+
+class OperatorSpy:
+    def __init__(self, spied_data):
+        self.spied_data = spied_data
+
+    def __setattr__(self, name, value):
+        if name != "spied_data":
+            self.spied_data["kwargs"][name] = value
+
+
+panel_name_cache = {}
+panel_spy = None
+
+
 def replace_variables(value):
     for key, new_value in variables.items():
         value = value.replace("{" + key + "}", str(new_value))
@@ -104,6 +165,85 @@ def the_brickschema_is_stubbed():
     # This makes things run faster since we don't need to load the entire brick schema
     cwd = os.path.dirname(os.path.realpath(__file__))
     BrickStore.schema = os.path.join(cwd, "..", "files", "BrickStub.ttl")
+
+
+@given(parsers.parse('I look at the "{panel}" panel'))
+@when(parsers.parse('I look at the "{panel}" panel'))
+@when(parsers.parse('I look at the "{panel}" panel'))
+def i_look_at_the_panel_panel(panel):
+    global panel_name_cache
+    global panel_spy
+    if not panel_name_cache:
+        for bl_idname in dir(bpy.types):
+            try:
+                panel_type = getattr(bpy.types, bl_idname)
+                if panel_type.bl_rna.base.name != "Panel":
+                    continue
+                panel_name_cache[panel_type.bl_label] = panel_type.bl_idname
+            except:
+                pass
+    panel_spy = PanelSpy(getattr(bpy.types, panel_name_cache[panel]))
+    panel_spy.refresh_spy()
+
+
+@given(parsers.parse('I see "{text}"'))
+@when(parsers.parse('I see "{text}"'))
+@then(parsers.parse('I see "{text}"'))
+def i_see_text(text):
+    panel_spy.refresh_spy()
+    assert [l for l in panel_spy.spied_labels if text in l], f"Text {text} not found in {panel_spy.spied_labels}"
+
+
+@given(parsers.parse('I don\'t see "{text}"'))
+@when(parsers.parse('I don\'t see "{text}"'))
+@then(parsers.parse('I don\'t see "{text}"'))
+def i_dont_see_text(text):
+    panel_spy.refresh_spy()
+    assert not [l for l in panel_spy.spied_labels if text in l], f"Text {text} found in {panel_spy.spied_labels}"
+
+
+@given(parsers.parse('I see the "{prop}" property'))
+@when(parsers.parse('I see the "{prop}" property'))
+@then(parsers.parse('I see the "{prop}" property'))
+def i_see_the_prop_property(prop):
+    panel_spy.refresh_spy()
+    assert [
+        p for p in panel_spy.spied_props if prop in (p["name"], p["text"], p["icon"])
+    ], f"Property {prop} not found in {panel_spy.spied_props}"
+
+
+@given(parsers.parse('I don\'t see the "{prop}" property'))
+@when(parsers.parse('I don\'t see the "{prop}" property'))
+@then(parsers.parse('I don\'t see the "{prop}" property'))
+def i_dont_see_the_prop_property(prop):
+    panel_spy.refresh_spy()
+    assert [
+        p for p in panel_spy.spied_props if prop not in (p["name"], p["text"], p["icon"])
+    ], f"Property {prop} not found in {panel_spy.spied_props}"
+
+
+@given(parsers.parse('I see the "{prop}" property is "{value}"'))
+@when(parsers.parse('I see the "{prop}" property is "{value}"'))
+@then(parsers.parse('I see the "{prop}" property is "{value}"'))
+def i_see_the_prop_property_is_value(prop, value):
+    panel_spy.refresh_spy()
+    for spied_prop in panel_spy.spied_props:
+        if prop in (spied_prop["name"], spied_prop["text"], spied_prop["icon"]):
+            assert spied_prop["value"] == value, f"Property {prop} value is not {value} - it is actually {spied_prop['value']}"
+            return
+    assert False, f"Property {prop} not found in {panel_spy.spied_props}"
+
+
+@given(parsers.parse('I set the "{prop}" property to "{value}"'))
+@when(parsers.parse('I set the "{prop}" property to "{value}"'))
+@then(parsers.parse('I set the "{prop}" property to "{value}"'))
+def i_set_the_prop_property_to_value(prop, value):
+    panel_spy.refresh_spy()
+    for spied_prop in panel_spy.spied_props:
+        if prop in (spied_prop["name"], spied_prop["text"], spied_prop["icon"]):
+            setattr(spied_prop["props"], spied_prop["name"], value)
+            return
+    assert False, f"Property {prop} not found in {panel_spy.spied_props}"
 
 
 @when("I load a new pset template file")
@@ -224,6 +364,18 @@ def i_press_operator(operator):
     except Exception as e:
         traceback.print_exc()
         assert False, f"Failed to run operator bpy.ops.{operator} because of {e}"
+
+
+@given(parsers.parse('I click "{button}"'))
+@when(parsers.parse('I click "{button}"'))
+def i_click_button(button):
+    panel_spy.refresh_spy()
+    for spied_operator in panel_spy.spied_operators:
+        if spied_operator["text"] == button or spied_operator["icon"] == button:
+            spied_operator["operator"](**spied_operator["kwargs"])
+            panel_spy.is_spy_dirty = True
+            return
+    assert False, f"Could not find {button} in {panel_spy.spied_operators}"
 
 
 @given(parsers.parse('I evaluate expression "{expression}"'))
