@@ -39,7 +39,7 @@
 
 html {
     font-size: var(--base-font-size);
-    color: var(--blender-text);
+    color: var(--blender-text, var(--text-color));
 }
 
 body {
@@ -127,7 +127,7 @@ nav ul li a.active {
     overflow-y: auto;
     overflow: hidden;
     transition: opacity 0.3s ease-out, visibility 0.3s ease-out;
-    border: 1px solid var(--blender-tab-outline, var(--details-border-color));
+    border: 1px solid var(--blender-tab-outline, var(--border-color));
     background-color: var(--blender-panel-background, var(--nav-bg-color));
     z-index: 1;
     opacity: 0;
@@ -146,7 +146,7 @@ nav ul li a.active {
 
 .client {
     padding: var(--margin-small);
-    border-bottom: 1px solid var(--blender-tab-outline, var(--details-border-color));
+    border-bottom: 1px solid var(--blender-tab-outline, var(--border-color));
     cursor: pointer;
 }
 
@@ -166,14 +166,13 @@ nav ul li a.active {
 }
 
 .client-detail {
-    border-bottom: 1px solid var(--blender-tab-outline, var(--details-border-color));
+    border-bottom: 1px solid var(--blender-tab-outline, var(--border-color));
     padding: var(--padding-small);
 }
 
 #show-connected-button {
     width: auto;
     background-color: var(--blender-panel-header, var(--bg-color));
-    border: none;
     font-size: var(--base-font-size);
 }
 
@@ -188,6 +187,32 @@ nav ul li a.active {
     margin-top: var(--margin-small);
 }
 
+footer {
+    background-color: var(--blender-top-bar-header, var(--nav-bg-color));
+    text-align: right;
+    padding: var(--padding-tiny);
+    border-top: 1px solid var(--blender-tab-outline, var(--nav-border-color));
+}
+
+footer p {
+    margin: 0;
+    color: var(--blender-text, var(--nav-link-color));
+    margin-right: var(--margin-small);
+    font-size: 0.8rem;
+}
+
+
+
+button {
+    background-color: var(--blender-panel-header, var(--bg-color));
+    color: var(--blender-text, var(--text-color));
+    border-color: var(--blender-tab-outline, var(--border-color));
+    transition: filter 0.2s ease;
+}
+
+button:hover {
+    filter: brightness(1.2);
+}
 
 .left {
     flex: 1;
@@ -265,20 +290,6 @@ li.svg-name {
     outline: none;
 }
 
-footer {
-    background-color: var(--blender-top-bar-header, var(--nav-bg-color));
-    text-align: right;
-    padding: var(--padding-tiny);
-    border-top: 1px solid var(--blender-tab-outline, var(--nav-border-color));
-}
-
-footer p {
-    margin: 0;
-    color: var(--blender-text, var(--nav-link-color));
-    margin-right: var(--margin-small);
-    font-size: 0.8rem;
-}
-
 /* remove bootstrap css confilcts */
 
 *,
@@ -290,4 +301,8 @@ footer p {
 .btn,
 .btn:hover {
     color: var(--blender-text, var(--nav-link-color));
+}
+
+button:focus {
+    outline: none;
 }
