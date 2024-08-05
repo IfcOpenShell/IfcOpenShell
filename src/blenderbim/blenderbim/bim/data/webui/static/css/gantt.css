@@ -35,7 +35,7 @@
     --group-item-bg-color: #4b4b4b;
     --input-bg-color: #3b3b3b;
     --input-border-color: #000;
-    --details-border-color: #464444;
+    --border-color: #464444;
 }
 
 :root.light {
@@ -47,7 +47,7 @@
     --nav-link-color: #000000;
     --nav-link-hover-color: #38a63d;
     --warning-color: #FF4500;
-    --details-border-color: #222;
+    --border-color: #222;
 }
 
 html {
@@ -158,7 +158,7 @@ nav ul li a.active {
     overflow-y: auto;
     overflow: hidden;
     transition: opacity 0.3s ease-out, visibility 0.3s ease-out;
-    border: 1px solid var(--blender-tab-outline, var(--details-border-color));
+    border: 1px solid var(--blender-tab-outline, var(--border-color));
     background-color: var(--blender-panel-background, var(--nav-bg-color));
     z-index: 1;
     opacity: 0;
@@ -177,7 +177,7 @@ nav ul li a.active {
 
 .client {
     padding: var(--margin-small);
-    border-bottom: 1px solid var(--blender-tab-outline, var(--details-border-color));
+    border-bottom: 1px solid var(--blender-tab-outline, var(--border-color));
     cursor: pointer;
 }
 
@@ -197,14 +197,13 @@ nav ul li a.active {
 }
 
 .client-detail {
-    border-bottom: 1px solid var(--blender-tab-outline, var(--details-border-color));
+    border-bottom: 1px solid var(--blender-tab-outline, var(--border-color));
     padding: var(--padding-small);
 }
 
 #show-connected-button {
     width: auto;
     background-color: var(--blender-panel-header, var(--bg-color));
-    border: none;
     font-size: var(--base-font-size);
 }
 
@@ -258,7 +257,14 @@ footer p {
     transition: filter 0.2s ease;
 }
 
-:root.blender button:hover {
+button {
+    background-color: var(--blender-panel-header, var(--bg-color));
+    color: var(--blender-text, var(--text-color));
+    border-color: var(--blender-tab-outline, var(--border-color));
+    transition: filter 0.2s ease;
+}
+
+button:hover {
     filter: brightness(1.2);
 }
 
