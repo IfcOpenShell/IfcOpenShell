@@ -71,7 +71,8 @@ function handleBlenderConnect(blenderId) {
 
 // Function to handle 'default_data' event
 function handleDefaultData(data) {
-  getDrawingsData();
+  const blenderId = data["blenderId"];
+  getDrawingsData(blenderId);
 }
 
 // Function to handle 'blender_disconnect' event
@@ -355,12 +356,17 @@ function toggleClientList() {
   clientList.addClass("show");
 }
 
-function getDrawingsData() {
+function getDrawingsData(blenderId) {
   const msg = {
     sourcePage: "drawings",
     operator: {
       type: "getDrawings",
     },
   };
+
+  if (blenderId !== undefined) {
+    msg.BlenderId = blenderId;
+  }
+
   socket.emit("web_operator", msg);
 }
