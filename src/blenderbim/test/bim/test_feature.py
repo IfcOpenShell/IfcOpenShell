@@ -229,7 +229,9 @@ def i_see_the_prop_property_is_value(prop, value):
     panel_spy.refresh_spy()
     for spied_prop in panel_spy.spied_props:
         if prop in (spied_prop["name"], spied_prop["text"], spied_prop["icon"]):
-            assert spied_prop["value"] == value, f"Property {prop} value is not {value} - it is actually {spied_prop['value']}"
+            assert (
+                spied_prop["value"] == value
+            ), f"Property {prop} value is not {value} - it is actually {spied_prop['value']}"
             return
     assert False, f"Property {prop} not found in {panel_spy.spied_props}"
 

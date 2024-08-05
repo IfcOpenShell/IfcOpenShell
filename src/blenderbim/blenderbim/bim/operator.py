@@ -104,8 +104,6 @@ class CloseError(bpy.types.Operator):
         col.label(text="Warning: your model may be damaged.")
         col.label(text="Really continue?")
 
-
-
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self)
 

@@ -36,7 +36,7 @@ class Collector(blenderbim.core.tool.Collector):
                 # "Collection" (which is the default collection that comes with
                 # a Blender session)
                 if "Ifc" in users_collection.name or users_collection.name == "Collection":
-                    print('removing', users_collection, 'from', obj)
+                    print("removing", users_collection, "from", obj)
                     users_collection.objects.unlink(obj)
 
         element = tool.Ifc.get_entity(obj)

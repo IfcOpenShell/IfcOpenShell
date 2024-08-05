@@ -1513,7 +1513,11 @@ class ActivateDrawing(bpy.types.Operator):
     bl_idname = "bim.activate_drawing"
     bl_label = "Activate Drawing"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Activates the selected drawing view.\n\n" + "ALT+CLICK to keep the viewport position.\n\n" + "SHIFT+CLICK activiate drawing without turning objects on/off."
+    bl_description = (
+        "Activates the selected drawing view.\n\n"
+        + "ALT+CLICK to keep the viewport position.\n\n"
+        + "SHIFT+CLICK activiate drawing without turning objects on/off."
+    )
 
     drawing: bpy.props.IntProperty()
     camera_view_point: bpy.props.BoolProperty(name="Camera View Point", default=True, options={"SKIP_SAVE"})
