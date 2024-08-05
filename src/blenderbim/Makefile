@@ -49,11 +49,6 @@ LAST_COMMIT_HASH:=$(shell git rev-parse HEAD)
 PYVERSION:=py310
 PYPI_IMP:=cp
 
-ifeq ($(PYVERSION), py310)
-PYLIBDIR:=python3.10
-PYNUMBER:=310
-PYPI_VERSION:=3.10
-endif
 ifeq ($(PYVERSION), py311)
 PYLIBDIR:=python3.11
 PYNUMBER:=311
@@ -183,10 +178,6 @@ else ifeq ($(PLATFORM), macos)
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pyradiance --platform macosx_10_13_x86_64 --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
 else
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pyradiance $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
-endif
-	# tomllib replacement for < Python 3.11, used to parse blender_manifest
-ifeq ($(PYVERSION), py310)
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download tomli --dest=./wheels
 endif
 
 	# Provides jsgantt-improved supports for web-based construction sequencing gantt charts
