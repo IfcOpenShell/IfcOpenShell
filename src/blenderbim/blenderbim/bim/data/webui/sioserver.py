@@ -112,7 +112,6 @@ class BlenderNamespace(socketio.AsyncNamespace):
 
     async def on_drawings_data(self, sid, data):
         print(f"Drawings data from Blender client {sid}")
-        print(data)
         blender_messages[sid]["drwings_data"] = data
         await sio.emit("drawings_data", {"blenderId": sid, "data": data}, namespace="/web")
 
