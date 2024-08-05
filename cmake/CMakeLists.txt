@@ -872,7 +872,7 @@ if(BUILD_CONVERT OR BUILD_IFCPYTHON)
 
     if(WITH_OPENCASCADE)
         foreach(schema ${SCHEMA_VERSIONS})
-            set(GEOM_SERIALIZER_SCHEMA_LIBRARIES ${GEOM_SERIALIZER_SCHEMA_LIBRARIES} GeometrySerializers_ifc${schema})
+            set(GEOM_SERIALIZER_SCHEMA_LIBRARIES ${GEOM_SERIALIZER_SCHEMA_LIBRARIES} geometry_serializer_ifc${schema})
 
             add_library(geometry_serializer_ifc${schema} ../src/ifcgeom/Serialization/schema/Serialization.cpp)
             target_link_libraries(geometry_serializer_ifc${schema} ${OPENCASCADE_LIBRARIES})
@@ -1093,6 +1093,17 @@ if(BUILD_CONVERT)
         LIBRARY DESTINATION ${LIBDIR}
         RUNTIME DESTINATION ${BINDIR}
     )
+    if (CITYJSON_SUPPORT)
+        file(GLOB CITYJSON_CONVERT_H_FILES ../src/ifcconvert/cityjson/*.h)
+        install(TARGETS cityjson_converter
+            ARCHIVE DESTINATION ${LIBDIR}
+            LIBRARY DESTINATION ${LIBDIR}
+            RUNTIME DESTINATION ${BINDIR}
+        )
+        install(FILES ${CITYJSON_CONVERT_H_FILES}
+            DESTINATION ${INCLUDEDIR}/cityjson
+        )
+    endif()
 endif(BUILD_CONVERT)
 
 # IfcGeomServer
@@ -1212,17 +1223,17 @@ if(BUILD_IFCGEOM)
 endif(BUILD_IFCGEOM)
 
 if(BUILD_CONVERT)
-    install(TARGETS Serializers ${SERIALIZER_SCHEMA_LIBRARIES}
+    install(TARGETS Serializers ${SERIALIZER_SCHEMA_LIBRARIES} geometry_serializer  ${GEOM_SERIALIZER_SCHEMA_LIBRARIES}
         ARCHIVE DESTINATION ${LIBDIR}
         LIBRARY DESTINATION ${LIBDIR}
         RUNTIME DESTINATION ${BINDIR}
     )
 
-    install(FILES ${SERIALIZERS_FILES}
+    install(FILES ${SERIALIZERS_H_FILES}
         DESTINATION ${INCLUDEDIR}/serializers/
     )
 
-    install(FILES ${SERIALIZERS_S_FILES}
+    install(FILES ${SERIALIZERS_S_H_FILES}
         DESTINATION ${INCLUDEDIR}/serializers/schema_dependent
     )
 endif(BUILD_CONVERT)
