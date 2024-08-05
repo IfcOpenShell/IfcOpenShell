@@ -190,6 +190,8 @@ class CreateAllShapes(bpy.types.Operator):
         for i, element in enumerate(elements, 1):
             if element.GlobalId in excludes:
                 continue
+            if not element.Representation:
+                continue
             print(f"{i}/{total}:", element)
             start = time.time()
             shape = None
