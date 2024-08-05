@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en" class="blender">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -69,7 +69,7 @@
     <div class="container-fluid d-flex" id="container">
       <div class="col-2 left">
         <!-- Dropdown menu -->
-        <div class="dropdown mb-3">
+        <div class="dropdown mb-1">
           <label for="dropdown-menu">IFC File:</label>
           <select class="p-0 pl-2" id="dropdown-menu">
             <!-- IFC files will be dynamically populated here -->
@@ -78,7 +78,7 @@
         </div>
         <!-- Panel with sub-panels -->
         <div class="panel">
-          <div id="accordion">
+          <div class="card-container" id="accordion">
             <div class="card pb-2">
               <div class="card-header overflow-hidden" id="headingOne">
                 <button
@@ -90,7 +90,7 @@
                 </button>
               </div>
 
-              <div id="collapseOne" class="collapse show">
+              <div id="collapseOne" class="collapse show card-container">
                 <div class="card-body">
                   <ul class="sub-panel pl-2" id="drawings-sub-panel">
                     <!-- Drawings will be dynamically populated here -->
@@ -108,7 +108,7 @@
                   Sheets
                 </button>
               </div>
-              <div id="collapseTwo" class="collapse show">
+              <div id="collapseTwo" class="collapse show card-container">
                 <div class="card-body">
                   <ul class="sub-panel pl-2" id="sheets-sub-panel">
                     <!-- Sheets will be dynamically populated here -->

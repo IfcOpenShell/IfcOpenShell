@@ -177,7 +177,7 @@ nav ul li a.active {
 
 .client {
     padding: var(--margin-small);
-    border-bottom: 1px solid 1px solid var(--blender-tab-outline, var(--details-border-color));
+    border-bottom: 1px solid var(--blender-tab-outline, var(--details-border-color));
     cursor: pointer;
 }
 
