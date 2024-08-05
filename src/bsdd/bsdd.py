@@ -408,16 +408,16 @@ class Client:
         self.client_id = "4aba821f-d4ff-498b-a462-c2837dbbba70"
 
     def get(self, endpoint, params=None, is_auth_required=False):
-        headers = {}
+        headers = {"User-Agent": "IfcOpenShell.bSDD.py/0.8.0"}
         if is_auth_required:
-            headers = {"Authorization": "Bearer " + self.get_access_token()}
+            headers["Authorization"] = "Bearer " + self.get_access_token()
         return requests.get(f"{self.baseurl}{endpoint}", timeout=10, headers=headers, params=params or None).json()
 
     def _get_deprecated(self, endpoint, params=None, is_auth_required=False):
-        headers = {}
+        headers = {"User-Agent": "IfcOpenShell.bSDD.py/0.8.0"}
         old_baseurl = "https://bs-dd-api-prototype.azurewebsites.net/"
         if is_auth_required:
-            headers = {"Authorization": "Bearer " + self.get_access_token()}
+            headers["Authorization"] = "Bearer " + self.get_access_token()
         return requests.get(f"{old_baseurl}{endpoint}", timeout=10, headers=headers, params=params or None).json()
 
     def post(self):
