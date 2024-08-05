@@ -145,7 +145,7 @@ async def gantt(request):
 async def drawings(request):
     with open("templates/drawings.html", "r") as f:
         template = f.read()
-    html_content = pystache.render(template, {"port": sio_port})
+    html_content = pystache.render(template, {"port": sio_port, "version": blenderbim_version})
     return web.Response(text=html_content, content_type="text/html")
 
 
