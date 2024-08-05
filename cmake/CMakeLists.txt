@@ -221,7 +221,7 @@ endif()
 
 if(GLTF_SUPPORT OR CITYJSON_SUPPORT)
     UNIFY_ENVVARS_AND_CACHE(JSON_INCLUDE_DIR)
-    find_path(json_header_path "json.hpp" ${JSON_INCLUDE_DIR} PATH_SUFFIXES "nlohmann")
+    find_path(json_header_path "json.hpp" HINTS ${JSON_INCLUDE_DIR} PATH_SUFFIXES "nlohmann")
     set(JSON_INCLUDE_DIR ${json_header_path})
 
     if(json_header_path)
