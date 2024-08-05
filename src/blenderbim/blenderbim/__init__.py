@@ -68,14 +68,11 @@ def initialize_bbim_semver():
     in `addon_utils.modules()->bl_info['version']`,
     therefore we just parse it from .toml.
     """
-    if sys.version_info >= (3, 11):
-        import tomllib as toml
-    else:
-        import tomli as toml
+    import tomllib
 
     toml_path = Path(__file__).parent / "blender_manifest.toml"
     with open(toml_path, "rb") as f:
-        manifest = toml.load(f)
+        manifest = tomllib.load(f)
     semver_pattern = r"^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+(?P<buildmetadata>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$"
     version_str = manifest["version"]
     re_version = re.match(semver_pattern, version_str)
