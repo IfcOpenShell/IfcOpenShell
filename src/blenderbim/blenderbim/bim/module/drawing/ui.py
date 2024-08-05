@@ -433,9 +433,9 @@ class BIM_PT_sheets(Panel):
 
             if active_sheet.reference_type == "DRAWING":
                 drawingnamesvg = active_sheet.name
-                drawingname = drawingnamesvg.split('.')[0]
+                drawingname = drawingnamesvg.split(".")[0]
                 ifc_file = tool.Ifc.get()
-                ifc_annotations = ifc_file.by_type('IfcAnnotation')
+                ifc_annotations = ifc_file.by_type("IfcAnnotation")
                 for annotation in ifc_annotations:
                     if annotation.Name == drawingname:
                         drawingid = annotation.id()
