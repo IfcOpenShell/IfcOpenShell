@@ -33,6 +33,7 @@ function connectSocket() {
   socket.on("blender_disconnect", handleBlenderDisconnect);
   socket.on("connect", handleWebConnect);
   socket.on("connected_clients", handleConnectedClients);
+  socket.on("default_data", handleDefaultData);
   socket.on("theme_data", handleThemeData);
   socket.on("drawings_data", handleDrawingsData);
   socket.on("svg_data", handleSvgData);
@@ -40,13 +41,7 @@ function connectSocket() {
 
 // function used to get drawings data from blenderbim
 function handleWebConnect() {
-  const msg = {
-    sourcePage: "drawings",
-    operator: {
-      type: "getDrawings",
-    },
-  };
-  socket.emit("web_operator", msg);
+  getDrawingsData();
 }
 
 // Function to handle 'blender_connect' event
@@ -74,12 +69,17 @@ function handleBlenderConnect(blenderId) {
   socket.emit("web_operator", msg);
 }
 
+// Function to handle 'default_data' event
+function handleDefaultData(data) {
+  getDrawingsData();
+}
+
 // Function to handle 'blender_disconnect' event
 function handleBlenderDisconnect(blenderId) {
   console.log("blender_disconnect: ", blenderId);
   if (connectedClients.hasOwnProperty(blenderId)) {
     delete connectedClients[blenderId];
-    // remove(blenderId);
+    removeSelectOption(blenderId);
   }
 
   $("#blender-count").text(function (i, text) {
@@ -155,7 +155,7 @@ function handleDrawingsData(data) {
       };
       addSelectOption(blenderId, filename);
     } else {
-      // update(blenderId, data, filename);
+      updateSelectOption(blenderId, filename);
     }
   } else {
     connectedClients[blenderId] = {
@@ -198,6 +198,32 @@ function addSelectOption(blenderId, filename) {
     .val(filename)
     .text(filename);
   $("#dropdown-menu").append(filenameOption);
+}
+
+function updateSelectOption(blenderId, filename) {
+  $("#blender-" + blenderId).text(filename);
+  console.log(blenderId, filename);
+  console.log($("#dropdown-menu").val());
+
+  if ($("#dropdown-menu").val() === filename) {
+    console.log("here");
+    displayDrawingsNames(blenderId, filename);
+  }
+}
+
+function removeSelectOption(blenderId) {
+  const filename = $("#blender-" + blenderId).val();
+  const selectedOption = $("#dropdown-menu").val();
+
+  $("#blender-" + blenderId).remove();
+  delete allDrawings[filename];
+
+  if (selectedOption == filename) {
+    $("#dropdown-menu").val("0");
+
+    $("#drawings-sub-panel").empty();
+    $("#sheets-sub-panel").empty();
+  }
 }
 
 function displayDrawingsNames(blenderId, ifcFile) {
@@ -327,4 +353,14 @@ function toggleClientList() {
     clientList.append(clientDiv);
   });
   clientList.addClass("show");
+}
+
+function getDrawingsData() {
+  const msg = {
+    sourcePage: "drawings",
+    operator: {
+      type: "getDrawings",
+    },
+  };
+  socket.emit("web_operator", msg);
 }
