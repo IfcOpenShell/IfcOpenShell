@@ -514,21 +514,17 @@ class DrawPolylineWall(bpy.types.Operator):
                 tool.Snaping.remove_last_polyline_point()
                 tool.Blender.update_viewport()
 
-        if event.value == 'PRESS' and event.type == 'I': 
+        # if event.value == 'PRESS' and event.type == 'I':
+        # self.is_input_on = True
+
+        # if self.is_input_on:
+        if event.value == "PRESS" and event.type in self.input_options:
             self.is_input_on = True
-
-        if self.is_input_on:
-            if event.value == 'PRESS' and event.type in self.input_options:
-                self.input_type = event.type
-                self.number_input = []
-                self.number_output = ''
-                WallPolylineDecorator.set_input_panel(self.input_panel, self.input_type)
-                tool.Blender.update_viewport()
-
-
-            if event.value == 'PRESS' and event.type in {'RIGHTMOUSE', 'ESC'}:
-                self.is_input_on = False
-                self.input_type = None
+            self.input_type = event.type
+            self.number_input = []
+            self.number_output = ""
+            WallPolylineDecorator.set_input_panel(self.input_panel, self.input_type)
+            tool.Blender.update_viewport()
 
         if self.input_type:
             if (event.ascii in self.number_options) or (event.value == "RELEASE" and event.type == "BACK_SPACE"):
@@ -566,20 +562,26 @@ class DrawPolylineWall(bpy.types.Operator):
             self.input_type = None
             WallPolylineDecorator.set_input_panel(self.input_panel, self.input_type)
             tool.Blender.update_viewport()
-            
-        if event.type in {'MIDDLEMOUSE', 'WHEELUPMOUSE', 'WHEELDOWNMOUSE'}:
-            return {'PASS_THROUGH'}
-            
-        if event.type in {'RIGHTMOUSE', 'ESC'}:
-            WallPolylineDecorator.uninstall()
-            tool.Snaping.clear_polyline()
-            tool.Blender.update_viewport()
-            print("CANCELLED")
-            return {'CANCELLED'}
 
-        return {'RUNNING_MODAL'}
-            
-            
+        if event.type in {"MIDDLEMOUSE", "WHEELUPMOUSE", "WHEELDOWNMOUSE"}:
+            return {"PASS_THROUGH"}
+
+        if self.is_input_on:
+            if event.value == "PRESS" and event.type in {"RIGHTMOUSE", "ESC"}:
+                self.is_input_on = False
+                self.input_type = None
+                WallPolylineDecorator.set_input_panel(self.input_panel, self.input_type)
+                tool.Blender.update_viewport()
+        else:
+            if event.value == "PRESS" and event.type in {"RIGHTMOUSE", "ESC"}:
+                WallPolylineDecorator.uninstall()
+                tool.Snaping.clear_polyline()
+                tool.Blender.update_viewport()
+                print("CANCELLED")
+                return {"CANCELLED"}
+
+        return {"RUNNING_MODAL"}
+
     def invoke(self, context, event):
         if context.space_data.type == "VIEW_3D":
             WallPolylineDecorator.install(context)
