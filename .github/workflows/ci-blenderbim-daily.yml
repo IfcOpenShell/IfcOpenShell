@@ -83,3 +83,37 @@ jobs:
           release_name: "blenderbim-${{steps.version.outputs.version}}-alpha${{steps.date.outputs.date}} (unstable)"
           tag: "blenderbim-${{steps.version.outputs.version}}-alpha${{steps.date.outputs.date}}"
           overwrite: true
+
+  update-extensions-repo:
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout blenderbim_unstable_repo repository
+        uses: actions/checkout@v2
+        with:
+          repository: IfcOpenShell/blenderbim_unstable_repo
+          token: ${{ secrets.IOS_TO_BLENDER_REPO }}
+          path: blenderbim_unstable_repo
+
+      - name: Update index.json on extensions repo
+        run: |
+          set -x -e
+
+          # Download Blender.
+          wget -q -O blender.tar.xz https://ftp.nluug.nl/pub/graphics/blender/release/Blender4.2/blender-4.2.0-linux-x64.tar.xz
+          tar -xf blender.tar.xz
+
+          # Setup Blender.
+          BLENDER_PATH=$(find blender-*/ -maxdepth 0 -exec readlink -f {} \;)
+          export PATH="$PATH:$BLENDER_PATH"
+          blender --version
+
+          cd blenderbim_unstable_repo
+          pip install -r requirements.txt
+          python setup_extensions_repo.py --last-tag
+          git config --global user.name 'IfcOpenBot'
+          git config --global user.email 'IfcOpenBot@users.noreply.github.com'
+          git add index.json
+          git add readme.md
+          git commit -m "Update index.json"
+          git push
