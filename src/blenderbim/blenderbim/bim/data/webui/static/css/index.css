@@ -22,7 +22,7 @@
     --nav-link-color: #fff;
     --nav-link-hover-color: #3fb449;
     --warning-color: #FFDB8F;
-    --table-border-color: #464444;
+    --border-color: #464444;
 }
 
 :root.light {
@@ -34,7 +34,7 @@
     --nav-link-color: #000000;
     --nav-link-hover-color: #38a63d;
     --warning-color: #FF4500;
-    --table-border-color: #222;
+    --border-color: #222;
 }
 
 html {
@@ -127,7 +127,7 @@ nav ul li a.active {
     overflow-y: auto;
     overflow: hidden;
     transition: opacity 0.3s ease-out, visibility 0.3s ease-out;
-    border: 1px solid var(--blender-tab-outline, var(--table-border-color));
+    border: 1px solid var(--blender-tab-outline, var(--border-color));
     background-color: var(--blender-panel-background, var(--nav-bg-color));
     z-index: 1;
     opacity: 0;
@@ -146,7 +146,7 @@ nav ul li a.active {
 
 .client {
     padding: var(--margin-small);
-    border-bottom: 1px solid var(--blender-tab-outline, var(--table-border-color));
+    border-bottom: 1px solid var(--blender-tab-outline, var(--border-color));
     cursor: pointer;
 }
 
@@ -166,7 +166,7 @@ nav ul li a.active {
 }
 
 .client-detail {
-    border-bottom: 1px solid var(--blender-tab-outline, var(--table-border-color));
+    border-bottom: 1px solid var(--blender-tab-outline, var(--border-color));
     padding: var(--padding-small);
 }
 
@@ -210,14 +210,14 @@ footer p {
     margin-top: var(--margin-small);
 }
 
-:root.blender button {
-    background-color: var(--blender-panel-header);
-    color: var(--blender-text);
-    border-color: var(--blender-tab-outline);
+button {
+    background-color: var(--blender-panel-header, var(--bg-color));
+    color: var(--blender-text, var(--text-color));
+    border-color: var(--blender-tab-outline, var(--border-color));
     transition: filter 0.2s ease;
 }
 
-:root.blender button:hover {
+button:hover {
     filter: brightness(1.2);
 }
 
@@ -230,8 +230,8 @@ footer p {
 }
 
 :root.light .tabulator {
-    border-top: 1px solid var(--table-border-color);
-    border-bottom: 2px solid var(--table-border-color);
+    border-top: 1px solid var(--border-color);
+    border-bottom: 2px solid var(--border-color);
 }
 
 :root.blender .tabulator-table-holder,
