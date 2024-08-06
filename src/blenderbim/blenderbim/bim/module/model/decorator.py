@@ -304,7 +304,6 @@ class WallPolylineDecorator:
     angle_snap_mat = None
     angle_snap_loc = None
 
-    
     @classmethod
     def install(cls, context):
         if cls.is_installed:
@@ -323,11 +322,10 @@ class WallPolylineDecorator:
                 pass
         cls.is_installed = False
 
-    
     @classmethod
     def set_mouse_position(cls, context, event):
         cls.mouse_pos = event.mouse_region_x, event.mouse_region_y
-        
+
     @classmethod
     def set_input_panel(cls, input_panel, input_type):
         cls.input_panel = input_panel
@@ -345,32 +343,54 @@ class WallPolylineDecorator:
             last_point_data = polyline_data[len(polyline_data) - 1]
         except:
             last_point_data = None
-        
+
         snap_prop = context.scene.BIMModelProperties.snap_mouse_point[0]
-        
+
         if last_point_data:
             last_point = Vector((last_point_data.x, last_point_data.y, last_point_data.z))
         else:
-            last_point = Vector((0, 0, 0,))
-        
+            last_point = Vector(
+                (
+                    0,
+                    0,
+                    0,
+                )
+            )
+
         if is_input_on:
-            snap_vector = Vector((float(cls.input_panel['X']), float(cls.input_panel['Y']), 0))
+            snap_vector = Vector((float(cls.input_panel["X"]), float(cls.input_panel["Y"]), 0))
         else:
             snap_vector = Vector((snap_prop.x, snap_prop.y, 0))
-        
-        distance = (snap_vector - last_point).length # TODO get height from default container
-        x_axis_edge = (Vector((0, 0, )), Vector((1, 0, )))
-        current_axis = (Vector((last_point.x, last_point.y)), Vector((snap_vector.x, snap_vector.y))) # TODO get height from default container
+
+        distance = (snap_vector - last_point).length  # TODO get height from default container
+        x_axis_edge = (
+            Vector(
+                (
+                    0,
+                    0,
+                )
+            ),
+            Vector(
+                (
+                    1,
+                    0,
+                )
+            ),
+        )
+        current_axis = (
+            Vector((last_point.x, last_point.y)),
+            Vector((snap_vector.x, snap_vector.y)),
+        )  # TODO get height from default container
         if distance > 0:
             angle = tool.Cad.angle_edges(x_axis_edge, current_axis, degrees=True, signed=True)
             if cls.input_panel:
-                cls.input_panel['X'] = str(round(snap_vector.x, 4))
-                cls.input_panel['Y'] = str(round(snap_vector.y, 4))
-                cls.input_panel['D'] = str(round(distance, 4))
-                cls.input_panel['A'] = str(round(angle, 4))
+                cls.input_panel["X"] = str(round(snap_vector.x, 4))
+                cls.input_panel["Y"] = str(round(snap_vector.y, 4))
+                cls.input_panel["D"] = str(round(distance, 4))
+                cls.input_panel["A"] = str(round(angle, 4))
 
                 return cls.input_panel
-        
+
         return cls.input_panel
 
     @classmethod
@@ -381,32 +401,31 @@ class WallPolylineDecorator:
             last_point_data = polyline_data[len(polyline_data) - 1]
         except:
             return
-        
+
         last_point = Vector((last_point_data.x, last_point_data.y, last_point_data.z))
-        distance = float(cls.input_panel['D'])
-        
+        distance = float(cls.input_panel["D"])
+
         if distance < 0 or distance > 0:
-            angle_degrees = float(cls.input_panel['A'])
-            angle_radians = radians(360 - angle_degrees) # Substracting from 360 to make it clockwise
+            angle_degrees = float(cls.input_panel["A"])
+            angle_radians = radians(360 - angle_degrees)  # Substracting from 360 to make it clockwise
             x = last_point[0] + distance * cos(angle_radians)
             y = last_point[1] + distance * sin(angle_radians)
             if cls.input_panel:
-                cls.input_panel['X'] = str(round(x, 4))
-                cls.input_panel['Y'] = str(round(y, 4))
+                cls.input_panel["X"] = str(round(x, 4))
+                cls.input_panel["Y"] = str(round(y, 4))
 
                 return cls.input_panel
-        
+
         return cls.input_panel
-        
+
     def draw_batch(self, shader_type, content_pos, color, indices=None):
         shader = self.line_shader if shader_type == "LINES" else self.shader
         batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
         shader.uniform_float("color", color)
         batch.draw(shader)
 
-    
     def draw_text(self, context):
-        texts = ['X coord:', 'Y coord:', 'Distance:', 'Angle:']
+        texts = ["X coord:", "Y coord:", "Distance:", "Angle:"]
         self.addon_prefs = tool.Blender.get_addon_preferences()
         self.font_id = 0
         blf.size(self.font_id, 12)
@@ -423,7 +442,6 @@ class WallPolylineDecorator:
             blf.position(self.font_id, self.mouse_pos[0] + offset, self.mouse_pos[1] + offset - (new_line * i), 0)
             blf.draw(self.font_id, text + self.input_panel[keys[i]])
 
-        
     def __call__(self, context):
 
         self.addon_prefs = tool.Blender.get_addon_preferences()
@@ -434,7 +452,6 @@ class WallPolylineDecorator:
         decorator_color_unselected = self.addon_prefs.decorator_color_unselected
         decorator_color_background = self.addon_prefs.decorator_color_background
 
-        
         gpu.state.blend_set("ALPHA")
         self.line_shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
         self.line_shader.bind()  # required to be able to change uniforms of the shader
@@ -446,7 +463,7 @@ class WallPolylineDecorator:
         gpu.state.point_size_set(10)
 
         snap_prop = context.scene.BIMModelProperties.snap_mouse_point[0]
-        
+
         # Point related to the mouse
         mouse_point = [Vector((snap_prop.x, snap_prop.y, snap_prop.z))]
         if snap_prop.snap_type in ["Face", "Plane"]:
@@ -454,16 +471,15 @@ class WallPolylineDecorator:
         else:
             self.draw_batch("POINTS", mouse_point, (1.0, 0.6, 0.0, 1.0))
 
-
         # When a point is above the plane it projects the point
         # to the plane and creates a line
         if snap_prop.snap_type != "Plane" and snap_prop.z != 0:
             self.line_shader.uniform_float("lineWidth", 1.0)
-            projection_point = [Vector((snap_prop.x, snap_prop.y, 0))] # TODO get height from default container
+            projection_point = [Vector((snap_prop.x, snap_prop.y, 0))]  # TODO get height from default container
             self.draw_batch("POINTS", projection_point, decorator_color_unselected)
             edges = [[0, 1]]
             self.draw_batch("LINES", mouse_point + projection_point, (1.0, 0.6, 0.0, 1.0), edges)
-            
+
         # Polyline with selected points
         polyline_data = context.scene.BIMModelProperties.polyline_point
         polyline_points = []
@@ -473,14 +489,13 @@ class WallPolylineDecorator:
             polyline_points.append(point)
 
         for i in range(len(polyline_points) - 1):
-            polyline_edges.append([i, i+1])
-            
+            polyline_edges.append([i, i + 1])
+
         self.line_shader.uniform_float("lineWidth", 2.0)
         self.draw_batch("POINTS", polyline_points, decorator_color_selected)
         if len(polyline_points) > 1:
             self.draw_batch("LINES", polyline_points, decorator_color_selected, polyline_edges)
-            
-            
+
         # Line between last polyline point and mouse
         edges = [[0, 1]]
         if snap_prop.snap_type != "Plane" and snap_prop.z != 0:
@@ -489,12 +504,11 @@ class WallPolylineDecorator:
             self.draw_batch("LINES", [polyline_points[-1]] + mouse_point, decorator_color_unselected, edges)
 
         # Line for angle axis snap
-        if snap_prop.snap_type == 'Axis':
+        if snap_prop.snap_type == "Axis":
             length = 1000
             direction = Vector((1, 0, 0))
             rot_dir = self.angle_snap_mat.inverted() @ direction
             start = self.angle_snap_loc + rot_dir * length
             end = self.angle_snap_loc - rot_dir * length
             self.line_shader.uniform_float("lineWidth", 0.75)
-            self.draw_batch("LINES", [start, end], decorator_color_unselected, [(0,1)])
-        
+            self.draw_batch("LINES", [start, end], decorator_color_unselected, [(0, 1)])
