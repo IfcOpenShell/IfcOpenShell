@@ -1,4 +1,4 @@
-name: Publish-blenderbim-chocolatey package
+name: ci-blenderbim-choco
 
 on:
   schedule:
@@ -9,6 +9,7 @@ on:
     #         │  │ │ │ ┌───────────── day of the week (0 - 6 or SUN-SAT)
     #         *  * * * *
     - cron:  "30 0 * * *" # 30min past utc midnight
+  workflow_dispatch:
 
 env:
   major: 0
