@@ -396,6 +396,7 @@ class Web(blenderbim.core.tool.Web):
         top_bar = bpy.context.preferences.themes[0].topbar.space
         info = bpy.context.preferences.themes[0].info
         outliner = bpy.context.preferences.themes[0].outliner
+        ui = bpy.context.preferences.themes[0].user_interface
 
         theme = {
             "window_background": get_color(prefs, "back"),
@@ -413,6 +414,9 @@ class Web(blenderbim.core.tool.Web):
             "even_row": mix_colors(get_color(outliner.space, "back"), get_color(outliner, "row_alternate")),
             "active_highlight": get_color(outliner, "active"),
             "active_text_highlight": get_color(outliner, "active_object"),
+            "button_background": get_color(ui.wcol_tool, "inner"),
+            "button_test": get_color(ui.wcol_tool, "text"),
+            "button_border": get_color(ui.wcol_tool, "outline"),
         }
         cls.send_webui_data(theme, "theme", "theme_data", use_web_data=False)
 
