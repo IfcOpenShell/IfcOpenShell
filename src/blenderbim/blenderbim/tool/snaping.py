@@ -33,10 +33,10 @@ class Snaping(blenderbim.core.tool.Snaping):
         vertices = []
         for i in face.vertices:
             vertices.append(matrix @ obj.data.vertices[i].co)
-        
+
         edges_center = []
         for v1, v2 in zip(vertices, vertices[1:] + [vertices[0]]):
-            middle_dist = (v2-v1) / 2
+            middle_dist = (v2 - v1) / 2
             edges_center.append(v1 + middle_dist)
 
         snap_points.update({tuple(vertex): "Vertices" for vertex in vertices})
@@ -44,7 +44,6 @@ class Snaping(blenderbim.core.tool.Snaping):
 
         return snap_points
 
-    
     @classmethod
     def get_snap_points_on_polyline(cls):
         snap_points = {}
@@ -54,10 +53,9 @@ class Snaping(blenderbim.core.tool.Snaping):
             point = Vector((point_data.x, point_data.y, point_data.z))
             polyline_points.append(point)
         snap_points.update({tuple(point): "Polyline Point" for point in polyline_points})
-        
+
         return snap_points
 
-    
     @classmethod
     def select_snap_point(cls, snap_points, hit, threshold):
         shortest_distance = None
@@ -76,7 +74,7 @@ class Snaping(blenderbim.core.tool.Snaping):
                 snap_point = (point, snap_type)
             else:
                 pass
-            
+
         return snap_point
 
     @classmethod
@@ -95,16 +93,16 @@ class Snaping(blenderbim.core.tool.Snaping):
     def insert_polyline_point(cls, x=None, y=None):
         snap_vertex = bpy.context.scene.BIMModelProperties.snap_mouse_point[0]
         polyline_data = bpy.context.scene.BIMModelProperties.polyline_point
-            
+
         polyline_point = bpy.context.scene.BIMModelProperties.polyline_point.add()
         if x is not None and y is not None:
             polyline_point.x = x
             polyline_point.y = y
-            polyline_point.z = 0 # TODO Update to the the default container height
+            polyline_point.z = 0  # TODO Update to the the default container height
         else:
             polyline_point.x = snap_vertex.x
             polyline_point.y = snap_vertex.y
-            polyline_point.z = 0 # TODO Update to the the default container height
+            polyline_point.z = 0  # TODO Update to the the default container height
 
     @classmethod
     def clear_polyline(cls):
@@ -118,16 +116,16 @@ class Snaping(blenderbim.core.tool.Snaping):
     def snap_on_axis(intersection):
         polyline_data = bpy.context.scene.BIMModelProperties.polyline_point
         if polyline_data:
-            last_point_data =polyline_data[-1]
+            last_point_data = polyline_data[-1]
             last_point = Vector((last_point_data.x, last_point_data.y, last_point_data.z))
         else:
             last_point = Vector((0, 0, 0))
-            
+
         # translates intersection point based on last_point
         translated_intersection = intersection - last_point
         for i in range(12):
             angle = 30 * i
-            rot_mat = Matrix.Rotation(math.radians(360 - angle), 3, 'Z')
+            rot_mat = Matrix.Rotation(math.radians(360 - angle), 3, "Z")
             WallPolylineDecorator.set_angle_axis_line(rot_mat, last_point)
             rot_intersection = rot_mat @ translated_intersection
             is_on_rot_axis = abs(rot_intersection.y) <= 0.60
@@ -135,8 +133,7 @@ class Snaping(blenderbim.core.tool.Snaping):
                 # snap to axis
                 rot_intersection = Vector((rot_intersection.x, 0, rot_intersection.z))
                 # convert it back
-                snap_intersection =  rot_mat.inverted() @ rot_intersection + last_point
+                snap_intersection = rot_mat.inverted() @ rot_intersection + last_point
                 return snap_intersection
-            
+
         return None
-        
