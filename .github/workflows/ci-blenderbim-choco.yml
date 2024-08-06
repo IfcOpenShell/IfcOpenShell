@@ -42,5 +42,6 @@ jobs:
       - name: Check in release tags if we should do a choco release and perform the release if needed
         id: do_choco_release
         run: |
+          pip install pygithub
           cd /home/runner/work/IfcOpenShell/IfcOpenShell/choco/blenderbim/ &&
           python3 choco_release.py
