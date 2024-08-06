@@ -83,6 +83,7 @@ jobs:
           release_name: "blenderbim-${{steps.version.outputs.version}}-alpha${{steps.date.outputs.date}} (unstable)"
           tag: "blenderbim-${{steps.version.outputs.version}}-alpha${{steps.date.outputs.date}}"
           overwrite: true
+          body: "See README in https://github.com/IfcOpenShell/blenderbim_unstable_repo/ on how to setup autoupdates for daily BlenderBIM builds."
 
   update-extensions-repo-and-run-tests:
     needs: [build]
