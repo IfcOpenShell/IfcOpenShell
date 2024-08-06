@@ -210,10 +210,11 @@ footer p {
     margin-top: var(--margin-small);
 }
 
-button {
-    background-color: var(--blender-panel-header, var(--bg-color));
-    color: var(--blender-text, var(--text-color));
-    border-color: var(--blender-tab-outline, var(--border-color));
+button,
+select {
+    background-color: var(--blender-button-background, var(--bg-color));
+    color: var(--blender-button-text, var(--text-color));
+    border-color: var(--blender-button-border, var(--border-color));
     transition: filter 0.2s ease;
 }
 

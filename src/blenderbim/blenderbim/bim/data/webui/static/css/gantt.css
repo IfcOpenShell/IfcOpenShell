@@ -250,17 +250,12 @@ footer p {
     }
 }
 
-:root.blender button {
-    background-color: var(--blender-panel-header);
-    color: var(--blender-text);
-    border-color: var(--blender-tab-outline);
-    transition: filter 0.2s ease;
-}
 
-button {
-    background-color: var(--blender-panel-header, var(--bg-color));
-    color: var(--blender-text, var(--text-color));
-    border-color: var(--blender-tab-outline, var(--border-color));
+button,
+select {
+    background-color: var(--blender-button-background, var(--bg-color));
+    color: var(--blender-button-text, var(--text-color));
+    border-color: var(--blender-button-border, var(--border-color));
     transition: filter 0.2s ease;
 }
 
@@ -509,7 +504,9 @@ button:hover {
 
 /* Highlight row */
 :root.blender .gitemhighlight td,
-:root.blender .gitemhighlight .gantt-inputtable {
+:root.blender .gitemhighlight .gantt-inputtable,
+:root.blender .gitemhighlight .gcaption,
+:root.blender .gitemhighlight .ggroupcaption {
     background-color: var(--blender-active-highlight) !important;
     color: var(--blender-active-text-highlight) !important;
 }
@@ -568,7 +565,7 @@ button:hover {
 :root.blender .gantt-inputtable {
     background-color: var(--blender-panel-header);
     box-sizing: border-box;
-    border: 2px solid var(--blender-top-bar-header);
+    border: 2px solid var(--blender-button-border);
     color: var(--blender-text);
 }
 
