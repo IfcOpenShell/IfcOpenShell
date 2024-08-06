@@ -14,9 +14,11 @@ import os
 import pathlib
 import re
 from urllib import request
+from github import Github
+from typing import NoReturn
 
 
-def get_repo_tag_names():
+def get_repo_tag_names() -> list[str]:
     git_return = os.popen("git tag -l").read()
     tag_names = [tag_name for tag_name in git_return.split("\n") if tag_name]
     print(f"{len(tag_names)} tag_names found in repo")
@@ -43,7 +45,7 @@ def get_latest_choco_blender_version() -> list:
     return re.findall(RE_BLENDER_VERSION_MIN_MAJ_PAT, html_txt)
 
 
-def get_file_sha256_hash(file_path):
+def get_file_sha256_hash(file_path: str) -> str:
     BLOCKSIZE = 65536
     hasher = hashlib.sha256()
 
@@ -56,16 +58,29 @@ def get_file_sha256_hash(file_path):
     return hasher.hexdigest()
 
 
-def quit_with_error_message(message: str):
+def quit_with_error_message(message: str) -> NoReturn:
     print(f"ERROR: {message}")
     quit(0)
+
+
+def get_release_zip(tag: str) -> tuple[str, str]:
+    g = Github()
+    repo = g.get_repo("IfcOpenShell/IfcOpenShell")
+    release = repo.get_release(tag)
+    for asset in release.get_assets():
+        asset_name = asset.name
+        if python_version not in asset_name:
+            continue
+        if TARGET_OS not in asset_name:
+            continue
+        return (asset_name, asset.browser_download_url)
+    raise Exception(f"Couldn't find the release matching '{python_version}' and '{TARGET_OS}' in tag '{tag}'.")
 
 
 start = datetime.datetime.now()
 
 URL_CHOCO_PACKAGE  = "https://community.chocolatey.org/packages/blender"
 URL_BLENDER_CMAKE  = "https://raw.githubusercontent.com/blender/blender/{}/build_files/cmake/Modules/FindPythonLibsUnix.cmake"
-URL_IFCOS_RELEASES = "https://github.com/IfcOpenShell/IfcOpenShell/releases/download/"
 RE_BLENDER_VERSION_MIN_MAJ        = r"Latest Version.+<span>Blender (\d+\.\d+)\..+</span>"
 RE_BLENDER_VERSION_MIN_MAJ_PAT    = r"Latest Version.+<span>Blender (\d+\.\d+\.\d+)</span>"
 RE_BLENDER_PYTHON_VERSION_MAJ_MIN = r"\(_PYTHON_VERSION_SUPPORTED (\d+\.\d+)\)"
@@ -79,7 +94,7 @@ os.chdir(BLENDERBIM_DIR)
 blenderbim_date_yesterday = (datetime.datetime.now() - datetime.timedelta(days=1)).strftime("%y%m%d")
 should_release = False
 target_release_tag = ""
-target_os = "win"
+TARGET_OS = "windows-x64"
 
 git_status = os.popen("git status").read()
 print(git_status)
@@ -130,10 +145,7 @@ print(f"{python_version=}")
 blenderbim_build_version = target_release_tag.replace("blenderbim-", "")
 
 # url_blenderbim_py3x_win_zip
-release_zip_file_name = f"{target_release_tag}-{python_version}-{target_os}.zip"
-
-# download release
-url_blenderbim_py3x_win_zip = f"{URL_IFCOS_RELEASES}{target_release_tag}/{release_zip_file_name}"
+release_zip_file_name, url_blenderbim_py3x_win_zip = get_release_zip(target_release_tag)
 os.popen(f"wget {url_blenderbim_py3x_win_zip} --no-verbose").read()
 
 # sha256sum_blenderbim_py310_win_zip
