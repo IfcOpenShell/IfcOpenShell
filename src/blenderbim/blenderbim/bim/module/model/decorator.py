@@ -498,10 +498,11 @@ class WallPolylineDecorator:
 
         # Line between last polyline point and mouse
         edges = [[0, 1]]
-        if snap_prop.snap_type != "Plane" and snap_prop.z != 0:
-            self.draw_batch("LINES", [polyline_points[-1]] + projection_point, decorator_color_unselected, edges)
-        else:
-            self.draw_batch("LINES", [polyline_points[-1]] + mouse_point, decorator_color_unselected, edges)
+        if polyline_points:
+            if snap_prop.snap_type != "Plane" and snap_prop.z != 0:
+                self.draw_batch("LINES", [polyline_points[-1]] + projection_point, decorator_color_unselected, edges)
+            else:
+                self.draw_batch("LINES", [polyline_points[-1]] + mouse_point, decorator_color_unselected, edges)
 
         # Line for angle axis snap
         if snap_prop.snap_type == "Axis":
