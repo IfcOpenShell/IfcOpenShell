@@ -175,7 +175,7 @@ def get_bbox_centroid(geometry: ShapeType) -> tuple[float, float, float]:
     :return: A tuple representing the XYZ centroid
     :rtype: tuple[float, float, float]
     """
-    vertices_array = np.array(geometry.verts).reshape(-1, 3)
+    vertices_array = get_vertices(geometry)
     return (np.min(vertices_array, axis=0) + np.max(vertices_array, axis=0)) / 2
 
 
@@ -189,7 +189,7 @@ def get_vert_centroid(geometry: ShapeType) -> tuple[float, float, float]:
     :return: A tuple representing the XYZ centroid
     :rtype: tuple[float, float, float]
     """
-    return np.mean(np.array(geometry.verts).reshape(-1, 3), axis=0)
+    return np.mean(get_vertices(geometry), axis=0)
 
 
 def get_element_bbox_centroid(element: ifcopenshell.entity_instance, geometry) -> npt.NDArray[np.float64]:
