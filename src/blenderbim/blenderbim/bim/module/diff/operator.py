@@ -19,8 +19,10 @@
 import bpy
 import json
 import logging
+import ifcdiff
 import ifcopenshell
 import blenderbim.bim.handler
+import blenderbim.bim.import_ifc
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 
@@ -175,7 +177,7 @@ class ExecuteIfcDiff(bpy.types.Operator):
         blenderbim.bim.handler.refresh_ui_data()
         return {"FINISHED"}
 
-    def load_changed_elements(self, ifc_diff):
+    def load_changed_elements(self, ifc_diff: ifcdiff.IfcDiff):
         if not tool.Ifc.get() or self.props.active_file == "NONE" or not self.props.should_load_changed_elements:
             return
 
