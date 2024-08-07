@@ -20,6 +20,10 @@ PACKAGE_NAME:=ifcdiff.py
 IS_MODULE:=true
 include ../common.mk
 
+.PHONY: test
+test:
+	pytest -p no:pytest-blender test.py
+
 .PHONY: qa
 qa:
 	black .
