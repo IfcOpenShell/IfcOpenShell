@@ -9,8 +9,8 @@
     --padding-small: 0.625rem;
     --padding-medium: 1rem;
     --font-size-large: 1.2rem;
-    --logo-height: 2.5rem;
-    --nav-height: 2.5rem;
+    --logo-height: 1.5rem;
+    --nav-height: 0.625rem;
 }
 
 :root.dark {
@@ -81,20 +81,18 @@ nav .logo {
 nav ul {
     list-style-type: none;
     margin: 0;
-    margin-left: 0.0625rem;
     display: flex;
-    flex-grow: 1;
+    flex: 1;
     justify-content: center;
 }
 
 nav ul li {
-    margin-right: 3.125rem;
+    margin-right: var(--margin-large);
 }
 
 nav ul li a {
     text-decoration: none;
     color: var(--blender-text, var(--nav-link-color));
-    font-size: var(--font-size-large);
 }
 
 nav ul li a:hover,
