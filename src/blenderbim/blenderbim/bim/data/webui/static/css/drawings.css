@@ -96,13 +96,14 @@ nav ul li {
 }
 
 nav ul li a {
-    text-decoration: none;
+    text-decoration: none !important;
     color: var(--blender-text, var(--nav-link-color));
 }
 
 nav ul li a:hover,
 nav ul li a.active {
     color: var(--blender-selected-object, var(--nav-link-hover-color));
+    text-decoration: none !important;
 }
 
 .warning {
@@ -310,3 +311,13 @@ li.svg-name {
 button:focus {
     outline: none;
 }
+
+/* a:not([href]):not([class]):hover {
+    color: var(--blender-selected-object, var(--nav-link-hover-color));
+    text-decoration: none !important;
+}
+
+a:not([href]):not([class]) {
+    text-decoration: none !important;
+    color: var(--blender-text, var(--nav-link-color));
+} */
