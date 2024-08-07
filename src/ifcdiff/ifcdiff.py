@@ -203,7 +203,7 @@ class IfcDiff:
                     "sum_verts": sum(geometry.verts),
                     "min_vert": min(geometry.verts),
                     "max_vert": max(geometry.verts),
-                    "matrix": tuple(shape.transformation.matrix.data),
+                    "matrix": tuple(shape.transformation.matrix),
                     "openings": sorted(
                         [o.RelatedOpeningElement.GlobalId for o in getattr(element, "HasOpenings", []) or []]
                     ),
@@ -237,7 +237,7 @@ class IfcDiff:
             ]
         )
         if body_contexts:
-            settings.set_context_ids(body_contexts)
+            settings.set("context-ids", body_contexts)
         return settings
 
     def json_dump_default(self, obj):
