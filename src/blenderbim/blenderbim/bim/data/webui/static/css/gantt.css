@@ -12,6 +12,7 @@
     --font-size-large: 1.2rem;
     --logo-height: 1.5rem;
     --nav-height: 0.625rem;
+    --border-radius: 0.3rem;
     --folder-collapse-font-size: 0.75rem;
     --folder-collapse-font-family: Courier, "Courier New", monospace;
     --box-shadow: 0 0 0.7rem #5f5f5f66;
@@ -48,6 +49,11 @@
     --nav-link-hover-color: #38a63d;
     --warning-color: #FF4500;
     --border-color: #222;
+}
+
+
+*:not(td, tr, td, .gmain) {
+    border-radius: var(--border-radius) !important;
 }
 
 html {
