@@ -591,7 +591,7 @@ class DrawPolylineWall(bpy.types.Operator):
             vec1 = Vector((polyline_data[i].x, polyline_data[i].y, polyline_data[i].z))
             vec2 = Vector((polyline_data[i + 1].x, polyline_data[i + 1].y, polyline_data[i + 1].z))
             coords = (vec1, vec2)
-            dwg = DumbWallGenerator(relating_type).generate()
+            dwg = DumbWallGenerator(relating_type).generate(True)
 
     def modal(self, context, event):
 
@@ -857,7 +857,7 @@ class DumbWallGenerator:
         self.relating_type = relating_type
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
-    def generate(self):
+    def generate(self, draw_from_polyline=False):
         self.file = IfcStore.get_file()
         self.layers = tool.Model.get_material_layer_parameters(self.relating_type)
         if not self.layers["thickness"]:
@@ -878,8 +878,10 @@ class DumbWallGenerator:
         self.location = Vector((0, 0, 0))
         self.x_angle = 0 if tool.Cad.is_x(props.x_angle, 0, tolerance=0.001) else props.x_angle
 
-        # return self.derive_from_cursor()
-        return self.derive_from_polyline()
+        if draw_from_polyline:
+            return self.derive_from_polyline()
+        else:
+            return self.derive_from_cursor()
 
     def has_sketch(self):
         return (
