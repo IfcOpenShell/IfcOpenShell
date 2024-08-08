@@ -38,6 +38,9 @@ from blenderbim.bim.module.light.data import SolarData
 
 ifc_materials = []
 
+with open(os.path.join(os.path.dirname(__file__), "spectraldb.json"), 'r') as f:
+    spectraldb = json.load(f)
+
 
 class ExportOBJ(bpy.types.Operator):
     """Exports the IFC File to OBJ"""
@@ -159,6 +162,17 @@ class RadianceRender(bpy.types.Operator):
         hour = sun_props.hour
         minute = sun_props.minute
 
+        print("Sun Properties:")
+        print("Latitude: ", latitude)
+        print("Longitude: ", longitude)
+        print("Timezone: ", timezone)
+        print("Month: ", month)
+        print("Day: ", day)
+        print("Hour: ", hour)
+        print("Minute: ", minute)
+
+
+
         camera = self.get_active_camera(context)
         if camera is None:
             self.report({"ERROR"}, "No active camera found in the scene. Please add a camera and set it as active.")
@@ -174,9 +188,10 @@ class RadianceRender(bpy.types.Operator):
             latitude=latitude,
             longitude=longitude,
             timezone=timezone,
+            year=2024,
             sunny_with_sun=True,
             sunny_without_sun=False,
-            cloudy=True,
+            cloudy=False,
             ground_reflectance=0.2,
             turbidity=3.0,
         )
@@ -204,7 +219,7 @@ class RadianceRender(bpy.types.Operator):
         # 0
         # 4 0 0 -1 180
 
-        if choose_hdr_image == "Noon":
+        if use_hdr and choose_hdr_image == "Noon":
 
             with open(sky_file_path, "w") as f:
                 f.write(sky_description_str)
@@ -268,14 +283,14 @@ ground_glow source ground
 4 0 0 -1 180"""
                 )
 
-        else:
+        elif not use_hdr:
             with open(sky_file_path, "w") as f:
                 f.write(sky_description_str)
                 f.write("\n")
-                f.write("skyfunc glow sky_glow\n0\n0\n4 .9 .9 1.15 0\n")
-                f.write("sky_glow source sky\n0\n0\n4 0 0 1 180\n")
-                f.write("skyfunc glow ground_glow\n0\n0\n4 1.4 .9 .6 0\n")
-                f.write("ground_glow source ground\n0\n0\n4 0 0 -1 180\n")
+                # f.write("skyfunc glow sky_glow\n0\n0\n4 .9 .9 1.15 0\n")
+                # f.write("sky_glow source sky\n0\n0\n4 0 0 1 180\n")
+                # f.write("skyfunc glow ground_glow\n0\n0\n4 1.4 .9 .6 0\n")
+                # f.write("ground_glow source ground\n0\n0\n4 0 0 -1 180\n")
 
         props = context.scene.radiance_exporter_properties
 
@@ -286,20 +301,46 @@ ground_glow source ground
             data = props.get_mappings_dict()
 
         materials_file = os.path.join(output_dir, "materials.rad")
+        written_materials = set()
+
+        all_materials = set(ifc_materials)
+
         with open(materials_file, "w") as file:
-            file.write("void plastic white\n0\n0\n5 0.8 0.8 0.8 0 0\n")
-            file.write("void plastic blue_plastic\n0\n0\n5 0.1 0.2 0.8 0.05 0.1\n")
-            file.write("void plastic red_plastic\n0\n0\n5 0.8 0.1 0.2 0.05 0.1\n")
-            file.write("void metal silver_metal\n0\n0\n5 0.8 0.8 0.8 0.9 0.1\n")
-            file.write("void glass clear_glass\n0\n0\n3 0.96 0.96 0.96\n")
-            file.write("void light white_light\n0\n0\n3 1.0 1.0 1.0\n")
-            file.write("void trans olive_trans\n0\n0\n7 0.6 0.7 0.4 0.05 0.05 0.7 0.2\n")
+            # Write default materials
+            default_materials = [
+                "void plastic white\n0\n0\n5 0.8 0.8 0.8 0 0\n",
+                # "void plastic blue_plastic\n0\n0\n5 0.1 0.2 0.8 0.05 0.1\n",
+                # "void plastic red_plastic\n0\n0\n5 0.8 0.1 0.2 0.05 0.1\n",
+                # "void metal silver_metal\n0\n0\n5 0.8 0.8 0.8 0.9 0.1\n",
+                # "void glass clear_glass\n0\n0\n3 0.96 0.96 0.96\n",
+                # "void light white_light\n0\n0\n3 1.0 1.0 1.0\n",
+                # "void trans olive_trans\n0\n0\n7 0.6 0.7 0.4 0.05 0.05 0.7 0.2\n",
+            ]
+            for material in default_materials:
+                file.write(material)
+                written_materials.add(material.split()[2])  # Add material name to written set
+            
+            print(data)
+            print(default_materials)
 
-            for style_id, radiance_material in data.items():
-                # print(style_id, radiance_material)
-                file.write("inherit alias " + style_id + " " + data.get(style_id, "white") + "\n")
+            for style_id in all_materials:
+                material = next((m for m in props.materials if m.style_id == style_id), None)
+                if material and material.is_mapped:
+                    category, subcategory = material.category, material.subcategory
+                    if category in spectraldb and subcategory in spectraldb[category]:
+                        material_def = spectraldb[category][subcategory]
+                        material_name = material_def.split()[2]
+                        if material_name not in written_materials:
+                            file.write(material_def + "\n")
+                            written_materials.add(material_name)
+                        file.write(f"inherit alias {style_id} {material_name}\n")
+                    else:
+                        file.write(f"inherit alias {style_id} white\n")
+                else:
+                    # If the material is not mapped, alias it to white
+                    file.write(f"inherit alias {style_id} white\n")
 
-        self.report({"INFO"}, "Exported Materials Rad file to: {}".format(materials_file))
+        self.report({"INFO"}, f"Exported Materials Rad file to: {materials_file}")
 
         # Run obj2mesh
         rtm_file_path = os.path.join(output_dir, "model.rtm")
@@ -334,7 +375,7 @@ ground_glow source ground
             variability=variability,
         )
 
-        output_hdr_path = os.path.join(output_dir, f"render123.{output_file_format.lower()}")
+        output_hdr_path = os.path.join(output_dir, f"{output_file_name}.{output_file_format.lower()}")
 
         if output_file_format == "HDR":
             with open(output_hdr_path, "wb") as wtr:
@@ -464,12 +505,31 @@ class RefreshIFCMaterials(bpy.types.Operator):
         props = context.scene.radiance_exporter_properties
         ifc_file = tool.Ifc.get() if props.should_load_from_memory else ifcopenshell.open(props.ifc_file)
 
+        props.materials.clear()
+
         for style in ifc_file.by_type("IfcSurfaceStyle"):
             for render_item in style.Styles:
                 if render_item.is_a("IfcSurfaceStyleRendering"):
                     style_id = f"IfcSurfaceStyleRendering-{render_item.id()}"
+                    ifc_materials.append(style_id)
                     style_name = style.Name or f"Unnamed Style {render_item.id()}"
-                    if not props.get_material_mapping(style_name):
-                        props.add_material_mapping(style_id, style_name)
+                    props.add_material_mapping(style_id, style_name)
 
+        props.active_material_index = 0 if props.materials else -1
+
+        self.report({'INFO'}, f"Refreshed {len(props.materials)} IFC materials")
         return {"FINISHED"}
+
+
+class UnmapMaterial(bpy.types.Operator):
+    bl_idname = "bim.unmap_material"
+    bl_label = "Unmap Material"
+    bl_options = {'REGISTER', 'UNDO'}
+    
+    material_index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = context.scene.radiance_exporter_properties
+        material = props.materials[self.material_index]
+        props.unmap_material(material.name)
+        return {'FINISHED'}
