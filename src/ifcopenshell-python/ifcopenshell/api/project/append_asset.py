@@ -17,11 +17,14 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.api.geometry
 import ifcopenshell.api.type
 import ifcopenshell.api.project
 import ifcopenshell.api.context
 import ifcopenshell.api.owner.settings
 import ifcopenshell.util.element
+import ifcopenshell.util.geolocation
+import ifcopenshell.util.placement
 from typing import Optional, Any, Union
 
 
@@ -205,6 +208,13 @@ class Usecase:
         self.existing_contexts = self.file.by_type("IfcGeometricRepresentationContext")
         element = self.add_element(self.settings["element"])
         self.reuse_existing_contexts()
+
+        placement = element.ObjectPlacement
+        if placement is not None:
+            matrix = ifcopenshell.util.placement.get_local_placement(placement)
+            matrix = ifcopenshell.util.geolocation.auto_local2global(self.settings["library"], matrix)
+            matrix = ifcopenshell.util.geolocation.auto_global2local(self.file, matrix)
+            ifcopenshell.api.geometry.edit_object_placement(self.file, element, matrix, is_si=False)
 
         element_type = ifcopenshell.util.element.get_type(self.settings["element"])
         if element_type:
