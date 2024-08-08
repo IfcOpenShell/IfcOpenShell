@@ -47,7 +47,7 @@ function connectSocket() {
 
 // Function to handle 'blender_connect' event
 function handleBlenderConnect(blenderId) {
-  console.log("blender_connect: ", blenderId);
+  console.log("blender connected: ", blenderId);
   if (!connectedClients.hasOwnProperty(blenderId)) {
     connectedClients[blenderId] = {
       shown: false,
@@ -63,7 +63,7 @@ function handleBlenderConnect(blenderId) {
 
 // Function to handle 'blender_disconnect' event
 function handleBlenderDisconnect(blenderId) {
-  console.log("blender_disconnect: ", blenderId);
+  console.log("blender disconnected: ", blenderId);
   if (connectedClients.hasOwnProperty(blenderId)) {
     delete connectedClients[blenderId];
     removeGanttElement(blenderId);
@@ -76,7 +76,7 @@ function handleBlenderDisconnect(blenderId) {
 
 function handleConnectedClients(data) {
   $("#blender-count").text(data.length);
-  console.log(data);
+  // console.log(data);
   data.forEach(function (id) {
     connectedClients[id] = {
       shown: false,
@@ -87,7 +87,7 @@ function handleConnectedClients(data) {
 }
 
 function handleThemeData(themeData) {
-  console.log(themeData);
+  // console.log(themeData);
 
   function arrayToRgbString(arr) {
     const [r, g, b, a] = arr.map((num) => Math.round(num * 255));
@@ -385,12 +385,12 @@ function generateTooltip(task) {
 
 // Event handlers for editing gantt table data
 function editValue(list, task, event, cell, column) {
-  console.log("editValue function called with the following parameters:");
-  console.log("list:", list);
-  console.log("task:", task);
-  console.log("event:", event);
-  console.log("cell:", cell);
-  console.log("column:", column);
+  // console.log("editValue function called with the following parameters:");
+  // console.log("list:", list);
+  // console.log("task:", task);
+  // console.log("event:", event);
+  // console.log("cell:", cell);
+  // console.log("column:", column);
 
   const ganttId = task.getGantt()["vDiv"].id;
   const index = ganttId.indexOf("-") + 1;
@@ -413,6 +413,7 @@ function editValue(list, task, event, cell, column) {
       value: event.target.value,
     },
   };
+  console.log("web operator: " + msg);
   socket.emit("web_operator", msg);
 }
 
