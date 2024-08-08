@@ -295,7 +295,11 @@ function addGanttElement(blenderId, tasks, workSched, filename) {
     $(".gantt-chart").removeClass("no-print");
     $(".gantt-chart")
       .not("#gantt-" + blenderId)
-      .addClass("your-css-class");
+      .addClass("no-print");
+
+    $(".gantt-info")
+      .not("#gantt-info-" + blenderId)
+      .addClass("no-print");
 
     var values = $("#print-options-" + blenderId)
       .val()
