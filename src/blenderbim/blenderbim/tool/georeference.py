@@ -27,18 +27,21 @@ import ifcopenshell.util.unit
 import blenderbim.core.tool
 import blenderbim.tool as tool
 import blenderbim.bim.helper
+from typing import Any, Union, Literal
 
 
 class Georeference(blenderbim.core.tool.Georeference):
+    COORDINATE_TYPE = Literal["blender", "local", "map"]
+
     @classmethod
-    def add_georeferencing(cls):
+    def add_georeferencing(cls) -> None:
         tool.Ifc.run(
             "georeference.add_georeferencing",
             ifc_class=bpy.context.scene.BIMGeoreferenceProperties.coordinate_operation_class,
         )
 
     @classmethod
-    def import_projected_crs(cls):
+    def import_projected_crs(cls) -> None:
         def callback(name, prop, data):
             if name == "MapUnit":
                 new = bpy.context.scene.BIMGeoreferenceProperties.projected_crs.add()
@@ -70,7 +73,7 @@ class Georeference(blenderbim.core.tool.Georeference):
                 return
 
     @classmethod
-    def import_coordinate_operation(cls):
+    def import_coordinate_operation(cls) -> None:
         def callback(name, prop, data):
             if name in ("FirstCoordinate", "SecondCoordinate"):
                 props = bpy.context.scene.BIMGeoreferenceProperties
@@ -128,7 +131,7 @@ class Georeference(blenderbim.core.tool.Georeference):
                 return
 
     @classmethod
-    def import_true_north(cls):
+    def import_true_north(cls) -> None:
         if tool.Ifc.get_schema() == "IFC2X3":
             return
 
@@ -150,7 +153,7 @@ class Georeference(blenderbim.core.tool.Georeference):
                 return
 
     @classmethod
-    def export_projected_crs(cls):
+    def export_projected_crs(cls) -> dict[str, Any]:
         def callback(attributes, prop):
             if not prop.is_null and prop.name == "MapUnit":
                 attributes[prop.name] = tool.Ifc.get().by_id(int(prop.enum_value))
@@ -160,7 +163,7 @@ class Georeference(blenderbim.core.tool.Georeference):
         return blenderbim.bim.helper.export_attributes(props.projected_crs, callback=callback)
 
     @classmethod
-    def export_coordinate_operation(cls):
+    def export_coordinate_operation(cls) -> dict[str, Any]:
         measure_type = None
 
         def callback(attributes, prop):
@@ -191,7 +194,7 @@ class Georeference(blenderbim.core.tool.Georeference):
         return blenderbim.bim.helper.export_attributes(props.coordinate_operation, callback=callback)
 
     @classmethod
-    def get_true_north_attributes(cls):
+    def get_true_north_attributes(cls) -> Union[list[float], None]:
         props = bpy.context.scene.BIMGeoreferenceProperties
         try:
             return [float(props.true_north_abscissa), float(props.true_north_ordinate)]
@@ -199,46 +202,48 @@ class Georeference(blenderbim.core.tool.Georeference):
             print("ERROR, True North Abscissa and Ordinate expect a number")
 
     @classmethod
-    def enable_editing(cls):
+    def enable_editing(cls) -> None:
         bpy.context.scene.BIMGeoreferenceProperties.is_editing = True
 
     @classmethod
-    def disable_editing(cls):
+    def disable_editing(cls) -> None:
         bpy.context.scene.BIMGeoreferenceProperties.is_editing = False
 
     @classmethod
-    def enable_editing_wcs(cls):
+    def enable_editing_wcs(cls) -> None:
         bpy.context.scene.BIMGeoreferenceProperties.is_editing_wcs = True
 
     @classmethod
-    def disable_editing_wcs(cls):
+    def disable_editing_wcs(cls) -> None:
         bpy.context.scene.BIMGeoreferenceProperties.is_editing_wcs = False
 
     @classmethod
-    def enable_editing_true_north(cls):
+    def enable_editing_true_north(cls) -> None:
         bpy.context.scene.BIMGeoreferenceProperties.is_editing_true_north = True
 
     @classmethod
-    def disable_editing_true_north(cls):
+    def disable_editing_true_north(cls) -> None:
         bpy.context.scene.BIMGeoreferenceProperties.is_editing_true_north = False
 
     @classmethod
-    def set_coordinates(cls, io, coordinates):
+    def set_coordinates(cls, io: COORDINATE_TYPE, coordinates: list[float]) -> None:
         props = bpy.context.scene.BIMGeoreferenceProperties
         setattr(props, f"{io}_coordinates", ",".join([str(o) for o in coordinates]))
 
     @classmethod
-    def get_coordinates(cls, io):
+    def get_coordinates(cls, io: COORDINATE_TYPE) -> list[float]:
         props = bpy.context.scene.BIMGeoreferenceProperties
         return [float(co) for co in getattr(props, f"{io}_coordinates").split(",")]
 
     @classmethod
-    def get_cursor_location(cls):
+    def get_cursor_location(cls) -> list[float]:
         scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         return [o / scale for o in bpy.context.scene.cursor.location]
 
     @classmethod
-    def xyz2enh(cls, coordinates, should_return_in_map_units=True):
+    def xyz2enh(
+        cls, coordinates: tuple[float, float, float], should_return_in_map_units: bool = True
+    ) -> tuple[float, float, float]:
         props = bpy.context.scene.BIMGeoreferenceProperties
         if props.has_blender_offset:
             coordinates = ifcopenshell.util.geolocation.xyz2enh(
@@ -256,7 +261,7 @@ class Georeference(blenderbim.core.tool.Georeference):
         )
 
     @classmethod
-    def enh2xyz(cls, coordinates):
+    def enh2xyz(cls, coordinates: tuple[float, float, float]) -> tuple[float, float, float]:
         coordinates = ifcopenshell.util.geolocation.auto_enh2xyz(tool.Ifc.get(), *coordinates)
         props = bpy.context.scene.BIMGeoreferenceProperties
         if props.has_blender_offset:
@@ -273,10 +278,10 @@ class Georeference(blenderbim.core.tool.Georeference):
         return coordinates
 
     @classmethod
-    def import_plot(cls, filepath):
+    def import_plot(cls, filepath: str) -> None:
         import bmesh
 
-        def parse_csv(file_path):
+        def parse_csv(file_path: str):
             import csv
 
             with open(file_path, "r") as f:
@@ -307,7 +312,7 @@ class Georeference(blenderbim.core.tool.Georeference):
         bm.free()
 
     @classmethod
-    def import_wcs(cls):
+    def import_wcs(cls) -> None:
         props = bpy.context.scene.BIMGeoreferenceProperties
         wcs = None
         for context in tool.Ifc.get().by_type("IfcGeometricRepresentationContext", include_subtypes=False):
@@ -324,7 +329,7 @@ class Georeference(blenderbim.core.tool.Georeference):
             props.wcs_x, props.wcs_y, props.wcs_z = map(str, placement[:, 3][:3])
 
     @classmethod
-    def export_wcs(cls):
+    def export_wcs(cls) -> dict[str, float]:
         props = bpy.context.scene.BIMGeoreferenceProperties
         return {
             "x": float(props.wcs_x),
@@ -334,7 +339,7 @@ class Georeference(blenderbim.core.tool.Georeference):
         }
 
     @classmethod
-    def set_wcs(cls, wcs):
+    def set_wcs(cls, wcs: dict[str, float]) -> None:
         ifcopenshell.api.georeference.edit_wcs(tool.Ifc.get(), **wcs, is_si=False)
 
     @classmethod
