@@ -97,7 +97,7 @@
                 "Qto_CableCarrierSegmentBaseQuantities": {
                     "CrossSectionArea": null,
                     "GrossWeight": null,
-                    "Length": "net_get_max_xyz",
+                    "Length": "net_get_segment_length",
                     "OuterSurfaceArea": null
                 }
             },
@@ -110,7 +110,7 @@
                 "Qto_CableSegmentBaseQuantities": {
                     "CrossSectionArea": null,
                     "GrossWeight": null,
-                    "Length": "net_get_max_xyz",
+                    "Length": "net_get_segment_length",
                     "OuterSurfaceArea": null
                 }
             },
@@ -236,7 +236,7 @@
                 "Qto_DuctSegmentBaseQuantities": {
                     "GrossCrossSectionArea": null,
                     "GrossWeight": null,
-                    "Length": "net_get_max_xyz",
+                    "Length": "net_get_segment_length",
                     "NetCrossSectionArea": null,
                     "OuterSurfaceArea": null
                 }
@@ -421,7 +421,7 @@
                 "Qto_PipeSegmentBaseQuantities": {
                     "GrossCrossSectionArea": null,
                     "GrossWeight": null,
-                    "Length": "net_get_max_xyz",
+                    "Length": "net_get_segment_length",
                     "NetCrossSectionArea": null,
                     "NetWeight": null,
                     "OuterSurfaceArea": null
