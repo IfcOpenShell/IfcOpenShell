@@ -40,7 +40,7 @@ from blenderbim.bim.module.light.decorator import SolarDecorator
 
 sun_position = tool.Blender.get_sun_position_addon()
 
-with open(os.path.join(os.path.dirname(__file__), "spectraldb.json"), 'r') as f:
+with open(os.path.join(os.path.dirname(__file__), "spectraldb.json"), "r") as f:
     spectraldb = json.load(f)
 
 
@@ -163,6 +163,7 @@ class RadianceMaterial(PropertyGroup):
     subcategory: StringProperty(name="Subcategory")
     is_mapped: BoolProperty(name="Is Mapped", default=False)
 
+
 class RadianceExporterProperties(PropertyGroup):
 
     def update_json_file(self, context):
@@ -199,8 +200,12 @@ class RadianceExporterProperties(PropertyGroup):
             self.materials[-1].subcategory = subcategory
 
     def get_mappings_dict(self):
-        return {item.style_id: (item.category, item.subcategory) for item in self.materials if item.category and item.subcategory}
-    
+        return {
+            item.style_id: (item.category, item.subcategory)
+            for item in self.materials
+            if item.category and item.subcategory
+        }
+
     def unmap_material(self, style_name):
         item = self.get_material_mapping(style_name)
         if item:
@@ -219,19 +224,19 @@ class RadianceExporterProperties(PropertyGroup):
     )
 
     categories = [
-        ('Wall', 'Wall', ''),
-        ('Floor', 'Floor', ''),
-        ('Ceiling', 'Ceiling', ''),
-        ('Door', 'Door', ''),
-        ('Furniture', 'Furniture', ''),
-        ('Exterior Floor', 'Exterior Floor', ''),
-        ('Others', 'Others', ''),
-        ('Exterior Building', 'Exterior Building', ''),
-        ('Window Mullion', 'Window Mullion', ''),
-        ('PV', 'PV', ''),
-        ('Plant', 'Plant', ''),
-        ('Exterior', 'Exterior', ''),
-        ('Color Swatch', 'Color Swatch', ''),
+        ("Wall", "Wall", ""),
+        ("Floor", "Floor", ""),
+        ("Ceiling", "Ceiling", ""),
+        ("Door", "Door", ""),
+        ("Furniture", "Furniture", ""),
+        ("Exterior Floor", "Exterior Floor", ""),
+        ("Others", "Others", ""),
+        ("Exterior Building", "Exterior Building", ""),
+        ("Window Mullion", "Window Mullion", ""),
+        ("PV", "PV", ""),
+        ("Plant", "Plant", ""),
+        ("Exterior", "Exterior", ""),
+        ("Color Swatch", "Color Swatch", ""),
     ]
 
     def update_material_mapping(self, context):
@@ -243,22 +248,16 @@ class RadianceExporterProperties(PropertyGroup):
             print(f"Material '{active_material.name}' mapped to {self.category} - {self.subcategory}")
 
     category: bpy.props.EnumProperty(
-        items=categories,
-        name="Category",
-        description="Material category",
-        update=update_material_mapping
+        items=categories, name="Category", description="Material category", update=update_material_mapping
     )
 
     def get_subcategories(self, context):
         if self.category in spectraldb:
-            return [(k, k, '') for k in spectraldb[self.category].keys()]
+            return [(k, k, "") for k in spectraldb[self.category].keys()]
         return []
 
     subcategory: bpy.props.EnumProperty(
-        items=get_subcategories,
-        name="Subcategory",
-        description="Material subcategory",
-        update=update_material_mapping
+        items=get_subcategories, name="Subcategory", description="Material subcategory", update=update_material_mapping
     )
 
     materials: CollectionProperty(type=RadianceMaterial)

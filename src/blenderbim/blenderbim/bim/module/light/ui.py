@@ -71,13 +71,14 @@ class BIM_PT_radiance_exporter(bpy.types.Panel):
                 if props.active_material_index >= 0 and props.active_material_index < len(props.materials):
                     active_material = props.materials[props.active_material_index]
                     if active_material.category and active_material.subcategory:
-                        layout.label(text=f"Mapped: {active_material.name} to {active_material.category} - {active_material.subcategory}")
+                        layout.label(
+                            text=f"Mapped: {active_material.name} to {active_material.category} - {active_material.subcategory}"
+                        )
                     else:
                         layout.label(text=f"Select category and subcategory for: {active_material.name}")
-            
+
             row = layout.row()
             row.operator("bim.refresh_ifc_materials", text="Refresh IFC Materials")
-
 
         layout.separator()
         row = layout.row()

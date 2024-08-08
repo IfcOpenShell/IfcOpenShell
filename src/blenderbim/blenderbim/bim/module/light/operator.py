@@ -38,7 +38,7 @@ from blenderbim.bim.module.light.data import SolarData
 
 ifc_materials = []
 
-with open(os.path.join(os.path.dirname(__file__), "spectraldb.json"), 'r') as f:
+with open(os.path.join(os.path.dirname(__file__), "spectraldb.json"), "r") as f:
     spectraldb = json.load(f)
 
 
@@ -170,8 +170,6 @@ class RadianceRender(bpy.types.Operator):
         print("Day: ", day)
         print("Hour: ", hour)
         print("Minute: ", minute)
-
-
 
         camera = self.get_active_camera(context)
         if camera is None:
@@ -319,7 +317,7 @@ ground_glow source ground
             for material in default_materials:
                 file.write(material)
                 written_materials.add(material.split()[2])  # Add material name to written set
-            
+
             print(data)
             print(default_materials)
 
@@ -517,19 +515,19 @@ class RefreshIFCMaterials(bpy.types.Operator):
 
         props.active_material_index = 0 if props.materials else -1
 
-        self.report({'INFO'}, f"Refreshed {len(props.materials)} IFC materials")
+        self.report({"INFO"}, f"Refreshed {len(props.materials)} IFC materials")
         return {"FINISHED"}
 
 
 class UnmapMaterial(bpy.types.Operator):
     bl_idname = "bim.unmap_material"
     bl_label = "Unmap Material"
-    bl_options = {'REGISTER', 'UNDO'}
-    
+    bl_options = {"REGISTER", "UNDO"}
+
     material_index: bpy.props.IntProperty()
 
     def execute(self, context):
         props = context.scene.radiance_exporter_properties
         material = props.materials[self.material_index]
         props.unmap_material(material.name)
-        return {'FINISHED'}
+        return {"FINISHED"}
