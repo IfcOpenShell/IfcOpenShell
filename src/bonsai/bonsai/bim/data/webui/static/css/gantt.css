@@ -142,6 +142,14 @@ nav ul li a.active {
     border-bottom: 1px solid var(--blender-tab-outline, var(--border-color));
 }
 
+.table-description tr:nth-child(even) {
+    background-color: var(--blender-even-row);
+}
+
+.table-description tr:nth-child(odd) {
+    background-color: var(--blender-odd-row);
+}
+
 #toggle-theme {
     border: none;
     background: none;
