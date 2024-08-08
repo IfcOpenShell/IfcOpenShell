@@ -261,6 +261,8 @@ function updateTableElement(blenderId, csvData, filename) {
   // else, replace the whole data and column definations
   const firstLine = csvData.indexOf("\n");
   const newHeaders = csvData.substring(0, firstLine).split(",");
+  const hasRows = csvData.substring(firstLine + 1).trim().length > 0;
+
   const sameHeaders = compareHeaders(
     connectedClients[blenderId].headers,
     newHeaders
@@ -272,7 +274,12 @@ function updateTableElement(blenderId, csvData, filename) {
       table.replaceData(csvData, { importFormat: "csv" });
     } else {
       table.setData(csvData);
-      connectedClients[blenderId].headers = newHeaders;
+
+      if (hasRows) {
+        connectedClients[blenderId].headers = newHeaders;
+      } else {
+        connectedClients[blenderId].headers = "";
+      }
     }
     $("#title-" + blenderId).text(filename);
   }
@@ -289,7 +296,11 @@ function showWarning(blenderId, isDirty) {
 
 // Utility function to compare two csv header
 function compareHeaders(headers1, headers2) {
-  if (headers1.length !== headers2.length) {
+  if (
+    headers1.length !== headers2.length ||
+    headers1.length == 0 ||
+    headers2.length == 0
+  ) {
     return false;
   }
   for (let i = 0; i < headers1.length; i++) {
