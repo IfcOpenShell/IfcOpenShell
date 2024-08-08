@@ -1,5 +1,5 @@
 // keeps track of blenders connected in form of
-// {shown:bool, filename:string, headers:array}
+// {shown:bool, filename:string, headers:array, warning: false}
 const connectedClients = {};
 let socket;
 
@@ -37,6 +37,7 @@ function handleBlenderConnect(blenderId) {
   if (!connectedClients.hasOwnProperty(blenderId)) {
     connectedClients[blenderId] = { shown: false, ifc_file: "" };
   }
+
   $("#blender-count").text(function (i, text) {
     return parseInt(text, 10) + 1;
   });
@@ -108,16 +109,19 @@ function handleCsvData(data) {
         shown: true,
         ifc_file: filename,
         headers: [],
+        warning: false,
       };
       addTableElement(blenderId, csvData, filename);
     } else {
       updateTableElement(blenderId, csvData, filename);
+      connectedClients[blenderId].warning = false;
     }
   } else {
     connectedClients[blenderId] = {
       shown: true,
       ifc_file: filename,
       headers: [],
+      warning: false,
     };
     addTableElement(blenderId, csvData, filename);
   }
@@ -147,19 +151,11 @@ function addTableElement(blenderId, csvData, filename) {
     .text(filename)
     .css("margin-bottom", "10px");
 
-  const warning = $("<div></div>")
-    .attr("id", "warning-" + blenderId)
-    .html(
-      "&#9888; Warning: This table may contain outdated data due to recent changes in Blender."
-    )
-    .addClass("warning");
-
   const tableDiv = $("<div></div>")
     .addClass("csv-table")
     .attr("id", "table-" + blenderId);
 
   tableContainer.append(tableTitle);
-  tableContainer.append(warning);
   tableContainer.append(tableDiv);
   $("#container").append(tableContainer);
 
@@ -282,7 +278,7 @@ function removeTableElement(blenderId) {
 }
 
 function showWarning(blenderId, isDirty) {
-  $("#warning-" + blenderId).css("display", "block");
+  connectedClients[blenderId].warning = true;
 }
 
 // Utility function to compare two csv header
@@ -349,11 +345,28 @@ function toggleClientList() {
 
     const clientDiv = $("<div>")
       .addClass("client")
+      .addClass(`client-${id}`)
       .text(client.ifc_file || "Blender " + counter);
+
+    if (client.warning) {
+      warningIcon = $("<i>")
+        .addClass("fas fa-triangle-exclamation warning")
+        .css("margin-left", "0.5rem");
+      clientDiv.append(warningIcon);
+    }
 
     clientDiv.append(dropdownIcon);
 
     const clientDetailsDiv = $("<div>").addClass("client-details");
+
+    if (client.warning) {
+      warningIcon = $("<i>").addClass("fa-solid fa-triangle-exclamation");
+      const clientWarning = $("<div>")
+        .addClass("client-detail warning")
+        .text(" Might have outdated data due to recent changes in Blender.");
+      clientWarning.prepend(warningIcon);
+      clientDetailsDiv.append(clientWarning);
+    }
 
     if (id) {
       const clientId = $("<div>")
@@ -397,5 +410,6 @@ function toggleClientList() {
 
     clientList.append(clientDiv);
   });
+
   clientList.addClass("show");
 }
