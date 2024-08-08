@@ -119,11 +119,9 @@ nav ul li a.active {
     color: var(--blender-selected-object, var(--nav-link-hover-color));
 }
 
-.warning {
+.warning,
+.warning-icon {
     color: var(--blender-info-warning, var(--warning-color));
-    margin-bottom: var(--margin-small);
-    padding: var(--padding-tiny);
-    display: none;
 }
 
 .table-description {

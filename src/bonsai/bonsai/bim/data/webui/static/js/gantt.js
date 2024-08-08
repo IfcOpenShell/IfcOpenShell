@@ -1,5 +1,5 @@
 // keeps track of blenders connected in form of
-// shown:bool, workSchedule: {}, ganttTasks: {},
+// shown:bool, workSchedule: {}, ganttTasks: {}, warning: bool
 const connectedClients = {};
 let socket;
 
@@ -135,12 +135,14 @@ function handleGanttData(data) {
         ifc_file: filename,
         ganttTasks: ganttTasks,
         workSchedule: ganttWorkSched,
+        warning: false,
       };
       addGanttElement(blenderId, ganttTasks, ganttWorkSched, filename);
     } else {
       updateGanttElement(blenderId, ganttTasks, ganttWorkSched, filename);
       connectedClients[blenderId].workSchedule = ganttWorkSched;
       connectedClients[blenderId].ganttTasks = ganttTasks;
+      connectedClients[blenderId].warning = false;
     }
   } else {
     connectedClients[blenderId] = {
@@ -148,6 +150,7 @@ function handleGanttData(data) {
       ifc_file: filename,
       ganttTasks: ganttTasks,
       workSchedule: ganttWorkSched,
+      warning: false,
     };
     addGanttElement(blenderId, ganttTasks, ganttWorkSched, filename);
   }
@@ -171,13 +174,6 @@ function addGanttElement(blenderId, tasks, workSched, filename) {
     .text(filename)
     .addClass("no-print")
     .css("margin-bottom", "10px");
-
-  const warning = $("<div></div>")
-    .attr("id", "warning-" + blenderId)
-    .html(
-      "&#9888; Warning: This Gantt Chart may contain outdated data due to recent changes in Blender."
-    )
-    .addClass("warning no-print");
 
   const workSchedDiv = $("<div></div>").attr("id", "workSched" + blenderId);
 
@@ -226,7 +222,6 @@ function addGanttElement(blenderId, tasks, workSched, filename) {
   workSchedDiv.append(scheduleTable);
 
   ganttContainer.append(ganttTitle);
-  ganttContainer.append(warning);
   ganttContainer.append(workSchedDiv);
   ganttContainer.append(ganttInfoDiv);
   ganttContainer.append(ganttDiv);
@@ -367,7 +362,7 @@ function removeGanttElement(blenderId) {
 }
 
 function showWarning(blenderId, isDirty) {
-  $("#warning-" + blenderId).css("display", "block");
+  connectedClients[blenderId].warning = true;
 }
 
 // Utility function to create a tooltip for the gantt chars
@@ -462,11 +457,28 @@ function toggleClientList() {
 
     const clientDiv = $("<div>")
       .addClass("client")
+      .addClass(`client-${id}`)
       .text(client.ifc_file || "Blender " + counter);
+
+    if (client.warning) {
+      warningIcon = $("<i>")
+        .addClass("fas fa-triangle-exclamation warning")
+        .css("margin-left", "0.5rem");
+      clientDiv.append(warningIcon);
+    }
 
     clientDiv.append(dropdownIcon);
 
     const clientDetailsDiv = $("<div>").addClass("client-details");
+
+    if (client.warning) {
+      warningIcon = $("<i>").addClass("fa-solid fa-triangle-exclamation");
+      const clientWarning = $("<div>")
+        .addClass("client-detail warning")
+        .text(" Might have outdated data due to recent changes in Blender.");
+      clientWarning.prepend(warningIcon);
+      clientDetailsDiv.append(clientWarning);
+    }
 
     if (id) {
       const clientId = $("<div>")
@@ -519,5 +531,6 @@ function toggleClientList() {
 
     clientList.append(clientDiv);
   });
+
   clientList.addClass("show");
 }
