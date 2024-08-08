@@ -33,7 +33,7 @@ function connectSocket() {
 
 // Function to handle 'blender_connect' event
 function handleBlenderConnect(blenderId) {
-  console.log("blender_connect: ", blenderId);
+  console.log("blender connected: ", blenderId);
   if (!connectedClients.hasOwnProperty(blenderId)) {
     connectedClients[blenderId] = { shown: false, ifc_file: "" };
   }
@@ -45,7 +45,7 @@ function handleBlenderConnect(blenderId) {
 
 // Function to handle 'blender_disconnect' event
 function handleBlenderDisconnect(blenderId) {
-  console.log("blender_disconnect: ", blenderId);
+  console.log("blender disconnected: ", blenderId);
   if (connectedClients.hasOwnProperty(blenderId)) {
     delete connectedClients[blenderId];
     removeTableElement(blenderId);
@@ -58,14 +58,14 @@ function handleBlenderDisconnect(blenderId) {
 
 function handleConnectedClients(data) {
   $("#blender-count").text(data.length);
-  console.log(data);
+  // console.log(data);
   data.forEach(function (id) {
     connectedClients[id] = { shown: false, ifc_file: "" };
   });
 }
 
 function handleThemeData(themeData) {
-  console.log(themeData);
+  // console.log(themeData);
 
   function arrayToRgbString(arr) {
     const [r, g, b, a] = arr.map((num) => Math.round(num * 255));
@@ -141,7 +141,7 @@ function addTableElement(blenderId, csvData, filename) {
   const csvHeaders = csvData.substring(0, firstLine).split(",");
   connectedClients[blenderId].headers = csvHeaders;
 
-  console.log(connectedClients[blenderId]);
+  // console.log(connectedClients[blenderId]);
   const tableContainer = $("<div></div>")
     .addClass("table-container")
     .attr("id", "container-" + blenderId);
@@ -188,8 +188,8 @@ function addTableElement(blenderId, csvData, filename) {
 
           // Toggle current column visibility
           column.visible = !column.visible;
-          console.log(column.title, column.visible);
-          // Change menu item checkbox
+          // console.log(column.title, column.visible);
+
           if (column.visible) {
             table.showColumn(column.title);
             checkbox.textContent = "\u2611"; // ☑
