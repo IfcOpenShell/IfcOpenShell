@@ -460,7 +460,13 @@ class DrawPolylineWall(bpy.types.Operator):
         ray_origin, ray_target, ray_direction = get_viewport_ray_data()
         obj, hit, face_index = cast_rays_and_get_best_object()
         intersection = ray_cast_to_plane(context, plane_origin, plane_normal)
-        rot_intersection = tool.Snaping.snap_on_axis(intersection)
+
+        # Locks snap into an angle axis
+        if event.shift:
+            rot_intersection, _, axis_start, axis_end = tool.Snaping.snap_on_axis(intersection, self.snap_angle)
+        else:
+            self.snap_angle = None
+            rot_intersection, self.snap_angle, _, _ = tool.Snaping.snap_on_axis(intersection)
 
         if obj is not None:
             original_obj = obj.original
@@ -469,7 +475,27 @@ class DrawPolylineWall(bpy.types.Operator):
             snap_point = tool.Snaping.select_snap_point(snap_points, hit, snap_threshold)
 
             if snap_point:
-                tool.Snaping.update_snaping_point(snap_point[0], snap_point[1])
+                # Creates a mixed snap point between the locked axis and
+                # the object snap
+                # TODO Improve alt responsiveness
+                # TODO Create decorator for this
+                if event.shift:
+                    snap_point_axis = (
+                        Vector((snap_point[0].x + 1000, snap_point[0].y, 0)),
+                        Vector((snap_point[0].x - 1000, snap_point[0].y, 0)),
+                    )
+                    if event.alt:
+                        snap_point_axis = (
+                            Vector((snap_point[0].x, snap_point[0].y + 1000, 0)),
+                            Vector((snap_point[0].x, snap_point[0].y - 1000, 0)),
+                        )
+                    snap_angle_axis = (axis_start, axis_end)
+                    results = tool.Cad.intersect_edges(snap_angle_axis, snap_point_axis)
+                    resulting_vector = Vector((results[0].x, results[0].y, 0))
+
+                    tool.Snaping.update_snaping_point(resulting_vector, "Axis")
+                else:
+                    tool.Snaping.update_snaping_point(snap_point[0], snap_point[1])
 
             else:
                 tool.Snaping.update_snaping_point(hit, "Face")
