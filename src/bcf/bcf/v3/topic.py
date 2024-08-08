@@ -103,7 +103,7 @@ class TopicHandler:
     @modified_date.setter
     def modified_date(self, value: str) -> None:
         """Set Modified Date object."""
-        self.markup.topic.modified_date = XmlDateTime.from_string(value.replace("+0000","Z"))
+        self.markup.topic.modified_date = XmlDateTime.from_string(value.replace("+0000", "Z"))
 
     @property
     def creation_date(self) -> mdl.Topic:
@@ -113,7 +113,7 @@ class TopicHandler:
     @creation_date.setter
     def creation_date(self, value: str) -> None:
         """Set Creation Date object."""
-        self.markup.topic.creation_date = XmlDateTime.from_string(value.replace("+0000","Z"))
+        self.markup.topic.creation_date = XmlDateTime.from_string(value.replace("+0000", "Z"))
 
     @property
     def bim_snippet(self) -> Optional[bytes]:
