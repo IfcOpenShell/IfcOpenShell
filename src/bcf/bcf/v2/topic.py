@@ -68,6 +68,56 @@ class TopicHandler:
         """Return the comments of the topic."""
         return self.markup.comment if self.markup else []
 
+        @property
+    def priority(self) -> mdl.Topic:
+        """Return the Priority object."""
+        return self.markup.topic.priority
+    
+    @priority.setter
+    def priority(self, value: str) -> None:
+        """Set Priority object."""
+        self.markup.topic.priority = value
+
+    @property
+    def labels(self) -> mdl.Topic:
+        """Return the Labels object."""
+        return self.markup.topic.labels
+    
+    @labels.setter
+    def labels(self, value: list) -> None:
+        """Set Labels object."""
+        self.markup.topic.labels = value
+    
+    @property
+    def modified_author(self) -> mdl.Topic:
+        """Return the Modified Author object."""
+        return self.markup.topic.modified_author
+    
+    @modified_author.setter
+    def modified_author(self, value: str) -> None:
+        """Set Modified Author object."""
+        self.markup.topic.modified_author = value
+
+    @property
+    def modified_date(self) -> mdl.Topic:
+        """Return the Modified Date object."""
+        return self.markup.topic.modified_date
+    
+    @modified_date.setter
+    def modified_date(self, value: str) -> None:
+        """Set Modified Date object."""
+        self.markup.topic.modified_date = XmlDateTime.from_string(value.replace("+0000","Z"))
+
+    @property
+    def creation_date(self) -> mdl.Topic:
+        """Return the Ccreation Date object."""
+        return self.markup.topic.creation_date
+    
+    @creation_date.setter
+    def creation_date(self, value: str) -> None:
+        """Set Creation Date object."""
+        self.markup.topic.creation_date = XmlDateTime.from_string(value.replace("+0000","Z"))
+        
     @property
     def bim_snippet(self) -> Optional[bytes]:
         if not self._bim_snippet and self._topic_dir:
