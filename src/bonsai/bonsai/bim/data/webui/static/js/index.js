@@ -139,7 +139,13 @@ function addTableElement(blenderId, csvData, filename) {
   // store headers of the csv data
   const firstLine = csvData.indexOf("\n");
   const csvHeaders = csvData.substring(0, firstLine).split(",");
-  connectedClients[blenderId].headers = csvHeaders;
+  const hasRows = csvData.substring(firstLine + 1).trim().length > 0;
+
+  if (hasRows) {
+    connectedClients[blenderId].headers = csvHeaders;
+  } else {
+    connectedClients[blenderId].headers = "";
+  }
 
   // console.log(connectedClients[blenderId]);
   const tableContainer = $("<div></div>")
@@ -205,6 +211,7 @@ function addTableElement(blenderId, csvData, filename) {
   }
 
   var table = new Tabulator("#table-" + blenderId, {
+    placeholder: "No data to display",
     height: "400px",
     resizableColumnGuide: true,
     index: "GlobalId",
@@ -268,7 +275,6 @@ function updateTableElement(blenderId, csvData, filename) {
       connectedClients[blenderId].headers = newHeaders;
     }
     $("#title-" + blenderId).text(filename);
-    $("#warning-" + blenderId).css("display", "none");
   }
 }
 
