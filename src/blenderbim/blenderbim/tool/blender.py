@@ -694,6 +694,8 @@ class Blender(blenderbim.core.tool.Blender):
         ao = context.active_object
         if not ao:
             return {"CANCELLED"}
+        if ao.library:
+            return {"CANCELLED"}
         if ao.type in cls.OBJECT_TYPES_THAT_SUPPORT_EDIT_MODE:
             return bpy.ops.object.mode_set(mode="EDIT", toggle=True)
         elif ao.type in cls.OBJECT_TYPES_THAT_SUPPORT_EDIT_GPENCIL_MODE:

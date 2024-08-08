@@ -1669,7 +1669,8 @@ class OverrideModeSetEdit(bpy.types.Operator):
             # The active object is non-mesh-like. Set a valid object (or None) as active
             context.view_layer.objects.active = context.selected_objects[0] if context.selected_objects else None
         if context.active_object:
-            tool.Blender.toggle_edit_mode(context)
+            if tool.Blender.toggle_edit_mode(context) == {"CANCELLED"}:
+                return {"CANCELLED"}
             context.scene.BIMGeometryProperties.is_changing_mode = True
             if context.scene.BIMGeometryProperties.mode != "EDIT":
                 context.scene.BIMGeometryProperties.mode = "EDIT"
