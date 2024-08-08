@@ -16,26 +16,34 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+from typing import TYPE_CHECKING, Optional
 
-def add_georeferencing(georeference):
+if TYPE_CHECKING:
+    import bpy
+    import ifcopenshell
+    import blenderbim.tool as tool
+
+
+def add_georeferencing(georeference: tool.Georeference) -> None:
     georeference.add_georeferencing()
 
 
-def enable_editing_georeferencing(georeference):
+def enable_editing_georeferencing(georeference: tool.Georeference) -> None:
     georeference.import_projected_crs()
     georeference.import_coordinate_operation()
     georeference.enable_editing()
 
 
-def remove_georeferencing(ifc):
+def remove_georeferencing(ifc: tool.Ifc) -> None:
     ifc.run("georeference.remove_georeferencing")
 
 
-def disable_editing_georeferencing(georeference):
+def disable_editing_georeferencing(georeference: tool.Georeference) -> None:
     georeference.disable_editing()
 
 
-def edit_georeferencing(ifc, georeference):
+def edit_georeferencing(ifc: tool.Ifc, georeference: tool.Georeference) -> None:
     ifc.run(
         "georeference.edit_georeferencing",
         projected_crs=georeference.export_projected_crs(),
@@ -45,7 +53,7 @@ def edit_georeferencing(ifc, georeference):
     georeference.set_model_origin()
 
 
-def get_cursor_location(georeference):
+def get_cursor_location(georeference: tool.Georeference) -> None:
     location = georeference.get_cursor_location()
     if georeference.has_blender_offset():
         georeference.set_coordinates("blender", location)
@@ -53,39 +61,39 @@ def get_cursor_location(georeference):
         georeference.set_coordinates("local", location)
 
 
-def import_plot(georeference, filepath):
+def import_plot(georeference: tool.Georeference, filepath: str) -> None:
     georeference.import_plot(filepath)
 
 
-def enable_editing_wcs(georeference):
+def enable_editing_wcs(georeference: tool.Georeference) -> None:
     georeference.import_wcs()
     georeference.enable_editing_wcs()
 
 
-def disable_editing_wcs(georeference):
+def disable_editing_wcs(georeference: tool.Georeference) -> None:
     georeference.disable_editing_wcs()
 
 
-def edit_wcs(georeference):
+def edit_wcs(georeference: tool.Georeference) -> None:
     wcs = georeference.export_wcs()
     georeference.set_wcs(wcs)
     georeference.disable_editing_wcs()
     georeference.set_model_origin()
 
 
-def enable_editing_true_north(georeference):
+def enable_editing_true_north(georeference: tool.Georeference) -> None:
     georeference.import_true_north()
     georeference.enable_editing_true_north()
 
 
-def disable_editing_true_north(georeference):
+def disable_editing_true_north(georeference: tool.Georeference) -> None:
     georeference.disable_editing_true_north()
 
 
-def edit_true_north(ifc, georeference):
+def edit_true_north(ifc: tool.Ifc, georeference: tool.Georeference) -> None:
     ifc.run("georeference.edit_true_north", true_north=georeference.get_true_north_attributes())
     georeference.disable_editing_true_north()
 
 
-def remove_true_north(ifc):
+def remove_true_north(ifc: tool.Ifc) -> None:
     ifc.run("georeference.edit_true_north", true_north=None)
