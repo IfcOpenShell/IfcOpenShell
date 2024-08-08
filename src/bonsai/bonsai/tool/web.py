@@ -409,7 +409,7 @@ class Web(bonsai.core.tool.Web):
             "top_bar_header_text": get_color(top_bar, "header_text"),
             "active_object": get_color(view_3d, "object_active"),
             "selected_object": get_color(view_3d, "object_selected"),
-            "info_warning": get_color(info, "info_warning"),
+            "info_warning": get_color(info, "info_warning_text"),
             "odd_row": get_color(outliner.space, "back"),
             "even_row": mix_colors(get_color(outliner.space, "back"), get_color(outliner, "row_alternate")),
             "active_highlight": get_color(outliner, "active"),
