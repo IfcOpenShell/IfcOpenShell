@@ -60,12 +60,16 @@
       </button>
     </nav>
     <div id="connected-list-div">
-      <button id="show-connected-button" onclick="toggleClientList()">
+      <button
+        id="show-connected-button"
+        class="no-print"
+        onclick="toggleClientList()"
+      >
         Connected Blenders:
         <span id="blender-count">0</span>
         <i class="fas fa-chevron-down"></i>
       </button>
-      <div id="client-list"></div>
+      <div id="client-list" class="no-print"></div>
     </div>
     <div id="container"></div>
     <footer>
