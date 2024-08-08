@@ -107,7 +107,9 @@ class IfcOpenShell:
             "Footprint Perimeter",
             "The perimeter if the object's faces were projected along the Z-axis and seen top down",
         ),
-        "get_segment_length": Function("IfcLengthMeasure", "Segment Length", "Intelligently guesses the length of flow segments"),
+        "get_segment_length": Function(
+            "IfcLengthMeasure", "Segment Length", "Intelligently guesses the length of flow segments"
+        ),
         # IfcAreaMeasure
         "get_area": Function("IfcAreaMeasure", "Area", "The total surface area of the element"),
         "get_footprint_area": Function(
