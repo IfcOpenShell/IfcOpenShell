@@ -65,7 +65,7 @@ class TopicHandler:
         """Return the comments of the topic."""
         return self.topic.comments.comment if self.topic.comments else []
 
-        @property
+    @property
     def priority(self) -> mdl.Topic:
         """Return the Priority object."""
         return self.markup.topic.priority
