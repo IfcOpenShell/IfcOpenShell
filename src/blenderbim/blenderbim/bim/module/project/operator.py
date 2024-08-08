@@ -751,6 +751,8 @@ class LoadProject(bpy.types.Operator, IFCFileSelector):
         return {"FINISHED"}
 
     def invoke(self, context, event):
+        if self.filepath:
+            return self.execute(context)
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
 
