@@ -165,6 +165,162 @@ function handleDefaultData(data) {
 
 // Function to add a new gantt with data and filename
 function addGanttElement(blenderId, tasks, workSched, filename) {
+  function createWorkSchedDiv(blenderId, workSched) {
+    const workSchedDiv = $("<div></div>").attr("id", "workSched" + blenderId);
+    const scheduleTable = $("<table></table>")
+      .addClass("no-print table-description")
+      .attr("id", "workSchedTable-" + blenderId)
+      .hide();
+
+    $.each(workSched, (key, value) => {
+      value = value ? value : "null";
+      $("<tr></tr>")
+        .append($("<td></td>").text(key))
+        .append($("<td></td>").text(value))
+        .appendTo(scheduleTable);
+    });
+
+    const toggleButton = $("<button></button>")
+      .text("Show Schedule Info")
+      .addClass("btn no-print")
+      .on("click", function () {
+        scheduleTable.toggle();
+        const buttonText = scheduleTable.is(":visible")
+          ? "Hide Schedule Info"
+          : "Show Schedule Info";
+        toggleButton.text(buttonText);
+      });
+
+    workSchedDiv.append(toggleButton);
+    workSchedDiv.append(scheduleTable);
+
+    return workSchedDiv;
+  }
+
+  function createGanttInfoDiv(blenderId, workSched) {
+    const ganttInfoDiv = $("<div></div>")
+      .addClass("gantt-info")
+      .attr("id", "gantt-info-" + blenderId);
+
+    const scheduleName = $("<span></span>").text("Schedule: " + workSched.Name);
+    const createdOn = $("<span></span>")
+      .text("Created: " + new Date(workSched.CreationDate).toLocaleDateString())
+      .css("float", "right");
+
+    ganttInfoDiv.append(scheduleName);
+    ganttInfoDiv.append(createdOn);
+
+    return ganttInfoDiv;
+  }
+
+  function createGantt(blenderId, tasks) {
+    const ganttDiv = $("<div></div>")
+      .addClass("gantt-chart")
+      .attr("id", "gantt-" + blenderId);
+
+    let g = new JSGantt.GanttChart(ganttDiv[0], "week");
+    g.setOptions({
+      vCaptionType: "Caption", // Set to Show Caption : None,Caption,Resource,Duration,Complete,
+      vQuarterColWidth: 36,
+      vDateTaskDisplayFormat: "day dd month yyyy", // Shown in tool tip box
+      vDayMajorDateDisplayFormat: "mon yyyy - Week ww", // Set format to dates in the "Major" header of the "Day" view
+      vWeekMinorDateDisplayFormat: "dd mon", // Set format to display dates in the "Minor" header of the "Week" view
+      vLang: "en",
+      vShowTaskInfoLink: 1, // Show link in tool tip (0/1)
+      vShowEndWeekDate: 0, // Show/Hide the date for the last day of the week in header for daily
+      vUseSingleCell: 10000, // Set the threshold cell per table row (Helps performance for large data.
+      vFormatArr: ["Day", "Week", "Month", "Quarter"], // Even with setUseSingleCell using Hour format on such a large chart can cause issues in some browsers,
+      vShowRes: true, // Disable the resource column.
+      vShowComp: false, // Disable the completion column.
+      vShowDur: false, // Disable the duration column, because jsgantt doesn't calculate durations the way we want.
+      vAdditionalHeaders: {
+        ifcduration: { title: "Duration" },
+        resourceUsage: { title: "Resource Usage" },
+      },
+      vUseToolTip: true, // Disable tooltips.
+      vTooltipTemplate: generateTooltip,
+      vTotalHeight: 900,
+
+      vEventsChange: {
+        taskname: editValue, // if you need to use the this scope, do: editValue.bind(this)
+        res: editValue,
+        dur: editValue,
+        comp: editValue,
+        start: editValue,
+        end: editValue,
+        planstart: editValue,
+        planend: editValue,
+        cost: editValue,
+        additional_category: editValue,
+      },
+    });
+
+    JSGantt.addJSONTask(g, tasks);
+    g.setEditable(true);
+    g.Draw();
+
+    connectedClients[blenderId]["gantt"] = g;
+
+    return ganttDiv;
+  }
+
+  function createPrint(blenderId) {
+    const printButton = $("<button>", {
+      id: "print-btn-" + blenderId,
+      html: "Print",
+      class: "btn no-print",
+    });
+
+    const printOptions = $("<select>", {
+      id: "print-options-" + blenderId,
+      class: "no-print",
+    });
+
+    $.each(pageSizes, function (index, size) {
+      printOptions.append(
+        $("<option>", {
+          value: size.value,
+          text: size.text,
+        })
+      );
+    });
+
+    printButton.on("click", function () {
+      $(".gantt-chart").removeClass("no-print");
+      $(".gantt-chart")
+        .not("#gantt-" + blenderId)
+        .addClass("no-print");
+
+      $(".gantt-info")
+        .not("#gantt-info-" + blenderId)
+        .addClass("no-print");
+
+      const values = printOptions.val().split(",");
+
+      const g = connectedClients[blenderId]["gantt"];
+      g.setEditable(false);
+      g.setTotalHeight("");
+      g.Draw();
+
+      addEventListener("afterprint", () => g.setEditable(true));
+
+      let css = `@media print {
+            @page {
+                size: ${values[0]}mm ${values[1]}mm;
+            }
+            body, p, span, h1, h2, h3, h4, h5, h6, div, a, li, td, th, * {
+                color: black !important;
+            }
+        }`;
+
+      g.printChart(values[0], values[1], css);
+      g.setTotalHeight(900);
+      g.Draw();
+    });
+
+    return { printButton, printOptions };
+  }
+
   const ganttContainer = $("<div></div>")
     .addClass("gantt-container")
     .attr("id", "container-" + blenderId);
@@ -173,167 +329,22 @@ function addGanttElement(blenderId, tasks, workSched, filename) {
     .attr("id", "title-" + blenderId)
     .text(filename)
     .addClass("no-print")
-    .css("margin-bottom", "10px");
+    .css("margin-bottom", "0.875rem");
 
-  const workSchedDiv = $("<div></div>").attr("id", "workSched" + blenderId);
-
-  const scheduleTable = $("<table></table>")
-    .addClass("no-print table-description")
-    .attr("id", "workSchedTable-" + blenderId)
-    .hide();
-
-  $.each(workSched, (key, value) => {
-    value = value ? value : "null";
-    $("<tr></tr>")
-      .append($("<td></td>").text(key))
-      .append($("<td></td>").text(value))
-      .appendTo(scheduleTable);
-  });
-
-  const toggleButton = $("<button></button>")
-    .text("Show Schedule Info")
-    .addClass("btn no-print")
-    .on("click", function () {
-      scheduleTable.toggle();
-      const buttonText = scheduleTable.is(":visible")
-        ? "Hide Schedule Info"
-        : "Show Schedule Info";
-      toggleButton.text(buttonText);
-    });
-
-  var ganttInfoDiv = $("<div></div>")
-    .addClass("gantt-info")
-    .attr("id", "gantt-info-" + blenderId);
-
-  const scheduleName = $("<span></span>").text("Schedule: " + workSched.Name);
-
-  const createdOn = $("<span></span>")
-    .text("Created: " + new Date(workSched.CreationDate).toLocaleDateString())
-    .css("float", "right");
-
-  const ganttDiv = $("<div></div>")
-    .addClass("gantt-chart")
-    .attr("id", "gantt-" + blenderId);
-
-  ganttInfoDiv.append(scheduleName);
-  ganttInfoDiv.append(createdOn);
-
-  workSchedDiv.append(toggleButton);
-  workSchedDiv.append(scheduleTable);
+  const workSchedDiv = createWorkSchedDiv(blenderId, workSched);
+  const ganttInfoDiv = createGanttInfoDiv(blenderId, workSched);
+  const ganttDiv = createGantt(blenderId, tasks);
+  const { printButton, printOptions } = createPrint(blenderId);
 
   ganttContainer.append(ganttTitle);
   ganttContainer.append(workSchedDiv);
   ganttContainer.append(ganttInfoDiv);
   ganttContainer.append(ganttDiv);
 
-  $("#container").append(ganttContainer);
-
-  let g = new JSGantt.GanttChart($("#gantt-" + blenderId)[0], "week");
-  g.setOptions({
-    vCaptionType: "Caption", // Set to Show Caption : None,Caption,Resource,Duration,Complete,
-    vQuarterColWidth: 36,
-    vDateTaskDisplayFormat: "day dd month yyyy", // Shown in tool tip box
-    vDayMajorDateDisplayFormat: "mon yyyy - Week ww", // Set format to dates in the "Major" header of the "Day" view
-    vWeekMinorDateDisplayFormat: "dd mon", // Set format to display dates in the "Minor" header of the "Week" view
-    vLang: "en",
-    vShowTaskInfoLink: 1, // Show link in tool tip (0/1)
-    vShowEndWeekDate: 0, // Show/Hide the date for the last day of the week in header for daily
-    vUseSingleCell: 10000, // Set the threshold cell per table row (Helps performance for large data.
-    vFormatArr: ["Day", "Week", "Month", "Quarter"], // Even with setUseSingleCell using Hour format on such a large chart can cause issues in some browsers,
-    vShowRes: true, // Disable the resource column.
-    vShowComp: false, // Disable the completion column.
-    vShowDur: false, // Disable the duration column, because jsgantt doesn't calculate durations the way we want.
-    vAdditionalHeaders: {
-      ifcduration: { title: "Duration" },
-      resourceUsage: { title: "Resource Usage" },
-    },
-    vUseToolTip: true, // Disable tooltips.
-    vTooltipTemplate: generateTooltip,
-    vTotalHeight: 900,
-
-    vEventsChange: {
-      taskname: editValue, // if you need to use the this scope, do: editValue.bind(this)
-      res: editValue,
-      dur: editValue,
-      comp: editValue,
-      start: editValue,
-      end: editValue,
-      planstart: editValue,
-      planend: editValue,
-      cost: editValue,
-      additional_category: editValue,
-    },
-  });
-  JSGantt.addJSONTask(g, tasks);
-  g.setEditable(true);
-  g.Draw();
-
-  connectedClients[blenderId]["gantt"] = g;
-
-  let printButton = $("<button>", {
-    id: "print-btn-" + blenderId,
-    html: "Print",
-    class: "btn no-print",
-  });
-
-  let printOptions = $("<select>", {
-    id: "print-options-" + blenderId,
-    class: "no-print",
-  });
-
-  $.each(pageSizes, function (index, size) {
-    printOptions.append(
-      $("<option>", {
-        value: size.value,
-        text: size.text,
-      })
-    );
-  });
-
-  printButton.on("click", function () {
-    // make it only the corresponding gantt chart is printed
-    $(".gantt-chart").removeClass("no-print");
-    $(".gantt-chart")
-      .not("#gantt-" + blenderId)
-      .addClass("no-print");
-
-    $(".gantt-info")
-      .not("#gantt-info-" + blenderId)
-      .addClass("no-print");
-
-    var values = $("#print-options-" + blenderId)
-      .val()
-      .split(",");
-
-    g.setEditable(false);
-    g.setTotalHeight("");
-    g.Draw();
-
-    addEventListener("afterprint", (event) => {
-      g.setEditable(true);
-    });
-
-    let css =
-      "@media print {\n" +
-      "    @page {\n" +
-      "        size: " +
-      values[0] +
-      "mm " +
-      values[1] +
-      "mm;\n" +
-      "    }\n" +
-      "    /* Make all text black */\n" +
-      "    body, p, span, h1, h2, h3, h4, h5, h6, div, a, li, td, th, * {\n" +
-      "        color: black !important;\n" +
-      "    }\n" +
-      "}";
-    g.printChart(values[0], values[1], css);
-    g.setTotalHeight(900);
-    g.Draw();
-  });
-
   ganttContainer.append(printOptions);
   ganttContainer.append(printButton);
+
+  $("#container").append(ganttContainer);
 }
 
 // Function to update gantt and filename
@@ -357,7 +368,6 @@ function updateGanttElement(blenderId, tasks, workSched, filename) {
   g.Draw();
 
   $("#title-" + blenderId).text(filename);
-  $("#warning-" + blenderId).css("display", "none");
 }
 
 // Function to remove gantt element
