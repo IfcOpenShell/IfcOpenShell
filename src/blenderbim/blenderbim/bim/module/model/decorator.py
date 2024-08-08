@@ -332,9 +332,9 @@ class WallPolylineDecorator:
         cls.input_type = input_type
 
     @classmethod
-    def set_angle_axis_line(cls, angle_snap_mat, angle_snap_loc):
-        cls.angle_snap_mat = angle_snap_mat
-        cls.angle_snap_loc = angle_snap_loc
+    def set_angle_axis_line(cls, start, end):
+        cls.axis_start = start
+        cls.axis_end = end
 
     @classmethod
     def calculate_distance_and_angle(cls, context, is_input_on):
@@ -349,13 +349,7 @@ class WallPolylineDecorator:
         if last_point_data:
             last_point = Vector((last_point_data.x, last_point_data.y, last_point_data.z))
         else:
-            last_point = Vector(
-                (
-                    0,
-                    0,
-                    0,
-                )
-            )
+            last_point = Vector((0, 0, 0))
 
         if is_input_on:
             snap_vector = Vector((float(cls.input_panel["X"]), float(cls.input_panel["Y"]), 0))
@@ -364,18 +358,8 @@ class WallPolylineDecorator:
 
         distance = (snap_vector - last_point).length  # TODO get height from default container
         x_axis_edge = (
-            Vector(
-                (
-                    0,
-                    0,
-                )
-            ),
-            Vector(
-                (
-                    1,
-                    0,
-                )
-            ),
+            Vector((0, 0)),
+            Vector((1, 0)),
         )
         current_axis = (
             Vector((last_point.x, last_point.y)),
@@ -506,10 +490,5 @@ class WallPolylineDecorator:
 
         # Line for angle axis snap
         if snap_prop.snap_type == "Axis":
-            length = 1000
-            direction = Vector((1, 0, 0))
-            rot_dir = self.angle_snap_mat.inverted() @ direction
-            start = self.angle_snap_loc + rot_dir * length
-            end = self.angle_snap_loc - rot_dir * length
             self.line_shader.uniform_float("lineWidth", 0.75)
-            self.draw_batch("LINES", [start, end], decorator_color_unselected, [(0, 1)])
+            self.draw_batch("LINES", [self.axis_start, self.axis_end], decorator_color_unselected, [(0, 1)])
