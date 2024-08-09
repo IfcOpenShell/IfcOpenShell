@@ -19,14 +19,16 @@
 import os
 import bpy
 import bcf
+import bcf.bcfxml
 import bcf.v2.bcfxml
+from typing import Union
 
 
 class BcfStore:
-    bcfxml = None
+    bcfxml: Union[bcf.bcfxml.BcfXml, None] = None
 
     @classmethod
-    def get_bcfxml(cls):
+    def get_bcfxml(cls) -> Union[bcf.bcfxml.BcfXml, None]:
         if not cls.bcfxml:
             bcf_filepath = bpy.context.scene.BCFProperties.bcf_file
             if not os.path.isabs(bcf_filepath):
@@ -42,14 +44,14 @@ class BcfStore:
         return cls.bcfxml
 
     @classmethod
-    def set(cls, bcfxml, filepath):
+    def set(cls, bcfxml: Union[bcf.bcfxml.BcfXml, None], filepath: str) -> None:
         cls.bcfxml = bcfxml
         bpy.context.scene.BCFProperties.bcf_file = filepath
 
     @classmethod
-    def set_by_filepath(cls, filepath):
+    def set_by_filepath(cls, filepath: str) -> None:
         cls.set(None, filepath)
 
     @classmethod
-    def unload_bcfxml(cls):
+    def unload_bcfxml(cls) -> None:
         cls.set(None, "")

@@ -20,7 +20,10 @@ import os
 import bpy
 import bcf
 import bcf.bcfxml
+import bcf.v2.bcfxml
 import bcf.v2.model
+import bcf.v2.topic
+import bcf.v2.visinfo
 import uuid
 import numpy as np
 import tempfile
@@ -909,7 +912,13 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         self.setup_camera(viewpoint, obj, cam_aspect, context)
         return {"FINISHED"}
 
-    def setup_camera(self, viewpoint, obj, cam_aspect, context):
+    def setup_camera(
+        self,
+        viewpoint: bcf.v2.visinfo.VisualizationInfoHandler,
+        obj: bpy.types.Object,
+        cam_aspect: float,
+        context: bpy.types.Context,
+    ) -> None:
         if viewpoint.visualization_info.orthogonal_camera:
             camera = viewpoint.visualization_info.orthogonal_camera
             obj.data.type = "ORTHO"
@@ -955,7 +964,9 @@ class ActivateBcfViewpoint(bpy.types.Operator):
             )
         obj.matrix_world = Matrix(matrix.tolist())
 
-    def set_viewpoint_components(self, viewpoint, context):
+    def set_viewpoint_components(
+        self, viewpoint: bcf.v2.visinfo.VisualizationInfoHandler, context: bpy.types.Context
+    ) -> None:
         if not viewpoint.visualization_info.components:
             return
 
@@ -968,7 +979,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         self.set_selection(viewpoint)
         self.set_colours(viewpoint)
 
-    def set_exceptions(self, viewpoint, context):
+    def set_exceptions(self, viewpoint: bcf.v2.visinfo.VisualizationInfoHandler, context: bpy.types.Context) -> None:
         if not hasattr(viewpoint.visualization_info.components, "visibility") or not hasattr(
             viewpoint.visualization_info.components.visibility.exceptions, "component"
         ):
@@ -1012,7 +1023,9 @@ class ActivateBcfViewpoint(bpy.types.Operator):
                     bpy.data.objects["Viewpoint"].hide_set(False)
                 context.area.type = old
 
-    def set_view_setup_hints(self, viewpoint, context):
+    def set_view_setup_hints(
+        self, viewpoint: bcf.v2.visinfo.VisualizationInfoHandler, context: bpy.types.Context
+    ) -> None:
         if viewpoint.visualization_info.components.view_setup_hints:
             if not viewpoint.visualization_info.components.view_setup_hints.spaces_visible:
                 self.hide_spaces(context)
@@ -1024,7 +1037,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
             self.hide_spaces(context)
             self.set_openings_visibility(False, context)
 
-    def hide_spaces(self, context):
+    def hide_spaces(self, context: bpy.types.Context) -> None:
         old = context.area.type
         context.area.type = "VIEW_3D"
         bpy.ops.object.select_all(action="DESELECT")
@@ -1035,7 +1048,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
     def set_openings_visibility(self, is_visible, context):
         pass  # We no longer have an openings collection
 
-    def set_selection(self, viewpoint):
+    def set_selection(self, viewpoint: bcf.v2.visinfo.VisualizationInfoHandler) -> None:
         if not viewpoint.visualization_info.components or not viewpoint.visualization_info.components.selection:
             return
         selected_global_ids = [s.ifc_guid for s in viewpoint.visualization_info.components.selection.component or []]
@@ -1048,7 +1061,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
                 obj.select_set(True)
                 obj.hide_set(False)
 
-    def set_colours(self, viewpoint):
+    def set_colours(self, viewpoint: bcf.v2.visinfo.VisualizationInfoHandler) -> None:
         if not viewpoint.visualization_info.components or not viewpoint.visualization_info.components.coloring:
             return
         global_id_colours = {}
@@ -1062,7 +1075,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
                 # print("  obj found   ")
                 obj.color = self.hex_to_rgb(color)
 
-    def draw_lines(self, viewpoint, context):
+    def draw_lines(self, viewpoint: bcf.v2.visinfo.VisualizationInfoHandler, context: bpy.types.Context) -> None:
         gp = bpy.data.grease_pencils.new("BCF")
         scene = context.scene
         scene.grease_pencil = gp
@@ -1081,7 +1094,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
             )
         stroke.points.foreach_set("co", coords)
 
-    def create_clipping_planes(self, viewpoint):
+    def create_clipping_planes(self, viewpoint: bcf.v2.visinfo.VisualizationInfoHandler) -> None:
         n = 0
         for plane in viewpoint.visualization_info.clipping_planes.clipping_plane:
             bpy.ops.bim.add_section_plane()
@@ -1096,7 +1109,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
             )
             n += 1
 
-    def delete_clipping_planes(self, context):
+    def delete_clipping_planes(self, context: bpy.types.Context) -> None:
         collection = bpy.data.collections.get("Sections")
         if not collection:
             return
@@ -1104,7 +1117,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
             context.view_layer.objects.active = section
             bpy.ops.bim.remove_section_plane()
 
-    def delete_bitmaps(self, context):
+    def delete_bitmaps(self, context: bpy.types.Context) -> None:
         collection = bpy.data.collections.get("Bitmaps")
         if not collection:
             collection = bpy.data.collections.new("Bitmaps")
@@ -1112,7 +1125,9 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         for bitmap in collection.objects:
             bpy.data.objects.remove(bitmap)
 
-    def create_bitmaps(self, bcfxml, viewpoint, topic):
+    def create_bitmaps(
+        self, bcfxml, viewpoint: bcf.v2.visinfo.VisualizationInfoHandler, topic: bcf.v2.topic.TopicHandler
+    ) -> None:
         collection = bpy.data.collections.get("Bitmaps")
         if not collection:
             collection = bpy.data.collections.new("Bitmaps")
@@ -1140,7 +1155,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
             obj.location = (bitmap.location.x, bitmap.location.y, bitmap.location.z)
             collection.objects.link(obj)
 
-    def hex_to_rgb(self, value):
+    def hex_to_rgb(self, value: str) -> list[float]:
         value = value.lstrip("#")
         lv = len(value)
         # https://github.com/buildingSMART/BCF-XML/tree/release_3_0/Documentation#coloring
