@@ -134,6 +134,15 @@ class VisualizationInfoHandler:
         self._save_bitmaps(bcf_zip, topic_dir)
 
     def _save_snapshot(self, bcf_zip: ZipFileInterface, topic_dir: str, filename: Optional[str]) -> None:
+        if bool(self.snapshot) ^ bool(filename):
+            data = ["data (VisualizationInfoHandler.snapshot)", "filename (ViewPoint.snapshot)"]
+            provided_data, missing_data = data if self.snapshot else data[::-1]
+            print(
+                f"WARNING. Snapshot with viewpoint guid '{self.guid}' won't be saved to bcf. "
+                f"Only snapshot {provided_data} is provided but snapshot {missing_data} is missing."
+            )
+            return
+
         if self.snapshot and filename:
             bcf_zip.writestr(f"{topic_dir}/{filename}", self.snapshot)
 
