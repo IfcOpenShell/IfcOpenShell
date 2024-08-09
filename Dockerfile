@@ -1,6 +1,6 @@
 # -*- mode: Dockerfile -*-
 
-FROM ubuntu:focal
+FROM ubuntu:22.04
 
 ARG CHANNEL
 ENV CHANNEL=${CHANNEL:-latest}
@@ -23,7 +23,7 @@ RUN echo "deb http://archive.ubuntu.com/ubuntu focal-proposed main restricted" |
     echo "deb http://archive.ubuntu.com/ubuntu focal-proposed multiverse" |  tee -a /etc/apt/sources.list; \
     apt-get -qq update; \
     apt-get -y install tzdata dos2unix rsync; \
-    apt-get -y install python3 libxml2 libpython3.8 \
+    apt-get -y install python3 libxml2 libpython3.10 \
                     libboost-all-dev \
                     libocct-foundation-dev libocct-modeling-algorithms-dev libocct-modeling-data-dev \
                     libocct-ocaf-dev libocct-visualization-dev libocct-data-exchange-dev \
