@@ -191,12 +191,15 @@ class TopicHandler:
         self.add_visinfo_handler(vi_handler)
         return vi_handler
 
-    def add_visinfo_handler(self, new_viewpoint: VisualizationInfoHandler) -> mdl.ViewPoint:
+    def add_visinfo_handler(
+        self, new_viewpoint: VisualizationInfoHandler, snapshot_filename: Optional[str] = None
+    ) -> mdl.ViewPoint:
         self.viewpoints[new_viewpoint.guid + ".bcfv"] = new_viewpoint
         if self.topic.viewpoints is None:
             self.topic.viewpoints = mdl.TopicViewpoints()
         viewpoint = mdl.ViewPoint(
             viewpoint=new_viewpoint.guid + ".bcfv",
+            snapshot=snapshot_filename,
             guid=new_viewpoint.guid,
         )
         self.topic.viewpoints.view_point.append(viewpoint)
