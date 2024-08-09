@@ -1,6 +1,5 @@
 import uuid
 import zipfile
-from functools import lru_cache
 from typing import Any, Iterable, Optional
 
 import numpy as np
@@ -206,7 +205,6 @@ class VisualizationInfoHandler:
         )
 
 
-@lru_cache(maxsize=None)
 def build_viewpoint(element: entity_instance) -> mdl.VisualizationInfo:
     """
     Return a BCF viewpoint of an IFC element.
