@@ -31,6 +31,7 @@ import webbrowser
 import ifcopenshell
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.unit
+import blenderbim.tool as tool
 import blenderbim.bim.module.bcf.prop as bcf_prop
 import blenderbim.bim.module.bcf.bcfstore as bcfstore
 from pathlib import Path
@@ -453,6 +454,7 @@ class AddBcfViewpoint(bpy.types.Operator):
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         blender_camera = context.scene.camera
+        assert blender_camera
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
@@ -495,12 +497,26 @@ class AddBcfViewpoint(bpy.types.Operator):
             snapshot = f.read()
         # viewpoint.snapshot = blender_render.filepath
 
-        # TODO we should handle selection and visibility state
         vizinfo = bcf.v2.visinfo.VisualizationInfoHandler(visualization_info=visualization_info, snapshot=snapshot)
         topic.viewpoints[vizinfo.guid + ".bcfv"] = vizinfo
         topic.markup.viewpoints.append(
             bcf.v2.model.ViewPoint(viewpoint=vizinfo.guid + ".bcfv", guid=vizinfo.guid, snapshot=vizinfo.guid + ".png")
         )
+
+        def get_ifc_elements(objs: list[bpy.types.Object]) -> list[ifcopenshell.entity_instance]:
+            elements = []
+            for obj in objs:
+                if e := tool.Ifc.get_entity(obj):
+                    elements.append(e)
+            return elements
+
+        selected_elements = get_ifc_elements(context.selected_objects)
+        if selected_elements:
+            vizinfo.set_selected_elements(selected_elements)
+
+        visible_elements = get_ifc_elements(context.visible_objects)
+        if visible_elements:
+            vizinfo.set_visible_elements(visible_elements)
 
         blender_render.filepath = old_filepath
         blender_render.image_settings.file_format = old_file_format
