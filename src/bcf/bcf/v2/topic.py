@@ -268,7 +268,7 @@ class TopicHandler:
 
         return outfile
 
-    def add_viewpoint(self, element: entity_instance) -> None:
+    def add_viewpoint(self, element: entity_instance) -> VisualizationInfoHandler:
         """Add a viewpoint pointed at the placement of an IFC element to the topic.
 
         Args:
@@ -278,7 +278,9 @@ class TopicHandler:
         self.add_visinfo_handler(new_viewpoint)
         return new_viewpoint
 
-    def add_viewpoint_from_point_and_guids(self, position: NDArray[np.float64], *guids: str) -> None:
+    def add_viewpoint_from_point_and_guids(
+        self, position: NDArray[np.float64], *guids: str
+    ) -> VisualizationInfoHandler:
         """Add a viewpoint pointing at an XYZ point in space
 
         Args:
