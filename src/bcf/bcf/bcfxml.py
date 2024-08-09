@@ -30,9 +30,10 @@ from bcf.v3.model import Version as Version3
 from bcf.xml_parser import AbstractXmlParserSerializer, XmlParserSerializer
 
 
-def load(
-    filepath: Path, xml_handler: Optional[AbstractXmlParserSerializer] = None
-) -> Optional[Union[BcfXml2, BcfXml3]]:
+BcfXml = Union[BcfXml2, BcfXml3]
+
+
+def load(filepath: Path, xml_handler: Optional[AbstractXmlParserSerializer] = None) -> Optional[BcfXml]:
     """
     Load a BCF file.
 
