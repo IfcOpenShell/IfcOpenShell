@@ -445,7 +445,10 @@ class AddBcfViewpoint(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return context.scene.camera
+        if not context.scene.camera:
+            cls.poll_message_set("Scene has no active camera.")
+            return False
+        return True
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
