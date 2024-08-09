@@ -78,7 +78,7 @@ memory until you call the `save` method.
                 print(comment.author)
 
         # Get a particular topic
-        topic = bcfxml.get_topic(guid)
+        topic = bcfxml.get_topic(guid).topic
 
         # Modify a topic
         topic.title = "New title"
