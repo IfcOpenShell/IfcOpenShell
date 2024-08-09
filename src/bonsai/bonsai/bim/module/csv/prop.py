@@ -91,7 +91,7 @@ class CsvProperties(PropertyGroup):
             ("web", "web", ""),
         ],
         name="Output format",
-        default="csv",
+        default="web",
     )
     csv_custom_delimiter: StringProperty(default="", name="Custom Delimiter")
     should_show_settings: BoolProperty(default=False, name="Show Settings")
