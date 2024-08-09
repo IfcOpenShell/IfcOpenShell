@@ -130,6 +130,7 @@ jobs:
           cd ../bcf && make test
           pip install requests
           cd ../bsdd && make test
+          pip install deepdiff
           cd ../ifcdiff && make test
           cd ../ifcpatch && make test
           cd ../ifctester && make test
