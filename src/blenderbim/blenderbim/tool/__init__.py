@@ -47,6 +47,7 @@ from blenderbim.tool.project import Project
 from blenderbim.tool.profile import Profile
 from blenderbim.tool.pset import Pset
 from blenderbim.tool.qto import Qto
+from blenderbim.tool.raycasting import Raycasting
 from blenderbim.tool.resource import Resource
 from blenderbim.tool.root import Root
 from blenderbim.tool.sequence import Sequence

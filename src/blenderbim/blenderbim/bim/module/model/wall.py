@@ -312,41 +312,6 @@ class DrawPolylineWall(bpy.types.Operator):
         self.input_panel = {"X": "", "Y": "", "D": "", "A": ""}
         self.snap_angle = None
 
-    def get_visible_objects(self, context):
-        depsgraph = context.evaluated_depsgraph_get()
-        all_objs = []
-        for dup in depsgraph.object_instances:
-            if dup.is_instance:  # Real dupli instance
-                obj = dup.instance_object
-                all_objs.append(obj)
-            else:  # Usual object
-                obj = dup.object
-                all_objs.append(obj)
-        return all_objs
-
-    def get_objects_2d_bounding_boxes(self, context, obj):
-        obj_matrix = obj.matrix_world.copy()
-        bbox = [obj_matrix @ Vector(v) for v in obj.bound_box]
-
-        transposed_bbox = []
-        bbox_2d = []
-
-        for v in bbox:
-            coord_2d = view3d_utils.location_3d_to_region_2d(context.region, context.space_data.region_3d, v)
-            if coord_2d is not None:
-                transposed_bbox.append(coord_2d)
-
-        region = context.region
-        borders = (region.width, region.height)
-        for i, axis in enumerate(zip(*transposed_bbox)):
-            if all(ax < 0 or ax > borders[i] for ax in axis):  # Filter only objects in viewport
-                return (obj, None)
-            min_point = min(axis)
-            max_point = max(axis)
-            bbox_2d.extend([min_point, max_point])
-
-        return (obj, bbox_2d)
-
     def snaping_movement(self, context, event):
         region = context.region
         rv3d = context.region_data
@@ -369,53 +334,6 @@ class DrawPolylineWall(bpy.types.Operator):
         plane_origin = Vector((0, 0, 0))
         plane_normal = Vector((0, 0, 1))
 
-        def get_viewport_ray_data():
-            view_vector = view3d_utils.region_2d_to_vector_3d(region, rv3d, self.mouse_pos)
-            ray_origin = view3d_utils.region_2d_to_origin_3d(region, rv3d, self.mouse_pos)
-            ray_target = ray_origin + view_vector
-            ray_direction = ray_target - ray_origin
-
-            return ray_origin, ray_target, ray_direction
-
-        def get_object_ray_data(obj_matrix):
-            ray_origin, ray_target, _ = get_viewport_ray_data()
-            matrix_inv = obj_matrix.inverted()
-            ray_origin_obj = matrix_inv @ ray_origin
-            ray_target_obj = matrix_inv @ ray_target
-            ray_direction_obj = ray_target_obj - ray_origin_obj
-
-            return ray_origin_obj, ray_target_obj, ray_direction_obj
-
-        def in_view_2d_bounding_box(bbox):
-            x, y = self.mouse_pos
-            xmin, xmax, ymin, ymax = bbox
-
-            if xmin < x < xmax and ymin < y < ymax:
-                return True
-            else:
-                return False
-
-        def obj_ray_cast(obj):
-            ray_origin_obj, _, ray_direction_obj = get_object_ray_data(obj.matrix_world.copy())
-            success, location, normal, face_index = obj.ray_cast(ray_origin_obj, ray_direction_obj)
-            if success:
-                return location, normal, face_index
-            else:
-                return None, None, None
-
-        def ray_cast_to_plane(plane_origin, plane_normal):
-            intersection = Vector((0, 0, 0))
-            try:
-                loc = view3d_utils.region_2d_to_location_3d(region, rv3d, self.mouse_pos, ray_direction)
-                intersection = mathutils.geometry.intersect_line_plane(ray_target, loc, plane_origin, plane_normal)
-            except:
-                intersection = Vector((0, 0, 0))
-
-            if intersection == None:
-                intersection = Vector((0, 0, 0))
-
-            return intersection
-
         def cast_rays_and_get_best_object():
             best_length_squared = 1.0
             best_obj = None
@@ -426,17 +344,17 @@ class DrawPolylineWall(bpy.types.Operator):
 
             for obj, bbox_2d in self.objs_2d_bbox:
                 if obj.type == "MESH" and bbox_2d:
-                    if in_view_2d_bounding_box(bbox_2d):
+                    if tool.Raycasting.in_view_2d_bounding_box(self.mouse_pos, bbox_2d):
                         objs_to_raycast.append(obj)
 
             for obj in objs_to_raycast:
-                hit, normal, face_index = obj_ray_cast(obj)
+                hit, normal, face_index = tool.Raycasting.obj_ray_cast(context, event, obj)
                 if hit is None:
                     # Tried original mouse position. Now it will try the offsets.
                     original_mouse_pos = self.mouse_pos
                     for value in mouse_offset:
                         self.mouse_pos = tuple(x + y for x, y in zip(original_mouse_pos, value))
-                        hit, normal, face_index = obj_ray_cast(obj)
+                        hit, normal, face_index = tool.Raycasting.obj_ray_cast(context, event, obj)
                         if hit:
                             break
                     self.mouse_pos = original_mouse_pos
@@ -456,9 +374,9 @@ class DrawPolylineWall(bpy.types.Operator):
                 return None, None, None
 
         snap_threshold = 0.3
-        ray_origin, ray_target, ray_direction = get_viewport_ray_data()
+        ray_origin, ray_target, ray_direction = tool.Raycasting.get_viewport_ray_data(context, event)
         obj, hit, face_index = cast_rays_and_get_best_object()
-        intersection = ray_cast_to_plane(plane_origin, plane_normal)
+        intersection = tool.Raycasting.ray_cast_to_plane(context, event, plane_origin, plane_normal)
 
         # Locks snap into an angle axis
         if event.shift:
@@ -475,10 +393,12 @@ class DrawPolylineWall(bpy.types.Operator):
             if snap_point:
                 # Creates a mixed snap point between the locked axis and
                 # the object snap
-                # TODO Use ALT key to give the user the option to choose between the two results. 
+                # TODO Use ALT key to give the user the option to choose between the two results.
                 # TODO Create decorator for this
                 try:
-                    snap_point_vector = Vector((snap_point[0].x, snap_point[0].y, snap_point[0].z)) # TODO use Z from default container
+                    snap_point_vector = Vector(
+                        (snap_point[0].x, snap_point[0].y, snap_point[0].z)
+                    )  # TODO use Z from default container
                     snap_point_axis_1 = (
                         Vector((snap_point[0].x + 1000, snap_point[0].y, 0)),
                         Vector((snap_point[0].x - 1000, snap_point[0].y, 0)),
@@ -489,11 +409,11 @@ class DrawPolylineWall(bpy.types.Operator):
                     )
                     snap_angle_axis = (axis_start, axis_end)
                     result_1 = tool.Cad.intersect_edges(snap_angle_axis, snap_point_axis_1)
-                    result_1 = Vector((result_1[0].x, result_1[0].y, 0)) # TODO use Z from default container
+                    result_1 = Vector((result_1[0].x, result_1[0].y, 0))  # TODO use Z from default container
                     distance_1 = (result_1 - snap_point_vector).length
 
                     result_2 = tool.Cad.intersect_edges(snap_angle_axis, snap_point_axis_2)
-                    result_2 = Vector((result_2[0].x, result_2[0].y, 0)) # TODO use Z from default container
+                    result_2 = Vector((result_2[0].x, result_2[0].y, 0))  # TODO use Z from default container
                     distance_2 = (result_2 - snap_point_vector).length
 
                     if distance_1 < distance_2:
@@ -581,7 +501,6 @@ class DrawPolylineWall(bpy.types.Operator):
             WallPolylineDecorator.set_input_panel(self.input_panel, self.input_type)
             tool.Blender.update_viewport()
 
-                    
     # TODO This is creating a hack in generate function from DumbWallGenerator
     # Come up with a better solution
     def create_walls_from_polyline(self, context):
@@ -614,7 +533,7 @@ class DrawPolylineWall(bpy.types.Operator):
             if self.mousemove_count == 2:
                 self.objs_2d_bbox = []
                 for obj in self.visible_objs:
-                    self.objs_2d_bbox.append(self.get_objects_2d_bounding_boxes(context, obj))
+                    self.objs_2d_bbox.append(tool.Raycasting.get_objects_2d_bounding_boxes(context, obj))
 
             if self.mousemove_count > 3:
                 self.snaping_movement(context, event)
@@ -732,13 +651,10 @@ class DrawPolylineWall(bpy.types.Operator):
     def invoke(self, context, event):
         if context.space_data.type == "VIEW_3D":
             WallPolylineDecorator.install(context)
-            # self.is_input_on = False
-            # self.input_type = "OFF"
             WallPolylineDecorator.set_input_panel(self.input_panel, self.input_type)
-            # self.objs_2d_bbox = []
-            self.visible_objs = self.get_visible_objects(context)
+            self.visible_objs = tool.Raycasting.get_visible_objects(context)
             for obj in self.visible_objs:
-                self.objs_2d_bbox.append(self.get_objects_2d_bounding_boxes(context, obj))
+                self.objs_2d_bbox.append(tool.Raycasting.get_objects_2d_bounding_boxes(context, obj))
             self.snaping_movement(context, event)
             WallPolylineDecorator.set_mouse_position(event)
             self.input_panel = WallPolylineDecorator.calculate_distance_and_angle(context, self.is_input_on)
