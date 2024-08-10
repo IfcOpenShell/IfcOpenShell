@@ -659,6 +659,9 @@ class Qto:
     def get_rounded_value(cls, new_quantity): pass
     def set_qto_result(cls, result): pass
 
+@interface
+class Raycasting:
+    pass
 
 @interface
 class Resource:
