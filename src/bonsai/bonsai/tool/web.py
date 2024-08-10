@@ -372,8 +372,8 @@ class Web(bonsai.core.tool.Web):
             )
 
     @classmethod
-    def open_web_browser(cls, port: int) -> None:
-        webbrowser.open(f"http://127.0.0.1:{port}/")
+    def open_web_browser(cls, port: int, page: str = "") -> None:
+        webbrowser.open(f"http://127.0.0.1:{port}/{page}")
 
     @classmethod
     def send_theme_data(cls) -> None:
