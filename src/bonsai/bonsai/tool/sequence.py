@@ -1541,20 +1541,10 @@ class Sequence(bonsai.core.tool.Sequence):
     def generate_gantt_browser_chart(
         cls, task_json: list[dict[str, Any]], work_schedule: ifcopenshell.entity_instance
     ) -> None:
-        if bpy.context.scene.WebProperties.is_connected:
-            gantt_data = {"tasks": task_json, "work_schedule": work_schedule.get_info(recursive=True)}
-            tool.Web.send_webui_data(data=gantt_data, data_key="gantt_data", event="gantt_data")
-            return
-
-        with open(os.path.join(bpy.context.scene.BIMProperties.data_dir, "gantt", "index.html"), "w") as f:
-            with open(os.path.join(bpy.context.scene.BIMProperties.data_dir, "gantt", "index.mustache"), "r") as t:
-                task_b64 = base64.b64encode(bytes(json.dumps(task_json), "utf-8")).decode("utf-8")
-                f.write(
-                    pystache.render(
-                        t.read(), {"json_data": task_b64, "data": json.dumps(work_schedule.get_info(recursive=True))}
-                    )
-                )
-        webbrowser.open("file://" + os.path.join(bpy.context.scene.BIMProperties.data_dir, "gantt", "index.html"))
+        if not bpy.context.scene.WebProperties.is_connected:
+            bpy.ops.bim.connect_websocket_server()
+        gantt_data = {"tasks": task_json, "work_schedule": work_schedule.get_info(recursive=True)}
+        tool.Web.send_webui_data(data=gantt_data, data_key="gantt_data", event="gantt_data")
 
     @classmethod
     def is_filter_by_active_schedule(cls) -> bool:
