@@ -299,15 +299,17 @@ class DrawPolylineWall(bpy.types.Operator):
     def __init__(self):
         self.mousemove_count = 0
         self.action_count = 0
-        self.visible_objs = None
+        self.visible_objs = []
+        self.objs_2d_bbox = []
         self.number_options = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "+", "-", "*", "-", "/"}
         self.number_input = []
         self.number_output = ""
         self.number_is_negative = False
         self.is_input_on = False
         self.input_options = ["X", "Y", "D", "A"]
-        self.input_type = ""
+        self.input_type = "OFF"
         self.input_value_xy = [None, None]
+        self.input_panel = {"X": "", "Y": "", "D": "", "A": ""}
         self.snap_angle = None
 
     def get_visible_objects(self, context):
@@ -328,7 +330,6 @@ class DrawPolylineWall(bpy.types.Operator):
 
         transposed_bbox = []
         bbox_2d = []
-        screen_size = (context.region.width, context.region.height)
 
         for v in bbox:
             coord_2d = view3d_utils.location_3d_to_region_2d(context.region, context.space_data.region_3d, v)
@@ -347,7 +348,6 @@ class DrawPolylineWall(bpy.types.Operator):
         return (obj, bbox_2d)
 
     def snaping_movement(self, context, event):
-        scene = context.scene
         region = context.region
         rv3d = context.region_data
         self.mouse_pos = event.mouse_region_x, event.mouse_region_y
@@ -378,7 +378,7 @@ class DrawPolylineWall(bpy.types.Operator):
             return ray_origin, ray_target, ray_direction
 
         def get_object_ray_data(obj_matrix):
-            ray_origin, ray_target, ray_direction = get_viewport_ray_data()
+            ray_origin, ray_target, _ = get_viewport_ray_data()
             matrix_inv = obj_matrix.inverted()
             ray_origin_obj = matrix_inv @ ray_origin
             ray_target_obj = matrix_inv @ ray_target
@@ -386,7 +386,7 @@ class DrawPolylineWall(bpy.types.Operator):
 
             return ray_origin_obj, ray_target_obj, ray_direction_obj
 
-        def in_view_2d_bounding_box(obj, bbox):
+        def in_view_2d_bounding_box(bbox):
             x, y = self.mouse_pos
             xmin, xmax, ymin, ymax = bbox
 
@@ -403,7 +403,7 @@ class DrawPolylineWall(bpy.types.Operator):
             else:
                 return None, None, None
 
-        def ray_cast_to_plane(context, plane_origin, plane_normal):
+        def ray_cast_to_plane(plane_origin, plane_normal):
             intersection = Vector((0, 0, 0))
             try:
                 loc = view3d_utils.region_2d_to_location_3d(region, rv3d, self.mouse_pos, ray_direction)
@@ -422,12 +422,11 @@ class DrawPolylineWall(bpy.types.Operator):
             best_hit = None
             best_face_index = None
 
-            in_viewport = []
             objs_to_raycast = []
 
             for obj, bbox_2d in self.objs_2d_bbox:
                 if obj.type == "MESH" and bbox_2d:
-                    if in_view_2d_bounding_box(obj, bbox_2d):
+                    if in_view_2d_bounding_box(bbox_2d):
                         objs_to_raycast.append(obj)
 
             for obj in objs_to_raycast:
@@ -459,7 +458,7 @@ class DrawPolylineWall(bpy.types.Operator):
         snap_threshold = 0.3
         ray_origin, ray_target, ray_direction = get_viewport_ray_data()
         obj, hit, face_index = cast_rays_and_get_best_object()
-        intersection = ray_cast_to_plane(context, plane_origin, plane_normal)
+        intersection = ray_cast_to_plane(plane_origin, plane_normal)
 
         # Locks snap into an angle axis
         if event.shift:
@@ -469,7 +468,6 @@ class DrawPolylineWall(bpy.types.Operator):
             rot_intersection, self.snap_angle, _, _ = tool.Snaping.snap_on_axis(intersection)
 
         if obj is not None:
-            original_obj = obj.original
 
             snap_points = tool.Snaping.get_snap_points_on_raycasted_obj(obj, face_index)
             snap_point = tool.Snaping.select_snap_point(snap_points, hit, snap_threshold)
@@ -477,24 +475,36 @@ class DrawPolylineWall(bpy.types.Operator):
             if snap_point:
                 # Creates a mixed snap point between the locked axis and
                 # the object snap
-                # TODO Improve alt responsiveness
+                # TODO Use ALT key to give the user the option to choose between the two results. 
                 # TODO Create decorator for this
-                if event.shift:
-                    snap_point_axis = (
+                try:
+                    snap_point_vector = Vector((snap_point[0].x, snap_point[0].y, snap_point[0].z)) # TODO use Z from default container
+                    snap_point_axis_1 = (
                         Vector((snap_point[0].x + 1000, snap_point[0].y, 0)),
                         Vector((snap_point[0].x - 1000, snap_point[0].y, 0)),
                     )
-                    if event.alt:
-                        snap_point_axis = (
-                            Vector((snap_point[0].x, snap_point[0].y + 1000, 0)),
-                            Vector((snap_point[0].x, snap_point[0].y - 1000, 0)),
-                        )
+                    snap_point_axis_2 = (
+                        Vector((snap_point[0].x, snap_point[0].y + 1000, 0)),
+                        Vector((snap_point[0].x, snap_point[0].y - 1000, 0)),
+                    )
                     snap_angle_axis = (axis_start, axis_end)
-                    results = tool.Cad.intersect_edges(snap_angle_axis, snap_point_axis)
-                    resulting_vector = Vector((results[0].x, results[0].y, 0))
+                    result_1 = tool.Cad.intersect_edges(snap_angle_axis, snap_point_axis_1)
+                    result_1 = Vector((result_1[0].x, result_1[0].y, 0)) # TODO use Z from default container
+                    distance_1 = (result_1 - snap_point_vector).length
 
-                    tool.Snaping.update_snaping_point(resulting_vector, "Axis")
-                else:
+                    result_2 = tool.Cad.intersect_edges(snap_angle_axis, snap_point_axis_2)
+                    result_2 = Vector((result_2[0].x, result_2[0].y, 0)) # TODO use Z from default container
+                    distance_2 = (result_2 - snap_point_vector).length
+
+                    if distance_1 < distance_2:
+                        best_result = result_1
+                    else:
+                        best_result = result_2
+
+                    tool.Snaping.update_snaping_point(best_result, "Axis")
+
+                except Exception as e:
+                    print(str(e))
                     tool.Snaping.update_snaping_point(snap_point[0], snap_point[1])
 
             else:
@@ -566,13 +576,14 @@ class DrawPolylineWall(bpy.types.Operator):
                 if self.input_type in {"X", "Y"}:
                     self.input_panel = WallPolylineDecorator.calculate_distance_and_angle(context, self.is_input_on)
                 elif self.input_type in {"D", "A"}:
-                    self.input_panel = WallPolylineDecorator.calculate_x_and_y(context, self.is_input_on)
+                    self.input_panel = WallPolylineDecorator.calculate_x_and_y(context)
                 self.input_panel[self.input_type] = self.number_output
             WallPolylineDecorator.set_input_panel(self.input_panel, self.input_type)
             tool.Blender.update_viewport()
 
                     
     # TODO This is creating a hack in generate function from DumbWallGenerator
+    # Come up with a better solution
     def create_walls_from_polyline(self, context):
         props = context.scene.BIMModelProperties
         relating_type_id = props.relating_type_id
@@ -586,12 +597,7 @@ class DrawPolylineWall(bpy.types.Operator):
 
         relating_type = tool.Ifc.get().by_id(int(relating_type_id))
 
-        polyline_data = bpy.context.scene.BIMModelProperties.polyline_point
-        for i in range(len(polyline_data) - 1):
-            vec1 = Vector((polyline_data[i].x, polyline_data[i].y, polyline_data[i].z))
-            vec2 = Vector((polyline_data[i + 1].x, polyline_data[i + 1].y, polyline_data[i + 1].z))
-            coords = (vec1, vec2)
-            dwg = DumbWallGenerator(relating_type).generate(True)
+        dwg = DumbWallGenerator(relating_type).generate(True)
 
     def modal(self, context, event):
 
@@ -599,7 +605,7 @@ class DrawPolylineWall(bpy.types.Operator):
             if event.type == "MOUSEMOVE":
                 self.mousemove_count += 1
                 self.is_input_on = False
-                self.input_type = None
+                self.input_type = "OFF"
                 WallPolylineDecorator.set_input_panel(self.input_panel, self.input_type)
                 tool.Blender.update_viewport()
             else:
@@ -612,7 +618,7 @@ class DrawPolylineWall(bpy.types.Operator):
 
             if self.mousemove_count > 3:
                 self.snaping_movement(context, event)
-                WallPolylineDecorator.set_mouse_position(context, event)
+                WallPolylineDecorator.set_mouse_position(event)
                 self.input_panel = WallPolylineDecorator.calculate_distance_and_angle(context, self.is_input_on)
                 tool.Blender.update_viewport()
                 return {"RUNNING_MODAL"}
@@ -658,7 +664,7 @@ class DrawPolylineWall(bpy.types.Operator):
             WallPolylineDecorator.set_input_panel(self.input_panel, self.input_type)
             tool.Blender.update_viewport()
 
-        if self.input_type:
+        if self.input_type in self.input_options:
             if (event.ascii in self.number_options) or (
                 event.value == "RELEASE" and event.type in {"BACK_SPACE", "MINUS", "NUMPAD_MINUS"}
             ):
@@ -688,17 +694,17 @@ class DrawPolylineWall(bpy.types.Operator):
             return {"FINISHED"}
 
         if self.is_input_on and event.value == "RELEASE" and event.type in {"RET", "NUMPAD_ENTER"}:
-            if self.input_type:
+            if self.input_type in self.input_options:
                 self.recalculate_inputs(context)
                 self.is_input_on = True
-                self.input_type = None
+                self.input_type = "OFF"
                 self.number_input = []
                 WallPolylineDecorator.set_input_panel(self.input_panel, self.input_type)
                 tool.Blender.update_viewport()
             else:
                 tool.Snaping.insert_polyline_point(float(self.input_panel["X"]), float(self.input_panel["Y"]))
                 self.is_input_on = False
-                self.input_type = None
+                self.input_type = "OFF"
                 self.number_input = []
                 self.number_output = ""
                 WallPolylineDecorator.set_input_panel(self.input_panel, self.input_type)
@@ -710,7 +716,7 @@ class DrawPolylineWall(bpy.types.Operator):
         if self.is_input_on:
             if event.value == "RELEASE" and event.type in {"RIGHTMOUSE", "ESC"}:
                 self.is_input_on = False
-                self.input_type = None
+                self.input_type = "OFF"
                 WallPolylineDecorator.set_input_panel(self.input_panel, self.input_type)
                 tool.Blender.update_viewport()
         else:
@@ -726,16 +732,15 @@ class DrawPolylineWall(bpy.types.Operator):
     def invoke(self, context, event):
         if context.space_data.type == "VIEW_3D":
             WallPolylineDecorator.install(context)
-            self.is_input_on = False
-            self.input_type = None
-            self.input_panel = {"X": "", "Y": "", "D": "", "A": ""}
+            # self.is_input_on = False
+            # self.input_type = "OFF"
             WallPolylineDecorator.set_input_panel(self.input_panel, self.input_type)
-            self.objs_2d_bbox = []
+            # self.objs_2d_bbox = []
             self.visible_objs = self.get_visible_objects(context)
             for obj in self.visible_objs:
                 self.objs_2d_bbox.append(self.get_objects_2d_bounding_boxes(context, obj))
             self.snaping_movement(context, event)
-            WallPolylineDecorator.set_mouse_position(context, event)
+            WallPolylineDecorator.set_mouse_position(event)
             self.input_panel = WallPolylineDecorator.calculate_distance_and_angle(context, self.is_input_on)
             tool.Blender.update_viewport()
             context.window_manager.modal_handler_add(self)
@@ -897,7 +902,6 @@ class DumbWallGenerator:
             vec1 = Vector((polyline_data[i].x, polyline_data[i].y, polyline_data[i].z))
             vec2 = Vector((polyline_data[i + 1].x, polyline_data[i + 1].y, polyline_data[i + 1].z))
             coords = (vec1, vec2)
-            print("COORDS", coords)
             self.create_wall_from_2_points(coords)
 
     def derive_from_sketch(self):
