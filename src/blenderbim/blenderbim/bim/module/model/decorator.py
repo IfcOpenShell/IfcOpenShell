@@ -323,7 +323,7 @@ class WallPolylineDecorator:
         cls.is_installed = False
 
     @classmethod
-    def set_mouse_position(cls, context, event):
+    def set_mouse_position(cls, event):
         cls.mouse_pos = event.mouse_region_x, event.mouse_region_y
 
     @classmethod
@@ -378,10 +378,9 @@ class WallPolylineDecorator:
         return cls.input_panel
 
     @classmethod
-    def calculate_x_and_y(cls, context, is_input_on):
+    def calculate_x_and_y(cls, context):
         try:
             polyline_data = context.scene.BIMModelProperties.polyline_point
-            snap_prop = context.scene.BIMModelProperties.snap_mouse_point[0]
             last_point_data = polyline_data[len(polyline_data) - 1]
         except:
             return
@@ -457,6 +456,7 @@ class WallPolylineDecorator:
 
         # When a point is above the plane it projects the point
         # to the plane and creates a line
+        projection_point = []
         if snap_prop.snap_type != "Plane" and snap_prop.z != 0:
             self.line_shader.uniform_float("lineWidth", 1.0)
             projection_point = [Vector((snap_prop.x, snap_prop.y, 0))]  # TODO get height from default container
@@ -483,7 +483,7 @@ class WallPolylineDecorator:
         # Line between last polyline point and mouse
         edges = [[0, 1]]
         if polyline_points:
-            if snap_prop.snap_type != "Plane" and snap_prop.z != 0:
+            if snap_prop.snap_type != "Plane" and snap_prop.z != 0 and projection_point:
                 self.draw_batch("LINES", [polyline_points[-1]] + projection_point, decorator_color_unselected, edges)
             else:
                 self.draw_batch("LINES", [polyline_points[-1]] + mouse_point, decorator_color_unselected, edges)
