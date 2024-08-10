@@ -164,6 +164,7 @@ function handleDefaultData(data) {
 }
 
 // Function to add a new gantt with data and filename
+
 function addGanttElement(blenderId, tasks, workSched, filename) {
   function createWorkSchedDiv(blenderId, workSched) {
     const workSchedDiv = $("<div></div>").attr("id", "workSched" + blenderId);
@@ -213,7 +214,7 @@ function addGanttElement(blenderId, tasks, workSched, filename) {
     return ganttInfoDiv;
   }
 
-  function createGantt(blenderId, tasks) {
+  function createGantt(blenderId) {
     const ganttDiv = $("<div></div>")
       .addClass("gantt-chart")
       .attr("id", "gantt-" + blenderId);
@@ -257,7 +258,6 @@ function addGanttElement(blenderId, tasks, workSched, filename) {
 
     JSGantt.addJSONTask(g, tasks);
     g.setEditable(true);
-    g.Draw();
 
     connectedClients[blenderId]["gantt"] = g;
 
@@ -345,6 +345,11 @@ function addGanttElement(blenderId, tasks, workSched, filename) {
   ganttContainer.append(printButton);
 
   $("#container").append(ganttContainer);
+
+  // have to  call draw after appening the containers to the DOM
+  // otherwise the dependencies will not be displayed properly
+  const g = connectedClients[blenderId].gantt;
+  g.Draw();
 }
 
 // Function to update gantt and filename
