@@ -254,7 +254,7 @@ class ExportIfcCsv(bpy.types.Operator):
             schedule_creator = scheduler.Scheduler()
             schedule_creator.schedule(self.filepath, tool.Drawing.get_path_with_ext(self.filepath, "svg"))
         if props.format == "web":
-            if not context.scene.WebProperties.is_running and not context.scene.WebProperties.is_connected:
+            if not context.scene.WebProperties.is_connected:
                 bpy.ops.bim.connect_websocket_server()
             tool.Web.send_webui_data(data=ifc_csv.dataframe.to_csv(index=False), data_key="csv_data", event="csv_data")
 
