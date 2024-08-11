@@ -331,7 +331,8 @@ class DrawPolylineWall(bpy.types.Operator):
         )
 
         # Plane to intersect. Default Container
-        plane_origin = Vector((0, 0, 0))
+        default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
+        plane_origin = Vector((0, 0, default_container_elevation))
         plane_normal = Vector((0, 0, 1))
 
         def cast_rays_and_get_best_object():
@@ -398,22 +399,22 @@ class DrawPolylineWall(bpy.types.Operator):
                 try:
                     snap_point_vector = Vector(
                         (snap_point[0].x, snap_point[0].y, snap_point[0].z)
-                    )  # TODO use Z from default container
+                    )  
                     snap_point_axis_1 = (
-                        Vector((snap_point[0].x + 1000, snap_point[0].y, 0)),
-                        Vector((snap_point[0].x - 1000, snap_point[0].y, 0)),
+                        Vector((snap_point[0].x + 1000, snap_point[0].y, default_container_elevation)),
+                        Vector((snap_point[0].x - 1000, snap_point[0].y, default_container_elevation)),
                     )
                     snap_point_axis_2 = (
-                        Vector((snap_point[0].x, snap_point[0].y + 1000, 0)),
-                        Vector((snap_point[0].x, snap_point[0].y - 1000, 0)),
+                        Vector((snap_point[0].x, snap_point[0].y + 1000, default_container_elevation)),
+                        Vector((snap_point[0].x, snap_point[0].y - 1000, default_container_elevation)),
                     )
                     snap_angle_axis = (axis_start, axis_end)
                     result_1 = tool.Cad.intersect_edges(snap_angle_axis, snap_point_axis_1)
-                    result_1 = Vector((result_1[0].x, result_1[0].y, 0))  # TODO use Z from default container
+                    result_1 = Vector((result_1[0].x, result_1[0].y, default_container_elevation)) 
                     distance_1 = (result_1 - snap_point_vector).length
 
                     result_2 = tool.Cad.intersect_edges(snap_angle_axis, snap_point_axis_2)
-                    result_2 = Vector((result_2[0].x, result_2[0].y, 0))  # TODO use Z from default container
+                    result_2 = Vector((result_2[0].x, result_2[0].y, default_container_elevation)) 
                     distance_2 = (result_2 - snap_point_vector).length
 
                     if distance_1 < distance_2:
@@ -424,7 +425,6 @@ class DrawPolylineWall(bpy.types.Operator):
                     tool.Snaping.update_snaping_point(best_result, "Axis")
 
                 except Exception as e:
-                    print(str(e))
                     tool.Snaping.update_snaping_point(snap_point[0], snap_point[1])
 
             else:
@@ -643,7 +643,6 @@ class DrawPolylineWall(bpy.types.Operator):
                 WallPolylineDecorator.uninstall()
                 tool.Snaping.clear_polyline()
                 tool.Blender.update_viewport()
-                print("CANCELLED")
                 return {"CANCELLED"}
 
         return {"RUNNING_MODAL"}

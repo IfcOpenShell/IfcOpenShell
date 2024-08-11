@@ -19,8 +19,7 @@
 import bpy
 from bpy_extras import view3d_utils
 import blenderbim.core.tool
-
-# from blenderbim.bim.module.model.decorator import WallPolylineDecorator
+import blenderbim.tool as tool
 import math
 import mathutils
 from mathutils import Matrix, Vector
@@ -113,14 +112,15 @@ class Raycasting(blenderbim.core.tool.Raycasting):
         mouse_pos = event.mouse_region_x, event.mouse_region_y
         ray_origin, ray_target, ray_direction = cls.get_viewport_ray_data(context, event)
 
-        intersection = Vector((0, 0, 0))
+        default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
+        intersection = Vector((0, 0, default_container_elevation))
         try:
             loc = view3d_utils.region_2d_to_location_3d(region, rv3d, mouse_pos, ray_direction)
             intersection = mathutils.geometry.intersect_line_plane(ray_target, loc, plane_origin, plane_normal)
         except:
-            intersection = Vector((0, 0, 0))
+            intersection = Vector((0, 0, default_container_elevation))
 
         if intersection == None:
-            intersection = Vector((0, 0, 0))
+            intersection = Vector((0, 0, default_container_elevation))
 
         return intersection

@@ -18,6 +18,7 @@
 
 import bpy
 import blenderbim.core.tool
+import blenderbim.tool as tool
 from blenderbim.bim.module.model.decorator import WallPolylineDecorator
 import math
 import mathutils
@@ -93,14 +94,15 @@ class Snaping(blenderbim.core.tool.Snaping):
     def insert_polyline_point(cls, x=None, y=None):
         snap_vertex = bpy.context.scene.BIMModelProperties.snap_mouse_point[0]
         polyline_point = bpy.context.scene.BIMModelProperties.polyline_point.add()
+        default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
         if x is not None and y is not None:
             polyline_point.x = x
             polyline_point.y = y
-            polyline_point.z = 0  # TODO Update to the the default container height
+            polyline_point.z = default_container_elevation
         else:
             polyline_point.x = snap_vertex.x
             polyline_point.y = snap_vertex.y
-            polyline_point.z = 0  # TODO Update to the the default container height
+            polyline_point.z = default_container_elevation
 
     @classmethod
     def clear_polyline(cls):
@@ -122,12 +124,13 @@ class Snaping(blenderbim.core.tool.Snaping):
             end = origin - rot_dir * length
             return start, end
 
+        default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
         polyline_data = bpy.context.scene.BIMModelProperties.polyline_point
         if polyline_data:
             last_point_data = polyline_data[-1]
             last_point = Vector((last_point_data.x, last_point_data.y, last_point_data.z))
         else:
-            last_point = Vector((0, 0, 0))
+            last_point = Vector((0, 0, default_container_elevation))
 
         # Translates intersection point based on last_point
         translated_intersection = intersection - last_point
@@ -142,8 +145,8 @@ class Snaping(blenderbim.core.tool.Snaping):
         for axis in snap_axis:
             rot_mat = Matrix.Rotation(math.radians(360 - axis), 3, "Z")
             start, end = create_axis_line(rot_mat, last_point)
-            WallPolylineDecorator.set_angle_axis_line(start, end)
             rot_intersection = rot_mat @ translated_intersection
+            WallPolylineDecorator.set_angle_axis_line(start, end)
             if lock_axis:
                 is_on_rot_axis = True
             else:
