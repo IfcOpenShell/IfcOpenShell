@@ -30,6 +30,7 @@ from odf.text import P
 from odf.style import Style
 from textwrap import wrap
 from pathlib import Path
+from blenderbim.bim.ifc import IfcStore
 
 DEBUG = False
 
@@ -75,8 +76,8 @@ class Scheduler:
         stylesheet_path = os.path.splitext(infile)[0] + ".css" 
         if not os.path.exists(stylesheet_path): 
             stylesheet_rel_path = getattr(bpy.context.scene.DocProperties, "schedules_stylesheet_path")
-            infile_directory = os.path.dirname(infile)
-            stylesheet_path = infile_directory + "\\" + stylesheet_rel_path
+            ifc_file_path = os.path.dirname(IfcStore.path)
+            stylesheet_path = ifc_file_path + "\\" + stylesheet_rel_path
             if not os.path.exists(stylesheet_path): 
                 stylesheet_path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "assets", "schedule.css")
         with open(stylesheet_path, "r") as stylesheet:
