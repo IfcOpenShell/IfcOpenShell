@@ -47,11 +47,11 @@ from blenderbim.tool.project import Project
 from blenderbim.tool.profile import Profile
 from blenderbim.tool.pset import Pset
 from blenderbim.tool.qto import Qto
-from blenderbim.tool.raycasting import Raycasting
+from blenderbim.tool.raycast import Raycast
 from blenderbim.tool.resource import Resource
 from blenderbim.tool.root import Root
 from blenderbim.tool.sequence import Sequence
-from blenderbim.tool.snaping import Snaping
+from blenderbim.tool.snap import Snap
 from blenderbim.tool.spatial import Spatial
 from blenderbim.tool.covering import Covering
 from blenderbim.tool.structural import Structural

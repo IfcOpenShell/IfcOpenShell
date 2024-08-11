@@ -25,7 +25,7 @@ import mathutils
 from mathutils import Matrix, Vector
 
 
-class Snaping(blenderbim.core.tool.Snaping):
+class Snap(blenderbim.core.tool.Snap):
     @classmethod
     def get_snap_points_on_raycasted_obj(cls, obj, face_index):
         snap_points = {}

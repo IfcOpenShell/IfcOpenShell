@@ -660,7 +660,7 @@ class Qto:
     def set_qto_result(cls, result): pass
 
 @interface
-class Raycasting:
+class Raycast:
     pass
 
 @interface
@@ -938,7 +938,7 @@ class Covering:
     def get_z_from_ceiling_height(cls): pass
 
 @interface
-class Snaping:
+class Snap:
     pass
 
 @interface

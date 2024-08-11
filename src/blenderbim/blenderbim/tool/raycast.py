@@ -25,7 +25,7 @@ import mathutils
 from mathutils import Matrix, Vector
 
 
-class Raycasting(blenderbim.core.tool.Raycasting):
+class Raycast(blenderbim.core.tool.Raycast):
     @classmethod
     def get_visible_objects(cls, context):
         depsgraph = context.evaluated_depsgraph_get()

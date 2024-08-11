@@ -345,17 +345,17 @@ class DrawPolylineWall(bpy.types.Operator):
 
             for obj, bbox_2d in self.objs_2d_bbox:
                 if obj.type == "MESH" and bbox_2d:
-                    if tool.Raycasting.in_view_2d_bounding_box(self.mouse_pos, bbox_2d):
+                    if tool.Raycast.in_view_2d_bounding_box(self.mouse_pos, bbox_2d):
                         objs_to_raycast.append(obj)
 
             for obj in objs_to_raycast:
-                hit, normal, face_index = tool.Raycasting.obj_ray_cast(context, event, obj)
+                hit, normal, face_index = tool.Raycast.obj_ray_cast(context, event, obj)
                 if hit is None:
                     # Tried original mouse position. Now it will try the offsets.
                     original_mouse_pos = self.mouse_pos
                     for value in mouse_offset:
                         self.mouse_pos = tuple(x + y for x, y in zip(original_mouse_pos, value))
-                        hit, normal, face_index = tool.Raycasting.obj_ray_cast(context, event, obj)
+                        hit, normal, face_index = tool.Raycast.obj_ray_cast(context, event, obj)
                         if hit:
                             break
                     self.mouse_pos = original_mouse_pos
@@ -375,21 +375,21 @@ class DrawPolylineWall(bpy.types.Operator):
                 return None, None, None
 
         snap_threshold = 0.3
-        ray_origin, ray_target, ray_direction = tool.Raycasting.get_viewport_ray_data(context, event)
+        ray_origin, ray_target, ray_direction = tool.Raycast.get_viewport_ray_data(context, event)
         obj, hit, face_index = cast_rays_and_get_best_object()
-        intersection = tool.Raycasting.ray_cast_to_plane(context, event, plane_origin, plane_normal)
+        intersection = tool.Raycast.ray_cast_to_plane(context, event, plane_origin, plane_normal)
 
         # Locks snap into an angle axis
         if event.shift:
-            rot_intersection, _, axis_start, axis_end = tool.Snaping.snap_on_axis(intersection, self.snap_angle)
+            rot_intersection, _, axis_start, axis_end = tool.Snap.snap_on_axis(intersection, self.snap_angle)
         else:
             self.snap_angle = None
-            rot_intersection, self.snap_angle, _, _ = tool.Snaping.snap_on_axis(intersection)
+            rot_intersection, self.snap_angle, _, _ = tool.Snap.snap_on_axis(intersection)
 
         if obj is not None:
 
-            snap_points = tool.Snaping.get_snap_points_on_raycasted_obj(obj, face_index)
-            snap_point = tool.Snaping.select_snap_point(snap_points, hit, snap_threshold)
+            snap_points = tool.Snap.get_snap_points_on_raycasted_obj(obj, face_index)
+            snap_point = tool.Snap.select_snap_point(snap_points, hit, snap_threshold)
 
             if snap_point:
                 # Creates a mixed snap point between the locked axis and
@@ -422,24 +422,24 @@ class DrawPolylineWall(bpy.types.Operator):
                     else:
                         best_result = result_2
 
-                    tool.Snaping.update_snaping_point(best_result, "Axis")
+                    tool.Snap.update_snaping_point(best_result, "Axis")
 
                 except Exception as e:
-                    tool.Snaping.update_snaping_point(snap_point[0], snap_point[1])
+                    tool.Snap.update_snaping_point(snap_point[0], snap_point[1])
 
             else:
-                tool.Snaping.update_snaping_point(hit, "Face")
+                tool.Snap.update_snaping_point(hit, "Face")
 
         else:
-            snap_points = tool.Snaping.get_snap_points_on_polyline()
-            snap_point = tool.Snaping.select_snap_point(snap_points, intersection, snap_threshold)
+            snap_points = tool.Snap.get_snap_points_on_polyline()
+            snap_point = tool.Snap.select_snap_point(snap_points, intersection, snap_threshold)
 
             if snap_point:
-                tool.Snaping.update_snaping_point(snap_point[0], snap_point[1])
+                tool.Snap.update_snaping_point(snap_point[0], snap_point[1])
             elif rot_intersection:
-                tool.Snaping.update_snaping_point(rot_intersection, "Axis")
+                tool.Snap.update_snaping_point(rot_intersection, "Axis")
             else:
-                tool.Snaping.update_snaping_point(intersection, "Plane")
+                tool.Snap.update_snaping_point(intersection, "Plane")
 
     def validate_input(self, input_number):
         grammar = """
@@ -533,7 +533,7 @@ class DrawPolylineWall(bpy.types.Operator):
             if self.mousemove_count == 2:
                 self.objs_2d_bbox = []
                 for obj in self.visible_objs:
-                    self.objs_2d_bbox.append(tool.Raycasting.get_objects_2d_bounding_boxes(context, obj))
+                    self.objs_2d_bbox.append(tool.Raycast.get_objects_2d_bounding_boxes(context, obj))
 
             if self.mousemove_count > 3:
                 self.snaping_movement(context, event)
@@ -543,11 +543,11 @@ class DrawPolylineWall(bpy.types.Operator):
                 return {"RUNNING_MODAL"}
 
         if event.value == "RELEASE" and event.type == "LEFTMOUSE":
-            tool.Snaping.insert_polyline_point()
+            tool.Snap.insert_polyline_point()
 
         if not self.is_input_on:
             if event.value == "RELEASE" and event.type == "BACK_SPACE":
-                tool.Snaping.remove_last_polyline_point()
+                tool.Snap.remove_last_polyline_point()
                 tool.Blender.update_viewport()
 
         if self.is_input_on and event.value == "PRESS" and event.type == "TAB":
@@ -608,7 +608,7 @@ class DrawPolylineWall(bpy.types.Operator):
         if not self.is_input_on and event.value == "RELEASE" and event.type in {"RET", "NUMPAD_ENTER"}:
             self.create_walls_from_polyline(context)
             WallPolylineDecorator.uninstall()
-            tool.Snaping.clear_polyline()
+            tool.Snap.clear_polyline()
             tool.Blender.update_viewport()
             return {"FINISHED"}
 
@@ -621,7 +621,7 @@ class DrawPolylineWall(bpy.types.Operator):
                 WallPolylineDecorator.set_input_panel(self.input_panel, self.input_type)
                 tool.Blender.update_viewport()
             else:
-                tool.Snaping.insert_polyline_point(float(self.input_panel["X"]), float(self.input_panel["Y"]))
+                tool.Snap.insert_polyline_point(float(self.input_panel["X"]), float(self.input_panel["Y"]))
                 self.is_input_on = False
                 self.input_type = "OFF"
                 self.number_input = []
@@ -641,7 +641,7 @@ class DrawPolylineWall(bpy.types.Operator):
         else:
             if event.value == "RELEASE" and event.type in {"RIGHTMOUSE", "ESC"}:
                 WallPolylineDecorator.uninstall()
-                tool.Snaping.clear_polyline()
+                tool.Snap.clear_polyline()
                 tool.Blender.update_viewport()
                 return {"CANCELLED"}
 
@@ -651,9 +651,9 @@ class DrawPolylineWall(bpy.types.Operator):
         if context.space_data.type == "VIEW_3D":
             WallPolylineDecorator.install(context)
             WallPolylineDecorator.set_input_panel(self.input_panel, self.input_type)
-            self.visible_objs = tool.Raycasting.get_visible_objects(context)
+            self.visible_objs = tool.Raycast.get_visible_objects(context)
             for obj in self.visible_objs:
-                self.objs_2d_bbox.append(tool.Raycasting.get_objects_2d_bounding_boxes(context, obj))
+                self.objs_2d_bbox.append(tool.Raycast.get_objects_2d_bounding_boxes(context, obj))
             self.snaping_movement(context, event)
             WallPolylineDecorator.set_mouse_position(event)
             self.input_panel = WallPolylineDecorator.calculate_distance_and_angle(context, self.is_input_on)
