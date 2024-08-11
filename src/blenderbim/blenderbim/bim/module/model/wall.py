@@ -517,6 +517,10 @@ class DrawPolylineWall(bpy.types.Operator):
         relating_type = tool.Ifc.get().by_id(int(relating_type_id))
 
         dwg = DumbWallGenerator(relating_type).generate(True)
+        if dwg:
+            for wall1, wall2 in zip(dwg, dwg[1:] + [dwg[0]]):
+                print(wall1['obj'], wall2['obj'])
+                DumbWallJoiner().join_V(wall1['obj'], wall2['obj'])
 
     def modal(self, context, event):
 
@@ -813,11 +817,13 @@ class DumbWallGenerator:
 
     def derive_from_polyline(self):
         polyline_data = bpy.context.scene.BIMModelProperties.polyline_point
+        walls = []
         for i in range(len(polyline_data) - 1):
             vec1 = Vector((polyline_data[i].x, polyline_data[i].y, polyline_data[i].z))
             vec2 = Vector((polyline_data[i + 1].x, polyline_data[i + 1].y, polyline_data[i + 1].z))
             coords = (vec1, vec2)
-            self.create_wall_from_2_points(coords)
+            walls.append(self.create_wall_from_2_points(coords))
+        return walls
 
     def derive_from_sketch(self):
         objs = []
