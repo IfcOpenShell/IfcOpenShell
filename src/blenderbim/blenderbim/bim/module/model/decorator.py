@@ -340,9 +340,11 @@ class WallPolylineDecorator:
     def calculate_distance_and_angle(cls, context, is_input_on):
         try:
             polyline_data = context.scene.BIMModelProperties.polyline_point
+            default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
             last_point_data = polyline_data[len(polyline_data) - 1]
         except:
             last_point_data = None
+            default_container_elevation = 0
 
         snap_prop = context.scene.BIMModelProperties.snap_mouse_point[0]
 
@@ -352,11 +354,11 @@ class WallPolylineDecorator:
             last_point = Vector((0, 0, 0))
 
         if is_input_on:
-            snap_vector = Vector((float(cls.input_panel["X"]), float(cls.input_panel["Y"]), 0))
+            snap_vector = Vector((float(cls.input_panel["X"]), float(cls.input_panel["Y"]), default_container_elevation))
         else:
-            snap_vector = Vector((snap_prop.x, snap_prop.y, 0))
+            snap_vector = Vector((snap_prop.x, snap_prop.y, default_container_elevation))
 
-        distance = (snap_vector - last_point).length  # TODO get height from default container
+        distance = (snap_vector - last_point).length
         x_axis_edge = (
             Vector((0, 0)),
             Vector((1, 0)),
@@ -364,7 +366,7 @@ class WallPolylineDecorator:
         current_axis = (
             Vector((last_point.x, last_point.y)),
             Vector((snap_vector.x, snap_vector.y)),
-        )  # TODO get height from default container
+        )
         if distance > 0:
             angle = tool.Cad.angle_edges(x_axis_edge, current_axis, degrees=True, signed=True)
             if cls.input_panel:
@@ -446,6 +448,7 @@ class WallPolylineDecorator:
         gpu.state.point_size_set(10)
 
         snap_prop = context.scene.BIMModelProperties.snap_mouse_point[0]
+        default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
 
         # Point related to the mouse
         mouse_point = [Vector((snap_prop.x, snap_prop.y, snap_prop.z))]
@@ -459,7 +462,7 @@ class WallPolylineDecorator:
         projection_point = []
         if snap_prop.snap_type != "Plane" and snap_prop.z != 0:
             self.line_shader.uniform_float("lineWidth", 1.0)
-            projection_point = [Vector((snap_prop.x, snap_prop.y, 0))]  # TODO get height from default container
+            projection_point = [Vector((snap_prop.x, snap_prop.y, default_container_elevation))]
             self.draw_batch("POINTS", projection_point, decorator_color_unselected)
             edges = [[0, 1]]
             self.draw_batch("LINES", mouse_point + projection_point, (1.0, 0.6, 0.0, 1.0), edges)
