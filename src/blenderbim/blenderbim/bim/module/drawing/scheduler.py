@@ -159,6 +159,7 @@ class Scheduler:
                     self.svg.rect(
                         insert=(x, y),
                         size=(width, height),
+                        style=f"fill: {background_color};",
                         class_="border",
                     )
                 )
@@ -435,6 +436,7 @@ class Scheduler:
                             self.svg.rect(
                                 insert=(x, y),
                                 size=(width, height),
+                                style=f"fill: {background_color};",
                                 class_="border",
                             )
                         )

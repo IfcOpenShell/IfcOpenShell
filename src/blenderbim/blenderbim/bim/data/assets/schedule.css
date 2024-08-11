@@ -43,3 +43,9 @@
 }
 
 text, tspan { /* 2.5mm */ fill: black; stroke: none; font-family: 'OpenGost Type B TT', 'DejaVu Sans Condensed', 'Liberation Sans', 'Arial Narrow', 'Arial'; }
+
+.border {
+    stroke: #000000;
+    stroke-width:.125;
+    fill: none; /* will be overriden if background color is set in .ods, or .xlsx */
+}
