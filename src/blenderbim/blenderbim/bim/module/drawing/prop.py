@@ -364,6 +364,9 @@ class DocProperties(PropertyGroup):
     stylesheet_path: StringProperty(
         default=os.path.join("drawings", "assets", "default.css"), name="Default Stylesheet"
     )
+    schedules_stylesheet_path: StringProperty(
+        default=os.path.join("drawings", "assets", "schedule.css"), name="Default Stylesheet for Schedules"
+    )
     markers_path: StringProperty(default=os.path.join("drawings", "assets", "markers.svg"), name="Default Markers")
     symbols_path: StringProperty(default=os.path.join("drawings", "assets", "symbols.svg"), name="Default Symbols")
     patterns_path: StringProperty(default=os.path.join("drawings", "assets", "patterns.svg"), name="Default Patterns")

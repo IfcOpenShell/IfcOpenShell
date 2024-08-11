@@ -69,10 +69,16 @@ class Scheduler:
         elif infile.endswith("xlsx"):
             self.schedule_xlsx(infile, outfile)
 
+
+
     def parse_css(self, infile):
-        stylesheet_path = os.path.splitext(infile)[0] + ".css"
-        if not os.path.exists(stylesheet_path):
-            stylesheet_path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "assets", "schedule.css")
+        stylesheet_path = os.path.splitext(infile)[0] + ".css" 
+        if not os.path.exists(stylesheet_path): 
+            stylesheet_rel_path = getattr(bpy.context.scene.DocProperties, "schedules_stylesheet_path")
+            infile_directory = os.path.dirname(infile)
+            stylesheet_path = infile_directory + "\\" + stylesheet_rel_path
+            if not os.path.exists(stylesheet_path): 
+                stylesheet_path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "assets", "schedule.css")
         with open(stylesheet_path, "r") as stylesheet:
             css = stylesheet.read()
 
@@ -153,7 +159,7 @@ class Scheduler:
                     self.svg.rect(
                         insert=(x, y),
                         size=(width, height),
-                        style=f"fill: {background_color}; stroke-width:.125; stroke: #000000;",
+                        class_="border",
                     )
                 )
 
@@ -429,7 +435,7 @@ class Scheduler:
                             self.svg.rect(
                                 insert=(x, y),
                                 size=(width, height),
-                                style=f"fill: {background_color}; stroke-width:.125; stroke: #000000;",
+                                class_="border",
                             )
                         )
 
