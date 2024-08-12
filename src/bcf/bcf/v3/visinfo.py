@@ -209,7 +209,7 @@ def build_viewpoint(element: entity_instance) -> mdl.VisualizationInfo:
     """
     Return a BCF viewpoint of an IFC element.
 
-    This function is cached to speedudp the creation of multiple BCF topics regarding the same element.
+    This function is cached to speed up the creation of multiple BCF topics regarding the same element.
 
     Args:
         element: The IFC element to point at.
@@ -235,7 +235,7 @@ def build_viewpoint_from_position_and_guids(position: NDArray[np.float64], *guid
     """
     Return a BCF viewpoint of an IFC element.
 
-    This function is cached to speedudp the creation of multiple BCF topics regarding the same element.
+    This function is cached to speed up the creation of multiple BCF topics regarding the same element.
 
     Args:
         position: target point coordinates.
