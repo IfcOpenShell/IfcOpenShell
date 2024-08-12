@@ -219,7 +219,7 @@ Compiling on Windows (Visual Studio)
 ------------------------------------
 
 This is for users of  `Visual Studio <https://www.visualstudio.com/>`__ 2008 to
-2019 (2022 not yet supported by dependency CMake) with C++ toolset (or `Visual
+2022 with C++ toolset, recommend to install the C++ toolset with VisualStudio Installer (or `Visual
 C++ Build Tools <http://landinghub.visualstudio.com/visual-cpp-build-tools>`__).
 
 1. Fetch the latest source code, including all submodules.
