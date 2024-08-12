@@ -105,6 +105,16 @@ class Snap(blenderbim.core.tool.Snap):
             polyline_point.z = default_container_elevation
 
     @classmethod
+    def close_polyline(cls):
+        polyline_data = bpy.context.scene.BIMModelProperties.polyline_point
+        if len(polyline_data) > 2:
+            first_point = polyline_data[0]
+            polyline_point = bpy.context.scene.BIMModelProperties.polyline_point.add()
+            polyline_point.x = first_point.x
+            polyline_point.y = first_point.y
+            polyline_point.z = first_point.z
+
+    @classmethod
     def clear_polyline(cls):
         bpy.context.scene.BIMModelProperties.polyline_point.clear()
 
