@@ -354,7 +354,9 @@ class WallPolylineDecorator:
             last_point = Vector((0, 0, 0))
 
         if is_input_on:
-            snap_vector = Vector((float(cls.input_panel["X"]), float(cls.input_panel["Y"]), default_container_elevation))
+            snap_vector = Vector(
+                (float(cls.input_panel["X"]), float(cls.input_panel["Y"]), default_container_elevation)
+            )
         else:
             snap_vector = Vector((snap_prop.x, snap_prop.y, default_container_elevation))
 

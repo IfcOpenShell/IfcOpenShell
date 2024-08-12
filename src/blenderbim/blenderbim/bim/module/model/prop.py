@@ -105,11 +105,12 @@ class SnapMousePoint(PropertyGroup):
     z: bpy.props.FloatProperty(name="Z")
     snap_type: bpy.props.StringProperty(name="Snap Type")
 
+
 class PolylinePoint(PropertyGroup):
     x: bpy.props.FloatProperty(name="X")
     y: bpy.props.FloatProperty(name="Y")
     z: bpy.props.FloatProperty(name="Z")
-    
+
 
 class BIMModelProperties(PropertyGroup):
     ifc_class: bpy.props.EnumProperty(items=get_ifc_class, name="Construction Class", update=update_ifc_class)

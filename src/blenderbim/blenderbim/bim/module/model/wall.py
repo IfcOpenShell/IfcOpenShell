@@ -397,9 +397,7 @@ class DrawPolylineWall(bpy.types.Operator):
                 # TODO Use ALT key to give the user the option to choose between the two results.
                 # TODO Create decorator for this
                 try:
-                    snap_point_vector = Vector(
-                        (snap_point[0].x, snap_point[0].y, snap_point[0].z)
-                    )  
+                    snap_point_vector = Vector((snap_point[0].x, snap_point[0].y, snap_point[0].z))
                     snap_point_axis_1 = (
                         Vector((snap_point[0].x + 1000, snap_point[0].y, default_container_elevation)),
                         Vector((snap_point[0].x - 1000, snap_point[0].y, default_container_elevation)),
@@ -410,11 +408,11 @@ class DrawPolylineWall(bpy.types.Operator):
                     )
                     snap_angle_axis = (axis_start, axis_end)
                     result_1 = tool.Cad.intersect_edges(snap_angle_axis, snap_point_axis_1)
-                    result_1 = Vector((result_1[0].x, result_1[0].y, default_container_elevation)) 
+                    result_1 = Vector((result_1[0].x, result_1[0].y, default_container_elevation))
                     distance_1 = (result_1 - snap_point_vector).length
 
                     result_2 = tool.Cad.intersect_edges(snap_angle_axis, snap_point_axis_2)
-                    result_2 = Vector((result_2[0].x, result_2[0].y, default_container_elevation)) 
+                    result_2 = Vector((result_2[0].x, result_2[0].y, default_container_elevation))
                     distance_2 = (result_2 - snap_point_vector).length
 
                     if distance_1 < distance_2:
@@ -519,8 +517,8 @@ class DrawPolylineWall(bpy.types.Operator):
         dwg = DumbWallGenerator(relating_type).generate(True)
         if dwg:
             for wall1, wall2 in zip(dwg, dwg[1:] + [dwg[0]]):
-                print(wall1['obj'], wall2['obj'])
-                DumbWallJoiner().join_V(wall1['obj'], wall2['obj'])
+                print(wall1["obj"], wall2["obj"])
+                DumbWallJoiner().join_V(wall1["obj"], wall2["obj"])
 
     def modal(self, context, event):
 
