@@ -26,7 +26,7 @@ class TopicHandler:
         xml_handler: Optional[AbstractXmlParserSerializer] = None,
     ) -> None:
         self._markup: Optional[mdl.Markup] = None
-        self._viewpoints: dict[str, VisualizationInfoHandler] = {}
+        self._viewpoints: Optional[dict[str, VisualizationInfoHandler]] = None
         self._bim_snippet: Optional[bytes] = None
         self._xml_handler = xml_handler or XmlParserSerializer()
         self._topic_dir = topic_dir
@@ -77,14 +77,14 @@ class TopicHandler:
 
     @property
     def viewpoints(self) -> dict[str, "VisualizationInfoHandler"]:
-        if (
-            not self._viewpoints
-            and self._topic_dir
-            and self.topic.viewpoints
-            and (viewpoints := self.topic.viewpoints.view_point)
-        ):
-            self._viewpoints = VisualizationInfoHandler.from_topic_viewpoints(self._topic_dir, viewpoints)
+        if self._viewpoints is None:
+            self._viewpoints = self._load_viewpoints()
         return self._viewpoints
+
+    def _load_viewpoints(self) -> dict[str, "VisualizationInfoHandler"]:
+        if self._topic_dir and self.topic.viewpoints and (viewpoints := self.topic.viewpoints.view_point):
+            return VisualizationInfoHandler.from_topic_viewpoints(self._topic_dir, viewpoints)
+        return {}
 
     def _load_bim_snippet(self) -> Optional[bytes]:
         bim_snippet_obj = self.topic.bim_snippet

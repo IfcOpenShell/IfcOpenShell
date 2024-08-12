@@ -27,9 +27,9 @@ class TopicHandler:
         xml_handler: Optional[AbstractXmlParserSerializer] = None,
     ) -> None:
         self._markup: Optional[mdl.Markup] = None
-        self._viewpoints: dict[str, VisualizationInfoHandler] = {}
-        self._reference_files: dict[str, bytes] = {}
-        self._document_references: dict[str, bytes] = {}
+        self._viewpoints: Optional[dict[str, VisualizationInfoHandler]] = None
+        self._reference_files: Optional[dict[str, bytes]] = None
+        self._document_references: Optional[dict[str, bytes]] = None
         self._bim_snippet: Optional[bytes] = None
         self._xml_handler = xml_handler or XmlParserSerializer()
         self._topic_dir = topic_dir
@@ -80,14 +80,24 @@ class TopicHandler:
 
     @property
     def viewpoints(self) -> dict[str, VisualizationInfoHandler]:
-        if not self._viewpoints and self._topic_dir:
+        if self._viewpoints is None:
             self._viewpoints = self._load_viewpoints()
         return self._viewpoints
 
+    def _load_viewpoints(self) -> dict[str, VisualizationInfoHandler]:
+        if self._topic_dir and self.markup and (viewpoints := self.markup.viewpoints):
+            return VisualizationInfoHandler.from_topic_viewpoints(self._topic_dir, viewpoints)
+        return {}
+
     @property
     def reference_files(self) -> dict[str, bytes]:
-        if self._reference_files or not self.header:
+        if self._reference_files is not None:
             return self._reference_files
+
+        self._reference_files = {}
+        if not self.header:
+            return self._reference_files
+
         for ref in self.header.file:
             if ref.is_external:
                 continue
@@ -99,8 +109,13 @@ class TopicHandler:
 
     @property
     def document_references(self) -> dict[str, bytes]:
-        if self._document_references or not self.topic:
+        if self._document_references is not None:
             return self._document_references
+
+        self._document_references = {}
+        if not self.topic:
+            return self._document_references
+
         for doc in self.topic.document_reference:
             if doc.is_external or not doc.referenced_document:
                 continue
@@ -117,11 +132,6 @@ class TopicHandler:
             if bim_snippet_path.exists():
                 return bim_snippet_path.read_bytes()
         return None
-
-    def _load_viewpoints(self) -> dict[str, VisualizationInfoHandler]:
-        if self.markup and (viewpoints := self.markup.viewpoints):
-            return VisualizationInfoHandler.from_topic_viewpoints(self._topic_dir, viewpoints)
-        return {}
 
     @classmethod
     def create_new(
