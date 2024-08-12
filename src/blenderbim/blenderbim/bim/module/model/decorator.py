@@ -416,6 +416,8 @@ class WallPolylineDecorator:
         self.addon_prefs = tool.Blender.get_addon_preferences()
         self.font_id = 0
         blf.size(self.font_id, 12)
+        blf.enable(self.font_id, blf.SHADOW)
+        blf.shadow(self.font_id, 6, 0, 0, 0, 1)
         color = self.addon_prefs.decorations_colour
         color_highlight = self.addon_prefs.decorator_color_special
         offset = 20
