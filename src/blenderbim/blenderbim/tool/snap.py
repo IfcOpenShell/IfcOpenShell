@@ -150,7 +150,7 @@ class Snap(blenderbim.core.tool.Snap):
             if lock_axis:
                 is_on_rot_axis = True
             else:
-                is_on_rot_axis = abs(rot_intersection.y) <= 0.60
+                is_on_rot_axis = abs(rot_intersection.y) <= 0.15
 
             if is_on_rot_axis:
                 # Snap to axis
