@@ -998,43 +998,46 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         self.set_colours(viewpoint)
 
     def set_exceptions(self, viewpoint: bcf.v2.visinfo.VisualizationInfoHandler, context: bpy.types.Context) -> None:
-        if not hasattr(viewpoint.visualization_info.components, "visibility") or not hasattr(
-            viewpoint.visualization_info.components.visibility.exceptions, "component"
-        ):
+        visibility_settings = viewpoint.get_elements_visibility()
+        if visibility_settings is None:
             return
 
-        exception_global_ids = {
-            v.ifc_guid for v in viewpoint.visualization_info.components.visibility.exceptions.component or []
-        }
+        default_visibility, exception_global_ids = visibility_settings
 
-        if viewpoint.visualization_info.components.visibility.default_visibility:
+        objs: list[bpy.types.Object] = []
+        for global_id in exception_global_ids:
+            obj = IfcStore.get_element(global_id)
+            if obj and context.view_layer.objects.get(obj.name):
+                assert isinstance(obj, bpy.types.Object)
+                objs.append(obj)
+
+        context_override = tool.Blender.get_viewport_context()
+        if default_visibility:
             # default_visibility is True: show all objs, hide the exceptions
-            old = context.area.type
-            context.area.type = "VIEW_3D"
-            bpy.ops.object.hide_view_clear()
-            context.area.type = old
-            for global_id in exception_global_ids:
-                obj = IfcStore.get_element(global_id)
-                if obj and bpy.context.view_layer.objects.get(obj.name):
+            with context.temp_override(**context_override):
+                bpy.ops.object.hide_view_clear(select=False)
+                for obj in objs:
                     obj.hide_set(True)
         else:
             # default_visibility is False: hide all objs, show the exceptions
-            objs = []
-            for global_id in exception_global_ids:
-                obj = IfcStore.get_element(global_id)
-                if obj:
-                    objs.append(obj)
-            if objs:
-                old = context.area.type
-                context.area.type = "VIEW_3D"
-                bpy.ops.object.hide_view_clear()
-                context_override = {}
-                context_override["object"] = context_override["active_object"] = objs[0]
-                context_override["selected_objects"] = context_override["selected_editable_objects"] = objs
-                with context.temp_override(**context_override):
-                    bpy.ops.object.hide_view_set(unselected=True)
-                    bpy.data.objects["Viewpoint"].hide_set(False)
-                context.area.type = old
+            with context.temp_override(**context_override):
+                bpy.ops.object.hide_view_clear(select=False)
+                bpy.ops.object.select_all(action="DESELECT")
+
+                # We need to store unselectable objects and toggle unselectibility for them.
+                # As hide_view_set requires them to be selected to work.
+                unselectable = []
+                for obj in objs:
+                    if obj.hide_select:
+                        unselectable.append(obj)
+                        obj.hide_select = False
+                    obj.select_set(True)
+
+                # hide_view_set is checking actually selected objects, not context.selected objects.
+                bpy.ops.object.hide_view_set(unselected=True)
+                bpy.data.objects["Viewpoint"].hide_set(False)
+                for obj in unselectable:
+                    obj.hide_select = True
 
     def set_view_setup_hints(
         self, viewpoint: bcf.v2.visinfo.VisualizationInfoHandler, context: bpy.types.Context
@@ -1062,9 +1065,9 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         pass  # We no longer have an openings collection
 
     def set_selection(self, viewpoint: bcf.v2.visinfo.VisualizationInfoHandler) -> None:
-        if not viewpoint.visualization_info.components or not viewpoint.visualization_info.components.selection:
+        selected_global_ids = viewpoint.get_selected_guids()
+        if selected_global_ids is None:
             return
-        selected_global_ids = [s.ifc_guid for s in viewpoint.visualization_info.components.selection.component or []]
         bpy.ops.object.select_all(action="DESELECT")
         for global_id in selected_global_ids:
             obj = IfcStore.get_element(global_id)
