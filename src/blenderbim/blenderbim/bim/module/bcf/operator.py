@@ -106,7 +106,6 @@ class LoadBcfTopics(bpy.types.Operator):
         # happens on non standard nodes or on missing nodes in markup
         topics2use = []
         for topic_guid in bcfxml.topics.keys():
-            # print("topic guid: {}".format(topic_guid))
             try:
                 topic_titel = bcfxml.topics[topic_guid].topic.title
                 topics2use.append(topic_guid)
@@ -989,7 +988,6 @@ class ActivateBcfViewpoint(bpy.types.Operator):
             v.ifc_guid for v in viewpoint.visualization_info.components.visibility.exceptions.component or []
         }
 
-        # print("default_visibility: {}".format(viewpoint.visualization_info.components.visibility.default_visibility))
         if viewpoint.visualization_info.components.visibility.default_visibility:
             # default_visibility is True: show all objs, hide the exceptions
             old = context.area.type
@@ -997,19 +995,15 @@ class ActivateBcfViewpoint(bpy.types.Operator):
             bpy.ops.object.hide_view_clear()
             context.area.type = old
             for global_id in exception_global_ids:
-                # print("{}: hide".format(global_id))
                 obj = IfcStore.get_element(global_id)
                 if obj and bpy.context.view_layer.objects.get(obj.name):
-                    # print("  obj found")
                     obj.hide_set(True)
         else:
             # default_visibility is False: hide all objs, show the exceptions
             objs = []
             for global_id in exception_global_ids:
-                # print("{}: show".format(global_id))
                 obj = IfcStore.get_element(global_id)
                 if obj:
-                    # print("  obj found")
                     objs.append(obj)
             if objs:
                 old = context.area.type
@@ -1054,10 +1048,8 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         selected_global_ids = [s.ifc_guid for s in viewpoint.visualization_info.components.selection.component or []]
         bpy.ops.object.select_all(action="DESELECT")
         for global_id in selected_global_ids:
-            # print("{}: selected".format(global_id))
             obj = IfcStore.get_element(global_id)
             if obj:
-                # print("  obj found")
                 obj.select_set(True)
                 obj.hide_set(False)
 
@@ -1069,10 +1061,8 @@ class ActivateBcfViewpoint(bpy.types.Operator):
             for acomponent in acoloring.component:
                 global_id_colours.setdefault(acomponent.ifc_guid, acoloring.color)
         for global_id, color in global_id_colours.items():
-            # print("{}: color: {}: {}".format(global_id, color, self.hex_to_rgb(color)))
             obj = IfcStore.get_element(global_id)
             if obj:
-                # print("  obj found   ")
                 obj.color = self.hex_to_rgb(color)
 
     def draw_lines(self, viewpoint: bcf.v2.visinfo.VisualizationInfoHandler, context: bpy.types.Context) -> None:
