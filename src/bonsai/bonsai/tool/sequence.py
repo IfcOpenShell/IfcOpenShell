@@ -1542,7 +1542,7 @@ class Sequence(bonsai.core.tool.Sequence):
         cls, task_json: list[dict[str, Any]], work_schedule: ifcopenshell.entity_instance
     ) -> None:
         if not bpy.context.scene.WebProperties.is_connected:
-            bpy.ops.bim.connect_websocket_server(page="gantt")
+            bpy.ops.bim.connect_websocket_server(page="sequencing")
         gantt_data = {"tasks": task_json, "work_schedule": work_schedule.get_info(recursive=True)}
         tool.Web.send_webui_data(data=gantt_data, data_key="gantt_data", event="gantt_data")
 

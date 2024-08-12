@@ -122,27 +122,21 @@ class BlenderNamespace(socketio.AsyncNamespace):
         await sio.emit("theme_data", data, namespace="/web")
 
 
-# Attach namespaces
-sio.register_namespace(WebNamespace("/web"))
-sio.register_namespace(BlenderNamespace("/blender"))
-
-
-# Define a route to render the index.html template
-async def index(request):
+async def schedules(request):
     with open("templates/index.html", "r") as f:
         template = f.read()
     html_content = pystache.render(template, {"port": sio_port, "version": bonsai_version})
     return web.Response(text=html_content, content_type="text/html")
 
 
-async def gantt(request):
+async def sequencing(request):
     with open("templates/gantt.html", "r") as f:
         template = f.read()
     html_content = pystache.render(template, {"port": sio_port, "version": bonsai_version})
     return web.Response(text=html_content, content_type="text/html")
 
 
-async def drawings(request):
+async def documentation(request):
     with open("templates/drawings.html", "r") as f:
         template = f.read()
     html_content = pystache.render(template, {"port": sio_port, "version": bonsai_version})
@@ -164,12 +158,21 @@ async def on_startup(app):
         json.dump(pids, f, indent=4)
 
 
-app.router.add_get("/", index)
-app.router.add_get("/drawings", drawings)
-app.router.add_get("/gantt", gantt)
+# Add on startup function
+app.on_startup.append(on_startup)
+
+# Attach namespaces
+sio.register_namespace(WebNamespace("/web"))
+sio.register_namespace(BlenderNamespace("/blender"))
+
+# Regsier routes
+app.router.add_get("/", schedules)
+app.router.add_get("/documentation", documentation)
+app.router.add_get("/sequencing", sequencing)
+
+# Add static files
 app.router.add_static("/jsgantt/", path="../gantt", name="jsgantt")
 app.router.add_static("/static/", path="./static", name="static")
-app.on_startup.append(on_startup)
 
 
 def main():
