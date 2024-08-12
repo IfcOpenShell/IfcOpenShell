@@ -514,11 +514,18 @@ class DrawPolylineWall(bpy.types.Operator):
 
         relating_type = tool.Ifc.get().by_id(int(relating_type_id))
 
-        dwg = DumbWallGenerator(relating_type).generate(True)
-        if dwg:
-            for wall1, wall2 in zip(dwg, dwg[1:] + [dwg[0]]):
-                print(wall1["obj"], wall2["obj"])
-                DumbWallJoiner().join_V(wall1["obj"], wall2["obj"])
+        walls, is_polyline_closed = DumbWallGenerator(relating_type).generate(True)
+        print(is_polyline_closed)
+        if walls:
+            if is_polyline_closed:
+                for wall1, wall2 in zip(walls, walls[1:] + [walls[0]]):
+                    print(wall1["obj"], wall2["obj"])
+                    DumbWallJoiner().join_V(wall1["obj"], wall2["obj"])
+            else:
+                for wall1, wall2 in zip(walls[:-1], walls[1:]):
+                    print(wall1["obj"], wall2["obj"])
+                    DumbWallJoiner().join_V(wall1["obj"], wall2["obj"])
+                    
 
     def modal(self, context, event):
 
@@ -815,13 +822,20 @@ class DumbWallGenerator:
 
     def derive_from_polyline(self):
         polyline_data = bpy.context.scene.BIMModelProperties.polyline_point
+        is_polyline_closed = False
+        if len(polyline_data) > 3:
+            first_vec = Vector((polyline_data[0].x, polyline_data[0].y, polyline_data[0].z))
+            last_vec = Vector((polyline_data[-1].x, polyline_data[-1].y, polyline_data[-1].z))
+            if first_vec == last_vec:
+                is_polyline_closed = True
+            
         walls = []
         for i in range(len(polyline_data) - 1):
             vec1 = Vector((polyline_data[i].x, polyline_data[i].y, polyline_data[i].z))
             vec2 = Vector((polyline_data[i + 1].x, polyline_data[i + 1].y, polyline_data[i + 1].z))
             coords = (vec1, vec2)
             walls.append(self.create_wall_from_2_points(coords))
-        return walls
+        return walls, is_polyline_closed
 
     def derive_from_sketch(self):
         objs = []
