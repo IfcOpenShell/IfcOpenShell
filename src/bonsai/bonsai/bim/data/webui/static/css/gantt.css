@@ -348,12 +348,6 @@ button:hover {
     border-color: var(--border-color);
 }
 
-/* .gTaskInfo {
-    background-color: #2e2e2e;
-    color: #c7c7c7;
-    border-color: #c7c7c7;;
-} */
-
 /* Dark mode scrollbar */
 :root.dark .frame::-webkit-scrollbar-thumb,
 :root.dark .frame::-webkit-scrollbar-track {
@@ -468,6 +462,11 @@ button:hover {
 :root.blender .glistlbl.gcontainercol .gtaskname,
 :root.blender .glistlbl.gcontainercol .gtasklist {
     background-color: var(--blender-panel-header);
+    border-color: var(--blender-tab-outline);
+}
+
+:root.blender .gtaskcellcurrent {
+    background-color: var(--blender-odd-row);
     border-color: var(--blender-tab-outline);
 }
 
