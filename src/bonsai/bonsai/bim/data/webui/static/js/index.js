@@ -5,10 +5,6 @@ let socket;
 
 // Document ready function
 $(document).ready(function () {
-  var systemTheme = window.matchMedia("(prefers-color-scheme: light)").matches
-    ? "light"
-    : "dark";
-  $(":root").css("color-scheme", systemTheme);
   var defaultTheme = "blender";
   var theme = localStorage.getItem("theme") || defaultTheme;
   setTheme(theme);
@@ -313,6 +309,7 @@ function compareHeaders(headers1, headers2) {
 
 function setTheme(theme) {
   $("html").removeClass("light dark blender").addClass(theme);
+  $(":root").css("color-scheme", theme);
   var stylesheet = $("#tabulator-stylesheet");
   if (theme === "light") {
     stylesheet.attr(
