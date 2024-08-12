@@ -553,6 +553,12 @@ class DrawPolylineWall(bpy.types.Operator):
 
         if event.value == "RELEASE" and event.type == "LEFTMOUSE":
             tool.Snap.insert_polyline_point()
+            tool.Blender.update_viewport()
+
+        if event.value == "PRESS" and event.type == "C":
+            tool.Snap.close_polyline()
+            WallPolylineDecorator.set_input_panel(self.input_panel, self.input_type)
+            tool.Blender.update_viewport()
 
         if not self.is_input_on:
             if event.value == "RELEASE" and event.type == "BACK_SPACE":
