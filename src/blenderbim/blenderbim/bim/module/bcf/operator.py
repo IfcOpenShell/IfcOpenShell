@@ -29,7 +29,7 @@ import ifcopenshell
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.unit
 import blenderbim.bim.module.bcf.prop as bcf_prop
-from . import bcfstore
+import blenderbim.bim.module.bcf.bcfstore as bcfstore
 from pathlib import Path
 from blenderbim.bim.ifc import IfcStore
 from math import radians, degrees, atan, tan, cos, sin
@@ -1232,3 +1232,38 @@ class ExtractBcfFile(bpy.types.Operator):
 
         webbrowser.open(str(topic.extract_file(entity).parent))
         return {"FINISHED"}
+
+
+class BCFFileHandlerOperator(bpy.types.Operator):
+    bl_idname = "bim.load_bcf_project_file_handler"
+    bl_label = "Import .bcf file"
+    bl_options = {"REGISTER", "UNDO", "INTERNAL"}
+
+    directory: bpy.props.StringProperty(subtype="FILE_PATH", options={"SKIP_SAVE", "HIDDEN"})
+    files: bpy.props.CollectionProperty(type=bpy.types.OperatorFileListElement, options={"SKIP_SAVE", "HIDDEN"})
+
+    def invoke(self, context, event):
+        # Keeping code in .invoke() as we might add some
+        # popup windows later.
+
+        if len(self.files) > 1:
+            self.report({"INFO"}, "Loading multiple BCF files is not supported.")
+            return {"FINISHED"}
+
+        if bcfstore.BcfStore.get_bcfxml():
+            bpy.ops.bim.unload_bcf_project()
+
+        # `files` contain only .bcf files.
+        filepath = Path(self.directory)
+        return bpy.ops.bim.load_bcf_project(filepath=(filepath / self.files[0].name).as_posix())
+
+
+class BIM_FH_import_bcf(bpy.types.FileHandler):
+    bl_label = "BCF File Handler"
+    bl_import_operator = BCFFileHandlerOperator.bl_idname
+    bl_file_extensions = ".bcf"
+
+    # FileHandler won't work without poll_drop defined.
+    @classmethod
+    def poll_drop(cls, context):
+        return True

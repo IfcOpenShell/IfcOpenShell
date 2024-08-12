@@ -30,6 +30,8 @@ classes = (
     operator.AddBcfRelatedTopic,
     operator.AddBcfTopic,
     operator.AddBcfViewpoint,
+    operator.BCFFileHandlerOperator,
+    operator.BIM_FH_import_bcf,
     operator.EditBcfAuthor,
     operator.EditBcfComment,
     operator.EditBcfLabels,
