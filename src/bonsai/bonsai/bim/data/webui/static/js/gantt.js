@@ -19,10 +19,6 @@ const pageSizes = [
 
 // Document ready function
 $(document).ready(function () {
-  var systemTheme = window.matchMedia("(prefers-color-scheme: light)").matches
-    ? "light"
-    : "dark";
-  $(":root").css("color-scheme", systemTheme);
   var defaultTheme = "blender";
   var theme = localStorage.getItem("theme") || defaultTheme;
   setTheme(theme);
@@ -438,6 +434,7 @@ function editValue(list, task, event, cell, column) {
 
 function setTheme(theme) {
   $("html").removeClass("light dark blender").addClass(theme);
+  $(":root").css("color-scheme", theme);
   if (theme === "light") {
     $("#toggle-theme").html('<i class="fas fa-sun"></i>');
   } else if (theme === "dark") {
