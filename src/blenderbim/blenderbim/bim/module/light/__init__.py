@@ -17,7 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from . import ui, prop, operator
+from . import ui, prop, operator, list
 
 import stat
 from pathlib import Path
@@ -38,10 +38,13 @@ classes = (
     operator.RadianceRender,
     operator.ViewFromSun,
     operator.RefreshIFCMaterials,
+    operator.UnmapMaterial,
+    prop.RadianceMaterial,
     prop.BIMSolarProperties,
     prop.RadianceExporterProperties,
     ui.BIM_PT_radiance_exporter,
     ui.BIM_PT_solar,
+    list.MATERIAL_UL_radiance_materials,
 )
 
 

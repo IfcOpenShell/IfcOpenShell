@@ -34,6 +34,7 @@ sio.attach(app)
 
 # represents a caching for blender messages
 blender_messages = {}
+blender_theme = {}
 
 
 # Web namespace
@@ -44,6 +45,8 @@ class WebNamespace(socketio.AsyncNamespace):
     async def on_connect(self, sid, environ):
         print(f"Web client connected: {sid}")
         if blender_messages:
+            await sio.emit("connected_clients", list(blender_messages.keys()), namespace="/web", room=sid)
+            await sio.emit("theme_data", blender_theme, namespace="/web", room=sid)
             await self.send_cached_messages(sid)
 
     async def on_disconnect(self, sid):
@@ -108,10 +111,15 @@ class BlenderNamespace(socketio.AsyncNamespace):
         await sio.emit("gantt_data", {"blenderId": sid, "data": data}, namespace="/web")
 
     async def on_drawings_data(self, sid, data):
-        print(f"Drawings directory from Blender client {sid}")
-        print(data)
+        print(f"Drawings data from Blender client {sid}")
         blender_messages[sid]["drwings_data"] = data
         await sio.emit("drawings_data", {"blenderId": sid, "data": data}, namespace="/web")
+
+    async def on_theme_data(self, sid, data):
+        global blender_theme
+        print(f"Blender theme data")
+        blender_theme = data
+        await sio.emit("theme_data", data, namespace="/web")
 
 
 # Attach namespaces
@@ -137,7 +145,7 @@ async def gantt(request):
 async def drawings(request):
     with open("templates/drawings.html", "r") as f:
         template = f.read()
-    html_content = pystache.render(template, {"port": sio_port})
+    html_content = pystache.render(template, {"port": sio_port, "version": blenderbim_version})
     return web.Response(text=html_content, content_type="text/html")
 
 

@@ -8,7 +8,9 @@ $(document).ready(function () {
   var systemTheme = window.matchMedia("(prefers-color-scheme: light)").matches
     ? "light"
     : "dark";
-  var theme = localStorage.getItem("theme") || systemTheme;
+  $(":root").css("color-scheme", systemTheme);
+  var defaultTheme = "blender";
+  var theme = localStorage.getItem("theme") || defaultTheme;
   setTheme(theme);
 
   connectSocket();
@@ -23,6 +25,8 @@ function connectSocket() {
   // Register socket event handlers
   socket.on("blender_connect", handleBlenderConnect);
   socket.on("blender_disconnect", handleBlenderDisconnect);
+  socket.on("connected_clients", handleConnectedClients);
+  socket.on("theme_data", handleThemeData);
   socket.on("csv_data", handleCsvData);
   socket.on("default_data", handleDefaultData);
 }
@@ -33,6 +37,9 @@ function handleBlenderConnect(blenderId) {
   if (!connectedClients.hasOwnProperty(blenderId)) {
     connectedClients[blenderId] = { shown: false, ifc_file: "" };
   }
+  $("#blender-count").text(function (i, text) {
+    return parseInt(text, 10) + 1;
+  });
 }
 
 // Function to handle 'blender_disconnect' event
@@ -46,6 +53,46 @@ function handleBlenderDisconnect(blenderId) {
   $("#blender-count").text(function (i, text) {
     return parseInt(text, 10) - 1;
   });
+}
+
+function handleConnectedClients(data) {
+  $("#blender-count").text(data.length);
+  console.log(data);
+  data.forEach(function (id) {
+    connectedClients[id] = { shown: false, ifc_file: "" };
+  });
+}
+
+function handleThemeData(themeData) {
+  console.log(themeData);
+
+  function arrayToRgbString(arr) {
+    const [r, g, b, a] = arr.map((num) => Math.round(num * 255));
+    if (a !== undefined) {
+      return `rgba(${r}, ${g}, ${b}, ${a})`;
+    }
+    return `rgb(${r}, ${g}, ${b})`;
+  }
+
+  function generateCssVariableRule(theme) {
+    let cssVariables = ":root.blender {\n";
+    for (const key in theme) {
+      const cssVariableName = `--blender-${key.replace(/_/g, "-")}`;
+      const cssVariableValue = arrayToRgbString(theme[key]);
+      cssVariables += `    ${cssVariableName}: ${cssVariableValue};\n`;
+    }
+    cssVariables += "}";
+    return cssVariables;
+  }
+
+  const cssRule = generateCssVariableRule(themeData.theme);
+  console.log(cssRule);
+
+  var styleElement = $("#index-stylesheet")[0];
+  if (styleElement) {
+    var sheet = styleElement.sheet || styleElement.styleSheet;
+    sheet.insertRule(cssRule, sheet.cssRules.length);
+  }
 }
 
 // Function to handle 'csv_data' event
@@ -85,10 +132,6 @@ function handleDefaultData(data) {
 
 // Function to add a new table with data and filename
 function addTableElement(blenderId, csvData, filename) {
-  $("#blender-count").text(function (i, text) {
-    return parseInt(text, 10) + 1;
-  });
-
   // store headers of the csv data
   const firstLine = csvData.indexOf("\n");
   const csvHeaders = csvData.substring(0, firstLine).split(",");
@@ -256,30 +299,33 @@ function compareHeaders(headers1, headers2) {
 }
 
 function setTheme(theme) {
+  $("html").removeClass("light dark blender").addClass(theme);
   var stylesheet = $("#tabulator-stylesheet");
   if (theme === "light") {
     stylesheet.attr(
       "href",
       "https://unpkg.com/tabulator-tables/dist/css/tabulator_site.min.css"
     );
-    $("html").removeClass("dark").addClass("light");
     $("#toggle-theme").html('<i class="fas fa-sun"></i>');
-  } else {
+  } else if (theme === "dark") {
     stylesheet.attr(
       "href",
       "https://unpkg.com/tabulator-tables/dist/css/tabulator_site_dark.min.css"
     );
-    $("html").removeClass("light").addClass("dark");
     $("#toggle-theme").html('<i class="fas fa-moon"></i>');
+  } else if (theme === "blender") {
+    $("#toggle-theme").html('<i class="fas fa-adjust"></i>');
   }
   localStorage.setItem("theme", theme);
 }
 
 function toggleTheme() {
-  if ($("html").hasClass("dark")) {
-    setTheme("light");
-  } else {
+  if ($("html").hasClass("light")) {
     setTheme("dark");
+  } else if ($("html").hasClass("dark")) {
+    setTheme("blender");
+  } else {
+    setTheme("light");
   }
 }
 
@@ -292,15 +338,18 @@ function toggleClientList() {
   }
 
   clientList.empty();
+  var counter = 0;
 
   $.each(connectedClients, function (id, client) {
-    if (!client.shown) return;
+    counter++;
 
     const dropdownIcon = $("<i>")
       .addClass("fas fa-chevron-down")
       .css("margin-left", "0.5rem");
 
-    const clientDiv = $("<div>").addClass("client").text(client.ifc_file);
+    const clientDiv = $("<div>")
+      .addClass("client")
+      .text(client.ifc_file || "Blender " + counter);
 
     clientDiv.append(dropdownIcon);
 
@@ -313,6 +362,13 @@ function toggleClientList() {
       clientDetailsDiv.append(clientId);
     }
 
+    if (!client.shown) {
+      const clientShown = $("<div>")
+        .addClass("client-detail")
+        .text("No CSV exported for this Blender yet");
+      clientDetailsDiv.append(clientShown);
+    }
+
     if (client.headers && client.headers.length) {
       const clientHeaders = $("<div>")
         .addClass("client-detail")
@@ -323,9 +379,7 @@ function toggleClientList() {
         .text("Scroll to Table")
         .on("click", function () {
           $("html, body").animate(
-            {
-              scrollTop: $("#table-" + id).offset().top,
-            },
+            { scrollTop: $("#table-" + id).offset().top },
             600
           );
           clientList.removeClass("show");

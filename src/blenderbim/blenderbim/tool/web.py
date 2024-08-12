@@ -61,7 +61,7 @@ class Web(blenderbim.core.tool.Web):
         It then retrieves the port number, and returns it.
 
         Returns:
-            int: The port number that was generated.
+            - int: The port number that was generated.
         """
         print("Generating port number")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -81,7 +81,7 @@ class Web(blenderbim.core.tool.Web):
            - port (int): The port number to check.
 
         Returns:
-            bool: True if the port is available, False if it is in use.
+            - bool: True if the port is available, False if it is in use.
         """
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             # connect_ex returns errno.SUCCESS (0) if the connection succeeds
@@ -219,7 +219,19 @@ class Web(blenderbim.core.tool.Web):
         print("Websocket server killed successfully")
 
     @classmethod
-    def has_started(cls, port):
+    def has_started(cls, port: int) -> bool:
+        """
+        Check if the WebSocket server has started on the specified port.
+
+        This function continuously checks for the existence of the WebSocket server's process ID (PID) in the running_pid JSON file.
+        It waits for a maximum of 5 seconds before returning False.
+
+        Args:
+            - port (int): The port number on which the WebSocket server is expected to be running.
+
+        Returns:
+            - bool: True if the WebSocket server has started on the specified port within the maximum time limit, False otherwise.
+        """
         max_time = 5
         start = time.time()
         while True:
@@ -249,11 +261,11 @@ class Web(blenderbim.core.tool.Web):
         Sends data to the Web UI via Websocket connection.
 
         Args:
-        - data (Optional[Any]): The data to send. If None, just sends data from WebData.
-        - data_key (str): The key under which to store the data in the payload. Defaults to "data".
-        - event (str): The WebSocket event to emit. Defaults to "data".
-        - namespace (str): The namespace for the WebSocket event. Defaults to "/blender".
-        - use_web_data (bool): Whether to use data from WebData. Defaults to True.
+            - data (Optional[Any]): The data to send. If None, just sends data from WebData.
+            - data_key (str): The key under which to store the data in the payload. Defaults to "data".
+            - event (str): The WebSocket event to emit. Defaults to "data".
+            - namespace (str): The namespace for the WebSocket event. Defaults to "/blender".
+            - use_web_data (bool): Whether to use data from WebData. Defaults to True.
         """
 
         global ws_thread
@@ -262,7 +274,7 @@ class Web(blenderbim.core.tool.Web):
         if use_web_data:
             if not WebData.is_loaded:
                 WebData.load()
-            payload = WebData.data
+            payload = WebData.data.copy()
 
         if data is not None:
             payload[data_key] = data
@@ -342,13 +354,18 @@ class Web(blenderbim.core.tool.Web):
             for sheet in sorted(sheets, key=lambda s: getattr(s, "Identification", getattr(s, "DocumentId", None))):
                 for reference in tool.Drawing.get_document_references(sheet):
                     reference_description = tool.Drawing.get_reference_description(reference)
-                    reference_location = tool.Drawing.get_reference_location(reference)
-                    reference_name = os.path.basename(reference_location)
-                    reference_path = os.path.join(ifc_file_dir, reference_location)
-                    if reference_description == "SHEET":
-                        sheets_data.append({"name": reference_name, "path": reference_path})
-                    if reference_description == "DRAWING":
-                        drawings_data.append({"name": reference_name, "path": reference_path})
+                    if reference_description != "SHEET":
+                        continue
+                    reference_name = os.path.basename(reference.Location)
+                    reference_path = os.path.join(ifc_file_dir, reference.Location)
+                    sheets_data.append({"name": reference_name, "path": reference_path})
+
+            drawings = [e for e in tool.Ifc.get().by_type("IfcAnnotation") if e.ObjectType == "DRAWING"]
+            for drawing in drawings:
+                document = tool.Drawing.get_drawing_document(drawing)
+                reference_name = os.path.basename(document.Location)
+                reference_path = os.path.join(ifc_file_dir, document.Location)
+                drawings_data.append({"name": reference_name, "path": reference_path})
 
             cls.send_webui_data(
                 data={"drawings": drawings_data, "sheets": sheets_data}, data_key="drawings_data", event="drawings_data"
@@ -357,6 +374,51 @@ class Web(blenderbim.core.tool.Web):
     @classmethod
     def open_web_browser(cls, port: int) -> None:
         webbrowser.open(f"http://127.0.0.1:{port}/")
+
+    @classmethod
+    def send_theme_data(cls) -> None:
+        def get_color(theme, attribute) -> tuple[Any, ...]:
+            return tuple(getattr(theme, attribute)[:])
+
+        def mix_colors(color1, color2):
+            alpha1 = color1[3] * 255 if len(color1) > 3 else 255
+            alpha2 = color2[3] * 255 if len(color2) > 3 else 255
+
+            alpha = 255 - ((255 - alpha1) * (255 - alpha2) / 255)
+            red = (color1[0] * (255 - alpha2) + color2[0] * alpha2) / 255
+            green = (color1[1] * (255 - alpha2) + color2[1] * alpha2) / 255
+            blue = (color1[2] * (255 - alpha2) + color2[2] * alpha2) / 255
+            return red, green, blue, alpha / 255
+
+        prefs = bpy.context.preferences.themes[0].preferences.space
+        panel = prefs.panelcolors
+        view_3d = bpy.context.preferences.themes[0].view_3d
+        top_bar = bpy.context.preferences.themes[0].topbar.space
+        info = bpy.context.preferences.themes[0].info
+        outliner = bpy.context.preferences.themes[0].outliner
+        ui = bpy.context.preferences.themes[0].user_interface
+
+        theme = {
+            "window_background": get_color(prefs, "back"),
+            "text": get_color(prefs, "text"),
+            "tab_background": get_color(prefs, "tab_back"),
+            "tab_outline": get_color(prefs, "tab_outline"),
+            "panel_header": get_color(panel, "header"),
+            "panel_background": mix_colors(get_color(panel, "back"), get_color(panel, "sub_back")),
+            "top_bar_header": get_color(top_bar, "header"),
+            "top_bar_header_text": get_color(top_bar, "header_text"),
+            "active_object": get_color(view_3d, "object_active"),
+            "selected_object": get_color(view_3d, "object_selected"),
+            "info_warning": get_color(info, "info_warning"),
+            "odd_row": get_color(outliner.space, "back"),
+            "even_row": mix_colors(get_color(outliner.space, "back"), get_color(outliner, "row_alternate")),
+            "active_highlight": get_color(outliner, "active"),
+            "active_text_highlight": get_color(outliner, "active_object"),
+            "button_background": get_color(ui.wcol_tool, "inner"),
+            "button_test": get_color(ui.wcol_tool, "text"),
+            "button_border": get_color(ui.wcol_tool, "outline"),
+        }
+        cls.send_webui_data(theme, "theme", "theme_data", use_web_data=False)
 
     @classmethod
     async def sio_connect(cls, url: str) -> None:

@@ -611,7 +611,10 @@ class PipInstall(bpy.types.Operator):
     def execute(self, context):
         import blenderbim.bim
 
-        target = [p for p in sys.path if p.endswith("packages") and "addons" in p][0]
+        blender_path = Path(bpy.app.binary_path).parent
+        target = next(
+            path for p in sys.path if (path := Path(p)).name == "site-packages" and path.is_relative_to(blender_path)
+        ).__str__()
         py_exec = str(sys.executable)
 
         print("Detected executable:", py_exec)
@@ -620,7 +623,7 @@ class PipInstall(bpy.types.Operator):
         subprocess.call([py_exec, "-m", "ensurepip", "--user"])
         subprocess.call([py_exec, "-m", "pip", "install", "--upgrade", "pip"])
         # Trusted host to make things simpler due to some enterprise network restrictions
-        subprocess.call(
+        return_code = subprocess.call(
             [
                 py_exec,
                 "-m",
@@ -635,6 +638,13 @@ class PipInstall(bpy.types.Operator):
                 "files.pythonhosted.org",
             ]
         )
+        if return_code == 0:
+            self.report({"INFO"}, f"'{self.name}' was successfully installed.")
+        else:
+            self.report(
+                {"ERROR"},
+                f"Error installing '{self.name}', see system console for details (return code '{return_code}').",
+            )
         return {"FINISHED"}
 
 

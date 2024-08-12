@@ -36,9 +36,14 @@ import blenderbim.core.model as core
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 from math import pi, sin, cos, degrees
+from time import time
 from mathutils import Vector, Matrix
+from mathutils.bvhtree import BVHTree
+from bpy_extras import view3d_utils
 from blenderbim.bim.module.model.opening import FilledOpeningGenerator
+from blenderbim.bim.module.model.decorator import WallPolylineDecorator
 from typing import Optional
+from lark import Lark, Transformer
 
 
 class UnjoinWalls(bpy.types.Operator, tool.Ifc.Operator):
@@ -279,6 +284,391 @@ def recalculate_dumb_wall_origin(wall, new_origin=None):
         child.matrix_parent_inverse = wall.matrix_world.inverted()
 
 
+class DrawPolylineWall(bpy.types.Operator):
+    bl_idname = "bim.draw_polyline_wall"
+    bl_label = "Draw Polyline Wall"
+    bl_options = {"REGISTER", "UNDO"}
+
+    objs_bvhs = []
+    viewport_box = []
+
+    @classmethod
+    def poll(cls, context):
+        return context.space_data.type == "VIEW_3D"
+
+    def __init__(self):
+        self.mousemove_count = 0
+        self.action_count = 0
+        self.visible_objs = []
+        self.objs_2d_bbox = []
+        self.number_options = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "+", "-", "*", "-", "/"}
+        self.number_input = []
+        self.number_output = ""
+        self.number_is_negative = False
+        self.is_input_on = False
+        self.input_options = ["X", "Y", "D", "A"]
+        self.input_type = "OFF"
+        self.input_value_xy = [None, None]
+        self.input_panel = {"X": "", "Y": "", "D": "", "A": ""}
+        self.snap_angle = None
+
+    def snaping_movement(self, context, event):
+        region = context.region
+        rv3d = context.region_data
+        self.mouse_pos = event.mouse_region_x, event.mouse_region_y
+
+        offset = 5
+        mouse_offset = (
+            (-offset, offset),
+            (0, offset),
+            (offset, offset),
+            (-offset, 0),
+            (0, 0),
+            (offset, 0),
+            (-offset, -offset),
+            (0, -offset),
+            (offset, -offset),
+        )
+
+        # Plane to intersect. Default Container
+        default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
+        plane_origin = Vector((0, 0, default_container_elevation))
+        plane_normal = Vector((0, 0, 1))
+
+        def cast_rays_and_get_best_object():
+            best_length_squared = 1.0
+            best_obj = None
+            best_hit = None
+            best_face_index = None
+
+            objs_to_raycast = []
+
+            for obj, bbox_2d in self.objs_2d_bbox:
+                if obj.type == "MESH" and bbox_2d:
+                    if tool.Raycast.in_view_2d_bounding_box(self.mouse_pos, bbox_2d):
+                        objs_to_raycast.append(obj)
+
+            for obj in objs_to_raycast:
+                hit, normal, face_index = tool.Raycast.obj_ray_cast(context, event, obj)
+                if hit is None:
+                    # Tried original mouse position. Now it will try the offsets.
+                    original_mouse_pos = self.mouse_pos
+                    for value in mouse_offset:
+                        self.mouse_pos = tuple(x + y for x, y in zip(original_mouse_pos, value))
+                        hit, normal, face_index = tool.Raycast.obj_ray_cast(context, event, obj)
+                        if hit:
+                            break
+                    self.mouse_pos = original_mouse_pos
+                if hit is not None:
+                    hit_world = obj.original.matrix_world @ hit
+                    length_squared = (hit_world - ray_origin).length_squared
+                    if best_obj is None or length_squared < best_length_squared:
+                        best_length_squared = length_squared
+                        best_obj = obj
+                        best_hit = hit_world
+                        best_face_index = face_index
+
+            if best_obj is not None:
+                return best_obj, best_hit, best_face_index
+
+            else:
+                return None, None, None
+
+        snap_threshold = 0.3
+        ray_origin, ray_target, ray_direction = tool.Raycast.get_viewport_ray_data(context, event)
+        obj, hit, face_index = cast_rays_and_get_best_object()
+        intersection = tool.Raycast.ray_cast_to_plane(context, event, plane_origin, plane_normal)
+
+        # Locks snap into an angle axis
+        if event.shift:
+            rot_intersection, _, axis_start, axis_end = tool.Snap.snap_on_axis(intersection, self.snap_angle)
+        else:
+            self.snap_angle = None
+            rot_intersection, self.snap_angle, _, _ = tool.Snap.snap_on_axis(intersection)
+
+        if obj is not None:
+
+            snap_points = tool.Snap.get_snap_points_on_raycasted_obj(obj, face_index)
+            snap_point = tool.Snap.select_snap_point(snap_points, hit, snap_threshold)
+
+            if snap_point:
+                # Creates a mixed snap point between the locked axis and
+                # the object snap
+                # TODO Use ALT key to give the user the option to choose between the two results.
+                # TODO Create decorator for this
+                try:
+                    snap_point_vector = Vector(
+                        (snap_point[0].x, snap_point[0].y, snap_point[0].z)
+                    )  
+                    snap_point_axis_1 = (
+                        Vector((snap_point[0].x + 1000, snap_point[0].y, default_container_elevation)),
+                        Vector((snap_point[0].x - 1000, snap_point[0].y, default_container_elevation)),
+                    )
+                    snap_point_axis_2 = (
+                        Vector((snap_point[0].x, snap_point[0].y + 1000, default_container_elevation)),
+                        Vector((snap_point[0].x, snap_point[0].y - 1000, default_container_elevation)),
+                    )
+                    snap_angle_axis = (axis_start, axis_end)
+                    result_1 = tool.Cad.intersect_edges(snap_angle_axis, snap_point_axis_1)
+                    result_1 = Vector((result_1[0].x, result_1[0].y, default_container_elevation)) 
+                    distance_1 = (result_1 - snap_point_vector).length
+
+                    result_2 = tool.Cad.intersect_edges(snap_angle_axis, snap_point_axis_2)
+                    result_2 = Vector((result_2[0].x, result_2[0].y, default_container_elevation)) 
+                    distance_2 = (result_2 - snap_point_vector).length
+
+                    if distance_1 < distance_2:
+                        best_result = result_1
+                    else:
+                        best_result = result_2
+
+                    tool.Snap.update_snaping_point(best_result, "Axis")
+
+                except Exception as e:
+                    tool.Snap.update_snaping_point(snap_point[0], snap_point[1])
+
+            else:
+                tool.Snap.update_snaping_point(hit, "Face")
+
+        else:
+            snap_points = tool.Snap.get_snap_points_on_polyline()
+            snap_point = tool.Snap.select_snap_point(snap_points, intersection, snap_threshold)
+
+            if snap_point:
+                tool.Snap.update_snaping_point(snap_point[0], snap_point[1])
+            elif rot_intersection:
+                tool.Snap.update_snaping_point(rot_intersection, "Axis")
+            else:
+                tool.Snap.update_snaping_point(intersection, "Plane")
+
+    def validate_input(self, input_number):
+        grammar = """
+        start: dim expr?
+        dim: NUMBER
+        expr: (ADD | SUB | MUL | DIV) NUMBER
+
+        NUMBER: /-?\\d+(?:\\.\\d+)?/
+        ADD: "+"
+        SUB: "-"
+        MUL: "*"
+        DIV: "/"
+
+        %ignore " "
+        """
+
+        class InputTransform(Transformer):
+            def dim(self, args):
+                return float(args[0])
+
+            def expr(self, args):
+                op = args[0]
+                value = float(args[1])
+                if op == "+":
+                    return lambda x: x + value
+                elif op == "-":
+                    return lambda x: x - value
+                elif op == "*":
+                    return lambda x: x * value
+                elif op == "/":
+                    return lambda x: x / value
+
+            def start(self, args):
+                dimension = args[0]
+                if len(args) > 1:
+                    expression = args[1]
+                    return expression(dimension)
+                else:
+                    return dimension
+
+        try:
+            parser = Lark(grammar, parser="lalr", transformer=InputTransform())
+            result = parser.parse(input_number)
+            return True, str(result)
+        except:
+            self.report({"WARNING"}, "The number typed is not valid.")
+            return False, "0"
+
+    def recalculate_inputs(self, context):
+        if self.number_input:
+            is_valid, self.number_output = self.validate_input(self.number_output)
+            self.input_panel[self.input_type] = self.number_output
+            if is_valid:
+                if self.input_type in {"X", "Y"}:
+                    self.input_panel = WallPolylineDecorator.calculate_distance_and_angle(context, self.is_input_on)
+                elif self.input_type in {"D", "A"}:
+                    self.input_panel = WallPolylineDecorator.calculate_x_and_y(context)
+                self.input_panel[self.input_type] = self.number_output
+            WallPolylineDecorator.set_input_panel(self.input_panel, self.input_type)
+            tool.Blender.update_viewport()
+
+    # TODO This is creating a hack in generate function from DumbWallGenerator
+    # Come up with a better solution
+    def create_walls_from_polyline(self, context):
+        props = context.scene.BIMModelProperties
+        relating_type_id = props.relating_type_id
+
+        if not relating_type_id:
+            return {"FINISHED"}
+
+        self.container_obj = None
+        if container := tool.Root.get_default_container():
+            self.container_obj = tool.Ifc.get_object(container)
+
+        relating_type = tool.Ifc.get().by_id(int(relating_type_id))
+
+        dwg = DumbWallGenerator(relating_type).generate(True)
+        if dwg:
+            for wall1, wall2 in zip(dwg, dwg[1:] + [dwg[0]]):
+                print(wall1['obj'], wall2['obj'])
+                DumbWallJoiner().join_V(wall1['obj'], wall2['obj'])
+
+    def modal(self, context, event):
+
+        if not self.is_input_on:
+            if event.type == "MOUSEMOVE":
+                self.mousemove_count += 1
+                self.is_input_on = False
+                self.input_type = "OFF"
+                WallPolylineDecorator.set_input_panel(self.input_panel, self.input_type)
+                tool.Blender.update_viewport()
+            else:
+                self.mousemove_count = 0
+
+            if self.mousemove_count == 2:
+                self.objs_2d_bbox = []
+                for obj in self.visible_objs:
+                    self.objs_2d_bbox.append(tool.Raycast.get_objects_2d_bounding_boxes(context, obj))
+
+            if self.mousemove_count > 3:
+                self.snaping_movement(context, event)
+                WallPolylineDecorator.set_mouse_position(event)
+                self.input_panel = WallPolylineDecorator.calculate_distance_and_angle(context, self.is_input_on)
+                tool.Blender.update_viewport()
+                return {"RUNNING_MODAL"}
+
+        if event.value == "RELEASE" and event.type == "LEFTMOUSE":
+            tool.Snap.insert_polyline_point()
+
+        if not self.is_input_on:
+            if event.value == "RELEASE" and event.type == "BACK_SPACE":
+                tool.Snap.remove_last_polyline_point()
+                tool.Blender.update_viewport()
+
+        if self.is_input_on and event.value == "PRESS" and event.type == "TAB":
+            self.recalculate_inputs(context)
+            index = self.input_options.index(self.input_type)
+            size = len(self.input_options)
+            self.input_type = self.input_options[((index + 1) % size)]
+            self.number_input = []
+            WallPolylineDecorator.set_input_panel(self.input_panel, self.input_type)
+            tool.Blender.update_viewport()
+
+        if not self.is_input_on and event.value == "RELEASE" and event.type == "TAB":
+            self.recalculate_inputs(context)
+            self.is_input_on = True
+            self.input_type = "X"
+            self.number_input = []
+            WallPolylineDecorator.set_input_panel(self.input_panel, self.input_type)
+            tool.Blender.update_viewport()
+
+        if not self.is_input_on and event.ascii in self.number_options:
+            self.recalculate_inputs(context)
+            self.is_input_on = True
+            self.input_type = "D"
+            self.number_input = []
+            WallPolylineDecorator.set_input_panel(self.input_panel, self.input_type)
+            tool.Blender.update_viewport()
+
+        if event.value == "RELEASE" and event.type in self.input_options:
+            self.recalculate_inputs(context)
+            self.is_input_on = True
+            self.input_type = event.type
+            self.number_input = []
+            WallPolylineDecorator.set_input_panel(self.input_panel, self.input_type)
+            tool.Blender.update_viewport()
+
+        if self.input_type in self.input_options:
+            if (event.ascii in self.number_options) or (
+                event.value == "RELEASE" and event.type in {"BACK_SPACE", "MINUS", "NUMPAD_MINUS"}
+            ):
+                if event.type == "BACK_SPACE":
+                    if len(self.number_input) <= 1:
+                        self.number_input = []
+                    else:
+                        self.number_input = self.number_input[:-1]
+                    self.number_output = "".join(self.number_input)
+                    self.input_panel[self.input_type] = self.number_output
+                    WallPolylineDecorator.set_input_panel(self.input_panel, self.input_type)
+                    tool.Blender.update_viewport()
+                else:
+                    self.number_input.append(event.ascii)
+                    self.number_output = "".join(self.number_input)
+
+                if self.number_input:
+                    self.input_panel[self.input_type] = self.number_output
+                    WallPolylineDecorator.set_input_panel(self.input_panel, self.input_type)
+                    tool.Blender.update_viewport()
+
+        if not self.is_input_on and event.value == "RELEASE" and event.type in {"RET", "NUMPAD_ENTER"}:
+            self.create_walls_from_polyline(context)
+            WallPolylineDecorator.uninstall()
+            tool.Snap.clear_polyline()
+            tool.Blender.update_viewport()
+            return {"FINISHED"}
+
+        if self.is_input_on and event.value == "RELEASE" and event.type in {"RET", "NUMPAD_ENTER"}:
+            if self.input_type in self.input_options:
+                self.recalculate_inputs(context)
+                self.is_input_on = True
+                self.input_type = "OFF"
+                self.number_input = []
+                WallPolylineDecorator.set_input_panel(self.input_panel, self.input_type)
+                tool.Blender.update_viewport()
+            else:
+                tool.Snap.insert_polyline_point(float(self.input_panel["X"]), float(self.input_panel["Y"]))
+                self.is_input_on = False
+                self.input_type = "OFF"
+                self.number_input = []
+                self.number_output = ""
+                WallPolylineDecorator.set_input_panel(self.input_panel, self.input_type)
+                tool.Blender.update_viewport()
+
+        if event.type in {"MIDDLEMOUSE", "WHEELUPMOUSE", "WHEELDOWNMOUSE"}:
+            return {"PASS_THROUGH"}
+
+        if self.is_input_on:
+            if event.value == "RELEASE" and event.type in {"RIGHTMOUSE", "ESC"}:
+                self.is_input_on = False
+                self.input_type = "OFF"
+                WallPolylineDecorator.set_input_panel(self.input_panel, self.input_type)
+                tool.Blender.update_viewport()
+        else:
+            if event.value == "RELEASE" and event.type in {"RIGHTMOUSE", "ESC"}:
+                WallPolylineDecorator.uninstall()
+                tool.Snap.clear_polyline()
+                tool.Blender.update_viewport()
+                return {"CANCELLED"}
+
+        return {"RUNNING_MODAL"}
+
+    def invoke(self, context, event):
+        if context.space_data.type == "VIEW_3D":
+            WallPolylineDecorator.install(context)
+            WallPolylineDecorator.set_input_panel(self.input_panel, self.input_type)
+            self.visible_objs = tool.Raycast.get_visible_objects(context)
+            for obj in self.visible_objs:
+                self.objs_2d_bbox.append(tool.Raycast.get_objects_2d_bounding_boxes(context, obj))
+            self.snaping_movement(context, event)
+            WallPolylineDecorator.set_mouse_position(event)
+            self.input_panel = WallPolylineDecorator.calculate_distance_and_angle(context, self.is_input_on)
+            tool.Blender.update_viewport()
+            context.window_manager.modal_handler_add(self)
+            return {"RUNNING_MODAL"}
+        else:
+            self.report({"WARNING"}, "Active space must be a View3d")
+            return {"CANCELLED"}
+
+
 class DumbWallAligner:
     # An alignment shifts the origin of all walls to the closest point on the
     # local X axis of the reference wall. In addition, the Z rotation is copied.
@@ -391,7 +781,7 @@ class DumbWallGenerator:
         self.relating_type = relating_type
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
-    def generate(self):
+    def generate(self, draw_from_polyline=False):
         self.file = IfcStore.get_file()
         self.layers = tool.Model.get_material_layer_parameters(self.relating_type)
         if not self.layers["thickness"]:
@@ -412,7 +802,10 @@ class DumbWallGenerator:
         self.location = Vector((0, 0, 0))
         self.x_angle = 0 if tool.Cad.is_x(props.x_angle, 0, tolerance=0.001) else props.x_angle
 
-        return self.derive_from_cursor()
+        if draw_from_polyline:
+            return self.derive_from_polyline()
+        else:
+            return self.derive_from_cursor()
 
     def has_sketch(self):
         return (
@@ -421,6 +814,16 @@ class DumbWallGenerator:
             and bpy.context.scene.grease_pencil.layers[0].info == "Note"
             and bpy.context.scene.grease_pencil.layers[0].active_frame.strokes
         )
+
+    def derive_from_polyline(self):
+        polyline_data = bpy.context.scene.BIMModelProperties.polyline_point
+        walls = []
+        for i in range(len(polyline_data) - 1):
+            vec1 = Vector((polyline_data[i].x, polyline_data[i].y, polyline_data[i].z))
+            vec2 = Vector((polyline_data[i + 1].x, polyline_data[i + 1].y, polyline_data[i + 1].z))
+            coords = (vec1, vec2)
+            walls.append(self.create_wall_from_2_points(coords))
+        return walls
 
     def derive_from_sketch(self):
         objs = []

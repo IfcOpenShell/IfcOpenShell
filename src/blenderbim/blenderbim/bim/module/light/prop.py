@@ -19,6 +19,7 @@
 import bpy
 import pytz
 import tzfpy
+import json
 import datetime
 import blenderbim.tool as tool
 from math import radians, pi
@@ -32,9 +33,15 @@ from bpy.props import (
     BoolProperty,
     CollectionProperty,
 )
+import os
 from bpy.types import PropertyGroup
 from blenderbim.bim.module.light.data import SolarData
 from blenderbim.bim.module.light.decorator import SolarDecorator
+
+sun_position = tool.Blender.get_sun_position_addon()
+
+with open(os.path.join(os.path.dirname(__file__), "spectraldb.json"), "r") as f:
+    spectraldb = json.load(f)
 
 
 def get_sites(self, context):
@@ -149,6 +156,14 @@ def update_sun_path():
         obj.data.ortho_scale = props.sun_path_size * 2
 
 
+class RadianceMaterial(PropertyGroup):
+    name: StringProperty(name="Name")
+    style_id: StringProperty(name="Style ID")
+    category: StringProperty(name="Category")
+    subcategory: StringProperty(name="Subcategory")
+    is_mapped: BoolProperty(name="Is Mapped", default=False)
+
+
 class RadianceExporterProperties(PropertyGroup):
 
     def update_json_file(self, context):
@@ -164,24 +179,39 @@ class RadianceExporterProperties(PropertyGroup):
             self.ifc_file = bpy.path.abspath(self.ifc_file)
 
     def add_material_mapping(self, style_id, style_name):
-        item = self.material_mappings.add()
+        item = self.materials.add()
         item.name = style_name
-        item["style_id"] = style_id
-        item["radiance_material"] = "white"  # Default to white
+        item.style_id = style_id
+        item.category = ""
+        item.subcategory = ""
+        return item
 
     def get_material_mapping(self, style_name):
-        return next((item for item in self.material_mappings if item.name == style_name), None)
+        return next((item for item in self.materials if item.name == style_name), None)
 
-    def set_material_mapping(self, style_id, style_name, radiance_material):
+    def set_material_mapping(self, style_id, style_name, category, subcategory):
         item = self.get_material_mapping(style_name)
         if item:
-            item["radiance_material"] = radiance_material
+            item.category = category
+            item.subcategory = subcategory
         else:
             self.add_material_mapping(style_id, style_name)
-            self.material_mappings[-1]["radiance_material"] = radiance_material
+            self.materials[-1].category = category
+            self.materials[-1].subcategory = subcategory
 
     def get_mappings_dict(self):
-        return {item["style_id"]: item["radiance_material"] for item in self.material_mappings}
+        return {
+            item.style_id: (item.category, item.subcategory)
+            for item in self.materials
+            if item.category and item.subcategory
+        }
+
+    def unmap_material(self, style_name):
+        item = self.get_material_mapping(style_name)
+        if item:
+            item.category = ""
+            item.subcategory = ""
+            item.is_mapped = False
 
     use_json_file: BoolProperty(
         name="Upload JSON",
@@ -193,7 +223,47 @@ class RadianceExporterProperties(PropertyGroup):
         name="Is Exporting", description="Whether the OBJ export is in progress", default=False
     )
 
-    material_mappings: bpy.props.CollectionProperty(type=bpy.types.PropertyGroup, name="Material Mappings")
+    categories = [
+        ("Wall", "Wall", ""),
+        ("Floor", "Floor", ""),
+        ("Ceiling", "Ceiling", ""),
+        ("Door", "Door", ""),
+        ("Furniture", "Furniture", ""),
+        ("Exterior Floor", "Exterior Floor", ""),
+        ("Others", "Others", ""),
+        ("Exterior Building", "Exterior Building", ""),
+        ("Window Mullion", "Window Mullion", ""),
+        ("PV", "PV", ""),
+        ("Plant", "Plant", ""),
+        ("Exterior", "Exterior", ""),
+        ("Color Swatch", "Color Swatch", ""),
+    ]
+
+    def update_material_mapping(self, context):
+        if self.active_material_index >= 0 and self.active_material_index < len(self.materials):
+            active_material = self.materials[self.active_material_index]
+            active_material.category = self.category
+            active_material.subcategory = self.subcategory
+            active_material.is_mapped = True
+            print(f"Material '{active_material.name}' mapped to {self.category} - {self.subcategory}")
+
+    category: bpy.props.EnumProperty(
+        items=categories, name="Category", description="Material category", update=update_material_mapping
+    )
+
+    def get_subcategories(self, context):
+        if self.category in spectraldb:
+            return [(k, k, "") for k in spectraldb[self.category].keys()]
+        return []
+
+    subcategory: bpy.props.EnumProperty(
+        items=get_subcategories, name="Subcategory", description="Material subcategory", update=update_material_mapping
+    )
+
+    materials: CollectionProperty(type=RadianceMaterial)
+    active_material_index: IntProperty()
+
+    # material_mappings: bpy.props.CollectionProperty(type=bpy.types.PropertyGroup, name="Material Mappings")
     # material_mappings: CollectionProperty(type=MaterialMapping)
 
     should_load_from_memory: BoolProperty(

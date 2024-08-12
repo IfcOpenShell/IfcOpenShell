@@ -22,7 +22,9 @@ $(document).ready(function () {
   var systemTheme = window.matchMedia("(prefers-color-scheme: light)").matches
     ? "light"
     : "dark";
-  var theme = localStorage.getItem("theme") || systemTheme;
+  $(":root").css("color-scheme", systemTheme);
+  var defaultTheme = "blender";
+  var theme = localStorage.getItem("theme") || defaultTheme;
   setTheme(theme);
 
   connectSocket();
@@ -37,6 +39,8 @@ function connectSocket() {
   // Register socket event handlers
   socket.on("blender_connect", handleBlenderConnect);
   socket.on("blender_disconnect", handleBlenderDisconnect);
+  socket.on("connected_clients", handleConnectedClients);
+  socket.on("theme_data", handleThemeData);
   socket.on("gantt_data", handleGanttData);
   socket.on("default_data", handleDefaultData);
 }
@@ -51,6 +55,10 @@ function handleBlenderConnect(blenderId) {
       ganttTasks: {},
     };
   }
+
+  $("#blender-count").text(function (i, text) {
+    return parseInt(text, 10) + 1;
+  });
 }
 
 // Function to handle 'blender_disconnect' event
@@ -66,6 +74,50 @@ function handleBlenderDisconnect(blenderId) {
   });
 }
 
+function handleConnectedClients(data) {
+  $("#blender-count").text(data.length);
+  console.log(data);
+  data.forEach(function (id) {
+    connectedClients[id] = {
+      shown: false,
+      workSchedule: {},
+      ganttTasks: {},
+    };
+  });
+}
+
+function handleThemeData(themeData) {
+  console.log(themeData);
+
+  function arrayToRgbString(arr) {
+    const [r, g, b, a] = arr.map((num) => Math.round(num * 255));
+    if (a !== undefined) {
+      return `rgba(${r}, ${g}, ${b}, ${a})`;
+    }
+    return `rgb(${r}, ${g}, ${b})`;
+  }
+
+  function generateCssVariableRule(theme) {
+    let cssVariables = ":root.blender {\n";
+    for (const key in theme) {
+      const cssVariableName = `--blender-${key.replace(/_/g, "-")}`;
+      const cssVariableValue = arrayToRgbString(theme[key]);
+      cssVariables += `    ${cssVariableName}: ${cssVariableValue};\n`;
+    }
+    cssVariables += "}";
+    return cssVariables;
+  }
+
+  const cssRule = generateCssVariableRule(themeData.theme);
+  console.log(cssRule);
+
+  var styleElement = $("#gantt-stylesheet")[0];
+  if (styleElement) {
+    var sheet = styleElement.sheet || styleElement.styleSheet;
+    sheet.insertRule(cssRule, sheet.cssRules.length);
+  }
+}
+
 // Function to handle 'gantt_data' event
 function handleGanttData(data) {
   const blenderId = data["blenderId"];
@@ -75,7 +127,6 @@ function handleGanttData(data) {
   const filename = data["data"]["ifc_file"];
   const ganttTasks = data["data"]["gantt_data"]["tasks"];
   const ganttWorkSched = data["data"]["gantt_data"]["work_schedule"];
-  // const ganttWorkSched = {};
 
   if (connectedClients.hasOwnProperty(blenderId)) {
     if (!connectedClients[blenderId].shown) {
@@ -111,10 +162,6 @@ function handleDefaultData(data) {
 
 // Function to add a new gantt with data and filename
 function addGanttElement(blenderId, tasks, workSched, filename) {
-  $("#blender-count").text(function (i, text) {
-    return parseInt(text, 10) + 1;
-  });
-
   const ganttContainer = $("<div></div>")
     .addClass("gantt-container")
     .attr("id", "container-" + blenderId);
@@ -375,21 +422,24 @@ function editValue(list, task, event, cell, column) {
 }
 
 function setTheme(theme) {
+  $("html").removeClass("light dark blender").addClass(theme);
   if (theme === "light") {
-    $("html").removeClass("dark").addClass("light");
     $("#toggle-theme").html('<i class="fas fa-sun"></i>');
-  } else {
-    $("html").removeClass("light").addClass("dark");
+  } else if (theme === "dark") {
     $("#toggle-theme").html('<i class="fas fa-moon"></i>');
+  } else if (theme === "blender") {
+    $("#toggle-theme").html('<i class="fas fa-adjust"></i>');
   }
   localStorage.setItem("theme", theme);
 }
 
 function toggleTheme() {
-  if ($("html").hasClass("dark")) {
-    setTheme("light");
-  } else {
+  if ($("html").hasClass("light")) {
     setTheme("dark");
+  } else if ($("html").hasClass("dark")) {
+    setTheme("blender");
+  } else {
+    setTheme("light");
   }
 }
 
@@ -402,15 +452,17 @@ function toggleClientList() {
   }
 
   clientList.empty();
+  var counter = 0;
 
   $.each(connectedClients, function (id, client) {
-    if (!client.shown) return;
-
+    counter++;
     const dropdownIcon = $("<i>")
       .addClass("fas fa-chevron-down")
       .css("margin-left", "0.5rem");
 
-    const clientDiv = $("<div>").addClass("client").text(client.ifc_file);
+    const clientDiv = $("<div>")
+      .addClass("client")
+      .text(client.ifc_file || "Blender " + counter);
 
     clientDiv.append(dropdownIcon);
 
@@ -421,6 +473,13 @@ function toggleClientList() {
         .addClass("client-detail")
         .text(`Blender ID: ${id}`);
       clientDetailsDiv.append(clientId);
+    }
+
+    if (!client.shown) {
+      const clientShown = $("<div>")
+        .addClass("client-detail")
+        .text("No work schedule exported for this Blender yet");
+      clientDetailsDiv.append(clientShown);
     }
 
     if (client.workSchedule && client.gantt) {
@@ -441,9 +500,7 @@ function toggleClientList() {
         .text("Scroll to Gantt Chart")
         .on("click", function () {
           $("html, body").animate(
-            {
-              scrollTop: $("#gantt-" + id).offset().top,
-            },
+            { scrollTop: $("#gantt-" + id).offset().top },
             600
           );
           clientList.removeClass("show");

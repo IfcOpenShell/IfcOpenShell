@@ -9,8 +9,9 @@
     --padding-small: 0.625rem;
     --padding-medium: 1rem;
     --font-size-large: 1.2rem;
-    --logo-height: 2.5rem;
-    --nav-height: 2.5rem;
+    --logo-height: 1.5rem;
+    --nav-height: 0.625rem;
+    --border-radius: 0.3rem;
 }
 
 :root.dark {
@@ -22,7 +23,7 @@
     --nav-link-color: #fff;
     --nav-link-hover-color: #3fb449;
     --warning-color: #FFDB8F;
-    --table-border-color: #464444;
+    --border-color: #464444;
 }
 
 :root.light {
@@ -34,7 +35,11 @@
     --nav-link-color: #000000;
     --nav-link-hover-color: #38a63d;
     --warning-color: #FF4500;
-    --table-border-color: #222;
+    --border-color: #222;
+}
+
+*:not(.tabulator-cell) {
+    border-radius: var(--border-radius) !important;
 }
 
 html {
@@ -42,8 +47,8 @@ html {
 }
 
 body {
-    background-color: var(--bg-color);
-    color: var(--text-color);
+    background-color: var(--blender-window-background, var(--bg-color));
+    color: var(--blender-text, var(--text-color));
     margin: 0;
     font-family: var(--font-family);
     display: flex;
@@ -64,13 +69,13 @@ h3 {
 }
 
 nav {
-    background-color: var(--nav-bg-color);
+    background-color: var(--blender-top-bar-header, var(--nav-bg-color));
     height: var(--nav-height);
     padding: var(--padding-medium) 0;
     display: flex;
     align-items: center;
     position: relative;
-    border-bottom: 2px solid var(--nav-border-color);
+    border-bottom: 2px solid var(--blender-tab-outline, var(--nav-border-color));
 }
 
 nav .logo {
@@ -81,29 +86,27 @@ nav .logo {
 nav ul {
     list-style-type: none;
     margin: 0;
-    margin-left: 0.0625rem;
     display: flex;
-    flex-grow: 1;
+    flex: 1;
     justify-content: center;
 }
 
 nav ul li {
-    margin-right: 3.125rem;
+    margin-right: var(--margin-large);
 }
 
 nav ul li a {
     text-decoration: none;
-    color: var(--nav-link-color);
-    font-size: var(--font-size-large);
+    color: var(--blender-text, var(--nav-link-color));
 }
 
 nav ul li a:hover,
 nav ul li a.active {
-    color: var(--nav-link-hover-color);
+    color: var(--blender-selected-object, var(--nav-link-hover-color));
 }
 
 .warning {
-    color: var(--warning-color);
+    color: var(--blender-info-warning, var(--warning-color));
     margin-bottom: var(--margin-small);
     padding: var(--padding-tiny);
     display: none;
@@ -127,8 +130,8 @@ nav ul li a.active {
     overflow-y: auto;
     overflow: hidden;
     transition: opacity 0.3s ease-out, visibility 0.3s ease-out;
-    border: 1px solid var(--table-border-color);
-    background-color: var(--nav-bg-color);
+    border: 1px solid var(--blender-tab-outline, var(--border-color));
+    background-color: var(--blender-panel-background, var(--nav-bg-color));
     z-index: 1;
     opacity: 0;
     visibility: hidden;
@@ -146,7 +149,7 @@ nav ul li a.active {
 
 .client {
     padding: var(--margin-small);
-    border-bottom: 1px solid var(--table-border-color);
+    border-bottom: 1px solid var(--blender-tab-outline, var(--border-color));
     cursor: pointer;
 }
 
@@ -155,7 +158,7 @@ nav ul li a.active {
     overflow: hidden;
     padding-left: var(--padding-small);
     transition: max-height 0.2s ease-out, padding 0.2s ease-out, opacity 0.1s ease-out;
-    background-color: var(--nav-bg-color);
+    background-color: var(--blender-panel-background, var(--nav-bg-color));
     margin-top: var(--margin-tiny);
     opacity: 0;
 }
@@ -166,15 +169,15 @@ nav ul li a.active {
 }
 
 .client-detail {
-    border-bottom: 1px solid var(--table-border-color);
+    border-bottom: 1px solid var(--blender-tab-outline, var(--border-color));
     padding: var(--padding-small);
 }
 
 #show-connected-button {
     width: auto;
-    background-color: var(--bg-color);
-    border: none;
+    background-color: var(--blender-panel-header, var(--bg-color));
     font-size: var(--base-font-size);
+    color: var(--blender-text, var(--text-color))
 }
 
 #show-connected-button:hover,
@@ -189,15 +192,15 @@ nav ul li a.active {
 }
 
 footer {
-    background-color: var(--nav-bg-color);
+    background-color: var(--blender-top-bar-header, var(--nav-bg-color));
     text-align: right;
     padding: var(--padding-tiny);
-    border-top: 1px solid var(--nav-border-color);
+    border-top: 1px solid var(--blender-tab-outline, var(--nav-border-color));
 }
 
 footer p {
     margin: 0;
-    color: var(--text-color);
+    color: var(--blender-text, var(--nav-link-color));
     margin-right: var(--margin-small);
     font-size: 0.8rem;
 }
@@ -210,6 +213,18 @@ footer p {
     margin-top: var(--margin-small);
 }
 
+button,
+select {
+    background-color: var(--blender-button-background, var(--bg-color));
+    color: var(--blender-button-text, var(--text-color));
+    border-color: var(--blender-button-border, var(--border-color));
+    transition: filter 0.2s ease;
+}
+
+button:hover {
+    filter: brightness(1.2);
+}
+
 /* ------------ Overwriting Tabulator CSS rules ------------ */
 
 :root.light .tabulator-header,
@@ -219,6 +234,69 @@ footer p {
 }
 
 :root.light .tabulator {
-    border-top: 1px solid var(--table-border-color);
-    border-bottom: 2px solid var(--table-border-color);
+    border-top: 1px solid var(--border-color);
+    border-bottom: 2px solid var(--border-color);
+}
+
+:root.blender .tabulator-table-holder,
+:root.blender .tabulator {
+    background-color: var(--blender-panel-background) !important;
+}
+
+:root.blender .tabulator-header {
+    border-bottom-color: var(--blender-tab-outline);
+    color: var(--blender-text);
+}
+
+:root.blender .tabulator-header,
+:root.blender .tabulator .tabulator-header .tabulator-col {
+    background-color: var(--blender-panel-header) !important;
+}
+
+:root.blender .tabulator {
+    border-top-color: var(--blender-tab-outline);
+    border-bottom-color: var(--blender-tab-outline);
+    color: var(--blender-text);
+}
+
+:root.blender .tabulator-row-odd .tabulator-cell {
+    background-color: var(--blender-odd-row);
+    transition: filter 0.2s ease;
+}
+
+:root.blender .tabulator-row-even .tabulator-cell {
+    background-color: var(--blender-even-row);
+    transition: filter 0.2s ease;
+}
+
+:root.blender .tabulator-row-odd:hover .tabulator-cell,
+:root.blender .tabulator-row-even:hover .tabulator-cell {
+    filter: brightness(1.4);
+}
+
+:root.blender .tabulator-row,
+:root.blender .tabulator-cell {
+    color: var(--blender-text);
+}
+
+
+
+:root.blender .tabulator-selected .tabulator-cell {
+    background-color: var(--blender-active-highlight) !important;
+    color: var(--blender-active-text-highlight) !important;
+}
+
+
+:root.blender .tabulator-selected:hover .tabulator-cell {
+    filter: brightness(1.2)
+}
+
+.tabulator-menu-item {
+    color: var(--blender-text) !important;
+    background-color: var(--blender-panel-background) !important;
+    transition: filter 0.1s ease;
+}
+
+.tabulator-menu-item:hover {
+    filter: brightness(1.4);
 }

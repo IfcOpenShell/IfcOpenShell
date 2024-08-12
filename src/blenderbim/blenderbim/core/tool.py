@@ -659,6 +659,9 @@ class Qto:
     def get_rounded_value(cls, new_quantity): pass
     def set_qto_result(cls, result): pass
 
+@interface
+class Raycast:
+    pass
 
 @interface
 class Resource:
@@ -933,6 +936,10 @@ class Spatial:
 @interface
 class Covering:
     def get_z_from_ceiling_height(cls): pass
+
+@interface
+class Snap:
+    pass
 
 @interface
 class Structural:

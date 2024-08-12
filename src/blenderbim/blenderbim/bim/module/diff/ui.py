@@ -98,6 +98,9 @@ class BIM_PT_diff(Panel):
         row = layout.row()
         row.operator("bim.execute_ifc_diff")
 
+        if props.active_file == "NONE":
+            return
+
         row = layout.row(align=True)
         row.prop(props, "diff_json_file")
         row.operator("bim.select_diff_json_file", icon="FILE_FOLDER", text="")

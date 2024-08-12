@@ -268,7 +268,7 @@ class TopicHandler:
 
         return outfile
 
-    def add_viewpoint(self, element: entity_instance) -> None:
+    def add_viewpoint(self, element: entity_instance) -> VisualizationInfoHandler:
         """Add a viewpoint pointed at the placement of an IFC element to the topic.
 
         Args:
@@ -278,7 +278,9 @@ class TopicHandler:
         self.add_visinfo_handler(new_viewpoint)
         return new_viewpoint
 
-    def add_viewpoint_from_point_and_guids(self, position: NDArray[np.float64], *guids: str) -> None:
+    def add_viewpoint_from_point_and_guids(
+        self, position: NDArray[np.float64], *guids: str
+    ) -> VisualizationInfoHandler:
         """Add a viewpoint pointing at an XYZ point in space
 
         Args:
@@ -291,9 +293,17 @@ class TopicHandler:
         self.add_visinfo_handler(vi_handler)
         return vi_handler
 
-    def add_visinfo_handler(self, new_viewpoint: VisualizationInfoHandler) -> None:
+    def add_visinfo_handler(
+        self, new_viewpoint: VisualizationInfoHandler, snapshot_filename: Optional[str] = None
+    ) -> mdl.ViewPoint:
         self.viewpoints[new_viewpoint.guid + ".bcfv"] = new_viewpoint
-        self.markup.viewpoints.append(mdl.ViewPoint(viewpoint=new_viewpoint.guid + ".bcfv", guid=new_viewpoint.guid))
+        viewpoint = mdl.ViewPoint(
+            viewpoint=new_viewpoint.guid + ".bcfv",
+            snapshot=snapshot_filename,
+            guid=new_viewpoint.guid,
+        )
+        self.markup.viewpoints.append(viewpoint)
+        return viewpoint
 
     def __eq__(self, other: object) -> bool | NoReturn:
         return (

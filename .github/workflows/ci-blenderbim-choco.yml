@@ -1,4 +1,4 @@
-name: Publish-blenderbim-chocolatey package
+name: ci-blenderbim-choco
 
 on:
   schedule:
@@ -9,6 +9,7 @@ on:
     #         │  │ │ │ ┌───────────── day of the week (0 - 6 or SUN-SAT)
     #         *  * * * *
     - cron:  "30 0 * * *" # 30min past utc midnight
+  workflow_dispatch:
 
 env:
   major: 0
@@ -41,5 +42,6 @@ jobs:
       - name: Check in release tags if we should do a choco release and perform the release if needed
         id: do_choco_release
         run: |
+          pip install pygithub
           cd /home/runner/work/IfcOpenShell/IfcOpenShell/choco/blenderbim/ &&
           python3 choco_release.py

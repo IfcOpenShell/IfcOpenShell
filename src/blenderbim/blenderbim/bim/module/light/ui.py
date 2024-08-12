@@ -55,15 +55,30 @@ class BIM_PT_radiance_exporter(bpy.types.Panel):
         if props.use_json_file:
             row = layout.row()
             row.prop(props, "json_file")
-        else:
-            # Material Mappings UI
-            layout.label(text="Material Mappings:")
-            for item in props.material_mappings:
-                row = layout.row(align=True)
-                row.label(text=item.name)
-                row.prop(item, '["radiance_material"]', text="")
 
-            layout.operator("bim.refresh_ifc_materials")
+        if not props.use_json_file:
+            row = layout.row()
+            layout.label(text="Info: Unmapped materials default to white")
+            row = layout.row()
+            row.template_list("MATERIAL_UL_radiance_materials", "", props, "materials", props, "active_material_index")
+
+            if len(props.materials) > 0:
+                col = layout.column(align=True)
+                col.prop(props, "category")
+                if props.category:
+                    col.prop(props, "subcategory")
+
+                if props.active_material_index >= 0 and props.active_material_index < len(props.materials):
+                    active_material = props.materials[props.active_material_index]
+                    if active_material.category and active_material.subcategory:
+                        layout.label(
+                            text=f"Mapped: {active_material.name} to {active_material.category} - {active_material.subcategory}"
+                        )
+                    else:
+                        layout.label(text=f"Select category and subcategory for: {active_material.name}")
+
+            row = layout.row()
+            row.operator("bim.refresh_ifc_materials", text="Refresh IFC Materials")
 
         layout.separator()
         row = layout.row()
@@ -95,8 +110,9 @@ class BIM_PT_radiance_exporter(bpy.types.Panel):
         row = layout.row()
         row.prop(props, "use_hdr")
 
-        row = layout.row()
-        row.prop(props, "choose_hdr_image")
+        if props.use_hdr:
+            row = layout.row()
+            row.prop(props, "choose_hdr_image")
 
         row = layout.row()
         row.operator("export_scene.radiance", text="Export Geometry for Simulation")

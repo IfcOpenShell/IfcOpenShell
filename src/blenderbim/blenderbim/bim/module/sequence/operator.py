@@ -1399,11 +1399,8 @@ class LoadProductTasks(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        if not tool.Ifc.get():
-            return False
-        if not context.active_object:
-            return False
-        if not context.active_object.BIMObjectProperties.ifc_definition_id:
+        if not tool.Ifc.get() or not (obj := context.active_object) or not (obj.BIMObjectProperties.ifc_definition_id):
+            cls.poll_message_set("No IFC object is active.")
             return False
         return True
 

@@ -8,7 +8,9 @@ $(document).ready(function () {
   var systemTheme = window.matchMedia("(prefers-color-scheme: light)").matches
     ? "light"
     : "dark";
-  var theme = localStorage.getItem("theme") || systemTheme;
+  $(":root").css("color-scheme", systemTheme);
+  var defaultTheme = "blender";
+  var theme = localStorage.getItem("theme") || defaultTheme;
   setTheme(theme);
 
   $("#dropdown-menu").change(function () {
@@ -30,20 +32,16 @@ function connectSocket() {
   socket.on("blender_connect", handleBlenderConnect);
   socket.on("blender_disconnect", handleBlenderDisconnect);
   socket.on("connect", handleWebConnect);
+  socket.on("connected_clients", handleConnectedClients);
+  socket.on("default_data", handleDefaultData);
+  socket.on("theme_data", handleThemeData);
   socket.on("drawings_data", handleDrawingsData);
   socket.on("svg_data", handleSvgData);
-  //   socket.on("default_data", handleDefaultData);
 }
 
 // function used to get drawings data from blenderbim
 function handleWebConnect() {
-  const msg = {
-    sourcePage: "drawings",
-    operator: {
-      type: "getDrawings",
-    },
-  };
-  socket.emit("web_operator", msg);
+  getDrawingsData();
 }
 
 // Function to handle 'blender_connect' event
@@ -53,8 +51,28 @@ function handleBlenderConnect(blenderId) {
     connectedClients[blenderId] = {
       shown: false,
       ifc_file: "",
+      has_drawings: false,
     };
   }
+
+  $("#blender-count").text(function (i, text) {
+    return parseInt(text, 10) + 1;
+  });
+
+  const msg = {
+    blenderId: blenderId,
+    sourcePage: "drawings",
+    operator: {
+      type: "getDrawings",
+    },
+  };
+  socket.emit("web_operator", msg);
+}
+
+// Function to handle 'default_data' event
+function handleDefaultData(data) {
+  const blenderId = data["blenderId"];
+  getDrawingsData(blenderId);
 }
 
 // Function to handle 'blender_disconnect' event
@@ -62,12 +80,56 @@ function handleBlenderDisconnect(blenderId) {
   console.log("blender_disconnect: ", blenderId);
   if (connectedClients.hasOwnProperty(blenderId)) {
     delete connectedClients[blenderId];
-    // remove(blenderId);
+    removeSelectOption(blenderId);
   }
 
   $("#blender-count").text(function (i, text) {
     return parseInt(text, 10) - 1;
   });
+}
+
+function handleConnectedClients(data) {
+  $("#blender-count").text(data.length);
+  console.log(data);
+  data.forEach(function (id) {
+    connectedClients[id] = {
+      shown: false,
+      ifc_file: "",
+      has_drawings: false,
+    };
+  });
+}
+
+function handleThemeData(themeData) {
+  console.log(themeData);
+
+  function arrayToRgbString(arr) {
+    const [r, g, b, a] = arr.map((num) => Math.round(num * 255));
+    if (a !== undefined) {
+      return `rgba(${r}, ${g}, ${b}, ${a})`;
+    }
+    return `rgb(${r}, ${g}, ${b})`;
+  }
+
+  function generateCssVariableRule(theme) {
+    let cssVariables = ":root.blender {\n";
+    for (const key in theme) {
+      const cssVariableName = `--blender-${key.replace(/_/g, "-")}`;
+      const cssVariableValue = arrayToRgbString(theme[key]);
+      cssVariables += `    ${cssVariableName}: ${cssVariableValue};\n`;
+    }
+    cssVariables += "}";
+    return cssVariables;
+  }
+
+  const cssRule = generateCssVariableRule(themeData.theme);
+  console.log(cssRule);
+
+  var styleElement = $("#drawings-stylesheet")[0];
+  if (styleElement) {
+    var sheet = styleElement.sheet || styleElement.styleSheet;
+    sheet.insertRule(cssRule, sheet.cssRules.length);
+  }
 }
 
 function handleDrawingsData(data) {
@@ -81,6 +143,8 @@ function handleDrawingsData(data) {
 
   allDrawings[filename] = { drawings: drawings, sheets: sheets };
 
+  const hasDrawings = drawings.length > 0 || sheets.length > 0;
+
   console.log(connectedClients);
 
   if (connectedClients.hasOwnProperty(blenderId)) {
@@ -88,15 +152,17 @@ function handleDrawingsData(data) {
       connectedClients[blenderId] = {
         shown: true,
         ifc_file: filename,
+        has_drawings: hasDrawings,
       };
       addSelectOption(blenderId, filename);
     } else {
-      // update(blenderId, data, filename);
+      updateSelectOption(blenderId, filename);
     }
   } else {
     connectedClients[blenderId] = {
       shown: true,
       ifc_file: filename,
+      has_drawings: hasDrawings,
     };
     addSelectOption(blenderId, filename);
   }
@@ -135,6 +201,32 @@ function addSelectOption(blenderId, filename) {
   $("#dropdown-menu").append(filenameOption);
 }
 
+function updateSelectOption(blenderId, filename) {
+  $("#blender-" + blenderId).text(filename);
+  console.log(blenderId, filename);
+  console.log($("#dropdown-menu").val());
+
+  if ($("#dropdown-menu").val() === filename) {
+    console.log("here");
+    displayDrawingsNames(blenderId, filename);
+  }
+}
+
+function removeSelectOption(blenderId) {
+  const filename = $("#blender-" + blenderId).val();
+  const selectedOption = $("#dropdown-menu").val();
+
+  $("#blender-" + blenderId).remove();
+  delete allDrawings[filename];
+
+  if (selectedOption == filename) {
+    $("#dropdown-menu").val("0");
+
+    $("#drawings-sub-panel").empty();
+    $("#sheets-sub-panel").empty();
+  }
+}
+
 function displayDrawingsNames(blenderId, ifcFile) {
   drawings = allDrawings[ifcFile].drawings;
   sheets = allDrawings[ifcFile].sheets;
@@ -163,6 +255,9 @@ function displayDrawingsNames(blenderId, ifcFile) {
         };
         console.log(msg);
         socket.emit("get_svg", msg);
+
+        $("li").removeClass("selected-svg");
+        $(this).addClass("selected-svg");
       });
 
     if (type === "drawing") $("#drawings-sub-panel").append(label);
@@ -181,21 +276,24 @@ function displayDrawingsNames(blenderId, ifcFile) {
 }
 
 function setTheme(theme) {
+  $("html").removeClass("light dark blender").addClass(theme);
   if (theme === "light") {
-    $("html").removeClass("dark").addClass("light");
     $("#toggle-theme").html('<i class="fas fa-sun"></i>');
-  } else {
-    $("html").removeClass("light").addClass("dark");
+  } else if (theme === "dark") {
     $("#toggle-theme").html('<i class="fas fa-moon"></i>');
+  } else if (theme === "blender") {
+    $("#toggle-theme").html('<i class="fas fa-adjust"></i>');
   }
   localStorage.setItem("theme", theme);
 }
 
 function toggleTheme() {
-  if ($("html").hasClass("dark")) {
-    setTheme("light");
-  } else {
+  if ($("html").hasClass("light")) {
     setTheme("dark");
+  } else if ($("html").hasClass("dark")) {
+    setTheme("blender");
+  } else {
+    setTheme("light");
   }
 }
 
@@ -208,15 +306,18 @@ function toggleClientList() {
   }
 
   clientList.empty();
+  var counter = 0;
 
   $.each(connectedClients, function (id, client) {
-    if (!client.shown) return;
+    counter++;
 
     const dropdownIcon = $("<i>")
       .addClass("fas fa-chevron-down")
       .css("margin-left", "0.5rem");
 
-    const clientDiv = $("<div>").addClass("client").text(client.ifc_file);
+    const clientDiv = $("<div>")
+      .addClass("client")
+      .text(client.ifc_file || "Blender " + counter);
 
     clientDiv.append(dropdownIcon);
 
@@ -229,26 +330,19 @@ function toggleClientList() {
       clientDetailsDiv.append(clientId);
     }
 
-    if (client.headers && client.headers.length) {
-      const clientHeaders = $("<div>")
+    if (!client.has_drawings) {
+      const clientShown = $("<div>")
         .addClass("client-detail")
-        .text(`Table Headers: ${client.headers.join(", ")}`);
-
-      const scrollButton = $("<button>")
-        .addClass("scroll-button")
-        .text("Scroll to Table")
-        .on("click", function () {
-          $("html, body").animate(
-            {
-              scrollTop: $("#table-" + id).offset().top,
-            },
-            600
-          );
-          clientList.removeClass("show");
-        });
-
-      clientDetailsDiv.append(clientHeaders);
-      clientDetailsDiv.append(scrollButton);
+        .text("No drawings exist for this IFC File yet");
+      clientDetailsDiv.append(clientShown);
+    } else {
+      const clientNumbers = $("<div>")
+        .addClass("client-detail")
+        .text(
+          `${allDrawings[client.ifc_file].drawings.length} Drawing(s), 
+          ${allDrawings[client.ifc_file].sheets.length} Sheet(s)`
+        );
+      clientDetailsDiv.append(clientNumbers);
     }
 
     clientDiv.append(clientDetailsDiv);
@@ -260,4 +354,19 @@ function toggleClientList() {
     clientList.append(clientDiv);
   });
   clientList.addClass("show");
+}
+
+function getDrawingsData(blenderId) {
+  const msg = {
+    sourcePage: "drawings",
+    operator: {
+      type: "getDrawings",
+    },
+  };
+
+  if (blenderId !== undefined) {
+    msg.BlenderId = blenderId;
+  }
+
+  socket.emit("web_operator", msg);
 }

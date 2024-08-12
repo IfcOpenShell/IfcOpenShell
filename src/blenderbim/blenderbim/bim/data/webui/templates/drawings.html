@@ -1,14 +1,18 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en" class="blender">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Web Client</title>
+    <title>BlenderBIM Web UI</title>
     <link
       rel="stylesheet"
       href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
     />
-    <link rel="stylesheet" href="/static/css/drawings.css" />
+    <link
+      rel="stylesheet"
+      href="/static/css/drawings.css"
+      id="drawings-stylesheet"
+    />
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"
@@ -46,9 +50,34 @@
         class="logo"
       />
       <ul>
-        <li><a href="/">IFC Data</a></li>
-        <li><a href="/gantt">Gantt Chart</a></li>
-        <li><a href="/drawings" class="active">Drawings</a></li>
+        <li>
+          <a href="/"><i class="fa-solid fa-table"></i> Schedules</a>
+        </li>
+        <li>
+          <a href="/gantt"
+            ><i class="fa-solid fa-chart-gantt"></i> Construction Sequencing</a
+          >
+        </li>
+        <li>
+          <a href="drawings" class="active"
+            ><i class="fa-solid fa-images"></i> Documentation</a
+          >
+        </li>
+        <li>
+          <a class="dummy-class"
+            ><i class="fa-solid fa-camera"></i> BCF Topics</a
+          >
+        </li>
+        <li>
+          <a class="dummy-class"
+            ><i class="fa-solid fa-square-check"></i> IDS Audits</a
+          >
+        </li>
+        <li>
+          <a class="dummy-class"
+            ><i class="fa-solid fa-hotel"></i> Facility Management</a
+          >
+        </li>
       </ul>
       <button id="toggle-theme" onclick="toggleTheme()">
         <i class="fas fa-moon"></i>
@@ -65,20 +94,20 @@
     <div class="container-fluid d-flex" id="container">
       <div class="col-2 left">
         <!-- Dropdown menu -->
-        <div class="dropdown mb-3">
+        <div class="dropdown mb-1">
           <label for="dropdown-menu">IFC File:</label>
           <select class="p-0 pl-2" id="dropdown-menu">
             <!-- IFC files will be dynamically populated here -->
-            <option value="" selected disabled hidden>IFC File</option>
+            <option value="0" selected hidden>IFC File</option>
           </select>
         </div>
         <!-- Panel with sub-panels -->
         <div class="panel">
-          <div id="accordion">
+          <div class="card-container" id="accordion">
             <div class="card pb-2">
               <div class="card-header overflow-hidden" id="headingOne">
                 <button
-                  class="btn p-0 w-100 text-left"
+                  class="btn p-0 pl-2 w-100 text-left"
                   data-toggle="collapse"
                   data-target="#collapseOne"
                 >
@@ -86,7 +115,7 @@
                 </button>
               </div>
 
-              <div id="collapseOne" class="collapse show">
+              <div id="collapseOne" class="collapse show card-container">
                 <div class="card-body">
                   <ul class="sub-panel pl-2" id="drawings-sub-panel">
                     <!-- Drawings will be dynamically populated here -->
@@ -97,14 +126,14 @@
             <div class="card pb-2">
               <div class="card-header overflow-hidden" id="headingTwo">
                 <button
-                  class="btn p-0 w-100 text-left"
+                  class="btn p-0 pl-2 w-100 text-left"
                   data-toggle="collapse"
                   data-target="#collapseTwo"
                 >
                   Sheets
                 </button>
               </div>
-              <div id="collapseTwo" class="collapse show">
+              <div id="collapseTwo" class="collapse show card-container">
                 <div class="card-body">
                   <ul class="sub-panel pl-2" id="sheets-sub-panel">
                     <!-- Sheets will be dynamically populated here -->
@@ -119,5 +148,8 @@
         <div id="svg-container"></div>
       </div>
     </div>
+    <footer>
+      <p>BlenderBIM Version: {{version}}</p>
+    </footer>
   </body>
 </html>

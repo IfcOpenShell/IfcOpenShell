@@ -57,7 +57,7 @@ class BlenderImporter:
             if c.ContextType in ["Plan", "Annotation"]
         ]
         if self.plan_contexts:
-            self.settings_2d.set_context_ids(self.plan_contexts)
+            self.settings_2d.set("context-ids", self.plan_contexts)
 
     def create_elements(self, elements):
         # Based on my experience in viewing BIM models, representations are prioritised as follows:

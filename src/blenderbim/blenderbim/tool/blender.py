@@ -690,9 +690,11 @@ class Blender(blenderbim.core.tool.Blender):
         return False, None
 
     @classmethod
-    def toggle_edit_mode(cls, context: bpy.types.Context) -> set:
+    def toggle_edit_mode(cls, context: bpy.types.Context) -> set[str]:
         ao = context.active_object
         if not ao:
+            return {"CANCELLED"}
+        if ao.library:
             return {"CANCELLED"}
         if ao.type in cls.OBJECT_TYPES_THAT_SUPPORT_EDIT_MODE:
             return bpy.ops.object.mode_set(mode="EDIT", toggle=True)

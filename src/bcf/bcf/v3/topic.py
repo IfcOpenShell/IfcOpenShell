@@ -165,7 +165,7 @@ class TopicHandler:
         if self.bim_snippet:
             destination_zip.writestr(f"{self.topic.guid}/{ref_filename}", self.bim_snippet)
 
-    def add_viewpoint(self, element: entity_instance) -> None:
+    def add_viewpoint(self, element: entity_instance) -> VisualizationInfoHandler:
         """
         Add a viewpoint tergeting an IFC element to the topic.
 
@@ -174,8 +174,11 @@ class TopicHandler:
         """
         new_viewpoint = VisualizationInfoHandler.create_new(element, self._xml_handler)
         self.add_visinfo_handler(new_viewpoint)
+        return new_viewpoint
 
-    def add_viewpoint_from_point_and_guids(self, position: NDArray[np.float64], *guids: str) -> None:
+    def add_viewpoint_from_point_and_guids(
+        self, position: NDArray[np.float64], *guids: str
+    ) -> VisualizationInfoHandler:
         """
         Add a viewpoint tergeting an IFC element to the topic.
 
@@ -186,14 +189,21 @@ class TopicHandler:
             position, *guids, xml_handler=self._xml_handler
         )
         self.add_visinfo_handler(vi_handler)
+        return vi_handler
 
-    def add_visinfo_handler(self, new_viewpoint: VisualizationInfoHandler) -> None:
+    def add_visinfo_handler(
+        self, new_viewpoint: VisualizationInfoHandler, snapshot_filename: Optional[str] = None
+    ) -> mdl.ViewPoint:
         self.viewpoints[new_viewpoint.guid + ".bcfv"] = new_viewpoint
         if self.topic.viewpoints is None:
             self.topic.viewpoints = mdl.TopicViewpoints()
-        self.topic.viewpoints.view_point.append(
-            mdl.ViewPoint(viewpoint=new_viewpoint.guid + ".bcfv", guid=new_viewpoint.guid)
+        viewpoint = mdl.ViewPoint(
+            viewpoint=new_viewpoint.guid + ".bcfv",
+            snapshot=snapshot_filename,
+            guid=new_viewpoint.guid,
         )
+        self.topic.viewpoints.view_point.append(viewpoint)
+        return viewpoint
 
     def __eq__(self, other: object) -> bool | NoReturn:
         return (

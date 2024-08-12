@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en" class="blender">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Web Client</title>
-    <link rel="stylesheet" href="/static/css/index.css" />
+    <title>BlenderBIM Web UI</title>
+    <link rel="stylesheet" href="/static/css/index.css" id="index-stylesheet" />
     <link
       rel="stylesheet"
       id="tabulator-stylesheet"
@@ -39,9 +39,30 @@
         class="logo"
       />
       <ul>
-        <li><a href="/" class="active">IFC Data</a></li>
-        <li><a href="/gantt">Gantt Chart</a></li>
-        <li><a href="/drawings">Drawings</a></li>
+        <li>
+          <a href="/" class="active"
+            ><i class="fa-solid fa-table"></i> Schedules</a
+          >
+        </li>
+        <li>
+          <a href="/gantt"
+            ><i class="fa-solid fa-chart-gantt"></i> Construction Sequencing</a
+          >
+        </li>
+        <li>
+          <a href="drawings"
+            ><i class="fa-solid fa-images"></i> Documentation</a
+          >
+        </li>
+        <li>
+          <a><i class="fa-solid fa-camera"></i> BCF Topics</a>
+        </li>
+        <li>
+          <a><i class="fa-solid fa-square-check"></i> IDS Audits</a>
+        </li>
+        <li>
+          <a><i class="fa-solid fa-hotel"></i> Facility Management</a>
+        </li>
       </ul>
       <button id="toggle-theme" onclick="toggleTheme()">
         <i class="fas fa-moon"></i>
