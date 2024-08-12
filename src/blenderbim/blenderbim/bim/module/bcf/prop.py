@@ -138,7 +138,7 @@ class BcfTopic(PropertyGroup):
     modified_author: StringProperty(default="", name="Modified By")
     assigned_to: StringProperty(default="", name="Assigned To")
     due_date: StringProperty(default="", name="Due Date")
-    description: StringProperty(default="", name="Description")
+    description: StringProperty(default="", name="Topic Description")
     viewpoints: EnumProperty(items=lambda _, context: getBcfViewpoints(_, context), name="BCF Viewpoints")
     files: CollectionProperty(name="Files", type=StrProperty)
     reference_links: CollectionProperty(name="Reference Links", type=BcfReferenceLink)
@@ -147,7 +147,7 @@ class BcfTopic(PropertyGroup):
     document_references: CollectionProperty(name="Document References", type=BcfDocumentReference)
     related_topics: CollectionProperty(name="Related Topics", type=StrProperty)
     comments: CollectionProperty(name="Comments", type=BcfComment)
-    is_editable: BoolProperty(name="Is Editable", default=False, update=updateBcfTopicIsEditable)
+    is_editable: BoolProperty(name="Edit Topic Attributes", default=False, update=updateBcfTopicIsEditable)
 
 
 class BCFProperties(PropertyGroup):

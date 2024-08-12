@@ -63,12 +63,12 @@ class BIM_PT_bcf(Panel):
         col.operator("bim.remove_bcf_topic", icon="REMOVE", text="")
         if props.active_topic_index < len(props.topics):
             topic = props.active_topic
+            is_editable = topic.is_editable
             col.prop(topic, "is_editable", icon="CHECKMARK" if topic.is_editable else "GREASEPENCIL", icon_only=True)
 
-        if props.active_topic_index < len(props.topics):
             topic = props.active_topic
             row = layout.row()
-            row.enabled = topic.is_editable
+            row.enabled = is_editable
             row.prop(topic, "description", text="")
 
             row = layout.row()
@@ -78,18 +78,10 @@ class BIM_PT_bcf(Panel):
             row.operator("bim.remove_bcf_viewpoint", icon="X", text="")
 
             col = layout.column(align=True)
-            if topic.type:
-                col.prop(topic, "type", emboss=topic.is_editable)
-            if topic.status:
-                col.prop(topic, "status", emboss=topic.is_editable)
-            if topic.priority:
-                col.prop(topic, "priority", emboss=topic.is_editable)
-            if topic.stage:
-                col.prop(topic, "stage", emboss=topic.is_editable)
-            if topic.assigned_to:
-                col.prop(topic, "assigned_to", emboss=topic.is_editable)
-            if topic.due_date:
-                col.prop(topic, "due_date", emboss=topic.is_editable)
+            props = ("type", "status", "priority", "stage", "assigned_to", "due_date")
+            for prop in props:
+                if getattr(topic, prop) or is_editable:
+                    col.prop(topic, prop, emboss=is_editable)
 
             col = layout.column(align=True)
             if topic.modified_date:
