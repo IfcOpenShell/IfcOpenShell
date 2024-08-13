@@ -1115,9 +1115,9 @@ class Blender(blenderbim.core.tool.Blender):
     @classmethod
     def get_blender_addon_package_name(cls) -> str:
         for package_name in bpy.context.preferences.addons.keys():
-            if package_name.endswith(".blenderbim"):
+            if package_name.endswith(".bonsai"):
                 return package_name
-        return "blenderbim"
+        return "bonsai"
 
     @classmethod
     def get_bbim_extension_package(cls) -> types.ModuleType:
