@@ -126,7 +126,7 @@ def safe_link_dlls() -> None:
     # Then, Blender won't have a problem unlinking unloaded dlls as they are still linked somewhere.
     # On register() we clean up our temp directory with binaries.
     #
-    # TODO: If user uninstalls BlenderBIM to never use it again, temporary directory won't be cleared.
+    # TODO: If user uninstalls Bonsai to never use it again, temporary directory won't be cleared.
     #
     # See: https://projects.blender.org/blender/blender/issues/125049
     import bpy
@@ -279,7 +279,7 @@ if IN_BLENDER:
         print("\nFATAL ERROR: Unable to load Bonsai")
 
         class BIM_PT_fatal_error(bpy.types.Panel):
-            bl_label = "BlenderBIM Fatal Error"
+            bl_label = "Bonsai Fatal Error"
             bl_idname = "SCENE_PT_error_message"
             bl_space_type = "PROPERTIES"
             bl_region_type = "WINDOW"
@@ -290,7 +290,7 @@ if IN_BLENDER:
 
                 layout = self.layout
                 layout.alert = True
-                layout.label(text="BlenderBIM could not load.", icon="ERROR")
+                layout.label(text="Bonsai could not load.", icon="ERROR")
                 if info["os"] == "Windows":
                     layout.operator("wm.console_toggle", text="View the console for full logs.", icon="CONSOLE")
                 else:
@@ -311,7 +311,7 @@ if IN_BLENDER:
                     # From wrong-platform-build issues we're guarded by Blender extension installation.
                     # But Blender currently doesn't support separate builds for different Python version,
                     # so those issues might still slip in.
-                    box.label(text="BlenderBIM installed for wrong Python version.")
+                    box.label(text="Bonsai installed for wrong Python version.")
                     box.label(text=f"Expected: {py}. Got: {binary_py}.")
                     # On reinstallation, dependencies versions doesn't change, so Blender will just ignore new dependencies.
                     # So, we need to make user will disable an extension (just uninstallation won't remove dependencies).
@@ -319,7 +319,7 @@ if IN_BLENDER:
                     # as dependencies failed to load due to Python version mismatch.
                     box.label(text="Try reinstalling with the correct Python version.")
                     box.label(text="Before reinstallation make sure to")
-                    box.label(text="DISABLE BlenderBIM (uninstallation won't help).")
+                    box.label(text="DISABLE Bonsai (uninstallation won't help).")
                     box.label(text="You can download correct version below.")
 
                 layout.operator("bim.copy_debug_information", text="Copy Error Message To Clipboard")

@@ -107,7 +107,7 @@ class RunAnalysis(bpy.types.Operator):
             "run": context.scene.CoveToolProperties.projects[
                 context.scene.CoveToolProperties.active_project_index
             ].run_set,
-            "source": "BlenderBIM",
+            "source": "Bonsai",
             "rotation_angle": self.get_rotation_angle(),
             **self.inputs,
         }

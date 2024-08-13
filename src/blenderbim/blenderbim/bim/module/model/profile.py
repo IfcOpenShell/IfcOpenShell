@@ -139,7 +139,7 @@ class DumbProfileGenerator:
         tool.Blender.remove_data_block(mesh)
 
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Parametric")
-        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "BlenderBIM.DumbProfile"})
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "Bonsai.DumbProfile"})
 
         obj.select_set(True)
 

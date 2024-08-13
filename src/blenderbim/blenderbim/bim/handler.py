@@ -228,14 +228,14 @@ def get_application(ifc: ifcopenshell.file) -> ifcopenshell.entity_instance:
     # TODO: cache this for even faster application retrieval. It honestly makes a difference on long scripts.
     version = tool.Blender.get_blenderbim_version()
     for element in ifc.by_type("IfcApplication"):
-        if element.ApplicationIdentifier == "BlenderBIM" and element.Version == version:
+        if element.ApplicationIdentifier == "Bonsai" and element.Version == version:
             return element
     return ifcopenshell.api.run(
         "owner.add_application",
         ifc,
         version=version,
         application_full_name="Bonsai",
-        application_identifier="BlenderBIM",
+        application_identifier="Bonsai",
     )
 
 

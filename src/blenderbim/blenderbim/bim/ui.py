@@ -440,8 +440,8 @@ class BIM_PT_tabs(Panel):
                 box = self.layout.box()
                 box.alert = True
 
-                box.label(text="BlenderBIM requires Blender to restart.", icon="ERROR")
-                box.label(text="BlenderBIM was reinstalled in the current session:")
+                box.label(text="Bonsai requires Blender to restart.", icon="ERROR")
+                box.label(text="Bonsai was reinstalled in the current session:")
                 box.label(text=f"{blenderbim.FIRST_INSTALLED_BBIM_VERSION} -> {blenderbim.REINSTALLED_BBIM_VERSION}")
                 box.label(text="Please restart Blender to avoid potential issues.")
                 box.operator("bim.restart_blender", text="Restart Blender", icon="BLENDER")
@@ -450,7 +450,7 @@ class BIM_PT_tabs(Panel):
                 box = self.layout.box()
                 box.alert = True
                 row = box.row(align=True)
-                row.label(text="BlenderBIM experienced an error :(", icon="ERROR")
+                row.label(text="Bonsai experienced an error :(", icon="ERROR")
                 row.operator("bim.close_error", text="", icon="CANCEL")
                 if platform.system() == "Windows":
                     box.operator("wm.console_toggle", text="View the console for full logs.", icon="CONSOLE")

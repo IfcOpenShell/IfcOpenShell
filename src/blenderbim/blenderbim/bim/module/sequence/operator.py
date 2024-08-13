@@ -1135,7 +1135,7 @@ class VisualiseWorkScheduleDateRange(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BlenderBIM_DatePicker(bpy.types.Operator):
+class Bonsai_DatePicker(bpy.types.Operator):
     bl_label = "Date Picker"
     bl_idname = "bim.datepicker"
     bl_options = {"REGISTER", "UNDO"}
@@ -1208,7 +1208,7 @@ class BlenderBIM_DatePicker(bpy.types.Operator):
         parent[prop] = value
 
 
-class BlenderBIM_DatePickerSetDate(bpy.types.Operator):
+class Bonsai_DatePickerSetDate(bpy.types.Operator):
     bl_label = "Set Date"
     bl_idname = "bim.datepicker_setdate"
     bl_options = {"REGISTER", "UNDO"}
@@ -1219,7 +1219,7 @@ class BlenderBIM_DatePickerSetDate(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BlenderBIM_RedrawDatePicker(bpy.types.Operator):
+class Bonsai_RedrawDatePicker(bpy.types.Operator):
     bl_label = "Redraw Datepicker Window"
     bl_idname = "bim.redraw_datepicker"
     bl_options = {"REGISTER", "UNDO"}

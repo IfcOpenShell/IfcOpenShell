@@ -149,7 +149,7 @@ class BIM_PT_authoring(Panel):
     bl_idname = "BIM_PT_authoring"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
-    bl_category = "BlenderBIM"
+    bl_category = "Bonsai"
 
     def draw(self, context):
         row = self.layout.row(align=True)

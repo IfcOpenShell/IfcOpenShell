@@ -246,7 +246,7 @@ class SelectSchemaDir(bpy.types.Operator):
 
 class FileAssociate(bpy.types.Operator):
     bl_idname = "bim.file_associate"
-    bl_label = "Associate BlenderBIM with *.ifc files"
+    bl_label = "Associate Bonsai with *.ifc files"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Creates a Desktop launcher and associates it with IFC files"
 
@@ -352,7 +352,7 @@ class FileAssociate(bpy.types.Operator):
 
 class FileUnassociate(bpy.types.Operator):
     bl_idname = "bim.file_unassociate"
-    bl_label = "Remove BlenderBIM *.ifc association"
+    bl_label = "Remove Bonsai *.ifc association"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Removes Desktop launcher and unassociates it with IFC files"
 
@@ -420,7 +420,7 @@ class OpenUpstream(bpy.types.Operator):
         elif self.page == "docs":
             webbrowser.open("https://docs.blenderbim.org/")
         elif self.page == "wiki":
-            webbrowser.open("https://wiki.osarch.org/index.php?title=Category:BlenderBIM_Add-on")
+            webbrowser.open("https://wiki.osarch.org/index.php?title=Category:Bonsai")
         elif self.page == "community":
             webbrowser.open("https://community.osarch.org/")
         elif self.page == "fund":
