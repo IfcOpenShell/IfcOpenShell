@@ -71,7 +71,7 @@ jobs:
       - name: Find zip file name
         id: find_zip
         run: |
-          filepath=$(ls src/blenderbim/dist/blenderbim_*.zip)
+          filepath=$(ls src/blenderbim/dist/bonsai_*.zip)
           echo "filepath=$filepath" >> $GITHUB_OUTPUT
           echo "filename=$(basename $filepath)" >> $GITHUB_OUTPUT
       - name: Upload zip file to release
@@ -80,8 +80,8 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: ${{ steps.find_zip.outputs.filepath }}
           asset_name: ${{ steps.find_zip.outputs.filename }}
-          release_name: "blenderbim-${{steps.version.outputs.version}}-alpha${{steps.date.outputs.date}} (unstable)"
-          tag: "blenderbim-${{steps.version.outputs.version}}-alpha${{steps.date.outputs.date}}"
+          release_name: "bonsai-${{steps.version.outputs.version}}-alpha${{steps.date.outputs.date}} (unstable)"
+          tag: "bonsai-${{steps.version.outputs.version}}-alpha${{steps.date.outputs.date}}"
           overwrite: true
           body: "See README in https://github.com/IfcOpenShell/blenderbim_unstable_repo/ on how to setup autoupdates for daily BlenderBIM builds."
 

@@ -326,12 +326,12 @@ endif
 	rm -rf build/blenderbim/tool/
 
 ifeq ($(IS_STABLE), TRUE)
-	cd build && zip -r blenderbim_$(PYVERSION)-$(VERSION)-$(BLENDER_PLATFORM).zip ./blenderbim
+	cd build && zip -r bonsai_$(PYVERSION)-$(VERSION)-$(BLENDER_PLATFORM).zip ./blenderbim
 else
-	cd build && zip -r blenderbim_$(PYVERSION)-$(VERSION)-alpha$(VERSION_DATE)-$(BLENDER_PLATFORM).zip ./blenderbim
+	cd build && zip -r bonsai_$(PYVERSION)-$(VERSION)-alpha$(VERSION_DATE)-$(BLENDER_PLATFORM).zip ./blenderbim
 endif
 
-	mv build/blenderbim*.zip dist/
+	mv build/bonsai*.zip dist/
 
 	rm -rf build
 

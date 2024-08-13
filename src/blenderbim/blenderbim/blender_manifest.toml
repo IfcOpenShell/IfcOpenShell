@@ -1,11 +1,11 @@
 schema_version = "1.0.0"
-id = "blenderbim"
+id = "bonsai"
 version = "0.0.0"
-name = "BlenderBIM"
+name = "Bonsai"
 tagline = "A native Building Information Model authoring platform using IFC"
 maintainer = "Dion Moult <dion@thinkmoult.com>"
 type = "add-on"
-website = "https://blenderbim.org/"
+website = "https://bonsaibim.org/"
 tags = [
     "3D View",
     "Add Mesh",
