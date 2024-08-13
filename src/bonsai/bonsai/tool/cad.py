@@ -85,6 +85,26 @@ class Cad:
         return math.degrees(a) if degrees else a
 
     @classmethod
+    def angle_3_vectors(cls, v1, v2, v3, degrees=False):
+        """
+        > takes 3 vectors. The order matters, v2 is the center point.  
+        < returns the potentially signed angle as degrees or radians
+        """
+        d1 = v1 - v2
+        d2 = v2 - v3
+        cos_a = (d1.dot(d2)) / (d1.length * d2.length)
+
+        cos_a = max(-1, min(1, cos_a))
+
+        print(v1, v2, v3)
+        print(cos_a)
+        a = math.acos(cos_a)
+        if degrees:
+            return math.degrees(a)
+        else:
+            return a
+
+    @classmethod
     def is_x(cls, value: float, x: float, tolerance: float | None = None) -> bool:
         """
         > takes a value and a target of x, either as a single value x or an interable of values

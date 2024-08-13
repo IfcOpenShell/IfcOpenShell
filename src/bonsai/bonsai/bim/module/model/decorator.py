@@ -343,14 +343,6 @@ class WallPolylineDecorator:
 
     @classmethod
     def calculate_distance_and_angle(cls, context, is_input_on):
-        def calculate_angle(snap_vector, last_point, second_to_last_point):
-            v1 = snap_vector - last_point
-            v2 = last_point - second_to_last_point
-            cos_angle = (v1.dot(v2)) / (v1.length * v2.length)
-            if cos_angle > 1:
-                cos_angle = 1
-            angle = acos(cos_angle)
-            return degrees(angle)
 
         try:
             polyline_data = context.scene.BIMModelProperties.polyline_point
