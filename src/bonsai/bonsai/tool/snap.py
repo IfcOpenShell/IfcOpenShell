@@ -23,6 +23,7 @@ from bonsai.bim.module.model.decorator import WallPolylineDecorator
 import math
 import mathutils
 from mathutils import Matrix, Vector
+from lark import Lark, Transformer
 
 
 class Snap(bonsai.core.tool.Snap):
@@ -327,3 +328,52 @@ class Snap(bonsai.core.tool.Snap):
                 cls.update_snaping_point(rot_intersection, "Axis")
             else:
                 cls.update_snaping_point(intersection, "Plane")
+
+
+    @classmethod
+    def validate_input(cls, input_number):
+        grammar = """
+        start: dim expr?
+        dim: NUMBER
+        expr: (ADD | SUB | MUL | DIV) NUMBER
+
+        NUMBER: /-?\\d+(?:\\.\\d+)?/
+        ADD: "+"
+        SUB: "-"
+        MUL: "*"
+        DIV: "/"
+
+        %ignore " "
+        """
+
+        class InputTransform(Transformer):
+            def dim(self, args):
+                return float(args[0])
+
+            def expr(self, args):
+                op = args[0]
+                value = float(args[1])
+                if op == "+":
+                    return lambda x: x + value
+                elif op == "-":
+                    return lambda x: x - value
+                elif op == "*":
+                    return lambda x: x * value
+                elif op == "/":
+                    return lambda x: x / value
+
+            def start(self, args):
+                dimension = args[0]
+                if len(args) > 1:
+                    expression = args[1]
+                    return expression(dimension)
+                else:
+                    return dimension
+
+        try:
+            parser = Lark(grammar, parser="lalr", transformer=InputTransform())
+            result = parser.parse(input_number)
+            return True, str(result)
+        except:
+            return False, "0"
+
