@@ -52,6 +52,7 @@ from bpy.app.handlers import persistent
 from ifcopenshell.geom import ShapeElementType
 from bonsai.bim.module.project.data import LinksData
 from bonsai.bim.module.project.decorator import ProjectDecorator, ClippingPlaneDecorator
+from bonsai.bim.module.model.decorator import WallPolylineDecorator
 from typing import Union
 
 
@@ -2286,3 +2287,92 @@ if bpy.app.version >= (4, 1, 0):
         @classmethod
         def poll_drop(cls, context):
             return True
+
+
+class MeasureTool(bpy.types.Operator):
+    bl_idname = "bim.measure_tool"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_label = "Measure Tool"
+
+
+    @classmethod
+    def poll(cls, context):
+        return context.space_data.type == "VIEW_3D"
+
+    def __init__(self):
+        self.mousemove_count = 0
+        self.action_count = 0
+        self.visible_objs = []
+        self.objs_2d_bbox = []
+        self.number_options = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "+", "-", "*", "-", "/"}
+        self.number_input = []
+        self.number_output = ""
+        self.number_is_negative = False
+        self.is_input_on = False
+        self.input_options = ["X", "Y", "D", "A"]
+        self.input_type = "OFF"
+        self.input_value_xy = [None, None]
+        self.input_panel = {"X": "", "Y": "", "Z": "", "D": "", "A": ""}
+        self.snap_angle = None
+
+
+    def modal(self, context, event):
+
+        if event.type == "MOUSEMOVE":
+            self.mousemove_count += 1
+            self.input_type = "OFF"
+            WallPolylineDecorator.set_input_panel(self.input_panel, self.input_type)
+            tool.Blender.update_viewport()
+        else:
+            self.mousemove_count = 0
+
+        if self.mousemove_count == 2:
+            self.objs_2d_bbox = []
+            for obj in self.visible_objs:
+                self.objs_2d_bbox.append(tool.Raycast.get_objects_2d_bounding_boxes(context, obj))
+
+        if self.mousemove_count > 3:
+            tool.Snap.snaping_movement(context, event, self.objs_2d_bbox)
+            WallPolylineDecorator.set_mouse_position(event)
+            self.input_panel = WallPolylineDecorator.calculate_distance_and_angle(context, False)
+            tool.Blender.update_viewport()
+            return {"RUNNING_MODAL"}
+
+        if event.type in {"MIDDLEMOUSE", "WHEELUPMOUSE", "WHEELDOWNMOUSE"}:
+            return {"PASS_THROUGH"}
+
+        if event.value == "RELEASE" and event.type == "LEFTMOUSE":
+            tool.Snap.insert_polyline_point()
+            tool.Blender.update_viewport()
+
+        if event.value == "RELEASE" and event.type == "BACK_SPACE":
+            tool.Snap.remove_last_polyline_point()
+            tool.Blender.update_viewport()
+
+        if event.value == "RELEASE" and event.type in {"RIGHTMOUSE", "ESC"}:
+            WallPolylineDecorator.uninstall()
+            tool.Snap.clear_polyline()
+            tool.Blender.update_viewport()
+            return {"FINISHED"}
+
+        return {"RUNNING_MODAL"}
+
+    def invoke(self, context, event):
+        if context.space_data.type == "VIEW_3D":
+            WallPolylineDecorator.install(context)
+            tool.Snap.set_use_default_container(False)
+            WallPolylineDecorator.set_use_default_container(False)
+            tool.Snap.set_snap_plane_method('No Plane')
+            WallPolylineDecorator.set_input_panel(self.input_panel, self.input_type)
+            self.visible_objs = tool.Raycast.get_visible_objects(context)
+            for obj in self.visible_objs:
+                self.objs_2d_bbox.append(tool.Raycast.get_objects_2d_bounding_boxes(context, obj))
+            tool.Snap.snaping_movement(context, event, self.objs_2d_bbox)
+            WallPolylineDecorator.set_mouse_position(event)
+            self.input_panel = WallPolylineDecorator.calculate_distance_and_angle(context, self.is_input_on)
+            tool.Blender.update_viewport()
+            context.window_manager.modal_handler_add(self)
+            return {"RUNNING_MODAL"}
+        else:
+            self.report({"WARNING"}, "Active space must be a View3d")
+            return {"CANCELLED"}

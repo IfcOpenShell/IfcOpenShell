@@ -303,6 +303,7 @@ class WallPolylineDecorator:
     input_type = None
     angle_snap_mat = None
     angle_snap_loc = None
+    use_default_container = False
 
     @classmethod
     def install(cls, context):
@@ -337,6 +338,10 @@ class WallPolylineDecorator:
         cls.axis_end = end
 
     @classmethod
+    def set_use_default_container(cls, value=False):
+        cls.use_default_container = value
+
+    @classmethod
     def calculate_distance_and_angle(cls, context, is_input_on):
         try:
             polyline_data = context.scene.BIMModelProperties.polyline_point
@@ -358,7 +363,10 @@ class WallPolylineDecorator:
                 (float(cls.input_panel["X"]), float(cls.input_panel["Y"]), default_container_elevation)
             )
         else:
-            snap_vector = Vector((snap_prop.x, snap_prop.y, default_container_elevation))
+            if cls.use_default_container:
+                snap_vector = Vector((snap_prop.x, snap_prop.y, default_container_elevation))
+            else:
+                snap_vector = Vector((snap_prop.x, snap_prop.y, snap_prop.z))
 
         distance = (snap_vector - last_point).length
         x_axis_edge = (
@@ -374,6 +382,8 @@ class WallPolylineDecorator:
             if cls.input_panel:
                 cls.input_panel["X"] = str(round(snap_vector.x, 4))
                 cls.input_panel["Y"] = str(round(snap_vector.y, 4))
+                if "Z" in list(cls.input_panel.keys()):
+                    cls.input_panel["Z"] = str(round(snap_vector.z, 4))
                 cls.input_panel["D"] = str(round(distance, 4))
                 cls.input_panel["A"] = str(round(angle, 4))
 
@@ -412,7 +422,7 @@ class WallPolylineDecorator:
         batch.draw(shader)
 
     def draw_text(self, context):
-        texts = ["X coord:", "Y coord:", "Distance:", "Angle:"]
+        texts = {"X": "X coord:", "Y": "Y coord:", "Z": "Z coord:", "D": "Distance:", "A": "Angle:"}
         self.addon_prefs = tool.Blender.get_addon_preferences()
         self.font_id = 0
         blf.size(self.font_id, 12)
@@ -422,14 +432,16 @@ class WallPolylineDecorator:
         color_highlight = self.addon_prefs.decorator_color_special
         offset = 20
         new_line = 20
-        keys = list(self.input_panel.keys())
-        for i, text in enumerate(texts):
-            if keys[i] == self.input_type:
+        for i, (key, value) in enumerate(self.input_panel.items()):
+            if key not in list(texts.keys()):
+                continue
+            if key == self.input_type:
                 blf.color(self.font_id, *color_highlight)
             else:
                 blf.color(self.font_id, *color)
             blf.position(self.font_id, self.mouse_pos[0] + offset, self.mouse_pos[1] + offset - (new_line * i), 0)
-            blf.draw(self.font_id, text + self.input_panel[keys[i]])
+            blf.draw(self.font_id, texts[key] + value)
+
 
     def __call__(self, context):
 
@@ -461,15 +473,16 @@ class WallPolylineDecorator:
         else:
             self.draw_batch("POINTS", mouse_point, (1.0, 0.6, 0.0, 1.0))
 
-        # When a point is above the plane it projects the point
-        # to the plane and creates a line
         projection_point = []
-        if snap_prop.snap_type != "Plane" and snap_prop.z != 0:
-            self.line_shader.uniform_float("lineWidth", 1.0)
-            projection_point = [Vector((snap_prop.x, snap_prop.y, default_container_elevation))]
-            self.draw_batch("POINTS", projection_point, decorator_color_unselected)
-            edges = [[0, 1]]
-            self.draw_batch("LINES", mouse_point + projection_point, (1.0, 0.6, 0.0, 1.0), edges)
+        if self.use_default_container:
+            # When a point is above the plane it projects the point
+            # to the plane and creates a line
+            if snap_prop.snap_type != "Plane" and snap_prop.z != 0:
+                self.line_shader.uniform_float("lineWidth", 1.0)
+                projection_point = [Vector((snap_prop.x, snap_prop.y, default_container_elevation))]
+                self.draw_batch("POINTS", projection_point, decorator_color_unselected)
+                edges = [[0, 1]]
+                self.draw_batch("LINES", mouse_point + projection_point, (1.0, 0.6, 0.0, 1.0), edges)
 
         # Polyline with selected points
         polyline_data = context.scene.BIMModelProperties.polyline_point
@@ -490,9 +503,11 @@ class WallPolylineDecorator:
         # Line between last polyline point and mouse
         edges = [[0, 1]]
         if polyline_points:
-            if snap_prop.snap_type != "Plane" and snap_prop.z != 0 and projection_point:
+            print("PP", polyline_points)
+            if snap_prop.snap_type != "Plane" and projection_point:
                 self.draw_batch("LINES", [polyline_points[-1]] + projection_point, decorator_color_unselected, edges)
             else:
+                print("FOI")
                 self.draw_batch("LINES", [polyline_points[-1]] + mouse_point, decorator_color_unselected, edges)
 
         # Line for angle axis snap
