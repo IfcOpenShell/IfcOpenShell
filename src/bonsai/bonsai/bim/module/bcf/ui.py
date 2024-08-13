@@ -78,18 +78,31 @@ class BIM_PT_bcf(Panel):
             row.operator("bim.remove_bcf_viewpoint", icon="X", text="")
 
             col = layout.column(align=True)
-            props = ("type", "status", "priority", "stage", "assigned_to", "due_date")
-            for prop in props:
+            topic_props = ("type", "status", "priority", "stage", "assigned_to", "due_date")
+            bl_rna_props = topic.bl_rna.properties
+
+            def draw_prop(prop_name: str) -> None:
+                row = col.row(align=True)
+                row.label(text=f"{bl_rna_props[prop_name].name}")
+                row.label(text=getattr(topic, prop_name))
+
+            for prop in topic_props:
                 if getattr(topic, prop) or is_editable:
-                    col.prop(topic, prop, emboss=is_editable)
+                    # Can't just use emboss because search= on props is changing
+                    # how they look and adds "ui.button_string_clear" button
+                    # which allows clearing out the string and we don't want to.
+                    if is_editable:
+                        col.prop(topic, prop, emboss=is_editable)
+                    else:
+                        draw_prop(prop)
 
             col = layout.column(align=True)
             if topic.modified_date:
-                col.prop(topic, "modified_date", emboss=False)
-                col.prop(topic, "modified_author", emboss=False)
+                draw_prop("modified_date")
+                draw_prop("modified_author")
             else:
-                col.prop(topic, "creation_date", emboss=False)
-                col.prop(topic, "creation_author", emboss=False)
+                draw_prop("creation_date")
+                draw_prop("creation_author")
 
 
 class BIM_PT_bcf_metadata(Panel):

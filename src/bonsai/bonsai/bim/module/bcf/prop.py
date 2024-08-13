@@ -30,6 +30,10 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+from functools import partial
+from typing import Literal
+from typing_extensions import assert_never
+from bcf.agnostic.extensions import get_extensions_attributes
 
 
 bcfviewpoints_enum = None
@@ -85,7 +89,11 @@ class BcfReferenceLink(PropertyGroup):
 
 
 class BcfLabel(PropertyGroup):
-    name: StringProperty(name="Name", update=updateBcfLabel)
+    name: StringProperty(
+        name="Name",
+        update=updateBcfLabel,
+        search=lambda s, c, t: get_extensions_items(s, c, t, extensions_attr="topic_labels"),
+    )
 
 
 def getBcfViewpoints(self, context, force_update=False):
@@ -125,18 +133,48 @@ class BcfComment(PropertyGroup):
     is_editable: BoolProperty(name="Is Editable", default=False, update=updateBcfCommentIsEditable)
 
 
+def get_extensions_items(
+    self: "BCFProperties", context: bpy.types.Context, edit_text: str, extensions_attr: str
+) -> list[str]:
+    bcf_file = bcfstore.BcfStore.get_bcfxml()
+    assert bcf_file
+    extensions = bcf_file.extensions
+    if extensions is None:
+        return []
+
+    extension_data = getattr(extensions, extensions_attr)
+    if extension_data is None:
+        return []
+
+    attrs = get_extensions_attributes(extensions)
+    attribute_data = attrs[extensions_attr]
+    return getattr(extension_data, attribute_data.subattr_name)
+
+
 class BcfTopic(PropertyGroup):
     name: StringProperty(name="GUID")
     title: StringProperty(default="", name="Title", update=updateBcfTopicName)
-    type: StringProperty(default="", name="Type")
-    status: StringProperty(default="", name="Status")
-    priority: StringProperty(default="", name="Priority")
-    stage: StringProperty(default="", name="Stage")
+    type: StringProperty(
+        default="", name="Type", search=lambda s, c, t: get_extensions_items(s, c, t, extensions_attr="topic_types")
+    )
+    status: StringProperty(
+        default="",
+        name="Status",
+        search=lambda s, c, t: get_extensions_items(s, c, t, extensions_attr="topic_statuses"),
+    )
+    priority: StringProperty(
+        default="", name="Priority", search=lambda s, c, t: get_extensions_items(s, c, t, extensions_attr="priorities")
+    )
+    stage: StringProperty(
+        default="", name="Stage", search=lambda s, c, t: get_extensions_items(s, c, t, extensions_attr="stages")
+    )
     creation_date: StringProperty(default="", name="Date")
     creation_author: StringProperty(default="", name="Author")
     modified_date: StringProperty(default="", name="Modified Date")
     modified_author: StringProperty(default="", name="Modified By")
-    assigned_to: StringProperty(default="", name="Assigned To")
+    assigned_to: StringProperty(
+        default="", name="Assigned To", search=lambda s, c, t: get_extensions_items(s, c, t, extensions_attr="users")
+    )
     due_date: StringProperty(default="", name="Due Date")
     description: StringProperty(default="", name="Topic Description")
     viewpoints: EnumProperty(items=lambda _, context: getBcfViewpoints(_, context), name="BCF Viewpoints")
@@ -163,7 +201,9 @@ class BCFProperties(PropertyGroup):
     reference_link: StringProperty(default="", name="Reference Link")
     label: StringProperty(default="", name="Label")
     bim_snippet_reference: StringProperty(default="", name="Reference")
-    bim_snippet_type: StringProperty(default="", name="Type")
+    bim_snippet_type: StringProperty(
+        default="", name="Type", search=lambda s, c, t: get_extensions_items(s, c, t, extensions_attr="snippet_types")
+    )
     bim_snippet_schema: StringProperty(default="", name="Schema")
     document_reference: StringProperty(default="", name="Referenced Document")
     document_reference_description: StringProperty(default="", name="Description")
