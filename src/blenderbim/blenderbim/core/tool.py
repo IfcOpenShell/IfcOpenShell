@@ -1,20 +1,20 @@
-# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Bonsai - OpenBIM Blender Add-on
 # Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
 #
-# This file is part of BlenderBIM Add-on.
+# This file is part of Bonsai.
 #
-# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# Bonsai is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# Bonsai is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+# along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import abc
 import inspect
@@ -33,13 +33,13 @@ def interface(cls):
 
 # ############################################################################ #
 
-# Hey there! Welcome to the BlenderBIM Add-on code. Please feel free to reach
+# Hey there! Welcome to the Bonsai code. Please feel free to reach
 # out if you have any questions or need further guidance. Happy hacking!
 
 # ############################################################################ #
 
 # This portion of the code is singled out as it is part of the Demo module, used
-# to teach people how the code is structured in the BlenderBIM Add-on.
+# to teach people how the code is structured in the Bonsai.
 
 # This is an example "interface" (as in, a software interface, not a user
 # interface) for the Demo module. Think of it as a list of all of the functions

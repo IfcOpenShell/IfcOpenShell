@@ -1,20 +1,20 @@
-# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Bonsai - OpenBIM Blender Add-on
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
-# This file is part of BlenderBIM Add-on.
+# This file is part of Bonsai.
 #
-# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# Bonsai is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# Bonsai is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+# along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
 import bpy
@@ -271,7 +271,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         )
         row = box.row()
         row.label(
-            text="To upgrade, first uninstall your current BlenderBIM Add-on, then install the new version.",
+            text="To upgrade, first uninstall your current Bonsai, then install the new version.",
             icon="ERROR",
         )
 
@@ -378,7 +378,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
 
 # Scene panel groups
 class BIM_PT_tabs(Panel):
-    bl_label = "BlenderBIM Add-on"
+    bl_label = "Bonsai"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -1052,7 +1052,7 @@ class UIData:
 def draw_statusbar(self, context):
     if not UIData.is_loaded:
         UIData.load()
-    text = f"BlenderBIM Add-on v{UIData.data['version']}"
+    text = f"Bonsai v{UIData.data['version']}"
     self.layout.label(text=text)
 
 
