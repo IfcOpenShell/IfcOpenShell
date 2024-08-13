@@ -1,10 +1,10 @@
-name: ci-blenderbim-daily
+name: ci-bonsai-daily
 
 on:
   push:
     paths:
-      - '.github/workflows/ci-blenderbim-daily.yml'
-      - 'src/blenderbim/**'
+      - '.github/workflows/ci-bonsai-daily.yml'
+      - 'src/bonsai/**'
       - 'src/ifcopenshell-python/ifcopenshell/**'
       - 'src/bcf/bcf/**'
       - 'src/ifcclash/ifcclash/**'
@@ -67,11 +67,11 @@ jobs:
         run: echo "date=$(date +'%y%m%d')" >> $GITHUB_OUTPUT
       - name: Compile
         run: |
-          cd src/blenderbim && make dist PLATFORM=${{ matrix.config.short_name }} PYVERSION=${{ matrix.pyver }}
+          cd src/bonsai && make dist PLATFORM=${{ matrix.config.short_name }} PYVERSION=${{ matrix.pyver }}
       - name: Find zip file name
         id: find_zip
         run: |
-          filepath=$(ls src/blenderbim/dist/bonsai_*.zip)
+          filepath=$(ls src/bonsai/dist/bonsai_*.zip)
           echo "filepath=$filepath" >> $GITHUB_OUTPUT
           echo "filename=$(basename $filepath)" >> $GITHUB_OUTPUT
       - name: Upload zip file to release
@@ -83,18 +83,18 @@ jobs:
           release_name: "bonsai-${{steps.version.outputs.version}}-alpha${{steps.date.outputs.date}} (unstable)"
           tag: "bonsai-${{steps.version.outputs.version}}-alpha${{steps.date.outputs.date}}"
           overwrite: true
-          body: "See README in https://github.com/IfcOpenShell/blenderbim_unstable_repo/ on how to setup autoupdates for daily BlenderBIM builds."
+          body: "See README in https://github.com/IfcOpenShell/bonsai_unstable_repo/ on how to setup autoupdates for daily Bonsai builds."
 
   update-extensions-repo-and-run-tests:
     needs: [build]
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout blenderbim_unstable_repo repository
+      - name: Checkout bonsai_unstable_repo repository
         uses: actions/checkout@v2
         with:
-          repository: IfcOpenShell/blenderbim_unstable_repo
+          repository: IfcOpenShell/bonsai_unstable_repo
           token: ${{ secrets.IOS_TO_BLENDER_REPO }}
-          path: blenderbim_unstable_repo
+          path: bonsai_unstable_repo
 
       - name: Update index.json on extensions repo
         run: |
@@ -109,7 +109,7 @@ jobs:
           export PATH="$PATH:$BLENDER_PATH"
           blender --version
 
-          cd blenderbim_unstable_repo
+          cd bonsai_unstable_repo
           pip install -r requirements.txt
           python setup_extensions_repo.py --last-tag
           git config --global user.name 'IfcOpenBot'
@@ -118,14 +118,14 @@ jobs:
           git add readme.md
           git commit -m "Update index.json"
           git push
-      - name: Run blenderbim tests
+      - name: Run bonsai tests
         run: |
           set -x -e
           BLENDER_PATH=$(find blender-*/ -maxdepth 0 -exec readlink -f {} \;)
           export PATH="$PATH:$BLENDER_PATH"
-          blenderbim_zip="$(pwd)/$(ls blenderbim_unstable_repo/blenderbim_py311*-linux-x64.zip)"
+          bonsai_zip="$(pwd)/$(ls bonsai_unstable_repo/bonsai_py311*-linux-x64.zip)"
           blender --version
-          blender --command extension install-file -r user_default -e $blenderbim_zip
+          blender --command extension install-file -r user_default -e $bonsai_zip
           blender --command extension list
 
           wget -q -O sverchok.zip https://github.com/nortikin/sverchok/archive/refs/heads/master.zip
@@ -142,8 +142,8 @@ jobs:
           sverchok_zip="$(pwd)/dist/$(ls dist)"
           blender --command extension install-file -r user_default $sverchok_zip
 
-          cd ../blenderbim
+          cd ../bonsai
           pip install pytest-blender
           blender --background --python scripts/setup_pytest.py
-          blender --python-expr "import blenderbim; print(blenderbim.bbim_semver); import ifcopenshell; print(ifcopenshell.version)" --background
+          blender --python-expr "import bonsai; print(bonsai.bbim_semver); import ifcopenshell; print(ifcopenshell.version)" --background
           make test
