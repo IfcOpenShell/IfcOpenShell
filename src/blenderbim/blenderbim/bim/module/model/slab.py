@@ -42,7 +42,7 @@ def calculate_quantities(usecase_path, ifc_file, settings):
     obj = settings["blender_object"]
     product = ifc_file.by_id(obj.BIMObjectProperties.ifc_definition_id)
     parametric = ifcopenshell.util.element.get_psets(product).get("EPset_Parametric")
-    if not parametric or "Engine" not in parametric or parametric["Engine"] != "BlenderBIM.DumbLayer3":
+    if not parametric or "Engine" not in parametric or parametric["Engine"] != "Bonsai.DumbLayer3":
         return
     qto = ifcopenshell.api.run(
         "pset.add_qto", ifc_file, should_run_listeners=False, product=product, name="Qto_SlabBaseQuantities"
@@ -219,7 +219,7 @@ class DumbSlabGenerator:
                 )
 
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Parametric")
-        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "BlenderBIM.DumbLayer3"})
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "Bonsai.DumbLayer3"})
         obj.select_set(True)
         return obj
 

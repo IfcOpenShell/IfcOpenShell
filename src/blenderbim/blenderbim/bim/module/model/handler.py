@@ -26,56 +26,56 @@ from bpy.app.handlers import persistent
 
 @persistent
 def load_post(*args):
-    ifcopenshell.api.add_pre_listener("attribute.edit_attributes", "BlenderBIM.Root.SyncName", root.sync_name)
-    ifcopenshell.api.add_pre_listener("style.edit_presentation_style", "BlenderBIM.Root.SyncStyleName", root.sync_name)
+    ifcopenshell.api.add_pre_listener("attribute.edit_attributes", "Bonsai.Root.SyncName", root.sync_name)
+    ifcopenshell.api.add_pre_listener("style.edit_presentation_style", "Bonsai.Root.SyncStyleName", root.sync_name)
 
     ifcopenshell.api.add_post_listener(
-        "geometry.add_representation", "BlenderBIM.Product.GenerateBox", product.generate_box
+        "geometry.add_representation", "Bonsai.Product.GenerateBox", product.generate_box
     )
 
     ifcopenshell.api.add_post_listener(
-        "sequence.edit_task_time", "BlenderBIM.Task.CalculateQuantities", task.calculate_quantities
+        "sequence.edit_task_time", "Bonsai.Task.CalculateQuantities", task.calculate_quantities
     )
 
     ifcopenshell.api.add_post_listener(
         "material.edit_profile_usage",
-        "BlenderBIM.Product.RegenerateProfileUsage",
+        "Bonsai.Product.RegenerateProfileUsage",
         product.regenerate_profile_usage,
     )
 
     ifcopenshell.api.add_post_listener(
-        "geometry.add_representation", "BlenderBIM.DumbWall.CalculateQuantities", wall.calculate_quantities
+        "geometry.add_representation", "Bonsai.DumbWall.CalculateQuantities", wall.calculate_quantities
     )
     ifcopenshell.api.add_post_listener(
-        "material.edit_layer", "BlenderBIM.DumbWall.RegenerateFromLayer", wall.DumbWallPlaner().regenerate_from_layer
+        "material.edit_layer", "Bonsai.DumbWall.RegenerateFromLayer", wall.DumbWallPlaner().regenerate_from_layer
     )
     ifcopenshell.api.add_post_listener(
-        "type.assign_type", "BlenderBIM.DumbWall.RegenerateFromType", wall.DumbWallPlaner().regenerate_from_type
+        "type.assign_type", "Bonsai.DumbWall.RegenerateFromType", wall.DumbWallPlaner().regenerate_from_type
     )
 
     ifcopenshell.api.add_post_listener(
-        "geometry.add_representation", "BlenderBIM.DumbSlab.CalculateQuantities", slab.calculate_quantities
+        "geometry.add_representation", "Bonsai.DumbSlab.CalculateQuantities", slab.calculate_quantities
     )
     ifcopenshell.api.add_post_listener(
-        "material.edit_layer", "BlenderBIM.DumbSlab.RegenerateFromLayer", slab.DumbSlabPlaner().regenerate_from_layer
+        "material.edit_layer", "Bonsai.DumbSlab.RegenerateFromLayer", slab.DumbSlabPlaner().regenerate_from_layer
     )
     ifcopenshell.api.add_post_listener(
-        "type.assign_type", "BlenderBIM.DumbSlab.RegenerateFromType", slab.DumbSlabPlaner().regenerate_from_type
+        "type.assign_type", "Bonsai.DumbSlab.RegenerateFromType", slab.DumbSlabPlaner().regenerate_from_type
     )
 
     ifcopenshell.api.add_post_listener(
         "material.edit_profile",
-        "BlenderBIM.DumbProfile.RegenerateFromProfile",
+        "Bonsai.DumbProfile.RegenerateFromProfile",
         profile.DumbProfileRegenerator().regenerate_from_profile,
     )
     ifcopenshell.api.add_post_listener(
         "type.assign_type",
-        "BlenderBIM.DumbProfile.RegenerateFromType",
+        "Bonsai.DumbProfile.RegenerateFromType",
         profile.DumbProfileRegenerator().regenerate_from_type,
     )
 
     ifcopenshell.api.add_post_listener(
         "type.assign_type",
-        "BlenderBIM.Opening.RegenerateFromType",
+        "Bonsai.Opening.RegenerateFromType",
         opening.FilledOpeningGenerator().regenerate_from_type,
     )

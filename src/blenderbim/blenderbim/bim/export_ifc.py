@@ -164,7 +164,7 @@ class IfcExporter:
         tool.Geometry.record_object_position(obj)
 
     def get_application_name(self) -> str:
-        return "BlenderBIM"
+        return "Bonsai"
 
 
 class IfcExportSettings:

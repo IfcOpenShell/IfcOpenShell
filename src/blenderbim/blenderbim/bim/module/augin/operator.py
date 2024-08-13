@@ -84,7 +84,7 @@ class AuginCreateNewModel(bpy.types.Operator):
             "project_name": props.project_name,
             "model_filename": props.project_filename + ".ifc",
             "thumb_filename": props.project_filename + ".png",
-            "app_name": "BlenderBIM",
+            "app_name": "Bonsai",
             "sw_version": bpy.app.version_string,
             "plugin_version": addon_version,
         }

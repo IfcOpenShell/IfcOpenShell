@@ -36,7 +36,7 @@ from blenderbim.bim.module.demo.data import DemoData
 # file like this one where you can see this code. Pretty neat!
 class BIM_PT_demo(bpy.types.Panel):
     # Every panel has a title.
-    bl_label = "BlenderBIM Demo"
+    bl_label = "Bonsai Demo"
 
     # Every panel must have an ID. It must be unique. For example, you may want
     # to later reference the panel (such as if you want to create a nested

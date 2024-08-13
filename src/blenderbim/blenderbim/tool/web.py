@@ -118,7 +118,7 @@ class Web(blenderbim.core.tool.Web):
                 / "site-packages"
             )
         else:
-            addon = [a for a in addon_utils.modules() if a.bl_info["name"] == "BlenderBIM"][0]
+            addon = [a for a in addon_utils.modules() if a.bl_info["name"] == "Bonsai"][0]
             blenderbim_path = os.path.dirname(addon.__file__)
             blenderbim_lib_path = os.path.join(blenderbim_path, "libs", "site", "packages")
 

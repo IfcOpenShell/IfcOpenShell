@@ -1419,7 +1419,7 @@ class OpenDrawing(bpy.types.Operator):
     view: bpy.props.StringProperty()
     bl_description = (
         "Opens a .svg drawing based on currently active camera with default system viewer\n"
-        + 'or using "svg_command" from the BlenderBIM preferences (if provided).\n\n'
+        + 'or using "svg_command" from the Bonsai preferences (if provided).\n\n'
         + "SHIFT+CLICK to open all selected drawings"
     )
     open_all: bpy.props.BoolProperty(name="Open All", default=False, options={"SKIP_SAVE"})
