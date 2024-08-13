@@ -1,6 +1,6 @@
-name: ci-blenderbim
+name: ci-bonsai
 
-# Differences from ci-blenderbim-daily.yml:
+# Differences from ci-bonsai-daily.yml:
 # - make has IS_STABLE=TRUE
 # - action is never triggered and executed only manually
 # - doesn't add a current date to the release and tag
@@ -53,12 +53,12 @@ jobs:
         run: echo "version=$(cat VERSION)" >> $GITHUB_OUTPUT
       - name: Compile
         run: |
-          cd src/blenderbim &&
+          cd src/bonsai &&
           make dist PLATFORM=${{ matrix.config.short_name }} PYVERSION=${{ matrix.pyver }} IS_STABLE=TRUE
       - name: Find zip file name
         id: find_zip
         run: |
-          filepath=$(ls src/blenderbim/dist/blenderbim_*.zip)
+          filepath=$(ls src/bonsai/dist/bonsai_*.zip)
           echo "filepath=$filepath" >> $GITHUB_OUTPUT
           echo "filename=$(basename $filepath)" >> $GITHUB_OUTPUT
       - name: Upload zip file to release
@@ -67,6 +67,6 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: ${{ steps.find_zip.outputs.filepath }}
           asset_name: ${{ steps.find_zip.outputs.filename }}
-          release_name: "blenderbim-${{steps.version.outputs.version}}"
-          tag: "blenderbim-${{steps.version.outputs.version}}"
+          release_name: "bonsai-${{steps.version.outputs.version}}"
+          tag: "bonsai-${{steps.version.outputs.version}}"
           overwrite: true

@@ -1,4 +1,4 @@
-name: ci-blenderbim-choco
+name: ci-bonsai-choco
 
 on:
   schedule:
@@ -14,7 +14,7 @@ on:
 env:
   major: 0
   minor: 0
-  name: blenderbim
+  name: bonsai
   choco_version: 1.1.0
   CHOCO_TOKEN:   ${{ secrets.CHOCO_TOKEN }}
 
@@ -43,5 +43,5 @@ jobs:
         id: do_choco_release
         run: |
           pip install pygithub
-          cd /home/runner/work/IfcOpenShell/IfcOpenShell/choco/blenderbim/ &&
+          cd /home/runner/work/IfcOpenShell/IfcOpenShell/choco/bonsai/ &&
           python3 choco_release.py
