@@ -231,6 +231,7 @@ class Web(bonsai.core.tool.Web):
         Returns:
             bool: True if the WebSocket server has started on the specified port within the maximum time limit, False otherwise.
         """
+        pid = ws_process.pid
         max_time = 5
         start = time.time()
         while True:
@@ -241,7 +242,7 @@ class Web(bonsai.core.tool.Web):
             try:
                 with open(pid_file, "r") as f:
                     data = json.load(f)
-                    if port in data.values():
+                    if data.get(str(pid)) == port:
                         return True
             except:
                 pass
