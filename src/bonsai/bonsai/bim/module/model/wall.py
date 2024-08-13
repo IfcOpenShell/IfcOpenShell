@@ -285,7 +285,6 @@ class DrawPolylineWall(bpy.types.Operator):
     bl_label = "Draw Polyline Wall"
     bl_options = {"REGISTER", "UNDO"}
 
-
     @classmethod
     def poll(cls, context):
         return context.space_data.type == "VIEW_3D"
@@ -482,14 +481,18 @@ class DrawPolylineWall(bpy.types.Operator):
 
     def recalculate_inputs(self, context):
         if self.number_input:
-            is_valid, self.number_output = self.validate_input(self.number_output)
+            is_valid, self.number_output = tool.Snap.validate_input(self.number_output)
             self.input_panel[self.input_type] = self.number_output
-            if is_valid:
+            if not is_valid:
+                self.report({"WARNING"}, "The number typed is not valid.")
+            else:
                 if self.input_type in {"X", "Y"}:
                     self.input_panel = WallPolylineDecorator.calculate_distance_and_angle(context, self.is_input_on)
                 elif self.input_type in {"D", "A"}:
                     self.input_panel = WallPolylineDecorator.calculate_x_and_y(context)
+
                 self.input_panel[self.input_type] = self.number_output
+
             WallPolylineDecorator.set_input_panel(self.input_panel, self.input_type)
             tool.Blender.update_viewport()
 
@@ -509,15 +512,12 @@ class DrawPolylineWall(bpy.types.Operator):
         relating_type = tool.Ifc.get().by_id(int(relating_type_id))
 
         walls, is_polyline_closed = DumbWallGenerator(relating_type).generate(True)
-        print(is_polyline_closed)
         if walls:
             if is_polyline_closed:
                 for wall1, wall2 in zip(walls, walls[1:] + [walls[0]]):
-                    print(wall1["obj"], wall2["obj"])
                     DumbWallJoiner().join_V(wall1["obj"], wall2["obj"])
             else:
                 for wall1, wall2 in zip(walls[:-1], walls[1:]):
-                    print(wall1["obj"], wall2["obj"])
                     DumbWallJoiner().join_V(wall1["obj"], wall2["obj"])
 
     def modal(self, context, event):
@@ -660,7 +660,7 @@ class DrawPolylineWall(bpy.types.Operator):
             WallPolylineDecorator.install(context)
             tool.Snap.set_use_default_container(True)
             WallPolylineDecorator.set_use_default_container(True)
-            tool.Snap.set_snap_plane_method('XY')
+            tool.Snap.set_snap_plane_method("XY")
             WallPolylineDecorator.set_input_panel(self.input_panel, self.input_type)
             self.visible_objs = tool.Raycast.get_visible_objects(context)
             for obj in self.visible_objs:

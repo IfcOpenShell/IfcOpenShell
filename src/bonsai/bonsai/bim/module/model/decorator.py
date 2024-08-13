@@ -21,7 +21,7 @@ import gpu
 import gpu_extras
 import bmesh
 import bonsai.tool as tool
-from math import sin, cos, radians
+from math import sin, cos, radians, degrees, atan2, acos
 from bpy.types import SpaceView3D
 from mathutils import Vector, Matrix
 from gpu_extras.batch import batch_for_shader
@@ -343,12 +343,22 @@ class WallPolylineDecorator:
 
     @classmethod
     def calculate_distance_and_angle(cls, context, is_input_on):
+        def calculate_angle(snap_vector, last_point, second_to_last_point):
+            v1 = snap_vector - last_point
+            v2 = last_point - second_to_last_point
+            cos_angle = (v1.dot(v2)) / (v1.length * v2.length)
+            if cos_angle > 1:
+                cos_angle = 1
+            angle = acos(cos_angle)
+            return degrees(angle)
+
         try:
             polyline_data = context.scene.BIMModelProperties.polyline_point
             default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
             last_point_data = polyline_data[len(polyline_data) - 1]
         except:
             last_point_data = None
+            second_to_last_point_data = None
             default_container_elevation = 0
 
         snap_prop = context.scene.BIMModelProperties.snap_mouse_point[0]
@@ -357,6 +367,11 @@ class WallPolylineDecorator:
             last_point = Vector((last_point_data.x, last_point_data.y, last_point_data.z))
         else:
             last_point = Vector((0, 0, 0))
+
+        second_to_last_point = None
+        if len(polyline_data) > 1:
+            second_to_last_point_data = polyline_data[len(polyline_data) - 2]
+            second_to_last_point = Vector((second_to_last_point_data.x, second_to_last_point_data.y, second_to_last_point_data.z))
 
         if is_input_on:
             snap_vector = Vector(
@@ -373,12 +388,22 @@ class WallPolylineDecorator:
             Vector((0, 0)),
             Vector((1, 0)),
         )
+        if second_to_last_point:
+            previous_axis = (
+                Vector((second_to_last_point.x, second_to_last_point.y)),
+                Vector((last_point.x, last_point.y)),
+            )
+        else:
+            second_to_last_point = Vector((last_point.x + 10, last_point.y, last_point.z))
+            previous_axis = x_axis_edge
+
         current_axis = (
             Vector((last_point.x, last_point.y)),
             Vector((snap_vector.x, snap_vector.y)),
         )
         if distance > 0:
-            angle = tool.Cad.angle_edges(x_axis_edge, current_axis, degrees=True, signed=True)
+            angle = tool.Cad.angle_3_vectors(snap_vector, last_point, second_to_last_point, degrees=True)
+            angle = 180 - angle
             if cls.input_panel:
                 cls.input_panel["X"] = str(round(snap_vector.x, 4))
                 cls.input_panel["Y"] = str(round(snap_vector.y, 4))
@@ -400,11 +425,20 @@ class WallPolylineDecorator:
             return
 
         last_point = Vector((last_point_data.x, last_point_data.y, last_point_data.z))
+        second_to_last_point = None
+        if len(polyline_data) > 2:
+            second_to_last_point_data = polyline_data[len(polyline_data) - 2]
+            second_to_last_point = Vector((second_to_last_point_data.x, second_to_last_point_data.y, second_to_last_point_data.z))
+        else:
+            second_to_last_point = Vector((0, 0, 0))
+
         distance = float(cls.input_panel["D"])
 
         if distance < 0 or distance > 0:
             angle_degrees = float(cls.input_panel["A"])
-            angle_radians = radians(360 - angle_degrees)  # Substracting from 360 to make it clockwise
+            reference_vector = second_to_last_point - last_point
+            reference_angle = degrees(atan2(reference_vector[1], reference_vector[0]))
+            angle_radians = radians(360 - (angle_degrees - reference_angle))  # Substracting from 360 to make it clockwise
             x = last_point[0] + distance * cos(angle_radians)
             y = last_point[1] + distance * sin(angle_radians)
             if cls.input_panel:
@@ -503,11 +537,9 @@ class WallPolylineDecorator:
         # Line between last polyline point and mouse
         edges = [[0, 1]]
         if polyline_points:
-            print("PP", polyline_points)
             if snap_prop.snap_type != "Plane" and projection_point:
                 self.draw_batch("LINES", [polyline_points[-1]] + projection_point, decorator_color_unselected, edges)
             else:
-                print("FOI")
                 self.draw_batch("LINES", [polyline_points[-1]] + mouse_point, decorator_color_unselected, edges)
 
         # Line for angle axis snap
