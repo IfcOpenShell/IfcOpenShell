@@ -2349,6 +2349,11 @@ class MeasureTool(bpy.types.Operator):
             tool.Snap.remove_last_polyline_point()
             tool.Blender.update_viewport()
 
+        if event.shift and event.type == "Z":
+            tool.Snap.set_use_default_container(False)
+            WallPolylineDecorator.set_use_default_container(False)
+            tool.Snap.set_snap_plane_method('XY')
+
         if event.value == "RELEASE" and event.type in {"RIGHTMOUSE", "ESC"}:
             WallPolylineDecorator.uninstall()
             tool.Snap.clear_polyline()
