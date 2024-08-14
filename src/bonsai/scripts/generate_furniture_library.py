@@ -1929,7 +1929,7 @@ class LibraryGenerator:
 
 
 if __name__ == "__main__":
-    path = Path(__file__).parents[1] / "blenderbim/bim/data/libraries"
+    path = Path(__file__).parents[1] / "bonsai/bim/data/libraries"
     LibraryGenerator().generate(
         "Non-structural assets library", output_filename=str(path / "IFC4 Furniture Library.ifc")
     )

@@ -22,7 +22,7 @@ import csv
 import random
 import ifcopenshell
 import ifcopenshell.api
-import blenderbim.tool as tool
+import bonsai.tool as tool
 from math import cos, sin, tan, pi
 from pathlib import Path
 from itertools import chain
@@ -34,7 +34,7 @@ from random import uniform
 
 # When run from Blender
 BLEND_DIR = os.path.dirname(bpy.data.filepath)
-OUT_PATH = os.path.join(BLEND_DIR, "..", "blenderbim", "bim", "data", "libraries", "IFC4 Landscape Library.ifc")
+OUT_PATH = os.path.join(BLEND_DIR, "..", "bonsai", "bim", "data", "libraries", "IFC4 Landscape Library.ifc")
 
 SimpleTreeParams = namedtuple("SimpleTreeParams", "plant_height crown_diameter trunk_diameter")
 LowPolyTreeParams = namedtuple(

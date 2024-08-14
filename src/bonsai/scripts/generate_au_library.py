@@ -22,7 +22,7 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.api
-import blenderbim.tool as tool
+import bonsai.tool as tool
 
 
 class LibraryGenerator:
@@ -183,7 +183,7 @@ class LibraryGenerator:
         self.create_type("IfcDoorType", "DEMO1", {"model_body": "Door", "plan_body": "Door-Annotation"})
         self.create_type("IfcFurnitureType", "BUNNY", {"model_body": "Bunny", "plan_body": "Bunny-Annotation"})
 
-        self.file.write("blenderbim-au-library.ifc")
+        self.file.write("bonsai-au-library.ifc")
 
     def create_layer_set_type(self, name, data):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class=data["type"], name=name)

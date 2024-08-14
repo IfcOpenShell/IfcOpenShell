@@ -20,13 +20,13 @@ import os
 import bpy
 import ifcopenshell
 import ifcopenshell.api
-import blenderbim.tool as tool
+import bonsai.tool as tool
 from pathlib import Path
 
 
 # When run from Blender
 BLEND_DIR = os.path.dirname(bpy.data.filepath)
-OUT_PATH = os.path.join(BLEND_DIR, "..", "blenderbim", "bim", "data", "libraries", "IFC4 Entourage Library.ifc")
+OUT_PATH = os.path.join(BLEND_DIR, "..", "bonsai", "bim", "data", "libraries", "IFC4 Entourage Library.ifc")
 
 
 class LibraryGenerator:

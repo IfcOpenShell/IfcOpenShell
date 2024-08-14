@@ -55,7 +55,7 @@ class Describer:
             f.write(json.dumps(self.enum_descriptions, indent=4))
 
     def get_html_sources(self):
-        html_dir = "/home/dion/Projects/IfcOpenShell/src/blenderbim/descriptions/IFC4_3/RC1/HTML"
+        html_dir = "/home/dion/Projects/IfcOpenShell/src/bonsai/descriptions/IFC4_3/RC1/HTML"
         for filename in Path(html_dir).rglob("*.htm"):
             if "lexical" not in str(filename):
                 continue
