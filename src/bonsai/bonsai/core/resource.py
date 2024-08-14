@@ -24,7 +24,7 @@ from typing import TYPE_CHECKING, Optional, Union, Iterable
 if TYPE_CHECKING:
     import bpy
     import ifcopenshell
-    import blenderbim.tool as tool
+    import bonsai.tool as tool
 
 
 def load_resources(resource: tool.Resource) -> None:

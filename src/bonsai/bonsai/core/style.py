@@ -22,7 +22,7 @@ from typing import TYPE_CHECKING, Optional, Any
 if TYPE_CHECKING:
     import bpy
     import ifcopenshell
-    import blenderbim.tool as tool
+    import bonsai.tool as tool
 
 
 def add_style(ifc: tool.Ifc, style: tool.Style, obj: bpy.types.Material) -> ifcopenshell.entity_instance:

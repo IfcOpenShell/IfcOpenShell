@@ -17,13 +17,13 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import blenderbim.core.geometry
+import bonsai.core.geometry
 from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     import bpy
     import ifcopenshell
-    import blenderbim.tool as tool
+    import bonsai.tool as tool
 
 
 def assign_type(

@@ -23,7 +23,7 @@ if TYPE_CHECKING:
     import bpy
     import ifcopenshell
     import bsdd
-    import blenderbim.tool as tool
+    import bonsai.tool as tool
 
 
 def get_class_properties(client: bsdd.Client, bsdd: tool.Bsdd) -> dict[str, dict[str, Any]]:

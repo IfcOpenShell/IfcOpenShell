@@ -17,7 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import blenderbim.core.sequence as subject
+import bonsai.core.sequence as subject
 from test.core.bootstrap import ifc, sequence
 
 

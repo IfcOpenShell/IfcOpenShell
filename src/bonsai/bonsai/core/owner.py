@@ -22,7 +22,7 @@ from typing import TYPE_CHECKING, Optional, Union
 if TYPE_CHECKING:
     import bpy
     import ifcopenshell
-    import blenderbim.tool as tool
+    import bonsai.tool as tool
     from ifcopenshell.api.owner.add_address import ADDRESS_TYPE
     from ifcopenshell.api.owner.add_actor import ACTOR_TYPE
 
