@@ -20,14 +20,14 @@
 
 It is useful when an annotation drawing has been created on windows and you want to recreate the
 drawig in linux.
-In this case, blenderbim would tell you that can't load "stylesheet" or "markers" or "symbols" or "patterns" folder.
+In this case, bonsai would tell you that can't load "stylesheet" or "markers" or "symbols" or "patterns" folder.
 If this happens, this script comes in rescue!
 Basically, as the path is stored in a string, the script replaces the existing sep char with the right one.
 It works on the active ifc file (if exists).
 
 """
 
-import blenderbim.tool as tool
+import bonsai.tool as tool
 import ifcopenshell
 import sys
 

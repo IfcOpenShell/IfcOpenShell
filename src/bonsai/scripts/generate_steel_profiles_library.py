@@ -229,7 +229,7 @@ class LibraryGenerator:
 
 
 if __name__ == "__main__":
-    path = Path(__file__).parents[1] / "blenderbim/bim/data/libraries"
+    path = Path(__file__).parents[1] / "bonsai/bim/data/libraries"
     LibraryGenerator().generate(parse_profiles_type="EU", output_filename=str(path / "IFC4 EU Steel.ifc"))
     LibraryGenerator().generate(parse_profiles_type="AU", output_filename=str(path / "IFC4 AU Steel.ifc"))
     LibraryGenerator().generate(parse_profiles_type="US", output_filename=str(path / "IFC4 US Steel.ifc"))

@@ -19,7 +19,7 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.api
-import blenderbim.tool as tool
+import bonsai.tool as tool
 
 
 class LibraryGenerator:
@@ -28,11 +28,9 @@ class LibraryGenerator:
         ifcopenshell.api.post_listeners = {}
 
         self.file = ifcopenshell.api.run("project.create_file")
-        self.project = ifcopenshell.api.run(
-            "root.create_entity", self.file, ifc_class="IfcProject", name="BlenderBIM Demo"
-        )
+        self.project = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject", name="Bonsai Demo")
         self.library = ifcopenshell.api.run(
-            "root.create_entity", self.file, ifc_class="IfcProjectLibrary", name="BlenderBIM Demo Library"
+            "root.create_entity", self.file, ifc_class="IfcProjectLibrary", name="Bonsai Demo Library"
         )
         ifcopenshell.api.run(
             "project.assign_declaration", self.file, definitions=[self.library], relating_context=self.library
@@ -66,7 +64,7 @@ class LibraryGenerator:
             {"body": "Mobile Crane 50T", "clearance": "Mobile Crane 50T - Clearance"},
         )
 
-        self.file.write("blenderbim-site-library.ifc")
+        self.file.write("bonsai-site-library.ifc")
 
     def create_type(self, ifc_class, name, representations):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class=ifc_class, name=name)

@@ -18,7 +18,7 @@
 
 
 import ifcopenshell
-import blenderbim.tool as tool
+import bonsai.tool as tool
 
 import bpy
 import bmesh

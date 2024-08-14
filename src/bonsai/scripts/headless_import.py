@@ -1,7 +1,7 @@
 # This can be run using `blender -b -P headless_import.py`
 
 import bpy
-from blenderbim.bim.ifc import IfcStore
+from bonsai.bim.ifc import IfcStore
 
 # When federating, you may wish to manually specify the origin to ensure models
 # with different or arbitrary origin conventions will turn up in the right spot.
