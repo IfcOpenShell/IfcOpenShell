@@ -525,7 +525,6 @@ class DrawPolylineWall(bpy.types.Operator):
                 for wall1, wall2 in zip(walls[:-1], walls[1:]):
                     print(wall1["obj"], wall2["obj"])
                     DumbWallJoiner().join_V(wall1["obj"], wall2["obj"])
-                    
 
     def modal(self, context, event):
 
@@ -834,7 +833,7 @@ class DumbWallGenerator:
             last_vec = Vector((polyline_data[-1].x, polyline_data[-1].y, polyline_data[-1].z))
             if first_vec == last_vec:
                 is_polyline_closed = True
-            
+
         walls = []
         for i in range(len(polyline_data) - 1):
             vec1 = Vector((polyline_data[i].x, polyline_data[i].y, polyline_data[i].z))
