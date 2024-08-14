@@ -140,6 +140,8 @@ class BIM_PT_bcf_metadata(Panel):
                 if f.is_external:
                     row.operator("bim.open_uri", icon="URL", text="").uri = f.reference
                 else:
+                    op = row.operator("bim.load_bcf_header_ifc_file", icon="FILE_REFRESH", text="")
+                    op.index = index
                     op = row.operator("bim.extract_bcf_file", icon="FILE_FOLDER", text="")
                     op.index = index
                     op.entity_type = "HEADER_FILE"

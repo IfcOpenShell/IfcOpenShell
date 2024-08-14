@@ -41,6 +41,7 @@ classes = (
     operator.EditBcfTopicName,
     operator.ExtractBcfFile,
     operator.LoadBcfComments,
+    operator.LoadBcfHeaderIfcFile,
     operator.LoadBcfProject,
     operator.LoadBcfTopic,
     operator.LoadBcfTopics,

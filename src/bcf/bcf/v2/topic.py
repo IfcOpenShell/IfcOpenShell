@@ -230,7 +230,9 @@ class TopicHandler:
                 real_path = real_path.parent if path_part == ".." else real_path.joinpath(path_part)
             destination_zip.writestr(real_path.at, self.document_references[doc.referenced_document])
 
-    def extract_file(self, entity, outfile: Optional[Path] = None) -> Path:
+    def extract_file(
+        self, entity: Union[mdl.HeaderFile, mdl.BimSnippet, mdl.TopicDocumentReference], outfile: Optional[Path] = None
+    ) -> Union[Path, str, None]:
         """Extracts an element with a file into a temporary directory
 
         These include header files, bim snippets, document references, and
@@ -238,11 +240,9 @@ class TopicHandler:
         URI reference is returned.
 
         :param entity: The entity with a file reference to extract
-        :type entity: bcf.v2.model.HeaderFile,bcf.v2.model.BimSnippet,bcf.v2.model.TopicDocumentReference
         :param outfile: If provided, save the header file to that location.
             Otherwise, a temporary directory is created and the filename is
             derived from the header's original filename.
-        :type outfile: pathlib.Path,optional
         :return: The filepath of the extracted file. It may be a URL if the
             header file is external.
         :rtype: Path
