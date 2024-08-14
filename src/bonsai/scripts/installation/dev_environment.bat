@@ -8,11 +8,11 @@ rem Otherwise by default it is assumed script is executed from IfcOpenShell dire
 rem SET REPO_PATH=%HOMEDRIVE%\Users\%USERNAME%\Where\Your\Git\Repository\Is\Cloned\IfcOpenShell
 SET BLENDER_PATH=%HOMEDRIVE%\Users\%USERNAME%\AppData\Roaming\Blender Foundation\Blender\4.2
 SET PACKAGE_PATH=%BLENDER_PATH%\extensions\.local\lib\python3.11\site-packages
-SET BLENDERBIM_PATH=%BLENDER_PATH%\extensions\user_default\blenderbim
+SET BONSAI_PATH=%BLENDER_PATH%\extensions\user_default\bonsai
 
 
-echo SETUP BLENDERBIM ADD-ON LIVE DEVELOPMENT ENVIRONMENT
-echo Update REPO_PATH, BLENDER_PATH, PACKAGE_PATH, BLENDERBIM_PATH in the script above.
+echo SETUP BONSAI ADD-ON LIVE DEVELOPMENT ENVIRONMENT
+echo Update REPO_PATH, BLENDER_PATH, PACKAGE_PATH, BONSAI_PATH in the script above.
 echo This script needs to be run as administrator (to create symbolic links)
 echo Make sure you have followed these steps before proceeding :)
 echo.
@@ -24,7 +24,7 @@ if not defined REPO_PATH (
 echo REPO_PATH=%REPO_PATH%
 echo BLENDER_PATH=%BLENDER_PATH%
 echo PACKAGE_PATH=%PACKAGE_PATH%
-echo BLENDERBIM_PATH=%BLENDERBIM_PATH%
+echo BONSAI_PATH=%BONSAI_PATH%
 pause
 
 echo Changing to the Git repository directory...
@@ -34,8 +34,8 @@ echo Copy over compiled IfcOpenShell files...
 copy "%PACKAGE_PATH%\ifcopenshell\*_wrapper*" "%CD%\src\ifcopenshell-python\ifcopenshell\"
 
 echo Remove extension and link to Git...
-del "%BLENDERBIM_PATH%\__init__.py"
-rd /S /Q "%PACKAGE_PATH%\blenderbim"
+del "%BONSAI_PATH%\__init__.py"
+rd /S /Q "%PACKAGE_PATH%\bonsai"
 rd /S /Q "%PACKAGE_PATH%\ifcopenshell"
 del "%PACKAGE_PATH%\ifccsv.py"
 del "%PACKAGE_PATH%\ifcdiff.py"
@@ -49,8 +49,8 @@ rd /S /Q "%PACKAGE_PATH%\ifcpatch"
 rd /S /Q "%PACKAGE_PATH%\ifctester"
 rd /S /Q "%PACKAGE_PATH%\ifcfm"
 
-mklink "%BLENDERBIM_PATH%\__init__.py" "%CD%\src\blenderbim\blenderbim\__init__.py"
-mklink /D "%PACKAGE_PATH%\blenderbim" "%CD%\src\blenderbim\blenderbim"
+mklink "%BONSAI_PATH%\__init__.py" "%CD%\src\bonsai\bonsai\__init__.py"
+mklink /D "%PACKAGE_PATH%\bonsai" "%CD%\src\bonsai\bonsai"
 mklink /D "%PACKAGE_PATH%\ifcopenshell" "%CD%\src\ifcopenshell-python\ifcopenshell"
 mklink "%PACKAGE_PATH%\ifccsv.py" "%CD%\src\ifccsv\ifccsv.py"
 mklink "%PACKAGE_PATH%\ifcdiff.py" "%CD%\src\ifcdiff\ifcdiff.py"
@@ -65,8 +65,8 @@ mklink /D "%PACKAGE_PATH%\ifctester" "%CD%\src\ifctester\ifctester"
 mklink /D "%PACKAGE_PATH%\ifcfm" "%CD%\src\ifcfm\ifcfm"
 
 echo Manually downloading some third party dependencies...
-curl https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.js -o "%PACKAGE_PATH%\blenderbim\bim\data\gantt\jsgantt.js"
-curl https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.css -o "%PACKAGE_PATH%\blenderbim\bim\data\gantt\jsgantt.css"
-curl -L https://github.com/BrickSchema/Brick/releases/download/nightly/Brick.ttl -o "%PACKAGE_PATH%\blenderbim\bim\schema\Brick.ttl"
+curl https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.js -o "%PACKAGE_PATH%\bonsai\bim\data\gantt\jsgantt.js"
+curl https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.css -o "%PACKAGE_PATH%\bonsai\bim\data\gantt\jsgantt.css"
+curl -L https://github.com/BrickSchema/Brick/releases/download/nightly/Brick.ttl -o "%PACKAGE_PATH%\bonsai\bim\schema\Brick.ttl"
 
 pause
