@@ -1,11 +1,11 @@
-# Please update REPO_PATH, BLENDER_PATH, PACKAGE_PATH, BLENDERBIM_PATH in the script below.
+# Please update REPO_PATH, BLENDER_PATH, PACKAGE_PATH, BONSAI_PATH in the script below.
 # Default BLENDER_PATH on Mac: "/Users/$USER/Library/Application Support/Blender/4.2/"
 # Default BLENDER_PATH on Linux: "$HOME/.config/blender/4.2/"
 # REPO_PATH="/path/to/where/your/git/repository/is/cloned/IfcOpenShell"
 REPO_PATH="/home/dion/Projects/ifcopenshell/"
 BLENDER_PATH="${HOME}/.config/blender/4.2"
 PACKAGE_PATH="${BLENDER_PATH}/extensions/.local/lib/python3.11/site-packages"
-BLENDERBIM_PATH="${BLENDER_PATH}/extensions/user_default/blenderbim"
+BONSAI_PATH="${BLENDER_PATH}/extensions/user_default/bonsai"
 
 # Changing to the Git repository directory
 cd $REPO_PATH
@@ -14,8 +14,8 @@ cd $REPO_PATH
 cp $PACKAGE_PATH/ifcopenshell/*_wrapper* $PWD/src/ifcopenshell-python/ifcopenshell/
 
 # Remove extension and link to Git
-rm $BLENDERBIM_PATH/__init__.py
-rm -r $PACKAGE_PATH/blenderbim
+rm $BONSAI_PATH/__init__.py
+rm -r $PACKAGE_PATH/bonsai
 rm -r $PACKAGE_PATH/ifcopenshell
 rm -r $PACKAGE_PATH/ifccsv.py
 rm -r $PACKAGE_PATH/ifcdiff.py
@@ -29,8 +29,8 @@ rm -r $PACKAGE_PATH/ifcpatch
 rm -r $PACKAGE_PATH/ifctester
 rm -r $PACKAGE_PATH/ifcfm
 
-ln -s $PWD/src/blenderbim/blenderbim/__init__.py $BLENDERBIM_PATH/__init__.py
-ln -s $PWD/src/blenderbim/blenderbim $PACKAGE_PATH/blenderbim
+ln -s $PWD/src/bonsai/bonsai/__init__.py $BONSAI_PATH/__init__.py
+ln -s $PWD/src/bonsai/bonsai $PACKAGE_PATH/bonsai
 ln -s $PWD/src/ifcopenshell-python/ifcopenshell $PACKAGE_PATH/ifcopenshell
 ln -s $PWD/src/ifccsv/ifccsv.py $PACKAGE_PATH/ifccsv.py
 ln -s $PWD/src/ifcdiff/ifcdiff.py $PACKAGE_PATH/ifcdiff.py
@@ -45,8 +45,8 @@ ln -s $PWD/src/ifctester/ifctester $PACKAGE_PATH/ifctester
 ln -s $PWD/src/ifcfm/ifcfm $PACKAGE_PATH/ifcfm
 
 # Manually download some third party dependencies
-cd $PACKAGE_PATH/blenderbim/bim/data/gantt
+cd $PACKAGE_PATH/bonsai/bim/data/gantt
 wget https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.js
 wget https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.css
-cd $PACKAGE_PATH/blenderbim/bim/schema
+cd $PACKAGE_PATH/bonsai/bim/schema
 wget https://github.com/BrickSchema/Brick/releases/download/nightly/Brick.ttl
