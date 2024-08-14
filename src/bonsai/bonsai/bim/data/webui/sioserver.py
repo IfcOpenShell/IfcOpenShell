@@ -2,11 +2,11 @@ import sys
 import os
 import webbrowser
 
-blenderbim_lib_path = os.environ.get("BLENDERBIM_LIB_PATH")
-blenderbim_version = os.environ.get("BLENDERBIM_VERSION")
+bonsai_lib_path = os.environ.get("BONSAI_LIB_PATH")
+bonsai_version = os.environ.get("BONSAI_VERSION")
 
-if blenderbim_lib_path:
-    sys.path.insert(0, blenderbim_lib_path)
+if bonsai_lib_path:
+    sys.path.insert(0, bonsai_lib_path)
 
 import argparse
 from aiohttp import web
@@ -131,21 +131,21 @@ sio.register_namespace(BlenderNamespace("/blender"))
 async def index(request):
     with open("templates/index.html", "r") as f:
         template = f.read()
-    html_content = pystache.render(template, {"port": sio_port, "version": blenderbim_version})
+    html_content = pystache.render(template, {"port": sio_port, "version": bonsai_version})
     return web.Response(text=html_content, content_type="text/html")
 
 
 async def gantt(request):
     with open("templates/gantt.html", "r") as f:
         template = f.read()
-    html_content = pystache.render(template, {"port": sio_port, "version": blenderbim_version})
+    html_content = pystache.render(template, {"port": sio_port, "version": bonsai_version})
     return web.Response(text=html_content, content_type="text/html")
 
 
 async def drawings(request):
     with open("templates/drawings.html", "r") as f:
         template = f.read()
-    html_content = pystache.render(template, {"port": sio_port, "version": blenderbim_version})
+    html_content = pystache.render(template, {"port": sio_port, "version": bonsai_version})
     return web.Response(text=html_content, content_type="text/html")
 
 

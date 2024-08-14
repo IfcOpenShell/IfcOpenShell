@@ -110,7 +110,7 @@ class Web(bonsai.core.tool.Web):
         py_version = sys.version_info
 
         if bpy.app.version >= (4, 2, 0):
-            blenderbim_lib_path = (
+            bonsai_lib_path = (
                 Path(bpy.utils.user_resource("EXTENSIONS"))
                 / ".local"
                 / "lib"
@@ -119,12 +119,12 @@ class Web(bonsai.core.tool.Web):
             )
         else:
             addon = [a for a in addon_utils.modules() if a.bl_info["name"] == "Bonsai"][0]
-            blenderbim_path = os.path.dirname(addon.__file__)
-            blenderbim_lib_path = os.path.join(blenderbim_path, "libs", "site", "packages")
+            bonsai_path = os.path.dirname(addon.__file__)
+            bonsai_lib_path = os.path.join(bonsai_path, "libs", "site", "packages")
 
         env = os.environ.copy()
-        env["BLENDERBIM_LIB_PATH"] = str(blenderbim_lib_path)
-        env["BLENDERBIM_VERSION"] = tool.Blender.get_bonsai_version()
+        env["BONSAI_LIB_PATH"] = str(bonsai_lib_path)
+        env["BONSAI_VERSION"] = tool.Blender.get_bonsai_version()
 
         ws_process = subprocess.Popen(
             [sys.executable, ws_path, "--p", str(port), "--host", "127.0.0.1"],
