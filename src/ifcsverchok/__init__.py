@@ -68,7 +68,7 @@ def ensure_addons_are_enabled(*addon_names: str) -> None:
         raise Exception("Some issues were found trying to enable IFC Sverchok:\n" + "\n".join(errors))
 
 
-ensure_addons_are_enabled("blenderbim", "sverchok")
+ensure_addons_are_enabled("bonsai", "sverchok")
 
 
 from sverchok.ui.nodeview_space_menu import add_node_menu

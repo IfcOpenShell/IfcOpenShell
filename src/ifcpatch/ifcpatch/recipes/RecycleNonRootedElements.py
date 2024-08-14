@@ -34,7 +34,7 @@ class Patcher:
         If filesize is an issue, another approach would be to use IFCZIP
         instead to compress the model. Optimising the model only typically
         affects filesize and has minimal impact on load times. Large filesizes
-        can usually be solved through other means. Consult the BlenderBIM Add-on
+        can usually be solved through other means. Consult Bonsai
         documentation on dealing with large models for more details.
 
         This patch may be run multiple times with diminishing returns.
