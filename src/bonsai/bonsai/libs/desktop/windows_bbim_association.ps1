@@ -6,11 +6,11 @@ Start-Process cmd -ArgumentList `
     "/k ", `
     "ASSOC .IFC=", `
     "&", `
-    "FTYPE BLENDERBIM=""$BlenderPath"" --python-expr ""import bpy; bpy.ops.bim.load_project(filepath=r'%1')""",
+    "FTYPE BONSAI=""$BlenderPath"" --python-expr ""import bpy; bpy.ops.bim.load_project(filepath=r'%1')""",
     "&", `
-    "echo. & echo. & echo To create an association between .IFC files and BlenderBIM", `
+    "echo. & echo. & echo To create an association between .IFC files and Bonsai", `
     "&", `
     "echo type the command below & echo.", `
     "&", `
-    "echo ASSOC .IFC=BLENDERBIM & echo." `
+    "echo ASSOC .IFC=BONSAI & echo." `
 -Verb RunAs

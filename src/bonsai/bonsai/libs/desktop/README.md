@@ -2,20 +2,20 @@ Desktop
 =======
 
 This folder contains everything needed to create file associations and icons to
-present BlenderBIM as a desktop application.
+present Bonsai as a desktop application.
 
 Linux
 -----
 
-Assuming that blender and BlenderBIM are already installed on your system,
+Assuming that blender and Bonsai are already installed on your system,
 configure associations and icons for a single user by running `make`:
 
   make install
 
-Test by running the wrapper script directly, this should launch BlenderBIM with
+Test by running the wrapper script directly, this should launch Bonsai with
 an empty IFC project:
 
-  blenderbim
+  bonsai
 
 This `Makefile` installs files to `~/.local` by default, to install to an
 alternative location, set `DESTDIR`:
