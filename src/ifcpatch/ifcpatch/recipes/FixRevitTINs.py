@@ -70,7 +70,7 @@ class Patcher:
     def patch(self):
         import bpy
         import bmesh
-        import blenderbim.tool as tool
+        import bonsai.tool as tool
         from math import degrees
 
         bpy.context.scene.BIMProjectProperties.should_use_native_meshes = True
