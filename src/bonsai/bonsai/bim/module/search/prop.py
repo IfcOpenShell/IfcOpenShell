@@ -17,10 +17,10 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import blenderbim.tool as tool
+import bonsai.tool as tool
 import ifcopenshell.util.schema
-from blenderbim.bim.prop import ObjProperty, BIMFilterGroup
-from blenderbim.bim.module.search.data import SearchData, ColourByPropertyData, SelectSimilarData
+from bonsai.bim.prop import ObjProperty, BIMFilterGroup
+from bonsai.bim.module.search.data import SearchData, ColourByPropertyData, SelectSimilarData
 from bpy.types import PropertyGroup
 from . import ui, prop, operator
 from bpy.props import (

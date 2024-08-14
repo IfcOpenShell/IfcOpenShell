@@ -17,11 +17,10 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import blenderbim.bim.helper
 from bpy.types import Panel, UIList
-from blenderbim.bim.ifc import IfcStore
-import blenderbim.tool as tool
-from blenderbim.bim.module.boundary.data import SpaceBoundariesData
+from bonsai.bim.ifc import IfcStore
+import bonsai.tool as tool
+from bonsai.bim.module.boundary.data import SpaceBoundariesData
 
 
 class BIM_PT_SceneBoundaries(Panel):

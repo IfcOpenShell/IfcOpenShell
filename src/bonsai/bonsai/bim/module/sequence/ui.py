@@ -17,11 +17,11 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import isodate
-import blenderbim.bim.helper
+import bonsai.bim.helper
 from bpy.types import Panel, UIList
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.helper import draw_attributes
-from blenderbim.bim.module.sequence.data import (
+from bonsai.bim.ifc import IfcStore
+from bonsai.bim.helper import draw_attributes
+from bonsai.bim.module.sequence.data import (
     WorkPlansData,
     WorkScheduleData,
     SequenceData,
@@ -384,10 +384,10 @@ class BIM_PT_work_schedules(Panel):
             op.task = task["id"]
 
     def draw_editable_sequence_attributes_ui(self):
-        blenderbim.bim.helper.draw_attributes(self.props.sequence_attributes, self.layout)
+        bonsai.bim.helper.draw_attributes(self.props.sequence_attributes, self.layout)
 
     def draw_editable_sequence_lag_time_ui(self):
-        blenderbim.bim.helper.draw_attributes(self.props.lag_time_attributes, self.layout)
+        bonsai.bim.helper.draw_attributes(self.props.lag_time_attributes, self.layout)
 
     def draw_editable_task_calendar_ui(self):
         task = SequenceData.data["tasks"][self.props.active_task_id]
@@ -409,12 +409,12 @@ class BIM_PT_work_schedules(Panel):
             row.label(text="Must Create a Calendar First. See Work Calendar Panel", icon="INFO")
 
     def draw_editable_task_attributes_ui(self):
-        blenderbim.bim.helper.draw_attributes(
+        bonsai.bim.helper.draw_attributes(
             self.props.task_attributes, self.layout, copy_operator="bim.copy_task_attribute"
         )
 
     def draw_editable_task_time_attributes_ui(self):
-        blenderbim.bim.helper.draw_attributes(self.props.task_time_attributes, self.layout)
+        bonsai.bim.helper.draw_attributes(self.props.task_time_attributes, self.layout)
 
     def draw_baseline_ui(self, work_schedule_id):
         if not self.props.should_show_schedule_baseline_ui:

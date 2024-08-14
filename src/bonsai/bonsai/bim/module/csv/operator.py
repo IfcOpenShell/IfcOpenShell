@@ -24,10 +24,10 @@ import logging
 import tempfile
 import ifcopenshell
 import ifcopenshell.util.selector
-import blenderbim.tool as tool
-import blenderbim.bim.module.drawing.scheduler as scheduler
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.handler import refresh_ui_data
+import bonsai.tool as tool
+import bonsai.bim.module.drawing.scheduler as scheduler
+from bonsai.bim.ifc import IfcStore
+from bonsai.bim.handler import refresh_ui_data
 
 
 class AddCsvAttribute(bpy.types.Operator):

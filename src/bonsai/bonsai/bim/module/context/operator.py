@@ -17,11 +17,8 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import blenderbim.tool as tool
-import blenderbim.core.context as core
-import blenderbim.bim.module.context.data
-import blenderbim.bim.handler
-from blenderbim.bim.ifc import IfcStore
+import bonsai.tool as tool
+import bonsai.core.context as core
 
 
 class AddContext(bpy.types.Operator, tool.Ifc.Operator):

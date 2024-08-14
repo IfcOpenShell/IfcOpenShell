@@ -22,7 +22,7 @@ import ifcopenshell.util.geolocation
 import ifcopenshell.util.placement
 import ifcopenshell.util.schema
 import ifcopenshell.util.unit
-import blenderbim.tool as tool
+import bonsai.tool as tool
 from mathutils import Vector
 
 

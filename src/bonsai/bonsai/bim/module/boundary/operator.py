@@ -31,15 +31,15 @@ import ifcopenshell.util.shape
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
-import blenderbim.tool as tool
-import blenderbim.bim.import_ifc as import_ifc
+import bonsai.tool as tool
+import bonsai.bim.import_ifc as import_ifc
 from math import pi, inf, degrees, acos, radians
 from mathutils import Vector, Matrix
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.model.decorator import ProfileDecorator
-from blenderbim.bim.module.boundary.decorator import BoundaryDecorator
-import blenderbim.core
-import blenderbim.core.geometry
+from bonsai.bim.ifc import IfcStore
+from bonsai.bim.module.model.decorator import ProfileDecorator
+from bonsai.bim.module.boundary.decorator import BoundaryDecorator
+import bonsai.core
+import bonsai.core.geometry
 
 
 def get_boundaries_collection(blender_space):
@@ -521,7 +521,7 @@ class ShowBoundaries(bpy.types.Operator, tool.Ifc.Operator):
             if not element or not getattr(element, "BoundedBy", None):
                 continue
             if tool.Ifc.is_moved(obj):
-                blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+                bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
             element = tool.Ifc.get_entity(obj)
             for rel in element.BoundedBy or []:
                 boundary_obj = loader.load_boundary(rel, obj)
@@ -1014,7 +1014,7 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
     def get_flattened_polygon(self, element, relating_space_obj, target_face_matrix_i):
         obj = tool.Ifc.get_object(element)
         if obj and tool.Ifc.is_moved(obj):
-            blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+            bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
 
         space_matrix_i = relating_space_obj.matrix_world.inverted()
 

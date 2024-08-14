@@ -29,7 +29,7 @@
 # of "fetching data" and "displaying data" is a common concept that makes UI
 # code much simpler, more efficient, and less error-prone to refresh data.
 
-import blenderbim.tool as tool
+import bonsai.tool as tool
 
 
 # All data must have a refresh function. The refresh function simply sets all

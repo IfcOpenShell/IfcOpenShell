@@ -28,12 +28,12 @@ import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.placement
 import ifcopenshell.util.unit
-import blenderbim.tool as tool
-import blenderbim.core.geometry
-import blenderbim.core.aggregate
-import blenderbim.core.spatial
-import blenderbim.core.style
-from blenderbim.bim.ifc import IfcStore
+import bonsai.tool as tool
+import bonsai.core.geometry
+import bonsai.core.aggregate
+import bonsai.core.spatial
+import bonsai.core.style
+from bonsai.bim.ifc import IfcStore
 from mathutils import Vector
 from typing import Union
 from logging import Logger
@@ -151,7 +151,7 @@ class IfcExporter:
             return self.sync_grid_axis_object_placement(obj, element)
         if not hasattr(element, "ObjectPlacement"):
             return
-        blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+        bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
         return element
 
     def sync_grid_axis_object_placement(self, obj: bpy.types.Object, element: ifcopenshell.entity_instance) -> None:

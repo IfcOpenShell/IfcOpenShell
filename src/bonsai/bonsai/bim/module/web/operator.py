@@ -18,8 +18,8 @@
 
 import os
 import bpy
-import blenderbim.core.web as core
-import blenderbim.tool as tool
+import bonsai.core.web as core
+import bonsai.tool as tool
 
 
 class ConnectToWebsocketServer(bpy.types.Operator):

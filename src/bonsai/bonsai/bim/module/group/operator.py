@@ -19,9 +19,9 @@
 import bpy
 import ifcopenshell.util.attribute
 import ifcopenshell.api
-import blenderbim.bim.helper
-import blenderbim.tool as tool
-from blenderbim.bim.ifc import IfcStore
+import bonsai.bim.helper
+import bonsai.tool as tool
+from bonsai.bim.ifc import IfcStore
 import json
 
 
@@ -152,7 +152,7 @@ class EnableEditingGroup(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         props = context.scene.BIMGroupProperties
         props.group_attributes.clear()
-        blenderbim.bim.helper.import_attributes2(tool.Ifc.get().by_id(self.group), props.group_attributes)
+        bonsai.bim.helper.import_attributes2(tool.Ifc.get().by_id(self.group), props.group_attributes)
         props.active_group_id = self.group
         return {"FINISHED"}
 

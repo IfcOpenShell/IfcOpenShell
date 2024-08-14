@@ -31,11 +31,11 @@ from ifcopenshell.util.doc import (
     get_property_doc,
     get_predefined_type_doc,
 )
-import blenderbim.bim
-import blenderbim.bim.schema
-import blenderbim.bim.handler
-from blenderbim.bim.ifc import IfcStore
-import blenderbim.tool as tool
+import bonsai.bim
+import bonsai.bim.schema
+import bonsai.bim.handler
+from bonsai.bim.ifc import IfcStore
+import bonsai.tool as tool
 from collections import defaultdict
 from bpy.types import PropertyGroup
 from bpy.props import (
@@ -110,20 +110,20 @@ def get_attribute_enum_values(prop, context):
 
 
 def update_schema_dir(self, context):
-    import blenderbim.bim.schema
+    import bonsai.bim.schema
 
-    blenderbim.bim.schema.ifc.schema_dir = context.scene.BIMProperties.schema_dir
+    bonsai.bim.schema.ifc.schema_dir = context.scene.BIMProperties.schema_dir
 
 
 def update_data_dir(self, context):
-    import blenderbim.bim.schema
+    import bonsai.bim.schema
 
-    blenderbim.bim.schema.ifc.data_dir = context.scene.BIMProperties.data_dir
+    bonsai.bim.schema.ifc.data_dir = context.scene.BIMProperties.data_dir
 
 
 def update_ifc_file(self, context):
     if context.scene.BIMProperties.ifc_file:
-        blenderbim.bim.handler.loadIfcStore(context.scene)
+        bonsai.bim.handler.loadIfcStore(context.scene)
 
 
 def update_section_color(self, context):
@@ -345,7 +345,7 @@ class Attribute(PropertyGroup):
 
 def get_tab(self, context):
     return [
-        ("PROJECT", "Project Overview", "", blenderbim.bim.icons["IFC"].icon_id, 0),
+        ("PROJECT", "Project Overview", "", bonsai.bim.icons["IFC"].icon_id, 0),
         ("OBJECT", "Object Information", "", "FILE_3D", 1),
         ("GEOMETRY", "Geometry and Materials", "", "MATERIAL", 2),
         ("DRAWINGS", "Drawings and Documents", "", "DOCUMENTS", 3),

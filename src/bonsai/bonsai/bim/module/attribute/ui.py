@@ -16,10 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import blenderbim.bim.helper
+import bonsai.bim.helper
 from bpy.types import Panel
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.attribute.data import AttributesData
+from bonsai.bim.ifc import IfcStore
+from bonsai.bim.module.attribute.data import AttributesData
 
 
 def draw_ui(context, layout, attributes):
@@ -34,7 +34,7 @@ def draw_ui(context, layout, attributes):
         op = row.operator("bim.disable_editing_attributes", icon="CANCEL", text="")
         op.obj = obj.name
 
-        blenderbim.bim.helper.draw_attributes(props.attributes, layout, copy_operator="bim.copy_attribute_to_selection")
+        bonsai.bim.helper.draw_attributes(props.attributes, layout, copy_operator="bim.copy_attribute_to_selection")
     else:
         row = layout.row()
         op = row.operator("bim.enable_editing_attributes", icon="GREASEPENCIL", text="Edit")

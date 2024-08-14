@@ -24,7 +24,7 @@ import shutil
 import requests
 import tempfile
 import datetime
-import blenderbim.tool as tool
+import bonsai.tool as tool
 
 
 class AuginLogin(bpy.types.Operator):

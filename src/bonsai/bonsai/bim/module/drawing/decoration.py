@@ -26,16 +26,16 @@ import shapely
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.unit
-import blenderbim.tool as tool
-import blenderbim.bim.module.drawing.helper as helper
+import bonsai.tool as tool
+import bonsai.bim.module.drawing.helper as helper
 from math import pi, sin, cos, tan, acos, atan, degrees, radians, ceil
 from bpy.types import SpaceView3D
 from mathutils import Vector, Matrix
 from bpy_extras.view3d_utils import location_3d_to_region_2d
 from gpu_extras.batch import batch_for_shader
-from blenderbim.bim.module.drawing.data import DecoratorData, DrawingsData
-from blenderbim.bim.module.drawing.shaders import add_verts_sequence, add_offsets
-from blenderbim.bim.module.drawing.helper import format_distance
+from bonsai.bim.module.drawing.data import DecoratorData, DrawingsData
+from bonsai.bim.module.drawing.shaders import add_verts_sequence, add_offsets
+from bonsai.bim.module.drawing.helper import format_distance
 from timeit import default_timer as timer
 from functools import lru_cache
 from typing import Optional, Iterator, Type, Union

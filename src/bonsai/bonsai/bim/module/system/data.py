@@ -22,7 +22,7 @@ import ifcopenshell.util.schema
 import ifcopenshell.util.system
 import ifcopenshell.util.unit
 from ifcopenshell.util.doc import get_entity_doc
-import blenderbim.tool as tool
+import bonsai.tool as tool
 
 
 def refresh():

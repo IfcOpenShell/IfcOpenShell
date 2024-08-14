@@ -17,9 +17,9 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import blenderbim.tool as tool
-from blenderbim.bim.helper import prop_with_search
-from blenderbim.bim.helper import draw_attributes
+import bonsai.tool as tool
+from bonsai.bim.helper import prop_with_search
+from bonsai.bim.helper import draw_attributes
 
 
 class BIM_PT_patch(bpy.types.Panel):

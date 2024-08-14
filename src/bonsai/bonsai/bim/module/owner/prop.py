@@ -18,9 +18,9 @@
 
 import bpy
 from ifcopenshell.util.doc import get_entity_doc
-import blenderbim.tool as tool
-from blenderbim.bim.prop import StrProperty, Attribute
-from blenderbim.bim.module.owner.data import OwnerData, ActorData, ObjectActorData
+import bonsai.tool as tool
+from bonsai.bim.prop import StrProperty, Attribute
+from bonsai.bim.module.owner.data import OwnerData, ActorData, ObjectActorData
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,

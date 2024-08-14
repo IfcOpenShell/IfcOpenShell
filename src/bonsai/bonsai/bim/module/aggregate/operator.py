@@ -20,11 +20,10 @@ import bpy
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.element
-import blenderbim.tool as tool
-import blenderbim.core.aggregate as core
-import blenderbim.core.spatial
-import blenderbim.bim.handler
-from blenderbim.bim.ifc import IfcStore
+import bonsai.tool as tool
+import bonsai.core.aggregate as core
+import bonsai.core.spatial
+from bonsai.bim.ifc import IfcStore
 
 
 class BIM_OT_aggregate_assign_object(bpy.types.Operator, tool.Ifc.Operator):
@@ -164,7 +163,7 @@ class BIM_OT_add_aggregate(bpy.types.Operator, tool.Ifc.Operator):
                     related_obj=aggregate,
                 )
             elif current_container:
-                blenderbim.core.spatial.assign_container(
+                bonsai.core.spatial.assign_container(
                     tool.Ifc,
                     tool.Collector,
                     tool.Spatial,
@@ -284,7 +283,7 @@ class BIM_OT_add_part_to_object(bpy.types.Operator, tool.Ifc.Operator):
             part_class=self.part_class,
             part_name=self.part_name,
         )
-        blenderbim.core.spatial.import_spatial_decomposition(tool.Spatial)
+        bonsai.core.spatial.import_spatial_decomposition(tool.Spatial)
 
 
 class BIM_OT_break_link_to_other_aggregates(bpy.types.Operator, tool.Ifc.Operator):

@@ -18,14 +18,14 @@
 
 import os
 import bpy
-import blenderbim.tool as tool
-import blenderbim.core.model as core
-from blenderbim.bim.module.model.wall import DumbWallJoiner
-from blenderbim.bim.helper import prop_with_search
+import bonsai.tool as tool
+import bonsai.core.model as core
+from bonsai.bim.module.model.wall import DumbWallJoiner
+from bonsai.bim.helper import prop_with_search
 from bpy.types import WorkSpaceTool
-from blenderbim.bim.module.model.data import AuthoringData
-from blenderbim.bim.module.system.data import PortData
-from blenderbim.bim.module.model.prop import get_ifc_class
+from bonsai.bim.module.model.data import AuthoringData
+from bonsai.bim.module.system.data import PortData
+from bonsai.bim.module.model.prop import get_ifc_class
 
 
 class BimTool(WorkSpaceTool):

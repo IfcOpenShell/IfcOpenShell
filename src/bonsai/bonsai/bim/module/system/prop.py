@@ -17,9 +17,9 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from blenderbim.bim.module.system.data import SystemData
-import blenderbim.bim.module.system.decorator as decorator
-from blenderbim.bim.prop import StrProperty, Attribute
+from bonsai.bim.module.system.data import SystemData
+import bonsai.bim.module.system.decorator as decorator
+from bonsai.bim.prop import StrProperty, Attribute
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,

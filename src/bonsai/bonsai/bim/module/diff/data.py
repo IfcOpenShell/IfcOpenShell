@@ -18,7 +18,7 @@
 
 import bpy
 import json
-import blenderbim.tool as tool
+import bonsai.tool as tool
 
 
 def refresh():

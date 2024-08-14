@@ -22,11 +22,10 @@ import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.guid
 import ifcopenshell.util.element
-import blenderbim.bim.helper
-import blenderbim.bim.handler
-import blenderbim.tool as tool
-import blenderbim.core.attribute as core
-from blenderbim.bim.ifc import IfcStore
+import bonsai.bim.helper
+import bonsai.tool as tool
+import bonsai.core.attribute as core
+from bonsai.bim.ifc import IfcStore
 
 
 class EnableEditingAttributes(bpy.types.Operator):
@@ -59,13 +58,13 @@ class EnableEditingAttributes(bpy.types.Operator):
                 new.data_type = "string"
                 new.ifc_class = data["type"]
                 new.string_value = "" if new.is_null else json.dumps(data[name])
-                blenderbim.bim.helper.add_attribute_description(new)
+                bonsai.bim.helper.add_attribute_description(new)
                 new.description += " The degrees, minutes and seconds should follow this format : [12,34,56]"
             if name in ("PredefinedType", "ObjectType") and has_inherited_predefined_type:
                 props.attributes.remove(len(props.attributes) - 1)
                 return True
 
-        blenderbim.bim.helper.import_attributes2(element, props.attributes, callback=callback)
+        bonsai.bim.helper.import_attributes2(element, props.attributes, callback=callback)
         props.is_editing_attributes = True
         return {"FINISHED"}
 
@@ -106,7 +105,7 @@ class EditAttributes(bpy.types.Operator, tool.Ifc.Operator):
                         attributes[prop.name] = None
                 return True
 
-        attributes = blenderbim.bim.helper.export_attributes(props.attributes, callback=callback)
+        attributes = bonsai.bim.helper.export_attributes(props.attributes, callback=callback)
         ifcopenshell.api.run("attribute.edit_attributes", self.file, product=product, attributes=attributes)
         bpy.ops.bim.disable_editing_attributes(obj=obj.name)
         return {"FINISHED"}

@@ -18,8 +18,8 @@
 
 import bpy
 import bsdd
-import blenderbim.tool as tool
-from blenderbim.core import bsdd as core
+import bonsai.tool as tool
+from bonsai.core import bsdd as core
 
 
 class LoadBSDDDomains(bpy.types.Operator):

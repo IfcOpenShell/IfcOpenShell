@@ -20,7 +20,7 @@ import bpy
 import math
 import bmesh
 import mathutils
-import blenderbim.tool as tool
+import bonsai.tool as tool
 import ifcopenshell
 import ifcopenshell.geom
 import ifcopenshell.util.element

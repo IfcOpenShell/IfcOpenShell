@@ -22,8 +22,7 @@ import ifcopenshell.util.cost
 import ifcopenshell.util.date
 import ifcopenshell.util.element
 import ifcopenshell.util.unit
-import blenderbim.tool as tool
-import blenderbim.bim.schema
+import bonsai.tool as tool
 from ifcopenshell.util.doc import get_entity_doc, get_predefined_type_doc
 from typing import Any
 

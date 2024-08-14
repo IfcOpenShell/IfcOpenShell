@@ -23,14 +23,14 @@ import string
 import svgwrite
 import openpyxl
 
-from blenderbim.bim.module.drawing.svgwriter import SvgWriter
+from bonsai.bim.module.drawing.svgwriter import SvgWriter
 from odf.opendocument import load as load_ods
 from odf.table import Table, TableRow, TableColumn, TableCell
 from odf.text import P
 from odf.style import Style
 from textwrap import wrap
 from pathlib import Path
-from blenderbim.bim.ifc import IfcStore
+from bonsai.bim.ifc import IfcStore
 
 DEBUG = False
 

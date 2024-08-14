@@ -17,9 +17,9 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import blenderbim.bim.helper
+import bonsai.bim.helper
 from bpy.types import Panel
-from blenderbim.bim.module.clash.data import ClashData
+from bonsai.bim.module.clash.data import ClashData
 
 
 class BIM_PT_ifcclash(Panel):
@@ -92,7 +92,7 @@ class BIM_PT_ifcclash(Panel):
             op.group = "a"
 
             if source.mode != "a":
-                blenderbim.bim.helper.draw_filter(
+                bonsai.bim.helper.draw_filter(
                     layout, source.filter_groups, ClashData, f"clash_{props.active_clash_set_index}_a_{index}"
                 )
 
@@ -112,7 +112,7 @@ class BIM_PT_ifcclash(Panel):
             op.group = "b"
 
             if source.mode != "a":
-                blenderbim.bim.helper.draw_filter(
+                bonsai.bim.helper.draw_filter(
                     layout, source.filter_groups, ClashData, f"clash_{props.active_clash_set_index}_b_{index}"
                 )
 

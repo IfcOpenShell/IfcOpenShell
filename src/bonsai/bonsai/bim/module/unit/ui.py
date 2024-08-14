@@ -16,11 +16,11 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import blenderbim.bim.helper
+import bonsai.bim.helper
 from bpy.types import Panel, UIList
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.helper import prop_with_search
-from blenderbim.bim.module.unit.data import UnitsData
+from bonsai.bim.ifc import IfcStore
+from bonsai.bim.helper import prop_with_search
+from bonsai.bim.module.unit.data import UnitsData
 
 
 class BIM_PT_units(Panel):
@@ -98,7 +98,7 @@ class BIM_PT_units(Panel):
             self.draw_editable_ui(context)
 
     def draw_editable_ui(self, context):
-        blenderbim.bim.helper.draw_attributes(self.props.unit_attributes, self.layout)
+        bonsai.bim.helper.draw_attributes(self.props.unit_attributes, self.layout)
 
 
 class BIM_UL_units(UIList):

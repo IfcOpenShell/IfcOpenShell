@@ -21,7 +21,7 @@ import json
 import ifcopenshell
 import ifcopenshell.util.element
 from math import degrees, atan2
-from blenderbim.bim.ifc import IfcStore
+from bonsai.bim.ifc import IfcStore
 
 from .api import Api
 

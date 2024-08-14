@@ -25,8 +25,8 @@ import ifctester
 import ifctester.ids
 import ifctester.reporter
 import ifcopenshell
-import blenderbim.tool as tool
-import blenderbim.bim.handler
+import bonsai.tool as tool
+import bonsai.bim.handler
 from pathlib import Path
 
 
@@ -57,7 +57,7 @@ class ExecuteIfcTester(bpy.types.Operator, tool.Ifc.Operator):
                 for f in props.specs.file_list:
                     self.execute_tester(ifc_data, ifc_file.name, f.name)
 
-        blenderbim.bim.handler.refresh_ui_data()
+        bonsai.bim.handler.refresh_ui_data()
         return {"FINISHED"}
 
     def execute_tester(self, ifc_data, ifc_path, specs_path):

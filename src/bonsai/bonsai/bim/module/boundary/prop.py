@@ -18,7 +18,7 @@
 
 import bpy
 from bpy.types import PropertyGroup
-from blenderbim.bim.prop import ObjProperty
+from bonsai.bim.prop import ObjProperty
 from bpy.props import (
     PointerProperty,
     StringProperty,
@@ -29,7 +29,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
-import blenderbim.tool as tool
+import bonsai.tool as tool
 
 
 def space_filter(self, object):

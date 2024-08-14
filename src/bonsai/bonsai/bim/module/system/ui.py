@@ -17,11 +17,11 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import blenderbim.bim.helper
-import blenderbim.tool as tool
-from blenderbim.bim.helper import prop_with_search
+import bonsai.bim.helper
+import bonsai.tool as tool
+from bonsai.bim.helper import prop_with_search
 from bpy.types import Panel, UIList
-from blenderbim.bim.module.system.data import SystemData, ZonesData, ActiveObjectZonesData, ObjectSystemData, PortData
+from bonsai.bim.module.system.data import SystemData, ZonesData, ActiveObjectZonesData, ObjectSystemData, PortData
 
 
 FLOW_DIRECTION_TO_ICON = {
@@ -377,7 +377,7 @@ class BIM_PT_zones(Panel):
         self.layout.template_list("BIM_UL_zones", "", self.props, "zones", self.props, "active_zone_index")
 
         if self.props.is_editing:
-            blenderbim.bim.helper.draw_attributes(self.props.attributes, self.layout)
+            bonsai.bim.helper.draw_attributes(self.props.attributes, self.layout)
             row = self.layout.row(align=True)
             row.operator("bim.edit_zone", icon="CHECKMARK")
             row.operator("bim.disable_editing_zone", icon="CANCEL", text="")

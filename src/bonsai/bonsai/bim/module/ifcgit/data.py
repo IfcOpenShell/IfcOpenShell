@@ -3,7 +3,7 @@ import os
 import shutil
 
 # import tool
-import blenderbim.tool as tool
+import bonsai.tool as tool
 
 
 def refresh():

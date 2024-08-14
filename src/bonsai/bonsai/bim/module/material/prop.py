@@ -18,10 +18,10 @@
 
 import bpy
 from ifcopenshell.util.doc import get_entity_doc
-import blenderbim.tool as tool
-from blenderbim.bim.module.material.data import MaterialsData, ObjectMaterialData
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.prop import StrProperty, Attribute
+import bonsai.tool as tool
+from bonsai.bim.module.material.data import MaterialsData, ObjectMaterialData
+from bonsai.bim.ifc import IfcStore
+from bonsai.bim.prop import StrProperty, Attribute
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,

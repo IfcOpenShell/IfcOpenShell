@@ -19,10 +19,10 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.api
-import blenderbim.tool as tool
-import blenderbim.core.qto as core
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.qto import helper
+import bonsai.tool as tool
+import bonsai.core.qto as core
+from bonsai.bim.ifc import IfcStore
+from bonsai.bim.module.qto import helper
 
 
 class CalculateCircleRadius(bpy.types.Operator):

@@ -17,9 +17,9 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import blenderbim.bim.helper
-import blenderbim.tool as tool
-from blenderbim.bim.module.context.data import ContextData
+import bonsai.bim.helper
+import bonsai.tool as tool
+from bonsai.bim.module.context.data import ContextData
 
 
 class BIM_PT_context(bpy.types.Panel):
@@ -56,7 +56,7 @@ class BIM_PT_context(bpy.types.Panel):
                 row = box.row(align=True)
                 row.operator("bim.edit_context", icon="CHECKMARK")
                 row.operator("bim.disable_editing_context", icon="CANCEL", text="")
-                blenderbim.bim.helper.draw_attributes(ifc_context["props"], box)
+                bonsai.bim.helper.draw_attributes(ifc_context["props"], box)
             else:
                 row = box.row(align=True)
                 row.label(text=ifc_context["context_type"])
@@ -64,8 +64,8 @@ class BIM_PT_context(bpy.types.Panel):
                 row.operator("bim.remove_context", icon="X", text="").context = ifc_context["id"]
 
             row = box.row(align=True)
-            blenderbim.bim.helper.prop_with_search(row, props, "subcontexts", text="")
-            blenderbim.bim.helper.prop_with_search(row, props, "target_views", text="")
+            bonsai.bim.helper.prop_with_search(row, props, "subcontexts", text="")
+            bonsai.bim.helper.prop_with_search(row, props, "target_views", text="")
             op = row.operator("bim.add_context", icon="ADD", text="")
             op.context_type = ifc_context["context_type"]
             op.context_identifier = props.subcontexts
@@ -77,7 +77,7 @@ class BIM_PT_context(bpy.types.Panel):
                     row = box.row(align=True)
                     row.operator("bim.edit_context", icon="CHECKMARK")
                     row.operator("bim.disable_editing_context", icon="CANCEL", text="")
-                    blenderbim.bim.helper.draw_attributes(subcontext["props"], box)
+                    bonsai.bim.helper.draw_attributes(subcontext["props"], box)
                 else:
                     row = box.row(align=True)
                     row.label(text=subcontext["context_type"])

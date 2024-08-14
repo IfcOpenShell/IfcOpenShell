@@ -20,8 +20,8 @@ import bpy
 import ifcopenshell
 import ifcopenshell.util.date
 import ifcopenshell.util.classification
-import blenderbim.tool as tool
-from blenderbim.bim.ifc import IfcStore
+import bonsai.tool as tool
+from bonsai.bim.ifc import IfcStore
 
 
 def refresh():

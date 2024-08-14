@@ -22,8 +22,8 @@ import pathlib
 import ifcopenshell
 import ifcopenshell.util.attribute
 import ifcopenshell.util.doc
-import blenderbim.tool as tool
-from blenderbim.bim.ifc import IfcStore
+import bonsai.tool as tool
+from bonsai.bim.ifc import IfcStore
 
 
 def refresh():

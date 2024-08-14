@@ -17,9 +17,9 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import blenderbim.tool as tool
+import bonsai.tool as tool
 from bpy.types import Panel
-from blenderbim.bim.module.void.data import BooleansData, VoidsData
+from bonsai.bim.module.void.data import BooleansData, VoidsData
 
 
 class BIM_PT_voids(Panel):

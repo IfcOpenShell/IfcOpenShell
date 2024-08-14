@@ -17,14 +17,10 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import json
 import ifcopenshell.api
 import ifcopenshell.util.unit
-import blenderbim.bim.helper
-import blenderbim.bim.handler
-import blenderbim.tool as tool
-import blenderbim.core.unit as core
-from blenderbim.bim.ifc import IfcStore
+import bonsai.tool as tool
+import bonsai.core.unit as core
 
 
 class AssignSceneUnits(bpy.types.Operator, tool.Ifc.Operator):

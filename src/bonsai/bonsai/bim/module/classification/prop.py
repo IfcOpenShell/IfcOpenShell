@@ -17,10 +17,8 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import blenderbim.bim.helper
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.prop import StrProperty, Attribute
-from blenderbim.bim.module.classification.data import ClassificationsData, ClassificationReferencesData
+from bonsai.bim.prop import Attribute
+from bonsai.bim.module.classification.data import ClassificationsData, ClassificationReferencesData
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,

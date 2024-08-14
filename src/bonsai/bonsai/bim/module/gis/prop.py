@@ -18,7 +18,7 @@
 
 from bpy.types import PropertyGroup
 from bpy.props import StringProperty, BoolProperty, EnumProperty, CollectionProperty
-from blenderbim.bim.prop import StrProperty
+from bonsai.bim.prop import StrProperty
 
 
 class BIMCityJsonProperties(PropertyGroup):

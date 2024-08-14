@@ -19,11 +19,11 @@
 import os
 import bpy
 import ifcopenshell.api
-import blenderbim.tool as tool
-import blenderbim.core.brick as core
-import blenderbim.bim.handler
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.tool.brick import BrickStore
+import bonsai.tool as tool
+import bonsai.core.brick as core
+import bonsai.bim.handler
+from bonsai.bim.ifc import IfcStore
+from bonsai.tool.brick import BrickStore
 
 
 class LoadBrickProject(bpy.types.Operator, tool.Ifc.Operator):
@@ -197,7 +197,7 @@ class NewBrickFile(bpy.types.Operator):
         }
         IfcStore.add_transaction_operation(self, rollback=lambda data: True, commit=self.commit)
         IfcStore.end_transaction(self)
-        blenderbim.bim.handler.refresh_ui_data()
+        bonsai.bim.handler.refresh_ui_data()
         return {"FINISHED"}
 
     def _execute(self, context):

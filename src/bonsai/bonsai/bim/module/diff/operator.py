@@ -21,10 +21,10 @@ import json
 import logging
 import ifcdiff
 import ifcopenshell
-import blenderbim.bim.handler
-import blenderbim.bim.import_ifc
-import blenderbim.tool as tool
-from blenderbim.bim.ifc import IfcStore
+import bonsai.bim.handler
+import bonsai.bim.import_ifc
+import bonsai.tool as tool
+from bonsai.bim.ifc import IfcStore
 
 
 class SelectDiffJsonFile(bpy.types.Operator):
@@ -174,7 +174,7 @@ class ExecuteIfcDiff(bpy.types.Operator):
 
         self.load_changed_elements(ifc_diff)
 
-        blenderbim.bim.handler.refresh_ui_data()
+        bonsai.bim.handler.refresh_ui_data()
         return {"FINISHED"}
 
     def load_changed_elements(self, ifc_diff: ifcdiff.IfcDiff):
@@ -183,8 +183,8 @@ class ExecuteIfcDiff(bpy.types.Operator):
 
         active_ifc = tool.Ifc.get()
         logger = logging.getLogger("ImportIFC")
-        ifc_import_settings = blenderbim.bim.import_ifc.IfcImportSettings.factory(bpy.context, None, logger)
-        ifc_importer = blenderbim.bim.import_ifc.IfcImporter(ifc_import_settings)
+        ifc_import_settings = bonsai.bim.import_ifc.IfcImportSettings.factory(bpy.context, None, logger)
+        ifc_importer = bonsai.bim.import_ifc.IfcImporter(ifc_import_settings)
 
         if self.props.active_file == "NEW":
             tool.Ifc.set(ifc_diff.old)

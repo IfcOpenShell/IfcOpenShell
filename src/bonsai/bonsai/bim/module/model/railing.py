@@ -24,12 +24,12 @@ import ifcopenshell.api
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
 from ifcopenshell.util.shape_builder import V
-import blenderbim.core.root
-import blenderbim.core.geometry
-import blenderbim.tool as tool
-from blenderbim.bim.module.model.door import bm_sort_out_geom
-from blenderbim.bim.module.model.data import RailingData, refresh
-from blenderbim.bim.module.model.decorator import ProfileDecorator
+import bonsai.core.root
+import bonsai.core.geometry
+import bonsai.tool as tool
+from bonsai.bim.module.model.door import bm_sort_out_geom
+from bonsai.bim.module.model.data import RailingData, refresh
+from bonsai.bim.module.model.decorator import ProfileDecorator
 
 from mathutils import Vector
 import json
@@ -300,7 +300,7 @@ class BIM_OT_add_railing(bpy.types.Operator, tool.Ifc.Operator):
         obj.location = spawn_location
 
         body_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
-        blenderbim.core.root.assign_class(
+        bonsai.core.root.assign_class(
             tool.Ifc,
             tool.Collector,
             tool.Root,
@@ -476,7 +476,7 @@ def cancel_editing_railing_path(context):
     else:
         element = tool.Ifc.get_entity(obj)
         body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-        blenderbim.core.geometry.switch_representation(
+        bonsai.core.geometry.switch_representation(
             tool.Ifc,
             tool.Geometry,
             obj=obj,

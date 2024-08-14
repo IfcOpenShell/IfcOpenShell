@@ -18,8 +18,8 @@
 
 import bpy
 import ifcopenshell.file
-import blenderbim.bim.handler
-import blenderbim.tool as tool
+import bonsai.bim.handler
+import bonsai.tool as tool
 from bonsai.bim.ifc import IFC_CONNECTED_TYPE
 from typing import Any
 
@@ -47,4 +47,4 @@ def sync_name(usecase_path: str, ifc_file: ifcopenshell.file, settings: dict[str
     elif isinstance(obj, bpy.types.Material):
         new_name = settings["attributes"]["Name"] or "Unnamed"
     obj.name = new_name
-    blenderbim.bim.handler.refresh_ui_data()
+    bonsai.bim.handler.refresh_ui_data()

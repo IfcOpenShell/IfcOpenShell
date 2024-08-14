@@ -31,11 +31,11 @@ import webbrowser
 import ifcopenshell
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.unit
-import blenderbim.tool as tool
-import blenderbim.bim.module.bcf.prop as bcf_prop
-import blenderbim.bim.module.bcf.bcfstore as bcfstore
+import bonsai.tool as tool
+import bonsai.bim.module.bcf.prop as bcf_prop
+import bonsai.bim.module.bcf.bcfstore as bcfstore
 from pathlib import Path
-from blenderbim.bim.ifc import IfcStore
+from bonsai.bim.ifc import IfcStore
 from math import radians, degrees, atan, tan, cos, sin
 from mathutils import Vector, Matrix, Euler, geometry
 from xsdata.models.datatype import XmlDateTime

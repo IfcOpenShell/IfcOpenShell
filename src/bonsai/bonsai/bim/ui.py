@@ -29,11 +29,11 @@ from ifcopenshell.util.doc import (
     get_attribute_doc,
 )
 from . import ifc
-from blenderbim import get_debug_info
-import blenderbim.bim
-import blenderbim.tool as tool
+from bonsai import get_debug_info
+import bonsai.bim
+import bonsai.tool as tool
 from ifcopenshell.util.file import IfcHeaderExtractor
-from blenderbim.bim.prop import Attribute
+from bonsai.bim.prop import Attribute
 from typing import Optional
 
 
@@ -400,7 +400,7 @@ class BIM_PT_tabs(Panel):
                 text="",
                 emboss=aprops.tab == "PROJECT",
                 depress=True,
-                icon_value=blenderbim.bim.icons["IFC"].icon_id,
+                icon_value=bonsai.bim.icons["IFC"].icon_id,
             ).tab = "PROJECT"
             self.draw_tab_entry(row, "FILE_3D", "OBJECT", is_ifc_project, aprops.tab == "OBJECT")
             self.draw_tab_entry(row, "MATERIAL", "GEOMETRY", is_ifc_project, aprops.tab == "GEOMETRY")
@@ -436,17 +436,17 @@ class BIM_PT_tabs(Panel):
             row = self.layout.row(align=True)
             row.prop(aprops, "tab", text="")
 
-            if blenderbim.REINSTALLED_BBIM_VERSION:
+            if bonsai.REINSTALLED_BBIM_VERSION:
                 box = self.layout.box()
                 box.alert = True
 
                 box.label(text="Bonsai requires Blender to restart.", icon="ERROR")
                 box.label(text="Bonsai was reinstalled in the current session:")
-                box.label(text=f"{blenderbim.FIRST_INSTALLED_BBIM_VERSION} -> {blenderbim.REINSTALLED_BBIM_VERSION}")
+                box.label(text=f"{bonsai.FIRST_INSTALLED_BBIM_VERSION} -> {bonsai.REINSTALLED_BBIM_VERSION}")
                 box.label(text="Please restart Blender to avoid potential issues.")
                 box.operator("bim.restart_blender", text="Restart Blender", icon="BLENDER")
 
-            if blenderbim.last_error:
+            if bonsai.last_error:
                 box = self.layout.box()
                 box.alert = True
                 row = box.row(align=True)

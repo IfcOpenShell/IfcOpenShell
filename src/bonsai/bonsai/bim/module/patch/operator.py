@@ -20,9 +20,9 @@ import os
 import bpy
 import json
 import ifcopenshell
-import blenderbim.tool as tool
-import blenderbim.core.patch as core
-import blenderbim.bim.handler
+import bonsai.tool as tool
+import bonsai.core.patch as core
+import bonsai.bim.handler
 from pathlib import Path
 
 try:
@@ -187,5 +187,5 @@ class RunMigratePatch(bpy.types.Operator):
             bpy.ops.file.refresh()
         except:
             pass  # Probably running in headless mode
-        blenderbim.bim.handler.refresh_ui_data()
+        bonsai.bim.handler.refresh_ui_data()
         return {"FINISHED"}

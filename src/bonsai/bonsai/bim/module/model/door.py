@@ -28,11 +28,11 @@ import ifcopenshell.util.representation
 import ifcopenshell.util.schema
 import ifcopenshell.util.unit
 from ifcopenshell.util.shape_builder import V
-import blenderbim.tool as tool
-import blenderbim.core.geometry
-import blenderbim.core.geometry as core
-import blenderbim.core.root
-from blenderbim.bim.module.model.window import create_bm_window, create_bm_box
+import bonsai.tool as tool
+import bonsai.core.geometry
+import bonsai.core.geometry as core
+import bonsai.core.root
+from bonsai.bim.module.model.window import create_bm_window, create_bm_box
 
 from mathutils import Vector, Matrix
 
@@ -144,7 +144,7 @@ def update_door_modifier_representation(context: bpy.types.Context, obj: bpy.typ
                 previously_active_context.TargetView,
             )
 
-        blenderbim.core.geometry.switch_representation(
+        bonsai.core.geometry.switch_representation(
             tool.Ifc,
             tool.Geometry,
             obj=obj,
@@ -510,10 +510,10 @@ class BIM_OT_add_door(bpy.types.Operator, tool.Ifc.Operator):
         obj = bpy.data.objects.new("IfcDoor", mesh)
         obj.location = spawn_location
 
-        element = blenderbim.core.root.assign_class(
+        element = bonsai.core.root.assign_class(
             tool.Ifc, tool.Collector, tool.Root, obj=obj, ifc_class="IfcDoor", should_add_representation=False
         )
-        blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+        bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
         if tool.Ifc.get_schema() != "IFC2X3":
             element.PredefinedType = "DOOR"
 
@@ -575,7 +575,7 @@ class CancelEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
         props.set_props_kwargs_from_ifc_data(data)
 
         body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-        blenderbim.core.geometry.switch_representation(
+        bonsai.core.geometry.switch_representation(
             tool.Ifc,
             tool.Geometry,
             obj=obj,

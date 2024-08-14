@@ -19,10 +19,10 @@
 import bpy
 import ifcopenshell.util.element
 import ifcopenshell.util.type
-from blenderbim.bim.module.type.data import TypeData
-from blenderbim.bim.prop import StrProperty, Attribute
-from blenderbim.bim.ifc import IfcStore
-import blenderbim.tool as tool
+from bonsai.bim.module.type.data import TypeData
+from bonsai.bim.prop import StrProperty, Attribute
+from bonsai.bim.ifc import IfcStore
+import bonsai.tool as tool
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,

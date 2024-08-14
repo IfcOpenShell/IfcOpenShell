@@ -39,7 +39,7 @@ function connectSocket() {
   socket.on("svg_data", handleSvgData);
 }
 
-// function used to get drawings data from blenderbim
+// function used to get drawings data from Bonsai
 function handleWebConnect() {
   getDrawingsData();
 }

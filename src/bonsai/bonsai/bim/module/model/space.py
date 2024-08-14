@@ -18,8 +18,8 @@
 
 
 import bpy
-import blenderbim.tool as tool
-import blenderbim.core.spatial as core
+import bonsai.tool as tool
+import bonsai.core.spatial as core
 
 
 class GenerateSpace(bpy.types.Operator, tool.Ifc.Operator):

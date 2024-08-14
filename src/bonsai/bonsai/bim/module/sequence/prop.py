@@ -22,13 +22,13 @@ import ifcopenshell.api
 import ifcopenshell.util.attribute
 import ifcopenshell.util.date
 from ifcopenshell.util.doc import get_predefined_type_doc
-import blenderbim.tool as tool
-import blenderbim.core.sequence as core
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.sequence.data import SequenceData, AnimationColorSchemeData, refresh as refresh_sequence_data
-import blenderbim.bim.module.resource.data
-import blenderbim.bim.module.pset.data
-from blenderbim.bim.prop import StrProperty, Attribute
+import bonsai.tool as tool
+import bonsai.core.sequence as core
+from bonsai.bim.ifc import IfcStore
+from bonsai.bim.module.sequence.data import SequenceData, AnimationColorSchemeData, refresh as refresh_sequence_data
+import bonsai.bim.module.resource.data
+import bonsai.bim.module.pset.data
+from bonsai.bim.prop import StrProperty, Attribute
 from dateutil import parser
 from bpy.types import PropertyGroup
 from bpy.props import (
@@ -93,7 +93,7 @@ def update_active_task_index(self, context):
     task = tool.Sequence.get_highlighted_task()
     self.highlighted_task_id = task.id() if task else 0
     tool.Sequence.update_task_ICOM(task)
-    blenderbim.bim.module.pset.data.refresh()
+    bonsai.bim.module.pset.data.refresh()
     if self.editing_task_type == "SEQUENCE":
         tool.Sequence.load_task_properties()
 
@@ -343,9 +343,9 @@ def updateAssignedResourceUsage(self, context):
     tool.Sequence.load_task_properties()
     tool.Resource.load_resource_properties()
     tool.Sequence.refresh_task_resources()
-    blenderbim.bim.module.resource.data.refresh()
+    bonsai.bim.module.resource.data.refresh()
     refresh_sequence_data()
-    blenderbim.bim.module.pset.data.refresh()
+    bonsai.bim.module.pset.data.refresh()
 
 
 def update_task_bar_list(self, context):

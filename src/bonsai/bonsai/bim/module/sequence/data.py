@@ -17,7 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import blenderbim.tool as tool
+import bonsai.tool as tool
 import ifcopenshell
 import ifcopenshell.util.date as dateutil
 import json

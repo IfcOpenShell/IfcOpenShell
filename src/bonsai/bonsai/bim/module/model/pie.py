@@ -17,10 +17,8 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import blenderbim.tool as tool
-import blenderbim.core.spatial
-import blenderbim.core.aggregate
-from blenderbim.bim.ifc import IfcStore
+import bonsai.tool as tool
+from bonsai.bim.ifc import IfcStore
 
 
 class OpenPieClass(bpy.types.Operator):

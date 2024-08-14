@@ -16,16 +16,12 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
 import bpy
-import json
-import time
 import ifcopenshell.api
-import blenderbim.bim.helper
-import blenderbim.tool as tool
+import bonsai.tool as tool
 from bpy_extras.io_utils import ImportHelper
-import blenderbim.tool as tool
-import blenderbim.core.cost as core
+import bonsai.tool as tool
+import bonsai.core.cost as core
 
 
 class AddCostSchedule(bpy.types.Operator, tool.Ifc.Operator):

@@ -20,9 +20,9 @@ import os
 import bpy
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
-from blenderbim.bim.module.project.data import ProjectData
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.prop import StrProperty, ObjProperty
+from bonsai.bim.module.project.data import ProjectData
+from bonsai.bim.ifc import IfcStore
+from bonsai.bim.prop import StrProperty, ObjProperty
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,

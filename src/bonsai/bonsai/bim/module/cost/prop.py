@@ -18,11 +18,11 @@
 
 import bpy
 import ifcopenshell.api
-import blenderbim.tool as tool
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.classification.data import CostClassificationsData
-from blenderbim.bim.module.cost.data import CostSchedulesData, CostItemRatesData, CostItemQuantitiesData
-from blenderbim.bim.prop import StrProperty, Attribute
+import bonsai.tool as tool
+from bonsai.bim.ifc import IfcStore
+from bonsai.bim.module.classification.data import CostClassificationsData
+from bonsai.bim.module.cost.data import CostSchedulesData, CostItemRatesData, CostItemQuantitiesData
+from bonsai.bim.prop import StrProperty, Attribute
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,

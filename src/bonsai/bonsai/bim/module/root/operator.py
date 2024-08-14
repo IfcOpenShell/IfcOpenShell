@@ -22,16 +22,11 @@ import ifcopenshell.api
 import ifcopenshell.util.schema
 import ifcopenshell.util.element
 import ifcopenshell.util.type
-import blenderbim.bim.handler
-import blenderbim.core.geometry
-import blenderbim.core.material
-import blenderbim.core.spatial
-import blenderbim.core.style
-import blenderbim.core.type
-import blenderbim.core.root as core
-import blenderbim.tool as tool
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.helper import get_enum_items
+import bonsai.bim.handler
+import bonsai.core.root as core
+import bonsai.tool as tool
+from bonsai.bim.ifc import IfcStore
+from bonsai.bim.helper import get_enum_items
 
 
 class EnableReassignClass(bpy.types.Operator):
@@ -305,4 +300,4 @@ class CopyClass(bpy.types.Operator, tool.Ifc.Operator):
         objects = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
         for obj in objects:
             core.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=obj)
-        blenderbim.bim.handler.refresh_ui_data()
+        bonsai.bim.handler.refresh_ui_data()

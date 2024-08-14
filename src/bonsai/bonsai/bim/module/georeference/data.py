@@ -19,7 +19,7 @@
 
 import bpy
 import numpy as np
-import blenderbim.tool as tool
+import bonsai.tool as tool
 import ifcopenshell.util.element
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.schema

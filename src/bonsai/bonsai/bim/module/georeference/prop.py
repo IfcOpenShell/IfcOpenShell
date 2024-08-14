@@ -18,8 +18,8 @@
 
 import bpy
 import ifcopenshell.util.geolocation
-import blenderbim.tool as tool
-from blenderbim.bim.prop import Attribute
+import bonsai.tool as tool
+from bonsai.bim.prop import Attribute
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -31,8 +31,8 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
-from blenderbim.bim.module.georeference.data import GeoreferenceData
-from blenderbim.bim.module.georeference.decorator import GeoreferenceDecorator
+from bonsai.bim.module.georeference.data import GeoreferenceData
+from bonsai.bim.module.georeference.decorator import GeoreferenceDecorator
 
 
 def get_coordinate_operation_class(self, context):

@@ -23,13 +23,11 @@ import ifcopenshell.util.attribute
 import ifcopenshell.util.element
 import ifcopenshell.util.pset
 import ifcopenshell.util.unit
-import blenderbim.bim.schema
-import blenderbim.bim.helper
-import blenderbim.bim.handler
-import blenderbim.tool as tool
-import blenderbim.core.pset as core
-import blenderbim.bim.module.pset.data
-from blenderbim.bim.ifc import IfcStore
+import bonsai.bim.schema
+import bonsai.tool as tool
+import bonsai.core.pset as core
+import bonsai.bim.module.pset.data
+from bonsai.bim.ifc import IfcStore
 
 
 class TogglePsetExpansion(bpy.types.Operator, tool.Ifc.Operator):
@@ -38,8 +36,8 @@ class TogglePsetExpansion(bpy.types.Operator, tool.Ifc.Operator):
     pset_id: bpy.props.IntProperty()
 
     def _execute(self, context):
-        blenderbim.bim.module.pset.data.is_expanded[self.pset_id] = (
-            not blenderbim.bim.module.pset.data.is_expanded.setdefault(self.pset_id, True)
+        bonsai.bim.module.pset.data.is_expanded[self.pset_id] = not bonsai.bim.module.pset.data.is_expanded.setdefault(
+            self.pset_id, True
         )
 
 
@@ -130,7 +128,7 @@ class EditPset(bpy.types.Operator, tool.Ifc.Operator):
                 pset=pset,
                 name=props.active_pset_name,
                 properties=properties,
-                pset_template=blenderbim.bim.schema.ifc.psetqto.get_by_name(props.active_pset_name),
+                pset_template=bonsai.bim.schema.ifc.psetqto.get_by_name(props.active_pset_name),
             )
         else:
             for key, value in properties.items():

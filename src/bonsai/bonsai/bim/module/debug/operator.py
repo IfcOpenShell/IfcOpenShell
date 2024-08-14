@@ -30,13 +30,13 @@ import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
-import blenderbim.tool as tool
-import blenderbim.core.debug as core
-import blenderbim.bim.handler
-import blenderbim.bim.import_ifc as import_ifc
+import bonsai.tool as tool
+import bonsai.core.debug as core
+import bonsai.bim.handler
+import bonsai.bim.import_ifc as import_ifc
 from pathlib import Path
-from blenderbim import get_debug_info, format_debug_info
-from blenderbim.bim.ifc import IfcStore
+from bonsai import get_debug_info, format_debug_info
+from bonsai.bim.ifc import IfcStore
 
 
 class CopyDebugInformation(bpy.types.Operator):
@@ -99,7 +99,7 @@ class ConvertToBlender(bpy.types.Operator):
         context.scene.BIMProperties.ifc_file = ""
         context.scene.BIMDebugProperties.attributes.clear()
         IfcStore.purge()
-        blenderbim.bim.handler.refresh_ui_data()
+        bonsai.bim.handler.refresh_ui_data()
         return {"FINISHED"}
 
 
@@ -408,7 +408,7 @@ class ParseExpress(bpy.types.Operator):
 
     def execute(self, context):
         core.parse_express(tool.Debug, context.scene.BIMDebugProperties.express_file)
-        blenderbim.bim.handler.refresh_ui_data()
+        bonsai.bim.handler.refresh_ui_data()
         return {"FINISHED"}
 
 
@@ -609,8 +609,6 @@ class PipInstall(bpy.types.Operator):
     name: bpy.props.StringProperty()
 
     def execute(self, context):
-        import blenderbim.bim
-
         blender_path = Path(bpy.app.binary_path).parent
         target = next(
             path for p in sys.path if (path := Path(p)).name == "site-packages" and path.is_relative_to(blender_path)

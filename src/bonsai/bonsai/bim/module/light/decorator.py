@@ -20,13 +20,13 @@ import bpy
 import blf
 import gpu
 import bmesh
-import blenderbim.tool as tool
+import bonsai.tool as tool
 from bpy.types import SpaceView3D
 from math import radians
 from mathutils import Vector, Matrix
 from gpu_extras.batch import batch_for_shader
 from bpy_extras.view3d_utils import location_3d_to_region_2d
-from blenderbim.bim.module.light.data import SolarData
+from bonsai.bim.module.light.data import SolarData
 
 
 class SolarDecorator:

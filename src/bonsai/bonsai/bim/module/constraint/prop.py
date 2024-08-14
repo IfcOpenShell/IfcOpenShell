@@ -18,8 +18,8 @@
 
 import bpy
 from ifcopenshell.util.doc import get_entity_doc
-import blenderbim.tool as tool
-from blenderbim.bim.prop import Attribute
+import bonsai.tool as tool
+from bonsai.bim.prop import Attribute
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,

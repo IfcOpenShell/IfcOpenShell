@@ -22,9 +22,9 @@ import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.classification
 import ifcopenshell.util.element
-import blenderbim.tool as tool
-import blenderbim.bim.helper
-from blenderbim.bim.ifc import IfcStore
+import bonsai.tool as tool
+import bonsai.bim.helper
+from bonsai.bim.ifc import IfcStore
 
 
 class LoadClassificationLibrary(bpy.types.Operator, tool.Ifc.Operator):
@@ -63,7 +63,7 @@ class AddManualClassification(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         props = context.scene.BIMClassificationProperties
-        attributes = blenderbim.bim.helper.export_attributes(props.classification_attributes)
+        attributes = bonsai.bim.helper.export_attributes(props.classification_attributes)
         classification = ifcopenshell.api.run(
             "classification.add_classification", tool.Ifc.get(), classification="Unnamed"
         )
@@ -89,7 +89,7 @@ class AddManualClassificationReference(bpy.types.Operator, tool.Ifc.Operator):
         else:
             objects = [self.obj]
         props = context.scene.BIMClassificationReferenceProperties
-        attributes = blenderbim.bim.helper.export_attributes(props.reference_attributes)
+        attributes = bonsai.bim.helper.export_attributes(props.reference_attributes)
         products = [
             tool.Ifc.get().by_id(ifc_definition_id)
             for obj in objects
@@ -152,7 +152,7 @@ class EnableAddingManualClassification(bpy.types.Operator):
         props.is_adding = True
         props.active_classification_id = 0
         props.classification_attributes.clear()
-        blenderbim.bim.helper.import_attributes2("IfcClassification", props.classification_attributes)
+        bonsai.bim.helper.import_attributes2("IfcClassification", props.classification_attributes)
         return {"FINISHED"}
 
 
@@ -176,7 +176,7 @@ class EnableAddingManualClassificationReference(bpy.types.Operator):
         props = context.scene.BIMClassificationReferenceProperties
         props.is_adding = True
         props.reference_attributes.clear()
-        blenderbim.bim.helper.import_attributes2("IfcClassificationReference", props.reference_attributes)
+        bonsai.bim.helper.import_attributes2("IfcClassificationReference", props.reference_attributes)
         return {"FINISHED"}
 
 
@@ -210,7 +210,7 @@ class EnableEditingClassification(bpy.types.Operator):
 
         props = context.scene.BIMClassificationProperties
         props.classification_attributes.clear()
-        blenderbim.bim.helper.import_attributes2(
+        bonsai.bim.helper.import_attributes2(
             tool.Ifc.get().by_id(self.classification), props.classification_attributes, callback
         )
         props.active_classification_id = self.classification
@@ -280,7 +280,7 @@ class EnableEditingClassificationReference(bpy.types.Operator):
     def execute(self, context):
         props = context.scene.BIMClassificationReferenceProperties
         props.reference_attributes.clear()
-        blenderbim.bim.helper.import_attributes2(tool.Ifc.get().by_id(self.reference), props.reference_attributes)
+        bonsai.bim.helper.import_attributes2(tool.Ifc.get().by_id(self.reference), props.reference_attributes)
         props.active_reference_id = self.reference
         return {"FINISHED"}
 

@@ -19,12 +19,12 @@
 import bpy
 import ifcopenshell.api
 import ifcopenshell.util.resource
-from blenderbim.bim.ifc import IfcStore
-import blenderbim.tool as tool
-import blenderbim.bim.module.pset.data
-import blenderbim.bim.module.resource.data
-import blenderbim.bim.module.sequence.data
-from blenderbim.bim.prop import StrProperty, Attribute
+from bonsai.bim.ifc import IfcStore
+import bonsai.tool as tool
+import bonsai.bim.module.pset.data
+import bonsai.bim.module.resource.data
+import bonsai.bim.module.sequence.data
+from bonsai.bim.prop import StrProperty, Attribute
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -61,7 +61,7 @@ def updateResourceName(self, context):
     if props.active_resource_id == self.ifc_definition_id:
         attribute = props.resource_attributes.get("Name")
         attribute.string_value = self.name
-    blenderbim.bim.module.resource.data.refresh()
+    bonsai.bim.module.resource.data.refresh()
     tool.Sequence.refresh_task_resources()
 
 
@@ -70,7 +70,7 @@ def get_quantity_types(self, context):
 
 
 def update_active_resource_index(self, context):
-    blenderbim.bim.module.pset.data.refresh()
+    bonsai.bim.module.pset.data.refresh()
     if self.should_show_resource_tools:
         tool.Resource.load_productivity_data()
 
@@ -87,9 +87,9 @@ def updateResourceUsage(self, context):
     tool.Sequence.load_task_properties()
     tool.Resource.load_resource_properties()
     tool.Sequence.refresh_task_resources()
-    blenderbim.bim.module.resource.data.refresh()
-    blenderbim.bim.module.sequence.data.refresh()
-    blenderbim.bim.module.pset.data.refresh()
+    bonsai.bim.module.resource.data.refresh()
+    bonsai.bim.module.sequence.data.refresh()
+    bonsai.bim.module.pset.data.refresh()
 
 
 class ISODuration(PropertyGroup):

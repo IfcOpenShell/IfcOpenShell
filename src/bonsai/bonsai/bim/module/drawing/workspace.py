@@ -19,14 +19,11 @@
 
 import os
 import bpy
-import blenderbim.core.type
-import blenderbim.tool as tool
-from blenderbim.bim.helper import prop_with_search
+import bonsai.core.type
+import bonsai.tool as tool
+from bonsai.bim.module.drawing.data import DecoratorData, AnnotationData
+from bonsai.bim.helper import prop_with_search
 from bpy.types import WorkSpaceTool
-
-from blenderbim.bim.module.drawing.data import DecoratorData, AnnotationData
-from blenderbim.bim.ifc import IfcStore
-import blenderbim.bim.handler
 
 
 class LaunchAnnotationTypeManager(bpy.types.Operator):
@@ -171,7 +168,7 @@ def create_annotation_occurrence(context):
         ifc_representation_class=tool.Drawing.get_ifc_representation_class(object_type),
     )
 
-    blenderbim.core.type.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
+    bonsai.core.type.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
 
     tool.Ifc.run("group.assign_group", group=tool.Drawing.get_drawing_group(drawing), products=[element])
     tool.Collector.assign(obj)

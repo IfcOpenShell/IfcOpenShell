@@ -18,12 +18,9 @@
 
 import bpy
 import ifcopenshell.util.element
-import blenderbim.tool as tool
-import blenderbim.core.spatial as core
-import blenderbim.core.geometry
-import blenderbim.core.aggregate
-import blenderbim.core.root
-import blenderbim.bim.handler
+import bonsai.tool as tool
+import bonsai.core.spatial as core
+import bonsai.bim.handler
 
 
 class ReferenceStructure(bpy.types.Operator, tool.Ifc.Operator):
@@ -153,7 +150,7 @@ class CopyToContainer(bpy.types.Operator, tool.Ifc.Operator):
 
         # Recreate decompositions
         tool.Root.recreate_decompositions(relationships, old_to_new)
-        blenderbim.bim.handler.refresh_ui_data()
+        bonsai.bim.handler.refresh_ui_data()
 
 
 class SelectContainer(bpy.types.Operator, tool.Ifc.Operator):

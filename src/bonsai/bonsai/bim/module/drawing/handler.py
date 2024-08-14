@@ -17,8 +17,8 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import blenderbim.bim.module.drawing.decoration as decoration
-import blenderbim.tool as tool
+import bonsai.bim.module.drawing.decoration as decoration
+import bonsai.tool as tool
 from bpy.app.handlers import persistent
 
 

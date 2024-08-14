@@ -23,12 +23,12 @@ import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
-import blenderbim.core.root
-import blenderbim.tool as tool
-from blenderbim.bim.helper import convert_property_group_from_si
-from blenderbim.bim.module.model.door import bm_sort_out_geom
-from blenderbim.bim.module.model.data import RoofData, refresh
-from blenderbim.bim.module.model.decorator import ProfileDecorator
+import bonsai.core.root
+import bonsai.tool as tool
+from bonsai.bim.helper import convert_property_group_from_si
+from bonsai.bim.module.model.door import bm_sort_out_geom
+from bonsai.bim.module.model.data import RoofData, refresh
+from bonsai.bim.module.model.decorator import ProfileDecorator
 
 import json
 from math import tan, pi, radians
@@ -516,7 +516,7 @@ class BIM_OT_add_roof(bpy.types.Operator, tool.Ifc.Operator):
         obj.location = spawn_location
 
         body_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
-        blenderbim.core.root.assign_class(
+        bonsai.core.root.assign_class(
             tool.Ifc,
             tool.Collector,
             tool.Root,

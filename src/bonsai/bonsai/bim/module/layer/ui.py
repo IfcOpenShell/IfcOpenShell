@@ -17,8 +17,8 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from bpy.types import Panel, UIList, Mesh
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.layer.data import LayersData
+from bonsai.bim.ifc import IfcStore
+from bonsai.bim.module.layer.data import LayersData
 
 
 class BIM_PT_layers(Panel):

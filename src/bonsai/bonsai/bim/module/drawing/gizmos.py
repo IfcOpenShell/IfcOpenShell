@@ -23,7 +23,7 @@ from bpy import types
 from mathutils import Vector
 from mathutils import geometry
 from bpy_extras import view3d_utils
-from blenderbim.bim.module.drawing.shaders import DotsGizmoShader, ExtrusionGuidesShader
+from bonsai.bim.module.drawing.shaders import DotsGizmoShader, ExtrusionGuidesShader
 from ifcopenshell.util.unit import si_conversions
 
 

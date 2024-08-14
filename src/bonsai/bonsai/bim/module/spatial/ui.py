@@ -17,8 +17,8 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from bpy.types import Panel, UIList
-from blenderbim.bim.module.spatial.data import SpatialData, SpatialDecompositionData
-import blenderbim.tool as tool
+from bonsai.bim.module.spatial.data import SpatialData, SpatialDecompositionData
+import bonsai.tool as tool
 
 
 class BIM_PT_spatial(Panel):
