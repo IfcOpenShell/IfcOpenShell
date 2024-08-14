@@ -276,8 +276,6 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         )
 
         row = layout.row()
-        row.operator("bim.open_upstream", text="Help Donate to Fund Development!", icon="FUND").page = "fund"
-        row = layout.row()
         row.operator("bim.open_upstream", text="Visit Homepage").page = "home"
         row.operator("bim.open_upstream", text="Visit Documentation").page = "docs"
         row = layout.row()
