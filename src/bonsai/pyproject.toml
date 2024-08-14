@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "blenderbim"
+name = "bonsai"
 version = "0.0.0"
 authors = [
   { name="Dion Moult", email="dion@thinkmoult.com" },
@@ -23,7 +23,7 @@ Documentation = "https://docs.bonsaibim.org"
 Issues = "https://github.com/IfcOpenShell/IfcOpenShell/issues"
 
 [tool.setuptools.packages.find]
-include = ["blenderbim*"]
+include = ["bonsai*"]
 exclude = ["test*"]
 
 [tool.setuptools.package-data]
