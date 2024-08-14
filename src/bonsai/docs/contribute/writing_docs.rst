@@ -104,7 +104,7 @@ download.
 
 .. container:: blockbutton
 
-    `Visit critical link <https://blenderbim.org>`__
+    `Visit critical link <https://bonsaibim.org>`__
 
 You can use bulleted lists:
 
@@ -132,7 +132,7 @@ Or ordered lists:
 .. seealso::
 
     See also blocks should be used to reference `further reading
-    <https://blenderbim.org>`__ links.
+    <https://bonsaibim.org>`__ links.
 
 Tables can be very annoying to format. You can use a CSV table instead.
 

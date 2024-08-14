@@ -36,7 +36,7 @@ Languages supported include (in alphabetical order):
 
 If you are not a developer, we highly recommend simply installing an integrated version of BIMTester.
 
- * If you use Blender, install the [BlenderBIM Add-on](https://blenderbim.org)
+ * If you use Blender, install the [Bonsai](https://bonsaibim.org)
  * If you use FreeCAD, install the [FreeCAD BIMTester Workbench](https://github.com/bimtester/bimtesterfc)
 
 If you are a developer, read on!

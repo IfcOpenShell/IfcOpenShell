@@ -2,7 +2,7 @@
 # Visit https://bit.ly/cffinit to generate yours today!
 
 cff-version: 1.2.0
-title: BlenderBIM Add-on
+title: Bonsai
 message: >-
   If you use this software, please cite it using the
   metadata from this file.
@@ -10,9 +10,9 @@ type: software
 authors:
   - name: "IfcOpenShell contributors"
 repository-code: >-
-  https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.8.0/src/blenderbim
-url: 'https://blenderbim.org/'
-repository-artifact: 'https://blenderbim.org/download.html'
+  https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.8.0/src/bonsai
+url: 'https://bonsaibim.org/'
+repository-artifact: 'https://bonsaibim.org/download.html'
 abstract: >-
   Add-on to Blender providing a graphical native IFC
   authoring platform

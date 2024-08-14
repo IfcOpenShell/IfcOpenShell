@@ -64,7 +64,7 @@ table below.
 .. _Ifc5D: ifc5d.html
 .. _IfcCityJSON: ifccityjson.html
 .. _Ifc2JSON: other.html
-.. _BlenderBIM Add-on: https://blenderbim.org
+.. _Bonsai: https://bonsaibim.org
 
 .. toctree::
    :hidden:

@@ -458,7 +458,7 @@ class BIM_PT_tabs(Panel):
                     box.label(text="View the console for full logs.", icon="CONSOLE")
                 box.operator("bim.copy_debug_information", text="Copy Error Message To Clipboard")
                 op = box.operator("bim.open_uri", text="How Can I Fix This?")
-                op.uri = "https://docs.blenderbim.org/users/troubleshooting.html"
+                op.uri = "https://docs.bonsaibim.org/users/troubleshooting.html"
 
         except:
             pass  # Prior to load_post, we may not have any area properties setup

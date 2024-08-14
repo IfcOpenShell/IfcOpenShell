@@ -415,9 +415,9 @@ class OpenUpstream(bpy.types.Operator):
 
     def execute(self, context):
         if self.page == "home":
-            webbrowser.open("https://blenderbim.org/")
+            webbrowser.open("https://bonsaibim.org/")
         elif self.page == "docs":
-            webbrowser.open("https://docs.blenderbim.org/")
+            webbrowser.open("https://docs.bonsaibim.org/")
         elif self.page == "wiki":
             webbrowser.open("https://wiki.osarch.org/index.php?title=Category:Bonsai")
         elif self.page == "community":

@@ -2,7 +2,7 @@
   BlenderBIM Reference Manual
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Welcome to the manual for `BlenderBIM <https://blenderbim.org>`__,
+Welcome to the manual for `Bonsai <https://bonsaibim.org>`__,
 the free and open source BIM add-on for Blender.
 
 Quickstart

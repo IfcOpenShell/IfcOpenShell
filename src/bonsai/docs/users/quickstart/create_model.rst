@@ -41,7 +41,7 @@ Class**.
 .. seealso::
 
    Use the `IFC Class search tool
-   <https://blenderbim.org/search-ifc-class.html>`__ to help choose an **IFC
+   <https://bonsaibim.org/search-ifc-class.html>`__ to help choose an **IFC
    Class**!
 
 Select the cube (selected objects are highlighted in orange, careful not to
