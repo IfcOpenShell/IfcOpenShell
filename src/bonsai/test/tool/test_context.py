@@ -19,14 +19,14 @@
 import bpy
 import ifcopenshell
 import test.bim.bootstrap
-import blenderbim.core.tool
-import blenderbim.tool as tool
-from blenderbim.tool.context import Context as subject
+import bonsai.core.tool
+import bonsai.tool as tool
+from bonsai.tool.context import Context as subject
 
 
 class TestImplementsTool(test.bim.bootstrap.NewFile):
     def test_run(self):
-        assert isinstance(subject(), blenderbim.core.tool.Context)
+        assert isinstance(subject(), bonsai.core.tool.Context)
 
 
 class TestSetContext(test.bim.bootstrap.NewFile):

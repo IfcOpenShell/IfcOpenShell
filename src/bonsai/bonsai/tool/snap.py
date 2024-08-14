@@ -17,15 +17,15 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import blenderbim.core.tool
-import blenderbim.tool as tool
-from blenderbim.bim.module.model.decorator import WallPolylineDecorator
+import bonsai.core.tool
+import bonsai.tool as tool
+from bonsai.bim.module.model.decorator import WallPolylineDecorator
 import math
 import mathutils
 from mathutils import Matrix, Vector
 
 
-class Snap(blenderbim.core.tool.Snap):
+class Snap(bonsai.core.tool.Snap):
     @classmethod
     def get_snap_points_on_raycasted_obj(cls, obj, face_index):
         snap_points = {}

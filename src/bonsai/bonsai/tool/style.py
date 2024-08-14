@@ -21,9 +21,9 @@ import numpy as np
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
-import blenderbim.core.tool
-import blenderbim.tool as tool
-import blenderbim.bim.helper
+import bonsai.core.tool
+import bonsai.tool as tool
+import bonsai.bim.helper
 from mathutils import Color
 from typing import Union, Any, Optional, Literal
 
@@ -46,7 +46,7 @@ STYLE_PROPS_MAP = {
 STYLE_TYPES = Literal["Shading", "External"]
 
 
-class Style(blenderbim.core.tool.Style):
+class Style(bonsai.core.tool.Style):
     @classmethod
     def can_support_rendering_style(cls, obj: bpy.types.Material) -> bool:
         return obj.use_nodes and hasattr(obj.node_tree, "nodes")
@@ -101,7 +101,7 @@ class Style(blenderbim.core.tool.Style):
     @classmethod
     def export_surface_attributes(cls) -> dict[str, Any]:
         props = bpy.context.scene.BIMStylesProperties
-        return blenderbim.bim.helper.export_attributes(props.attributes)
+        return bonsai.bim.helper.export_attributes(props.attributes)
 
     @classmethod
     def get_active_style_type(cls) -> str:
@@ -529,7 +529,7 @@ class Style(blenderbim.core.tool.Style):
     def import_surface_attributes(cls, style: ifcopenshell.entity_instance) -> None:
         attributes = bpy.context.scene.BIMStylesProperties.attributes
         attributes.clear()
-        blenderbim.bim.helper.import_attributes2(style, attributes)
+        bonsai.bim.helper.import_attributes2(style, attributes)
 
     @classmethod
     def has_blender_external_style(cls, style_elements: dict[str, ifcopenshell.entity_instance]) -> bool:

@@ -19,11 +19,12 @@
 import bpy
 import json
 import ifcopenshell
-import blenderbim.core.tool
-import blenderbim.tool as tool
+import bonsai.bim.helper
+import bonsai.core.tool
+import bonsai.tool as tool
 
 
-class Unit(blenderbim.core.tool.Unit):
+class Unit(bonsai.core.tool.Unit):
     @classmethod
     def clear_active_unit(cls):
         bpy.context.scene.BIMUnitProperties.active_unit_id = 0
@@ -47,7 +48,7 @@ class Unit(blenderbim.core.tool.Unit):
                 return True
 
         props = bpy.context.scene.BIMUnitProperties
-        return blenderbim.bim.helper.export_attributes(props.unit_attributes, callback=callback)
+        return bonsai.bim.helper.export_attributes(props.unit_attributes, callback=callback)
 
     @classmethod
     def get_scene_unit_name(cls, unit_type):
@@ -95,7 +96,7 @@ class Unit(blenderbim.core.tool.Unit):
 
         props = bpy.context.scene.BIMUnitProperties
         props.unit_attributes.clear()
-        blenderbim.bim.helper.import_attributes2(unit, props.unit_attributes, callback=callback)
+        bonsai.bim.helper.import_attributes2(unit, props.unit_attributes, callback=callback)
 
     @classmethod
     def import_units(cls):

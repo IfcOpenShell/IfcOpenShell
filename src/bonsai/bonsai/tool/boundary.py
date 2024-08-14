@@ -18,16 +18,16 @@
 
 import bpy
 import mathutils
-import blenderbim.core.tool
-import blenderbim.tool as tool
+import bonsai.core.tool
+import bonsai.tool as tool
 from mathutils import Matrix, Vector
 from typing import Any, Sequence
 
 
-class Boundary(blenderbim.core.tool.Boundary):
+class Boundary(bonsai.core.tool.Boundary):
     @classmethod
     def get_assign_connection_geometry_settings(cls, obj: bpy.types.Object) -> dict[str, Any]:
-        from blenderbim.bim.module.geometry.helper import Helper
+        from bonsai.bim.module.geometry.helper import Helper
 
         ifc = tool.Ifc.get()
         helper = Helper(ifc)

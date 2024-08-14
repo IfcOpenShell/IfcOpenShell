@@ -24,18 +24,18 @@ from brickschema.namespaces import REF, A
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.guid
-import blenderbim.core.tool
-import blenderbim.tool as tool
+import bonsai.core.tool
+import bonsai.tool as tool
 from rdflib.namespace import RDF
 from rdflib import Literal, URIRef, Namespace
 from test.bim.bootstrap import NewFile
-from blenderbim.tool.brick import Brick as subject
-from blenderbim.tool.brick import BrickStore
+from bonsai.tool.brick import Brick as subject
+from bonsai.tool.brick import BrickStore
 
 
 class TestImplementsTool(NewFile):
     def test_run(self):
-        assert isinstance(subject(), blenderbim.core.tool.Brick)
+        assert isinstance(subject(), bonsai.core.tool.Brick)
 
 
 class TestAddBrick(NewFile):

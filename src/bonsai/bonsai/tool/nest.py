@@ -16,12 +16,12 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import blenderbim.core.tool
-import blenderbim.tool as tool
+import bonsai.core.tool
+import bonsai.tool as tool
 import ifcopenshell.util.element
 
 
-class Nest(blenderbim.core.tool.Nest):
+class Nest(bonsai.core.tool.Nest):
     @classmethod
     def can_nest(cls, relating_obj, related_obj):
         relating_object = tool.Ifc.get_entity(relating_obj)

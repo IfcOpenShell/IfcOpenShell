@@ -23,18 +23,18 @@ import ifcopenshell.api.style
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
-import blenderbim.core.tool
-import blenderbim.tool as tool
+import bonsai.core.tool
+import bonsai.tool as tool
 import numpy as np
 import json
 from test.bim.bootstrap import NewFile
-from blenderbim.tool.model import Model as subject
+from bonsai.tool.model import Model as subject
 from ifcopenshell.util.shape_builder import V, ShapeBuilder
 
 
 class TestImplementsTool(NewFile):
     def test_run(self):
-        assert isinstance(subject(), blenderbim.core.tool.Model)
+        assert isinstance(subject(), bonsai.core.tool.Model)
 
 
 class TestGenerateOccurrenceName(NewFile):

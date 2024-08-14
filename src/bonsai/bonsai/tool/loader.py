@@ -27,9 +27,9 @@ import ifcopenshell.util.geolocation
 import ifcopenshell.util.placement
 import ifcopenshell.util.shape
 import ifcopenshell.util.unit
-import blenderbim.core.tool
-import blenderbim.tool as tool
-import blenderbim.bim.import_ifc
+import bonsai.core.tool
+import bonsai.tool as tool
+import bonsai.bim.import_ifc
 import numpy as np
 import numpy.typing as npt
 from mathutils import Vector, Matrix
@@ -46,16 +46,16 @@ from typing import Union
 OBJECT_DATA_TYPE = Union[bpy.types.Mesh, bpy.types.Curve]
 
 
-class Loader(blenderbim.core.tool.Loader):
+class Loader(bonsai.core.tool.Loader):
     unit_scale: float = 1
-    settings: blenderbim.bim.import_ifc.IfcImportSettings = None
+    settings: bonsai.bim.import_ifc.IfcImportSettings = None
 
     @classmethod
     def set_unit_scale(cls, unit_scale: float) -> None:
         cls.unit_scale = unit_scale
 
     @classmethod
-    def set_settings(cls, settings: blenderbim.bim.import_ifc.IfcImportSettings) -> None:
+    def set_settings(cls, settings: bonsai.bim.import_ifc.IfcImportSettings) -> None:
         cls.settings = settings
 
     @classmethod

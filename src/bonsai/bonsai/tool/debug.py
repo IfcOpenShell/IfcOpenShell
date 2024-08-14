@@ -19,12 +19,12 @@
 import os
 import bpy
 import ifcopenshell.express
-import blenderbim.core.tool
-import blenderbim.tool as tool
-from blenderbim.bim.ifc import IfcStore
+import bonsai.core.tool
+import bonsai.tool as tool
+from bonsai.bim.ifc import IfcStore
 
 
-class Debug(blenderbim.core.tool.Debug):
+class Debug(bonsai.core.tool.Debug):
     @classmethod
     def add_schema_identifier(cls, schema):
         IfcStore.schema_identifiers.append(schema.schema_name)

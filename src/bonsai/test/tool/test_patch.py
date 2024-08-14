@@ -19,15 +19,15 @@
 import os
 import bpy
 import ifcopenshell
-import blenderbim.core.tool
-import blenderbim.tool as tool
+import bonsai.core.tool
+import bonsai.tool as tool
 from test.bim.bootstrap import NewFile
-from blenderbim.tool.patch import Patch as subject
+from bonsai.tool.patch import Patch as subject
 
 
 class TestImplementsTool(NewFile):
     def test_run(self):
-        assert isinstance(subject(), blenderbim.core.tool.Patch)
+        assert isinstance(subject(), bonsai.core.tool.Patch)
 
 
 class TestRunMigratePatch(NewFile):

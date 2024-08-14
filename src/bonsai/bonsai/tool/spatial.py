@@ -29,12 +29,12 @@ import ifcopenshell.util.representation
 import ifcopenshell.util.shape_builder
 import ifcopenshell.util.type
 import ifcopenshell.util.unit
-import blenderbim.core.type
-import blenderbim.core.tool
-import blenderbim.core.root
-import blenderbim.core.spatial
-import blenderbim.core.geometry
-import blenderbim.tool as tool
+import bonsai.core.type
+import bonsai.core.tool
+import bonsai.core.root
+import bonsai.core.spatial
+import bonsai.core.geometry
+import bonsai.tool as tool
 import json
 from math import pi
 from mathutils import Vector, Matrix
@@ -42,7 +42,7 @@ from shapely import Polygon
 from typing import Generator, Optional, Union, Literal, List
 
 
-class Spatial(blenderbim.core.tool.Spatial):
+class Spatial(bonsai.core.tool.Spatial):
     @classmethod
     def can_contain(cls, container: ifcopenshell.entity_instance, element_obj: Union[bpy.types.Object, None]) -> bool:
         element = tool.Ifc.get_entity(element_obj)
@@ -110,19 +110,19 @@ class Spatial(blenderbim.core.tool.Spatial):
 
     @classmethod
     def run_root_copy_class(cls, obj: bpy.types.Object) -> ifcopenshell.entity_instance:
-        return blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=obj)
+        return bonsai.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=obj)
 
     @classmethod
     def run_spatial_assign_container(
         cls, container: ifcopenshell.entity_instance, element_obj: bpy.types.Object
     ) -> Union[ifcopenshell.entity_instance, None]:
-        return blenderbim.core.spatial.assign_container(
+        return bonsai.core.spatial.assign_container(
             tool.Ifc, tool.Collector, tool.Spatial, container=container, element_obj=element_obj
         )
 
     @classmethod
     def run_spatial_import_spatial_decomposition(cls) -> None:
-        return blenderbim.core.spatial.import_spatial_decomposition(tool.Spatial)
+        return bonsai.core.spatial.import_spatial_decomposition(tool.Spatial)
 
     @classmethod
     def select_object(cls, obj: bpy.types.Object) -> None:
@@ -291,7 +291,7 @@ class Spatial(blenderbim.core.tool.Spatial):
     def edit_container_attributes(cls, entity: ifcopenshell.entity_instance) -> None:
         # TODO
         obj = tool.Ifc.get_object(entity)
-        blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+        bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
         name = bpy.context.scene.BIMSpatialDecompositionProperties.container_name
         if name != entity.Name:
             cls.edit_container_name(entity, name)
@@ -790,11 +790,11 @@ class Spatial(blenderbim.core.tool.Spatial):
         element: ifcopenshell.entity_instance,
         relating_type: ifcopenshell.entity_instance,
     ) -> None:
-        blenderbim.core.type.assign_type(ifc, type, element=element, type=relating_type)
+        bonsai.core.type.assign_type(ifc, type, element=element, type=relating_type)
 
     @classmethod
     def regen_obj_representation(cls, obj: bpy.types.Object, body: ifcopenshell.entity_instance) -> None:
-        blenderbim.core.geometry.switch_representation(
+        bonsai.core.geometry.switch_representation(
             tool.Ifc,
             tool.Geometry,
             obj=obj,

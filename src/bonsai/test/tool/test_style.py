@@ -21,16 +21,16 @@ import bpy
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.representation
-import blenderbim.core.tool
-import blenderbim.tool as tool
+import bonsai.core.tool
+import bonsai.tool as tool
 from test.bim.bootstrap import NewFile
-from blenderbim.tool.style import Style as subject
+from bonsai.tool.style import Style as subject
 from ifcopenshell.util.shape_builder import ShapeBuilder
 
 
 class TestImplementsTool(NewFile):
     def test_run(self):
-        assert isinstance(subject(), blenderbim.core.tool.Style)
+        assert isinstance(subject(), bonsai.core.tool.Style)
 
 
 class TestCanSupportRenderingStyle(NewFile):

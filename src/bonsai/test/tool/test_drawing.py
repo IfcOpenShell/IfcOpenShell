@@ -22,12 +22,12 @@ import bpy
 import mathutils
 import ifcopenshell
 import ifcopenshell.guid
-import blenderbim.core.tool
-import blenderbim.tool as tool
+import bonsai.core.tool
+import bonsai.tool as tool
 from test.bim.bootstrap import NewFile
-from blenderbim.tool.drawing import Drawing as subject
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.drawing.data import DecoratorData
+from bonsai.tool.drawing import Drawing as subject
+from bonsai.bim.ifc import IfcStore
+from bonsai.bim.module.drawing.data import DecoratorData
 from mathutils import Vector
 
 import xml.etree.ElementTree as ET
@@ -35,7 +35,7 @@ import xml.etree.ElementTree as ET
 
 class TestImplementsTool(NewFile):
     def test_run(self):
-        assert isinstance(subject(), blenderbim.core.tool.Drawing)
+        assert isinstance(subject(), bonsai.core.tool.Drawing)
 
 
 class TestCopyRepresentation(NewFile):

@@ -17,12 +17,12 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import blenderbim.bim.helper
-import blenderbim.tool as tool
-import blenderbim.core.tool
+import bonsai.bim.helper
+import bonsai.tool as tool
+import bonsai.core.tool
 
 
-class Context(blenderbim.core.tool.Context):
+class Context(bonsai.core.tool.Context):
     @classmethod
     def set_context(cls, context):
         bpy.context.scene.BIMContextProperties.active_context_id = context.id()
@@ -42,7 +42,7 @@ class Context(blenderbim.core.tool.Context):
                     props.context_attributes.remove(props.context_attributes.find("CoordinateSpaceDimension"))
                     return True
 
-        blenderbim.bim.helper.import_attributes(context.is_a(), props.context_attributes, context.get_info(), callback)
+        bonsai.bim.helper.import_attributes(context.is_a(), props.context_attributes, context.get_info(), callback)
 
     @classmethod
     def clear_context(cls):
@@ -54,4 +54,4 @@ class Context(blenderbim.core.tool.Context):
 
     @classmethod
     def export_attributes(cls):
-        return blenderbim.bim.helper.export_attributes(bpy.context.scene.BIMContextProperties.context_attributes)
+        return bonsai.bim.helper.export_attributes(bpy.context.scene.BIMContextProperties.context_attributes)

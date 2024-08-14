@@ -22,14 +22,14 @@ import numpy as np
 import ifcopenshell.api
 import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
 import ifcopenshell.util.element
-import blenderbim.core.tool
-import blenderbim.bim.handler
-import blenderbim.tool as tool
-from blenderbim.bim.ifc import IfcStore, IFC_CONNECTED_TYPE
+import bonsai.core.tool
+import bonsai.bim.handler
+import bonsai.tool as tool
+from bonsai.bim.ifc import IfcStore, IFC_CONNECTED_TYPE
 from typing import Optional, Union, Any, final, Literal
 
 
-class Ifc(blenderbim.core.tool.Ifc):
+class Ifc(bonsai.core.tool.Ifc):
     OBJECT_TYPE = Literal[
         "Object",
         "Material",
@@ -154,9 +154,9 @@ class Ifc(blenderbim.core.tool.Ifc):
             if global_id:
                 IfcStore.guid_map[global_id] = obj
 
-            blenderbim.bim.handler.subscribe_to(obj, "name", blenderbim.bim.handler.name_callback)
-            blenderbim.bim.handler.subscribe_to(
-                obj, "active_material_index", blenderbim.bim.handler.active_material_index_callback
+            bonsai.bim.handler.subscribe_to(obj, "name", bonsai.bim.handler.name_callback)
+            bonsai.bim.handler.subscribe_to(
+                obj, "active_material_index", bonsai.bim.handler.active_material_index_callback
             )
 
         for obj in bpy.data.materials:
@@ -172,7 +172,7 @@ class Ifc(blenderbim.core.tool.Ifc):
             if style:
                 IfcStore.id_map[style.id()] = obj
 
-            blenderbim.bim.handler.subscribe_to(obj, "name", blenderbim.bim.handler.name_callback)
+            bonsai.bim.handler.subscribe_to(obj, "name", bonsai.bim.handler.name_callback)
 
     @classmethod
     def link(cls, element: ifcopenshell.entity_instance, obj: IFC_CONNECTED_TYPE) -> None:
@@ -242,7 +242,7 @@ class Ifc(blenderbim.core.tool.Ifc):
         @final
         def execute(self, context):
             IfcStore.execute_ifc_operator(self, context)
-            blenderbim.bim.handler.refresh_ui_data()
+            bonsai.bim.handler.refresh_ui_data()
             return {"FINISHED"}
 
         # NOTE: this class can't inherit from abc.ABC to use abc.abstractmethod

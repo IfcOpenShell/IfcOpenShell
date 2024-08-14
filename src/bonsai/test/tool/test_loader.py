@@ -19,10 +19,10 @@
 import bpy
 import bmesh
 import ifcopenshell
-import blenderbim.core.tool
-import blenderbim.tool as tool
+import bonsai.core.tool
+import bonsai.tool as tool
 from test.bim.bootstrap import NewFile
-from blenderbim.tool.loader import Loader as subject
+from bonsai.tool.loader import Loader as subject
 import numpy as np
 from ifcopenshell.util.shape_builder import ShapeBuilder, V
 from mathutils import Vector
@@ -31,7 +31,7 @@ from pathlib import Path
 
 class TestImplementsTool(NewFile):
     def test_run(self):
-        assert isinstance(subject(), blenderbim.core.tool.Loader)
+        assert isinstance(subject(), bonsai.core.tool.Loader)
 
 
 class TestCreatingStyles(NewFile):
@@ -58,7 +58,7 @@ class TestCreatingStyles(NewFile):
         texture_data = [
             {
                 "Mode": "DIFFUSE",
-                "URLReference": "blenderbim/test/files/image.jpg",
+                "URLReference": "bonsai/test/files/image.jpg",
                 "type": "IfcImageTexture",
                 "uv_mode": "Generated",
             },
@@ -113,7 +113,7 @@ class TestCreatingStyles(NewFile):
 
         textures = [
             {
-                "URLReference": "blenderbim/test/files/image.jpg",
+                "URLReference": "bonsai/test/files/image.jpg",
                 "Mode": "DIFFUSE",
                 "RepeatS": True,
                 "RepeatT": True,

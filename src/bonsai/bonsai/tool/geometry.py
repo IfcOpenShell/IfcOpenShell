@@ -29,23 +29,23 @@ import ifcopenshell.guid
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.system
-import blenderbim.core.tool
-import blenderbim.core.drawing
-import blenderbim.core.style
-import blenderbim.core.spatial
-import blenderbim.core.system
-import blenderbim.core.geometry
-import blenderbim.tool as tool
-import blenderbim.bim.import_ifc
+import bonsai.core.tool
+import bonsai.core.drawing
+import bonsai.core.geometry
+import bonsai.core.spatial
+import bonsai.core.style
+import bonsai.core.system
+import bonsai.tool as tool
+import bonsai.bim.import_ifc
 from collections import defaultdict
 from math import radians, pi
 from mathutils import Vector, Matrix
-from blenderbim.bim.ifc import IfcStore
+from bonsai.bim.ifc import IfcStore
 from typing import Union, Iterable, Optional, Literal
 from typing import Iterator
 
 
-class Geometry(blenderbim.core.tool.Geometry):
+class Geometry(bonsai.core.tool.Geometry):
     @classmethod
     def change_object_data(cls, obj: bpy.types.Object, data: bpy.types.ID, is_global: bool = False) -> None:
         if is_global:
@@ -97,7 +97,7 @@ class Geometry(blenderbim.core.tool.Geometry):
         if not element:
             return
         if element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
-            return blenderbim.core.drawing.remove_drawing(tool.Ifc, tool.Drawing, drawing=element)
+            return bonsai.core.drawing.remove_drawing(tool.Ifc, tool.Drawing, drawing=element)
         if element.is_a("IfcRelSpaceBoundary"):
             ifcopenshell.api.run("boundary.remove_boundary", tool.Ifc.get(), boundary=element)
             return bpy.data.objects.remove(obj)
@@ -143,7 +143,7 @@ class Geometry(blenderbim.core.tool.Geometry):
                 for rel in element.HasOpenings:
                     bpy.ops.bim.remove_opening(opening_id=rel.RelatedOpeningElement.id())
             for port in ifcopenshell.util.system.get_ports(element):
-                blenderbim.core.system.remove_port(tool.Ifc, tool.System, port=port)
+                bonsai.core.system.remove_port(tool.Ifc, tool.System, port=port)
             ifcopenshell.api.run("root.remove_product", tool.Ifc.get(), product=element)
 
             if isinstance(obj.data, bpy.types.Mesh) and not tool.Ifc.get_entity_by_id(
@@ -152,7 +152,7 @@ class Geometry(blenderbim.core.tool.Geometry):
                 tool.Blender.remove_data_block(obj.data)
 
             if is_spatial:
-                blenderbim.core.spatial.import_spatial_decomposition(tool.Spatial)
+                bonsai.core.spatial.import_spatial_decomposition(tool.Spatial)
         try:
             obj.name
             bpy.data.objects.remove(obj)
@@ -576,7 +576,7 @@ class Geometry(blenderbim.core.tool.Geometry):
         cls, obj: bpy.types.Object, representation: ifcopenshell.entity_instance, apply_openings: bool = True
     ) -> Union[bpy.types.Mesh, bpy.types.Curve]:
         logger = logging.getLogger("ImportIFC")
-        ifc_import_settings = blenderbim.bim.import_ifc.IfcImportSettings.factory(bpy.context, None, logger)
+        ifc_import_settings = bonsai.bim.import_ifc.IfcImportSettings.factory(bpy.context, None, logger)
         element = tool.Ifc.get_entity(obj)
         assert element  # Type checker.
         settings = ifcopenshell.geom.settings()
@@ -606,7 +606,7 @@ class Geometry(blenderbim.core.tool.Geometry):
                 settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
                 shape = ifcopenshell.geom.create_shape(settings, element, representation)
 
-        ifc_importer = blenderbim.bim.import_ifc.IfcImporter(ifc_import_settings)
+        ifc_importer = bonsai.bim.import_ifc.IfcImporter(ifc_import_settings)
         ifc_importer.file = tool.Ifc.get()
 
         if element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
@@ -796,7 +796,7 @@ class Geometry(blenderbim.core.tool.Geometry):
 
     @classmethod
     def run_style_add_style(cls, obj: bpy.types.Material) -> ifcopenshell.entity_instance:
-        return blenderbim.core.style.add_style(tool.Ifc, tool.Style, obj=obj)
+        return bonsai.core.style.add_style(tool.Ifc, tool.Style, obj=obj)
 
     @classmethod
     def select_connection(cls, connection: ifcopenshell.entity_instance) -> None:
@@ -899,7 +899,7 @@ class Geometry(blenderbim.core.tool.Geometry):
         as it will handle those complications by itself.
         """
         representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
-        blenderbim.core.geometry.switch_representation(
+        bonsai.core.geometry.switch_representation(
             tool.Ifc,
             tool.Geometry,
             obj=obj,
@@ -937,7 +937,7 @@ class Geometry(blenderbim.core.tool.Geometry):
             cls.recreate_object_with_data(obj, None)
             return
 
-        blenderbim.core.geometry.switch_representation(
+        bonsai.core.geometry.switch_representation(
             tool.Ifc,
             tool.Geometry,
             obj=obj,

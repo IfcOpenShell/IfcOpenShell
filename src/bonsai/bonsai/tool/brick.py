@@ -23,8 +23,9 @@ import ifcopenshell.guid
 import ifcopenshell.util.brick
 import ifcopenshell.util.element
 import ifcopenshell.util.system
-import blenderbim.core.tool
-import blenderbim.tool as tool
+import bonsai.core.brick
+import bonsai.core.tool
+import bonsai.tool as tool
 from contextlib import contextmanager
 import datetime
 
@@ -47,7 +48,7 @@ logger = logging.getLogger("rdflib")
 logger.setLevel(logging.ERROR)
 
 
-class Brick(blenderbim.core.tool.Brick):
+class Brick(bonsai.core.tool.Brick):
     @classmethod
     def add_brick(cls, namespace, brick_class, label):
         ns = Namespace(namespace)
@@ -400,17 +401,17 @@ class Brick(blenderbim.core.tool.Brick):
 
     @classmethod
     def run_assign_brick_reference(cls, element=None, library=None, brick_uri=None):
-        return blenderbim.core.brick.assign_brick_reference(
+        return bonsai.core.brick.assign_brick_reference(
             tool.Ifc, tool.Brick, element=element, library=library, brick_uri=brick_uri
         )
 
     @classmethod
     def run_refresh_brick_viewer(cls):
-        return blenderbim.core.brick.refresh_brick_viewer(tool.Brick)
+        return bonsai.core.brick.refresh_brick_viewer(tool.Brick)
 
     @classmethod
     def run_view_brick_class(cls, brick_class=None, split_screen=False):
-        return blenderbim.core.brick.view_brick_class(tool.Brick, brick_class=brick_class, split_screen=split_screen)
+        return bonsai.core.brick.view_brick_class(tool.Brick, brick_class=brick_class, split_screen=split_screen)
 
     @classmethod
     def select_browser_item(cls, item, split_screen=False):
