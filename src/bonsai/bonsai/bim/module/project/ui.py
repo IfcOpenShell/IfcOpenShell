@@ -132,7 +132,7 @@ class BIM_PT_project(Panel):
                 row = box.row(align=True)
                 row.label(text="Your Model May Be Outdated", icon="ERROR")
                 op = row.operator("bim.open_uri", text="", icon="QUESTION")
-                op.uri = "https://docs.blenderbim.org/users/troubleshooting.html#saving-and-loading-blend-files"
+                op.uri = "https://docs.bonsaibim.org/users/troubleshooting.html#saving-and-loading-blend-files"
                 row.operator("bim.close_blend_warning", text="", icon="CANCEL")
 
             if props.ifc_file:

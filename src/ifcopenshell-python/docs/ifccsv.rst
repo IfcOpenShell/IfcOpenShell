@@ -68,7 +68,7 @@ interface to access the IfcOpenShell utilities.
 
 1. Install the BlenderBIM Add-on by following the `BlenderBIM Add-on
    installation documentation
-   <https://docs.blenderbim.org/users/installation.html>`_.
+   <https://docs.bonsaibim.org/users/installation.html>`_.
 
 2. Launch Blender. Change to the **Scene Properties** tab in the **Properties
    Panel**. Scroll down to the **IFC Collaboration > IFC CSV Import / Export**

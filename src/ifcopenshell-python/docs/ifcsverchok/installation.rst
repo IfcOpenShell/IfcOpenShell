@@ -19,7 +19,7 @@ Addons > Install > Choose Downloaded ZIP > Enable Add-on Checkbox``. You can
 enable add-ons permanently by using ``Save User Settings`` from the Addons menu.
 
 Before installing, you will also need to `install the BlenderBIM Add-on
-<https://blenderbim.org/download.html>`__ and `install Sverchok
+<https://bonsaibim.org/download.html>`__ and `install Sverchok
 <https://github.com/nortikin/sverchok#installation>`__.
 
 If you downloaded Blender as a ``.zip`` file without running an installer, you

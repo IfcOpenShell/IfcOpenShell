@@ -26,7 +26,7 @@ Installation
 
 .. container:: blockbutton
 
-   `Download BlenderBIM Add-on <https://blenderbim.org/download.html>`__
+   `Download Bonsai <https://bonsaibim.org/download.html>`__
 
 3. **Install the BlenderBIM Add-on**
 

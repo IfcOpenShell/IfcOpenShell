@@ -1,5 +1,5 @@
-# BlenderBIM Add-on
+# Bonsai
 
 An add-on to Blender to allow BIM functionality.
 
-More information on the [BlenderBIM Add-on website](https://blenderbim.org).
+More information on the [Bonsai website](https://bonsaibim.org).

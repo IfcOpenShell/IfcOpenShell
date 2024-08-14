@@ -54,7 +54,7 @@ Fields
   .. seealso::
 
     Use the `IFC Class search tool
-    <https://blenderbim.org/search-ifc-class.html>`__ to help choose an **IFC
+    <https://bonsaibim.org/search-ifc-class.html>`__ to help choose an **IFC
     Class** based on the IFC Schema version.
 
 **Unit System**
