@@ -21,7 +21,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
 bl_info = {
-    "name": "BlenderBIM Translations",
+    "name": "Bonsai Translations",
     "description": "",
     "author": "IfcOpenShell Contributors",
     "blender": (2, 80, 0),
@@ -34,7 +34,7 @@ bl_info = {
 # NOTE: list of available languages in Blender can be retrieved
 # by the command below:
 # bpy.context.preferences.view.language = "test"
-ADDON_NAME = "blenderbim"
+ADDON_NAME = "bonsai"
 TRANSLATION_UI_IS_LOADED = False
 
 
@@ -75,7 +75,7 @@ class Message:
     translations: Optional[Dict[str, str]] = field(default_factory=dict)
 
 
-def blenderbim_strings_parse(addon_directory=None, po_directory=None):
+def bonsai_strings_parse(addon_directory=None, po_directory=None):
     # NOTE: we decided to use our own parser due bug in Blender parser
     # as it tends to pick up strings from other addons and other Blender parts
     # and this bug probably would be to low of a priority for Blender to fix
@@ -136,7 +136,7 @@ def blenderbim_strings_parse(addon_directory=None, po_directory=None):
                             )
                         message.sources.append(source_rel_path)
 
-    pot_filepath = po_directory / "blenderbim.pot"
+    pot_filepath = po_directory / "bonsai.pot"
     with open(pot_filepath, "w", encoding="utf-8") as fo:
         for msg in matched_dict.values():
             # make sure sources are unique but keep the order
@@ -292,14 +292,14 @@ if BPY_IS_LOADED:
 
             return {"FINISHED"}
 
-    class ParseBlenderBIMStrings(bpy.types.Operator):
-        bl_idname = "bim.parse_blenderbim_strings"
-        bl_label = "Parse BlenderBIM strings To .pot"
-        bl_description = "Parse strings from BlenderBIM and save to .pot"
+    class ParseBonsaiStrings(bpy.types.Operator):
+        bl_idname = "bim.parse_bonsai_strings"
+        bl_label = "Parse Bonsai strings To .pot"
+        bl_description = "Parse strings from Bonsai and save to .pot"
         bl_options = set()
 
         def execute(self, context):
-            blenderbim_strings_parse()
+            bonsai_strings_parse()
             self.report({"INFO"}, "String were parsed and saved to .pot file.")
             return {"FINISHED"}
 
@@ -326,9 +326,9 @@ if BPY_IS_LOADED:
             self.report({"INFO"}, f"Addon's translation updated from .po in {branches_dir}")
             return {"FINISHED"}
 
-    class BBIM_PT_translations(bpy.types.Panel):
-        bl_label = "BlenderBIM Translations"
-        bl_idname = "BBIM_PT_translations"
+    class Bonsai_PT_translations(bpy.types.Panel):
+        bl_label = "Bonsai Translations"
+        bl_idname = "Bonsai_PT_translations"
         bl_space_type = "PROPERTIES"
         bl_region_type = "WINDOW"
         bl_context = "render"
@@ -343,17 +343,17 @@ if BPY_IS_LOADED:
                 return
 
             layout.label(text="Developer UI:")
-            layout.operator("bim.parse_blenderbim_strings", icon="FILE_REFRESH")
+            layout.operator("bim.parse_bonsai_strings", icon="FILE_REFRESH")
 
             layout.separator()
             layout.label(text="Translator UI:")
             layout.operator("bim.update_translations_from_po", icon="IMPORT")
 
     classes = (
-        ParseBlenderBIMStrings,
+        ParseBonsaiStrings,
         UpdateTranslationsFromPo,
         SetupTranslationUI,
-        BBIM_PT_translations,
+        Bonsai_PT_translations,
     )
 
     def register():
@@ -367,7 +367,7 @@ if BPY_IS_LOADED:
 
 if __name__ == "__main__":
     # Example:
-    # py src/blenderbim/scripts/bbim_translations.py -i "C:/blenderbim-translations" -o "C:/Blender/4.0/scripts/addons/blenderbim/translations.py"
+    # py src/bonsai/scripts/bbim_translations.py -i "C:/bonsai-translations" -o "C:/Blender/4.0/scripts/addons/bonsai/translations.py"
     import argparse
 
     parser = argparse.ArgumentParser(description="Converts .po files to translations.py")

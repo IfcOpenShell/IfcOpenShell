@@ -95,7 +95,7 @@ endif
 	rm -rf build
 	mkdir -p build
 	mkdir -p dist
-	cp -r blenderbim build/
+	cp -r bonsai build/
 
 	# To scope any build-time dependencies
 	cd build && $(PYTHON) -m venv env && . env/$(VENV_ACTIVATE) && $(PIP) install build
@@ -103,18 +103,18 @@ endif
 
 	mkdir -p build/wheels
 	# Provides IfcOpenShell Python functionality
-	cd ../ifcopenshell-python && make dist PLATFORM=$(PLATFORM)64 PYVERSION=$(PYVERSION) && mv dist/*.whl ../blenderbim/build/wheels/
-	cd ../bcf && make dist && mv dist/*.whl ../blenderbim/build/wheels/
-	cd ../ifcclash && make dist && mv dist/*.whl ../blenderbim/build/wheels/
-	cd ../ifctester && make dist && mv dist/*.whl ../blenderbim/build/wheels/
-	cd ../ifcfm && make dist && mv dist/*.whl ../blenderbim/build/wheels/
-	cd ../bsdd && make dist && mv dist/*.whl ../blenderbim/build/wheels/
-	cd ../ifcdiff && make dist && mv dist/*.whl ../blenderbim/build/wheels/
-	cd ../ifccsv && make dist && mv dist/*.whl ../blenderbim/build/wheels/
-	cd ../ifcpatch && make dist && mv dist/*.whl ../blenderbim/build/wheels/
-	cd ../ifc4d && make dist && mv dist/*.whl ../blenderbim/build/wheels/
-	cd ../ifc5d && make dist && mv dist/*.whl ../blenderbim/build/wheels/
-	cd ../ifccityjson && make dist && mv dist/*.whl ../blenderbim/build/wheels/
+	cd ../ifcopenshell-python && make dist PLATFORM=$(PLATFORM)64 PYVERSION=$(PYVERSION) && mv dist/*.whl ../bonsai/build/wheels/
+	cd ../bcf && make dist && mv dist/*.whl ../bonsai/build/wheels/
+	cd ../ifcclash && make dist && mv dist/*.whl ../bonsai/build/wheels/
+	cd ../ifctester && make dist && mv dist/*.whl ../bonsai/build/wheels/
+	cd ../ifcfm && make dist && mv dist/*.whl ../bonsai/build/wheels/
+	cd ../bsdd && make dist && mv dist/*.whl ../bonsai/build/wheels/
+	cd ../ifcdiff && make dist && mv dist/*.whl ../bonsai/build/wheels/
+	cd ../ifccsv && make dist && mv dist/*.whl ../bonsai/build/wheels/
+	cd ../ifcpatch && make dist && mv dist/*.whl ../bonsai/build/wheels/
+	cd ../ifc4d && make dist && mv dist/*.whl ../bonsai/build/wheels/
+	cd ../ifc5d && make dist && mv dist/*.whl ../bonsai/build/wheels/
+	cd ../ifccityjson && make dist && mv dist/*.whl ../bonsai/build/wheels/
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download GitPython --dest=./wheels
 	# Provides audio playback for costing
 	# This is a REALLY IMPORTANT feature
@@ -181,8 +181,8 @@ else
 endif
 
 	# Provides jsgantt-improved supports for web-based construction sequencing gantt charts
-	cd build/blenderbim/bim/data/gantt/ && wget https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.js
-	cd build/blenderbim/bim/data/gantt/ && wget https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.css
+	cd build/bonsai/bim/data/gantt/ && wget https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.js
+	cd build/bonsai/bim/data/gantt/ && wget https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.css
 
 	# Provides IFCJSON functionality
 	# TODO: replace with main repo if https://github.com/IFCJSON-Team/IFC2JSON_python/pull/3 is merged.
@@ -203,7 +203,7 @@ endif
 	# Brickschema requires pkg_resources which is provided by Blender.
 	# Provides Brickschema functionality
 	# For now lets bundle the latest nightly schema
-	cd build/blenderbim/bim/schema && wget https://github.com/BrickSchema/Brick/releases/download/nightly/Brick.ttl
+	cd build/bonsai/bim/schema && wget https://github.com/BrickSchema/Brick/releases/download/nightly/Brick.ttl
 
 	# Required for hipped roof generation
 	cd build && wget https://github.com/prochitecture/bpypolyskel/archive/refs/heads/master.zip
@@ -218,11 +218,11 @@ endif
 	cp -r build/bpypolyskel-master/dist/*.whl build/wheels/
 
 	# Required for Desktop icon and file association
-	cp -r blenderbim/libs/desktop build/blenderbim/libs/
+	cp -r bonsai/libs/desktop build/bonsai/libs/
 
-	# Generate translations module for BBIM build
-	git clone https://github.com/IfcOpenShell/blenderbim-translations.git build/working
-	$(PYTHON) scripts/bbim_translations.py -i "build/working" -o "build/blenderbim"
+	# Generate translations module for Bonsai build
+	git clone https://github.com/IfcOpenShell/bonsai-translations.git build/working
+	$(PYTHON) scripts/bonsai_translations.py -i "build/working" -o "build/bonsai"
 	rm -rf build/working
 
 	# Remove dependencies also bundled with Blender
@@ -230,17 +230,17 @@ endif
 
 	cp pyproject.toml build/
 ifeq ($(IS_STABLE), TRUE)
-	$(SED) "s/0.0.0/$(VERSION)/" build/blenderbim/blender_manifest.toml
+	$(SED) "s/0.0.0/$(VERSION)/" build/bonsai/blender_manifest.toml
 	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' build/pyproject.toml
 else
-	$(SED) "s/0.0.0/$(VERSION)-alpha$(VERSION_DATE)/" build/blenderbim/blender_manifest.toml
-	$(SED) "s/8888888/$(LAST_COMMIT_HASH)/" build/blenderbim/__init__.py
+	$(SED) "s/0.0.0/$(VERSION)-alpha$(VERSION_DATE)/" build/bonsai/blender_manifest.toml
+	$(SED) "s/8888888/$(LAST_COMMIT_HASH)/" build/bonsai/__init__.py
 	$(SED) 's/version = "0.0.0"/version = "$(VERSION)-alpha$(VERSION_DATE)"/' build/pyproject.toml
 endif
 
-	$(SED) "s/os-arch/$(BLENDER_PLATFORM)/" build/blenderbim/blender_manifest.toml
+	$(SED) "s/os-arch/$(BLENDER_PLATFORM)/" build/bonsai/blender_manifest.toml
 
-	# Provides BlenderBIM Add-on functionality
+	# Provides bonsai Add-on functionality
 ifeq ($(IS_STABLE), TRUE)
 	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' build/pyproject.toml
 else
@@ -257,7 +257,7 @@ endif
 		echo "Error: non-wheel dependencies are not supported by Blender!"; \
 		exit 1; \
 	fi
-	mv build/wheels/*.whl build/blenderbim/wheels/
+	mv build/wheels/*.whl build/bonsai/wheels/
 
 	# Ugly patch to accomodate MacOS universal builds not being recognized by Blender.
 	# Blender doesn't look into the wheel contents, it just checks the name.
@@ -266,41 +266,41 @@ endif
 
 ifeq ($(PLATFORM), macosm1)
 	# Has universal and x86_64 builds.
-	prev_whl_name=$$(find build/blenderbim/wheels/MarkupSafe-*.whl); \
+	prev_whl_name=$$(find build/bonsai/wheels/MarkupSafe-*.whl); \
 	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/_arm64/"); \
 	mv "$$prev_whl_name" "$$whl_name";
 
 	# Has universal and x86_64 builds.
-	prev_whl_name=$$(find build/blenderbim/wheels/lxml-*.whl); \
+	prev_whl_name=$$(find build/bonsai/wheels/lxml-*.whl); \
 	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/_arm64/"); \
 	mv "$$prev_whl_name" "$$whl_name";
 
-	prev_whl_name=$$(find build/blenderbim/wheels/tzfpy-*.whl); \
+	prev_whl_name=$$(find build/bonsai/wheels/tzfpy-*.whl); \
 	whl_name=$$(echo $$prev_whl_name | sed "s/macosx_10_12_x86_64.macosx_11_0_arm64.macosx_10_12_universal2/macosx_10_12_arm64/"); \
 	mv "$$prev_whl_name" "$$whl_name";
 
 	# Has only universal build.
-	prev_whl_name=$$(find build/blenderbim/wheels/greenlet-*.whl); \
+	prev_whl_name=$$(find build/bonsai/wheels/greenlet-*.whl); \
 	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/_arm64/"); \
 	mv "$$prev_whl_name" "$$whl_name";
 endif
 ifeq ($(PLATFORM), macos)
-	prev_whl_name=$$(find build/blenderbim/wheels/tzfpy-*.whl); \
+	prev_whl_name=$$(find build/bonsai/wheels/tzfpy-*.whl); \
 	whl_name=$$(echo $$prev_whl_name | sed "s/macosx_10_9_x86_64.macosx_11_0_arm64.macosx_10_9_universal2/macosx_10_9_x86_64/"); \
 	mv "$$prev_whl_name" "$$whl_name";
 
-	prev_whl_name=$$(find build/blenderbim/wheels/greenlet-*.whl); \
+	prev_whl_name=$$(find build/bonsai/wheels/greenlet-*.whl); \
 	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/_x86_64/"); \
 	mv "$$prev_whl_name" "$$whl_name";
 
 	# has universal and amr64 builds.
-	prev_whl_name=$$(find build/blenderbim/wheels/fonttools-*.whl); \
+	prev_whl_name=$$(find build/bonsai/wheels/fonttools-*.whl); \
 	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/_x86_64/"); \
 	mv "$$prev_whl_name" "$$whl_name";
 endif
 
 	# Safeguard for unhandled universal files.
-	wheels=$$(find build/blenderbim/wheels/*universal2*.whl); \
+	wheels=$$(find build/bonsai/wheels/*universal2*.whl); \
 	if [ -n "$$wheels" ]; then \
 		echo "Found universal2 wheel files:"; \
 		echo "$$wheels"; \
@@ -311,7 +311,7 @@ endif
 ifneq ($(PLATFORM), linux)
 	# Safeguard: in case one of `pip download` will break,
 	# it will produce a linux wheel for non-linux build (our github action machine is using linux).
-	wheels=$$(find build/blenderbim/wheels/*manylinux_*.whl); \
+	wheels=$$(find build/bonsai/wheels/*manylinux_*.whl); \
 	if [ -n "$$wheels" ]; then \
 		echo "Found linux wheel files in non-linux build:"; \
 		echo "$$wheels"; \
@@ -320,15 +320,15 @@ ifneq ($(PLATFORM), linux)
 	fi
 endif
 
-	$(PYTHON) scripts/get_wheels.py build/blenderbim/wheels build/blenderbim/blender_manifest.toml
-	rm -rf build/blenderbim/bim/
-	rm -rf build/blenderbim/core/
-	rm -rf build/blenderbim/tool/
+	$(PYTHON) scripts/get_wheels.py build/bonsai/wheels build/bonsai/blender_manifest.toml
+	rm -rf build/bonsai/bim/
+	rm -rf build/bonsai/core/
+	rm -rf build/bonsai/tool/
 
 ifeq ($(IS_STABLE), TRUE)
-	cd build && zip -r bonsai_$(PYVERSION)-$(VERSION)-$(BLENDER_PLATFORM).zip ./blenderbim
+	cd build && zip -r bonsai_$(PYVERSION)-$(VERSION)-$(BLENDER_PLATFORM).zip ./bonsai
 else
-	cd build && zip -r bonsai_$(PYVERSION)-$(VERSION)-alpha$(VERSION_DATE)-$(BLENDER_PLATFORM).zip ./blenderbim
+	cd build && zip -r bonsai_$(PYVERSION)-$(VERSION)-alpha$(VERSION_DATE)-$(BLENDER_PLATFORM).zip ./bonsai
 endif
 
 	mv build/bonsai*.zip dist/
@@ -374,13 +374,13 @@ qa:
 
 .PHONY: coverage
 coverage:
-	coverage run --source blenderbim.core -m pytest -p no:pytest-blender test/core
+	coverage run --source bonsai.core -m pytest -p no:pytest-blender test/core
 	coverage html
 	xdg-open htmlcov/index.html
 
 .PHONY: license
 license:
-	copyright-header --license GPL3 --copyright-holder "Dion Moult <dion@thinkmoult.com>" --copyright-year "2022" --copyright-software "BlenderBIM Add-on" --copyright-software-description "OpenBIM Blender Add-on" -a ./ -o ./
+	copyright-header --license GPL3 --copyright-holder "Dion Moult <dion@thinkmoult.com>" --copyright-year "2022" --copyright-software "Bonsai" --copyright-software-description "OpenBIM Blender Add-on" -a ./ -o ./
 
 .PHONY: clean
 clean:
