@@ -5,8 +5,8 @@ FILE_NAME('/dev/null','2024-03-03T16:03:58+11:00',(),(),'IfcOpenShell v0.7.0-eaa
 FILE_SCHEMA(('IFC4'));
 ENDSEC;
 DATA;
-#1=IFCPROJECT('3NJUxHyTzEv96oezyDYEqf',$,'BlenderBIM Demo',$,$,$,$,(#12,#16),#7);
-#2=IFCPROJECTLIBRARY('0D39k7hbT5ce$jWaCd2niG',$,'BlenderBIM Demo Library',$,$,$,$,$,$);
+#1=IFCPROJECT('3NJUxHyTzEv96oezyDYEqf',$,'Bonsai Demo',$,$,$,$,(#12,#16),#7);
+#2=IFCPROJECTLIBRARY('0D39k7hbT5ce$jWaCd2niG',$,'Bonsai Demo Library',$,$,$,$,$,$);
 #3=IFCRELDECLARES('2RWVohyP57PBHT9zCs4H2O',$,$,$,#1,(#2));
 #4=IFCSIUNIT(*,.LENGTHUNIT.,$,.METRE.);
 #5=IFCSIUNIT(*,.AREAUNIT.,$,.SQUARE_METRE.);

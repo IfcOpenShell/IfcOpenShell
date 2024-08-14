@@ -1,7 +1,7 @@
 ISO-10303-21;
 HEADER;
 FILE_DESCRIPTION(('ViewDefinition[DesignTransferView]'),'2;1');
-FILE_NAME('annotation.ifc','2021-10-19T11:50:01+11:00',(),(),'IfcOpenShell v0.7.0-6cc7d796','BlenderBIM 0.0.999999','Nobody');
+FILE_NAME('annotation.ifc','2021-10-19T11:50:01+11:00',(),(),'IfcOpenShell v0.7.0-6cc7d796','Bonsai 0.0.999999','Nobody');
 FILE_SCHEMA(('IFC4'));
 ENDSEC;
 DATA;
@@ -11,7 +11,7 @@ DATA;
 #4=IFCACTORROLE(.USERDEFINED.,'CONTRIBUTOR',$);
 #5=IFCTELECOMADDRESS(.USERDEFINED.,$,'WEBPAGE',$,$,$,$,'https://ifcopenshell.org',$);
 #6=IFCORGANIZATION('IfcOpenShell','IfcOpenShell','IfcOpenShell is an open source software library that helps users and software developers to work with IFC data.',(#4),(#5));
-#7=IFCAPPLICATION(#6,'0.0.999999','BlenderBIM Add-on','BlenderBIM');
+#7=IFCAPPLICATION(#6,'0.0.999999','Bonsai','Bonsai');
 #8=IFCOWNERHISTORY(#3,#7,.READWRITE.,.ADDED.,1634604558,#3,#7,1634604558);
 #9=IFCPROJECT('0NqkoFmWPBxvsDLeGa5rDc',#8,'My Project',$,$,$,$,(#18,#24),#13);
 #10=IFCSIUNIT(*,.LENGTHUNIT.,$,.METRE.);
