@@ -17,12 +17,12 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-import blenderbim.bim
-import blenderbim.tool as tool
-from blenderbim.bim.helper import prop_with_search
+import bonsai.bim
+import bonsai.tool as tool
+from bonsai.bim.helper import prop_with_search
 from bpy.types import Panel, Menu, UIList
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.project.data import ProjectData, LinksData
+from bonsai.bim.ifc import IfcStore
+from bonsai.bim.module.project.data import ProjectData, LinksData
 
 
 def file_import_menu(self, context):
@@ -53,9 +53,7 @@ class BIM_MT_recent_projects(Menu):
             return
 
         for path in paths:
-            op = self.layout.operator(
-                "bim.load_project", text=path.name, icon_value=blenderbim.bim.icons["IFC"].icon_id
-            )
+            op = self.layout.operator("bim.load_project", text=path.name, icon_value=bonsai.bim.icons["IFC"].icon_id)
             op.filepath = str(path)
             op.should_start_fresh_session = True
             op.use_detailed_tooltip = True
@@ -76,7 +74,7 @@ class BIM_MT_new_project(Menu):
         # Do we need to set it back to exec default?
         # self.layout.operator_context = "EXEC_DEFAULT"
         self.layout.separator()
-        self.layout.label(text="New IFC Project", icon_value=blenderbim.bim.icons["IFC"].icon_id)
+        self.layout.label(text="New IFC Project", icon_value=bonsai.bim.icons["IFC"].icon_id)
         self.layout.operator("bim.new_project", text="Metric (m) Project").preset = "metric_m"
         self.layout.operator("bim.new_project", text="Metric (mm) Project").preset = "metric_mm"
         self.layout.operator("bim.new_project", text="Imperial (ft) Project").preset = "imperial_ft"

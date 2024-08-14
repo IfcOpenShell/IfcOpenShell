@@ -29,14 +29,13 @@ import subprocess
 import tempfile
 import webbrowser
 import ifcopenshell
-import blenderbim.bim.handler
-import blenderbim.tool as tool
-from . import schema
-from blenderbim.bim import import_ifc
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.prop import StrProperty
-from blenderbim.bim.ui import IFCFileSelector
-from blenderbim.bim.helper import get_enum_items
+import bonsai.bim
+import bonsai.tool as tool
+from bonsai.bim import import_ifc
+from bonsai.bim.ifc import IfcStore
+from bonsai.bim.prop import StrProperty
+from bonsai.bim.ui import IFCFileSelector
+from bonsai.bim.helper import get_enum_items
 from mathutils import Vector, Matrix, Euler
 from math import radians
 from pathlib import Path
@@ -54,7 +53,7 @@ class SetTab(bpy.types.Operator):
 
     @classmethod
     def description(cls, context, operator):
-        return next((t[1] for t in blenderbim.bim.prop.get_tab(None, context) if t[0] == operator.tab), "")
+        return next((t[1] for t in bonsai.bim.prop.get_tab(None, context) if t[0] == operator.tab), "")
 
     def execute(self, context):
         if context.area.spaces.active.search_filter:
@@ -96,7 +95,7 @@ class CloseError(bpy.types.Operator):
     bl_label = "Close Error"
 
     def execute(self, context):
-        blenderbim.last_error = None
+        bonsai.last_error = None
         return {"FINISHED"}
 
     def draw(self, context):

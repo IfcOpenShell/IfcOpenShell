@@ -28,9 +28,8 @@
 # "Operators", since they correlate to a single user operation.
 
 import bpy
-import blenderbim.tool as tool
-import blenderbim.core.demo as core
-import blenderbim.bim.handler
+import bonsai.tool as tool
+import bonsai.core.demo as core
 
 
 # Each button correlates to a class like the one below. In this case, we're

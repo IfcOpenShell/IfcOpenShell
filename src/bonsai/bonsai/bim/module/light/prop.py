@@ -21,7 +21,7 @@ import pytz
 import tzfpy
 import json
 import datetime
-import blenderbim.tool as tool
+import bonsai.tool as tool
 from math import radians, pi
 from mathutils import Euler, Vector, Matrix, Quaternion
 from bpy.props import (
@@ -35,8 +35,8 @@ from bpy.props import (
 )
 import os
 from bpy.types import PropertyGroup
-from blenderbim.bim.module.light.data import SolarData
-from blenderbim.bim.module.light.decorator import SolarDecorator
+from bonsai.bim.module.light.data import SolarData
+from bonsai.bim.module.light.decorator import SolarDecorator
 
 sun_position = tool.Blender.get_sun_position_addon()
 

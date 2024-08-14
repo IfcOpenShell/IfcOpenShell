@@ -23,13 +23,13 @@ import ifcopenshell.util.element
 import ifcopenshell.util.attribute
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
-import blenderbim.bim.helper
-import blenderbim.tool as tool
-import blenderbim.core.style
-import blenderbim.core.material as core
-import blenderbim.bim.module.model.profile as model_profile
-from blenderbim.bim.module.material.prop import purge as material_prop_purge
-from blenderbim.bim.ifc import IfcStore
+import bonsai.bim.helper
+import bonsai.tool as tool
+import bonsai.core.style
+import bonsai.core.material as core
+import bonsai.bim.module.model.profile as model_profile
+from bonsai.bim.module.material.prop import purge as material_prop_purge
+from bonsai.bim.ifc import IfcStore
 
 
 class LoadMaterials(bpy.types.Operator, tool.Ifc.Operator):
@@ -460,12 +460,12 @@ class EnableEditingAssignedMaterial(bpy.types.Operator):
         props.material_set_attributes.clear()
 
         if "Usage" in material.is_a():
-            blenderbim.bim.helper.import_attributes2(
+            bonsai.bim.helper.import_attributes2(
                 material, props.material_set_usage_attributes, callback=self.import_attributes
             )
-            blenderbim.bim.helper.import_attributes2(material[0], props.material_set_attributes)
+            bonsai.bim.helper.import_attributes2(material[0], props.material_set_attributes)
         else:
-            blenderbim.bim.helper.import_attributes2(material, props.material_set_attributes)
+            bonsai.bim.helper.import_attributes2(material, props.material_set_attributes)
         return {"FINISHED"}
 
     def import_attributes(self, name, prop, data):
@@ -541,7 +541,7 @@ class EditAssignedMaterial(bpy.types.Operator, tool.Ifc.Operator):
             return {"FINISHED"}
 
         material_set = self.file.by_id(self.material_set)
-        attributes = blenderbim.bim.helper.export_attributes(props.material_set_attributes)
+        attributes = bonsai.bim.helper.export_attributes(props.material_set_attributes)
         ifcopenshell.api.run(
             "material.edit_assigned_material",
             self.file,
@@ -550,7 +550,7 @@ class EditAssignedMaterial(bpy.types.Operator, tool.Ifc.Operator):
 
         if self.material_set_usage:
             material_set_usage = self.file.by_id(self.material_set_usage)
-            attributes = blenderbim.bim.helper.export_attributes(props.material_set_usage_attributes)
+            attributes = bonsai.bim.helper.export_attributes(props.material_set_usage_attributes)
             if material_set_usage.is_a("IfcMaterialLayerSetUsage"):
                 ifcopenshell.api.run(
                     "material.edit_layer_usage",
@@ -582,7 +582,7 @@ class EnableEditingMaterialSetItemProfile(bpy.types.Operator):
         self.props.active_material_set_item_id = self.material_set_item
         self.props.material_set_item_profile_attributes.clear()
         profile = tool.Ifc.get().by_id(self.material_set_item).Profile
-        blenderbim.bim.helper.import_attributes2(profile, self.props.material_set_item_profile_attributes)
+        bonsai.bim.helper.import_attributes2(profile, self.props.material_set_item_profile_attributes)
         return {"FINISHED"}
 
 
@@ -610,7 +610,7 @@ class EditMaterialSetItemProfile(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         self.props = obj.BIMObjectMaterialProperties
-        attributes = blenderbim.bim.helper.export_attributes(self.props.material_set_item_profile_attributes)
+        attributes = bonsai.bim.helper.export_attributes(self.props.material_set_item_profile_attributes)
         profile = tool.Ifc.get().by_id(self.material_set_item).Profile
         ifcopenshell.api.run("profile.edit_profile", tool.Ifc.get(), profile=profile, attributes=attributes)
         self.props.active_material_set_item_id = 0
@@ -639,7 +639,7 @@ class EnableEditingMaterialSetItem(bpy.types.Operator):
         self.props.material_set_item_material = str(material_set_item.Material.id())
 
         self.props.material_set_item_attributes.clear()
-        blenderbim.bim.helper.import_attributes2(material_set_item, self.props.material_set_item_attributes)
+        bonsai.bim.helper.import_attributes2(material_set_item, self.props.material_set_item_attributes)
 
         if material_set_item.is_a("IfcMaterialProfile"):
             if material_set_item.Profile and material_set_item.Profile.ProfileName:
@@ -676,7 +676,7 @@ class EditMaterialSetItem(bpy.types.Operator, tool.Ifc.Operator):
         element = tool.Ifc.get_entity(obj)
         material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
 
-        attributes = blenderbim.bim.helper.export_attributes(props.material_set_item_attributes)
+        attributes = bonsai.bim.helper.export_attributes(props.material_set_item_attributes)
 
         if material.is_a("IfcMaterialConstituentSet"):
             ifcopenshell.api.run(

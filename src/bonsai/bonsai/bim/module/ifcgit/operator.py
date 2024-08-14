@@ -1,9 +1,9 @@
 import os
 import re
 import bpy
-import blenderbim.core.ifcgit as core
-import blenderbim.tool as tool
-from blenderbim.bim.module.ifcgit.data import IfcGitData, refresh
+import bonsai.core.ifcgit as core
+import bonsai.tool as tool
+from bonsai.bim.module.ifcgit.data import IfcGitData, refresh
 
 
 class CreateRepo(bpy.types.Operator):

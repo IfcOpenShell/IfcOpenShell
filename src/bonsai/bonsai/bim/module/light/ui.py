@@ -17,8 +17,8 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import blenderbim.tool as tool
-from blenderbim.bim.module.light.data import SolarData
+import bonsai.tool as tool
+from bonsai.bim.module.light.data import SolarData
 
 
 class BIM_PT_radiance_exporter(bpy.types.Panel):

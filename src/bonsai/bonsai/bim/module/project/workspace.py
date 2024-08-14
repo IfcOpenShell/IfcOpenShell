@@ -18,9 +18,9 @@
 
 import os
 import bpy
-import blenderbim.tool as tool
+import bonsai.tool as tool
 from bpy.types import WorkSpaceTool
-from blenderbim.bim.module.project.data import LinksData
+from bonsai.bim.module.project.data import LinksData
 
 
 class ExploreTool(bpy.types.WorkSpaceTool):

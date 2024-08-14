@@ -18,13 +18,13 @@
 
 import bpy
 import ifcopenshell.api
-import blenderbim.bim.helper
-import blenderbim.tool as tool
-import blenderbim.bim.module.model.profile as model_profile
-import blenderbim.core.profile as core
-from blenderbim.bim.module.model.decorator import ProfileDecorator
-from blenderbim.bim.module.profile.prop import generate_thumbnail_for_active_profile
-from blenderbim.bim.module.profile.data import refresh
+import bonsai.bim.helper
+import bonsai.tool as tool
+import bonsai.bim.module.model.profile as model_profile
+import bonsai.core.profile as core
+from bonsai.bim.module.model.decorator import ProfileDecorator
+from bonsai.bim.module.profile.prop import generate_thumbnail_for_active_profile
+from bonsai.bim.module.profile.data import refresh
 
 
 class LoadProfiles(bpy.types.Operator):
@@ -85,7 +85,7 @@ class EnableEditingProfile(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         props = context.scene.BIMProfileProperties
         props.profile_attributes.clear()
-        blenderbim.bim.helper.import_attributes2(tool.Ifc.get().by_id(self.profile), props.profile_attributes)
+        bonsai.bim.helper.import_attributes2(tool.Ifc.get().by_id(self.profile), props.profile_attributes)
         props.active_profile_id = self.profile
 
 
@@ -107,7 +107,7 @@ class EditProfile(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         props = context.scene.BIMProfileProperties
-        attributes = blenderbim.bim.helper.export_attributes(props.profile_attributes)
+        attributes = bonsai.bim.helper.export_attributes(props.profile_attributes)
         profile = tool.Ifc.get().by_id(props.active_profile_id)
         ifcopenshell.api.run("profile.edit_profile", tool.Ifc.get(), profile=profile, attributes=attributes)
         model_profile.DumbProfileRegenerator().regenerate_from_profile_def(profile)

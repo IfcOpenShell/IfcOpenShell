@@ -32,11 +32,10 @@ import ifcopenshell.util.shape_builder
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
-import blenderbim.tool as tool
-import blenderbim.core.geometry
-import blenderbim.bim.import_ifc as import_ifc
-import blenderbim.bim.handler
-from blenderbim.bim.ifc import IfcStore
+import bonsai.tool as tool
+import bonsai.core.geometry
+import bonsai.bim.import_ifc as import_ifc
+from bonsai.bim.ifc import IfcStore
 from math import pi, radians
 from mathutils import Vector, Matrix
 from bpy.types import Operator
@@ -126,7 +125,7 @@ class FilledOpeningGenerator:
             bpy.context.view_layer.update()
 
         if tool.Ifc.is_moved(voided_obj):
-            blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=voided_obj)
+            bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=voided_obj)
 
         existing_opening_occurrence = self.get_existing_opening_occurrence_if_any(filling)
 
@@ -178,7 +177,7 @@ class FilledOpeningGenerator:
                 context = tool.Geometry.get_active_representation_context(voided_obj)
                 representation = tool.Geometry.get_representation_by_context(voided_element, context)
 
-                blenderbim.core.geometry.switch_representation(
+                bonsai.core.geometry.switch_representation(
                     tool.Ifc,
                     tool.Geometry,
                     obj=voided_obj,
@@ -243,7 +242,7 @@ class FilledOpeningGenerator:
             if not voided_obj.data:
                 continue
             representation = tool.Ifc.get().by_id(voided_obj.data.BIMMeshProperties.ifc_definition_id)
-            blenderbim.core.geometry.switch_representation(
+            bonsai.core.geometry.switch_representation(
                 tool.Ifc,
                 tool.Geometry,
                 obj=voided_obj,
@@ -384,11 +383,9 @@ class RecalculateFill(bpy.types.Operator, tool.Ifc.Operator):
             for building_element in building_elements:
                 building_obj = tool.Ifc.get_object(building_element)
                 if tool.Ifc.is_moved(building_obj):
-                    blenderbim.core.geometry.edit_object_placement(
-                        tool.Ifc, tool.Geometry, tool.Surveyor, obj=building_obj
-                    )
+                    bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=building_obj)
             for opening in openings:
-                blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+                bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
                 ifcopenshell.api.run(
                     "geometry.edit_object_placement", tool.Ifc.get(), product=opening, matrix=obj.matrix_world
                 )
@@ -403,7 +400,7 @@ class RecalculateFill(bpy.types.Operator, tool.Ifc.Operator):
                 if building_obj and building_obj.data:
                     representation = tool.Geometry.get_active_representation(building_obj)
                     if representation:
-                        blenderbim.core.geometry.switch_representation(
+                        bonsai.core.geometry.switch_representation(
                             tool.Ifc,
                             tool.Geometry,
                             obj=building_obj,
@@ -567,7 +564,7 @@ class AddBoolean(Operator, tool.Ifc.Operator):
         tool.Model.mark_manual_booleans(element1, booleans)
         tool.Model.clear_scene_openings()
 
-        blenderbim.core.geometry.switch_representation(
+        bonsai.core.geometry.switch_representation(
             tool.Ifc,
             tool.Geometry,
             obj=obj1,
@@ -710,7 +707,7 @@ class RemoveBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
                 bbim_boolean_updates.setdefault(element, []).append(boolean_id)
                 body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
                 if body:
-                    blenderbim.core.geometry.switch_representation(
+                    bonsai.core.geometry.switch_representation(
                         tool.Ifc,
                         tool.Geometry,
                         obj=upstream_obj,
@@ -740,7 +737,7 @@ class ShowOpenings(Operator, tool.Ifc.Operator):
             if not element or not getattr(element, "HasOpenings", None):
                 continue
             if tool.Ifc.is_moved(obj):
-                blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+                bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
             openings = tool.Model.load_openings(
                 [
                     r.RelatedOpeningElement
@@ -802,8 +799,8 @@ class EditOpenings(Operator, tool.Ifc.Operator):
                 opening_obj = tool.Ifc.get_object(opening)
                 building_objs.add(obj)
 
-                similar_openings = blenderbim.core.geometry.get_similar_openings(tool.Ifc, opening)
-                similar_openings_building_objs = blenderbim.core.geometry.get_similar_openings_building_objs(
+                similar_openings = bonsai.core.geometry.get_similar_openings(tool.Ifc, opening)
+                similar_openings_building_objs = bonsai.core.geometry.get_similar_openings_building_objs(
                     tool.Ifc, similar_openings
                 )
                 building_objs.update(similar_openings_building_objs)
@@ -811,16 +808,12 @@ class EditOpenings(Operator, tool.Ifc.Operator):
                 if opening_obj:
                     if tool.Ifc.is_edited(opening_obj):
                         tool.Geometry.run_geometry_update_representation(obj=opening_obj)
-                        blenderbim.core.geometry.edit_similar_opening_placement(
-                            tool.Geometry, opening, similar_openings
-                        )
+                        bonsai.core.geometry.edit_similar_opening_placement(tool.Geometry, opening, similar_openings)
                     elif tool.Ifc.is_moved(opening_obj):
-                        blenderbim.core.geometry.edit_object_placement(
+                        bonsai.core.geometry.edit_object_placement(
                             tool.Ifc, tool.Geometry, tool.Surveyor, obj=opening_obj
                         )
-                        blenderbim.core.geometry.edit_similar_opening_placement(
-                            tool.Geometry, opening, similar_openings
-                        )
+                        bonsai.core.geometry.edit_similar_opening_placement(tool.Geometry, opening, similar_openings)
 
                     building_objs.update(
                         self.get_all_building_objects_of_similar_openings(opening)

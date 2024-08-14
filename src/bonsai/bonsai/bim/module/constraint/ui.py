@@ -17,9 +17,9 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from bpy.types import Panel, UIList
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.helper import draw_attributes
-from blenderbim.bim.module.constraint.data import ConstraintsData, ObjectConstraintsData
+from bonsai.bim.ifc import IfcStore
+from bonsai.bim.helper import draw_attributes
+from bonsai.bim.module.constraint.data import ConstraintsData, ObjectConstraintsData
 
 
 class BIM_PT_constraints(Panel):

@@ -17,9 +17,9 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import blenderbim.tool as tool
-from blenderbim.bim.prop import StrProperty, Attribute
-from blenderbim.bim.module.geometry.data import RepresentationsData, ViewportData
+import bonsai.tool as tool
+from bonsai.bim.prop import StrProperty, Attribute
+from bonsai.bim.module.geometry.data import RepresentationsData, ViewportData
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -56,7 +56,7 @@ def get_mode(self, context):
 
 def get_styles(self, context):
     # postponed import to avoid circular import
-    from blenderbim.bim.module.material.data import MaterialsData
+    from bonsai.bim.module.material.data import MaterialsData
 
     if not MaterialsData.is_loaded:
         MaterialsData.load()
@@ -70,7 +70,7 @@ def get_shape_aspects(self, context):
 
 
 def get_material_constituents(self, context, edit_text):
-    from blenderbim.bim.module.material.data import ObjectMaterialData
+    from bonsai.bim.module.material.data import ObjectMaterialData
 
     if not ObjectMaterialData.is_loaded:
         ObjectMaterialData.load()

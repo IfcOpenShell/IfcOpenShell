@@ -17,8 +17,8 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.prop import StrProperty, Attribute
+from bonsai.bim.ifc import IfcStore
+from bonsai.bim.prop import StrProperty, Attribute
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,

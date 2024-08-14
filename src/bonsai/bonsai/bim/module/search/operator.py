@@ -23,9 +23,9 @@ import ifcopenshell.api
 import ifcopenshell.guid
 import ifcopenshell.util.element
 import ifcopenshell.util.selector
-import blenderbim.tool as tool
-from blenderbim.bim.ifc import IfcStore
-import blenderbim.core.search as core
+import bonsai.tool as tool
+from bonsai.bim.ifc import IfcStore
+import bonsai.core.search as core
 from itertools import cycle
 from bpy.types import PropertyGroup, Operator
 from bpy.props import (

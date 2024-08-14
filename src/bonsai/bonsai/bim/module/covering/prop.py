@@ -17,24 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from blenderbim.bim.prop import StrProperty, Attribute
-
-# from blenderbim.bim.module.spatial.data import SpatialData
 from bpy.types import PropertyGroup
-from bpy.props import (
-    PointerProperty,
-    StringProperty,
-    EnumProperty,
-    BoolProperty,
-    IntProperty,
-    FloatProperty,
-    FloatVectorProperty,
-    CollectionProperty,
-)
-
-# import blenderbim.tool as tool
-# import blenderbim.core.geometry
-# import ifcopenshell
 
 
 class BIMCoveringProperties(PropertyGroup):

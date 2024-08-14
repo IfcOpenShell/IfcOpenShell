@@ -22,16 +22,15 @@ import ifcopenshell.api
 import ifcopenshell.util.pset
 import test.bim.bootstrap
 import bonsai.core.tool
-import blenderbim.core.root
+import bonsai.core.root
 import bonsai.tool as tool
-import blenderbim.bim.import_ifc as import_ifc
-import blenderbim.bim.module.qto.calculator as calculator
+import bonsai.bim.import_ifc as import_ifc
 from bonsai.tool.qto import Qto as subject
 
 
 class TestImplementsTool(test.bim.bootstrap.NewFile):
     def test_run(self):
-        assert isinstance(subject(), blenderbim.core.tool.Qto)
+        assert isinstance(subject(), bonsai.core.tool.Qto)
 
 
 class TestGetRadiusOfSelectedVertices(test.bim.bootstrap.NewFile):
@@ -75,7 +74,7 @@ class TestGetCalculatedObjectQuantities(test.bim.bootstrap.NewFile):
         context = ifcopenshell.api.run("context.add_context", self.ifc, context_type="Model")
         bpy.ops.mesh.primitive_cube_add(location=(0.0, 0.0, 0.0), size=2)
         obj = bpy.context.active_object
-        element = blenderbim.core.root.assign_class(
+        element = bonsai.core.root.assign_class(
             tool.Ifc,
             tool.Collector,
             tool.Root,

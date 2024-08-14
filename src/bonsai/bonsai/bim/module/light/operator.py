@@ -26,7 +26,7 @@ except ImportError:
 
 from datetime import datetime
 import bpy
-import blenderbim.tool as tool
+import bonsai.tool as tool
 from pathlib import Path
 from typing import Union, Optional, Sequence
 import json
@@ -34,7 +34,7 @@ import ifcopenshell
 import ifcopenshell.geom
 import multiprocessing
 from mathutils import Vector
-from blenderbim.bim.module.light.data import SolarData
+from bonsai.bim.module.light.data import SolarData
 
 ifc_materials = []
 

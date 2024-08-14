@@ -18,11 +18,11 @@
 
 import os
 import bpy
-import blenderbim.tool as tool
-import blenderbim.bim.module.type.prop as type_prop
+import bonsai.tool as tool
+import bonsai.bim.module.type.prop as type_prop
 import ifcopenshell.util.unit
 from bpy.types import WorkSpaceTool
-from blenderbim.bim.module.model.data import AuthoringData, RailingData, RoofData
+from bonsai.bim.module.model.data import AuthoringData, RailingData, RoofData
 
 
 class CadTool(WorkSpaceTool):

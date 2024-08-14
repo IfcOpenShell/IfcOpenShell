@@ -23,7 +23,7 @@ import ifcfm
 import logging
 import tempfile
 import ifcopenshell
-import blenderbim.tool as tool
+import bonsai.tool as tool
 
 
 class ExecuteIfcFM(bpy.types.Operator):

@@ -20,12 +20,10 @@
 import os
 import bpy
 import ifcopenshell
-import blenderbim.tool as tool
-from blenderbim.bim.helper import prop_with_search
-from blenderbim.bim.module.model.data import AuthoringData
+import bonsai.tool as tool
+from bonsai.bim.helper import prop_with_search
+from bonsai.bim.module.model.data import AuthoringData
 from bpy.types import WorkSpaceTool
-from blenderbim.bim.ifc import IfcStore
-import blenderbim.bim.handler
 
 
 class CoveringTool(WorkSpaceTool):

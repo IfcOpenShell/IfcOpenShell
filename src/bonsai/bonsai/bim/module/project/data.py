@@ -18,8 +18,8 @@
 
 import os
 import bpy
-import blenderbim.tool as tool
-from blenderbim.bim.ifc import IfcStore
+import bonsai.tool as tool
+from bonsai.bim.ifc import IfcStore
 
 
 def refresh():

@@ -17,19 +17,19 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import blenderbim.bim
-import blenderbim.tool as tool
+import bonsai.bim
+import bonsai.tool as tool
 from bpy.types import Panel, Menu, UIList
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.helper import prop_with_search
-from blenderbim.bim.module.geometry.data import (
+from bonsai.bim.ifc import IfcStore
+from bonsai.bim.helper import prop_with_search
+from bonsai.bim.module.geometry.data import (
     RepresentationsData,
     RepresentationItemsData,
     ConnectionsData,
     PlacementData,
     DerivedCoordinatesData,
 )
-from blenderbim.bim.module.layer.data import LayersData
+from bonsai.bim.module.layer.data import LayersData
 
 
 def mode_menu(self, context):
@@ -38,7 +38,7 @@ def mode_menu(self, context):
     row = self.layout.row(align=True)
     if context.scene.BIMGeometryProperties.mode == "EDIT":
         row.operator("bim.override_mode_set_object", icon="CANCEL", text="Discard Changes").should_save = False
-    row.prop(context.scene.BIMGeometryProperties, "mode", text="", icon_value=blenderbim.bim.icons["IFC"].icon_id)
+    row.prop(context.scene.BIMGeometryProperties, "mode", text="", icon_value=bonsai.bim.icons["IFC"].icon_id)
 
 
 def object_menu(self, context):
@@ -69,7 +69,7 @@ class BIM_MT_hotkey_separate(Menu):
     bl_label = "Separate"
 
     def draw(self, context):
-        self.layout.label(text="IFC Separate", icon_value=blenderbim.bim.icons["IFC"].icon_id)
+        self.layout.label(text="IFC Separate", icon_value=bonsai.bim.icons["IFC"].icon_id)
         self.layout.operator("bim.override_mesh_separate", text="Selection").type = "SELECTED"
         self.layout.operator("bim.override_mesh_separate", text="By Material").type = "MATERIAL"
         self.layout.operator("bim.override_mesh_separate", text="By Loose Parts").type = "LOOSE"

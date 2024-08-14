@@ -19,11 +19,8 @@
 
 import os
 import bpy
-import blenderbim.tool as tool
-from blenderbim.bim.helper import prop_with_search
+import bonsai.tool as tool
 from bpy.types import WorkSpaceTool
-from blenderbim.bim.ifc import IfcStore
-import blenderbim.bim.handler
 
 
 class StructuralTool(WorkSpaceTool):

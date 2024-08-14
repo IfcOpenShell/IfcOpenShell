@@ -22,7 +22,7 @@ import json
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
-import blenderbim.tool as tool
+import bonsai.tool as tool
 from pathlib import Path
 from typing import Any, Union
 

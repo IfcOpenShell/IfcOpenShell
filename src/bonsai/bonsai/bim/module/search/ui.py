@@ -17,9 +17,9 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import blenderbim.bim.helper
+import bonsai.bim.helper
 from bpy.types import Panel
-from blenderbim.bim.module.search.data import SearchData, ColourByPropertyData, SelectSimilarData
+from bonsai.bim.module.search.data import SearchData, ColourByPropertyData, SelectSimilarData
 
 
 class BIM_PT_search(Panel):
@@ -36,7 +36,7 @@ class BIM_PT_search(Panel):
 
         props = context.scene.BIMSearchProperties
 
-        blenderbim.bim.helper.draw_filter(self.layout, props.filter_groups, SearchData, "search")
+        bonsai.bim.helper.draw_filter(self.layout, props.filter_groups, SearchData, "search")
 
         if len(props.filter_groups):
             row = self.layout.row(align=True)

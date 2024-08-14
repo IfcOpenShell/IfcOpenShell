@@ -16,15 +16,15 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import blenderbim.bim.helper
-import blenderbim.tool as tool
+import bonsai.bim.helper
+import bonsai.tool as tool
 import bpy
 from bpy.types import Panel, UIList
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.helper import draw_attributes
-from blenderbim.bim.helper import prop_with_search
-from blenderbim.bim.module.material.data import MaterialsData, ObjectMaterialData
-from blenderbim.bim.module.drawing.helper import format_distance
+from bonsai.bim.ifc import IfcStore
+from bonsai.bim.helper import draw_attributes
+from bonsai.bim.helper import prop_with_search
+from bonsai.bim.module.material.data import MaterialsData, ObjectMaterialData
+from bonsai.bim.module.drawing.helper import format_distance
 
 
 class BIM_PT_materials(Panel):
@@ -108,7 +108,7 @@ class BIM_PT_materials(Panel):
             return
         ifc_definition_id = self.props.active_material_id
         if self.props.editing_material_type == "ATTRIBUTES":
-            blenderbim.bim.helper.draw_attributes(self.props.material_attributes, self.layout)
+            bonsai.bim.helper.draw_attributes(self.props.material_attributes, self.layout)
             row = self.layout.row(align=True)
             row.operator("bim.edit_material", text="Save Material", icon="CHECKMARK").material = ifc_definition_id
             row.operator("bim.disable_editing_material", text="", icon="CANCEL")
@@ -216,8 +216,8 @@ class BIM_PT_object_material(Panel):
         self.draw_read_only_set_ui()
 
     def draw_editable_set_ui(self):
-        blenderbim.bim.helper.draw_attributes(self.props.material_set_attributes, self.layout)
-        blenderbim.bim.helper.draw_attributes(self.props.material_set_usage_attributes, self.layout)
+        bonsai.bim.helper.draw_attributes(self.props.material_set_attributes, self.layout)
+        bonsai.bim.helper.draw_attributes(self.props.material_set_usage_attributes, self.layout)
 
         if ObjectMaterialData.data["set_item_name"] == "profile" and not self.mprops.profiles:
             row = self.layout.row(align=True)

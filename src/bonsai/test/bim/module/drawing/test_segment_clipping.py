@@ -18,7 +18,7 @@
 
 import pytest
 from mathutils import Vector
-from blenderbim.bim.module.drawing.helper import clip_segment
+from bonsai.bim.module.drawing.helper import clip_segment
 
 
 BOUNDS = (10, 30, 10, 30, None, None)

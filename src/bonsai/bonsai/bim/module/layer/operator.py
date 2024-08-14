@@ -21,9 +21,9 @@ import json
 import ifcopenshell.api
 import ifcopenshell.util.element
 import ifcopenshell.util.attribute
-import blenderbim.bim.helper
-import blenderbim.tool as tool
-from blenderbim.bim.ifc import IfcStore
+import bonsai.bim.helper
+import bonsai.tool as tool
+from bonsai.bim.ifc import IfcStore
 
 
 class LoadLayers(bpy.types.Operator):
@@ -63,7 +63,7 @@ class EnableEditingLayer(bpy.types.Operator):
     def execute(self, context):
         props = context.scene.BIMLayerProperties
         props.layer_attributes.clear()
-        blenderbim.bim.helper.import_attributes2(tool.Ifc.get().by_id(self.layer), props.layer_attributes)
+        bonsai.bim.helper.import_attributes2(tool.Ifc.get().by_id(self.layer), props.layer_attributes)
         props.active_layer_id = self.layer
         return {"FINISHED"}
 

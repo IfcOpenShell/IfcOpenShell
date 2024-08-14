@@ -22,11 +22,11 @@ import re
 import bpy
 import pytest
 import webbrowser
-import blenderbim
+import bonsai.bim.handler
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
-from blenderbim.bim.ifc import IfcStore
+from bonsai.bim.ifc import IfcStore
 from mathutils import Vector
 
 # Monkey-patch webbrowser opening since we want to test headlessly
@@ -44,7 +44,7 @@ class NewFile:
         if bpy.data.objects:
             bpy.data.batch_remove(bpy.data.objects)
             bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
-        blenderbim.bim.handler.load_post(None)
+        bonsai.bim.handler.load_post(None)
 
 
 class NewIfc:
@@ -54,7 +54,7 @@ class NewIfc:
         bpy.ops.wm.read_homefile(app_template="")
         bpy.data.batch_remove(bpy.data.objects)
         bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
-        blenderbim.bim.handler.load_post(None)
+        bonsai.bim.handler.load_post(None)
         bpy.ops.bim.create_project()
 
 
@@ -65,7 +65,7 @@ class NewIfc4X3:
         bpy.ops.wm.read_homefile(app_template="")
         bpy.data.batch_remove(bpy.data.objects)
         bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
-        blenderbim.bim.handler.load_post(None)
+        bonsai.bim.handler.load_post(None)
         bpy.context.scene.BIMProjectProperties.export_schema = "IFC4X3_ADD2"
         bpy.ops.bim.create_project()
 
@@ -245,12 +245,12 @@ def the_object_name_is_contained_in_container_name(name, container_name):
 
 def i_duplicate_the_selected_objects():
     bpy.ops.object.duplicate_move()
-    blenderbim.bim.handler.active_object_callback()
+    bonsai.bim.handler.active_object_callback()
 
 
 def i_delete_the_selected_objects():
     bpy.ops.object.delete()
-    blenderbim.bim.handler.active_object_callback()
+    bonsai.bim.handler.active_object_callback()
 
 
 def the_object_name1_and_name2_are_different_elements(name1, name2):

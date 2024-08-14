@@ -24,11 +24,11 @@ import numpy as np
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
-import blenderbim.tool as tool
-import blenderbim.bim
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.tool.brick import BrickStore
-from blenderbim.bim.module.model.data import AuthoringData
+import bonsai.tool as tool
+import bonsai.bim.handler
+from bonsai.bim.ifc import IfcStore
+from bonsai.tool.brick import BrickStore
+from bonsai.bim.module.model.data import AuthoringData
 from pytest_bdd import scenarios, given, when, then, parsers
 from mathutils import Vector
 from math import radians
@@ -390,19 +390,19 @@ def i_evaluate_expression(expression):
 @when("I duplicate the selected objects")
 def i_duplicate_the_selected_objects():
     bpy.ops.bim.override_object_duplicate_move()
-    blenderbim.bim.handler.active_object_callback()
+    bonsai.bim.handler.active_object_callback()
 
 
 @when("I duplicate linked aggregate the selected objects")
 def i_duplicate_linked_aggregate_the_selected_objects():
     bpy.ops.bim.object_duplicate_move_linked_aggregate()
-    blenderbim.bim.handler.active_object_callback()
+    bonsai.bim.handler.active_object_callback()
 
 
 @when("I refresh linked aggregate the selected object")
 def i_refresh_the_selected_objects():
     bpy.ops.bim.refresh_linked_aggregate()
-    blenderbim.bim.handler.active_object_callback()
+    bonsai.bim.handler.active_object_callback()
 
 
 @when("I deselect all objects")
@@ -1075,7 +1075,7 @@ def i_load_the_ifc_test_file(filepath):
 @given("I load the demo construction library")
 @when("I load the demo construction library")
 def i_add_a_construction_library():
-    lib_path = "./blenderbim/bim/data/libraries/IFC4 Demo Library.ifc"
+    lib_path = "./bonsai/bim/data/libraries/IFC4 Demo Library.ifc"
     bpy.ops.bim.select_library_file(filepath=lib_path, append_all=True)
 
 

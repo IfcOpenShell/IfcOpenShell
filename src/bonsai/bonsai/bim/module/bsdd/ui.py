@@ -16,9 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import blenderbim.tool as tool
+import bonsai.tool as tool
 from bpy.types import Panel, UIList
-from blenderbim.bim.ifc import IfcStore
+from bonsai.bim.ifc import IfcStore
 
 
 class BIM_PT_bsdd(Panel):
