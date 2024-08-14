@@ -1239,6 +1239,30 @@ class SelectBcfDocumentReference(bpy.types.Operator):
         return {"RUNNING_MODAL"}
 
 
+class LoadBcfHeaderIfcFile(bpy.types.Operator):
+    bl_idname = "bim.load_bcf_header_ifc_file"
+    bl_label = "Load BCF Header IFC File"
+    bl_description = (
+        "Extract BCF Header IFC file and load it in current session."
+        "\n\nWarning. Current IFC and BCF sessions won't be saved, BCF file will be reloaded (if it's saved on disk)"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        bcfxml = bcfstore.BcfStore.get_bcfxml()
+        assert bcfxml
+        bcf_path = tool.Bcf.get_path()
+
+        topic = bcfxml.topics[context.scene.BCFProperties.active_topic.name]
+        entity = topic.header.file[self.index]
+        ifc_path = str(topic.extract_file(entity))
+        bpy.ops.bim.load_project(filepath=ifc_path)
+        if bcf_path:
+            bpy.ops.bim.load_bcf_project(filepath=bcf_path)
+        return {"FINISHED"}
+
+
 class ExtractBcfFile(bpy.types.Operator):
     bl_idname = "bim.extract_bcf_file"
     bl_label = "Extract BCF Header File"

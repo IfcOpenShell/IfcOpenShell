@@ -74,6 +74,11 @@ class Aggregate:
 
 
 @interface
+class Bcf:
+    pass
+
+
+@interface
 class Blender:
     def activate_camera(cls, obj): pass
     def apply_bmesh(cls, mesh, bm, obj=None): pass
