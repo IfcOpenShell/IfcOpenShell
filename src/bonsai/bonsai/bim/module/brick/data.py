@@ -17,8 +17,8 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import blenderbim.tool as tool
-from blenderbim.tool.brick import BrickStore
+import bonsai.tool as tool
+from bonsai.tool.brick import BrickStore
 
 try:
     from rdflib import URIRef, BNode

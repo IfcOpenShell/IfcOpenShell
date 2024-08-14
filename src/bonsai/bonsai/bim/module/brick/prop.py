@@ -17,8 +17,8 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from blenderbim.bim.module.brick.data import BrickschemaData, BrickschemaReferencesData
-from blenderbim.bim.prop import StrProperty, Attribute
+from bonsai.bim.module.brick.data import BrickschemaData, BrickschemaReferencesData
+from bonsai.bim.prop import StrProperty, Attribute
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -30,9 +30,9 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
-import blenderbim.core.brick as core
-import blenderbim.tool.brick as tool
-from blenderbim.tool.brick import BrickStore
+import bonsai.core.brick as core
+import bonsai.tool.brick as tool
+from bonsai.tool.brick import BrickStore
 
 
 def update_active_brick_index(self, context):

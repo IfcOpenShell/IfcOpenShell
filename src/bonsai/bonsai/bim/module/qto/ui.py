@@ -17,7 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from blenderbim.bim.module.qto.data import QtoData
+from bonsai.bim.module.qto.data import QtoData
 
 
 class BIM_PT_qto(bpy.types.Panel):

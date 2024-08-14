@@ -1,6 +1,6 @@
 # ############################################################################ #
 
-# Hey there! Welcome to the BlenderBIM Add-on code. Please feel free to reach
+# Hey there! Welcome to the Bonsai code. Please feel free to reach
 # out if you have any questions or need further guidance. Happy hacking!
 
 # ############################################################################ #

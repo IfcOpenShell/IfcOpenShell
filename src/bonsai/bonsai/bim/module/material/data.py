@@ -22,8 +22,8 @@ import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.doc
 import ifcopenshell.util.schema
-import blenderbim.tool as tool
-from blenderbim.bim.module.drawing.helper import format_distance
+import bonsai.tool as tool
+from bonsai.bim.module.drawing.helper import format_distance
 
 
 def refresh():

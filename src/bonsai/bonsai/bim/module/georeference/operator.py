@@ -18,9 +18,9 @@
 
 import bpy
 
-import blenderbim.tool as tool
-import blenderbim.core.georeference as core
-from blenderbim.bim.module.georeference.decorator import GeoreferenceDecorator
+import bonsai.tool as tool
+import bonsai.core.georeference as core
+from bonsai.bim.module.georeference.decorator import GeoreferenceDecorator
 
 
 class AddGeoreferencing(bpy.types.Operator, tool.Ifc.Operator):

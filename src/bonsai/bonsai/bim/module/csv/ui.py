@@ -16,10 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import blenderbim.bim.helper
+import bonsai.bim.helper
 from bpy.types import Panel
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.search.data import SearchData
+from bonsai.bim.ifc import IfcStore
+from bonsai.bim.module.search.data import SearchData
 
 
 class BIM_PT_ifccsv(Panel):
@@ -85,7 +85,7 @@ class BIM_PT_ifccsv(Panel):
             row.prop(props, "concat_value")
             layout.use_property_split = False
 
-        blenderbim.bim.helper.draw_filter(self.layout, props.filter_groups, SearchData, "csv")
+        bonsai.bim.helper.draw_filter(self.layout, props.filter_groups, SearchData, "csv")
 
         row = layout.row(align=True)
         op = row.operator("bim.search", text="Select", icon="VIEWZOOM")

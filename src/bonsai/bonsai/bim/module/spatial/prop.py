@@ -17,8 +17,8 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from blenderbim.bim.prop import StrProperty, Attribute
-from blenderbim.bim.module.spatial.data import SpatialDecompositionData
+from bonsai.bim.prop import StrProperty, Attribute
+from bonsai.bim.module.spatial.data import SpatialDecompositionData
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -30,7 +30,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
-import blenderbim.tool as tool
+import bonsai.tool as tool
 import ifcopenshell
 import ifcopenshell.util.element
 

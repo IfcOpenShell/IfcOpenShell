@@ -17,11 +17,11 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import blenderbim.bim.module.root.prop as root_prop
+import bonsai.bim.module.root.prop as root_prop
 from bpy.types import Panel
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.helper import prop_with_search
-from blenderbim.bim.module.root.data import IfcClassData
+from bonsai.bim.ifc import IfcStore
+from bonsai.bim.helper import prop_with_search
+from bonsai.bim.module.root.data import IfcClassData
 
 
 class BIM_PT_class(Panel):

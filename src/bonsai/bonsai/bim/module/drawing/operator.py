@@ -35,26 +35,25 @@ import ifcopenshell.geom
 import ifcopenshell.util.selector
 import ifcopenshell.util.representation
 import ifcopenshell.util.element
-import blenderbim.bim.schema
-import blenderbim.bim.helper
-import blenderbim.bim.handler
-import blenderbim.tool as tool
-import blenderbim.core.geometry
-import blenderbim.core.drawing as core
-import blenderbim.bim.module.drawing.svgwriter as svgwriter
-import blenderbim.bim.module.drawing.annotation as annotation
-import blenderbim.bim.module.drawing.sheeter as sheeter
-import blenderbim.bim.module.drawing.scheduler as scheduler
-import blenderbim.bim.module.drawing.helper as helper
-import blenderbim.bim.export_ifc
-from blenderbim.bim.module.drawing.decoration import CutDecorator
-from blenderbim.bim.module.drawing.data import DecoratorData, DrawingsData
+import bonsai.bim.helper
+import bonsai.bim.handler
+import bonsai.tool as tool
+import bonsai.core.geometry
+import bonsai.core.drawing as core
+import bonsai.bim.module.drawing.svgwriter as svgwriter
+import bonsai.bim.module.drawing.annotation as annotation
+import bonsai.bim.module.drawing.sheeter as sheeter
+import bonsai.bim.module.drawing.scheduler as scheduler
+import bonsai.bim.module.drawing.helper as helper
+import bonsai.bim.export_ifc
+from bonsai.bim.module.drawing.decoration import CutDecorator
+from bonsai.bim.module.drawing.data import DecoratorData, DrawingsData
 from typing import NamedTuple, List, Union, Optional, Literal
 from lxml import etree
 from mathutils import Vector, Color, Matrix
 from timeit import default_timer as timer
-from blenderbim.bim.module.drawing.prop import RasterStyleProperty, RASTER_STYLE_PROPERTIES_EXCLUDE
-from blenderbim.bim.ifc import IfcStore
+from bonsai.bim.module.drawing.prop import RasterStyleProperty, RASTER_STYLE_PROPERTIES_EXCLUDE
+from bonsai.bim.ifc import IfcStore
 from pathlib import Path
 from bpy_extras.image_utils import load_image
 
@@ -499,7 +498,7 @@ class CreateDrawing(bpy.types.Operator):
         if self.sync and self.drawing_index == 0:
             with profile("sync"):
                 # All very hackish whilst prototyping
-                exporter = blenderbim.bim.export_ifc.IfcExporter(None)
+                exporter = bonsai.bim.export_ifc.IfcExporter(None)
                 exporter.file = tool.Ifc.get()
                 invalidated_elements = exporter.sync_all_objects()
                 invalidated_elements += exporter.sync_edited_objects()
@@ -1490,7 +1489,7 @@ class ActivateModel(bpy.types.Operator):
             if model:
                 current_representation = tool.Geometry.get_active_representation(obj)
                 if current_representation != model:
-                    blenderbim.core.geometry.switch_representation(
+                    bonsai.core.geometry.switch_representation(
                         tool.Ifc,
                         tool.Geometry,
                         obj=obj,
@@ -1505,7 +1504,7 @@ class ActivateModel(bpy.types.Operator):
             obj.hide_set(hide_status)
 
         tool.Blender.update_viewport()
-        blenderbim.bim.handler.refresh_ui_data()
+        bonsai.bim.handler.refresh_ui_data()
         return {"FINISHED"}
 
 
@@ -1844,7 +1843,7 @@ class SaveDrawingStylesData(bpy.types.Operator, tool.Ifc.Operator):
             ifcopenshell.api.run(
                 "pset.edit_pset", ifc_file, pset=pset, properties={"CurrentShadingStyle": new_style_name}
             )
-            blenderbim.bim.handler.refresh_ui_data()
+            bonsai.bim.handler.refresh_ui_data()
 
         return {"FINISHED"}
 
@@ -1873,7 +1872,7 @@ class ActivateDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
         ifcopenshell.api.run(
             "pset.edit_pset", ifc_file, pset=pset, properties={"CurrentShadingStyle": self.drawing_style.name}
         )
-        blenderbim.bim.handler.refresh_ui_data()
+        bonsai.bim.handler.refresh_ui_data()
         return {"FINISHED"}
 
     def set_raster_style(self, context):
@@ -2239,7 +2238,7 @@ class EditTextPopup(bpy.types.Operator):
 
             # skip BoxAlignment since we're going to format it ourselves
             attributes = [a for a in literal_props.attributes if a.name != "BoxAlignment"]
-            blenderbim.bim.helper.draw_attributes(attributes, box, popup_active_attribute=attributes[0])
+            bonsai.bim.helper.draw_attributes(attributes, box, popup_active_attribute=attributes[0])
 
             row = box.row(align=True)
             cols = [row.column(align=True) for i in range(3)]
@@ -2323,7 +2322,7 @@ class AddTextLiteral(bpy.types.Operator):
             "Path": "RIGHT",
             "BoxAlignment": "bottom_left",
         }
-        # emulates `blenderbim.bim.helper.import_attributes2(ifc_literal, literal_props.attributes)`
+        # emulates `bonsai.bim.helper.import_attributes2(ifc_literal, literal_props.attributes)`
         for attr_name in literal_attr_values:
             attr = literal_attributes.add()
             attr.name = attr_name

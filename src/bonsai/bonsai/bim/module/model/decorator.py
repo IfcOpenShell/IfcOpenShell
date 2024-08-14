@@ -20,7 +20,7 @@ import blf
 import gpu
 import gpu_extras
 import bmesh
-import blenderbim.tool as tool
+import bonsai.tool as tool
 from math import sin, cos, radians
 from bpy.types import SpaceView3D
 from mathutils import Vector, Matrix

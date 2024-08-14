@@ -25,7 +25,7 @@ from . import handler, ui, prop, operator, helper
 from typing import Callable, Union
 
 try:
-    from blenderbim.translations import translations_dict
+    from bonsai.translations import translations_dict
 except ImportError:
     translations_dict = {}
 cwd = os.path.dirname(os.path.realpath(__file__))
@@ -91,7 +91,7 @@ modules = {
 
 
 for name in modules.keys():
-    modules[name] = importlib.import_module(f"blenderbim.bim.module.{name}")
+    modules[name] = importlib.import_module(f"bonsai.bim.module.{name}")
 
 
 classes = [
@@ -254,7 +254,7 @@ def register():
             icon_preview.load(icon_name, icon_path, "IMAGE")
 
     icons = icon_preview
-    bpy.app.translations.register("blenderbim", translations_dict)
+    bpy.app.translations.register("bonsai", translations_dict)
 
 
 def unregister():
@@ -291,10 +291,10 @@ def unregister():
             km.keymap_items.remove(kmi)
     addon_keymaps.clear()
 
-    import blenderbim.tool as tool
+    import bonsai.tool as tool
 
     # use tuple() as method will be removing keys from dict
     for panel in tuple(original_scene_panels_polls.keys()):
         tool.Blender.remove_scene_panel_override(panel)
 
-    bpy.app.translations.unregister("blenderbim")
+    bpy.app.translations.unregister("bonsai")

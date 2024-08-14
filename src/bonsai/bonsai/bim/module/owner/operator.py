@@ -17,10 +17,8 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import blenderbim.tool as tool
-import blenderbim.core.owner as core
-import blenderbim.bim.handler
-from blenderbim.bim.ifc import IfcStore
+import bonsai.tool as tool
+import bonsai.core.owner as core
 
 
 class EnableEditingPerson(bpy.types.Operator, tool.Ifc.Operator):

@@ -20,9 +20,9 @@ import bpy
 import json
 import ifcopenshell.api
 import ifcopenshell.util.attribute
-import blenderbim.bim.helper
-import blenderbim.tool as tool
-from blenderbim.bim.ifc import IfcStore
+import bonsai.bim.helper
+import bonsai.tool as tool
+from bonsai.bim.ifc import IfcStore
 
 
 class LoadObjectives(bpy.types.Operator):
@@ -62,7 +62,7 @@ class EnableEditingConstraint(bpy.types.Operator):
     def execute(self, context):
         props = context.scene.BIMConstraintProperties
         props.constraint_attributes.clear()
-        blenderbim.bim.helper.import_attributes2(tool.Ifc.get().by_id(self.constraint), props.constraint_attributes)
+        bonsai.bim.helper.import_attributes2(tool.Ifc.get().by_id(self.constraint), props.constraint_attributes)
         props.active_constraint_id = self.constraint
         return {"FINISHED"}
 

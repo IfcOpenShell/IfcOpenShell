@@ -22,14 +22,14 @@ import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
 import ifcopenshell.api.owner.settings
-import blenderbim.bim
-import blenderbim.tool as tool
-import blenderbim.core.owner as core_owner
+import bonsai.bim
+import bonsai.tool as tool
+import bonsai.core.owner as core_owner
 from bpy.app.handlers import persistent
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.owner.prop import get_user_person, get_user_organisation
-from blenderbim.bim.module.model.data import AuthoringData
-from blenderbim.bim.module.model.workspace import LIST_OF_TOOLS, TOOLS_TO_CLASSES_MAP
+from bonsai.bim.ifc import IfcStore
+from bonsai.bim.module.owner.prop import get_user_person, get_user_organisation
+from bonsai.bim.module.model.data import AuthoringData
+from bonsai.bim.module.model.workspace import LIST_OF_TOOLS, TOOLS_TO_CLASSES_MAP
 from mathutils import Vector
 from math import cos, degrees
 from typing import Union
@@ -174,7 +174,7 @@ def refresh_ui_data():
     Note that calling non-ifc-operators by itself doesn't refresh the UI data
     and it need to be refreshed manually if needed.
     """
-    from blenderbim.bim import modules
+    from bonsai.bim import modules
 
     for name, value in modules.items():
         try:
@@ -299,7 +299,7 @@ def load_post(scene):
     # tab. We override default scene properties panels with our own poll
     # to hide them unless the user has chosen to view Blender properties.
     for panel in tool.Blender.get_scene_panels_list():
-        if panel in blenderbim.bim.original_scene_panels_polls:
+        if panel in bonsai.bim.original_scene_panels_polls:
             continue
         tool.Blender.override_scene_panel(panel)
     tool.Blender.setup_tabs()

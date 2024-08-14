@@ -16,10 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import blenderbim.tool as tool
+import bonsai.tool as tool
 from bpy.types import Panel
-from blenderbim.bim.helper import draw_attributes, draw_attribute
-from blenderbim.bim.module.georeference.data import GeoreferenceData
+from bonsai.bim.helper import draw_attributes, draw_attribute
+from bonsai.bim.module.georeference.data import GeoreferenceData
 
 
 class BIM_PT_gis(Panel):

@@ -16,8 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-from blenderbim.bim.module.tester.data import TesterData
-from blenderbim.bim.prop import StrProperty, MultipleFileSelect
+from bonsai.bim.module.tester.data import TesterData
+from bonsai.bim.prop import StrProperty, MultipleFileSelect
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,

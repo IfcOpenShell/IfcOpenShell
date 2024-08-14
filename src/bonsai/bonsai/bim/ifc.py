@@ -27,11 +27,11 @@ import traceback
 import ifcopenshell
 import ifcopenshell.geom
 import ifcopenshell.ifcopenshell_wrapper
-import blenderbim
-import blenderbim.bim.handler
-import blenderbim.tool as tool
+import bonsai
+import bonsai.bim.handler
+import bonsai.tool as tool
 from pathlib import Path
-from blenderbim.tool.brick import BrickStore
+from bonsai.tool.brick import BrickStore
 from typing import Set, Union, Optional, TypedDict, Callable
 
 
@@ -252,11 +252,11 @@ class IfcStore:
         else:
             obj.BIMObjectProperties.ifc_definition_id = element.id()
 
-        blenderbim.bim.handler.subscribe_to(obj, "name", blenderbim.bim.handler.name_callback)
+        bonsai.bim.handler.subscribe_to(obj, "name", bonsai.bim.handler.name_callback)
 
         if isinstance(obj, bpy.types.Object):
-            blenderbim.bim.handler.subscribe_to(
-                obj, "active_material_index", blenderbim.bim.handler.active_material_index_callback
+            bonsai.bim.handler.subscribe_to(
+                obj, "active_material_index", bonsai.bim.handler.active_material_index_callback
             )
 
         if IfcStore.history:
@@ -279,10 +279,10 @@ class IfcStore:
         IfcStore.id_map[data["id"]] = obj
         if "guid" in data:
             IfcStore.guid_map[data["guid"]] = obj
-        blenderbim.bim.handler.subscribe_to(obj, "name", blenderbim.bim.handler.name_callback)
+        bonsai.bim.handler.subscribe_to(obj, "name", bonsai.bim.handler.name_callback)
         if isinstance(obj, bpy.types.Object):
-            blenderbim.bim.handler.subscribe_to(
-                obj, "active_material_index", blenderbim.bim.handler.active_material_index_callback
+            bonsai.bim.handler.subscribe_to(
+                obj, "active_material_index", bonsai.bim.handler.active_material_index_callback
             )
         # TODO Listeners are not re-registered. Does this cause nasty problems to debug later on?
         # TODO We're handling id_map and guid_map, but what about edited_objs? This might cause big problems.
@@ -364,7 +364,7 @@ class IfcStore:
 
     @staticmethod
     def execute_ifc_operator(operator: bpy.types.Operator, context: bpy.types.Context, is_invoke=False):
-        blenderbim.last_actions.append({"type": "operator", "name": operator.bl_idname})
+        bonsai.last_actions.append({"type": "operator", "name": operator.bl_idname})
         bpy.context.scene.BIMProperties.is_dirty = True
         is_top_level_operator = not bool(IfcStore.current_transaction)
 
@@ -385,7 +385,7 @@ class IfcStore:
             else:
                 result = getattr(operator, "_execute")(context)
         except:
-            blenderbim.last_error = traceback.format_exc()
+            bonsai.last_error = traceback.format_exc()
             raise
 
         if is_top_level_operator:
@@ -397,7 +397,7 @@ class IfcStore:
             if BrickStore.graph is not None:  # `if BrickStore.graph` by itself takes ages.
                 BrickStore.end_transaction()
             IfcStore.end_transaction(operator)
-            blenderbim.bim.handler.refresh_ui_data()
+            bonsai.bim.handler.refresh_ui_data()
 
         return result
 

@@ -16,11 +16,11 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import blenderbim.tool as tool
+import bonsai.tool as tool
 from bpy.types import Panel, UIList
-from blenderbim.bim.helper import prop_with_search
-from blenderbim.bim.module.brick.data import BrickschemaData, BrickschemaReferencesData
-from blenderbim.tool.brick import BrickStore
+from bonsai.bim.helper import prop_with_search
+from bonsai.bim.module.brick.data import BrickschemaData, BrickschemaReferencesData
+from bonsai.tool.brick import BrickStore
 
 
 class BIM_PT_brickschema(Panel):

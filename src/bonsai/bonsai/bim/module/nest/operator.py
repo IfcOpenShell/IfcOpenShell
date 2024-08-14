@@ -19,11 +19,9 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.util.element
-import blenderbim.tool as tool
-import blenderbim.core.nest as core
-import blenderbim.core.spatial
-import blenderbim.bim.handler
-from blenderbim.bim.ifc import IfcStore
+import bonsai.tool as tool
+import bonsai.core.nest as core
+from bonsai.bim.ifc import IfcStore
 
 
 class BIM_OT_nest_assign_object(bpy.types.Operator, tool.Ifc.Operator):

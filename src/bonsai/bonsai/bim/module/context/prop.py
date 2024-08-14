@@ -17,8 +17,8 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from blenderbim.bim.prop import StrProperty, Attribute
-from blenderbim.bim.module.context.data import ContextData
+from bonsai.bim.prop import StrProperty, Attribute
+from bonsai.bim.module.context.data import ContextData
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,

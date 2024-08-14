@@ -18,7 +18,7 @@
 
 import bpy
 from . import bcfstore
-from blenderbim.bim.prop import StrProperty
+from bonsai.bim.prop import StrProperty
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,

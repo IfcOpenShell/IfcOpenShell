@@ -17,10 +17,10 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from bpy.types import Panel
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.diff.data import DiffData
-import blenderbim.bim.helper
-import blenderbim.tool as tool
+from bonsai.bim.ifc import IfcStore
+from bonsai.bim.module.diff.data import DiffData
+import bonsai.bim.helper
+import bonsai.tool as tool
 
 
 class BIM_PT_diff(Panel):
@@ -93,7 +93,7 @@ class BIM_PT_diff(Panel):
             remove.collection = "diff_relationships"
             remove.index = index
 
-        blenderbim.bim.helper.draw_filter(self.layout, props.filter_groups, DiffData, "diff")
+        bonsai.bim.helper.draw_filter(self.layout, props.filter_groups, DiffData, "diff")
 
         row = layout.row()
         row.operator("bim.execute_ifc_diff")

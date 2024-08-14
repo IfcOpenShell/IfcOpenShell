@@ -16,10 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import blenderbim.tool as tool
+import bonsai.tool as tool
 from bpy.types import Panel
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.fm.data import FMData
+from bonsai.bim.ifc import IfcStore
+from bonsai.bim.module.fm.data import FMData
 
 
 class BIM_PT_fm(Panel):

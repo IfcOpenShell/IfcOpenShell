@@ -23,15 +23,15 @@ import enum
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.element
-import blenderbim.tool as tool
-import blenderbim.core.drawing as core
-import blenderbim.bim.module.drawing.annotation as annotation
-import blenderbim.bim.module.drawing.decoration as decoration
-from blenderbim.bim.prop import BIMFilterGroup
-from blenderbim.bim.module.drawing.data import DrawingsData, DecoratorData, SheetsData, AnnotationData
-from blenderbim.bim.module.drawing.data import refresh as refresh_drawing_data
+import bonsai.tool as tool
+import bonsai.core.drawing as core
+import bonsai.bim.module.drawing.annotation as annotation
+import bonsai.bim.module.drawing.decoration as decoration
+from bonsai.bim.prop import BIMFilterGroup
+from bonsai.bim.module.drawing.data import DrawingsData, DecoratorData, SheetsData, AnnotationData
+from bonsai.bim.module.drawing.data import refresh as refresh_drawing_data
 from pathlib import Path
-from blenderbim.bim.prop import Attribute, StrProperty
+from bonsai.bim.prop import Attribute, StrProperty
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,

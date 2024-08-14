@@ -28,19 +28,17 @@ import ifcopenshell.util.unit
 import ifcopenshell.util.system
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
-import mathutils.geometry
 import numpy as np
-import blenderbim.bim.handler
-import blenderbim.core.type
-import blenderbim.core.root
-import blenderbim.core.geometry
-import blenderbim.tool as tool
+import bonsai.core.type
+import bonsai.core.root
+import bonsai.core.geometry
+import bonsai.tool as tool
 from math import pi, degrees, radians, sin, cos, asin, tan
 from copy import copy
 from mathutils import Vector, Matrix
 from ifcopenshell.util.shape_builder import ShapeBuilder
-from blenderbim.bim.module.model.profile import DumbProfileJoiner
-from blenderbim.tool.cad import VTX_PRECISION
+from bonsai.bim.module.model.profile import DumbProfileJoiner
+from bonsai.tool.cad import VTX_PRECISION
 
 V = lambda *x: Vector([float(i) for i in x])
 
@@ -529,7 +527,7 @@ class MEPGenerator:
 
         obj = bpy.data.objects.new("Obstruction", None)
         # TODO: OBSTRUCTION predefined type is available only for IfcDuctFitting and IfcPipeFitting
-        element = blenderbim.core.root.assign_class(
+        element = bonsai.core.root.assign_class(
             tool.Ifc,
             tool.Collector,
             tool.Root,
@@ -840,7 +838,7 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
         else:  # create new fitting type if nothing is compatible
             mesh = bpy.data.meshes.new("Transition")
             obj = bpy.data.objects.new("Transition", mesh)
-            transition_type = blenderbim.core.root.assign_class(
+            transition_type = bonsai.core.root.assign_class(
                 tool.Ifc,
                 tool.Collector,
                 tool.Root,
@@ -1191,7 +1189,7 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
         else:  # create new fitting type if nothing is compatible
             mesh = bpy.data.meshes.new("Bend")
             obj = bpy.data.objects.new("Bend", mesh)
-            bend_type = blenderbim.core.root.assign_class(
+            bend_type = bonsai.core.root.assign_class(
                 tool.Ifc,
                 tool.Collector,
                 tool.Root,

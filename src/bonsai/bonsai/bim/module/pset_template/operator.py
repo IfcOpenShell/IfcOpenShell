@@ -20,10 +20,10 @@ import os
 import bpy
 import ifcopenshell
 import ifcopenshell.api
-import blenderbim.bim.schema
-import blenderbim.bim.handler
-import blenderbim.tool as tool
-from blenderbim.bim.ifc import IfcStore
+import bonsai.bim.schema
+import bonsai.bim.handler
+import bonsai.tool as tool
+from bonsai.bim.ifc import IfcStore
 from typing import final
 
 
@@ -38,7 +38,7 @@ class PsetTemplateOperator:
         IfcStore.pset_template_file.end_transaction()
         IfcStore.add_transaction_operation(self)
         IfcStore.end_transaction(self)
-        blenderbim.bim.handler.refresh_ui_data()
+        bonsai.bim.handler.refresh_ui_data()
         return {"FINISHED"}
 
     def rollback(self, data):
@@ -71,8 +71,8 @@ class AddPsetTemplateFile(bpy.types.Operator):
         ifcopenshell.api.run("pset_template.add_prop_template", template, pset_template=pset_template)
         template.write(filepath)
         self.props.new_template_filename = ""
-        blenderbim.bim.handler.refresh_ui_data()
-        blenderbim.bim.schema.reload(tool.Ifc.get().schema)
+        bonsai.bim.handler.refresh_ui_data()
+        bonsai.bim.schema.reload(tool.Ifc.get().schema)
         context.scene.BIMPsetTemplateProperties.pset_template_files = filepath
         return {"FINISHED"}
 
@@ -86,8 +86,8 @@ class AddPsetTemplate(bpy.types.Operator, PsetTemplateOperator):
         template = ifcopenshell.api.run("pset_template.add_pset_template", IfcStore.pset_template_file)
         ifcopenshell.api.run("pset_template.add_prop_template", IfcStore.pset_template_file, pset_template=template)
         IfcStore.pset_template_file.write(IfcStore.pset_template_path)
-        blenderbim.bim.handler.refresh_ui_data()
-        blenderbim.bim.schema.reload(tool.Ifc.get().schema)
+        bonsai.bim.handler.refresh_ui_data()
+        bonsai.bim.schema.reload(tool.Ifc.get().schema)
         context.scene.BIMPsetTemplateProperties.pset_templates = str(template.id())
 
 
@@ -106,8 +106,8 @@ class RemovePsetTemplate(bpy.types.Operator, PsetTemplateOperator):
             **{"pset_template": IfcStore.pset_template_file.by_id(int(props.pset_templates))}
         )
         IfcStore.pset_template_file.write(IfcStore.pset_template_path)
-        blenderbim.bim.handler.refresh_ui_data()
-        blenderbim.bim.schema.reload(tool.Ifc.get().schema)
+        bonsai.bim.handler.refresh_ui_data()
+        bonsai.bim.schema.reload(tool.Ifc.get().schema)
 
 
 class EnableEditingPsetTemplate(bpy.types.Operator):
@@ -220,8 +220,8 @@ class EditPsetTemplate(bpy.types.Operator, PsetTemplateOperator):
         )
         bpy.ops.bim.disable_editing_pset_template()
         IfcStore.pset_template_file.write(IfcStore.pset_template_path)
-        blenderbim.bim.handler.refresh_ui_data()
-        blenderbim.bim.schema.reload(tool.Ifc.get().schema)
+        bonsai.bim.handler.refresh_ui_data()
+        bonsai.bim.schema.reload(tool.Ifc.get().schema)
 
 
 class SavePsetTemplateFile(bpy.types.Operator):
@@ -230,8 +230,8 @@ class SavePsetTemplateFile(bpy.types.Operator):
 
     def execute(self, context):
         IfcStore.pset_template_file.write(IfcStore.pset_template_path)
-        blenderbim.bim.handler.refresh_ui_data()
-        blenderbim.bim.schema.reload(tool.Ifc.get().schema)
+        bonsai.bim.handler.refresh_ui_data()
+        bonsai.bim.schema.reload(tool.Ifc.get().schema)
         return {"FINISHED"}
 
 
@@ -244,8 +244,8 @@ class RemovePsetTemplateFile(bpy.types.Operator):
             os.remove(IfcStore.pset_template_path)
         except:
             pass
-        blenderbim.bim.handler.refresh_ui_data()
-        blenderbim.bim.schema.reload(tool.Ifc.get().schema)
+        bonsai.bim.handler.refresh_ui_data()
+        bonsai.bim.schema.reload(tool.Ifc.get().schema)
         return {"FINISHED"}
 
 
@@ -264,8 +264,8 @@ class AddPropTemplate(bpy.types.Operator, PsetTemplateOperator):
         )
         bpy.ops.bim.disable_editing_prop_template()
         IfcStore.pset_template_file.write(IfcStore.pset_template_path)
-        blenderbim.bim.handler.refresh_ui_data()
-        blenderbim.bim.schema.reload(tool.Ifc.get().schema)
+        bonsai.bim.handler.refresh_ui_data()
+        bonsai.bim.schema.reload(tool.Ifc.get().schema)
 
 
 class RemovePropTemplate(bpy.types.Operator, PsetTemplateOperator):
@@ -281,8 +281,8 @@ class RemovePropTemplate(bpy.types.Operator, PsetTemplateOperator):
             **{"prop_template": IfcStore.pset_template_file.by_id(self.prop_template)}
         )
         IfcStore.pset_template_file.write(IfcStore.pset_template_path)
-        blenderbim.bim.handler.refresh_ui_data()
-        blenderbim.bim.schema.reload(tool.Ifc.get().schema)
+        bonsai.bim.handler.refresh_ui_data()
+        bonsai.bim.schema.reload(tool.Ifc.get().schema)
 
 
 class EditPropTemplate(bpy.types.Operator, PsetTemplateOperator):
@@ -312,6 +312,6 @@ class EditPropTemplate(bpy.types.Operator, PsetTemplateOperator):
         )
         bpy.ops.bim.disable_editing_prop_template()
         IfcStore.pset_template_file.write(IfcStore.pset_template_path)
-        blenderbim.bim.handler.refresh_ui_data()
+        bonsai.bim.handler.refresh_ui_data()
         if tool.Ifc.get():
-            blenderbim.bim.schema.reload(tool.Ifc.get().schema)
+            bonsai.bim.schema.reload(tool.Ifc.get().schema)

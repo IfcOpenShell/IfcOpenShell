@@ -16,12 +16,12 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import blenderbim.tool as tool
-import blenderbim.bim.module.type.prop as type_prop
+import bonsai.tool as tool
+import bonsai.bim.module.type.prop as type_prop
 from bpy.types import Panel
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.helper import prop_with_search
-from blenderbim.bim.module.type.data import TypeData
+from bonsai.bim.ifc import IfcStore
+from bonsai.bim.helper import prop_with_search
+from bonsai.bim.module.type.data import TypeData
 
 
 class BIM_PT_type(Panel):

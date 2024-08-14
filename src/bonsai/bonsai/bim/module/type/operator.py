@@ -24,11 +24,11 @@ import ifcopenshell.util.representation
 import ifcopenshell.util.type
 import ifcopenshell.util.unit
 import ifcopenshell.api
-import blenderbim.tool as tool
-import blenderbim.core.geometry
-import blenderbim.core.type as core
-import blenderbim.core.root
-from blenderbim.bim.ifc import IfcStore
+import bonsai.tool as tool
+import bonsai.core.geometry
+import bonsai.core.type as core
+import bonsai.core.root
+from bonsai.bim.ifc import IfcStore
 
 
 class AssignType(bpy.types.Operator, tool.Ifc.Operator):
@@ -98,7 +98,7 @@ class UnassignType(bpy.types.Operator):
                 element.Representation.Representations = representations
 
             if new_active_representation:
-                blenderbim.core.geometry.switch_representation(
+                bonsai.core.geometry.switch_representation(
                     tool.Ifc,
                     tool.Geometry,
                     obj=obj,
@@ -268,7 +268,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                 bm.free()
                 obj = bpy.data.objects.new(name, mesh)
             obj.matrix_world.translation = location
-            blenderbim.core.root.assign_class(
+            bonsai.core.root.assign_class(
                 tool.Ifc,
                 tool.Collector,
                 tool.Root,
@@ -283,7 +283,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
         elif template in ("LAYERSET_AXIS2", "LAYERSET_AXIS3"):
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
             obj = bpy.data.objects.new(name, None)
-            element = blenderbim.core.root.assign_class(
+            element = bonsai.core.root.assign_class(
                 tool.Ifc,
                 tool.Collector,
                 tool.Root,
@@ -317,7 +317,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
         elif template == "PROFILESET" or template.startswith("FLOW_SEGMENT_"):
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
             obj = bpy.data.objects.new(name, None)
-            element = blenderbim.core.root.assign_class(
+            element = bonsai.core.root.assign_class(
                 tool.Ifc,
                 tool.Collector,
                 tool.Root,
@@ -390,7 +390,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
 
         elif template == "EMPTY":
             obj = bpy.data.objects.new(name, None)
-            blenderbim.core.root.assign_class(
+            bonsai.core.root.assign_class(
                 tool.Ifc,
                 tool.Collector,
                 tool.Root,
@@ -405,7 +405,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
         elif template == "WINDOW":
             mesh = bpy.data.meshes.new(name)
             obj = bpy.data.objects.new(name, mesh)
-            element = blenderbim.core.root.assign_class(
+            element = bonsai.core.root.assign_class(
                 tool.Ifc,
                 tool.Collector,
                 tool.Root,
@@ -420,7 +420,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
         elif template == "DOOR":
             mesh = bpy.data.meshes.new(name)
             obj = bpy.data.objects.new(name, mesh)
-            element = blenderbim.core.root.assign_class(
+            element = bonsai.core.root.assign_class(
                 tool.Ifc,
                 tool.Collector,
                 tool.Root,
@@ -435,7 +435,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
         elif template == "STAIR":
             mesh = bpy.data.meshes.new(name)
             obj = bpy.data.objects.new(name, mesh)
-            element = blenderbim.core.root.assign_class(
+            element = bonsai.core.root.assign_class(
                 tool.Ifc,
                 tool.Collector,
                 tool.Root,
@@ -450,7 +450,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
         elif template == "RAILING":
             mesh = bpy.data.meshes.new(name)
             obj = bpy.data.objects.new(name, mesh)
-            element = blenderbim.core.root.assign_class(
+            element = bonsai.core.root.assign_class(
                 tool.Ifc,
                 tool.Collector,
                 tool.Root,
@@ -466,7 +466,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
         elif template == "ROOF":
             mesh = bpy.data.meshes.new(name)
             obj = bpy.data.objects.new(name, mesh)
-            element = blenderbim.core.root.assign_class(
+            element = bonsai.core.root.assign_class(
                 tool.Ifc,
                 tool.Collector,
                 tool.Root,
@@ -549,7 +549,7 @@ class DuplicateType(bpy.types.Operator, tool.Ifc.Operator):
         new_obj = obj.copy()
         if obj.data:
             new_obj.data = obj.data.copy()
-        new = blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj)
+        new = bonsai.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj)
         new.Name += " Copy"
         bpy.ops.bim.load_type_thumbnails(ifc_class=new.is_a())
         if obj in context.selectable_objects:

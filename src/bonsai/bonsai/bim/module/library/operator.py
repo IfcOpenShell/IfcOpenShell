@@ -18,10 +18,8 @@
 
 import bpy
 import ifcopenshell.api
-import blenderbim.tool as tool
-import blenderbim.core.library as core
-import blenderbim.bim.handler
-from blenderbim.bim.ifc import IfcStore
+import bonsai.tool as tool
+import bonsai.core.library as core
 
 
 class AddLibrary(bpy.types.Operator, tool.Ifc.Operator):

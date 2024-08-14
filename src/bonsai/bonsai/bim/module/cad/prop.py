@@ -17,7 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from blenderbim.bim.module.model.data import AuthoringData
+from bonsai.bim.module.model.data import AuthoringData
 from bpy.types import PropertyGroup
 from math import pi
 

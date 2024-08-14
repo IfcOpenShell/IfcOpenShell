@@ -16,12 +16,12 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import blenderbim.bim.helper
-import blenderbim.tool as tool
-import blenderbim.bim.module.classification.prop as classification_prop
+import bonsai.bim.helper
+import bonsai.tool as tool
+import bonsai.bim.module.classification.prop as classification_prop
 from bpy.types import Panel, UIList
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.classification.data import (
+from bonsai.bim.ifc import IfcStore
+from bonsai.bim.module.classification.data import (
     ClassificationsData,
     ClassificationReferencesData,
     MaterialClassificationsData,
@@ -67,7 +67,7 @@ class BIM_PT_classifications(Panel):
 
     def draw_add_manual_ui(self, context):
         if self.props.is_adding:
-            blenderbim.bim.helper.draw_attributes(self.props.classification_attributes, self.layout)
+            bonsai.bim.helper.draw_attributes(self.props.classification_attributes, self.layout)
             row = self.layout.row(align=True)
             row.operator("bim.add_manual_classification", text="Save", icon="CHECKMARK")
             row.operator("bim.disable_adding_manual_classification", text="", icon="CANCEL")
@@ -104,7 +104,7 @@ class BIM_PT_classifications(Panel):
         row = self.layout.row(align=True)
         row.operator("bim.edit_classification", text="Save changes", icon="CHECKMARK")
         row.operator("bim.disable_editing_classification", text="", icon="CANCEL")
-        blenderbim.bim.helper.draw_attributes(self.props.classification_attributes, self.layout)
+        bonsai.bim.helper.draw_attributes(self.props.classification_attributes, self.layout)
 
     def draw_ui(self, classification):
         row = self.layout.row(align=True)
@@ -151,7 +151,7 @@ class ReferenceUI:
         row = self.layout.row()
         row.prop(self.props, "classifications", text="")
         if self.props.is_adding:
-            blenderbim.bim.helper.draw_attributes(self.props.reference_attributes, self.layout)
+            bonsai.bim.helper.draw_attributes(self.props.reference_attributes, self.layout)
             row = self.layout.row(align=True)
             op = row.operator("bim.add_manual_classification_reference", text="Save", icon="CHECKMARK")
             op.obj_type = self.data.data["object_type"]
@@ -203,7 +203,7 @@ class ReferenceUI:
                     box = self.layout.box()
                     row = box.row()
                     row.label(text=pset.name, icon="COPY_ID")
-                    blenderbim.bim.helper.draw_attributes(pset.properties, box)
+                    bonsai.bim.helper.draw_attributes(pset.properties, box)
 
     def draw_add_file_ui(self, context):
         if not self.data.data["active_classification_library"]:
@@ -243,7 +243,7 @@ class ReferenceUI:
         row = self.layout.row(align=True)
         row.operator("bim.edit_classification_reference", text="Save changes", icon="CHECKMARK")
         row.operator("bim.disable_editing_classification_reference", text="", icon="CANCEL")
-        blenderbim.bim.helper.draw_attributes(self.props.reference_attributes, self.layout)
+        bonsai.bim.helper.draw_attributes(self.props.reference_attributes, self.layout)
 
     def draw_reference_ui(self, reference):
         row = self.layout.row(align=True)

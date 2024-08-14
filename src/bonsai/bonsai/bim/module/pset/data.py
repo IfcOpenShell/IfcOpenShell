@@ -20,8 +20,8 @@ import bpy
 import ifcopenshell
 import ifcopenshell.util.doc
 import ifcopenshell.util.element
-import blenderbim.tool as tool
-import blenderbim.bim.schema
+import bonsai.tool as tool
+import bonsai.bim.schema
 
 
 # TODO: Should this cache belong here? Dunno. Maybe.
@@ -106,7 +106,7 @@ class ObjectPsetsData(Data):
         element = tool.Ifc.get_entity(obj)
         if not element:
             return []
-        psets = blenderbim.bim.schema.ifc.psetqto.get_applicable(
+        psets = bonsai.bim.schema.ifc.psetqto.get_applicable(
             element.is_a(), ifcopenshell.util.element.get_predefined_type(element), pset_only=True
         )
         psetnames = cls.format_pset_enum(psets)
@@ -119,7 +119,7 @@ class ObjectPsetsData(Data):
         element = tool.Ifc.get_entity(obj)
         if not element:
             return []
-        qtos = blenderbim.bim.schema.ifc.psetqto.get_applicable(
+        qtos = bonsai.bim.schema.ifc.psetqto.get_applicable(
             element.is_a(), ifcopenshell.util.element.get_predefined_type(element), qto_only=True
         )
         return cls.format_pset_enum(qtos)
@@ -178,7 +178,7 @@ class MaterialPsetsData(Data):
             if material.ifc_definition_id:
                 material = tool.Ifc.get().by_id(material.ifc_definition_id)
                 category = getattr(material, "Category", None) or None
-                psets = blenderbim.bim.schema.ifc.psetqto.get_applicable("IfcMaterial", category, pset_only=True)
+                psets = bonsai.bim.schema.ifc.psetqto.get_applicable("IfcMaterial", category, pset_only=True)
                 psetnames = cls.format_pset_enum(psets)
                 assigned_names = ifcopenshell.util.element.get_psets(
                     material, psets_only=True, should_inherit=False

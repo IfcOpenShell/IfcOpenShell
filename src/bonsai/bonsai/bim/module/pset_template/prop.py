@@ -20,9 +20,9 @@ import os
 import bpy
 import ifcopenshell
 from ifcopenshell.util.doc import get_attribute_doc
-from blenderbim.bim.module.pset_template.data import PsetTemplatesData
-from blenderbim.bim.prop import StrProperty, Attribute
-from blenderbim.bim.ifc import IfcStore
+from bonsai.bim.module.pset_template.data import PsetTemplatesData
+from bonsai.bim.prop import StrProperty, Attribute
+from bonsai.bim.ifc import IfcStore
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,

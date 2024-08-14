@@ -24,8 +24,8 @@ import ifcopenshell.api
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
-import blenderbim.core.root
-import blenderbim.tool as tool
+import bonsai.core.root
+import bonsai.tool as tool
 from mathutils import Vector
 from bmesh.types import BMVert
 from bpy.types import Operator
@@ -219,7 +219,7 @@ class BIM_OT_add_clever_stair(bpy.types.Operator, tool.Ifc.Operator):
         obj = bpy.data.objects.new("StairFlight", mesh)
         obj.location = spawn_location
 
-        element = blenderbim.core.root.assign_class(
+        element = bonsai.core.root.assign_class(
             tool.Ifc,
             tool.Collector,
             tool.Root,

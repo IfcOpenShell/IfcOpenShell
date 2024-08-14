@@ -36,25 +36,22 @@ import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.shape
 import ifcopenshell.util.unit
-import blenderbim.bim.handler
-import blenderbim.bim.schema
-import blenderbim.tool as tool
-import blenderbim.core.project as core
-import blenderbim.core.context
-import blenderbim.core.owner
-import blenderbim.core.spatial
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.ui import IFCFileSelector
-from blenderbim.bim import import_ifc
-from blenderbim.bim import export_ifc
+import bonsai.bim.handler
+import bonsai.bim.schema
+import bonsai.tool as tool
+import bonsai.core.project as core
+from bonsai.bim.ifc import IfcStore
+from bonsai.bim.ui import IFCFileSelector
+from bonsai.bim import import_ifc
+from bonsai.bim import export_ifc
 from collections import defaultdict
 from math import radians
 from pathlib import Path
 from mathutils import Vector, Matrix
 from bpy.app.handlers import persistent
 from ifcopenshell.geom import ShapeElementType
-from blenderbim.bim.module.project.data import LinksData
-from blenderbim.bim.module.project.decorator import ProjectDecorator, ClippingPlaneDecorator
+from bonsai.bim.module.project.data import LinksData
+from bonsai.bim.module.project.decorator import ProjectDecorator, ClippingPlaneDecorator
 from typing import Union
 
 
@@ -130,7 +127,7 @@ class CreateProject(bpy.types.Operator):
         core.create_project(
             tool.Ifc, tool.Georeference, tool.Project, tool.Spatial, schema=props.export_schema, template=template
         )
-        blenderbim.bim.schema.reload(tool.Ifc.get().schema_identifier)
+        bonsai.bim.schema.reload(tool.Ifc.get().schema_identifier)
         tool.Blender.register_toolbar()
 
     def rollback(self, data):
@@ -467,7 +464,7 @@ class AppendLibraryElement(bpy.types.Operator):
         except:
             # TODO Remove this terrible code when I refactor this into the core
             pass
-        blenderbim.bim.handler.refresh_ui_data()
+        bonsai.bim.handler.refresh_ui_data()
         return {"FINISHED"}
 
     def import_material_from_ifc(self, element: ifcopenshell.entity_instance, context: bpy.types.Context) -> None:
@@ -746,7 +743,7 @@ class LoadProject(bpy.types.Operator, IFCFileSelector):
                 if not self.should_start_fresh_session:
                     bpy.ops.bim.convert_to_blender()
         except:
-            blenderbim.last_error = traceback.format_exc()
+            bonsai.last_error = traceback.format_exc()
             raise
         return {"FINISHED"}
 
@@ -797,7 +794,7 @@ class LoadProjectElements(bpy.types.Operator):
     def execute(self, context):
         self.props = context.scene.BIMProjectProperties
         self.file = IfcStore.get_file()
-        blenderbim.bim.schema.reload(self.file.schema_identifier)
+        bonsai.bim.schema.reload(self.file.schema_identifier)
         start = time.time()
         logger = logging.getLogger("ImportIFC")
         path_log = os.path.join(context.scene.BIMProperties.data_dir, "process.log")
@@ -1321,7 +1318,7 @@ class ExportIFCBase:
         if save_blend_file:
             bpy.ops.wm.save_mainfile(filepath=bpy.data.filepath)
         bpy.context.scene.BIMProperties.is_dirty = False
-        blenderbim.bim.handler.refresh_ui_data()
+        bonsai.bim.handler.refresh_ui_data()
         self.report(
             {"INFO"},
             f'IFC Project "{os.path.basename(output_file)}" {"" if not save_blend_file else "And Current Blend File Are"} Saved',
@@ -1854,7 +1851,7 @@ class AppendInspectedLinkedElement(AppendLibraryElement):
     bl_options = {"REGISTER"}
 
     def _execute(self, context):
-        from blenderbim.bim.module.project.data import LinksData
+        from bonsai.bim.module.project.data import LinksData
 
         if not LinksData.linked_data:
             self.report({"INFO"}, "No linked element found.")

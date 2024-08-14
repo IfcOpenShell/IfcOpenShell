@@ -17,8 +17,8 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from bpy.types import Panel, UIList
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.group.data import GroupsData, ObjectGroupsData
+from bonsai.bim.ifc import IfcStore
+from bonsai.bim.module.group.data import GroupsData, ObjectGroupsData
 
 
 class BIM_PT_groups(Panel):

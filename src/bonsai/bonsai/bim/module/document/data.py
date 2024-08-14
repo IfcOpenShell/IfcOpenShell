@@ -20,7 +20,7 @@ import os
 import bpy
 import ifcopenshell
 import ifcopenshell.util.schema
-import blenderbim.tool as tool
+import bonsai.tool as tool
 
 
 def refresh():

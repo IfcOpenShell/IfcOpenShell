@@ -22,14 +22,14 @@ import json
 import time
 import calendar
 import isodate
-import blenderbim.core.sequence as core
-import blenderbim.tool as tool
-import blenderbim.bim.module.sequence.helper as helper
+import bonsai.core.sequence as core
+import bonsai.tool as tool
+import bonsai.bim.module.sequence.helper as helper
 import ifcopenshell.util.sequence
 import ifcopenshell.util.selector
 from datetime import datetime
 from dateutil import parser, relativedelta
-from blenderbim.bim.ifc import IfcStore
+from bonsai.bim.ifc import IfcStore
 from bpy_extras.io_utils import ImportHelper
 
 
