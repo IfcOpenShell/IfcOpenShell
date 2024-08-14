@@ -24,8 +24,8 @@ import ifcopenshell
 import ifcsverchok.helper
 import ifcopenshell.api
 from ifcsverchok.ifcstore import SvIfcStore
-import blenderbim.tool as tool
-import blenderbim.core.geometry as core
+import bonsai.tool as tool
+import bonsai.core.geometry as core
 from bpy.props import (
     StringProperty,
     EnumProperty,
@@ -35,7 +35,7 @@ from bpy.props import (
 )
 from sverchok.node_tree import SverchCustomTreeNode
 from sverchok.data_structure import updateNode, flatten_data, fixed_iter, flat_iter
-from blenderbim.bim.module.root.prop import get_contexts
+from bonsai.bim.module.root.prop import get_contexts
 from sverchok.data_structure import zip_long_repeat, node_id
 from sverchok.core.socket_data import sv_get_socket
 

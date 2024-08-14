@@ -23,8 +23,8 @@ import ifcsverchok.helper
 import ifcopenshell.api
 import ifcopenshell.util.representation
 from ifcsverchok.ifcstore import SvIfcStore
-import blenderbim.tool as tool
-import blenderbim.core.geometry as core
+import bonsai.tool as tool
+import bonsai.core.geometry as core
 from bpy.props import StringProperty, EnumProperty, IntProperty, FloatVectorProperty
 from sverchok.node_tree import SverchCustomTreeNode
 from sverchok.data_structure import updateNode, ensure_min_nesting

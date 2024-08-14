@@ -288,8 +288,8 @@ class Blender:
     def calculate(
         ifc_file: ifcopenshell.file, elements: set[ifcopenshell.entity_instance], qtos: dict, results: dict
     ) -> None:
-        import blenderbim.tool as tool
-        import blenderbim.bim.module.qto.calculator as calculator
+        import bonsai.tool as tool
+        import bonsai.bim.module.qto.calculator as calculator
 
         unit_converter = SI2ProjectUnitConverter(ifc_file)
         formula_functions = {}

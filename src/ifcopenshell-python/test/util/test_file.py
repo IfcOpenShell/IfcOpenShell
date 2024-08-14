@@ -28,7 +28,7 @@ HEADER_EXTRACTOR_TEST_FILE_STR = """
 ISO-10303-21;
 HEADER;
 FILE_DESCRIPTION(('ViewDefinition[DesignTransferView]'),'2;1');
-FILE_NAME('file.ifc','2024-06-25T15:48:10+05:00',(),(),'IfcOpenShell 0.0.0','BlenderBIM 0.0.999999-xxxxxxx','Nobody');
+FILE_NAME('file.ifc','2024-06-25T15:48:10+05:00',(),(),'IfcOpenShell 0.0.0','Bonsai 0.0.999999-xxxxxxx','Nobody');
 FILE_SCHEMA(('IFC4X3_ADD2'));
 ENDSEC;
 DATA;

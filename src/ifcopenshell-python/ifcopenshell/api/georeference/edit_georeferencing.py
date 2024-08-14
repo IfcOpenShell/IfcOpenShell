@@ -31,7 +31,7 @@ def edit_georeferencing(
     Setting the correct georeferencing parameters is a complex topic and
     should ideally be done with three parties present: the lead architect,
     surveyor, and a third-party digital engineer with expertise in IFC to
-    moderate. For more information, read the BlenderBIM Add-on documentation
+    moderate. For more information, read the Bonsai documentation
     for Georeferencing:
     https://docs.bonsaibim.org/users/advanced/georeferencing.html
 
@@ -63,7 +63,7 @@ def edit_georeferencing(
 
         # For buildings, it is almost always recommended to specify map
         # conversion parameters to a false origin and orientation to project
-        # north. See the diagram in the BlenderBIM Add-on Georeferencing
+        # north. See the diagram in the Bonsai Georeferencing
         # documentation for correct calculation of the X Axis Abcissa and
         # Ordinate.
         ifcopenshell.api.georeference.edit_georeferencing(model,
