@@ -211,7 +211,7 @@ not see it all the time.
 .. seealso::
 
     You can use the `Search IFC Class
-    <https://blenderbim.org/search-ifc-class.html>`__ tool to learn the correct
+    <https://bonsaibim.org/search-ifc-class.html>`__ tool to learn the correct
     classes and predefined types you should see.
 
 Press the **Select Icon** to select all objects that are of the same

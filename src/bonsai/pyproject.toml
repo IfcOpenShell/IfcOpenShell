@@ -18,8 +18,8 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "http://blenderbim.org"
-Documentation = "https://docs.blenderbim.org"
+Homepage = "http://bonsaibim.org"
+Documentation = "https://docs.bonsaibim.org"
 Issues = "https://github.com/IfcOpenShell/IfcOpenShell/issues"
 
 [tool.setuptools.packages.find]
