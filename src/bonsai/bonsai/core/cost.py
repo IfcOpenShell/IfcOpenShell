@@ -23,7 +23,7 @@ if TYPE_CHECKING:
     import bpy
     import ifcopenshell
     import ifcopenshell.util.cost
-    import blenderbim.tool as tool
+    import bonsai.tool as tool
 
 
 def add_cost_schedule(ifc: tool.Ifc, name: str, predefined_type: str) -> None:

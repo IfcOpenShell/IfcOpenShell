@@ -21,7 +21,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     import bpy
-    import blenderbim.tool as tool
+    import bonsai.tool as tool
 
 
 def calculate_circle_radius(qto: tool.Qto, obj: bpy.types.Object) -> float:

@@ -23,7 +23,7 @@ from typing import TYPE_CHECKING, Optional
 if TYPE_CHECKING:
     import bpy
     import ifcopenshell
-    import blenderbim.tool as tool
+    import bonsai.tool as tool
 
 
 def run_migrate_patch(patch: tool.Patch, infile: str, outfile: str, schema: str) -> None:
