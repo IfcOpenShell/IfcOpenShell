@@ -19,7 +19,7 @@
 import os
 import sys
 
-# Ensure we don't try to import bpy or blenderbim.bim
+# Ensure we don't try to import bpy or bonsai.bim
 # to support running core tests.
 # We assume if bpy was never loaded in current python session
 # then we're not in Blender. It's still possible to use
@@ -51,10 +51,10 @@ def get_last_commit_hash() -> Union[str, None]:
     return last_commit_hash[:7]
 
 
-# Accessed from blenderbim extension:
+# Accessed from bonsai extension:
 bbim_semver: dict[str, Any] = {}
 
-# Accessed from blenderbim dependency:
+# Accessed from bonsai dependency:
 last_error = None
 last_actions: deque = deque(maxlen=10)
 FIRST_INSTALLED_BBIM_VERSION: Union[str, None] = None
@@ -93,8 +93,8 @@ def get_debug_info():
         "machine": platform.machine(),
         "processor": platform.processor(),
         "blender_version": bpy.app.version_string,
-        "blenderbim_version": bbim_version,
-        "blenderbim_commit_hash": get_last_commit_hash(),
+        "bonsai_version": bbim_version,
+        "bonsai_commit_hash": get_last_commit_hash(),
         "last_actions": last_actions,
         "last_error": last_error,
     }
@@ -212,7 +212,7 @@ if IN_BLENDER:
     try:
         import git
 
-        # We can't just use __file__ as blenderbim/__init__.py is typically not symlinked
+        # We can't just use __file__ as bonsai/__init__.py is typically not symlinked
         # as Blender have errors symlinking main addon package file.
         path = Path(__file__).resolve().parent
         repo = git.Repo(str(path), search_parent_directories=True)
@@ -238,23 +238,23 @@ if IN_BLENDER:
             if platform.system() == "Windows":
                 clean_up_dlls_safe_links()
 
-            import blenderbim.bim
+            import bonsai.bim
 
             current_version = bbim_semver["version"]
-            if blenderbim.FIRST_INSTALLED_BBIM_VERSION is None:
-                blenderbim.FIRST_INSTALLED_BBIM_VERSION = current_version
-            elif not blenderbim.REINSTALLED_BBIM_VERSION and blenderbim.FIRST_INSTALLED_BBIM_VERSION != current_version:
-                blenderbim.REINSTALLED_BBIM_VERSION = current_version
+            if bonsai.FIRST_INSTALLED_BBIM_VERSION is None:
+                bonsai.FIRST_INSTALLED_BBIM_VERSION = current_version
+            elif not bonsai.REINSTALLED_BBIM_VERSION and bonsai.FIRST_INSTALLED_BBIM_VERSION != current_version:
+                bonsai.REINSTALLED_BBIM_VERSION = current_version
 
-            blenderbim.bim.register()
+            bonsai.bim.register()
 
         def unregister():
             if platform.system() == "Windows":
                 safe_link_dlls()
 
-            import blenderbim.bim
+            import bonsai.bim
 
-            blenderbim.bim.unregister()
+            bonsai.bim.unregister()
 
     except:
 
@@ -300,10 +300,10 @@ if IN_BLENDER:
                 b3d = ".".join(info["blender_version"].split(".")[0:2])
                 box.label(text="System Information:")
                 box.label(text=f"Blender {b3d} {info['os']} {info['machine']}", icon="BLENDER")
-                blenderbim_version = info["blenderbim_version"]
-                if commit_hash := info.get("blenderbim_commit_hash"):
-                    blenderbim_version += f"-{commit_hash}"
-                box.label(text=f"Python {py} BBIM {info['blenderbim_version']}", icon="SCRIPTPLUGINS")
+                bonsai_version = info["bonsai_version"]
+                if commit_hash := info.get("bonsai_commit_hash"):
+                    bonsai_version += f"-{commit_hash}"
+                box.label(text=f"Python {py} BBIM {info['bonsai_version']}", icon="SCRIPTPLUGINS")
 
                 binary_py = get_binary_info().get("binary_python_version")
                 if binary_py and py != binary_py:
@@ -328,7 +328,7 @@ if IN_BLENDER:
 
                 layout.label(text="Try Reinstalling:", icon="IMPORT")
                 op = layout.operator("bim.open_uri", text="Re-download Add-on")
-                bbim_version = info["blenderbim_version"]
+                bbim_version = info["bonsai_version"]
                 py_tag = py.replace(".", "")
                 if "Linux" in info["os"]:
                     os = "linux-x64"
@@ -339,7 +339,7 @@ if IN_BLENDER:
                         os = "macos-x64"
                 else:
                     os = "windows-x64"
-                op.uri = f"https://github.com/IfcOpenShell/IfcOpenShell/releases/download/blenderbim-{bbim_version}/blenderbim_py{py_tag}-{bbim_version}-{os}.zip"
+                op.uri = f"https://github.com/IfcOpenShell/IfcOpenShell/releases/download/bonsai-{bbim_version}/bonsai_py{py_tag}-{bbim_version}-{os}.zip"
 
         class OpenUri(bpy.types.Operator):
             bl_idname = "bim.open_uri"
