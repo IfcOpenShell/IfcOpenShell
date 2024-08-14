@@ -23,14 +23,14 @@ import json
 import os
 import ifcopenshell.api
 import ifcopenshell.util.element
-import blenderbim.core.tool
-import blenderbim.tool as tool
-import blenderbim.bim
+import bonsai.core.tool
+import bonsai.tool as tool
+import bonsai.bim
 import types
 import importlib
 from mathutils import Vector
 from pathlib import Path
-from blenderbim.bim.ifc import IFC_CONNECTED_TYPE
+from bonsai.bim.ifc import IFC_CONNECTED_TYPE
 from typing import Any, Optional, Union, Literal, Iterable, Callable
 from typing_extensions import assert_never
 
@@ -49,7 +49,7 @@ VIEWPORT_ATTRIBUTES = [
 OBJECT_DATA_TYPE = Union[bpy.types.Mesh, bpy.types.Curve, bpy.types.Camera]
 
 
-class Blender(blenderbim.core.tool.Blender):
+class Blender(bonsai.core.tool.Blender):
     OBJECT_TYPES_THAT_SUPPORT_EDIT_MODE = ("MESH", "CURVE", "SURFACE", "META", "FONT", "LATTICE", "ARMATURE")
     OBJECT_TYPES_THAT_SUPPORT_EDIT_GPENCIL_MODE = ("GPENCIL",)
     TYPE_MANAGER_ICON = "LIGHTPROBE_VOLUME" if bpy.app.version >= (4, 1, 0) else "LIGHTPROBE_GRID"
@@ -943,7 +943,7 @@ class Blender(blenderbim.core.tool.Blender):
         return commit_hash[:7]
 
     @classmethod
-    def get_blenderbim_version(cls) -> str:
+    def get_bonsai_version(cls) -> str:
         bbim = cls.get_bbim_extension_package()
         version = bbim.bbim_semver["version"]
         if commit_hash := cls.get_last_commit_hash():
@@ -952,11 +952,11 @@ class Blender(blenderbim.core.tool.Blender):
 
     @classmethod
     def register_toolbar(cls):
-        import blenderbim.bim.module.model.workspace as ws_model
-        import blenderbim.bim.module.drawing.workspace as ws_drawing
-        import blenderbim.bim.module.spatial.workspace as ws_spatial
-        import blenderbim.bim.module.structural.workspace as ws_structural
-        import blenderbim.bim.module.covering.workspace as ws_covering
+        import bonsai.bim.module.model.workspace as ws_model
+        import bonsai.bim.module.drawing.workspace as ws_drawing
+        import bonsai.bim.module.spatial.workspace as ws_spatial
+        import bonsai.bim.module.structural.workspace as ws_structural
+        import bonsai.bim.module.covering.workspace as ws_covering
 
         if bpy.app.background:
             return
@@ -984,11 +984,11 @@ class Blender(blenderbim.core.tool.Blender):
 
     @classmethod
     def unregister_toolbar(cls):
-        import blenderbim.bim.module.model.workspace as ws_model
-        import blenderbim.bim.module.drawing.workspace as ws_drawing
-        import blenderbim.bim.module.spatial.workspace as ws_spatial
-        import blenderbim.bim.module.structural.workspace as ws_structural
-        import blenderbim.bim.module.covering.workspace as ws_covering
+        import bonsai.bim.module.model.workspace as ws_model
+        import bonsai.bim.module.drawing.workspace as ws_drawing
+        import bonsai.bim.module.spatial.workspace as ws_spatial
+        import bonsai.bim.module.structural.workspace as ws_structural
+        import bonsai.bim.module.covering.workspace as ws_covering
 
         if bpy.app.background:
             return
@@ -1022,7 +1022,7 @@ class Blender(blenderbim.core.tool.Blender):
             if not hasattr(item, "bl_rna") or not isinstance(item.bl_rna, bpy.types.Panel):
                 continue
             # ignore bbim panels
-            if item.__module__.startswith("blenderbim"):
+            if item.__module__.startswith("bonsai"):
                 continue
             # filter scene panels
             if getattr(item, "bl_context", None) != "scene":
@@ -1075,7 +1075,7 @@ class Blender(blenderbim.core.tool.Blender):
         def poll_check_blender_tab(cls, context):
             return tool.Blender.is_tab(context, "BLENDER")
 
-        polls = blenderbim.bim.original_scene_panels_polls
+        polls = bonsai.bim.original_scene_panels_polls
 
         # override poll method
         if not hasattr(original_panel, "poll"):
@@ -1096,7 +1096,7 @@ class Blender(blenderbim.core.tool.Blender):
 
     @classmethod
     def remove_scene_panel_override(cls, panel: bpy.types.Panel) -> None:
-        polls = blenderbim.bim.original_scene_panels_polls
+        polls = bonsai.bim.original_scene_panels_polls
 
         poll = polls[panel]
         if poll is None:
@@ -1125,7 +1125,7 @@ class Blender(blenderbim.core.tool.Blender):
         return importlib.import_module(name)
 
     @classmethod
-    def get_addon_preferences(cls) -> blenderbim.bim.ui.BIM_ADDON_preferences:
+    def get_addon_preferences(cls) -> bonsai.bim.ui.BIM_ADDON_preferences:
         blender_package_name = cls.get_blender_addon_package_name()
         return bpy.context.preferences.addons[blender_package_name].preferences
 

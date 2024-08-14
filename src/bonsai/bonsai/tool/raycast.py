@@ -18,14 +18,14 @@
 
 import bpy
 from bpy_extras import view3d_utils
-import blenderbim.core.tool
-import blenderbim.tool as tool
+import bonsai.core.tool
+import bonsai.tool as tool
 import math
 import mathutils
 from mathutils import Matrix, Vector
 
 
-class Raycast(blenderbim.core.tool.Raycast):
+class Raycast(bonsai.core.tool.Raycast):
     @classmethod
     def get_visible_objects(cls, context):
         depsgraph = context.evaluated_depsgraph_get()

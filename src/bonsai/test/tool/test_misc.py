@@ -21,15 +21,15 @@ import math
 import numpy
 import ifcopenshell
 import test.bim.bootstrap
-import blenderbim.core.tool
-import blenderbim.tool as tool
-from blenderbim.tool.misc import Misc as subject
-from blenderbim.bim.ifc import IfcStore
+import bonsai.core.tool
+import bonsai.tool as tool
+from bonsai.tool.misc import Misc as subject
+from bonsai.bim.ifc import IfcStore
 
 
 class TestImplementsTool(test.bim.bootstrap.NewFile):
     def test_run(self):
-        assert isinstance(subject(), blenderbim.core.tool.Misc)
+        assert isinstance(subject(), bonsai.core.tool.Misc)
 
 
 class TestGetObjectStorey(test.bim.bootstrap.NewFile):

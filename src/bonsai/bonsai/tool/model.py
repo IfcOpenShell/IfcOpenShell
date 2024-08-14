@@ -28,25 +28,25 @@ import ifcopenshell.util.element
 import ifcopenshell.util.unit
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
-import blenderbim.core.geometry
-import blenderbim.core.tool
-import blenderbim.tool as tool
-import blenderbim.core.geometry as geometry
+import bonsai.core.geometry
+import bonsai.core.tool
+import bonsai.tool as tool
+import bonsai.core.geometry as geometry
 from math import atan, degrees
 from mathutils import Matrix, Vector
 from copy import deepcopy
 from functools import partial
-from blenderbim.bim import import_ifc
-from blenderbim.bim.module.geometry.helper import Helper
-from blenderbim.bim.module.model.data import AuthoringData, RailingData, RoofData, WindowData, DoorData
-from blenderbim.bim.module.model.opening import FilledOpeningGenerator
+from bonsai.bim import import_ifc
+from bonsai.bim.module.geometry.helper import Helper
+from bonsai.bim.module.model.data import AuthoringData, RailingData, RoofData, WindowData, DoorData
+from bonsai.bim.module.model.opening import FilledOpeningGenerator
 from ifcopenshell.util.shape_builder import V, ShapeBuilder
 from typing import Optional, Union, TypeVar, Any, Iterable, Literal
 
 T = TypeVar("T")
 
 
-class Model(blenderbim.core.tool.Model):
+class Model(bonsai.core.tool.Model):
     @classmethod
     def convert_si_to_unit(cls, value: T) -> T:
         if isinstance(value, (tuple, list)):
@@ -897,7 +897,7 @@ class Model(blenderbim.core.tool.Model):
     def sync_object_ifc_position(cls, obj):
         """make sure IFC position will be in sync with the Blender object position, if object was moved in Blender"""
         if tool.Ifc.is_moved(obj):
-            blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+            bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
 
     @classmethod
     def get_element_matrix(cls, element, keep_local=False):
@@ -930,7 +930,7 @@ class Model(blenderbim.core.tool.Model):
                 continue
             element = tool.Ifc.get_entity(obj)
             body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-            blenderbim.core.geometry.switch_representation(
+            bonsai.core.geometry.switch_representation(
                 tool.Ifc,
                 tool.Geometry,
                 obj=obj,

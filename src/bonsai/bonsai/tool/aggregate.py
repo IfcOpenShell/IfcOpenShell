@@ -17,14 +17,14 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import blenderbim.core.tool
-import blenderbim.tool as tool
+import bonsai.core.tool
+import bonsai.tool as tool
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 from typing import Union
 
 
-class Aggregate(blenderbim.core.tool.Aggregate):
+class Aggregate(bonsai.core.tool.Aggregate):
     @classmethod
     def can_aggregate(cls, relating_obj: bpy.types.Object, related_obj: bpy.types.Object) -> bool:
         relating_object = tool.Ifc.get_entity(relating_obj)

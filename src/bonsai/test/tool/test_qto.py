@@ -21,12 +21,12 @@ import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.pset
 import test.bim.bootstrap
-import blenderbim.core.tool
+import bonsai.core.tool
 import blenderbim.core.root
-import blenderbim.tool as tool
+import bonsai.tool as tool
 import blenderbim.bim.import_ifc as import_ifc
 import blenderbim.bim.module.qto.calculator as calculator
-from blenderbim.tool.qto import Qto as subject
+from bonsai.tool.qto import Qto as subject
 
 
 class TestImplementsTool(test.bim.bootstrap.NewFile):

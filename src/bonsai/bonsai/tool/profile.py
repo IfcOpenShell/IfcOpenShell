@@ -22,14 +22,14 @@ import ifcopenshell.util.element
 import ifcopenshell.util.unit
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
-import blenderbim.core.tool
-import blenderbim.tool as tool
+import bonsai.core.tool
+import bonsai.tool as tool
 import PIL.ImageDraw
-from blenderbim.bim.module.model.decorator import ProfileDecorator
+from bonsai.bim.module.model.decorator import ProfileDecorator
 from typing import Union
 
 
-class Profile(blenderbim.core.tool.Profile):
+class Profile(bonsai.core.tool.Profile):
     @classmethod
     def draw_image_for_ifc_profile(
         cls, draw: PIL.ImageDraw.ImageDraw, profile: ifcopenshell.entity_instance, size: float

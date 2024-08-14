@@ -19,14 +19,14 @@
 import bpy
 import bmesh
 import ifcopenshell
-import blenderbim.core.tool
-import blenderbim.core.root
-import blenderbim.tool as tool
+import bonsai.core.tool
+import bonsai.core.root
+import bonsai.tool as tool
 from mathutils import Vector, Matrix
-from blenderbim.bim.ifc import IfcStore
+from bonsai.bim.ifc import IfcStore
 
 
-class Misc(blenderbim.core.tool.Misc):
+class Misc(bonsai.core.tool.Misc):
     @classmethod
     def get_object_storey(cls, obj):
         storey = ifcopenshell.util.element.get_container(tool.Ifc.get_entity(obj))
@@ -78,7 +78,7 @@ class Misc(blenderbim.core.tool.Misc):
 
     @classmethod
     def run_root_copy_class(cls, obj=None):
-        return blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=obj)
+        return bonsai.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=obj)
 
     @classmethod
     def scale_object_to_height(cls, obj, height):

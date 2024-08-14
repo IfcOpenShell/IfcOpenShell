@@ -85,7 +85,7 @@ class IfcExporter:
         )
         self.file.wrapped_data.header.file_name.preprocessor_version = "IfcOpenShell {}".format(ifcopenshell.version)
         self.file.wrapped_data.header.file_name.originating_system = "{} {}".format(
-            self.get_application_name(), tool.Blender.get_blenderbim_version()
+            self.get_application_name(), tool.Blender.get_bonsai_version()
         )
 
     def sync_all_objects(self) -> list[ifcopenshell.entity_instance]:

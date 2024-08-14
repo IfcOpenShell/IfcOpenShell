@@ -24,13 +24,13 @@ import ifcopenshell.api.georeference
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.placement
 import ifcopenshell.util.unit
-import blenderbim.core.tool
-import blenderbim.tool as tool
-import blenderbim.bim.helper
+import bonsai.core.tool
+import bonsai.tool as tool
+import bonsai.bim.helper
 from typing import Any, Union, Literal
 
 
-class Georeference(blenderbim.core.tool.Georeference):
+class Georeference(bonsai.core.tool.Georeference):
     COORDINATE_TYPE = Literal["blender", "local", "map"]
 
     @classmethod
@@ -69,7 +69,7 @@ class Georeference(blenderbim.core.tool.Georeference):
         for context in tool.Ifc.get().by_type("IfcGeometricRepresentationContext", include_subtypes=False):
             if context.HasCoordinateOperation:
                 projected_crs = context.HasCoordinateOperation[0].TargetCRS
-                blenderbim.bim.helper.import_attributes2(projected_crs, props.projected_crs, callback=callback)
+                bonsai.bim.helper.import_attributes2(projected_crs, props.projected_crs, callback=callback)
                 return
 
     @classmethod
@@ -125,7 +125,7 @@ class Georeference(blenderbim.core.tool.Georeference):
         for context in tool.Ifc.get().by_type("IfcGeometricRepresentationContext", include_subtypes=False):
             if context.HasCoordinateOperation:
                 coordinate_operation = context.HasCoordinateOperation[0]
-                blenderbim.bim.helper.import_attributes2(
+                bonsai.bim.helper.import_attributes2(
                     coordinate_operation, props.coordinate_operation, callback=callback
                 )
                 return
@@ -160,7 +160,7 @@ class Georeference(blenderbim.core.tool.Georeference):
                 return True
 
         props = bpy.context.scene.BIMGeoreferenceProperties
-        return blenderbim.bim.helper.export_attributes(props.projected_crs, callback=callback)
+        return bonsai.bim.helper.export_attributes(props.projected_crs, callback=callback)
 
     @classmethod
     def export_coordinate_operation(cls) -> dict[str, Any]:
@@ -191,7 +191,7 @@ class Georeference(blenderbim.core.tool.Georeference):
                 return True
 
         props = bpy.context.scene.BIMGeoreferenceProperties
-        return blenderbim.bim.helper.export_attributes(props.coordinate_operation, callback=callback)
+        return bonsai.bim.helper.export_attributes(props.coordinate_operation, callback=callback)
 
     @classmethod
     def get_true_north_attributes(cls) -> Union[list[float], None]:

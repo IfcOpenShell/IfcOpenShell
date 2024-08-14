@@ -17,9 +17,9 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from blenderbim.bim.module.web.data import WebData
-import blenderbim.core.tool
-import blenderbim.tool as tool
+from bonsai.bim.module.web.data import WebData
+import bonsai.core.tool
+import bonsai.tool as tool
 import ifcopenshell.api.sequence
 from typing import Any, Dict, Optional
 import time
@@ -51,7 +51,7 @@ IFC_TASK_ATTRIBUTE_MAP = {
 }
 
 
-class Web(blenderbim.core.tool.Web):
+class Web(bonsai.core.tool.Web):
     @classmethod
     def generate_port_number(cls) -> int:
         """
@@ -124,7 +124,7 @@ class Web(blenderbim.core.tool.Web):
 
         env = os.environ.copy()
         env["BLENDERBIM_LIB_PATH"] = str(blenderbim_lib_path)
-        env["BLENDERBIM_VERSION"] = tool.Blender.get_blenderbim_version()
+        env["BLENDERBIM_VERSION"] = tool.Blender.get_bonsai_version()
 
         ws_process = subprocess.Popen(
             [sys.executable, ws_path, "--p", str(port), "--host", "127.0.0.1"],

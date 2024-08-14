@@ -76,7 +76,7 @@ class AuginCreateNewModel(bpy.types.Operator):
         props.project_filename = "BBM{}{}".format(
             datetime.datetime.now().strftime("%Y%m%d%H%M%S"), "".join(random.choice(chars) for _ in range(6))
         )
-        addon_version = tool.Blender.get_blenderbim_version()
+        addon_version = tool.Blender.get_bonsai_version()
 
         payload = {
             "user_token": props.token,

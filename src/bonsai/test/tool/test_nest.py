@@ -18,15 +18,15 @@
 
 import bpy
 import ifcopenshell
-import blenderbim.core.tool
-import blenderbim.tool as tool
+import bonsai.core.tool
+import bonsai.tool as tool
 from test.bim.bootstrap import NewFile
-from blenderbim.tool.nest import Nest as subject
+from bonsai.tool.nest import Nest as subject
 
 
 class TestImplementsTool(NewFile):
     def test_run(self):
-        assert isinstance(subject(), blenderbim.core.tool.Nest)
+        assert isinstance(subject(), bonsai.core.tool.Nest)
 
 
 class TestCanNest(NewFile):

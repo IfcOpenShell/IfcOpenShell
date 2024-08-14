@@ -21,17 +21,17 @@ import math
 import numpy as np
 import ifcopenshell
 import ifcopenshell.api.type
-import blenderbim.core.tool
-import blenderbim.tool as tool
+import bonsai.core.tool
+import bonsai.tool as tool
 from mathutils import Vector
 from test.bim.bootstrap import NewFile
-from blenderbim.tool.geometry import Geometry as subject
+from bonsai.tool.geometry import Geometry as subject
 from typing import Union
 
 
 class TestImplementsTool(NewFile):
     def test_run(self):
-        assert isinstance(subject(), blenderbim.core.tool.Geometry)
+        assert isinstance(subject(), bonsai.core.tool.Geometry)
 
 
 class TestChangeObjectData(NewFile):

@@ -20,14 +20,13 @@ from __future__ import annotations
 import bpy
 import ifcopenshell.api
 import ifcopenshell.util.classification
-import blenderbim.core.tool
-import blenderbim.tool as tool
-import blenderbim.bim
+import bonsai.core.tool
+import bonsai.tool as tool
 from typing import Any, Optional, Union, Literal, Iterable, Callable
 from typing_extensions import assert_never
 
 
-class Classification(blenderbim.core.tool.Classification):
+class Classification(bonsai.core.tool.Classification):
     @classmethod
     def get_location(cls, classification: ifcopenshell.entity_instance) -> Union[str, None]:
         schema = classification.file.schema

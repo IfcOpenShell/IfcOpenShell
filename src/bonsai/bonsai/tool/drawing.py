@@ -32,17 +32,18 @@ import platform
 import mathutils
 import subprocess
 import numpy as np
-import blenderbim.core.tool
-import blenderbim.core.geometry
-import blenderbim.tool as tool
+import bonsai.core.tool
+import bonsai.core.geometry
+import bonsai.tool as tool
 import ifcopenshell.api
 import ifcopenshell.geom
 import ifcopenshell.util.representation
 import ifcopenshell.util.element
 import ifcopenshell.util.selector
 import ifcopenshell.util.shape
-import blenderbim.bim.import_ifc
-import blenderbim.core.root
+import bonsai.bim.helper
+import bonsai.bim.import_ifc
+import bonsai.core.root
 from shapely.ops import unary_union
 from lxml import etree
 from mathutils import Vector, Matrix
@@ -51,7 +52,7 @@ from typing import Optional, Union, Iterable, Any, Literal
 from pathlib import Path
 
 
-class Drawing(blenderbim.core.tool.Drawing):
+class Drawing(bonsai.core.tool.Drawing):
     ANNOTATION_DATA_TYPE = Literal["empty", "curve", "mesh"]
     DOCUMENT_TYPE = Literal["SCHEDULE", "REFERENCE"]
 
@@ -96,7 +97,7 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def create_annotation_object(cls, drawing: ifcopenshell.entity_instance, object_type: str) -> bpy.types.Object:
-        import blenderbim.bim.module.drawing.annotation as annotation
+        import bonsai.bim.module.drawing.annotation as annotation
 
         data_type = cls.get_annotation_data_type(object_type)
         obj = annotation.Annotator.get_annotation_obj(drawing, object_type, data_type)
@@ -269,7 +270,7 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def create_svg_schedule(cls, schedule: ifcopenshell.entity_instance) -> None:
-        import blenderbim.bim.module.drawing.scheduler as scheduler
+        import bonsai.bim.module.drawing.scheduler as scheduler
 
         schedule_creator = scheduler.Scheduler()
         schedule_creator.schedule(
@@ -278,7 +279,7 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def create_svg_sheet(cls, document: ifcopenshell.entity_instance, titleblock: str) -> str:
-        import blenderbim.bim.module.drawing.sheeter as sheeter
+        import bonsai.bim.module.drawing.sheeter as sheeter
 
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.data_dir = bpy.context.scene.BIMProperties.data_dir
@@ -288,7 +289,7 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def add_drawings(cls, sheet: ifcopenshell.entity_instance) -> None:
-        import blenderbim.bim.module.drawing.sheeter as sheeter
+        import bonsai.bim.module.drawing.sheeter as sheeter
 
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.data_dir = bpy.context.scene.BIMProperties.data_dir
@@ -401,7 +402,7 @@ class Drawing(blenderbim.core.tool.Drawing):
     def export_text_literal_attributes(cls, obj: bpy.types.Object) -> list[dict[str, Any]]:
         literals = []
         for literal_props in obj.BIMTextProperties.literals:
-            literal_data = blenderbim.bim.helper.export_attributes(literal_props.attributes)
+            literal_data = bonsai.bim.helper.export_attributes(literal_props.attributes)
             literals.append(literal_data)
         return literals
 
@@ -671,8 +672,8 @@ class Drawing(blenderbim.core.tool.Drawing):
             [e for e in cls.get_group_elements(group) if e.is_a("IfcAnnotation") and e.ObjectType != "DRAWING"]
         )
         logger = logging.getLogger("ImportIFC")
-        ifc_import_settings = blenderbim.bim.import_ifc.IfcImportSettings.factory(bpy.context, None, logger)
-        ifc_importer = blenderbim.bim.import_ifc.IfcImporter(ifc_import_settings)
+        ifc_import_settings = bonsai.bim.import_ifc.IfcImportSettings.factory(bpy.context, None, logger)
+        ifc_importer = bonsai.bim.import_ifc.IfcImporter(ifc_import_settings)
         ifc_importer.file = tool.Ifc.get()
         ifc_importer.calculate_unit_scale()
         ifc_importer.process_context_filter()
@@ -751,7 +752,7 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def import_camera_props(cls, drawing: ifcopenshell.entity_instance, obj: bpy.types.Object) -> None:
-        from blenderbim.bim.module.drawing.prop import get_diagram_scales
+        from bonsai.bim.module.drawing.prop import get_diagram_scales
 
         # Temporarily clear the definition id to prevent prop update callbacks to IFC.
         ifc_definition_id = obj.BIMObjectProperties.ifc_definition_id
@@ -891,14 +892,14 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def import_text_attributes(cls, obj: bpy.types.Object) -> None:
-        from blenderbim.bim.module.drawing.prop import BOX_ALIGNMENT_POSITIONS
+        from bonsai.bim.module.drawing.prop import BOX_ALIGNMENT_POSITIONS
 
         props = obj.BIMTextProperties
         props.literals.clear()
 
         for ifc_literal in cls.get_text_literal(obj, return_list=True):
             literal_props = props.literals.add()
-            blenderbim.bim.helper.import_attributes2(ifc_literal, literal_props.attributes)
+            bonsai.bim.helper.import_attributes2(ifc_literal, literal_props.attributes)
 
             box_alignment_mask = [False] * 9
             position_string = literal_props.attributes["BoxAlignment"].string_value
@@ -906,7 +907,7 @@ class Drawing(blenderbim.core.tool.Drawing):
             literal_props.box_alignment = box_alignment_mask
             literal_props.ifc_definition_id = ifc_literal.id()
 
-        from blenderbim.bim.module.drawing.data import DecoratorData
+        from bonsai.bim.module.drawing.data import DecoratorData
 
         text_data = DecoratorData.get_ifc_text_data(obj)
         props.font_size = str(text_data["FontSize"])
@@ -958,7 +959,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         context=None,
         ifc_representation_class=None,
     ) -> Union[ifcopenshell.entity_instance, None]:
-        return blenderbim.core.root.assign_class(
+        return bonsai.core.root.assign_class(
             tool.Ifc,
             tool.Collector,
             tool.Root,
@@ -998,7 +999,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         """updates pset `EPset_Annotation.Classes` value
         based on current font size from `obj.BIMTextProperties.font_size`
         """
-        from blenderbim.bim.module.drawing.data import FONT_SIZES
+        from bonsai.bim.module.drawing.data import FONT_SIZES
 
         props = obj.BIMTextProperties
         element = tool.Ifc.get_entity(obj)
@@ -1206,7 +1207,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         reference_element: ifcopenshell.entity_instance,
         context: ifcopenshell.entity_instance,
     ) -> ifcopenshell.entity_instance:
-        import blenderbim.bim.module.drawing.helper as helper
+        import bonsai.bim.module.drawing.helper as helper
 
         camera = tool.Ifc.get_object(drawing)
         bounds = helper.ortho_view_frame(camera.data) if camera.data.type == "ORTHO" else None
@@ -1273,7 +1274,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         reference_element: ifcopenshell.entity_instance,
         context: ifcopenshell.entity_instance,
     ) -> ifcopenshell.entity_instance:
-        import blenderbim.bim.module.drawing.helper as helper
+        import bonsai.bim.module.drawing.helper as helper
 
         reference_obj = tool.Ifc.get_object(reference_element)
         reference_obj.matrix_world
@@ -1397,7 +1398,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         reference_element: ifcopenshell.entity_instance,
         context: ifcopenshell.entity_instance,
     ) -> ifcopenshell.entity_instance:
-        import blenderbim.bim.module.drawing.helper as helper
+        import bonsai.bim.module.drawing.helper as helper
 
         target_view = tool.Drawing.get_drawing_target_view(drawing)
 
@@ -1569,7 +1570,7 @@ class Drawing(blenderbim.core.tool.Drawing):
             return cls.sync_grid_axis_object_placement(obj, element)
         if not hasattr(element, "ObjectPlacement"):
             return
-        blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+        bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
         return element
 
     @classmethod
@@ -1883,7 +1884,7 @@ class Drawing(blenderbim.core.tool.Drawing):
                     break
                 priority_representation = ifcopenshell.util.representation.get_representation(element, *subcontext)
                 if priority_representation:
-                    blenderbim.core.geometry.switch_representation(
+                    bonsai.core.geometry.switch_representation(
                         tool.Ifc,
                         tool.Geometry,
                         obj=obj,

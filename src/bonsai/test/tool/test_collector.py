@@ -20,15 +20,15 @@ import bpy
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.element
-import blenderbim.core.tool
-import blenderbim.tool as tool
-from blenderbim.tool.collector import Collector as subject
+import bonsai.core.tool
+import bonsai.tool as tool
+from bonsai.tool.collector import Collector as subject
 from test.bim.bootstrap import NewFile, NewIfc, NewIfc4X3
 
 
 class TestImplementsTool(NewFile):
     def test_run(self):
-        assert isinstance(subject(), blenderbim.core.tool.Collector)
+        assert isinstance(subject(), bonsai.core.tool.Collector)
 
 
 class TestAssign(NewIfc):

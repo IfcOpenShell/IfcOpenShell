@@ -18,15 +18,15 @@
 
 import bpy
 import ifcopenshell
-import blenderbim.core.tool
-import blenderbim.tool as tool
+import bonsai.core.tool
+import bonsai.tool as tool
 from test.bim.bootstrap import NewFile
-from blenderbim.tool.unit import Unit as subject
+from bonsai.tool.unit import Unit as subject
 
 
 class TestImplementsTool(NewFile):
     def test_run(self):
-        assert isinstance(subject(), blenderbim.core.tool.Unit)
+        assert isinstance(subject(), bonsai.core.tool.Unit)
 
 
 class TestClearActiveUnit(NewFile):

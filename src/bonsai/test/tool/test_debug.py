@@ -19,16 +19,16 @@
 import os
 import bpy
 import ifcopenshell
-import blenderbim.core.tool
-import blenderbim.tool as tool
+import bonsai.core.tool
+import bonsai.tool as tool
 from test.bim.bootstrap import NewFile
-from blenderbim.tool.debug import Debug as subject
-from blenderbim.bim.ifc import IfcStore
+from bonsai.tool.debug import Debug as subject
+from bonsai.bim.ifc import IfcStore
 
 
 class TestImplementsTool(NewFile):
     def test_run(self):
-        assert isinstance(subject(), blenderbim.core.tool.Debug)
+        assert isinstance(subject(), bonsai.core.tool.Debug)
 
 
 class TestAddSchemaIdentifier(NewFile):

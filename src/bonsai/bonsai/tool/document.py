@@ -18,12 +18,12 @@
 
 import bpy
 import ifcopenshell.util.system
-import blenderbim.core.tool
-import blenderbim.tool as tool
-from blenderbim.bim import import_ifc
+import bonsai.core.tool
+import bonsai.tool as tool
+from bonsai.bim import import_ifc
 
 
-class Document(blenderbim.core.tool.Document):
+class Document(bonsai.core.tool.Document):
     @classmethod
     def add_breadcrumb(cls, document):
         props = bpy.context.scene.BIMDocumentProperties
@@ -54,7 +54,7 @@ class Document(blenderbim.core.tool.Document):
 
     @classmethod
     def export_document_attributes(cls):
-        return blenderbim.bim.helper.export_attributes(bpy.context.scene.BIMDocumentProperties.document_attributes)
+        return bonsai.bim.helper.export_attributes(bpy.context.scene.BIMDocumentProperties.document_attributes)
 
     @classmethod
     def get_active_breadcrumb(cls):
@@ -66,7 +66,7 @@ class Document(blenderbim.core.tool.Document):
     def import_document_attributes(cls, document):
         props = bpy.context.scene.BIMDocumentProperties
         props.document_attributes.clear()
-        blenderbim.bim.helper.import_attributes2(document, props.document_attributes)
+        bonsai.bim.helper.import_attributes2(document, props.document_attributes)
 
     @classmethod
     def import_project_documents(cls):

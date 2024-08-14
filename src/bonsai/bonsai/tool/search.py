@@ -1,14 +1,14 @@
 import bpy
 import json
 import lark
-import blenderbim.core.tool
+import bonsai.core.tool
 import ifcopenshell.guid
 import ifcopenshell.util.selector
-from blenderbim.bim.prop import BIMFacet
+from bonsai.bim.prop import BIMFacet
 from typing import Union, Literal
 
 
-class Search(blenderbim.core.tool.Search):
+class Search(bonsai.core.tool.Search):
     @classmethod
     def get_group_query(cls, group: ifcopenshell.entity_instance) -> str:
         return json.loads(group.Description)["query"]

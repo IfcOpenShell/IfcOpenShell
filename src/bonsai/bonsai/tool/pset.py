@@ -20,14 +20,14 @@ import bpy
 import ifcopenshell
 import ifcopenshell.util.attribute
 import ifcopenshell.util.element
-import blenderbim.core.tool
-import blenderbim.tool as tool
-import blenderbim.bim.schema
+import bonsai.core.tool
+import bonsai.tool as tool
+import bonsai.bim.schema
 from typing import Union, Literal, Any
 from typing_extensions import assert_never
 
 
-class Pset(blenderbim.core.tool.Pset):
+class Pset(bonsai.core.tool.Pset):
     PSET_TYPE = Literal["PSET", "QTO"]
 
     @classmethod
@@ -72,7 +72,7 @@ class Pset(blenderbim.core.tool.Pset):
     def is_pset_applicable(cls, element: ifcopenshell.entity_instance, pset_name: str) -> bool:
         return bool(
             pset_name
-            in blenderbim.bim.schema.ifc.psetqto.get_applicable_names(
+            in bonsai.bim.schema.ifc.psetqto.get_applicable_names(
                 element.is_a(), ifcopenshell.util.element.get_predefined_type(element), pset_only=True
             )
         )
@@ -219,7 +219,7 @@ class Pset(blenderbim.core.tool.Pset):
             metadata.bool_value = False if metadata.is_null else bool(data[prop_template.Name])
 
         metadata.ifc_class = pset_template.Name
-        blenderbim.bim.helper.add_attribute_description(metadata, prop_template)
+        bonsai.bim.helper.add_attribute_description(metadata, prop_template)
 
     @classmethod
     def import_pset_from_template(
@@ -273,7 +273,7 @@ class Pset(blenderbim.core.tool.Pset):
 
     @classmethod
     def get_pset_template(cls, name: str) -> Union[ifcopenshell.entity_instance, None]:
-        return blenderbim.bim.schema.ifc.psetqto.get_by_name(name)
+        return bonsai.bim.schema.ifc.psetqto.get_by_name(name)
 
     @classmethod
     def add_proposed_property(cls, name: str, value: Any, props: bpy.types.PropertyGroup) -> None:

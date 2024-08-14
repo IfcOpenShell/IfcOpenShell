@@ -18,13 +18,13 @@
 
 import bpy
 import ifcopenshell.api
-import blenderbim.core.tool
-import blenderbim.tool as tool
+import bonsai.core.tool
+import bonsai.tool as tool
 import numpy as np
 from mathutils import Matrix
 
 
-class Surveyor(blenderbim.core.tool.Surveyor):
+class Surveyor(bonsai.core.tool.Surveyor):
     @classmethod
     def get_absolute_matrix(cls, obj: bpy.types.Object) -> Matrix:
         matrix = np.array(obj.matrix_world)

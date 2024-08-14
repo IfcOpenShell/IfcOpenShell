@@ -19,15 +19,14 @@
 import bpy
 import ifcopenshell
 import json
-import blenderbim.bim.helper
-import blenderbim.core.tool
-import blenderbim.core.structural
-import blenderbim.tool as tool
-from blenderbim.bim.ifc import IfcStore
+import bonsai.bim.helper
+import bonsai.core.tool
+import bonsai.tool as tool
+from bonsai.bim.ifc import IfcStore
 from pprint import pprint
 
 
-class Structural(blenderbim.core.tool.Structural):
+class Structural(bonsai.core.tool.Structural):
     @classmethod
     def disable_editing_structural_analysis_model(cls):
         bpy.context.scene.BIMStructuralProperties.active_structural_analysis_model_id = 0
@@ -121,7 +120,7 @@ class Structural(blenderbim.core.tool.Structural):
     @classmethod
     def get_structural_analysis_model_attributes(cls):
         props = bpy.context.scene.BIMStructuralProperties
-        attributes = blenderbim.bim.helper.export_attributes(props.structural_analysis_model_attributes)
+        attributes = bonsai.bim.helper.export_attributes(props.structural_analysis_model_attributes)
         return attributes
 
     @classmethod

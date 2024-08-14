@@ -19,18 +19,18 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.api
-import blenderbim.core.tool
-import blenderbim.tool as tool
+import bonsai.core.tool
+import bonsai.tool as tool
 import numpy as np
 from test.bim.bootstrap import NewFile
-from blenderbim.tool.system import System as subject
+from bonsai.tool.system import System as subject
 from mathutils import Euler, Vector, Matrix
 from math import pi
 
 
 class TestImplementsTool(NewFile):
     def test_run(self):
-        assert isinstance(subject(), blenderbim.core.tool.System)
+        assert isinstance(subject(), bonsai.core.tool.System)
 
 
 class TestAddPorts(NewFile):

@@ -17,14 +17,14 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import blenderbim.core.tool
-import blenderbim.tool as tool
-import blenderbim.bim.helper
+import bonsai.core.tool
+import bonsai.tool as tool
+import bonsai.bim.helper
 import ifcopenshell
 from typing import Union, Any
 
 
-class Owner(blenderbim.core.tool.Owner):
+class Owner(bonsai.core.tool.Owner):
     @classmethod
     def set_user(cls, user: ifcopenshell.entity_instance) -> None:
         bpy.context.scene.BIMOwnerProperties.active_user_id = user.id()
@@ -75,7 +75,7 @@ class Owner(blenderbim.core.tool.Owner):
                 for line in data[name] or []:
                     props.messaging_ids.add().name = line
 
-        blenderbim.bim.helper.import_attributes(address.is_a(), props.address_attributes, address.get_info(), callback)
+        bonsai.bim.helper.import_attributes(address.is_a(), props.address_attributes, address.get_info(), callback)
 
     @classmethod
     def clear_address(cls) -> None:
@@ -88,7 +88,7 @@ class Owner(blenderbim.core.tool.Owner):
     @classmethod
     def export_address_attributes(cls) -> dict[str, Any]:
         props = bpy.context.scene.BIMOwnerProperties
-        attributes = blenderbim.bim.helper.export_attributes(props.address_attributes)
+        attributes = bonsai.bim.helper.export_attributes(props.address_attributes)
         if cls.get_address().is_a("IfcPostalAddress"):
             attributes["AddressLines"] = [l.name for l in props.address_lines] or None
         elif cls.get_address().is_a("IfcTelecomAddress"):
@@ -136,9 +136,7 @@ class Owner(blenderbim.core.tool.Owner):
         props = bpy.context.scene.BIMOwnerProperties
         props.organisation_attributes.clear()
 
-        blenderbim.bim.helper.import_attributes(
-            "IfcOrganization", props.organisation_attributes, organisation.get_info()
-        )
+        bonsai.bim.helper.import_attributes("IfcOrganization", props.organisation_attributes, organisation.get_info())
 
     @classmethod
     def clear_organisation(cls) -> None:
@@ -147,7 +145,7 @@ class Owner(blenderbim.core.tool.Owner):
     @classmethod
     def export_organisation_attributes(cls) -> dict[str, Any]:
         props = bpy.context.scene.BIMOwnerProperties
-        attributes = blenderbim.bim.helper.export_attributes(props.organisation_attributes)
+        attributes = bonsai.bim.helper.export_attributes(props.organisation_attributes)
         return attributes
 
     @classmethod
@@ -178,7 +176,7 @@ class Owner(blenderbim.core.tool.Owner):
                 for name in data["SuffixTitles"] or []:
                     props.suffix_titles.add().name = name or ""
 
-        blenderbim.bim.helper.import_attributes("IfcPerson", props.person_attributes, person.get_info(), callback)
+        bonsai.bim.helper.import_attributes("IfcPerson", props.person_attributes, person.get_info(), callback)
 
     @classmethod
     def clear_person(cls) -> None:
@@ -187,7 +185,7 @@ class Owner(blenderbim.core.tool.Owner):
     @classmethod
     def export_person_attributes(cls) -> dict[str, Any]:
         props = bpy.context.scene.BIMOwnerProperties
-        attributes = blenderbim.bim.helper.export_attributes(props.person_attributes)
+        attributes = bonsai.bim.helper.export_attributes(props.person_attributes)
         attributes["MiddleNames"] = [v.name for v in props.middle_names] if props.middle_names else None
         attributes["PrefixTitles"] = [v.name for v in props.prefix_titles] if props.prefix_titles else None
         attributes["SuffixTitles"] = [v.name for v in props.suffix_titles] if props.suffix_titles else None
@@ -224,7 +222,7 @@ class Owner(blenderbim.core.tool.Owner):
         role = cls.get_role()
         props = bpy.context.scene.BIMOwnerProperties
         props.role_attributes.clear()
-        blenderbim.bim.helper.import_attributes("IfcActorRole", props.role_attributes, role.get_info())
+        bonsai.bim.helper.import_attributes("IfcActorRole", props.role_attributes, role.get_info())
 
     @classmethod
     def clear_role(cls) -> None:
@@ -236,7 +234,7 @@ class Owner(blenderbim.core.tool.Owner):
 
     @classmethod
     def export_role_attributes(cls) -> dict[str, Any]:
-        return blenderbim.bim.helper.export_attributes(bpy.context.scene.BIMOwnerProperties.role_attributes)
+        return bonsai.bim.helper.export_attributes(bpy.context.scene.BIMOwnerProperties.role_attributes)
 
     @classmethod
     def set_actor(cls, actor: ifcopenshell.entity_instance) -> None:
@@ -246,7 +244,7 @@ class Owner(blenderbim.core.tool.Owner):
     def import_actor_attributes(cls, actor: ifcopenshell.entity_instance) -> None:
         props = bpy.context.scene.BIMOwnerProperties
         props.actor_attributes.clear()
-        blenderbim.bim.helper.import_attributes2(actor, props.actor_attributes)
+        bonsai.bim.helper.import_attributes2(actor, props.actor_attributes)
 
     @classmethod
     def clear_actor(cls) -> None:
@@ -255,7 +253,7 @@ class Owner(blenderbim.core.tool.Owner):
     @classmethod
     def export_actor_attributes(cls) -> dict[str, Any]:
         props = bpy.context.scene.BIMOwnerProperties
-        attributes = blenderbim.bim.helper.export_attributes(props.actor_attributes)
+        attributes = bonsai.bim.helper.export_attributes(props.actor_attributes)
         return attributes
 
     @classmethod

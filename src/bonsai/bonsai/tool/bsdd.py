@@ -1,12 +1,12 @@
-import blenderbim.core.tool
-import blenderbim.tool as tool
+import bonsai.core.tool
+import bonsai.tool as tool
 import bpy
 import json
 import bsdd
 from typing import Any, Union, Optional
 
 
-class Bsdd(blenderbim.core.tool.Bsdd):
+class Bsdd(bonsai.core.tool.Bsdd):
     @classmethod
     def clear_class_psets(cls) -> None:
         bpy.context.scene.BIMBSDDProperties.classification_psets.clear()

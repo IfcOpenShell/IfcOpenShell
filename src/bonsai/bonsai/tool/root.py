@@ -22,17 +22,14 @@ import ifcopenshell.api
 import ifcopenshell.util.representation
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
-import blenderbim.core.tool
-import blenderbim.core.root
-import blenderbim.core.aggregate
-import blenderbim.core.geometry
-import blenderbim.core.material
-import blenderbim.core.style
-import blenderbim.tool as tool
+import bonsai.core.tool
+import bonsai.core.aggregate
+import bonsai.core.geometry
+import bonsai.tool as tool
 from typing import Union, Optional, Any
 
 
-class Root(blenderbim.core.tool.Root):
+class Root(bonsai.core.tool.Root):
     @classmethod
     def add_tracked_opening(cls, obj: bpy.types.Object) -> None:
         new = bpy.context.scene.BIMModelProperties.openings.add()
@@ -244,7 +241,7 @@ class Root(blenderbim.core.tool.Root):
                     for voided_obj in voided_objs:
                         if voided_obj.data:
                             representation = tool.Ifc.get().by_id(voided_obj.data.BIMMeshProperties.ifc_definition_id)
-                            blenderbim.core.geometry.switch_representation(
+                            bonsai.core.geometry.switch_representation(
                                 tool.Ifc,
                                 tool.Geometry,
                                 obj=voided_obj,
@@ -285,7 +282,7 @@ class Root(blenderbim.core.tool.Root):
                 try:
                     new_aggregate = old_to_new[old_aggregate]
                 except:
-                    blenderbim.core.aggregate.unassign_object(
+                    bonsai.core.aggregate.unassign_object(
                         tool.Ifc,
                         tool.Aggregate,
                         tool.Collector,
@@ -294,7 +291,7 @@ class Root(blenderbim.core.tool.Root):
                     )
                     continue
 
-                blenderbim.core.aggregate.assign_object(
+                bonsai.core.aggregate.assign_object(
                     tool.Ifc,
                     tool.Aggregate,
                     tool.Collector,
@@ -307,7 +304,7 @@ class Root(blenderbim.core.tool.Root):
                 if pset:
                     array_children = tool.Blender.Modifier.Array.get_all_children_objects(new[0])
                     for obj in array_children:
-                        blenderbim.core.aggregate.assign_object(
+                        bonsai.core.aggregate.assign_object(
                             tool.Ifc,
                             tool.Aggregate,
                             tool.Collector,
@@ -323,7 +320,7 @@ class Root(blenderbim.core.tool.Root):
         ifc_representation_class: Optional[str] = None,
         profile_set_usage: Optional[ifcopenshell.entity_instance] = None,
     ) -> ifcopenshell.entity_instance:
-        return blenderbim.core.geometry.add_representation(
+        return bonsai.core.geometry.add_representation(
             tool.Ifc,
             tool.Geometry,
             tool.Style,

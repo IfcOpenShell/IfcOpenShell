@@ -18,15 +18,15 @@
 
 import bpy
 import ifcopenshell
-import blenderbim.core.tool
-import blenderbim.tool as tool
-from blenderbim.tool.pset import Pset as subject
+import bonsai.core.tool
+import bonsai.tool as tool
+from bonsai.tool.pset import Pset as subject
 from test.bim.bootstrap import NewFile
 
 
 class TestImplementsTool(NewFile):
     def test_run(self):
-        assert isinstance(subject(), blenderbim.core.tool.Pset)
+        assert isinstance(subject(), bonsai.core.tool.Pset)
 
 
 class TestGetElementPset(NewFile):

@@ -20,16 +20,16 @@ import bpy
 import math
 import ifcopenshell
 import ifcopenshell.api
-import blenderbim.core.tool
-import blenderbim.tool as tool
+import bonsai.core.tool
+import bonsai.tool as tool
 from mathutils import Vector
 from test.bim.bootstrap import NewFile
-from blenderbim.tool.georeference import Georeference as subject
+from bonsai.tool.georeference import Georeference as subject
 
 
 class TestImplementsTool(NewFile):
     def test_run(self):
-        assert isinstance(subject(), blenderbim.core.tool.Georeference)
+        assert isinstance(subject(), bonsai.core.tool.Georeference)
 
 
 class TestImportProjectedCRS(NewFile):

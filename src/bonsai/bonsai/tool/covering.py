@@ -17,22 +17,13 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import bmesh
-import shapely
 import ifcopenshell
 import ifcopenshell.util.element
-import blenderbim.core.tool
-import blenderbim.core.root
-import blenderbim.core.spatial
-import blenderbim.core.geometry
-import blenderbim.tool as tool
-import json
-from math import pi
-from mathutils import Vector, Matrix
-from shapely import Polygon, MultiPolygon
+import bonsai.core.tool
+import bonsai.tool as tool
 
 
-class Covering(blenderbim.core.tool.Covering):
+class Covering(bonsai.core.tool.Covering):
     @classmethod
     def get_z_from_ceiling_height(cls) -> float:
         props = bpy.context.scene.BIMCoveringProperties

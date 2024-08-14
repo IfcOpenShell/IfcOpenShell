@@ -1046,7 +1046,7 @@ class UIData:
 
     @classmethod
     def version(cls):
-        return tool.Blender.get_blenderbim_version()
+        return tool.Blender.get_bonsai_version()
 
 
 def draw_statusbar(self, context):

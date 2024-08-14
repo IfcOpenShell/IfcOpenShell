@@ -33,10 +33,10 @@
 
 import bpy
 import ifcopenshell
-import blenderbim.core.tool
-import blenderbim.tool as tool
+import bonsai.core.tool
+import bonsai.tool as tool
 from test.bim.bootstrap import NewFile
-from blenderbim.tool.demo import Demo as subject
+from bonsai.tool.demo import Demo as subject
 
 
 # Our first test is that our tool implements all the abstract methods defined by
@@ -45,7 +45,7 @@ from blenderbim.tool.demo import Demo as subject
 # other languages, but not Python, so we test it explicitly.
 class TestImplementsTool(NewFile):
     def test_run(self):
-        assert isinstance(subject(), blenderbim.core.tool.Demo)
+        assert isinstance(subject(), bonsai.core.tool.Demo)
 
 
 # These are fairly boring tests. What it does demonstrate is that no matter how
