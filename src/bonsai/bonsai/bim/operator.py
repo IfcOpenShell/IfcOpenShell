@@ -310,15 +310,15 @@ class FileAssociate(bpy.types.Operator):
             os.makedirs(os.path.join(destdir, rel_path), exist_ok=True)
 
         shutil.copy(
-            os.path.join(src_dir, "blenderbim.png"),
+            os.path.join(src_dir, "bonsai.png"),
             os.path.join(destdir, "share/icons/hicolor/128x128/apps"),
         )
         shutil.copy(
-            os.path.join(src_dir, "blenderbim.desktop"),
+            os.path.join(src_dir, "bonsai.desktop"),
             os.path.join(destdir, "share/applications"),
         )
         shutil.copy(
-            os.path.join(src_dir, "blenderbim.xml"),
+            os.path.join(src_dir, "bonsai.xml"),
             os.path.join(destdir, "share/mime/packages"),
         )
         shutil.copyfile(
@@ -327,13 +327,13 @@ class FileAssociate(bpy.types.Operator):
         )
 
         # copy and rewrite wrapper script
-        with open(os.path.join(src_dir, "blenderbim"), "r") as wrapper_template:
+        with open(os.path.join(src_dir, "bonsai"), "r") as wrapper_template:
             filedata = wrapper_template.read()
             filedata = filedata.replace("#BLENDER_EXE=/opt/blender-3.3/blender", 'BLENDER_EXE="' + binary_path + '"')
-        with open(os.path.join(destdir, "bin", "blenderbim"), "w") as wrapper:
+        with open(os.path.join(destdir, "bin", "bonsai"), "w") as wrapper:
             wrapper.write(filedata)
 
-        os.chmod(os.path.join(destdir, "bin", "blenderbim"), 0o755)
+        os.chmod(os.path.join(destdir, "bin", "bonsai"), 0o755)
 
         self.refresh_system_linux(destdir=destdir)
 
@@ -383,11 +383,11 @@ class FileUnassociate(bpy.types.Operator):
     def uninstall_desktop_linux(self, destdir="/tmp"):
         """Removes linux file assocations and launcher icon"""
         for rel_path in (
-            "share/icons/hicolor/128x128/apps/blenderbim.png",
+            "share/icons/hicolor/128x128/apps/bonsai.png",
             "share/icons/hicolor/128x128/mimetypes/x-ifc.png",
-            "share/applications/blenderbim.desktop",
-            "share/mime/packages/blenderbim.xml",
-            "bin/blenderbim",
+            "share/applications/bonsai.desktop",
+            "share/mime/packages/bonsai.xml",
+            "bin/bonsai",
         ):
             try:
                 os.remove(os.path.join(destdir, rel_path))

@@ -9,21 +9,21 @@ install :
 	${DESTDIR}/share/icons/hicolor/128x128/mimetypes \
 	${DESTDIR}/share/applications \
 	${DESTDIR}/share/mime/packages
-	cp blenderbim ${DESTDIR}/bin/
-	chmod +x ${DESTDIR}/bin/blenderbim
-	cp blenderbim.png ${DESTDIR}/share/icons/hicolor/128x128/apps/
-	cp blenderbim.desktop ${DESTDIR}/share/applications/
-	cp blenderbim.xml ${DESTDIR}/share/mime/packages/
+	cp bonsai ${DESTDIR}/bin/
+	chmod +x ${DESTDIR}/bin/bonsai
+	cp bonsai.png ${DESTDIR}/share/icons/hicolor/128x128/apps/
+	cp bonsai.desktop ${DESTDIR}/share/applications/
+	cp bonsai.xml ${DESTDIR}/share/mime/packages/
 	cp x-ifc_128x128.png ${DESTDIR}/share/icons/hicolor/128x128/mimetypes/x-ifc.png
 	update-mime-database ${DESTDIR}/share/mime/ || true
 	update-desktop-database ${DESTDIR}/share/applications/ || true
 
 uninstall :
 	rm -f \
-	${DESTDIR}/bin/blenderbim \
-	${DESTDIR}/share/icons/hicolor/128x128/apps/blenderbim.png \
-	${DESTDIR}/share/applications/blenderbim.desktop \
-	${DESTDIR}/share/mime/packages/blenderbim.xml \
+	${DESTDIR}/bin/bonsai \
+	${DESTDIR}/share/icons/hicolor/128x128/apps/bonsai.png \
+	${DESTDIR}/share/applications/bonsai.desktop \
+	${DESTDIR}/share/mime/packages/bonsai.xml \
 	${DESTDIR}/share/icons/hicolor/128x128/mimetypes/x-ifc.png
 	update-mime-database ${DESTDIR}/share/mime/ || true
 	update-desktop-database ${DESTDIR}/share/applications/ || true
