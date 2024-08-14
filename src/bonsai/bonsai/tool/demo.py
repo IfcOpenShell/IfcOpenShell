@@ -30,13 +30,13 @@
 # processing, and more.
 
 import bpy
-import blenderbim.core.tool
-import blenderbim.tool as tool
+import bonsai.core.tool
+import bonsai.tool as tool
 
 
 # There is always one class in each tool file, which implements the interface
 # defined by `core/tool.py`.
-class Demo(blenderbim.core.tool.Demo):
+class Demo(bonsai.core.tool.Demo):
     @classmethod
     def clear_name_field(cls):
         # In this concrete implementation, we see that "clear name field"

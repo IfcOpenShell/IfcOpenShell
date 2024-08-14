@@ -17,13 +17,13 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import blenderbim.core.tool
-import blenderbim.tool as tool
+import bonsai.core.tool
+import bonsai.tool as tool
 import ifcopenshell.util.element
 from typing import Union
 
 
-class Collector(blenderbim.core.tool.Collector):
+class Collector(bonsai.core.tool.Collector):
     @classmethod
     def assign(cls, obj: bpy.types.Object, should_clean_users_collection=True) -> None:
         """Links an object to an appropriate Blender collection."""

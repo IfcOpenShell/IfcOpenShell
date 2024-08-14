@@ -18,16 +18,16 @@
 
 import bpy
 import ifcopenshell
-import blenderbim.core.tool
-import blenderbim.tool as tool
-from blenderbim.tool.spatial import Spatial as subject
+import bonsai.core.tool
+import bonsai.tool as tool
+from bonsai.tool.spatial import Spatial as subject
 from test.bim.bootstrap import NewFile
 from mathutils import Matrix
 
 
 class TestImplementsTool(NewFile):
     def test_run(self):
-        assert isinstance(subject(), blenderbim.core.tool.Spatial)
+        assert isinstance(subject(), bonsai.core.tool.Spatial)
 
 
 class TestCanContain(NewFile):

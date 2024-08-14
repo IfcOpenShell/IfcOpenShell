@@ -18,17 +18,17 @@
 
 import bpy
 import ifcopenshell
-import blenderbim.core.tool
-import blenderbim.tool as tool
+import bonsai.core.tool
+import bonsai.tool as tool
 import tempfile
 from test.bim.bootstrap import NewFile
-from blenderbim.tool.project import Project as subject
+from bonsai.tool.project import Project as subject
 from pathlib import Path
 
 
 class TestImplementsTool(NewFile):
     def test_run(self):
-        assert isinstance(subject(), blenderbim.core.tool.Project)
+        assert isinstance(subject(), bonsai.core.tool.Project)
 
 
 class TestAppendAllTypesFromTemplate(NewFile):

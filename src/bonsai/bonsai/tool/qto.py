@@ -17,9 +17,9 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import blenderbim.core.tool
-import blenderbim.bim.schema
-import blenderbim.tool as tool
+import bonsai.core.tool
+import bonsai.bim.schema
+import bonsai.tool as tool
 import ifcopenshell
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
@@ -29,7 +29,7 @@ from typing import Optional, Union, Literal
 QuantityTypes = Literal["Q_LENGTH", "Q_AREA", "Q_VOLUME"]
 
 
-class Qto(blenderbim.core.tool.Qto):
+class Qto(bonsai.core.tool.Qto):
     @classmethod
     def get_radius_of_selected_vertices(cls, obj: bpy.types.Object) -> float:
         selected_verts = [v.co for v in obj.data.vertices if v.select]
@@ -65,7 +65,7 @@ class Qto(blenderbim.core.tool.Qto):
             "Q_VOLUME": ("VOLUMEUNIT", "CUBIC_METRE"),
         }
         if not quantity_type:
-            qt = blenderbim.bim.schema.ifc.psetqto.get_by_name(qto_name)
+            qt = bonsai.bim.schema.ifc.psetqto.get_by_name(qto_name)
             quantity_type = next(q.TemplateType for q in qt.HasPropertyTemplates if q.Name == quantity_name)
 
         unit_type = quantity_to_unit_types.get(quantity_type, None)
@@ -128,7 +128,7 @@ class Qto(blenderbim.core.tool.Qto):
         Example:
 
         .. code::Python
-        import blenderbim.tool as tool
+        import bonsai.tool as tool
 
         relating_cost_items = tool.Qto.relating_cost_items(my_beautiful_wall)
         for relating_cost_item in relating_cost_items:

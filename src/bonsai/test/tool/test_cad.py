@@ -17,7 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from test.bim.bootstrap import NewFile
-from blenderbim.tool.cad import Cad as subject
+from bonsai.tool.cad import Cad as subject
 from mathutils import Vector
 
 V = lambda *x: Vector([float(i) for i in x])

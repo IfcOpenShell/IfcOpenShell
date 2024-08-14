@@ -19,15 +19,15 @@
 import bpy
 import ifcopenshell
 import test.bim.bootstrap
-import blenderbim.core.tool
-import blenderbim.tool as tool
+import bonsai.core.tool
+import bonsai.tool as tool
 import pytest
-from blenderbim.tool.ifc import Ifc as subject
+from bonsai.tool.ifc import Ifc as subject
 
 
 class TestImplementsTool(test.bim.bootstrap.NewFile):
     def test_run(self):
-        assert isinstance(subject(), blenderbim.core.tool.Ifc)
+        assert isinstance(subject(), bonsai.core.tool.Ifc)
 
 
 class TestSet(test.bim.bootstrap.NewFile):

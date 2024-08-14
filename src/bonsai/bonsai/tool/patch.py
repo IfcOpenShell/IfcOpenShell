@@ -18,7 +18,7 @@
 
 import bpy
 import ifcopenshell
-import blenderbim.core.tool
+import bonsai.core.tool
 from typing import TYPE_CHECKING
 
 
@@ -31,7 +31,7 @@ if TYPE_CHECKING:
     import ifcpatch
 
 
-class Patch(blenderbim.core.tool.Patch):
+class Patch(bonsai.core.tool.Patch):
     @classmethod
     def run_migrate_patch(cls, infile: str, outfile: str, schema: str) -> None:
         output = ifcpatch.execute(

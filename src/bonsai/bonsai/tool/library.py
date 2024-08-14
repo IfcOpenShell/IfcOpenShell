@@ -17,11 +17,11 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import blenderbim.core.tool
-import blenderbim.tool as tool
+import bonsai.core.tool
+import bonsai.tool as tool
 
 
-class Library(blenderbim.core.tool.Library):
+class Library(bonsai.core.tool.Library):
     @classmethod
     def clear_editing_mode(cls):
         bpy.context.scene.BIMLibraryProperties.editing_mode = ""
@@ -29,12 +29,12 @@ class Library(blenderbim.core.tool.Library):
     @classmethod
     def export_library_attributes(cls):
         props = bpy.context.scene.BIMLibraryProperties
-        return blenderbim.bim.helper.export_attributes(props.library_attributes)
+        return bonsai.bim.helper.export_attributes(props.library_attributes)
 
     @classmethod
     def export_reference_attributes(cls):
         props = bpy.context.scene.BIMLibraryProperties
-        return blenderbim.bim.helper.export_attributes(props.reference_attributes)
+        return bonsai.bim.helper.export_attributes(props.reference_attributes)
 
     @classmethod
     def get_active_library(cls):
@@ -48,13 +48,13 @@ class Library(blenderbim.core.tool.Library):
     def import_library_attributes(cls, library):
         props = bpy.context.scene.BIMLibraryProperties
         props.library_attributes.clear()
-        blenderbim.bim.helper.import_attributes2(library, props.library_attributes)
+        bonsai.bim.helper.import_attributes2(library, props.library_attributes)
 
     @classmethod
     def import_reference_attributes(cls, reference):
         props = bpy.context.scene.BIMLibraryProperties
         props.reference_attributes.clear()
-        blenderbim.bim.helper.import_attributes2(reference, props.reference_attributes)
+        bonsai.bim.helper.import_attributes2(reference, props.reference_attributes)
 
     @classmethod
     def import_references(cls, library):

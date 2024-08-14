@@ -20,14 +20,14 @@ import bpy
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
-import blenderbim.core.tool
-import blenderbim.core.geometry
-import blenderbim.tool as tool
-import blenderbim.bim.helper
+import bonsai.core.tool
+import bonsai.core.geometry
+import bonsai.tool as tool
+import bonsai.bim.helper
 from typing import Union
 
 
-class Type(blenderbim.core.tool.Type):
+class Type(bonsai.core.tool.Type):
     @classmethod
     def change_object_data(cls, obj: bpy.types.Object, data: bpy.types.ID, is_global: bool = False) -> None:
         tool.Geometry.change_object_data(obj, data, is_global)
@@ -107,7 +107,7 @@ class Type(blenderbim.core.tool.Type):
         ifc_representation_class: Union[str, None] = None,
         profile_set_usage: Union[ifcopenshell.entity_instance, None] = None,
     ) -> ifcopenshell.entity_instance:
-        return blenderbim.core.geometry.add_representation(
+        return bonsai.core.geometry.add_representation(
             tool.Ifc,
             tool.Geometry,
             tool.Style,
@@ -126,7 +126,7 @@ class Type(blenderbim.core.tool.Type):
         should_reload: bool = False,
         is_global: bool = False,
     ) -> None:
-        return blenderbim.core.geometry.switch_representation(
+        return bonsai.core.geometry.switch_representation(
             tool.Ifc,
             tool.Geometry,
             obj=obj,

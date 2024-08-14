@@ -19,15 +19,15 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.api
-import blenderbim.core.tool
-import blenderbim.tool as tool
+import bonsai.core.tool
+import bonsai.tool as tool
 from test.bim.bootstrap import NewFile
-from blenderbim.tool.root import Root as subject
+from bonsai.tool.root import Root as subject
 
 
 class TestImplementsTool(NewFile):
     def test_run(self):
-        assert isinstance(subject(), blenderbim.core.tool.Root)
+        assert isinstance(subject(), bonsai.core.tool.Root)
 
 
 class TestAddTrackedOpening(NewFile):
