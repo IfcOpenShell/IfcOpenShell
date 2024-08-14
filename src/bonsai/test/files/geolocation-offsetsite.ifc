@@ -1,7 +1,7 @@
 ISO-10303-21;
 HEADER;
 FILE_DESCRIPTION(('ViewDefinition[DesignTransferView]'),'2;1');
-FILE_NAME('geo.ifc','2024-06-05T22:47:24+10:00',(),(),'IfcOpenShell v0.7.0-f7c03db75','BlenderBIM 0.0.999999-8b69ea4','Nobody');
+FILE_NAME('geo.ifc','2024-06-05T22:47:24+10:00',(),(),'IfcOpenShell v0.7.0-f7c03db75','Bonsai 0.0.999999-8b69ea4','Nobody');
 FILE_SCHEMA(('IFC4'));
 ENDSEC;
 DATA;
