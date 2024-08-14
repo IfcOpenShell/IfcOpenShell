@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import blenderbim.core.tool as tool
+import bonsai.core.tool as tool
 from typing import Literal
 
 

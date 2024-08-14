@@ -22,7 +22,7 @@ from typing import TYPE_CHECKING, Optional
 if TYPE_CHECKING:
     import bpy
     import ifcopenshell
-    import blenderbim.tool as tool
+    import bonsai.tool as tool
 
 
 def purge_unused_profiles(ifc: tool.Ifc, profile: tool.Profile) -> int:

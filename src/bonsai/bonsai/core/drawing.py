@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     import bpy
     import ifcopenshell
     import ifcopenshell.util.representation
-    import blenderbim.tool as tool
+    import bonsai.tool as tool
 
 
 def enable_editing_text(drawing: tool.Drawing, obj: bpy.types.Object) -> None:

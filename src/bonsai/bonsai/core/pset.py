@@ -23,7 +23,7 @@ from typing import TYPE_CHECKING, Optional, Union, Any
 if TYPE_CHECKING:
     import bpy
     import ifcopenshell
-    import blenderbim.tool as tool
+    import bonsai.tool as tool
 
 
 def copy_property_to_selection(

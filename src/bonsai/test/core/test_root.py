@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import blenderbim.core.root as subject
+import bonsai.core.root as subject
 import test.core.test_geometry
 from test.core.bootstrap import ifc, collector, geometry, root
 

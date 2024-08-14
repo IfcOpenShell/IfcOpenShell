@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import blenderbim.core.qto as subject
+import bonsai.core.qto as subject
 from test.core.bootstrap import qto
 
 

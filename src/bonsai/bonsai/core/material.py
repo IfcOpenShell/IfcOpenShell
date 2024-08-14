@@ -22,7 +22,7 @@ from typing import TYPE_CHECKING, Optional, Union
 if TYPE_CHECKING:
     import bpy
     import ifcopenshell
-    import blenderbim.tool as tool
+    import bonsai.tool as tool
 
 
 def add_material(

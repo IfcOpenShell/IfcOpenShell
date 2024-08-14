@@ -17,7 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import blenderbim.core.document as subject
+import bonsai.core.document as subject
 from test.core.bootstrap import ifc, document
 
 
