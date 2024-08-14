@@ -366,10 +366,14 @@ Token IfcSpfLexer::Next() {
             decoder_->skip();
         }
     }
+    Token t;
     if (len != 0) {
-        return GeneralTokenPtr(this, pos, stream->Tell());
+        t = GeneralTokenPtr(this, pos, stream->Tell());
+    } else {
+        t = NoneTokenPtr();
     }
-    return NoneTokenPtr();
+    // std::wcout << "token: " << pos << " " << TokenFunc::asStringRef(t).c_str() << std::endl;
+    return t;
 }
 
 bool IfcSpfStream::is_eof_at(unsigned int local_ptr) {
@@ -685,6 +689,10 @@ std::string TokenFunc::toString(const Token& token) {
 void IfcParse::IfcFile::load(unsigned entity_instance_name, const IfcParse::entity* entity, parse_context& context, int attribute_index) {
     Token next = tokens->Next();
 
+    if (TokenFunc::isOperator(next, '(')) {
+        next = tokens->Next();
+    }
+
     /*
     std::vector<Argument*>* vector = 0;
     vector_or_array<Argument*> filler(attributes, num_attributes);
@@ -711,7 +719,7 @@ void IfcParse::IfcFile::load(unsigned entity_instance_name, const IfcParse::enti
 
     while ((next.startPos != 0U) || (next.lexer != nullptr)) {
         if (TokenFunc::isOperator(next, ',')) {
-            if (attribute_index == 0) {
+            if (attribute_index == -1) {
                 attribute_index_within_data += 1;
             }
         } else if (TokenFunc::isOperator(next, ')')) {
@@ -722,17 +730,17 @@ void IfcParse::IfcFile::load(unsigned entity_instance_name, const IfcParse::enti
         } else {
             return_value++;
             if (TokenFunc::isIdentifier(next)) {
-                // register_inverse(entity_instance_name, entity, next, attribute_index == -1 ? attribute_index_within_data : attribute_index);
+                register_inverse(entity_instance_name, entity, next, attribute_index == -1 ? attribute_index_within_data : attribute_index);
             }
 
             if (TokenFunc::isKeyword(next)) {
                 try {
-                    parse_context ps(storage_t(1));
+                    parse_context ps;
                     load(0, nullptr, ps, -1);
-                    IfcParse::schema_definition* schema;
-                    auto* simple_type_instance = schema->instantiate(TokenFunc::asStringRef(next), IfcEntityInstanceData(ps.data()));
+                    auto* simple_type_instance = schema_->instantiate(TokenFunc::asStringRef(next), ps.construct(-1, references_to_resolve, schema_->declaration_by_name(TokenFunc::asStringRef(next))));
                     //@todo decide addEntity(((IfcUtil::IfcBaseClass*)*entity));
                     context.push(simple_type_instance);
+                    simple_type_instance->file_ = this;
                 } catch (IfcException& e) {
                     Logger::Message(Logger::LOG_ERROR, e.what());
                     // #4070 We didn't actually capture an aggregate entry, undo length increment.
@@ -744,103 +752,24 @@ void IfcParse::IfcFile::load(unsigned entity_instance_name, const IfcParse::enti
         }
         next = tokens->Next();
     }
-
-    /*
-    if (vector != nullptr) {
-        // Obviously don't try and create a 0-length array.
-        if ((num_attributes != 0U) || !vector->empty()) {
-            // @todo figure out whether all this logic is still necessary, since we know the
-            // expected amount of attributes and shouldn't be able to access more than allowed
-            // by the schema.
-            attributes = new Argument* [(std::max)(num_attributes, vector->size())] { nullptr };
-
-            // @todo this appears unnecessary, we increment this in the loop already,
-            // which is more accurate as the filler can't go above it's size in case
-            // it uses the pre-allocated c-array.
-            // -> return_value = vector->size();
-
-            for (size_t i = 0; i < vector->size(); ++i) {
-                attributes[i] = vector->at(i);
-            }
-        }
-
-        if ((vector != &internal_attribute_vector_) && (vector != &internal_attribute_vector_simple_type_)) {
-            delete vector;
-        }
-    }
-
-    return return_value;
-    */
 }
-
-// templated helper function for reading arguments into a list
-template <typename T>
-std::vector<T> read_aggregate_as_vector(const std::vector<Token>& tokens) {
-    std::vector<T> return_value;
-    return_value.reserve(tokens.size());
-    for (size_t i = 0; i < tokens.size(); ++i) {
-        return_value.push_back(tokens[i]);
-    }
-    return return_value;
-}
-template <typename T>
-std::vector<std::vector<T>> read_aggregate_of_aggregate_as_vector2(const std::vector<parse_context>& tokens) {
-    std::vector<std::vector<T>> return_value;
-    return_value.reserve(tokens.size());
-    for (size_t i = 0; i < tokens.size(); ++i) {
-        return_value.push_back(read_aggregate_as_vector<T>(boost::get< std::vector<Token>>(tokens[i].tokens)));
-    }
-    return return_value;
-}
-
-/*
-IfcUtil::ArgumentType TokenArgument::type() const {
-    if (TokenFunc::isInt(token)) {
-        return IfcUtil::Argument_INT;
-    }
-    if (TokenFunc::isBool(token)) {
-        return IfcUtil::Argument_BOOL;
-    }
-    if (TokenFunc::isLogical(token)) {
-        return IfcUtil::Argument_LOGICAL;
-    }
-    if (TokenFunc::isFloat(token)) {
-        return IfcUtil::Argument_DOUBLE;
-    }
-    if (TokenFunc::isString(token)) {
-        return IfcUtil::Argument_STRING;
-    }
-    if (TokenFunc::isEnumeration(token)) {
-        return IfcUtil::Argument_ENUMERATION;
-    }
-    if (TokenFunc::isIdentifier(token)) {
-        return IfcUtil::Argument_ENTITY_INSTANCE;
-    }
-    if (TokenFunc::isBinary(token)) {
-        return IfcUtil::Argument_BINARY;
-    }
-    if (TokenFunc::isOperator(token, '$')) {
-        return IfcUtil::Argument_NULL;
-    }
-    if (TokenFunc::isOperator(token, '*')) {
-        return IfcUtil::Argument_DERIVED;
-    }
-    return IfcUtil::Argument_UNKNOWN;
-}
-*/
 
 //
 // Reads an Entity from the list of Tokens at the specified offset in the file
 //
-IfcEntityInstanceData&& IfcParse::read(unsigned int i, IfcFile* f) {
+IfcEntityInstanceData IfcParse::read(unsigned int i, IfcFile* f) {
     Token datatype = f->tokens->Next();
     if (!TokenFunc::isKeyword(datatype)) {
         throw IfcException("Unexpected token while parsing entity");
     }
     const IfcParse::declaration* ty = f->schema()->declaration_by_name(TokenFunc::asStringRef(datatype));
-    parse_context pc(storage_t((uint8_t) ty->as_entity()->all_attributes().size()));
+    parse_context pc;
     f->load(i, ty->as_entity(), pc, -1);
-    return IfcEntityInstanceData(pc.data());
+    return IfcEntityInstanceData(pc.construct(i, f->references_to_resolve, ty));
+    /*std::ostringstream oss;
+    d.toString(oss);
+    auto osss = oss.str();
+    std::wcout << osss.c_str() << std::endl;*/
 }
 
 void IfcParse::IfcFile::try_read_semicolon() {
@@ -900,7 +829,7 @@ namespace {
         StringBuilderVisitor(const StringBuilderVisitor&);            //N/A
         StringBuilderVisitor& operator=(const StringBuilderVisitor&); //N/A
 
-        std::ostringstream& data_;
+        std::ostream& data_;
         template <typename T>
         void serialize(const std::vector<T>& i) {
             data_ << "(";
@@ -961,7 +890,7 @@ namespace {
         bool upper_;
 
     public:
-        StringBuilderVisitor(std::ostringstream& stream, bool upper = false)
+        StringBuilderVisitor(std::ostream& stream, bool upper = false)
             : data_(stream),
             upper_(upper) {}
         void operator()(const Blank& /*i*/) { data_ << "$"; }
@@ -1024,7 +953,6 @@ namespace {
         }
         void operator()(const empty_aggregate_t&) const { data_ << "()"; }
         void operator()(const empty_aggregate_of_aggregate_t&) const { data_ << "()"; }
-        operator std::string() { return data_.str(); }
     };
 
     template <>
@@ -1094,8 +1022,7 @@ namespace {
 // Returns a string representation of the entity
 // Note that this initializes the entity if it is not initialized
 //
-std::string IfcEntityInstanceData::toString(bool upper) const {
-    std::ostringstream ss;
+void IfcEntityInstanceData::toString(std::ostream& ss, bool upper, const entity* decl) const {
     ss.imbue(std::locale::classic());
 
     /*
@@ -1120,23 +1047,17 @@ std::string IfcEntityInstanceData::toString(bool upper) const {
         if (i != 0) {
             ss << ",";
         }
-        /*
         if (storage_.has<Blank>(i)) {
-            // @todo
-            if (type_->as_entity() != nullptr && type_->as_entity()->derived()[i]) {
+            if (decl != nullptr && decl->derived()[i]) {
                ss << "*";
             } else {
                ss << "$";
-	        // }
+	        }
         } else {
-            
+            storage_.apply_visitor(vis, i);
         }
-        */
-        storage_.apply_visitor(vis, i);
     }
     ss << ")";
-
-    return ss.str();
 }
 
 unsigned IfcUtil::IfcBaseEntity::set_id(const boost::optional<unsigned>& i) {
@@ -1145,39 +1066,6 @@ unsigned IfcUtil::IfcBaseEntity::set_id(const boost::optional<unsigned>& i) {
     }
     return id_ = file_->FreshId();
 }
-/*
-void IfcEntityInstanceData::load() const {
-
-    Argument** tmp_data = nullptr;
-
-    if (file->parsing_complete()) {
-        // only when parsing is fully complete we need to seek to the instance, otherwise
-        // we know the token cursor is currently at the keyword token
-        file->seek_to(*this);
-    } else {
-        // Apparently the load() function assumes one token later after the opening parenthesis
-        file->tokens->Next();
-    }
-
-    // type_ is 0 for header entities which have their size predetermined in code
-    // in that we have attributes_ pre-constructed to the correct size in the constructor
-    // in the other case load() will use a vector internally to grow to the size found in the file
-    size_t n = file->load(id(), type_ != nullptr ? type_->as_entity() : nullptr, type_ != nullptr ? tmp_data : attributes_, getArgumentCount());
-    if (n != getArgumentCount()) {
-        Logger::Error("Wrong number of attributes on instance with id #" + std::to_string(id_) +
-                      " at offset " + std::to_string(this->offset_in_file()) +
-                      " expected " + std::to_string(getArgumentCount()) +
-                      " got " + std::to_string(n));
-    }
-
-    file->try_read_semicolon();
-
-    // @todo does this need to be atomic somehow?
-    if (tmp_data != nullptr) {
-        attributes_ = tmp_data;
-    }
-}
-*/
 
 namespace {
 // @todo remove redundancy with python wrapper code (which is not identical due to
@@ -1201,24 +1089,6 @@ IfcUtil::ArgumentType get_argument_type(const IfcParse::declaration* decl, size_
     return IfcUtil::from_parameter_type(pt);
 }
 } // namespace
-
-/*
-IfcEntityInstanceData::IfcEntityInstanceData(const IfcEntityInstanceData& data) {
-    file = 0;
-    type_ = data.type_;
-    id_ = 0;
-
-    const size_t count = data.getArgumentCount();
-
-    // In order not to have the instance read from file
-    attributes_ = new Argument*[count];
-
-    for (unsigned int i = 0; i < count; ++i) {
-        attributes_[i] = 0;
-        this->setArgument(i, data.get_attribute_value(i), get_argument_type(data.type(), i), true);
-    }
-}
-*/
 
 class unregister_inverse_visitor {
   private:
@@ -1265,16 +1135,12 @@ class add_to_instance_list_visitor {
 
 class apply_individual_instance_visitor {
   private:
-    AttributeValue attribute_;
+    boost::optional<AttributeValue> attribute_;
     IfcEntityInstanceData* data_;
     int attribute_index_;
 
     template <typename T>
     void apply_attribute_(T& t, const AttributeValue& attr, int index) const {
-        if (!attr) {
-            return;
-        }
-
         if (attr.type() == IfcUtil::Argument_ENTITY_INSTANCE) {
             IfcUtil::IfcBaseClass* inst = attr;
             t(inst, index);
@@ -1306,7 +1172,7 @@ class apply_individual_instance_visitor {
     template <typename T>
     void apply(T& t) const {
         if (attribute_) {
-            apply_attribute_(t, attribute_, attribute_index_);
+            apply_attribute_(t, *attribute_, attribute_index_);
         } else {
             for (size_t i = 0; i < data_->size(); ++i) {
                 auto attr = data_->get_attribute_value(i);
@@ -1554,7 +1420,7 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
     stream = 0;
     schema_ = 0;
 
-    setDefaultHeaderValues();
+    // setDefaultHeaderValues();
 
     stream = s;
     if (!stream->valid) {
@@ -1625,11 +1491,11 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
                 goto advance;
             }
 
-            // @todo implement attribute_size() accessor
-            parse_context ps(storage_t(entity_type->as_entity()->all_attributes().size()));
+            parse_context ps;
             load(current_id, entity_type->as_entity(), ps, -1);
-            IfcParse::schema_definition* schema;
-            instance = schema->instantiate(entity_type->name(), IfcEntityInstanceData(ps.data()));
+            instance = schema_->instantiate(entity_type->name(), ps.construct(current_id, references_to_resolve, entity_type));
+            instance->file_ = this;
+            instance->id_ = current_id;
 
             /// @todo Printing to stdout in a library class feels weird. Maybe move the progress prints to the client code?
             // Update the status after every 1000 instances parsed
@@ -1721,6 +1587,58 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
     }
 
     Logger::Status("\rDone scanning file   ");
+
+    for (auto& p : references_to_resolve) {
+        boost::apply_visitor([this, &p](auto& v) {
+            if constexpr (std::is_same_v<std::decay_t<decltype(v)>, reference_or_simple_type>) {
+                byid_[p.first.name_]->data().storage_.set(p.first.index_, boost::apply_visitor([this](auto inst) {
+                    IfcUtil::IfcBaseClass* ptr;
+                    if constexpr (std::is_same_v<decltype(inst), int>) {
+                        ptr = this->instance_by_id(inst);
+                    } else {
+                        ptr = inst;
+                    }
+                    return ptr;
+                }, v));
+            } else if constexpr (std::is_same_v<std::decay_t<decltype(v)>, std::vector<reference_or_simple_type>>) {
+                aggregate_of_instance::ptr instances(new aggregate_of_instance);
+                for (auto& p : v) {
+                    instances->push(boost::apply_visitor([this](auto inst) {
+                        IfcUtil::IfcBaseClass* ptr;
+                        if constexpr (std::is_same_v<decltype(inst), int>) {
+                            ptr = this->instance_by_id(inst);
+                        } else {
+                            ptr = inst;
+                        }
+                        return ptr;
+                    }, p));
+                }
+                byid_[p.first.name_]->data().storage_.set(p.first.index_, instances);
+            } else if constexpr (std::is_same_v<std::decay_t<decltype(v)>, std::vector<std::vector<reference_or_simple_type>>>) {
+                aggregate_of_aggregate_of_instance::ptr instances(new aggregate_of_aggregate_of_instance);
+                for (auto& ps : v) {
+                    std::vector<IfcUtil::IfcBaseClass*> inner;
+                    for (auto& p : ps) {
+                        inner.push_back(boost::apply_visitor([this](auto inst) {
+                            IfcUtil::IfcBaseClass* ptr;
+                            if constexpr (std::is_same_v<decltype(inst), int>) {
+                                ptr = this->instance_by_id(inst);
+                            } else {
+                                ptr = inst;
+                            }
+                            return ptr;
+                        }, p));
+                    }
+                    instances->push(inner);
+                }
+                byid_[p.first.name_]->data().storage_.set(p.first.index_, instances);
+            } else {
+                static_assert(false, "Inconsistent type");
+            }
+        }, p.second);
+    }
+
+    references_to_resolve.clear();
 
     return;
 }
@@ -2414,7 +2332,8 @@ std::ostream& operator<<(std::ostream& out, const IfcParse::IfcFile& file) {
     for (vector_t::const_iterator it = sorted.begin(); it != sorted.end(); ++it) {
         const IfcUtil::IfcBaseClass* e = it->second;
         if (e->declaration().as_entity() != nullptr) {
-            out << e->data().toString(true) << ";" << std::endl;
+            e->toString(out, true);
+            out << ";" << std::endl;
         }
     }
 
@@ -2646,6 +2565,15 @@ void IfcUtil::IfcBaseClass::unset_attribute_value(size_t index) {
     data_.storage_.set(index, Blank{});
 }
 
+void IfcUtil::IfcBaseClass::toString(std::ostream& out, bool upper) const
+{
+    auto ent = declaration().as_entity();
+    if (ent) {
+        out << "#" << as<IfcUtil::IfcBaseEntity>()->id();
+    }
+    data().toString(out, upper, ent);
+}
+
 IfcEntityInstanceData::IfcEntityInstanceData(const IfcEntityInstanceData& data)
     : storage_(data.storage_.size() )
 {
@@ -2656,21 +2584,42 @@ IfcEntityInstanceData::IfcEntityInstanceData(const IfcEntityInstanceData& data)
     }
 }
 
-/*
-template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_value<int>(int index, const int& value);
-template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_value<bool>(int index, const bool& value);
-template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_value<boost::logic::tribool>(int index, const boost::logic::tribool& value);
-template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_value<double>(int index, const double& value);
-template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_value<std::string>(int index, const std::string& value);
-template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_value<boost::dynamic_bitset<>>(int index, const boost::dynamic_bitset<>& value);
-template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_value<IfcWrite::IfcWriteArgument::EnumerationReference>(int index, const IfcWrite::IfcWriteArgument::EnumerationReference& value);
-template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_value<IfcUtil::IfcBaseClass*>(int index, IfcUtil::IfcBaseClass* const& value);
-template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_value<std::vector<int>>(int index, const std::vector<int>& value);
-template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_value<std::vector<double>>(int index, const std::vector<double>& value);
-template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_value<std::vector<std::string>>(int index, const std::vector<std::string>& value);
-template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_value<std::vector<boost::dynamic_bitset<>>>(int index, const std::vector<boost::dynamic_bitset<>>& value);
-template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_value<aggregate_of_instance::ptr>(int index, const aggregate_of_instance::ptr& value);
-template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_value<std::vector<std::vector<int>>>(int index, const std::vector<std::vector<int>>& value);
-template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_value<std::vector<std::vector<double>>>(int index, const std::vector<std::vector<double>>& value);
-template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_value<aggregate_of_aggregate_of_instance::ptr>(int index, const aggregate_of_aggregate_of_instance::ptr& value);
-*/
+AttributeValue IfcEntityInstanceData::get_attribute_value(size_t index) const
+{
+    return { &storage_, (uint8_t) index };
+}
+
+
+template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<int>(size_t index, const int& value);
+template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<bool>(size_t index, const bool& value);
+template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<boost::logic::tribool>(size_t index, const boost::logic::tribool& value);
+template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<double>(size_t index, const double& value);
+template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<std::string>(size_t index, const std::string& value);
+template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<boost::dynamic_bitset<>>(size_t index, const boost::dynamic_bitset<>& value);
+template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<EnumerationReference>(size_t index, const EnumerationReference& value);
+template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<IfcUtil::IfcBaseClass*>(size_t index, IfcUtil::IfcBaseClass* const& value);
+template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<std::vector<int>>(size_t index, const std::vector<int>& value);
+template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<std::vector<double>>(size_t index, const std::vector<double>& value);
+template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<std::vector<std::string>>(size_t index, const std::vector<std::string>& value);
+template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<std::vector<boost::dynamic_bitset<>>>(size_t index, const std::vector<boost::dynamic_bitset<>>& value);
+template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<aggregate_of_instance::ptr>(size_t index, const aggregate_of_instance::ptr& value);
+template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<std::vector<std::vector<int>>>(size_t index, const std::vector<std::vector<int>>& value);
+template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<std::vector<std::vector<double>>>(size_t index, const std::vector<std::vector<double>>& value);
+template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<aggregate_of_aggregate_of_instance::ptr>(size_t index, const aggregate_of_aggregate_of_instance::ptr& value);
+
+template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<int>(const std::string& name, const int& value);
+template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<bool>(const std::string& name, const bool& value);
+template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<boost::logic::tribool>(const std::string& name, const boost::logic::tribool& value);
+template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<double>(const std::string& name, const double& value);
+template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<std::string>(const std::string& name, const std::string& value);
+template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<boost::dynamic_bitset<>>(const std::string& name, const boost::dynamic_bitset<>& value);
+template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<EnumerationReference>(const std::string& name, const EnumerationReference& value);
+template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<IfcUtil::IfcBaseClass*>(const std::string& name, IfcUtil::IfcBaseClass* const& value);
+template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<std::vector<int>>(const std::string& name, const std::vector<int>& value);
+template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<std::vector<double>>(const std::string& name, const std::vector<double>& value);
+template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<std::vector<std::string>>(const std::string& name, const std::vector<std::string>& value);
+template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<std::vector<boost::dynamic_bitset<>>>(const std::string& name, const std::vector<boost::dynamic_bitset<>>& value);
+template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<aggregate_of_instance::ptr>(const std::string& name, const aggregate_of_instance::ptr& value);
+template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<std::vector<std::vector<int>>>(const std::string& name, const std::vector<std::vector<int>>& value);
+template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<std::vector<std::vector<double>>>(const std::string& name, const std::vector<std::vector<double>>& value);
+template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<aggregate_of_aggregate_of_instance::ptr>(const std::string& name, const aggregate_of_aggregate_of_instance::ptr& value);

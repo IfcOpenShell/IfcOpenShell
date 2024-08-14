@@ -7350,7 +7350,7 @@ Ifc4x3_add2::IfcPressureMeasure::operator double() const { return data_.get_attr
 const IfcParse::type_declaration& Ifc4x3_add2::IfcPropertySetDefinitionSet::Class() { return *((IfcParse::type_declaration*)IFC4X3_ADD2_types[828]); }
 const IfcParse::type_declaration& Ifc4x3_add2::IfcPropertySetDefinitionSet::declaration() const { return *((IfcParse::type_declaration*)IFC4X3_ADD2_types[828]); }
 Ifc4x3_add2::IfcPropertySetDefinitionSet::IfcPropertySetDefinitionSet(IfcEntityInstanceData&& e) : IfcUtil::IfcBaseType(std::move(e)) {  }
-Ifc4x3_add2::IfcPropertySetDefinitionSet::IfcPropertySetDefinitionSet(aggregate_of< ::Ifc4x3_add2::IfcPropertySetDefinition >::ptr v) : IfcUtil::IfcBaseType() { set_attribute_value(0, v); }
+Ifc4x3_add2::IfcPropertySetDefinitionSet::IfcPropertySetDefinitionSet(aggregate_of< ::Ifc4x3_add2::IfcPropertySetDefinition >::ptr v) : IfcUtil::IfcBaseType() { set_attribute_value(0, v->generalize()); }
 Ifc4x3_add2::IfcPropertySetDefinitionSet::operator aggregate_of< ::Ifc4x3_add2::IfcPropertySetDefinition >::ptr() const { aggregate_of_instance::ptr es = data_.get_attribute_value(0); return es->as< ::Ifc4x3_add2::IfcPropertySetDefinition >(); }
 
 // Function implementations for IfcRadioActivityMeasure

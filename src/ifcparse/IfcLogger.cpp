@@ -70,7 +70,9 @@ void plain_text_message(T& out, const boost::optional<const IfcUtil::IfcBaseClas
     }
     out << message.c_str() << std::endl;
     if (instance) {
-        std::string instance_string = instance->data().toString();
+        std::ostringstream oss;
+        instance->as<IfcUtil::IfcBaseClass>()->toString(oss);
+        auto instance_string = oss.str();
         if (instance_string.size() > 259) {
             instance_string = instance_string.substr(0, 256) + "...";
         }
@@ -98,11 +100,15 @@ void json_message(T& out, const boost::optional<const IfcUtil::IfcBaseClass*>& c
 
     property_tree.put(level_string, severity_strings<typename T::char_type>::value[type]);
     if (current_product) {
-        property_tree.put(product_string, string_as<typename T::char_type>((**current_product).data().toString()));
+        std::ostringstream oss;
+        (*current_product)->toString(oss);
+        property_tree.put(product_string, string_as<typename T::char_type>(oss.str()));
     }
     property_tree.put(message_string, string_as<typename T::char_type>(message));
     if (instance) {
-        property_tree.put(instance_string, string_as<typename T::char_type>(instance->data().toString()));
+        std::ostringstream oss;
+        instance->as<IfcUtil::IfcBaseClass>()->toString(oss);
+        property_tree.put(instance_string, string_as<typename T::char_type>(oss.str()));
     }
 
     property_tree.put(time_string, string_as<typename T::char_type>(get_time()));

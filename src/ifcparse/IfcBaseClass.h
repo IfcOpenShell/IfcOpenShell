@@ -88,7 +88,6 @@ class IFC_PARSE_API IfcBaseInterface {
 class IFC_PARSE_API IfcBaseClass : public virtual IfcBaseInterface {
   protected:
     uint32_t identity_;
-    uint32_t id_;
     static std::atomic_uint32_t counter_;
     
     IfcEntityInstanceData data_;
@@ -98,10 +97,15 @@ class IFC_PARSE_API IfcBaseClass : public virtual IfcBaseInterface {
     }
 
   public:
+      uint32_t id_;
       IfcParse::IfcFile* file_;
 
-    IfcBaseClass(IfcEntityInstanceData&& data) : identity_(counter_++),
-                                                data_(std::move(data)) {}
+    IfcBaseClass(IfcEntityInstanceData&& data)
+        : identity_(counter_++)
+        , data_(std::move(data))
+        , id_(0)
+        , file_(nullptr)
+    {}
 
     const IfcEntityInstanceData& data() const { return data_; }
     IfcEntityInstanceData& data() { return data_; }
@@ -120,7 +124,6 @@ class IFC_PARSE_API IfcBaseClass : public virtual IfcBaseInterface {
 
     uint32_t id() const { return id_; }
 
-    std::string toString(bool upper = false) const;
     void toString(std::ostream&, bool upper = false) const;
 };
 

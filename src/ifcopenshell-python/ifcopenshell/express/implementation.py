@@ -370,7 +370,7 @@ class Implementation(codegen.Base):
                                 ("IfcEntityInstanceData&& e",),
                                 "",
                             ),
-                            ("", "", constructor, "", ("%s v" % type_str,), "set_attribute_value(0, v);") if mapping.simple_type_parent(class_name) is None else \
+                            ("", "", constructor, "", ("%s v" % type_str,), ("set_attribute_value(0, v%s);" % ("->generalize()" if mapping.is_templated_list(type) else ""))) if mapping.simple_type_parent(class_name) is None else \
                             ("v", "", constructor, "", ("%s v" % type_str,), ""),
                             ("", "", templates.cast_function, type_str, (), simpletype_impl_cast),
                         ),

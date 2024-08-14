@@ -23,9 +23,12 @@
 #include "ArgumentType.h"
 #include "variantarray.h"
 #include "aggregate_of_instance.h"
+#include "IfcSchema.h"
 
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/logic/tribool.hpp>
+#include <boost/dynamic_bitset.hpp>
 
 class EnumerationReference {
 private:
@@ -112,19 +115,22 @@ typedef VariantArray <
     aggregate_of_aggregate_of_instance::ptr
 > storage_t;
 
+struct MutableAttributeValue {
+    int name_;
+    uint8_t index_;
+};
+
 // short lived
-class AttributeValue {
-private:
-    storage_t* array_;
+struct AttributeValue {
+    const storage_t* array_;
     uint8_t index_;
 
-public:
     AttributeValue()
         : array_(nullptr)
         , index_(0)
     {}
 
-    AttributeValue(storage_t* arr, uint8_t index)
+    AttributeValue(const storage_t* arr, uint8_t index)
         : array_(arr)
         , index_(index)
     {}
@@ -151,7 +157,6 @@ public:
     unsigned int size() const;
 
     IfcUtil::ArgumentType type() const;
-    // AttributeValue* operator[](unsigned int index) const = 0;
 };
 
 class IFC_PARSE_API IfcEntityInstanceData {
@@ -163,6 +168,13 @@ class IFC_PARSE_API IfcEntityInstanceData {
       {}
 
       IfcEntityInstanceData(const IfcEntityInstanceData& data);
+
+      IfcEntityInstanceData& operator=(IfcEntityInstanceData&& other) {
+          if (this != &other) {
+              storage_ = std::move(other.storage_);
+          }
+          return *this;
+      }
 
     AttributeValue get_attribute_value(size_t index) const;
 
@@ -177,9 +189,7 @@ class IFC_PARSE_API IfcEntityInstanceData {
         return storage_.size();
     }
 
-    // @todo can no longer work because we don't have access to type anymore to lookup derived
-    std::string toString(bool upper = false) const;
-    void toString(std::ostream&, bool upper = false) const;
+    void toString(std::ostream&, bool upper = false, const IfcParse::entity* ent = nullptr) const;
 };
 
 #endif

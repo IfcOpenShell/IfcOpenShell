@@ -21,6 +21,7 @@
 #define IFCSPFHEADER_H
 
 #include "ifc_parse_api.h"
+#include "IfcEntityInstanceData.h"
 
 namespace IfcParse {
     class IfcFile;
@@ -28,8 +29,8 @@ namespace IfcParse {
 class IFC_PARSE_API HeaderEntity {
   private:
     const char* const datatype_;
-    size_t size_;
-
+    IfcFile* file_;
+    
     HeaderEntity(const HeaderEntity&);            //N/A
     HeaderEntity& operator=(const HeaderEntity&); //N/A
   protected:
@@ -48,12 +49,13 @@ class IFC_PARSE_API HeaderEntity {
 
   public:
     virtual size_t getArgumentCount() const {
-        return size_;
+        return data_.size();
     }
 
     std::string toString(bool upper = false) const {
         std::stringstream stream;
-        stream << datatype_ << data_.toString(upper);
+        stream << datatype_;
+        data_.toString(stream, upper);
         return stream.str();
     }
 };
@@ -115,14 +117,17 @@ class IFC_PARSE_API IfcSpfHeader {
     void readTerminal(const std::string& term, Trail trail);
 
   public:
-    explicit IfcSpfHeader(IfcParse::IfcFile* file = 0)
+    explicit IfcSpfHeader(IfcParse::IfcFile* file = nullptr)
         : file_(file),
           file_description_(0),
           file_name_(0),
-          file_schema_(0) {
-        file_description_ = new FileDescription(file_);
-        file_name_ = new FileName(file_);
-        file_schema_ = new FileSchema(file_);
+          file_schema_(0)
+    {
+        if (file == nullptr) {
+            file_description_ = new FileDescription(file_);
+            file_name_ = new FileName(file_);
+            file_schema_ = new FileSchema(file_);
+        }
     }
 
     ~IfcSpfHeader() {

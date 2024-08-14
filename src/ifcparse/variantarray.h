@@ -59,7 +59,10 @@ namespace impl {
     // Base case: When the first type in the pack is the type we're looking for, or is a base class of it
     template <typename T, typename U, typename... Ts>
     struct TypeIndex<T, U, Ts...>
-        : std::integral_constant<std::size_t, std::is_base_of<U, T>::value ? 0 : 1 + TypeIndex<T, Ts...>::value> {};
+        : std::integral_constant<std::size_t, (std::is_pointer_v<T> ? std::is_base_of_v<std::remove_pointer_t<U>, std::remove_pointer_t<T>> : std::is_same_v<T, U>) ? 0 :
+        (TypeIndex<T, Ts...>::value == std::numeric_limits<std::size_t>::max()
+            ? std::numeric_limits<std::size_t>::max()
+            : 1 + TypeIndex<T, Ts...>::value)> {};
 
     // Recursion termination: When the parameter pack is empty
     template <typename T>
@@ -117,6 +120,7 @@ namespace impl {
     struct make_union_from_tuple<std::tuple<Args...>> {
         using type = typename std::aligned_union<0, Args...>::type;
     };
+
 }
 
 template<typename... Types>
@@ -165,15 +169,17 @@ public:
 
     template<typename T, typename = std::enable_if_t<!std::is_same_v<std::decay_t<T>, VariantArray>>>
     void set(std::size_t index, T&& value) {
+        using U = std::decay_t<T>;
+        static_assert(impl::TypeIndex_v<U, Types...> < sizeof...(Types), "Type not supported by variant");
         if (index >= size_and_indices_[0]) {
             throw std::out_of_range("Index out of range");
         }
 
         destroy_at_index(index);
 
-        using U = std::decay_t<T>;
         size_and_indices_[index + 1] = impl::TypeIndex_v<U, Types...>;
         using V = typename std::tuple_element<impl::TypeIndex_v<U, Types...>, impl::MapTypes_t<Types... >>::type;
+        // std::wcout << "setting " << index << " to " << typeid(V).name() << " (" << impl::TypeIndex_v<U, Types...> << ")" << std::endl;
         if constexpr (impl::is_unique_ptr<V>::value) {
             new(&storage_[index]) V(new U(value));
         } else {
@@ -194,7 +200,12 @@ public:
         if (!has<T>(index)) {
             throw std::bad_cast();
         }
-        return *reinterpret_cast<T*>(&storage_[index]);
+        using V = typename std::tuple_element<impl::TypeIndex_v<T, Types...>, impl::MapTypes_t<Types... >>::type;
+        if constexpr (impl::is_unique_ptr<V>::value) {
+            return **reinterpret_cast<V*>(&storage_[index]);
+        } else {
+            return *reinterpret_cast<V*>(&storage_[index]);
+        }
     }
 
     template<typename T>
@@ -207,7 +218,12 @@ public:
         if (size_and_indices_[index + 1] != impl::TypeIndex<T, Types...>::value) {
             throw std::bad_cast();
         }
-        return *reinterpret_cast<const T*>(&storage_[index]);
+        using V = typename std::tuple_element<impl::TypeIndex_v<T, Types...>, impl::MapTypes_t<Types... >>::type;
+        if constexpr (impl::is_unique_ptr<V>::value) {
+            return **reinterpret_cast<const V*>(&storage_[index]);
+        } else {
+            return *reinterpret_cast<const V*>(&storage_[index]);
+        }
     }
 
     template<typename Visitor>
@@ -267,9 +283,18 @@ private:
         return apply_visitor_impl(std::forward<Visitor>(visitor), idx, std::integral_constant<std::size_t, Index - 1>{});
     }
 
+    template<typename, typename = std::void_t<>>
+    struct has_result_type : std::false_type {};
+    template<typename T>
+    struct has_result_type<T, std::void_t<typename T::result_type>> : std::true_type {};
+
     template<typename Visitor>
     auto apply_visitor_impl(Visitor&&, std::size_t, std::integral_constant<std::size_t, 0>) const {
         throw std::runtime_error("Invalid variant index");
+        // This raises a warning but is neccessary (?) for the auto return type inference?
+        if constexpr (has_result_type<Visitor>::value) {
+            return typename Visitor::result_type{};
+        }
     }
 };
 

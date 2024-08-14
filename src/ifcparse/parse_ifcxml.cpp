@@ -27,7 +27,34 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/algorithm/copy.hpp>
+#include <boost/any.hpp>
 #include <libxml/parser.h>
+
+namespace {
+    // Base case: when there are no more types left to check.
+    template <typename Fn>
+    void visit_any_impl(Fn& fn, const boost::any& a) {
+    }
+
+    // Recursive case: Check the first type in the pack.
+    template <typename Fn, typename T, typename... Types>
+    void visit_any_impl(Fn& fn, const boost::any& a) {
+        if (a.type() == typeid(T)) {
+            Fn(boost::any_cast<T>(a));
+        } else {
+            visit_any_impl<Types...>(a);
+        }
+    }
+
+    // Helper to prepend a type to a tuple
+    template <typename Fn, typename U>
+    void visit_any(Fn fn, const boost::any& a);
+    template <typename Fn, typename... Types>
+    void visit_any(Fn fn, const boost::any & a) {
+        visit_any_impl<Fn, Types...>(fn, a);
+    };
+
+}
 
 // For debug printing on release builds
 // #undef NDEBUG
@@ -71,7 +98,8 @@ class stack_node {
         node_header_entry
     };
 
-    std::vector<Argument*> aggregate_elements;
+    // to be coerced into the correct type later on
+    std::vector<boost::any> aggregate_elements;
 
   protected:
     node_type type_;
@@ -199,13 +227,12 @@ std::vector<T> split(const std::string& value) {
     return r;
 }
 
-Argument* parse_attribute_value(const IfcParse::parameter_type* ty, const std::string& value) {
-    auto* v = new IfcWrite::IfcWriteArgument();
-
+boost::any parse_attribute_value(const IfcParse::parameter_type* ty, const std::string& value) {
+    boost::any any;
     auto cpp_type = IfcUtil::from_parameter_type(ty);
 
     if (cpp_type == IfcUtil::Argument_STRING) {
-        v->set(value);
+        any = value;
     } else if (cpp_type == IfcUtil::Argument_ENUMERATION) {
         const auto* enum_type = ty->as_named_type()->declared_type()->as_enumeration_type();
 
@@ -214,28 +241,24 @@ Argument* parse_attribute_value(const IfcParse::parameter_type* ty, const std::s
             enum_type->enumeration_items().end(),
             boost::to_upper_copy(value));
 
-        if (iter != enum_type->enumeration_items().end()) {
-            v->set(IfcWrite::IfcWriteArgument::EnumerationReference(iter - enum_type->enumeration_items().begin(), iter->c_str()));
-        }
+        any = EnumerationReference(enum_type, std::distance(enum_type->enumeration_items().begin(), iter));
     } else if (cpp_type == IfcUtil::Argument_INT) {
-        v->set(boost::lexical_cast<int>(value));
+        any = boost::lexical_cast<int>(value);
     } else if (cpp_type == IfcUtil::Argument_DOUBLE) {
-        v->set(boost::lexical_cast<double>(value));
+        any = boost::lexical_cast<double>(value);
     } else if (cpp_type == IfcUtil::Argument_BOOL) {
-        v->set(boost::to_lower_copy(value) == "true");
+        any = boost::to_lower_copy(value) == "true";
     } else if (cpp_type == IfcUtil::Argument_AGGREGATE_OF_INT) {
-        v->set(split<int>(value));
+        any = split<int>(value);
     } else if (cpp_type == IfcUtil::Argument_AGGREGATE_OF_DOUBLE) {
-        v->set(split<double>(value));
+        any = split<double>(value);
     }
 
-    if (v->isNull()) {
+    if (any.empty()) {
         Logger::Error("Attribute '" + value + "' not successfully parsed");
-        delete v;
-        v = nullptr;
     }
 
-    return v;
+    return any;
 }
 
 static void end_element(void* user, const xmlChar* tag) {
@@ -248,17 +271,20 @@ static void end_element(void* user, const xmlChar* tag) {
     if (!state->stack.empty() && state->stack.back().ntype() == stack_node::node_aggregate) {
         const auto& back = state->stack.back();
         auto& elems = state->stack.back().aggregate_elements;
+        /*
         auto* list = new IfcParse::ArgumentList(elems.size());
         size_t i = 0;
         for (auto& elem : elems) {
             list->arguments()[i++] = elem;
         }
-        back.inst()->data().attributes()[back.idx()] = list;
+        */
+        // @todo
+        // back.inst()->data().storage_.set(back.idx(), elems);
     }
 
     if (state->dialect == ifcxml_dialect_ifc2x3 && state->stack.back().ntype() == stack_node::node_instance) {
         if (state->stack.back().inst() != nullptr) {
-            state->idmap[state->stack.back().id()] = state->file->addEntity(state->stack.back().inst())->data().id();
+            state->idmap[state->stack.back().id()] = state->file->addEntity(state->stack.back().inst())->id();
         }
     }
 
@@ -290,15 +316,17 @@ static void process_characters(void* user, const xmlChar* character, int len) {
 
     if (!state->stack.empty() && state->stack.back().inst() != nullptr && (state->stack.back().inst()->declaration().as_type_declaration() != nullptr)) {
         const auto* pt = state->stack.back().inst()->declaration().as_type_declaration()->declared_type();
-        Argument* val = nullptr;
+        boost::any val;
         try {
             val = parse_attribute_value(pt, txt);
         } catch (const std::exception& e) {
             Logger::Error(e, state->stack.back().inst());
         }
-        if (val != nullptr) {
+        if (!val.empty()) {
             // type declaration always at idx 0
-            state->stack.back().inst()->data().setArgument(0, val);
+            visit_any([&state](auto& v) {
+                state->stack.back().inst()->data().storage_.set(0, v);
+            }, val);
         }
     } else if (state_type == stack_node::node_header_entry) {
         const std::string tagname = boost::replace_all_copy(state->stack.back().tagname(), "ex:", "");
@@ -326,15 +354,17 @@ static void process_characters(void* user, const xmlChar* character, int len) {
         const auto* pt = state->stack.back().inst()->declaration().as_entity()->attribute_by_index(state->stack.back().idx())->type_of_attribute();
         auto cpp_type = IfcUtil::from_parameter_type(pt);
         if (cpp_type != IfcUtil::Argument_ENTITY_INSTANCE) {
-            auto* val = parse_attribute_value(pt, txt);
-            if (val != nullptr) {
-                state->stack.back().inst()->data().setArgument(state->stack.back().idx(), val);
+            auto val = parse_attribute_value(pt, txt);
+            if (!val.empty()) {
+                visit_any([&state](auto& v) {
+                    state->stack.back().inst()->data().setArgument(state->stack.back().idx(), v);
+                }, val);
             }
         }
     } else if (state_type == stack_node::node_aggregate_element) {
         const auto* pt = state->stack.back().aggregate_elem_type();
-        auto* val = parse_attribute_value(pt, txt);
-        if (val != nullptr) {
+        auto val = parse_attribute_value(pt, txt);
+        if (!val.empty()) {
             (*(state->stack.rbegin() + 1)).aggregate_elements.push_back(val);
         }
     }
@@ -388,13 +418,11 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
                         std::string schema_name(&it->front(), it->size());
                         boost::to_upper(schema_name);
                         state->file = new IfcParse::IfcFile(IfcParse::schema_by_name(schema_name));
-                        state->file->parsing_complete() = false;
                         state->dialect = ifcxml_dialect_ifc4;
                     }
                     goto end;
                 } else if (tagname == "ex:iso_10303_28" && attrname == "xsi:schemaLocation" && boost::starts_with(value, "http://www.iai-tech.org/ifcXML/IFC2x3")) {
                     state->file = new IfcParse::IfcFile(IfcParse::schema_by_name("IFC2X3"));
-                    state->file->parsing_complete() = false;
                     state->dialect = ifcxml_dialect_ifc2x3;
                     goto end;
                 }
@@ -426,7 +454,6 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
                 state->forward_references.push_back(std::make_tuple(inst->as<IfcUtil::IfcBaseEntity>(), attribute_index, boost::get<std::string>(inst_or_ref)));
             } else {
                 inst = boost::get<IfcUtil::IfcBaseClass*>(inst_or_ref);
-                // wattr->set(inst);
                 inst->set_attribute_value(attribute_index, inst);
             }
         };
@@ -452,7 +479,7 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
                 }
             }
 
-            auto* untyped = new IfcEntityInstanceData(decl);
+            auto untyped = IfcEntityInstanceData(storage_t(decl->as_entity() ? decl->as_entity()->attribute_count() : 1));
 
             const IfcParse::entity* entity = decl->as_entity();
             if (entity != nullptr) {
@@ -464,9 +491,11 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
                     auto idx = entity->attribute_index(pair.first);
                     if (idx != -1) {
                         const auto* attr = entity->attribute_by_index(idx);
-                        auto* val = parse_attribute_value(attr->type_of_attribute(), pair.second);
-                        if (val != nullptr) {
-                            untyped->setArgument(idx, val);
+                        auto val = parse_attribute_value(attr->type_of_attribute(), pair.second);
+                        if (!val.empty()) {
+                            visit_any([&untyped, idx](auto& v) {
+                                untyped->data().storage_->set_attribute_value(idx, v);
+                            }, val);
                         }
                     } else {
                         Logger::Error("Unknown attribute '" + pair.first + "' on entity '" + entity->name() + "' with value '" + pair.second + "'");
@@ -474,7 +503,7 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
                 }
             }
 
-            IfcUtil::IfcBaseClass* newinst = state->file->schema()->instantiate(untyped);
+            IfcUtil::IfcBaseClass* newinst = state->file->schema()->instantiate(decl->name(), std::move(untyped));
 
             if (state->dialect == ifcxml_dialect_ifc4) {
                 // In IFC2X3 not added directly because attrs such as GlobalId are in
@@ -532,9 +561,10 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
                 if (decl != nullptr) {
                     auto inst_or_ref = create_instance(decl);
                     IfcUtil::IfcBaseClass* inst;
-                    Argument* attr;
-                    instance_to_attribute(inst_or_ref, attr, inst);
-                    state->stack.back().aggregate_elements.push_back(attr);
+                    // Argument* attr;
+                    // @todo
+                    // instance_to_attribute(inst_or_ref, attr, inst);
+                    state->stack.back().aggregate_elements.push_back(boost::any{});
                     state->stack.push_back(stack_node::instance(id, inst));
                 }
             }
@@ -558,14 +588,11 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
                         if ((*found)->bound1() == 0 && (*found)->bound2() == 1) {
                             auto inst_or_ref = create_instance((*found)->entity_reference());
                             IfcUtil::IfcBaseClass* inst;
-                            Argument* attr;
-                            instance_to_attribute(inst_or_ref, attr, inst);
+                            instance_to_attribute(inst_or_ref, 0, inst);
                             if (inst != nullptr) {
                                 int idx = (*found)->entity_reference()->attribute_index(
                                     (*found)->attribute_reference());
-                                IfcWrite::IfcWriteArgument* attr_inv = new IfcWrite::IfcWriteArgument();
-                                attr_inv->set(state->stack.back().inst());
-                                inst->data().setArgument(idx, attr_inv);
+                                inst->data().storage_.set(idx, state->stack.back().inst());
                                 state->stack.push_back(stack_node::instance(id, inst));
                             } else {
                                 Logger::Error("Unknown attribute " + tagname);
@@ -588,11 +615,11 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
                         if (IfcUtil::from_parameter_type(attribute_type) == IfcUtil::Argument_ENTITY_INSTANCE) {
                             if (const auto* entity = attribute_type->as_named_type()->declared_type()->as_entity()) {
                                 auto inst_or_reference = create_instance(entity);
-                                Argument* attr;
-                                IfcUtil::IfcBaseClass* newinst;
-                                instance_to_attribute(inst_or_reference, attr, newinst);
-                                state->stack.back().inst()->data().setArgument(idx, attr);
-                                state->stack.push_back(stack_node::instance(id, newinst));
+                                IfcUtil::IfcBaseClass* inst;
+                                instance_to_attribute(inst_or_reference, idx, inst);
+                                // @todo
+                                state->stack.back().inst();
+                                state->stack.push_back(stack_node::instance(id, boost::get<IfcUtil::IfcBaseClass*>(inst_or_reference)));
                             } else if (attribute_type->as_named_type()->declared_type()->as_select_type() != nullptr) {
                                 // Select types cause an additional indirection, so the current stack node is simply repeated
                                 state->stack.push_back(stack_node::select(state->stack.back().inst(), idx));
@@ -630,21 +657,18 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
 
                 auto inst_or_ref = create_instance(decl);
                 IfcUtil::IfcBaseClass* inst;
-                Argument* attr;
-                instance_to_attribute(inst_or_ref, attr, inst);
+                instance_to_attribute(inst_or_ref, state->stack.back().idx(), inst);
 
                 if (state_type == stack_node::node_inverse) {
                     int idx = state->stack.back().inv_attr()->entity_reference()->attribute_index(
                         state->stack.back().inv_attr()->attribute_reference());
-                    IfcWrite::IfcWriteArgument* attr_inv = new IfcWrite::IfcWriteArgument();
-                    attr_inv->set(state->stack.back().inst());
                     if (inst != nullptr) {
-                        inst->data().setArgument(idx, attr_inv);
+                        inst->data().storage_.set(idx, state->stack.back().inst());
                     } else {
                         Logger::Error("Internal error, inverse attribute not processed");
                     }
                 } else if (state_type == stack_node::node_instance_attribute) {
-                    state->stack.back().inst()->data().attributes()[state->stack.back().idx()] = attr;
+                    state->stack.back().inst()->data().storage_.set(state->stack.back().idx(), inst);
                 }
 
                 if (entity == nullptr) {
@@ -679,16 +703,18 @@ IFC_PARSE_API IfcParse::IfcFile* IfcParse::parse_ifcxml(const std::string& filen
     xmlSAXUserParseFile(&handler, &state, filename.c_str());
 
     for (const auto& pair : state.forward_references) {
+        /*
         auto it = state.idmap.find(pair.second);
         if (it == state.idmap.end()) {
             Logger::Error("Instance with id '" + pair.second + "' not encountered");
         } else {
             pair.first->set(state.file->instance_by_id(it->second));
         }
+        */
     }
 
     if (state.file != nullptr) {
-        state.file->parsing_complete() = true;
+        // state.file->parsing_complete() = true;
         state.file->build_inverses();
     }
 

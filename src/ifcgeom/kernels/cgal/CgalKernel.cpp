@@ -767,7 +767,7 @@ bool CgalKernel::convert_impl(const taxonomy::shell::ptr shell, ConversionResult
 		return false;
 	}
 	results.emplace_back(ConversionResult(
-		shell->instance->data().id(),
+		shell->instance->as<IfcUtil::IfcBaseEntity>()->id(),
 		shell->matrix,
 		new CgalShape(shape),
 		shell->surface_style
@@ -788,7 +788,7 @@ bool CgalKernel::convert_impl(const taxonomy::solid::ptr solid, ConversionResult
 		return false;
 	}
 	results.emplace_back(ConversionResult(
-		solid->instance->data().id(),
+		solid->instance->as<IfcUtil::IfcBaseEntity>()->id(),
 		solid->matrix,
 		new CgalShape(shape),
 		solid->surface_style
@@ -938,7 +938,7 @@ bool CgalKernel::convert_impl(const taxonomy::extrusion::ptr extrusion, Conversi
 		return false;
 	}
 	results.emplace_back(ConversionResult(
-		extrusion->instance->data().id(),
+		extrusion->instance->as<IfcUtil::IfcBaseEntity>()->id(),
 		extrusion->matrix,
 		new CgalShape(shape),
 		extrusion->surface_style
@@ -1814,7 +1814,7 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result::ptr br, Conversion
 			}
 
 			return ConversionResult(
-				br->instance->data().id(),
+				br->instance->as<IfcUtil::IfcBaseEntity>()->id(),
 				br->matrix,
 				new CgalShape(shp),
 				br->surface_style ? br->surface_style : first_item_style
@@ -2047,7 +2047,7 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result::ptr br, Conversion
 	}
 
 	results.emplace_back(ConversionResult(
-		br->instance->data().id(),
+		br->instance->as<IfcUtil::IfcBaseEntity>()->id(),
 		br->matrix,
 		new CgalShape(a_poly),
 		br->surface_style ? br->surface_style : first_item_style

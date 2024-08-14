@@ -363,7 +363,7 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::loop::ptr loop, IfcGeom::Co
 	}
 
 	results.emplace_back(ConversionResult(
-		loop->instance->data().id(),
+		loop->instance->as<IfcUtil::IfcBaseEntity>()->id(),
 		new OpenCascadeShape(shape),
 		loop->surface_style
 	));
@@ -374,7 +374,7 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::edge::ptr edge, IfcGeom::Co
 	TopoDS_Wire shape = boost::get<TopoDS_Wire>(convert_curve(edge));
 
 	results.emplace_back(ConversionResult(
-		edge->instance->data().id(),
+		edge->instance->as<IfcUtil::IfcBaseEntity>()->id(),
 		new OpenCascadeShape(shape),
 		edge->surface_style
 	));

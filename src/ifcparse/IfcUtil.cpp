@@ -56,6 +56,7 @@
 #include "IfcBaseClass.h"
 #include "IfcException.h"
 #include "utils.h"
+#include "IfcFile.h"
 
 #include <algorithm>
 #include <boost/algorithm/string/replace.hpp>
@@ -206,6 +207,19 @@ Argument* IfcUtil::IfcBaseEntity::get(const std::string& name) const {
     return data().getArgument(declaration().attribute_index(name));
 }
 */
+
+AttributeValue IfcUtil::IfcBaseEntity::get(const std::string& name) const
+{
+    auto attrs = declaration().as_entity()->all_attributes();
+    auto iter = attrs.begin();
+    size_t idx = 0;
+    for (; iter != attrs.end(); ++iter, ++idx) {
+        if ((*iter)->name() == name) {
+            return data().get_attribute_value(idx);
+        }
+    }
+    throw IfcParse::IfcException(name + " not found on " + declaration().name());
+}
 
 aggregate_of_instance::ptr IfcUtil::IfcBaseEntity::get_inverse(const std::string& name) const {
     const std::vector<const IfcParse::inverse_attribute*> attrs = declaration().as_entity()->all_inverse_attributes();

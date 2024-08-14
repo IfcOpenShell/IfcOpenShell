@@ -59,7 +59,7 @@ IfcSchema::IfcProduct::list::ptr mapping::products_represented_by(const IfcSchem
 
         // IfcProductRepresentation also lacks the INVERSE relation to IfcProduct
         // Let's find the IfcProducts that reference the IfcProductRepresentation anyway
-        products->push((*it)->data().getInverse((&IfcSchema::IfcProduct::Class()), -1)->as<IfcSchema::IfcProduct>());
+        products->push((*it)->file_->getInverse((*it)->id(), &IfcSchema::IfcProduct::Class(), -1)->as<IfcSchema::IfcProduct>());
     }
 
     if (only_direct) {
@@ -81,13 +81,13 @@ IfcSchema::IfcProduct::list::ptr mapping::products_represented_by(const IfcSchem
                     continue;
                 }
 
-                IfcSchema::IfcRepresentation::list::ptr reps = item->data().getInverse((&IfcSchema::IfcRepresentation::Class()), -1)->as<IfcSchema::IfcRepresentation>();
+                IfcSchema::IfcRepresentation::list::ptr reps = item->file_->getInverse(item->id(), (&IfcSchema::IfcRepresentation::Class()), -1)->as<IfcSchema::IfcRepresentation>();
                 for (IfcSchema::IfcRepresentation::list::it jt = reps->begin(); jt != reps->end(); ++jt) {
                     IfcSchema::IfcRepresentation* rep = *jt;
                     if (rep->Items()->size() != 1) continue;
                     IfcSchema::IfcProductRepresentation::list::ptr prodreps_mapped = rep->OfProductRepresentation();
                     for (IfcSchema::IfcProductRepresentation::list::it kt = prodreps_mapped->begin(); kt != prodreps_mapped->end(); ++kt) {
-                        IfcSchema::IfcProduct::list::ptr ps = (*kt)->data().getInverse((&IfcSchema::IfcProduct::Class()), -1)->as<IfcSchema::IfcProduct>();
+                        IfcSchema::IfcProduct::list::ptr ps = (*kt)->file_->getInverse((*kt)->id(), (&IfcSchema::IfcProduct::Class()), -1)->as<IfcSchema::IfcProduct>();
                         products->push(ps);
                     }
                 }
@@ -273,7 +273,7 @@ const IfcUtil::IfcBaseEntity* mapping::get_product_type(const IfcUtil::IfcBaseEn
         }
 #endif
         // Avoid segfault if RelatingType is unset.
-        if (rel->get("RelatingType")->isNull()){
+        if (rel->get("RelatingType").isNull()){
             break;
             return nullptr;
         }
@@ -492,7 +492,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcMaterial* material) {
         material_style->name = material->Name();
     } else {
         std::ostringstream oss;
-        oss << material->declaration().name() << "-" << material->data().id();
+        oss << material->declaration().name() << "-" << material->id();
         material_style->name = oss.str();
     }
     return material_style;
@@ -522,7 +522,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcStyledItem* inst) {
     } else {
         std::ostringstream oss;
         if (shading) {
-            oss << shading->declaration().name() << "-" << shading->data().id();
+            oss << shading->declaration().name() << "-" << shading->id();
         } else {
             oss << "-";
         }
@@ -660,8 +660,8 @@ IfcUtil::IfcBaseEntity* mapping::get_decomposing_entity(const IfcUtil::IfcBaseEn
 
     /* Parent decompositions to the RelatingObject */
     if (!parent) {
-        aggregate_of_instance::ptr parents = product->data().getInverse((&IfcSchema::IfcRelAggregates::Class()), -1);
-        parents->push(product->data().getInverse((&IfcSchema::IfcRelNests::Class()), -1));
+        aggregate_of_instance::ptr parents = product->file_->getInverse(product->id(), (&IfcSchema::IfcRelAggregates::Class()), -1);
+        parents->push(product->file_->getInverse(product->id(), (&IfcSchema::IfcRelNests::Class()), -1));
         for (aggregate_of_instance::it it = parents->begin(); it != parents->end(); ++it) {
             IfcSchema::IfcRelDecomposes* decompose = (*it)->as<IfcSchema::IfcRelDecomposes>();
             IfcUtil::IfcBaseEntity* ifc_objectdef;
@@ -794,11 +794,11 @@ void mapping::initialize_settings() {
         // See if there is a context_id filter and whether the context is selected
         if (settings_.get<settings::ContextIds>().has()) {
             auto cids = settings_.get<settings::ContextIds>().get();
-            if (cids.find(context->data().id()) == cids.end()) {
+            if (cids.find(context->id()) == cids.end()) {
                 bool selected_sub_context = false;
                 auto subs = context->HasSubContexts();
                 for (auto& sub : *subs) {
-                    if (cids.find(context->data().id()) != cids.end()) {
+                    if (cids.find(context->id()) != cids.end()) {
                         selected_sub_context = true;
                         break;
                     }
