@@ -5,7 +5,7 @@ import tempfile
 import uuid
 import zipfile
 from pathlib import Path
-from typing import Any, NoReturn, Optional
+from typing import Any, NoReturn, Optional, Union
 
 import numpy as np
 from ifcopenshell import entity_instance
