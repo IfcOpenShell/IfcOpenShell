@@ -263,18 +263,6 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     def draw(self, context):
         layout = self.layout
 
-        box = layout.box()
-        row = box.row()
-        row.label(
-            text="To uninstall: 1) Disable the add-on 2) Restart Blender 3) Press the 'Remove' button.",
-            icon="ERROR",
-        )
-        row = box.row()
-        row.label(
-            text="To upgrade, first uninstall your current Bonsai, then install the new version.",
-            icon="ERROR",
-        )
-
         row = layout.row()
         row.operator("bim.open_upstream", text="Visit Homepage").page = "home"
         row.operator("bim.open_upstream", text="Visit Documentation").page = "docs"
