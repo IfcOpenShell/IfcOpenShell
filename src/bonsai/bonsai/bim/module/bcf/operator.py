@@ -691,14 +691,12 @@ class AddBcfReferenceLink(bpy.types.Operator):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
 
-        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
-            self.report({"INFO"}, f"BCF {version} is not yet supported.")
-            return {"FINISHED"}
-
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
-        topic.topic.reference_link.append(props.reference_link)
+        reference_links = tool.Bcf.get_topic_reference_links(topic)
+        reference_links.append(props.reference_link)
+        tool.Bcf.set_topic_reference_links(topic, reference_links)
         bpy.ops.bim.load_bcf_topic(topic_guid=topic.guid, topic_index=props.active_topic_index)
         props.reference_link = ""
         return {"FINISHED"}
@@ -782,17 +780,11 @@ class EditBcfReferenceLinks(bpy.types.Operator):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
 
-        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
-            self.report({"INFO"}, f"BCF {version} is not yet supported.")
-            return {"FINISHED"}
-
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
-        for index, reference_link in enumerate(topic.topic.reference_link):
-            if reference_link == blender_topic.reference_links[index].name:
-                continue
-            topic.topic.reference_link[index] = blender_topic.reference_links[index].name
+        reference_links = [r.name for r in blender_topic.reference_links]
+        tool.Bcf.set_topic_reference_links(topic, reference_links)
         return {"FINISHED"}
 
 
@@ -823,14 +815,12 @@ class RemoveBcfReferenceLink(bpy.types.Operator):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
 
-        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
-            self.report({"INFO"}, f"BCF {version} is not yet supported.")
-            return {"FINISHED"}
-
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
-        del topic.topic.reference_link[self.index]
+        reference_links = tool.Bcf.get_topic_reference_links(topic)
+        del reference_links[self.index]
+        tool.Bcf.set_topic_reference_links(topic, reference_links)
         blender_topic.reference_links.remove(self.index)
         return {"FINISHED"}
 

@@ -94,6 +94,20 @@ class Bcf(bonsai.core.tool.Bcf):
         return reference_links
 
     @classmethod
+    def set_topic_reference_links(cls, topic: bcf.agnostic.topic.TopicHandler, reference_links: list[str]) -> None:
+        topic_ = topic.topic
+        if isinstance(topic_, bcf.v2.model.Topic):
+            topic_.reference_link = reference_links
+        else:
+            topic_links = topic_.reference_links
+            if topic_links is None:
+                if not reference_links:
+                    return
+                topic_.reference_links = (topic_links := bcf.v3.model.TopicReferenceLinks())
+                return
+            topic_links.reference_link = reference_links
+
+    @classmethod
     def get_topic_related_topics(
         cls, topic: bcf.agnostic.topic.TopicHandler
     ) -> Union[list[bcf.v2.model.TopicRelatedTopic], list[bcf.v3.model.TopicRelatedTopicsRelatedTopic]]:

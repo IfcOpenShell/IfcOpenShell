@@ -176,11 +176,11 @@ class BIM_PT_bcf_metadata(Panel):
         layout.label(text="Reference Links:")
         for index, link in enumerate(topic.reference_links):
             row = layout.row(align=True)
-            row.prop(link, "name")
+            row.prop(link, "name", text="")
             row.operator("bim.open_uri", icon="URL", text="").uri = link.name
             row.operator("bim.remove_bcf_reference_link", icon="X", text="").index = index
         row = layout.row()
-        row.prop(props, "reference_link")
+        row.prop(props, "reference_link", text="New Reference Link:")
         row = layout.row()
         row.operator("bim.add_bcf_reference_link")
 
