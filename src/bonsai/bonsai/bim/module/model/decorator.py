@@ -360,11 +360,6 @@ class WallPolylineDecorator:
         else:
             last_point = Vector((0, 0, 0))
 
-        second_to_last_point = None
-        if len(polyline_data) > 1:
-            second_to_last_point_data = polyline_data[len(polyline_data) - 2]
-            second_to_last_point = Vector((second_to_last_point_data.x, second_to_last_point_data.y, second_to_last_point_data.z))
-
         if is_input_on:
             snap_vector = Vector(
                 (float(cls.input_panel["X"]), float(cls.input_panel["Y"]), default_container_elevation)
@@ -375,24 +370,16 @@ class WallPolylineDecorator:
             else:
                 snap_vector = Vector((snap_prop.x, snap_prop.y, snap_prop.z))
 
-        distance = (snap_vector - last_point).length
-        x_axis_edge = (
-            Vector((0, 0)),
-            Vector((1, 0)),
-        )
-        if second_to_last_point:
-            previous_axis = (
-                Vector((second_to_last_point.x, second_to_last_point.y)),
-                Vector((last_point.x, last_point.y)),
-            )
-        else:
+        second_to_last_point = None
+        if len(polyline_data) > 1:
+            second_to_last_point_data = polyline_data[len(polyline_data) - 2]
+            second_to_last_point = Vector((second_to_last_point_data.x, second_to_last_point_data.y, second_to_last_point_data.z))
+        if not second_to_last_point:
+            # Creates a fake "second to last" point away from the first point but in the same x axis
+            # this allows to calculate the angle relative to x axis when there is only one point
             second_to_last_point = Vector((last_point.x + 10, last_point.y, last_point.z))
-            previous_axis = x_axis_edge
 
-        current_axis = (
-            Vector((last_point.x, last_point.y)),
-            Vector((snap_vector.x, snap_vector.y)),
-        )
+        distance = (snap_vector - last_point).length
         if distance > 0:
             angle = tool.Cad.angle_3_vectors(snap_vector, last_point, second_to_last_point, degrees=True)
             angle = 180 - angle
