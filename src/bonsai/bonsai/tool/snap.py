@@ -199,6 +199,39 @@ class Snap(bonsai.core.tool.Snap):
         return None, None, None, None
 
     @classmethod
+    def mix_snap_and_axis(cls, snap_point, axis_start, axis_end, elevation):
+        # Creates a mixed snap point between the locked axis and
+        # the object snap
+        # TODO Use ALT key to give the user the option to choose between the two results.
+        # TODO Create decorator for this
+        snap_point_vector = Vector((snap_point[0].x, snap_point[0].y, snap_point[0].z))
+        snap_point_axis_1 = (
+            Vector((snap_point[0].x + 1000, snap_point[0].y, elevation)),
+            Vector((snap_point[0].x - 1000, snap_point[0].y, elevation)),
+        )
+        snap_point_axis_2 = (
+            Vector((snap_point[0].x, snap_point[0].y + 1000, elevation)),
+            Vector((snap_point[0].x, snap_point[0].y - 1000, elevation)),
+        )
+        snap_angle_axis = (axis_start, axis_end)
+        result_1 = tool.Cad.intersect_edges(snap_angle_axis, snap_point_axis_1)
+        result_1 = Vector((result_1[0].x, result_1[0].y, elevation))
+        distance_1 = (result_1 - snap_point_vector).length
+
+        result_2 = tool.Cad.intersect_edges(snap_angle_axis, snap_point_axis_2)
+        result_2 = Vector((result_2[0].x, result_2[0].y, elevation))
+        distance_2 = (result_2 - snap_point_vector).length
+
+        if distance_1 < distance_2:
+            best_result = result_1
+        else:
+            best_result = result_2
+
+        return best_result, "Axis"
+
+        # except Exception as e:
+        # cls.update_snaping_point(snap_point[0], snap_point[1])
+    @classmethod
     def snaping_movement(cls, context, event, objs_2d_bbox):
         region = context.region
         rv3d = context.region_data
@@ -290,54 +323,23 @@ class Snap(bonsai.core.tool.Snap):
             snap_points = cls.get_snap_points_on_raycasted_obj(obj, face_index)
             snap_point = cls.select_snap_point(snap_points, hit, snap_threshold)
 
-            if snap_point:
-                # Creates a mixed snap point between the locked axis and
-                # the object snap
-                # TODO Use ALT key to give the user the option to choose between the two results.
-                # TODO Create decorator for this
-                # try:
-                #     snap_point_vector = Vector((snap_point[0].x, snap_point[0].y, snap_point[0].z))
-                #     snap_point_axis_1 = (
-                #         Vector((snap_point[0].x + 1000, snap_point[0].y, default_container_elevation)),
-                #         Vector((snap_point[0].x - 1000, snap_point[0].y, default_container_elevation)),
-                #     )
-                #     snap_point_axis_2 = (
-                #         Vector((snap_point[0].x, snap_point[0].y + 1000, default_container_elevation)),
-                #         Vector((snap_point[0].x, snap_point[0].y - 1000, default_container_elevation)),
-                #     )
-                #     snap_angle_axis = (axis_start, axis_end)
-                #     result_1 = tool.Cad.intersect_edges(snap_angle_axis, snap_point_axis_1)
-                #     result_1 = Vector((result_1[0].x, result_1[0].y, default_container_elevation))
-                #     distance_1 = (result_1 - snap_point_vector).length
-
-                #     result_2 = tool.Cad.intersect_edges(snap_angle_axis, snap_point_axis_2)
-                #     result_2 = Vector((result_2[0].x, result_2[0].y, default_container_elevation))
-                #     distance_2 = (result_2 - snap_point_vector).length
-
-                #     if distance_1 < distance_2:
-                #         best_result = result_1
-                #     else:
-                #         best_result = result_2
-
-                #     cls.update_snaping_point(best_result, "Axis")
-
-                # except Exception as e:
-                # cls.update_snaping_point(snap_point[0], snap_point[1])
-                cls.update_snaping_point(snap_point[0], snap_point[1])
-
-            else:
+            if not snap_point:
                 cls.update_snaping_point(hit, "Face")
 
         else:
             snap_points = cls.get_snap_points_on_polyline()
             snap_point = cls.select_snap_point(snap_points, intersection, snap_threshold)
 
-            if snap_point:
-                cls.update_snaping_point(snap_point[0], snap_point[1])
-            elif rot_intersection:
-                cls.update_snaping_point(rot_intersection, "Axis")
+        if snap_point:
+            if event.shift:
+                snap_result, snap_type = cls.mix_snap_and_axis(snap_point, axis_start, axis_end, elevation)
+                cls.update_snaping_point(snap_result, snap_type)
             else:
-                cls.update_snaping_point(intersection, "Plane")
+                cls.update_snaping_point(snap_point[0], snap_point[1])
+        elif rot_intersection:
+            cls.update_snaping_point(rot_intersection, "Axis")
+        else:
+            cls.update_snaping_point(intersection, "Plane")
 
 
     @classmethod
