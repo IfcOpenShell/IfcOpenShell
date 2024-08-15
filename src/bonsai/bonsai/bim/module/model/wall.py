@@ -528,6 +528,7 @@ class DrawPolylineWall(bpy.types.Operator):
                 self.is_input_on = False
                 self.input_type = "OFF"
                 WallPolylineDecorator.set_input_panel(self.input_panel, self.input_type)
+                tool.Snap.clear_snaping_ref()
                 tool.Blender.update_viewport()
             else:
                 self.mousemove_count = 0
