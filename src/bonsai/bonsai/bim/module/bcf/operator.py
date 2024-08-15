@@ -27,6 +27,8 @@ import bcf.v2.bcfxml
 import bcf.v2.model
 import bcf.v2.topic
 import bcf.v2.visinfo
+import bcf.agnostic.visinfo
+import bcf.agnostic.topic
 import uuid
 import numpy as np
 import tempfile
@@ -113,7 +115,6 @@ class LoadBcfTopics(bpy.types.Operator):
         topics2use = []
         for topic_guid in bcfxml.topics.keys():
             try:
-                topic_titel = bcfxml.topics[topic_guid].topic.title
                 topics2use.append(topic_guid)
             except:
                 print("Problems on reading topic, thus ignored: {}".format(topic_guid))
@@ -216,6 +217,11 @@ class LoadBcfComments(bpy.types.Operator):
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
+
+        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
+            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
+            return {"FINISHED"}
+
         blender_topic = context.scene.BCFProperties.topics.get(self.topic_guid)
         blender_topic.comments.clear()
         for comment in bcfxml.topics[self.topic_guid].comments:
@@ -243,6 +249,11 @@ class EditBcfProjectName(bpy.types.Operator):
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
+
+        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
+            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
+            return {"FINISHED"}
+
         bcfxml.project.name = context.scene.BCFProperties.name
         return {"FINISHED"}
 
@@ -255,6 +266,11 @@ class EditBcfAuthor(bpy.types.Operator):
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
+
+        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
+            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
+            return {"FINISHED"}
+
         bcfxml.author = context.scene.BCFProperties.author
         return {"FINISHED"}
 
@@ -269,6 +285,11 @@ class EditBcfTopicName(bpy.types.Operator):
         blender_topic = props.active_topic
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
+
+        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
+            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
+            return {"FINISHED"}
+
         topic = bcfxml.topics[blender_topic.name].topic
         topic.title = blender_topic.title
         return {"FINISHED"}
@@ -284,6 +305,10 @@ class EditBcfTopic(bpy.types.Operator):
         blender_topic = props.active_topic
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
+
+        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
+            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
+            return {"FINISHED"}
 
         topic = bcfxml.topics[blender_topic.name].topic
         topic.title = blender_topic.title or None
@@ -330,6 +355,11 @@ class AddBcfTopic(bpy.types.Operator):
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
+
+        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
+            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
+            return {"FINISHED"}
+
         bcfxml.add_topic("New Topic", "", context.scene.BCFProperties.author)
         bpy.ops.bim.load_bcf_topics()
         return {"FINISHED"}
@@ -352,6 +382,11 @@ class AddBcfBimSnippet(bpy.types.Operator):
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
+
+        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
+            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
+            return {"FINISHED"}
+
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
@@ -400,6 +435,11 @@ class AddBcfRelatedTopic(bpy.types.Operator):
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
+
+        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
+            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
+            return {"FINISHED"}
+
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
@@ -425,6 +465,11 @@ class AddBcfHeaderFile(bpy.types.Operator):
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
+
+        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
+            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
+            return {"FINISHED"}
+
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
@@ -479,6 +524,11 @@ class AddBcfViewpoint(bpy.types.Operator):
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
+
+        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
+            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
+            return {"FINISHED"}
+
         blender_camera = context.scene.camera
         assert blender_camera
         props = context.scene.BCFProperties
@@ -562,6 +612,11 @@ class RemoveBcfViewpoint(bpy.types.Operator):
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
+
+        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
+            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
+            return {"FINISHED"}
+
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
@@ -586,6 +641,11 @@ class RemoveBcfFile(bpy.types.Operator):
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
+
+        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
+            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
+            return {"FINISHED"}
+
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
@@ -607,6 +667,11 @@ class RemoveBcfTopic(bpy.types.Operator):
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
+
+        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
+            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
+            return {"FINISHED"}
+
         props = context.scene.BCFProperties
         del bcfxml.topics[props.active_topic.name]
         bpy.ops.bim.load_bcf_topics()
@@ -625,6 +690,11 @@ class AddBcfReferenceLink(bpy.types.Operator):
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
+
+        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
+            self.report({"INFO"}, f"BCF {version} is not yet supported.")
+            return {"FINISHED"}
+
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
@@ -646,6 +716,11 @@ class AddBcfDocumentReference(bpy.types.Operator):
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
+
+        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
+            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
+            return {"FINISHED"}
+
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
@@ -684,12 +759,16 @@ class AddBcfLabel(bpy.types.Operator):
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
+
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
         new = blender_topic.labels.add()
         new.name = props.label
-        topic.topic.labels.append(props.label)
+
+        labels = tool.Bcf.get_topic_labels(topic)
+        labels.append(props.label)
+        tool.Bcf.set_topic_labels(topic, labels)
         props.label = ""
         return {"FINISHED"}
 
@@ -702,6 +781,11 @@ class EditBcfReferenceLinks(bpy.types.Operator):
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
+
+        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
+            self.report({"INFO"}, f"BCF {version} is not yet supported.")
+            return {"FINISHED"}
+
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
@@ -720,15 +804,12 @@ class EditBcfLabels(bpy.types.Operator):
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
+
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
-        for index, label in enumerate(blender_topic.labels):
-            if index >= len(topic.topic.labels):
-                break
-            if label.name == topic.topic.labels[index]:
-                continue
-            topic.topic.labels[index] = blender_topic.labels[index].name
+        labels = [l.name for l in blender_topic.labels]
+        tool.Bcf.set_topic_labels(topic, labels)
         return {"FINISHED"}
 
 
@@ -741,6 +822,11 @@ class RemoveBcfReferenceLink(bpy.types.Operator):
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
+
+        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
+            self.report({"INFO"}, f"BCF {version} is not yet supported.")
+            return {"FINISHED"}
+
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
@@ -758,10 +844,13 @@ class RemoveBcfLabel(bpy.types.Operator):
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
+
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
-        del topic.topic.labels[self.index]
+        labels = tool.Bcf.get_topic_labels(topic)
+        del labels[self.index]
+        tool.Bcf.set_topic_labels(topic, labels)
         blender_topic.labels.remove(self.index)
         return {"FINISHED"}
 
@@ -774,6 +863,11 @@ class RemoveBcfBimSnippet(bpy.types.Operator):
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
+
+        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
+            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
+            return {"FINISHED"}
+
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
@@ -793,6 +887,11 @@ class RemoveBcfDocumentReference(bpy.types.Operator):
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
+
+        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
+            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
+            return {"FINISHED"}
+
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
@@ -810,6 +909,11 @@ class RemoveBcfRelatedTopic(bpy.types.Operator):
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
+
+        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
+            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
+            return {"FINISHED"}
+
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
@@ -827,6 +931,11 @@ class RemoveBcfComment(bpy.types.Operator):
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
+
+        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
+            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
+            return {"FINISHED"}
+
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
@@ -847,6 +956,11 @@ class EditBcfComment(bpy.types.Operator):
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
+
+        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
+            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
+            return {"FINISHED"}
+
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         blender_comment = blender_topic.comments.get(self.comment_guid)
@@ -878,6 +992,11 @@ class AddBcfComment(bpy.types.Operator):
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
+
+        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
+            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
+            return {"FINISHED"}
+
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
@@ -967,7 +1086,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
             self.create_clipping_planes(viewpoint)
 
         self.delete_bitmaps(context)
-        if viewpoint.visualization_info.bitmap:
+        if tool.Bcf.get_viewpoint_bitmaps(viewpoint):
             self.create_bitmaps(bcfxml, viewpoint, topic)
 
         self.setup_camera(viewpoint, obj, cam_aspect, context)
@@ -975,7 +1094,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
 
     def setup_camera(
         self,
-        viewpoint: bcf.v2.visinfo.VisualizationInfoHandler,
+        viewpoint: bcf.agnostic.visinfo.VisualizationInfoHandler,
         obj: bpy.types.Object,
         cam_aspect: float,
         context: bpy.types.Context,
@@ -1026,7 +1145,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         obj.matrix_world = Matrix(matrix.tolist())
 
     def set_viewpoint_components(
-        self, viewpoint: bcf.v2.visinfo.VisualizationInfoHandler, context: bpy.types.Context
+        self, viewpoint: bcf.agnostic.visinfo.VisualizationInfoHandler, context: bpy.types.Context
     ) -> None:
         if not viewpoint.visualization_info.components:
             return
@@ -1040,7 +1159,9 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         self.set_selection(viewpoint)
         self.set_colours(viewpoint)
 
-    def set_exceptions(self, viewpoint: bcf.v2.visinfo.VisualizationInfoHandler, context: bpy.types.Context) -> None:
+    def set_exceptions(
+        self, viewpoint: bcf.agnostic.visinfo.VisualizationInfoHandler, context: bpy.types.Context
+    ) -> None:
         visibility_settings = viewpoint.get_elements_visibility()
         if visibility_settings is None:
             return
@@ -1083,7 +1204,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
                     obj.hide_select = True
 
     def set_view_setup_hints(
-        self, viewpoint: bcf.v2.visinfo.VisualizationInfoHandler, context: bpy.types.Context
+        self, viewpoint: bcf.agnostic.visinfo.VisualizationInfoHandler, context: bpy.types.Context
     ) -> None:
         if viewpoint.visualization_info.components.view_setup_hints:
             if not viewpoint.visualization_info.components.view_setup_hints.spaces_visible:
@@ -1107,7 +1228,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
     def set_openings_visibility(self, is_visible, context):
         pass  # We no longer have an openings collection
 
-    def set_selection(self, viewpoint: bcf.v2.visinfo.VisualizationInfoHandler) -> None:
+    def set_selection(self, viewpoint: bcf.agnostic.visinfo.VisualizationInfoHandler) -> None:
         selected_global_ids = viewpoint.get_selected_guids()
         if selected_global_ids is None:
             return
@@ -1118,7 +1239,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
                 obj.select_set(True)
                 obj.hide_set(False)
 
-    def set_colours(self, viewpoint: bcf.v2.visinfo.VisualizationInfoHandler) -> None:
+    def set_colours(self, viewpoint: bcf.agnostic.visinfo.VisualizationInfoHandler) -> None:
         if not viewpoint.visualization_info.components or not viewpoint.visualization_info.components.coloring:
             return
         global_id_colours = {}
@@ -1130,7 +1251,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
             if obj:
                 obj.color = self.hex_to_rgb(color)
 
-    def draw_lines(self, viewpoint: bcf.v2.visinfo.VisualizationInfoHandler, context: bpy.types.Context) -> None:
+    def draw_lines(self, viewpoint: bcf.agnostic.visinfo.VisualizationInfoHandler, context: bpy.types.Context) -> None:
         gp = bpy.data.grease_pencils.new("BCF")
         scene = context.scene
         scene.grease_pencil = gp
@@ -1149,7 +1270,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
             )
         stroke.points.foreach_set("co", coords)
 
-    def create_clipping_planes(self, viewpoint: bcf.v2.visinfo.VisualizationInfoHandler) -> None:
+    def create_clipping_planes(self, viewpoint: bcf.agnostic.visinfo.VisualizationInfoHandler) -> None:
         n = 0
         for plane in viewpoint.visualization_info.clipping_planes.clipping_plane:
             bpy.ops.bim.add_section_plane()
@@ -1181,15 +1302,16 @@ class ActivateBcfViewpoint(bpy.types.Operator):
             bpy.data.objects.remove(bitmap)
 
     def create_bitmaps(
-        self, bcfxml, viewpoint: bcf.v2.visinfo.VisualizationInfoHandler, topic: bcf.v2.topic.TopicHandler
+        self, bcfxml, viewpoint: bcf.agnostic.visinfo.VisualizationInfoHandler, topic: bcf.agnostic.topic.TopicHandler
     ) -> None:
         collection = bpy.data.collections.get("Bitmaps")
         if not collection:
             collection = bpy.data.collections.new("Bitmaps")
-        for bitmap in viewpoint.visualization_info.bitmap:
+        for bitmap in tool.Bcf.get_viewpoint_bitmaps(viewpoint):
             obj = bpy.data.objects.new("Bitmap", None)
             obj.empty_display_type = "IMAGE"
             # image = bpy.data.images.load(os.path.join(bcfxml.filepath, topic.guid, bitmap.reference))
+            # TODO: suuport bcf v3.
             with tempfile.NamedTemporaryFile(delete=False) as f:
                 topic.extract_file(bitmap, f.name)
                 # f.write(bitmap.what)
@@ -1295,8 +1417,12 @@ class LoadBcfHeaderIfcFile(bpy.types.Operator):
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
-        bcf_path = tool.Bcf.get_path()
 
+        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
+            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
+            return {"FINISHED"}
+
+        bcf_path = tool.Bcf.get_path()
         topic = bcfxml.topics[context.scene.BCFProperties.active_topic.name]
         entity = topic.header.file[self.index]
         ifc_path = str(topic.extract_file(entity))
@@ -1316,6 +1442,11 @@ class ExtractBcfFile(bpy.types.Operator):
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
+
+        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
+            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
+            return {"FINISHED"}
+
         topic = bcfxml.topics[context.scene.BCFProperties.active_topic.name]
 
         if self.entity_type == "HEADER_FILE":

@@ -18,6 +18,7 @@
 
 import os
 import bpy
+import bonsai.tool as tool
 from . import bcfstore
 from bpy.types import Panel
 
@@ -122,18 +123,18 @@ class BIM_PT_bcf_metadata(Panel):
         scene = context.scene
         props = scene.BCFProperties
 
-        if props.active_topic_index >= len(props.topics):
+        bcfxml = bcfstore.BcfStore.get_bcfxml()
+        if not bcfxml or props.active_topic_index >= len(props.topics):
             layout.label(text="No BCF project is loaded")
             return
 
         topic = props.active_topic
-        bcfxml = bcfstore.BcfStore.get_bcfxml()
         bcf_topic = bcfxml.topics[topic.name]
 
         layout.label(text="Header Files:")
 
         if bcf_topic.header:
-            for index, f in enumerate(bcf_topic.header.file):
+            for index, f in enumerate(tool.Bcf.get_topic_header_files(bcf_topic)):
                 box = self.layout.box()
                 row = box.row(align=True)
                 row.label(text=f.filename, icon="FILE_BLANK")
