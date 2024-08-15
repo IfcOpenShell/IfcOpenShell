@@ -331,6 +331,13 @@ namespace ifcopenshell {
 				static constexpr bool defaultvalue = false;
 			};
 
+			struct SurfaceColour : public SettingBase<SurfaceColour, bool> {
+                static constexpr const char* const name = "surface-colour";
+                static constexpr const char* const description =
+                    "Prioritizes the surface color instead of using diffuse.";
+                static constexpr bool defaultvalue = false;
+            };
+
 			enum PiecewiseStepMethod  {
 				MAXSTEPSIZE,
 				MINSTEPS };
