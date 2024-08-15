@@ -128,17 +128,14 @@ class Snap(bonsai.core.tool.Snap):
         else:
             z = snap_vertex.z
 
-        if not x and not y:
+        if x is None and y is None:
             x = snap_vertex.x
             y = snap_vertex.y
 
         # Avoids creating two points at the same location
         polyline_data = bpy.context.scene.BIMModelProperties.polyline_point
-        print(polyline_data, len(polyline_data))
         if polyline_data:
             last_point = polyline_data[len(polyline_data) - 1]
-            print(last_point)
-            print(last_point.x, last_point.y, last_point.z)
             if (x, y, z) == (last_point.x, last_point.y, last_point.z):
                 return
         
