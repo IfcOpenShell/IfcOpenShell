@@ -201,8 +201,7 @@ class RefreshLibrary(bpy.types.Operator):
 
         types = IfcStore.library_file.wrapped_data.types_with_super()
 
-        element_classes = ["IfcTypeProduct", "IfcMaterial", "IfcCostSchedule", "IfcProfileDef"]
-        for importable_type in sorted(element_classes):
+        for importable_type in sorted(tool.Project.get_appendable_asset_types()):
             if importable_type in types:
                 new = self.props.library_elements.add()
                 new.name = importable_type
@@ -384,9 +383,8 @@ class AppendEntireLibrary(bpy.types.Operator):
         self.file = IfcStore.get_file()
         self.library = IfcStore.library_file
 
-        lib_elements = ifcopenshell.util.selector.filter_elements(
-            self.library, "IfcTypeProduct, IfcMaterial, IfcCostSchedule, IfcProfileDef"
-        )
+        query = ", ".join(tool.Project.get_appendable_asset_types())
+        lib_elements = ifcopenshell.util.selector.filter_elements(self.library, query)
         for element in lib_elements:
             bpy.ops.bim.append_library_element(definition=element.id())
         return {"FINISHED"}
@@ -456,9 +454,11 @@ class AppendLibraryElement(bpy.types.Operator):
             obj = tool.Ifc.get_object(element_type)
             if obj is None:
                 self.import_type_from_ifc(element_type, context)
-
         elif element.is_a("IfcMaterial"):
             self.import_material_from_ifc(element, context)
+        elif element.is_a("IfcPresentationStyle"):
+            self.import_presentation_style_from_ifc(element, context)
+
         try:
             context.scene.BIMProjectProperties.library_elements[self.prop_index].is_appended = True
         except:
@@ -474,6 +474,16 @@ class AppendLibraryElement(bpy.types.Operator):
         ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
         ifc_importer.file = self.file
         self.import_material_styles(element, ifc_importer)
+
+    def import_presentation_style_from_ifc(
+        self, style: ifcopenshell.entity_instance, context: bpy.types.Context
+    ) -> None:
+        self.file = tool.Ifc.get()
+        logger = logging.getLogger("ImportIFC")
+        ifc_import_settings = import_ifc.IfcImportSettings.factory(context, tool.Ifc.get_path(), logger)
+        ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
+        ifc_importer.file = self.file
+        ifc_importer.create_style(style)
 
     def import_product_from_ifc(self, element: ifcopenshell.entity_instance, context: bpy.types.Context) -> None:
         self.file = IfcStore.get_file()

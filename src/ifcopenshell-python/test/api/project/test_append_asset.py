@@ -408,6 +408,31 @@ class TestAppendAssetIFC2X3(test.bootstrap.IFC2X3):
         )
         assert np.array_equal(ifcopenshell.util.placement.get_local_placement(new.ObjectPlacement), resulting_matrix)
 
+    def test_append_a_surface_style(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        library = ifcopenshell.api.project.create_file(version=self.file.schema)
+        ifcopenshell.api.root.create_entity(library, ifc_class="IfcProject")
+
+        style_name = "New Style"
+        style = ifcopenshell.api.style.add_style(library, style_name)
+        shading_attrs = {"SurfaceColour": {"Name": "", "Red": 1, "Green": 1, "Blue": 1}}
+        ifcopenshell.api.style.add_surface_style(
+            library, style, ifc_class="IfcSurfaceStyleShading", attributes=shading_attrs
+        )
+
+        new_style = ifcopenshell.api.project.append_asset(self.file, library=library, element=style)
+        assert self.file.by_type("IfcSurfaceStyle") == [new_style]
+        assert new_style.Name == style_name
+        style_elements = new_style.Styles
+        assert len(style_elements) == 1
+
+        # Check shading style.
+        shading_style = style_elements[0]
+        assert shading_style.is_a("IfcSurfaceStyleShading")
+        shading_colour_info = shading_style.SurfaceColour.get_info()
+        del shading_colour_info["id"], shading_colour_info["type"]
+        assert shading_colour_info == shading_attrs["SurfaceColour"]
+
 
 class TestAppendAssetIFC4(test.bootstrap.IFC4, TestAppendAssetIFC2X3):
     # NOTE: breaks in IFC2X3 since IfcProfileDef doesn't have "HasProperties" inverse in ifc2x3

@@ -30,6 +30,7 @@ import bonsai.core.owner
 import bonsai.bim.schema
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
+from ifcopenshell.api.project.append_asset import APPENDABLE_ASSET_TYPES
 from pathlib import Path
 from typing import Optional
 
@@ -204,3 +205,7 @@ class Project(bonsai.core.tool.Project):
     @classmethod
     def clear_recent_ifc_projects(cls) -> None:
         cls.write_recent_ifc_projects([])
+
+    @classmethod
+    def get_appendable_asset_types(cls) -> tuple[str, ...]:
+        return tuple(e for e in APPENDABLE_ASSET_TYPES if e != "IfcProduct")
