@@ -120,11 +120,17 @@ class Annotator:
 
     @staticmethod
     def get_annotation_obj(drawing, object_type, data_type):
-        camera = tool.Ifc.get_object(drawing)
-        co1, _, _, _ = Annotator.get_placeholder_coords(camera)
-        matrix_world = tool.Drawing.get_camera_matrix(camera)
-        matrix_world.translation = co1
-        collection = camera.BIMObjectProperties.collection
+    camera = tool.Ifc.get_object(drawing)
+    if not camera:
+        raise ValueError("No camera found for the drawing")
+
+    co1, _, _, _ = Annotator.get_placeholder_coords(camera)
+    matrix_world = tool.Drawing.get_camera_matrix(camera)
+    matrix_world.translation = co1
+
+    collection = getattr(camera.BIMObjectProperties, 'collection', None)
+    if not collection:
+        raise ValueError("No collection found for the camera")
 
         if object_type == "TEXT":
             obj = bpy.data.objects.new(object_type, None)
