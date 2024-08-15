@@ -96,8 +96,6 @@ class Cad:
 
         cos_a = max(-1, min(1, cos_a))
 
-        print(v1, v2, v3)
-        print(cos_a)
         a = math.acos(cos_a)
         if degrees:
             return math.degrees(a)
