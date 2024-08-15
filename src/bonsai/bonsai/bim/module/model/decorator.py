@@ -477,15 +477,24 @@ class WallPolylineDecorator:
         gpu.state.point_size_set(10)
 
         snap_prop = context.scene.BIMModelProperties.snap_mouse_point[0]
-        default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
-
         # Point related to the mouse
         mouse_point = [Vector((snap_prop.x, snap_prop.y, snap_prop.z))]
+
+        try:
+            snap_ref = context.scene.BIMModelProperties.snap_mouse_ref[0]
+            ref_point = [Vector((snap_ref.x, snap_ref.y, snap_ref.z))]
+        except:
+            ref_point = None
+
         if snap_prop.snap_type in ["Face", "Plane"]:
             self.draw_batch("POINTS", mouse_point, decorator_color_unselected)
         else:
             self.draw_batch("POINTS", mouse_point, (1.0, 0.6, 0.0, 1.0))
 
+        if ref_point:
+            self.draw_batch("POINTS", ref_point, (1.0, 0.6, 0.0, 1.0))
+
+        default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
         projection_point = []
         if self.use_default_container:
             # When a point is above the plane it projects the point

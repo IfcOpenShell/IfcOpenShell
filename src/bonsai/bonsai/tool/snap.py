@@ -105,6 +105,22 @@ class Snap(bonsai.core.tool.Snap):
         snap_vertex.snap_type = snap_type
 
     @classmethod
+    def update_snaping_ref(cls, snap_point, snap_type):
+        try:
+            snap_vertex = bpy.context.scene.BIMModelProperties.snap_mouse_ref[0]
+        except:
+            snap_vertex = bpy.context.scene.BIMModelProperties.snap_mouse_ref.add()
+
+        snap_vertex.x = snap_point[0]
+        snap_vertex.y = snap_point[1]
+        snap_vertex.z = snap_point[2]
+        snap_vertex.snap_type = snap_type
+
+    @classmethod
+    def clear_snaping_ref(cls):
+        bpy.context.scene.BIMModelProperties.snap_mouse_ref.clear()
+
+    @classmethod
     def insert_polyline_point(cls, x=None, y=None, z=None):
         snap_vertex = bpy.context.scene.BIMModelProperties.snap_mouse_point[0]
         if cls.use_default_container:
@@ -227,7 +243,7 @@ class Snap(bonsai.core.tool.Snap):
         else:
             best_result = result_2
 
-        return best_result, "Axis"
+        return best_result, "Mix"
 
         # except Exception as e:
         # cls.update_snaping_point(snap_point[0], snap_point[1])
@@ -334,6 +350,7 @@ class Snap(bonsai.core.tool.Snap):
             if event.shift:
                 snap_result, snap_type = cls.mix_snap_and_axis(snap_point, axis_start, axis_end, elevation)
                 cls.update_snaping_point(snap_result, snap_type)
+                cls.update_snaping_ref(snap_point[0], snap_point[1])
             else:
                 cls.update_snaping_point(snap_point[0], snap_point[1])
         elif rot_intersection:
