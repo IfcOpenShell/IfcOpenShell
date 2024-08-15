@@ -200,7 +200,9 @@ class BCFProperties(PropertyGroup):
     file_ifc_project: StringProperty(default="", name="IFC Project")
     file_ifc_spatial_structure_element: StringProperty(default="", name="IFC Spatial Structure Element")
     reference_link: StringProperty(default="", name="Reference Link")
-    label: StringProperty(default="", name="Label")
+    label: StringProperty(
+        default="", name="Label", search=lambda s, c, t: get_extensions_items(s, c, t, extensions_attr="topic_labels")
+    )
     bim_snippet_reference: StringProperty(default="", name="Reference")
     bim_snippet_type: StringProperty(
         default="", name="Type", search=lambda s, c, t: get_extensions_items(s, c, t, extensions_attr="snippet_types")
