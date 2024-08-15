@@ -266,19 +266,40 @@ class Snap(bonsai.core.tool.Snap):
             (offset, -offset),
         )
 
-        # TODO Create option for different planes. RANDOM, XY, YZ, XZ. This should change the code in the bottom
-        if cls.snap_plane_method == "No Plane":
-            camera_rotation = rv3d.view_rotation
-            plane_origin = Vector((0, 0, 0))
-            plane_normal = Vector((0, 1, 1, 1)) * Vector((camera_rotation))
 
-        elif cls.snap_plane_method == "XY":
-            if cls.use_default_container:
-                elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
-            else:
-                elevation = 0
-            plane_origin = Vector((0, 0, elevation))
-            plane_normal = Vector((0, 0, 1))
+        def select_plane_method():
+            if cls.snap_plane_method == "No Plane":
+                camera_rotation = rv3d.view_rotation
+                plane_origin = Vector((0, 0, 0))
+                plane_normal = Vector((0, 1, 1, 1)) * Vector((camera_rotation))
+
+            if cls.snap_plane_method == "XY":
+                if cls.use_default_container:
+                    plane_origin_point = elevation
+                elif not last_polyline_point:
+                    plane_origin_point = 0
+                else:
+                    plane_origin_point = last_polyline_point.z
+                plane_origin = Vector((0, 0, plane_origin_point))
+                plane_normal = Vector((0, 0, 1))
+
+            elif cls.snap_plane_method == "XZ":
+                if not last_polyline_point:
+                    plane_origin_point = 0
+                else:
+                    plane_origin_point = last_polyline_point.y
+                plane_origin = Vector((0, plane_origin_point, 0))
+                plane_normal = Vector((0, 1, 0))
+
+            elif cls.snap_plane_method == "YZ":
+                if not last_polyline_point:
+                    plane_origin_point = 0
+                else:
+                    plane_origin_point = last_polyline_point.x
+                plane_origin = Vector((plane_origin_point, 0, 0))
+                plane_normal = Vector((1, 0, 0))
+
+            return plane_origin, plane_normal
 
         def cast_rays_and_get_best_object():
             best_length_squared = 1.0
@@ -322,6 +343,16 @@ class Snap(bonsai.core.tool.Snap):
         snap_threshold = 0.3
         ray_origin, ray_target, ray_direction = tool.Raycast.get_viewport_ray_data(context, event)
         obj, hit, face_index = cast_rays_and_get_best_object()
+
+        try:
+            polyline_data = bpy.context.scene.BIMModelProperties.polyline_point
+            last_polyline_point = polyline_data[len(polyline_data) - 1]
+        except:
+            last_polyline_point = None
+
+        elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
+
+        plane_origin, plane_normal = select_plane_method()
         intersection = tool.Raycast.ray_cast_to_plane(context, event, plane_origin, plane_normal)
 
         if cls.use_default_container:
