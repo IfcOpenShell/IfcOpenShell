@@ -18,6 +18,8 @@
 
 import os
 import bcf.v3
+import bcf.v3.bcfxml
+import bcf.v3.document
 import bcf.v3.model
 import bcf.v3.topic
 import bpy
@@ -714,30 +716,70 @@ class AddBcfDocumentReference(bpy.types.Operator):
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
-
-        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
-            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
-            return {"FINISHED"}
+        bcf_v2 = (bcfxml.version.version_id or "").startswith("2")
 
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
 
         is_external = "://" in props.document_reference
-        filename = Path(props.document_reference).name if os.path.exists(props.document_reference) else None
+
+        document_path = Path(props.document_reference)
+        document_bytes, filename = None, None
+        if document_path.is_file():
+            filename = document_path.name
+            document_bytes = document_path.read_bytes()
 
         if filename:
             with open(props.document_reference, "rb") as f:
-                topic.document_references[filename] = f.read()
+                document_bytes = f.read()
 
-        document_reference = bcf.v2.model.TopicDocumentReference(
-            referenced_document=props.document_reference if is_external else filename,
-            description=props.document_reference_description or None,
-            guid=str(uuid.uuid4()),
-            is_external=is_external,
-        )
+        document_references = tool.Bcf.get_topic_document_references(topic)
+        if bcf_v2:
+            assert isinstance(topic, bcf.v2.topic.TopicHandler)
+            if document_bytes and filename:
+                topic.document_references[filename] = document_bytes
+            assert tool.Bcf.is_list_of(document_references, bcf.v2.model.TopicDocumentReference)
+            document_reference = bcf.v2.model.TopicDocumentReference(
+                referenced_document=props.document_reference if is_external else filename,
+                description=props.document_reference_description or None,
+                guid=str(uuid.uuid4()),
+                is_external=is_external,
+            )
+            document_references.append(document_reference)
+        else:
+            document_guid = None
+            if not is_external:
+                assert filename and document_bytes
+                assert isinstance(bcfxml, bcf.v3.bcfxml.BcfXml)
+                bcf_docs = bcfxml.documents
 
-        topic.topic.document_reference.append(document_reference)
+                if bcf_docs:
+                    doc_definition = bcf_docs.definition
+                else:
+                    doc_definition = bcf.v3.model.DocumentInfo()
+                    bcf_docs = bcf.v3.document.DocumentsHandler(doc_definition)
+                    bcfxml._documents = bcf_docs
+
+                bcf_docs.documents[filename] = document_bytes
+                document_guid = str(uuid.uuid4())
+                document = bcf.v3.model.Document(
+                    filename=filename, description=props.document_description, guid=document_guid
+                )
+                doc_definition_docs = doc_definition.documents
+                if not doc_definition_docs:
+                    doc_definition.documents = (doc_definition_docs := bcf.v3.model.DocumentInfoDocuments())
+                doc_definition_docs.document.append(document)
+
+            assert tool.Bcf.is_list_of(document_references, bcf.v3.model.DocumentReference)
+            document_reference = bcf.v3.model.DocumentReference(
+                document_guid=document_guid,
+                url=props.document_reference if is_external else None,
+                description=props.document_reference_description or None,
+                guid=str(uuid.uuid4()),
+            )
+            document_references.append(document_reference)
+        tool.Bcf.set_topic_document_references(topic, document_references)
 
         bpy.ops.bim.load_bcf_topic(topic_guid=topic.guid, topic_index=props.active_topic_index)
         props.document_reference = ""
@@ -877,15 +919,59 @@ class RemoveBcfDocumentReference(bpy.types.Operator):
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
-
-        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
-            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
-            return {"FINISHED"}
+        bcf_v2 = (bcfxml.version.version_id or "").startswith("2")
 
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
-        del topic.topic.document_reference[self.index]
+
+        document_references = tool.Bcf.get_topic_document_references(topic)
+        topic_index: int = self.index
+        document_reference = document_references[topic_index]
+
+        # Remove document contents.
+        if bcf_v2:
+            assert isinstance(topic, bcf.v2.topic.TopicHandler)
+            assert isinstance(document_reference, bcf.v2.model.TopicDocumentReference)
+            if not document_reference.is_external:
+                ref_document = document_reference.referenced_document
+                assert ref_document
+                del topic.document_references[ref_document]
+        else:
+            assert isinstance(document_reference, bcf.v3.model.DocumentReference)
+            document_guid = document_reference.document_guid
+            # For bcf v3 documents are stored in bcfxml, not in the topic.
+            if document_guid:
+                assert isinstance(bcfxml, bcf.v3.bcfxml.BcfXml)
+
+                # As there's no bcfxml document manager ui yet,
+                # we remove document if it's not referenced by any topic.
+                present_in_other_topics = False
+                for topic_ in bcfxml.topics.values():
+                    if topic_ == topic:
+                        continue
+                    document_references = tool.Bcf.get_topic_document_references(topic_)
+                    assert tool.Bcf.is_list_of(document_references, bcf.v3.model.DocumentReference)
+                    for ref_ in document_references:
+                        if ref_.document_guid == document_guid:
+                            present_in_other_topics = True
+                            break
+                    if present_in_other_topics:
+                        break
+
+                if not present_in_other_topics:
+                    doc_handler = bcfxml.documents
+                    assert doc_handler
+                    docs = doc_handler.definition.documents
+                    assert docs
+                    doc = next(d for d in docs.document if d.guid == document_guid)
+                    del doc_handler.documents[doc.filename]
+                    docs.document.remove(doc)
+
+        # Remove document reference.
+        del document_references[topic_index]
+        tool.Bcf.set_topic_document_references(topic, document_references)
+
         bpy.ops.bim.load_bcf_topic(topic_guid=topic.guid, topic_index=props.active_topic_index)
         return {"FINISHED"}
 
