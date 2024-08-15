@@ -64,6 +64,7 @@ class LoadBcfProject(bpy.types.Operator):
         if self.filepath:
             bcfstore.BcfStore.set_by_filepath(self.filepath)
         bcfxml = bcfstore.BcfStore.get_bcfxml()
+        assert bcfxml
         # a  BCFv2.1 does not need to have a project, but BBIM likes to have one
         # https://github.com/buildingSMART/BCF-XML/tree/release_2_1/Documentation#bcf-file-structure
         nameless = "Unknown"
@@ -101,6 +102,7 @@ class LoadBcfTopics(bpy.types.Operator):
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
+        assert bcfxml
         context.scene.BCFProperties.topics.clear()
         # workaround, one non standard topic would break reading entire bcf
         # ignored these topics ATM
@@ -128,6 +130,7 @@ class LoadBcfTopic(bpy.types.Operator):
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
+        assert bcfxml
         topic = bcfxml.topics[self.topic_guid]
         bcfxml.get_header(self.topic_guid)
         new = context.scene.BCFProperties.topics[self.topic_index]
@@ -201,6 +204,7 @@ class LoadBcfComments(bpy.types.Operator):
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
+        assert bcfxml
         blender_topic = context.scene.BCFProperties.topics.get(self.topic_guid)
         blender_topic.comments.clear()
         for comment in bcfxml.topics[self.topic_guid].comments:
@@ -227,6 +231,7 @@ class EditBcfProjectName(bpy.types.Operator):
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
+        assert bcfxml
         bcfxml.project.name = context.scene.BCFProperties.name
         return {"FINISHED"}
 
@@ -238,6 +243,7 @@ class EditBcfAuthor(bpy.types.Operator):
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
+        assert bcfxml
         bcfxml.author = context.scene.BCFProperties.author
         return {"FINISHED"}
 
@@ -251,6 +257,7 @@ class EditBcfTopicName(bpy.types.Operator):
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         bcfxml = bcfstore.BcfStore.get_bcfxml()
+        assert bcfxml
         topic = bcfxml.topics[blender_topic.name].topic
         topic.title = blender_topic.title
         return {"FINISHED"}
@@ -265,6 +272,7 @@ class EditBcfTopic(bpy.types.Operator):
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         bcfxml = bcfstore.BcfStore.get_bcfxml()
+        assert bcfxml
 
         topic = bcfxml.topics[blender_topic.name].topic
         topic.title = blender_topic.title or None
@@ -289,6 +297,7 @@ class SaveBcfProject(bpy.types.Operator):
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
+        assert bcfxml
         bcfxml.save(self.filepath)
         bcfstore.BcfStore.set(bcfxml, self.filepath)
         return {"FINISHED"}
@@ -309,6 +318,7 @@ class AddBcfTopic(bpy.types.Operator):
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
+        assert bcfxml
         bcfxml.add_topic("New Topic", "", context.scene.BCFProperties.author)
         bpy.ops.bim.load_bcf_topics()
         return {"FINISHED"}
@@ -330,6 +340,7 @@ class AddBcfBimSnippet(bpy.types.Operator):
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
+        assert bcfxml
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
@@ -355,6 +366,7 @@ class AddBcfRelatedTopic(bpy.types.Operator):
     @classmethod
     def poll(cls, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
+        assert bcfxml
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         if not props.related_topic:
@@ -376,6 +388,7 @@ class AddBcfRelatedTopic(bpy.types.Operator):
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
+        assert bcfxml
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
@@ -400,6 +413,7 @@ class AddBcfHeaderFile(bpy.types.Operator):
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
+        assert bcfxml
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
@@ -453,6 +467,7 @@ class AddBcfViewpoint(bpy.types.Operator):
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
+        assert bcfxml
         blender_camera = context.scene.camera
         assert blender_camera
         props = context.scene.BCFProperties
@@ -535,6 +550,7 @@ class RemoveBcfViewpoint(bpy.types.Operator):
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
+        assert bcfxml
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
@@ -558,6 +574,7 @@ class RemoveBcfFile(bpy.types.Operator):
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
+        assert bcfxml
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
@@ -578,6 +595,7 @@ class RemoveBcfTopic(bpy.types.Operator):
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
+        assert bcfxml
         props = context.scene.BCFProperties
         del bcfxml.topics[props.active_topic.name]
         bpy.ops.bim.load_bcf_topics()
@@ -595,6 +613,7 @@ class AddBcfReferenceLink(bpy.types.Operator):
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
+        assert bcfxml
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
@@ -615,6 +634,7 @@ class AddBcfDocumentReference(bpy.types.Operator):
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
+        assert bcfxml
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
@@ -652,6 +672,7 @@ class AddBcfLabel(bpy.types.Operator):
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
+        assert bcfxml
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
@@ -669,6 +690,7 @@ class EditBcfReferenceLinks(bpy.types.Operator):
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
+        assert bcfxml
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
@@ -686,6 +708,7 @@ class EditBcfLabels(bpy.types.Operator):
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
+        assert bcfxml
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
@@ -706,6 +729,7 @@ class RemoveBcfReferenceLink(bpy.types.Operator):
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
+        assert bcfxml
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
@@ -722,6 +746,7 @@ class RemoveBcfLabel(bpy.types.Operator):
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
+        assert bcfxml
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
@@ -737,6 +762,7 @@ class RemoveBcfBimSnippet(bpy.types.Operator):
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
+        assert bcfxml
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
@@ -755,6 +781,7 @@ class RemoveBcfDocumentReference(bpy.types.Operator):
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
+        assert bcfxml
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
@@ -771,6 +798,7 @@ class RemoveBcfRelatedTopic(bpy.types.Operator):
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
+        assert bcfxml
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
@@ -787,6 +815,7 @@ class RemoveBcfComment(bpy.types.Operator):
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
+        assert bcfxml
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
@@ -806,6 +835,7 @@ class EditBcfComment(bpy.types.Operator):
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
+        assert bcfxml
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         blender_comment = blender_topic.comments.get(self.comment_guid)
@@ -836,6 +866,7 @@ class AddBcfComment(bpy.types.Operator):
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
+        assert bcfxml
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
@@ -861,17 +892,18 @@ class ActivateBcfViewpoint(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        bcfxml = bcfstore.BcfStore.get_bcfxml()
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         if blender_topic is None:
             return False
+        bcfxml = bcfstore.BcfStore.get_bcfxml()
         topic = bcfxml.topics[blender_topic.name]
         return topic.viewpoints
 
     def execute(self, context):
         self.file = IfcStore.get_file()
         bcfxml = bcfstore.BcfStore.get_bcfxml()
+        assert bcfxml
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
@@ -1272,6 +1304,7 @@ class ExtractBcfFile(bpy.types.Operator):
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
+        assert bcfxml
         topic = bcfxml.topics[context.scene.BCFProperties.active_topic.name]
 
         if self.entity_type == "HEADER_FILE":

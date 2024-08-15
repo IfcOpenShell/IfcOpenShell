@@ -102,6 +102,7 @@ def getBcfViewpoints(self, context, force_update=False):
         bcfviewpoints_enum = []
         props = context.scene.BCFProperties
         bcfxml = bcfstore.BcfStore.get_bcfxml()
+        assert bcfxml
         topic = props.active_topic
         viewpoints = bcfxml.topics[topic.name].viewpoints.keys() if topic else []
         bcfviewpoints_enum.extend([(v, f"Viewpoint {i+1}", "") for i, v in enumerate(viewpoints)])
