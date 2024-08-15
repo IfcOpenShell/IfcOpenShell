@@ -26,13 +26,23 @@ import bcf.v2.topic
 import bcf.v3.model
 import bcf.v3.topic
 import bcf.agnostic.topic
-from typing import Any, Union, Optional
+from typing import Any, Union, TypeVar, TypeGuard
+
+
+T = TypeVar("T")
 
 
 class Bcf(bonsai.core.tool.Bcf):
     @classmethod
     def get_path(cls) -> str:
         return bpy.context.scene.BCFProperties.bcf_file
+
+    @classmethod
+    def is_list_of(cls, a: list[Any], t: type[T]) -> TypeGuard[list[T]]:
+        """Narrow type for a list assuming list is not mixing types."""
+        if not a:
+            return True
+        return isinstance(a[0], t)
 
     # BCF version agnostic API.
     ## topic
@@ -46,6 +56,26 @@ class Bcf(bonsai.core.tool.Bcf):
             document_references = topic.topic.document_references
             document_references = document_references.document_reference if document_references else []
         return document_references
+
+    @classmethod
+    def set_topic_document_references(
+        cls,
+        topic: bcf.agnostic.topic.TopicHandler,
+        document_references: Union[list[bcf.v2.model.TopicDocumentReference], list[bcf.v3.model.DocumentReference]],
+    ) -> None:
+        topic_ = topic.topic
+        if isinstance(topic_, bcf.v2.model.Topic):
+            assert cls.is_list_of(document_references, bcf.v2.model.TopicDocumentReference)
+            topic_.document_reference = document_references
+        else:
+            assert cls.is_list_of(document_references, bcf.v3.model.DocumentReference)
+            topic_document_references = topic_.document_references
+            if topic_document_references is None:
+                if not document_references:
+                    return
+                topic_.document_references = (topic_document_references := bcf.v3.model.TopicDocumentReferences())
+                return
+            topic_document_references.document_reference = document_references
 
     @classmethod
     def get_topic_header_files(

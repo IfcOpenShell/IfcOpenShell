@@ -116,6 +116,10 @@ class BIM_PT_bcf_metadata(Panel):
     bl_parent_id = "BIM_PT_bcf"
 
     def draw(self, context):
+        # TODO: in bcf v3 documents can be added to the bcf
+        # without adding them to specific topic.
+        # Currently we just handle it the same way as in v2
+        # documents are accessed and managed from topics.
         layout = self.layout
         layout.use_property_split = True
         layout.use_property_decorate = False
@@ -127,6 +131,8 @@ class BIM_PT_bcf_metadata(Panel):
         if not bcfxml or props.active_topic_index >= len(props.topics):
             layout.label(text="No BCF project is loaded")
             return
+        bcf_verison = bcfxml.version.version_id or ""
+        bcf_v3 = bcf_verison.startswith("3")
 
         topic = props.active_topic
         bcf_topic = bcfxml.topics[topic.name]
@@ -239,7 +245,12 @@ class BIM_PT_bcf_metadata(Panel):
         row.prop(props, "document_reference")
         row.operator("bim.select_bcf_document_reference", icon="FILE_FOLDER", text="")
         row = layout.row()
-        row.prop(props, "document_reference_description")
+        row.prop(
+            props, "document_reference_description", text="Reference Description" if bcf_v3 else "Document Description"
+        )
+        if bcf_v3:
+            row = layout.row()
+            row.prop(props, "document_description")
         row = layout.row()
         row.operator("bim.add_bcf_document_reference")
 
