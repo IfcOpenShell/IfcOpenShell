@@ -565,15 +565,13 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcStyledItem* inst) {
         return surface_style;
     }
 
-     surface_style->use_surface_color = settings_.get<settings::SurfaceColour>().get();
+	surface_style->use_surface_color = settings_.get<settings::SurfaceColour>().get();
 
-    static taxonomy::colour white = taxonomy::colour(1., 1., 1.);
-    double rgb[3];
-    if (process_colour(shading->SurfaceColour(), rgb)) {
-        surface_style->surface.components() << rgb[0], rgb[1], rgb[2];
-    } else {
-		surface_style->surface = white;
-    }
+	static taxonomy::colour white = taxonomy::colour(1., 1., 1.);
+	double rgb[3];
+	if (process_colour(shading->SurfaceColour(), rgb)) {
+		surface_style->surface.components() << rgb[0], rgb[1], rgb[2];
+	}
 
     if (auto rendering_style = shading->as<IfcSchema::IfcSurfaceStyleRendering>()) {
         if (rendering_style->DiffuseColour() && process_colour(rendering_style->DiffuseColour(), rgb)) {
