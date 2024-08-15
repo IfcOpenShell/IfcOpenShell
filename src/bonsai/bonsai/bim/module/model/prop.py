@@ -204,6 +204,7 @@ class BIMModelProperties(PropertyGroup):
     type_name: bpy.props.StringProperty(name="Name", default="TYPEX")
     boundary_class: bpy.props.EnumProperty(items=get_boundary_class, name="Boundary Class")
     snap_mouse_point: bpy.props.CollectionProperty(type=SnapMousePoint)
+    snap_mouse_ref: bpy.props.CollectionProperty(type=SnapMousePoint)
     polyline_point: bpy.props.CollectionProperty(type=PolylinePoint)
 
 
