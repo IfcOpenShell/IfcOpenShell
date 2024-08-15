@@ -25,7 +25,18 @@ import ifcopenshell.api.owner.settings
 import ifcopenshell.util.element
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.placement
-from typing import Optional, Any, Union
+from typing import Optional, Any, Union, Literal, get_args
+
+
+APPENDABLE_ASSET = Literal[
+    "IfcTypeProduct",
+    "IfcProduct",
+    "IfcMaterial",
+    "IfcCostSchedule",
+    "IfcProfileDef",
+    "IfcPresentationStyle",
+]
+APPENDABLE_ASSET_TYPES = get_args(APPENDABLE_ASSET)
 
 
 def append_asset(
@@ -154,6 +165,9 @@ class Usecase:
         elif self.settings["element"].is_a("IfcProfileDef"):
             self.target_class = "IfcProfileDef"
             return self.append_profile_def()
+        elif self.settings["element"].is_a("IfcPresentationStyle"):
+            self.target_class = "IfcPresentationStyle"
+            return self.append_presentation_style()
 
     def get_existing_element(self, element):
         if element.id() in self.added_elements:
@@ -184,6 +198,10 @@ class Usecase:
 
     def append_profile_def(self):
         self.whitelisted_inverse_attributes = {"IfcProfileDef": ["HasProperties"]}
+        return self.add_element(self.settings["element"])
+
+    def append_presentation_style(self):
+        self.whitelisted_inverse_attributes = {}
         return self.add_element(self.settings["element"])
 
     def append_type_product(self):
