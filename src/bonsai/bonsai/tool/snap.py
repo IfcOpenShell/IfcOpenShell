@@ -107,19 +107,29 @@ class Snap(bonsai.core.tool.Snap):
     @classmethod
     def insert_polyline_point(cls, x=None, y=None, z=None):
         snap_vertex = bpy.context.scene.BIMModelProperties.snap_mouse_point[0]
-        polyline_point = bpy.context.scene.BIMModelProperties.polyline_point.add()
         if cls.use_default_container:
-            elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
+            z = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
         else:
-            elevation = snap_vertex.z
-        if x is not None and y is not None:
-            polyline_point.x = x
-            polyline_point.y = y
-            polyline_point.z = elevation
-        else:
-            polyline_point.x = snap_vertex.x
-            polyline_point.y = snap_vertex.y
-            polyline_point.z = elevation
+            z = snap_vertex.z
+
+        if not x and not y:
+            x = snap_vertex.x
+            y = snap_vertex.y
+
+        # Avoids creating two points at the same location
+        polyline_data = bpy.context.scene.BIMModelProperties.polyline_point
+        print(polyline_data, len(polyline_data))
+        if polyline_data:
+            last_point = polyline_data[len(polyline_data) - 1]
+            print(last_point)
+            print(last_point.x, last_point.y, last_point.z)
+            if (x, y, z) == (last_point.x, last_point.y, last_point.z):
+                return
+        
+        polyline_point = bpy.context.scene.BIMModelProperties.polyline_point.add()
+        polyline_point.x = x
+        polyline_point.y = y
+        polyline_point.z = z
 
     @classmethod
     def close_polyline(cls):
