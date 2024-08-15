@@ -17,6 +17,9 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import bcf.v3
+import bcf.v3.model
+import bcf.v3.topic
 import bpy
 import bcf
 import bcf.bcfxml
@@ -154,12 +157,12 @@ class LoadBcfTopic(bpy.types.Operator):
                 setattr(new, key, str(value))
 
         new.reference_links.clear()
-        for reference_link in topic.topic.reference_link:
+        for reference_link in tool.Bcf.get_topic_reference_links(topic):
             new_reference_link = new.reference_links.add()
             new_reference_link.name = reference_link
 
         new.labels.clear()
-        for label in topic.topic.labels:
+        for label in tool.Bcf.get_topic_labels(topic):
             new_label = new.labels.add()
             new_label.name = label
 
@@ -175,20 +178,28 @@ class LoadBcfTopic(bpy.types.Operator):
                     setattr(new.bim_snippet, key, value)
 
         new.document_references.clear()
-        for doc in topic.topic.document_reference:
+        for doc in tool.Bcf.get_topic_document_references(topic):
             new_document_references = new.document_references.add()
+
+            if isinstance(doc, bcf.v2.model.TopicDocumentReference):
+                reference = doc.referenced_document
+                is_external = doc.is_external
+            else:
+                is_external = doc.document_guid is None
+                reference = doc.url if is_external else doc.document_guid
+
             data_map = {
-                "reference": doc.referenced_document,
+                "reference": reference,
                 "description": doc.description,
                 "guid": doc.guid,
-                "is_external": doc.is_external,
+                "is_external": is_external,
             }
             for key, value in data_map.items():
                 if value is not None:
                     setattr(new_document_references, key, value)
 
         new.related_topics.clear()
-        for related_topic in topic.topic.related_topic:
+        for related_topic in tool.Bcf.get_topic_related_topics(topic):
             new_related_topic = new.related_topics.add()
             new_related_topic.name = related_topic.guid
 
