@@ -23,6 +23,7 @@ import bmesh
 import bonsai.tool as tool
 from math import sin, cos, radians, degrees, atan2, acos
 from bpy.types import SpaceView3D
+import math
 from mathutils import Vector, Matrix
 from gpu_extras.batch import batch_for_shader
 from typing import Union
@@ -338,8 +339,17 @@ class WallPolylineDecorator:
         cls.axis_end = end
 
     @classmethod
+    def set_axis_rectangle(cls, corners):
+        cls.axis_rectangle = corners
+
+    @classmethod
     def set_use_default_container(cls, value=False):
         cls.use_default_container = value
+
+    @classmethod
+    def set_plane(cls, plane_origin, plane_normal):
+        cls.plane_origin = plane_origin
+        cls.plane_normal = plane_normal
 
     @classmethod
     def calculate_distance_and_angle(cls, context, is_input_on):
@@ -534,3 +544,9 @@ class WallPolylineDecorator:
         if snap_prop.snap_type == "Axis":
             self.line_shader.uniform_float("lineWidth", 0.75)
             self.draw_batch("LINES", [self.axis_start, self.axis_end], decorator_color_unselected, [(0, 1)])
+
+        if self.plane_normal:
+
+            self.draw_batch(
+                "TRIS", [*self.axis_rectangle], (1, 1, 1, 0.1), [(0, 1, 3), (0, 2, 3)]
+            )

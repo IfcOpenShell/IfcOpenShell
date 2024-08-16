@@ -166,13 +166,38 @@ class Snap(bonsai.core.tool.Snap):
     @classmethod
     def snap_on_axis(cls, intersection, lock_axis=None):
 
-        def create_axis_line(rot_mat, origin):
+        def create_axis_line_data(rot_mat, origin):
             length = 1000
             direction = Vector((1, 0, 0))
+            if cls.snap_plane_method == "YZ":
+                direction = Vector((0, 0, 1))
             rot_dir = rot_mat.inverted() @ direction
             start = origin + rot_dir * length
             end = origin - rot_dir * length
+
             return start, end
+
+        def create_axis_rectangle_data(origin):
+            size = 0.5
+            direction = Vector((1, 0, 0))
+            if cls.snap_plane_method == "YZ":
+                direction = Vector((0, 0, 1))
+            rot_mat = Matrix.Rotation(math.radians(360), 3, pivot_axis)
+            rot_dir = rot_mat.inverted() @ direction
+            v1 = origin + rot_dir * 0
+            v2 = origin + rot_dir * size
+            if cls.snap_plane_method == "XY":
+                angle = 270
+            else:
+                angle = 90
+            rot_mat = Matrix.Rotation(math.radians(angle), 3, pivot_axis)
+            rot_dir = rot_mat.inverted() @ direction
+            v3 = origin + rot_dir * size
+            v4 = v2 + rot_dir * size
+
+            return (v1, v2, v3, v4)
+
+
 
         default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
         polyline_data = bpy.context.scene.BIMModelProperties.polyline_point
@@ -192,19 +217,32 @@ class Snap(bonsai.core.tool.Snap):
         else:
             snap_axis = [lock_axis]
 
+        pivot_axis = "Z"
+        if cls.snap_plane_method == "XZ":
+            pivot_axis = "Y"
+        if cls.snap_plane_method == "YZ":
+            pivot_axis = "X"
+            
+        rectangle_data = create_axis_rectangle_data(last_point)
+        WallPolylineDecorator.set_axis_rectangle(rectangle_data)
         for axis in snap_axis:
-            rot_mat = Matrix.Rotation(math.radians(360 - axis), 3, "Z")
-            start, end = create_axis_line(rot_mat, last_point)
+            rot_mat = Matrix.Rotation(math.radians(360 - axis), 3, pivot_axis)
+            start, end = create_axis_line_data(rot_mat, last_point)
             rot_intersection = rot_mat @ translated_intersection
+            proximity = rot_intersection.y
+            if cls.snap_plane_method == "XZ":
+                proximity = rot_intersection.z
             WallPolylineDecorator.set_angle_axis_line(start, end)
             if lock_axis:
                 is_on_rot_axis = True
             else:
-                is_on_rot_axis = abs(rot_intersection.y) <= 0.15
+                is_on_rot_axis = abs(proximity) <= 0.15
 
             if is_on_rot_axis:
                 # Snap to axis
                 rot_intersection = Vector((rot_intersection.x, 0, rot_intersection.z))
+                if cls.snap_plane_method == "XZ":
+                    rot_intersection = Vector((rot_intersection.x, rot_intersection.y, 0))
                 # Convert it back
                 snap_intersection = rot_mat.inverted() @ rot_intersection + last_point
                 return snap_intersection, axis, start, end
@@ -272,28 +310,21 @@ class Snap(bonsai.core.tool.Snap):
 
             if cls.snap_plane_method == "XY":
                 if cls.use_default_container:
-                    plane_origin_point = elevation
+                    plane_origin = Vector((0, 0, elevation))
                 elif not last_polyline_point:
-                    plane_origin_point = 0
+                    plane_origin = Vector((0, 0, 0))
                 else:
-                    plane_origin_point = last_polyline_point.z
-                plane_origin = Vector((0, 0, plane_origin_point))
+                    plane_origin = Vector((last_polyline_point.x, last_polyline_point.y, last_polyline_point.z))
                 plane_normal = Vector((0, 0, 1))
 
             elif cls.snap_plane_method == "XZ":
-                if not last_polyline_point:
-                    plane_origin_point = 0
-                else:
-                    plane_origin_point = last_polyline_point.y
-                plane_origin = Vector((0, plane_origin_point, 0))
+                if last_polyline_point:
+                    plane_origin = Vector((last_polyline_point.x, last_polyline_point.y, last_polyline_point.z))
                 plane_normal = Vector((0, 1, 0))
 
             elif cls.snap_plane_method == "YZ":
-                if not last_polyline_point:
-                    plane_origin_point = 0
-                else:
-                    plane_origin_point = last_polyline_point.x
-                plane_origin = Vector((plane_origin_point, 0, 0))
+                if last_polyline_point:
+                    plane_origin = Vector((last_polyline_point.x, last_polyline_point.y, last_polyline_point.z))
                 plane_normal = Vector((1, 0, 0))
 
             return plane_origin, plane_normal
@@ -350,9 +381,10 @@ class Snap(bonsai.core.tool.Snap):
         elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
 
         plane_origin, plane_normal = select_plane_method()
+        WallPolylineDecorator.set_plane(plane_origin, plane_normal)
         intersection = tool.Raycast.ray_cast_to_plane(context, event, plane_origin, plane_normal)
 
-        if cls.use_default_container:
+        if cls.snap_plane_method in {"XY", "XZ", "YZ"} :
             # Locks snap into an angle axis
             if event.shift:
                 rot_intersection, _, axis_start, axis_end = cls.snap_on_axis(intersection, cls.snap_angle)
