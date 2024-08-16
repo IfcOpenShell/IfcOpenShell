@@ -31,95 +31,26 @@
 	$result = SWIG_Python_str_FromChar(data_type_strings[(int)$1]);
 }
 
-%typemap(out) std::pair<IfcUtil::ArgumentType, Argument*> {
+%typemap(out) AttributeValue {
 	// The SWIG %exception directive does not take care
 	// of our typemap. So the attribute conversion block
 	// is wrapped in a try-catch block manually.
 	try {
-	const Argument& arg = *($1.second);
-	const IfcUtil::ArgumentType type = $1.first;
-	if (arg.isNull()) {
-		Py_INCREF(Py_None);
-		$result = Py_None;
-	} else if (type == IfcUtil::Argument_DERIVED) {
-		if (feature_use_attribute_value_derived) {
-			$result = SWIG_NewPointerObj(new attribute_value_derived, SWIGTYPE_p_attribute_value_derived, SWIG_POINTER_OWN);
-		} else {
-			Py_INCREF(Py_None);
-			$result = Py_None;
-		}
-	} else {
-	switch(type) {
-		case IfcUtil::Argument_INT: {
-			int v = arg;
-			$result = pythonize(v);
-		break; }
-		case IfcUtil::Argument_BOOL: {
-			bool v = arg;
-			$result = pythonize(v);
-		break; }
-		case IfcUtil::Argument_LOGICAL: {
-			boost::logic::tribool v = arg;
-			$result = pythonize(v);
-		break; }
-		case IfcUtil::Argument_DOUBLE: {
-			double v = arg;
-			$result = pythonize(v);
-		break; }
-		case IfcUtil::Argument_ENUMERATION:
-		case IfcUtil::Argument_STRING: {
-			std::string v = arg;
-			$result = pythonize(v);
-		break; }
-		case IfcUtil::Argument_BINARY: {
-			boost::dynamic_bitset<> v = arg;
-			$result = pythonize(v);
-		break; }
-		case IfcUtil::Argument_AGGREGATE_OF_INT: {
-			std::vector<int> v = arg;
-			$result = pythonize_vector(v);
-		break; }
-		case IfcUtil::Argument_AGGREGATE_OF_DOUBLE: {
-			std::vector<double> v = arg;
-			$result = pythonize_vector(v);
-		break; }
-		case IfcUtil::Argument_AGGREGATE_OF_STRING: {
-			std::vector<std::string> v = arg;
-			$result = pythonize_vector(v);
-		break; }
-		case IfcUtil::Argument_ENTITY_INSTANCE: {
-			IfcUtil::IfcBaseClass* v = arg;
-			$result = pythonize(v);
-		break; }
-		case IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE: {
-			aggregate_of_instance::ptr v = arg;
-			$result = pythonize(v);
-		break; }
-		case IfcUtil::Argument_AGGREGATE_OF_BINARY: {
-			std::vector< boost::dynamic_bitset<> > v = arg;
-			$result = pythonize_vector(v);
-		break; }
-		case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_INT: {
-			std::vector< std::vector<int> > v = arg;
-			$result = pythonize_vector2(v);
-		break; }
-		case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE: {
-			std::vector< std::vector<double> > v = arg;
-			$result = pythonize_vector2(v);
-		break; }
-		case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE: {
-			aggregate_of_aggregate_of_instance::ptr v = arg;
-			$result = pythonize(v);
-		break; }
-		case IfcUtil::Argument_EMPTY_AGGREGATE: {
-			$result = PyTuple_New(0);
-		break; }
-		case IfcUtil::Argument_UNKNOWN:
-		default:
-			SWIG_exception(SWIG_RuntimeError,"Unknown attribute type");
-		break;
-	}
-	}
+		$result = $1.array_->apply_visitor([](auto& v){
+			using U = std::decay_t<decltype(v)>;
+            if constexpr (is_std_vector_vector_v<U>) {
+                return pythonize_vector2(v);
+            } else if constexpr (is_std_vector_v<U>) {
+				return pythonize_vector(v);
+            } else if constexpr (std::is_same_v<U, EnumerationReference>) {
+                return pythonize(v.value());
+            } else if constexpr (std::is_same_v<U, empty_aggregate_t> || std::is_same_v<U, empty_aggregate_of_aggregate_t> || std::is_same_v<U, Derived> || std::is_same_v<U, Blank>) {
+                Py_INCREF(Py_None);
+				return static_cast<PyObject*>(Py_None); 
+            } else {
+				return pythonize(v);
+			}
+		}, $1.index_);
 	} catch(IfcParse::IfcException& e) {
 		SWIG_exception(SWIG_RuntimeError, e.what());
 	} catch(...) {

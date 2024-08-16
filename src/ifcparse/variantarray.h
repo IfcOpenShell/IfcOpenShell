@@ -283,17 +283,11 @@ private:
         return apply_visitor_impl(std::forward<Visitor>(visitor), idx, std::integral_constant<std::size_t, Index - 1>{});
     }
 
-    template<typename, typename = std::void_t<>>
-    struct has_result_type : std::false_type {};
-    template<typename T>
-    struct has_result_type<T, std::void_t<typename T::result_type>> : std::true_type {};
-
     template<typename Visitor>
     auto apply_visitor_impl(Visitor&&, std::size_t, std::integral_constant<std::size_t, 0>) const {
         throw std::runtime_error("Invalid variant index");
-        // This raises a warning but is neccessary (?) for the auto return type inference?
-        if constexpr (has_result_type<Visitor>::value) {
-            return typename Visitor::result_type{};
+        if constexpr (!std::is_void_v<decltype(std::declval<Visitor>()(std::declval<typename std::tuple_element_t<0, impl::MapTypes_t<Types...>> &>()))>) {
+            return decltype(std::declval<Visitor>()(std::declval<typename std::tuple_element_t<0, impl::MapTypes_t<Types...>> &>())){};
         }
     }
 };

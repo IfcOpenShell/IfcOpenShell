@@ -147,8 +147,8 @@ void Logger::SetOutput(std::wostream* stream1, std::wostream* stream2) {
 }
 
 void Logger::Message(Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseInterface* instance) {
-    static std::mutex mtx;
-    std::lock_guard<std::mutex> lock(mtx);
+    // static std::mutex mtx;
+    // std::lock_guard<std::mutex> lock(mtx);
 
     if (type == LOG_PERF) {
         if (!first_timepoint_) {

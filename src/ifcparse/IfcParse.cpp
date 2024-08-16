@@ -2569,8 +2569,9 @@ void IfcUtil::IfcBaseClass::toString(std::ostream& out, bool upper) const
 {
     auto ent = declaration().as_entity();
     if (ent) {
-        out << "#" << as<IfcUtil::IfcBaseEntity>()->id();
+        out << "#" << as<IfcUtil::IfcBaseEntity>()->id() << "=";
     }
+    out << declaration().name_uc();
     data().toString(out, upper, ent);
 }
 
