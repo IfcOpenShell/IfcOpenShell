@@ -138,7 +138,7 @@ class Snap(bonsai.core.tool.Snap):
             last_point = polyline_data[len(polyline_data) - 1]
             if (x, y, z) == (last_point.x, last_point.y, last_point.z):
                 return
-        
+
         polyline_point = bpy.context.scene.BIMModelProperties.polyline_point.add()
         polyline_point.x = x
         polyline_point.y = y
@@ -197,8 +197,6 @@ class Snap(bonsai.core.tool.Snap):
 
             return (v1, v2, v3, v4)
 
-
-
         default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
         polyline_data = bpy.context.scene.BIMModelProperties.polyline_point
         if polyline_data:
@@ -222,7 +220,7 @@ class Snap(bonsai.core.tool.Snap):
             pivot_axis = "Y"
         if cls.snap_plane_method == "YZ":
             pivot_axis = "X"
-            
+
         rectangle_data = create_axis_rectangle_data(last_point)
         WallPolylineDecorator.set_axis_rectangle(rectangle_data)
         for axis in snap_axis:
@@ -282,6 +280,7 @@ class Snap(bonsai.core.tool.Snap):
 
         # except Exception as e:
         # cls.update_snaping_point(snap_point[0], snap_point[1])
+
     @classmethod
     def snaping_movement(cls, context, event, objs_2d_bbox):
         region = context.region
@@ -300,7 +299,6 @@ class Snap(bonsai.core.tool.Snap):
             (0, -offset),
             (offset, -offset),
         )
-
 
         def select_plane_method():
             if cls.snap_plane_method == "No Plane":
@@ -384,7 +382,7 @@ class Snap(bonsai.core.tool.Snap):
         WallPolylineDecorator.set_plane(plane_origin, plane_normal)
         intersection = tool.Raycast.ray_cast_to_plane(context, event, plane_origin, plane_normal)
 
-        if cls.snap_plane_method in {"XY", "XZ", "YZ"} :
+        if cls.snap_plane_method in {"XY", "XZ", "YZ"}:
             # Locks snap into an angle axis
             if event.shift:
                 rot_intersection, _, axis_start, axis_end = cls.snap_on_axis(intersection, cls.snap_angle)
@@ -417,7 +415,6 @@ class Snap(bonsai.core.tool.Snap):
             cls.update_snaping_point(rot_intersection, "Axis")
         else:
             cls.update_snaping_point(intersection, "Plane")
-
 
     @classmethod
     def validate_input(cls, input_number):
@@ -465,4 +462,3 @@ class Snap(bonsai.core.tool.Snap):
             return True, str(result)
         except:
             return False, "0"
-
