@@ -383,7 +383,9 @@ class WallPolylineDecorator:
         second_to_last_point = None
         if len(polyline_data) > 1:
             second_to_last_point_data = polyline_data[len(polyline_data) - 2]
-            second_to_last_point = Vector((second_to_last_point_data.x, second_to_last_point_data.y, second_to_last_point_data.z))
+            second_to_last_point = Vector(
+                (second_to_last_point_data.x, second_to_last_point_data.y, second_to_last_point_data.z)
+            )
         if not second_to_last_point:
             # Creates a fake "second to last" point away from the first point but in the same x axis
             # this allows to calculate the angle relative to x axis when there is only one point
@@ -417,7 +419,9 @@ class WallPolylineDecorator:
         second_to_last_point = None
         if len(polyline_data) > 2:
             second_to_last_point_data = polyline_data[len(polyline_data) - 2]
-            second_to_last_point = Vector((second_to_last_point_data.x, second_to_last_point_data.y, second_to_last_point_data.z))
+            second_to_last_point = Vector(
+                (second_to_last_point_data.x, second_to_last_point_data.y, second_to_last_point_data.z)
+            )
         else:
             second_to_last_point = Vector((0, 0, 0))
 
@@ -427,7 +431,9 @@ class WallPolylineDecorator:
             angle_degrees = float(cls.input_panel["A"])
             reference_vector = second_to_last_point - last_point
             reference_angle = degrees(atan2(reference_vector[1], reference_vector[0]))
-            angle_radians = radians(360 - (angle_degrees - reference_angle))  # Substracting from 360 to make it clockwise
+            angle_radians = radians(
+                360 - (angle_degrees - reference_angle)
+            )  # Substracting from 360 to make it clockwise
             x = last_point[0] + distance * cos(angle_radians)
             y = last_point[1] + distance * sin(angle_radians)
             if cls.input_panel:
@@ -464,7 +470,6 @@ class WallPolylineDecorator:
                 blf.color(self.font_id, *color)
             blf.position(self.font_id, self.mouse_pos[0] + offset, self.mouse_pos[1] + offset - (new_line * i), 0)
             blf.draw(self.font_id, texts[key] + value)
-
 
     def __call__(self, context):
 
@@ -546,7 +551,4 @@ class WallPolylineDecorator:
             self.draw_batch("LINES", [self.axis_start, self.axis_end], decorator_color_unselected, [(0, 1)])
 
         if self.plane_normal:
-
-            self.draw_batch(
-                "TRIS", [*self.axis_rectangle], (1, 1, 1, 0.1), [(0, 1, 3), (0, 2, 3)]
-            )
+            self.draw_batch("TRIS", [*self.axis_rectangle], (1, 1, 1, 0.1), [(0, 1, 3), (0, 2, 3)])

@@ -2294,7 +2294,6 @@ class MeasureTool(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     bl_label = "Measure Tool"
 
-
     @classmethod
     def poll(cls, context):
         return context.space_data.type == "VIEW_3D"
@@ -2314,7 +2313,6 @@ class MeasureTool(bpy.types.Operator):
         self.input_value_xy = [None, None]
         self.input_panel = {"X": "", "Y": "", "Z": "", "D": "", "A": ""}
         self.snap_angle = None
-
 
     def modal(self, context, event):
 
@@ -2352,17 +2350,17 @@ class MeasureTool(bpy.types.Operator):
         if event.shift and event.type == "X":
             tool.Snap.set_use_default_container(False)
             WallPolylineDecorator.set_use_default_container(False)
-            tool.Snap.set_snap_plane_method('YZ')
+            tool.Snap.set_snap_plane_method("YZ")
 
         if event.shift and event.type == "Y":
             tool.Snap.set_use_default_container(False)
             WallPolylineDecorator.set_use_default_container(False)
-            tool.Snap.set_snap_plane_method('XZ')
+            tool.Snap.set_snap_plane_method("XZ")
 
         if event.shift and event.type == "Z":
             tool.Snap.set_use_default_container(False)
             WallPolylineDecorator.set_use_default_container(False)
-            tool.Snap.set_snap_plane_method('XY')
+            tool.Snap.set_snap_plane_method("XY")
 
         if event.value == "RELEASE" and event.type in {"RIGHTMOUSE", "ESC"}:
             WallPolylineDecorator.uninstall()
@@ -2377,7 +2375,7 @@ class MeasureTool(bpy.types.Operator):
             WallPolylineDecorator.install(context)
             tool.Snap.set_use_default_container(False)
             WallPolylineDecorator.set_use_default_container(False)
-            tool.Snap.set_snap_plane_method('No Plane')
+            tool.Snap.set_snap_plane_method("No Plane")
             WallPolylineDecorator.set_input_panel(self.input_panel, self.input_type)
             self.visible_objs = tool.Raycast.get_visible_objects(context)
             for obj in self.visible_objs:
