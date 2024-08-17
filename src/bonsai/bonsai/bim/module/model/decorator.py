@@ -408,6 +408,49 @@ class PolylineDecorator:
         return cls.input_panel
 
     @classmethod
+    def calculate_area(cls, context):
+        try:
+            polyline_data = context.scene.BIMModelProperties.polyline_point
+        except:
+            return cls.input_panel
+
+        if len(polyline_data) < 3:
+            return cls.input_panel
+
+        points = []
+        for data in polyline_data:
+            points.append(Vector((data.x, data.y, data.z)))
+
+        if points[0] == points[-1]:
+            points = points[1:]
+
+        # TODO move this to CAD
+        # Calculate the normal vector of the plane formed by the first three vertices
+        v1, v2, v3 = points[:3]
+        normal = (v2 - v1).cross(v3 - v1).normalized()
+
+        # Check if all points are coplanar
+        is_coplanar = True
+        tolerance = 1e-6  # Adjust this value as needed
+        for v in points:
+            if abs((v - v1).dot(normal)) > tolerance:
+                is_coplanar = False
+
+        if is_coplanar:
+            area = 0
+            for i in range(len(points)):
+                j = (i + 1) % len(points)
+                area += points[i].cross(points[j]).dot(normal)
+
+            area = abs(area) / 2
+        else:
+            area = 0
+
+        if "AREA" in list(cls.input_panel.keys()):
+            cls.input_panel["AREA"] = str(round(area, 4))
+        return cls.input_panel
+
+    @classmethod
     def calculate_x_and_y(cls, context):
         try:
             polyline_data = context.scene.BIMModelProperties.polyline_point
@@ -451,7 +494,7 @@ class PolylineDecorator:
         batch.draw(shader)
 
     def draw_text(self, context):
-        texts = {"X": "X coord:", "Y": "Y coord:", "Z": "Z coord:", "D": "Distance:", "A": "Angle:"}
+        texts = {"X": "X coord:", "Y": "Y coord:", "Z": "Z coord:", "D": "Distance:", "A": "Angle:", "AREA": "Area:"}
         self.addon_prefs = tool.Blender.get_addon_preferences()
         self.font_id = 0
         blf.size(self.font_id, 12)
@@ -550,5 +593,15 @@ class PolylineDecorator:
             self.line_shader.uniform_float("lineWidth", 0.75)
             self.draw_batch("LINES", [self.axis_start, self.axis_end], decorator_color_unselected, [(0, 1)])
 
-        if self.plane_normal:
-            self.draw_batch("TRIS", [*self.axis_rectangle], (1, 1, 1, 0.1), [(0, 1, 3), (0, 2, 3)])
+        try:
+            self.draw_batch("TRIS", self.axis_rectangle, (1, 1, 1, 0.1), [(0, 1, 3), (0, 2, 3)])
+        except:
+            pass
+
+        # Area highlight
+        if "AREA" in list(self.input_panel.keys()):
+            if self.input_panel["AREA"] and float(self.input_panel["AREA"]) > 0:
+                edges = []
+                for i in range(1, len(polyline_points) - 1):
+                    edges.append((0, i, i + 1))
+                self.draw_batch("TRIS", polyline_points, (0, 1, 0, 0.1), edges)
