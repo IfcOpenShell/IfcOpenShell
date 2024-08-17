@@ -125,12 +125,11 @@ class Snap(bonsai.core.tool.Snap):
         snap_vertex = bpy.context.scene.BIMModelProperties.snap_mouse_point[0]
         if cls.use_default_container:
             z = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
-        else:
-            z = snap_vertex.z
 
         if x is None and y is None:
             x = snap_vertex.x
             y = snap_vertex.y
+            z = snap_vertex.z
 
         # Avoids creating two points at the same location
         polyline_data = bpy.context.scene.BIMModelProperties.polyline_point
@@ -301,6 +300,9 @@ class Snap(bonsai.core.tool.Snap):
         )
 
         def select_plane_method():
+            if not last_polyline_point:
+                plane_origin = Vector((0, 0, 0))
+
             if cls.snap_plane_method == "No Plane":
                 camera_rotation = rv3d.view_rotation
                 plane_origin = Vector((0, 0, 0))
