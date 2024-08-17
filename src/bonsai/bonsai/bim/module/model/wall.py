@@ -294,7 +294,7 @@ class DrawPolylineWall(bpy.types.Operator):
         self.action_count = 0
         self.visible_objs = []
         self.objs_2d_bbox = []
-        self.number_options = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "+", "-", "*", "-", "/"}
+        self.number_options = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "+", "-", "*", "/"}
         self.number_input = []
         self.number_output = ""
         self.number_is_negative = False
@@ -304,180 +304,6 @@ class DrawPolylineWall(bpy.types.Operator):
         self.input_value_xy = [None, None]
         self.input_panel = {"X": "", "Y": "", "D": "", "A": ""}
         self.snap_angle = None
-
-    # def snaping_movement(self, context, event):
-    #     region = context.region
-    #     rv3d = context.region_data
-    #     self.mouse_pos = event.mouse_region_x, event.mouse_region_y
-
-    #     offset = 5
-    #     mouse_offset = (
-    #         (-offset, offset),
-    #         (0, offset),
-    #         (offset, offset),
-    #         (-offset, 0),
-    #         (0, 0),
-    #         (offset, 0),
-    #         (-offset, -offset),
-    #         (0, -offset),
-    #         (offset, -offset),
-    #     )
-
-    #     # Plane to intersect. Default Container
-    #     default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
-    #     plane_origin = Vector((0, 0, default_container_elevation))
-    #     plane_normal = Vector((0, 0, 1))
-
-    #     def cast_rays_and_get_best_object():
-    #         best_length_squared = 1.0
-    #         best_obj = None
-    #         best_hit = None
-    #         best_face_index = None
-
-    #         objs_to_raycast = []
-
-    #         for obj, bbox_2d in self.objs_2d_bbox:
-    #             if obj.type == "MESH" and bbox_2d:
-    #                 if tool.Raycast.in_view_2d_bounding_box(self.mouse_pos, bbox_2d):
-    #                     objs_to_raycast.append(obj)
-
-    #         for obj in objs_to_raycast:
-    #             hit, normal, face_index = tool.Raycast.obj_ray_cast(context, event, obj)
-    #             if hit is None:
-    #                 # Tried original mouse position. Now it will try the offsets.
-    #                 original_mouse_pos = self.mouse_pos
-    #                 for value in mouse_offset:
-    #                     self.mouse_pos = tuple(x + y for x, y in zip(original_mouse_pos, value))
-    #                     hit, normal, face_index = tool.Raycast.obj_ray_cast(context, event, obj)
-    #                     if hit:
-    #                         break
-    #                 self.mouse_pos = original_mouse_pos
-    #             if hit is not None:
-    #                 hit_world = obj.original.matrix_world @ hit
-    #                 length_squared = (hit_world - ray_origin).length_squared
-    #                 if best_obj is None or length_squared < best_length_squared:
-    #                     best_length_squared = length_squared
-    #                     best_obj = obj
-    #                     best_hit = hit_world
-    #                     best_face_index = face_index
-
-    #         if best_obj is not None:
-    #             return best_obj, best_hit, best_face_index
-
-    #         else:
-    #             return None, None, None
-
-    #     snap_threshold = 0.3
-    #     ray_origin, ray_target, ray_direction = tool.Raycast.get_viewport_ray_data(context, event)
-    #     obj, hit, face_index = cast_rays_and_get_best_object()
-    #     intersection = tool.Raycast.ray_cast_to_plane(context, event, plane_origin, plane_normal)
-
-    #     # Locks snap into an angle axis
-    #     if event.shift:
-    #         rot_intersection, _, axis_start, axis_end = tool.Snap.snap_on_axis(intersection, self.snap_angle)
-    #     else:
-    #         self.snap_angle = None
-    #         rot_intersection, self.snap_angle, _, _ = tool.Snap.snap_on_axis(intersection)
-
-    #     if obj is not None:
-
-    #         snap_points = tool.Snap.get_snap_points_on_raycasted_obj(obj, face_index)
-    #         snap_point = tool.Snap.select_snap_point(snap_points, hit, snap_threshold)
-
-    #         if snap_point:
-    #             # Creates a mixed snap point between the locked axis and
-    #             # the object snap
-    #             # TODO Use ALT key to give the user the option to choose between the two results.
-    #             # TODO Create decorator for this
-    #             try:
-    #                 snap_point_vector = Vector((snap_point[0].x, snap_point[0].y, snap_point[0].z))
-    #                 snap_point_axis_1 = (
-    #                     Vector((snap_point[0].x + 1000, snap_point[0].y, default_container_elevation)),
-    #                     Vector((snap_point[0].x - 1000, snap_point[0].y, default_container_elevation)),
-    #                 )
-    #                 snap_point_axis_2 = (
-    #                     Vector((snap_point[0].x, snap_point[0].y + 1000, default_container_elevation)),
-    #                     Vector((snap_point[0].x, snap_point[0].y - 1000, default_container_elevation)),
-    #                 )
-    #                 snap_angle_axis = (axis_start, axis_end)
-    #                 result_1 = tool.Cad.intersect_edges(snap_angle_axis, snap_point_axis_1)
-    #                 result_1 = Vector((result_1[0].x, result_1[0].y, default_container_elevation))
-    #                 distance_1 = (result_1 - snap_point_vector).length
-
-    #                 result_2 = tool.Cad.intersect_edges(snap_angle_axis, snap_point_axis_2)
-    #                 result_2 = Vector((result_2[0].x, result_2[0].y, default_container_elevation))
-    #                 distance_2 = (result_2 - snap_point_vector).length
-
-    #                 if distance_1 < distance_2:
-    #                     best_result = result_1
-    #                 else:
-    #                     best_result = result_2
-
-    #                 tool.Snap.update_snaping_point(best_result, "Axis")
-
-    #             except Exception as e:
-    #                 tool.Snap.update_snaping_point(snap_point[0], snap_point[1])
-
-    #         else:
-    #             tool.Snap.update_snaping_point(hit, "Face")
-
-    #     else:
-    #         snap_points = tool.Snap.get_snap_points_on_polyline()
-    #         snap_point = tool.Snap.select_snap_point(snap_points, intersection, snap_threshold)
-
-    #         if snap_point:
-    #             tool.Snap.update_snaping_point(snap_point[0], snap_point[1])
-    #         elif rot_intersection:
-    #             tool.Snap.update_snaping_point(rot_intersection, "Axis")
-    #         else:
-    #             tool.Snap.update_snaping_point(intersection, "Plane")
-
-    def validate_input(self, input_number):
-        grammar = """
-        start: dim expr?
-        dim: NUMBER
-        expr: (ADD | SUB | MUL | DIV) NUMBER
-
-        NUMBER: /-?\\d+(?:\\.\\d+)?/
-        ADD: "+"
-        SUB: "-"
-        MUL: "*"
-        DIV: "/"
-
-        %ignore " "
-        """
-
-        class InputTransform(Transformer):
-            def dim(self, args):
-                return float(args[0])
-
-            def expr(self, args):
-                op = args[0]
-                value = float(args[1])
-                if op == "+":
-                    return lambda x: x + value
-                elif op == "-":
-                    return lambda x: x - value
-                elif op == "*":
-                    return lambda x: x * value
-                elif op == "/":
-                    return lambda x: x / value
-
-            def start(self, args):
-                dimension = args[0]
-                if len(args) > 1:
-                    expression = args[1]
-                    return expression(dimension)
-                else:
-                    return dimension
-
-        try:
-            parser = Lark(grammar, parser="lalr", transformer=InputTransform())
-            result = parser.parse(input_number)
-            return True, str(result)
-        except:
-            self.report({"WARNING"}, "The number typed is not valid.")
-            return False, "0"
 
     def recalculate_inputs(self, context):
         if self.number_input:
@@ -592,9 +418,7 @@ class DrawPolylineWall(bpy.types.Operator):
             tool.Blender.update_viewport()
 
         if self.input_type in self.input_options:
-            if (event.ascii in self.number_options) or (
-                event.value == "RELEASE" and event.type in {"BACK_SPACE", "MINUS", "NUMPAD_MINUS"}
-            ):
+            if (event.ascii in self.number_options) or (event.value == "RELEASE" and event.type == "BACK_SPACE"):
                 if event.type == "BACK_SPACE":
                     if len(self.number_input) <= 1:
                         self.number_input = []
@@ -610,32 +434,25 @@ class DrawPolylineWall(bpy.types.Operator):
 
                 if self.number_input:
                     self.input_panel[self.input_type] = self.number_output
-                    WallPolylineDecorator.set_input_panel(self.input_panel, self.input_type)
+                    PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
                     tool.Blender.update_viewport()
 
         if not self.is_input_on and event.value == "RELEASE" and event.type in {"RET", "NUMPAD_ENTER"}:
             self.create_walls_from_polyline(context)
-            WallPolylineDecorator.uninstall()
+            PolylineDecorator.uninstall()
             tool.Snap.clear_polyline()
             tool.Blender.update_viewport()
             return {"FINISHED"}
 
         if self.is_input_on and event.value == "RELEASE" and event.type in {"RET", "NUMPAD_ENTER"}:
-            if self.input_type in self.input_options:
-                self.recalculate_inputs(context)
-                self.is_input_on = True
-                self.input_type = "OFF"
-                self.number_input = []
-                WallPolylineDecorator.set_input_panel(self.input_panel, self.input_type)
-                tool.Blender.update_viewport()
-            else:
-                tool.Snap.insert_polyline_point(float(self.input_panel["X"]), float(self.input_panel["Y"]))
-                self.is_input_on = False
-                self.input_type = "OFF"
-                self.number_input = []
-                self.number_output = ""
-                WallPolylineDecorator.set_input_panel(self.input_panel, self.input_type)
-                tool.Blender.update_viewport()
+            self.recalculate_inputs(context)
+            tool.Snap.insert_polyline_point(float(self.input_panel["X"]), float(self.input_panel["Y"]))
+            self.is_input_on = False
+            self.input_type = "OFF"
+            self.number_input = []
+            self.number_output = ""
+            PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
+            tool.Blender.update_viewport()
 
         if event.type in {"MIDDLEMOUSE", "WHEELUPMOUSE", "WHEELDOWNMOUSE"}:
             return {"PASS_THROUGH"}
