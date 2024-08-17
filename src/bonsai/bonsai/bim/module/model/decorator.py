@@ -340,7 +340,7 @@ class PolylineDecorator:
 
     @classmethod
     def set_axis_rectangle(cls, corners):
-        cls.axis_rectangle = corners
+        cls.axis_rectangle = [*corners]
 
     @classmethod
     def set_use_default_container(cls, value=False):
@@ -394,7 +394,6 @@ class PolylineDecorator:
         distance = (snap_vector - last_point).length
         if distance > 0:
             angle = tool.Cad.angle_3_vectors(snap_vector, last_point, second_to_last_point, degrees=True)
-            angle = 180 - angle
             if cls.input_panel:
                 cls.input_panel["X"] = str(round(snap_vector.x, 4))
                 cls.input_panel["Y"] = str(round(snap_vector.y, 4))
@@ -460,7 +459,7 @@ class PolylineDecorator:
 
         last_point = Vector((last_point_data.x, last_point_data.y, last_point_data.z))
         second_to_last_point = None
-        if len(polyline_data) > 2:
+        if len(polyline_data) > 1:
             second_to_last_point_data = polyline_data[len(polyline_data) - 2]
             second_to_last_point = Vector(
                 (second_to_last_point_data.x, second_to_last_point_data.y, second_to_last_point_data.z)
@@ -472,11 +471,9 @@ class PolylineDecorator:
 
         if distance < 0 or distance > 0:
             angle_degrees = float(cls.input_panel["A"])
-            reference_vector = second_to_last_point - last_point
-            reference_angle = degrees(atan2(reference_vector[1], reference_vector[0]))
-            angle_radians = radians(
-                360 - (angle_degrees - reference_angle)
-            )  # Substracting from 360 to make it clockwise
+            vector_to_axis = last_point + Vector((1, 0, 0))  # TODO Make it work for other axis
+            reference_angle = tool.Cad.angle_3_vectors(second_to_last_point, last_point, vector_to_axis, degrees=True)
+            angle_radians = radians(reference_angle + angle_degrees)  # Substracting from 360 to make it clockwise
             x = last_point[0] + distance * cos(angle_radians)
             y = last_point[1] + distance * sin(angle_radians)
             if cls.input_panel:
