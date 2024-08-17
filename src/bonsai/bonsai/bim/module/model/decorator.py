@@ -484,6 +484,54 @@ class PolylineDecorator:
 
         return cls.input_panel
 
+    @classmethod
+    def calculate_x_y_and_z(cls, context):
+        try:
+            polyline_data = context.scene.BIMModelProperties.polyline_point
+            last_point_data = polyline_data[len(polyline_data) - 1]
+        except:
+            return
+
+        snap_prop = context.scene.BIMModelProperties.snap_mouse_point[0]
+        snap_vector = Vector((snap_prop.x, snap_prop.y, snap_prop.z))
+        last_point = Vector((last_point_data.x, last_point_data.y, last_point_data.z))
+        second_to_last_point = None
+        if len(polyline_data) > 1:
+            second_to_last_point_data = polyline_data[len(polyline_data) - 2]
+            second_to_last_point = Vector(
+                (second_to_last_point_data.x, second_to_last_point_data.y, second_to_last_point_data.z)
+            )
+        else:
+            second_to_last_point = Vector((0, 0, 0))
+
+        distance = float(cls.input_panel["D"])
+
+        if distance < 0 or distance > 0:
+            angle_rad = radians(180 - float(cls.input_panel["A"]))
+            ref_vec = second_to_last_point - last_point
+            dir_vec = last_point - snap_vector
+
+            rot_axis = ref_vec.cross(dir_vec)
+            rot_axis.normalize()
+            rot_axis = Vector((abs(rot_axis.x), abs(rot_axis.y), abs(rot_axis.z)))
+
+            rot_mat = Matrix.Rotation(angle_rad, 3, rot_axis)
+
+            coords = ((ref_vec @ rot_mat) * distance) + last_point
+
+            x = coords[0]
+            y = coords[1]
+            z = coords[2]
+            if cls.input_panel:
+                cls.input_panel["X"] = str(round(x, 4))
+                cls.input_panel["Y"] = str(round(y, 4))
+                if "Z" in list(cls.input_panel.keys()):
+                    cls.input_panel["Z"] = str(round(z, 4))
+
+                return cls.input_panel
+
+        return cls.input_panel
+
     def draw_batch(self, shader_type, content_pos, color, indices=None):
         shader = self.line_shader if shader_type == "LINES" else self.shader
         batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
