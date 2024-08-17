@@ -87,18 +87,30 @@ class Cad:
     @classmethod
     def angle_3_vectors(cls, v1, v2, v3, degrees=False):
         """
-        > takes 3 vectors. The order matters, v2 is the center point.  
+        > takes 3 vectors. The order matters, v2 is the center point.
         < returns the potentially signed angle as degrees or radians
         """
         d1 = v1 - v2
         d2 = v2 - v3
-        cos_a = (d1.dot(d2)) / (d1.length * d2.length)
 
-        cos_a = max(-1, min(1, cos_a))
+        axis = d1.cross(d2)
+        axis.normalize()
+        axis = Vector((abs(axis.x), abs(axis.y), abs(axis.z)))
 
-        a = math.acos(cos_a)
+        rotation_axis = d1.cross(d2)
+
+        # Calculate the unsigned angle between the "from" and "to" vectors
+        a = d1.angle(d2)
+
+        # Determine the sign of the angle based on the provided axis
         if degrees:
-            return math.degrees(a)
+            a = math.degrees(a)
+
+            parameter = rotation_axis.dot(axis)
+
+            sign = 1 if parameter <= 0 else -1
+
+            return a * sign
         else:
             return a
 
