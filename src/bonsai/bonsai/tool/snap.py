@@ -19,7 +19,7 @@
 import bpy
 import bonsai.core.tool
 import bonsai.tool as tool
-from bonsai.bim.module.model.decorator import WallPolylineDecorator
+from bonsai.bim.module.model.decorator import PolylineDecorator
 import math
 import mathutils
 from mathutils import Matrix, Vector
@@ -222,7 +222,7 @@ class Snap(bonsai.core.tool.Snap):
             pivot_axis = "X"
 
         rectangle_data = create_axis_rectangle_data(last_point)
-        WallPolylineDecorator.set_axis_rectangle(rectangle_data)
+        PolylineDecorator.set_axis_rectangle(rectangle_data)
         for axis in snap_axis:
             rot_mat = Matrix.Rotation(math.radians(360 - axis), 3, pivot_axis)
             start, end = create_axis_line_data(rot_mat, last_point)
@@ -230,7 +230,7 @@ class Snap(bonsai.core.tool.Snap):
             proximity = rot_intersection.y
             if cls.snap_plane_method == "XZ":
                 proximity = rot_intersection.z
-            WallPolylineDecorator.set_angle_axis_line(start, end)
+            PolylineDecorator.set_angle_axis_line(start, end)
             if lock_axis:
                 is_on_rot_axis = True
             else:
@@ -379,7 +379,7 @@ class Snap(bonsai.core.tool.Snap):
         elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
 
         plane_origin, plane_normal = select_plane_method()
-        WallPolylineDecorator.set_plane(plane_origin, plane_normal)
+        PolylineDecorator.set_plane(plane_origin, plane_normal)
         intersection = tool.Raycast.ray_cast_to_plane(context, event, plane_origin, plane_normal)
 
         if cls.snap_plane_method in {"XY", "XZ", "YZ"}:

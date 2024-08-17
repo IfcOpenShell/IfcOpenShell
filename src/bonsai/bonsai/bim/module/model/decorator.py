@@ -296,7 +296,7 @@ class ProfileDecorator:
         return points, listEdg
 
 
-class WallPolylineDecorator:
+class PolylineDecorator:
     is_installed = False
     handlers = []
     mouse_pos = None
