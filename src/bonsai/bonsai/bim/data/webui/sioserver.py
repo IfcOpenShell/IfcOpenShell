@@ -117,9 +117,13 @@ class BlenderNamespace(socketio.AsyncNamespace):
 
     async def on_theme_data(self, sid, data):
         global blender_theme
-        print(f"Blender theme data")
         blender_theme = data
         await sio.emit("theme_data", data, namespace="/web")
+
+    async def on_demo_data(self, sid, data):
+        print(f"Demo data from Blender client {sid}")
+        blender_messages[sid]["demo_data"] = data
+        await sio.emit("demo_data", {"blenderId": sid, "data": data}, namespace="/web")
 
 
 async def schedules(request):
@@ -138,6 +142,13 @@ async def sequencing(request):
 
 async def documentation(request):
     with open("templates/drawings.html", "r") as f:
+        template = f.read()
+    html_content = pystache.render(template, {"port": sio_port, "version": bonsai_version})
+    return web.Response(text=html_content, content_type="text/html")
+
+
+async def demo(request):
+    with open("templates/demo.html", "r") as f:
         template = f.read()
     html_content = pystache.render(template, {"port": sio_port, "version": bonsai_version})
     return web.Response(text=html_content, content_type="text/html")
@@ -169,6 +180,7 @@ sio.register_namespace(BlenderNamespace("/blender"))
 app.router.add_get("/", schedules)
 app.router.add_get("/documentation", documentation)
 app.router.add_get("/sequencing", sequencing)
+app.router.add_get("/demo", demo)
 
 # Add static files
 app.router.add_static("/jsgantt/", path="../gantt", name="jsgantt")
