@@ -1,9 +1,9 @@
 Troubleshooting
 ===============
 
-The BlenderBIM Add-on is alpha software. There are many bugs! When something
-goes wrong, you may see some computer code flash up on your screen. You may
-also see an error message:
+Bonsai is alpha software. There are many bugs! When something goes wrong, you
+may see some computer code flash up on your screen. You may also see an error
+message:
 
 .. image:: images/error-message.png
 
@@ -25,12 +25,26 @@ or other powerusers.
 
     `Chat live with a developer <https://osarch.org/chat>`_
 
+Updating
+--------
+
+We always recommend to use the latest version.
+
+Open up Blender, click on ``Edit > Preferences``, and select the **Get
+Extensions** tab. If an update is available, you will see a button next to the
+**Bonsai** add-on.
+
+Updates are typically available every 2 months. If you need something more
+frequent, check out :ref:`devs/installation:unstable installation` which is
+updated every day.
+
+.. image:: images/update.png
+
 Installation issues
 -------------------
 
-If you are unable to install the BlenderBIM Add-on, make sure you are using
-**Blender 4.2** installed from https://blender.org/ and have
-:ref:`updated to the latest version <users/quickstart/installation:Updating>`.
+If you are unable to install Bonsai, make sure you are using **Blender 4.2**
+installed from https://blender.org/.
 
 Other common solutions are listed below. If none of these fix the problem, you
 can `report a bug <https://github.com/ifcopenshell/ifcopenshell/issues>`_ or
@@ -39,12 +53,12 @@ can `report a bug <https://github.com/ifcopenshell/ifcopenshell/issues>`_ or
 1. **Some other error prevents me from installing or doing basic functions with
    the add-on. Is it specific to my environment?**
 
-   Try installing and using the BlenderBIM Add-on on a "clean environment". A
-   clean environment is a fresh Blender installation with no other add-ons
-   enabled with factory settings.
+   Try installing and using Bonsai on a "clean environment". A clean
+   environment is a fresh Blender installation with no other add-ons enabled
+   with factory settings.
 
    To quickly test in a clean environment, first :ref:`find your Blender
-   configuration folder<users/quickstart/installation:Where is the add-on
+   configuration folder<users/troubleshooting:Where is the add-on
    installed?>`.  Rename the folder from ``X.XX`` to something else like
    ``X.XX_backup``, then restart Blender and try follow the :doc:`installation
    instructions</users/quickstart/installation>` again.
@@ -69,9 +83,9 @@ can `report a bug <https://github.com/ifcopenshell/ifcopenshell/issues>`_ or
 Saving and loading blend files
 ------------------------------
 
-The BlenderBIM Add-on transform Blender into a native IFC authoring platform.
-This means that you can open and save IFC files directly without using
-Blender's ``.blend`` format.
+Bonsai transforms Blender into a native IFC authoring platform.  This means
+that you can open and save IFC files directly without using Blender's
+``.blend`` format.
 
 All data about your model is saved in your IFC. No data is stored in the
 ``.blend`` format. This means that if you save or open a ``.blend`` file, you
@@ -84,3 +98,72 @@ editing something that doesn't actually exist in your IFC model. This will
 create unpredictable, and sometimes unrecoverable errors.
 
 To avoid this issue, only open and save IFCs.
+
+Where is the add-on installed?
+------------------------------
+
+Upon installation, Bonsai is stored in Blender configuration folder. However,
+the location of your Blender configuration folder depends on how you have
+installed Blender.
+
+If you downloaded Blender as a ``.zip`` file without running an installer,
+Bonsai will be installed in the following directory, where ``X.XX`` is the
+Blender version:
+
+::
+
+    /path/to/blender/X.XX/
+
+Otherwise, if you installed Blender using an installation package, the Blender
+configuration folder depends on which operating system you use.
+
+On Linux, if you are installing the add-on as a user:
+
+::
+
+    ~/.config/blender/X.XX/
+
+On Linux, if you are deploying the add-on system-wide (this may also depend on
+your Linux distribution):
+
+::
+
+    /usr/share/blender/X.XX/
+
+On Mac, if you are installing the add-on as a user:
+
+::
+
+    /Users/{YOUR_USER}/Library/Application Support/Blender/X.XX/
+
+On Mac, if you are deploying the add-on system-wide:
+
+::
+
+    /Library/Application Support/Blender/X.XX/
+
+On Windows:
+
+::
+
+    C:\Users\{YOUR_USER}\AppData\Roaming\Blender Foundation\X.XX\
+
+Inside the Blender configuration folder, Bonsai is stored in two different
+locations. The extension itself is stored in
+``extensions/blender_org/bonsai`` whereas the Python packages are installed
+into ``extensions/.local/lib/pythonX.XX/site-packages/``.
+
+Uninstalling
+------------
+
+Open up Blender, click on ``Edit > Preferences``, and select the **Get
+Extensions** tab. In the dropdown menu to the right of the **Bonsai** add-on,
+click on **Uninstall**.
+
+.. image:: images/uninstall.png
+
+Alternatively, you may start from a fresh setup by renaming or deleting the
+Blender version folder, found in the add-on path. In the screenshot above, this
+is ``/home/dion/.config/blender/4.2``.
+
+
