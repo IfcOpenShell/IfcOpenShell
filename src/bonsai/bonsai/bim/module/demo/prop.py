@@ -59,3 +59,4 @@ class BIMDemoProperties(PropertyGroup):
     # an input text field in the ui.py.
     message: StringProperty(name="Message")
     show_hints: BoolProperty(name="Show Hints", default=False)
+    webui_message: StringProperty(name="Web UI Message", default="Hello, Web UI!")
