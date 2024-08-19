@@ -267,10 +267,14 @@ class BIM_PT_bcf_metadata(Panel):
                 row.operator("bim.remove_bcf_related_topic", icon="X", text="").index = index
             except KeyError:
                 pass
-        row = layout.row()
-        row.prop(props, "related_topic")
-        row = layout.row()
-        row.operator("bim.add_bcf_related_topic")
+
+        if len(props.topics) == len(topic.related_topics) + 1:
+            layout.label(text="No topics to add as related.")
+        else:
+            row = layout.row()
+            row.prop(props, "related_topic")
+            row = layout.row()
+            row.operator("bim.add_bcf_related_topic")
 
 
 class BIM_PT_bcf_comments(Panel):
