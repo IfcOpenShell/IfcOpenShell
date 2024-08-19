@@ -68,6 +68,11 @@ class TopicHandler:
         """Return the comments of the topic."""
         return self.markup.comment if self.markup else []
 
+    @comments.setter
+    def comments(self, comments: list[mdl.Comment]) -> None:
+        assert self.markup
+        self.markup.comment = comments
+
     @property
     def bim_snippet(self) -> Optional[bytes]:
         if not self._bim_snippet and self._topic_dir:
