@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bcf.agnostic.visinfo
 import bcf.v2.visinfo
 import bonsai.core.tool
 import bonsai.tool as tool
@@ -25,8 +24,10 @@ import bcf.v2.model
 import bcf.v2.topic
 import bcf.v3.model
 import bcf.v3.topic
+import bcf.agnostic.model
 import bcf.agnostic.topic
-from typing import Any, Union, TypeVar, TypeGuard
+import bcf.agnostic.visinfo
+from typing import Any, Union, TypeVar, TypeGuard, Optional
 
 
 T = TypeVar("T")
@@ -46,6 +47,26 @@ class Bcf(bonsai.core.tool.Bcf):
 
     # BCF version agnostic API.
     ## topic
+    @classmethod
+    def set_topic_bim_snippet(
+        cls,
+        topic: bcf.agnostic.topic.TopicHandler,
+        bim_snippet: Union[bcf.agnostic.model.BimSnippet, None],
+        bim_snippet_bytes: Optional[bytes] = None,
+    ) -> None:
+        if isinstance(bim_snippet, bcf.v2.model.BimSnippet):
+            assert isinstance(topic, bcf.v2.topic.TopicHandler)
+            topic.topic.bim_snippet = bim_snippet
+        elif isinstance(bim_snippet, bcf.v3.model.BimSnippet):
+            assert isinstance(topic, bcf.v3.topic.TopicHandler)
+            topic.topic.bim_snippet = bim_snippet
+        else:
+            topic.topic.bim_snippet = bim_snippet
+
+        if bim_snippet and not bim_snippet.is_external and bim_snippet_bytes is None:
+            raise Exception("No bytes data provided for non-external bim snippet.")
+        topic._bim_snippet = bim_snippet_bytes
+
     @classmethod
     def get_topic_document_references(
         cls, topic: bcf.agnostic.topic.TopicHandler
