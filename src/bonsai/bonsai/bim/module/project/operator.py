@@ -2396,7 +2396,7 @@ class MeasureTool(bpy.types.Operator):
             PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
             tool.Blender.update_viewport()
 
-        if event.value == "RELEASE" and event.type in self.input_options and not event.shift:
+        if event.value == "PRESS" and event.type in self.input_options and not event.shift:
             self.recalculate_inputs(context)
             self.is_input_on = True
             self.input_type = event.type
