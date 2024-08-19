@@ -203,7 +203,7 @@ class BIM_PT_bcf_metadata(Panel):
         row.operator("bim.add_bcf_label")
 
         layout.label(text="BIM Snippet:")
-        if topic.bim_snippet.schema:
+        if topic.bim_snippet.reference:
             row = layout.row(align=True)
             row.prop(topic.bim_snippet, "type", emboss=False)
             if topic.bim_snippet.schema:
