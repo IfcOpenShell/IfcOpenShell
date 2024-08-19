@@ -517,6 +517,7 @@ class PolylineDecorator:
 
             rot_mat = Matrix.Rotation(angle_rad, 3, rot_axis)
 
+            ref_vec.normalize()
             coords = ((ref_vec @ rot_mat) * distance) + last_point
 
             x = coords[0]
