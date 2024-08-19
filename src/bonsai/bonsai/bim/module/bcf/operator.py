@@ -379,12 +379,14 @@ class AddBcfBimSnippet(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return all(
-            (
-                getattr(context.scene.BCFProperties, attr, False)
-                for attr in ("bim_snippet_reference", "bim_snippet_schema", "bim_snippet_type")
-            )
+        props = context.scene.BCFProperties
+        props_are_filled = all(
+            (getattr(props, attr) for attr in ("bim_snippet_reference", "bim_snippet_schema", "bim_snippet_type"))
         )
+        if not props_are_filled:
+            cls.poll_message_set("Some BIM snippet fields are empty.")
+            return False
+        return True
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
