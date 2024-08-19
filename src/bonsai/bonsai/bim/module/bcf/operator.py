@@ -220,10 +220,6 @@ class LoadBcfComments(bpy.types.Operator):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
 
-        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
-            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
-            return {"FINISHED"}
-
         blender_topic = context.scene.BCFProperties.topics.get(self.topic_guid)
         blender_topic.comments.clear()
         for comment in bcfxml.topics[self.topic_guid].comments:
@@ -1015,17 +1011,13 @@ class RemoveBcfComment(bpy.types.Operator):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
 
-        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
-            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
-            return {"FINISHED"}
-
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
-        for i, comment in enumerate(topic.comments):
-            if comment.guid == self.comment_guid:
-                break
-        del topic.comments[i]
+        comments = topic.comments
+        i = next(i for i, c in enumerate(comments) if c.guid != self.comment_guid)
+        del comments[i]
+        topic.coments = comments
         bpy.ops.bim.load_bcf_comments(topic_guid=topic.guid)
         return {"FINISHED"}
 
@@ -1040,15 +1032,11 @@ class EditBcfComment(bpy.types.Operator):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
 
-        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
-            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
-            return {"FINISHED"}
-
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         blender_comment = blender_topic.comments.get(self.comment_guid)
         topic = bcfxml.topics[blender_topic.name]
-        for i, comment in enumerate(topic.comments):
+        for comment in topic.comments:
             if comment.guid == self.comment_guid:
                 comment.comment = blender_comment.comment
                 comment.modified_date = XmlDateTime.now()
@@ -1075,23 +1063,40 @@ class AddBcfComment(bpy.types.Operator):
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
-
-        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
-            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
-            return {"FINISHED"}
+        bcf_v2 = (bcfxml.version.version_id or "").startswith("2")
 
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
-        comment = bcf.v2.model.Comment(
-            date=XmlDateTime.now(),
-            author=context.scene.BCFProperties.author,
-            comment=props.comment,
-            guid=str(uuid.uuid4()),
-        )
-        if props.has_related_viewpoint:
-            comment.viewpoint = bcf.v2.model.CommentViewpoint(guid=blender_topic.viewpoints)
-        topic.comments.append(comment)
+        comments = topic.comments
+
+        if bcf_v2:
+            comment = bcf.v2.model.Comment(
+                date=XmlDateTime.now(),
+                author=context.scene.BCFProperties.author,
+                comment=props.comment,
+                guid=str(uuid.uuid4()),
+            )
+            if props.has_related_viewpoint:
+                comment.viewpoint = bcf.v2.model.CommentViewpoint(guid=blender_topic.viewpoints)
+            assert tool.Bcf.is_list_of(comments, bcf.v2.model.Comment)
+            comments.append(comment)
+            assert isinstance(topic, bcf.v2.topic.TopicHandler)
+            topic.comments = comments
+        else:
+            comment = bcf.v3.model.Comment(
+                date=XmlDateTime.now(),
+                author=context.scene.BCFProperties.author,
+                comment=props.comment,
+                guid=str(uuid.uuid4()),
+            )
+            if props.has_related_viewpoint:
+                comment.viewpoint = bcf.v3.model.CommentViewpoint(guid=blender_topic.viewpoints)
+            assert tool.Bcf.is_list_of(comments, bcf.v3.model.Comment)
+            comments.append(comment)
+            assert isinstance(topic, bcf.v3.topic.TopicHandler)
+            topic.comments = comments
+
         bpy.ops.bim.load_bcf_comments(topic_guid=topic.guid)
         props.comment = ""
         props.has_related_viewpoint = False
