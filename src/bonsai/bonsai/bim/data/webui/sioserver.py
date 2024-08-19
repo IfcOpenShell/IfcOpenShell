@@ -20,14 +20,6 @@ sio = socketio.AsyncServer(
     cors_allowed_origins="*",
     async_mode="aiohttp",
 )
-
-# sio.instrument(
-#     auth={
-#         "username": "admin",
-#         "password": "admin",
-#     }
-# )
-
 app = web.Application()
 sio.attach(app)
 
@@ -37,6 +29,8 @@ blender_messages = {}
 blender_theme = {}
 
 
+# we define two namespaces, one for Bonsai and one for Web UI
+# each namespace has its own event handlers that are called when an event is emitted by a client
 # Web namespace
 class WebNamespace(socketio.AsyncNamespace):
     def __init__(self, namespace):
@@ -120,6 +114,8 @@ class BlenderNamespace(socketio.AsyncNamespace):
         blender_theme = data
         await sio.emit("theme_data", data, namespace="/web")
 
+
+    # this function will be called when the event demo_data is emitted 
     async def on_demo_data(self, sid, data):
         print(f"Demo data from Blender client {sid}")
         blender_messages[sid]["demo_data"] = data
@@ -147,6 +143,8 @@ async def documentation(request):
     return web.Response(text=html_content, content_type="text/html")
 
 
+# This is a request handler for the /demo URL endpoint.
+# It serves the demo HTML file after using pystache to render the variables
 async def demo(request):
     with open("templates/demo.html", "r") as f:
         template = f.read()
