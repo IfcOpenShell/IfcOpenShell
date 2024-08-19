@@ -307,6 +307,9 @@ class Web(bonsai.core.tool.Web):
                 cls.handle_gantt_operator(operator["operator"])
             elif operator["sourcePage"] == "drawings":
                 cls.handle_drawings_operator(operator["operator"])
+            elif operator["sourcePage"] == "demo":
+                message = operator["operator"]["message"]
+                print(f"Message from demo page: {message}")
         return 1.0
 
     @classmethod
