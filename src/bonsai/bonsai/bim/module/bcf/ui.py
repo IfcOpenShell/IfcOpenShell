@@ -232,7 +232,7 @@ class BIM_PT_bcf_metadata(Panel):
         for index, doc in enumerate(topic.document_references):
             box = self.layout.box()
             row = box.row(align=True)
-            row.prop(doc, "reference")
+            row.prop(doc, "reference", emboss=False)
             if doc.is_external:
                 row.operator("bim.open_uri", icon="URL", text="").uri = doc.reference
             else:
@@ -242,7 +242,7 @@ class BIM_PT_bcf_metadata(Panel):
 
             row.operator("bim.remove_bcf_document_reference", icon="X", text="").index = index
             row = box.row(align=True)
-            row.prop(doc, "description")
+            row.prop(doc, "description", emboss=False)
         row = layout.row(align=True)
         row.prop(props, "document_reference")
         row.operator("bim.select_bcf_document_reference", icon="FILE_FOLDER", text="")
