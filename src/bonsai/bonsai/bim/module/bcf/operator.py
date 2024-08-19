@@ -441,21 +441,25 @@ class AddBcfRelatedTopic(bpy.types.Operator):
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
-
-        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
-            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
-            return {"FINISHED"}
+        bcf_v2 = (bcfxml.version.version_id or "").startswith("2")
 
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
-        topic.topic.related_topic.append(
-            bcf.v2.model.TopicRelatedTopic(
-                guid=next((t for t in bcfxml.topics.values() if t.topic.title == props.related_topic)).guid
-            )
-        )
+        related_topics = tool.Bcf.get_topic_related_topics(topic)
+        related_topic_guid = props.related_topic
+
+        if bcf_v2:
+            assert tool.Bcf.is_list_of(related_topics, bcf.v2.model.TopicRelatedTopic)
+            related_topic = bcf.v2.model.TopicRelatedTopic(guid=related_topic_guid)
+            related_topics.append(related_topic)
+        else:
+            assert tool.Bcf.is_list_of(related_topics, bcf.v3.model.TopicRelatedTopicsRelatedTopic)
+            related_topic = bcf.v3.model.TopicRelatedTopicsRelatedTopic(guid=related_topic_guid)
+            related_topics.append(related_topic)
+
+        tool.Bcf.set_topic_related_topics(topic, related_topics)
         bpy.ops.bim.load_bcf_topic(topic_guid=topic.guid, topic_index=props.active_topic_index)
-        props.related_topic = ""
         return {"FINISHED"}
 
 
@@ -982,14 +986,12 @@ class RemoveBcfRelatedTopic(bpy.types.Operator):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
 
-        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
-            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
-            return {"FINISHED"}
-
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
-        del topic.topic.related_topic[self.index]
+        related_topics = tool.Bcf.get_topic_related_topics(topic)
+        del related_topics[self.index]
+        tool.Bcf.set_topic_related_topics(topic, related_topics)
         bpy.ops.bim.load_bcf_topic(topic_guid=topic.guid, topic_index=props.active_topic_index)
         return {"FINISHED"}
 

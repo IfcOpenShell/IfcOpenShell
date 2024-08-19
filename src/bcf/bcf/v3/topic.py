@@ -49,11 +49,11 @@ class TopicHandler:
         return self.markup.topic
 
     @property
-    def guid(self) -> Optional[str]:
+    def guid(self) -> str:
         """Return the GUID of the topic."""
         if self._markup:
             return self.topic.guid
-        return self._topic_dir.name if self._topic_dir else None
+        return self._topic_dir.name if self._topic_dir else ""
 
     @property
     def header(self) -> Optional[mdl.Header]:
