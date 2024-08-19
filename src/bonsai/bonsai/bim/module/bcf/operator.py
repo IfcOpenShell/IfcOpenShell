@@ -85,6 +85,7 @@ class LoadBcfProject(bpy.types.Operator):
             bcfxml.project.name = nameless
         context.scene.BCFProperties.name = bcfxml.project.name
         bpy.ops.bim.load_bcf_topics()
+        self.report({"INFO"}, f"BCF Project '{Path(self.filepath).name}' is loaded.")
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -335,6 +336,7 @@ class SaveBcfProject(bpy.types.Operator):
         assert bcfxml
         bcfxml.save(self.filepath)
         bcfstore.BcfStore.set(bcfxml, self.filepath)
+        self.report({"INFO"}, f"BCF Project '{Path(self.filepath).name}' is saved.")
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -1567,7 +1569,12 @@ class BCFFileHandlerOperator(bpy.types.Operator):
 
         # `files` contain only .bcf files.
         filepath = Path(self.directory)
-        return bpy.ops.bim.load_bcf_project(filepath=(filepath / self.files[0].name).as_posix())
+        filename = self.files[0].name
+        res = bpy.ops.bim.load_bcf_project(filepath=(filepath / filename).as_posix())
+        if res != {"FINISHED"}:
+            return res
+        self.report({"INFO"}, f"BCF Project '{filename}' is loaded.")
+        return {"FINISHED"}
 
 
 class BIM_FH_import_bcf(bpy.types.FileHandler):
