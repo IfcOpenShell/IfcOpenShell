@@ -297,10 +297,6 @@ class EditBcfTopicName(bpy.types.Operator):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
 
-        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
-            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
-            return {"FINISHED"}
-
         topic = bcfxml.topics[blender_topic.name].topic
         topic.title = blender_topic.title
         return {"FINISHED"}
@@ -316,20 +312,29 @@ class EditBcfTopic(bpy.types.Operator):
         blender_topic = props.active_topic
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
-
-        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
-            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
-            return {"FINISHED"}
+        bcf_v2 = (bcfxml.version.version_id or "").startswith("2")
 
         topic = bcfxml.topics[blender_topic.name].topic
-        topic.title = blender_topic.title or None
+        topic.title = blender_topic.title or ""
         topic.priority = blender_topic.priority or None
         topic.due_date = blender_topic.due_date or None
         topic.assigned_to = blender_topic.assigned_to or None
         topic.stage = blender_topic.stage or None
         topic.description = blender_topic.description or None
-        topic.topic_status = blender_topic.status or None
-        topic.topic_type = blender_topic.type or None
+
+        if bcf_v2:
+            assert isinstance(topic, bcf.v2.model.Topic)
+            topic.topic_status = blender_topic.status or None
+            topic.topic_type = blender_topic.type or None
+        else:
+            if not blender_topic.status:
+                self.report({"INFO"}, "Topic Status field is not optional.")
+                return {"CANCELLED"}
+            if not blender_topic.type:
+                self.report({"INFO"}, "Topic Type field is not optional.")
+                return {"CANCELLED"}
+            topic.topic_status = blender_topic.status
+            topic.topic_type = blender_topic.type
 
         props.refresh_topic(context)
         return {"FINISHED"}
@@ -374,10 +379,6 @@ class AddBcfTopic(bpy.types.Operator):
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
-
-        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
-            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
-            return {"FINISHED"}
 
         bcfxml.add_topic("New Topic", "", context.scene.BCFProperties.author)
         bpy.ops.bim.load_bcf_topics()
@@ -694,10 +695,6 @@ class RemoveBcfTopic(bpy.types.Operator):
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
-
-        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
-            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
-            return {"FINISHED"}
 
         props = context.scene.BCFProperties
         del bcfxml.topics[props.active_topic.name]
