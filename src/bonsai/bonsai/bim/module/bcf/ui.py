@@ -47,7 +47,9 @@ class BIM_PT_bcf(Panel):
             return
 
         row = layout.row(align=True)
-        row.operator("bim.save_bcf_project", icon="EXPORT", text="Save Project")
+        op = row.operator("bim.save_bcf_project", icon="FILE_TICK", text="Save Current Project")
+        op.save_current_bcf = True
+        row.operator("bim.save_bcf_project", icon="EXPORT", text="Save Project As...")
         row.operator("bim.unload_bcf_project", text="", icon="CANCEL")
 
         row = layout.row()

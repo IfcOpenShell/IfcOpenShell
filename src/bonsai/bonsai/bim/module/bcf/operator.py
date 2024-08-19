@@ -332,6 +332,7 @@ class SaveBcfProject(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.bcf;*.bcfzip", options={"HIDDEN"})
+    save_current_bcf: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
@@ -341,6 +342,12 @@ class SaveBcfProject(bpy.types.Operator):
         return {"FINISHED"}
 
     def invoke(self, context, event):
+        if self.save_current_bcf:
+            path = tool.Bcf.get_path()
+            if path:
+                self.filepath = str(path)
+                return self.execute(context)
+
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
 
