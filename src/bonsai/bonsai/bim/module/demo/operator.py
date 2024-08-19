@@ -90,3 +90,4 @@ class SendWebUiDemoMessage(bpy.types.Operator):
         if not context.scene.WebProperties.is_connected:
             bpy.ops.bim.connect_websocket_server(page="demo")
         core.send_webui_demo_message(tool.Web, message=bpy.context.scene.BIMDemoProperties.webui_message)
+        return {"FINISHED"}
