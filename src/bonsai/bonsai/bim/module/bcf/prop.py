@@ -189,6 +189,21 @@ class BcfTopic(PropertyGroup):
     is_editable: BoolProperty(name="Edit Topic Attributes", default=False, update=updateBcfTopicIsEditable)
 
 
+def get_related_topics(self: "BCFProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
+    props = self
+    active_topic = props.active_topic
+    active_related_topics = active_topic.related_topics.keys()
+    enum_items = []
+    i = 0
+    for t in props.topics:
+        if t.name == active_topic.name:
+            continue
+        if t.name in active_related_topics:
+            continue
+        enum_items.append((t.name, t.title, t.description))
+    return enum_items
+
+
 class BCFProperties(PropertyGroup):
     bcf_file: StringProperty(name="BCF File")
     comment_text_width: IntProperty(name="Comment Text Width", default=40)
@@ -211,7 +226,7 @@ class BCFProperties(PropertyGroup):
     document_reference: StringProperty(default="", name="Referenced Document")
     document_reference_description: StringProperty(default="", name="Description")
     document_description: StringProperty(default="", name="Document Description")
-    related_topic: StringProperty(name="Related Topic")
+    related_topic: EnumProperty(name="Related Topic", items=get_related_topics)
     comment: StringProperty(default="", name="Comment")
     has_related_viewpoint: BoolProperty(name="Has Related Viewpoint", default=False)
 

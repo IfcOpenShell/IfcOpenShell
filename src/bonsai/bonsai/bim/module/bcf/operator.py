@@ -327,11 +327,16 @@ class EditBcfTopic(bpy.types.Operator):
             topic.topic_status = blender_topic.status or None
             topic.topic_type = blender_topic.type or None
         else:
+            error_msg = None
             if not blender_topic.status:
-                self.report({"INFO"}, "Topic Status field is not optional.")
-                return {"CANCELLED"}
+                error_msg = "Topic Status field is not optional."
             if not blender_topic.type:
-                self.report({"INFO"}, "Topic Type field is not optional.")
+                error_msg = "Topic Type field is not optional."
+            if error_msg:
+                # Use show_info_message as this operator is not called directly
+                # but from prop callback and user won't see a popup from self.report.
+                tool.Blender.show_info_message(error_msg, "ERROR")
+                self.report({"INFO"}, error_msg)
                 return {"CANCELLED"}
             topic.topic_status = blender_topic.status
             topic.topic_type = blender_topic.type
@@ -432,33 +437,6 @@ class AddBcfRelatedTopic(bpy.types.Operator):
     bl_idname = "bim.add_bcf_related_topic"
     bl_label = "Add BCF Related Topic"
     bl_options = {"REGISTER", "UNDO"}
-
-    @classmethod
-    def poll(cls, context):
-        bcfxml = bcfstore.BcfStore.get_bcfxml()
-        assert bcfxml
-        props = context.scene.BCFProperties
-        blender_topic = props.active_topic
-        if not props.related_topic:
-            cls.poll_message_set("Related topic field is empty.")
-            return False
-        if props.related_topic == blender_topic.title:
-            # Prevent adding self as related topic
-            cls.poll_message_set("Cannot add current topic as related topic to itself.")
-            return False
-        related_topic_guid = None
-        for topic in bcfxml.topics.values():
-            if topic.topic.title == props.related_topic:
-                related_topic_guid = topic.guid
-                break
-        if not related_topic_guid:
-            cls.poll_message_set(f"Topic by name '{props.related_topic}' doesn't exist..")
-            return False
-        if str(related_topic_guid) in [t.name for t in blender_topic.related_topics]:
-            cls.poll_message_set("This topic is already added as related")
-            # Prevent adding the same related topic more than once
-            return False
-        return True
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
