@@ -72,15 +72,29 @@ class LoadBcfProject(bpy.types.Operator):
             bcfstore.BcfStore.set_by_filepath(self.filepath)
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
-        # a  BCFv2.1 does not need to have a project, but BBIM likes to have one
+        bcf_v2 = (bcfxml.version.version_id or "").startswith("2")
+
+        # BCF v2.1/v3 does not need to have a project, but BBIM likes to have one
         # https://github.com/buildingSMART/BCF-XML/tree/release_2_1/Documentation#bcf-file-structure
         nameless = "Unknown"
         if bcfxml.project is None:
-            if bcfxml.version.version_id.startswith("2"):
-                print("No project, we will create one for BBIM.")
-                bcfxml.project_info = bcf.v2.model.ProjectExtension(
-                    project=bcf.v2.model.Project(name=nameless, project_id=str(uuid.uuid4())), extension_schema=""
+            print("No project, we will create one for BBIM.")
+            project_info = bcfxml.project_info
+            if bcf_v2:
+                assert isinstance(bcfxml, bcf.v2.bcfxml.BcfXml)
+                if project_info is None:
+                    project_info = bcf.v2.model.ProjectExtension(extension_schema="")
+                    bcfxml.project_info = project_info
+                if project_info.project is None:
+                    project_info.project = bcf.v2.model.Project(name=nameless, project_id=str(uuid.uuid4()))
+            else:
+                assert isinstance(bcfxml, bcf.v3.bcfxml.BcfXml)
+                project_info = bcf.v3.model.ProjectInfo(
+                    project=bcf.v3.model.Project(name=nameless, project_id=str(uuid.uuid4()))
                 )
+                bcfxml.project_info = project_info
+
+        assert bcfxml.project
         if bcfxml.project.name is None:
             bcfxml.project.name = nameless
         context.scene.BCFProperties.name = bcfxml.project.name
@@ -249,10 +263,8 @@ class EditBcfProjectName(bpy.types.Operator):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
 
-        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
-            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
-            return {"FINISHED"}
-
+        # Bonsai creates default project on load.
+        assert bcfxml.project
         bcfxml.project.name = context.scene.BCFProperties.name
         return {"FINISHED"}
 
