@@ -439,9 +439,11 @@ class AddBcfRelatedTopic(bpy.types.Operator):
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         if not props.related_topic:
+            cls.poll_message_set("Related topic field is empty.")
             return False
         if props.related_topic == blender_topic.title:
             # Prevent adding self as related topic
+            cls.poll_message_set("Cannot add current topic as related topic to itself.")
             return False
         related_topic_guid = None
         for topic in bcfxml.topics.values():
@@ -449,8 +451,10 @@ class AddBcfRelatedTopic(bpy.types.Operator):
                 related_topic_guid = topic.guid
                 break
         if not related_topic_guid:
+            cls.poll_message_set(f"Topic by name '{props.related_topic}' doesn't exist..")
             return False
         if str(related_topic_guid) in [t.name for t in blender_topic.related_topics]:
+            cls.poll_message_set("This topic is already added as related")
             # Prevent adding the same related topic more than once
             return False
         return True
