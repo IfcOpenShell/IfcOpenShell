@@ -203,7 +203,7 @@ class BCFProperties(PropertyGroup):
     label: StringProperty(
         default="", name="Label", search=lambda s, c, t: get_extensions_items(s, c, t, extensions_attr="topic_labels")
     )
-    bim_snippet_reference: StringProperty(default="", name="Reference")
+    bim_snippet_reference: StringProperty(default="", name="Reference", description="URI or filepath to BimSnippet")
     bim_snippet_type: StringProperty(
         default="", name="Type", search=lambda s, c, t: get_extensions_items(s, c, t, extensions_attr="snippet_types")
     )
