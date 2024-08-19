@@ -384,6 +384,8 @@ class Snap(bonsai.core.tool.Snap):
         PolylineDecorator.set_plane(plane_origin, plane_normal)
         intersection = tool.Raycast.ray_cast_to_plane(context, event, plane_origin, plane_normal)
 
+        axis_start = None
+        axis_end = None
         if cls.snap_plane_method in {"XY", "XZ", "YZ"}:
             # Locks snap into an angle axis
             if event.shift:
@@ -407,7 +409,7 @@ class Snap(bonsai.core.tool.Snap):
             snap_point = cls.select_snap_point(snap_points, intersection, snap_threshold)
 
         if snap_point:
-            if event.shift:
+            if event.shift and axis_start:
                 snap_result, snap_type = cls.mix_snap_and_axis(snap_point, axis_start, axis_end, elevation)
                 cls.update_snaping_point(snap_result, snap_type)
                 cls.update_snaping_ref(snap_point[0], snap_point[1])
