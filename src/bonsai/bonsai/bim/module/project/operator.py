@@ -2308,7 +2308,7 @@ class MeasureTool(bpy.types.Operator):
         self.number_output = ""
         self.number_is_negative = False
         self.is_input_on = False
-        self.input_options = ["X", "Y", "D", "A"]
+        self.input_options = ["X", "Y", "Z", "D", "A"]
         self.input_type = "OFF"
         self.input_value_xy = [None, None]
         self.input_panel = {"X": "", "Y": "", "Z": "", "D": "", "A": "", "AREA": ""}
@@ -2396,7 +2396,7 @@ class MeasureTool(bpy.types.Operator):
             PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
             tool.Blender.update_viewport()
 
-        if event.value == "RELEASE" and event.type in self.input_options:
+        if event.value == "RELEASE" and event.type in self.input_options and not event.shift:
             self.recalculate_inputs(context)
             self.is_input_on = True
             self.input_type = event.type
@@ -2436,17 +2436,17 @@ class MeasureTool(bpy.types.Operator):
             PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
             tool.Blender.update_viewport()
 
-        if event.shift and event.type == "X":
+        if event.shift and event.value == "PRESS" and event.type == "X":
             tool.Snap.set_use_default_container(False)
             PolylineDecorator.set_use_default_container(False)
             tool.Snap.set_snap_plane_method("YZ")
 
-        if event.shift and event.type == "Y":
+        if event.shift and event.value == "PRESS" and event.type == "Y":
             tool.Snap.set_use_default_container(False)
             PolylineDecorator.set_use_default_container(False)
             tool.Snap.set_snap_plane_method("XZ")
 
-        if event.shift and event.type == "Z":
+        if event.shift and event.value == "PRESS" and event.type == "Z":
             tool.Snap.set_use_default_container(False)
             PolylineDecorator.set_use_default_container(False)
             tool.Snap.set_snap_plane_method("XY")
