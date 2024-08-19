@@ -387,24 +387,26 @@ class AddBcfBimSnippet(bpy.types.Operator):
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
-
-        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
-            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
-            return {"FINISHED"}
+        bcf_v2 = (bcfxml.version.version_id or "").startswith("2")
 
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
         is_external = "://" in props.bim_snippet_reference
-        bim_snippet = bcf.v2.model.BimSnippet(
+        bim_snippet_class = bcf.v2.model.BimSnippet if bcf_v2 else bcf.v3.model.BimSnippet
+        bim_snippet = bim_snippet_class(
             reference=props.bim_snippet_reference if is_external else Path(props.bim_snippet_reference).name,
             reference_schema=props.bim_snippet_schema,
             snippet_type=props.bim_snippet_type,
             is_external=is_external,
         )
-        topic.topic.bim_snippet = bim_snippet
-        with open(props.bim_snippet_reference, "r") as f:
-            topic.bim_snippet = f.read()
+
+        bim_snippet_bytes = None
+        if not is_external:
+            with open(props.bim_snippet_reference, "rb") as f:
+                bim_snippet_bytes = f.read()
+        tool.Bcf.set_topic_bim_snippet(topic, bim_snippet, bim_snippet_bytes)
+
         bpy.ops.bim.load_bcf_topic(topic_guid=topic.guid, topic_index=props.active_topic_index)
         return {"FINISHED"}
 
@@ -899,14 +901,10 @@ class RemoveBcfBimSnippet(bpy.types.Operator):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
 
-        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
-            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
-            return {"FINISHED"}
-
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
-        topic.topic.bim_snippet = None
+        tool.Bcf.set_topic_bim_snippet(topic, None)
         blender_topic.bim_snippet.schema = ""
         blender_topic.bim_snippet.reference = ""
         blender_topic.bim_snippet.type = ""
