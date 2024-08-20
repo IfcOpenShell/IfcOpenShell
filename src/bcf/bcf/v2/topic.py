@@ -240,54 +240,6 @@ class TopicHandler:
                 real_path = real_path.parent if path_part == ".." else real_path.joinpath(path_part)
             destination_zip.writestr(real_path.at, self.document_references[doc.referenced_document])
 
-    def extract_file(
-        self, entity: Union[mdl.HeaderFile, mdl.BimSnippet, mdl.TopicDocumentReference], outfile: Optional[Path] = None
-    ) -> Union[Path, str, None]:
-        """Extracts an element with a file into a temporary directory
-
-        These include header files, bim snippets, document references, and
-        viewpoint bitmaps. External reference are not downloaded. Instead, the
-        URI reference is returned.
-
-        :param entity: The entity with a file reference to extract
-        :param outfile: If provided, save the header file to that location.
-            Otherwise, a temporary directory is created and the filename is
-            derived from the header's original filename.
-        :return: The filepath of the extracted file. It may be a URL if the
-            header file is external.
-        :rtype: Path
-        """
-        if hasattr(entity, "reference"):
-            reference = entity.reference
-        else:
-            reference = entity.referenced_document
-
-        if not reference:
-            return
-
-        if getattr(entity, "is_external", False):
-            return entity.reference
-
-        resolved_reference = self._topic_dir
-
-        for part in Path(reference).parts:
-            if part == "..":
-                resolved_reference = resolved_reference.parent
-            else:
-                resolved_reference = resolved_reference.joinpath(part)
-
-        if not outfile:
-            if getattr(entity, "filename", None):
-                filename = entity.filename
-            else:
-                filename = resolved_reference.name
-            outfile = Path(tempfile.mkdtemp()) / filename
-
-        with open(outfile, "wb") as f:
-            f.write(resolved_reference.read_bytes())
-
-        return outfile
-
     def add_viewpoint(self, element: entity_instance) -> VisualizationInfoHandler:
         """Add a viewpoint pointed at the placement of an IFC element to the topic.
 
