@@ -316,7 +316,7 @@ typedef item const* ptr;
 				virtual kinds kind() const { return STYLE; }
 
 				virtual size_t calc_hash() const {
-					auto v = std::make_tuple(static_cast<size_t>(STYLE), name, diffuse.hash(), surface.hash(), specular.hash(), specularity, transparency, use_surface_color);
+					auto v = std::make_tuple(static_cast<size_t>(STYLE), name, diffuse.hash(), surface.hash(), specular.hash(), specularity, transparency);
 					return boost::hash<decltype(v)>{}(v);
 				}
 
