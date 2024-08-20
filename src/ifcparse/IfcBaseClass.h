@@ -86,20 +86,17 @@ class IFC_PARSE_API IfcBaseInterface {
 };
 
 class IFC_PARSE_API IfcBaseClass : public virtual IfcBaseInterface {
-  protected:
-    uint32_t identity_;
+ protected:
     static std::atomic_uint32_t counter_;
-    
+
+    uint32_t identity_;
+public:
+    uint32_t id_;
+    IfcParse::IfcFile* file_;
+protected:
     IfcEntityInstanceData data_;
 
-    static bool is_null(const IfcBaseClass* not_this) {
-        return not_this == nullptr;
-    }
-
-  public:
-      uint32_t id_;
-      IfcParse::IfcFile* file_;
-
+public:
     IfcBaseClass(IfcEntityInstanceData&& data)
         : identity_(counter_++)
         , data_(std::move(data))

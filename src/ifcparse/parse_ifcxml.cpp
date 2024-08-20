@@ -503,7 +503,7 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
                 }
             }
 
-            IfcUtil::IfcBaseClass* newinst = state->file->schema()->instantiate(decl->name(), std::move(untyped));
+            IfcUtil::IfcBaseClass* newinst = state->file->schema()->instantiate(decl, std::move(untyped));
 
             if (state->dialect == ifcxml_dialect_ifc4) {
                 // In IFC2X3 not added directly because attrs such as GlobalId are in

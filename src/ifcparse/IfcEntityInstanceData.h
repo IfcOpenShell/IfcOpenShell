@@ -167,6 +167,10 @@ class IFC_PARSE_API IfcEntityInstanceData {
           : storage_(std::move(storage))
       {}
 
+      IfcEntityInstanceData(IfcEntityInstanceData&& other) noexcept
+          : storage_(std::move(other.storage_))
+      {}
+
       IfcEntityInstanceData(const IfcEntityInstanceData& data);
 
       IfcEntityInstanceData& operator=(IfcEntityInstanceData&& other) {

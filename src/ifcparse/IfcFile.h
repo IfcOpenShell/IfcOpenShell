@@ -104,7 +104,7 @@ class IFC_PARSE_API IfcFile {
     typedef boost::unordered_map<unsigned int, IfcUtil::IfcBaseClass*> entity_by_id_t;
     typedef boost::unordered_map<uint32_t, IfcUtil::IfcBaseClass*> entity_by_iden_t;
     typedef std::map<std::string, IfcUtil::IfcBaseClass*> entity_by_guid_t;
-    typedef std::tuple<int, int, int> inverse_attr_record;
+    typedef std::tuple<int, short, short> inverse_attr_record;
     enum INVERSE_ATTR {
         INSTANCE_ID,
         INSTANCE_TYPE,
@@ -165,10 +165,10 @@ class IFC_PARSE_API IfcFile {
     entity_by_id_t byid_;
     // this is for simple types
     entity_by_iden_t byidentity_;
-    entities_by_type_t bytype_;
+    // entities_by_type_t bytype_;
     entities_by_type_t bytype_excl_;
-    entities_by_ref_t byref_;
-    entities_by_ref_excl_t byref_excl_;
+    // entities_by_ref_t byref_;
+    entities_by_ref_t byref_excl_;
     entity_by_guid_t byguid_;
     entity_entity_map_t entity_file_map_;
 
@@ -222,8 +222,8 @@ class IFC_PARSE_API IfcFile {
     type_iterator types_begin() const;
     type_iterator types_end() const;
 
-    type_iterator types_incl_super_begin() const;
-    type_iterator types_incl_super_end() const;
+    // type_iterator types_incl_super_begin() const;
+    // type_iterator types_incl_super_end() const;
 
     /// Returns all entities in the file that match the template argument.
     /// NOTE: This also returns subtypes of the requested type, for example:

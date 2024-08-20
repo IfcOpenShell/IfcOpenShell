@@ -1505,7 +1505,7 @@ namespace latebound_access {
 	IfcUtil::IfcBaseClass* create(IfcParse::IfcFile& f, const std::string& entity) {
 		auto decl = f.schema()->declaration_by_name(entity);
 		auto data = IfcEntityInstanceData(storage_t(decl->as_entity()->attribute_count()));
-		auto inst = f.schema()->instantiate(entity, std::move(data));
+		auto inst = f.schema()->instantiate(decl, std::move(data));
 		if (decl->is("IfcRoot")) {
 			IfcParse::IfcGlobalId guid;
 			latebound_access::set(inst, "GlobalId", (std::string) guid);

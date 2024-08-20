@@ -446,7 +446,7 @@ class IFC_PARSE_API IfcHierarchyHelper : public IfcParse::IfcFile {
             data.storage_.set(relating_index, relating_object);
             data.storage_.set(related_index, related_objects);
 
-            T* t = (T*)Schema::get_schema().instantiate(T::Class().name(), std::move(data));
+            T* t = (T*)Schema::get_schema().instantiate(&T::Class(), std::move(data));
             addEntity(t);
         }
     }

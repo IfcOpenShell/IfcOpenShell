@@ -34,6 +34,8 @@ variant - which is the maximum size of its constituents - is reduced.
 #include <memory>
 #include <tuple>
 
+#include "IfcException.h"
+
 namespace impl {
     // Trait to detect unique_ptr
     template <typename...> struct is_unique_ptr : std::false_type {};
@@ -216,7 +218,13 @@ public:
     template<typename T>
     const T& get(std::size_t index) const {
         if (size_and_indices_[index + 1] != impl::TypeIndex<T, Types...>::value) {
-            throw std::bad_cast();
+            // @todo this IfcException is silly. Figure out what
+            // to do, but at the moment it is specifically caught
+            // in various places.
+            throw IfcParse::IfcException(
+                "Type held at index " + std::to_string(index) + " is " + 
+                get_type_name(index) + " and not " + typeid(T).name()
+            );
         }
         using V = typename std::tuple_element<impl::TypeIndex_v<T, Types...>, impl::MapTypes_t<Types... >>::type;
         if constexpr (impl::is_unique_ptr<V>::value) {
@@ -289,6 +297,23 @@ private:
         if constexpr (!std::is_void_v<decltype(std::declval<Visitor>()(std::declval<typename std::tuple_element_t<0, impl::MapTypes_t<Types...>> &>()))>) {
             return decltype(std::declval<Visitor>()(std::declval<typename std::tuple_element_t<0, impl::MapTypes_t<Types...>> &>())){};
         }
+    }
+
+    template <size_t I>
+    const char* get_type_name_impl(size_t i) const {
+        if constexpr (I == 0) {
+            return "";
+        } else {
+            if (i == I - 1) {
+                return typeid(std::tuple_element_t<I - 1, std::tuple<Types...>>).name();
+            } else {
+                return get_type_name_impl<I - 1>(i);
+            }
+        }
+    }
+
+    const char* get_type_name(size_t i) const {
+        return get_type_name_impl<sizeof...(Types)>(i);
     }
 };
 

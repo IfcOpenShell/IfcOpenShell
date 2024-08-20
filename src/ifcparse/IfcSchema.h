@@ -507,7 +507,7 @@ class IFC_PARSE_API schema_definition {
 
     const std::string& name() const { return name_; }
 
-    IfcUtil::IfcBaseClass* instantiate(const std::string& type_name, IfcEntityInstanceData&& data) const;
+    IfcUtil::IfcBaseClass* instantiate(const IfcParse::declaration* decl, IfcEntityInstanceData&& data) const;
 };
 
 IFC_PARSE_API const schema_definition* schema_by_name(const std::string&);

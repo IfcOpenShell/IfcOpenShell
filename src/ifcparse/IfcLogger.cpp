@@ -17,6 +17,8 @@
  *                                                                              *
  ********************************************************************************/
 
+#define _DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR
+
 #include "IfcLogger.h"
 
 #include "Argument.h"
@@ -147,8 +149,12 @@ void Logger::SetOutput(std::wostream* stream1, std::wostream* stream2) {
 }
 
 void Logger::Message(Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseInterface* instance) {
-    // static std::mutex mtx;
-    // std::lock_guard<std::mutex> lock(mtx);
+    if (type < verbosity_) {
+        return;
+    }
+
+    static std::mutex mtx;
+    std::lock_guard<std::mutex> lock(mtx);
 
     if (type == LOG_PERF) {
         if (!first_timepoint_) {
@@ -166,7 +172,7 @@ void Logger::Message(Logger::Severity type, const std::string& message, const If
     if (type > max_severity_) {
         max_severity_ = type;
     }
-    if (((log2_ != nullptr) || (wlog2_ != nullptr)) && type >= verbosity_) {
+    if (((log2_ != nullptr) || (wlog2_ != nullptr))) {
         if (format_ == FMT_PLAIN) {
             if (log2_ != nullptr) {
                 plain_text_message(*log2_, current_product_, type, message, instance);

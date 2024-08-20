@@ -186,6 +186,7 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 		return ts;
 	}
 
+	/*
 	std::vector<std::string> types_with_super() const {
 		const size_t n = std::distance($self->types_incl_super_begin(), $self->types_incl_super_end());
 		std::vector<std::string> ts;
@@ -193,6 +194,7 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 		std::transform($self->types_incl_super_begin(), $self->types_incl_super_end(), std::back_inserter(ts), helper_fn_declaration_get_name);
 		return ts;
 	}
+	*/
 
 	std::string schema_name() const {
 		if ($self->schema() == 0) return "";
@@ -368,7 +370,7 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 	void setArgumentAsNull(unsigned int i) {
 		bool is_optional = $self->declaration().as_entity()->attribute_by_index(i)->optional();
 		if (is_optional) {
-			self->data().storage_.set(i, Blank{});
+			self->set_attribute_value(i, Blank{});
 		} else {
 			throw IfcParse::IfcException("Attribute not set");
 		}
@@ -377,9 +379,9 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 	void setArgumentAsInt(unsigned int i, int v) {
 		IfcUtil::ArgumentType arg_type = helper_fn_attribute_type($self, i);
 		if (arg_type == IfcUtil::Argument_INT) {
-			self->data().storage_.set(i, v);	
+			self->set_attribute_value(i, v);	
 		} else if ( (arg_type == IfcUtil::Argument_BOOL) && ( (v == 0) || (v == 1) ) ) {
-			self->data().storage_.set(i, v);	
+			self->set_attribute_value(i, v);	
 		} else {
 			throw IfcParse::IfcException("Attribute not set");
 		}
@@ -388,7 +390,7 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 	void setArgumentAsBool(unsigned int i, bool v) {
 		IfcUtil::ArgumentType arg_type = helper_fn_attribute_type($self, i);
 		if (arg_type == IfcUtil::Argument_BOOL) {
-			self->data().storage_.set(i, v);	
+			self->set_attribute_value(i, v);	
 		} else {
 			throw IfcParse::IfcException("Attribute not set");
 		}
@@ -397,7 +399,7 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 	void setArgumentAsLogical(unsigned int i, boost::logic::tribool v) {
 		IfcUtil::ArgumentType arg_type = helper_fn_attribute_type($self, i);
 		if (arg_type == IfcUtil::Argument_LOGICAL) {
-			self->data().storage_.set(i, v);	
+			self->set_attribute_value(i, v);	
 		} else {
 			throw IfcParse::IfcException("Attribute not set");
 		}
@@ -406,7 +408,7 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 	void setArgumentAsDouble(unsigned int i, double v) {
 		IfcUtil::ArgumentType arg_type = helper_fn_attribute_type($self, i);
 		if (arg_type == IfcUtil::Argument_DOUBLE) {
-			self->data().storage_.set(i, v);	
+			self->set_attribute_value(i, v);	
 		} else {
 			throw IfcParse::IfcException("Attribute not set");
 		}
@@ -415,15 +417,15 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 	void setArgumentAsString(unsigned int i, const std::string& a) {
 		IfcUtil::ArgumentType arg_type = helper_fn_attribute_type($self, i);
 		if (arg_type == IfcUtil::Argument_STRING) {
-			self->data().storage_.set(i, a);	
+			self->set_attribute_value(i, a);	
 		} else if (arg_type == IfcUtil::Argument_ENUMERATION) {
 			const IfcParse::enumeration_type* enum_type = $self->declaration().schema()->declaration_by_name($self->declaration().type())->as_entity()->
 			attribute_by_index(i)->type_of_attribute()->as_named_type()->declared_type()->as_enumeration_type();
-			self->data().storage_.set(i, EnumerationReference(enum_type, enum_type->lookup_enum_offset(a)));
+			self->set_attribute_value(i, EnumerationReference(enum_type, enum_type->lookup_enum_offset(a)));
 		} else if (arg_type == IfcUtil::Argument_BINARY) {
 			if (IfcUtil::valid_binary_string(a)) {
 				boost::dynamic_bitset<> bits(a);
-				self->data().storage_.set(i, bits);
+				self->set_attribute_value(i, bits);
 			} else {
 				throw IfcParse::IfcException("String not a valid binary representation");
 			}
@@ -435,7 +437,7 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 	void setArgumentAsAggregateOfInt(unsigned int i, const std::vector<int>& v) {
 		IfcUtil::ArgumentType arg_type = helper_fn_attribute_type($self, i);
 		if (arg_type == IfcUtil::Argument_AGGREGATE_OF_INT) {
-			self->data().storage_.set(i, v);
+			self->set_attribute_value(i, v);
 		} else {
 			throw IfcParse::IfcException("Attribute not set");
 		}
@@ -444,7 +446,7 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 	void setArgumentAsAggregateOfDouble(unsigned int i, const std::vector<double>& v) {
 		IfcUtil::ArgumentType arg_type = helper_fn_attribute_type($self, i);
 		if (arg_type == IfcUtil::Argument_AGGREGATE_OF_DOUBLE) {
-			self->data().storage_.set(i, v);
+			self->set_attribute_value(i, v);
 		} else {
 			throw IfcParse::IfcException("Attribute not set");
 		}
@@ -453,7 +455,7 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 	void setArgumentAsAggregateOfString(unsigned int i, const std::vector<std::string>& v) {
 		IfcUtil::ArgumentType arg_type = helper_fn_attribute_type($self, i);
 		if (arg_type == IfcUtil::Argument_AGGREGATE_OF_STRING) {
-			self->data().storage_.set(i, v);
+			self->set_attribute_value(i, v);
 		} else if (arg_type == IfcUtil::Argument_AGGREGATE_OF_BINARY) {
 			std::vector< boost::dynamic_bitset<> > bits;
 			bits.reserve(v.size());
@@ -464,7 +466,7 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 					throw IfcParse::IfcException("String not a valid binary representation");
 				}			
 			}
-			self->data().storage_.set(i, bits);
+			self->set_attribute_value(i, bits);
 		} else {
 			throw IfcParse::IfcException("Attribute not set");
 		}
@@ -473,7 +475,7 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 	void setArgumentAsEntityInstance(unsigned int i, IfcUtil::IfcBaseClass* v) {
 		IfcUtil::ArgumentType arg_type = helper_fn_attribute_type($self, i);
 		if (arg_type == IfcUtil::Argument_ENTITY_INSTANCE) {
-			self->data().storage_.set(i, v);
+			self->set_attribute_value(i, v);
 		} else {
 			throw IfcParse::IfcException("Attribute not set");
 		}
@@ -482,7 +484,7 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 	void setArgumentAsAggregateOfEntityInstance(unsigned int i, aggregate_of_instance::ptr v) {
 		IfcUtil::ArgumentType arg_type = helper_fn_attribute_type($self, i);
 		if (arg_type == IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE) {
-			self->data().storage_.set(i, v);
+			self->set_attribute_value(i, v);
 		} else {
 			throw IfcParse::IfcException("Attribute not set");
 		}
@@ -491,7 +493,7 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 	void setArgumentAsAggregateOfAggregateOfInt(unsigned int i, const std::vector< std::vector<int> >& v) {
 		IfcUtil::ArgumentType arg_type = helper_fn_attribute_type($self, i);
 		if (arg_type == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_INT) {
-			self->data().storage_.set(i, v);
+			self->set_attribute_value(i, v);
 		} else {
 			throw IfcParse::IfcException("Attribute not set");
 		}
@@ -500,7 +502,7 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 	void setArgumentAsAggregateOfAggregateOfDouble(unsigned int i, const std::vector< std::vector<double> >& v) {
 		IfcUtil::ArgumentType arg_type = helper_fn_attribute_type($self, i);
 		if (arg_type == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE) {
-			self->data().storage_.set(i, v);
+			self->set_attribute_value(i, v);
 		} else {
 			throw IfcParse::IfcException("Attribute not set");
 		}
@@ -509,7 +511,7 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 	void setArgumentAsAggregateOfAggregateOfEntityInstance(unsigned int i, aggregate_of_aggregate_of_instance::ptr v) {
 		IfcUtil::ArgumentType arg_type = helper_fn_attribute_type($self, i);
 		if (arg_type == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE) {
-			self->data().storage_.set(i, v);
+			self->set_attribute_value(i, v);
 		} else {
 			throw IfcParse::IfcException("Attribute not set");
 		}
@@ -590,7 +592,7 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 		const IfcParse::schema_definition* schema = IfcParse::schema_by_name(schema_identifier);
 		const IfcParse::declaration* decl = schema->declaration_by_name(name);
         IfcEntityInstanceData data(storage_t(decl->as_entity() ? decl->as_entity()->attribute_count() : 1));
-		return schema->instantiate(decl->name(), std::move(data));
+		return schema->instantiate(decl, std::move(data));
 	}
 %}
 

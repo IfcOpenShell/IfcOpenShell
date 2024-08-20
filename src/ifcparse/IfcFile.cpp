@@ -141,7 +141,7 @@ namespace {
         } else if (t.type == IfcParse::Token_FLOAT) {
             fn(IfcParse::TokenFunc::asFloat(t));
         } else if (t.type == IfcParse::Token_IDENTIFIER) {
-            fn(InstanceReference{ IfcParse::TokenFunc::asIdentifier(t) });
+            fn(IfcParse::reference_or_simple_type{ InstanceReference{ IfcParse::TokenFunc::asIdentifier(t) } });
         } else if (t.type == IfcParse::Token_INT) {
             fn(IfcParse::TokenFunc::asInt(t));
         } else if (t.type == IfcParse::Token_STRING) {
@@ -150,26 +150,31 @@ namespace {
     }
 
     template <typename Fn>
-    void construct_(IfcParse::parse_context& p, Fn fn) {
+    void construct_(IfcParse::parse_context& p, const IfcParse::aggregation_type* aggr, Fn fn) {
         if (p.tokens_.empty()) {
-            // @todo based on type create appropate empty aggregate
-            return;
-        }
-        decltype(p.tokens_) p_tokens_filtered;
-        std::vector<uint8_t> first_type;
-        get_token_type(first_type, p.tokens_.front());
-        std::copy_if(
-            p.tokens_.begin(),
-            p.tokens_.end(),
-            std::back_inserter(p_tokens_filtered),
-            [first_type](auto& x) {
-                std::vector<uint8_t> nth_type;
-                get_token_type(nth_type, x);
-                return can_coerce(first_type, nth_type);
+            // @todo instead of ugly if-else we could also default initialize the respective
+            // variant types below.
+            if (aggr) {
+                auto aggr_type = IfcUtil::make_aggregate(IfcUtil::from_parameter_type(aggr->type_of_element()));
+                if (aggr_type == IfcUtil::Argument_AGGREGATE_OF_INT) {
+                    fn(std::vector<int>{});
+                } else if (aggr_type == IfcUtil::Argument_AGGREGATE_OF_DOUBLE) {
+                    fn(std::vector<double>{});
+                } else if (aggr_type == IfcUtil::Argument_AGGREGATE_OF_STRING) {
+                    fn(std::vector<std::string>{});
+                } else if (aggr_type == IfcUtil::Argument_AGGREGATE_OF_BINARY) {
+                    fn(std::vector<boost::dynamic_bitset<>>{});
+                } else if (aggr_type == IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE) {
+                    fn(aggregate_of_instance::ptr(new aggregate_of_instance));
+                } else if (aggr_type == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_INT) {
+                    fn(std::vector<std::vector<int>>{});
+                } else if (aggr_type == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE) {
+                    fn(std::vector<std::vector<double>>{});
+                } else if (aggr_type == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE) {
+                    fn(aggregate_of_aggregate_of_instance::ptr(new aggregate_of_aggregate_of_instance));
+                }
             }
-        );
-        if (p.tokens_.size() != p_tokens_filtered.size()) {
-            // warning
+            return;
         }
 
         typedef boost::variant<
@@ -188,25 +193,28 @@ namespace {
 
         possible_aggregation_types_t aggregate_storage;
 
-        for (auto& t : p_tokens_filtered) {
-            boost::apply_visitor([&aggregate_storage](auto& v) {
+        auto append_to_aggregate_storage = [&aggregate_storage](auto v) {
+            if constexpr (is_type_in_variant_v<possible_aggregation_types_t, std::vector<std::decay_t<decltype(v)>>>) {
+                if (aggregate_storage.which() == 0) {
+                    aggregate_storage = std::vector<std::decay_t<decltype(v)>>{ v };
+                } else {
+                    auto* vec_ptr = boost::get< std::vector<std::decay_t<decltype(v)>>>(&aggregate_storage);
+                    if (vec_ptr) {
+                        vec_ptr->push_back(v);
+                    } else {
+                        // inconsistent aggregate valuation
+                    }
+                }
+            } else {
+                // unsupported aggregate type
+            }
+        };
+
+        for (auto& t : p.tokens_) {
+            boost::apply_visitor([&aggregate_storage, &append_to_aggregate_storage, aggr](auto& v) {
                 if constexpr (std::is_same_v<std::decay_t<decltype(v)>, IfcParse::Token>) {
                     // @todo get aggregate of enumeration
-                    dispatch_token(v, nullptr, [&aggregate_storage](auto v) {
-                        if constexpr (std::is_same_v<decltype(v), InstanceReference>) {
-                            if (aggregate_storage.which() == 0) {
-                                aggregate_storage = std::vector<IfcParse::reference_or_simple_type>{ v };
-                            } else {
-                                boost::get< std::vector<IfcParse::reference_or_simple_type>>(aggregate_storage).push_back(v);
-                            }
-                        } else if constexpr (is_type_in_variant_v<possible_aggregation_types_t, std::vector<std::decay_t<decltype(v)>>>) {
-                            if (aggregate_storage.which() == 0) {
-                                aggregate_storage = std::vector<std::decay_t<decltype(v)>>{ v };
-                            } else {
-                                boost::get< std::vector<std::decay_t<decltype(v)>>>(aggregate_storage).push_back(v);
-                            }
-                        }
-                    });
+                    dispatch_token(v, aggr && aggr->type_of_element()->as_named_type() ? aggr->type_of_element()->as_named_type()->declared_type() : nullptr, append_to_aggregate_storage);
                 } else if constexpr (std::is_same_v<std::decay_t<decltype(v)>, IfcParse::parse_context*>) {
                     /*construct_(*v, [&aggregate_storage](auto& v) {
                         if (aggregate_storage.which() == 0) {
@@ -217,11 +225,7 @@ namespace {
                     });*/
                     // Too deeply nested list
                 } else {
-                    if (aggregate_storage.which() == 0) {
-                        aggregate_storage = std::vector<IfcParse::reference_or_simple_type>{ v };
-                    } else {
-                        boost::get<std::vector<IfcParse::reference_or_simple_type>>(aggregate_storage).push_back(v);
-                    }
+                    append_to_aggregate_storage(v);
                 }
             }, t);
         }
@@ -246,17 +250,8 @@ IfcEntityInstanceData IfcParse::parse_context::construct(int name, unresolved_re
             }
         );
     }
-    
-    std::vector<IfcUtil::ArgumentType> attr_types;
-    std::transform(
-        parameter_types.begin(),
-        parameter_types.end(),
-        std::back_inserter(attr_types),
-        IfcUtil::from_parameter_type
-    );
-    
 
-    if (decl && (tokens_.size() != attr_types.size())) {
+    if (decl && (tokens_.size() != parameter_types.size())) {
         // warning
     }
 
@@ -265,17 +260,15 @@ IfcEntityInstanceData IfcParse::parse_context::construct(int name, unresolved_re
     }
 
     storage_t storage(decl
-        ? (std::min)(attr_types.size(), tokens_.size())
+        ? (std::min)(parameter_types.size(), tokens_.size())
         : tokens_.size()
     );
 
     auto it = tokens_.begin();
-    auto jt = attr_types.begin();
     auto kt = parameter_types.begin();
-    for (; it != tokens_.end() && (!decl || jt != attr_types.end()); ++it) {
+    for (; it != tokens_.end() && (!decl || kt != parameter_types.end()); ++it) {
         auto& token = *it;
         // @todo coerce to expected type, e.g empty -> std::vector<int>, bool -> logical
-        // auto& attr_type = *jt;
         const IfcParse::parameter_type* param_type = nullptr;
         if (decl) {
             param_type = *kt;
@@ -286,20 +279,26 @@ IfcEntityInstanceData IfcParse::parse_context::construct(int name, unresolved_re
         boost::apply_visitor([this, &storage, name, &references_to_resolve, index, it, param_type](auto& v) {
             if constexpr (std::is_same_v<std::decay_t<decltype(v)>, IfcParse::Token>) {
                 dispatch_token(v, param_type && param_type->as_named_type() ? param_type->as_named_type()->declared_type() : nullptr, [this, &storage, name, &references_to_resolve, index](auto v) {
-                    if constexpr (std::is_same_v<std::decay_t<decltype(v)>, InstanceReference>) {
+                    if constexpr (std::is_same_v<std::decay_t<decltype(v)>, IfcParse::reference_or_simple_type>) {
                         references_to_resolve.push_back(std::make_pair(
                             // @todo previously this was storage but apparently the 
                             // pointer is not constant with the moving and temporary nature
                             // maybe it ought to be and in that case a pointer is more direct
                             MutableAttributeValue{ name, index },
-                            unresolved_references::value_type::second_type{v} 
+                            v
                         ));
                     } else {
                         storage.set(index, v);
                     }
                 });
             } else if constexpr (std::is_same_v<std::decay_t<decltype(v)>, IfcParse::parse_context*>) {
-                construct_(*v, [this, &storage, name, &references_to_resolve, index](auto& v) {
+                auto pt = param_type;
+                if (pt) {
+                    while (pt->as_named_type()) {
+                        pt = pt->as_named_type()->declared_type()->as_type_declaration()->declared_type();
+                    }
+                }
+                construct_(*v, pt ? pt->as_aggregation_type() : nullptr, [this, &storage, name, &references_to_resolve, index](const auto& v) {
                     if constexpr (std::is_same_v<std::decay_t<decltype(v)>, std::vector<reference_or_simple_type>>) {
                         references_to_resolve.push_back({ {name, index }, v });
                     } else if constexpr (std::is_same_v<std::decay_t<decltype(v)>, std::vector<std::vector<reference_or_simple_type>>>) {
@@ -314,7 +313,7 @@ IfcEntityInstanceData IfcParse::parse_context::construct(int name, unresolved_re
         }, token);
 
         if (decl) {
-            ++jt, ++kt;
+            ++kt;
         }
     }
 
