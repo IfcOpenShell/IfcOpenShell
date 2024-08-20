@@ -241,7 +241,6 @@ class BCFProperties(PropertyGroup):
         self.bim_snippet_schema = ""
         self.document_reference = ""
         self.document_reference_description = ""
-        self.related_topic = ""
         self.comment = ""
         self.has_related_viewpoint = False
 
