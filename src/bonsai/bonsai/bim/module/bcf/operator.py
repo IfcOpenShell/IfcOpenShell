@@ -126,7 +126,8 @@ class LoadBcfTopics(bpy.types.Operator):
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
-        context.scene.BCFProperties.topics.clear()
+        props = context.scene.BCFProperties
+        props.topics.clear()
         # workaround, one non standard topic would break reading entire bcf
         # ignored these topics ATM
         # happens on non standard nodes or on missing nodes in markup
@@ -138,8 +139,10 @@ class LoadBcfTopics(bpy.types.Operator):
                 print("Problems on reading topic, thus ignored: {}".format(topic_guid))
                 continue
         for index, topic_guid in enumerate(topics2use):
-            new = context.scene.BCFProperties.topics.add()
+            new = props.topics.add()
             bpy.ops.bim.load_bcf_topic(topic_guid=topic_guid, topic_index=index)
+
+        props.refresh_topic(context)
         return {"FINISHED"}
 
 
