@@ -1493,14 +1493,10 @@ class LoadBcfHeaderIfcFile(bpy.types.Operator):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
 
-        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
-            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
-            return {"FINISHED"}
-
         bcf_path = tool.Bcf.get_path()
         topic = bcfxml.topics[context.scene.BCFProperties.active_topic.name]
-        entity = topic.header.file[self.index]
-        ifc_path = str(topic.extract_file(entity))
+        entity = tool.Bcf.get_topic_header_files(topic)[self.index]
+        ifc_path = bcf.agnostic.topic.extract_file(topic, entity)
         bpy.ops.bim.load_project(filepath=ifc_path)
         if bcf_path:
             bpy.ops.bim.load_bcf_project(filepath=bcf_path)
@@ -1518,20 +1514,21 @@ class ExtractBcfFile(bpy.types.Operator):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
 
-        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
-            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
-            return {"FINISHED"}
-
         topic = bcfxml.topics[context.scene.BCFProperties.active_topic.name]
 
         if self.entity_type == "HEADER_FILE":
-            entity = topic.header.file[self.index]
+            entity = tool.Bcf.get_topic_header_files(topic)[self.index]
         elif self.entity_type == "BIM_SNIPPET":
-            entity = topic.markup.topic.bim_snippet
+            entity = topic.topic.bim_snippet
         elif self.entity_type == "DOCUMENT_REFERENCE":
-            entity = topic.markup.topic.document_reference[self.index]
+            entity = tool.Bcf.get_topic_document_references(topic)[self.index]
+        else:
+            assert False
 
-        webbrowser.open(str(topic.extract_file(entity).parent))
+        assert entity
+        filepath = bcf.agnostic.topic.extract_file(topic, entity, bcfxml)
+        assert isinstance(filepath, Path)
+        webbrowser.open(str(filepath.parent))
         return {"FINISHED"}
 
 
