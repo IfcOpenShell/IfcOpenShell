@@ -113,6 +113,37 @@ class Bcf(bonsai.core.tool.Bcf):
         return header_files
 
     @classmethod
+    def set_topic_header_files(
+        cls,
+        topic: bcf.agnostic.topic.TopicHandler,
+        files: Union[list[bcf.v2.model.HeaderFile], list[bcf.v3.model.File]],
+    ) -> None:
+        if isinstance(topic, bcf.v2.topic.TopicHandler):
+            header = topic.header
+            if not header:
+                if not files:
+                    return
+                topic.header = (header := bcf.v2.model.Header())
+            if not header.file:
+                if not files:
+                    return
+            assert cls.is_list_of(files, bcf.v2.model.HeaderFile)
+            header.file = files
+        else:
+            header = topic.header
+            if not header:
+                if not files:
+                    return
+                header = bcf.v3.model.Header()
+            header_files = header.files
+            if not header_files:
+                if not files:
+                    return
+                header.files = (header_files := bcf.v3.model.HeaderFiles())
+            assert cls.is_list_of(files, bcf.v3.model.File)
+            header_files.file = files
+
+    @classmethod
     def get_topic_labels(cls, topic: bcf.agnostic.topic.TopicHandler) -> list[str]:
         if isinstance(topic, bcf.v2.topic.TopicHandler):
             labels = topic.topic.labels

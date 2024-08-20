@@ -63,6 +63,11 @@ class TopicHandler:
         """Return the header of the topic."""
         return self.markup.header if self.markup else None
 
+    @header.setter
+    def header(self, header: mdl.Header) -> None:
+        """Set the header of the topic."""
+        self.markup.header = header
+
     @property
     def comments(self) -> list[mdl.Comment]:
         """Return the comments of the topic."""
