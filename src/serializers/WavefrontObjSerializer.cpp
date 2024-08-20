@@ -67,7 +67,7 @@ void WaveFrontOBJSerializer::writeMaterial(const ifcopenshell::geometry::taxonom
     mtl_stream.stream << "newmtl " << material_name << "\n";
 
 	{
-		auto& diffuse = style.diffuse.ccomponents();
+        auto& diffuse = style.get_color().ccomponents();
 		mtl_stream.stream << "Kd " << diffuse(0) << " " << diffuse(1) << " " << diffuse(2) << "\n";
 	}
 	if (style.specular) {
