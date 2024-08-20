@@ -269,23 +269,6 @@ class EditBcfProjectName(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class EditBcfAuthor(bpy.types.Operator):
-    bl_idname = "bim.edit_bcf_author"
-    bl_label = "Edit BCF Author"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        bcfxml = bcfstore.BcfStore.get_bcfxml()
-        assert bcfxml
-
-        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
-            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
-            return {"FINISHED"}
-
-        bcfxml.author = context.scene.BCFProperties.author
-        return {"FINISHED"}
-
-
 class EditBcfTopicName(bpy.types.Operator):
     bl_idname = "bim.edit_bcf_topic_name"
     bl_label = "Edit BCF Topic Name"

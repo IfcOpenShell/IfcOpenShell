@@ -59,11 +59,6 @@ def updateBcfProjectName(self, context):
         bpy.ops.bim.edit_bcf_project_name()
 
 
-def updateBcfAuthor(self, context):
-    if bcfstore.BcfStore.get_bcfxml():
-        bpy.ops.bim.edit_bcf_author()
-
-
 def updateBcfTopicName(self, context):
     if bcfstore.BcfStore.get_bcfxml():
         bpy.ops.bim.edit_bcf_topic_name()
@@ -208,7 +203,11 @@ class BCFProperties(PropertyGroup):
     bcf_file: StringProperty(name="BCF File")
     comment_text_width: IntProperty(name="Comment Text Width", default=40)
     name: StringProperty(default="", name="Project Name", update=updateBcfProjectName)
-    author: StringProperty(default="john@doe.com", name="Author Email", update=updateBcfAuthor)
+    author: StringProperty(
+        default="john@doe.com",
+        name="Author Email",
+        description="Author name that will be used for added comments, topics",
+    )
     topics: CollectionProperty(name="BCF Topics", type=BcfTopic)
     active_topic_index: IntProperty(name="Active BCF Topic Index", update=refreshBcfTopic)
     file_reference: StringProperty(default="", name="Reference")
