@@ -219,6 +219,39 @@ class Bcf(bonsai.core.tool.Bcf):
                 topic_.related_topics = (topic_related_topics := bcf.v3.model.TopicRelatedTopics())
             topic_related_topics.related_topic = related_topics
 
+    @classmethod
+    def get_topic_viewpoints(
+        cls, topic: bcf.agnostic.topic.TopicHandler
+    ) -> Union[list[bcf.v2.model.ViewPoint], list[bcf.v3.model.ViewPoint]]:
+        if isinstance(topic, bcf.v2.topic.TopicHandler):
+            assert topic.markup
+            viewpoints = topic.markup.viewpoints
+        else:
+            topic_viewpoints = topic.topic.viewpoints
+            if not topic_viewpoints:
+                return []
+            viewpoints = topic_viewpoints.view_point
+        return viewpoints
+
+    @classmethod
+    def set_topic_viewpoints(
+        cls,
+        topic: bcf.agnostic.topic.TopicHandler,
+        viewpoints: Union[list[bcf.v2.model.ViewPoint], list[bcf.v3.model.ViewPoint]],
+    ) -> None:
+        if isinstance(topic, bcf.v2.topic.TopicHandler):
+            assert topic.markup
+            assert cls.is_list_of(viewpoints, bcf.v2.model.ViewPoint)
+            topic.markup.viewpoints = viewpoints
+        else:
+            topic_viewpoints = topic.topic.viewpoints
+            if not topic_viewpoints:
+                if not viewpoints:
+                    return
+                topic.topic.viewpoints = (topic_viewpoints := bcf.v3.model.TopicViewpoints())
+            assert cls.is_list_of(viewpoints, bcf.v3.model.ViewPoint)
+            topic_viewpoints.view_point = viewpoints
+
     ## visinfo
     @classmethod
     def get_viewpoint_bitmaps(

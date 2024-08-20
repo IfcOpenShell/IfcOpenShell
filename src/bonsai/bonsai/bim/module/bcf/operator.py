@@ -22,6 +22,7 @@ import bcf.v3.bcfxml
 import bcf.v3.document
 import bcf.v3.model
 import bcf.v3.topic
+import bcf.v3.visinfo
 import bpy
 import bcf
 import bcf.bcfxml
@@ -29,8 +30,8 @@ import bcf.v2.bcfxml
 import bcf.v2.model
 import bcf.v2.topic
 import bcf.v2.visinfo
-import bcf.agnostic.visinfo
 import bcf.agnostic.topic
+import bcf.agnostic.visinfo
 import uuid
 import numpy as np
 import tempfile
@@ -532,13 +533,11 @@ class AddBcfViewpoint(bpy.types.Operator):
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
-
-        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
-            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
-            return {"FINISHED"}
+        bcf_v2 = (bcfxml.version.version_id or "").startswith("2")
 
         blender_camera = context.scene.camera
         assert blender_camera
+
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
@@ -546,32 +545,66 @@ class AddBcfViewpoint(bpy.types.Operator):
         direction = blender_camera.matrix_world.to_quaternion() @ Vector((0.0, 0.0, -1.0))
         up = blender_camera.matrix_world.to_quaternion() @ Vector((0.0, 1.0, 0.0))
 
-        camera_view_point = bcf.v2.model.Point(
-            x=blender_camera.location.x, y=blender_camera.location.y, z=blender_camera.location.z
-        )
-        camera_direction = bcf.v2.model.Direction(x=direction.x, y=direction.y, z=direction.z)
-        camera_up_vector = bcf.v2.model.Direction(x=up.x, y=up.y, z=up.z)
-        if blender_camera.data.type == "ORTHO":
-            camera = bcf.v2.model.OrthogonalCamera(
-                view_to_world_scale=blender_camera.data.ortho_scale,
-                camera_view_point=camera_view_point,
-                camera_direction=camera_direction,
-                camera_up_vector=camera_up_vector,
+        blender_render = context.scene.render
+        assert isinstance(blender_camera.data, bpy.types.Camera)
+        visinfo_guid = str(uuid.uuid4())
+        if bcf_v2:
+            camera_view_point = bcf.v2.model.Point(
+                x=blender_camera.location.x, y=blender_camera.location.y, z=blender_camera.location.z
             )
-            visualization_info = bcf.v2.model.VisualizationInfo(orthogonal_camera=camera)
-        elif blender_camera.data.type == "PERSP":
-            camera = bcf.v2.model.PerspectiveCamera(
-                field_of_view=degrees(blender_camera.data.angle),
-                camera_view_point=camera_view_point,
-                camera_direction=camera_direction,
-                camera_up_vector=camera_up_vector,
+            camera_direction = bcf.v2.model.Direction(x=direction.x, y=direction.y, z=direction.z)
+            camera_up_vector = bcf.v2.model.Direction(x=up.x, y=up.y, z=up.z)
+            if blender_camera.data.type == "ORTHO":
+                camera = bcf.v2.model.OrthogonalCamera(
+                    view_to_world_scale=blender_camera.data.ortho_scale,
+                    camera_view_point=camera_view_point,
+                    camera_direction=camera_direction,
+                    camera_up_vector=camera_up_vector,
+                )
+                visualization_info = bcf.v2.model.VisualizationInfo(guid=visinfo_guid, orthogonal_camera=camera)
+            elif blender_camera.data.type == "PERSP":
+                camera = bcf.v2.model.PerspectiveCamera(
+                    field_of_view=degrees(blender_camera.data.angle),
+                    camera_view_point=camera_view_point,
+                    camera_direction=camera_direction,
+                    camera_up_vector=camera_up_vector,
+                )
+                visualization_info = bcf.v2.model.VisualizationInfo(guid=visinfo_guid, perspective_camera=camera)
+            else:
+                self.report({"INFO"}, f"Unsupported camera type: '{blender_camera.data.type}'.")
+                return {"FINISHED"}
+        else:
+            camera_view_point = bcf.v3.model.Point(
+                x=blender_camera.location.x, y=blender_camera.location.y, z=blender_camera.location.z
             )
-            visualization_info = bcf.v2.model.VisualizationInfo(guid=str(uuid.uuid4()), perspective_camera=camera)
+            camera_direction = bcf.v3.model.Direction(x=direction.x, y=direction.y, z=direction.z)
+            camera_up_vector = bcf.v3.model.Direction(x=up.x, y=up.y, z=up.z)
+            cam_aspect = blender_render.resolution_x / blender_render.resolution_y
+            if blender_camera.data.type == "ORTHO":
+                camera = bcf.v3.model.OrthogonalCamera(
+                    view_to_world_scale=blender_camera.data.ortho_scale,
+                    camera_view_point=camera_view_point,
+                    camera_direction=camera_direction,
+                    camera_up_vector=camera_up_vector,
+                    aspect_ratio=cam_aspect,
+                )
+                visualization_info = bcf.v3.model.VisualizationInfo(guid=visinfo_guid, orthogonal_camera=camera)
+            elif blender_camera.data.type == "PERSP":
+                camera = bcf.v3.model.PerspectiveCamera(
+                    field_of_view=degrees(blender_camera.data.angle),
+                    camera_view_point=camera_view_point,
+                    camera_direction=camera_direction,
+                    camera_up_vector=camera_up_vector,
+                    aspect_ratio=cam_aspect,
+                )
+                visualization_info = bcf.v3.model.VisualizationInfo(guid=visinfo_guid, perspective_camera=camera)
+            else:
+                self.report({"INFO"}, f"Unsupported camera type: '{blender_camera.data.type}'.")
+                return {"FINISHED"}
 
         # TODO allow the user to enable or disable snapshotting
         snapshot = None
 
-        blender_render = context.scene.render
         old_file_format = blender_render.image_settings.file_format
         blender_render.image_settings.file_format = "PNG"
         old_filepath = blender_render.filepath
@@ -581,11 +614,26 @@ class AddBcfViewpoint(bpy.types.Operator):
             snapshot = f.read()
         # viewpoint.snapshot = blender_render.filepath
 
-        vizinfo = bcf.v2.visinfo.VisualizationInfoHandler(visualization_info=visualization_info, snapshot=snapshot)
-        topic.viewpoints[vizinfo.guid + ".bcfv"] = vizinfo
-        topic.markup.viewpoints.append(
-            bcf.v2.model.ViewPoint(viewpoint=vizinfo.guid + ".bcfv", guid=vizinfo.guid, snapshot=vizinfo.guid + ".png")
-        )
+        if isinstance(visualization_info, bcf.v2.model.VisualizationInfo):
+            vizinfo = bcf.v2.visinfo.VisualizationInfoHandler(visualization_info=visualization_info, snapshot=snapshot)
+            assert isinstance(topic, bcf.v2.topic.TopicHandler)
+            topic.viewpoints[vizinfo.guid + ".bcfv"] = vizinfo
+            viewpoints = tool.Bcf.get_topic_viewpoints(topic)
+            viewpoint = bcf.v2.model.ViewPoint(
+                viewpoint=vizinfo.guid + ".bcfv", guid=vizinfo.guid, snapshot=vizinfo.guid + ".png"
+            )
+            assert tool.Bcf.is_list_of(viewpoints, bcf.v2.model.ViewPoint)
+            viewpoints.append(viewpoint)
+        else:
+            vizinfo = bcf.v3.visinfo.VisualizationInfoHandler(visualization_info=visualization_info, snapshot=snapshot)
+            assert isinstance(topic, bcf.v3.topic.TopicHandler)
+            topic.viewpoints[vizinfo.guid + ".bcfv"] = vizinfo
+            viewpoints = tool.Bcf.get_topic_viewpoints(topic)
+            viewpoint = bcf.v3.model.ViewPoint(
+                viewpoint=vizinfo.guid + ".bcfv", guid=vizinfo.guid, snapshot=vizinfo.guid + ".png"
+            )
+            assert tool.Bcf.is_list_of(viewpoints, bcf.v3.model.ViewPoint)
+            viewpoints.append(viewpoint)
 
         def get_ifc_elements(objs: list[bpy.types.Object]) -> list[ifcopenshell.entity_instance]:
             elements = []
@@ -615,27 +663,35 @@ class RemoveBcfViewpoint(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return bcf_prop.getBcfViewpoints(None, context)
+        bcfxml = bcfstore.BcfStore.get_bcfxml()
+        if not bcfxml:
+            return False
+        props = context.scene.BCFProperties
+        topic = props.active_topic
+        if not topic:
+            return False
+
+        topic = props.topics[topic.name]
+        if not tool.Blender.get_enum_safe(topic, "viewpoints"):
+            cls.poll_message_set("No viewpoint selected.")
+            return False
+        return True
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
 
-        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
-            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
-            return {"FINISHED"}
-
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
-        for key, viewpoint in topic.viewpoints.items():
-            if viewpoint.guid == blender_topic.viewpoints:
-                break
-        del topic.viewpoints[key]
-        for i, viewpoint in enumerate(topic.markup.viewpoints):
-            if viewpoint.guid == blender_topic.viewpoints:
-                break
-        del topic.markup.viewpoints[i]
+        del topic.viewpoints[blender_topic.viewpoints]
+
+        viewpoints = tool.Bcf.get_topic_viewpoints(topic)
+        # Only guid is required attribute for a viewpoint.
+        vp_index = next(i for i, vp in enumerate(viewpoints) if vp.guid in blender_topic.viewpoints)
+        del viewpoints[vp_index]
+        tool.Bcf.set_topic_viewpoints(topic, viewpoints)
+
         props.refresh_topic(context)
         return {"FINISHED"}
 
@@ -716,8 +772,8 @@ class AddBcfDocumentReference(bpy.types.Operator):
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
-        bcf_v2 = (bcfxml.version.version_id or "").startswith("2")
 
+        bcf_v2 = (bcfxml.version.version_id or "").startswith("2")
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
@@ -1102,6 +1158,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         if blender_topic is None:
             return False
         bcfxml = bcfstore.BcfStore.get_bcfxml()
+        assert bcfxml
         topic = bcfxml.topics[blender_topic.name]
         return topic.viewpoints
 
@@ -1386,9 +1443,8 @@ class ActivateBcfViewpoint(bpy.types.Operator):
             obj = bpy.data.objects.new("Bitmap", None)
             obj.empty_display_type = "IMAGE"
             # image = bpy.data.images.load(os.path.join(bcfxml.filepath, topic.guid, bitmap.reference))
-            # TODO: suuport bcf v3.
             with tempfile.NamedTemporaryFile(delete=False) as f:
-                topic.extract_file(bitmap, f.name)
+                bcf.agnostic.topic.extract_file(topic, bitmap, outfile=Path(f.name))
                 # f.write(bitmap.what)
                 image = bpy.data.images.load(f.name)
             src_width = image.size[0]

@@ -15,7 +15,7 @@ TopicHandler = Union[bcf.v2.topic.TopicHandler, bcf.v3.topic.TopicHandler]
 
 def extract_file(
     topic: TopicHandler,
-    entity: Union[mdl.HeaderFile, mdl.BimSnippet, mdl.DocumentReference],
+    entity: Union[mdl.HeaderFile, mdl.BimSnippet, mdl.DocumentReference, mdl.BitMap],
     bcfxml: Optional[Union[bcf.v2.bcfxml.BcfXml, bcf.v3.bcfxml.BcfXml]] = None,
     outfile: Optional[Path] = None,
 ) -> Union[Path, str, None]:
@@ -47,7 +47,8 @@ def extract_file(
         return None
 
     # For v3 document references external documents are detected by empty document_guid.
-    if not isinstance(entity, bcf.v3.model.DocumentReference) and entity.is_external:
+    # External bitmaps are not supported by bcf.
+    if not isinstance(entity, (bcf.v3.model.DocumentReference, mdl.BitMap)) and entity.is_external:
         return reference
 
     if isinstance(entity, bcf.v3.model.DocumentReference):
@@ -72,6 +73,13 @@ def extract_file(
             assert isinstance(bytes_data, bytes)
         elif isinstance(entity, mdl.HeaderFile):
             bytes_data = topic.reference_files[reference]
+        elif isinstance(entity, mdl.BitMap):
+            bytes_data = next(
+                byte_data
+                for vp in topic.viewpoints.values()
+                for data_reference, byte_data in vp.bitmaps.items()
+                if data_reference == reference
+            )
         elif isinstance(entity, bcf.v2.model.TopicDocumentReference):
             assert isinstance(topic, bcf.v2.topic.TopicHandler)
             bytes_data = topic.document_references[reference]
