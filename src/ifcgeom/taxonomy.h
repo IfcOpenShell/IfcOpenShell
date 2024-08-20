@@ -327,7 +327,7 @@ typedef item const* ptr;
 				style(const std::string& name) : name(name), specularity(std::numeric_limits<double>::quiet_NaN()), transparency(std::numeric_limits<double>::quiet_NaN()), use_surface_color(false) {}
 
 				colour get_color() const {
-                    if (use_surface_color && surface) {
+                    if ((use_surface_color && surface) || !diffuse) {
                         return surface;
 					}
 					return diffuse;
