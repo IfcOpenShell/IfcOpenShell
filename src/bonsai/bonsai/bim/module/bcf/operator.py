@@ -475,31 +475,46 @@ class AddBcfHeaderFile(bpy.types.Operator):
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
-
-        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
-            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
-            return {"FINISHED"}
+        bcf_v2 = (bcfxml.version.version_id or "").startswith("2")
 
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
 
         is_external = "://" in props.file_reference
-        filename = Path(props.file_reference).name if os.path.exists(props.file_reference) else None
+        filepath = Path(props.file_reference)
+        file_bytes, filename = None, None
+        if filepath.is_file():
+            filename = filepath.name
+            file_bytes = filepath.read_bytes()
 
-        if filename:
-            with open(props.file_reference, "r") as f:
-                topic.reference_files[filename] = f.read()
+        header_files = tool.Bcf.get_topic_header_files(topic)
+        if filename and file_bytes:
+            topic.reference_files[filename] = file_bytes
+        if bcf_v2:
+            header_file = bcf.v2.model.HeaderFile(
+                filename=filename,
+                date=XmlDateTime.now(),
+                reference=props.file_reference if is_external else filename,
+                ifc_project=props.file_ifc_project,
+                ifc_spatial_structure_element=props.file_ifc_spatial_structure_element,
+                is_external=is_external,
+            )
+            assert tool.Bcf.is_list_of(header_files, bcf.v2.model.HeaderFile)
+            header_files.append(header_file)
+        else:
+            header_file = bcf.v3.model.File(
+                filename=filename,
+                date=XmlDateTime.now(),
+                reference=props.file_reference if is_external else filename,
+                ifc_project=props.file_ifc_project,
+                ifc_spatial_structure_element=props.file_ifc_spatial_structure_element,
+                is_external=is_external,
+            )
+            assert tool.Bcf.is_list_of(header_files, bcf.v3.model.File)
+            header_files.append(header_file)
 
-        header_file = bcf.v2.model.HeaderFile(
-            filename=filename,
-            date=XmlDateTime.now(),
-            reference=props.file_reference if is_external else Path(props.file_reference).name,
-            ifc_project=props.file_ifc_project,
-            ifc_spatial_structure_element=props.file_ifc_spatial_structure_element,
-            is_external=is_external,
-        )
-        topic.header.file.append(header_file)
+        tool.Bcf.set_topic_header_files(topic, header_files)
 
         props.refresh_topic(context)
         return {"FINISHED"}
@@ -652,14 +667,12 @@ class RemoveBcfFile(bpy.types.Operator):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
 
-        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
-            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
-            return {"FINISHED"}
-
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
-        del topic.header.file[self.index]
+        header_files = tool.Bcf.get_topic_header_files(topic)
+        del header_files[self.index]
+        tool.Bcf.set_topic_header_files(topic, header_files)
         props.refresh_topic(context)
         return {"FINISHED"}
 
@@ -733,10 +746,6 @@ class AddBcfDocumentReference(bpy.types.Operator):
         if document_path.is_file():
             filename = document_path.name
             document_bytes = document_path.read_bytes()
-
-        if filename:
-            with open(props.document_reference, "rb") as f:
-                document_bytes = f.read()
 
         document_references = tool.Bcf.get_topic_document_references(topic)
         if bcf_v2:
