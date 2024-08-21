@@ -67,7 +67,6 @@ class ExecuteIfcPatch(bpy.types.Operator):
     bl_idname = "bim.execute_ifc_patch"
     bl_label = "Execute IFCPatch"
     file_format: bpy.props.StringProperty()
-    use_json_for_args: bpy.props.BoolProperty()
 
     @classmethod
     def poll(cls, context):
@@ -76,9 +75,8 @@ class ExecuteIfcPatch(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMPatchProperties
-        if self.use_json_for_args or not props.ifc_patch_args_attr:
-            arguments = json.loads(props.ifc_patch_args or "[]")
-        else:
+        arguments = []
+        if props.ifc_patch_args_attr:
             arguments = [arg.get_value() for arg in props.ifc_patch_args_attr]
 
         if props.should_load_from_memory and tool.Ifc.get():
@@ -124,17 +122,47 @@ class UpdateIfcPatchArguments(bpy.types.Operator):
                 new_attr = patch_args.add()
                 data_type = arg_info.get("type", "str")
                 if isinstance(data_type, list):
+                    if "file" in data_type:
+                        data_type = ["file"]
+
                     data_type = [dt for dt in data_type if dt != "NoneType"][0]
+
                 new_attr.data_type = {
-                    "Literal": "string",
+                    "Literal": "enum",
+                    "file": "file",
                     "str": "string",
                     "float": "float",
                     "int": "integer",
                     "bool": "boolean",
                 }[data_type]
-                new_attr.name = arg_name
+                new_attr.name = self.pretty_arg_name(arg_name)
+                if new_attr.data_type == "enum":
+                    new_attr.enum_items = json.dumps(arg_info.get("enum_items", []))
+                    new_attr.enum_value = arg_info.get("default", new_attr.get_value_default())
+                    continue
+
+                if new_attr.data_type == "file":
+                    new_attr.filepath_value.single_file = arg_info.get("default", new_attr.get_value_default())
+                    new_attr.filter_glob = arg_info.get("filter_glob", "*.ifc;*.ifczip;*.ifcxml")
+                    continue
+
                 new_attr.set_value(arg_info.get("default", new_attr.get_value_default()))
         return {"FINISHED"}
+
+    def pretty_arg_name(self, arg_name: str):
+        words = []
+
+        for word in arg_name.split("_"):
+            word = word.strip().capitalize()
+
+            replacements = [("Dir", "Directory"), ("Sql", "SQL")]
+
+            for prev, new in replacements:
+                word = word.replace(prev, new)
+
+            words.append(word)
+
+        return " ".join(words)
 
 
 class RunMigratePatch(bpy.types.Operator):

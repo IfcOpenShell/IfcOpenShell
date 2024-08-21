@@ -156,6 +156,34 @@ class ObjProperty(PropertyGroup):
     obj: bpy.props.PointerProperty(type=bpy.types.Object)
 
 
+def update_single_file(self, context):
+    self.file_list.clear()
+    new = self.file_list.add()
+    new.name = self.single_file
+
+
+class MultipleFileSelect(PropertyGroup):
+    single_file: bpy.props.StringProperty(name="Single File Path", description="", update=update_single_file)
+    file_list: bpy.props.CollectionProperty(type=StrProperty)
+
+    def set_file_list(self, dirname: str, files: list[str]):
+        self.file_list.clear()
+
+        for f in files:
+            new = self.file_list.add()
+            new.name = os.path.join(dirname, f)
+
+    def layout_file_select(self, layout, filter_glob="", text=""):
+        if len(self.file_list) > 1:
+            layout.label(text=f"{len(self.file_list)} Files Selected")
+        else:
+            layout.prop(self, "single_file", text=text)
+
+        layout.context_pointer_set("file_props", self)
+        op = layout.operator("bim.multiple_file_selector", icon="FILE_FOLDER", text="")
+        op.filter_glob = filter_glob
+
+
 def update_attribute_value(self, context):
     value_name = self.get_value_name()
     if value_name:
@@ -248,6 +276,8 @@ class Attribute(PropertyGroup):
     enum_items: StringProperty(name="Value")
     enum_descriptions: CollectionProperty(type=StrProperty)
     enum_value: EnumProperty(items=get_attribute_enum_values, name="Value", update=update_attribute_value)
+    filepath_value: PointerProperty(type=MultipleFileSelect)
+    filter_glob: StringProperty()
     is_null: BoolProperty(name="Is Null", update=update_is_null)
     is_optional: BoolProperty(name="Is Optional")
     is_uri: BoolProperty(name="Is Uri", default=False)
@@ -263,6 +293,8 @@ class Attribute(PropertyGroup):
             return None
         if self.data_type == "string":
             return self.string_value.replace("\\n", "\n")
+        if self.data_type == "file":
+            return [f.name for f in self.filepath_value.file_list]
         return getattr(self, str(self.get_value_name()), None)
 
     def get_value_default(self):
@@ -276,6 +308,8 @@ class Attribute(PropertyGroup):
             return False
         elif self.data_type == "enum":
             return "0"
+        elif self.data_type == "file":
+            return ""
 
     def get_value_name(self, display_only=False):
         if self.data_type == "string":
@@ -290,6 +324,8 @@ class Attribute(PropertyGroup):
             return "float_value"
         elif self.data_type == "enum":
             return "enum_value"
+        elif self.data_type == "file":
+            return "filepath_value"
 
     def set_value(self, value):
         if isinstance(value, str):

@@ -31,6 +31,9 @@ __version__ = version = "0.0.0"
 Status = Literal["Preview", "Active", "Inactive"]
 ClassTypes = Literal["Class", "GroupOfProperties", "AlternativeUse", "Material"]
 
+# NOTE: Some values in TypedDicts are actually not guaranteed to be provided
+# and should be typed with NotRequired.
+
 
 class DictionaryContractV1(TypedDict):
     uri: str
@@ -725,8 +728,8 @@ class Client:
     def search_class(
         self,
         search_text: str,
-        dictionary_uris=None,
-        related_ifc_entities=None,
+        dictionary_uris: Optional[list[str]] = None,
+        related_ifc_entities: Optional[list[str]] = None,
         version: int = 1,
         offset: int = 0,
         limit: int = 100,

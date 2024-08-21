@@ -32,6 +32,7 @@ class BIM_PT_bsdd(Panel):
 
     def draw(self, context):
         props = context.scene.BIMBSDDProperties
+        layout = self.layout
         row = self.layout.row(align=True)
         row.prop(props, "load_preview_domains")
         if len(props.domains):
@@ -53,6 +54,22 @@ class BIM_PT_bsdd(Panel):
                 props,
                 "active_domain_index",
             )
+            if 0 <= props.active_domain_index < len(props.domains):
+                selected_domain = props.domains[props.active_domain_index]
+            else:
+                selected_domain = None
+
+            if selected_domain:
+                layout.label(text="Selected domain:")
+                box = layout.box()
+                row = box.row(align=True)
+                row.label(text="Language")
+                row.label(text=selected_domain.default_language_code)
+                row = box.row(align=True)
+                row.label(text="Version")
+                row.label(text=selected_domain.version)
+                box.operator("bim.open_uri", text="Open bSDD In Browser", icon="URL").uri = selected_domain.uri
+
         else:
             row = self.layout.row()
             row.operator("bim.load_bsdd_domains")
@@ -61,14 +78,18 @@ class BIM_PT_bsdd(Panel):
 class BIM_UL_bsdd_domains(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
+            props = context.scene.BIMBSDDProperties
             row = layout.row(align=True)
             if item.status != "Active":
                 row.label(text=f"{item.name} ({item.organization_name_owner}) - {item.status}", icon="ERROR")
             else:
                 row.label(text=f"{item.name} ({item.organization_name_owner})")
-            op = row.operator("bim.set_active_bsdd_domain", text="", icon="RESTRICT_SELECT_OFF")
-            op.name = item.name
-            op.uri = item.uri
+            if item.uri == props.active_uri:
+                row.label(text="", icon="URL")
+            else:
+                op = row.operator("bim.set_active_bsdd_domain", text="", icon="RESTRICT_SELECT_OFF")
+                op.name = item.name
+                op.uri = item.uri
 
 
 class BIM_UL_bsdd_classifications(UIList):
@@ -77,3 +98,4 @@ class BIM_UL_bsdd_classifications(UIList):
             row = layout.row(align=True)
             row.label(text=item.reference_code)
             row.label(text=item.name)
+            row.operator("bim.open_uri", text="", icon="URL").uri = item.uri

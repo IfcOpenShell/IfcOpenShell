@@ -65,10 +65,12 @@ class Demo:
 
 @interface
 class Aggregate:
-    def can_aggregate(cls, relating_object, related_object): pass
+    def can_aggregate(cls, relating_obj, related_obj): pass
+    def has_physical_body_representation(cls, element): pass
     def disable_editing(cls, obj): pass
     def enable_editing(cls, obj): pass
     def get_container(cls, element): pass
+    def get_relating_object(cls, related_element): pass
 
 
 @interface
@@ -139,6 +141,7 @@ class Brick:
     def clear_breadcrumbs(cls, split_screen=False): pass
 
 
+@interface
 class Bsdd:
     def clear_class_psets(cls): pass
     def clear_classes(cls): pass
@@ -165,6 +168,12 @@ class Clash:
     def import_active_clashes(cls): pass
     def load_clash_sets(cls, fn): pass
     def look_at(cls, target, location): pass
+
+
+@interface
+class Classification:
+    def get_location(cls, classification): pass
+    def set_location(cls, classification): pass
 
 
 @interface
@@ -373,6 +382,7 @@ class Geometry:
     def clear_modifiers(cls, obj): pass
     def clear_scale(cls, obj): pass
     def delete_data(cls, data): pass
+    def delete_ifc_object(cls, obj): pass
     def does_representation_id_exist(cls, representation_id): pass
     def duplicate_object_data(cls, obj): pass
     def get_cartesian_point_coordinate_offset(cls, obj): pass
@@ -413,6 +423,9 @@ class Geometry:
     def unresolve_type_representation(cls, representation, element): pass
     def delete_opening_object_placement(cls, opening): pass
     def switch_from_representation(cls, obj, representation): pass
+    def get_blender_offset_type(cls, obj): pass
+    def has_material_style_override(cls, obj): pass
+    def should_use_immediate_representation(cls, entity, apply_openings): pass
 
 
 @interface
@@ -440,6 +453,7 @@ class Georeference:
     def set_cursor_location(cls, coordinates): pass
     def set_ifc_grid_north(cls): pass
     def set_ifc_true_north(cls): pass
+    def set_model_origin(cls): pass
     def set_vector_coordinates(cls, vector_coordinates, type): pass
     def set_wcs(cls, matrix): pass
     def xyz2enh(cls, coordinates): pass
@@ -489,23 +503,30 @@ class Material:
     def add_material_to_set(cls, material_set, material): pass
     def disable_editing_material(cls): pass
     def disable_editing_materials(cls): pass
+    def duplicate_material(cls, material): pass
     def enable_editing_material(cls, material): pass
     def enable_editing_materials(cls): pass
-    def get_active_material(cls): pass
+    def ensure_material_assigned(cls, elements, material_type, material): pass
+    def ensure_material_unassigned(cls, elements): pass
+    def get_active_material_item(cls): pass
     def get_active_material_type(cls): pass
-    def get_active_object_material_type(cls, obj): pass
+    def get_default_material(cls): pass
     def get_elements_by_material(cls, material): pass
-    def get_material(cls, element, should_inherit): pass
     def get_material_attributes(cls): pass
+    def get_material(cls, element, should_inherit: bool = False): pass
+    def get_object_ui_active_material(cls): pass
+    def get_object_ui_material_type(cls): pass
+    def get_style(cls, material): pass
     def get_type(cls, element): pass
     def has_material_profile(cls, element): pass
-    def import_material_definitions(cls, material_type): pass
+    def import_material_definitions(cls, material_type: str): pass
     def is_a_flow_segment(cls, element): pass
     def is_a_material_set(cls, material): pass
     def is_editing_materials(cls): pass
     def is_material_used_in_sets(cls, material): pass
     def load_material_attributes(cls, material): pass
     def replace_material_with_material_profile(cls, element): pass
+    def update_elements_using_material(cls, material): pass
 
 
 @interface
@@ -831,11 +852,10 @@ class Sequence:
 
 @interface
 class Spatial:
-    def can_contain(cls, structure_obj, element_obj): pass
+    def can_contain(cls, container, element_obj): pass
     def can_reference(cls, structure, element): pass
     def contract_container(cls, container): pass
     def copy_xy(cls, src_obj, destination_obj): pass
-    def import_spatial_element(cls, element, level_index): pass
     def deselect_objects(cls): pass
     def disable_editing(cls, obj): pass
     def duplicate_object_and_data(cls, obj): pass
@@ -843,6 +863,9 @@ class Spatial:
     def edit_container_name(cls, container, name): pass
     def enable_editing(cls, obj): pass
     def expand_container(cls, container): pass
+    def filter_elements_by_class(cls, elements, ifc_class): pass
+    def filter_elements_by_relating_type(cls, elements, relating_type): pass
+    def filter_elements_by_untyped(cls, elements): pass
     def filter_products(cls, products, action): pass
     def get_active_container(cls): pass
     def get_container(cls, element): pass
@@ -851,24 +874,27 @@ class Spatial:
     def get_relative_object_matrix(cls, target_obj, relative_to_obj): pass
     def get_selected_product_types(cls): pass
     def get_selected_products(cls): pass
-    def import_containers(cls, parent=None): pass
     def import_spatial_decomposition(cls): pass
-    def run_root_copy_class(cls, obj=None): pass
-    def run_spatial_assign_container(cls, structure_obj=None, element_obj=None): pass
+    def import_spatial_element(cls, element, level_index): pass
+    def load_contained_elements(cls): pass
+    def run_root_copy_class(cls, obj): pass
+    def run_spatial_assign_container(cls, container, element_obj): pass
     def run_spatial_import_spatial_decomposition(cls): pass
     def select_object(cls, obj): pass
     def select_products(cls, products, unhide=False): pass
     def set_active_object(cls, obj): pass
     def set_relative_object_matrix(cls, target_obj, relative_to_obj, matrix): pass
-    def set_default_container(cls, container): pass
     def show_scene_objects(cls): pass
-    #HERE STARTS SPATIAL TOOL
+
+    # HERE STARTS SPATIAL TOOL
     def is_bounding_class(cls, visible_element): pass
     def get_space_polygon_from_context_visible_objects(cls, x, y): pass
-    def get_boundary_lines_from_context_visible_objects(cls, visible_objects): pass
+    def debug_shape(cls, foo): pass
+    def debug_line(cls, start, end): pass
+    def get_boundary_lines_from_context_visible_objects(cls): pass
     def get_gross_mesh_from_element(cls, visible_element): pass
     def create_mesh_from_shape(cls, shape): pass
-    def get_x_y_z_h_mat_from_active_obj(cls, active_obj): pass
+    def get_x_y_z_h_mat_from_obj(cls, obj): pass
     def get_x_y_z_h_mat_from_cursor(cls): pass
     def get_union_shape_from_selected_objects(cls): pass
     def get_boundary_elements(cls, selected_objects): pass
@@ -892,17 +918,20 @@ class Spatial:
     def get_active_obj_z(cls): pass
     def get_active_obj_height(cls): pass
     def get_relating_type_id(cls): pass
-    def translate_obj_to_z_location(cls, obj): pass
+    def translate_obj_to_z_location(cls, obj, z): pass
     def get_2d_vertices_from_obj(cls, obj): pass
     def get_scaled_2d_vertices(cls, points): pass
     def assign_swept_area_outer_curve_from_2d_vertices(cls, obj, vertices): pass
     def get_body_representation(cls, obj): pass
     def assign_ifcspace_class_to_obj(cls, obj): pass
     def assign_type_to_obj(cls, obj): pass
-    def assign_relating_type_to_element(cls, ifc, Type, element, relating_type): pass
-    def regen_obj_representation(cls, ifc, geometry, obj, body): pass
+    def assign_relating_type_to_element(cls, ifc, type, element, relating_type): pass
+    def regen_obj_representation(cls, obj, body): pass
     def toggle_spaces_visibility_wired_and_textured(cls, spaces): pass
     def toggle_hide_spaces(cls, spaces): pass
+    def set_default_container(cls, container): pass
+    def guess_default_container(cls): pass
+    def get_selected_containers(cls): pass
 
 @interface
 class Covering:
@@ -993,7 +1022,6 @@ class Type:
     def get_representation_context(cls, representation): pass
     def get_type_occurrences(cls, element_type): pass
     def has_material_usage(cls, element): pass
-    def remove_object(cls, obj): pass
     def run_geometry_add_representation(cls, obj=None, context=None, ifc_representation_class=None, profile_set_usage=None): pass
     def run_geometry_switch_representation(cls, obj=None, representation=None, should_reload=None, is_global=None): pass
 

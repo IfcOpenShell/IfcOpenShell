@@ -226,7 +226,7 @@ class StructuralLoadsData:
         cls.data = {
             "total_loads": cls.total_loads(),
             "load_classes": cls.load_classes(),
-            "structural_load_types": cls.structural_load_types()
+            "structural_load_types": cls.structural_load_types(),
         }
         cls.is_loaded = True
 

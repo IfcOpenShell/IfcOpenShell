@@ -21,8 +21,6 @@ from . import ui, prop, operator
 
 classes = (
     operator.ExecuteIfcTester,
-    operator.SelectSpecs,
-    operator.SelectIfcTesterIfcFile,
     operator.SelectRequirement,
     operator.SelectFailedEntities,
     operator.SelectEntity,
@@ -32,7 +30,7 @@ classes = (
     prop.IfcTesterProperties,
     ui.BIM_PT_tester,
     ui.BIM_UL_tester_specifications,
-    ui.BIM_UL_tester_failed_entities
+    ui.BIM_UL_tester_failed_entities,
 )
 
 
@@ -42,4 +40,3 @@ def register():
 
 def unregister():
     del bpy.types.Scene.IfcTesterProperties
-    

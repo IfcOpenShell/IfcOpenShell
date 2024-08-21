@@ -167,7 +167,7 @@ class BIM_OT_add_aggregate(bpy.types.Operator, tool.Ifc.Operator):
                     tool.Ifc,
                     tool.Collector,
                     tool.Spatial,
-                    structure_obj=tool.Ifc.get_object(current_container),
+                    container=current_container,
                     element_obj=aggregate,
                 )
             core.assign_object(tool.Ifc, tool.Aggregate, tool.Collector, relating_obj=aggregate, related_obj=obj)

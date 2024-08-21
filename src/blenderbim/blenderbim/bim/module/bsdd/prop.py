@@ -43,7 +43,6 @@ class BSDDDomain(PropertyGroup):
 class BSDDClassification(PropertyGroup):
     name: StringProperty(name="Name")
     reference_code: StringProperty(name="Reference Code")
-    description: StringProperty(name="Description")
     uri: StringProperty(name="Namespace URI")
     domain_name: StringProperty(name="Domain Name")
     domain_namespace_uri: StringProperty(name="Domain Namespace URI")
@@ -62,6 +61,12 @@ class BIMBSDDProperties(PropertyGroup):
     classifications: CollectionProperty(name="Classifications", type=BSDDClassification)
     active_classification_index: IntProperty(name="Active Classification Index")
     keyword: StringProperty(name="Keyword")
-    should_filter_ifc_class: BoolProperty(name="Filter Active IFC Class", default=True)
-    load_preview_domains: BoolProperty(name="Load Preview Domains", default=False)
+    should_filter_ifc_class: BoolProperty(
+        name="Filter Active IFC Class",
+        description="Whether to search only for bSDD classes that match active object's IFC class",
+        default=True,
+    )
+    load_preview_domains: BoolProperty(
+        name="Load Preview Domains", description="Whether it should load preview and inactive domains", default=False
+    )
     classification_psets: CollectionProperty(name="Classification Psets", type=BSDDPset)

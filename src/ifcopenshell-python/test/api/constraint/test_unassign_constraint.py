@@ -27,12 +27,8 @@ class TestUnassignConstraint(test.bootstrap.IFC4):
         constraint = ifcopenshell.api.constraint.add_objective(self.file)
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         element2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
-        ifcopenshell.api.constraint.assign_constraint(
-            self.file, products=[element, element2], constraint=constraint
-        )
-        ifcopenshell.api.constraint.unassign_constraint(
-            self.file, products=[element, element2], constraint=constraint
-        )
+        ifcopenshell.api.constraint.assign_constraint(self.file, products=[element, element2], constraint=constraint)
+        ifcopenshell.api.constraint.unassign_constraint(self.file, products=[element, element2], constraint=constraint)
         assert ifcopenshell.util.constraint.get_constrained_elements(element) == set()
         assert len(self.file.by_type("IfcRelAssociatesConstraint")) == 0
 
@@ -40,9 +36,7 @@ class TestUnassignConstraint(test.bootstrap.IFC4):
         constraint = ifcopenshell.api.constraint.add_objective(self.file)
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         element2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
-        ifcopenshell.api.constraint.unassign_constraint(
-            self.file, products=[element, element2], constraint=constraint
-        )
+        ifcopenshell.api.constraint.unassign_constraint(self.file, products=[element, element2], constraint=constraint)
         assert ifcopenshell.util.constraint.get_constrained_elements(element) == set()
         assert ifcopenshell.util.constraint.get_constrained_elements(element2) == set()
 
@@ -54,12 +48,8 @@ class TestUnassignConstraint(test.bootstrap.IFC4):
         ifcopenshell.api.constraint.assign_constraint(self.file, products=[element1], constraint=constraint)
         rel = self.file.by_type("IfcRelAssociatesConstraint")[0]
 
-        ifcopenshell.api.constraint.assign_constraint(
-            self.file, products=[element2, element3], constraint=constraint
-        )
-        ifcopenshell.api.constraint.unassign_constraint(
-            self.file, products=[element1, element2], constraint=constraint
-        )
+        ifcopenshell.api.constraint.assign_constraint(self.file, products=[element2, element3], constraint=constraint)
+        ifcopenshell.api.constraint.unassign_constraint(self.file, products=[element1, element2], constraint=constraint)
         assert rel.RelatedObjects == (element3,)
 
 

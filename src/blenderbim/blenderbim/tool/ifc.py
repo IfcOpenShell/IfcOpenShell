@@ -26,10 +26,23 @@ import blenderbim.core.tool
 import blenderbim.bim.handler
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore, IFC_CONNECTED_TYPE
-from typing import Optional, Union, Any, final
+from typing import Optional, Union, Any, final, Literal
 
 
 class Ifc(blenderbim.core.tool.Ifc):
+    OBJECT_TYPE = Literal[
+        "Object",
+        "Material",
+        "MaterialSet",
+        "MaterialSetItem",
+        "Task",
+        "Cost",
+        "Resource",
+        "Profile",
+        "WorkSchedule",
+        "Group",
+    ]
+
     @classmethod
     def run(cls, command: str, **kwargs) -> Any:
         return ifcopenshell.api.run(command, IfcStore.get_file(), **kwargs)

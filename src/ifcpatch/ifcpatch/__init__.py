@@ -26,6 +26,7 @@ import typing
 import inspect
 import collections
 import importlib
+import importlib.util
 from typing import Union
 
 
@@ -158,6 +159,9 @@ def _extract_docs(cls, method_name, boilerplate_args):
             continue
         if isinstance(type_hint, typing._UnionGenericAlias):
             inputs[input_name]["type"] = [t.__name__ for t in typing.get_args(type_hint)]
+        elif type_hint.__name__ == "Literal":
+            inputs[input_name]["type"] = "Literal"
+            inputs[input_name]["enum_items"] = list(typing.get_args(type_hint))
         else:
             inputs[input_name]["type"] = type_hint.__name__
 
@@ -174,6 +178,10 @@ def _extract_docs(cls, method_name, boilerplate_args):
                 param_name = line.split(":")[1].strip().replace("param ", "")
                 if param_name in inputs:
                     inputs[param_name]["description"] = line.split(":")[2].strip()
+            elif line.startswith(":filter_glob"):
+                param_name = line.split(":")[1].strip().replace("filter_glob ", "")
+                if param_name in inputs:
+                    inputs[param_name]["filter_glob"] = line.split(":")[2].strip()
             elif i == 2:
                 description += line
             elif i > 2:

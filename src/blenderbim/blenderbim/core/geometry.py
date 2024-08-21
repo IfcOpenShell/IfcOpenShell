@@ -126,8 +126,7 @@ def switch_representation(
     if not current_obj_data and geometry.is_text_literal(representation):
         return
 
-    use_immediate_repr = apply_openings and bool(getattr(entity, "HasOpenings", None))
-    use_immediate_repr = use_immediate_repr or geometry.has_material_style_override(entity)
+    use_immediate_repr = geometry.should_use_immediate_representation(entity, apply_openings)
     if use_immediate_repr:
         # if it has openings make sure to switch to element's mapped representation
         representation = geometry.unresolve_type_representation(representation, entity)
@@ -169,8 +168,11 @@ def get_representation_ifc_parameters(
 def remove_representation(
     ifc: tool.Ifc, geometry: tool.Geometry, obj: bpy.types.Object, representation: ifcopenshell.entity_instance
 ) -> None:
-    """Consider changing obj representation before using the function,
-    otherwise it will replace object with empty."""
+    """Remove IFC representation from an object.
+
+    If removed representation is active will automatically change it to some other one.
+    If it is the object's only representation, object will be recreated as an empty.
+    """
 
     element = ifc.get_entity(obj)
     assert element

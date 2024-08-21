@@ -1110,5 +1110,5 @@ def draw_custom_context_menu(self, context):
             url = docs.get("spec_url", "")
             if url:
                 layout.separator()
-                url_op = layout.operator("bim.open_webbrowser", icon="URL", text="Online IFC Documentation")
-                url_op.url = url
+                url_op = layout.operator("bim.open_uri", icon="URL", text="Online IFC Documentation")
+                url_op.uri = url

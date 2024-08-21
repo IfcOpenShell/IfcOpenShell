@@ -91,6 +91,8 @@ class Loader(blenderbim.core.tool.Loader):
 
     @classmethod
     def get_name(cls, element: ifcopenshell.entity_instance) -> str:
+        if element.is_a("IfcGridAxis"):
+            return "{}/{}".format(element.is_a(), element.AxisTag)
         return "{}/{}".format(element.is_a(), getattr(element, "Name", "None"))
 
     @classmethod
@@ -695,7 +697,7 @@ class Loader(blenderbim.core.tool.Loader):
         cls.settings.false_origin = ifcopenshell.util.geolocation.auto_xyz2enh(
             ifc_file, *offset_point, should_return_in_map_units=False
         )
-        if angle := ifcopenshell.util.geolocation.get_grid_north(ifc_file):
+        if (angle := ifcopenshell.util.geolocation.get_grid_north(ifc_file)) and not tool.Cad.is_x(angle, 0):
             cls.settings.project_north = angle
         cls.set_manual_blender_offset(ifc_file)
 

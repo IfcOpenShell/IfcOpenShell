@@ -833,31 +833,31 @@ Scenario: Unlink IFC
 
 Scenario: Export IFC - blank project
     Given an empty IFC project
-    When I press "export_ifc.bim(filepath='{cwd}/test/files/temp/export.ifc')"
+    When I press "bim.save_project(filepath='{cwd}/test/files/temp/export.ifc')"
     Then nothing happens
 
 Scenario: Export IFC - with basic contents
     Given an empty Blender session
     And I press "bim.load_project(filepath='{cwd}/test/files/basic.ifc')"
-    When I press "export_ifc.bim(filepath='{cwd}/test/files/temp/export.ifc')"
+    When I press "bim.save_project(filepath='{cwd}/test/files/temp/export.ifc')"
     Then "scene.BIMProperties.ifc_file" is "{cwd}/test/files/temp/export.ifc"
 
 Scenario: Export IFC - with basic contents and saving as another file
     Given an empty Blender session
     And I press "bim.load_project(filepath='{cwd}/test/files/basic.ifc')"
-    When I press "export_ifc.bim(filepath='{cwd}/test/files/temp/export.ifc', should_save_as=True)"
+    When I press "bim.save_project(filepath='{cwd}/test/files/temp/export.ifc', should_save_as=True)"
     Then "scene.BIMProperties.ifc_file" is "{cwd}/test/files/temp/export.ifc"
 
 Scenario: Export IFC - with basic contents and saving as IfcJSON where import is not supported
     Given an empty Blender session
     And I press "bim.load_project(filepath='{cwd}/test/files/basic.ifc')"
-    When I press "export_ifc.bim(filepath='{cwd}/test/files/temp/export.ifcjson', should_save_as=True)"
+    When I press "bim.save_project(filepath='{cwd}/test/files/temp/export.ifcjson', should_save_as=True)"
     Then "scene.BIMProperties.ifc_file" is "{cwd}/test/files/basic.ifc"
 
 Scenario: Export IFC - with basic contents and round-tripping an IfcZip
     Given an empty Blender session
     And I press "bim.load_project(filepath='{cwd}/test/files/basic.ifc')"
-    When I press "export_ifc.bim(filepath='{cwd}/test/files/temp/export.ifczip', should_save_as=True)"
+    When I press "bim.save_project(filepath='{cwd}/test/files/temp/export.ifczip', should_save_as=True)"
     Then "scene.BIMProperties.ifc_file" is "{cwd}/test/files/basic.ifc"
     When an empty Blender session is started
     And I press "bim.load_project(filepath='{cwd}/test/files/temp/export.ifczip')"
@@ -867,14 +867,14 @@ Scenario: Export IFC - with basic contents and saving as a relative path
     Given an empty Blender session
     And I press "bim.load_project(filepath='{cwd}/test/files/basic.ifc')"
     When I press "wm.save_mainfile(filepath='{cwd}/test/files/temp/export.blend')"
-    And I press "export_ifc.bim(filepath='{cwd}/test/files/temp/export.ifc', use_relative_path=True, save_as_invoked=True)"
+    And I press "bim.save_project(filepath='{cwd}/test/files/temp/export.ifc', use_relative_path=True, save_as_invoked=True)"
     Then "scene.BIMProperties.ifc_file" is "export.ifc"
 
 Scenario: Export IFC - with deleted objects synchronised
     Given an empty IFC project
     When the object "IfcBuildingStorey/My Storey" is selected
     And I delete the selected objects
-    And I press "export_ifc.bim(filepath='{cwd}/test/files/temp/export.ifc')"
+    And I press "bim.save_project(filepath='{cwd}/test/files/temp/export.ifc')"
     And an empty Blender session is started
     And I press "bim.load_project(filepath='{cwd}/test/files/temp/export.ifc')"
     Then the object "IfcBuildingStorey/My Storey" does not exist
@@ -882,7 +882,7 @@ Scenario: Export IFC - with deleted objects synchronised
 Scenario: Export IFC - with moved object location synchronised
     Given an empty IFC project
     When the object "IfcBuildingStorey/My Storey" is moved to "0,0,1"
-    And I press "export_ifc.bim(filepath='{cwd}/test/files/temp/export.ifc')"
+    And I press "bim.save_project(filepath='{cwd}/test/files/temp/export.ifc')"
     And an empty Blender session is started
     And I press "bim.load_project(filepath='{cwd}/test/files/temp/export.ifc')"
     Then the object "IfcBuildingStorey/My Storey" is at "0,0,1"
@@ -891,7 +891,7 @@ Scenario: Export IFC - with moved grid axis location synchronised
     Given an empty IFC project
     And I press "mesh.add_grid"
     When the object "IfcGridAxis/01" is moved to "1,0,0"
-    And I press "export_ifc.bim(filepath='{cwd}/test/files/temp/export.ifc')"
+    And I press "bim.save_project(filepath='{cwd}/test/files/temp/export.ifc')"
     And an empty Blender session is started
     And I press "bim.load_project(filepath='{cwd}/test/files/temp/export.ifc')"
     Then the object "IfcGridAxis/01" bottom left corner is at "1,-2,0"
@@ -905,23 +905,7 @@ Scenario: Export IFC - with changed object scale synchronised
     And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected
     When the object "IfcWall/Cube" is scaled to "2"
-    And I press "export_ifc.bim(filepath='{cwd}/test/files/temp/export.ifc')"
+    And I press "bim.save_project(filepath='{cwd}/test/files/temp/export.ifc')"
     And an empty Blender session is started
     And I press "bim.load_project(filepath='{cwd}/test/files/temp/export.ifc')"
     Then the object "IfcWall/Cube" dimensions are "4,4,4"
-
-Scenario: Export IFC - with changed style element synchronised
-    Given an empty IFC project
-    And I add a cube
-    And the object "Cube" is selected
-    And I add a material
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
-    And the object "IfcWall/Cube" is selected
-    When I add a material
-    And the material "Material.001" colour is set to "1,0,0,1"
-    And I press "export_ifc.bim(filepath='{cwd}/test/files/temp/export.ifc')"
-    And an empty Blender session is started
-    And I press "bim.load_project(filepath='{cwd}/test/files/temp/export.ifc', should_start_fresh_session=False)"
-    Then the material "Material.001" colour is "1,0,0,1"

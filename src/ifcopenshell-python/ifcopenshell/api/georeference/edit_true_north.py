@@ -57,7 +57,7 @@ def edit_true_north(file: ifcopenshell.file, true_north: Optional[Union[tuple[fl
 
     for context in file.by_type("IfcGeometricRepresentationContext", include_subtypes=False):
         if context.TrueNorth and true_north is None:
-            old_true_north =  context.TrueNorth
+            old_true_north = context.TrueNorth
             context.TrueNorth = None
             if not file.get_total_inverses(old_true_north):
                 ifcopenshell.util.element.remove_deep2(file, old_true_north)

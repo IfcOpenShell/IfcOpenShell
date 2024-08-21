@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import bpy
 import blf
 import gpu
 import bmesh
@@ -61,10 +62,10 @@ class GeoreferenceDecorator:
         self.calculate_angles(context)
         props = context.scene.BIMGeoreferenceProperties
         e, n, h = [round(float(o), 7) for o in props.model_origin.split(",")]
-
-        wcs_matrix = None
-        if GeoreferenceData.data["world_coordinate_system"]["has_transformation"]:
-            wcs_matrix = GeoreferenceData.data["world_coordinate_system"]["matrix"]
+        if (operation := GeoreferenceData.data["coordinate_operation"]) and (scale := operation.get("Scale", None)):
+            e *= scale
+            n *= scale
+            h *= scale
 
         self.addon_prefs = tool.Blender.get_addon_preferences()
 
@@ -75,10 +76,14 @@ class GeoreferenceDecorator:
         blf.enable(self.font_id, blf.SHADOW)
         blf.shadow(self.font_id, 6, 0, 0, 0, 1)
 
-        text = "Blender Coordinates X: 0, Y: 0, Z: 0"
+        if props.has_blender_offset:
+            text = "Blender Origin"
+            text += f"\nBlender Coordinates ({GeoreferenceData.data['local_unit_symbol']}) X: 0, Y: 0, Z: 0"
+        else:
+            text = "IFC Local Origin"
         text += f"\nLocal Coordinates ({GeoreferenceData.data['local_unit_symbol']}) X: {props.blender_offset_x}, Y: {props.blender_offset_y}, Z: {props.blender_offset_z}"
         if GeoreferenceData.data["projected_crs"]:
-            text += f"\nMap Coordinates ({GeoreferenceData.data['local_unit_symbol']}) E: {e}, N: {n}, H: {h}"
+            text += f"\nMap Coordinates ({GeoreferenceData.data['map_unit_symbol']}) E: {e}, N: {n}, H: {h}"
         self.draw_text_at_position(context, text, Vector((0, -0.1, 0)))
 
         angle = Matrix.Rotation(radians(self.pn_angle), 4, "Z")
@@ -111,24 +116,41 @@ class GeoreferenceDecorator:
             arc_mid = angle_half @ arc_start
             self.draw_text_at_position(context, f"{self.tn_angle}deg", arc_mid)
 
-        if wcs_matrix:
-            x, y, z = wcs_matrix.translation
+        if (wcs := GeoreferenceData.data["world_coordinate_system"]) and wcs["has_transformation"]:
+            text = "WCS"
+            if props.has_blender_offset:
+                text += f"\nBlender Coordinates ({GeoreferenceData.data['local_unit_symbol']}) X: {wcs['blender_x']}, Y: {wcs['blender_y']}, Z: {wcs['blender_z']}"
+            text += f"\nLocal Coordinates ({GeoreferenceData.data['local_unit_symbol']}) X: {wcs['x']}, Y: {wcs['y']}, Z: {wcs['z']}"
             if operation := GeoreferenceData.data["coordinate_operation"]:
                 e = operation.get("Eastings")
                 n = operation.get("Northings")
                 h = operation.get("OrthogonalHeight")
-                text = f"WCS\n X: {x}, Y: {y}, Z: {z}\nE: {e}, N: {n}, H: {h}"
-            else:
-                text = f"WCS\n X: {x}, Y: {y}, Z: {z}"
+                text += f"\nMap Coordinates ({GeoreferenceData.data['map_unit_symbol']}) E: {e}, N: {n}, H: {h}"
 
-            if wcs_matrix.translation.length < 1000:
-                position = wcs_matrix.translation.copy()
+            if wcs["blender_location"].length < 1000:
+                position = wcs["blender_location"].copy()
             else:
-                position = wcs_matrix.translation.normalized() * 3
+                position = wcs["blender_location"].normalized() * 3
                 text += "\n(Warning: Actual XYZ Not Shown)"
             position -= Vector((0, 0.1, 0))
 
             self.draw_text_at_position(context, text, position)
+
+        if props.has_blender_offset:
+            text = "IFC Local Origin"
+            x = GeoreferenceData.data["local_origin"]["x"]
+            y = GeoreferenceData.data["local_origin"]["y"]
+            z = GeoreferenceData.data["local_origin"]["z"]
+            location = GeoreferenceData.data["local_origin"]["location"]
+            text += f"\nBlender Coordinates ({GeoreferenceData.data['local_unit_symbol']}) X: {x}, Y: {y}, Z: {z}"
+            text += f"\nLocal Coordinates ({GeoreferenceData.data['local_unit_symbol']}) X: 0, Y: 0, Z: 0"
+            if GeoreferenceData.data["projected_crs"]:
+                e, n, h = GeoreferenceData.data["local_origin"]["enh"]
+                text += f"\nMap Coordinates ({GeoreferenceData.data['map_unit_symbol']}) E: {e}, N: {n}, H: {h}"
+            if location.length > 1000:
+                location = location.normalized() * 3
+                text += "\n(Warning: Actual XYZ Not Shown)"
+            self.draw_text_at_position(context, text, location)
 
     def draw_text_at_position(self, context, text, position):
         coords_2d = location_3d_to_region_2d(context.region, context.region_data, position)
@@ -143,10 +165,6 @@ class GeoreferenceDecorator:
 
     def draw_geometry(self, context):
         self.calculate_angles(context)
-
-        wcs_matrix = None
-        if GeoreferenceData.data["world_coordinate_system"]["has_transformation"]:
-            wcs_matrix = GeoreferenceData.data["world_coordinate_system"]["matrix"]
 
         self.addon_prefs = tool.Blender.get_addon_preferences()
         decorator_color = self.addon_prefs.decorations_colour
@@ -263,24 +281,50 @@ class GeoreferenceDecorator:
             verts, edges = arc_segments
             self.draw_batch("LINES", verts, decorator_color_special, edges)
 
-        if wcs_matrix:
-            if wcs_matrix.translation.length < 1000:
-                verts = [Vector((0, 0, 0)), wcs_matrix.translation]
+        if (wcs := GeoreferenceData.data["world_coordinate_system"]) and wcs["has_transformation"]:
+            if wcs["blender_location"].length < 1000:
+                verts = [Vector((0, 0, 0)), wcs["blender_location"]]
                 edges = [[0, 1]]
                 self.draw_batch("LINES", verts, decorator_color_special, edges)
                 self.draw_batch("POINTS", verts[1:], decorator_color_special)
             else:
+                location = wcs["blender_location"].normalized()
                 edges = [[0, 1]]
-                verts = [Vector((0, 0, 0)), wcs_matrix.translation.normalized() * 3]
+                verts = [Vector((0, 0, 0)), location * 3]
                 self.draw_batch("LINES", verts, decorator_color_special, edges)
-                verts = [wcs_matrix.translation.normalized() * 3, wcs_matrix.translation.normalized() * 3.1]
-                self.draw_batch("LINES", verts, decorator_color_error, edges)
-                verts = [wcs_matrix.translation.normalized() * 3.12, wcs_matrix.translation.normalized() * 3.2]
-                self.draw_batch("LINES", verts, decorator_color_error, edges)
-                verts = [wcs_matrix.translation.normalized() * 3.22, wcs_matrix.translation.normalized() * 3.3]
-                self.draw_batch("LINES", verts, decorator_color_error, edges)
-                verts = [wcs_matrix.translation.normalized() * 3.32, wcs_matrix.translation.normalized() * 3.4]
-                self.draw_batch("LINES", verts, decorator_color_error, edges)
+                self.draw_dashed_line(location * 3, location * 6, decorator_color_error)
+
+        props = context.scene.BIMGeoreferenceProperties
+        if props.has_blender_offset:
+            location = GeoreferenceData.data["local_origin"]["location"]
+            if location.length < 1000:
+                verts = [Vector((0, 0, 0)), location]
+                edges = [[0, 1]]
+                self.draw_batch("LINES", verts, decorator_color_special, edges)
+                self.draw_batch("POINTS", verts[1:], decorator_color_special)
+            else:
+                location = location.normalized()
+                edges = [[0, 1]]
+                verts = [Vector((0, 0, 0)), location * 3]
+                self.draw_batch("LINES", verts, decorator_color_special, edges)
+                self.draw_dashed_line(location * 3, location * 6, decorator_color_error)
+
+    def draw_dashed_line(self, start, end, colour):
+        direction = (end - start).normalized()
+        distance = (end - start).length
+        current_distance = Vector((0, 0, 0))
+        gap = 0.05 * direction
+        dash = 0.1 * direction
+        points = [start]
+        while current_distance.length < distance:
+            points.append(start + current_distance + dash)
+            points.append(start + current_distance + dash + gap)
+            current_distance += gap + dash
+        points.pop()
+
+        edges = [[i, i + 1] for i in range(0, len(points), 2)]
+        verts = points
+        self.draw_batch("LINES", verts, colour, edges)
 
     def calculate_angles(self, context):
         self.pn_angle = 0.0

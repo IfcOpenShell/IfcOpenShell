@@ -30,30 +30,29 @@ class TestReferenceStructure:
 class TestDereferenceStructure:
     def test_run(self, ifc, spatial):
         spatial.can_reference("structure", "element").should_be_called().will_return(True)
-        ifc.run("spatial.dereference_structure", products=["element"], relating_structure="structure").should_be_called()
+        ifc.run(
+            "spatial.dereference_structure", products=["element"], relating_structure="structure"
+        ).should_be_called()
         subject.dereference_structure(ifc, spatial, structure="structure", element="element")
 
 
 class TestAssignContainer:
     def test_run(self, ifc, collector, spatial):
-        spatial.can_contain("structure_obj", "element_obj").should_be_called().will_return(True)
-        ifc.get_entity("structure_obj").should_be_called().will_return("structure")
+        spatial.can_contain("container", "element_obj").should_be_called().will_return(True)
         ifc.get_entity("element_obj").should_be_called().will_return("element")
         ifc.run(
-            "spatial.assign_container", products=["element"], relating_structure="structure"
+            "spatial.assign_container", products=["element"], relating_structure="container"
         ).should_be_called().will_return("rel")
         spatial.disable_editing("element_obj").should_be_called()
         collector.assign("element_obj").should_be_called()
         assert (
-            subject.assign_container(ifc, collector, spatial, structure_obj="structure_obj", element_obj="element_obj")
-            == "rel"
+            subject.assign_container(ifc, collector, spatial, container="container", element_obj="element_obj") == "rel"
         )
 
 
 class TestEnableEditingContainer:
     def test_run(self, spatial):
         spatial.enable_editing("obj").should_be_called()
-        spatial.import_containers().should_be_called()
         subject.enable_editing_container(spatial, obj="obj")
 
 
@@ -61,12 +60,6 @@ class TestDisableEditingContainer:
     def test_run(self, spatial):
         spatial.disable_editing("obj").should_be_called()
         subject.disable_editing_container(spatial, obj="obj")
-
-
-class TestChangeSpatialLevel:
-    def test_run(self, spatial):
-        spatial.import_containers(parent="parent").should_be_called()
-        subject.change_spatial_level(spatial, parent="parent")
 
 
 class TestRemoveContainer:
@@ -88,7 +81,7 @@ class TestCopyToContainer:
         spatial.duplicate_object_and_data("obj").should_be_called().will_return("new_obj")
         spatial.set_relative_object_matrix("new_obj", "to_container_obj", "matrix").should_be_called()
         spatial.run_root_copy_class(obj="new_obj").should_be_called()
-        spatial.run_spatial_assign_container(structure_obj="to_container_obj", element_obj="new_obj").should_be_called()
+        spatial.run_spatial_assign_container(container="to_container", element_obj="new_obj").should_be_called()
 
         spatial.disable_editing("obj").should_be_called()
 
@@ -103,7 +96,7 @@ class TestCopyToContainer:
         spatial.duplicate_object_and_data("obj").should_be_called().will_return("new_obj")
         spatial.set_relative_object_matrix("new_obj", "to_container_obj", "matrix").should_be_called()
         spatial.run_root_copy_class(obj="new_obj").should_be_called()
-        spatial.run_spatial_assign_container(structure_obj="to_container_obj", element_obj="new_obj").should_be_called()
+        spatial.run_spatial_assign_container(container="to_container", element_obj="new_obj").should_be_called()
 
         spatial.disable_editing("obj").should_be_called()
 
@@ -112,11 +105,9 @@ class TestCopyToContainer:
 
 class TestSelectContainer:
     def test_run(self, ifc, spatial):
-        ifc.get_entity("obj").should_be_called().will_return("element")
-        spatial.get_container("element").should_be_called().will_return("container")
         ifc.get_object("container").should_be_called().will_return("container_obj")
         spatial.set_active_object("container_obj").should_be_called()
-        subject.select_container(ifc, spatial, obj="obj")
+        subject.select_container(ifc, spatial, container="container")
 
 
 class TestSelectSimilarContainer:

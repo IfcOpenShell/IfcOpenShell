@@ -159,13 +159,21 @@ class TestAddBrick:
         brick.run_assign_brick_reference(element="element", library="library", brick_uri="brick_uri").should_be_called()
         brick.run_refresh_brick_viewer().should_be_called()
         subject.add_brick(
-            ifc, brick, element="element", namespace="namespace", brick_class="brick_class", library="library", label="label"
+            ifc,
+            brick,
+            element="element",
+            namespace="namespace",
+            brick_class="brick_class",
+            library="library",
+            label="label",
         )
 
     def test_adding_a_plain_brick(self, ifc, brick):
         brick.add_brick("namespace", "brick_class", "label").should_be_called()
         brick.run_refresh_brick_viewer().should_be_called()
-        subject.add_brick(ifc, brick, element=None, namespace="namespace", brick_class="brick_class", library=None, label="label")
+        subject.add_brick(
+            ifc, brick, element=None, namespace="namespace", brick_class="brick_class", library=None, label="label"
+        )
 
 
 class TestAddBrickRelation:
@@ -197,24 +205,42 @@ class TestConvertIfcToBrick:
 
         brick.get_convertable_brick_elements().should_be_called().will_return({"element", "downstream_element"})
         brick.get_brick_class("element").should_be_called().will_return("element_class")
-        brick.add_brick_from_element("element", "namespace", "element_class").should_be_called().will_return("element_uri")
+        brick.add_brick_from_element("element", "namespace", "element_class").should_be_called().will_return(
+            "element_uri"
+        )
         brick.get_element_container("element").should_be_called().will_return("space")
-        brick.add_relation("element_uri", "https://brickschema.org/schema/Brick#hasLocation", "space_uri").should_be_called()
+        brick.add_relation(
+            "element_uri", "https://brickschema.org/schema/Brick#hasLocation", "space_uri"
+        ).should_be_called()
         brick.get_element_systems("element").should_be_called().will_return(["system"])
-        brick.add_relation("system_uri", "https://brickschema.org/schema/Brick#hasPart", "element_uri").should_be_called()
-        brick.run_assign_brick_reference(element="element", library="library", brick_uri="element_uri").should_be_called()
+        brick.add_relation(
+            "system_uri", "https://brickschema.org/schema/Brick#hasPart", "element_uri"
+        ).should_be_called()
+        brick.run_assign_brick_reference(
+            element="element", library="library", brick_uri="element_uri"
+        ).should_be_called()
 
         brick.get_brick_class("downstream_element").should_be_called().will_return("downstream_element_class")
-        brick.add_brick_from_element("downstream_element", "namespace", "downstream_element_class").should_be_called().will_return("downstream_element_uri")
+        brick.add_brick_from_element(
+            "downstream_element", "namespace", "downstream_element_class"
+        ).should_be_called().will_return("downstream_element_uri")
         brick.get_element_container("downstream_element").should_be_called().will_return("space")
-        brick.add_relation("downstream_element_uri", "https://brickschema.org/schema/Brick#hasLocation", "space_uri").should_be_called()
+        brick.add_relation(
+            "downstream_element_uri", "https://brickschema.org/schema/Brick#hasLocation", "space_uri"
+        ).should_be_called()
         brick.get_element_systems("downstream_element").should_be_called().will_return(["system"])
-        brick.add_relation("system_uri", "https://brickschema.org/schema/Brick#hasPart", "downstream_element_uri").should_be_called()
-        brick.run_assign_brick_reference(element="downstream_element", library="library", brick_uri="downstream_element_uri").should_be_called()
+        brick.add_relation(
+            "system_uri", "https://brickschema.org/schema/Brick#hasPart", "downstream_element_uri"
+        ).should_be_called()
+        brick.run_assign_brick_reference(
+            element="downstream_element", library="library", brick_uri="downstream_element_uri"
+        ).should_be_called()
 
         brick.get_element_feeds("element").should_be_called().will_return(["downstream_element"])
         brick.get_element_feeds("downstream_element").should_be_called().will_return([])
-        brick.add_relation("element_uri", "https://brickschema.org/schema/Brick#feeds", "downstream_element_uri").should_be_called()
+        brick.add_relation(
+            "element_uri", "https://brickschema.org/schema/Brick#feeds", "downstream_element_uri"
+        ).should_be_called()
         brick.run_refresh_brick_viewer().should_be_called()
         subject.convert_ifc_to_brick(brick, namespace="namespace", library="library")
 

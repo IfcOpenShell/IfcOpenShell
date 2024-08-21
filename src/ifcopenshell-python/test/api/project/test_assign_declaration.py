@@ -57,9 +57,7 @@ class TestAssignDeclaration(test.bootstrap.IFC4):
     def test_that_old_relationships_are_updated_if_they_still_contain_elements(self):
         element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
         library = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProjectLibrary")
-        ifcopenshell.api.project.assign_declaration(
-            self.file, definitions=[element_type], relating_context=library
-        )
+        ifcopenshell.api.project.assign_declaration(self.file, definitions=[element_type], relating_context=library)
         rel = self.file.by_type("IfcRelDeclares")[0]
 
         element_type2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")

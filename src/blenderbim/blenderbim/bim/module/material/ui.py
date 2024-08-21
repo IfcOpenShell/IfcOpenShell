@@ -223,7 +223,7 @@ class BIM_PT_object_material(Panel):
             row = self.layout.row(align=True)
             row.label(text="No Profiles Available")
             row.operator("bim.add_profile_def", icon="ADD", text="")
-        else:            
+        else:
             row = self.layout.row(align=True)
             if ObjectMaterialData.data["set_item_name"] == "profile":
                 prop_with_search(row, self.mprops, "profiles", icon="ITALIC", text="")
@@ -235,7 +235,10 @@ class BIM_PT_object_material(Panel):
         row = self.layout.row(align=True)
         row.label(text="----- Exterior -----")
         for index, set_item in enumerate(ObjectMaterialData.data["set_items"]):
-            if len(self.props.material_set_item_profile_attributes) and self.props.active_material_set_item_id == set_item["id"]:
+            if (
+                len(self.props.material_set_item_profile_attributes)
+                and self.props.active_material_set_item_id == set_item["id"]
+            ):
                 self.draw_editable_set_item_profile_ui(set_item)
             elif self.props.active_material_set_item_id == set_item["id"]:
                 self.draw_editable_set_item_ui(set_item)
@@ -341,7 +344,9 @@ class BIM_PT_object_material(Panel):
                 precision = bpy.context.scene.DocProperties.imperial_precision
             else:
                 precision = None
-            formatted_thickness = format_distance(total_thickness, precision=precision, suppress_zero_inches=True, in_unit_length = True)
+            formatted_thickness = format_distance(
+                total_thickness, precision=precision, suppress_zero_inches=True, in_unit_length=True
+            )
             row = self.layout.row(align=True)
             row.label(text=f"Total Thickness: {formatted_thickness}")
 

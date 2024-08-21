@@ -25,6 +25,7 @@ classes = (
     operator.CalculateFaceAreas,
     operator.CalculateFormworkArea,
     operator.CalculateObjectVolumes,
+    operator.CalculateSideFormworkArea,
     operator.CalculateSingleQuantity,
     operator.PerformQuantityTakeOff,
     prop.BIMQtoProperties,

@@ -1,4 +1,5 @@
 """XML Parser and Serializer factories."""
+
 from typing import Optional, Protocol, Type, TypeVar
 
 from xsdata.formats.dataclass.context import XmlContext

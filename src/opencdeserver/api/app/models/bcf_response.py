@@ -2,9 +2,9 @@ from models.bcf_common import *
 
 
 class ProjectAction(Enum):
-    update = 'update'
-    createTopic = 'createTopic'
-    createDocument = 'createDocument'
+    update = "update"
+    createTopic = "createTopic"
+    createDocument = "createDocument"
 
 
 class ProjectGETAuthorization(BaseModel):
@@ -18,19 +18,19 @@ class ProjectGET(BaseModel):
 
 
 class TopicAction(Enum):
-    update = 'update'
-    updateBimSnippet = 'updateBimSnippet'
-    updateRelatedTopics = 'updateRelatedTopics'
-    updateDocumentReferences = 'updateDocumentReferences'
-    updateFiles = 'updateFiles'
-    createComment = 'createComment'
-    createViewpoint = 'createViewpoint'
-    delete = 'delete'
+    update = "update"
+    updateBimSnippet = "updateBimSnippet"
+    updateRelatedTopics = "updateRelatedTopics"
+    updateDocumentReferences = "updateDocumentReferences"
+    updateFiles = "updateFiles"
+    createComment = "createComment"
+    createViewpoint = "createViewpoint"
+    delete = "delete"
 
 
 class CommentAction(Enum):
-    update = 'update'
-    delete = 'delete'
+    update = "update"
+    delete = "delete"
 
 
 class ExtensionsGET(BaseModel):
@@ -123,7 +123,7 @@ class SnapshotGET(BaseModel):
 
 
 class ViewpointAction(Enum):
-    delete = 'delete'
+    delete = "delete"
 
 
 class ViewpointGETAuthorization(BaseModel):
@@ -174,6 +174,8 @@ class TopicEventGET(BaseModel):
     topic_guid: str
     date: str
     author: str
+
+
 #     actions: Optional[List[EventAction]] = Field(None, min_items=1)
 
 
@@ -182,6 +184,8 @@ class CommentEventGET(BaseModel):
     topic_guid: str
     date: str
     author: str
+
+
 #     actions: Optional[List[EventAction]] = Field(None, min_items=1)
 
 

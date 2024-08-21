@@ -87,37 +87,6 @@ class GetCursorLocation(bpy.types.Operator, tool.Ifc.Operator):
         core.get_cursor_location(tool.Georeference)
 
 
-class ConvertLocalToGlobal(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.convert_local_to_global"
-    bl_label = "Convert Local To Global"
-    bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Convert local coordinate to global coordinate"
-
-    @classmethod
-    def poll(cls, context):
-        file = tool.Ifc.get()
-        props = context.scene.BIMGeoreferenceProperties
-        return file and props.local_coordinates.count(",") == 2
-
-    def _execute(self, context):
-        core.convert_local_to_global(tool.Georeference)
-
-
-class ConvertGlobalToLocal(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.convert_global_to_local"
-    bl_label = "Convert Global To Local"
-    bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Convert global coordinate to local coordinate"
-
-    @classmethod
-    def poll(cls, context):
-        file = tool.Ifc.get()
-        props = context.scene.BIMGeoreferenceProperties
-        return file and file.by_type("IfcUnitAssignment") and props.local_coordinates.count(",") == 2
-
-    def _execute(self, context):
-        core.convert_global_to_local(tool.Georeference)
-
 class ConvertAngleToCoordinates(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.convert_angle_to_coord"
     bl_label = "Convert Angle To Y Axis"

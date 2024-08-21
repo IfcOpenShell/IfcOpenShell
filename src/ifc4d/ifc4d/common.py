@@ -246,12 +246,11 @@ class ScheduleIfcGenerator:
                 "ScheduleStart": activity["StartDate"],
                 "ScheduleFinish": activity["FinishDate"],
                 "DurationType": "WORKTIME" if activity["PlannedDuration"] else None,
-                "ScheduleDuration": timedelta(
-                    days=float(activity["PlannedDuration"]) / float(calendar["HoursPerDay"] or 8)
-                )
-                or None
-                if activity["PlannedDuration"]
-                else None,
+                "ScheduleDuration": (
+                    timedelta(days=float(activity["PlannedDuration"]) / float(calendar["HoursPerDay"] or 8)) or None
+                    if activity["PlannedDuration"]
+                    else None
+                ),
             },
         )
 

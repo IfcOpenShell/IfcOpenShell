@@ -33,6 +33,8 @@ from typing import TypeVar, Union, Optional, Generator, Any, Literal, overload, 
 if TYPE_CHECKING:
     from OCC.Core import TopoDS
 
+    IteratorOutput = Union["ShapeElementType", "utils.shape_tuple"]
+
 T = TypeVar("T")
 ShapeElementType = Union[
     ifcopenshell_wrapper.BRepElement, ifcopenshell_wrapper.TriangulationElement, ifcopenshell_wrapper.SerializedElement
@@ -273,7 +275,7 @@ class iterator(ifcopenshell_wrapper.Iterator):
         def get(self):
             return wrap_shape_creation(self.settings, ifcopenshell_wrapper.Iterator.get(self))
 
-    def __iter__(self) -> Generator[ShapeElementType, None, None]:
+    def __iter__(self) -> Generator[IteratorOutput, None, None]:
         if self.initialize():
             while True:
                 yield self.get()
@@ -412,7 +414,19 @@ def create_shape(
     )
 
 
-def consume_iterator(it, with_progress=False):
+@overload
+def consume_iterator(it: iterator, with_progress: Literal[False] = False) -> Generator[IteratorOutput, None, None]: ...
+@overload
+def consume_iterator(
+    it: iterator, with_progress: Literal[True]
+) -> Generator[tuple[int, IteratorOutput], None, None]: ...
+@overload
+def consume_iterator(
+    it: iterator, with_progress: bool
+) -> Generator[Union[IteratorOutput, tuple[int, IteratorOutput]], None, None]: ...
+def consume_iterator(
+    it: iterator, with_progress: bool = False
+) -> Generator[Union[IteratorOutput, tuple[int, IteratorOutput]], None, None]:
     if it.initialize():
         while True:
             if with_progress:
@@ -423,16 +437,49 @@ def consume_iterator(it, with_progress=False):
                 break
 
 
+@overload
 def iterate(
-    settings,
-    file_or_filename,
-    num_threads=1,
-    include=None,
-    exclude=None,
-    with_progress=False,
-    cache=None,
+    settings: settings,
+    file_or_filename: Union[file, str],
+    num_threads: int = 1,
+    include: Optional[Union[list[entity_instance], list[str]]] = None,
+    exclude: Optional[Union[list[entity_instance], list[str]]] = None,
+    with_progress: Literal[False] = False,
+    cache: Optional[serializers.hdf5] = None,
     geometry_library: GEOMETRY_LIBRARY = "opencascade",
-):
+) -> Generator[IteratorOutput, None, None]: ...
+@overload
+def iterate(
+    settings: settings,
+    file_or_filename: Union[file, str],
+    num_threads: int = 1,
+    include: Optional[Union[list[entity_instance], list[str]]] = None,
+    exclude: Optional[Union[list[entity_instance], list[str]]] = None,
+    with_progress: Literal[True] = True,
+    cache: Optional[serializers.hdf5] = None,
+    geometry_library: GEOMETRY_LIBRARY = "opencascade",
+) -> Generator[tuple[int, IteratorOutput], None, None]: ...
+@overload
+def iterate(
+    settings: settings,
+    file_or_filename: Union[file, str],
+    num_threads: int = 1,
+    include: Optional[Union[list[entity_instance], list[str]]] = None,
+    exclude: Optional[Union[list[entity_instance], list[str]]] = None,
+    with_progress: bool = False,
+    cache: Optional[serializers.hdf5] = None,
+    geometry_library: GEOMETRY_LIBRARY = "opencascade",
+) -> Generator[Union[IteratorOutput, tuple[int, IteratorOutput]], None, None]: ...
+def iterate(
+    settings: settings,
+    file_or_filename: Union[file, str],
+    num_threads: int = 1,
+    include: Optional[Union[list[entity_instance], list[str]]] = None,
+    exclude: Optional[Union[list[entity_instance], list[str]]] = None,
+    with_progress: bool = False,
+    cache: Optional[serializers.hdf5] = None,
+    geometry_library: GEOMETRY_LIBRARY = "opencascade",
+) -> Generator[Union[IteratorOutput, tuple[int, IteratorOutput]], None, None]:
     it = iterator(settings, file_or_filename, num_threads, include, exclude, geometry_library)
     if cache:
         hdf5_cache = serializers.hdf5(cache, settings)

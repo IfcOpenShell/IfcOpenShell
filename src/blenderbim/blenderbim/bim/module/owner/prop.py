@@ -79,7 +79,11 @@ def get_actor_type_enum(self, context):
     return [
         ("IfcPerson", "Person", get_entity_doc(version, "IfcPerson").get("description", "")),
         ("IfcOrganization", "Organisation", get_entity_doc(version, "IfcOrganization").get("description", "")),
-        ("IfcPersonAndOrganization", "User", get_entity_doc(version, "IfcPersonAndOrganization").get("description", "")),
+        (
+            "IfcPersonAndOrganization",
+            "User",
+            get_entity_doc(version, "IfcPersonAndOrganization").get("description", ""),
+        ),
     ]
 
 

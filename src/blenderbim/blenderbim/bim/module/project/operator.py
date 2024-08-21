@@ -127,7 +127,9 @@ class CreateProject(bpy.types.Operator):
                 bpy.data.meshes.remove(mesh)
             for mat in bpy.data.materials:
                 bpy.data.materials.remove(mat)
-        core.create_project(tool.Ifc, tool.Georeference, tool.Project, tool.Spatial, schema=props.export_schema, template=template)
+        core.create_project(
+            tool.Ifc, tool.Georeference, tool.Project, tool.Spatial, schema=props.export_schema, template=template
+        )
         blenderbim.bim.schema.reload(tool.Ifc.get().schema_identifier)
         tool.Blender.register_toolbar()
 
@@ -728,12 +730,12 @@ class LoadProject(bpy.types.Operator, IFCFileSelector):
             if not self.is_existing_ifc_file():
                 return {"FINISHED"}
 
-            if tool.Blender.is_default_scene():
+            if self.should_start_fresh_session and tool.Blender.is_default_scene():
                 for obj in bpy.data.objects:
                     bpy.data.objects.remove(obj)
 
             filepath = Path(self.get_filepath())
-            context.scene.BIMProperties.ifc_file = str(filepath)
+            context.scene.BIMProperties.ifc_file = filepath.as_posix()
             context.scene.BIMProjectProperties.is_loading = True
             context.scene.BIMProjectProperties.total_elements = len(tool.Ifc.get().by_type("IfcElement"))
             tool.Blender.register_toolbar()
@@ -741,6 +743,8 @@ class LoadProject(bpy.types.Operator, IFCFileSelector):
 
             if not self.is_advanced:
                 bpy.ops.bim.load_project_elements()
+                if not self.should_start_fresh_session:
+                    bpy.ops.bim.convert_to_blender()
         except:
             blenderbim.last_error = traceback.format_exc()
             raise
@@ -1233,6 +1237,10 @@ class ExportIFCBase:
         if bpy.data.is_saved:
             layout.prop(self, "use_relative_path")
 
+        layout.separator()
+        layout.label(text="Supported formats for export:")
+        layout.label(text=".ifc, .ifczip, .ifcjson")
+
     def invoke(self, context, event):
         if not tool.Ifc.get():
             bpy.ops.wm.save_mainfile("INVOKE_DEFAULT")
@@ -1329,18 +1337,6 @@ class ExportIFCBase:
 
 class ExportIFC(ExportIFCBase, bpy.types.Operator):
     pass
-
-
-# TODO: remove as deprecated, better wait couple releases since
-# this operator is used for saving IFC files in user scripts.
-class ExportIFCDeprecated(ExportIFCBase, bpy.types.Operator):
-    bl_idname = "export_ifc.bim"
-
-    def execute(self, context):
-        msg = f"'{ExportIFCDeprecated.bl_idname}' operator name is deprecated, use '{ExportIFC.bl_idname}'."
-        self.report({"WARNING"}, msg)
-        print(msg)
-        return super().execute(context)
 
 
 class LoadLinkedProject(bpy.types.Operator):

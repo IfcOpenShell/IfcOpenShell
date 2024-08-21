@@ -74,8 +74,7 @@ def get_calendar(task: ifcopenshell.entity_instance) -> Union[ifcopenshell.entit
     calendar = [
         rel.RelatingControl
         for rel in task.HasAssignments or []
-        if rel.is_a("IfcRelAssignsToControl")
-        and rel.RelatingControl.is_a("IfcWorkCalendar")
+        if rel.is_a("IfcRelAssignsToControl") and rel.RelatingControl.is_a("IfcWorkCalendar")
     ]
     if calendar:
         return calendar[0]
@@ -88,11 +87,7 @@ def count_working_days(start, finish, calendar: ifcopenshell.entity_instance) ->
     current_date = datetime.date(start.year, start.month, start.day)
     finish_date = datetime.date(finish.year, finish.month, finish.day)
     while current_date <= finish_date:
-        if (
-            calendar
-            and calendar.WorkingTimes
-            and is_working_day(current_date, calendar)
-        ):
+        if calendar and calendar.WorkingTimes and is_working_day(current_date, calendar):
             result += 1
         elif not calendar or not is_calendar_applicable(current_date, calendar):
             result += 1
@@ -132,9 +127,7 @@ def offset_date(start, duration, duration_type: DURATION_TYPE, calendar: ifcopen
     abs_duration = abs((duration.days + months * 30 + years * 12 * 30))
     date_offset = datetime.timedelta(days=1 if duration.days > 0 else -1)
     while abs_duration > 0:
-        if duration_type == "ELAPSEDTIME" or not is_calendar_applicable(
-            current_date, calendar
-        ):
+        if duration_type == "ELAPSEDTIME" or not is_calendar_applicable(current_date, calendar):
             abs_duration -= 1
         elif is_working_day(current_date, calendar):
             abs_duration -= 1
@@ -245,16 +238,13 @@ def is_work_time_applicable_to_day(work_time: ifcopenshell.entity_instance, day)
         return False  # TODO
     elif recurrence_type == "MONTHLY_BY_POSITION":
         if not recurrence.Interval and not recurrence.Occurrences:
-            return (day.weekday() + 1) in recurrence.WeekdayComponent and floor(
-                day.day / 7
-            ) + 1 == recurrence["Position"]
+            return (day.weekday() + 1) in recurrence.WeekdayComponent and floor(day.day / 7) + 1 == recurrence[
+                "Position"
+            ]
         return False  # TODO
     elif recurrence_type == "YEARLY_BY_DAY_OF_MONTH":
         if not recurrence.Interval and not recurrence.Occurrences:
-            return (
-                day.month in recurrence.MonthComponent
-                and day.day in recurrence.DayComponent
-            )
+            return day.month in recurrence.MonthComponent and day.day in recurrence.DayComponent
         return False  # TODO
     elif recurrence_type == "YEARLY_BY_POSITION":
         if not recurrence.Interval and not recurrence.Occurrences:
@@ -272,9 +262,7 @@ def get_task_work_schedule(task: ifcopenshell.entity_instance) -> Union[ifcopens
         return get_task_work_schedule(parent_task) or get_task_work_schedule(task)
     else:
         for rel in task.HasAssignments:
-            if rel.is_a("IfcRelAssignsToControl") and rel.RelatingControl.is_a(
-                "IfcWorkSchedule"
-            ):
+            if rel.is_a("IfcRelAssignsToControl") and rel.RelatingControl.is_a("IfcWorkSchedule"):
                 return rel.RelatingControl
         return None
 
@@ -304,21 +292,11 @@ def get_work_schedule_tasks(work_schedule: ifcopenshell.entity_instance) -> list
 
 
 def get_root_tasks(work_schedule: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
-    return [
-        obj
-        for rel in work_schedule.Controls
-        for obj in rel.RelatedObjects
-        if obj.is_a("IfcTask")
-    ]
+    return [obj for rel in work_schedule.Controls for obj in rel.RelatedObjects if obj.is_a("IfcTask")]
 
 
 def get_root_tasks_ids(work_schedule: ifcopenshell.entity_instance) -> list[int]:
-    return [
-        obj.id()
-        for rel in work_schedule.Controls
-        for obj in rel.RelatedObjects
-        if obj.is_a("IfcTask")
-    ]
+    return [obj.id() for rel in work_schedule.Controls for obj in rel.RelatedObjects if obj.is_a("IfcTask")]
 
 
 def guess_date_range(work_schedule: ifcopenshell.entity_instance):
@@ -344,22 +322,14 @@ def guess_date_range(work_schedule: ifcopenshell.entity_instance):
 
 
 def get_direct_task_outputs(task: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
-    return [
-        rel.RelatingProduct
-        for rel in task.HasAssignments
-        if rel.is_a("IfcRelAssignsToProduct")
-    ]
+    return [rel.RelatingProduct for rel in task.HasAssignments if rel.is_a("IfcRelAssignsToProduct")]
 
 
 def get_task_outputs(task: ifcopenshell.entity_instance, is_deep: bool = False) -> list[ifcopenshell.entity_instance]:
     if not is_deep:
         return get_direct_task_outputs(task)
     else:
-        return [
-            output
-            for nested_task in get_all_nested_tasks(task)
-            for output in get_direct_task_outputs(nested_task)
-        ]
+        return [output for nested_task in get_all_nested_tasks(task) for output in get_direct_task_outputs(nested_task)]
 
 
 def get_task_inputs(task: ifcopenshell.entity_instance, is_deep: bool = False) -> list[ifcopenshell.entity_instance]:
@@ -434,8 +404,7 @@ def get_tasks_for_product(
     inputs = [
         assignement.RelatingProcess
         for assignement in product.HasAssignments
-        if assignement.is_a("IfcRelAssignsToProcess")
-        and assignement.RelatingProcess.is_a("IfcTask")
+        if assignement.is_a("IfcRelAssignsToProcess") and assignement.RelatingProcess.is_a("IfcTask")
     ]
     outputs = [
         obj
@@ -446,16 +415,8 @@ def get_tasks_for_product(
     ]
 
     if schedule:
-        inputs = [
-            task
-            for task in inputs
-            if get_task_work_schedule(task).id() == schedule.id()
-        ]
-        outputs = [
-            task
-            for task in outputs
-            if get_task_work_schedule(task).id() == schedule.id()
-        ]
+        inputs = [task for task in inputs if get_task_work_schedule(task).id() == schedule.id()]
+        outputs = [task for task in outputs if get_task_work_schedule(task).id() == schedule.id()]
 
     return inputs, outputs
 

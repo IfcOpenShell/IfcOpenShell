@@ -18,11 +18,18 @@
 
 import ifcopenshell
 import ifcopenshell.util.schema
+import typing
 from logging import Logger
 
 
 class Patcher:
-    def __init__(self, src: str, file: ifcopenshell.file, logger: Logger, schema: str = "IFC4"):
+    def __init__(
+        self,
+        src: str,
+        file: ifcopenshell.file,
+        logger: Logger,
+        schema: typing.Literal["IFC2X3", "IFC4", "IFC4X3"] = "IFC4",
+    ):
         """Migrate from one IFC version to another
 
         Note that this is experimental and will try to preserve as much data as

@@ -92,7 +92,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* inst) {
 		return loop;
 	}
 	else {
-      auto pwf = taxonomy::make<taxonomy::piecewise_function>(pwfs,&settings_,inst);
+      auto pwf = taxonomy::make<taxonomy::piecewise_function>(0.0,pwfs,&settings_,inst);
 		return pwf;
 	}
 }

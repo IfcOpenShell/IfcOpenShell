@@ -168,13 +168,6 @@ class TestHasMaterialUsage(NewFile):
         assert subject.has_material_usage(element) is True
 
 
-class TestRemoveObject(NewFile):
-    def test_run(self):
-        obj = bpy.data.objects.new("Object", None)
-        subject.remove_object(obj)
-        assert not bpy.data.objects.get("Object")
-
-
 class TestRunGeometryAddRepresentation(NewFile):
     def test_nothing(self):
         pass

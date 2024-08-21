@@ -30,9 +30,7 @@ from sverchok.node_tree import SverchCustomTreeNode
 from sverchok.data_structure import updateNode, ensure_min_nesting
 
 
-class SvIfcSverchokToIfcRepr(
-    bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore
-):
+class SvIfcSverchokToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):
     """
     Triggers: Sv to Ifc Repr
     Tooltip: Sverchok geometry to Ifc Shape Representation
@@ -85,9 +83,7 @@ class SvIfcSverchokToIfcRepr(
 
     def sv_init(self, context):
         self.inputs.new("SvStringsSocket", "context_type").prop_name = "context_type"
-        self.inputs.new(
-            "SvStringsSocket", "context_identifier"
-        ).prop_name = "context_identifier"
+        self.inputs.new("SvStringsSocket", "context_identifier").prop_name = "context_identifier"
         self.inputs.new("SvStringsSocket", "target_view").prop_name = "target_view"
         self.inputs.new("SvVerticesSocket", "Vertices")
         self.inputs.new("SvStringsSocket", "Edges")
@@ -97,9 +93,9 @@ class SvIfcSverchokToIfcRepr(
         self.node_dict[hash(self)] = {}
 
     def draw_buttons(self, context, layout):
-        op = layout.operator(
-            "node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False
-        ).tooltip = "Sverchok geometry to Ifc Shape Representation. \nTakes one or multiple geometries."
+        op = layout.operator("node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False).tooltip = (
+            "Sverchok geometry to Ifc Shape Representation. \nTakes one or multiple geometries."
+        )
 
     def process(self):
         if not any(socket.is_linked for socket in self.inputs):
@@ -108,9 +104,7 @@ class SvIfcSverchokToIfcRepr(
         self.sv_input_names = [i.name for i in self.inputs]
 
         if hash(self) not in self.node_dict:
-            self.node_dict[
-                hash(self)
-            ] = {}  # happens if node is already on canvas when blender loads
+            self.node_dict[hash(self)] = {}  # happens if node is already on canvas when blender loads
         if not self.node_dict[hash(self)]:
             self.node_dict[hash(self)].update(dict.fromkeys(self.sv_input_names, 0))
 
@@ -124,9 +118,7 @@ class SvIfcSverchokToIfcRepr(
                 edit = True
             self.node_dict[hash(self)][self.inputs[i].name] = input
 
-        self.vertices = ensure_min_nesting(
-            self.inputs["Vertices"].sv_get(deepcopy=False), 4
-        )
+        self.vertices = ensure_min_nesting(self.inputs["Vertices"].sv_get(deepcopy=False), 4)
         self.edges = ensure_min_nesting(self.inputs["Edges"].sv_get(deepcopy=False), 4)
         self.faces = ensure_min_nesting(self.inputs["Faces"].sv_get(deepcopy=False), 4)
         data = list(zip(self.vertices, self.edges, self.faces))
@@ -160,14 +152,12 @@ class SvIfcSverchokToIfcRepr(
                     faces=[list(map(tuple, item[2]))],
                 )
                 if not representation:
-                    raise Exception(
-                        "Couldn't create representation. Possibly wrong context."
-                    )
+                    raise Exception("Couldn't create representation. Possibly wrong context.")
                 representations_ids_obj.append([representation.id()])
             representations_ids.append(representations_ids_obj)
-            SvIfcStore.id_map.setdefault(self.node_id, {}).setdefault(
-                "Representations", []
-            ).append(representations_ids_obj)
+            SvIfcStore.id_map.setdefault(self.node_id, {}).setdefault("Representations", []).append(
+                representations_ids_obj
+            )
         return representations_ids
 
     def edit(self):
@@ -188,13 +178,9 @@ class SvIfcSverchokToIfcRepr(
             self.file, self.context_type, self.context_identifier, self.target_view
         )
         if not context:
-            parent = ifcopenshell.util.representation.get_context(
-                self.file, self.context_type
-            )
+            parent = ifcopenshell.util.representation.get_context(self.file, self.context_type)
             if not parent:
-                parent = ifcopenshell.api.run(
-                    "context.add_context", self.file, context_type=self.context_type
-                )
+                parent = ifcopenshell.api.run("context.add_context", self.file, context_type=self.context_type)
             context = ifcopenshell.api.run(
                 "context.add_context",
                 self.file,
@@ -203,9 +189,7 @@ class SvIfcSverchokToIfcRepr(
                 target_view=self.target_view,
                 parent=parent,
             )
-            SvIfcStore.id_map.setdefault(self.node_id, {}).setdefault(
-                "Contexts", []
-            ).append(context.id())
+            SvIfcStore.id_map.setdefault(self.node_id, {}).setdefault("Contexts", []).append(context.id())
         return context
 
     def sv_free(self):
@@ -225,14 +209,10 @@ class SvIfcSverchokToIfcRepr(
                     if not self.file.get_inverse(context):
                         if self.file.by_id(context_id).ParentContext:
                             parent = self.file.by_id(context_id).ParentContext
-                        ifcopenshell.api.run(
-                            "context.remove_context", self.file, context=context
-                        )
+                        ifcopenshell.api.run("context.remove_context", self.file, context=context)
                         if parent:
                             if not self.file.get_inverse(parent):
-                                ifcopenshell.api.run(
-                                    "context.remove_context", self.file, context=parent
-                                )
+                                ifcopenshell.api.run("context.remove_context", self.file, context=parent)
                         # print("Removed context with step ID: ", context_id)
                         SvIfcStore.id_map[self.node_id]["Contexts"].remove(context_id)
             del SvIfcStore.id_map[self.node_id]

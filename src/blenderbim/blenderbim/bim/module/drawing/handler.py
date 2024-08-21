@@ -41,9 +41,8 @@ def set_active_camera_resolution(scene):
     props = scene.camera.data.BIMCameraProperties
     ortho_scale = max((props.width, props.height))
     aspect_ratio = props.width / props.height
-    if (
-        (scene.camera.data.ortho_scale != ortho_scale)
-        or (scene.render.resolution_x / scene.render.resolution_y != aspect_ratio)
+    if (scene.camera.data.ortho_scale != ortho_scale) or (
+        scene.render.resolution_x / scene.render.resolution_y != aspect_ratio
     ):
         scene.camera.data.ortho_scale = ortho_scale
 

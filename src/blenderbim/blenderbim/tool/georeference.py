@@ -21,6 +21,9 @@ import json
 import numpy as np
 import ifcopenshell
 import ifcopenshell.api.georeference
+import ifcopenshell.util.geolocation
+import ifcopenshell.util.placement
+import ifcopenshell.util.unit
 import blenderbim.core.tool
 import blenderbim.tool as tool
 import blenderbim.bim.helper
@@ -222,17 +225,13 @@ class Georeference(blenderbim.core.tool.Georeference):
 
     @classmethod
     def set_coordinates(cls, io, coordinates):
-        if io == "local":
-            bpy.context.scene.BIMGeoreferenceProperties.local_coordinates = ",".join([str(o) for o in coordinates])
-        elif io == "map":
-            bpy.context.scene.BIMGeoreferenceProperties.map_coordinates = ",".join([str(o) for o in coordinates])
+        props = bpy.context.scene.BIMGeoreferenceProperties
+        setattr(props, f"{io}_coordinates", ",".join([str(o) for o in coordinates]))
 
     @classmethod
     def get_coordinates(cls, io):
-        if io == "local":
-            return [float(co) for co in bpy.context.scene.BIMGeoreferenceProperties.local_coordinates.split(",")]
-        elif io == "map":
-            return [float(co) for co in bpy.context.scene.BIMGeoreferenceProperties.map_coordinates.split(",")]
+        props = bpy.context.scene.BIMGeoreferenceProperties
+        return [float(co) for co in getattr(props, f"{io}_coordinates").split(",")]
 
     @classmethod
     def get_cursor_location(cls):
@@ -383,3 +382,7 @@ class Georeference(blenderbim.core.tool.Georeference):
             )
             angle = tool.Cad.normalise_angle(angle)
         gprops.model_project_north = str(angle)
+
+    @classmethod
+    def has_blender_offset(cls) -> bool:
+        return bpy.context.scene.BIMGeoreferenceProperties.has_blender_offset

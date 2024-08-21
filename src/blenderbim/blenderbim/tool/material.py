@@ -92,6 +92,7 @@ class Material(blenderbim.core.tool.Material):
             get_name = lambda x: "Unnamed"
         materials = sorted(tool.Ifc.get().by_type(material_type), key=get_name)
         categories = defaultdict(list)
+
         if material_type == "IfcMaterial":
             category_index_to_reselect = None
 
@@ -112,8 +113,9 @@ class Material(blenderbim.core.tool.Material):
 
                 for material in mats if cat.is_expanded else []:
                     new = props.materials.add()
-                    new.ifc_definition_id = material.id()
+                    # Assign name before assigning ifc_definition_id to avoid triggering IFC update.
                     new.name = get_name(material)
+                    new.ifc_definition_id = material.id()
                     new.total_elements = len(
                         ifcopenshell.util.element.get_elements_by_material(tool.Ifc.get(), material)
                     )
@@ -124,8 +126,9 @@ class Material(blenderbim.core.tool.Material):
             return
         for material in materials:
             new = props.materials.add()
-            new.ifc_definition_id = material.id()
+            # Assign name before assigning ifc_definition_id to avoid triggering IFC update.
             new.name = get_name(material)
+            new.ifc_definition_id = material.id()
             new.total_elements = len(ifcopenshell.util.element.get_elements_by_material(tool.Ifc.get(), material))
 
     @classmethod
@@ -318,7 +321,8 @@ class Material(blenderbim.core.tool.Material):
     ) -> None:
         """Ensure blender materials are updated after a material assignment.
 
-        Designed to be called after material.assign_material API call."""
+        Designed to be called after material.assign_material API call.
+        For material sets it should be called after some item is already added to the material set."""
 
         # NOTE: adding/editing/removing layers/profiles/constituents is not supported.
         # Adding support for profiles/layers it only will be possible when we'll be adding styles

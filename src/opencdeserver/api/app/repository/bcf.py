@@ -45,9 +45,7 @@ class BCFDB(MyDB):
                 AND p.project_id = $project_id
                 RETURN p AS project
                 """
-            result = tx.run(cypher,
-                            username=current_user.username,
-                            project_id=str(project_id))
+            result = tx.run(cypher, username=current_user.username, project_id=str(project_id))
             first = result.single()
             if first is None:
                 raise HTTPException(status_code=404, detail="Item not found.")
@@ -69,10 +67,9 @@ class BCFDB(MyDB):
                 SET p.name = $project_name
                 RETURN p AS project
                 """
-            result = tx.run(cypher,
-                            username=current_user.username,
-                            project_id=str(project_id),
-                            project_name=project.name)
+            result = tx.run(
+                cypher, username=current_user.username, project_id=str(project_id), project_name=project.name
+            )
             first = result.single()
             if first is None:
                 raise HTTPException(status_code=404, detail="Item not found.")
@@ -93,9 +90,7 @@ class BCFDB(MyDB):
                     AND p.project_id = $project_id
                     RETURN e AS extensions
                     """
-            result = tx.run(cypher,
-                            username=current_user.username,
-                            project_id=str(project_id))
+            result = tx.run(cypher, username=current_user.username, project_id=str(project_id))
             first = result.single()
             if first is None:
                 raise HTTPException(status_code=404, detail="Item not found.")
@@ -117,9 +112,7 @@ class BCFDB(MyDB):
                 AND p.project_id = $project_id 
                 RETURN t AS topic, ID(t) AS server_assigned_id
                 """
-            results = tx.run(cypher,
-                             username=current_user.username,
-                             project_id=str(project_id))
+            results = tx.run(cypher, username=current_user.username, project_id=str(project_id))
             topic_model_list = list()
             for result in results:
                 topic_json = self.node_to_json(result.get("topic"))
@@ -142,10 +135,7 @@ class BCFDB(MyDB):
                 AND t.guid = $topic_id
                 RETURN t AS topic, ID(t) AS server_assigned_id
                 """
-            result = tx.run(cypher,
-                            username=current_user.username,
-                            project_id=str(project_id),
-                            topic_id=str(topic_id))
+            result = tx.run(cypher, username=current_user.username, project_id=str(project_id), topic_id=str(topic_id))
             first = result.single()
             if first is None:
                 raise HTTPException(status_code=404, detail="Item not found.")
@@ -181,24 +171,26 @@ class BCFDB(MyDB):
                     t.due_date              = $due_date
                 RETURN t AS topic, ID(t) AS server_assigned_id
                 """
-            if not hasattr(topic, 'guid') or topic.guid is None:
+            if not hasattr(topic, "guid") or topic.guid is None:
                 topic.guid = uuid4()
             creation_date = self.timestamp()
             print(cypher)
-            result = tx.run(cypher,
-                            username=current_user.username,
-                            project_id=str(project_id),
-                            guid=str(topic.guid),
-                            creation_date=creation_date,
-                            topic_type=topic.topic_type,
-                            topic_status=topic.topic_status,
-                            title=topic.title,
-                            priority=topic.priority,
-                            index=topic.index,
-                            assigned_to=topic.assigned_to,
-                            stage=topic.stage,
-                            description=topic.description,
-                            due_date=topic.due_date)
+            result = tx.run(
+                cypher,
+                username=current_user.username,
+                project_id=str(project_id),
+                guid=str(topic.guid),
+                creation_date=creation_date,
+                topic_type=topic.topic_type,
+                topic_status=topic.topic_status,
+                title=topic.title,
+                priority=topic.priority,
+                index=topic.index,
+                assigned_to=topic.assigned_to,
+                stage=topic.stage,
+                description=topic.description,
+                due_date=topic.due_date,
+            )
             summary = result.consume()
             if summary.counters.nodes_created < 1:
                 raise HTTPException(status_code=400, detail="Item not added.")
@@ -230,20 +222,22 @@ class BCFDB(MyDB):
                     t.due_date          = $due_date
                 RETURN t AS topic, ID(t) AS server_assigned_id
                 """
-            result = tx.run(cypher,
-                            username=current_user.username,
-                            project_id=str(project_id),
-                            topic_id=str(topic_id),
-                            topic_type=topic.topic_type,
-                            topic_status=topic.topic_status,
-                            title=topic.title,
-                            priority=topic.priority,
-                            index=topic.index,
-                            modified_date=self.timestamp(),
-                            assigned_to=topic.assigned_to,
-                            stage=topic.stage,
-                            description=topic.description,
-                            due_date=topic.due_date)
+            result = tx.run(
+                cypher,
+                username=current_user.username,
+                project_id=str(project_id),
+                topic_id=str(topic_id),
+                topic_type=topic.topic_type,
+                topic_status=topic.topic_status,
+                title=topic.title,
+                priority=topic.priority,
+                index=topic.index,
+                modified_date=self.timestamp(),
+                assigned_to=topic.assigned_to,
+                stage=topic.stage,
+                description=topic.description,
+                due_date=topic.due_date,
+            )
             summary = result.consume()
             if summary.counters.properties_set < 1:
                 raise HTTPException(status_code=404, detail="Item not found.")
@@ -265,11 +259,13 @@ class BCFDB(MyDB):
                    AND t.guid = $topic_id
                    SET t.modified_date     = $modified_date
                 """
-            result = tx.run(cypher,
-                            username=current_user.username,
-                            project_id=str(project_id),
-                            topic_id=str(topic_id),
-                            modified_date=self.timestamp())
+            result = tx.run(
+                cypher,
+                username=current_user.username,
+                project_id=str(project_id),
+                topic_id=str(topic_id),
+                modified_date=self.timestamp(),
+            )
             summary = result.consume()
             if summary.counters.properties_set < 1:
                 raise HTTPException(status_code=404, detail="Item not found.")
@@ -289,10 +285,7 @@ class BCFDB(MyDB):
                     AND t.guid = $topic_id
                     DETACH DELETE t
                     """
-            result = tx.run(cypher,
-                            username=current_user.username,
-                            project_id=str(project_id),
-                            topic_id=str(topic_id))
+            result = tx.run(cypher, username=current_user.username, project_id=str(project_id), topic_id=str(topic_id))
             result_summary = result.consume()
             if result_summary.counters.nodes_deleted < 1:
                 raise HTTPException(status_code=404, detail="Item not found.")
@@ -312,35 +305,29 @@ class BCFDB(MyDB):
                  AND p.project_id = $project_id
                  RETURN d AS document
                  """
-            results = tx.run(cypher,
-                             username=current_user.username,
-                             project_id=str(project_id))
+            results = tx.run(cypher, username=current_user.username, project_id=str(project_id))
 
             project_file_informations = list()
             for result in results:
                 document_json = self.node_to_json(result.get("document"))
                 display_information_list = list()
-                display_information_json = {
-                    'field_display_name': 'File',
-                    'field_value': document_json['title']
-                }
+                display_information_json = {"field_display_name": "File", "field_value": document_json["title"]}
                 display_information_list.append(display_information_json)
-                base = os.environ['KONTROLL_BASE_URL'] + "documents/1.0/document/"
-                base.replace('http://', 'https://')
-                base.replace('https://', 'open-cde-documents://')
-                document_id = document_json['document_id']
-                version_index = document_json['version_index']
+                base = os.environ["KONTROLL_BASE_URL"] + "documents/1.0/document/"
+                base.replace("http://", "https://")
+                base.replace("https://", "open-cde-documents://")
+                document_id = document_json["document_id"]
+                version_index = document_json["version_index"]
                 extra_path = document_id + "/version/" + str(version_index)
                 reference = base + extra_path
                 file_get_json = {
-                    'ifc_project': document_json['ifc_project'],
-                    'filename': document_json['name'],
-                    'reference': reference
+                    "ifc_project": document_json["ifc_project"],
+                    "filename": document_json["name"],
+                    "reference": reference,
                 }
-                project_file_information = ProjectFileInformation(**{
-                    'display_information': display_information_list,
-                    'file': file_get_json
-                })
+                project_file_information = ProjectFileInformation(
+                    **{"display_information": display_information_list, "file": file_get_json}
+                )
                 project_file_informations.append(project_file_information)
             return project_file_informations
 
@@ -406,10 +393,7 @@ class BCFDB(MyDB):
                 AND t.guid = $topic_id
                 RETURN f AS file
                 """
-            results = tx.run(cypher,
-                             username=current_user.username,
-                             project_id=str(project_id),
-                             topic_id=str(topic_id))
+            results = tx.run(cypher, username=current_user.username, project_id=str(project_id), topic_id=str(topic_id))
             file_model_list = list()
             for result in results:
                 file_json = self.node_to_json(result.get("file"))
@@ -431,10 +415,12 @@ class BCFDB(MyDB):
                 AND t.guid = $topic_id
                 DELETE r3
             """
-            tx.run(cypher_delete_references,
-                   username=current_user.username,
-                   project_id=str(project_id),
-                   topic_id=str(topic_id))
+            tx.run(
+                cypher_delete_references,
+                username=current_user.username,
+                project_id=str(project_id),
+                topic_id=str(topic_id),
+            )
             cypher_update_and_attach_references = """
                 MATCH (u:User)-[r1:HAS_ACTIONS_ON]->(p:Project)-[r2:HAS]->(f:Document:Model)
                 MATCH (u)-[r1]->(p)-[r3:HAS]->(t:Topic)
@@ -451,15 +437,17 @@ class BCFDB(MyDB):
                 RETURN f
                 """
             for file in files:
-                result = tx.run(cypher_update_and_attach_references,
-                                username=current_user.username,
-                                project_id=str(project_id),
-                                reference=file.reference,
-                                topic_id=str(topic_id),
-                                filename=file.filename,
-                                date=file.date,
-                                ifc_project=file.ifc_project,
-                                ifc_spatial_structure_element=file.ifc_spatial_structure_element)
+                result = tx.run(
+                    cypher_update_and_attach_references,
+                    username=current_user.username,
+                    project_id=str(project_id),
+                    reference=file.reference,
+                    topic_id=str(topic_id),
+                    filename=file.filename,
+                    date=file.date,
+                    ifc_project=file.ifc_project,
+                    ifc_spatial_structure_element=file.ifc_spatial_structure_element,
+                )
                 first = result.single()
                 if first is None:
                     raise HTTPException(status_code=404, detail="Item not found.")
@@ -480,14 +468,11 @@ class BCFDB(MyDB):
                 AND t.guid = $topic_id
                 RETURN c AS comment
                 """
-            results = tx.run(cypher,
-                             username=current_user.username,
-                             project_id=str(project_id),
-                             topic_id=str(topic_id))
+            results = tx.run(cypher, username=current_user.username, project_id=str(project_id), topic_id=str(topic_id))
             comment_model_list = list()
             for result in results:
                 comment_json = self.node_to_json(result.get("comment"))
-                comment_json['topic_guid'] = str(topic_id)
+                comment_json["topic_guid"] = str(topic_id)
                 comment_model = CommentGET(**comment_json)
                 comment_model_list.append(comment_model)
             return comment_model_list
@@ -507,17 +492,19 @@ class BCFDB(MyDB):
                 AND c.guid = $comment_id
                 RETURN c AS comment
                 """
-            result = tx.run(cypher,
-                            username=current_user.username,
-                            project_id=str(project_id),
-                            topic_id=str(topic_id),
-                            comment_id=str(comment_id))
+            result = tx.run(
+                cypher,
+                username=current_user.username,
+                project_id=str(project_id),
+                topic_id=str(topic_id),
+                comment_id=str(comment_id),
+            )
             first = result.single()
             if first is None:
                 raise HTTPException(status_code=404, detail="Item not found.")
             comment_node = first.get("comment")
             comment_dict = self.node_to_json(comment_node)
-            comment_dict['topic_guid'] = str(topic_id)
+            comment_dict["topic_guid"] = str(topic_id)
             comment = CommentGET(**comment_dict)
             return comment
 
@@ -529,7 +516,7 @@ class BCFDB(MyDB):
 
     def post_comment(self, project_id: UUID, topic_id: UUID, comment: CommentPOST, current_user: User) -> CommentGET:
         def post_comment_work(tx) -> UUID:
-            if not hasattr(comment, 'guid') or comment.guid is None:
+            if not hasattr(comment, "guid") or comment.guid is None:
                 this_comment_guid = uuid4()
             else:
                 this_comment_guid = UUID(comment.guid)
@@ -539,26 +526,26 @@ class BCFDB(MyDB):
                 viewpoint_guids = [viewpoint.guid for viewpoint in viewpoints]
                 if comment.viewpoint_guid not in viewpoint_guids:
                     raise HTTPException(status_code=400, detail="Item not added.")
-                injection_viewpoint = '-[r3:HAS]->(v:Viewpoint)'
-                injection_viewpoint_selection = 'AND v.guid = $viewpoint_id'
-                injection_viewpoint_relation = 'MERGE (c2)-[r7:RELATED_TO]->(v)'
+                injection_viewpoint = "-[r3:HAS]->(v:Viewpoint)"
+                injection_viewpoint_selection = "AND v.guid = $viewpoint_id"
+                injection_viewpoint_relation = "MERGE (c2)-[r7:RELATED_TO]->(v)"
             else:
-                injection_viewpoint = ''
-                injection_viewpoint_selection = ''
-                injection_viewpoint_relation = ''
-            if hasattr(comment, 'reply_to_comment_guid'):
+                injection_viewpoint = ""
+                injection_viewpoint_selection = ""
+                injection_viewpoint_relation = ""
+            if hasattr(comment, "reply_to_comment_guid"):
                 # make sure that given reply_to_comment_guid exists in database
                 get_comments = self.get_comments(project_id, topic_id, current_user)
                 comment_guids = [get_comment.guid for get_comment in get_comments]
                 if comment.reply_to_comment_guid not in comment_guids:
                     raise HTTPException(status_code=400, detail="Item not added.")
-                injection_existing_comment = 'MATCH (u)-[r1]->(p)-[r2]->(t)-[r4:HAS]->(c1:Comment)'
-                injection_existing_comment_selection = 'AND c1.guid = $reply_to_comment_id'
-                injection_existing_comment_relation = 'MERGE (c1)-[r5:THEN]->(c2)'
+                injection_existing_comment = "MATCH (u)-[r1]->(p)-[r2]->(t)-[r4:HAS]->(c1:Comment)"
+                injection_existing_comment_selection = "AND c1.guid = $reply_to_comment_id"
+                injection_existing_comment_relation = "MERGE (c1)-[r5:THEN]->(c2)"
             else:
-                injection_existing_comment = ''
-                injection_existing_comment_selection = ''
-                injection_existing_comment_relation = ''
+                injection_existing_comment = ""
+                injection_existing_comment_selection = ""
+                injection_existing_comment_relation = ""
             cypher = """
                 MATCH (u:User)-[r1:HAS_ACTIONS_ON]->(p:Project)-[r2:HAS]->(t:Topic)%s
                 %s
@@ -576,21 +563,25 @@ class BCFDB(MyDB):
                     c2.author                = $username,
                     c2.modified_author       = $username,
                     c2.comment               = $comment
-                """ % (injection_viewpoint,
-                       injection_existing_comment,
-                       injection_viewpoint_selection,
-                       injection_existing_comment_selection,
-                       injection_viewpoint_relation,
-                       injection_existing_comment_relation)
-            result = tx.run(cypher,
-                            username=current_user.username,
-                            project_id=str(project_id),
-                            topic_id=str(topic_id),
-                            viewpoint_id=str(comment.viewpoint_guid),
-                            reply_to_comment_id=str('comment.reply_to_comment_guid'),
-                            comment_id=str(this_comment_guid),
-                            creation_date=self.timestamp(),
-                            comment=comment.comment)
+                """ % (
+                injection_viewpoint,
+                injection_existing_comment,
+                injection_viewpoint_selection,
+                injection_existing_comment_selection,
+                injection_viewpoint_relation,
+                injection_existing_comment_relation,
+            )
+            result = tx.run(
+                cypher,
+                username=current_user.username,
+                project_id=str(project_id),
+                topic_id=str(topic_id),
+                viewpoint_id=str(comment.viewpoint_guid),
+                reply_to_comment_id=str("comment.reply_to_comment_guid"),
+                comment_id=str(this_comment_guid),
+                creation_date=self.timestamp(),
+                comment=comment.comment,
+            )
             summary = result.consume()
             if summary.counters.nodes_created < 1:
                 raise HTTPException(status_code=400, detail="Item not added.")
@@ -600,21 +591,22 @@ class BCFDB(MyDB):
             comment_guid = session.execute_write(post_comment_work)
             return self.get_comment(project_id, topic_id, comment_guid, current_user)
 
-    def put_comment(self, project_id: UUID, topic_id: UUID, comment_id: UUID, comment: CommentPUT,
-                    current_user: User) -> CommentGET:
+    def put_comment(
+        self, project_id: UUID, topic_id: UUID, comment_id: UUID, comment: CommentPUT, current_user: User
+    ) -> CommentGET:
         def put_comment_work(tx) -> bool:
             if comment.viewpoint_guid:
                 viewpoints = self.get_viewpoints(project_id, topic_id, current_user)
                 viewpoint_guids = [viewpoint.guid for viewpoint in viewpoints]
                 if comment.viewpoint_guid not in viewpoint_guids:
                     raise HTTPException(status_code=400, detail="Item not added.")
-                injection_new_viewpoint = 'MATCH (t)-[r5:HAS]->(v_new:Viewpoint)'
-                injection_new_viewpoint_selection = 'WHERE v_new.guid = $new_rtv_id'
-                injection_new_viewpoint_relation = 'MERGE (c)-[r5:RELATED_TO]->(v)'
+                injection_new_viewpoint = "MATCH (t)-[r5:HAS]->(v_new:Viewpoint)"
+                injection_new_viewpoint_selection = "WHERE v_new.guid = $new_rtv_id"
+                injection_new_viewpoint_relation = "MERGE (c)-[r5:RELATED_TO]->(v)"
             else:
-                injection_new_viewpoint = ''
-                injection_new_viewpoint_selection = ''
-                injection_new_viewpoint_relation = ''
+                injection_new_viewpoint = ""
+                injection_new_viewpoint_selection = ""
+                injection_new_viewpoint_relation = ""
             cypher = """
                 MATCH (u:User)-[r1:HAS_ACTIONS_ON]->(p:Project)-[r2:HAS]->(t:Topic)-[r3:HAS]->(c:Comment)
                 WHERE u.username = $username
@@ -630,17 +622,21 @@ class BCFDB(MyDB):
                 SET c.modified_author = $username
                 DELETE r4
                 %s
-            """ % (injection_new_viewpoint,
-                   injection_new_viewpoint_selection,
-                   injection_new_viewpoint_relation)
-            result = tx.run(cypher,
-                            username=current_user.username,
-                            project_id=str(project_id),
-                            topic_id=str(topic_id),
-                            comment_id=str(comment_id),
-                            new_rtv_id=str(comment.viewpoint_guid),
-                            comment=comment.comment,
-                            modified_date=self.timestamp())
+            """ % (
+                injection_new_viewpoint,
+                injection_new_viewpoint_selection,
+                injection_new_viewpoint_relation,
+            )
+            result = tx.run(
+                cypher,
+                username=current_user.username,
+                project_id=str(project_id),
+                topic_id=str(topic_id),
+                comment_id=str(comment_id),
+                new_rtv_id=str(comment.viewpoint_guid),
+                comment=comment.comment,
+                modified_date=self.timestamp(),
+            )
             summary = result.consume()
             if summary.counters.properties_set < 1:
                 raise HTTPException(status_code=400, detail="Item not added.")
@@ -662,11 +658,13 @@ class BCFDB(MyDB):
                     AND c.guid = $comment_id
                     DETACH DELETE c
                 """
-            result = tx.run(cypher,
-                            username=current_user.username,
-                            project_id=str(project_id),
-                            topic_id=str(topic_id),
-                            comment_id=str(comment_id))
+            result = tx.run(
+                cypher,
+                username=current_user.username,
+                project_id=str(project_id),
+                topic_id=str(topic_id),
+                comment_id=str(comment_id),
+            )
             result_summary = result.consume()
             if result_summary.counters.nodes_deleted < 1:
                 raise HTTPException(status_code=404, detail="Item not found.")
@@ -678,27 +676,29 @@ class BCFDB(MyDB):
 
     @staticmethod
     def enum_to_mime(enum_type) -> str:
-        if str(enum_type) == 'png':
-            mime_type = 'image/png'
-        elif str(enum_type) == 'jpg' or str(enum_type) == 'jpeg':
-            mime_type = 'image/jpeg'
+        if str(enum_type) == "png":
+            mime_type = "image/png"
+        elif str(enum_type) == "jpg" or str(enum_type) == "jpeg":
+            mime_type = "image/jpeg"
         else:
-            mime_type = 'image/' + str(enum_type)
+            mime_type = "image/" + str(enum_type)
         return mime_type
 
     # implementing
-    def post_viewpoint(self, project_id: UUID, topic_id: UUID, viewpoint: ViewpointPOST,
-                       current_user: User) -> ViewpointGET:
+    def post_viewpoint(
+        self, project_id: UUID, topic_id: UUID, viewpoint: ViewpointPOST, current_user: User
+    ) -> ViewpointGET:
         def post_viewpoint_work(tx) -> str:
-            if hasattr(viewpoint, 'snapshot'):
+            if hasattr(viewpoint, "snapshot"):
                 snapshot_type = self.enum_to_mime(viewpoint.snapshot.snapshot_type.value)
                 snapshot = True
-                set_snapshot = 'v.snapshot = $snapshot, v.snapshot_type = $snapshot_type,'
+                set_snapshot = "v.snapshot = $snapshot, v.snapshot_type = $snapshot_type,"
             else:
-                snapshot_type = ''
+                snapshot_type = ""
                 snapshot = False
-                set_snapshot = ''
-            cypher_viewpoint = """
+                set_snapshot = ""
+            cypher_viewpoint = (
+                """
                  MATCH (u:User)-[r1:HAS_ACTIONS_ON]->(p:Project)-[r2:HAS]->(t:Topic)
                  WHERE u.username = $username
                  AND r1.createViewpoint = True
@@ -716,41 +716,51 @@ class BCFDB(MyDB):
                      v.spaces_visible = $spaces_visible,
                      v.space_boundaries_visible = $space_boundaries_visible,
                      v.openings_visible = $openings_visible
-                 """ % set_snapshot
+                 """
+                % set_snapshot
+            )
             if viewpoint.guid is None:
                 viewpoint.guid = uuid4()
             if viewpoint.orthogonal_camera is None:
-                camera_definition = 'perspective_camera'
+                camera_definition = "perspective_camera"
                 view_tws_or_fo_view = viewpoint.perspective_camera.field_of_view
                 aspect_ratio = viewpoint.perspective_camera.aspect_ratio
                 cvp = viewpoint.perspective_camera.camera_view_point
                 cad = viewpoint.perspective_camera.camera_direction
                 cuv = viewpoint.perspective_camera.camera_up_vector
             else:
-                camera_definition = 'orthogonal_camera'
+                camera_definition = "orthogonal_camera"
                 view_tws_or_fo_view = viewpoint.orthogonal_camera.view_to_world_scale
                 aspect_ratio = viewpoint.orthogonal_camera.aspect_ratio
                 cvp = viewpoint.orthogonal_camera.camera_view_point
                 cad = viewpoint.orthogonal_camera.camera_direction
                 cuv = viewpoint.orthogonal_camera.camera_up_vector
-            result = tx.run(cypher_viewpoint,
-                            username=current_user.username,
-                            project_id=str(project_id),
-                            topic_id=str(topic_id),
-                            guid=str(viewpoint.guid),
-                            index=viewpoint.index,
-                            camera_definition=camera_definition,
-                            cvp_x=cvp.x, cvp_y=cvp.y, cvp_z=cvp.z,
-                            cad_x=cad.x, cad_y=cad.y, cad_z=cad.z,
-                            cuv_x=cuv.x, cuv_y=cuv.y, cuv_z=cuv.z,
-                            view_tws_or_fo_view=view_tws_or_fo_view,
-                            aspect_ratio=aspect_ratio,
-                            snapshot=snapshot,
-                            snapshot_type=snapshot_type,
-                            default_visibility=viewpoint.components.visibility.default_visibility,
-                            spaces_visible=viewpoint.components.visibility.view_setup_hints.spaces_visible,
-                            space_boundaries_visible=viewpoint.components.visibility.view_setup_hints.space_boundaries_visible,
-                            openings_visible=viewpoint.components.visibility.view_setup_hints.openings_visible)
+            result = tx.run(
+                cypher_viewpoint,
+                username=current_user.username,
+                project_id=str(project_id),
+                topic_id=str(topic_id),
+                guid=str(viewpoint.guid),
+                index=viewpoint.index,
+                camera_definition=camera_definition,
+                cvp_x=cvp.x,
+                cvp_y=cvp.y,
+                cvp_z=cvp.z,
+                cad_x=cad.x,
+                cad_y=cad.y,
+                cad_z=cad.z,
+                cuv_x=cuv.x,
+                cuv_y=cuv.y,
+                cuv_z=cuv.z,
+                view_tws_or_fo_view=view_tws_or_fo_view,
+                aspect_ratio=aspect_ratio,
+                snapshot=snapshot,
+                snapshot_type=snapshot_type,
+                default_visibility=viewpoint.components.visibility.default_visibility,
+                spaces_visible=viewpoint.components.visibility.view_setup_hints.spaces_visible,
+                space_boundaries_visible=viewpoint.components.visibility.view_setup_hints.space_boundaries_visible,
+                openings_visible=viewpoint.components.visibility.view_setup_hints.openings_visible,
+            )
             summary = result.consume()
             if summary.counters.nodes_created < 1:
                 print(cypher_viewpoint)
@@ -765,10 +775,16 @@ class BCFDB(MyDB):
                     SET l.start_point = point({x: $lsp_x, y: $lsp_y, z: $lsp_z}),
                         l.end_point = point({x: $lep_x, y: $lep_y, z: $lep_z})
                 """
-                result = tx.run(cypher_line,
-                                guid=str(viewpoint.guid),
-                                lsp_x=line.start_point.x, lsp_y=line.start_point.y, lsp_z=line.start_point.z,
-                                lep_x=line.end_point.x, lep_y=line.end_point.y, lep_z=line.end_point.z)
+                result = tx.run(
+                    cypher_line,
+                    guid=str(viewpoint.guid),
+                    lsp_x=line.start_point.x,
+                    lsp_y=line.start_point.y,
+                    lsp_z=line.start_point.z,
+                    lep_x=line.end_point.x,
+                    lep_y=line.end_point.y,
+                    lep_z=line.end_point.z,
+                )
                 summary = result.consume()
                 if summary.counters.nodes_created < 1:
                     print(cypher_line)
@@ -783,12 +799,16 @@ class BCFDB(MyDB):
                     SET cp.location = point({x: $cpl_x, y: $cpl_y, z: $cpl_z}),
                         cp.direction = point({x: $cpd_x, y: $cpd_y, z: $cpd_z})
                 """
-                result = tx.run(cypher_clipping_plane,
-                                guid=str(viewpoint.guid),
-                                lsp_x=clipping_plane.location.x, lsp_y=clipping_plane.location.y,
-                                lsp_z=clipping_plane.location.z,
-                                lep_x=clipping_plane.direction.x, lep_y=clipping_plane.direction.y,
-                                lep_z=clipping_plane.direction.z)
+                result = tx.run(
+                    cypher_clipping_plane,
+                    guid=str(viewpoint.guid),
+                    lsp_x=clipping_plane.location.x,
+                    lsp_y=clipping_plane.location.y,
+                    lsp_z=clipping_plane.location.z,
+                    lep_x=clipping_plane.direction.x,
+                    lep_y=clipping_plane.direction.y,
+                    lep_z=clipping_plane.direction.z,
+                )
                 summary = result.consume()
                 if summary.counters.nodes_created < 1:
                     print(cypher_clipping_plane)
@@ -807,13 +827,21 @@ class BCFDB(MyDB):
                         b.height = $height
                 """
                 bitmap_type = self.enum_to_mime(bitmap.bitmap_type)
-                result = tx.run(cypher_bitmap,
-                                guid=str(viewpoint.guid),
-                                type=bitmap_type,
-                                bml_x=bitmap.location.x, bml_y=bitmap.location.y, bml_z=bitmap.location.z,
-                                bmn_x=bitmap.direction.x, bmn_y=bitmap.direction.y, bmn_z=bitmap.direction.z,
-                                bmu_x=bitmap.direction.x, bmu_y=bitmap.direction.y, bmu_z=bitmap.direction.z,
-                                height=bitmap.height)
+                result = tx.run(
+                    cypher_bitmap,
+                    guid=str(viewpoint.guid),
+                    type=bitmap_type,
+                    bml_x=bitmap.location.x,
+                    bml_y=bitmap.location.y,
+                    bml_z=bitmap.location.z,
+                    bmn_x=bitmap.direction.x,
+                    bmn_y=bitmap.direction.y,
+                    bmn_z=bitmap.direction.z,
+                    bmu_x=bitmap.direction.x,
+                    bmu_y=bitmap.direction.y,
+                    bmu_z=bitmap.direction.z,
+                    height=bitmap.height,
+                )
                 summary = result.consume()
                 if summary.counters.nodes_created < 1:
                     print(bitmap_type)
@@ -824,44 +852,44 @@ class BCFDB(MyDB):
             for selected_component in viewpoint.components.selection:
                 if selected_component.ifc_guid not in components:
                     components[selected_component.ifc_guid] = {}
-                components[selected_component.ifc_guid]['selected'] = True
-                components[selected_component.ifc_guid]['originating_system'] = selected_component.originating_system
-                components[selected_component.ifc_guid]['authoring_tool_id'] = selected_component.authoring_tool_id
+                components[selected_component.ifc_guid]["selected"] = True
+                components[selected_component.ifc_guid]["originating_system"] = selected_component.originating_system
+                components[selected_component.ifc_guid]["authoring_tool_id"] = selected_component.authoring_tool_id
             for color in viewpoint.components.coloring:
                 for colored_component in color.components:
                     if colored_component.ifc_guid not in components:
                         components[colored_component.ifc_guid] = {}
-                    components[colored_component.ifc_guid]['color'] = color.color
+                    components[colored_component.ifc_guid]["color"] = color.color
             for exception_component in viewpoint.components.visibility.exceptions:
                 if exception_component.ifc_guid not in components:
                     components[exception_component.ifc_guid] = {}
-                components[exception_component.ifc_guid]['visibility_exception'] = True
+                components[exception_component.ifc_guid]["visibility_exception"] = True
             set_list = list()
 
             for ifc_guid in components.keys():
-                set_list.append('c.ifc_guid = $ifc_guid')
-                if 'selected' in components[ifc_guid]:
+                set_list.append("c.ifc_guid = $ifc_guid")
+                if "selected" in components[ifc_guid]:
                     selected = True
-                    originating_system = components[ifc_guid]['originating_system']
-                    authoring_tool_id = components[ifc_guid]['authoring_tool_id']
-                    set_list.append('c.selected = $selected')
-                    set_list.append('c.originating_system = $originating_system')
-                    set_list.append('c.authoring_tool_id = $authoring_tool_id')
+                    originating_system = components[ifc_guid]["originating_system"]
+                    authoring_tool_id = components[ifc_guid]["authoring_tool_id"]
+                    set_list.append("c.selected = $selected")
+                    set_list.append("c.originating_system = $originating_system")
+                    set_list.append("c.authoring_tool_id = $authoring_tool_id")
                 else:
                     selected = False
                     originating_system = False
                     authoring_tool_id = False
-                if 'color' in components[ifc_guid]:
-                    color = components[ifc_guid]['color']
-                    set_list.append('c.color = $color')
+                if "color" in components[ifc_guid]:
+                    color = components[ifc_guid]["color"]
+                    set_list.append("c.color = $color")
                 else:
                     color = False
-                if 'visibility_exception' in components[ifc_guid]:
+                if "visibility_exception" in components[ifc_guid]:
                     visibility_exception = True
-                    set_list.append('c.visibility_exception = $visibility_exception')
+                    set_list.append("c.visibility_exception = $visibility_exception")
                 else:
                     visibility_exception = False
-                set_string = ', '.join(set_list)
+                set_string = ", ".join(set_list)
                 cypher_component = """
                     MATCH (v:Viewpoint)
                     WHERE v.guid = $viewpoint_id
@@ -869,14 +897,16 @@ class BCFDB(MyDB):
                     SET 
                 """
                 cypher_component += set_string
-                tx.run(cypher_component,
-                       viewpoint_id=str(viewpoint.guid),
-                       ifc_guid=str(ifc_guid),
-                       selected=selected,
-                       originating_system=originating_system,
-                       authoring_tool_id=authoring_tool_id,
-                       color=color,
-                       visibility_exception=visibility_exception)
+                tx.run(
+                    cypher_component,
+                    viewpoint_id=str(viewpoint.guid),
+                    ifc_guid=str(ifc_guid),
+                    selected=selected,
+                    originating_system=originating_system,
+                    authoring_tool_id=authoring_tool_id,
+                    color=color,
+                    visibility_exception=visibility_exception,
+                )
                 summary = result.consume()
 
             # Look for component UUIDs in IFC-graph and relate them
@@ -908,26 +938,26 @@ class BCFDB(MyDB):
                 print(cypher_component)
                 raise HTTPException(status_code=400, detail="Item not added.")
             else:
-                snapshot_path = ''
-                bitmap_path = ''
+                snapshot_path = ""
+                bitmap_path = ""
                 try:
-                    snapshot_name = 'snapshot_' + str(viewpoint.guid)
-                    file_ending = '.' + str(viewpoint.snapshot.snapshot_type.value)
-                    snapshot_path = 'data/snapshots/' + snapshot_name + file_ending
+                    snapshot_name = "snapshot_" + str(viewpoint.guid)
+                    file_ending = "." + str(viewpoint.snapshot.snapshot_type.value)
+                    snapshot_path = "data/snapshots/" + snapshot_name + file_ending
                     with open(snapshot_path, "wb") as snapshot_file:
                         snapshot_image = base64.b64decode(viewpoint.snapshot.snapshot_data, validate=True)
                         snapshot_file.write(snapshot_image)
                         snapshot_file.close()
                     for bitmap in viewpoint.bitmaps:
-                        bitmap_name = 'bitmap_' + str(bitmap.guid)
-                        file_ending = '.' + str(bitmap.bitmap_type.value)
-                        bitmap_path = 'data/bitmaps/' + bitmap_name + file_ending
+                        bitmap_name = "bitmap_" + str(bitmap.guid)
+                        file_ending = "." + str(bitmap.bitmap_type.value)
+                        bitmap_path = "data/bitmaps/" + bitmap_name + file_ending
                         with open(bitmap_path, "wb") as bitmap_file:
                             bitmap_image = base64.b64decode(bitmap.bitmap_data, validate=True)
                             bitmap_file.write(bitmap_image)
                             bitmap_file.close()
                 except Exception as e:
-                    print('could not create file ' + snapshot_path + ' ' + bitmap_path + ' ')
+                    print("could not create file " + snapshot_path + " " + bitmap_path + " ")
                     print(e)
                     raise HTTPException(status_code=400, detail="Item not added.")
             return viewpoint.guid
@@ -950,10 +980,7 @@ class BCFDB(MyDB):
                 AND t.guid = $topic_id
                 RETURN v.guid AS viewpoint_id
                 """
-            results = tx.run(cypher,
-                             username=current_user.username,
-                             project_id=str(project_id),
-                             topic_id=str(topic_id))
+            results = tx.run(cypher, username=current_user.username, project_id=str(project_id), topic_id=str(topic_id))
             viewpoint_model_list = list()
             for result in results:
                 viewpoint_id = result.get("viewpoint_id")
@@ -976,11 +1003,13 @@ class BCFDB(MyDB):
                 AND v.guid = $viewpoint_id
                 RETURN v AS viewpoint
                 """
-            result = tx.run(cypher,
-                            username=current_user.username,
-                            project_id=str(project_id),
-                            topic_id=str(topic_id),
-                            viewpoint_id=str(viewpoint_id))
+            result = tx.run(
+                cypher,
+                username=current_user.username,
+                project_id=str(project_id),
+                topic_id=str(topic_id),
+                viewpoint_id=str(viewpoint_id),
+            )
             first = result.single()
             if first is None:
                 raise HTTPException(status_code=404, detail="Item not found.")
@@ -991,32 +1020,30 @@ class BCFDB(MyDB):
             lines = self.get_viewpoint_lines(project_id, topic_id, viewpoint_id, current_user)
             clipping_planes = self.get_viewpoint_clipping_planes(project_id, topic_id, viewpoint_id, current_user)
             bitmaps = self.get_viewpoint_bitmaps(project_id, topic_id, viewpoint_id, current_user)
-            snapshot_get = {
-                'snapshot_type': v['snapshot_type'].split('/', 2)[1]
-            }
+            snapshot_get = {"snapshot_type": v["snapshot_type"].split("/", 2)[1]}
             viewpoint_get = {
-                'guid': v['guid'],
-                'index': v['index'],
-                'lines': lines,
-                'clipping_planes': clipping_planes,
-                'bitmaps': bitmaps,
-                'snapshot': snapshot_get
+                "guid": v["guid"],
+                "index": v["index"],
+                "lines": lines,
+                "clipping_planes": clipping_planes,
+                "bitmaps": bitmaps,
+                "snapshot": snapshot_get,
             }
-            cvp = v['camera_view_point']
-            cad = v['camera_direction']
-            cuv = v['camera_up_vector']
+            cvp = v["camera_view_point"]
+            cad = v["camera_direction"]
+            cuv = v["camera_up_vector"]
             camera = {
-                'camera_view_point': {'x': cvp.x, 'y': cvp.y, 'z': cvp.z},
-                'camera_direction': {'x': cad.x, 'y': cad.y, 'z': cad.z},
-                'camera_up_vector': {'x': cuv.x, 'y': cuv.y, 'z': cuv.z},
-                'aspect_ratio': v['aspect_ratio']
+                "camera_view_point": {"x": cvp.x, "y": cvp.y, "z": cvp.z},
+                "camera_direction": {"x": cad.x, "y": cad.y, "z": cad.z},
+                "camera_up_vector": {"x": cuv.x, "y": cuv.y, "z": cuv.z},
+                "aspect_ratio": v["aspect_ratio"],
             }
-            if v['camera_definition'] == 'orthogonal_camera':
-                camera['view_to_world_scale'] = v['view_tws_or_fo_view']
-                viewpoint_get['orthogonal_camera'] = camera
-            elif v['camera_definition'] == 'perspective_camera':
-                camera['field_of_view'] = v['view_tws_or_fo_view']
-                viewpoint_get['perspective_camera'] = camera
+            if v["camera_definition"] == "orthogonal_camera":
+                camera["view_to_world_scale"] = v["view_tws_or_fo_view"]
+                viewpoint_get["orthogonal_camera"] = camera
+            elif v["camera_definition"] == "perspective_camera":
+                camera["field_of_view"] = v["view_tws_or_fo_view"]
+                viewpoint_get["perspective_camera"] = camera
             jsonpickle.dumps(v)
             jsonpickle.dumps(viewpoint_get)
             return ViewpointGET(**viewpoint_get)
@@ -1024,8 +1051,9 @@ class BCFDB(MyDB):
         with self.driver.session() as session:
             return session.execute_read(get_viewpoint_work)
 
-    def get_viewpoint_lines(self, project_id: UUID, topic_id: UUID, viewpoint_id: UUID,
-                            current_user: User) -> List[Line]:
+    def get_viewpoint_lines(
+        self, project_id: UUID, topic_id: UUID, viewpoint_id: UUID, current_user: User
+    ) -> List[Line]:
         def get_viewpoint_lines_work(tx) -> List[Line]:
             cypher = """
                     MATCH (u:User)-[r1:HAS_ACTIONS_ON]->(p:Project)-[r2:HAS]->(t:Topic)-[r3:HAS]->(v:Viewpoint)-[r4:HAS]->(l:Line)
@@ -1036,18 +1064,17 @@ class BCFDB(MyDB):
                     AND v.guid = $viewpoint_id
                     RETURN l AS line
                     """
-            results = tx.run(cypher,
-                             username=current_user.username,
-                             project_id=str(project_id),
-                             topic_id=str(topic_id),
-                             viewpoint_id=str(viewpoint_id))
+            results = tx.run(
+                cypher,
+                username=current_user.username,
+                project_id=str(project_id),
+                topic_id=str(topic_id),
+                viewpoint_id=str(viewpoint_id),
+            )
             line_model_list = list()
             for result in results:
                 line_node = result.get("line")
-                line_json = {
-                    'start_point': line_node.start_point,
-                    'end_point': line_node.end_point
-                }
+                line_json = {"start_point": line_node.start_point, "end_point": line_node.end_point}
                 line_model = Line(**line_json)
                 line_model_list.append(line_model)
             return line_model_list
@@ -1055,8 +1082,9 @@ class BCFDB(MyDB):
         with self.driver.session() as session:
             return session.execute_read(get_viewpoint_lines_work)
 
-    def get_viewpoint_clipping_planes(self, project_id: UUID, topic_id: UUID, viewpoint_id: UUID,
-                                      current_user: User) -> List[ClippingPlane]:
+    def get_viewpoint_clipping_planes(
+        self, project_id: UUID, topic_id: UUID, viewpoint_id: UUID, current_user: User
+    ) -> List[ClippingPlane]:
         def get_viewpoint_clipping_planes_work(tx) -> List[ClippingPlane]:
             cypher = """
                     MATCH (u:User)-[r1:HAS_ACTIONS_ON]->(p:Project)-[r2:HAS]->(t:Topic)-[r3:HAS]->(v:Viewpoint)-[r4:HAS]->(cp:ClippingPlane)
@@ -1067,11 +1095,13 @@ class BCFDB(MyDB):
                     AND v.guid = $viewpoint_id
                     RETURN cp AS clipping_plane
                     """
-            results = tx.run(cypher,
-                             username=current_user.username,
-                             project_id=str(project_id),
-                             topic_id=str(topic_id),
-                             viewpoint_id=str(viewpoint_id))
+            results = tx.run(
+                cypher,
+                username=current_user.username,
+                project_id=str(project_id),
+                topic_id=str(topic_id),
+                viewpoint_id=str(viewpoint_id),
+            )
             clipping_plane_model_list = list()
             for result in results:
                 clipping_plane_json = self.node_to_json(result.get("clipping_plane"))
@@ -1082,8 +1112,9 @@ class BCFDB(MyDB):
         with self.driver.session() as session:
             return session.execute_read(get_viewpoint_clipping_planes_work)
 
-    def get_viewpoint_bitmaps(self, project_id: UUID, topic_id: UUID, viewpoint_id: UUID,
-                              current_user: User) -> List[BitmapGET]:
+    def get_viewpoint_bitmaps(
+        self, project_id: UUID, topic_id: UUID, viewpoint_id: UUID, current_user: User
+    ) -> List[BitmapGET]:
         def get_viewpoint_bitmaps_work(tx) -> List[BitmapGET]:
             cypher = """
                     MATCH (u:User)-[r1:HAS_ACTIONS_ON]->(p:Project)-[r2:HAS]->(t:Topic)-[r3:HAS]->(v:Viewpoint)-[r4:HAS]->(b:Bitmap)
@@ -1094,11 +1125,13 @@ class BCFDB(MyDB):
                     AND v.guid = $viewpoint_id
                     RETURN b AS bitmap
                 """
-            results = tx.run(cypher,
-                             username=current_user.username,
-                             project_id=str(project_id),
-                             topic_id=str(topic_id),
-                             viewpoint_id=str(viewpoint_id))
+            results = tx.run(
+                cypher,
+                username=current_user.username,
+                project_id=str(project_id),
+                topic_id=str(topic_id),
+                viewpoint_id=str(viewpoint_id),
+            )
             bitmap_model_list = list()
             for result in results:
                 bitmap_json = self.node_to_json(result.get("bitmap"))
@@ -1109,8 +1142,9 @@ class BCFDB(MyDB):
         with self.driver.session() as session:
             return session.execute_read(get_viewpoint_bitmaps_work)
 
-    def get_viewpoint_bitmap(self, project_id: UUID, topic_id: UUID, viewpoint_id: UUID, bitmap_id: UUID,
-                             current_user: User) -> BitmapGET:
+    def get_viewpoint_bitmap(
+        self, project_id: UUID, topic_id: UUID, viewpoint_id: UUID, bitmap_id: UUID, current_user: User
+    ) -> BitmapGET:
         def get_viewpoint_bitmap_work(tx) -> BitmapGET:
             cypher = """
                     MATCH (u:User)-[r1:HAS_ACTIONS_ON]->(p:Project)-[r2:HAS]->(t:Topic)-[r3:HAS]->(v:Viewpoint)-[r4:HAS]->(b:Bitmap)
@@ -1122,12 +1156,14 @@ class BCFDB(MyDB):
                     AND b.guid = $bitmap_id
                     RETURN b AS bitmap
                 """
-            result = tx.run(cypher,
-                            username=current_user.username,
-                            project_id=str(project_id),
-                            topic_id=str(topic_id),
-                            viewpoint_id=str(viewpoint_id),
-                            bitmap_id=str(bitmap_id))
+            result = tx.run(
+                cypher,
+                username=current_user.username,
+                project_id=str(project_id),
+                topic_id=str(topic_id),
+                viewpoint_id=str(viewpoint_id),
+                bitmap_id=str(bitmap_id),
+            )
             bitmap_json = self.node_to_json(result.get("bitmap"))
             return BitmapGET(**bitmap_json)
 
@@ -1146,11 +1182,13 @@ class BCFDB(MyDB):
                  AND v.snapshot IS NOT NULL
                  RETURN v.snapshot_type AS snapshot_type
                  """
-            result = tx.run(cypher,
-                            username=current_user.username,
-                            project_id=str(project_id),
-                            topic_id=str(topic_id),
-                            viewpoint_id=str(viewpoint_id))
+            result = tx.run(
+                cypher,
+                username=current_user.username,
+                project_id=str(project_id),
+                topic_id=str(topic_id),
+                viewpoint_id=str(viewpoint_id),
+            )
             first = result.single()
             if first is None:
                 raise HTTPException(status_code=404, detail="Item not found.")
@@ -1160,8 +1198,9 @@ class BCFDB(MyDB):
         with self.driver.session() as session:
             return session.execute_read(get_viewpoint_snapshot_work)
 
-    def get_viewpoint_colored_components(self, project_id: UUID, topic_id: UUID, viewpoint_id: UUID,
-                                         current_user: User) -> ColoringGET:
+    def get_viewpoint_colored_components(
+        self, project_id: UUID, topic_id: UUID, viewpoint_id: UUID, current_user: User
+    ) -> ColoringGET:
         def get_viewpoint_colored_components_work(tx) -> ColoringGET:
             cypher = """
                  MATCH (u:User)-[r1:HAS_ACTIONS_ON]->(p:Project)-[r2:HAS]->(t:Topic)-[r3:HAS]->(v:Viewpoint)-[r4:HAS]->(c:Component)
@@ -1173,36 +1212,36 @@ class BCFDB(MyDB):
                  AND c.color IS NOT NULL
                  RETURN c AS component ORDER BY c.color
                  """
-            results = tx.run(cypher,
-                             username=current_user.username,
-                             project_id=str(project_id),
-                             topic_id=str(topic_id),
-                             viewpoint_id=str(viewpoint_id))
+            results = tx.run(
+                cypher,
+                username=current_user.username,
+                project_id=str(project_id),
+                topic_id=str(topic_id),
+                viewpoint_id=str(viewpoint_id),
+            )
             coloring_list = list()
-            color = ''
+            color = ""
             coloring = {}
             occasion = 0
             for result in results:
                 component_json = self.node_to_json(result.get("component"))
-                if component_json['color'] != color:
+                if component_json["color"] != color:
                     if occasion > 0:
                         coloring_list.append(coloring)
                         occasion += 1
-                    color = component_json['color']
-                    coloring = {
-                        'color': color,
-                        'components': []
-                    }
-                coloring['components'].append(component_json)
+                    color = component_json["color"]
+                    coloring = {"color": color, "components": []}
+                coloring["components"].append(component_json)
             coloring_list.append(coloring)
-            coloring_get = {'coloring': coloring_list}
+            coloring_get = {"coloring": coloring_list}
             return ColoringGET(**coloring_get)
 
         with self.driver.session() as session:
             return session.execute_read(get_viewpoint_colored_components_work)
 
-    def get_viewpoint_selected_components(self, project_id: UUID, topic_id: UUID, viewpoint_id: UUID,
-                                          current_user: User) -> SelectionGET:
+    def get_viewpoint_selected_components(
+        self, project_id: UUID, topic_id: UUID, viewpoint_id: UUID, current_user: User
+    ) -> SelectionGET:
         def get_viewpoint_selected_components_work(tx) -> SelectionGET:
             cypher = """
                      MATCH (u:User)-[r1:HAS_ACTIONS_ON]->(p:Project)-[r2:HAS]->(t:Topic)-[r3:HAS]->(v:Viewpoint)-[r4:HAS]->(c:Component)
@@ -1214,23 +1253,26 @@ class BCFDB(MyDB):
                      AND c.selected IS NOT NULL
                      RETURN c AS component
                 """
-            results = tx.run(cypher,
-                             username=current_user.username,
-                             project_id=str(project_id),
-                             topic_id=str(topic_id),
-                             viewpoint_id=str(viewpoint_id))
+            results = tx.run(
+                cypher,
+                username=current_user.username,
+                project_id=str(project_id),
+                topic_id=str(topic_id),
+                viewpoint_id=str(viewpoint_id),
+            )
             component_list = list()
             for result in results:
                 component_json = self.node_to_json(result.get("component"))
                 component_list.append(component_json)
-            selection_get = {'selection': component_list}
+            selection_get = {"selection": component_list}
             return SelectionGET(**selection_get)
 
         with self.driver.session() as session:
             return session.execute_read(get_viewpoint_selected_components_work)
 
-    def get_viewpoint_components_visibility(self, project_id: UUID, topic_id: UUID, viewpoint_id: UUID,
-                                            current_user: User) -> VisibilityGET:
+    def get_viewpoint_components_visibility(
+        self, project_id: UUID, topic_id: UUID, viewpoint_id: UUID, current_user: User
+    ) -> VisibilityGET:
         def get_viewpoint_components_visibility_work(tx) -> VisibilityGET:
             cypher = """
                  MATCH (u:User)-[r1:HAS_ACTIONS_ON]->(p:Project)-[r2:HAS]->(t:Topic)-[r3:HAS]->(v:Viewpoint)
@@ -1241,23 +1283,25 @@ class BCFDB(MyDB):
                  AND v.guid = $viewpoint_id
                  RETURN v AS viewpoint
                  """
-            result = tx.run(cypher,
-                            username=current_user.username,
-                            project_id=str(project_id),
-                            topic_id=str(topic_id),
-                            viewpoint_id=str(viewpoint_id))
+            result = tx.run(
+                cypher,
+                username=current_user.username,
+                project_id=str(project_id),
+                topic_id=str(topic_id),
+                viewpoint_id=str(viewpoint_id),
+            )
             first = result.single()
             if first is None:
                 raise HTTPException(status_code=404, detail="Item not found.")
             viewpoint_json = self.node_to_json(first.get("viewpoint"))
             view_setup_hints = {
-                'spaces_visible': viewpoint_json['spaces_visible'],
-                'space_boundaries_visible': viewpoint_json['space_boundaries_visible'],
-                'openings_visible': viewpoint_json['openings_visible']
+                "spaces_visible": viewpoint_json["spaces_visible"],
+                "space_boundaries_visible": viewpoint_json["space_boundaries_visible"],
+                "openings_visible": viewpoint_json["openings_visible"],
             }
             visibility = {
-                'default_visibility': viewpoint_json['default_visibility'],
-                'view_setup_hints': view_setup_hints
+                "default_visibility": viewpoint_json["default_visibility"],
+                "view_setup_hints": view_setup_hints,
             }
             cypher = """
                 MATCH (u:User)-[r1:HAS_ACTIONS_ON]->(p:Project)-[r2:HAS]->(t:Topic)-[r3:HAS]->(v:Viewpoint)-[r4:HAS]->(c:Component)
@@ -1269,17 +1313,19 @@ class BCFDB(MyDB):
                 AND c.visibility_exception IS NOT NULL
                 RETURN c AS component
             """
-            results = tx.run(cypher,
-                             username=current_user.username,
-                             project_id=str(project_id),
-                             topic_id=str(topic_id),
-                             viewpoint_id=str(viewpoint_id))
+            results = tx.run(
+                cypher,
+                username=current_user.username,
+                project_id=str(project_id),
+                topic_id=str(topic_id),
+                viewpoint_id=str(viewpoint_id),
+            )
             component_list = list()
             for result in results:
                 component_json = self.node_to_json(result.get("component"))
                 component_list.append(component_json)
-            visibility['exceptions'] = component_list
-            visibility_get = {'visibility': visibility}
+            visibility["exceptions"] = component_list
+            visibility_get = {"visibility": visibility}
             return VisibilityGET(**visibility_get)
 
         with self.driver.session() as session:
@@ -1297,11 +1343,13 @@ class BCFDB(MyDB):
                     AND v.guid = $viewpoint_id
                     DETACH DELETE v, n
                     """
-            result = tx.run(cypher,
-                            username=current_user.username,
-                            project_id=str(project_id),
-                            topic_id=str(topic_id),
-                            viewpoint_id=str(viewpoint_id))
+            result = tx.run(
+                cypher,
+                username=current_user.username,
+                project_id=str(project_id),
+                topic_id=str(topic_id),
+                viewpoint_id=str(viewpoint_id),
+            )
             result_summary = result.consume()
             if result_summary.counters.nodes_deleted < 1:
                 raise HTTPException(status_code=404, detail="Item not found.")
@@ -1323,10 +1371,7 @@ class BCFDB(MyDB):
                 AND t1.guid = $topic_id
                 RETURN t2 AS topic, ID(t2) AS server_assigned_id
                 """
-            results = tx.run(cypher,
-                             username=current_user.username,
-                             project_id=str(project_id),
-                             topic_id=str(topic_id))
+            results = tx.run(cypher, username=current_user.username, project_id=str(project_id), topic_id=str(topic_id))
             topic_model_list = list()
             for result in results:
                 topic_json = self.node_to_json(result.get("topic"))
@@ -1338,8 +1383,9 @@ class BCFDB(MyDB):
         with self.driver.session() as session:
             return session.execute_read(get_related_topics_work)
 
-    def put_related_topics(self, project_id: UUID, topic_id: UUID, related_topics: List[RelatedTopicPUT],
-                           current_user: User) -> List[TopicGET]:
+    def put_related_topics(
+        self, project_id: UUID, topic_id: UUID, related_topics: List[RelatedTopicPUT], current_user: User
+    ) -> List[TopicGET]:
         def put_related_topics_work(tx) -> bool:
             for related_topic in related_topics:
                 cypher = """
@@ -1352,11 +1398,13 @@ class BCFDB(MyDB):
                     AND t2.guid = $related_topic_id
                     MERGE (t1)-[r3:RELATED_TO]->(t2:Topic)
                 """
-                tx.run(cypher,
-                       username=current_user.username,
-                       project_id=str(project_id),
-                       topic_id=topic_id,
-                       related_topic_id=related_topic.related_topic_guid)
+                tx.run(
+                    cypher,
+                    username=current_user.username,
+                    project_id=str(project_id),
+                    topic_id=topic_id,
+                    related_topic_id=related_topic.related_topic_guid,
+                )
             return True
 
         with self.driver.session() as session:
@@ -1365,8 +1413,9 @@ class BCFDB(MyDB):
             return self.get_related_topics(project_id, topic_id, current_user)
 
     # returns a collection
-    def get_topic_document_references(self, project_id: UUID, topic_id: UUID,
-                                      current_user: User) -> List[DocumentReferenceGET]:
+    def get_topic_document_references(
+        self, project_id: UUID, topic_id: UUID, current_user: User
+    ) -> List[DocumentReferenceGET]:
         def get_topic_document_references_work(tx) -> List[DocumentReferenceGET]:
             cypher = """
                 MATCH (u:User)-[r1:HAS_ACTIONS_ON]->(p:Project)-[r2:HAS]->(t:Topic)-[r3:REFERS_TO]->(d:Document)
@@ -1380,10 +1429,7 @@ class BCFDB(MyDB):
                     d.url AS document_url,
                     d.description AS document_description
                 """
-            results = tx.run(cypher,
-                             username=current_user.username,
-                             project_id=str(project_id),
-                             topic_id=str(topic_id))
+            results = tx.run(cypher, username=current_user.username, project_id=str(project_id), topic_id=str(topic_id))
             document_reference_model_list = list()
             for result in results:
                 document_reference_model = DocumentReferenceGET(**result)
@@ -1393,19 +1439,22 @@ class BCFDB(MyDB):
         with self.driver.session() as session:
             return session.execute_read(get_topic_document_references_work)
 
-    def post_topic_document_reference(self, project_id: UUID, topic_id: UUID, document_reference: DocumentReferencePOST,
-                                      current_user: User) -> List[DocumentReferenceGET]:
+    def post_topic_document_reference(
+        self, project_id: UUID, topic_id: UUID, document_reference: DocumentReferencePOST, current_user: User
+    ) -> List[DocumentReferenceGET]:
         def post_topic_document_reference_work(tx) -> bool:
             if document_reference.guid is None:
                 document_reference.guid = uuid4()
             if document_reference.document_guid is None or len(document_reference.url) > 4 > len(
-                    document_reference.document_guid):
+                document_reference.document_guid
+            ):
                 document_reference.document_guid = uuid4()
-                document_url = 'd.url = $url,'
+                document_url = "d.url = $url,"
             else:
-                document_url = ''
-                document_reference.url = ''
-            cypher = """
+                document_url = ""
+                document_reference.url = ""
+            cypher = (
+                """
                 MATCH (u:User)-[r1:HAS_ACTIONS_ON]->(p:Project)-[r2:HAS]->(t:Topic)
                 WHERE u.username = $username
                 AND r1.updateDocumentReferences = True
@@ -1415,15 +1464,19 @@ class BCFDB(MyDB):
                 SET r3.guid: $document_reference_id,
                     %s
                     d.description = $description
-            """ % document_url
-            result = tx.run(cypher,
-                            username=current_user.username,
-                            project_id=str(project_id),
-                            topic_id=str(topic_id),
-                            document_id=str(document_reference.document_guid),
-                            document_reference_id=str(document_reference.guid),
-                            url=document_reference.url,
-                            description=document_reference.description)
+            """
+                % document_url
+            )
+            result = tx.run(
+                cypher,
+                username=current_user.username,
+                project_id=str(project_id),
+                topic_id=str(topic_id),
+                document_id=str(document_reference.document_guid),
+                document_reference_id=str(document_reference.guid),
+                url=document_reference.url,
+                description=document_reference.description,
+            )
             summary = result.consume()
             if summary.counters.nodes_created < 1:
                 raise HTTPException(status_code=400, detail="Item not added.")
@@ -1434,13 +1487,19 @@ class BCFDB(MyDB):
             self.set_topic_modified_date(project_id, topic_id, current_user)
             return self.get_topic_document_references(project_id, topic_id, current_user)
 
-    def put_topic_document_references(self, project_id: UUID, topic_id: UUID, reference_id: UUID,
-                                      document_reference: DocumentReferencePUT,
-                                      current_user: User) -> List[DocumentReferenceGET]:
+    def put_topic_document_references(
+        self,
+        project_id: UUID,
+        topic_id: UUID,
+        reference_id: UUID,
+        document_reference: DocumentReferencePUT,
+        current_user: User,
+    ) -> List[DocumentReferenceGET]:
         document_reference.guid = reference_id
         document_reference_post = DocumentReferencePOST(document_reference)
-        topic_document_references_response = self.post_topic_document_reference(project_id, topic_id,
-                                                                                document_reference_post, current_user)
+        topic_document_references_response = self.post_topic_document_reference(
+            project_id, topic_id, document_reference_post, current_user
+        )
         self.set_topic_modified_date(project_id, topic_id, current_user)
         return topic_document_references_response
 

@@ -42,9 +42,9 @@ def get_applicable_structural_load_types(self, context):
 
 
 def updateApplicableStructuralLoadTypes(self, context):
-    StructuralLoadCasesData.data[
-        "applicable_structural_load_types"
-    ] = StructuralLoadCasesData.applicable_structural_load_types()
+    StructuralLoadCasesData.data["applicable_structural_load_types"] = (
+        StructuralLoadCasesData.applicable_structural_load_types()
+    )
 
 
 def get_applicable_structural_loads(self, context):

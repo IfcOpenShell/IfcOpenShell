@@ -448,7 +448,9 @@ class TestUsingArrays(NewFile):
 class TestApplyIfcMaterialChanges(NewFile):
     def get_used_styles(self, obj: bpy.types.Object) -> set[ifcopenshell.entity_instance]:
         ifc_file = tool.Ifc.get()
-        return {ifc_file.by_id(s.material.BIMStyleProperties.ifc_definition_id) for s in obj.material_slots if s.material}
+        return {
+            ifc_file.by_id(s.material.BIMStyleProperties.ifc_definition_id) for s in obj.material_slots if s.material
+        }
 
     def get_mesh(self, obj: bpy.types.Object) -> bpy.types.Mesh:
         mesh = obj.data

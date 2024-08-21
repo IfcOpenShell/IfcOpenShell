@@ -149,7 +149,10 @@ class Brick(blenderbim.core.tool.Brick):
                 <{brick_uri}> rdfs:label ?label .
             }
             LIMIT 1
-        """.replace("{brick_uri}", brick_uri))
+        """.replace(
+                "{brick_uri}", brick_uri
+            )
+        )
         name = None
         for row in query:
             name = str(row.get("label"))
@@ -440,8 +443,6 @@ class Brick(blenderbim.core.tool.Brick):
             bpy.context.scene.BIMBrickProperties.split_screen_brick_breadcrumbs.clear()
         else:
             bpy.context.scene.BIMBrickProperties.brick_breadcrumbs.clear()
-
-
 
 
 class BrickStore:

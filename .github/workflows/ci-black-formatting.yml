@@ -1,0 +1,12 @@
+name: ci-black-formatting
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  lint-formatting:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: psf/black@stable

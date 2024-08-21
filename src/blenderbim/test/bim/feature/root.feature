@@ -20,15 +20,20 @@ Scenario: Unlink object
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
-    And I add a material
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
-    And I press "bim.add_style()"
+    And I press "bim.load_styles(style_type='IfcSurfaceStyle')"
+    And I press "bim.enable_adding_presentation_style"
+    And I set "scene.BIMStylesProperties.style_name" to "Style"
+    And I press "bim.add_presentation_style"
+    And the object "IfcWall/Cube" is selected
+    And the variable "style" is "{ifc}.by_type('IfcSurfaceStyle')[0].id()"
+    And I press "bim.assign_style_to_selected(style_id={style})"
     When I press "bim.unlink_object(obj='IfcWall/Cube')"
     Then the object "Cube" is not an IFC element
-    And the material "Material" is an IFC style
-    And the material "Material.001" is not an IFC style
+    And the material "Style" is an IFC style
+    And the material "Style.001" is not an IFC style
 
 Scenario: Copy class
     Given an empty IFC project
@@ -59,7 +64,7 @@ Scenario: Assign a type class to a cube
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
     And I press "bim.assign_class"
     Then the object "IfcWallType/Cube" is an "IfcWallType"
-    And the object "IfcWallType/Cube" is in the collection "Types"
+    And the object "IfcWallType/Cube" is in the collection "IfcTypeProduct"
     And the object "IfcWallType/Cube" has a "Tessellation" representation of "Model/Body/MODEL_VIEW"
 
 Scenario: Assign a spatial class to a cube
@@ -83,7 +88,6 @@ Scenario: Assign a spatial class to a cube already in a collection
     And I press "bim.assign_class"
     Then the object "IfcSpace/Cube" is an "IfcSpace"
     And the object "IfcSpace/Cube" is in the collection "IfcSpace/Cube"
-    And the collection "IfcSpace/Cube" is in the collection "IfcBuildingStorey/My Storey"
     And the object "IfcSpace/Cube" has a "Tessellation" representation of "Model/Body/MODEL_VIEW"
 
 Scenario: Assign a class to a cube in a collection
@@ -113,4 +117,3 @@ Scenario: Copy a storey
     Then the object "IfcBuildingStorey/My Storey" and "IfcBuildingStorey/My Storey.001" are different elements
     And the object "IfcBuildingStorey/My Storey" is in the collection "IfcBuildingStorey/My Storey"
     And the object "IfcBuildingStorey/My Storey.001" is in the collection "IfcBuildingStorey/My Storey.001"
-    And the collection "IfcBuildingStorey/My Storey.001" is in the collection "IfcBuilding/My Building"

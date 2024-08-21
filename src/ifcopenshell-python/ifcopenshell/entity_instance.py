@@ -83,11 +83,15 @@ def register_schema_attributes(schema: ifcopenshell_wrapper.schema_definition) -
 
             # resolve to actual functions in wrapper
             functions = [
-                set_derived_attribute
-                if mname == "setArgumentAsDerived"
-                else set_unsupported_attribute
-                if mname == "setArgumentAsUnknown"
-                else getattr(ifcopenshell_wrapper.entity_instance, mname)
+                (
+                    set_derived_attribute
+                    if mname == "setArgumentAsDerived"
+                    else (
+                        set_unsupported_attribute
+                        if mname == "setArgumentAsUnknown"
+                        else getattr(ifcopenshell_wrapper.entity_instance, mname)
+                    )
+                )
                 for mname in fn_names
             ]
 
@@ -203,15 +207,20 @@ class entity_instance:
             rules = importlib.import_module(f"ifcopenshell.express.rules.{schema_name}")
         except:
             import os
-            current_dir_files = {fn.lower(): fn for fn in os.listdir('.')}
-            exp_filename = schema_name.lower() + '.exp'
+
+            current_dir_files = {fn.lower(): fn for fn in os.listdir(".")}
+            exp_filename = schema_name.lower() + ".exp"
             schema_path = current_dir_files.get(exp_filename)
             if schema_path is None:
-                raise Exception(f"Couldn't find express file '{schema_name.lower()}.exp' in the current folder: '{os.getcwd()}'.")
-            fn = schema_path[:-4] + '.py'
+                raise Exception(
+                    f"Couldn't find express file '{schema_name.lower()}.exp' in the current folder: '{os.getcwd()}'."
+                )
+            fn = schema_path[:-4] + ".py"
             if not os.path.exists(fn):
-                subprocess.run([sys.executable, "-m", "ifcopenshell.express.rule_compiler", schema_path, fn], check=True)
-                time.sleep(1.)
+                subprocess.run(
+                    [sys.executable, "-m", "ifcopenshell.express.rule_compiler", schema_path, fn], check=True
+                )
+                time.sleep(1.0)
             rules = importlib.import_module(schema_name)
 
         def yield_supertypes():
@@ -255,7 +264,7 @@ class entity_instance:
             # Define condition and transformation functions
             condition = lambda v: v == old
             transform = lambda v: new
-            
+
             # Usage example
             attribute_value = element.RelatedElements
             print(old in attribute_value, new in attribute_value) # True, False

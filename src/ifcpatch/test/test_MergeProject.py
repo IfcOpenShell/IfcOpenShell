@@ -18,8 +18,14 @@
 
 import ifcpatch
 import ifcopenshell
+import ifcopenshell.api.context
+import ifcopenshell.api.geometry
 import ifcopenshell.api.georeference
+import ifcopenshell.geom
+import ifcopenshell.util.geolocation
 import ifcopenshell.util.placement
+import ifcopenshell.util.representation
+import ifcopenshell.util.shape
 import ifcopenshell.util.shape_builder
 import test.bootstrap
 import tempfile
@@ -119,8 +125,8 @@ class TestMergeProject(test.bootstrap.IFC4):
         ifcopenshell.api.geometry.assign_representation(self.file, product=wall1, representation=rep)
         shape = ifcopenshell.geom.create_shape(ifcopenshell.geom.settings(), wall1)
         verts = ifcopenshell.util.shape.get_shape_vertices(shape, shape.geometry)
-        assert np.any(np.all(np.isclose(np.array((1., 2., 3.)), verts), axis=1))
-        assert np.any(np.all(np.isclose(np.array((3., 4., 5.)), verts), axis=1))
+        assert np.any(np.all(np.isclose(np.array((1.0, 2.0, 3.0)), verts), axis=1))
+        assert np.any(np.all(np.isclose(np.array((3.0, 4.0, 5.0)), verts), axis=1))
 
         # Second file is in millimeters with a different false origin
         wall1 = second_file.by_type("IfcWall")[0]
@@ -134,8 +140,8 @@ class TestMergeProject(test.bootstrap.IFC4):
         ifcopenshell.api.geometry.assign_representation(second_file, product=wall1, representation=rep)
         shape = ifcopenshell.geom.create_shape(ifcopenshell.geom.settings(), wall1)
         verts = ifcopenshell.util.shape.get_shape_vertices(shape, shape.geometry)
-        assert np.any(np.all(np.isclose(np.array((1., 2., 3.)), verts), axis=1))
-        assert np.any(np.all(np.isclose(np.array((3., 4., 5.)), verts), axis=1))
+        assert np.any(np.all(np.isclose(np.array((1.0, 2.0, 3.0)), verts), axis=1))
+        assert np.any(np.all(np.isclose(np.array((3.0, 4.0, 5.0)), verts), axis=1))
 
         output = ifcpatch.execute({"file": self.file, "recipe": "MergeProject", "arguments": [second_file]})
 
@@ -155,17 +161,17 @@ class TestMergeProject(test.bootstrap.IFC4):
         m2 = ifcopenshell.util.placement.get_local_placement(wall2.ObjectPlacement)
         assert np.allclose(m1[:, 3], (1, 2, 3, 1))
         # assert np.allclose(m2[:, 3], (8.321, 29.321, 3, 1), atol=1e-3)
-        assert np.allclose(m2[:, 3], (17.847, 24.707, 3., 1.), atol=1e-3)
+        assert np.allclose(m2[:, 3], (17.847, 24.707, 3.0, 1.0), atol=1e-3)
 
         shape = ifcopenshell.geom.create_shape(ifcopenshell.geom.settings(), wall1)
         verts = ifcopenshell.util.shape.get_shape_vertices(shape, shape.geometry)
-        assert np.any(np.all(np.isclose(np.array((1., 2., 3.)), verts), axis=1))
-        assert np.any(np.all(np.isclose(np.array((3., 4., 5.)), verts), axis=1))
+        assert np.any(np.all(np.isclose(np.array((1.0, 2.0, 3.0)), verts), axis=1))
+        assert np.any(np.all(np.isclose(np.array((3.0, 4.0, 5.0)), verts), axis=1))
 
         shape = ifcopenshell.geom.create_shape(ifcopenshell.geom.settings(), wall2)
         verts = ifcopenshell.util.shape.get_shape_vertices(shape, shape.geometry)
-        assert np.any(np.all(np.isclose(np.array((17.847, 24.707, 3.)), verts, atol=1e-3), axis=1))
-        assert np.any(np.all(np.isclose(np.array((20.410, 25.902, 5.)), verts, atol=1e-3), axis=1))
+        assert np.any(np.all(np.isclose(np.array((17.847, 24.707, 3.0)), verts, atol=1e-3), axis=1))
+        assert np.any(np.all(np.isclose(np.array((20.410, 25.902, 5.0)), verts, atol=1e-3), axis=1))
 
 
 class TestMergeProjectIFC2X3(test.bootstrap.IFC2X3, TestMergeProject):

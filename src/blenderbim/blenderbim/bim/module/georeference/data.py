@@ -21,7 +21,7 @@ import bpy
 import numpy as np
 import blenderbim.tool as tool
 import ifcopenshell.util.geolocation
-from mathutils import Matrix
+from mathutils import Matrix, Vector
 from ifcopenshell.util.doc import get_entity_doc
 
 
@@ -44,6 +44,7 @@ class GeoreferenceData:
         cls.data["local_unit_symbol"] = cls.local_unit_symbol()
         cls.data["map_unit_symbol"] = cls.map_unit_symbol()
         cls.data["world_coordinate_system"] = cls.world_coordinate_system()
+        cls.data["local_origin"] = cls.local_origin()
         cls.is_loaded = True
 
     @classmethod
@@ -162,8 +163,40 @@ class GeoreferenceData:
             result["has_transformation"] = True
             result["rotation"] = str(round(ifcopenshell.util.geolocation.yaxis2angle(*wcs[:, 1][:2]), 3))
             result["x"], result["y"], result["z"] = wcs[:, 3][:3]
+
+            props = bpy.context.scene.BIMGeoreferenceProperties
+            if props.has_blender_offset:
+                blender_xyz = ifcopenshell.util.geolocation.enh2xyz(
+                    result["x"],
+                    result["y"],
+                    result["z"],
+                    float(props.blender_offset_x),
+                    float(props.blender_offset_y),
+                    float(props.blender_offset_z),
+                    float(props.blender_x_axis_abscissa),
+                    float(props.blender_x_axis_ordinate),
+                )
+            else:
+                blender_xyz = wcs[:, 3][:3]
+
+            result["blender_x"], result["blender_y"], result["blender_z"] = blender_xyz
+            result["blender_location"] = Vector([co * unit_scale for co in blender_xyz])
+
             wcs[0][3] *= unit_scale
             wcs[1][3] *= unit_scale
             wcs[2][3] *= unit_scale
             result["matrix"] = Matrix(wcs)
         return result
+
+    @classmethod
+    def local_origin(cls):
+        props = bpy.context.scene.BIMGeoreferenceProperties
+        if not props.has_blender_offset:
+            return
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        x = float(props.blender_offset_x) * -1
+        y = float(props.blender_offset_y) * -1
+        z = float(props.blender_offset_z) * -1
+        enh = ifcopenshell.util.geolocation.auto_xyz2enh(tool.Ifc.get(), 0, 0, 0)
+        xyz_si = Vector([x * unit_scale, y * unit_scale, z * unit_scale])
+        return {"x": x, "y": y, "z": z, "enh": enh, "location": xyz_si}

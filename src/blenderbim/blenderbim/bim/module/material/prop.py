@@ -120,6 +120,11 @@ def get_contexts(self, context):
 
 
 def update_material_name(self: "Material", context: bpy.types.Context) -> None:
+    # No need to update anything if it's either category
+    # or ifc_definition_id is not yet set
+    # (which occurs when Material still in the process of creation).
+    if self.is_category or not self.ifc_definition_id:
+        return
     ifc_file = tool.Ifc.get()
     name = self.name
     material = ifc_file.by_id(self.ifc_definition_id)

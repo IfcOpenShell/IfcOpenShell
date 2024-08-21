@@ -32,6 +32,7 @@ from bpy.props import (
 )
 import blenderbim.tool as tool
 import ifcopenshell
+import ifcopenshell.util.element
 
 
 def get_subelement_class(self, context):
@@ -71,6 +72,7 @@ def update_relating_container_from_object(self, context):
         return
     container = ifcopenshell.util.element.get_container(element)
     if container:
+        # TODO: currently broken and relating_container_object is not used in UI.
         bpy.ops.bim.assign_container(structure=container.id())
     else:
         bpy.ops.bim.disable_editing_container()
@@ -80,20 +82,6 @@ def update_relating_container_from_object(self, context):
 def is_object_applicable(self, obj):
     element = tool.Ifc.get_entity(obj)
     return bool(element)
-
-
-class SpatialElement(PropertyGroup):
-    name: StringProperty(name="Name")
-    long_name: StringProperty(name="Long Name")
-    has_decomposition: BoolProperty(name="Has Decomposition")
-    ifc_definition_id: IntProperty(name="IFC Definition ID")
-    is_selected: BoolProperty(name="Is Selected")
-
-
-class BIMSpatialProperties(PropertyGroup):
-    containers: CollectionProperty(name="Containers", type=SpatialElement)
-    active_container_index: IntProperty(name="Active Container Index")
-    active_container_id: IntProperty(name="Active Container Id")
 
 
 class BIMObjectSpatialProperties(PropertyGroup):
@@ -123,6 +111,7 @@ class Element(PropertyGroup):
     name: StringProperty(name="Name")
     is_class: BoolProperty(name="Is Class", default=False)
     is_type: BoolProperty(name="Is Type", default=False)
+    ifc_definition_id: IntProperty(name="IFC Definition ID")
     total: IntProperty(name="Total")
 
 
@@ -144,3 +133,8 @@ class BIMSpatialDecompositionProperties(PropertyGroup):
     def active_container(self):
         if self.containers and self.active_container_index < len(self.containers):
             return self.containers[self.active_container_index]
+
+    @property
+    def active_element(self):
+        if self.elements and self.active_element_index < len(self.elements):
+            return self.elements[self.active_element_index]

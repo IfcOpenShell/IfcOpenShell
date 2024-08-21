@@ -101,9 +101,9 @@ class LibraryReferencesData:
                 results.append(
                     {
                         "id": library.id(),
-                        "identification": library.ItemReference
-                        if tool.Ifc.get_schema() == "IFC2X3"
-                        else library.Identification,
+                        "identification": (
+                            library.ItemReference if tool.Ifc.get_schema() == "IFC2X3" else library.Identification
+                        ),
                         "name": library.Name or "Unnamed",
                     }
                 )

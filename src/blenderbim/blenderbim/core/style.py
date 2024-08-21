@@ -57,11 +57,14 @@ def update_external_style(
 
 def remove_style(ifc: tool.Ifc, style_tool: tool.Style, style: ifcopenshell.entity_instance) -> None:
     obj = ifc.get_object(style)
+    # Get style_type before removing object as later StylesData might fail to load
+    # due object not yet removed completely.
+    style_type = style_tool.get_active_style_type()
     ifc.unlink(element=style)
     ifc.run("style.remove_style", style=style)
     style_tool.delete_object(obj)
     if style_tool.is_editing_styles():
-        style_tool.import_presentation_styles(style_tool.get_active_style_type())
+        style_tool.import_presentation_styles(style_type)
 
 
 def update_style_colours(ifc: tool.Ifc, style: tool.Style, obj: bpy.types.Material, verbose: bool = False) -> None:

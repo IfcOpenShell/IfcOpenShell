@@ -24,20 +24,7 @@ import logging
 import tempfile
 import ifcopenshell
 import blenderbim.tool as tool
-from blenderbim.bim.operator import MultipleFileSelector
 
-
-class SelectFMIfcFile(MultipleFileSelector):
-    bl_idname = "bim.select_fm_ifc_file"
-    bl_label = "Select FM IFC File"
-    filename_ext = ".ifc"
-    filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
-
-    def execute(self, context):
-        props = context.scene.BIMFMProperties
-
-        self.update_props(props, "ifc_file", props.ifc_files)
-        return {"FINISHED"}
 
 class ExecuteIfcFM(bpy.types.Operator):
     bl_idname = "bim.execute_ifcfm"
@@ -49,7 +36,7 @@ class ExecuteIfcFM(bpy.types.Operator):
     @classmethod
     def poll(cls, context):
         props = context.scene.BIMFMProperties
-        return props.should_load_from_memory or props.ifc_file
+        return props.should_load_from_memory or props.ifc_files.single_file
 
     def invoke(self, context, event):
         props = context.scene.BIMFMProperties
@@ -62,14 +49,13 @@ class ExecuteIfcFM(bpy.types.Operator):
         props = context.scene.BIMFMProperties
         ifc_file = tool.Ifc.get()
         filepaths = []
-        if not (ifc_file and props.should_load_from_memory):
-            if len(props.ifc_files):
-                ifc_files = [ifcopenshell.open(f.name) for f in props.ifc_files]
-                filepaths = [f.name for f in props.ifc_files]
-            else:
-                ifc_files = [ifcopenshell.open(props.ifc_file)]
-        else:
+        if ifc_file and props.should_load_from_memory:
             ifc_files = [ifc_file]
+        else:
+            ifc_files = [ifcopenshell.open(f.name) for f in props.ifc_files.file_list]
+
+            if len(ifc_files) > 1:
+                filepaths = [f.name for f in props.ifc_files.file_list]
 
         for i, ifc_file in enumerate(ifc_files):
             if filepaths:

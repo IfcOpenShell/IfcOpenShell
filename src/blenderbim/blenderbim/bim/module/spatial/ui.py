@@ -36,27 +36,39 @@ class BIM_PT_spatial(Panel):
         return SpatialData.data["poll"]
 
     def draw(self, context):
+        # TODO: expose relating_container_object so users could
+        # assign container without switching default container back and forth
+        # just for 1 operation.
+
         if not SpatialData.is_loaded:
             SpatialData.load()
 
-        props = context.scene.BIMSpatialProperties
         osprops = context.active_object.BIMObjectSpatialProperties
 
         if osprops.is_editing:
-            row = self.layout.row(align=True)
-            if SpatialData.data["parent_container_id"]:
-                op = row.operator("bim.change_spatial_level", text="", icon="FRAME_PREV")
-                op.parent = SpatialData.data["parent_container_id"]
-            if props.containers and props.active_container_index < len(props.containers):
-                op = row.operator("bim.assign_container", icon="CHECKMARK")
-                op.structure = props.containers[props.active_container_index].ifc_definition_id
-            row.operator("bim.reference_structure", icon="LINKED", text="")
-            row.operator("bim.dereference_structure", icon="UNLINKED", text="")
-            row.operator("bim.copy_to_container", icon="COPYDOWN", text="")
-            row.operator("bim.disable_editing_container", icon="CANCEL", text="")
+            if SpatialData.data["default_container"]:
+                row = self.layout.row(align=True)
+                row.label(text=f"Target: {SpatialData.data['default_container']}", icon="OUTLINER_COLLECTION")
+                row.operator("bim.assign_container", icon="CHECKMARK", text="Reassign Container")
+                row.operator("bim.disable_editing_container", icon="CANCEL", text="")
 
-            self.layout.template_list("BIM_UL_containers", "", props, "containers", props, "active_container_index")
-            self.layout.prop(osprops, "relating_container_object")
+            if SpatialData.data["selected_containers"]:
+                row = self.layout.row()
+                row.label(text=f"{len(SpatialData.data['selected_containers'])} Selected Containers")
+                for name in SpatialData.data["selected_containers"][:3]:
+                    row = self.layout.row()
+                    row.label(text=name, icon="OUTLINER_COLLECTION")
+                if len(SpatialData.data["selected_containers"]) > 3:
+                    row = self.layout.row()
+                    row.label(text=f"... {len(SpatialData.data['selected_containers']) - 3} More")
+                row = self.layout.row(align=True)
+                row.operator("bim.reference_structure", icon="LINKED", text="Reference Selected")
+                row.operator("bim.dereference_structure", icon="UNLINKED", text="")
+                row = self.layout.row()
+                row.operator("bim.copy_to_container", icon="COPYDOWN", text="Copy Object To Selected")
+            else:
+                row = self.layout.row()
+                row.label(text="No Selected Containers")
         else:
             row = self.layout.row(align=True)
             if SpatialData.data["label"]:
@@ -69,26 +81,15 @@ class BIM_PT_spatial(Panel):
             else:
                 row.label(text="No Spatial Container")
                 row.operator("bim.enable_editing_container", icon="GREASEPENCIL", text="")
-            for reference in SpatialData.data["references"]:
+
+        references = SpatialData.data["references"]
+        if references:
+            self.layout.label(text="Referenced In Structures:")
+            for reference in references:
                 row = self.layout.row()
                 row.label(text=reference, icon="LINKED")
-
-
-class BIM_UL_containers(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        if item:
-            if item.has_decomposition:
-                op = layout.operator("bim.change_spatial_level", text="", icon="DISCLOSURE_TRI_RIGHT", emboss=False)
-                op.parent = item.ifc_definition_id
-            layout.label(text=item.name)
-            layout.label(text=item.long_name)
-            layout.prop(
-                item,
-                "is_selected",
-                icon="CHECKBOX_HLT" if item.is_selected else "CHECKBOX_DEHLT",
-                text="",
-                emboss=False,
-            )
+        else:
+            self.layout.label(text="No References In Structures")
 
 
 class BIM_PT_spatial_decomposition(Panel):
@@ -109,7 +110,7 @@ class BIM_PT_spatial_decomposition(Panel):
             SpatialDecompositionData.load()
         self.props = context.scene.BIMSpatialDecompositionProperties
 
-        if SpatialDecompositionData.data['default_container']:
+        if SpatialDecompositionData.data["default_container"]:
             row = self.layout.row(align=True)
             row.label(
                 text=f"Default: {SpatialDecompositionData.data['default_container']}",
@@ -161,15 +162,23 @@ class BIM_PT_spatial_decomposition(Panel):
 
         if not self.props.total_elements:
             row = self.layout.row(align=True)
-            row.label(text="No Contained Elements", icon="FILE_3D")
+            row.label(text=f"{self.props.active_container.ifc_class} > No Contained Elements", icon="FILE_3D")
             row.prop(self.props, "should_include_children", text="", icon="OUTLINER")
             return
 
         row = self.layout.row(align=True)
-        row.label(text=f"{self.props.total_elements} Contained Elements", icon="FILE_3D")
+        row.label(
+            text=f"{self.props.active_container.ifc_class} > {self.props.total_elements} Contained Elements",
+            icon="FILE_3D",
+        )
         row.prop(self.props, "should_include_children", text="", icon="OUTLINER")
         op = row.operator("bim.select_decomposed_elements", icon="RESTRICT_SELECT_OFF", text="")
-        op.ifc_class = self.props.active_container.ifc_class
+        if self.props.active_element.is_class:
+            op.ifc_class = self.props.active_element.name
+            op.relating_type = 0
+        elif self.props.active_element.is_type:
+            op.ifc_class = ""
+            op.relating_type = self.props.active_element.ifc_definition_id
         op.container = ifc_definition_id
 
         self.layout.template_list(
@@ -187,7 +196,20 @@ class BIM_UL_containers_manager(UIList):
         if item:
             row = layout.row(align=True)
             self.draw_hierarchy(row, item)
-            row.prop(item, "name", emboss=False, text="")
+            icon = {
+                "IfcProject": "FILE",
+                "IfcSite": "WORLD",
+                "IfcBuilding": "HOME",
+                "IfcBuildingStorey": "LINENUMBERS_OFF",
+                "IfcSpace": "ANTIALIASED",
+                "IfcFacilityPart": "MOD_FLUID",
+                "IfcBridgePart": "MOD_FLUID",
+                "IfcFacilityPartCommon": "MOD_FLUID",
+                "IfcMarinePart": "MOD_FLUID",
+                "IfcRailwayPart": "MOD_FLUID",
+                "IfcRoadPart": "MOD_FLUID",
+            }.get(item.ifc_class, "META_PLANE")
+            row.prop(item, "name", emboss=False, text="", icon=icon)
             if item.long_name:
                 row.prop(item, "long_name", emboss=False, text="")
             col = row.column()
@@ -208,24 +230,6 @@ class BIM_UL_containers_manager(UIList):
                 )
         else:
             row.label(text="", icon="BLANK1")
-        if item.ifc_class == "IfcProject":
-            row.label(text="", icon="FILE")
-        else:
-            icon = {
-                "IfcSite": "WORLD",
-                "IfcBuilding": "HOME",
-                "IfcBuildingStorey": "LINENUMBERS_OFF",
-                "IfcSpace": "ANTIALIASED",
-                "IfcFacilityPart": "MOD_FLUID",
-                "IfcBridgePart": "MOD_FLUID",
-                "IfcFacilityPartCommon": "MOD_FLUID",
-                "IfcMarinePart": "MOD_FLUID",
-                "IfcRailwayPart": "MOD_FLUID",
-                "IfcRoadPart": "MOD_FLUID",
-            }.get(item.ifc_class, "META_PLANE")
-            op = row.operator("bim.select_decomposed_elements", icon=icon, text="", emboss=False)
-            op.ifc_class = item.ifc_class
-            op.container = item.ifc_definition_id
 
 
 class BIM_UL_elements(UIList):
@@ -240,7 +244,6 @@ class BIM_UL_elements(UIList):
                 col.label(text=str(item.total))
             elif item.is_type:
                 row.label(text="", icon="BLANK1")
-                row.label(text="", icon="DISCLOSURE_TRI_DOWN")
                 row.label(text=item.name)
                 col = row.column()
                 col.alignment = "RIGHT"

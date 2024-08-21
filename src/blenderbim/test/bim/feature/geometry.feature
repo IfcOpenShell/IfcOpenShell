@@ -50,7 +50,6 @@ Scenario: Add representation - add a representation with a scale factor applied
     And the object "Cube" is selected
     When the object "Cube" is scaled to "2"
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     Then the object "IfcWall/Cube" has no scale
@@ -62,7 +61,6 @@ Scenario: Add representation - add a representation with a scale factor removed 
     And I press "object.duplicate_move_linked"
     And the object "Cube" is selected
     When the object "Cube" is scaled to "2"
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
@@ -95,7 +93,7 @@ Scenario: Switch representation - current edited representation is updated prior
     And I press "bim.switch_representation(ifc_definition_id={representation}, should_reload=True)"
     And the variable "representation" is "[r for r in {ifc}.by_type('IfcShapeRepresentation') if r.RepresentationType=='Annotation2D'][0].id()"
     And I press "bim.switch_representation(ifc_definition_id={representation}, should_reload=True)"
-    When I press "export_ifc.bim(filepath='{cwd}/test/files/temp/export.ifc')"
+    When I press "bim.save_project(filepath='{cwd}/test/files/temp/export.ifc')"
     Then the object "IfcWall/Cube" dimensions are "4,4,0"
 
 Scenario: Switch representation - current edited representation is discarded if switching to a box
@@ -110,7 +108,7 @@ Scenario: Switch representation - current edited representation is discarded if 
     And I press "bim.switch_representation(obj='IfcWall/Cube', ifc_definition_id={representation}, should_reload=True)"
     And the variable "representation" is "{ifc}.by_type('IfcShapeRepresentation')[0].id()"
     And I press "bim.switch_representation(obj='IfcWall/Cube', ifc_definition_id={representation}, should_reload=True)"
-    When I press "export_ifc.bim(filepath='{cwd}/test/files/temp/export.ifc')"
+    When I press "bim.save_project(filepath='{cwd}/test/files/temp/export.ifc')"
     Then the object "IfcWall/Cube" dimensions are "2,2,2"
 
 Scenario: Switch representation - existing Blender modifiers must be purged
@@ -133,8 +131,10 @@ Scenario: Remove representation - remove an active representation
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
-    When the variable "representation" is "{ifc}.by_type('IfcShapeRepresentation')[0].id()"
-    And I press "bim.remove_representation(representation_id={representation})"
+    When the variable "representation_body" is "{ifc}.by_type('IfcShapeRepresentation')[0].id()"
+    And the variable "representation_bbox" is "{ifc}.by_type('IfcShapeRepresentation')[1].id()"
+    And I press "bim.remove_representation(representation_id={representation_body})"
+    And I press "bim.remove_representation(representation_id={representation_bbox})"
     Then the object "IfcWall/Cube" has no data
 
 Scenario: Remove representation - remove an unloaded representation
@@ -162,8 +162,10 @@ Scenario: Remove representation - remove an instanced representation from an act
     And I press "bim.add_constr_type_instance"
     And I press "bim.add_constr_type_instance"
     And the object "IfcWallType/Cube" is selected
-    When the variable "representation" is "{ifc}.by_type('IfcWallType')[0].RepresentationMaps[1].MappedRepresentation.id()"
-    And I press "bim.remove_representation(representation_id={representation})"
+    When the variable "representation_body" is "{ifc}.by_type('IfcWallType')[0].RepresentationMaps[1].MappedRepresentation.id()"
+    And the variable "representation_bbox" is "{ifc}.by_type('IfcWallType')[0].RepresentationMaps[0].MappedRepresentation.id()"
+    And I press "bim.remove_representation(representation_id={representation_body})"
+    And I press "bim.remove_representation(representation_id={representation_bbox})"
     Then the object "IfcWallType/Cube" has no data
     Then the object "IfcWall/Wall" has no data
     Then the object "IfcWall/Wall.001" has no data
@@ -181,8 +183,10 @@ Scenario: Remove representation - remove an instanced representation from an act
     And I press "bim.add_constr_type_instance"
     And I press "bim.add_constr_type_instance"
     And the object "IfcWall/Wall" is selected
-    When the variable "representation" is "{ifc}.by_type('IfcWall')[0].Representation.Representations[1].id()"
-    And I press "bim.remove_representation(representation_id={representation})"
+    When the variable "representation_body" is "{ifc}.by_type('IfcWall')[0].Representation.Representations[1].id()"
+    And the variable "representation_bbox" is "{ifc}.by_type('IfcWall')[0].Representation.Representations[0].id()"
+    And I press "bim.remove_representation(representation_id={representation_body})"
+    And I press "bim.remove_representation(representation_id={representation_bbox})"
     Then the object "IfcWallType/Cube" has no data
     Then the object "IfcWall/Wall" has no data
     Then the object "IfcWall/Wall.001" has no data
@@ -191,7 +195,6 @@ Scenario: Update representation - updating a tessellation
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
@@ -203,7 +206,6 @@ Scenario: Update representation - updating a layered extrusion
     And I add a cube
     And the object "Cube" is selected
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And I add an empty
@@ -211,7 +213,7 @@ Scenario: Update representation - updating a layered extrusion
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
     And I press "bim.assign_class"
-    And I press "bim.add_material(obj='')"
+    And I press "bim.add_material()"
     And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialLayerSet"
     And I press "bim.assign_material"
     And I press "bim.enable_editing_assigned_material"
@@ -239,7 +241,7 @@ Scenario: Update representation - updating a profiled extrusion
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
     And I press "bim.assign_class"
-    And I press "bim.add_material(obj='')"
+    And I press "bim.add_material()"
     And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialProfileSet"
     And I press "bim.assign_material"
     And I press "bim.enable_editing_assigned_material"
@@ -331,19 +333,24 @@ Scenario: Override duplicate move - copying a coloured representation
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
-    And I add a material
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected
-    And the material "Material" colour is set to "1,0,0,1"
+    And I press "bim.load_styles(style_type='IfcSurfaceStyle')"
+    And I press "bim.enable_adding_presentation_style"
+    And I set "scene.BIMStylesProperties.style_name" to "Style"
+    And I set "scene.BIMStylesProperties.surface_colour" to "[1.0,0.0,0.0]"
+    And I press "bim.add_presentation_style"
+    And the variable "style" is "{ifc}.by_type('IfcSurfaceStyle')[0].id()"
+    And I press "bim.assign_style_to_selected(style_id={style})"
     When I duplicate the selected objects
-    And I press "export_ifc.bim(filepath='{cwd}/test/files/temp/export.ifc')"
+    And I press "bim.save_project(filepath='{cwd}/test/files/temp/export.ifc')"
     And an empty Blender session is started
     And I press "bim.load_project(filepath='{cwd}/test/files/temp/export.ifc', should_start_fresh_session=False)"
-    Then the material "Material" colour is "1,0,0,1"
-    And the object "IfcWall/Cube" has the material "Material"
-    And the object "IfcWall/Cube.001" has the material "Material"
+    Then the material "Style" colour is "1,0,0,1"
+    And the object "IfcWall/Cube" has the material "Style"
+    And the object "IfcWall/Cube.001" has the material "Style"
 
 Scenario: Override duplicate move - copying a type instance with a representation map
     Given an empty IFC project
@@ -373,7 +380,7 @@ Scenario: Override duplicate move - copying a layered extrusion
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
     And I press "bim.assign_class"
-    And I press "bim.add_material(obj='')"
+    And I press "bim.add_material()"
     And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialLayerSet"
     And I press "bim.assign_material"
     And I press "bim.enable_editing_assigned_material"
@@ -403,7 +410,7 @@ Scenario: Override duplicate move - copying a profiled extrusion
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
     And I press "bim.assign_class"
-    And I press "bim.add_material(obj='')"
+    And I press "bim.add_material()"
     And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialProfileSet"
     And I press "bim.assign_material"
     And I press "bim.enable_editing_assigned_material"
@@ -426,18 +433,14 @@ Scenario: Override duplicate move - copying an aggregate
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected
-    When I press "bim.add_aggregate"
-    Then the object "IfcWall/Cube" is in the collection "IfcElementAssembly/Assembly"
-    And the object "IfcElementAssembly/Assembly" is in the collection "IfcElementAssembly/Assembly"
-    And the collection "IfcElementAssembly/Assembly" is in the collection "IfcBuildingStorey/My Storey"
+    When I press "bim.add_aggregate(aggregate_name='Assembly')"
     When the object "IfcWall/Cube" is selected
     And additionally the object "IfcElementAssembly/Assembly" is selected
     When I duplicate the selected objects
     Then the object "IfcWall/Cube.001" exists
-    And the object "IfcWall/Cube.001" is in the collection "IfcElementAssembly/Assembly.001"
     And the object "IfcElementAssembly/Assembly.001" exists
-    And the object "IfcElementAssembly/Assembly.001" is in the collection "IfcElementAssembly/Assembly.001"
-    And the collection "IfcElementAssembly/Assembly.001" is in the collection "IfcBuildingStorey/My Storey"
+    And the object "IfcWall/Cube.001" is aggregated by object "IfcElementAssembly/Assembly.001"
+    And the object "IfcElementAssembly/Assembly.001" is contained in object "IfcBuildingStorey/My Storey"
 
 Scenario: Override duplicate move - copying objects with connection
     Given an empty IFC project
@@ -450,7 +453,7 @@ Scenario: Override duplicate move - copying objects with connection
     And the object "IfcWall/Wall" dimensions are "1,0.1,3"
     And the object "IfcWall/Wall" bottom left corner is at "0,0,0"
     When I set "scene.BIMModelProperties.ifc_class" to "IfcSlabType"
-    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcSlabType') if e.Name == 'FLR150'][0].id()"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcSlabType') if e.Name == 'FLR200'][0].id()"
     And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
     When I press "bim.add_constr_type_instance"
     Then the object "IfcSlab/Slab" is an "IfcSlab"
@@ -606,4 +609,3 @@ Scenario: Refresh linked aggregate - after duplicating an object
     Then the object "IfcWall/Wall_01.001" exists
     And the object "IfcWall/Wall_02.001" exists
     And the object "IfcWall/Wall_03.001" exists
-

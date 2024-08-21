@@ -16,25 +16,20 @@ from security.secrets import get_secrets
 secrets = get_secrets()
 
 # password context
-crypt_context = CryptContext(
-    schemes=["bcrypt"],
-    deprecated="auto")
+crypt_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 oauth2_scheme = OAuth2AuthorizationCodeBearer(
-    authorizationUrl='foundation/oauth2/auth',
-    tokenUrl='foundation/oauth2/token',
-    scopes={
-        'test': 'Full access, but only test data.',
-        'user': 'Normal user access.',
-        'admin': 'Full access to all.'
-    })
+    authorizationUrl="foundation/oauth2/auth",
+    tokenUrl="foundation/oauth2/token",
+    scopes={"test": "Full access, but only test data.", "user": "Normal user access.", "admin": "Full access to all."},
+)
 
 
 credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
+    status_code=status.HTTP_401_UNAUTHORIZED,
+    detail="Could not validate credentials",
+    headers={"WWW-Authenticate": "Bearer"},
+)
 
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
@@ -44,7 +39,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     else:
         expire = datetime.utcnow() + timedelta(minutes=15)
     payload.update({"expires": str(expire)})
-    encoded_jwt = jwt.encode(payload, secrets['security_secret_key'], algorithm=os.environ['SECURITY_ALGORITHM'])
+    encoded_jwt = jwt.encode(payload, secrets["security_secret_key"], algorithm=os.environ["SECURITY_ALGORITHM"])
     return encoded_jwt
 
 
@@ -79,20 +74,18 @@ async def get_current_user(security_scopes: SecurityScopes, token: str = Depends
     print(authenticate_value)
 
     try:
-        print('Token: ', token)
-        payload = jwt.decode(token,
-                             secrets['security_secret_key'],
-                             algorithms=[os.environ['SECURITY_ALGORITHM']])
+        print("Token: ", token)
+        payload = jwt.decode(token, secrets["security_secret_key"], algorithms=[os.environ["SECURITY_ALGORITHM"]])
         username_from_token: str = payload.get("username")
-        print('Token username: ', username_from_token)
+        print("Token username: ", username_from_token)
         if username_from_token is None:
             raise credentials_exception
         token_scopes = payload.get("scopes", [])
-        print('Token scopes: ', token_scopes)
+        print("Token scopes: ", token_scopes)
         token_data = TokenData(scopes=token_scopes, username=username_from_token)
 
     except JWTError:
-        print('JWTError')
+        print("JWTError")
         raise credentials_exception
 
     user = db.get_user(username=token_data.username)

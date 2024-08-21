@@ -18,7 +18,9 @@
 import ifcopenshell
 
 
-def add_role(file: ifcopenshell.file, assigned_object: ifcopenshell.entity_instance, role: str = "ARCHITECT") -> ifcopenshell.entity_instance:
+def add_role(
+    file: ifcopenshell.file, assigned_object: ifcopenshell.entity_instance, role: str = "ARCHITECT"
+) -> ifcopenshell.entity_instance:
     """Adds and assigns a new role
 
     People and organisations must play one or more roles on a project. Roles

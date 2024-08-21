@@ -50,19 +50,10 @@ class BIM_PT_tester(Panel):
 
         if not tool.Ifc.get() or not props.should_load_from_memory:
             row = self.layout.row(align=True)
-            if len(props.ifc_files) > 1:
-                row.label(text=f"{len(props.ifc_files)} Files Selected")
-            else:
-                row.prop(props, "ifc_file")
-
-            row.operator("bim.select_ifctester_ifc_file", icon="FILE_FOLDER", text="")
+            props.ifc_files.layout_file_select(row, "*.ifc;*.ifczip;*.ifcxml", "IFC File(s)")
 
         row = self.layout.row(align=True)
-        if len(props.specs_files) > 1:
-            row.label(text=f"{len(props.specs_files)} Files Selected")
-        else:
-            row.prop(props, "specs")
-        row.operator("bim.select_specs", icon="FILE_FOLDER", text="")
+        props.specs.layout_file_select(row, "*.ids;*.xml", "IDS File(s)")
 
         row = self.layout.row()
         row.operator("bim.execute_ifc_tester")
@@ -98,7 +89,7 @@ class BIM_PT_tester(Panel):
             row = box.row(align=True)
             row.label(text=requirement["description"], icon="CHECKMARK" if requirement["status"] else "CANCEL")
             if not requirement["status"]:
-                op  = row.operator("bim.select_requirement", text="", icon="LONGDISPLAY")
+                op = row.operator("bim.select_requirement", text="", icon="LONGDISPLAY")
                 op2 = row.operator("bim.select_failed_entities", text="", icon="RESTRICT_SELECT_OFF")
                 op.spec_index = props.active_specification_index
                 op.req_index = i

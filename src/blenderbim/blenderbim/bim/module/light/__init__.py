@@ -34,9 +34,11 @@ classes = (
     ui.BIM_PT_solar,
 )
 
+
 def register():
     bpy.types.Scene.radiance_exporter_properties = bpy.props.PointerProperty(type=prop.RadianceExporterProperties)
     bpy.types.Scene.BIMSolarProperties = bpy.props.PointerProperty(type=prop.BIMSolarProperties)
+
 
 def unregister():
     del bpy.types.Scene.radiance_exporter_properties

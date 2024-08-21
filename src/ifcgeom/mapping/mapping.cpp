@@ -299,14 +299,45 @@ const IfcUtil::IfcBaseEntity* mapping::get_single_material_association(const Ifc
             single_material = associated_material->as<IfcSchema::IfcMaterial>();
             // NB: Single-layer layersets are also considered, regardless of --enable-layerset-slicing, this
             // in accordance with other viewers.
-            if (!single_material && associated_material->as<IfcSchema::IfcMaterialLayerSetUsage>()) {
-                IfcSchema::IfcMaterialLayerSet* layerset = associated_material->as<IfcSchema::IfcMaterialLayerSetUsage>()->ForLayerSet();
-                if (settings_.get<settings::LayersetFirst>().value ? layerset->MaterialLayers()->size() >= 1 : layerset->MaterialLayers()->size() == 1) {
-                    IfcSchema::IfcMaterialLayer* layer = (*layerset->MaterialLayers()->begin());
-                    if (layer->Material()) {
-                        single_material = layer->Material();
+            if (!single_material) {
+                if (associated_material->as<IfcSchema::IfcMaterialLayerSetUsage>() || associated_material->as<IfcSchema::IfcMaterialLayerSet>()) {
+                    IfcSchema::IfcMaterialLayerSet* layerset;
+                    if (auto *m = associated_material->as<IfcSchema::IfcMaterialLayerSetUsage>()) {
+                        if (m->get("ForLayerSet")->isNull()) {
+                            Logger::Warning("Missing ForLayerSet for:", m);
+                            return nullptr;
+                        }
+                        layerset = m->ForLayerSet();
+                    } else {
+                        layerset = associated_material->as<IfcSchema::IfcMaterialLayerSet>();
+                    }
+                    if (settings_.get<settings::LayersetFirst>().value ? layerset->MaterialLayers()->size() >= 1 : layerset->MaterialLayers()->size() == 1) {
+                        IfcSchema::IfcMaterialLayer* layer = (*layerset->MaterialLayers()->begin());
+                        if (auto *m_ = layer->Material()) {
+                            single_material = m_;
+                        }
                     }
                 }
+#ifdef SCHEMA_HAS_IfcMaterialProfileSet
+                if (associated_material->as<IfcSchema::IfcMaterialProfileSetUsage>() || associated_material->as<IfcSchema::IfcMaterialProfileSet>()) {
+                    IfcSchema::IfcMaterialProfileSet* profileset;
+                    if (auto* m = associated_material->as<IfcSchema::IfcMaterialProfileSetUsage>()) {
+                        if (m->get("ForProfileSet")->isNull()) {
+                            Logger::Warning("Missing ForProfileSet for:", m);
+                            return nullptr;
+                        }
+                        profileset = m->ForProfileSet();
+                    } else {
+                        profileset = associated_material->as<IfcSchema::IfcMaterialProfileSet>();
+                    }
+                    if (settings_.get<settings::LayersetFirst>().value ? profileset->MaterialProfiles()->size() >= 1 : profileset->MaterialProfiles()->size() == 1) {
+                        IfcSchema::IfcMaterialProfile* profile = (*profileset->MaterialProfiles()->begin());
+                        if (auto *m_ = profile->Material()) {
+                            single_material = m_;
+                        }
+                    }
+                }
+#endif
             }
         }
     }
@@ -581,6 +612,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcStyledItem* inst) {
 taxonomy::ptr mapping::map(const IfcBaseInterface* inst) {
     auto iden = inst->as<IfcUtil::IfcBaseClass>()->identity();
     if (use_caching_) {
+        std::lock_guard<std::mutex> guard(cache_guard_);
         auto it = cache_.find(iden);
         if (it != cache_.end()) {
             return it->second;
@@ -598,7 +630,8 @@ taxonomy::ptr mapping::map(const IfcBaseInterface* inst) {
 
     if (item) {
         if (use_caching_) {
-            cache_.insert({ iden, item });
+            std::lock_guard<std::mutex> guard(cache_guard_);
+            cache_.insert({iden, item});
         }
     } else if (!matched) {
         Logger::Message(Logger::LOG_ERROR, "No operation defined for:", inst);

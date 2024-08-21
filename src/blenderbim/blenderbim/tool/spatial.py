@@ -39,23 +39,20 @@ import json
 from math import pi
 from mathutils import Vector, Matrix
 from shapely import Polygon
-from typing import Generator, Optional, Union, Literal, Any
+from typing import Generator, Optional, Union, Literal, List
 
 
 class Spatial(blenderbim.core.tool.Spatial):
     @classmethod
-    def can_contain(
-        cls, structure_obj: Union[bpy.types.Object, None], element_obj: Union[bpy.types.Object, None]
-    ) -> bool:
-        structure = tool.Ifc.get_entity(structure_obj)
+    def can_contain(cls, container: ifcopenshell.entity_instance, element_obj: Union[bpy.types.Object, None]) -> bool:
         element = tool.Ifc.get_entity(element_obj)
-        if not structure or not element:
+        if not element:
             return False
         if tool.Ifc.get_schema() == "IFC2X3":
-            if not structure.is_a("IfcSpatialStructureElement"):
+            if not container.is_a("IfcSpatialStructureElement"):
                 return False
         else:
-            if not structure.is_a("IfcSpatialStructureElement") and not structure.is_a(
+            if not container.is_a("IfcSpatialStructureElement") and not container.is_a(
                 "IfcExternalSpatialStructureElement"
             ):
                 return False
@@ -112,40 +109,15 @@ class Spatial(blenderbim.core.tool.Spatial):
         return relative_to_obj.matrix_world.inverted() @ target_obj.matrix_world
 
     @classmethod
-    def import_containers(cls, parent: Optional[ifcopenshell.entity_instance] = None) -> None:
-        props = bpy.context.scene.BIMSpatialProperties
-        props.containers.clear()
-
-        if not parent:
-            parent = tool.Ifc.get().by_type("IfcProject")[0]
-
-        props.active_container_id = parent.id()
-
-        for rel in parent.IsDecomposedBy or []:
-            related_objects = []
-            for element in rel.RelatedObjects:
-                # skip objects without placements
-                if not element.is_a("IfcProduct"):
-                    continue
-                related_objects.append((element, ifcopenshell.util.placement.get_storey_elevation(element)))
-            related_objects = sorted(related_objects, key=lambda e: e[1])
-            for element, _ in related_objects:
-                new = props.containers.add()
-                new.name = element.Name or "Unnamed"
-                new.long_name = element.LongName or ""
-                new.has_decomposition = bool(element.IsDecomposedBy)
-                new.ifc_definition_id = element.id()
-
-    @classmethod
     def run_root_copy_class(cls, obj: bpy.types.Object) -> ifcopenshell.entity_instance:
         return blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=obj)
 
     @classmethod
     def run_spatial_assign_container(
-        cls, structure_obj: bpy.types.Object, element_obj: bpy.types.Object
+        cls, container: ifcopenshell.entity_instance, element_obj: bpy.types.Object
     ) -> Union[ifcopenshell.entity_instance, None]:
         return blenderbim.core.spatial.assign_container(
-            tool.Ifc, tool.Collector, tool.Spatial, structure_obj=structure_obj, element_obj=element_obj
+            tool.Ifc, tool.Collector, tool.Spatial, container=container, element_obj=element_obj
         )
 
     @classmethod
@@ -244,9 +216,10 @@ class Spatial(blenderbim.core.tool.Spatial):
                 continue
             element_type = ifcopenshell.util.element.get_type(element)
             ifc_class = element.is_a()
+            ifc_definition_id = element_type.id() if element_type else 0
             type_name = element_type.Name or "Unnamed" if element_type else "Untyped"
-            results.setdefault(ifc_class, {}).setdefault(type_name, 0)
-            results[ifc_class][type_name] += 1
+            results.setdefault(ifc_class, {}).setdefault(ifc_definition_id, {"total": 0, "type_name": type_name})
+            results[ifc_class][ifc_definition_id]["total"] += 1
 
         total_elements = 0
         for ifc_class in sorted(results.keys()):
@@ -254,16 +227,33 @@ class Spatial(blenderbim.core.tool.Spatial):
             new.name = ifc_class
             new.is_class = True
             total = 0
-            for type_name in sorted(results[ifc_class].keys()):
+            for ifc_definition_id in sorted(
+                results[ifc_class].keys(), key=lambda x: results[ifc_class][x]["type_name"]
+            ):
                 new2 = props.elements.add()
-                new2.name = type_name
                 new2.is_type = True
-                new2.total = results[ifc_class][type_name]
+                new2.name = results[ifc_class][ifc_definition_id]["type_name"]
+                new2.total = results[ifc_class][ifc_definition_id]["total"]
+                new2.ifc_definition_id = ifc_definition_id
                 total += new2.total
             new.total = total
             total_elements += total
 
         props.total_elements = total_elements
+
+    @classmethod
+    def filter_elements_by_class(cls, elements: List[ifcopenshell.entity_instance], ifc_class: str):
+        return [e for e in elements if e.is_a(ifc_class)]
+
+    @classmethod
+    def filter_elements_by_relating_type(
+        cls, elements: List[ifcopenshell.entity_instance], relating_type: ifcopenshell.entity_instance
+    ):
+        return [e for e in elements if ifcopenshell.util.element.get_type(e) == relating_type]
+
+    @classmethod
+    def filter_elements_by_untyped(cls, elements: List[ifcopenshell.entity_instance]):
+        return [e for e in elements if not ifcopenshell.util.element.get_type(e)]
 
     @classmethod
     def import_spatial_decomposition(cls) -> None:
@@ -402,10 +392,11 @@ class Spatial(blenderbim.core.tool.Spatial):
                 continue
 
             old_mesh = obj.data
+            assert isinstance(old_mesh, bpy.types.Mesh)
             if visible_element.HasOpenings:
                 new_mesh = cls.get_gross_mesh_from_element(visible_element)
             else:
-                new_mesh = obj.data.copy()
+                new_mesh = old_mesh.copy()
             obj.data = new_mesh
 
             # Boundary objects are likely triangulated. If a triangulated quad
@@ -473,15 +464,15 @@ class Spatial(blenderbim.core.tool.Spatial):
         return mesh
 
     @classmethod
-    def get_x_y_z_h_mat_from_active_obj(cls, active_obj: bpy.types.Object) -> tuple[float, float, float, float, Matrix]:
-        mat = active_obj.matrix_world
-        local_bbox_center = 0.125 * sum((Vector(b) for b in active_obj.bound_box), Vector())
+    def get_x_y_z_h_mat_from_obj(cls, obj: bpy.types.Object) -> tuple[float, float, float, float, Matrix]:
+        mat = obj.matrix_world
+        local_bbox_center = 0.125 * sum((Vector(b) for b in obj.bound_box), Vector())
         global_bbox_center = mat @ local_bbox_center
         x = global_bbox_center.x
         y = global_bbox_center.y
-        z = (mat @ Vector(active_obj.bound_box[0])).z
+        z = (mat @ Vector(obj.bound_box[0])).z
 
-        h = active_obj.dimensions.z
+        h = obj.dimensions.z
         return x, y, z, h, mat
 
     @classmethod
@@ -499,9 +490,15 @@ class Spatial(blenderbim.core.tool.Spatial):
         selected_objects = bpy.context.selected_objects
         boundary_elements = cls.get_boundary_elements(selected_objects)
         polys = cls.get_polygons(boundary_elements)
-        converted_tolerance = cls.get_converted_tolerance(tolerance=0.03)
-        union = shapely.ops.unary_union(polys).buffer(converted_tolerance, cap_style=2, join_style=2)
-        union = cls.get_purged_inner_holes_poly(union_geom=union, min_area=cls.get_converted_tolerance(tolerance=0.1))
+        converted_tolerance = cls.get_converted_tolerance(tolerance_si=0.03)
+        union = shapely.ops.unary_union(polys).buffer(
+            converted_tolerance,
+            cap_style=shapely.constructive.BufferCapStyle.flat,
+            join_style=shapely.constructive.BufferJoinStyle.mitre,
+        )
+        union = cls.get_purged_inner_holes_poly(
+            union_geom=union, min_area=cls.get_converted_tolerance(tolerance_si=0.1)
+        )
         return union
 
     @classmethod
@@ -531,28 +528,20 @@ class Spatial(blenderbim.core.tool.Spatial):
 
     @classmethod
     def get_obj_base_points(cls, obj: bpy.types.Object) -> dict[str, tuple[float, float]]:
-        x_values = [(obj.matrix_world @ Vector(v)).x for v in obj.bound_box]
-        y_values = [(obj.matrix_world @ Vector(v)).y for v in obj.bound_box]
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        bbox_ws = [obj.matrix_world @ Vector(v) / si_conversion for v in obj.bound_box]
         return {
-            "low_left": (x_values[0], y_values[0]),
-            "high_left": (x_values[3], y_values[3]),
-            "low_right": (x_values[4], y_values[4]),
-            "high_right": (x_values[7], y_values[7]),
+            "low_left": (bbox_ws[0].x, bbox_ws[0].y),
+            "high_left": (bbox_ws[3].x, bbox_ws[3].y),
+            "low_right": (bbox_ws[4].x, bbox_ws[4].y),
+            "high_right": (bbox_ws[7].x, bbox_ws[7].y),
         }
 
     @classmethod
-    def get_converted_tolerance(cls, tolerance: float) -> float:
+    def get_converted_tolerance(cls, tolerance_si: float) -> float:
         model = tool.Ifc.get()
-        project_unit = ifcopenshell.util.unit.get_project_unit(model, "LENGTHUNIT")
-        prefix = getattr(project_unit, "Prefix", None)
-
-        return ifcopenshell.util.unit.convert(
-            value=tolerance,
-            from_prefix=None,
-            from_unit="METRE",
-            to_prefix=prefix,
-            to_unit=project_unit.Name,
-        )
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(model)
+        return tolerance_si / si_conversion
 
     @classmethod
     def get_purged_inner_holes_poly(cls, union_geom: Polygon, min_area: float) -> Polygon:
@@ -585,8 +574,13 @@ class Spatial(blenderbim.core.tool.Spatial):
     @classmethod
     def get_buffered_poly_from_linear_ring(cls, linear_ring: shapely.LinearRing) -> Polygon:
         poly = Polygon(linear_ring)
-        converted_tolerance = cls.get_converted_tolerance(tolerance=0.03)
-        poly = poly.buffer(converted_tolerance, single_sided=True, cap_style=2, join_style=2)
+        converted_tolerance = cls.get_converted_tolerance(tolerance_si=0.03)
+        poly = poly.buffer(
+            converted_tolerance,
+            single_sided=True,
+            cap_style=shapely.BufferCapStyle.flat,
+            join_style=shapely.BufferJoinStyle.mitre,
+        )
         return poly
 
     @classmethod
@@ -597,8 +591,10 @@ class Spatial(blenderbim.core.tool.Spatial):
         bm.edges.index_update()
 
         mat_invert = mat.inverted()
-
-        new_verts = [bm.verts.new(mat_invert @ Vector([v[0], v[1], 0])) for v in poly.exterior.coords[0:-1]]
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        new_verts = [
+            bm.verts.new(mat_invert @ (Vector([v[0], v[1], 0]) * si_conversion)) for v in poly.exterior.coords[0:-1]
+        ]
         [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
         bm.edges.new((new_verts[len(new_verts) - 1], new_verts[0]))
 
@@ -868,3 +864,26 @@ class Spatial(blenderbim.core.tool.Spatial):
         if subelement:
             return subelement
         return None
+
+    @classmethod
+    def get_selected_containers(cls) -> List[ifcopenshell.entity_instance]:
+        results = []
+        for obj in tool.Blender.get_selected_objects():
+            if (element := tool.Ifc.get_entity(obj)) and tool.Root.is_spatial_element(element):
+                results.append(element)
+        return results
+
+    @classmethod
+    def get_selected_objects_without_containers(cls) -> list[bpy.types.Object]:
+        """Get selected objects skipping spatial elements.
+
+        Useful for operators that are using selected objects to identify selected containers.
+        Note that those operators are typically have a limitation since they can't tell
+        objects to operate on from containers that should be used in the operation.
+
+        E.g. we cannot bim.copy_to_container containers to other containers."""
+        results: list[bpy.types.Object] = []
+        for obj in tool.Blender.get_selected_objects():
+            if (element := tool.Ifc.get_entity(obj)) and not tool.Root.is_spatial_element(element):
+                results.append(obj)
+        return results

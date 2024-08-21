@@ -24,6 +24,31 @@ import ifcopenshell.util.element
 import ifcopenshell.util.unit
 from logging import Logger
 
+import typing
+
+LengthUnit = typing.Literal[
+    "ATTOMETER",
+    "FEMTOMETER",
+    "PICOMETER",
+    "NANOMETER",
+    "MICROMETER",
+    "MILLIMETER",
+    "CENTIMETER",
+    "DECIMETER",
+    "METER",
+    "DECAMETER",
+    "HECTOMETER",
+    "KILOMETER",
+    "MEGAMETER",
+    "GIGAMETER",
+    "TERAMETER",
+    "PETAMETER",
+    "EXAMETER",
+    "INCH",
+    "FOOT",
+    "MILE",
+]
+
 
 class Patcher:
     def __init__(
@@ -31,7 +56,7 @@ class Patcher:
         src: str,
         file: ifcopenshell.file,
         logger: Logger,
-        unit: str = "METER",
+        unit: LengthUnit = "METER",
     ):
         """Converts the length unit of a model to the specified unit
 
@@ -39,7 +64,7 @@ class Patcher:
         Allowed imperial units include INCH, FOOT, MILE.
 
         :param unit: The name of the desired unit, defaults to "METER"
-        :type unit: str
+        :type unit: LengthUnit
 
         Example:
 

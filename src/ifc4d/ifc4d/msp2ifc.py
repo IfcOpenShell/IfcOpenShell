@@ -112,13 +112,12 @@ class MSP2Ifc:
             # If first column = "all" then retrieve all columns
             if len(self.optionalColumns) and self.optionalColumns[0] == "all":
                 self.optionalColumns = [child.tag.split("}")[1] for child in task]
-            
+
             for column in self.optionalColumns:
                 if not self.tasks[task_id].get(column):
-                    self.tasks[task_id][column] = task.find(f"pr:{column}", self.ns).text if task.find(f"pr:{column}", self.ns) else None
-            
-
-
+                    self.tasks[task_id][column] = (
+                        task.find(f"pr:{column}", self.ns).text if task.find(f"pr:{column}", self.ns) else None
+                    )
 
     def parse_calendar_xml(self, project):
         def parse_working_times(day):
@@ -139,27 +138,37 @@ class MSP2Ifc:
             work_times = parse_working_times(exception)
             time_period = exception.find("pr:TimePeriod", self.ns)
             data = {
-                "Name": exception.find("pr:Name", self.ns).text
-                if exception.find("pr:Name", self.ns) is not None
-                else None,
-                "FromDate": datetime.datetime.fromisoformat(time_period.find("pr:FromDate", self.ns).text)
-                if time_period is not None
-                else None,
-                "ToDate": datetime.datetime.fromisoformat(time_period.find("pr:ToDate", self.ns).text)
-                if time_period is not None
-                else None,
-                "Occurrences": int(exception.find("pr:Occurrences", self.ns).text)
-                if exception.find("pr:Occurrences", self.ns) is not None
-                else None,
-                "Month": exception.find("pr:Month", self.ns).text
-                if exception.find("pr:Month", self.ns) is not None
-                else None,
-                "MonthDay": exception.find("pr:MonthDay", self.ns).text
-                if exception.find("pr:MonthDay", self.ns) is not None
-                else None,
-                "Type": exception.find("pr:Type", self.ns).text
-                if exception.find("pr:Type", self.ns) is not None
-                else None,
+                "Name": (
+                    exception.find("pr:Name", self.ns).text if exception.find("pr:Name", self.ns) is not None else None
+                ),
+                "FromDate": (
+                    datetime.datetime.fromisoformat(time_period.find("pr:FromDate", self.ns).text)
+                    if time_period is not None
+                    else None
+                ),
+                "ToDate": (
+                    datetime.datetime.fromisoformat(time_period.find("pr:ToDate", self.ns).text)
+                    if time_period is not None
+                    else None
+                ),
+                "Occurrences": (
+                    int(exception.find("pr:Occurrences", self.ns).text)
+                    if exception.find("pr:Occurrences", self.ns) is not None
+                    else None
+                ),
+                "Month": (
+                    exception.find("pr:Month", self.ns).text
+                    if exception.find("pr:Month", self.ns) is not None
+                    else None
+                ),
+                "MonthDay": (
+                    exception.find("pr:MonthDay", self.ns).text
+                    if exception.find("pr:MonthDay", self.ns) is not None
+                    else None
+                ),
+                "Type": (
+                    exception.find("pr:Type", self.ns).text if exception.find("pr:Type", self.ns) is not None else None
+                ),
                 "WorkingTimes": work_times,
                 "ifc": None,
             }
@@ -283,16 +292,15 @@ class MSP2Ifc:
         for subtask_id in task["subtasks"]:
             self.create_task(self.tasks[subtask_id], parent_task=task)
 
-
         # create pset for optional columns
         if len(self.optionalColumns):
-            pset = ifcopenshell.api.run("pset.add_pset", self.file, product=task["ifc"] , name="Pset_MSP_Task")
+            pset = ifcopenshell.api.run("pset.add_pset", self.file, product=task["ifc"], name="Pset_MSP_Task")
 
             ifcopenshell.api.run(
                 "pset.edit_pset",
                 self.file,
                 pset=pset,
-                properties= {name: str(task[name]) for name in self.optionalColumns if task[name]}
+                properties={name: str(task[name]) for name in self.optionalColumns if task[name]},
             )
 
     def process_working_week(self, week, calendar):

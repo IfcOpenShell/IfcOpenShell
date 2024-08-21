@@ -1,3 +1,22 @@
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
+from __future__ import annotations
 import os
 import re
 import bpy
@@ -5,6 +24,7 @@ import logging
 from blenderbim.bim import import_ifc
 from blenderbim.bim.ifc import IfcStore
 import blenderbim.tool as tool
+from typing import TYPE_CHECKING, Union
 
 # allows git import even if git executable isn't found
 os.environ["GIT_PYTHON_REFRESH"] = "quiet"
@@ -13,14 +33,20 @@ try:
 except ImportError:
     print("Warning: GitPython not available.")
 
+if TYPE_CHECKING:
+    import git
+
+
 class IfcGit:
+    STEP_IDS = dict[str, set[int]]
+
     @classmethod
-    def init_repo(cls, path_dir):
+    def init_repo(cls, path_dir: str) -> None:
         IfcGitRepo.repo = git.Repo.init(path_dir)
         cls.config_info_attributes(IfcGitRepo.repo)
 
     @classmethod
-    def clone_repo(cls, remote_url, local_folder):
+    def clone_repo(cls, remote_url: str, local_folder: str) -> git.Repo:
         IfcGitRepo.repo = git.Repo.clone_from(
             url=remote_url,
             to_path=local_folder,
@@ -29,7 +55,7 @@ class IfcGit:
         return IfcGitRepo.repo
 
     @classmethod
-    def load_anyifc(cls, repo):
+    def load_anyifc(cls, repo: git.Repo) -> bool:
         working_dir = repo.working_dir
         for item in os.listdir(working_dir):
             path = os.path.join(working_dir, item)
@@ -39,11 +65,11 @@ class IfcGit:
         return False
 
     @classmethod
-    def get_path_dir(cls, path_ifc):
+    def get_path_dir(cls, path_ifc: str) -> str:
         return os.path.abspath(os.path.dirname(path_ifc))
 
     @classmethod
-    def repo_from_path(cls, path):
+    def repo_from_path(cls, path: str) -> Union[git.Repo, None]:
         """Returns a Git repository object or None"""
 
         if os.path.isdir(path):
@@ -71,7 +97,7 @@ class IfcGit:
         return repo
 
     @classmethod
-    def add_file_to_repo(cls, repo, path_file):
+    def add_file_to_repo(cls, repo: git.Repo, path_file: str) -> None:
         if os.name == "nt":
             cls.dos2unix(path_file)
         repo.index.add(path_file)
@@ -79,11 +105,11 @@ class IfcGit:
         bpy.ops.ifcgit.refresh()
 
     @classmethod
-    def git_checkout(cls, path_file):
+    def git_checkout(cls, path_file: str) -> None:
         IfcGitRepo.repo.git.checkout(path_file)
 
     @classmethod
-    def checkout_new_branch(cls, path_file):
+    def checkout_new_branch(cls, path_file: str) -> None:
         """Create a branch and move uncommitted changes to this branch"""
         props = bpy.context.scene.IfcGitProperties
         if props.new_branch_name:
@@ -93,7 +119,7 @@ class IfcGit:
             bpy.ops.ifcgit.refresh()
 
     @classmethod
-    def git_commit(cls, path_file):
+    def git_commit(cls, path_file: str) -> None:
         props = bpy.context.scene.IfcGitProperties
         repo = IfcGitRepo.repo
         if os.name == "nt":
@@ -103,7 +129,7 @@ class IfcGit:
         props.commit_message = ""
 
     @classmethod
-    def add_tag(cls, repo):
+    def add_tag(cls, repo: git.Repo) -> None:
         props = bpy.context.scene.IfcGitProperties
         item = props.ifcgit_commits[props.commit_index]
         repo.create_tag(props.new_tag_name, ref=item.hexsha, message=props.new_tag_message)
@@ -111,19 +137,19 @@ class IfcGit:
         props.new_tag_message = ""
 
     @classmethod
-    def delete_tag(cls, repo, tag_name):
+    def delete_tag(cls, repo: git.Repo, tag_name: git.TagReference) -> None:
         if tag_name in repo.tags:
             repo.delete_tag(tag_name)
 
     @classmethod
-    def add_remote(cls, repo):
+    def add_remote(cls, repo: git.Repo) -> None:
         props = bpy.context.scene.IfcGitProperties
         repo.create_remote(name=props.remote_name, url=props.remote_url)
         props.remote_name = ""
         props.remote_url = ""
 
     @classmethod
-    def delete_remote(cls, repo):
+    def delete_remote(cls, repo: git.Repo) -> None:
         props = bpy.context.scene.IfcGitProperties
         remote_name = props.select_remote
         if remote_name in repo.remotes:
@@ -132,7 +158,7 @@ class IfcGit:
             props.select_remote = repo.remotes[0].name
 
     @classmethod
-    def push(cls, repo, remote_name, branch_name):
+    def push(cls, repo: git.Repo, remote_name: str, branch_name: str) -> Union[str, None]:
         cls.config_push(repo)
         remote = repo.remotes[remote_name]
         try:
@@ -141,7 +167,7 @@ class IfcGit:
             return exc.stderr
 
     @classmethod
-    def create_new_branch(cls):
+    def create_new_branch(cls) -> None:
         """Convert a detached HEAD into a branch"""
         props = bpy.context.scene.IfcGitProperties
         repo = IfcGitRepo.repo
@@ -153,7 +179,7 @@ class IfcGit:
         bpy.ops.ifcgit.refresh()
 
     @classmethod
-    def clear_commits_list(cls):
+    def clear_commits_list(cls) -> None:
         area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
         area.spaces[0].shading.color_type = "MATERIAL"
         props = bpy.context.scene.IfcGitProperties
@@ -162,7 +188,7 @@ class IfcGit:
         props.ifcgit_commits.clear()
 
     @classmethod
-    def get_commits_list(cls, path_ifc, lookup):
+    def get_commits_list(cls, path_ifc: str, lookup: dict[str, Any]) -> None:
 
         props = bpy.context.scene.IfcGitProperties
         repo = cls.repo_from_path(path_ifc)
@@ -204,14 +230,14 @@ class IfcGit:
                         list_item.tags[-1].message = tag.tag.message
 
     @classmethod
-    def refresh_revision_list(cls, path_ifc):
+    def refresh_revision_list(cls, path_ifc: str) -> None:
         repo = cls.repo_from_path(path_ifc)
         cls.clear_commits_list()
         lookup = cls.tags_by_hexsha(repo)
         cls.get_commits_list(path_ifc, lookup)
 
     @classmethod
-    def is_valid_ref_format(cls, string):
+    def is_valid_ref_format(cls, string: str) -> Union[re.Match[str], None]:
         """Check a bare branch or tag name is valid"""
 
         return re.match(
@@ -220,7 +246,7 @@ class IfcGit:
         )
 
     @classmethod
-    def load_project(cls, path_ifc=""):
+    def load_project(cls, path_ifc: str = "") -> None:
         """Clear and load an ifc project"""
 
         if path_ifc:
@@ -247,7 +273,7 @@ class IfcGit:
         bpy.ops.object.select_all(action="DESELECT")
 
     @classmethod
-    def branches_by_hexsha(cls, repo):
+    def branches_by_hexsha(cls, repo: git.Repo) -> dict[str, Any]:
         """reverse lookup for branches"""
 
         result = {}
@@ -266,7 +292,7 @@ class IfcGit:
         return result
 
     @classmethod
-    def tags_by_hexsha(cls, repo):
+    def tags_by_hexsha(cls, repo: git.Repo) -> dict[str, Any]:
         """reverse lookup for tags"""
 
         result = {}
@@ -278,7 +304,7 @@ class IfcGit:
         return result
 
     @classmethod
-    def ifc_diff_ids(cls, repo, hash_a, hash_b, path_ifc):
+    def ifc_diff_ids(cls, repo: git.Repo, hash_a: str, hash_b: str, path_ifc: str) -> STEP_IDS:
         """Given two revision hashes and a filename, retrieve"""
         """step-ids of modified, added and removed entities"""
 
@@ -308,7 +334,7 @@ class IfcGit:
         }
 
     @classmethod
-    def get_revisions_step_ids(cls):
+    def get_revisions_step_ids(cls) -> Union[STEP_IDS, None]:
 
         path_ifc = bpy.data.scenes["Scene"].BIMProperties.ifc_file
         props = bpy.context.scene.IfcGitProperties
@@ -340,7 +366,7 @@ class IfcGit:
         return step_ids
 
     @classmethod
-    def get_modified_shape_object_step_ids(cls, step_ids):
+    def get_modified_shape_object_step_ids(cls, step_ids: STEP_IDS) -> STEP_IDS:
         model = tool.Ifc.get()
         modified_shape_object_step_ids = {"modified": []}
 
@@ -352,7 +378,7 @@ class IfcGit:
         return modified_shape_object_step_ids
 
     @classmethod
-    def update_step_ids(cls, step_ids, modified_shape_object_step_ids):
+    def update_step_ids(cls, step_ids: STEP_IDS, modified_shape_object_step_ids: STEP_IDS) -> STEP_IDS:
 
         final_step_ids = {}
         final_step_ids["added"] = step_ids["added"]
@@ -361,7 +387,7 @@ class IfcGit:
         return final_step_ids
 
     @classmethod
-    def colourise(cls, step_ids):
+    def colourise(cls, step_ids: STEP_IDS) -> None:
         area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
         area.spaces[0].shading.color_type = "OBJECT"
         bpy.ops.object.select_all(action="DESELECT")
@@ -383,7 +409,7 @@ class IfcGit:
                 obj.color = (1.0, 1.0, 1.0, 0.5)
 
     @classmethod
-    def switch_to_revision_item(cls):
+    def switch_to_revision_item(cls) -> None:
         props = bpy.context.scene.IfcGitProperties
         repo = IfcGitRepo.repo
         item = props.ifcgit_commits[props.commit_index]
@@ -398,13 +424,13 @@ class IfcGit:
         repo.git.checkout(item.hexsha)
 
     @classmethod
-    def delete_collection(cls, blender_collection):
+    def delete_collection(cls, blender_collection: bpy.types.Collection) -> None:
         for obj in blender_collection.objects:
             bpy.data.objects.remove(obj, do_unlink=True)
         bpy.data.collections.remove(blender_collection)
 
     @classmethod
-    def is_valid_branch_name(cls, new_branch_name):
+    def is_valid_branch_name(cls, new_branch_name: str):
         """Check if a branch name is valid and doesn't conflict with existing branches"""
         if not cls.is_valid_ref_format(new_branch_name):
             return False
@@ -413,7 +439,7 @@ class IfcGit:
         return True
 
     @classmethod
-    def config_ifcmerge(cls):
+    def config_ifcmerge(cls) -> None:
         config_reader = IfcGitRepo.repo.config_reader()
         section = 'mergetool "ifcmerge"'
         if not config_reader.has_section(section):
@@ -427,7 +453,7 @@ class IfcGit:
                 config_writer.set_value(section, "trustExitCode", True)
 
     @classmethod
-    def config_push(cls, repo):
+    def config_push(cls, repo: git.Repo) -> None:
         """Set push.autoSetupRemote"""
         config_reader = repo.config_reader()
         if not config_reader.has_section("push"):
@@ -436,7 +462,7 @@ class IfcGit:
                 config_writer.set_value("push", "autoSetupRemote", True)
 
     @classmethod
-    def config_info_attributes(cls, repo):
+    def config_info_attributes(cls, repo: git.Repo) -> None:
         """Set IFC files as text in .git/info/attributes"""
         path_attributes = os.path.join(repo.git_dir, "info", "attributes")
         if not os.path.exists(path_attributes):
@@ -445,7 +471,7 @@ class IfcGit:
                 f.write("*.ifc text")
 
     @classmethod
-    def dos2unix(cls, path_file):
+    def dos2unix(cls, path_file: str) -> None:
         with open(path_file, "rb") as infile:
             content = infile.read()
         with open(path_file, "wb") as output:
@@ -453,7 +479,7 @@ class IfcGit:
                 output.write(line + b"\n")
 
     @classmethod
-    def execute_merge(cls, path_ifc, operator):
+    def execute_merge(cls, path_ifc: str, operator: bpy.types.Operator) -> Union[None, False]:
         props = bpy.context.scene.IfcGitProperties
         repo = IfcGitRepo.repo
         item = props.ifcgit_commits[props.commit_index]
@@ -497,7 +523,7 @@ class IfcGit:
             cls.refresh_revision_list(path_ifc)
 
     @classmethod
-    def entity_log(cls, path_ifc, step_id):
+    def entity_log(cls, path_ifc: str, step_id: int) -> str:
         """Raw git log for this entity"""
         repo = IfcGitRepo.repo
         if not repo:
@@ -513,4 +539,4 @@ class IfcGit:
 
 
 class IfcGitRepo:
-    repo = None
+    repo: git.Repo = None
