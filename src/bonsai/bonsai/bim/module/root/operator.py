@@ -172,7 +172,13 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         props = context.scene.BIMRootProperties
-        objects = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects or [context.active_object]
+        objects: list[bpy.types.Object] = []
+        if self.obj:
+            objects = [bpy.data.objects[self.obj]]
+        elif objects := context.selected_objects:
+            pass
+        elif obj := context.active_object:
+            objects = [obj]
 
         if not objects:
             self.report({"INFO"}, "No objects selected.")

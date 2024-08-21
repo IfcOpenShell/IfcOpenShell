@@ -364,7 +364,8 @@ class UpdateRepresentation(bpy.types.Operator, tool.Ifc.Operator):
             # TODO: write unit tests to see how this bulk operation handles
             # contradictory ifc_representation_class values and when
             # ifc_representation_class is IfcTextLiteral
-            if not obj.data:
+            data = obj.data
+            if not tool.Geometry.is_data_supported_for_adding_representation(data):
                 continue
             self.update_obj_mesh_representation(context, obj)
             tool.Ifc.finish_edit(obj)

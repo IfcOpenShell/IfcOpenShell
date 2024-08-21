@@ -41,8 +41,8 @@ from collections import defaultdict
 from math import radians, pi
 from mathutils import Vector, Matrix
 from bonsai.bim.ifc import IfcStore
-from typing import Union, Iterable, Optional, Literal
-from typing import Iterator
+from typing import Union, Iterable, Optional, Literal, Iterator
+from typing_extensions import TypeIs
 
 
 class Geometry(bonsai.core.tool.Geometry):
@@ -477,7 +477,7 @@ class Geometry(bonsai.core.tool.Geometry):
         return hasher.hexdigest()
 
     @classmethod
-    def get_object_data(cls, obj: bpy.types.Object) -> bpy.types.ID:
+    def get_object_data(cls, obj: bpy.types.Object) -> Union[bpy.types.ID, None]:
         return obj.data
 
     @classmethod
@@ -645,6 +645,21 @@ class Geometry(bonsai.core.tool.Geometry):
     @classmethod
     def is_box_representation(cls, representation: ifcopenshell.entity_instance) -> bool:
         return representation.ContextOfItems.ContextIdentifier == "Box"
+
+    @classmethod
+    def is_data_supported_for_adding_representation(cls, data: Union[bpy.types.ID, None]) -> TypeIs[
+        Union[
+            bpy.types.Mesh,
+            bpy.types.Curve,
+        ]
+    ]:
+        supported_types = (
+            bpy.types.Mesh,
+            bpy.types.Curve,
+        )
+        if not data:
+            return False
+        return isinstance(data, supported_types)
 
     @classmethod
     def is_edited(cls, obj: bpy.types.Object) -> bool:
