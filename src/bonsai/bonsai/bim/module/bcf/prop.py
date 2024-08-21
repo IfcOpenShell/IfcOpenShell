@@ -201,6 +201,12 @@ def get_related_topics(self: "BCFProperties", context: bpy.types.Context) -> lis
 
 class BCFProperties(PropertyGroup):
     bcf_file: StringProperty(name="BCF File")
+    bcf_version: EnumProperty(
+        name="BCF Version",
+        description="Currently loaded BCF project version / BCF version to use for created projects",
+        items=[("2", "v2.1", ""), ("3", "v3.0", "")],
+        default="3",
+    )
     comment_text_width: IntProperty(name="Comment Text Width", default=40)
     name: StringProperty(default="", name="Project Name", update=updateBcfProjectName)
     author: StringProperty(

@@ -55,7 +55,10 @@ class NewBcfProject(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        bcfxml = bcf.v2.bcfxml.BcfXml.create_new("New Project")
+        props = context.scene.BCFProperties
+        bcf_v2 = props.bcf_version == "2"
+        bcf_class = bcf.v2.bcfxml.BcfXml if bcf_v2 else bcf.v3.bcfxml.BcfXml
+        bcfxml = bcf_class.create_new("New Project")
         bcfstore.BcfStore.set(bcfxml, "")
         bpy.ops.bim.load_bcf_project()
         return {"FINISHED"}
@@ -65,12 +68,14 @@ class LoadBcfProject(bpy.types.Operator):
     bl_idname = "bim.load_bcf_project"
     bl_label = "Load BCF Project"
     bl_options = {"REGISTER", "UNDO"}
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH", options={"SKIP_SAVE"})
     filter_glob: bpy.props.StringProperty(default="*.bcf;*.bcfzip", options={"HIDDEN"})
 
     def execute(self, context):
+        # Operator is also used when new project is created by not yet saved.
         if self.filepath:
             bcfstore.BcfStore.set_by_filepath(self.filepath)
+
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
         bcf_v2 = (bcfxml.version.version_id or "").startswith("2")
