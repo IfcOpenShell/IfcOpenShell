@@ -142,6 +142,22 @@ class BIMSearchProperties(PropertyGroup):
         ],
         name="Palette",
     )
+    min_mode: EnumProperty(
+        items=[
+            ("AUTO", "Automatic", "Automatically determine the minimum value"),
+            ("MANUAL", "Manual", "Manually specify the minimum value"),
+        ],
+        name="Min Mode",
+    )
+    max_mode: EnumProperty(
+        items=[
+            ("AUTO", "Automatic", "Automatically determine the maximum value"),
+            ("MANUAL", "Manual", "Manually specify the maximum value"),
+        ],
+        name="Max Mode",
+    )
+    min_value: FloatProperty(name="Min Value", default=100)
+    max_value: FloatProperty(name="Max Value", default=100)
     colourscheme: CollectionProperty(type=BIMColour)
     active_colourscheme_index: IntProperty(name="Active Colourscheme Index")
     filter_type: StringProperty(name="Filter Type")

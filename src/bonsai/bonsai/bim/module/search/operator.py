@@ -264,8 +264,10 @@ class ColourByProperty(Operator):
         colourscheme = {}
 
         obj_values = {}
-        min_value = None
-        max_value = None
+        min_mode = props.min_mode
+        max_mode = props.max_mode
+        min_value = props.min_value if min_mode == "MANUAL" else None
+        max_value = props.max_value if max_mode == "MANUAL" else None
 
         if is_qualitative and len(props.colourscheme):
             colourscheme = {cs.name: {"colour": cs.colour[0:3], "total": 0} for cs in props.colourscheme}
@@ -292,10 +294,12 @@ class ColourByProperty(Operator):
                 else:
                     try:
                         value = float(value)
-                        if min_value is None or value < min_value:
-                            min_value = value
-                        if max_value is None or value > max_value:
-                            max_value = value
+                        if min_mode == "AUTO":
+                            if min_value is None or value < min_value:
+                                min_value = value
+                        if max_mode == "AUTO":
+                            if max_value is None or value > max_value:
+                                max_value = value
                         obj_values[obj] = value
                     except:
                         obj.color = (0, 0, 0, 1)
