@@ -82,7 +82,7 @@ class BIM_OT_add_object(Operator, tool.Ifc.Operator):
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get()
+        return tool.Ifc.get() and context.mode == "OBJECT"
 
     def _execute(self, context):
         add_object(self, context)
