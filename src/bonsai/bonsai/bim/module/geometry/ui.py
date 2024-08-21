@@ -192,6 +192,7 @@ class BIM_PT_representation_items(Panel):
             RepresentationItemsData.load()
 
         props = context.active_object.BIMGeometryProperties
+        layout = self.layout
 
         row = self.layout.row(align=True)
         row.label(text=f"{RepresentationItemsData.data['total_items']} Items Found")
@@ -230,6 +231,19 @@ class BIM_PT_representation_items(Panel):
 
         row = self.layout.row()
         row.label(text=active_item.layer or "No Presentation Layer", icon="STICKY_UVS_LOC")
+
+        if active_item.name.endswith("FaceSet"):
+            if "UV" in active_item.tags:
+                text = "Has UV mapping"
+            else:
+                text = "Has no UV mapping"
+            layout.label(text=text, icon="UV")
+
+            if "Colour" in active_item.tags:
+                text = "Has colour mapping"
+            else:
+                text = "Has no colour mapping"
+            layout.label(text=text, icon="COLOR")
 
         row = self.layout.row(align=True)
         if props.is_editing_item_shape_aspect:

@@ -1831,6 +1831,11 @@ class EnableEditingRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
 
         props.items.clear()
 
+        def add_tag(item, tag: str) -> None:
+            if item.tags:
+                item.tags += ","
+            item.tags += tag
+
         if bpy.context.active_object.data and hasattr(bpy.context.active_object.data, "BIMMeshProperties"):
             active_representation_id = bpy.context.active_object.data.BIMMeshProperties.ifc_definition_id
             element = tool.Ifc.get().by_id(active_representation_id)
@@ -1862,6 +1867,10 @@ class EnableEditingRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
                                 shape_aspect = inverse.OfShapeAspect[0]
                                 new.shape_aspect = shape_aspect.Name
                                 new.shape_aspect_id = shape_aspect.id()
+                        elif inverse.is_a("IfcIndexedTextureMap"):
+                            add_tag(new, "UV")
+                        elif inverse.is_a("IfcIndexedColourMap"):
+                            add_tag(new, "Colour")
 
             # sort created items
             sorted_items = sorted(props.items[:], key=lambda i: (not i.shape_aspect, i.shape_aspect))
