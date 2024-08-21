@@ -662,6 +662,25 @@ class Geometry(bonsai.core.tool.Geometry):
         return isinstance(data, supported_types)
 
     @classmethod
+    def has_mesh_properties(cls, data: Union[bpy.types.ID, None]) -> TypeIs[
+        Union[
+            bpy.types.Mesh,
+            bpy.types.Curve,
+            bpy.types.Camera,
+            bpy.types.PointLight,
+        ]
+    ]:
+        supported_types = (
+            bpy.types.Mesh,
+            bpy.types.Curve,
+            bpy.types.Camera,
+            bpy.types.PointLight,
+        )
+        if not data:
+            return False
+        return isinstance(data, supported_types)
+
+    @classmethod
     def is_edited(cls, obj: bpy.types.Object) -> bool:
         return not all([tool.Cad.is_x(o, 1.0) for o in obj.scale]) or obj in IfcStore.edited_objs
 
