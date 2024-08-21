@@ -62,9 +62,11 @@ class Covering(bonsai.core.tool.Covering):
     def covering_poll_relating_type_check(
         cls, operator: type[bpy.types.Operator], context: bpy.types.Context, covering_type: str
     ) -> bool:
-        relating_type_id = int(context.scene.BIMModelProperties.relating_type_id)
-        relating_type = ifcopenshell.util.element.get_predefined_type(tool.Ifc.get().by_id(relating_type_id))
-        if relating_type != covering_type:
-            operator.poll_message_set(f"Select IfcCoveringType with predefined type '{covering_type}'.")
-            return False
-        return True
+        props = context.scene.BIMModelProperties
+        relating_type_id = tool.Blender.get_enum_safe(props, "relating_type_id")
+        if relating_type_id is not None:
+            relating_type = ifcopenshell.util.element.get_predefined_type(tool.Ifc.get().by_id(relating_type_id))
+            if relating_type == covering_type:
+                return True
+        operator.poll_message_set(f"Select IfcCoveringType with predefined type '{covering_type}'.")
+        return False
