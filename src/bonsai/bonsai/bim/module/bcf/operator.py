@@ -642,6 +642,7 @@ class AddBcfViewpoint(bpy.types.Operator):
             )
             assert tool.Bcf.is_list_of(viewpoints, bcf.v3.model.ViewPoint)
             viewpoints.append(viewpoint)
+        tool.Bcf.set_topic_viewpoints(topic, viewpoints)
 
         def get_ifc_elements(objs: list[bpy.types.Object]) -> list[ifcopenshell.entity_instance]:
             elements = []
