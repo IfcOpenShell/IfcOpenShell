@@ -255,10 +255,11 @@ class ColourByProperty(Operator):
             self.report({"ERROR"}, "No Query Provided")
             return {"CANCELLED"}
 
-        is_qualitative = props.pallette in ("tab10", "paired")
+        palette = props.palette
+        is_qualitative = palette in ("tab10", "paired")
 
         if is_qualitative:
-            colours = tool.Search.get_qualitative_pallette(props.pallette)
+            colours = tool.Search.get_qualitative_palette(palette)
 
         colourscheme = {}
 
@@ -307,7 +308,7 @@ class ColourByProperty(Operator):
                 step_value = min_value + i * step_size
                 values.append(step_value)
                 colourscheme[str(step_value)] = {
-                    "colour": tool.Search.get_quantitative_pallette("foo", step_value, min_value, max_value),
+                    "colour": tool.Search.get_quantitative_palette(palette, step_value, min_value, max_value),
                     "total": 0,
                 }
 
@@ -316,7 +317,7 @@ class ColourByProperty(Operator):
                 if index >= len(values):
                     index = -1
                 colourscheme[str(values[index])]["total"] += 1
-                obj.color = (*tool.Search.get_quantitative_pallette("foo", value, min_value, max_value), 1)
+                obj.color = (*tool.Search.get_quantitative_palette(palette, value, min_value, max_value), 1)
 
         if areas := [a for a in context.screen.areas if a.type == "VIEW_3D"]:
             areas[0].spaces[0].shading.color_type = "OBJECT"
@@ -362,8 +363,9 @@ class SelectByProperty(Operator):
             return {"CANCELLED"}
 
         active_value = props.colourscheme[props.active_colourscheme_index].name
+        palette = props.palette
 
-        is_qualitative = props.pallette in ("tab10", "paired")
+        is_qualitative = palette in ("tab10", "paired")
 
         if not is_qualitative:
             values = []

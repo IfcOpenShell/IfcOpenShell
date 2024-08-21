@@ -86,7 +86,7 @@ class BIM_PT_colour_by_property(Panel):
         row.prop(props, "colourscheme_query", text="Query")
 
         row = self.layout.row()
-        row.prop(props, "pallette")
+        row.prop(props, "palette")
 
         row = self.layout.row(align=True)
         row.operator("bim.colour_by_property", icon="BRUSH_DATA")
