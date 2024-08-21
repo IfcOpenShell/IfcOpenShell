@@ -882,19 +882,35 @@ class AddSurfaceTexture(bpy.types.Operator):
 class SaveUVToStyle(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.save_uv_to_style"
     bl_label = "Save UV To Style"
+    bl_description = "Save active object UV to it's IfcSurfaceStyle's IfcSurfaceTexture"
     bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if not (obj := context.active_object) or not tool.Ifc.get_entity(obj):
+            cls.poll_message_set("No IFC object selected")
+            return False
+        if not obj.active_material or not tool.Ifc.get_entity(obj.active_material):
+            cls.poll_message_set("Object has no IFC style.")
+            return False
+        return True
 
     def _execute(self, context):
         context = bpy.context
         ifc_file = tool.Ifc.get()
-        material = context.active_object.active_material
         obj = context.active_object
+        assert obj
+
+        # We need IFC material with a texture style since in IFC
+        # UV indexing (IfcTextureCoordinate) requires some IfcSurfaceTexture.
+        material = obj.active_material
+        assert material
 
         # find active style item
-        style_id = material.BIMStyleProperties.ifc_definition_id
-        style = ifc_file.by_id(style_id)
+        style = tool.Ifc.get_entity(material)
+        assert style
 
-        def get_active_representation_items():
+        def get_active_representation_items() -> list[ifcopenshell.entity_instance]:
             representation = tool.Geometry.get_active_representation(obj)
             representation = ifcopenshell.util.representation.resolve_representation(representation)
             items = []
@@ -932,6 +948,14 @@ class SaveUVToStyle(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"ERROR"}, "No texture style found, not yet supported.")
             return {"CANCELLED"}
 
+        mesh = obj.data
+        assert isinstance(mesh, bpy.types.Mesh)
+        uv_layer = mesh.uv_layers.active
+        if not uv_layer:
+            self.report({"ERROR"}, "Object has no UV.")
+            return {"CANCELLED"}
+        uv_layer = uv_layer.uv
+
         # unmap preivously used IfcIndexedTextureMap
         # TODO: remove orphaned data?
         textures = set(texture_style.Textures)
@@ -942,9 +966,8 @@ class SaveUVToStyle(bpy.types.Operator, tool.Ifc.Operator):
             if coord.is_a("IfcIndexedTextureMap") and coord.MappedTo in active_representation_items:
                 coord.Maps = list(set(coord.Maps) - textures)
 
-        mesh = obj.data
         uv_indices = []
-        uv_verts = [uv.vector for uv in mesh.uv_layers.active.uv]
+        uv_verts = [uv.vector for uv in uv_layer]
 
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
 
@@ -993,7 +1016,7 @@ class SaveUVToStyle(bpy.types.Operator, tool.Ifc.Operator):
             uv_verts_list.TexCoordsList = uv_verts
             texture_coord.TexCoords = uv_verts_list
 
-        self.report({"INFO"}, f"UV saved to the style {style.Name}")
+        self.report({"INFO"}, f"UV saved to the style '{style.Name}'.")
 
         return {"FINISHED"}
 
