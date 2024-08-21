@@ -666,7 +666,6 @@ def add_mesh_object_menu(self, context):
     self.layout.separator()
     self.layout.operator("mesh.add_grid", icon_value=bonsai.bim.icons["IFC"].icon_id)
     self.layout.operator("mesh.add_stair", icon_value=bonsai.bim.icons["IFC"].icon_id)
-    self.layout.operator("mesh.add_clever_stair", icon_value=bonsai.bim.icons["IFC"].icon_id)
     self.layout.operator("mesh.add_window", icon_value=bonsai.bim.icons["IFC"].icon_id)
     self.layout.operator("mesh.add_door", icon_value=bonsai.bim.icons["IFC"].icon_id)
     self.layout.operator("mesh.add_railing", icon_value=bonsai.bim.icons["IFC"].icon_id)
