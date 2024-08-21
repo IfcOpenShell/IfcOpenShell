@@ -303,7 +303,7 @@ const IfcUtil::IfcBaseEntity* mapping::get_single_material_association(const Ifc
                 if (associated_material->as<IfcSchema::IfcMaterialLayerSetUsage>() || associated_material->as<IfcSchema::IfcMaterialLayerSet>()) {
                     IfcSchema::IfcMaterialLayerSet* layerset;
                     if (auto *m = associated_material->as<IfcSchema::IfcMaterialLayerSetUsage>()) {
-                        if (m->get("ForLayerSet")->isNull()) {
+                        if (m->get("ForLayerSet").isNull()) {
                             Logger::Warning("Missing ForLayerSet for:", m);
                             return nullptr;
                         }
@@ -322,7 +322,7 @@ const IfcUtil::IfcBaseEntity* mapping::get_single_material_association(const Ifc
                 if (associated_material->as<IfcSchema::IfcMaterialProfileSetUsage>() || associated_material->as<IfcSchema::IfcMaterialProfileSet>()) {
                     IfcSchema::IfcMaterialProfileSet* profileset;
                     if (auto* m = associated_material->as<IfcSchema::IfcMaterialProfileSetUsage>()) {
-                        if (m->get("ForProfileSet")->isNull()) {
+                        if (m->get("ForProfileSet").isNull()) {
                             Logger::Warning("Missing ForProfileSet for:", m);
                             return nullptr;
                         }
