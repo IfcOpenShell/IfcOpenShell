@@ -35,7 +35,7 @@
 
 #include <Precision.hxx>
 
-#define IfcSchema Ifc2x3
+#define IfcSchema Ifc4
 #include "../ifcparse/macros.h"
 #include "../ifcparse/Ifc2x3.h"
 #include "../ifcparse/IfcBaseClass.h"

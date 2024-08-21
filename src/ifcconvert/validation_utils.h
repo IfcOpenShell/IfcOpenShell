@@ -471,7 +471,7 @@ struct intersection_validator {
 			}
 
 			std::stringstream ss;
-			ss << geom_object->product()->data().toString();
+			geom_object->product()->toString(ss);
 			auto sss = ss.str();
 			std::wcout << sss.c_str() << std::endl;
 
