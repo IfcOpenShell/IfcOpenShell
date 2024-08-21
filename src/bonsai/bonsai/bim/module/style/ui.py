@@ -22,6 +22,7 @@ import bonsai.tool as tool
 from bpy.types import Panel, UIList
 from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.style.data import StylesData, BlenderMaterialStyleData
+from typing import Union
 
 
 class BIM_PT_styles(Panel):
@@ -93,7 +94,7 @@ class BIM_PT_styles(Panel):
         # style ui tools
         if active_style:
             row = self.layout.row(align=True)
-            material_name = StylesData.data["styles_to_blender_material_names"][self.props.active_style_index]
+            material_name = StylesData.data["styles_to_blender_material_names"][style]
             if material_name:  # The user may have unlinked the style, so the material may not exist
                 material = bpy.data.materials[material_name]
                 row.prop(material.BIMStyleProperties, "active_style_type", icon="SHADING_RENDERED", text="")
@@ -266,7 +267,12 @@ class BIM_UL_styles(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
             row = layout.row(align=True)
-            row.prop(item, "name", text="", emboss=False)
+            material_name: Union[str, None] = StylesData.data["styles_to_blender_material_names"][item]
+            material_icon = 0
+            if material_name and (material := bpy.data.materials.get(material_name)):
+                preview = material.preview_ensure()
+                material_icon = preview.icon_id
+            row.prop(item, "name", text="", emboss=False, icon_value=material_icon)
             if item.has_surface_colour:
                 row = row.row(align=True)
                 row.enabled = False
