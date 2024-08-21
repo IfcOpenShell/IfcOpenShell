@@ -90,12 +90,18 @@ class ConvertToBlender(bpy.types.Operator):
 
     def execute(self, context):
         for obj in bpy.data.objects:
+            if obj.library:
+                continue
             if obj.type in {"MESH", "EMPTY"}:
                 tool.Ifc.unlink(obj=obj)
                 data = obj.data
                 if tool.Geometry.has_mesh_properties(data):
+                    if data.library:
+                        continue
                     data.BIMMeshProperties.ifc_definition_id = 0
         for material in bpy.data.materials:
+            if material.library:
+                continue
             tool.Ifc.unlink(obj=material)
         context.scene.BIMProperties.ifc_file = ""
         context.scene.BIMDebugProperties.attributes.clear()
