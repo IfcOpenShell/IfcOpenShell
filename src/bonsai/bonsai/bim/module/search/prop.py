@@ -87,6 +87,21 @@ def update_is_container_selected(self, context):
                 new.obj = obj
 
 
+def update_show_flat_colours(self, context):
+    if self.show_flat_colours:
+        space = tool.Blender.get_view3d_space()
+        space.shading.light = "FLAT"
+        space.shading.color_type = "OBJECT"
+        space.shading.show_object_outline = True
+        space.shading.show_cavity = True
+    else:
+        space = tool.Blender.get_view3d_space()
+        space.shading.type = "SOLID"
+        space.shading.light = "STUDIO"
+        space.shading.show_object_outline = True
+        space.shading.show_cavity = False
+
+
 class BIMFilterClasses(PropertyGroup):
     name: StringProperty(name="Name")
     is_selected: BoolProperty(name="Is Selected", default=True, update=update_is_class_selected)
@@ -163,7 +178,7 @@ class BIMSearchProperties(PropertyGroup):
         ],
         name="Max Mode",
     )
-    min_value: FloatProperty(name="Min Value", default=100)
+    min_value: FloatProperty(name="Min Value", default=0)
     max_value: FloatProperty(name="Max Value", default=100)
     colourscheme: CollectionProperty(type=BIMColour)
     active_colourscheme_index: IntProperty(name="Active Colourscheme Index")
@@ -172,6 +187,7 @@ class BIMSearchProperties(PropertyGroup):
     filter_classes_index: IntProperty(name="Filter Classes Index")
     filter_container: CollectionProperty(type=BIMFilterBuildingStoreys, name="Filter Level")
     filter_container_index: IntProperty(name="Filter Level Index")
+    show_flat_colours: BoolProperty(name="Flat Colours", default=False, update=update_show_flat_colours)
 
 
 def get_classes(self, ifc_product):
