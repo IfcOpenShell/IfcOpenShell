@@ -130,6 +130,8 @@ endif
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) wheel odfpy --wheel-dir=./wheels
 	# Required by IFCCityJSON
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download cjio --dest=./wheels
+	# Required in general for sorting all sorts of stuff in a nice way
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download natsort --dest=./wheels
 	# Provides express rule validation for ifcopenshell.validate
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pytest --dest=./wheels
 	# Provides Brickschema functionality
