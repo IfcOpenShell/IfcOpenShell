@@ -249,7 +249,7 @@ class ColourByProperty(Operator):
 
     def _execute(self, context):
         props = context.scene.BIMSearchProperties
-        query = props.colourscheme_query
+        query = props.colourscheme_query if props.colourscheme_key == "QUERY" else props.colourscheme_key
 
         if not query:
             self.report({"ERROR"}, "No Query Provided")
@@ -327,13 +327,25 @@ class ColourByProperty(Operator):
             areas[0].spaces[0].shading.color_type = "OBJECT"
 
         props.colourscheme.clear()
-        for value in natsorted(colourscheme.keys()):
+
+        if is_qualitative:
+            keys = natsorted(colourscheme.keys())
+        else:
+            keys = sorted(colourscheme.keys(), key=self.sort_quantitative_key)
+
+        for value in keys:
             data = colourscheme[value]
             new = props.colourscheme.add()
             new.name = str(value)
             new.total = data["total"]
             new.colour = data["colour"][0:3]
         return {"FINISHED"}
+
+    def sort_quantitative_key(self, value):
+        try:
+            return (0, float(value))
+        except ValueError:
+            return (1, value)
 
     def store_state(self, context):
         if areas := [a for a in context.screen.areas if a.type == "VIEW_3D"]:
@@ -360,7 +372,7 @@ class SelectByProperty(Operator):
 
     def execute(self, context):
         props = context.scene.BIMSearchProperties
-        query = props.colourscheme_query
+        query = props.colourscheme_query if props.colourscheme_key == "QUERY" else props.colourscheme_key
 
         if not query:
             self.report({"ERROR"}, "No Query Provided")

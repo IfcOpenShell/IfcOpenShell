@@ -914,6 +914,8 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
     def add_items_regular(self, items):
         self.identifiers = []
         for item in items:
+            if item is None:  # Used as a separator
+                continue
             self.identifiers.append(item[0])
             self.add_item(identifier=item[0], name=item[1])
             if item[0] == getattr(self.data, self.prop_name):
