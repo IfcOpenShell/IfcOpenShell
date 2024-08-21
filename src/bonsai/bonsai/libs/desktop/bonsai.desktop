@@ -1,9 +1,9 @@
 [Desktop Entry]
 Type=Application
 Terminal=false
-Exec=blenderbim %f
-Name=BlenderBIM
-Icon=blenderbim
+Exec=bonsai %f
+Name=Bonsai
+Icon=bonsai
 X-Desktop-File-Install-Version=0.26
-GenericName=Blender BIM add-on
+GenericName=Bonsai
 MimeType=application/x-ifc;

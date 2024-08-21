@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Wrapper script to launch BlenderBIM.
+# Wrapper script to launch Bonsai.
 
 # If the `blender` executable can't be found in your PATH environment, set
 # BLENDER_EXE to the location of your preferred `blender` executable.
