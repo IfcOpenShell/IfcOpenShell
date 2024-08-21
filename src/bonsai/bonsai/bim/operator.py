@@ -388,6 +388,10 @@ class FileUnassociate(bpy.types.Operator):
             "share/applications/bonsai.desktop",
             "share/mime/packages/bonsai.xml",
             "bin/bonsai",
+            "share/icons/hicolor/128x128/apps/blenderbim.png",
+            "share/applications/blenderbim.desktop",
+            "share/mime/packages/blenderbim.xml",
+            "bin/blenderbim",
         ):
             try:
                 os.remove(os.path.join(destdir, rel_path))
