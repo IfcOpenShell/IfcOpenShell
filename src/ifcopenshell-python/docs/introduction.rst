@@ -57,7 +57,7 @@ IfcOpenShell is a modular ecosystem of tools that work together, where each tool
     "**IfcOpenShell**", "The core library for C++ developers. The library includes the ability to parse schemas, tessellate and process implicit geometry."
     "**IfcOpenShell-Python**", "Python bindings to the core IfcOpenShell C++ system, as well as high level analysis and authoring functions."
     "**IfcConvert**", "A command-line application for converting IFC geometry into file formats such as OBJ, DAE, GLB, STP, IGS, XML, SVG, H5, and IFC itself."
-    "**BlenderBIM Add-on**", "A graphical add-on that lets you analyse, author, and modify IFC with Blender. Graphically create BIM models from scratch!"
+    "**Bonsai**", "A graphical add-on for Blender that lets you analyse, author, and modify IFC with Blender. Graphically create BIM models from scratch!"
     "**BCF**", "BIM Collaboration Format (BCF) is a standard to manage and exchange coordination topics between disciplines collaborating on a project by changing XML files or querying an API."
     "**BIMServer-Plugin**", "A plugin to the open source BIMServer CDE to allow you to use IfcOpenShell to parse, view, and audit models."
     "**BIMTester**", "A utility that allows you to write Gherkin-based tests for models."
