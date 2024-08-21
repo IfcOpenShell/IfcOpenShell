@@ -33,54 +33,6 @@ from bpy.props import FloatProperty, IntProperty
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
 
 
-def add_dumb_stair_object(self, context):
-    verts = [
-        Vector((0, 0, 0)),
-        Vector((0, self.tread_length, 0)),
-        Vector((self.width, self.tread_length, 0)),
-        Vector((self.width, 0, 0)),
-    ]
-    edges = []
-    faces = [[0, 1, 2, 3]]
-
-    mesh = bpy.data.meshes.new(name="Dumb Stair")
-    mesh.from_pydata(verts, edges, faces)
-    obj = object_data_add(context, mesh, operator=self)
-    modifier = obj.modifiers.new("Stair Width", "SOLIDIFY")
-    modifier.use_even_offset = True
-    modifier.offset = 1
-    modifier.thickness = self.tread_depth
-    modifier = obj.modifiers.new("Stair Treads", "ARRAY")
-    modifier.relative_offset_displace[0] = 0
-    modifier.relative_offset_displace[1] = 1
-    modifier.use_constant_offset = True
-    modifier.constant_offset_displace[0] = 0
-    modifier.constant_offset_displace[1] = 0
-    modifier.constant_offset_displace[2] = self.height / self.number_of_treads
-    modifier.count = self.number_of_treads
-    self.riser_height = self.height / self.number_of_treads
-    self.length = self.number_of_treads * self.tread_length
-    obj.name = "Stair"
-
-
-class BIM_OT_add_object(Operator, AddObjectHelper):
-    bl_idname = "mesh.add_stair"
-    bl_label = "Dumb Stair"
-    bl_options = {"REGISTER", "UNDO"}
-
-    width: FloatProperty(name="Width", default=1.1)
-    height: FloatProperty(name="Height", default=1)
-    tread_depth: FloatProperty(name="Tread Depth", default=0.2)
-    number_of_treads: IntProperty(name="Number of Treads (Goings)", default=6, soft_min=1)
-    tread_length: FloatProperty(name="Tread Length (Going)", default=0.25)
-    riser_height: FloatProperty(name="*Calculated* Riser Height")
-    length: FloatProperty(name="*Calculated* Length")
-
-    def execute(self, context):
-        add_dumb_stair_object(self, context)
-        return {"FINISHED"}
-
-
 def regenerate_stair_mesh(context):
     obj = context.active_object
     props_kwargs = obj.BIMStairProperties.get_props_kwargs()
@@ -198,9 +150,9 @@ def update_ifc_stair_props(obj):
             tool.Drawing.setup_annotation_object(annotation_obj, "STAIR_ARROW", stair_obj)
 
 
-class BIM_OT_add_clever_stair(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "mesh.add_clever_stair"
-    bl_label = "Clever Stair"
+class BIM_OT_add_stair(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "mesh.add_stair"
+    bl_label = "Stair"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
