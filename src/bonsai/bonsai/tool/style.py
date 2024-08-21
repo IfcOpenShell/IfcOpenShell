@@ -460,9 +460,7 @@ class Style(bonsai.core.tool.Style):
         return style_elements.get("IfcExternallyDefinedSurfaceStyle", None)
 
     @classmethod
-    def get_surface_shading_attributes(
-        cls, blender_material_or_style: Union[bpy.types.Material, ifcopenshell.entity_instance]
-    ) -> dict[str, Any]:
+    def get_surface_shading_attributes(cls, obj: bpy.types.Material) -> dict[str, Any]:
         data = {
             "SurfaceColour": {
                 "Name": None,
