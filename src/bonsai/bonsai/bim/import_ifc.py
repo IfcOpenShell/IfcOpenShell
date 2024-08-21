@@ -785,7 +785,9 @@ class IfcImporter:
             self.set_matrix_world(obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, placement_matrix))
             self.link_element(product, obj)
 
-    def get_pointcloud_representation(self, product):
+    def get_pointcloud_representation(
+        self, product: ifcopenshell.entity_instance
+    ) -> Union[ifcopenshell.entity_instance, None]:
         if hasattr(product, "Representation") and hasattr(product.Representation, "Representations"):
             representations = product.Representation.Representations
         elif hasattr(product, "RepresentationMaps") and hasattr(product.RepresentationMaps, "RepresentationMaps"):

@@ -40,6 +40,7 @@ class Collector(bonsai.core.tool.Collector):
                     users_collection.objects.unlink(obj)
 
         element = tool.Ifc.get_entity(obj)
+        assert element
 
         if element.is_a("IfcGridAxis"):
             element = (element.PartOfU or element.PartOfV or element.PartOfW)[0]

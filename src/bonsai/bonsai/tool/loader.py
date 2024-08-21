@@ -98,7 +98,11 @@ class Loader(bonsai.core.tool.Loader):
         return "{}/{}".format(element.is_a(), getattr(element, "Name", "None"))
 
     @classmethod
-    def link_mesh(cls, shape, mesh: OBJECT_DATA_TYPE) -> None:
+    def link_mesh(
+        cls,
+        shape: Union[ifcopenshell.geom.ShapeElementType, ifcopenshell.geom.ShapeType],
+        mesh: tool.Geometry.TYPES_WITH_MESH_PROPERTIES,
+    ) -> None:
         geometry = shape.geometry if hasattr(shape, "geometry") else shape
         if "-" in geometry.id:
             mesh.BIMMeshProperties.ifc_definition_id = int(geometry.id.split("-")[0])

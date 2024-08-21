@@ -663,15 +663,15 @@ class Geometry(bonsai.core.tool.Geometry):
             return False
         return isinstance(data, supported_types)
 
+    TYPES_WITH_MESH_PROPERTIES = Union[
+        bpy.types.Mesh,
+        bpy.types.Curve,
+        bpy.types.Camera,
+        bpy.types.PointLight,
+    ]
+
     @classmethod
-    def has_mesh_properties(cls, data: Union[bpy.types.ID, None]) -> TypeIs[
-        Union[
-            bpy.types.Mesh,
-            bpy.types.Curve,
-            bpy.types.Camera,
-            bpy.types.PointLight,
-        ]
-    ]:
+    def has_mesh_properties(cls, data: Union[bpy.types.ID, None]) -> TypeIs[TYPES_WITH_MESH_PROPERTIES]:
         supported_types = (
             bpy.types.Mesh,
             bpy.types.Curve,
