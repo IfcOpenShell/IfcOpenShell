@@ -95,7 +95,6 @@ class Bcf(bonsai.core.tool.Bcf):
                 if not document_references:
                     return
                 topic_.document_references = (topic_document_references := bcf.v3.model.TopicDocumentReferences())
-                return
             topic_document_references.document_reference = document_references
 
     @classmethod
@@ -163,7 +162,6 @@ class Bcf(bonsai.core.tool.Bcf):
                 if not labels:
                     return
                 topic_.labels = (topic_labels := bcf.v3.model.TopicLabels())
-                return
             topic_labels.label = labels
 
     @classmethod
@@ -186,7 +184,6 @@ class Bcf(bonsai.core.tool.Bcf):
                 if not reference_links:
                     return
                 topic_.reference_links = (topic_links := bcf.v3.model.TopicReferenceLinks())
-                return
             topic_links.reference_link = reference_links
 
     @classmethod
