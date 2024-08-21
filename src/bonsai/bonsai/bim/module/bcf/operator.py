@@ -1066,7 +1066,7 @@ class RemoveBcfComment(bpy.types.Operator):
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
         comments = topic.comments
-        i = next(i for i, c in enumerate(comments) if c.guid != self.comment_guid)
+        i = next(i for i, c in enumerate(comments) if c.guid == self.comment_guid)
         del comments[i]
         topic.coments = comments
         bpy.ops.bim.load_bcf_comments(topic_guid=topic.guid)
