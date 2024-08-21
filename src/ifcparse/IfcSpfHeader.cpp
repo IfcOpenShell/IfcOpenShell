@@ -50,9 +50,9 @@ namespace {
 }
 
 HeaderEntity::HeaderEntity(const char* const datatype, size_t size, IfcFile* file)
-    : data_(file ? read_from_file(file, size) : IfcEntityInstanceData(storage_t(size)))
-    , datatype_(datatype)
+    : datatype_(datatype)
     , file_(file)
+    , data_(file ? read_from_file(file, size) : IfcEntityInstanceData(storage_t(size)))
 {}
 
 HeaderEntity::~HeaderEntity() {

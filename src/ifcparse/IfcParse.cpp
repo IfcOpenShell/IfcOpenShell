@@ -245,7 +245,7 @@ char IfcSpfStream::Read(unsigned int offset) {
 //
 // Returns the cursor position
 //
-unsigned int IfcSpfStream::Tell() {
+unsigned int IfcSpfStream::Tell() const {
     return ptr_;
 }
 
@@ -274,7 +274,7 @@ IfcSpfLexer::~IfcSpfLexer() {
     delete decoder_;
 }
 
-unsigned int IfcSpfLexer::skipWhitespace() {
+unsigned int IfcSpfLexer::skipWhitespace() const {
     unsigned int index = 0;
     while (!stream->eof) {
         char character = stream->Peek();
@@ -288,7 +288,7 @@ unsigned int IfcSpfLexer::skipWhitespace() {
     return index;
 }
 
-unsigned int IfcSpfLexer::skipComment() {
+unsigned int IfcSpfLexer::skipComment() const {
     char character = stream->Peek();
     if (character != '/') {
         return 0;
@@ -376,7 +376,7 @@ Token IfcSpfLexer::Next() {
     return t;
 }
 
-bool IfcSpfStream::is_eof_at(unsigned int local_ptr) {
+bool IfcSpfStream::is_eof_at(unsigned int local_ptr) const {
     return local_ptr >= len_;
 }
 
@@ -646,7 +646,7 @@ std::string TokenFunc::asString(const Token& token) {
 
 boost::dynamic_bitset<> TokenFunc::asBinary(const Token& token) {
     const std::string& str = asStringRef(token);
-    if (str.size() < 1) {
+    if (str.empty()) {
         throw IfcException("Token is not a valid binary sequence");
     }
 
@@ -716,7 +716,7 @@ void IfcParse::IfcFile::load(unsigned entity_instance_name, const IfcParse::enti
                 try {
                     parse_context ps;
                     load(0, nullptr, ps, -1);
-                    auto decl = schema_->declaration_by_name(TokenFunc::asStringRef(next));
+                    const auto *decl = schema_->declaration_by_name(TokenFunc::asStringRef(next));
                     auto* simple_type_instance = schema_->instantiate(decl, ps.construct(-1, references_to_resolve, decl));
                     //@todo decide addEntity(((IfcUtil::IfcBaseClass*)*entity));
                     context.push(simple_type_instance);
@@ -748,7 +748,7 @@ IfcEntityInstanceData IfcParse::read(unsigned int i, IfcFile* f) {
     return IfcEntityInstanceData(pc.construct(i, f->references_to_resolve, ty));
 }
 
-void IfcParse::IfcFile::try_read_semicolon() {
+void IfcParse::IfcFile::try_read_semicolon() const {
     unsigned int old_offset = tokens->stream->Tell();
     Token semilocon = tokens->Next();
     if (!TokenFunc::isOperator(semilocon, ';')) {
@@ -799,7 +799,7 @@ namespace {
         // The REAL token definition from the IFC SPF standard does not necessarily match
         // the output of the C++ ostream formatting operation.
         // REAL = [ SIGN ] DIGIT { DIGIT } "." { DIGIT } [ "E" [ SIGN ] DIGIT { DIGIT } ] .
-        std::string format_double(const double& d) {
+        static std::string format_double(const double& d) {
             std::ostringstream oss;
             oss.imbue(std::locale::classic());
             oss << std::setprecision(std::numeric_limits<double>::digits10) << d;
@@ -821,7 +821,7 @@ namespace {
             return oss.str();
         }
 
-        std::string format_binary(const boost::dynamic_bitset<>& b) {
+        static std::string format_binary(const boost::dynamic_bitset<>& b) {
             std::ostringstream oss;
             oss.imbue(std::locale::classic());
             oss.put('"');
@@ -906,8 +906,8 @@ namespace {
             }
             data_ << ")";
         }
-        void operator()(const empty_aggregate_t&) const { data_ << "()"; }
-        void operator()(const empty_aggregate_of_aggregate_t&) const { data_ << "()"; }
+        void operator()(const empty_aggregate_t& /*unused*/) const { data_ << "()"; }
+        void operator()(const empty_aggregate_of_aggregate_t& /*unused*/) const { data_ << "()"; }
     };
 
     template <>
@@ -1428,8 +1428,6 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
     }
 
     references_to_resolve.clear();
-
-    return;
 }
 
 void IfcFile::recalculate_id_counter() {
@@ -1969,7 +1967,7 @@ namespace {
     template <typename Fn>
     void visit_subtypes(const IfcParse::entity* ent, Fn fn) {
         fn(ent);
-        for (auto& st : ent->subtypes()) {
+        for (const auto& st : ent->subtypes()) {
             visit_subtypes(st, fn);
         }
     }
@@ -1985,7 +1983,7 @@ namespace {
 
 aggregate_of_instance::ptr IfcFile::instances_by_type(const IfcParse::declaration* t) {
     aggregate_of_instance::ptr insts(new aggregate_of_instance);
-    if (t->as_entity()) {
+    if (t->as_entity() != nullptr) {
         visit_subtypes(t->as_entity(), [this, &insts](const IfcParse::entity* ent) {
             auto it = bytype_excl_.find(ent);
             if (it != bytype_excl_.end()) {
@@ -2096,7 +2094,7 @@ std::ostream& operator<<(std::ostream& out, const IfcParse::IfcFile& file) {
     return out;
 }
 
-std::string IfcFile::createTimestamp() const {
+std::string IfcFile::createTimestamp() {
     char buf[255];
 
     time_t t;
@@ -2104,7 +2102,7 @@ std::string IfcFile::createTimestamp() const {
 
     struct tm* ti = localtime(&t);
 
-    std::string result = "";
+    std::string result;
     if (strftime(buf, 255, "%Y-%m-%dT%H:%M:%S", ti) != 0U) {
         result = std::string(buf);
     }
@@ -2194,8 +2192,10 @@ size_t IfcFile::getTotalInverses(int instance_id) {
 }
 
 void IfcFile::setDefaultHeaderValues() {
-    const std::string empty_string = "";
-    std::vector<std::string> file_description, schema_identifiers, empty_vector;
+    const std::string empty_string;
+    std::vector<std::string> file_description;
+    std::vector<std::string> schema_identifiers;
+    std::vector<std::string> empty_vector;
 
     file_description.push_back("ViewDefinition [CoordinationView]");
     if (schema() != nullptr) {
@@ -2311,8 +2311,8 @@ void IfcUtil::IfcBaseClass::unset_attribute_value(size_t index) {
 
 void IfcUtil::IfcBaseClass::toString(std::ostream& out, bool upper) const
 {
-    auto ent = declaration().as_entity();
-    if (ent) {
+    const auto *ent = declaration().as_entity();
+    if (ent != nullptr) {
         out << "#" << as<IfcUtil::IfcBaseEntity>()->id() << "=";
     }
     if (upper) {

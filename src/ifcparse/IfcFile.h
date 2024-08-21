@@ -274,11 +274,11 @@ class IFC_PARSE_API IfcFile {
     /// Performs a depth-first traversal, returning all entity instance
     /// attributes as a flat list. NB: includes the root instance specified
     /// in the first function argument.
-    aggregate_of_instance::ptr traverse(IfcUtil::IfcBaseClass* instance, int max_level = -1);
+    static aggregate_of_instance::ptr traverse(IfcUtil::IfcBaseClass* instance, int max_level = -1);
 
     /// Same as traverse() but maintains topological order by using a
     /// breadth-first search
-    aggregate_of_instance::ptr traverse_breadth_first(IfcUtil::IfcBaseClass* instance, int max_level = -1);
+    static aggregate_of_instance::ptr traverse_breadth_first(IfcUtil::IfcBaseClass* instance, int max_level = -1);
 
     /// Get the attribute indices corresponding to the list of entity instances
     /// returned by getInverse().
@@ -324,10 +324,10 @@ class IFC_PARSE_API IfcFile {
     const IfcSpfHeader& header() const { return _header; }
     IfcSpfHeader& header() { return _header; }
 
-    std::string createTimestamp() const;
+    static std::string createTimestamp() ;
 
     void load(unsigned entity_instance_name, const IfcParse::entity* entity, parse_context&, int attribute_index = -1);
-    void try_read_semicolon();
+    void try_read_semicolon() const;
 
     void register_inverse(unsigned, const IfcParse::entity* from_entity, Token, int attribute_index);
     void register_inverse(unsigned, const IfcParse::entity* from_entity, IfcUtil::IfcBaseClass*, int attribute_index);

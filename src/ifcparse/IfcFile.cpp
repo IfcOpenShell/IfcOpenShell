@@ -80,7 +80,7 @@ namespace {
                 target == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_INT ||
                 target == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE ||
                 target == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE;
-        } else if (source == IfcUtil::Argument_AGGREGATE_OF_EMPTY_AGGREGATE) {
+        } if (source == IfcUtil::Argument_AGGREGATE_OF_EMPTY_AGGREGATE) {
             return target == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_INT ||
                 target == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE ||
                 target == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE;
@@ -237,9 +237,9 @@ namespace {
 IfcEntityInstanceData IfcParse::parse_context::construct(int name, unresolved_references& references_to_resolve, const IfcParse::declaration* decl) {
     std::vector<const IfcParse::parameter_type*> parameter_types;
 
-    if (decl && decl->as_type_declaration()) {
+    if ((decl != nullptr) && (decl->as_type_declaration() != nullptr)) {
         parameter_types = { decl->as_type_declaration()->declared_type() };
-    } else if (decl && decl->as_entity()) {
+    } else if ((decl != nullptr) && (decl->as_entity() != nullptr)) {
         auto entity_attrs = decl->as_entity()->all_attributes();
         std::transform(
             entity_attrs.begin(),
@@ -251,32 +251,32 @@ IfcEntityInstanceData IfcParse::parse_context::construct(int name, unresolved_re
         );
     }
 
-    if (decl && (tokens_.size() != parameter_types.size())) {
+    if ((decl != nullptr) && (tokens_.size() != parameter_types.size())) {
         // warning
     }
 
-    if (tokens_.size() == 0) {
+    if (tokens_.empty()) {
         return IfcEntityInstanceData(storage_t(0));
     }
 
-    storage_t storage(decl
+    storage_t storage(decl != nullptr
         ? (std::min)(parameter_types.size(), tokens_.size())
         : tokens_.size()
     );
 
     auto it = tokens_.begin();
     auto kt = parameter_types.begin();
-    for (; it != tokens_.end() && (!decl || kt != parameter_types.end()); ++it) {
+    for (; it != tokens_.end() && ((decl == nullptr) || kt != parameter_types.end()); ++it) {
         auto& token = *it;
         // @todo coerce to expected type, e.g empty -> std::vector<int>, bool -> logical
         const IfcParse::parameter_type* param_type = nullptr;
-        if (decl) {
+        if (decl != nullptr) {
             param_type = *kt;
         }
 
         auto index = (uint8_t) std::distance(tokens_.begin(), it);
 
-        boost::apply_visitor([this, &storage, name, &references_to_resolve, index, it, param_type](auto& v) {
+        boost::apply_visitor([this, &storage, name, &references_to_resolve, index, param_type](auto& v) {
             if constexpr (std::is_same_v<std::decay_t<decltype(v)>, IfcParse::Token>) {
                 dispatch_token(v, param_type && param_type->as_named_type() ? param_type->as_named_type()->declared_type() : nullptr, [this, &storage, name, &references_to_resolve, index](auto v) {
                     if constexpr (std::is_same_v<std::decay_t<decltype(v)>, IfcParse::reference_or_simple_type>) {
@@ -292,7 +292,7 @@ IfcEntityInstanceData IfcParse::parse_context::construct(int name, unresolved_re
                     }
                 });
             } else if constexpr (std::is_same_v<std::decay_t<decltype(v)>, IfcParse::parse_context*>) {
-                auto pt = param_type;
+                const auto *pt = param_type;
                 if (pt) {
                     while (pt->as_named_type()) {
                         pt = pt->as_named_type()->declared_type()->as_type_declaration()->declared_type();
@@ -312,7 +312,7 @@ IfcEntityInstanceData IfcParse::parse_context::construct(int name, unresolved_re
             }
         }, token);
 
-        if (decl) {
+        if (decl != nullptr) {
             ++kt;
         }
     }

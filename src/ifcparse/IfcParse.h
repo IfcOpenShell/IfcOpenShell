@@ -148,8 +148,8 @@ Token NoneTokenPtr();
 class IFC_PARSE_API IfcSpfLexer {
   private:
     IfcCharacterDecoder* decoder_;
-    unsigned int skipWhitespace();
-    unsigned int skipComment();
+    unsigned int skipWhitespace() const;
+    unsigned int skipComment() const;
 
   public:
     std::string& GetTempString() const {

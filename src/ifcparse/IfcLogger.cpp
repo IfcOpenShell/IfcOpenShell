@@ -17,8 +17,6 @@
  *                                                                              *
  ********************************************************************************/
 
-#define _DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR
-
 #include "IfcLogger.h"
 
 #include "Argument.h"

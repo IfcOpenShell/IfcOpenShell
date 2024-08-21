@@ -459,7 +459,7 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
         };
 
         // Create or reference an instance from the file and set attributes based on XML attributes.
-        auto create_instance = [&state, &attributes, &id](const IfcParse::declaration* decl) {
+        auto create_instance = [&state, &attributes](const IfcParse::declaration* decl) {
             boost::optional<std::string> id;
             boost::variant<std::string, IfcUtil::IfcBaseClass*> rv;
 
@@ -479,7 +479,7 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
                 }
             }
 
-            auto untyped = IfcEntityInstanceData(storage_t(decl->as_entity() ? decl->as_entity()->attribute_count() : 1));
+            auto untyped = IfcEntityInstanceData(storage_t(decl->as_entity() != nullptr ? decl->as_entity()->attribute_count() : 1));
 
             const IfcParse::entity* entity = decl->as_entity();
             if (entity != nullptr) {

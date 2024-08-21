@@ -55,8 +55,6 @@
  *																			  *
  ********************************************************************************/
 
-#define _DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR
-
 #ifndef IFCGEOMITERATOR_H
 #define IFCGEOMITERATOR_H
 
