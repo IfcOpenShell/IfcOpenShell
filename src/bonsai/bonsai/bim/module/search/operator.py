@@ -305,7 +305,7 @@ class ColourByProperty(Operator):
                         obj.color = (0, 0, 0, 1)
 
         if not is_qualitative:
-            steps = 10
+            steps = 10 if max_value is not None and min_value is not None else 0
             step_size = (max_value - min_value) / (steps - 1)
             values = []
             for i in range(steps):
