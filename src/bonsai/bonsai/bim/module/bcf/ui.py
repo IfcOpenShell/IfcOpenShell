@@ -44,6 +44,7 @@ class BIM_PT_bcf(Panel):
             row = layout.row(align=True)
             row.operator("bim.new_bcf_project", text="New Project")
             row.operator("bim.load_bcf_project", text="Load Project")
+            layout.prop(props, "bcf_version")
             return
 
         row = layout.row(align=True)
@@ -51,6 +52,10 @@ class BIM_PT_bcf(Panel):
         op.save_current_bcf = True
         row.operator("bim.save_bcf_project", icon="EXPORT", text="Save Project As...")
         row.operator("bim.unload_bcf_project", text="", icon="CANCEL")
+
+        row = layout.row()
+        row.prop(props, "bcf_version", emboss=False)
+        row.enabled = False
 
         row = layout.row()
         row.prop(props, "name")
