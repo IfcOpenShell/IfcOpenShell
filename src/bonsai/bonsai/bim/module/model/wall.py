@@ -351,7 +351,7 @@ class DrawPolylineWall(bpy.types.Operator):
     def modal(self, context, event):
 
         if not self.is_input_on:
-            if event.type == "MOUSEMOVE":
+            if event.type == "MOUSEMOVE" or event.type == "INBETWEEN_MOUSEMOVE":
                 self.mousemove_count += 1
                 self.is_input_on = False
                 self.input_type = "OFF"
