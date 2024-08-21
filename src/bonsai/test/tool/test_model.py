@@ -566,10 +566,8 @@ class TestApplyIfcMaterialChanges(NewFile):
 
         # Occurrence with a style.
         element_type_obj = tool.Ifc.get_object(element_type)
-        tool.Blender.set_objects_selection(
-            bpy.context, active_object=element_type_obj, selected_objects=[element_type_obj]
-        )
-        bpy.ops.bim.assign_style_to_selected(style_id=green_style.id())
+        with bpy.context.temp_override(selected_objects=[element_type_obj]):
+            bpy.ops.bim.assign_style_to_selected(style_id=green_style.id())
 
         ifcopenshell.api.material.assign_material(ifc_file, material=red_material, products=[element_type])
         tool.Material.ensure_material_assigned([element_type], material=red_material)
