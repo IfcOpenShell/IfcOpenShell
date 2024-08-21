@@ -315,6 +315,9 @@ class BIM_PT_bcf_comments(Panel):
                 author_text = "*{} ({})".format(comment.modified_author, comment.modified_date)
             row = box.row(align=True)
             row.label(text=author_text, icon="WORDWRAP_ON")
+            if comment.viewpoint:
+                op = row.operator("bim.activate_bcf_viewpoint", icon="SCENE", text="")
+                op.viewpoint_guid = comment.viewpoint
             row.prop(
                 comment, "is_editable", icon="CHECKMARK" if comment.is_editable else "GREASEPENCIL", icon_only=True
             )

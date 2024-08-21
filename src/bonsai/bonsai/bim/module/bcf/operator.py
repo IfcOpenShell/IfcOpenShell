@@ -1169,27 +1169,47 @@ class ActivateBcfViewpoint(bpy.types.Operator):
     bl_idname = "bim.activate_bcf_viewpoint"
     bl_label = "Activate BCF Viewpoint"
     bl_options = {"REGISTER", "UNDO"}
+    viewpoint_guid: bpy.props.StringProperty(
+        name="Viewpoint GUID",
+        description="Viewpoint GUID from the active topic to activate. If not provided active viewpoint will be used",
+        default="",
+        options={"SKIP_SAVE"},
+    )
 
     @classmethod
     def poll(cls, context):
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         if blender_topic is None:
+            cls.poll_message_set("No topic is active.")
             return False
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
         topic = bcfxml.topics[blender_topic.name]
-        return topic.viewpoints
+        if not topic.viewpoints:
+            cls.poll_message_set("No viewpoints in the active topic.")
+            return False
+        return True
 
     def execute(self, context):
         self.file = IfcStore.get_file()
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
+
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
+        if self.viewpoint_guid:
+            viewpoint_guid = self.viewpoint_guid
+            if viewpoint_guid not in topic.viewpoints:
+                self.report({"ERROR"}, f"No such viewpoint in the active topic: '{viewpoint_guid}'.")
+                return {"CANCELLED"}
+        else:
+            viewpoint_guid = tool.Blender.get_enum_safe(blender_topic, "viewpoints")
+            if viewpoint_guid is None:
+                self.report({"ERROR"}, "No viewpoint is active.")
+                return {"CANCELLED"}
 
-        viewpoint_guid = blender_topic.viewpoints
         viewpoint = topic.viewpoints[viewpoint_guid]
         obj = bpy.data.objects.get("Viewpoint")
         if not obj:
