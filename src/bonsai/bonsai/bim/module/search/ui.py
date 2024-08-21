@@ -83,7 +83,10 @@ class BIM_PT_colour_by_property(Panel):
         row.operator("bim.save_colourscheme", text="", icon="EXPORT")
 
         row = self.layout.row()
-        row.prop(props, "colourscheme_query", text="Query")
+        bonsai.bim.helper.prop_with_search(self.layout, props, "colourscheme_key", text="Colour By")
+        if props.colourscheme_key == "QUERY":
+            row = self.layout.row()
+            row.prop(props, "colourscheme_query", text="Query")
 
         row = self.layout.row()
         row.prop(props, "palette")

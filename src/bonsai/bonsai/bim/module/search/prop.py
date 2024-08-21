@@ -41,6 +41,12 @@ def get_element_key(self, context):
     return SelectSimilarData.data["element_key"]
 
 
+def get_colourscheme_key(self, context):
+    if not ColourByPropertyData.is_loaded:
+        ColourByPropertyData.load()
+    return ColourByPropertyData.data["colourscheme_key"]
+
+
 def get_saved_searches(self, context):
     if not SearchData.is_loaded:
         SearchData.load()
@@ -122,6 +128,7 @@ class BIMSearchProperties(PropertyGroup):
     )
     saved_searches: EnumProperty(items=get_saved_searches, name="Saved Searches")
     saved_colourschemes: EnumProperty(items=get_saved_colourschemes, name="Saved Colourschemes")
+    colourscheme_key: EnumProperty(items=get_colourscheme_key, name="Colourscheme Key")
     colourscheme_query: StringProperty(name="Colourscheme Query", default="class")
     palette: EnumProperty(
         items=[
