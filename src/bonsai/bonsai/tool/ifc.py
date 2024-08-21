@@ -175,7 +175,11 @@ class Ifc(bonsai.core.tool.Ifc):
             bonsai.bim.handler.subscribe_to(obj, "name", bonsai.bim.handler.name_callback)
 
     @classmethod
-    def link(cls, element: ifcopenshell.entity_instance, obj: IFC_CONNECTED_TYPE) -> None:
+    def link(
+        cls,
+        element: ifcopenshell.entity_instance,
+        obj: Union[IFC_CONNECTED_TYPE, tool.Geometry.TYPES_WITH_MESH_PROPERTIES],
+    ) -> None:
         IfcStore.link_element(element, obj)
 
     @classmethod
