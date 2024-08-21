@@ -1,6 +1,6 @@
-BlenderBIM Add-on
+Bonsai Add-on
 =================
 
-The BlenderBIM Add-on lets you analyse, create, and modify OpenBIM with
-Blender. For more information, visit the `BlenderBIM Add-on website
+Bonsai Add-on for Blender lets you analyse, create, and modify OpenBIM with
+Blender. For more information, visit the `Bonsai website
 <https://bonsaibim.org>`_.
