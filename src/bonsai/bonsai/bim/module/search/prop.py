@@ -123,6 +123,15 @@ class BIMSearchProperties(PropertyGroup):
     saved_searches: EnumProperty(items=get_saved_searches, name="Saved Searches")
     saved_colourschemes: EnumProperty(items=get_saved_colourschemes, name="Saved Colourschemes")
     colourscheme_query: StringProperty(name="Colourscheme Query", default="class")
+    pallette: EnumProperty(
+        items=[
+            ("tab10", "Default", "Contrasting colours to distinguish categories"),
+            ("paired", "Paired", "Pairs of colours to distinguish categories"),
+            ("coolwarm", "CoolWarm", "A diverging linear range from blue to red with white in the middle"),
+            ("spectral", "Spectral", "A diverging spectral range from red to blue with white in the middle"),
+        ],
+        name="Pallette",
+    )
     colourscheme: CollectionProperty(type=BIMColour)
     active_colourscheme_index: IntProperty(name="Active Colourscheme Index")
     filter_type: StringProperty(name="Filter Type")

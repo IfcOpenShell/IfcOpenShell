@@ -4,6 +4,7 @@ import lark
 import bonsai.core.tool
 import ifcopenshell.guid
 import ifcopenshell.util.selector
+from itertools import cycle
 from bonsai.bim.prop import BIMFacet
 from typing import Union, Literal
 
@@ -112,6 +113,70 @@ class Search(bonsai.core.tool.Search):
         elif value in ("NULL", "TRUE", "FALSE"):
             return value
         return '"' + value.replace('"', '\\"') + '"'
+
+    @classmethod
+    def get_qualitative_pallette(cls, theme: str = "tab10") -> cycle:
+        if theme == "paired":
+            pass
+        return cycle(
+            [
+                (0.651, 0.81, 0.892, 1),
+                (0.121, 0.471, 0.706, 1),
+                (0.699, 0.876, 0.54, 1),
+                (0.199, 0.629, 0.174, 1),
+                (0.983, 0.605, 0.602, 1),
+                (0.89, 0.101, 0.112, 1),
+                (0.989, 0.751, 0.427, 1),
+                (0.986, 0.497, 0.1, 1),
+                (0.792, 0.699, 0.839, 1),
+                (0.414, 0.239, 0.603, 1),
+                (0.993, 0.999, 0.6, 1),
+                (0.693, 0.349, 0.157, 1),
+            ]
+        )
+
+    @classmethod
+    def interpolate_color(cls, c1, c2, factor):
+        return tuple((1 - factor) * x + factor * y for x, y in zip(c1, c2))
+
+    @classmethod
+    def get_quantitative_pallette(cls, theme: str, value, min_val, max_val):
+        palette = [
+            (0.227, 0.298, 0.753),
+            (0.282, 0.376, 0.820),
+            (0.345, 0.463, 0.886),
+            (0.412, 0.545, 0.937),
+            (0.482, 0.620, 0.973),
+            (0.553, 0.686, 0.992),
+            (0.616, 0.741, 0.996),
+            (0.686, 0.792, 0.984),
+            (0.753, 0.827, 0.961),
+            (0.812, 0.851, 0.918),
+            (0.865, 0.863, 0.863),
+            (0.910, 0.835, 0.792),
+            (0.945, 0.792, 0.714),
+            (0.965, 0.737, 0.635),
+            (0.965, 0.671, 0.553),
+            (0.957, 0.604, 0.482),
+            (0.929, 0.518, 0.404),
+            (0.890, 0.424, 0.329),
+            (0.839, 0.322, 0.263),
+            (0.773, 0.196, 0.200),
+            (0.702, 0.012, 0.149),
+        ]
+
+        if value < min_val:
+            value = min_val
+        if value > max_val:
+            value = max_val
+
+        scale = (value - min_val) / (max_val - min_val) * (len(palette) - 1)
+        index = int(scale)
+        fraction = scale - index
+
+        if index >= len(palette) - 1:
+            return palette[-1]
+        return cls.interpolate_color(palette[index], palette[index + 1], fraction)
 
 
 class ImportFilterQueryTransformer(lark.Transformer):
