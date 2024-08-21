@@ -331,8 +331,10 @@ class DrawPolylineWall(bpy.types.Operator):
         if not relating_type_id:
             return {"FINISHED"}
 
+        self.container = None
         self.container_obj = None
         if container := tool.Root.get_default_container():
+            self.container = container
             self.container_obj = tool.Ifc.get_object(container)
 
         relating_type = tool.Ifc.get().by_id(int(relating_type_id))
@@ -615,10 +617,13 @@ class DumbWallGenerator:
         self.axis_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Plan", "Axis", "GRAPH_VIEW")
 
         props = bpy.context.scene.BIMModelProperties
+
         self.container = None
+        self.container_obj = None
         if container := tool.Root.get_default_container():
             self.container = container
             self.container_obj = tool.Ifc.get_object(container)
+
         self.width = self.layers["thickness"]
         self.height = props.extrusion_depth
         self.length = props.length
