@@ -357,7 +357,7 @@ static void process_characters(void* user, const xmlChar* character, int len) {
             auto val = parse_attribute_value(pt, txt);
             if (!val.empty()) {
                 visit_any([&state](auto& v) {
-                    state->stack.back().inst()->data().setArgument(state->stack.back().idx(), v);
+                    state->stack.back().inst()->set_attribute_value(state->stack.back().idx(), v);
                 }, val);
             }
         }
@@ -494,7 +494,7 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
                         auto val = parse_attribute_value(attr->type_of_attribute(), pair.second);
                         if (!val.empty()) {
                             visit_any([&untyped, idx](auto& v) {
-                                untyped->data().storage_->set_attribute_value(idx, v);
+                                untyped.storage_.set(idx, v);
                             }, val);
                         }
                     } else {

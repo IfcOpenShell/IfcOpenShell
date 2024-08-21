@@ -52,15 +52,7 @@ class IFC_PARSE_API aggregate_of_instance {
     bool contains(IfcUtil::IfcBaseClass*) const;
     
     template <class U>
-    typename U::list::ptr as() {
-        typename U::list::ptr result(new typename U::list);
-        for (it i = begin(); i != end(); ++i) {
-            if ((*i)->template as<U>()) {
-                result->push((*i)->template as<U>());
-            }
-        }
-        return result;
-    }
+    typename U::list::ptr as();
 
     void remove(IfcUtil::IfcBaseClass*);
     aggregate_of_instance::ptr filtered(const std::set<const IfcParse::declaration*>& entities);
@@ -158,20 +150,7 @@ class IFC_PARSE_API aggregate_of_aggregate_of_instance {
     }
 
     template <class U>
-    typename aggregate_of_aggregate_of<U>::ptr as() {
-        typename aggregate_of_aggregate_of<U>::ptr result(new aggregate_of_aggregate_of<U>);
-        for (outer_it outer = begin(); outer != end(); ++outer) {
-            const std::vector<IfcUtil::IfcBaseClass*>& from = *outer;
-            typename std::vector<U*> to;
-            for (inner_it inner = from.begin(); inner != from.end(); ++inner) {
-                if ((*inner)->template as<U>()) {
-                    to.push_back((*inner)->template as<U>());
-                }
-            }
-            result->push(to);
-        }
-        return result;
-    }
+    typename aggregate_of_aggregate_of<U>::ptr as();
 
 };
 

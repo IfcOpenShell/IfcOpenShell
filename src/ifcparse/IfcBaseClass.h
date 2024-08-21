@@ -99,9 +99,9 @@ protected:
 public:
     IfcBaseClass(IfcEntityInstanceData&& data)
         : identity_(counter_++)
-        , data_(std::move(data))
         , id_(0)
         , file_(nullptr)
+        , data_(std::move(data))
     {}
 
     const IfcEntityInstanceData& data() const { return data_; }
@@ -191,6 +191,34 @@ T IfcBaseEntity::get_value(const std::string& name, const T& default_value) cons
     }
     return (T) attr;
 }
+
 } // namespace IfcUtil
+
+template <class U>
+typename U::list::ptr aggregate_of_instance::as() {
+    typename U::list::ptr result(new typename U::list);
+    for (it i = begin(); i != end(); ++i) {
+        if ((*i)->template as<U>()) {
+            result->push((*i)->template as<U>());
+        }
+    }
+    return result;
+}
+
+template <class U>
+typename aggregate_of_aggregate_of<U>::ptr aggregate_of_aggregate_of_instance::as() {
+    typename aggregate_of_aggregate_of<U>::ptr result(new aggregate_of_aggregate_of<U>);
+    for (outer_it outer = begin(); outer != end(); ++outer) {
+        const std::vector<IfcUtil::IfcBaseClass*>& from = *outer;
+        typename std::vector<U*> to;
+        for (inner_it inner = from.begin(); inner != from.end(); ++inner) {
+            if ((*inner)->template as<U>()) {
+                to.push_back((*inner)->template as<U>());
+            }
+        }
+        result->push(to);
+    }
+    return result;
+}
 
 #endif

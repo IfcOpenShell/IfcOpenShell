@@ -1422,7 +1422,7 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
                 }
                 byid_[p.first.name_]->data().storage_.set(p.first.index_, instances);
             } else {
-                static_assert(false, "Inconsistent type");
+                // static_assert(false, "Inconsistent type");
             }
         }, p.second);
     }
