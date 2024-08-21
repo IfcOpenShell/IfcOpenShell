@@ -1106,9 +1106,20 @@ class AddBcfComment(bpy.types.Operator):
     def poll(cls, context):
         props = context.scene.BCFProperties
         if not props.comment:
+            cls.poll_message_set("No comment to add.")
             return False
-        if props.has_related_viewpoint and not bcf_prop.getBcfViewpoints(None, context):
+
+        topic = props.active_topic
+        if not topic:
+            cls.poll_message_set("No topic is active.")
             return False
+
+        if props.has_related_viewpoint:
+            topic = props.topics[topic.name]
+            viewpoint = tool.Blender.get_enum_safe(topic, "viewpoints")
+            if not viewpoint:
+                cls.poll_message_set("No viewpoint is active to add a comment with viewpoint.")
+                return False
         return True
 
     def execute(self, context):
