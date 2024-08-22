@@ -216,6 +216,8 @@ function addTableElement(blenderId, csvData, filename) {
     autoColumns: true,
     selectableRows: 1,
     layout: "fitColumns",
+    // Our fields are never nested, and we use the "." character in queries
+    nestedFieldSeparator: false,
     autoColumnsDefinitions: function (definitions) {
       menu = createHeaderMenu(definitions, table);
       definitions.forEach((column) => {
