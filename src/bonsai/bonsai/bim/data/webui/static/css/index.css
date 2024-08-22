@@ -57,11 +57,9 @@ body {
 }
 
 #container {
+    position: relative;
+    padding: var(--margin-small);
     flex: 1;
-    margin-top: var(--margin-medium);
-    margin-left: var(--margin-small);
-    margin-right: var(--margin-small);
-    margin-bottom: var(--margin-medium);
 }
 
 h3 {
@@ -204,7 +202,11 @@ footer p {
 }
 
 .table-container {
-    margin-bottom: var(--margin-large);
+    position: absolute;
+    display: block;
+    height: calc(100% - var(--margin-small) * 2);
+    width: calc(100% - var(--margin-small) * 2);
+    overflow-x: scroll;
 }
 
 .csv-table {
