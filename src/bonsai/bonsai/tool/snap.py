@@ -41,23 +41,19 @@ class Snap(bonsai.core.tool.Snap):
         cls.snap_plane_method = value
 
     @classmethod
-    def get_snap_points_on_raycasted_obj(cls, obj, face_index):
-        snap_points = {}
+    def get_snap_points_on_raycasted_face(cls, context, event, obj, face_index):
         matrix = obj.matrix_world.copy()
         face = obj.data.polygons[face_index]
-        vertices = []
+        verts = []
         for i in face.vertices:
-            vertices.append(matrix @ obj.data.vertices[i].co)
+            verts.append(matrix @ obj.data.vertices[i].co)
 
-        edges_center = []
-        for v1, v2 in zip(vertices, vertices[1:] + [vertices[0]]):
-            middle_dist = (v2 - v1) / 2
-            edges_center.append(v1 + middle_dist)
+        hit, hit_type = tool.Raycast.ray_cast_by_proximity(context, event, obj, face)
+        snap_point = (hit, hit_type)
+        if hit is None:
+            return (None, None)
 
-        snap_points.update({tuple(vertex): "Vertices" for vertex in vertices})
-        snap_points.update({tuple(edge_center): "Edge Center" for edge_center in edges_center})
-
-        return snap_points
+        return snap_point
 
     @classmethod
     def get_snap_points_on_polyline(cls):
@@ -286,7 +282,8 @@ class Snap(bonsai.core.tool.Snap):
         rv3d = context.region_data
         cls.mouse_pos = event.mouse_region_x, event.mouse_region_y
 
-        offset = 5
+        offset = 15
+        snap_threshold = 0.3
         mouse_offset = (
             (-offset, offset),
             (0, offset),
@@ -329,18 +326,11 @@ class Snap(bonsai.core.tool.Snap):
 
             return plane_origin, plane_normal
 
-        def cast_rays_and_get_best_object():
+        def cast_rays_and_get_best_object(objs_to_raycast):
             best_length_squared = 1.0
             best_obj = None
             best_hit = None
             best_face_index = None
-
-            objs_to_raycast = []
-
-            for obj, bbox_2d in objs_2d_bbox:
-                if obj.type == "MESH" and bbox_2d:
-                    if tool.Raycast.in_view_2d_bounding_box(cls.mouse_pos, bbox_2d):
-                        objs_to_raycast.append(obj)
 
             for obj in objs_to_raycast:
                 hit, normal, face_index = tool.Raycast.obj_ray_cast(context, event, obj)
@@ -353,6 +343,7 @@ class Snap(bonsai.core.tool.Snap):
                         if hit:
                             break
                     cls.mouse_pos = original_mouse_pos
+
                 if hit is not None:
                     hit_world = obj.original.matrix_world @ hit
                     length_squared = (hit_world - ray_origin).length_squared
@@ -368,9 +359,6 @@ class Snap(bonsai.core.tool.Snap):
             else:
                 return None, None, None
 
-        snap_threshold = 0.3
-        ray_origin, ray_target, ray_direction = tool.Raycast.get_viewport_ray_data(context, event)
-        obj, hit, face_index = cast_rays_and_get_best_object()
 
         try:
             polyline_data = bpy.context.scene.BIMModelProperties.polyline_point
@@ -396,26 +384,56 @@ class Snap(bonsai.core.tool.Snap):
         else:
             rot_intersection = None
 
-        if obj is not None:
+        ray_origin, ray_target, ray_direction = tool.Raycast.get_viewport_ray_data(context, event)
 
-            snap_points = cls.get_snap_points_on_raycasted_obj(obj, face_index)
-            snap_point = cls.select_snap_point(snap_points, hit, snap_threshold)
+        objs_to_raycast = []
+        for obj, bbox_2d in objs_2d_bbox:
+            if obj.type == "MESH" and bbox_2d:
+                if tool.Raycast.in_view_2d_bounding_box(cls.mouse_pos, bbox_2d):
+                    objs_to_raycast.append(obj)
 
-            if not snap_point:
-                cls.update_snaping_point(hit, "Face")
+        # Try to get object using object raycast method
+        # If it fails use the raycast by proximity
+        snap_obj, hit, face_index = cast_rays_and_get_best_object(objs_to_raycast)
+        if snap_obj is None:
+            for obj in objs_to_raycast:
+                hit, hit_type = tool.Raycast.ray_cast_by_proximity(context, event, obj)
+                snap_obj = obj
+                if hit is not None:
+                    break
 
+        if snap_obj is not None:
+            # Objects with faces
+            if face_index is not None:
+                snap_point = cls.get_snap_points_on_raycasted_face(context, event, snap_obj, face_index)
+                if snap_point[0] is None:
+                    cls.update_snaping_point(hit, "Face")
+                    return
+            # Objects with only edges or verts
+            else:
+                if hit is not None:
+                    snap_point = (hit, hit_type)
+                else:
+                    snap_point = None
+
+        # If there are no objects to snap to, it will try snaping in the polyline
         else:
             snap_points = cls.get_snap_points_on_polyline()
             snap_point = cls.select_snap_point(snap_points, intersection, snap_threshold)
+            print("POLY", snap_points, snap_point)
 
         if snap_point:
             if event.shift and axis_start:
                 snap_result, snap_type = cls.mix_snap_and_axis(snap_point, axis_start, axis_end, elevation)
                 cls.update_snaping_point(snap_result, snap_type)
                 cls.update_snaping_ref(snap_point[0], snap_point[1])
+                return
             else:
                 cls.update_snaping_point(snap_point[0], snap_point[1])
-        elif rot_intersection:
+                return
+        # If theres no snapping point from objects and polyline
+        # It will snap to the plane
+        if rot_intersection:
             cls.update_snaping_point(rot_intersection, "Axis")
         else:
             cls.update_snaping_point(intersection, "Plane")
