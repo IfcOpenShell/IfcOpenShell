@@ -24,6 +24,7 @@ import bonsai.tool as tool
 from math import sin, cos, radians, degrees, atan2, acos
 from bpy.types import SpaceView3D
 import math
+from bpy_extras import view3d_utils
 from mathutils import Vector, Matrix
 from gpu_extras.batch import batch_for_shader
 from typing import Union
@@ -311,7 +312,8 @@ class PolylineDecorator:
         if cls.is_installed:
             cls.uninstall()
         handler = cls()
-        cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_text, (context,), "WINDOW", "POST_PIXEL"))
+        cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_input_panel, (context,), "WINDOW", "POST_PIXEL"))
+        cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_measurements, (context,), "WINDOW", "POST_PIXEL"))
         cls.handlers.append(SpaceView3D.draw_handler_add(handler, (context,), "WINDOW", "POST_VIEW"))
         cls.is_installed = True
 
@@ -507,7 +509,7 @@ class PolylineDecorator:
         shader.uniform_float("color", color)
         batch.draw(shader)
 
-    def draw_text(self, context):
+    def draw_input_panel(self, context):
         texts = {"D": "Distance:", "A": "Angle:", "X": "X coord:", "Y": "Y coord:", "Z": "Z coord:",  "AREA": "Area:"}
         self.addon_prefs = tool.Blender.get_addon_preferences()
         self.font_id = 0
@@ -525,8 +527,36 @@ class PolylineDecorator:
                 blf.color(self.font_id, *color_highlight)
             else:
                 blf.color(self.font_id, *color)
-            blf.position(self.font_id, self.mouse_pos[0] + offset, self.mouse_pos[1] + offset - (new_line * i), 0)
+            blf.position(self.font_id, self.mouse_pos[0] + offset, self.mouse_pos[1] - (new_line * i), 0)
             blf.draw(self.font_id, texts[key] + value)
+
+    def draw_measurements(self, context):
+        region = context.region
+        rv3d = region.data
+        measurement_prop = context.scene.BIMModelProperties.polyline_measurement
+
+
+        self.addon_prefs = tool.Blender.get_addon_preferences()
+        self.font_id = 0
+        blf.size(self.font_id, 12)
+        blf.enable(self.font_id, blf.SHADOW)
+        blf.shadow(self.font_id, 6, 0, 0, 0, 1)
+        color = self.addon_prefs.decorations_colour
+
+
+        blf.color(self.font_id, *color)
+        for i in range(len(measurement_prop)):
+            if i == 0:
+                continue
+            pos_dim = (Vector(measurement_prop[i].position) + Vector(measurement_prop[i-1].position)) / 2
+            coords_dim = view3d_utils.location_3d_to_region_2d(region, rv3d, pos_dim)
+            blf.position(self.font_id, coords_dim[0], coords_dim[1], 0)
+            blf.draw(self.font_id, "d: " + measurement_prop[i].dim)
+
+            pos_angle = measurement_prop[i-1].position
+            coords_angle = view3d_utils.location_3d_to_region_2d(region, rv3d, pos_angle)
+            blf.position(self.font_id, coords_angle[0], coords_angle[1], 0)
+            blf.draw(self.font_id, "a: " + measurement_prop[i].angle)
 
     def __call__(self, context):
 
