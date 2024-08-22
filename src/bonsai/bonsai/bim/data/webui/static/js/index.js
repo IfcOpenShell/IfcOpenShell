@@ -241,12 +241,6 @@ function addTableElement(blenderId, csvData, filename) {
   tableTitle.append(downloadCsv);
   downloadCsv.on('click', function() { table.download("csv", "data.csv"); })
 
-  var downloadExcel = $('<a><i class="fa-solid fa-file-excel"></i></a>')
-    .css("margin-left", "10px")
-    .css("cursor", "pointer");
-  tableTitle.append(downloadExcel);
-  downloadExcel.on('click', function() { table.download("xlsx", "data.xlsx"); })
-
   table.on("rowSelected", function (row) {
     var index = row.getIndex(); // the guid of the object
 
