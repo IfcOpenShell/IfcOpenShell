@@ -651,11 +651,13 @@ class Geometry(bonsai.core.tool.Geometry):
         Union[
             bpy.types.Mesh,
             bpy.types.Curve,
+            bpy.types.Camera,
         ]
     ]:
         supported_types = (
             bpy.types.Mesh,
             bpy.types.Curve,
+            bpy.types.Camera,
         )
         if not data:
             return False
