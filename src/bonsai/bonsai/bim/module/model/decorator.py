@@ -386,7 +386,7 @@ class PolylineDecorator:
             second_to_last_point = Vector(
                 (second_to_last_point_data.x, second_to_last_point_data.y, second_to_last_point_data.z)
             )
-        if not second_to_last_point:
+        else:
             # Creates a fake "second to last" point away from the first point but in the same x axis
             # this allows to calculate the angle relative to x axis when there is only one point
             second_to_last_point = Vector((last_point.x + 10, last_point.y, last_point.z))
@@ -449,40 +449,6 @@ class PolylineDecorator:
             cls.input_panel["AREA"] = str(round(area, 4))
         return cls.input_panel
 
-    @classmethod
-    def calculate_x_and_y(cls, context):
-        try:
-            polyline_data = context.scene.BIMModelProperties.polyline_point
-            last_point_data = polyline_data[len(polyline_data) - 1]
-        except:
-            return
-
-        last_point = Vector((last_point_data.x, last_point_data.y, last_point_data.z))
-        second_to_last_point = None
-        if len(polyline_data) > 1:
-            second_to_last_point_data = polyline_data[len(polyline_data) - 2]
-            second_to_last_point = Vector(
-                (second_to_last_point_data.x, second_to_last_point_data.y, second_to_last_point_data.z)
-            )
-        else:
-            second_to_last_point = Vector((0, 0, 0))
-
-        distance = float(cls.input_panel["D"])
-
-        if distance < 0 or distance > 0:
-            angle_degrees = float(cls.input_panel["A"])
-            vector_to_axis = last_point + Vector((1, 0, 0))  # TODO Make it work for other axis
-            reference_angle = tool.Cad.angle_3_vectors(second_to_last_point, last_point, vector_to_axis, degrees=True)
-            angle_radians = radians(reference_angle + angle_degrees)  # Substracting from 360 to make it clockwise
-            x = last_point[0] + distance * cos(angle_radians)
-            y = last_point[1] + distance * sin(angle_radians)
-            if cls.input_panel:
-                cls.input_panel["X"] = str(round(x, 4))
-                cls.input_panel["Y"] = str(round(y, 4))
-
-                return cls.input_panel
-
-        return cls.input_panel
 
     @classmethod
     def calculate_x_y_and_z(cls, context):
@@ -502,7 +468,9 @@ class PolylineDecorator:
                 (second_to_last_point_data.x, second_to_last_point_data.y, second_to_last_point_data.z)
             )
         else:
-            second_to_last_point = Vector((0, 0, 0))
+            # Creates a fake "second to last" point away from the first point but in the same x axis
+            # this allows to calculate the angle relative to x axis when there is only one point
+            second_to_last_point = Vector((last_point.x + 10, last_point.y, last_point.z))
 
         distance = float(cls.input_panel["D"])
 
