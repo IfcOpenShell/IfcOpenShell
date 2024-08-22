@@ -118,11 +118,14 @@ class Snap(bonsai.core.tool.Snap):
 
     @classmethod
     def insert_polyline_point(cls, input_panel):
-        x = float(input_panel['X'])
-        y = float(input_panel['Y'])
-        z = float(input_panel['Z'])
-        d = input_panel['D']
-        a = input_panel['A']
+        x = float(input_panel["X"])
+        y = float(input_panel["Y"])
+        try:
+            z = float(input_panel["Z"])
+        except:
+            z = Vector((0, 0, 0))
+        d = input_panel["D"]
+        a = input_panel["A"]
 
         snap_vertex = bpy.context.scene.BIMModelProperties.snap_mouse_point[0]
         if cls.use_default_container:
@@ -370,7 +373,6 @@ class Snap(bonsai.core.tool.Snap):
 
             else:
                 return None, None, None
-
 
         try:
             polyline_data = bpy.context.scene.BIMModelProperties.polyline_point
