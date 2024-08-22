@@ -2424,7 +2424,7 @@ class MeasureTool(bpy.types.Operator):
                     PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
                     tool.Blender.update_viewport()
 
-        if self.is_input_on and event.value == "RELEASE" and event.type in {"RET", "NUMPAD_ENTER"}:
+        if self.is_input_on and event.value == "RELEASE" and event.type in {"RET", "NUMPAD_ENTER", "RIGHTMOUSE"}:
             self.recalculate_inputs(context)
             tool.Snap.insert_polyline_point(
                 float(self.input_panel["X"]), float(self.input_panel["Y"]), float(self.input_panel["Z"])
@@ -2455,13 +2455,13 @@ class MeasureTool(bpy.types.Operator):
             return {"PASS_THROUGH"}
 
         if self.is_input_on:
-            if event.value == "RELEASE" and event.type in {"RIGHTMOUSE", "ESC"}:
+            if event.value == "RELEASE" and event.type in {"ESC"}:
                 self.is_input_on = False
                 self.input_type = "OFF"
                 PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
                 tool.Blender.update_viewport()
         else:
-            if event.value == "RELEASE" and event.type in {"RIGHTMOUSE", "ESC"}:
+            if event.value == "RELEASE" and event.type in {"ESC"}:
                 PolylineDecorator.uninstall()
                 tool.Snap.clear_polyline()
                 tool.Blender.update_viewport()
