@@ -228,6 +228,8 @@ function addTableElement(blenderId, csvData, filename) {
         column.visible = true;
         column.headerFilter = true;
         column.headerMenu = menu;
+        // TODO: more user control to choose function, style at bottomCalc
+        column.topCalc = 'sum';
       });
       return definitions;
     },
