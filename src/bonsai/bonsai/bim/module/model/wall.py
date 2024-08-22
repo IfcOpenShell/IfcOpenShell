@@ -439,14 +439,14 @@ class DrawPolylineWall(bpy.types.Operator):
                     PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
                     tool.Blender.update_viewport()
 
-        if not self.is_input_on and event.value == "RELEASE" and event.type in {"RET", "NUMPAD_ENTER"}:
+        if not self.is_input_on and event.value == "RELEASE" and event.type in {"RET", "NUMPAD_ENTER", "RIGHTMOUSE"}:
             self.create_walls_from_polyline(context)
             PolylineDecorator.uninstall()
             tool.Snap.clear_polyline()
             tool.Blender.update_viewport()
             return {"FINISHED"}
 
-        if self.is_input_on and event.value == "RELEASE" and event.type in {"RET", "NUMPAD_ENTER"}:
+        if self.is_input_on and event.value == "RELEASE" and event.type in {"RET", "NUMPAD_ENTER", "RIGHTMOUSE"}:
             self.recalculate_inputs(context)
             tool.Snap.insert_polyline_point(float(self.input_panel["X"]), float(self.input_panel["Y"]))
             self.is_input_on = False
@@ -460,13 +460,13 @@ class DrawPolylineWall(bpy.types.Operator):
             return {"PASS_THROUGH"}
 
         if self.is_input_on:
-            if event.value == "RELEASE" and event.type in {"RIGHTMOUSE", "ESC"}:
+            if event.value == "RELEASE" and event.type in {"ESC"}:
                 self.is_input_on = False
                 self.input_type = "OFF"
                 PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
                 tool.Blender.update_viewport()
         else:
-            if event.value == "RELEASE" and event.type in {"RIGHTMOUSE", "ESC"}:
+            if event.value == "RELEASE" and event.type in {"ESC"}:
                 PolylineDecorator.uninstall()
                 tool.Snap.clear_polyline()
                 tool.Blender.update_viewport()
