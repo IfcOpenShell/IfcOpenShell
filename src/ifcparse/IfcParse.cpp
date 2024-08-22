@@ -1385,6 +1385,7 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
         boost::apply_visitor([this, &p](auto& v) {
             if constexpr (std::is_same_v<std::decay_t<decltype(v)>, reference_or_simple_type>) {
                 byid_[p.first.name_]->data().storage_.set(p.first.index_, boost::apply_visitor([this](auto inst) {
+                    // @todo handle instance not found error
                     IfcUtil::IfcBaseClass* ptr;
                     if constexpr (std::is_same_v<decltype(inst), int>) {
                         ptr = this->instance_by_id(inst);

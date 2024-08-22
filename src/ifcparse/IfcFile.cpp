@@ -113,7 +113,7 @@ namespace {
 
         possible_aggregation_types_t aggregate_storage;
 
-        auto append_to_aggregate_storage = [&aggregate_storage](auto v) {
+        auto append_to_aggregate_storage = [&aggregate_storage](const auto& v) {
             if constexpr (is_type_in_variant_v<possible_aggregation_types_t, std::vector<std::decay_t<decltype(v)>>>) {
                 if (aggregate_storage.which() == 0) {
                     aggregate_storage = std::vector<std::decay_t<decltype(v)>>{ v };
@@ -132,17 +132,17 @@ namespace {
         };
 
         for (auto& t : p.tokens_) {
-            boost::apply_visitor([&aggregate_storage, &append_to_aggregate_storage, aggr](auto& v) {
+            boost::apply_visitor([&aggregate_storage, &append_to_aggregate_storage, aggr](const auto& v) {
                 if constexpr (std::is_same_v<std::decay_t<decltype(v)>, IfcParse::Token>) {
                     // @todo get aggregate of enumeration
                     dispatch_token(v, aggr && aggr->type_of_element()->as_named_type() ? aggr->type_of_element()->as_named_type()->declared_type() : nullptr, append_to_aggregate_storage);
                 } else if constexpr (std::is_same_v<std::decay_t<decltype(v)>, IfcParse::parse_context*>) {
+                    // nested list
                     if constexpr (Depth < 3) {
                         construct_<Depth + 1>(*v, nullptr, append_to_aggregate_storage);
                     }
-                    // nested list
                 } else {
-                    append_to_aggregate_storage(v);
+                    append_to_aggregate_storage(IfcParse::reference_or_simple_type{ v });
                 }
             }, t);
         }
@@ -193,7 +193,7 @@ IfcEntityInstanceData IfcParse::parse_context::construct(int name, unresolved_re
 
         auto index = (uint8_t) std::distance(tokens_.begin(), it);
 
-        boost::apply_visitor([this, &storage, name, &references_to_resolve, index, param_type](auto& v) {
+        boost::apply_visitor([this, &storage, name, &references_to_resolve, index, param_type](const auto& v) {
             if constexpr (std::is_same_v<std::decay_t<decltype(v)>, IfcParse::Token>) {
                 dispatch_token(v, param_type && param_type->as_named_type() ? param_type->as_named_type()->declared_type() : nullptr, [this, &storage, name, &references_to_resolve, index](auto v) {
                     if constexpr (std::is_same_v<std::decay_t<decltype(v)>, IfcParse::reference_or_simple_type>) {
