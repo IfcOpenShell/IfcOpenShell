@@ -111,6 +111,10 @@ class PolylinePoint(PropertyGroup):
     y: bpy.props.FloatProperty(name="Y")
     z: bpy.props.FloatProperty(name="Z")
 
+class PolylineMeasurement(PropertyGroup):
+    dim: bpy.props.StringProperty(name="Dimension")
+    angle: bpy.props.StringProperty(name="Angle")
+    position: bpy.props.FloatVectorProperty(name="Decorator Position", size=3)
 
 class BIMModelProperties(PropertyGroup):
     ifc_class: bpy.props.EnumProperty(items=get_ifc_class, name="Construction Class", update=update_ifc_class)
@@ -206,6 +210,7 @@ class BIMModelProperties(PropertyGroup):
     snap_mouse_point: bpy.props.CollectionProperty(type=SnapMousePoint)
     snap_mouse_ref: bpy.props.CollectionProperty(type=SnapMousePoint)
     polyline_point: bpy.props.CollectionProperty(type=PolylinePoint)
+    polyline_measurement: bpy.props.CollectionProperty(type=PolylineMeasurement)
 
 
 class BIMArrayProperties(PropertyGroup):

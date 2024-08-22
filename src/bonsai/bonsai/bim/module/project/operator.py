@@ -2311,7 +2311,7 @@ class MeasureTool(bpy.types.Operator):
         self.input_options = ["D", "A", "X", "Y", "Z"]
         self.input_type = "OFF"
         self.input_value_xy = [None, None]
-        self.input_panel = {"D": "", "A": "", "X": "", "Y": "", "Z": "", "AREA": ""}
+        self.input_panel = {"D": "", "A": "", "X": "", "Y": "", "Z": ""}
         self.snap_angle = None
 
     def recalculate_inputs(self, context):
@@ -2354,7 +2354,6 @@ class MeasureTool(bpy.types.Operator):
                 PolylineDecorator.set_mouse_position(event)
                 self.input_panel = PolylineDecorator.calculate_distance_and_angle(context, self.is_input_on)
                 PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
-                self.input_panel = PolylineDecorator.calculate_area(context)
                 tool.Blender.update_viewport()
                 return {"RUNNING_MODAL"}
 
@@ -2363,7 +2362,7 @@ class MeasureTool(bpy.types.Operator):
                 tool.Blender.update_viewport()
 
         if event.value == "RELEASE" and event.type == "LEFTMOUSE":
-            tool.Snap.insert_polyline_point()
+            tool.Snap.insert_polyline_point(self.input_panel)
             tool.Blender.update_viewport()
 
         if event.value == "PRESS" and event.type == "C":
@@ -2426,9 +2425,7 @@ class MeasureTool(bpy.types.Operator):
 
         if self.is_input_on and event.value == "RELEASE" and event.type in {"RET", "NUMPAD_ENTER", "RIGHTMOUSE"}:
             self.recalculate_inputs(context)
-            tool.Snap.insert_polyline_point(
-                float(self.input_panel["X"]), float(self.input_panel["Y"]), float(self.input_panel["Z"])
-            )
+            tool.Snap.insert_polyline_point(self.input_panel)
             self.is_input_on = False
             self.input_type = "OFF"
             self.number_input = []

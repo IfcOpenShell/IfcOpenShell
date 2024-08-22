@@ -117,7 +117,13 @@ class Snap(bonsai.core.tool.Snap):
         bpy.context.scene.BIMModelProperties.snap_mouse_ref.clear()
 
     @classmethod
-    def insert_polyline_point(cls, x=None, y=None, z=None):
+    def insert_polyline_point(cls, input_panel):
+        x = float(input_panel['X'])
+        y = float(input_panel['Y'])
+        z = float(input_panel['Z'])
+        d = input_panel['D']
+        a = input_panel['A']
+
         snap_vertex = bpy.context.scene.BIMModelProperties.snap_mouse_point[0]
         if cls.use_default_container:
             z = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
@@ -139,6 +145,11 @@ class Snap(bonsai.core.tool.Snap):
         polyline_point.y = y
         polyline_point.z = z
 
+        polyline_measurement = bpy.context.scene.BIMModelProperties.polyline_measurement.add()
+        polyline_measurement.dim = d
+        polyline_measurement.angle = a
+        polyline_measurement.position = Vector((x, y, z))
+
     @classmethod
     def close_polyline(cls):
         polyline_data = bpy.context.scene.BIMModelProperties.polyline_point
@@ -152,6 +163,7 @@ class Snap(bonsai.core.tool.Snap):
     @classmethod
     def clear_polyline(cls):
         bpy.context.scene.BIMModelProperties.polyline_point.clear()
+        bpy.context.scene.BIMModelProperties.polyline_measurement.clear()
 
     @classmethod
     def remove_last_polyline_point(cls):
