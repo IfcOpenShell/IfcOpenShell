@@ -65,6 +65,11 @@ section img {
     font-style: italic;
     color: var(--color-admonition-text);
 }
+img.transparent {
+    width: auto;
+    height: auto;
+    box-shadow: none;
+}
 img.icon {
     width: auto;
     height: auto;
