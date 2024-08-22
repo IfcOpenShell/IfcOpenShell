@@ -144,6 +144,7 @@ function addTableElement(blenderId, csvData, filename) {
   }
 
   // console.log(connectedClients[blenderId]);
+
   const tableContainer = $("<div></div>")
     .addClass("table-container")
     .attr("id", "container-" + blenderId);
@@ -225,6 +226,7 @@ function addTableElement(blenderId, csvData, filename) {
       menu = createHeaderMenu(definitions, table);
       definitions.forEach((column) => {
         column.visible = true;
+        column.headerFilter = true;
         column.headerMenu = menu;
       });
       return definitions;
