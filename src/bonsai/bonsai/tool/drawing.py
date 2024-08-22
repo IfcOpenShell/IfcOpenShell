@@ -265,7 +265,6 @@ class Drawing(bonsai.core.tool.Drawing):
         else:
             camera.data.BIMCameraProperties.diagram_scale = "1:100|1/100"
         camera.matrix_world = matrix
-        bpy.context.scene.collection.objects.link(camera)
         return camera
 
     @classmethod

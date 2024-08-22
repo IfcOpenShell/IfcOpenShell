@@ -61,7 +61,7 @@ class TestCreateCamera(NewFile):
         assert obj.data.type == "PERSP"
         assert obj.data.ortho_scale == 50
         assert obj.data.clip_end == 10
-        assert obj.users_collection[0] == bpy.context.scene.collection
+        assert obj.users_collection == tuple()
 
 
 class TestCreateSvgSheet(NewFile):
