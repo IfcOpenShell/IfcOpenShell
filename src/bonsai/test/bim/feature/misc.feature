@@ -8,13 +8,6 @@ Scenario: Set override colour
     When I press "bim.set_override_colour"
     Then nothing happens
 
-Scenario: Set viewport shadow from sun
-    Given an empty Blender session
-    And I add a sun
-    And the object "Sun" is selected
-    When I press "bim.set_viewport_shadow_from_sun"
-    Then nothing happens
-
 Scenario: Snap spaces together
     Given an empty Blender session
     And I add a cube
