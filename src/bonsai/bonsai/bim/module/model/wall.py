@@ -398,7 +398,7 @@ class DrawPolylineWall(bpy.types.Operator):
         if not self.is_input_on and event.value == "RELEASE" and event.type == "TAB":
             self.recalculate_inputs(context)
             self.is_input_on = True
-            self.input_type = "X"
+            self.input_type = "D"
             self.number_input = []
             PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
             tool.Blender.update_viewport()
