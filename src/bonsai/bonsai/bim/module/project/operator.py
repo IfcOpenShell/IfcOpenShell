@@ -2308,10 +2308,10 @@ class MeasureTool(bpy.types.Operator):
         self.number_output = ""
         self.number_is_negative = False
         self.is_input_on = False
-        self.input_options = ["X", "Y", "Z", "D", "A"]
+        self.input_options = ["D", "A", "X", "Y", "Z"]
         self.input_type = "OFF"
         self.input_value_xy = [None, None]
-        self.input_panel = {"X": "", "Y": "", "Z": "", "D": "", "A": "", "AREA": ""}
+        self.input_panel = {"D": "", "A": "", "X": "", "Y": "", "Z": "", "AREA": ""}
         self.snap_angle = None
 
     def recalculate_inputs(self, context):

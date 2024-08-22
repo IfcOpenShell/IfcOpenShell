@@ -299,10 +299,10 @@ class DrawPolylineWall(bpy.types.Operator):
         self.number_output = ""
         self.number_is_negative = False
         self.is_input_on = False
-        self.input_options = ["X", "Y", "D", "A"]
+        self.input_options = ["D", "A", "X", "Y"]
         self.input_type = "OFF"
         self.input_value_xy = [None, None]
-        self.input_panel = {"X": "", "Y": "", "D": "", "A": ""}
+        self.input_panel = {"D": "", "A": "", "X": "", "Y": ""}
         self.snap_angle = None
 
     def recalculate_inputs(self, context):

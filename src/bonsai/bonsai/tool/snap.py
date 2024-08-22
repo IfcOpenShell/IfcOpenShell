@@ -420,7 +420,6 @@ class Snap(bonsai.core.tool.Snap):
         else:
             snap_points = cls.get_snap_points_on_polyline()
             snap_point = cls.select_snap_point(snap_points, intersection, snap_threshold)
-            print("POLY", snap_points, snap_point)
 
         if snap_point:
             if event.shift and axis_start:

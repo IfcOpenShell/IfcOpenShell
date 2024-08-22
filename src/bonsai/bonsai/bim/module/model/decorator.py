@@ -508,7 +508,7 @@ class PolylineDecorator:
         batch.draw(shader)
 
     def draw_text(self, context):
-        texts = {"X": "X coord:", "Y": "Y coord:", "Z": "Z coord:", "D": "Distance:", "A": "Angle:", "AREA": "Area:"}
+        texts = {"D": "Distance:", "A": "Angle:", "X": "X coord:", "Y": "Y coord:", "Z": "Z coord:",  "AREA": "Area:"}
         self.addon_prefs = tool.Blender.get_addon_preferences()
         self.font_id = 0
         blf.size(self.font_id, 12)
