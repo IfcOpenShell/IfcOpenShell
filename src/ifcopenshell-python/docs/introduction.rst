@@ -3,7 +3,7 @@ Introduction
 
 **IfcOpenShell** is an open source software library for software developers and BIM powerusers working with Industry Foundation Classes (`IFC <https://technical.buildingsmart.org/standards/ifc/>`_).
 
-In addition to a C++ and Python API, **IfcOpenShell** comes with an ecosystem of tools, notably including **IfcConvert** (an application to convert IFC models to other formats), the **BlenderBIM Add-on** (an add-on to Blender providing a graphical IFC authoring platform), and many other libraries, CLI apps, and more. Support is also provided for auxiliary standards such as BCF, bSDD, and IDS.
+In addition to a C++ and Python API, **IfcOpenShell** comes with an ecosystem of tools, notably including **IfcConvert** (an application to convert IFC models to other formats), **Bonsai** (an add-on to Blender providing a graphical IFC authoring platform), and many other libraries, CLI apps, and more. Support is also provided for auxiliary standards such as BCF, bSDD, and IDS.
 
 Things you can do
 -----------------
@@ -78,7 +78,7 @@ IfcOpenShell is a modular ecosystem of tools that work together, where each tool
 
 .. note::
 
-    **IfcOpenShell** and all of its libraries are licensed under LGPL-3.0-or-later. Two exceptions to this are the **BlenderBIM Add-on** and **IfcSverchok**, which are both licensed under GPL-3.0-or-later.
+    **IfcOpenShell** and all of its libraries are licensed under LGPL-3.0-or-later. Two exceptions to this are **Bonsai** and **IfcSverchok**, which are both licensed under GPL-3.0-or-later.
 
 .. toctree::
    :hidden:

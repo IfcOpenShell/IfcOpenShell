@@ -17,4 +17,4 @@ It is recommended to use the latest version of IfcOpenShell and 3ds Max.
 
     This plugin is purely an importer and does not handle native IFC authoring
     or exporting. For more information for native IFC authoring, we recommend
-    using the :doc:`BlenderBIM Add-on<blenderbim>`.
+    using :doc:`Bonsai<bonsai>`.
