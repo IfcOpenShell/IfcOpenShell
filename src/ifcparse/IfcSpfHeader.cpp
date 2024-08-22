@@ -39,6 +39,7 @@ using namespace IfcParse;
 namespace {
     IfcEntityInstanceData read_from_file(IfcFile* f, size_t s) {
         parse_context pc;
+        f->tokens->Next();
         f->load(-1, nullptr, pc, -1);
         return pc.construct(-1, f->references_to_resolve, nullptr);
         /*std::ostringstream oss;

@@ -223,7 +223,7 @@ public:
             // in various places.
             throw IfcParse::IfcException(
                 "Type held at index " + std::to_string(index) + " is " + 
-                get_type_name(index) + " and not " + typeid(T).name()
+                get_type_name(size_and_indices_[index + 1]) + " and not " + typeid(T).name()
             );
         }
         using V = typename std::tuple_element<impl::TypeIndex_v<T, Types...>, impl::MapTypes_t<Types... >>::type;
