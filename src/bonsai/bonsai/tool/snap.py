@@ -172,6 +172,8 @@ class Snap(bonsai.core.tool.Snap):
     def remove_last_polyline_point(cls):
         polyline_data = bpy.context.scene.BIMModelProperties.polyline_point
         polyline_data.remove(len(polyline_data) - 1)
+        polyline_measurement = bpy.context.scene.BIMModelProperties.polyline_measurement
+        polyline_measurement.remove(len(polyline_measurement) - 1)
 
     @classmethod
     def snap_on_axis(cls, intersection, lock_axis=None):
