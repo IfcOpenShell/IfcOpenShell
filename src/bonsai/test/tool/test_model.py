@@ -139,7 +139,7 @@ class TestStairCalculatedParams(NewFile):
 
     def test_run(self):
         bpy.ops.bim.create_project()
-        bpy.ops.mesh.add_clever_stair()
+        bpy.ops.mesh.add_stair()
         pset_data_base = {
             "number_of_treads": 3,
             "height": 1.0,
