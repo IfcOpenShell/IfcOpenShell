@@ -206,16 +206,19 @@ function addTableElement(blenderId, csvData, filename) {
     return menu;
   }
 
+  var containerHeight=$('.table-container').height();
+  var h3Height=$('.table-container>h3').height();
   var table = new Tabulator("#table-" + blenderId, {
     placeholder: "No data to display",
-    height: "400px",
     resizableColumnGuide: true,
     index: "GlobalId",
     data: csvData,
     importFormat: "csv",
     autoColumns: true,
     selectableRows: 1,
-    layout: "fitColumns",
+    layout: "fitDataFill",
+    height: containerHeight - h3Height - 20 + "px",
+    movableColumns: true,
     // Our fields are never nested, and we use the "." character in queries
     nestedFieldSeparator: false,
     autoColumnsDefinitions: function (definitions) {
