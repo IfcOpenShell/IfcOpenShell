@@ -33,7 +33,6 @@ from . import (
     window,
     opening,
     mep,
-    pie,
     workspace,
     profile,
     sverchok_modifier,
@@ -144,10 +143,6 @@ classes = (
     stair.FinishEditingStair,
     stair.EnableEditingStair,
     stair.RemoveStair,
-    pie.OpenPieClass,
-    pie.PieAddOpening,
-    pie.VIEW3D_MT_PIE_bim,
-    pie.VIEW3D_MT_PIE_bim_class,
     sverchok_modifier.CreateNewSverchokGraph,
     sverchok_modifier.UpdateDataFromSverchok,
     sverchok_modifier.DeleteSverchokGraph,
@@ -219,12 +214,6 @@ def register():
     bpy.types.VIEW3D_MT_mesh_add.append(ui.add_mesh_object_menu)
     bpy.types.VIEW3D_MT_add.append(ui.add_menu)
     bpy.app.handlers.load_post.append(handler.load_post)
-    wm = bpy.context.window_manager
-    if wm.keyconfigs.addon:
-        km = wm.keyconfigs.addon.keymaps.new(name="3D View", space_type="VIEW_3D")
-        kmi = km.keymap_items.new("wm.call_menu_pie", "E", "PRESS", shift=True)
-        kmi.properties["name"] = "VIEW3D_MT_PIE_bim"
-        addon_keymaps.append((km, kmi))
 
 
 def unregister():
@@ -251,9 +240,3 @@ def unregister():
     bpy.app.handlers.load_post.remove(handler.load_post)
     bpy.types.VIEW3D_MT_mesh_add.remove(ui.add_mesh_object_menu)
     bpy.types.VIEW3D_MT_add.remove(ui.add_menu)
-    wm = bpy.context.window_manager
-    kc = wm.keyconfigs.addon
-    if kc:
-        for km, kmi in addon_keymaps:
-            km.keymap_items.remove(kmi)
-    addon_keymaps.clear()
