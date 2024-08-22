@@ -2,7 +2,7 @@
 Project 3: Multi-Storey Single-Family Home
 ==========================================
 
-In this project, we'll design a multi-storey single-family home using BlenderBIM.
+In this project, we'll design a multi-storey single-family home using Bonsai.
 This tutorial will introduce more advanced concepts such as templating, complex roofs, and sophisticated MEP systems.
 We'll also touch on basic site landscaping.
 
@@ -10,7 +10,7 @@ Prerequisites
 =============
 
 - Completion of Project 2: Building a Bungalow
-- Strong understanding of BlenderBIM's features and IFC concepts
+- Strong understanding of Bonsai's features and IFC concepts
 
 Learning Objectives
 ===================

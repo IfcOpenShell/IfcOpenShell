@@ -1,14 +1,11 @@
-.. _blenderbim/running_tests:
-
 Running tests
 =============
 
-The BlenderBIM Add-on has three layers of tests for each of its three technology
-layers:
+Bonsai has three layers of tests for each of its three technology layers:
 
 1. **Core tests**: abstract domain logic unit tests agnostic of Blender
 2. **Tool tests**: low-level concrete unit tests dependent on Blender
-3. **BIM tests**: high-level integration UI and smoke tests dependent on Blender
+3. **UI tests**: high-level integration UI and smoke tests dependent on Blender
 
 These tests use ``pytest`` as the test framework and runner, so install it:
 
@@ -23,9 +20,8 @@ When running tests, Makefile targets are provided for convenience so you can
 type in a simple command without knowing the internals. This means you can run
 tests by using the ``make`` command.
 
-Because the BlenderBIM Add-on depends on IfcOpenShell, it is advised to also run
-tests for IfcOpenShell and its Python bindings, which is not covered in this
-document.
+Because Bonsai depends on IfcOpenShell, it is advised to also run tests for
+IfcOpenShell and its Python bindings, which is not covered in this document.
 
 Core tests
 ----------
@@ -42,7 +38,7 @@ similar.
 
 .. code-block:: bash
 
-    cd src/blenderbim/
+    cd src/bonsai/
     make test-core
     # If you're on Windows, and don't want to use make, use:
     pytest -p no:pytest-blender test/core
@@ -85,7 +81,7 @@ You can install the dependencies by running the ``setup_pytest.py`` script in
 Blender:
 
 1. Launch Blender
-2. Load ``src/blenderbim/scripts/setup_pytest.py`` in the Blender text editor
+2. Load ``src/bonsai/scripts/setup_pytest.py`` in the Blender text editor
 3. Run the script by pressing ``Text > Run Script``.
 4. Check the Blender console for any errors or success messages.
 
@@ -104,31 +100,28 @@ of all concrete functions.
 
 .. code-block:: bash
 
-    cd src/blenderbim/
+    cd src/bonsai/
     make test-tool # Test everything
     make test-tool MODULE=foo # Only test a single module
     # If you're on Windows, and don't want to use make, use:
     pytest test/tool # Test everything
     pytest test/tool/test_foo.py # Only test a single module
 
-BlenderBIM Add-on tests
------------------------
+UI tests
+--------
 
-The BIM layer acts as a full integration test. It is not possible to fully test
-the UI, as we cannot reliably emit interface signals, nor read the interface as
-a DOM of sorts. The best we can do is to call Blender operators as a smoke test,
-and also check simple property and scene changes.
+The UI layer acts as a full integration test.
 
 Before running these tests, follow the instructions for running tool tests
 above.
 
 You will also need to enable the **Sun Position** add-on, as it is required to
-test georeferencing features: ``Edit > Preferences > Add-ons`` and enable
+test georeferencing features: ``Edit > Preferences > Add-ons`` and install
 **Lighting: Sun Position**.
 
 .. code-block:: bash
 
-    cd src/blenderbim/
+    cd src/bonsai/
     make test-bim # Test everything
     make test-bim MODULE=foo # Only test a single module
     # If you're on Windows, and don't want to use make, use:

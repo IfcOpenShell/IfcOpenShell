@@ -1,9 +1,9 @@
 Dealing with large models
 =========================
 
-The BlenderBIM Add-on can handle large models, or federated collections of
-models where the combined total IFCs may be many gigabytes or object counts may
-be in the hundreds of thousands.
+Bonsai can handle large models, or federated collections of models where the
+combined total IFCs may be many gigabytes or object counts may be in the
+hundreds of thousands.
 
 Models may be large in terms of different metrics, such as:
 
@@ -141,11 +141,10 @@ older Blender versions.
 Coordination only models
 ------------------------
 
-The BlenderBIM Add-on defaults to authoring IFCs. This allows full editing and
-inspection of all element properties and relationships. However, sometimes only
-geometry and basic attributes such as names are sufficient. Example usecases
-include CG visualisation, overall federated model coordination, or pure
-geometric checks.
+Bonsai defaults to authoring IFCs. This allows full editing and inspection of
+all element properties and relationships. However, sometimes only geometry and
+basic attributes such as names are sufficient. Example usecases include CG
+visualisation, overall federated model coordination, or pure geometric checks.
 
 Click on :ref:`Enable Advanced Mode <Project Info Advanced Loading Mode>` checkbox when loading a model and you will be presented
 with model loading options in the **Project Info** panel. Enable **For

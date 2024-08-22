@@ -1,12 +1,8 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  BlenderBIM Reference Manual
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Learn Bonsai
+============
 
-Welcome to the manual for `Bonsai <https://bonsaibim.org>`__,
-the free and open source BIM add-on for Blender.
-
-Quickstart
-==========
+Welcome to the manual for `Bonsai <https://bonsaibim.org>`__, the free and open
+source BIM add-on for Blender.
 
 .. only:: builder_html and (not singlehtml)
 
@@ -15,7 +11,7 @@ Quickstart
       .. container:: card
 
          :doc:`/users/quickstart/introduction_to_bim` (2-minute read)
-            Brief overview of BIM concepts and BlenderBIM's role.
+            Brief overview of BIM concepts and Bonsai's role.
 
       .. container:: card
 
@@ -55,7 +51,7 @@ Sections
       .. container:: card
 
          :doc:`/users/modeling/interface`
-            Guide to the BlenderBIM interface.
+            Guide to the Bonsai interface.
 
       .. container:: card
 
@@ -75,7 +71,7 @@ Sections
       .. container:: card
 
          :doc:`/users/structural_analysis/index`
-            Structural analysis capabilities in BlenderBIM.
+            Structural analysis capabilities.
 
       .. container:: card
 
@@ -135,9 +131,9 @@ Please consider joining the effort and :doc:`/contribute/writing_docs`.
 
 You can also can help with :doc:`Translations and Internationalisation </contribute/translations>`
 
-For users who want to contribute to the BlenderBIM codebase,
+For users who want to contribute to the Bonsai codebase,
 please refer to the :doc:`Documentation for Developers </devs/getting_started>`.
-This part of the documentation covers various aspects of the BlenderBIM development process.
+This part of the documentation covers various aspects of the Bonsai development process.
 
 You can get in touch by `joining the chat <https://osarch.org/chat/>`__.
 
@@ -153,7 +149,7 @@ You can get in touch by `joining the chat <https://osarch.org/chat/>`__.
 Developer Documentation
 =======================
 
-BlenderBIM is an open-source project, and its development is driven by the contributions of a dedicated community of developers,
+Bonsai is an open-source project, and its development is driven by the contributions of a dedicated community of developers,
 architects, engineers, and enthusiasts. If you're interested in contributing to the project, whether by submitting bug reports,
 suggesting new features, or contributing code, your involvement is highly encouraged and appreciated.
 
@@ -166,7 +162,7 @@ suggesting new features, or contributing code, your involvement is highly encour
       .. container:: card
 
          :doc:`/devs/getting_started`
-            Introduction to contributing to BlenderBIM.
+            Introduction to contributing to Bonsai.
 
       .. container:: card
 
@@ -181,7 +177,7 @@ suggesting new features, or contributing code, your involvement is highly encour
       .. container:: card
 
          :doc:`/devs/undo_system`
-            Working with BlenderBIM's undo system.
+            Working with Bonsai's undo system.
 
       .. container:: card
 

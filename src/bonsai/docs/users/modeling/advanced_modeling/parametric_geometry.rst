@@ -1,7 +1,7 @@
 Parametric Geometry
 ===================
 
-The BlenderBIM Add-on provides tools for creating and editing parametric geometry for IFC elements.
+Bonsai provides tools for creating and editing parametric geometry for IFC elements.
 Parametric geometry allows you to define building elements using parameters that can be easily adjusted, rather than modeling fixed geometry.
 
 Key features of the parametric geometry system include:

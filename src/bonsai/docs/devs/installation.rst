@@ -14,13 +14,13 @@ Unstable installation
 **Unstable installation** is almost the same as **Stable installation**, except
 that they are typically updated every day. Simply download a daily build from
 the `GitHub releases page
-<https://github.com/IfcOpenShell/IfcOpenShell/releases?q=blenderbim&expanded=true>`__,
+<https://github.com/IfcOpenShell/IfcOpenShell/releases?q=bonsai&expanded=true>`__,
 then follow the usual :doc:`installation
 instructions</users/quickstart/installation>`.
 
-The BlenderBIM Add-on officially supports all major 64-bit platforms, as well as
-the Python version shipped by the Blender Foundation for the most recent three
-major Blender versions:
+Bonsai officially supports all major 64-bit platforms, as well as the Python
+version shipped by the Blender Foundation for the most recent three major
+Blender versions:
 
 - 64-bit Linux (``linux-x64``)
 - 64-bit MacOS Intel (``macos-x64``)
@@ -44,15 +44,15 @@ but it happens.
 Bundling for Blender
 --------------------
 
-Instead of waiting for an official release on the BlenderBIM Add-on website, it
+Instead of waiting for an official release on the Bonsai website, it
 is possible to make your own Blender add-on from the bleeding edge source code
-of BlenderBIM. BlenderBIM is coded in Python and doesn't require any
+of Bonsai. Bonsai is coded in Python and doesn't require any
 compilation, so this is a relatively easy process.
 
-Note that the BlenderBIM Add-on does depend on IfcOpenShell, and IfcOpenShell
-does require compilation. The following instructions will use a pre-built
-IfcOpenShell (using an IfcOpenBot build) for convenience. Instructions on how to
-compile IfcOpenShell is out of scope of this document.
+Note that Bonsai depends on IfcOpenShell, and IfcOpenShell does require
+compilation. The following instructions will use a pre-built IfcOpenShell
+(using an IfcOpenBot build) for convenience. Instructions on how to compile
+IfcOpenShell is out of scope of this document.
 
 You can create your own package by using the Makefile as shown below. You can
 choose between a ``PLATFORM`` of ``linux``, ``macos``, ``macosm1``, and ``win``.
@@ -61,7 +61,7 @@ You can choose between a ``PYVERSION`` of ``py312``, ``py311``, ``py310``, or
 
 .. code-block:: bash
 
-    cd src/blenderbim
+    cd src/bonsai
     make dist PLATFORM=linux PYVERSION=py311
     ls dist/
 
@@ -104,7 +104,7 @@ Blender for the changes to take effect.
 The downside with this approach is that if a new dependency is added, or a
 compiled dependency version requirement has changed, or the build system
 changes, you'll need to fix your setup manually. But this is relatively rare.
-Reviewing the Makefile history, `here <https://github.com/IfcOpenShell/IfcOpenShell/commits/v0.8.0/src/blenderbim/Makefile>`__, is one quick way to see if a dependency has changed.  
+Reviewing the Makefile history, `here <https://github.com/IfcOpenShell/IfcOpenShell/commits/v0.8.0/src/bonsai/Makefile>`__, is one quick way to see if a dependency has changed.  
 
 .. seealso::
 
@@ -123,15 +123,15 @@ Packaged installation
 ---------------------
 
 - **Arch Linux**: `Direct from Git <https://aur.archlinux.org/packages/ifcopenshell-git/>`__.
-- **Chocolatey on Windows**: `Unstable <https://community.chocolatey.org/packages/blenderbim-nightly/>`__.
+- **Chocolatey on Windows**: `Unstable <https://community.chocolatey.org/packages/bonsai-nightly/>`__.
 
 Tips for package managers
 -------------------------
 
-The BlenderBIM Add-on is fully contained in the ``blenderbim/`` subfolder of the
-Blender add-ons directory. This is typically distributed as a zipfile as per
-Blender add-on conventions. Within this folder, you'll find the following file
-structure:
+Bonsai is fully contained in the ``bonsai/`` subfolder of the Blender add-ons
+directory. This is typically distributed as a zipfile as per Blender add-on
+conventions. Within this folder, you'll find the following file structure:
+
 ::
 
     core/ (Blender agnostic core logic)
@@ -142,35 +142,34 @@ structure:
     __init__.py
 
 This corresponds to the structure found in the source code `here
-<https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.8.0/src/blenderbim/blenderbim>`__.
+<https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.8.0/src/bonsai/bonsai>`__.
 
-The BlenderBIM Add-on is complex, and requires many dependencies, including
-Python modules, binaries, and static assets. When packaged for users, these
-dependencies are bundled with the add-on for convenience.
+Bonsai is complex, and requires many dependencies, including Python modules,
+binaries, and static assets. When packaged for users, these dependencies are
+bundled with the add-on for convenience.
 
-If you choose to install the BlenderBIM Add-on and use your own system
-dependencies, the source of truth for how dependencies are bundled are found in
+If you choose to install Bonsai and use your own system dependencies, the
+source of truth for how dependencies are bundled are found in
 the `Makefile
-<https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.8.0/src/blenderbim/Makefile>`__
+<https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.8.0/src/bonsai/Makefile>`__
 in the ``dist`` target.
 
 Add-on compatibility
 --------------------
 
-The BlenderBIM Add-on is a non-trivial add-on. By turning Blender into a
-graphical front-end to a native IFC authoring platform, some fundamental Blender
-features (such as hotkeys for basic functionality like object deletion or
-duplication) have been patched and many dependencies have been introduced.
+Bonsai is a non-trivial add-on. By turning Blender into a graphical front-end
+to a native IFC authoring platform, some fundamental Blender features (such as
+hotkeys for basic functionality like object deletion or duplication) have been
+patched and many dependencies have been introduced.
 
-Other add-ons may no longer work as intended when the BlenderBIM Add-on is
-enabled, or vice versa, the BlenderBIM Add-on may no longer work as intended
-when other add-ons are enabled.
+Other add-ons may no longer work as intended when Bonsai is enabled, or vice
+versa, Bonsai may no longer work as intended when other add-ons are enabled.
 
 Known scenarios which will lead to add-on incompatibility include:
 
 - The add-on also overrides the same hotkeys. For example, if an add-on
   overrides the "X" key to delete an object, you will need to manually trigger
-  (either via menu or custom hotkey) the BlenderBIM Add-on equivalent operator
+  (either via menu or custom hotkey) the Bonsai equivalent operator
   (e.g. IFC Delete).
 - The add-on uses object deletion or duplication macros with dictionary
   override. Note that this is also deprecated in Blender, so the other add-on

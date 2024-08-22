@@ -1,16 +1,16 @@
 ============================
-BlenderBIM Interface Guide
+Bonsai Interface Guide
 ============================
 
 Introduction
 ============
 
-The BlenderBIM interface extends Blender's powerful 3D environment with specialized tools for Building Information Modeling (BIM). This guide will help you navigate the BlenderBIM interface and understand its key components.
+Bonsai's interface extends Blender's powerful 3D environment with specialized tools for Building Information Modeling (BIM). This guide will help you navigate the Bonsai interface and understand its key components.
 
-BlenderBIM Workspace
-====================
+Bonsai Workspace
+================
 
-When you start Blender with BlenderBIM installed, you can switch to the BlenderBIM workspace
+When you start Blender with Bonsai installed, you can switch to the Bonsai workspace
 by clicking on the BIM workspace tab at the top of the Blender window.
 
 This workspace is preconfigured with the most commonly used panels and tools for BIM workflows.
@@ -51,7 +51,7 @@ Found in the Outliner, the IFC Tree View displays the hierarchical structure of 
 Customizing the Interface
 =========================
 
-BlenderBIM respects Blender's highly customizable interface. You can:
+Bonsai respects Blender's highly customizable interface. You can:
 
 - Rearrange editors and panels
 - Save custom workspace layouts
@@ -61,13 +61,13 @@ Tips for Efficient Use
 ======================
 
 1. Familiarize yourself with IFC classes and their properties.
-2. Utilize Blender's search function (F3) to quickly access BlenderBIM tools.
+2. Utilize Blender's search function (F3) to quickly access Bonsai tools.
 
 
 Next Steps
 ==========
 
-Now that you're familiar with the BlenderBIM interface, you have two main paths to continue your learning:
+Now that you're familiar with the Bonsai interface, you have two main paths to continue your learning:
 
 1. Proceed with IFC Modeling:
    If you're ready to start creating and working with BIM models, you can move on to:
@@ -75,7 +75,7 @@ Now that you're familiar with the BlenderBIM interface, you have two main paths 
    - :doc:`IFC Modeling Basics </users/modeling/ifc_modeling>`
 
 2. Dive deeper into the User Interface:
-   If you want to explore more details about the BlenderBIM interface, you can refer to:
+   If you want to explore more details about the Bonsai interface, you can refer to:
 
    - :doc:`User Interface Reference </users/user_interface>`
 
@@ -86,7 +86,7 @@ Remember, as you become more comfortable with the interface and basic modeling, 
 - :doc:`Generating Documentation </users/drawing/index>`
 - :doc:`Advanced BIM Techniques </users/advanced/index>`
 
-The BlenderBIM interface is designed to integrate seamlessly with Blender while providing powerful BIM-specific functionality.
+The Bonsai interface is designed to integrate seamlessly with Blender while providing powerful BIM-specific functionality.
 As you progress, you'll find your BIM workflow becoming increasingly efficient and productive.
 
 

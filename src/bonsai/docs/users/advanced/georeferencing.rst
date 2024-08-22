@@ -4,8 +4,8 @@ Georeferencing
 There are two types of construction: vertical construction (such as buildings
 and sites) which deal with small distances typically under 1km, and horizontal
 construction (such as transport, transmission, and subterranean networks) where
-distances frequently exceed 1km. Blender and the BlenderBIM Add-on focuses on
-vertical construction, and will typically just work out of the box.
+distances frequently exceed 1km. Blender and Bonsai focuses on vertical
+construction, and will typically just work out of the box.
 
 Coordinate reference systems
 ----------------------------
@@ -121,11 +121,11 @@ value close to, but not exactly 1.
 Working with Map Coordinates
 ----------------------------
 
-The BlenderBIM Add-on is designed to work with small coordinates (under 1km),
-whereas map coordinates are typically large. When you load an IFC which uses map
+Bonsai is designed to work with small coordinates (under 1km), whereas map
+coordinates are typically large. When you load an IFC which uses map
 coordinates directly, or when you are working with IFC2X3 and you cannot use a
-map conversion, the BlenderBIM Add-on will autodetect a point on your model to
-use as a false origin.
+map conversion, Bonsai will autodetect a point on your model to use as a false
+origin.
 
 The XYZ offset used for the false origin will be shown in the **IFC
 Georeferencing** panel under the **Blender Offset** header. It
@@ -182,12 +182,12 @@ the same Blender session.
     Many IFC viewers only show geometry, and don't show object placements. This may
     give users the false impression that their coordinates in their IFC project
     do not have such a large range. However, as a native IFC authoring platform,
-    the BlenderBIM Add-on will not accept this inconsistency.
+    Bonsai will not accept this inconsistency.
 
 At this point, it is the users responsibility to reconcile this inconsistency in
 their coordinates. Either the user needs to fix their file to consistently
-offset all coordinates, or the user needs to manually tell the BlenderBIM Add-on
-the coordinates of the desired false origin and accept the precision loss.
+offset all coordinates, or the user needs to manually tell Bonsai the
+coordinates of the desired false origin and accept the precision loss.
 
 Converting local and map coordinates
 ------------------------------------
@@ -231,11 +231,10 @@ fixed value.
 Coordinate precision limits
 ---------------------------
 
-The BlenderBIM Add-on focuses on vertical construction. Vertical construction
-typically uses **Local engineering coordinates** on a small site. The
-buildingSMART georeferencing technical experts panel have determined that a
-small site under 1km square can be assumed to have a constant **Map
-Conversion**.
+Bonsai focuses on vertical construction. Vertical construction typically uses
+**Local engineering coordinates** on a small site. The buildingSMART
+georeferencing technical experts panel have determined that a small site under
+1km square can be assumed to have a constant **Map Conversion**.
 
 Therefore, if your model is less than 1km square, you are within the coordinate
 precision limits. This is where the 1km default distance limit is derived from.
@@ -244,10 +243,10 @@ If you want to exceed the 1km square surveying limitation, you will need to be
 aware of software limitations that can result in precision loss when large
 coordinate ranges are used.
 
-Blender, and subsequently the BlenderBIM Add-on, is not designed for **Map
-Coordinates**. Blender internally uses single precision floating point
-calculations. A full description of the precision implications are described in
-the `Blender working limits documentation
+Blender, and subsequently Bonsai, is not designed for **Map Coordinates**.
+Blender internally uses single precision floating point calculations. A full
+description of the precision implications are described in the `Blender working
+limits documentation
 <https://docs.blender.org/manual/en/latest/advanced/limits.html>`__.
 
 This means that lengths greater than 5,000 meters start to accumulate software

@@ -21,7 +21,7 @@ They also develop other related standards like BCF (BIM Collaboration Format) an
 IfcOpenShell
 ------------
 
-IfcOpenShell is the open-source software library used by BlenderBIM to read, write, and manipulate IFC files.
+IfcOpenShell is the open-source software library used by Bonsai to read, write, and manipulate IFC files.
 It provides the core functionality for working with IFC data.
 
 Interoperability and Other Standards
@@ -40,7 +40,7 @@ and preserves data integrity throughout the building lifecycle.
 Key Concepts
 ============
 
-This section provides an overview of key IFC concepts and how they're implemented in BlenderBIM.
+This section provides an overview of key IFC concepts and how they're implemented in Bonsai.
 
 
 .. only:: builder_html and (not singlehtml)
@@ -65,7 +65,7 @@ This section provides an overview of key IFC concepts and how they're implemente
       .. container:: card
 
          :doc:`ifc_concepts/working_with_representations`
-            Representations in BlenderBIM.
+            Representations in Bonsai.
 
 .. container:: global-index-toc
 

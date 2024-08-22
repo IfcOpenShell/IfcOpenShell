@@ -33,17 +33,17 @@ construction type, and quantities. **IFC** will also describe that a wall that
 be associated with a location, like a building storey, or have an associated
 cost item in a schedule.
 
-When you use the BlenderBIM Add-on, you will be able to view and create **BIM**
-objects and relationships using the **IFC** standard.
+When you use Bonsai, you will be able to view and create **BIM** objects and
+relationships using the **IFC** standard.
 
 Things you can do
 -----------------
 
-The BlenderBIM Add-on is designed to be a comprehensive and truly native
-BIM authoring platform. Its capabilities include a wide range of tasks
-and workflows typically found across various BIM and CAD software, costing
-programs, scheduling tools, and simulation applications. While not
-an exhaustive list, some of the key things you can do with BlenderBIM include:
+Bonsai is designed to be a comprehensive and truly native BIM authoring
+platform. Its capabilities include a wide range of tasks and workflows
+typically found across various BIM and CAD software, costing programs,
+scheduling tools, and simulation applications. While not an exhaustive list,
+some of the key things you can do with Bonsai include:
 
 - View and explore IFC models, including spaces, properties, and relationships
 - Edit and extract attributes, properties, and metadata directly from IFC data
@@ -57,42 +57,3 @@ an exhaustive list, some of the key things you can do with BlenderBIM include:
 - Derive quantities from model elements and create cost schedules with formulas
 - Perform clash detection and coordinate models, managing issues across disciplines
 - Integrate non-geometric data like costing, scheduling, and asset management
-
-
-Roadmap and Upcoming Features
------------------------------
-
-While BlenderBIM already offers a comprehensive set of BIM authoring capabilities,
-the development team and community are continuously working to expand its functionality and improve existing workflows.
-Some of the most ambitious features and enhancements on the roadmap include:
-
-Usability and Workflow Enhancements
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-- Improve user-friendliness to equip average "Joe" with capabilities to model simple projects like single family homes, making BlenderBIM a viable alternative to SketchUp.
-- Make BlenderBIM more approachable for users across different skill levels, from advanced BIM experts to architects working on smaller residential projects.
-
-Improved Drawing and Documentation Workflows
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-- Continued enhancements to the drawing generation capabilities, including better dimensioning tools and support for associative dimensions linked to model geometry.
-- Advanced annotation tools with customizable tags, callouts, and the ability to define reusable annotation styles and templates.
-- Streamlined sheet layout management and improved integration with external tools like Inkscape for creating title blocks and sheet compositions.
-- Continued improvement of BlenderBIM's ability to generate comprehensive documentation sets, including drawing annotations, door schedules, wall schedules, and material tagging.
-
-Expanded Parametric Modeling Capabilities
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-- Native modeling tools for complex building elements like curtain wall systems and facade panels.
-- Expanded libraries with support for country-specific and manufacturer-provided object types.
-- Enhanced support for multi-story modeling, enabling efficient duplication and coordination of building elements across various levels.
-- Expanded parametric relationships and automating more common BIM tasks to reduce manual effort and enhance productivity.
-
-Enhanced Coordination and Collaboration Features
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-- Robust model merge and coordination workflows, with detailed clash detection capabilities across different disciplines and data sources.
-- Built-in support for version control and model sharing using Git repositories, enabling better team collaboration and change tracking.
-
-
-The development roadmap is continuously updated based on user feedback, industry requirements,
-and contributions from the open-source community. By embracing an open and collaborative approach,
-BlenderBIM aims to push the boundaries of what's possible in BIM authoring,
-ensuring that it remains at the forefront of innovation in the AEC industry.

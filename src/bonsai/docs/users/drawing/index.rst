@@ -2,7 +2,7 @@
 Drawings and Documents
 ======================
 
-The BlenderBIM Add-on provides powerful tools for generating 2D drawings from your 3D BIM models and adding detailed annotations.
+Bonsai provides powerful tools for generating 2D drawings from your 3D BIM models and adding detailed annotations.
 This section covers the process of creating various types of drawings and enhancing them with annotations.
 
 Prerequisites
@@ -11,7 +11,7 @@ Prerequisites
 Before starting with 2D drafting:
 
 1. Ensure you have completed the IFC modeling section or have a completed IFC model ready.
-2. Install and update to the latest compatible version of the BlenderBIM addon as Drafting module is still in early development.
+2. Install and update to the latest compatible version of Bonsai as the Drafting module is still in early development.
 3. Install InkScape as the drafting is heavily based on SVG files.
 
 Generating 2D Drawings

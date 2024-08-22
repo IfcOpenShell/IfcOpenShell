@@ -79,8 +79,9 @@ Fields
   whereas the IFC4 Demo Template is recommended for users wanting to experiment
   and learn with a basic set of objects.
 
-  The BlenderBIM Add-on provides other larger libraries containing hundreds of objects,
-  but loading them as a template is not recommended due to their size and complexity.
+  Bonsai provides other larger libraries containing hundreds of objects, but
+  loading them as a template is not recommended due to their size and
+  complexity.
 
   .. seealso::
 

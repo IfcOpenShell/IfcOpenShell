@@ -6,14 +6,14 @@ A window is an opening that allows light and air to enter a building, providing 
 In IFC, it's represented by the IfcWindow entity, which is a subtype of IfcBuildingElement.
 Windows play a crucial role in building design, affecting natural lighting, ventilation, energy efficiency, and aesthetics.
 
-This section covers how to add and customize windows in your BIM model using the BlenderBIM Add-on.
+This section covers how to add and customize windows in your BIM model using Bonsai.
 
 Adding a Window
 ---------------
 
 1. Select the wall where you want to place the window.
 2. Set the 3D cursor on the wall at the desired window location.
-3. Click on the "Create Window" tool in the BlenderBIM toolbar.
+3. Click on the "Create Window" tool in the Bonsai toolbar.
 4. In the top bar, you'll see "[No IfcWindowType Found] | Name [TYPEX] | + Add IfcWindowType".
 5. Edit [TYPEX] to use a window type name of your choice (e.g., WINDOW001).
 6. Click "+ Add IfcWindowType". The top bar will update with additional options.
