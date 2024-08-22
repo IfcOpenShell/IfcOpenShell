@@ -262,7 +262,7 @@ class FileAssociate(bpy.types.Operator):
         # NOTE: really weird thing on windows that typing this command in cmd works
         # when even if you create .bat with the command below and run it as administrator it won't
         # Haven't found a workaround yet to automate process completely.
-        command = "ASSOC .IFC=BLENDERBIM"
+        command = "ASSOC .IFC=BONSAI"
         self.layout.label(text="On the next step to create file association ")
         self.layout.label(text="the system console will be opened ")
         self.layout.label(text=f"and you will be asked to type command")
@@ -375,7 +375,7 @@ class FileUnassociate(bpy.types.Operator):
         cmd = [
             "powershell",
             "-Command",
-            "Start-Process -Verb RunAs -Wait cmd -ArgumentList '/c reg delete HKCR\\BLENDERBIM /f'",
+            "Start-Process -Verb RunAs -Wait cmd -ArgumentList '/c reg delete HKCR\\BONSAI /f'",
         ]
         subprocess.run(cmd, check=True)
         self.report({"INFO"}, "Association removed.")
@@ -388,10 +388,10 @@ class FileUnassociate(bpy.types.Operator):
             "share/applications/bonsai.desktop",
             "share/mime/packages/bonsai.xml",
             "bin/bonsai",
-            "share/icons/hicolor/128x128/apps/blenderbim.png",
-            "share/applications/blenderbim.desktop",
-            "share/mime/packages/blenderbim.xml",
-            "bin/blenderbim",
+            "share/icons/hicolor/128x128/apps/bonsai.png",
+            "share/applications/bonsai.desktop",
+            "share/mime/packages/bonsai.xml",
+            "bin/bonsai",
         ):
             try:
                 os.remove(os.path.join(destdir, rel_path))

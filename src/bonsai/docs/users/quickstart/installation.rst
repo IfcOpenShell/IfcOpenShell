@@ -17,23 +17,23 @@ Installation
 
 2. Open up Blender, and click on ``Edit > Preferences``.
 
-   .. image:: images/install-blenderbim-1.png
+   .. image:: images/install-bonsai-1.png
 
 3. Select the **Get Extensions** tab, and press **Allow Online Access**.
 
-   .. image:: images/install-blenderbim-2.png
+   .. image:: images/install-bonsai-2.png
 
 4. Search for **Bonsai** in the top left search bar, then press the **Install** button.
 
-   .. image:: images/install-blenderbim-3.png
+   .. image:: images/install-bonsai-3.png
 
 5. You should now see **Bonsai** available in your add-ons list. You're done!
 
-   .. image:: images/install-blenderbim-4.png
+   .. image:: images/install-bonsai-4.png
 
 Your interface will now look similar to below. If you check the ``File`` menu you should also see an option to ``Open IFC Project``.
 
-.. image:: images/install-blenderbim-5.png
+.. image:: images/install-bonsai-5.png
 
 You can enable add-ons permanently by using ``Save User Settings`` from the Addons menu.
 

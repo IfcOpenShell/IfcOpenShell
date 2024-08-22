@@ -2,14 +2,14 @@
 Project 0: Designing a Room
 ===========================
 
-In this introductory project, you'll learn the basics of using BlenderBIM to design a simple room.
+In this introductory project, you'll learn the basics of using Bonsai to design a simple room.
 By the end of this tutorial, you'll have created a basic 3D model and a 2D floor plan drawing.
 
 Prerequisites
 =============
 
 - Basic knowledge of Blender interface
-- BlenderBIM Add-on installed and activated
+- Bonsai installed and activated
 
 Learning Objectives
 ===================
@@ -32,7 +32,7 @@ Tutorial Steps
 
   Setup the `project0` project.
 
-1. Open Blender and switch to the BlenderBIM workspace.
+1. Open Blender and switch to the Bonsai workspace.
 2. Create a new IFC project. Use Metric.
 3. Save it as `project0.ifc` file.
 4. (optional) Save the `project0.blend` file.
@@ -43,10 +43,10 @@ Tutorial Steps
 -----------------
 
 .. figure:: images/project0-walls.png
-   :alt: Creating Walls in BlenderBIM
+   :alt: Creating Walls in Bonsai
    :width: 100%
 
-   Creating Walls in BlenderBIM
+   Creating Walls in Bonsai
 
 1. Use the "Create Wall" tool to draw the room's perimeter of a room 6m by 3m. Use mitre join.
 2. Add an interior wall across the room in the middle. Use butt join.
@@ -69,10 +69,10 @@ If you still struggling, here's what you should get:
 ------------------
 
 .. figure:: images/project0-openings.png
-   :alt: Adding Openings in BlenderBIM
+   :alt: Adding Openings in Bonsai
    :width: 100%
 
-   Adding Openings in BlenderBIM
+   Adding Openings in Bonsai
 
 1. Create two door openings:
 
@@ -130,14 +130,14 @@ If you're having difficulties, you can download the sample file:
 6. Placing Furniture
 --------------------
 
-1. Import basic furniture from the BlenderBIM library
+1. Import basic furniture from the Bonsai library
 2. Position and rotate furniture items
 3. Adjust furniture properties if needed
 
 7. Generating a Floor Plan
 --------------------------
 
-1. Set up a plan view using the BlenderBIM drawing tools
+1. Set up a plan view using the Bonsai drawing tools
 2. Add dimensions to the floor plan
 3. Include basic annotations and labels
 
@@ -150,7 +150,7 @@ If you're having difficulties, you can download the sample file:
 Conclusion
 ==========
 
-Congratulations! You've completed your first room design using BlenderBIM. You should now have a basic understanding of creating walls, openings, slabs, and simple MEP elements, as well as generating a basic floor plan.
+Congratulations! You've completed your first room design using Bonsai. You should now have a basic understanding of creating walls, openings, slabs, and simple MEP elements, as well as generating a basic floor plan.
 
 Next Steps
 ==========

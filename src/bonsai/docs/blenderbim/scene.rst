@@ -17,15 +17,15 @@ System Setup
   tree. You can see the tree of collections in the outliner when this is done.
 * **Schema Directory** - this folder stores the current IFC schema. You can
   download different schemas from the buildingSMART website. Unless you are an
-  IFC guru, you probably shouldn't touch this. BlenderBIM recognises different
+  IFC guru, you probably shouldn't touch this. Bonsai recognises different
   IFC data based on what is provided in this schema folder. It defaults to the
-  ``{{BLENDER_ADDONS_DIR}}/blenderbim/schema/`` folder, which is prepackaged
+  ``{{BLENDER_ADDONS_DIR}}/bonsai/schema/`` folder, which is prepackaged
   with the IFC4 schema. This is known as the ``{SCHEMA_DIR}``.
 * **Data Directory** - the data directory holds the auxiliary data related to
   your IFC model. Examples include related property definitions, documents, and
   classification systems. Each project should have its own data directory. It
   defaults to the data directory in the
-  ``{{BLENDER_ADDONS_DIR}}/blenderbim/data/`` folder, which comes with some
+  ``{{BLENDER_ADDONS_DIR}}/bonsai/data/`` folder, which comes with some
   example preset data. You are encouraged to copy this template and set your
   own. This is known as the ``{DATA_DIR}``.
 
@@ -115,13 +115,13 @@ IFC Classifications Panel
 
 - **Classification** - this lets you select which classification system you'd
   like to use. The list of possible classification systems is derived from the
-  ``{DATA_DIR}/class/classifications.csv`` file. By default, BlenderBIM comes
+  ``{DATA_DIR}/class/classifications.csv`` file. By default, Bonsai comes
   with Uniclass 2015 and Omniclass. If you need another classification system,
   you can add it to this ``.csv`` file.
 - **Reference** - this lets you select a single classification reference item,
   filtered depending on the currently active *Classification*. The list is
   derived from the ``{DATA_DIR}/class/references.csv`` file. Out of the box,
-  BlenderBIM only lists a single Uniclass reference as an example. It is
+  Bonsai only lists a single Uniclass reference as an example. It is
   advised to make a list of all the references you require for a project and
   add it to this ``.csv`` file.
 - **Assign Classification** - this assigns the currently active *Reference* to

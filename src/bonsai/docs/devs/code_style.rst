@@ -10,7 +10,7 @@ For Python code formatting, we use `Black code formatter <https://pypi.org/proje
 
 .. code-block:: bash
 
-   black --line-length 120 src/blenderbim/blenderbim/bim/module/qto/operator.py
+   black --line-length 120 src/bonsai/bonsai/bim/module/qto/operator.py
 
 Using PowerShell, you can run the Black formatter on the last commit in the repository.
 You can change ``~1`` to ``~n`` to affect ``n`` commits.

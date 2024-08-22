@@ -1,14 +1,14 @@
 Create Wall
 ===========
 
-The Create Wall tool in BlenderBIM allows you to add and manipulate wall elements in your floor plan.
+The Create Wall tool in Bonsai allows you to add and manipulate wall elements in your floor plan.
 It provides options for specifying wall element properties and adjusting their alignment and orientation.
 
 Toolbar Icon
 ------------
 
 .. figure:: images/toolbar_create-wall.png
-   :alt: Create Wall tool icon in the BlenderBIM toolbar
+   :alt: Create Wall tool icon in the Bonsai toolbar
 
 Tool Options
 ------------
@@ -98,5 +98,5 @@ To use the Create Wall tool:
 13. **Add voids** by clicking "Add Void" and placing openings where necessary.
 14. **Calculate quantities** by pressing :kbd:`Q` to ensure accurate measurements.
 
-The Create Wall tool in BlenderBIM enables precise and flexible wall creation and management,
+The Create Wall tool in Bonsai enables precise and flexible wall creation and management,
 enhancing your ability to develop detailed floor plans efficiently.

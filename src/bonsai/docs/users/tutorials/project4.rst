@@ -2,7 +2,7 @@
 Project 4: Terraced/Town Houses/Duplexes
 ========================================
 
-In this project, we'll design a row of terraced houses, town houses, or duplexes using BlenderBIM.
+In this project, we'll design a row of terraced houses, town houses, or duplexes using Bonsai.
 This tutorial will introduce concepts such as shared walls, duplicating units, parametric design,
 and collaboration with other stakeholders.
 
@@ -10,7 +10,7 @@ Prerequisites
 =============
 
 - Completion of Project 3: Multi-Storey Single-Family Home
-- Advanced understanding of BlenderBIM and IFC concepts
+- Advanced understanding of Bonsai and IFC concepts
 
 Learning Objectives
 ===================

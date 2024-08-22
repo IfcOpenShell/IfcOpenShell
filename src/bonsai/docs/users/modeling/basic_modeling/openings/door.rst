@@ -6,14 +6,14 @@ A door is a wall opening that allows passage between spaces, controlled access f
 In IFC, it's represented by the IfcDoor entity, which is a subtype of IfcBuildingElement.
 Doors play a crucial role in building design, affecting circulation, accessibility, and space functionality.
 
-This section covers how to add and customize doors in your BIM model using the BlenderBIM Add-on.
+This section covers how to add and customize doors in your BIM model using Bonsai.
 
 Adding a Door
 -------------
 
 1. Select the wall where you want to place the door.
 2. Set the 3D cursor on the wall at the desired door location.
-3. Click on the "Create Door" tool in the BlenderBIM toolbar.
+3. Click on the "Create Door" tool in the Bonsai toolbar.
 4. In the top bar, you'll see "[No IfcDoorType Found] | Name [TYPEX] | + Add IfcDoorType".
 5. Edit [TYPEX] to use a door type name of your choice (e.g., DOOR001).
 6. Click "+ Add IfcDoorType". The top bar will update with additional options.

@@ -2,7 +2,7 @@
 Project 5: Apartment Block
 ==========================
 
-In this final project, we'll design a complex apartment block using BlenderBIM.
+In this final project, we'll design a complex apartment block using Bonsai.
 This tutorial will introduce advanced concepts such as multi-level design, vertical transportation, parametric services,
 complex structural elements, and advanced project management techniques.
 
@@ -10,7 +10,7 @@ Prerequisites
 =============
 
 - Completion of Project 4: Terraced/Town Houses/Duplexes
-- Expert-level understanding of BlenderBIM and IFC concepts
+- Expert-level understanding of Bonsai and IFC concepts
 - Basic knowledge of structural and MEP engineering principles
 
 Learning Objectives
@@ -168,7 +168,7 @@ Conclusion
 ==========
 
 Congratulations on completing the design of a complex apartment block!
-You've now mastered advanced concepts in multi-level building design, complex systems integration, and project lifecycle management using BlenderBIM.
+You've now mastered advanced concepts in multi-level building design, complex systems integration, and project lifecycle management using Bonsai.
 
 Next Steps
 ==========
@@ -180,5 +180,5 @@ Next Steps
 - Learn about BIM implementation strategies for large organizations
 
 This project concludes our tutorial series.
-You now have a comprehensive understanding of using BlenderBIM for various scales of architectural projects,
+You now have a comprehensive understanding of using Bonsai for various scales of architectural projects,
 from single rooms to complex multi-unit buildings.

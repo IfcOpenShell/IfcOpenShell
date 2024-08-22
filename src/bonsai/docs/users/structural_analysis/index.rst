@@ -1,7 +1,7 @@
 Structural Analysis
 ===================
 
-This section covers the structural analysis capabilities in BlenderBIM.
+This section covers the structural analysis capabilities in Bonsai.
 
 .. note::
    This page is a stub. More detailed content will be added in future updates.
@@ -9,7 +9,7 @@ This section covers the structural analysis capabilities in BlenderBIM.
 Overview
 --------
 
-BlenderBIM provides tools for structural analysis within the BIM environment.
+Bonsai provides tools for structural analysis within the BIM environment.
 This integration allows for seamless workflow between architectural and structural engineering disciplines.
 
 Key Features
@@ -22,10 +22,10 @@ Key Features
 Getting Started
 ---------------
 
-To begin using the structural analysis features in BlenderBIM:
+To begin using the structural analysis features in Bonsai:
 
 1. Ensure your model contains properly defined structural elements
-2. Access the Structural Analysis panel in the BlenderBIM interface
+2. Access the Structural Analysis panel in the Bonsai interface
 3. Define load cases and boundary conditions
 
 .. seealso::

@@ -4,7 +4,7 @@ Geometry and Representations
 Understanding IFC Elements and Geometry
 ---------------------------------------
 
-In BlenderBIM, it's crucial to understand the relationship between IFC elements, their classification, types, and geometry.
+In Bonsai, it's crucial to understand the relationship between IFC elements, their classification, types, and geometry.
 These concepts work together but serve different purposes.
 
 IFC Classification
@@ -47,7 +47,7 @@ IFC supports various geometry types:
 - Mesh-like: Facetations, tessellations, triangulations, or planar breps.
 - Solid modeling: CSGs, swept solids, extrusions, lofts, etc.
 
-In BlenderBIM, you can create simple mesh geometries (like a cube) and assign them to IFC elements.
+In Bonsai, you can create simple mesh geometries (like a cube) and assign them to IFC elements.
 However, for more complex elements like walls, slabs, or columns, other representation types are more appropriate.
 
 Parametric Materials
@@ -60,12 +60,12 @@ IFC standardizes certain parametric modeling techniques:
 
 These are typically defined at the type level and inherited by occurrences.
 
-Working with Representations in BlenderBIM
-------------------------------------------
+Working with Representations in Bonsai
+--------------------------------------
 
 - Creating swept solids: Currently, the best method is to use parametric material layers (e.g., for walls) or material profiles.
 - Mesh editing: For mesh-like representations, you can edit them directly in Blender's edit mode.
-- Non-mesh modeling: BlenderBIM currently has limited tools for direct modeling of non-mesh geometries.
+- Non-mesh modeling: Bonsai currently has limited tools for direct modeling of non-mesh geometries.
   Future updates will include more intuitive interfaces for this purpose.
 - Deleting representations: This should be avoided as it can create invalid IFC data.
   If you delete a representation, the element should no longer be visible in the 3D view.
@@ -77,5 +77,5 @@ Working with Representations in BlenderBIM
 Future Developments
 -------------------
 
-The BlenderBIM team plans to develop more intuitive interfaces for non-mesh direct modeling tools in future versions.
+The Bonsai team plans to develop more intuitive interfaces for non-mesh direct modeling tools in future versions.
 This will make it easier to create and manipulate complex geometric representations without needing to understand the intricacies of IFC data structures.

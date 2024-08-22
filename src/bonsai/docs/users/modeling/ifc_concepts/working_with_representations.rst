@@ -1,7 +1,7 @@
 Working with Representations
 ----------------------------
 
-BlenderBIM provides tools to view, edit, and manage representations of IFC elements directly within Blender's interface.
+Bonsai provides tools to view, edit, and manage representations of IFC elements directly within Blender's interface.
 This section covers how to work with these representations effectively.
 
 Viewing Representations
@@ -37,10 +37,10 @@ To add a new representation to an element:
 4. In the dialog that appears, choose the method for creating the representation (e.g., Trace Outline, Bounding Box).
 5. Follow any additional prompts to complete the creation of the new representation.
 
-Common Representation Types in BlenderBIM
+Common Representation Types in Bonsai
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-BlenderBIM supports several representation types, each suitable for different purposes:
+Bonsai supports several representation types, each suitable for different purposes:
 
 1. SweptSolid
    - RepresentationIdentifier: 'Body'
@@ -76,7 +76,7 @@ BlenderBIM supports several representation types, each suitable for different pu
 Converting Representations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-BlenderBIM offers tools to convert between different representation types:
+Bonsai offers tools to convert between different representation types:
 
 1. Select the representation you want to convert.
 2. In the Representation Utilities section, you'll find options like:
@@ -99,10 +99,10 @@ Best Practices
 Future Developments
 ^^^^^^^^^^^^^^^^^^^
 
-The BlenderBIM team is continually working on improving the representation editing experience. Future updates may include:
+The Bonsai team is continually working on improving the representation editing experience. Future updates may include:
 
 - More intuitive interfaces for non-mesh modeling.
 - Enhanced tools for working with parametric representations.
 - Improved validation and error checking when editing representations.
 
-For the latest updates and feature requests, refer to the BlenderBIM Add-on GitHub repository.
+For the latest updates and feature requests, refer to the Bonsai GitHub repository.

@@ -1,7 +1,7 @@
 User Experience and User Interface guidelines
 =============================================
 
-This is intended as a reference document for developers working on the BlenderBim addon.
+This is intended as a reference document for developers working on the Bonsai.
 
 Operators
 ^^^^^^^^^
@@ -16,7 +16,7 @@ BIM will by definition contain a (big) number of submodules or subschemas. Grant
 
 * **Blender**
 
-  These considerations must be adapted to the Python API, to the general paradigm we have chosen to access, modify or create IFC data, and to the general philosophy of Blender. There are many ways and places where an add-on creator can choose to present information to the user. BlenderBim currently works that way :
+  These considerations must be adapted to the Python API, to the general paradigm we have chosen to access, modify or create IFC data, and to the general philosophy of Blender. There are many ways and places where an add-on creator can choose to present information to the user. Bonsai currently works that way :
 
   - Information about the current context is displayed inside the properties editor. We leverage the fact that it is already built around displaying different types of information whether we are in the Scene, Material, Mesh, Object, Curve, Texture, etc. subpanels. It fits really well with the way things are already organized in the IFC classification.
 
@@ -24,7 +24,7 @@ BIM will by definition contain a (big) number of submodules or subschemas. Grant
   
   - Some Misc tools and information are displayed in the N panel of the 3D viewport .   They're shortcuts to things that are already present elsewhere in the UI, but are   handy to have when modifying objects or geometry in the Viewport.
   
-  - Adding specific Import / Export IFC operators (arguably a bit misleading since   BlenderBim does more than import / export in these operations)
+  - Adding specific Import / Export IFC operators (arguably a bit misleading since   Bonsai does more than import / export in these operations)
 
 * **Interface panels**
 

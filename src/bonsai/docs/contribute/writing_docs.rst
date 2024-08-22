@@ -10,8 +10,8 @@ Writing technical documentation
 -------------------------------
 
 All documentation is written in ReStructured Text and is available in the
-`BlenderBIM Add-on docs directory
-<https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.8.0/src/blenderbim/docs>`_.
+`Bonsai docs directory
+<https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.8.0/src/bonsai/docs>`_.
 You can press the edit button on the top right on any documentation page to
 quickly edit their content.
 
@@ -90,7 +90,7 @@ longer code snippets may use code blocks.
 
 .. code-block:: bash
 
-    cd /path/to/blenderbim
+    cd /path/to/bonsai
     ls
 
 Be sure to specify the language to enable syntax highlighting.
@@ -159,7 +159,7 @@ Now you can generate the documentation:
 
 .. code-block:: bash
 
-    cd /path/to/ifcopenshell/src/blenderbim/docs/
+    cd /path/to/ifcopenshell/src/bonsai/docs/
     make html
     cd _build/html
     python -m http.server

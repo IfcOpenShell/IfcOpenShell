@@ -2,7 +2,7 @@
 Project 1: Designing a Flat
 ===========================
 
-Building on the skills from Project 0, this tutorial will guide you through designing a complete flat using BlenderBIM.
+Building on the skills from Project 0, this tutorial will guide you through designing a complete flat using Bonsai.
 You'll learn more advanced techniques for creating walls and openings, working with profiles, defining rooms and spaces,
 and generating more detailed drawings.
 
@@ -10,7 +10,7 @@ Prerequisites
 =============
 
 - Completion of Project 0: Designing a Room
-- Familiarity with basic BlenderBIM tools and interface
+- Familiarity with basic Bonsai tools and interface
 
 Learning Objectives
 ===================
@@ -27,7 +27,7 @@ Tutorial Steps
 1. Project Setup
 ----------------
 
-1. Open Blender and switch to the BlenderBIM workspace
+1. Open Blender and switch to the Bonsai workspace
 2. Create a new IFC project
 3. Save it as `project1.ifc` file (and optionally, `project1.blend` file)
 4. Load custom libraries and templates
@@ -69,7 +69,7 @@ Tutorial Steps
 6. Using Furniture and Fixture Libraries
 ----------------------------------------
 
-1. Import furniture from BlenderBIM libraries
+1. Import furniture from Bonsai libraries
 2. Place and arrange furniture in each room
 3. Add plumbing fixtures (sinks, toilets, bathtub/shower)
 4. Include kitchen appliances and cabinetry

@@ -8,7 +8,7 @@ These openings can serve various purposes such as ventilation, pass-throughs, se
 
 In IFC, it's represented by the IfcOpeningElement entity, which is a subtype of IfcFeatureElementSubtraction.
 
-This section covers how to create openings without fillings in your BIM model using the BlenderBIM Add-on.
+This section covers how to create openings without fillings in your BIM model using Bonsai.
 
 
 Creating an Opening Without Filling
@@ -30,9 +30,6 @@ Here's the process:
 6. In the Outline panel, find the "Type" field and press Delete.
 
 This process will leave you with an opening element without a filling.
-
-.. note::
-   Future versions of BlenderBIM may include a dedicated tool for creating openings without fillings, which would simplify this process.
 
 Additionally, you can create an opening by using the "Add Void" button in Create Wall tool.
 This tool will add an Opening IFC element to the Outline and its 3D representation in the 3D Vieport.

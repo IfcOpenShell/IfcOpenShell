@@ -1,7 +1,7 @@
 Openings
 ========
 
-This section covers the creation and management of openings in BlenderBIM.
+This section covers the creation and management of openings in Bonsai.
 Openings are crucial elements in building design, serving various purposes such as passage, ventilation, and lighting.
 
 .. only:: builder_html and (not singlehtml)
@@ -33,7 +33,7 @@ standard, openings are represented through a combination of elements:
 2. Fillings: These are the elements that occupy the voids, such as doors (IfcDoor) or windows (IfcWindow).
 3. Relationships: These are abstract objects that connect fillings to voids and voids to elements in which they're created.
 
-BlenderBIM provides tools to create and manage these elements:
+Bonsai provides tools to create and manage these elements:
 
 - Door Creation Tool: For adding doors to walls.
 - Window Creation Tool: For adding windows to walls.
@@ -47,7 +47,7 @@ These tools allow you to:
 - Modify opening properties and geometries.
 - Manage the relationships between walls, voids, and fillings.
 
-The following pages provide detailed guides on working with each type of wall opening in BlenderBIM.
+The following pages provide detailed guides on working with each type of wall opening in Bonsai.
 
 .. container:: global-index-toc
 

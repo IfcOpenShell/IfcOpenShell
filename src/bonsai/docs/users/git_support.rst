@@ -1,10 +1,10 @@
 Tracking revisions with Git
 ===========================
 
-BlenderBIM supports tracking the development of your IFC files with a Git
+Bonsai supports tracking the development of your IFC files with a Git
 repository.
 
-BlenderBIM is an IFC file editor, you can create or load an IFC project,
+Bonsai is an IFC file editor, you can create or load an IFC project,
 change, add or remove BIM objects and save to disk. A Git repository is a
 special folder on your computer where text files, such as IFC files, can be
 efficiently stored and past versions recalled.
@@ -24,7 +24,7 @@ Adding your IFC file to a repository
 
 First, save your file to disk. If the folder is already a repository you can
 *Add* the file in the *IFC Git panel* to tell Git you want to track it,
-otherwise BlenderBIM will offer to convert the folder into a repository.
+otherwise Bonsai will offer to convert the folder into a repository.
 
 .. Warning::
 
@@ -41,7 +41,7 @@ the top of the revision list.
 
 As you work on your IFC project, save the file regularly as usual. When you
 get to a point where it would be useful to later retrieve this state, you need
-to *commit* this to the Git repository. BlenderBIM gives you three options:
+to *commit* this to the Git repository. Bonsai gives you three options:
 
 - Showing uncommitted changes will temporarily highlight the differences
   between the saved file and the last committed revision. Green objects are new
@@ -77,20 +77,20 @@ Viewing object history
 ----------------------
 
 The history of *everything* in the project is tracked in Git, the revision log
-for the currently selected object can be viewed with the BlenderBIM side-bar.
+for the currently selected object can be viewed with the Bonsai side-bar.
 
 Retrieving Revisions
 --------------------
 
 Colourising the model will show you *which* things are different, but it won't
 show you *how* they are different. As long as you have no uncommitted changes,
-you can switch to the selected revision, this will load in BlenderBIM as a
+you can switch to the selected revision, this will load in Bonsai as a
 full model that can be viewed and even edited.
 
 .. Warning::
 
     Switching to a different revision actually changes the file on disk before
-    loading it in BlenderBIM. Don't worry, the original hasn't been lost,
+    loading it in Bonsai. Don't worry, the original hasn't been lost,
     simply select the revision at the top of the list, switch back to
     that and you can continue as before.
 
@@ -108,12 +108,12 @@ other branches.
     this is a convention, and older versions of Git call it *master*. Branch
     names should be short, but can contain unicode characters, emojis etc...
     Branch names can't contain spaces, and have some other minor limitations -
-    BlenderBIM will not allow you to create invalid branch names.
+    Bonsai will not allow you to create invalid branch names.
 
 To create a new branch from the current HEAD (ie. the top of the revision list)
 enter a branch name when committing. Leaving this field empty just adds a
 normal commit without creating a branch, however committing a change to an
-earlier revision necessarily implies a new branch, so BlenderBIM will insist
+earlier revision necessarily implies a new branch, so Bonsai will insist
 that you give it a name.
 
 Each branch can now be navigated separately in the revision list, to switch
@@ -147,9 +147,9 @@ changes don't directly conflict.
 
 When two branches have diverged, merging an IFC model requires *conflict
 resolution* (because added entities may inadvertently reuse the same Step-IDs),
-this means that data on one side or the other may be rewritten by BlenderBIM in
+this means that data on one side or the other may be rewritten by Bonsai in
 order to accommodate both sets of changes. ie. the merge process is
-*asymmetrical*.  BlenderBIM privileges data in the remote `origin/main` branch
+*asymmetrical*.  Bonsai privileges data in the remote `origin/main` branch
 over the local working branch, similarly it privileges data in the local `main`
 branch over any other local working branch. The practical result of this is
 that branches branched-off the `main` branch can generally be merged back into
@@ -169,7 +169,7 @@ optional message text.
 
     Tag names have the same limitations as branch names, names should be short
     and without spaces, but can contain unicode characters, emojis etc...
-    BlenderBIM will not allow you to create invalid or duplicate tag names.
+    Bonsai will not allow you to create invalid or duplicate tag names.
     Similar to commit messages, tag messages should be 50 characters or less,
     though there is no practical limit.
 
@@ -190,7 +190,7 @@ could be hosted by an online Git-forge service.
 Your repository can have multiple remote repositories registered, each
 can have potentially multiple branches.
 
-BlenderBIM allows you to make a local *clone* of a remote repository.  You will
+Bonsai allows you to make a local *clone* of a remote repository.  You will
 need to provide a URL *origin* to fetch, and an empty local folder to become
 the local repository.
 
@@ -208,14 +208,14 @@ tries to update the remote branch using changes from the selected local branch.
     protocols, for example, can require authentication. This authentication may
     expect you to generate and upload ssh keys, store API tokens, save
     username/password pairs, or use some other form of credential.
-    BlenderBIM can't configure these credentials for you, follow the
+    Bonsai can't configure these credentials for you, follow the
     configuration instructions provided by your online service before trying
     actions that require authentication.
 
 Using other Git tools
 ---------------------
 
-BlenderBIM is not a full Git user interface, but it provides most of the tools
+Bonsai is not a full Git user interface, but it provides most of the tools
 you will need for day-to-day usage. In general if you need other Git
 functionality you can use external Git tools with your repository and any
-changes will be reflected in the BlenderBIM UI.
+changes will be reflected in the Bonsai UI.

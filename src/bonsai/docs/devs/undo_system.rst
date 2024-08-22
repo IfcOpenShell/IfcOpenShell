@@ -4,11 +4,11 @@ Undo system
 Supporting undo and redo is quite a complex problem because the Blender undo
 system only keeps track of changes occurring in the Blender system. However,
 changes actually occur in two other locations that Blender doesn't know about:
-the IFC dataset, and the BlenderBIM Add-on system that synchronises Blender and
-the IFC dataset.
+the IFC dataset, and the Bonsai system that synchronises Blender and the IFC
+dataset.
 
-Let's see how undo works in a basic Blender add-on without IFC or the BlenderBIM
-Add-on getting involved.
+Let's see how undo works in a basic Blender add-on without IFC or Bonsai
+getting involved.
 
 .. code-block:: python
     :emphasize-lines: 4
@@ -47,8 +47,8 @@ Pure IfcOpenShell let's you start and stop recording transactions whenever you
 want. Since IfcOpenShell has no interface, you manually run code like
 ``model.undo()`` and ``model.redo()`` to undo and redo.
 
-This scenario where there is pure IfcOpenShell never occurs with the BlenderBIM
-Add-on. Instead, stuff happens in Blender operators.
+This scenario where there is pure IfcOpenShell never occurs with Bonsai.
+Instead, stuff happens in Blender operators.
 
 .. code-block:: python
     :emphasize-lines: 6,7
@@ -69,16 +69,16 @@ When your operator manipulates (creates, removes, or edits) IFC data directly or
 indirectly (i.e. through calling another operator), your operator must be
 wrapped in an ``IfcStore.execute_ifc_operator`` call. This wrapper will:
 
-1. Begin a BlenderBIM Add-on transaction
+1. Begin a Bonsai transaction
 2. Begin an IfcOpenShell transaction
-3. Runs your operator's ``_execute``.
-4. Ends the IfcOpenShell transaction
-5. Ends the BlenderBIM Add-on transaction
+3. Run your operator's ``_execute``.
+4. End the IfcOpenShell transaction
+5. End the Bonsai transaction
 
-The IfcOpenShell transaction keeps track of IFC data changes, and the BlenderBIM
-Add-on transaction keeps track of all other custom data changes, like changes in
-the ``id_map`` and ``guid_map``. For the vast majority of operations, this
-wrapper provides everything that you need.
+The IfcOpenShell transaction keeps track of IFC data changes, and the Bonsai
+transaction keeps track of all other custom data changes, like changes in the
+``id_map`` and ``guid_map``. For the vast majority of operations, this wrapper
+provides everything that you need.
 
 If, however, your operator manipulates data that is not tracked by Blender, is
 not tracked in the IFC data, and is not tracked in the element map, then you

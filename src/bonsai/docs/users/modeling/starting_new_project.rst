@@ -62,9 +62,9 @@ Using New Project Wizard / Scene Properties
 Cleaning the scene
 ------------------
 
-- After creating a new project, BlenderBIM considers the presence of three default Blender objects:
+- After creating a new project, Bonsai considers the presence of three default Blender objects:
   a mesh (usually the default cube), a camera, and a light.
-- If have scene setup like this, BlenderBIM will clean it up
+- If have scene setup like this, Bonsai will clean it up
 - Any customizations you make to the Blender scene before finalizing the IFC project creation will be preserved.
 
 If you like, you can delete the default cube, camera and light manually. Or create your own objects.
@@ -92,7 +92,7 @@ Saving
    Project Info in Unsaved Mode
 
 
-After creating a new project, BlenderBIM enters an Unsaved Mode. It's important to understand how saving works in BlenderBIM:
+After creating a new project, Bonsai enters an Unsaved Mode. It's important to understand how saving works in Bonsai:
 
 **Saving IFC Project**:
    - Using the keyboard shortcut `Ctrl+S` or `File > Save IFC Project` will save only the `.ifc` file.
@@ -124,7 +124,7 @@ After creating a new project, BlenderBIM enters an Unsaved Mode. It's important 
    - Focus on the `.ifc` file as the primary source of truth for your BIM data.
    - Use `.blend` files if you need to preserve specific Blender setups or visual configurations, but remember these are secondary to the IFC data.
 
-Remember, in BlenderBIM, the `.ifc` file contains the critical BIM information.
+Remember, in Bonsai, the `.ifc` file contains the critical BIM information.
 The `.blend` file is primarily for Blender-specific settings and visual representations.
 Always ensure your IFC project is saved before closing Blender or starting a new session.
 If you need to preserve Blender-specific configurations, save the `.blend` file separately.

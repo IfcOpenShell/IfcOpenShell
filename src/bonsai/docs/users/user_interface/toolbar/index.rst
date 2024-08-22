@@ -5,7 +5,7 @@ Toolbar
 Tool System Overview
 ====================
 
-BlenderBIM extends Blender's tool system, which provides a consistent way to interact with the 3D viewport. Here are some key points about the tool system:
+Bonsai extends Blender's tool system, which provides a consistent way to interact with the 3D viewport. Here are some key points about the tool system:
 
 - Tools are accessed from the Toolbar, typically located on the left side of the 3D viewport.
 - Only one tool can be active per Workspace and mode.
@@ -13,7 +13,7 @@ BlenderBIM extends Blender's tool system, which provides a consistent way to int
 - Press :kbd:`Shift` + :kbd:`Spacebar` to open the tool shortcut menu for quick access.
 - The Quick Favorites menu (:kbd:`Q`) allows you to gather your most-used tools for easy access.
 
-BlenderBIM integrates its tools seamlessly into this system, adding BIM-specific functionality while maintaining consistency with Blender's interface.
+Bonsai integrates its tools seamlessly into this system, adding BIM-specific functionality while maintaining consistency with Blender's interface.
 
 Tool Settings Access
 --------------------
@@ -44,10 +44,10 @@ providing context-specific controls and parameters.
    refer to the `Blender Manual <https://docs.blender.org/manual/en/latest/interface/tool_system.html>`_.
 
 
-BlenderBIM Tools
-================
+Bonsai Tools
+============
 
-The BlenderBIM toolbar extends Blender's built-in toolbar with additional tools specific to BIM modeling.
+The Bonsai toolbar extends Blender's built-in toolbar with additional tools specific to BIM modeling.
 These tools are positioned between the Transform and Annotate sections of the standard Blender toolbar.
 
 .. tip::

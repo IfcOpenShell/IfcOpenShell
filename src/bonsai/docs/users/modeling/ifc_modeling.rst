@@ -2,7 +2,7 @@
 IFC modeling
 ============
 
-This chapter covers the essential aspects of working with Industry Foundation Classes (IFC) in BlenderBIM. It is divided into five main sections:
+This chapter covers the essential aspects of working with Industry Foundation Classes (IFC) in Bonsai. It is divided into five main sections:
 
 .. only:: builder_html and (not singlehtml)
 
@@ -20,14 +20,14 @@ This chapter covers the essential aspects of working with Industry Foundation Cl
       .. container:: card
 
          :doc:`importing_viewing_models`
-            A guide on how to import existing IFC models into BlenderBIM and navigate them effectively.
-            This section includes techniques for inspecting and querying IFC data within the BlenderBIM environment.
+            A guide on how to import existing IFC models into Bonsai and navigate them effectively.
+            This section includes techniques for inspecting and querying IFC data within the Bonsai environment.
 
 
       .. container:: card
 
          :doc:`starting_new_project`
-            Instructions on creating and setting up a new IFC project from scratch in BlenderBIM.
+            Instructions on creating and setting up a new IFC project from scratch in Bonsai.
             This covers initial project setup, including advanced options for more complex projects.
 
       .. container:: card

@@ -1,25 +1,24 @@
 Hello, world!
 =============
 
-The BlenderBIM Add-on takes a unique approach to authoring BIM data. Traditional
-BIM authoring apps create features that are tailored for a single discipline's
-paradigm, such as a 3D environment, or a spreadsheet view, and store their data
-structure in a schema that is unique to their application. In order to
-interoperate with others, there is an export or import process that translates
-between their bespoke schema to and from open data standards. The most famous
-ISO standard for BIM is IFC. After this translation, they then serialise it
-typically into a format, which may be saved to disk.
+Bonsai takes a unique approach to authoring BIM data. Traditional BIM authoring
+apps create features that are tailored for a single discipline's paradigm, such
+as a 3D environment, or a spreadsheet view, and store their data structure in a
+schema that is unique to their application. In order to interoperate with
+others, there is an export or import process that translates between their
+bespoke schema to and from open data standards. The most famous ISO standard
+for BIM is IFC. After this translation, they then serialise it typically into a
+format, which may be saved to disk.
 
-The BlenderBIM Add-on does things differently.
+Bonsai does things differently.
 
-The BlenderBIM Add-on does not have its own bespoke data structure and does not
-import or export. The BlenderBIM Add-on uses ISO open data standards directly in
-memory. Most commonly, this is IFC data. We will place a focus on IFC on this
-guide, but the reader should be aware that the BlenderBIM Add-on also takes the
-same approach to dealing with other open data standards, like Brickschema or
-BCF. The same concepts will apply. We can call this Native OpenBIM authoring,
-which is a paradigm shift from traditional BIM which relies on translated IFC
-data.
+Bonsai does not have its own bespoke data structure and does not import or
+export. Bonsai uses ISO open data standards directly in memory. Most commonly,
+this is IFC data. We will place a focus on IFC on this guide, but the reader
+should be aware that Bonsai also takes the same approach to dealing with other
+open data standards, like Brickschema or BCF. The same concepts will apply. We
+can call this Native OpenBIM authoring, which is a paradigm shift from
+traditional BIM which relies on translated IFC data.
 
 .. image:: images/native-openbim.png
 
@@ -32,9 +31,8 @@ IFC, and the ``.blend`` container is largely unnecessary, as nothing of
 significance is stored in the Blender system, it is simply a snapshot of your
 working session.
 
-Due to this significant difference, hacking on the BlenderBIM Add-on requires
-knowledge not just about how Blender works, but also how open data standards
-like IFC works.
+Due to this significant difference, hacking on Bonsai requires knowledge not
+just about how Blender works, but also how open data standards like IFC works.
 
 Just show me the code!
 ----------------------
@@ -49,10 +47,10 @@ need to :ref:`use Git to collaborate <submitting-code-to-git>`.
     `Download Source
     <https://github.com/IfcOpenShell/IfcOpenShell/archive/refs/heads/v0.8.0.zip>`__
 
-BIM authoring is a really big topic. As a result, the BlenderBIM Add-on code is
-separated into modules. Each module focuses on a particular topic of BIM. Most
-modules are self-contained, but sometimes they connect to one another, just like
-how BIM works.
+BIM authoring is a really big topic. As a result, the Bonsai code is separated
+into modules. Each module focuses on a particular topic of BIM. Most modules
+are self-contained, but sometimes they connect to one another, just like how
+BIM works.
 
 .. image:: images/module-architecture.png
 
@@ -62,20 +60,20 @@ minimise the overlap between modules, so that developers can work on a single
 portion of the code with relative certainty that their actions will not affects
 other developers.
 
-- `BlenderBIM Add-on modules <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.8.0/src/blenderbim/blenderbim/bim/module>`__
+- `Bonsai modules <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.8.0/src/bonsai/bonsai/bim/module>`__
 - `IFC modules <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.8.0/src/ifcopenshell-python/ifcopenshell/api>`__
 
-The BlenderBIM Add-on comes with a secret **demo module** which is basically a
-hello world coding tutorial which teaches you about all the moving parts. It's
-far more interesting to read this code rather than 15 pages of abstract software
+Bonsai comes with a secret **demo module** which is basically a hello world
+coding tutorial which teaches you about all the moving parts. It's far more
+interesting to read this code rather than 15 pages of abstract software
 architecture flow charts and diagrams. The code and its comments will guide you
 through the process.
 
 Before playing with the demo module, you may want to switch to using a source
-installation. See `blenderbim/installation <./installation.html>`_ for details.
+installation. See `bonsai/installation <./installation.html>`_ for details.
 
 To see the demo module in action, you'll need to enable it. In
-``src/blenderbim/blenderbim/bim/__init__.py``, uncomment the line for the demo
+``src/bonsai/bonsai/bim/__init__.py``, uncomment the line for the demo
 module. When you restart Blender, you will see a new demo panel in your scene
 properties interface tab. Have fun!
 
@@ -88,30 +86,30 @@ the code, reload Blender, and see what happens!
 
 ::
 
-    src/blenderbim/blenderbim/bim/module/demo/__init__.py
-    src/blenderbim/blenderbim/bim/module/demo/operator.py
-    src/blenderbim/blenderbim/bim/module/demo/prop.py
-    src/blenderbim/blenderbim/bim/module/demo/ui.py
-    src/blenderbim/blenderbim/bim/module/demo/data.py
-    src/blenderbim/blenderbim/core/demo.py
-    src/blenderbim/blenderbim/tool/demo.py
+    src/bonsai/bonsai/bim/module/demo/__init__.py
+    src/bonsai/bonsai/bim/module/demo/operator.py
+    src/bonsai/bonsai/bim/module/demo/prop.py
+    src/bonsai/bonsai/bim/module/demo/ui.py
+    src/bonsai/bonsai/bim/module/demo/data.py
+    src/bonsai/bonsai/core/demo.py
+    src/bonsai/bonsai/tool/demo.py
 
 
 Wow! That's a lot of files needed for a hello world! Don't worry, it's mostly
 tutorial comments and it's there to teach you the basics from how Blender's
-add-on system works, how interfaces work, to how the BlenderBIM Add-on works,
-and how to test and structure it so that you can build incredibly complex
-features in a maintainable way.
+add-on system works, how interfaces work, to how Bonsai works, and how to test
+and structure it so that you can build incredibly complex features in a
+maintainable way.
 
 Tests for quality checking also exist. The system is designed so that you can
-do "Test Driven Development". For reference on how to run these tests, see `blenderbim/running_tests <./running_tests.html>`_
+do "Test Driven Development". For reference on how to run these tests, see `bonsai/running_tests <./running_tests.html>`_
 for details. You can find the tests here:
 
 ::
 
-    src/blenderbim/test/bim/feature/demo.feature
-    src/blenderbim/test/core/test_demo.py
-    src/blenderbim/test/tool/test_demo.py
+    src/bonsai/test/bim/feature/demo.feature
+    src/bonsai/test/core/test_demo.py
+    src/bonsai/test/tool/test_demo.py
 
 Not all developers, especially those learning how to code, are familiar with
 testing and how to write tests. That's OK! Feel free to ignore the tests at
@@ -120,8 +118,8 @@ guide you when you're ready to make the leap. Don't let this stop you from
 building things, others can also help write tests for you and clean your code.
 It's a great way to learn!
 
-Once you're through, you should be able to understand how most of the BlenderBIM
-Add-on is built and where to find things.
+Once you're through, you should be able to understand how most of Bonsai is
+built and where to find things.
 
 There are many Blender Python tutorials out there. A good place to start is the
 `Start coding for Blender
@@ -131,9 +129,9 @@ OSArch Wiki. In addition, the Blender text editor comes with a menu called
 create an add-on which creates objects, creates gizmos, new buttons, interfaces,
 and so on. This is a great way to try out how to build different extensions.
 
-Naturally, if you just want to tweak the BlenderBIM Add-on or build a small
-feature just for yourself, you're free to ignore this advice, skip all the
-tests, and just write half the code in a single file and it'll get the job done.
+Naturally, if you just want to tweak Bonsai or build a small feature just for
+yourself, you're free to ignore this advice, skip all the tests, and just write
+half the code in a single file and it'll get the job done.
 
 Software architecture
 ---------------------
@@ -161,10 +159,10 @@ is structured the way it is, here is a list of design principles we follow:
 The rest of this contains nasty software architecture jargon. If that's not your
 thing, stop reading now.
 
-The BlenderBIM Add-on code may be understood in three separate layers: **Delivery**,
-**Domain**, and **Data**. The BlenderBIM Add-on architecture separates these
-three layers from one another. Because they are separate, they can be tested and
-built separately.
+Bonsai code may be understood in three separate layers: **Delivery**,
+**Domain**, and **Data**. The Bonsai architecture separates these three layers
+from one another. Because they are separate, they can be tested and built
+separately.
 
 .. image:: images/architecture.png
 
@@ -196,9 +194,9 @@ using a **Data** repository. The data ensures that stored information confirms
 to a defined schema and is valid, and can be retrieved later. Some data is
 stored in Blender, such as information about your working session and active
 scene. Other data is stored in IFC, such as all the relationships in your BIM
-model. We mention **Data** specifically because OpenBIM data authoring is such a
-big aspect of the BlenderBIM Add-on. In fact, it's so big that most of it is
-completely separated from the BlenderBIM Add-on code and lives elsewhere.
+model. We mention **Data** specifically because OpenBIM data authoring is such
+a big aspect of Bonsai. In fact, it's so big that most of it is completely
+separated from the Bonsai code and lives elsewhere.
 
 For example, all the code that handles IFC data, which you can think of as a
 graph database, is in a completely separate codebase, even under a different
@@ -211,10 +209,9 @@ with the entire industry.
 IfcOpenShell Architecture
 -------------------------
 
-A large part of the BlenderBIM Add-on is understanding how IFC data is modified.
-This code is not technically part of the the BlenderBIM Add-on codebase, but it
-is vital to understand. You will need to be familiar with the IfcOpenShell
-Python module.
+A large part of Bonsai is understanding how IFC data is modified.  This code is
+not technically part of the Bonsai codebase, but it is vital to understand. You
+will need to be familiar with the IfcOpenShell Python module.
 
 Manipulating IFC data is not simple. IFC may be serialised into multiple
 formats, multiple schema versions must be supported, and geometry may be defined
@@ -224,9 +221,9 @@ library.
 
 The IfcOpenShell library consists of a C++ based core. Its geometry processing
 is done using OpenCascade, and optionally CGAL as an experimental option. By the
-time the BlenderBIM Add-on interacts with IFC, it uses the IfcOpenShell Python
-bindings, so all IFC data is already deserialised into Python objects. The inner
-workings of the C++ base is out of scope.
+time Bonsai interacts with IFC, it uses the IfcOpenShell Python bindings, so
+all IFC data is already deserialised into Python objects. The inner workings of
+the C++ base is out of scope.
 
 .. image:: images/ifcopenshell-architecture.png
 
@@ -282,8 +279,8 @@ Here's an example of it in action:
 
 Because the API performs all the IFC manipulations to achieve a usecase, no
 further interaction is required in a typical native IFC authoring environment.
-For this reason, the BlenderBIM Add-on only interacts with the API for its
-authoring capabilities.
+For this reason, Bonsai only interacts with the API for its authoring
+capabilities.
 
 The code for IfcOpenShell's various systems can be found here:
 

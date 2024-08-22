@@ -7,7 +7,7 @@ Property Editor Scene Properties
 
    .. |location| image:: /images/location-scene.svg
 
-BlenderBIM adds new functionality to the `Property Editor` -> `Scene` tab.
+Bonsai adds new functionality to the `Property Editor` -> `Scene` tab.
 
 .. figure:: images/interface_property-editor_project-overview_start-up.png
    :alt: Property editor on Blender start-up
@@ -18,9 +18,9 @@ Most of these sub-tabs become available with a created or loaded IFC file.
 Don't worry, the default Blender scene properties are still reachable under their own dedicated sub-tab.
 
 .. figure:: images/interface_property-editor_icons.png
-   :alt: Overview over the added property sub-tabs by BlenderBIM
+   :alt: Overview over the added property sub-tabs by Bonsai
 
-   Overview over the added property sub-tabs by BlenderBIM.
+   Overview over the added property sub-tabs by Bonsai.
 
 1. Project Overview
 2. Object Information
@@ -37,9 +37,9 @@ Don't worry, the default Blender scene properties are still reachable under thei
 You can also select the needed panel via the drop-down menue.
 
 .. figure:: images/interface_property-editor_panel-dropdown.png
-   :alt: BlenderBIM property editor sub-tabs drop-down menue
+   :alt: Bonsai property editor sub-tabs drop-down menue
 
-   Switching between BlenderBIM property editor sub-tabs via the drop-down menue.
+   Switching between Bonsai property editor sub-tabs via the drop-down menue.
 
 
 .. toctree::

@@ -1,10 +1,10 @@
 Creating Walls
 --------------
 
-Walls are fundamental elements in any building design. BlenderBIM provides powerful tools for creating and manipulating wall elements.
+Walls are fundamental elements in any building design. Bonsai provides powerful tools for creating and manipulating wall elements.
 This section will guide you through the process of creating standalone walls, multiple connected walls, and joining walls using various techniques.
 
-By following these steps and utilizing the various tools provided by BlenderBIM,
+By following these steps and utilizing the various tools provided by Bonsai,
 you can efficiently create, modify, and join walls to form complex building layouts.
 Remember to use snapping and alignment tools to ensure precision in your model.
 
@@ -35,7 +35,7 @@ Creating Multiple Connected Walls
 Modifying and Joining Walls
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-BlenderBIM offers various tools for modifying and joining wall segments:
+Bonsai offers various tools for modifying and joining wall segments:
 
 - **Extend (SHIFT + E)**: Extend an existing wall to intersect with another face.
 - **Butt (SHIFT + T)**: Join wall segments end-to-end.

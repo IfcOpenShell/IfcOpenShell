@@ -25,7 +25,7 @@ Blender's interface is divided into three panels. The left **Outliner** panel
 shows a tree of geometric objects. The centre main **Viewport** panel shows 3D
 geometry. The right **Properties** panel shows data and relationships.
 
-.. image:: images/blenderbim-layout.png
+.. image:: images/bonsai-layout.png
 
 The **Properties** panel has tabs to switch between different types of
 properties.

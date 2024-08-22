@@ -41,4 +41,4 @@ or a more customizable approach through the Project Wizard.
 BIM Workspace
 -------------
 
-BlenderBIM adds the **BIM** Workspace to the Topbar Workspaces tabs.
+Bonsai adds the **BIM** Workspace to the Topbar Workspaces tabs.

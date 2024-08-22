@@ -1,7 +1,7 @@
 Material Assignment
 ===================
 
-This section covers how to assign and customize materials in your BIM model using the BlenderBIM Add-on.
+This section covers how to assign and customize materials in your BIM model using the Bonsai.
 
 Types of Material Definitions
 -----------------------------
@@ -34,7 +34,7 @@ Materials should be categorized for easy identification and scheduling:
 
 To view all materials in your project:
 
-1. Go to the Materials schedule in the BlenderBIM panels.
+1. Go to the Materials schedule in the Bonsai panels.
 2. You'll see a list of all materials used in the model.
 
 Best Practices for Material Naming
@@ -66,7 +66,7 @@ For structural models, especially steel structures:
 
 To view profiles:
 
-1. Look for the Profiles schedule in BlenderBIM panels.
+1. Look for the Profiles schedule in Bonsai panels.
 2. You should see a list of all profiles used in the project.
 
 Color vs. Material
@@ -82,7 +82,7 @@ Avoid merging these concepts; an object can have a material without a specific c
 Saving and Exporting
 --------------------
 
-Remember that BlenderBIM .ifc files cannot currently save textures from image files. To preserve both BIM data and detailed materials:
+Remember that Bonsai .ifc files cannot currently save textures from image files. To preserve both BIM data and detailed materials:
 
 1. Save your project as a .blend file to retain all material and texture information for rendering.
 2. Also save as an .ifc file to store BIM data.

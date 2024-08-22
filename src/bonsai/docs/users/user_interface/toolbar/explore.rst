@@ -1,9 +1,9 @@
 Explore Tool
 ============
 
-The Explore Tool is a powerful feature in BlenderBIM that enhances your ability to navigate and inspect IFC models.
+The Explore Tool is a powerful feature in Bonsai that enhances your ability to navigate and inspect IFC models.
 It introduces functionality commonly found in dedicated IFC viewers,
-making BlenderBIM a more comprehensive native IFC authoring and viewing tool.
+making Bonsai a more comprehensive native IFC authoring and viewing tool.
 
 Shortcut
 --------
@@ -14,7 +14,7 @@ Toolbar Icon
 ------------
 
 .. figure:: images/toolbar_explore-tool.png
-   :alt: Explore tool icon in the BlenderBIM toolbar
+   :alt: Explore tool icon in the Bonsai toolbar
 
 Tool Options
 ------------
@@ -47,6 +47,6 @@ Usage
    * For Walk Mode, use WASD or arrow keys to move through the model.
    * For Clipping Plane, drag the plane to desired position and use Shift+F to flip if needed.
 
-The Explore Tool significantly enhances the model navigation and inspection capabilities of BlenderBIM.
+The Explore Tool significantly enhances the model navigation and inspection capabilities of Bonsai.
 It's particularly useful for understanding spatial relationships, inspecting building cross-sections, and navigating through complex interiors.
-These features make BlenderBIM more comparable to dedicated IFC viewers while retaining its powerful authoring capabilities.
+These features make Bonsai more comparable to dedicated IFC viewers while retaining its powerful authoring capabilities.

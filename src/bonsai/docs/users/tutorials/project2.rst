@@ -2,7 +2,7 @@
 Project 2: Building a Bungalow
 ==============================
 
-In this project, we'll take your BlenderBIM skills to the next level by designing a complete bungalow.
+In this project, we'll take your Bonsai skills to the next level by designing a complete bungalow.
 You'll learn about roof design, advanced foundations, structural elements, and more complex MEP systems.
 We'll also introduce basic costing and scheduling concepts.
 
@@ -10,7 +10,7 @@ Prerequisites
 =============
 
 - Completion of Project 1: Designing a Flat
-- Good understanding of BlenderBIM's basic and intermediate features
+- Good understanding of Bonsai's basic and intermediate features
 
 Learning Objectives
 ===================
