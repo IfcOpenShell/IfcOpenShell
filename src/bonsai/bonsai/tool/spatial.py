@@ -212,12 +212,12 @@ class Spatial(bonsai.core.tool.Spatial):
         else:
             elements = ifcopenshell.util.element.get_contained(container)
         for element in elements:
-            if not element.is_a("IfcElement"):
+            if element.is_a("IfcOpeningElement") or tool.Root.is_spatial_element(element):
                 continue
             element_type = ifcopenshell.util.element.get_type(element)
             ifc_class = element.is_a()
             ifc_definition_id = element_type.id() if element_type else 0
-            type_name = element_type.Name or "Unnamed" if element_type else "Untyped"
+            type_name = element_type.Name or "Unnamed" if element_type else f"Untyped {element.is_a()}"
             results.setdefault(ifc_class, {}).setdefault(ifc_definition_id, {"total": 0, "type_name": type_name})
             results[ifc_class][ifc_definition_id]["total"] += 1
 
