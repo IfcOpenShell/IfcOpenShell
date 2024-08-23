@@ -1381,48 +1381,48 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
 
     delete tokens;
 
+    auto resolve_instance = [this](auto inst, int ref, int refattr) {
+        IfcUtil::IfcBaseClass* ptr;
+        if constexpr (std::is_same_v<decltype(inst), int>) {
+            entity_by_id_t::const_iterator it = byid_.find(inst);
+            if (it == byid_.end()) {
+                Logger::Error("Instance reference #" + std::to_string(inst) + " used by instance #" + std::to_string(ref) + " at attribute index " + std::to_string(refattr) + " not found");
+                ptr = nullptr;
+            } else {
+                ptr = it->second;
+            }
+        } else {
+            ptr = inst;
+        }
+        return ptr;
+    };
+
     for (auto& p : references_to_resolve) {
-        boost::apply_visitor([this, &p](auto& v) {
+        boost::apply_visitor([this, &resolve_instance, &p](auto& v) {
             if constexpr (std::is_same_v<std::decay_t<decltype(v)>, reference_or_simple_type>) {
-                byid_[p.first.name_]->data().storage_.set(p.first.index_, boost::apply_visitor([this](auto inst) {
-                    // @todo handle instance not found error
-                    IfcUtil::IfcBaseClass* ptr;
-                    if constexpr (std::is_same_v<decltype(inst), int>) {
-                        ptr = this->instance_by_id(inst);
-                    } else {
-                        ptr = inst;
-                    }
-                    return ptr;
-                }, v));
+                auto inst = boost::apply_visitor([p, &resolve_instance](auto x) { return resolve_instance(x, p.first.name_, p.first.index_); }, v);
+                if (inst) {
+                    byid_[p.first.name_]->data().storage_.set(p.first.index_, inst);
+                }
             } else if constexpr (std::is_same_v<std::decay_t<decltype(v)>, std::vector<reference_or_simple_type>>) {
                 aggregate_of_instance::ptr instances(new aggregate_of_instance);
                 instances->reserve(v.size());
-                for (auto& p : v) {
-                    instances->push(boost::apply_visitor([this](auto inst) {
-                        IfcUtil::IfcBaseClass* ptr;
-                        if constexpr (std::is_same_v<decltype(inst), int>) {
-                            ptr = this->instance_by_id(inst);
-                        } else {
-                            ptr = inst;
-                        }
-                        return ptr;
-                    }, p));
+                for (auto& vi : v) {
+                    auto inst = boost::apply_visitor([p, &resolve_instance](auto x) { return resolve_instance(x, p.first.name_, p.first.index_); }, vi);
+                    if (inst) {
+                        instances->push(inst);
+                    }
                 }
                 byid_[p.first.name_]->data().storage_.set(p.first.index_, instances);
             } else if constexpr (std::is_same_v<std::decay_t<decltype(v)>, std::vector<std::vector<reference_or_simple_type>>>) {
                 aggregate_of_aggregate_of_instance::ptr instances(new aggregate_of_aggregate_of_instance);
-                for (auto& ps : v) {
+                for (auto& vi : v) {
                     std::vector<IfcUtil::IfcBaseClass*> inner;
-                    for (auto& p : ps) {
-                        inner.push_back(boost::apply_visitor([this](auto inst) {
-                            IfcUtil::IfcBaseClass* ptr;
-                            if constexpr (std::is_same_v<decltype(inst), int>) {
-                                ptr = this->instance_by_id(inst);
-                            } else {
-                                ptr = inst;
-                            }
-                            return ptr;
-                        }, p));
+                    for (auto& vii : vi) {
+                        auto inst = boost::apply_visitor([p, &resolve_instance](auto x) { return resolve_instance(x, p.first.name_, p.first.index_); }, vii);
+                        if (inst) {
+                            inner.push_back(inst);
+                        }
                     }
                     instances->push(inner);
                 }
