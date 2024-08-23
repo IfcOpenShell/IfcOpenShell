@@ -172,7 +172,7 @@ def draw_psetqto_ui(
                 row.scale_y = 0.8
                 row.label(text=prop["Name"])
                 op = row.operator("bim.select_similar", text=nominal_value, icon="NONE", emboss=False)
-                op.key = pset["Name"]
+                op.key = '"' + pset["Name"].replace('"', '\\"') + '"."' + prop["Name"].replace('"', '\\"') + '"'
 
             if not has_props_displayed:
                 row = box.row()
