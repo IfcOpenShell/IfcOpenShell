@@ -24,6 +24,7 @@ import bonsai.tool as tool
 from test.bim.bootstrap import NewFile
 from bonsai.tool.debug import Debug as subject
 from bonsai.bim.ifc import IfcStore
+from pathlib import Path
 
 
 class TestImplementsTool(NewFile):
@@ -52,10 +53,9 @@ class TestLoadExpress(NewFile):
 
 class TestPurgeHdf5Cache(NewFile):
     def test_run(self):
-        cache_dir = os.path.join(bpy.context.scene.BIMProperties.data_dir, "cache")
-        test_file = os.path.join(cache_dir, "test.h5")
-        if not os.path.isfile(test_file):
-            fp = open(test_file, "x")
-            fp.close()
+        cache_dir = Path(bpy.context.scene.BIMProperties.data_dir) / "cache"
+        test_file = cache_dir / "test.h5"
+        test_file.parent.mkdir(parents=True, exist_ok=True)
+        test_file.touch()
         subject.purge_hdf5_cache()
-        assert not [f for f in os.listdir(cache_dir) if f.endswith(".h5")]
+        assert not [f for f in cache_dir.iterdir() if f.suffix == ".h5"]
