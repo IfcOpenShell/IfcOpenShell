@@ -1608,8 +1608,8 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
         // information needs to be accounted for for IfcLengthMeasures.
         double conversion_factor = std::numeric_limits<double>::quiet_NaN();
 
-        for (size_t i = 0; i < we.size(); ++i) {
-            auto attr = we.get_attribute_value(i);
+        for (size_t i = 0; i < new_entity->data().size(); ++i) {
+            auto attr = new_entity->data().get_attribute_value(i);
             IfcUtil::ArgumentType attr_type = attr.type();
 
             IfcParse::declaration* decl = 0;
@@ -1629,7 +1629,8 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
                 if (eit == entity_file_map_.end()) {
                     throw IfcParse::IfcException("Unable to map instance to file");
                 }
-                we.storage_.set(i, eit->second);
+                // We directly use storage set not to trigger inverse recalculation which happens at the end
+                new_entity->data().storage_.set(i, eit->second);
             } else if (attr_type == IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE) {
                 aggregate_of_instance::ptr instances = attr;
                 aggregate_of_instance::ptr new_instances(new aggregate_of_instance);
@@ -1641,7 +1642,7 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
                     new_instances->push(eit->second);
                 }
 
-                we.storage_.set(i, new_instances);
+                new_entity->data().storage_.set(i, new_instances);
             } else if (attr_type == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE) {
                 aggregate_of_aggregate_of_instance::ptr instances = attr;
                 aggregate_of_aggregate_of_instance::ptr new_instances(new aggregate_of_aggregate_of_instance);
@@ -1657,7 +1658,7 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
                     new_instances->push(list);
                 }
                 
-                we.storage_.set(i, new_instances);
+                new_entity->data().storage_.set(i, new_instances);
             } else if ((decl != nullptr) && decl->is(*schema()->declaration_by_name("IfcLengthMeasure"))) {
                 if (boost::math::isnan(conversion_factor)) {
                     std::pair<IfcUtil::IfcBaseClass*, double> this_file_unit = {nullptr, 1.0};
@@ -1676,13 +1677,13 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
                 if (attr_type == IfcUtil::Argument_DOUBLE) {
                     double v = attr;
                     v *= conversion_factor;
-                    we.storage_.set(i, v);
+                    new_entity->data().storage_.set(i, v);
                 } else if (attr_type == IfcUtil::Argument_AGGREGATE_OF_DOUBLE) {
                     std::vector<double> v = attr;
                     for (std::vector<double>::iterator it = v.begin(); it != v.end(); ++it) {
                         (*it) *= conversion_factor;
                     }
-                    we.storage_.set(i, v);
+                    new_entity->data().storage_.set(i, v);
                 } else if (attr_type == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE) {
                     std::vector<std::vector<double>> v = attr;
                     for (std::vector<std::vector<double>>::iterator it = v.begin(); it != v.end(); ++it) {
@@ -1691,7 +1692,7 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
                             (*jt) *= conversion_factor;
                         }
                     }
-                    we.storage_.set(i, v);
+                    new_entity->data().storage_.set(i, v);
                 }
             }
         }
@@ -2332,8 +2333,30 @@ IfcEntityInstanceData::IfcEntityInstanceData(const IfcEntityInstanceData& data)
     : storage_(data.storage_.size() )
 {
     for (size_t i = 0; i < data.storage_.size(); ++i) {
-        data.storage_.apply_visitor([this, i](auto& v) {
-            storage_.set(i, v);
+        data.storage_.apply_visitor([this, i](const auto& v) {
+            using U = std::decay_t<decltype(v)>;
+            if constexpr (std::is_same_v<U, aggregate_of_instance::ptr>) {
+                // @todo why did we ever choose shared_ptrs for these
+                // aggregates? Now we need to explicit copies.
+                aggregate_of_instance::ptr v2(new aggregate_of_instance);
+                if (v) {
+                    v2->reserve(v->size());
+                    for (auto& i : *v) {
+                        v2->push(i);
+                    }
+                }
+                storage_.set(i, v2);
+            } else if constexpr (std::is_same_v<U, aggregate_of_aggregate_of_instance::ptr>) {
+                aggregate_of_aggregate_of_instance::ptr v2(new aggregate_of_aggregate_of_instance);
+                if (v) {
+                    for (auto& i : *v) {
+                        v2->push(i);
+                    }
+                }
+                storage_.set(i, v2);
+            } else {
+                storage_.set(i, v);
+            }
         }, i);
     }
 }
