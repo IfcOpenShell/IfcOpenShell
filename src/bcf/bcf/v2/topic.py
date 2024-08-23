@@ -5,7 +5,7 @@ import tempfile
 import uuid
 import zipfile
 from pathlib import Path
-from typing import Any, NoReturn, Optional
+from typing import Any, NoReturn, Optional, Union
 
 import numpy as np
 from ifcopenshell import entity_instance
@@ -27,9 +27,9 @@ class TopicHandler:
         xml_handler: Optional[AbstractXmlParserSerializer] = None,
     ) -> None:
         self._markup: Optional[mdl.Markup] = None
-        self._viewpoints: dict[str, VisualizationInfoHandler] = {}
-        self._reference_files: dict[str, bytes] = {}
-        self._document_references: dict[str, bytes] = {}
+        self._viewpoints: Optional[dict[str, VisualizationInfoHandler]] = None
+        self._reference_files: Optional[dict[str, bytes]] = None
+        self._document_references: Optional[dict[str, bytes]] = None
         self._bim_snippet: Optional[bytes] = None
         self._xml_handler = xml_handler or XmlParserSerializer()
         self._topic_dir = topic_dir
@@ -63,10 +63,20 @@ class TopicHandler:
         """Return the header of the topic."""
         return self.markup.header if self.markup else None
 
+    @header.setter
+    def header(self, header: mdl.Header) -> None:
+        """Set the header of the topic."""
+        self.markup.header = header
+
     @property
     def comments(self) -> list[mdl.Comment]:
         """Return the comments of the topic."""
         return self.markup.comment if self.markup else []
+
+    @comments.setter
+    def comments(self, comments: list[mdl.Comment]) -> None:
+        assert self.markup
+        self.markup.comment = comments
 
     @property
     def bim_snippet(self) -> Optional[bytes]:
@@ -80,14 +90,24 @@ class TopicHandler:
 
     @property
     def viewpoints(self) -> dict[str, VisualizationInfoHandler]:
-        if not self._viewpoints and self._topic_dir:
+        if self._viewpoints is None:
             self._viewpoints = self._load_viewpoints()
         return self._viewpoints
 
+    def _load_viewpoints(self) -> dict[str, VisualizationInfoHandler]:
+        if self._topic_dir and self.markup and (viewpoints := self.markup.viewpoints):
+            return VisualizationInfoHandler.from_topic_viewpoints(self._topic_dir, viewpoints)
+        return {}
+
     @property
     def reference_files(self) -> dict[str, bytes]:
-        if self._reference_files or not self.header:
+        if self._reference_files is not None:
             return self._reference_files
+
+        self._reference_files = {}
+        if not self.header:
+            return self._reference_files
+
         for ref in self.header.file:
             if ref.is_external:
                 continue
@@ -99,8 +119,13 @@ class TopicHandler:
 
     @property
     def document_references(self) -> dict[str, bytes]:
-        if self._document_references or not self.topic:
+        if self._document_references is not None:
             return self._document_references
+
+        self._document_references = {}
+        if not self.topic:
+            return self._document_references
+
         for doc in self.topic.document_reference:
             if doc.is_external or not doc.referenced_document:
                 continue
@@ -117,11 +142,6 @@ class TopicHandler:
             if bim_snippet_path.exists():
                 return bim_snippet_path.read_bytes()
         return None
-
-    def _load_viewpoints(self) -> dict[str, VisualizationInfoHandler]:
-        if self.markup and (viewpoints := self.markup.viewpoints):
-            return VisualizationInfoHandler.from_topic_viewpoints(self._topic_dir, viewpoints)
-        return {}
 
     @classmethod
     def create_new(
@@ -220,55 +240,7 @@ class TopicHandler:
                 real_path = real_path.parent if path_part == ".." else real_path.joinpath(path_part)
             destination_zip.writestr(real_path.at, self.document_references[doc.referenced_document])
 
-    def extract_file(self, entity, outfile: Optional[Path] = None) -> Path:
-        """Extracts an element with a file into a temporary directory
-
-        These include header files, bim snippets, document references, and
-        viewpoint bitmaps. External reference are not downloaded. Instead, the
-        URI reference is returned.
-
-        :param entity: The entity with a file reference to extract
-        :type entity: bcf.v2.model.HeaderFile,bcf.v2.model.BimSnippet,bcf.v2.model.TopicDocumentReference
-        :param outfile: If provided, save the header file to that location.
-            Otherwise, a temporary directory is created and the filename is
-            derived from the header's original filename.
-        :type outfile: pathlib.Path,optional
-        :return: The filepath of the extracted file. It may be a URL if the
-            header file is external.
-        :rtype: Path
-        """
-        if hasattr(entity, "reference"):
-            reference = entity.reference
-        else:
-            reference = entity.referenced_document
-
-        if not reference:
-            return
-
-        if getattr(entity, "is_external", False):
-            return entity.reference
-
-        resolved_reference = self._topic_dir
-
-        for part in Path(reference).parts:
-            if part == "..":
-                resolved_reference = resolved_reference.parent
-            else:
-                resolved_reference = resolved_reference.joinpath(part)
-
-        if not outfile:
-            if getattr(entity, "filename", None):
-                filename = entity.filename
-            else:
-                filename = resolved_reference.name
-            outfile = Path(tempfile.mkdtemp()) / filename
-
-        with open(outfile, "wb") as f:
-            f.write(resolved_reference.read_bytes())
-
-        return outfile
-
-    def add_viewpoint(self, element: entity_instance) -> None:
+    def add_viewpoint(self, element: entity_instance) -> VisualizationInfoHandler:
         """Add a viewpoint pointed at the placement of an IFC element to the topic.
 
         Args:
@@ -278,7 +250,9 @@ class TopicHandler:
         self.add_visinfo_handler(new_viewpoint)
         return new_viewpoint
 
-    def add_viewpoint_from_point_and_guids(self, position: NDArray[np.float64], *guids: str) -> None:
+    def add_viewpoint_from_point_and_guids(
+        self, position: NDArray[np.float64], *guids: str
+    ) -> VisualizationInfoHandler:
         """Add a viewpoint pointing at an XYZ point in space
 
         Args:
@@ -291,9 +265,17 @@ class TopicHandler:
         self.add_visinfo_handler(vi_handler)
         return vi_handler
 
-    def add_visinfo_handler(self, new_viewpoint: VisualizationInfoHandler) -> None:
+    def add_visinfo_handler(
+        self, new_viewpoint: VisualizationInfoHandler, snapshot_filename: Optional[str] = None
+    ) -> mdl.ViewPoint:
         self.viewpoints[new_viewpoint.guid + ".bcfv"] = new_viewpoint
-        self.markup.viewpoints.append(mdl.ViewPoint(viewpoint=new_viewpoint.guid + ".bcfv", guid=new_viewpoint.guid))
+        viewpoint = mdl.ViewPoint(
+            viewpoint=new_viewpoint.guid + ".bcfv",
+            snapshot=snapshot_filename,
+            guid=new_viewpoint.guid,
+        )
+        self.markup.viewpoints.append(viewpoint)
+        return viewpoint
 
     def __eq__(self, other: object) -> bool | NoReturn:
         return (

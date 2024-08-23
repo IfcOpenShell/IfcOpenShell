@@ -14,7 +14,7 @@ table below.
 |                         | .igs, .xml, .svg, .h5,  |                      |
 |                         | .ifc                    |                      |
 +-------------------------+-------------------------+----------------------+
-| .ifc                    | .dae, .abc, .usd, .obj, | `BlenderBIM Add-on`_ |
+| .ifc                    | .dae, .abc, .usd, .obj, | `Bonsai`_ |
 |                         | .ply, .stl, .fbx, .glb, |                      |
 |                         | .gltf, .x3d, .dxf       |                      |
 +-------------------------+-------------------------+----------------------+
@@ -41,9 +41,9 @@ table below.
 +-------------------------+-------------------------+----------------------+
 | .csv                    | .ifc                    | IfcCSV_              |
 +-------------------------+-------------------------+----------------------+
-| .dxf                    | .ifc                    | `BlenderBIM Add-on`_ |
+| .dxf                    | .ifc                    | `Bonsai`_ |
 +-------------------------+-------------------------+----------------------+
-| .obj                    | .ifc                    | `BlenderBIM Add-on`_ |
+| .obj                    | .ifc                    | `Bonsai`_ |
 +-------------------------+-------------------------+----------------------+
 | .json (CityJSON)        | .ifc                    | IfcCityJSON_         |
 +-------------------------+-------------------------+----------------------+
@@ -64,7 +64,7 @@ table below.
 .. _Ifc5D: ifc5d.html
 .. _IfcCityJSON: ifccityjson.html
 .. _Ifc2JSON: other.html
-.. _BlenderBIM Add-on: https://blenderbim.org
+.. _Bonsai: https://bonsaibim.org
 
 .. toctree::
    :hidden:

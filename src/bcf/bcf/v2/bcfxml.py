@@ -6,7 +6,9 @@ import zipfile
 from pathlib import Path
 from typing import Any, NoReturn, Optional, TypeVar
 
+import bcf.agnostic.extensions
 import bcf.v2.model as mdl
+import bcf.v2.model.extensions as mdl_extensions
 from bcf.inmemory_zipfile import InMemoryZipFile, ZipFileInterface
 from bcf.v2.topic import TopicHandler
 from bcf.xml_parser import AbstractXmlParserSerializer, XmlParserSerializer
@@ -24,7 +26,8 @@ class BcfXml:
         self._xml_handler = xml_handler or XmlParserSerializer()
         self._version: Optional[mdl.Version] = None
         self._project_info: Optional[mdl.ProjectExtension] = None
-        self._topics: dict[str, TopicHandler] = {}
+        self._extensions: Optional[mdl_extensions.Extensions] = None
+        self._topics: Optional[dict[str, TopicHandler]] = None
         self._extension_schema: Optional[bytes] = None
         self._zip_file = self._load_zip_file()
 
@@ -86,23 +89,62 @@ class BcfXml:
         self._extension_schema = value
 
     @property
+    def extensions(self) -> Optional[mdl_extensions.Extensions]:
+        """BCF extensions."""
+
+        if not self._extensions and self.extension_schema:
+            import io
+            from xml.etree import ElementTree as etree
+
+            extensions = mdl_extensions.Extensions()
+
+            xs = "{http://www.w3.org/2001/XMLSchema}"
+            root = etree.parse(io.BytesIO((self.extension_schema)))
+
+            attrs = bcf.agnostic.extensions.get_extensions_attributes(extensions)
+            xsd_to_attrs = {v.subattr_xsd_name: k for k, v in attrs.items()}
+            for node in root.findall(f".//{xs}restriction"):
+                attr_type = node.attrib.get("base")
+                if not attr_type:
+                    continue
+                attr_name = xsd_to_attrs.get(attr_type)
+                if attr_name is None:
+                    continue
+                values = []
+                for enum in node.findall(f".//{xs}enumeration"):
+                    values.append(enum.attrib["value"])
+                if not values:
+                    continue
+                attr_data = attrs[attr_name]
+                attr = attr_data.attr_type()
+                setattr(attr, attr_data.subattr_name, values)
+                setattr(extensions, attr_name, attr)
+
+            self._extensions = extensions
+        return self._extensions
+
+    @extensions.setter
+    def extensions(self, value: Optional[mdl_extensions.Extensions]) -> None:
+        self._extensions = value
+
+    @property
     def topics(self) -> dict[str, TopicHandler]:
         """BCF topics."""
-        if not self._topics and self._zip_file:
-            self._topics = self._load_topics(self._zip_file, self._xml_handler)
+        if self._topics is None:
+            self._topics = self._load_topics()
         return self._topics
 
-    def _load_topics(
-        self, zip_file: zipfile.ZipFile, xml_handler: AbstractXmlParserSerializer
-    ) -> dict[str, TopicHandler]:
+    def _load_topics(self) -> dict[str, TopicHandler]:
         topics = {}
-        for topic_dir in zipfile.Path(zip_file).iterdir():
+        if self._zip_file is None:
+            return topics
+        for topic_dir in zipfile.Path(self._zip_file).iterdir():
             if not topic_dir.is_dir():
                 continue
             markup_path = topic_dir.joinpath("markup.bcf")
             if not markup_path.exists():
                 continue
-            topics[topic_dir.name] = TopicHandler(topic_dir, xml_handler)
+            topics[topic_dir.name] = TopicHandler(topic_dir, self._xml_handler)
         return topics
 
     @classmethod

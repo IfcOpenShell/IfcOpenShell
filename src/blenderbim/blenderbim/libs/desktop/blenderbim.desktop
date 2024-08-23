@@ -1,9 +1,0 @@
-[Desktop Entry]
-Type=Application
-Terminal=false
-Exec=blenderbim %f
-Name=BlenderBIM
-Icon=blenderbim
-X-Desktop-File-Install-Version=0.26
-GenericName=Blender BIM add-on
-MimeType=application/x-ifc;

@@ -43,7 +43,7 @@
         p.unspecified { background-color: #994f00; padding: 5px; border-radius: 5px; color: #fff; }
         p.skipped { background-color: #8b8d8f; padding: 5px; border-radius: 5px; color: #fff; }
         p.description { background-color: #eee; border-radius: 5px; padding: 20px; margin-left: auto; margin-right: auto; display: inline-block; font-weight: bold;}
-        li { padding: 10px; font-family: monospace; }
+        li { padding: 10px; font-family: monospace; border-radius: 5px; margin-bottom: 5px; }
         li.pass { background-color: var(--light-green); color: #333; }
         li.fail { background-color: var(--light-red); color: #900; }
         li.unspecified { background-color: #ffd37f; color: #a30; }
@@ -69,6 +69,8 @@
         tbody tr:nth-child(odd) { background-color: rgba(1, 1, 1, 0.05); }
         tbody tr:nth-child(even) { background-color: rgba(1, 1, 1, 0.1); }
         tbody tr:hover { background-color: rgba(0, 0, 0, 0); }
+        div.info { float: left; width: 30%; }
+        div.results { float: left; width: calc(70% - 20px); margin-left: 20px; padding: 20px; border-radius: 5px; background-color: #fafafa; }
     </style>
 </head>
 <body>
@@ -94,119 +96,140 @@
     </p>
     <hr>
     {{#specifications}}
-    <section>
-        <h2>{{name}}</h2>
-        {{#description}}
-        <p>{{description}}</p>
-        {{/description}}
-        {{#instructions}}
-        <p><em>{{instructions}}</em></p>
-        {{/instructions}}
+    <section style="clear: both; overflow: hidden;">
+        <div class="info">
+            <h2>{{name}}</h2>
+            {{#description}}
+            <p>{{description}}</p>
+            {{/description}}
+            {{#instructions}}
+            <p><em>{{instructions}}</em></p>
+            {{/instructions}}
 
-        <div class="container">
-            <div class="{{#status}}pass{{/status}}{{^status}}fail{{/status}} percent" style="width: {{percent_checks_pass}}%;">{{percent_checks_pass}}%</div>
+            <div class="container">
+                <div class="{{#status}}pass{{/status}}{{^status}}fail{{/status}} percent" style="width: {{percent_checks_pass}}%;">{{percent_checks_pass}}%</div>
+            </div>
+            <p>
+                <span class="item {{#status}}pass{{/status}}{{^status}}fail{{/status}}">{{#status}}Pass{{/status}}{{^status}}Fail{{/status}}</span>
+                <span class="item">
+                    Checks passed: <strong>{{total_checks_pass}}</strong> / <strong>{{total_checks}}</strong>
+                </span>
+                <span class="item">
+                    Elements passed: <strong>{{total_applicable_pass}}</strong> / <strong>{{total_applicable}}</strong>
+                </span>
+            </p>
+            {{^is_ifc_version}}
+            <p>
+                <span class="item">
+                    <strong>Warning:</strong> specification does not apply to this IFC version
+                </span>
+            </p>
+            {{/is_ifc_version}}
         </div>
-        <p>
-            <span class="item {{#status}}pass{{/status}}{{^status}}fail{{/status}}">{{#status}}Pass{{/status}}{{^status}}Fail{{/status}}</span>
-            <span class="item">
-                Checks passed: <strong>{{total_checks_pass}}</strong> / <strong>{{total_checks}}</strong>
-            </span>
-            <span class="item">
-                Elements passed: <strong>{{total_applicable_pass}}</strong> / <strong>{{total_applicable}}</strong>
-            </span>
-        </p>
-        <p>
-            <strong>Applicability</strong>
-        </p>
-        <ul>
-            {{#applicability}}
-            <li>{{.}}</li>
-            {{/applicability}}
-        </ul>
-        <p>
-            <strong>Requirements</strong>
-        </p>
-        <ol>
-            {{#requirements}}
-            <li class="{{#status}}pass{{/status}}{{^status}}fail{{/status}}">
-                <details>
-                    <summary>
-                        {{description}}
-                    </summary>
-                    {{#total_pass}}
-                    <table class="pass">
-                        <thead>
-                            <tr>
-                                <th>Class</th>
-                                <th>PredefinedType</th>
-                                <th>Name</th>
-                                <th>Description</th>
-                                <th>GlobalId</th>
-                                <th>Tag</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {{#passed_entities}}
-                            <tr>
-                                <td>{{class}}</td>
-                                <td>{{predefined_type}}</td>
-                                <td>{{name}}</td>
-                                <td>{{description}}</td>
-                                <td>{{global_id}}</td>
-                                <td>{{tag}}</td>
-                            </tr>
-                            {{/passed_entities}}
-                            {{#has_omitted_passes}}
-                            <tr>
-                                <td colspan="7"> ... {{total_omitted_passes}} more passing elements not shown out of {{total_passed_entities}} total ...</td>
-                            </tr>
-                            {{/has_omitted_passes}}
-                        </tbody>
-                    </table>
-                    {{/total_pass}}
-                    {{#total_fail}}
-                    <table class="fail">
-                        <thead>
-                            <tr>
-                                <th>Class</th>
-                                <th>PredefinedType</th>
-                                <th>Name</th>
-                                <th>Description</th>
-                                <th>Warning</th>
-                                <th>GlobalId</th>
-                                <th>Tag</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {{#failed_entities}}
-                            <tr>
-                                <td>{{class}}</td>
-                                <td>{{predefined_type}}</td>
-                                <td>{{name}}</td>
-                                <td>{{description}}</td>
-                                <td>{{reason}}</td>
-                                <td>{{global_id}}</td>
-                                <td>{{tag}}</td>
-                            </tr>
-                            {{/failed_entities}}
-                            {{#has_omitted_failures}}
-                            <tr>
-                                <td colspan="7"> ... {{total_omitted_failures}} more failing elements not shown out of {{total_failed_entities}} total ...</td>
-                            </tr>
-                            {{/has_omitted_failures}}
-                        </tbody>
-                    </table>
-                    {{/total_fail}}
-                </details>
-            </li>
-            {{/requirements}}
-        </ol>
+        <div class="results">
+            <p>
+                <strong>Applicability</strong>
+            </p>
+            <ul>
+                {{#applicability}}
+                <li>{{.}}</li>
+                {{/applicability}}
+            </ul>
+            <p>
+                <strong>Requirements</strong>
+            </p>
+            <ol>
+                {{#requirements}}
+                <li class="{{#status}}pass{{/status}}{{^status}}fail{{/status}}">
+                    <details>
+                        <summary>
+                            {{description}}
+                        </summary>
+                        {{#total_pass}}
+                        <table class="pass">
+                            <thead>
+                                <tr>
+                                    <th>Class</th>
+                                    <th>PredefinedType</th>
+                                    <th>Name</th>
+                                    <th>Description</th>
+                                    <th>GlobalId</th>
+                                    <th>Tag</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {{#passed_entities}}
+                                <tr>
+                                    <td>{{class}}</td>
+                                    <td>{{predefined_type}}</td>
+                                    <td>{{name}}</td>
+                                    <td>{{description}}</td>
+                                    <td>{{global_id}}</td>
+                                    <td>{{tag}}</td>
+                                </tr>
+                                {{#extra_of_type}}
+                                <tr>
+                                    <td colspan="7">... {{extra_of_type}} more of the same element type ({{type_name}} with Tag {{type_tag}} and GlobalId {{type_global_id}}) not shown ...</td>
+                                </tr>
+                                {{/extra_of_type}}
+                                {{/passed_entities}}
+                                {{#has_omitted_passes}}
+                                <tr>
+                                    <td colspan="7"> ... {{total_omitted_passes}} more passing elements not shown out of {{total_passed_entities}} total ...</td>
+                                </tr>
+                                {{/has_omitted_passes}}
+                            </tbody>
+                        </table>
+                        {{/total_pass}}
+                        {{#total_fail}}
+                        <table class="fail">
+                            <thead>
+                                <tr>
+                                    <th>Class</th>
+                                    <th>PredefinedType</th>
+                                    <th>Name</th>
+                                    <th>Description</th>
+                                    <th>Warning</th>
+                                    <th>GlobalId</th>
+                                    <th>Tag</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {{#failed_entities}}
+                                <tr>
+                                    <td>{{class}}</td>
+                                    <td>{{predefined_type}}</td>
+                                    <td>{{name}}</td>
+                                    <td>{{description}}</td>
+                                    <td>{{reason}}</td>
+                                    <td>{{global_id}}</td>
+                                    <td>{{tag}}</td>
+                                </tr>
+                                {{#extra_of_type}}
+                                <tr>
+                                    <td colspan="7">... {{extra_of_type}} more of the same element type ({{type_name}} with Tag {{type_tag}} and GlobalId {{type_global_id}}) not shown ...</td>
+                                </tr>
+                                {{/extra_of_type}}
+                                {{/failed_entities}}
+                                {{#has_omitted_failures}}
+                                <tr>
+                                    <td colspan="7"> ... {{total_omitted_failures}} more failing elements not shown out of {{total_failed_entities}} total ...</td>
+                                </tr>
+                                {{/has_omitted_failures}}
+                            </tbody>
+                        </table>
+                        {{/total_fail}}
+                    </details>
+                </li>
+                {{/requirements}}
+            </ol>
+        </div>
     </section>
     {{/specifications}}
     <hr>
     <footer>
         <p>
-            Report by the <a href="https://blenderbim.org/">BlenderBIM Add-on</a> and <a href="http://ifcopenshell.org/">IfcOpenShell</a>.
+            Report by the <a href="https://bonsaibim.org/">Bonsai</a> and <a href="http://ifcopenshell.org/">IfcOpenShell</a>.
         </p>
     </footer>
 </body>

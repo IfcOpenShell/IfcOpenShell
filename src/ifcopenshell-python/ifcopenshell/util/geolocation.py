@@ -18,12 +18,13 @@
 
 import math
 import numpy as np
-import numpy.typing as npt
 import ifcopenshell
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 from typing import NamedTuple, Optional, Union
+
+MatrixType = ifcopenshell.util.placement.MatrixType
 
 
 class HelmertTransformation(NamedTuple):
@@ -159,7 +160,9 @@ def auto_xyz2enh(
     return enh[0] / parameters.scale, enh[1] / parameters.scale, enh[2] / parameters.scale
 
 
-def auto_enh2xyz(ifc_file, easting, northing, height, is_specified_in_map_units: bool = True):
+def auto_enh2xyz(
+    ifc_file: ifcopenshell.file, easting: float, northing: float, height: float, is_specified_in_map_units: bool = True
+) -> tuple[float, float, float]:
     """Convert from global map coordinate eastings, northings, and heights to local XYZ coordinates
 
     The necessary georeferencing map conversion is automatically detected from
@@ -351,7 +354,7 @@ def enh2xyz(
 
 
 def local2global(
-    matrix: npt.NDArray[np.float64],
+    matrix: MatrixType,
     eastings: float = 0.0,
     northings: float = 0.0,
     orthogonal_height: float = 0.0,
@@ -361,7 +364,7 @@ def local2global(
     factor_x: float = 1.0,
     factor_y: float = 1.0,
     factor_z: float = 1.0,
-) -> npt.NDArray[np.float64]:
+) -> MatrixType:
     """Manually convert a 4x4 matrix from local to global coordinates
 
     This function is for advanced users as it allows you to specify your own
@@ -413,8 +416,8 @@ def local2global(
 
 
 def auto_local2global(
-    ifc_file: ifcopenshell.file, matrix: npt.NDArray[np.float64], should_return_in_map_units: bool = True
-) -> npt.NDArray[np.float64]:
+    ifc_file: ifcopenshell.file, matrix: MatrixType, should_return_in_map_units: bool = True
+) -> MatrixType:
     """Convert a local matrix to a global map matrix
 
     The necessary georeferencing map conversion is automatically detected from
@@ -443,7 +446,7 @@ def auto_local2global(
 
 
 def global2local(
-    matrix: npt.NDArray[np.float64],
+    matrix: MatrixType,
     eastings: float = 0.0,
     northings: float = 0.0,
     orthogonal_height: float = 0.0,
@@ -453,7 +456,7 @@ def global2local(
     factor_x: float = 1.0,
     factor_y: float = 1.0,
     factor_z: float = 1.0,
-) -> npt.NDArray[np.float64]:
+) -> MatrixType:
     """Manually convert a 4x4 matrix from global to local coordinates
 
     This function is for advanced users as it allows you to specify your own
@@ -504,8 +507,8 @@ def global2local(
 
 
 def auto_global2local(
-    ifc_file: ifcopenshell.file, matrix: npt.NDArray[np.float64], is_specified_in_map_units: bool = True
-) -> npt.NDArray[np.float64]:
+    ifc_file: ifcopenshell.file, matrix: MatrixType, is_specified_in_map_units: bool = True
+) -> MatrixType:
     """Convert a global map matrix to a local matrix
 
     The necessary georeferencing map conversion is automatically detected from
@@ -651,7 +654,7 @@ def angle2yaxis(angle: float) -> tuple[float, float]:
     return x, y
 
 
-def get_wcs(ifc_file: ifcopenshell.file) -> Optional[npt.NDArray[np.float64]]:
+def get_wcs(ifc_file: ifcopenshell.file) -> Optional[MatrixType]:
     """Gets the WCS (prioritising 3D contexts) as a matrix
 
     :param: The IFC file

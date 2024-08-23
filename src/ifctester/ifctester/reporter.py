@@ -76,6 +76,7 @@ class ResultsSpecification(TypedDict):
     description: str
     instructions: str
     status: bool
+    is_ifc_version: bool
     total_applicable: int
     total_applicable_pass: int
     total_applicable_fail: int
@@ -109,8 +110,8 @@ ResultsEntity = TypedDict(
     "ResultsEntity",
     {
         "reason": str,
-        "element": str,
-        "element_type": str,
+        "element": ifcopenshell.entity_instance,
+        "element_type": Union[ifcopenshell.entity_instance, None],
         "class": str,
         "predefined_type": str,
         "name": Union[str, None],
@@ -359,6 +360,7 @@ class Json(Reporter):
             description=specification.description,
             instructions=specification.instructions,
             status=specification.status,
+            is_ifc_version=specification.is_ifc_version,
             total_applicable=total_applicable,
             total_applicable_pass=total_applicable_pass,
             total_applicable_fail=total_applicable - total_applicable_pass,
@@ -426,23 +428,60 @@ class Json(Reporter):
 
 class Html(Json):
     def __init__(self, ids: Ids):
+        self.entity_limit = 100
         super().__init__(ids)
 
     def report(self) -> None:
         super().report()
-        entity_limit = 100
         for spec in self.results["specifications"]:
             for requirement in spec["requirements"]:
                 total_passed_entities = len(requirement["passed_entities"])
                 total_failed_entities = len(requirement["failed_entities"])
-                requirement["passed_entities"] = requirement["passed_entities"][0:entity_limit]
-                requirement["failed_entities"] = requirement["failed_entities"][0:entity_limit]
+                requirement["passed_entities"] = self.limit_entities(requirement["passed_entities"])
+                requirement["failed_entities"] = self.limit_entities(requirement["failed_entities"])
                 requirement["total_failed_entities"] = total_failed_entities
-                requirement["total_omitted_failures"] = total_failed_entities - entity_limit
-                requirement["has_omitted_failures"] = total_failed_entities > entity_limit
+                requirement["total_omitted_failures"] = total_failed_entities - self.entity_limit
+                requirement["has_omitted_failures"] = total_failed_entities > self.entity_limit
                 requirement["total_passed_entities"] = total_passed_entities
-                requirement["total_omitted_passes"] = total_passed_entities - entity_limit
-                requirement["has_omitted_passes"] = total_passed_entities > entity_limit
+                requirement["total_omitted_passes"] = total_passed_entities - self.entity_limit
+                requirement["has_omitted_passes"] = total_passed_entities > self.entity_limit
+
+    def limit_entities(self, entities):
+        if len(entities) > self.entity_limit:
+            if entities[0]["element_type"]:
+                return self.group_by_type(entities)
+            return entities[0 : self.entity_limit]
+        return entities
+
+    def group_by_type(self, entities):
+        results = []
+        group_limit = 5
+        grouped_by_type = {}
+        [grouped_by_type.setdefault(e["element_type"], []).append(e) for e in entities]
+        total_entities = 0
+        for element_type, entities in grouped_by_type.items():
+            for i, entity in enumerate(entities):
+                results.append(entity)
+                total_entities += 1
+
+                if element_type and i > group_limit:
+                    results[-1]["type_name"] = element_type.Name if element_type else "Untyped"
+                    if element_type:
+                        results[-1]["type_tag"] = element_type.Tag
+                        results[-1]["type_global_id"] = element_type.GlobalId
+                    results[-1]["extra_of_type"] = len(entities) - i
+                    if total_entities == self.entity_limit:
+                        return results
+                    break
+
+                if total_entities == self.entity_limit:
+                    results[-1]["type_name"] = element_type.Name if element_type else "Untyped"
+                    if element_type:
+                        results[-1]["type_tag"] = element_type.Tag
+                        results[-1]["type_global_id"] = element_type.GlobalId
+                    results[-1]["extra_of_type"] = len(entities) - i
+                    return results
+        return results
 
     def to_string(self) -> str:
         import pystache

@@ -17,6 +17,8 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
+import ifcopenshell.api.geometry
+import ifcopenshell.api.georeference
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.type
@@ -27,6 +29,8 @@ import ifcopenshell.api.context
 import ifcopenshell.api.project
 import ifcopenshell.api.material
 import ifcopenshell.util.element
+import ifcopenshell.util.placement
+import numpy as np
 
 
 class TestAppendAssetIFC2X3(test.bootstrap.IFC2X3):
@@ -369,6 +373,65 @@ class TestAppendAssetIFC2X3(test.bootstrap.IFC2X3):
         ifcopenshell.api.void.add_opening(library, opening=opening, element=element)
         ifcopenshell.api.project.append_asset(self.file, library=library, element=element)
         assert self.file.by_type("IfcWall")[0].HasOpenings[0].RelatedOpeningElement.is_a("IfcOpeningElement")
+
+    def test_append_a_product_when_projects_have_georeference(self):
+        ifc_file = ifcopenshell.file()
+        ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcProject")
+        ifcopenshell.api.context.add_context(ifc_file, "Model")
+        ifcopenshell.api.georeference.add_georeferencing(ifc_file)
+        ifcopenshell.api.georeference.edit_georeferencing(
+            ifc_file, coordinate_operation={"Eastings": 3.0, "Northings": 23.0}
+        )
+
+        library = ifcopenshell.file.from_string(ifc_file.to_string())
+        ifcopenshell.api.georeference.edit_georeferencing(
+            library, coordinate_operation={"Eastings": 29, "Northings": 42}
+        )
+        element = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWall")
+        matrix = np.array(
+            (
+                (1.0, 0.0, 0.0, 1.0),
+                (0.0, 1.0, 0.0, 2.0),
+                (0.0, 0.0, 1.0, 3.0),
+                (0.0, 0.0, 0.0, 1.0),
+            )
+        )
+        ifcopenshell.api.geometry.edit_object_placement(library, element, matrix)
+        new = ifcopenshell.api.project.append_asset(ifc_file, library=library, element=element)
+        resulting_matrix = np.array(
+            (
+                (1.0, 0.0, 0.0, 27.0),
+                (0.0, 1.0, 0.0, 21.0),
+                (0.0, 0.0, 1.0, 3.0),
+                (0.0, 0.0, 0.0, 1.0),
+            )
+        )
+        assert np.array_equal(ifcopenshell.util.placement.get_local_placement(new.ObjectPlacement), resulting_matrix)
+
+    def test_append_a_surface_style(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        library = ifcopenshell.api.project.create_file(version=self.file.schema)
+        ifcopenshell.api.root.create_entity(library, ifc_class="IfcProject")
+
+        style_name = "New Style"
+        style = ifcopenshell.api.style.add_style(library, style_name)
+        shading_attrs = {"SurfaceColour": {"Name": "", "Red": 1, "Green": 1, "Blue": 1}}
+        ifcopenshell.api.style.add_surface_style(
+            library, style, ifc_class="IfcSurfaceStyleShading", attributes=shading_attrs
+        )
+
+        new_style = ifcopenshell.api.project.append_asset(self.file, library=library, element=style)
+        assert self.file.by_type("IfcSurfaceStyle") == [new_style]
+        assert new_style.Name == style_name
+        style_elements = new_style.Styles
+        assert len(style_elements) == 1
+
+        # Check shading style.
+        shading_style = style_elements[0]
+        assert shading_style.is_a("IfcSurfaceStyleShading")
+        shading_colour_info = shading_style.SurfaceColour.get_info()
+        del shading_colour_info["id"], shading_colour_info["type"]
+        assert shading_colour_info == shading_attrs["SurfaceColour"]
 
 
 class TestAppendAssetIFC4(test.bootstrap.IFC4, TestAppendAssetIFC2X3):

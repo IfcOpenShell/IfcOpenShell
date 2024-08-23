@@ -28,7 +28,7 @@ IfcOpenShell depends on:
   for IfcConvert to be able to write tessellated Collada (.dae) files
 - (Optional) `SWIG <http://www.swig.org/>`__ and `Python
   <https://www.python.org/>`__ - for building the IfcOpenShell Python interface
-  and use in the BlenderBIM Add-on
+  and use in Bonsai
 - (Optional) `HDF5 <https://www.hdfgroup.org/solutions/hdf5>`__ - for caching
   geometry using the HDF5 format
 
@@ -62,6 +62,8 @@ operating systems. GCC (4.7 or newer) or Clang (any version) is required.
 
        sudo apt-get install git cmake gcc g++ libboost-all-dev libcgal-dev
 
+   The CGAL version that ships with Ubuntu 20.04 is too old. Users on Ubuntu 20.04 are advised to manually install CGAL 5.3.
+
 3. Install OpenCascade Technology (OCCT).
 
    .. code-block:: bash
@@ -72,6 +74,8 @@ operating systems. GCC (4.7 or newer) or Clang (any version) is required.
 
         If OCCT is not available, an alternative is to `manually compile OCCT
         <https://dev.opencascade.org/release>`__.
+
+   IfcOpenShell 0.8 depends on fairly recent OCCT additions such as the BVH Tree functionality. Users on Ubuntu 20.04 are advised to manually compile and install OCCT 7.7.
 
    Another alternative is to use OpenCascade Community Edition (OCE), but it may
    lag behind OCCT and is no longer actively maintained so is not recommended.
@@ -137,25 +141,27 @@ operating systems. GCC (4.7 or newer) or Clang (any version) is required.
         # Check all paths are valid for your environment
         cmake ../cmake \
               -DOCC_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu/ \
-              -DOCC_INCLUDE_DIR=/usr/include/ \
-
+              -DOCC_INCLUDE_DIR=/usr/include/opencascade \
+              \
               # Optional Collada support
               -DCOLLADA_SUPPORT=On \
               -DOPENCOLLADA_INCLUDE_DIR="/usr/local/include/opencollada" \
               -DOPENCOLLADA_LIBRARY_DIR="/usr/local/lib/opencollada"  \
               -DPCRE_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu/ \
-
+              \
               # Optional HDF5 support
               -DHDF5_SUPPORT=On \
               -DHDF5_LIBRARIES="/usr/local/hdf5/lib/libhdf5_cpp.so;/usr/local/hdf5/lib/libhdf5.so;/usr/lib64/libz.so;/usr/lib64/libsz.so;/usr/lib64/libaec.so" \
               -DHDF5_INCLUDE_DIR="/usr/local/hdf5/include" \
-
+              \
               -DCGAL_INCLUDE_DIR=/usr/include \
               -DGMP_INCLUDE_DIR=/usr/include \
               -DMPFR_INCLUDE_DIR=/usr/include \
               -DGMP_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu \
-              -DMPFR_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu
-        # Replace X with number of CPU cores + 1
+              -DMPFR_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu \
+              -DJSON_INCLUDE_DIR=/usr/include \
+              -DEIGEN_DIR=/usr/include/eigen3
+        # Replace X with number of CPU cores + 1. Reduce when running out of memory. Compiling the code generated from the schemas is resource intensive.
         make -j X
         # Optionally install to the system
         sudo make install
@@ -213,7 +219,7 @@ Compiling on Windows (Visual Studio)
 ------------------------------------
 
 This is for users of  `Visual Studio <https://www.visualstudio.com/>`__ 2008 to
-2019 (2022 not yet supported by dependency CMake) with C++ toolset (or `Visual
+2022 with C++ toolset, recommend to install the C++ toolset with VisualStudio Installer (or `Visual
 C++ Build Tools <http://landinghub.visualstudio.com/visual-cpp-build-tools>`__).
 
 1. Fetch the latest source code, including all submodules.

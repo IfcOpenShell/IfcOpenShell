@@ -17,12 +17,26 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.api.geometry
 import ifcopenshell.api.type
 import ifcopenshell.api.project
 import ifcopenshell.api.context
 import ifcopenshell.api.owner.settings
 import ifcopenshell.util.element
-from typing import Optional, Any, Union
+import ifcopenshell.util.geolocation
+import ifcopenshell.util.placement
+from typing import Optional, Any, Union, Literal, get_args
+
+
+APPENDABLE_ASSET = Literal[
+    "IfcTypeProduct",
+    "IfcProduct",
+    "IfcMaterial",
+    "IfcCostSchedule",
+    "IfcProfileDef",
+    "IfcPresentationStyle",
+]
+APPENDABLE_ASSET_TYPES = get_args(APPENDABLE_ASSET)
 
 
 def append_asset(
@@ -151,6 +165,9 @@ class Usecase:
         elif self.settings["element"].is_a("IfcProfileDef"):
             self.target_class = "IfcProfileDef"
             return self.append_profile_def()
+        elif self.settings["element"].is_a("IfcPresentationStyle"):
+            self.target_class = "IfcPresentationStyle"
+            return self.append_presentation_style()
 
     def get_existing_element(self, element):
         if element.id() in self.added_elements:
@@ -183,6 +200,10 @@ class Usecase:
         self.whitelisted_inverse_attributes = {"IfcProfileDef": ["HasProperties"]}
         return self.add_element(self.settings["element"])
 
+    def append_presentation_style(self):
+        self.whitelisted_inverse_attributes = {}
+        return self.add_element(self.settings["element"])
+
     def append_type_product(self):
         self.whitelisted_inverse_attributes = {
             "IfcObjectDefinition": ["HasAssociations"],
@@ -205,6 +226,13 @@ class Usecase:
         self.existing_contexts = self.file.by_type("IfcGeometricRepresentationContext")
         element = self.add_element(self.settings["element"])
         self.reuse_existing_contexts()
+
+        placement = element.ObjectPlacement
+        if placement is not None:
+            matrix = ifcopenshell.util.placement.get_local_placement(placement)
+            matrix = ifcopenshell.util.geolocation.auto_local2global(self.settings["library"], matrix)
+            matrix = ifcopenshell.util.geolocation.auto_global2local(self.file, matrix)
+            ifcopenshell.api.geometry.edit_object_placement(self.file, element, matrix, is_si=False)
 
         element_type = ifcopenshell.util.element.get_type(self.settings["element"])
         if element_type:
@@ -249,7 +277,7 @@ class Usecase:
                 subelement_queue.extend(self.settings["library"].traverse(subelement, max_levels=1)[1:])
         return new
 
-    def has_whitelisted_inverses(self, element):
+    def has_whitelisted_inverses(self, element: ifcopenshell.entity_instance) -> bool:
         for source_class, attributes in self.whitelisted_inverse_attributes.items():
             if not element.is_a(source_class):
                 continue
@@ -264,6 +292,7 @@ class Usecase:
                             return True
                 elif value:
                     return True
+        return False
 
     def check_inverses(self, element: ifcopenshell.entity_instance) -> None:
         for source_class, attributes in self.whitelisted_inverse_attributes.items():
@@ -308,7 +337,7 @@ class Usecase:
             if new_attribute is not None:
                 new[i] = new_attribute
 
-    def is_another_asset(self, element):
+    def is_another_asset(self, element: ifcopenshell.entity_instance) -> bool:
         if element == self.settings["element"]:
             return False
         elif element.is_a("IfcFeatureElement"):
@@ -322,7 +351,7 @@ class Usecase:
             return True
         return False
 
-    def reuse_existing_contexts(self):
+    def reuse_existing_contexts(self) -> None:
         added_contexts = set([e for e in self.added_elements.values() if e.is_a("IfcGeometricRepresentationContext")])
         added_contexts -= set(self.existing_contexts)
         for added_context in added_contexts:
@@ -334,7 +363,9 @@ class Usecase:
         for added_context in added_contexts:
             ifcopenshell.util.element.remove_deep2(self.file, added_context)
 
-    def get_equivalent_existing_context(self, added_context):
+    def get_equivalent_existing_context(
+        self, added_context: ifcopenshell.entity_instance
+    ) -> Union[ifcopenshell.entity_instance, None]:
         for context in self.existing_contexts:
             if context.is_a() != added_context.is_a():
                 continue
@@ -351,7 +382,7 @@ class Usecase:
             ):
                 return context
 
-    def create_equivalent_context(self, added_context):
+    def create_equivalent_context(self, added_context: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
         if added_context.is_a("IfcGeometricRepresentationSubContext"):
             parent = self.get_equivalent_existing_context(added_context.ParentContext)
             if not parent:

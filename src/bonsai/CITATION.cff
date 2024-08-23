@@ -1,0 +1,26 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: Bonsai
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - name: "IfcOpenShell contributors"
+repository-code: >-
+  https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.8.0/src/bonsai
+url: 'https://bonsaibim.org/'
+repository-artifact: 'https://bonsaibim.org/download.html'
+abstract: >-
+  Add-on to Blender providing a graphical native IFC
+  authoring platform
+keywords:
+  - IFC
+  - Blender
+  - NativeIFC
+license: GPL-3.0-or-later
+commit: 1fb6dac
+version: v0.0.230506
+date-released: '2023-05-23'
