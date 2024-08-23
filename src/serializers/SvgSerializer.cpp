@@ -2328,7 +2328,7 @@ void SvgSerializer::setFile(IfcParse::IfcFile* f) {
 						gp_Trsf trsf;
 						if (matrix) {
 							// @todo shouldn't this take into account configurable section height?
-							setSectionHeight(matrix->translation_part()(3) + 1.);
+							setSectionHeight(matrix->translation_part()(2) + 1.);
 #ifdef TAXONOMY_USE_NAKED_PTR
 							delete matrix;
 #endif
