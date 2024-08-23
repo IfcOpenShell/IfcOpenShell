@@ -105,7 +105,6 @@ SERIALIZER_SETTING = Literal[
     "use-element-names",
     "use-element-guids",
     "use-element-step-ids",
-    "use-material-names",
     "use-element-types",
     "y-up",
     "ecef",
