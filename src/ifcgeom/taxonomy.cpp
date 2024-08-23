@@ -588,7 +588,9 @@ void ifcopenshell::geometry::taxonomy::trimmed_curve::print(std::ostream& o, int
 	}
 
 	if (this->instance) {
-		o << std::string(indent + 4, ' ') << this->instance->data().toString() << std::endl;
+		std::ostringstream oss;
+		this->instance->as<IfcUtil::IfcBaseClass>()->toString(oss);
+		o << std::string(indent + 4, ' ') << oss.str() << std::endl;
 	}
 }
 

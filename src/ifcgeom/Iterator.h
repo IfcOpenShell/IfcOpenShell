@@ -518,7 +518,7 @@ namespace IfcGeom {
 
 			Logger::SetProduct(product);
 			
-			IfcGeom::BRepElement* brep = static_cast<IfcGeom::BRepElement*>(decorate_with_cache_(GeometrySerializer::READ_BREP, (std::string)*product->get("GlobalId"), std::to_string(representation->instance->data().id()), [kernel, settings, product, place, representation]() {
+			IfcGeom::BRepElement* brep = static_cast<IfcGeom::BRepElement*>(decorate_with_cache_(GeometrySerializer::READ_BREP, (std::string)product->get("GlobalId"), std::to_string(representation->instance->as<IfcUtil::IfcBaseEntity>()->id()), [kernel, settings, product, place, representation]() {
 				return kernel->create_brep_for_representation_and_product(representation, product, place);
 			}));
 
@@ -539,7 +539,7 @@ namespace IfcGeom {
 				const IfcUtil::IfcBaseEntity* product2 = p.first;
 				const auto& place2 = p.second;
 
-				IfcGeom::BRepElement* brep2 = static_cast<IfcGeom::BRepElement*>(decorate_with_cache_(GeometrySerializer::READ_BREP, (std::string)*product2->get("GlobalId"), std::to_string(representation->instance->data().id()), [kernel, settings, product2, place2, representation, brep]() {
+				IfcGeom::BRepElement* brep2 = static_cast<IfcGeom::BRepElement*>(decorate_with_cache_(GeometrySerializer::READ_BREP, (std::string)product2->get("GlobalId"), std::to_string(representation->instance->as<IfcUtil::IfcBaseEntity>()->id()), [kernel, settings, product2, place2, representation, brep]() {
 					return kernel->create_brep_for_processed_representation(product2, place2, brep);
 				}));
 				if (brep2) {
@@ -746,13 +746,13 @@ namespace IfcGeom {
 				instance_type = ifc_product->declaration().name();
 
 				if (ifc_product->declaration().is("IfcRoot")) {
-					product_guid = (std::string) *ifc_product->get("GlobalId");
+					product_guid = (std::string) ifc_product->get("GlobalId");
 					product_name = ifc_product->get_value<std::string>("Name", "");
 				}
 
 				auto parent_object = converter_->mapping()->get_decomposing_entity(ifc_product);
 				if (parent_object) {
-					parent_id = parent_object->data().id();
+					parent_id = parent_object->id();
 				}
 
 				// fails in case of IfcProject

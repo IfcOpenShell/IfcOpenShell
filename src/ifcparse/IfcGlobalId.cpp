@@ -94,7 +94,7 @@ IfcParse::IfcGlobalId::IfcGlobalId() {
     uuid_data_ = gen();
     std::vector<unsigned char> v(uuid_data_.size());
     std::copy(uuid_data_.begin(), uuid_data_.end(), v.begin());
-    string_data_ = compress(&v[0]);
+    string_data_ = compress(v.data());
 #if BOOST_VERSION < 104400
     formatted_string = boost::lexical_cast<std::string>(uuid_data);
 #else
