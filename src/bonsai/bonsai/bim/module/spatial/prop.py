@@ -115,6 +115,7 @@ class Element(PropertyGroup):
 
 
 class BIMSpatialDecompositionProperties(PropertyGroup):
+    container_filter: StringProperty(name="Container Filter", default="", options={"TEXTEDIT_UPDATE"})
     containers: CollectionProperty(name="Containers", type=BIMContainer)
     contracted_containers: StringProperty(name="Contracted containers", default="[]")
     expanded_containers: StringProperty(name="Expanded containers", default="[]")
