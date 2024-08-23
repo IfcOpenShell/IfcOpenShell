@@ -68,6 +68,8 @@ def get_location_hint(self, context):
 
 
 def update_diagram_scale(self, context):
+    if not self.update_props:
+        return
     if not context.scene.camera or context.scene.camera.data != self.id_data:
         return
     element = tool.Ifc.get_entity(context.scene.camera)
@@ -94,6 +96,8 @@ def update_diagram_scale(self, context):
 
 
 def update_is_nts(self, context):
+    if not self.update_props:
+        return
     if not context.scene.camera or context.scene.camera.data != self.id_data:
         return
     element = tool.Ifc.get_entity(context.scene.camera)
@@ -220,6 +224,8 @@ def update_has_annotation(self, context):
 
 
 def update_layer(self, context, name, value):
+    if not self.update_props:
+        return
     if not context.scene.camera or context.scene.camera.data != self.id_data:
         return
     element = tool.Ifc.get_entity(context.scene.camera)
@@ -400,6 +406,7 @@ class BIMCameraProperties(PropertyGroup):
     filter_mode: StringProperty(name="Filter Mode", default="NONE")
     include_filter_groups: CollectionProperty(type=BIMFilterGroup, name="Include Filter")
     exclude_filter_groups: CollectionProperty(type=BIMFilterGroup, name="Exclude Filter")
+    update_props: BoolProperty(name="Enable Props Auto Update", default=True)
 
     # For now, this JSON dump are all the parameters that determine a camera's "Block representation"
     # By checking this, you will know whether or not the camera IFC representation needs to be refreshed

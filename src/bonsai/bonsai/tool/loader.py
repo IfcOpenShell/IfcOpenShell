@@ -19,12 +19,14 @@
 from __future__ import annotations
 import os
 import re
+import math
 import bpy
 import bmesh
 import ifcopenshell.geom
 import ifcopenshell.util.element
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.placement
+import ifcopenshell.util.representation
 import ifcopenshell.util.shape
 import ifcopenshell.util.unit
 import bonsai.core.tool
@@ -670,6 +672,62 @@ class Loader(bonsai.core.tool.Loader):
         mesh = bpy.data.meshes.new(mesh_name)
         mesh.from_pydata(vertex_list, [], [])
         return mesh
+
+    @classmethod
+    def create_camera(
+        cls,
+        element: ifcopenshell.entity_instance,
+        representation: ifcopenshell.entity_instance,
+        shape: Union[ifcopenshell.geom.ShapeElementType, ifcopenshell.geom.ShapeType],
+    ) -> bpy.types.Camera:
+        from bonsai.bim.module.drawing.prop import get_diagram_scales
+
+        if isinstance(shape, ifcopenshell.geom.ShapeElementType):
+            geometry = shape.geometry
+        else:
+            geometry = shape
+
+        v = geometry.verts
+        x = [v[i] for i in range(0, len(v), 3)]
+        y = [v[i + 1] for i in range(0, len(v), 3)]
+        z = [v[i + 2] for i in range(0, len(v), 3)]
+        width = max(x) - min(x)
+        height = max(y) - min(y)
+        depth = max(z) - min(z)
+
+        camera_type = "ORTHO"
+        if "IfcRectangularPyramid" in {e.is_a() for e in tool.Ifc.get().traverse(representation)}:
+            camera_type = "PERSP"
+
+        camera = bpy.data.cameras.new(tool.Loader.get_mesh_name_from_shape(geometry))
+        camera.type = camera_type
+        camera.show_limits = True
+
+        if camera_type == "ORTHO":
+            camera.clip_start = 0.002  # Technically 0, but Blender doesn't allow this, so 2mm it is!
+            camera.clip_end = depth
+
+            camera.BIMCameraProperties.width = width
+            camera.BIMCameraProperties.height = height
+        elif camera_type == "PERSP":
+            abs_min_z = abs(min(z))
+            abs_max_z = abs(max(z))
+            camera.clip_start = abs_max_z
+            camera.clip_end = abs_min_z
+            max_res = 1000
+
+            camera.BIMCameraProperties.width = width
+            camera.BIMCameraProperties.height = height
+
+            if width > height:
+                fov = 2 * math.atan(width / (2 * abs_min_z))
+            else:
+                fov = 2 * math.atan(height / (2 * abs_min_z))
+
+            camera.angle = fov
+
+        tool.Drawing.import_camera_props(element, camera)
+        return camera
 
     @classmethod
     def get_offset_point(cls, ifc_file: ifcopenshell.file) -> Union[npt.NDArray[np.float64], None]:
