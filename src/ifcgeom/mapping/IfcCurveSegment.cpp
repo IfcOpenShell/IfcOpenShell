@@ -67,7 +67,7 @@ double translate_if_param_value(const IfcSchema::IfcCurve* crv, IfcSchema::IfcCu
         // We don't care whether length- or positive length measure.
         return translate_to_length_measure(crv, *param);
     } else {
-        return *val->data().getArgument(0);
+        return val->data().get_attribute_value(0);
     }
 }
 

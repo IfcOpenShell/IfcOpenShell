@@ -35,7 +35,7 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 
 	auto place = place_;
 
-	representation_id_builder << representation_node->instance->data().id();
+	representation_id_builder << representation_node->instance->as<IfcUtil::IfcBaseEntity>()->id();
 
 	IfcGeom::Representation::BRep* shape;
 	IfcGeom::ConversionResults shapes;
@@ -137,7 +137,7 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 	}
 
 	if (material_style_applied) {
-		representation_id_builder << "-material-" << single_material->data().id();
+		representation_id_builder << "-material-" << single_material->id();
 	}
 
 	if (settings_.get<ifcopenshell::geometry::settings::ForceSpaceTransparency>().has() && product->declaration().is("IfcSpace")) {
@@ -153,7 +153,7 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 	try {
 		IfcUtil::IfcBaseEntity* parent_object = mapping_->get_decomposing_entity(product);
 		if (parent_object) {
-			parent_id = parent_object->data().id();
+			parent_id = parent_object->id();
 		}
 	} catch (const std::exception& e) {
 		Logger::Error(e);
@@ -171,7 +171,7 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 	if (!settings_.get<ifcopenshell::geometry::settings::DisableOpeningSubtractions>().get() && openings && openings->size()) {
 		representation_id_builder << "-openings";
 		for (auto it = openings->begin(); it != openings->end(); ++it) {
-			representation_id_builder << "-" << (*it)->data().id();
+			representation_id_builder << "-" << (*it)->id();
 		}
 
 		IfcGeom::ConversionResults opened_shapes;
@@ -236,19 +236,19 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 	// IfcShapeRepresentation.
 	const IfcUtil::IfcBaseEntity *representation = representation_node->instance->as<IfcUtil::IfcBaseEntity>();
 	auto representation_identifier = representation->get("RepresentationIdentifier");
-	if (!representation_identifier->isNull()) {
-		context_string = (std::string) *representation_identifier;
+	if (!representation_identifier.isNull()) {
+		context_string = (std::string) representation_identifier;
 	}
 	else {
-		IfcUtil::IfcBaseClass *context = (IfcUtil::IfcBaseClass *) *representation->get("ContextOfItems");
+		IfcUtil::IfcBaseClass *context = (IfcUtil::IfcBaseClass*)representation->get("ContextOfItems");
 		auto context_type = context->as<IfcUtil::IfcBaseEntity>()->get("ContextType");
-		if (!context_type->isNull()) {
-			context_string = (std::string) *context_type;
+		if (!context_type.isNull()) {
+			context_string = (std::string)context_type;
 		}
 	}
 
 	auto elem = new IfcGeom::BRepElement(
-		product->data().id(),
+		product->id(),
 		parent_id,
 		name,
 		product_type,
@@ -340,7 +340,7 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_process
 	try {
 		IfcUtil::IfcBaseEntity* parent_object = mapping_->get_decomposing_entity(product);
 		if (parent_object) {
-			parent_id = parent_object->data().id();
+			parent_id = parent_object->id();
 		}
 	} catch (const std::exception& e) {
 		Logger::Error(e);
@@ -352,7 +352,7 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_process
 	const std::string context_string = brep->context();
 
 	return new IfcGeom::BRepElement(
-		product->data().id(),
+		product->id(),
 		parent_id,
 		name,
 		product_type,

@@ -68,7 +68,7 @@ class IFC_PARSE_API IfcCharacterDecoder {
 
 } // namespace IfcParse
 
-namespace IfcWrite {
+namespace IfcParse {
 
 class IFC_PARSE_API IfcCharacterEncoder {
   private:

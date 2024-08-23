@@ -417,11 +417,11 @@ std::string ColladaSerializer::differentiateSlabTypes(const IfcUtil::IfcBaseEnti
 {
 	auto value = slab->get("PredefinedType");
 
-    if (value->isNull()) {
+    if (value.isNull()) {
         return "_Unknown";
     }
 
-	const std::string str_value = *value;
+	const std::string str_value = value;
 	std::string result;
 
 	if (str_value == "FLOOR") {
@@ -436,10 +436,10 @@ std::string ColladaSerializer::differentiateSlabTypes(const IfcUtil::IfcBaseEnti
 		result = "_NotDefined";
 	} else {
 		auto otype = slab->get("ObjectType");
-		if (otype->isNull()) {
+		if (otype.isNull()) {
 			result = "_Unknown";
 		} else {
-			result = (std::string) *otype;
+			result = (std::string) otype;
 		}
 	}
 

@@ -382,7 +382,7 @@ namespace {
 		for (const auto& p : o->parents()) {
 			if (p->type() == "IfcBuildingStorey") {
 				try {
-					double e = *p->product()->get("Elevation");
+					double e = p->product()->get("Elevation");
 					double storey_elevation = e * o->geometry().settings().get<ifcopenshell::geometry::settings::LengthUnit>().get();
 					return std::make_pair(p->product(), storey_elevation);
 				} catch (...) {
@@ -495,22 +495,22 @@ namespace {
 		auto rels = product->get_inverse("IsDefinedBy");
 		for (auto& rel : *rels) {
 			if (rel->declaration().is("IfcRelDefinesByProperties")) {
-				auto pset = (IfcUtil::IfcBaseEntity*) (IfcUtil::IfcBaseClass*) *((IfcUtil::IfcBaseEntity*) rel)->get("RelatingPropertyDefinition");
+				auto pset = ((IfcUtil::IfcBaseClass*) ((IfcUtil::IfcBaseEntity*) rel)->get("RelatingPropertyDefinition"))->as<IfcUtil::IfcBaseEntity>();
 				std::string pset_name;
-				if (!pset->get("Name")->isNull()) {
-					pset_name = (std::string) *pset->get("Name");
+				if (!pset->get("Name").isNull()) {
+					pset_name = (std::string) pset->get("Name");
 				}
-				aggregate_of_instance::ptr props = *pset->get("HasProperties");
+				aggregate_of_instance::ptr props = pset->get("HasProperties");
 				for (auto& prop : *props) {
 					if (prop->declaration().is("IfcPropertySingleValue")) {
-						std::string name = *((IfcUtil::IfcBaseEntity*) prop)->get("Name");
-                        if (((IfcUtil::IfcBaseEntity*) prop)->get("NominalValue")->isNull()) {
+						std::string name = ((IfcUtil::IfcBaseEntity*) prop)->get("Name");
+                        if (((IfcUtil::IfcBaseEntity*) prop)->get("NominalValue").isNull()) {
                             continue;
                         }
-						IfcUtil::IfcBaseClass* v = *((IfcUtil::IfcBaseEntity*) prop)->get("NominalValue");
-						auto value = v->data().getArgument(0);
-						if (value->type() == IfcUtil::Argument_STRING) {
-							std::string v_str = *value;
+						IfcUtil::IfcBaseClass* v = ((IfcUtil::IfcBaseEntity*) prop)->get("NominalValue");
+						auto value = v->data().get_attribute_value(0);
+						if (value.type() == IfcUtil::Argument_STRING) {
+							std::string v_str = value;
 							*output_it++ = string_property{ pset_name, name, v_str };
 						}
 					}
@@ -525,12 +525,12 @@ namespace {
 		auto refs = item->get_inverse("StyledByItem");
 		for (auto& ref : *refs) {
 			if (ref->declaration().is("IfcStyledItem")) {
-				aggregate_of_instance::ptr styles = *((IfcUtil::IfcBaseEntity*)ref)->get("Styles");
+				aggregate_of_instance::ptr styles = ((IfcUtil::IfcBaseEntity*)ref)->get("Styles");
 				for (auto& s_ : *styles) {
 					auto s = (IfcUtil::IfcBaseEntity*) s_;
 					std::vector<IfcUtil::IfcBaseEntity*> pss;
 					if (s->declaration().is("IfcPresentationStyleAssignment")) {
-						aggregate_of_instance::ptr pstyles = *s->get("Styles");
+						aggregate_of_instance::ptr pstyles = s->get("Styles");
 						for (auto& ssss : *pstyles) {
 							pss.push_back((IfcUtil::IfcBaseEntity*) ssss);
 						}
@@ -540,8 +540,8 @@ namespace {
 					for (auto& ps : pss) {
 						if (ps->declaration().is("IfcCurveStyle")) {
 							auto arg = ps->get("Name");
-							if (!arg->isNull()) {
-								return (std::string) *arg;
+							if (!arg.isNull()) {
+								return (std::string) arg;
 							}
 						}
 					}
@@ -555,8 +555,8 @@ namespace {
 void SvgSerializer::write(const IfcGeom::BRepElement* brep_obj) {
 
 	boost::optional<std::string> object_type;
-	if (!brep_obj->product()->get("ObjectType")->isNull()) {
-		object_type = static_cast<std::string>(*brep_obj->product()->get("ObjectType"));
+	if (!brep_obj->product()->get("ObjectType").isNull()) {
+		object_type = static_cast<std::string>(brep_obj->product()->get("ObjectType"));
 	}
 
 	std::vector<boost::optional<std::vector<double>>> dash_arrays;
@@ -845,11 +845,11 @@ void SvgSerializer::write(const geometry_data& data) {
 			}
 			for (auto& rel : *rels) {
 				if (rel->declaration().name() == "IfcRelDefinesByType") {
-					IfcUtil::IfcBaseClass* ty = *((IfcUtil::IfcBaseEntity*)rel)->get("RelatingType");
+					IfcUtil::IfcBaseClass* ty = ((IfcUtil::IfcBaseEntity*)rel)->get("RelatingType");
 					const std::string& ty_entity_name = ty->declaration().name();
 					// Damn you, IFC
 					if (ty_entity_name == "IfcDoorStyle" || ty_entity_name == "IfcDoorType") {
-						operation_type = (std::string)*((IfcUtil::IfcBaseEntity*)ty)->get("OperationType");
+						operation_type = (std::string)((IfcUtil::IfcBaseEntity*)ty)->get("OperationType");
 					}
 				}
 			}
@@ -1273,8 +1273,8 @@ void SvgSerializer::write(const geometry_data& data) {
 
 			std::string object_type;
 			auto ot_arg = data.product->get("ObjectType");
-			if (!ot_arg->isNull()) {
-				object_type = (std::string) *ot_arg;
+			if (!ot_arg.isNull()) {
+				object_type = (std::string) ot_arg;
 				object_type.erase(std::remove_if(object_type.begin(), object_type.end(), [](char c) { return !std::isalnum(c); }), object_type.end());
 			}
 
@@ -1476,8 +1476,8 @@ void SvgSerializer::write(const geometry_data& data) {
 
 					const double lu = file->getUnit("LENGTHUNIT").second;
 					auto a = data.product->get("Elevation");
-					if (!a->isNull()) {
-						double elev = *a;
+					if (!a.isNull()) {
+						double elev = a;
 						
 						// @nb we don't actually factor in the length unit.
 						// elev *= lu;
@@ -1622,8 +1622,8 @@ void SvgSerializer::write(const geometry_data& data) {
 				}
 				if (print_space_names_ && data.product->declaration().is("IfcSpace")) {
 					auto attr = data.product->get("LongName");
-					if (!attr->isNull()) {
-						std::string long_name = *attr;
+					if (!attr.isNull()) {
+						std::string long_name = attr;
 						if (!long_name.empty()) {
 							labels.insert(labels.begin(), long_name);
 						}
@@ -1851,14 +1851,14 @@ void SvgSerializer::addTextAnnotations(const drawing_key& k) {
 			auto ds = ann->get("Description");
 			auto pl = ann->get("ObjectPlacement");
 
-			if (!ot->isNull() && !nm->isNull() && !ds->isNull() && !pl->isNull()) {
-				auto object_type = (std::string) *ot;
-				auto name = (std::string) *nm;
-				auto desc = (std::string) *ds;
+			if (!ot.isNull() && !nm.isNull() && !ds.isNull() && !pl.isNull()) {
+				auto object_type = (std::string) ot;
+				auto name = (std::string) nm;
+				auto desc = (std::string) ds;
 
 				if (object_type == "Text") {
 					auto mapping = ifcopenshell::geometry::impl::mapping_implementations().construct(file, geometry_settings_);
-					auto item = mapping->map(*pl);
+					auto item = mapping->map(pl);
 					auto matrix = ifcopenshell::geometry::taxonomy::cast<ifcopenshell::geometry::taxonomy::matrix4>(item);
 					delete mapping;
 					if (item) {
@@ -2085,8 +2085,8 @@ void SvgSerializer::finalize() {
 					for (auto& s : *storeys) {
 						auto storey = (IfcUtil::IfcBaseEntity*) s;
 						auto a = storey->get("Elevation");
-						if (!a->isNull()) {
-							double elev = *a;
+						if (!a.isNull()) {
+							double elev = a;
 							elev *= lu;
 							auto svg_name = nameElement(storey);
 
@@ -2117,8 +2117,8 @@ void SvgSerializer::finalize() {
 							B.Add(C, mf.Face());
 							std::string name;
 							auto a2 = storey->get("Name");
-							if (!a2->isNull()) {
-								name = (std::string) *a2;
+							if (!a2.isNull()) {
+								name = (std::string) a2;
 							}
 							write(geometry_data{
 								C,{boost::none},trsf,storey,storey,elev,name,nameElement(storey)
@@ -2280,12 +2280,12 @@ std::string SvgSerializer::idElement(const IfcUtil::IfcBaseEntity* elem) {
 	const std::string type = elem->declaration().is("IfcBuildingStorey") ? "storey" : "product";
 	const std::string name =
 		(settings().get<ifcopenshell::geometry::settings::UseElementGuids>().get()
-			? static_cast<std::string>(*elem->get("GlobalId"))
-			: ((settings().get<ifcopenshell::geometry::settings::UseElementNames>().get() && !elem->get("Name")->isNull()))
-			? static_cast<std::string>(*elem->get("Name"))
+			? static_cast<std::string>(elem->get("GlobalId"))
+			: ((settings().get<ifcopenshell::geometry::settings::UseElementNames>().get() && !elem->get("Name").isNull()))
+			? static_cast<std::string>(elem->get("Name"))
 			: (settings().get<ifcopenshell::geometry::settings::UseElementStepIds>().get())
-			? ("id-" + boost::lexical_cast<std::string>(elem->data().id()))
-			: IfcParse::IfcGlobalId(*elem->get("GlobalId")).formatted());
+			? ("id-" + boost::lexical_cast<std::string>(elem->id()))
+			: IfcParse::IfcGlobalId(elem->get("GlobalId")).formatted());
 	return type + "-" + name;
 }
 
@@ -2294,8 +2294,8 @@ std::string SvgSerializer::nameElement(const IfcUtil::IfcBaseEntity* elem) {
 
 	const std::string& entity = elem->declaration().name();
 	std::string ifc_name;
-	if (!elem->get("Name")->isNull()) {
-		ifc_name = (std::string) *elem->get("Name");
+	if (!elem->get("Name").isNull()) {
+		ifc_name = (std::string) elem->get("Name");
 		IfcUtil::escape_xml(ifc_name);
 	}
 
@@ -2303,7 +2303,7 @@ std::string SvgSerializer::nameElement(const IfcUtil::IfcBaseEntity* elem) {
 		{"id", idElement(elem)},
 		{"class", entity},
 		{namespace_prefix_ + "name", ifc_name},
-		{namespace_prefix_ + "guid", *elem->get("GlobalId")}
+		{namespace_prefix_ + "guid", elem->get("GlobalId")}
 		});
 }
 
@@ -2322,8 +2322,8 @@ void SvgSerializer::setFile(IfcParse::IfcFile* f) {
 			if (insts) {
 				for (auto jt = insts->begin(); jt != insts->end(); ++jt) {
 					IfcUtil::IfcBaseEntity* product = (IfcUtil::IfcBaseEntity*) *jt;
-					if (!product->get("ObjectPlacement")->isNull()) {
-						auto item = mapping->map(*product->get("ObjectPlacement"));
+					if (!product->get("ObjectPlacement").isNull()) {
+						auto item = mapping->map(product->get("ObjectPlacement"));
 						auto matrix = ifcopenshell::geometry::taxonomy::cast<ifcopenshell::geometry::taxonomy::matrix4>(item);
 						gp_Trsf trsf;
 						if (matrix) {
@@ -2363,10 +2363,10 @@ void SvgSerializer::setSectionHeightsFromStoreys(double offset) {
 	if (storeys && storeys->size() > 0) {
 		for (auto& s : *storeys) {
 			auto attr_value = ((IfcUtil::IfcBaseEntity*)s)->get("Elevation");
-			if (!attr_value->isNull()) {
+			if (!attr_value.isNull()) {
 				double elev;
 				try {
-					elev = *attr_value;
+					elev = attr_value;
 				} catch (std::exception& e) {
 					Logger::Error(e);
 					continue;
