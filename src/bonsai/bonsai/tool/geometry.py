@@ -585,6 +585,16 @@ class Geometry(bonsai.core.tool.Geometry):
         settings.set("keep-bounding-boxes", True)
         context = representation.ContextOfItems
 
+        ifc_importer = bonsai.bim.import_ifc.IfcImporter(ifc_import_settings)
+        ifc_importer.file = tool.Ifc.get()
+
+        # create_shape doesn't support point cloud representations.
+        if representation.RepresentationType in ("PointCloud", "Point"):
+            mesh = tool.Loader.create_point_cloud_mesh(representation)
+            if mesh is None:
+                raise Exception(f"Failed to process point cloud representation: {representation}.")
+            return mesh
+
         if element.is_a("IfcTypeProduct"):
             # You may only specify a single representation when creating shapes for types
             try:
@@ -605,9 +615,6 @@ class Geometry(bonsai.core.tool.Geometry):
             else:
                 settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
                 shape = ifcopenshell.geom.create_shape(settings, element, representation)
-
-        ifc_importer = bonsai.bim.import_ifc.IfcImporter(ifc_import_settings)
-        ifc_importer.file = tool.Ifc.get()
 
         if element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
             mesh = ifc_importer.create_camera(element, shape)
