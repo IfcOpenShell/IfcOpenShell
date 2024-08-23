@@ -719,7 +719,7 @@ void IfcParse::IfcFile::load(unsigned entity_instance_name, const IfcParse::enti
                     tokens->Next();
                     load(0, nullptr, ps, -1);
                     const auto *decl = schema_->declaration_by_name(TokenFunc::asStringRef(next));
-                    auto* simple_type_instance = schema_->instantiate(decl, ps.construct(-1, references_to_resolve, decl));
+                    auto* simple_type_instance = schema_->instantiate(decl, ps.construct(-1, references_to_resolve, decl, boost::none));
                     //@todo decide addEntity(((IfcUtil::IfcBaseClass*)*entity));
                     context.push(simple_type_instance);
                     simple_type_instance->file_ = this;
@@ -748,7 +748,7 @@ IfcEntityInstanceData IfcParse::read(unsigned int i, IfcFile* f) {
     parse_context pc;
     f->tokens->Next();
     f->load(i, ty->as_entity(), pc, -1);
-    return IfcEntityInstanceData(pc.construct(i, f->references_to_resolve, ty));
+    return IfcEntityInstanceData(pc.construct(i, f->references_to_resolve, ty, boost::none));
 }
 
 void IfcParse::IfcFile::try_read_semicolon() const {
@@ -1300,7 +1300,7 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
             parse_context ps;
             tokens->Next();
             load(current_id, entity_type->as_entity(), ps, -1);
-            instance = schema_->instantiate(entity_type, ps.construct(current_id, references_to_resolve, entity_type));
+            instance = schema_->instantiate(entity_type, ps.construct(current_id, references_to_resolve, entity_type, boost::none));
             instance->file_ = this;
             instance->id_ = current_id;
 

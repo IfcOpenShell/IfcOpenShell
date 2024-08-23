@@ -180,7 +180,7 @@ namespace {
     }
 }
 
-IfcEntityInstanceData IfcParse::parse_context::construct(int name, unresolved_references& references_to_resolve, const IfcParse::declaration* decl) {
+IfcEntityInstanceData IfcParse::parse_context::construct(int name, unresolved_references& references_to_resolve, const IfcParse::declaration* decl, boost::optional<size_t> expected_size) {
     std::vector<const IfcParse::parameter_type*> parameter_types;
 
     if ((decl != nullptr) && (decl->as_type_declaration() != nullptr)) {
@@ -197,8 +197,11 @@ IfcEntityInstanceData IfcParse::parse_context::construct(int name, unresolved_re
         );
     }
 
-    if ((decl != nullptr) && (tokens_.size() != parameter_types.size())) {
-        // warning
+    if (((decl != nullptr) && (tokens_.size() != parameter_types.size())) ||
+        expected_size && *expected_size != tokens_.size())
+    {
+        size_t expected = expected_size ? *expected_size : parameter_types.size();
+        Logger::Warning("Expected " + std::to_string(expected) + " attribute values, found " + std::to_string(tokens_.size()) + " for instance #" + std::to_string(name));
     }
 
     if (tokens_.empty()) {

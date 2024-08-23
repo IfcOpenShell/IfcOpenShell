@@ -41,12 +41,7 @@ namespace {
         parse_context pc;
         f->tokens->Next();
         f->load(-1, nullptr, pc, -1);
-        return pc.construct(-1, f->references_to_resolve, nullptr);
-        /*std::ostringstream oss;
-        ent.toString(oss);
-        auto osss = oss.str();
-        std::wcout << osss.c_str() << std::endl;*/
-        // return ent;
+        return pc.construct(-1, f->references_to_resolve, nullptr, s);
     }
 }
 

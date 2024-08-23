@@ -91,7 +91,7 @@ struct parse_context {
 
     void push(IfcUtil::IfcBaseClass* inst);
 
-    IfcEntityInstanceData construct(int name, unresolved_references& references_to_resolve, const IfcParse::declaration* decl);
+    IfcEntityInstanceData construct(int name, unresolved_references& references_to_resolve, const IfcParse::declaration* decl, boost::optional<size_t> expected_size);
 };
 
 /// This class provides several static convenience functions and variables
