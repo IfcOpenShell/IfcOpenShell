@@ -102,14 +102,27 @@ namespace {
 		}
 	};
 
+	template <class T, class Tuple>
+	struct TupleTypeIndex;
+
+	template <class T, class... Types>
+	struct TupleTypeIndex<T, std::tuple<T, Types...>> {
+		static const std::size_t value = 0;
+	};
+
+	template <class T, class U, class... Types>
+	struct TupleTypeIndex<T, std::tuple<U, Types...>> {
+		static const std::size_t value = 1 + TupleTypeIndex<T, std::tuple<Types...>>::value;
+	};
+
 	/* A compile-time for loop over the curve kinds */
 	template <typename T, size_t N = 0>
 	struct dispatch_curve_creation {
 		static bool dispatch(const ifcopenshell::geometry::taxonomy::ptr item, T& visitor) {
-			// @todo it should be possible to eliminate this dynamic_cast when there is a static equivalent to kind()
-			auto v = ifcopenshell::geometry::taxonomy::template dcast<ifcopenshell::geometry::taxonomy::curves::type<N>>(item);
-			if (v && item->kind() == v->kind()) {
-				visitor(v);
+			constexpr auto KindIndex = TupleTypeIndex<std::tuple_element_t<N, ifcopenshell::geometry::taxonomy::impl::CurvesTuple>, ifcopenshell::geometry::taxonomy::impl::KindsTuple>::value;
+			if (item->kind() == KindIndex) {
+				auto concrete_item = ifcopenshell::geometry::taxonomy::template cast<ifcopenshell::geometry::taxonomy::curves::type<N>>(item);
+				visitor(concrete_item);
 				return true;
 			} else {
 				return dispatch_curve_creation<T, N + 1>::dispatch(item, visitor);
