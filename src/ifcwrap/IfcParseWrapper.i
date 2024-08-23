@@ -242,7 +242,9 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 	// to expose it to the Python wrapper it is simply duplicated here.
 	// Same applies to the two methods reimplemented below.
 	int id() const {
-		return $self->as<IfcUtil::IfcBaseEntity>()->id();
+		return $self->as<IfcUtil::IfcBaseEntity>() != nullptr
+			? $self->as<IfcUtil::IfcBaseEntity>()->id()
+			: 0;
 	}
 
 	int __len__() const {
