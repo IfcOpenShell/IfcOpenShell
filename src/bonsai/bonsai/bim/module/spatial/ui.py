@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import bpy
 from bpy.types import Panel, UIList
 from bonsai.bim.module.spatial.data import SpatialData, SpatialDecompositionData
 import bonsai.tool as tool
@@ -169,12 +170,6 @@ class BIM_PT_spatial_decomposition(Panel):
         )
         row.prop(self.props, "should_include_children", text="", icon="OUTLINER")
         op = row.operator("bim.select_decomposed_elements", icon="RESTRICT_SELECT_OFF", text="")
-        if self.props.active_element.is_class:
-            op.ifc_class = self.props.active_element.name
-            op.relating_type = 0
-        elif self.props.active_element.is_type:
-            op.ifc_class = ""
-            op.relating_type = self.props.active_element.ifc_definition_id
         op.container = ifc_definition_id
 
         self.layout.template_list(
@@ -184,6 +179,7 @@ class BIM_PT_spatial_decomposition(Panel):
             "elements",
             self.props,
             "active_element_index",
+            sort_lock=True,
         )
 
 
@@ -229,6 +225,9 @@ class BIM_UL_containers_manager(UIList):
 
 
 class BIM_UL_elements(UIList):
+    def __init__(self):
+        self.use_filter_show = True
+
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
             row = layout.row(align=True)
@@ -244,3 +243,16 @@ class BIM_UL_elements(UIList):
                 col = row.column()
                 col.alignment = "RIGHT"
                 col.label(text=str(item.total))
+
+    def draw_filter(self, context, layout):
+        row = layout.row()
+        row.prop(context.scene.BIMSpatialDecompositionProperties, "element_filter", text="", icon="VIEWZOOM")
+
+    def filter_items(self, context, data, propname):
+        items = getattr(data, propname)
+        filter_name = context.scene.BIMSpatialDecompositionProperties.element_filter
+        filtered = bpy.types.UI_UL_list.filter_items_by_name(filter_name, self.bitflag_filter_item, items, "name")
+        return filtered, []
+
+    def get_filter_name(self):
+        return self.filter_name

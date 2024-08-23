@@ -107,6 +107,7 @@ class BIMContainer(PropertyGroup):
 
 class Element(PropertyGroup):
     name: StringProperty(name="Name")
+    ifc_class: StringProperty(name="Name")
     is_class: BoolProperty(name="Is Class", default=False)
     is_type: BoolProperty(name="Is Type", default=False)
     ifc_definition_id: IntProperty(name="IFC Definition ID")
@@ -118,6 +119,7 @@ class BIMSpatialDecompositionProperties(PropertyGroup):
     contracted_containers: StringProperty(name="Contracted containers", default="[]")
     expanded_containers: StringProperty(name="Expanded containers", default="[]")
     active_container_index: IntProperty(name="Active Container Index", update=update_active_container_index)
+    element_filter: StringProperty(name="Element Filter", default="", options={"TEXTEDIT_UPDATE"})
     elements: CollectionProperty(name="Elements", type=Element)
     active_element_index: IntProperty(name="Active Element Index")
     total_elements: IntProperty(name="Total Elements")

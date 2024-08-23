@@ -233,6 +233,7 @@ class Spatial(bonsai.core.tool.Spatial):
                 new2 = props.elements.add()
                 new2.is_type = True
                 new2.name = results[ifc_class][ifc_definition_id]["type_name"]
+                new2.ifc_class = ifc_class
                 new2.total = results[ifc_class][ifc_definition_id]["total"]
                 new2.ifc_definition_id = ifc_definition_id
                 total += new2.total
@@ -242,18 +243,32 @@ class Spatial(bonsai.core.tool.Spatial):
         props.total_elements = total_elements
 
     @classmethod
-    def filter_elements_by_class(cls, elements: List[ifcopenshell.entity_instance], ifc_class: str):
-        return [e for e in elements if e.is_a(ifc_class)]
-
-    @classmethod
-    def filter_elements_by_relating_type(
-        cls, elements: List[ifcopenshell.entity_instance], relating_type: ifcopenshell.entity_instance
-    ):
-        return [e for e in elements if ifcopenshell.util.element.get_type(e) == relating_type]
-
-    @classmethod
-    def filter_elements_by_untyped(cls, elements: List[ifcopenshell.entity_instance]):
-        return [e for e in elements if not ifcopenshell.util.element.get_type(e)]
+    def filter_elements(
+        cls,
+        elements: List[ifcopenshell.entity_instance],
+        ifc_class: str | None,
+        relating_type: ifcopenshell.entity_instance | None,
+        is_untyped: bool | None,
+        keyword: str | None,
+    ) -> filter[ifcopenshell.entity_instance]:
+        keyword = keyword.lower() if keyword else keyword
+        def filter_element(element):
+            if ifc_class:
+                if not element.is_a(ifc_class):
+                    return False
+            element_type = ifcopenshell.util.element.get_type(element)
+            if relating_type:
+                if relating_type != element_type:
+                    return False
+            if is_untyped:
+                if element_type is not None:
+                    return False
+            if keyword:
+                type_name = getattr(element_type, "Name", "") or ""
+                if keyword not in f"{element.is_a()} {type_name}".lower():
+                    return False
+            return True
+        return filter(filter_element, elements)
 
     @classmethod
     def import_spatial_decomposition(cls) -> None:
