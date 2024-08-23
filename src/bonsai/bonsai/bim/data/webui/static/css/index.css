@@ -281,22 +281,29 @@ button:hover {
 
 
 
-:root.blender .tabulator-selected .tabulator-cell {
+:root.blender .tabulator-selected .tabulator-cell,
+:root.blender .tabulator-row.tabulator-selected {
     background-color: var(--blender-active-highlight) !important;
     color: var(--blender-active-text-highlight) !important;
 }
 
 
-:root.blender .tabulator-selected:hover .tabulator-cell {
+:root.blender .tabulator-selected:hover .tabulator-cell,
+:root.blender .tabulator-row.tabulator-selected:hover {
     filter: brightness(1.2)
 }
 
-.tabulator-menu-item {
+:root.blender .tabulator-popup-container {
+    background: var(--blender-panel-background);
+    border: var(--blender-tab-outline);
+}
+
+:root.blender .tabulator-menu-item {
     color: var(--blender-text) !important;
     background-color: var(--blender-panel-background) !important;
     transition: filter 0.1s ease;
 }
 
-.tabulator-menu-item:hover {
+:root.blender .tabulator-menu-item:hover {
     filter: brightness(1.4);
 }
