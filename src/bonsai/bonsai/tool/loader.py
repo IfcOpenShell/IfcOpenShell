@@ -652,6 +652,26 @@ class Loader(bonsai.core.tool.Loader):
                 pass
 
     @classmethod
+    def create_point_cloud_mesh(cls, representation: ifcopenshell.entity_instance) -> Union[bpy.types.Mesh, None]:
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        vertex_list = []
+        for item in representation.Items:
+            if item.is_a("IfcCartesianPointList3D"):
+                vertex_list.extend(Vector(list(coordinates)) * unit_scale for coordinates in item.CoordList)
+            elif item.is_a("IfcCartesianPointList2D"):
+                vertex_list.extend(Vector(list(coordinates)).to_3d() * unit_scale for coordinates in item.CoordList)
+            elif item.is_a("IfcCartesianPoint"):
+                vertex_list.append(Vector(list(item.Coordinates)) * unit_scale)
+
+        if len(vertex_list) == 0:
+            return None
+
+        mesh_name = tool.Geometry.get_representation_name(representation)
+        mesh = bpy.data.meshes.new(mesh_name)
+        mesh.from_pydata(vertex_list, [], [])
+        return mesh
+
+    @classmethod
     def get_offset_point(cls, ifc_file: ifcopenshell.file) -> Union[npt.NDArray[np.float64], None]:
         elements_checked = 0
         # If more than these elements aren't far away, the file probably isn't
