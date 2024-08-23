@@ -427,11 +427,19 @@ namespace {
 		}
 
 		void operator()(const taxonomy::trimmed_curve::ptr& e) {
+			auto e_basis = e->basis;
+
+			while (e_basis->kind() == taxonomy::EDGE && e_basis->instance && e_basis->instance->declaration().name() == "IfcTrimmedCurve") {
+				// @todo we still might have something to wrt orientation on periodic curves
+				// to make sure we select the correct arc later on.
+				e_basis = taxonomy::cast<taxonomy::edge>(e_basis)->basis;
+			}
+
 			point_projection_visitor v1{ e->basis }, v2{ e->basis };
 			boost::apply_visitor(v1, e->start);
 			boost::apply_visitor(v2, e->end);
 
-			if (!e->orientation.get_value_or(true)) {
+			if (!e->curve_sense.get_value_or(true)) {
 				std::swap(v1.u, v2.u);
 			}
 
@@ -440,7 +448,7 @@ namespace {
 			dispatch_curve_creation<cgal_curve_creation_visitor>::dispatch(e->basis, v);
 			this->points = v.points;
 
-			if (!e->orientation.get_value_or(true)) {
+			if (!e->curve_sense.get_value_or(true)) {
 				std::reverse(this->points.begin(), this->points.end());
 			}
 		}
@@ -652,20 +660,19 @@ bool CgalKernel::convert(const taxonomy::loop::ptr loop, cgal_wire_t& result) {
 
 	for (auto& e : loop->children) {
 		std::vector<taxonomy::point3> edge;
-		if (e->basis) {
+		if (e->basis && e->basis->kind() != taxonomy::LINE) {
 			convert_curve(settings_, e, edge);
-			if (!e->curve_sense.get_value_or(true)) {
-				std::reverse(edge.begin(), edge.end());
-			}
 		} else {
 			edge = {
 				*boost::get<taxonomy::point3::ptr>(e->start),
 				*boost::get<taxonomy::point3::ptr>(e->end)
 			};
 		}
+
 		if (!e->orientation.get_value_or(true)) {
 			std::reverse(edge.begin(), edge.end());
 		}
+
 		extend_wire(points, edge);
 	}
 
