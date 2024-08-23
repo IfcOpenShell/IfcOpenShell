@@ -182,9 +182,13 @@ namespace {
 
 IfcEntityInstanceData IfcParse::parse_context::construct(int name, unresolved_references& references_to_resolve, const IfcParse::declaration* decl, boost::optional<size_t> expected_size) {
     std::vector<const IfcParse::parameter_type*> parameter_types;
+    std::unique_ptr<IfcParse::named_type> transient_named_type;
 
     if ((decl != nullptr) && (decl->as_type_declaration() != nullptr)) {
         parameter_types = { decl->as_type_declaration()->declared_type() };
+    } else if ((decl != nullptr) && (decl->as_enumeration_type() != nullptr)) {
+        transient_named_type.reset(new IfcParse::named_type(const_cast<IfcParse::declaration*>(decl)));
+        parameter_types = { &*transient_named_type };
     } else if ((decl != nullptr) && (decl->as_entity() != nullptr)) {
         auto entity_attrs = decl->as_entity()->all_attributes();
         std::transform(
