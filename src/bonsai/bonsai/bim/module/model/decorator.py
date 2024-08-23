@@ -28,6 +28,7 @@ from bpy_extras import view3d_utils
 from mathutils import Vector, Matrix
 from gpu_extras.batch import batch_for_shader
 from typing import Union
+from bonsai.bim.module.drawing.helper import format_distance
 
 
 def transparent_color(color, alpha=0.1):
@@ -511,6 +512,15 @@ class PolylineDecorator:
 
     def draw_input_panel(self, context):
         texts = {"D": "Distance:", "A": "Angle:", "X": "X coord:", "Y": "Y coord:", "Z": "Z coord:",  "AREA": "Area:"}
+
+        unit_system = tool.Drawing.get_unit_system()
+        if unit_system == "IMPERIAL":
+            precision = context.scene.DocProperties.imperial_precision
+            factor = 3.28084
+        else:
+            precision = None
+            factor = 1
+
         self.addon_prefs = tool.Blender.get_addon_preferences()
         self.font_id = 0
         blf.size(self.font_id, 12)
@@ -521,6 +531,15 @@ class PolylineDecorator:
         offset = 20
         new_line = 20
         for i, (key, value) in enumerate(self.input_panel.items()):
+
+            if key != "A" and key != self.input_type:
+                value = float(value)
+                if context.scene.unit_settings.length_unit == 'MILLIMETERS':
+                    value = value * 1000
+                formatted_value = format_distance(value*factor, precision=precision, suppress_zero_inches=True, in_unit_length=True)
+            else:
+                formatted_value = value
+
             if key not in list(texts.keys()):
                 continue
             if key == self.input_type:
@@ -528,7 +547,7 @@ class PolylineDecorator:
             else:
                 blf.color(self.font_id, *color)
             blf.position(self.font_id, self.mouse_pos[0] + offset, self.mouse_pos[1] - (new_line * i), 0)
-            blf.draw(self.font_id, texts[key] + value)
+            blf.draw(self.font_id, texts[key] + formatted_value)
 
     def draw_measurements(self, context):
         region = context.region
@@ -550,8 +569,23 @@ class PolylineDecorator:
                 continue
             pos_dim = (Vector(measurement_prop[i].position) + Vector(measurement_prop[i-1].position)) / 2
             coords_dim = view3d_utils.location_3d_to_region_2d(region, rv3d, pos_dim)
+
+            unit_system = tool.Drawing.get_unit_system()
+            if unit_system == "IMPERIAL":
+                precision = context.scene.DocProperties.imperial_precision
+                factor = 3.28084
+            else:
+                precision = None
+                factor = 1
+
+            value = measurement_prop[i].dim            
+            value = float(value)
+            if context.scene.unit_settings.length_unit == 'MILLIMETERS':
+                value = value * 1000
+            formatted_value = format_distance(value*factor, precision=precision, suppress_zero_inches=True, in_unit_length=True)
+            
             blf.position(self.font_id, coords_dim[0], coords_dim[1], 0)
-            blf.draw(self.font_id, "d: " + measurement_prop[i].dim)
+            blf.draw(self.font_id, "d: " + formatted_value)
 
             pos_angle = measurement_prop[i-1].position
             coords_angle = view3d_utils.location_3d_to_region_2d(region, rv3d, pos_angle)

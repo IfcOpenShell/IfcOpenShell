@@ -294,7 +294,7 @@ class DrawPolylineWall(bpy.types.Operator):
         self.action_count = 0
         self.visible_objs = []
         self.objs_2d_bbox = []
-        self.number_options = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "+", "-", "*", "/"}
+        self.number_options = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", " ", ".", "+", "-", "*", "/", "'", "\"", "="}
         self.number_input = []
         self.number_output = ""
         self.number_is_negative = False
@@ -416,6 +416,7 @@ class DrawPolylineWall(bpy.types.Operator):
             self.is_input_on = True
             self.input_type = event.type
             self.number_input = []
+            self.input_panel[self.input_type] = ""
             PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
             tool.Blender.update_viewport()
 

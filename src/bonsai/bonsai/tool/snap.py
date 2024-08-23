@@ -455,10 +455,21 @@ class Snap(bonsai.core.tool.Snap):
 
     @classmethod
     def validate_input(cls, input_number):
+            
         grammar = """
-        start: dim expr?
-        dim: NUMBER
-        expr: (ADD | SUB | MUL | DIV) NUMBER
+        start: FORMULA? dim expr?
+        dim: metric | imperial
+
+        FORMULA: "="
+
+        metric: NUMBER
+
+        imperial: feet? "-"? inches?
+        feet: NUMBER? " "? fraction? "'"
+        inches: NUMBER? " "? fraction? "\\""
+        fraction: NUMBER "/" NUMBER
+
+        expr: (ADD | SUB | MUL | DIV) dim
 
         NUMBER: /-?\\d+(?:\\.\\d+)?/
         ADD: "+"
@@ -470,8 +481,34 @@ class Snap(bonsai.core.tool.Snap):
         """
 
         class InputTransform(Transformer):
+            def NUMBER(self, n):
+                return float(n)
+
+            def fraction(self, numbers):
+                return numbers[0] / numbers[1]
+
+            def inches(self, args):
+                if len(args) > 1:
+                    result = (args[0] + args[1])
+                else:
+                    result = args[0]
+                return result / 12
+         
+            def feet(self, args):
+                return args[0]
+        
+            def imperial(self, args):
+                if len(args) > 1:
+                    result = (args[0] + args[1])
+                else:
+                    result = args[0]
+                return result * 0.3048
+
+            def metric(self, args):
+                return args[0]
+
             def dim(self, args):
-                return float(args[0])
+                return args[0]
 
             def expr(self, args):
                 op = args[0]
@@ -485,17 +522,32 @@ class Snap(bonsai.core.tool.Snap):
                 elif op == "/":
                     return lambda x: x / value
 
+            def FORMULA(cls, args):
+                return args[0]
+
             def start(self, args):
-                dimension = args[0]
-                if len(args) > 1:
-                    expression = args[1]
+                i = 0
+                if args[0] == "=":
+                    i += 1
+                else:
+                    if len(args) > 1:
+                        raise ValueError("Invalid input.")
+                dimension = args[i]
+                if len(args) > i+1:
+                    expression = args[i + 1]
                     return expression(dimension)
                 else:
                     return dimension
 
+
         try:
-            parser = Lark(grammar, parser="lalr", transformer=InputTransform())
-            result = parser.parse(input_number)
+            parser = Lark(grammar)
+            parse_tree = parser.parse(input_number)
+
+            transformer = InputTransform()
+            result = transformer.transform(parse_tree)
+            if bpy.context.scene.unit_settings.length_unit == 'MILLIMETERS':
+                result /= 1000
             return True, str(result)
         except:
             return False, "0"
