@@ -184,6 +184,9 @@ class BIM_PT_spatial_decomposition(Panel):
 
 
 class BIM_UL_containers_manager(UIList):
+    def __init__(self):
+        self.use_filter_show = True
+
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
             row = layout.row(align=True)
@@ -214,15 +217,41 @@ class BIM_UL_containers_manager(UIList):
                 row.label(text="", icon="BLANK1")
             if item.has_children:
                 if item.is_expanded:
-                    row.operator("bim.contract_container", text="", emboss=False, icon="DISCLOSURE_TRI_DOWN").container = (
-                        item.ifc_definition_id
-                    )
+                    row.operator(
+                        "bim.contract_container", text="", emboss=False, icon="DISCLOSURE_TRI_DOWN"
+                    ).container = item.ifc_definition_id
                 else:
-                    row.operator("bim.expand_container", text="", emboss=False, icon="DISCLOSURE_TRI_RIGHT").container = (
-                        item.ifc_definition_id
-                    )
+                    row.operator(
+                        "bim.expand_container", text="", emboss=False, icon="DISCLOSURE_TRI_RIGHT"
+                    ).container = item.ifc_definition_id
             else:
                 row.label(text="", icon="BLANK1")
+
+    def draw_filter(self, context, layout):
+        row = layout.row()
+        row.prop(context.scene.BIMSpatialDecompositionProperties, "container_filter", text="", icon="VIEWZOOM")
+
+    def filter_items(self, context, data, propname):
+        items = getattr(data, propname)
+        filter_name = context.scene.BIMSpatialDecompositionProperties.container_filter.lower()
+        filter_flags = [self.bitflag_filter_item] * len(items)
+
+        for idx, item in enumerate(items):
+            if (
+                filter_name in item.name.lower()
+                or filter_name in item.long_name.lower()
+                or filter_name in item.ifc_class.lower()
+            ):
+                filter_flags[idx] |= self.bitflag_filter_item
+            else:
+                filter_flags[idx] &= ~self.bitflag_filter_item
+
+        return filter_flags, []
+
+        items = getattr(data, propname)
+        filter_name = context.scene.BIMSpatialDecompositionProperties.container_filter
+        filtered = bpy.types.UI_UL_list.filter_items_by_name(filter_name, self.bitflag_filter_item, items, "name")
+        return filtered, []
 
 
 class BIM_UL_elements(UIList):
