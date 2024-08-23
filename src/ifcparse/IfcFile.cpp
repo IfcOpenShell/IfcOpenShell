@@ -67,6 +67,9 @@ namespace {
             fn(IfcParse::TokenFunc::asInt(t));
         } else if (t.type == IfcParse::Token_STRING) {
             fn(IfcParse::TokenFunc::asStringRef(t));
+        } else if (t.type == IfcParse::Token_OPERATOR && t.value_char == '*') {
+            // This is only in place for the validator
+            fn(Derived{});
         }
     }
 

@@ -763,8 +763,15 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
             } else if constexpr (is_std_vector_v<U>) {
 				return pythonize_vector(v);
             } else if constexpr (std::is_same_v<U, EnumerationReference>) {
-                return pythonize(v.value());
-            } else if constexpr (std::is_same_v<U, empty_aggregate_t> || std::is_same_v<U, empty_aggregate_of_aggregate_t> || std::is_same_v<U, Derived> || std::is_same_v<U, Blank>) {
+                return pythonize(std::string(v.value()));
+			} else if constexpr (std::is_same_v<U, Derived>) {
+				if (feature_use_attribute_value_derived) {
+					return SWIG_NewPointerObj(new attribute_value_derived, SWIGTYPE_p_attribute_value_derived, SWIG_POINTER_OWN);
+				} else {
+					Py_INCREF(Py_None);
+					return static_cast<PyObject*>(Py_None); 
+				}
+            } else if constexpr (std::is_same_v<U, empty_aggregate_t> || std::is_same_v<U, empty_aggregate_of_aggregate_t> || std::is_same_v<U, Blank>) {
                 Py_INCREF(Py_None);
 				return static_cast<PyObject*>(Py_None); 
             } else {
