@@ -215,7 +215,7 @@ bool CgalKernel::convert(const taxonomy::face::ptr face, std::list<cgal_face_t>&
 		if (bound->external.get_value_or(false)) num_outer_bounds++;
 	}
 
-	if (num_outer_bounds != 1 && num_outer_bounds != face->children.size()) {
+	if (face->children.size() > 1 && num_outer_bounds > 1 && face->children.size() != num_outer_bounds) {
 		Logger::Message(Logger::LOG_ERROR, "Invalid configuration of boundaries for:", face->instance);
 		return false;
 	}
