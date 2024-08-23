@@ -35,7 +35,6 @@
 #include <boost/variant.hpp>
 #include <boost/math/special_functions/fpclassify.hpp>
 #include <ctime>
-#include <mutex>
 #include <set>
 #include <stdio.h>
 #include <stdlib.h>
