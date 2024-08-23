@@ -209,19 +209,20 @@ class BIM_UL_containers_manager(UIList):
             col.prop(item, "elevation", emboss=False, text="")
 
     def draw_hierarchy(self, row, item):
-        for i in range(0, item.level_index):
-            row.label(text="", icon="BLANK1")
-        if item.has_children:
-            if item.is_expanded:
-                row.operator("bim.contract_container", text="", emboss=False, icon="DISCLOSURE_TRI_DOWN").container = (
-                    item.ifc_definition_id
-                )
+        if item.level_index:
+            for i in range(0, item.level_index - 1):
+                row.label(text="", icon="BLANK1")
+            if item.has_children:
+                if item.is_expanded:
+                    row.operator("bim.contract_container", text="", emboss=False, icon="DISCLOSURE_TRI_DOWN").container = (
+                        item.ifc_definition_id
+                    )
+                else:
+                    row.operator("bim.expand_container", text="", emboss=False, icon="DISCLOSURE_TRI_RIGHT").container = (
+                        item.ifc_definition_id
+                    )
             else:
-                row.operator("bim.expand_container", text="", emboss=False, icon="DISCLOSURE_TRI_RIGHT").container = (
-                    item.ifc_definition_id
-                )
-        else:
-            row.label(text="", icon="BLANK1")
+                row.label(text="", icon="BLANK1")
 
 
 class BIM_UL_elements(UIList):
