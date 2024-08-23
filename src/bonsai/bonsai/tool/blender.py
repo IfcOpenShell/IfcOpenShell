@@ -1114,10 +1114,7 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     def get_blender_addon_package_name(cls) -> str:
-        for package_name in bpy.context.preferences.addons.keys():
-            if package_name.endswith(".bonsai"):
-                return package_name
-        return "bonsai"
+        return bonsai.REGISTERED_BBIM_PACKAGE
 
     @classmethod
     def get_bbim_extension_package(cls) -> types.ModuleType:
@@ -1151,6 +1148,10 @@ class Blender(bonsai.core.tool.Blender):
 
         for package_name in bpy.context.preferences.addons.keys():
             if package_name.endswith(".sun_position"):
-                sun_position = importlib.import_module(package_name)
+                try:
+                    sun_position = importlib.import_module(package_name)
+                    return sun_position
+                except ModuleNotFoundError:
+                    pass
 
         return sun_position
