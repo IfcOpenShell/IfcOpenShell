@@ -690,6 +690,8 @@ end:
 
 #ifdef WITH_IFCXML
 IFC_PARSE_API IfcParse::IfcFile* IfcParse::parse_ifcxml(const std::string& filename) {
+    throw std::runtime_error("IFC-XML import temporarily disabled");
+
     ifcxml_parse_state state;
     state.file = nullptr;
     state.dialect = ifcxml_dialect_unknown;
