@@ -847,7 +847,7 @@ bool ifcopenshell::geometry::kernels::CgalKernel::convert_openings(const IfcUtil
 
 		CGAL::Nef_polyhedron_3<Kernel_> a;
 		if (!preprocess_boolean_operand(entity, {}, {}, {}, entity_shape, a, PP_NONE /*PP_UNIFY_PLANES_INTERNALLY*/)) {
-			continue;
+			return false;
 		}
 
 		first_operands_nef.push_back(a);
