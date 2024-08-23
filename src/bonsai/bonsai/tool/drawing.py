@@ -689,53 +689,15 @@ class Drawing(bonsai.core.tool.Drawing):
     def import_drawing(cls, drawing: ifcopenshell.entity_instance) -> bpy.types.Object:
         settings = ifcopenshell.geom.settings()
 
-        camera_type = "ORTHO"
-        body = ifcopenshell.util.representation.get_representation(drawing, "Model", "Body", "MODEL_VIEW")
-        if "IfcRectangularPyramid" in {e.is_a() for e in tool.Ifc.get().traverse(body)}:
-            camera_type = "PERSP"
+        representation = ifcopenshell.util.representation.get_representation(drawing, "Model", "Body", "MODEL_VIEW")
+        assert representation
 
         shape = ifcopenshell.geom.create_shape(settings, drawing)
-        geometry = shape.geometry
-
-        v = geometry.verts
-        x = [v[i] for i in range(0, len(v), 3)]
-        y = [v[i + 1] for i in range(0, len(v), 3)]
-        z = [v[i + 2] for i in range(0, len(v), 3)]
-        width = max(x) - min(x)
-        height = max(y) - min(y)
-        depth = max(z) - min(z)
-
-        camera = bpy.data.cameras.new(tool.Loader.get_mesh_name_from_shape(geometry))
-        camera.type = camera_type
-        camera.show_limits = True
-
-        if camera_type == "ORTHO":
-            camera.clip_start = 0.002  # Technically 0, but Blender doesn't allow this, so 2mm it is!
-            camera.clip_end = depth
-
-            camera.BIMCameraProperties.width = width
-            camera.BIMCameraProperties.height = height
-        elif camera_type == "PERSP":
-            abs_min_z = abs(min(z))
-            abs_max_z = abs(max(z))
-            camera.clip_start = abs_max_z
-            camera.clip_end = abs_min_z
-            max_res = 1000
-
-            camera.BIMCameraProperties.width = width
-            camera.BIMCameraProperties.height = height
-
-            if width > height:
-                fov = 2 * math.atan(width / (2 * abs_min_z))
-            else:
-                fov = 2 * math.atan(height / (2 * abs_min_z))
-
-            camera.angle = fov
-
+        camera = tool.Loader.create_camera(drawing, representation, shape)
         tool.Loader.link_mesh(shape, camera)
 
         obj = bpy.data.objects.new(tool.Loader.get_name(drawing), camera)
-        cls.import_camera_props(drawing, obj)
+        cls.import_camera_props(drawing, camera)
         tool.Ifc.link(drawing, obj)
 
         mat = Matrix(ifcopenshell.util.shape.get_shape_matrix(shape))
@@ -750,14 +712,14 @@ class Drawing(bonsai.core.tool.Drawing):
         return obj
 
     @classmethod
-    def import_camera_props(cls, drawing: ifcopenshell.entity_instance, obj: bpy.types.Object) -> None:
+    def import_camera_props(cls, drawing: ifcopenshell.entity_instance, camera: bpy.types.Camera) -> None:
         from bonsai.bim.module.drawing.prop import get_diagram_scales
 
         # Temporarily clear the definition id to prevent prop update callbacks to IFC.
-        ifc_definition_id = obj.BIMObjectProperties.ifc_definition_id
-        obj.BIMObjectProperties.ifc_definition_id = 0
+        camera_props = camera.BIMCameraProperties
+        update_props = camera_props.update_props
+        camera_props.update_props = False
 
-        camera = obj.data
         camera.BIMCameraProperties.has_underlay = False
         camera.BIMCameraProperties.has_linework = True
         camera.BIMCameraProperties.has_annotation = True
@@ -791,7 +753,7 @@ class Drawing(bonsai.core.tool.Drawing):
             if "IsNTS" in pset:
                 camera.BIMCameraProperties.is_nts = bool(pset["IsNTS"])
 
-        obj.BIMObjectProperties.ifc_definition_id = ifc_definition_id
+        camera_props.update_props = update_props
 
     @classmethod
     def import_drawings(cls) -> None:
@@ -1906,7 +1868,7 @@ class Drawing(bonsai.core.tool.Drawing):
             if obj.name in element_obj_names or not tool.Ifc.get_entity(obj)
         ]
 
-        cls.import_camera_props(drawing, camera)
+        cls.import_camera_props(drawing, camera.data)
 
         for obj in selected_objects_before:
             obj.hide_set(False)

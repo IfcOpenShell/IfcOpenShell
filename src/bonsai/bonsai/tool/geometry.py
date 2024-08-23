@@ -617,7 +617,7 @@ class Geometry(bonsai.core.tool.Geometry):
                 shape = ifcopenshell.geom.create_shape(settings, element, representation)
 
         if element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
-            mesh = ifc_importer.create_camera(element, shape)
+            mesh = tool.Loader.create_camera(element, representation, shape)
         if element.is_a("IfcAnnotation") and ifc_importer.is_curve_annotation(element):
             mesh = ifc_importer.create_curve(element, shape)
         elif shape:
