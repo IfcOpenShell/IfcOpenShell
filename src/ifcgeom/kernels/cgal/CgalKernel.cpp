@@ -297,7 +297,7 @@ namespace {
 	};
 
 	void evaluate_curve(const taxonomy::line::ptr& c, double u, taxonomy::point3& p) {
-		Eigen::Vector4d xy{ u, 0, 0, 1. };
+		Eigen::Vector4d xy{ 0, 0, u, 1. };
 		p.components() = (c->matrix->ccomponents() * xy).head<3>();
 	}
 
@@ -314,7 +314,7 @@ namespace {
 	// ----
 
 	void project_onto_curve(const taxonomy::line::ptr& c, const taxonomy::point3& p, double& u) {
-		u = (c->matrix->ccomponents().inverse() * p.ccomponents().homogeneous())(0);
+		u = (c->matrix->ccomponents().inverse() * p.ccomponents().homogeneous())(2);
 	}
 
 	void project_onto_curve(const taxonomy::circle::ptr& c, const taxonomy::point3& p, double& u) {
