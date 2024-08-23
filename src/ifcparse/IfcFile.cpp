@@ -201,7 +201,7 @@ IfcEntityInstanceData IfcParse::parse_context::construct(int name, unresolved_re
         expected_size && *expected_size != tokens_.size())
     {
         size_t expected = expected_size ? *expected_size : parameter_types.size();
-        Logger::Warning("Expected " + std::to_string(expected) + " attribute values, found " + std::to_string(tokens_.size()) + " for instance #" + std::to_string(name));
+        Logger::Warning("Expected " + std::to_string(expected) + " attribute values, found " + std::to_string(tokens_.size()) + " for instance #" + std::to_string(name > 0 ? name : 0));
     }
 
     if (tokens_.empty()) {
