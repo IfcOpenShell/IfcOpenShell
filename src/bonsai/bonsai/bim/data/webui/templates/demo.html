@@ -81,7 +81,7 @@
       <div id="explanation">
         <h1 id="welcome-to-the-web-ui-demo-page">Welcome to the web UI demo page!</h1>
         <p>This demo showcases how Bonsai's Web UI interacts with a WebSocket server. The demo illustrates how the Web UI establishes a connection, exchanges data with the server, and updates the UI dynamically based on incoming data.</p>
-        <p>You can use the above textbox to send a message to Bonsai!</p>
+        <p>You can use the above textbox to send a message to Bonsai which will be printed to the console!</p>
         <p>If you prefer, you can explore the source code directly in the data/webui directory:</p>
         <ul>
         <li>sioserver.py</li>
@@ -220,6 +220,44 @@ $(<span class="hljs-built_in">document</span>).ready(<span class="hljs-function"
 
         <p>In this example, the blenderId field specifies which Bonsai instance should receive the operator. If blenderId is not set, the operator is broadcast to all instances.</p>
         <p>The server forwards this operator to the appropriate Bonsai instance, where it is processed by functions like sio_listen_web_operator and check_operator_queue in tool/web.py.</p>
+      
+        <h2 id="web-tool-toolwebpy">Web Tool (tool/web.py)</h2>
+        <p>the sio_listen_web_operator function is automatically called when the event web_operator is emitted to Bonsai. It takes the web operator and attempts to put it in a web operators queue.</p>
+
+<pre class="hljs"><code><div><span class="hljs-meta">@classmethod</span>
+<span class="hljs-keyword">async</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">sio_listen_web_operator</span><span class="hljs-params">(cls, data)</span>:</span>
+    <span class="hljs-keyword">try</span>:
+        web_operator_queue.put_nowait(data)
+    <span class="hljs-keyword">except</span> queue.Full:
+        <span class="hljs-keyword">pass</span>
+</div></code></pre>
+
+        <p>then the check_operator_queue function is called by a timer that is run every second to retrieve operators from the queue and handle them</p>
+
+<pre class="hljs"><code><div><span class="hljs-meta">@classmethod</span>
+<span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">check_operator_queue</span><span class="hljs-params">(cls)</span>:</span>
+    <span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> bpy.context.scene.WebProperties.is_connected:
+        <span class="hljs-keyword">with</span> web_operator_queue.mutex:
+            web_operator_queue.queue.clear()
+        <span class="hljs-keyword">return</span> <span class="hljs-literal">None</span>  <span class="hljs-comment"># unregister timer if not connected</span>
+
+    <span class="hljs-keyword">while</span> <span class="hljs-keyword">not</span> web_operator_queue.empty():
+        operator = web_operator_queue.get_nowait()
+        <span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> operator:
+            <span class="hljs-keyword">continue</span>
+        <span class="hljs-keyword">if</span> operator[<span class="hljs-string">"sourcePage"</span>] == <span class="hljs-string">"csv"</span>:
+            cls.handle_csv_operator(operator[<span class="hljs-string">"operator"</span>])
+        <span class="hljs-keyword">elif</span> operator[<span class="hljs-string">"sourcePage"</span>] == <span class="hljs-string">"gantt"</span>:
+            cls.handle_gantt_operator(operator[<span class="hljs-string">"operator"</span>])
+        <span class="hljs-keyword">elif</span> operator[<span class="hljs-string">"sourcePage"</span>] == <span class="hljs-string">"drawings"</span>:
+            cls.handle_drawings_operator(operator[<span class="hljs-string">"operator"</span>])
+        <span class="hljs-keyword">elif</span> operator[<span class="hljs-string">"sourcePage"</span>] == <span class="hljs-string">"demo"</span>:
+            message = operator[<span class="hljs-string">"operator"</span>][<span class="hljs-string">"message"</span>]
+            print(<span class="hljs-string">f"Message from demo page: <span class="hljs-subst">{message}</span>"</span>)
+    <span class="hljs-keyword">return</span> <span class="hljs-number">1.0</span>
+</div></code></pre>
+
+        <p>Here we check the source page of the operator and call the appropriate handler for that page.</p>
       </div>
       <!-- prettier-ignore-end -->
     </div>
