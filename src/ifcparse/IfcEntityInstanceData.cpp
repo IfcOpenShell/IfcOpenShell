@@ -45,6 +45,9 @@ AttributeValue::operator double() const
 
 AttributeValue::operator boost::logic::tribool() const
 {
+    if (array_->has<bool>(index_)) {
+        return array_->get<bool>(index_);
+    }
     return array_->get<boost::logic::tribool>(index_);
 }
 

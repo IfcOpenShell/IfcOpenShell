@@ -1,4 +1,5 @@
 #include "IfcFile.h"
+#include "IfcLogger.h"
 
 IfcParse::parse_context::~parse_context() {
     for (auto& t : tokens_) {
@@ -25,19 +26,15 @@ void IfcParse::parse_context::push(IfcUtil::IfcBaseClass* inst) {
 }
 
 namespace {
-    // Define a template to check if a type is in a boost::variant
     template<typename Variant, typename T>
     struct is_type_in_variant;
 
-    // Specialization for boost::variant
     template<typename T, typename... Types>
     struct is_type_in_variant<boost::variant<Types...>, T>
     {
-        // Recursive template to check if T is one of Types
         static constexpr bool value = (std::is_same<T, Types>::value || ...);
     };
 
-    // Helper variable template (C++14 and beyond)
     template<typename Variant, typename T>
     constexpr bool is_type_in_variant_v = is_type_in_variant<Variant, T>::value;
 
@@ -118,16 +115,41 @@ namespace {
                 if (aggregate_storage.which() == 0) {
                     aggregate_storage = std::vector<std::decay_t<decltype(v)>>{ v };
                 } else {
-                    auto* vec_ptr = boost::get< std::vector<std::decay_t<decltype(v)>>>(&aggregate_storage);
+                    auto* vec_ptr = boost::get<std::vector<std::decay_t<decltype(v)>>>(&aggregate_storage);
                     if (vec_ptr) {
                         vec_ptr->push_back(v);
                     } else {
-                        // inconsistent aggregate valuation
+                        // @todo would be cool if we can trace this back to file offset
+                        auto current = boost::apply_visitor([](auto v) { 
+                            if constexpr (!std::is_same_v<decltype(v), Blank>) {
+                                return std::string(typeid(typename decltype(v)::value_type).name());
+                            } else {
+                                // Cannot occur as aggregate_storage.which() == 0
+                                // is another branch several statements up. But is
+                                // needed for consistency of return type.
+                                return std::string{};
+                            }
+                        }, aggregate_storage);
+                        Logger::Error("Inconsistent aggregate valuation while attempting to append " + std::string(typeid(decltype(v)).name()) + " to an aggregate of " + current);
+
                         // @todo boolean -> logical upgrade
+                        // wait a second... there are no aggregate of bool / logical in the schema..
+                        // 
+                        // if constexpr (std::is_same_v<std::decay_t<decltype(v)>, bool>) {
+                        //     auto* vec_ptr = boost::get<std::vector<boost::tribool>(&aggregate_storage);
+                        //     vec_ptr->push_back(v);
+                        // }
+                        // if constexpr (std::is_same_v<std::decay_t<decltype(v)>, boost::tribool>) {
+                        //     auto* vec_ptr = boost::get<std::vector<bool>(&aggregate_storage);
+                        //     std::vector<boost::tribool> ps(vec_ptr->begin(), vec_ptr->end());
+                        //     ps.push_back(v);
+                        //     aggregate_storage = ps;
+                        // }
                     }
                 }
             } else {
-                // unsupported aggregate type
+                // @todo would be cool if we can trace this back to file offset
+                Logger::Error(std::string("Aggregates of ") + typeid(decltype(v)).name() + " are not supported in the IfcOpenShell parser");
             }
         };
 
