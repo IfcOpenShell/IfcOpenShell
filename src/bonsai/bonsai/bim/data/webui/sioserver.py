@@ -68,7 +68,8 @@ class WebNamespace(socketio.AsyncNamespace):
                 await self.emit("csv_data", {"blenderId": blenderId, "data": messages["csv_data"]}, room=sid)
             if "gantt_data" in messages:
                 await self.emit("gantt_data", {"blenderId": blenderId, "data": messages["gantt_data"]}, room=sid)
-
+            if "demo_data" in messages:
+                await self.emit("demo_data", {"blenderId": blenderId, "data": messages["demo_data"]}, room=sid)
 
 # Blender namespace
 class BlenderNamespace(socketio.AsyncNamespace):
