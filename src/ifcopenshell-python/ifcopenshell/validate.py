@@ -305,6 +305,7 @@ def log_internal_cpp_errors(f: ifcopenshell.file, filename: str, logger: Logger)
                 else:
                     logger.error(m)
 
+
 entity_attribute_map: dict[tuple[str, str], tuple[entity_type, tuple[attribute]]] = {}
 
 
