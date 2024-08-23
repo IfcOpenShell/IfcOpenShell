@@ -868,9 +868,7 @@ class Spatial:
     def edit_container_name(cls, container, name): pass
     def enable_editing(cls, obj): pass
     def expand_container(cls, container): pass
-    def filter_elements_by_class(cls, elements, ifc_class): pass
-    def filter_elements_by_relating_type(cls, elements, relating_type): pass
-    def filter_elements_by_untyped(cls, elements): pass
+    def filter_elements(cls, elements, ifc_class, relating_type, is_untyped, keyword): pass
     def filter_products(cls, products, action): pass
     def get_active_container(cls): pass
     def get_container(cls, element): pass
