@@ -5,29 +5,33 @@ Scenario: Calculate circle radius
     Given an empty Blender session
     And I add a cube
     And the object "Cube" is selected
-    When I press "bim.calculate_circle_radius"
-    Then "scene.BIMQtoProperties.qto_result" is "1.732"
+    And I look at the "Simple Quantity Calculator" panel
+    When I click "Calculate Circle Radius"
+    Then I see the "Results" property is "1.732"
 
 Scenario: Calculate edge lengths
     Given an empty Blender session
     And I add a cube
     And the object "Cube" is selected
-    When I press "bim.calculate_edge_lengths"
-    Then "scene.BIMQtoProperties.qto_result" is "24.0"
+    And I look at the "Simple Quantity Calculator" panel
+    When I click "Calculate Edge Lengths"
+    Then I see the "Results" property is "24.0"
 
 Scenario: Calculate face areas
     Given an empty Blender session
     And I add a cube
     And the object "Cube" is selected
-    When I press "bim.calculate_face_areas"
-    Then "scene.BIMQtoProperties.qto_result" is "24.0"
+    And I look at the "Simple Quantity Calculator" panel
+    When I click "Calculate Face Areas"
+    Then I see the "Results" property is "24.0"
 
 Scenario: Calculate object volumes
     Given an empty Blender session
     And I add a cube
     And the object "Cube" is selected
-    When I press "bim.calculate_object_volumes"
-    Then "scene.BIMQtoProperties.qto_result" is "8.0"
+    And I look at the "Simple Quantity Calculator" panel
+    When I click "Calculate Object Volumes"
+    Then I see the "Results" property is "8.0"
 
 Scenario: Execute qto method - formwork areas
     Given an empty Blender session
@@ -45,13 +49,40 @@ Scenario: Execute qto method - side formwork areas
     When I press "bim.calculate_side_formwork_area"
     Then "scene.BIMQtoProperties.qto_result" is "16.0"
 
-Scenario: Calculate all quantities
+Scenario: Perform quantity take-off - no objects
+    Given an empty IFC project
+    When I look at the "Quantity Take-off" panel
+    Then I see "Quantifying All Objects"
+    When I click "Perform Quantity Take-off"
+    Then nothing happens
+
+Scenario: Perform quantity take-off
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
-    And I press "bim.assign_class(ifc_class='IfcWall', predefined_type='SOLIDWALL')"
-    When I press "bim.perform_quantity_take_off"
-    And the variable "qset_id" is "{ifc}.by_type('IfcElementQuantity')[0].id()"
-    And I press "bim.enable_pset_editing(pset_id={qset_id}, obj='IfcWall/Cube', obj_type='Object')"
-    Then "active_object.PsetProperties.active_pset_name" is "Qto_WallBaseQuantities"
-    And "active_object.PsetProperties.properties['Length'].metadata.float_value" is roughly "2000.0"
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
+    And I look at the "Quantity Take-off" panel
+    When I see "Quantifying 1 Selected Objects"
+    And I click "Perform Quantity Take-off"
+    When I look at the "Quantity Sets" panel
+    Then I see "Qto_WallBaseQuantities"
+    And I see "NetVolume"
+
+Scenario: Perform quantity take-off - using Blender engine
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
+    And I look at the "Quantity Take-off" panel
+    When I set the "qto_rule" property to "IFC4 Base Quantities - Blender"
+    And I see "Quantifying 1 Selected Objects"
+    And I click "Perform Quantity Take-off"
+    When I look at the "Quantity Sets" panel
+    Then I see "Qto_WallBaseQuantities"
+    And I see "NetVolume"

@@ -60,6 +60,7 @@ class PanelSpy:
             self.spied_labels = []
             self.spied_props = []
             self.spied_operators = []
+            self.spied_lists = []
             self.panel.draw(self, bpy.context)
 
     def __getattr__(self, attr):
@@ -72,7 +73,17 @@ class PanelSpy:
         if self.spied_attr in ("row", "column", "box"):
             return self
         elif self.spied_attr == "template_list":
-            return lambda *args, **kwargs: None  # Handle UI list spies
+            listtype_name, list_id, dataptr, propname, active_dataptr, active_propname = args
+            spied_data = {
+                "listtype_name": listtype_name,
+                "list_id": list_id,
+                "dataptr": dataptr,
+                "propname": propname,
+                "active_dataptr": active_dataptr,
+                "active_propname": active_propname,
+            }
+            self.spied_lists.append(spied_data)
+            return TemplateListSpy(spied_data)
         elif self.spied_attr == "context_pointer_set":
             return lambda *args, **kwargs: None
         elif self.spied_attr == "label":
@@ -82,10 +93,29 @@ class PanelSpy:
             props, name = args
             text = kwargs.get("text", props.bl_rna.properties[name].name)
             icon = kwargs.get("icon", None)
+            prop_type = props.bl_rna.properties[name].type
+            enum_items = []
+            if prop_type == "ENUM":
+                prop_keywords = props.__annotations__[name].keywords
+                items = prop_keywords.get("items")
+                if items is not None:
+                    if isinstance(items, (list, tuple)):
+                        enum_items = items
+                    else:
+                        # items are retrieved through a callback, not a static list / tuple :
+                        enum_items = items(props, bpy.context)
             value = getattr(props, name)
             if text:
                 self.spied_labels.append(text)
-            spied_prop = {"props": props, "name": name, "text": text, "icon": icon, "value": value}
+            spied_prop = {
+                "props": props,
+                "name": name,
+                "text": text,
+                "icon": icon,
+                "value": value,
+                "prop_type": prop_type,
+                "enum_items": enum_items,
+            }
             self.spied_props.append(spied_prop)
         elif self.spied_attr == "operator":
             operator = args[0]
@@ -114,6 +144,11 @@ class OperatorSpy:
             super().__setattr__(name, value)
         else:
             self.spied_data["kwargs"][name] = value
+
+
+class TemplateListSpy:
+    def __init__(self, spied_data):
+        self.spied_data = spied_data
 
 
 panel_name_cache = {}
@@ -215,6 +250,14 @@ def i_dont_see_text(text):
     assert not [l for l in panel_spy.spied_labels if text in l], f"Text {text} found in {panel_spy.spied_labels}"
 
 
+@given(parsers.parse('I don\'t see the "{name}" list'))
+@when(parsers.parse('I don\'t see the "{name}" list'))
+@then(parsers.parse('I don\'t see the "{name}" list'))
+def i_dont_see_the_name_list(name):
+    panel_spy.refresh_spy()
+    assert name not in [l["listtype_name"] for l in panel_spy.spied_lists]
+
+
 @given(parsers.parse('I see the "{prop}" property'))
 @when(parsers.parse('I see the "{prop}" property'))
 @then(parsers.parse('I see the "{prop}" property'))
@@ -257,21 +300,37 @@ def i_set_the_prop_property_to_value(prop, value):
     panel_spy.refresh_spy()
     for spied_prop in panel_spy.spied_props:
         if prop in (spied_prop["name"], spied_prop["text"], spied_prop["icon"]):
-            if value == "TRUE":
-                setattr(spied_prop["props"], spied_prop["name"], True)
-            elif value == "FALSE":
-                setattr(spied_prop["props"], spied_prop["name"], False)
+            if spied_prop["prop_type"] == "BOOLEAN":
+                if value == "TRUE":
+                    setattr(spied_prop["props"], spied_prop["name"], True)
+                elif value == "FALSE":
+                    setattr(spied_prop["props"], spied_prop["name"], False)
+            elif spied_prop["prop_type"] == "FLOAT":
+                setattr(spied_prop["props"], spied_prop["name"], float(value))
+            elif spied_prop["prop_type"] == "INTEGER":
+                setattr(spied_prop["props"], spied_prop["name"], int(value))
+            elif spied_prop["prop_type"] == "ENUM":
+                enum_identifier = [i for i in spied_prop["enum_items"] if i[1] == value]
+                if not enum_identifier:
+                    assert False, f"Could not find value {value} in enum {spied_prop['enum_items']}"
+                setattr(spied_prop["props"], spied_prop["name"], enum_identifier[0][0])
             else:
-                try:
-                    setattr(spied_prop["props"], spied_prop["name"], value)
-                except:
-                    try:
-                        setattr(spied_prop["props"], spied_prop["name"], int(value))
-                    except:
-                        setattr(spied_prop["props"], spied_prop["name"], float(value))
+                setattr(spied_prop["props"], spied_prop["name"], value)
             panel_spy.is_spy_dirty = True
             return
     assert False, f"Property {prop} not found in {panel_spy.spied_props}"
+
+
+@then(parsers.parse('The "{name}" list has {total} items'))
+def the_name_list_has_total_items(name, total):
+    total = int(total)
+    panel_spy.refresh_spy()
+    for spied_list in panel_spy.spied_lists:
+        if name == spied_list["listtype_name"]:
+            actual_total = len(getattr(spied_list["dataptr"], spied_list["propname"]))
+            assert actual_total == total, f"The actual number of items in {name} is {actual_total} not {total}"
+            return
+    assert False, f"List {name} not found in {panel_spy.spied_lists}"
 
 
 @when("I load a new pset template file")
