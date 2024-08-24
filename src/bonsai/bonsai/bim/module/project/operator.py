@@ -2336,7 +2336,7 @@ class MeasureTool(bpy.types.Operator):
 
     def recalculate_inputs(self, context):
         if self.number_input:
-            is_valid, self.number_output = tool.Snap.validate_input(self.number_output)
+            is_valid, self.number_output = tool.Snap.validate_input(self.number_output, self.input_type)
             self.input_panel[self.input_type] = self.number_output
             if not is_valid:
                 self.report({"WARNING"}, "The number typed is not valid.")

@@ -454,7 +454,7 @@ class Snap(bonsai.core.tool.Snap):
             cls.update_snaping_point(intersection, "Plane")
 
     @classmethod
-    def validate_input(cls, input_number):
+    def validate_input(cls, input_number, input_type):
             
         grammar_imperial = """
         start: FORMULA? dim expr?
@@ -562,6 +562,10 @@ class Snap(bonsai.core.tool.Snap):
                 parser = Lark(grammar_imperial)
                 factor = 0.3048
             else:
+                parser = Lark(grammar_metric)
+                factor = 1
+
+            if input_type == 'A':
                 parser = Lark(grammar_metric)
                 factor = 1
 
