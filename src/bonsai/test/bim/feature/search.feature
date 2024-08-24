@@ -5,12 +5,53 @@ Scenario: Select all walls
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
-    And I press "bim.add_filter_group(module='search')"
-    And I set "scene.BIMSearchProperties.facet" to "entity"
-    And I press "bim.add_filter(index=0, type='entity', module='search')"
-    And I set "scene.BIMSearchProperties.filter_groups[0].filters[0].value" to "IfcWall"
-    When I press "bim.search(property_group='BIMSearchProperties')"
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
+    When I look at the "Search" panel
+    And I click "Add Search Group"
+    And I click "Add Filter"
+    And I set the "FILE_3D" property to "IfcWall"
+    And I click "Search"
     Then the object "IfcWall/Cube" is selected
+
+Scenario: Edit filter query
+    Given an empty IFC project
+    When I look at the "Search" panel
+    And I click "FILTER"
+    Then nothing happens
+
+Scenario: Colour by property - default class query
+    Given an empty IFC project
+    When I look at the "Colour By Property" panel
+    And I click "Colour by Property"
+    Then nothing happens
+
+Scenario: Colour by property - no query
+    Given an empty IFC project
+    When I look at the "Colour By Property" panel
+    And I set the "Query" property to " "
+    And I click "Colour by Property" and expect error "Error: No Query Provided"
+    Then nothing happens
+
+Scenario: Reset colours
+    Given an empty IFC project
+    And I look at the "Colour By Property" panel
+    And I click "Colour by Property"
+    When I click "Reset Colours"
+    Then nothing happens
+
+Scenario: Flat colours
+    Given an empty IFC project
+    And I look at the "Colour By Property" panel
+    And I click "Colour by Property"
+    When I click "SHADING_RENDERED"
+    Then nothing happens
+
+Scenario: Select by property
+    Given an empty IFC project
+    And I look at the "Colour By Property" panel
+    And I click "Colour by Property"
+    When I click "RESTRICT_SELECT_OFF"
+    Then nothing happens

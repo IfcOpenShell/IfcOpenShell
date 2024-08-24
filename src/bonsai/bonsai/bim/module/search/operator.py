@@ -124,6 +124,7 @@ class EditFilterQuery(Operator, tool.Ifc.Operator):
     bl_description = "Edit the underlying filter query for advanced users"
     bl_options = {"REGISTER", "UNDO"}
     query: StringProperty(name="Query")
+    old_query: StringProperty(name="Old Query")
     module: StringProperty()
 
     def _execute(self, context):
