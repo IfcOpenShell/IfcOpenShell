@@ -25,6 +25,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include <set>
+#include <vector>
 
 namespace IfcParse {
     class declaration;
