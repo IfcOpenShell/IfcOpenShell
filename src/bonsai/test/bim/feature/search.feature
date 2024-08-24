@@ -26,21 +26,21 @@ Scenario: Colour by property - default class query
     Given an empty IFC project
     When I look at the "Colour By Property" panel
     And I click "Colour by Property"
-    Then nothing happens
+    Then the "BIM_UL_colourscheme" list has 4 items
 
 Scenario: Colour by property - no query
     Given an empty IFC project
     When I look at the "Colour By Property" panel
     And I set the "Query" property to " "
     And I click "Colour by Property" and expect error "Error: No Query Provided"
-    Then nothing happens
+    Then I don't see the "BIM_UL_colourscheme" list
 
 Scenario: Reset colours
     Given an empty IFC project
     And I look at the "Colour By Property" panel
     And I click "Colour by Property"
     When I click "Reset Colours"
-    Then nothing happens
+    Then I don't see the "BIM_UL_colourscheme" list
 
 Scenario: Flat colours
     Given an empty IFC project
