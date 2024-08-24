@@ -72,10 +72,7 @@ body {
 
 #container {
     flex: 1;
-    margin-top: var(--margin-medium);
-    margin-left: var(--margin-small);
-    margin-right: var(--margin-small);
-    margin-bottom: var(--margin-medium);
+    padding: var(--margin-small);
 }
 
 h3 {
