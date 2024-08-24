@@ -310,7 +310,7 @@ def i_set_the_prop_property_to_value(prop, value):
             elif spied_prop["prop_type"] == "INTEGER":
                 setattr(spied_prop["props"], spied_prop["name"], int(value))
             elif spied_prop["prop_type"] == "ENUM":
-                enum_identifier = [i for i in spied_prop["enum_items"] if i[1] == value]
+                enum_identifier = [i for i in spied_prop["enum_items"] if i is not None and i[1] == value]
                 if not enum_identifier:
                     assert False, f"Could not find value {value} in enum {spied_prop['enum_items']}"
                 setattr(spied_prop["props"], spied_prop["name"], enum_identifier[0][0])
@@ -331,6 +331,22 @@ def the_name_list_has_total_items(name, total):
             assert actual_total == total, f"The actual number of items in {name} is {actual_total} not {total}"
             return
     assert False, f"List {name} not found in {panel_spy.spied_lists}"
+
+
+@when(parsers.parse('I select the "{item_name}" item in the "{list_name}" list'))
+def i_select_the_item_name_item_in_the_list_name_list(item_name, list_name):
+    panel_spy.refresh_spy()
+    for spied_list in panel_spy.spied_lists:
+        if list_name == spied_list["listtype_name"]:
+            item_names = []
+            for i, item in enumerate(getattr(spied_list["dataptr"], spied_list["propname"])):
+                item_names.append(item.name)
+                if item.name == item_name:
+                    setattr(spied_list["active_dataptr"], spied_list["active_propname"], i)
+                    panel_spy.is_spy_dirty = True
+                    return
+            assert False, f"Could not find item {item_name} in {item_names}"
+    assert False, f"List {list_name} not found in {panel_spy.spied_lists}"
 
 
 @when("I load a new pset template file")
@@ -519,6 +535,7 @@ def i_deselect_all_objects():
 
 @given(parsers.parse('the object "{name}" is selected'))
 @when(parsers.parse('the object "{name}" is selected'))
+@then(parsers.parse('the object "{name}" is selected'))
 def the_object_name_is_selected(name):
     i_deselect_all_objects()
     additionally_the_object_name_is_selected(name)

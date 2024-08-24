@@ -86,3 +86,37 @@ Scenario: Perform quantity take-off - using Blender engine
     When I look at the "Quantity Sets" panel
     Then I see "Qto_WallBaseQuantities"
     And I see "NetVolume"
+
+Scenario: Manual quantification
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
+    And I look at the "Manual Quantification" panel
+    When I set the "qto_name" property to "Foo"
+    And I set the "prop_name" property to "Bar"
+    And I click "Calculate Single Quantity"
+    When I look at the "Quantity Sets" panel
+    Then I see "Foo"
+    And I see "Bar"
+
+Scenario: Manual quantification - set an engine and function
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
+    And I look at the "Manual Quantification" panel
+    And I set the "Calculator" property to "IfcOpenShell"
+    And I set the "Function" property to "Volume: Net Volume"
+    When I set the "qto_name" property to "Foo"
+    And I set the "prop_name" property to "Bar"
+    And I click "Calculate Single Quantity"
+    When I look at the "Quantity Sets" panel
+    Then I see "Foo"
+    And I see "Bar"
