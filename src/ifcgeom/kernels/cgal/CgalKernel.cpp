@@ -224,7 +224,8 @@ bool CgalKernel::convert(const taxonomy::face::ptr face, std::list<cgal_face_t>&
 
 	for (auto& bound : face->children) {
 
-		const bool is_interior = !bound->external.get_value_or(false);
+		const bool is_interior = !(bound->external.get_value_or(false) || face->children.size() == 1);
+		// single face bound is always external... even if not marked as such
 
 		cgal_wire_t wire;
 		if (!convert(bound, wire)) {
@@ -244,7 +245,7 @@ bool CgalKernel::convert(const taxonomy::face::ptr face, std::list<cgal_face_t>&
 		}
 	}
 
-	if (num_outer_bounds == 1) {
+	if (num_outer_bounds == 1 || face->children.size() == 1) {
 		result.push_back(mf);
 	}
 
