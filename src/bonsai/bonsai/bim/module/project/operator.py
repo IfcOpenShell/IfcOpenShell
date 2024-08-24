@@ -2303,7 +2303,27 @@ class MeasureTool(bpy.types.Operator):
         self.action_count = 0
         self.visible_objs = []
         self.objs_2d_bbox = []
-        self.number_options = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "+", "-", "*", "-", "/"}
+        self.number_options = {
+            "0",
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6",
+            "7",
+            "8",
+            "9",
+            " ",
+            ".",
+            "+",
+            "-",
+            "*",
+            "/",
+            "'",
+            '"',
+            "=",
+        }
         self.number_input = []
         self.number_output = ""
         self.number_is_negative = False
@@ -2320,6 +2340,7 @@ class MeasureTool(bpy.types.Operator):
             self.input_panel[self.input_type] = self.number_output
             if not is_valid:
                 self.report({"WARNING"}, "The number typed is not valid.")
+                return is_valid
             else:
                 if self.input_type in {"X", "Y", "Z"}:
                     self.input_panel = PolylineDecorator.calculate_distance_and_angle(context, self.is_input_on)
@@ -2330,6 +2351,7 @@ class MeasureTool(bpy.types.Operator):
 
             PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
             tool.Blender.update_viewport()
+            return is_valid
 
     def modal(self, context, event):
 
@@ -2424,8 +2446,9 @@ class MeasureTool(bpy.types.Operator):
                     tool.Blender.update_viewport()
 
         if self.is_input_on and event.value == "RELEASE" and event.type in {"RET", "NUMPAD_ENTER", "RIGHTMOUSE"}:
-            self.recalculate_inputs(context)
-            tool.Snap.insert_polyline_point(self.input_panel)
+            is_valid = self.recalculate_inputs(context)
+            if is_valid:
+                tool.Snap.insert_polyline_point(self.input_panel)
             self.is_input_on = False
             self.input_type = "OFF"
             self.number_input = []

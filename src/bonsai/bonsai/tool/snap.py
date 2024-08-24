@@ -456,18 +456,35 @@ class Snap(bonsai.core.tool.Snap):
     @classmethod
     def validate_input(cls, input_number):
             
-        grammar = """
+        grammar_imperial = """
         start: FORMULA? dim expr?
-        dim: metric | imperial
+        dim: imperial
 
         FORMULA: "="
-
-        metric: NUMBER
 
         imperial: feet? "-"? inches?
         feet: NUMBER? " "? fraction? "'"
         inches: NUMBER? " "? fraction? "\\""
         fraction: NUMBER "/" NUMBER
+
+        expr: (ADD | SUB) dim | (MUL | DIV) NUMBER
+
+        NUMBER: /-?\\d+(?:\\.\\d+)?/
+        ADD: "+"
+        SUB: "-"
+        MUL: "*"
+        DIV: "/"
+
+        %ignore " "
+        """
+
+        grammar_metric = """
+        start: FORMULA? dim expr?
+        dim: metric
+
+        FORMULA: "="
+
+        metric: NUMBER
 
         expr: (ADD | SUB | MUL | DIV) dim
 
@@ -502,7 +519,7 @@ class Snap(bonsai.core.tool.Snap):
                     result = (args[0] + args[1])
                 else:
                     result = args[0]
-                return result * 0.3048
+                return result
 
             def metric(self, args):
                 return args[0]
@@ -535,13 +552,19 @@ class Snap(bonsai.core.tool.Snap):
                 dimension = args[i]
                 if len(args) > i+1:
                     expression = args[i + 1]
-                    return expression(dimension)
+                    return expression(dimension) * factor
                 else:
-                    return dimension
+                    return dimension * factor
 
 
         try:
-            parser = Lark(grammar)
+            if bpy.context.scene.unit_settings.system == 'IMPERIAL':
+                parser = Lark(grammar_imperial)
+                factor = 0.3048
+            else:
+                parser = Lark(grammar_metric)
+                factor = 1
+
             parse_tree = parser.parse(input_number)
 
             transformer = InputTransform()
