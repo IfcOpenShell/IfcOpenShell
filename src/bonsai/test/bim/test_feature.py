@@ -71,6 +71,10 @@ class PanelSpy:
     def __call__(self, *args, **kwargs):
         if self.spied_attr in ("row", "column", "box"):
             return self
+        elif self.spied_attr == "template_list":
+            return lambda *args, **kwargs: None  # Handle UI list spies
+        elif self.spied_attr == "context_pointer_set":
+            return lambda *args, **kwargs: None
         elif self.spied_attr == "label":
             self.spied_labels.append(kwargs["text"])
             return self
@@ -105,7 +109,10 @@ class OperatorSpy:
         self.spied_data = spied_data
 
     def __setattr__(self, name, value):
-        if name != "spied_data":
+        if name == "spied_data":
+            # Allow direct setting of spied_data only during initialization
+            super().__setattr__(name, value)
+        else:
             self.spied_data["kwargs"][name] = value
 
 
@@ -186,6 +193,8 @@ def i_look_at_the_panel_panel(panel):
                 panel_name_cache[panel_type.bl_label] = panel_type.bl_idname
             except:
                 pass
+    if panel not in panel_name_cache:
+        assert False, f"Panel {panel} not found in {panel_name_cache}"
     panel_spy = PanelSpy(getattr(bpy.types, panel_name_cache[panel]))
     panel_spy.refresh_spy()
 
@@ -244,6 +253,7 @@ def i_see_the_prop_property_is_value(prop, value):
 @when(parsers.parse('I set the "{prop}" property to "{value}"'))
 @then(parsers.parse('I set the "{prop}" property to "{value}"'))
 def i_set_the_prop_property_to_value(prop, value):
+    value = value.strip()
     panel_spy.refresh_spy()
     for spied_prop in panel_spy.spied_props:
         if prop in (spied_prop["name"], spied_prop["text"], spied_prop["icon"]):
@@ -390,7 +400,7 @@ def i_click_button(button):
     panel_spy.refresh_spy()
     for spied_operator in panel_spy.spied_operators:
         if spied_operator["text"] == button or spied_operator["icon"] == button:
-            spied_operator["operator"](**spied_operator["kwargs"])
+            spied_operator["operator"]("INVOKE_DEFAULT", **spied_operator["kwargs"])
             panel_spy.is_spy_dirty = True
             return
     # Users can also "click" on booleans to toggle them
@@ -400,6 +410,21 @@ def i_click_button(button):
             setattr(spied_prop["props"], spied_prop["name"], not bool(val))
             return
     assert False, f"Could not find {button} in {panel_spy.spied_operators}"
+
+
+@given(parsers.parse('I click "{button}" and expect error "{error_msg}"'))
+@when(parsers.parse('I click "{button}" and expect error "{error_msg}"'))
+def i_click_button_and_expect_error_error_msg(button, error_msg):
+    try:
+        i_click_button(button)
+    except Exception as e:
+        actual_error_msg = str(e).strip()
+        if str(e).strip() != error_msg:
+            traceback.print_exc()
+            msg = f"Got different exception clickign {button} - '{actual_error_msg}' instead of '{error_msg}'"
+            assert False, msg
+        return
+    assert False, f"No error message {error_msg} raised when I pressed {button}"
 
 
 @given(parsers.parse('I evaluate expression "{expression}"'))
