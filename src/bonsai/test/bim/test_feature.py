@@ -69,7 +69,7 @@ class PanelSpy:
         return self
 
     def __call__(self, *args, **kwargs):
-        if self.spied_attr in ("row", "column"):
+        if self.spied_attr in ("row", "column", "box"):
             return self
         elif self.spied_attr == "label":
             self.spied_labels.append(kwargs["text"])
@@ -79,6 +79,8 @@ class PanelSpy:
             text = kwargs.get("text", props.bl_rna.properties[name].name)
             icon = kwargs.get("icon", None)
             value = getattr(props, name)
+            if text:
+                self.spied_labels.append(text)
             spied_prop = {"props": props, "name": name, "text": text, "icon": icon, "value": value}
             self.spied_props.append(spied_prop)
         elif self.spied_attr == "operator":
@@ -89,6 +91,8 @@ class PanelSpy:
             bl_label = getattr(bpy.types, bl_idname).bl_label
             text = kwargs.get("text", bl_label)
             icon = kwargs.get("icon", None)
+            if text:
+                self.spied_labels.append(text)
             spied_operator = {"operator": operator, "icon": icon, "text": text, "kwargs": {}}
             self.spied_operators.append(spied_operator)
             return OperatorSpy(spied_operator)
@@ -243,7 +247,19 @@ def i_set_the_prop_property_to_value(prop, value):
     panel_spy.refresh_spy()
     for spied_prop in panel_spy.spied_props:
         if prop in (spied_prop["name"], spied_prop["text"], spied_prop["icon"]):
-            setattr(spied_prop["props"], spied_prop["name"], value)
+            if value == "TRUE":
+                setattr(spied_prop["props"], spied_prop["name"], True)
+            elif value == "FALSE":
+                setattr(spied_prop["props"], spied_prop["name"], False)
+            else:
+                try:
+                    setattr(spied_prop["props"], spied_prop["name"], value)
+                except:
+                    try:
+                        setattr(spied_prop["props"], spied_prop["name"], int(value))
+                    except:
+                        setattr(spied_prop["props"], spied_prop["name"], float(value))
+            panel_spy.is_spy_dirty = True
             return
     assert False, f"Property {prop} not found in {panel_spy.spied_props}"
 
@@ -376,6 +392,12 @@ def i_click_button(button):
         if spied_operator["text"] == button or spied_operator["icon"] == button:
             spied_operator["operator"](**spied_operator["kwargs"])
             panel_spy.is_spy_dirty = True
+            return
+    # Users can also "click" on booleans to toggle them
+    for spied_prop in panel_spy.spied_props:
+        if button in (spied_prop["name"], spied_prop["text"], spied_prop["icon"]):
+            val = getattr(spied_prop["props"], spied_prop["name"])
+            setattr(spied_prop["props"], spied_prop["name"], not bool(val))
             return
     assert False, f"Could not find {button} in {panel_spy.spied_operators}"
 
