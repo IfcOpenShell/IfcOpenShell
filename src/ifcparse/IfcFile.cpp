@@ -29,10 +29,18 @@ namespace {
     template<typename Variant, typename T>
     struct is_type_in_variant;
 
-    template<typename T, typename... Types>
-    struct is_type_in_variant<boost::variant<Types...>, T>
+    // Specialization when there are multiple types in the variant
+    template<typename T, typename First, typename... Rest>
+    struct is_type_in_variant<boost::variant<First, Rest...>, T>
     {
-        static constexpr bool value = (std::is_same<T, Types>::value || ...);
+        static constexpr bool value = std::is_same<T, First>::value || is_type_in_variant<boost::variant<Rest...>, T>::value;
+    };
+
+    // Specialization when there is only one type left in the variant
+    template<typename T, typename Last>
+    struct is_type_in_variant<boost::variant<Last>, T>
+    {
+        static constexpr bool value = std::is_same<T, Last>::value;
     };
 
     template<typename Variant, typename T>
