@@ -289,6 +289,9 @@ class BIM_PT_drawings(Panel):
                 create_drawing_button = row.row(align=True)
                 create_drawing_button.operator("bim.create_drawing", text="", icon="OUTPUT")
                 create_drawing_button.enabled = active_drawing.ifc_definition_id > 0
+
+                # might need a different icon since the URL icon is already used by the open_drawing
+                row.operator("bim.open_documentation_web_ui", icon="URL", text="")
             self.layout.template_list(
                 "BIM_UL_drawinglist", "", self.props, "drawings", self.props, "active_drawing_index"
             )
