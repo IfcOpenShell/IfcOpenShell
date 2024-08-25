@@ -601,6 +601,8 @@ class Snap(bonsai.core.tool.Snap):
             else:
                 parser = Lark(grammar_metric)
                 factor = 1
+                if bpy.context.scene.unit_settings.length_unit == 'MILLIMETERS':
+                    factor = 0.001
 
             if input_type == 'A':
                 parser = Lark(grammar_metric)
@@ -610,8 +612,6 @@ class Snap(bonsai.core.tool.Snap):
 
             transformer = InputTransform()
             result = transformer.transform(parse_tree)
-            if bpy.context.scene.unit_settings.length_unit == 'MILLIMETERS':
-                result /= 1000
             return True, str(result)
         except:
             return False, "0"
