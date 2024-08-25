@@ -151,9 +151,10 @@ class Raycast(bonsai.core.tool.Raycast):
             world_v1 = obj.matrix_world @ v1
             world_v2 = obj.matrix_world @ v2
             intersection = mathutils.geometry.intersect_line_line(ray_target, loc, world_v1, world_v2)
-            distance = (intersection[0] - intersection[1]).length
-            if distance < 0.2:
-                points.append((intersection[1], "Edge"))
+            if intersection:
+                distance = (intersection[0] - intersection[1]).length
+                if distance < 0.2:
+                    points.append((intersection[1], "Edge"))
 
         return points
 
