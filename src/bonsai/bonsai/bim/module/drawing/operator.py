@@ -2857,3 +2857,16 @@ class ConvertSVGToDXF(bpy.types.Operator):
 
         self.report({"INFO"}, f"{len(drawing_uris)} drawings were converted to .dxf.")
         return {"FINISHED"}
+
+
+class OpenDocumentationWebUi(bpy.types.Operator):
+    bl_idname = "bim.open_documentation_web_ui"
+    bl_label = "Open Documentation Web UI"
+    bl_description = "Open the documentation web UI page"
+
+    def execute(self, context):
+        if not context.scene.WebProperties.is_connected:
+            bpy.ops.bim.connect_websocket_server(page="documentation")
+        else:
+            bpy.ops.bim.bim.open_web_browser(page="documentation")
+        return {"FINISHED"}
