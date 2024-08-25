@@ -68,6 +68,8 @@ and data-rich OpenBIM with Blender :)
       :caption: Reference
       :maxdepth: 2
 
+      reference/interface
+      reference/topbar
       reference/workspace
       reference/properties
 
