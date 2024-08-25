@@ -424,8 +424,6 @@ class Snap(bonsai.core.tool.Snap):
 
         detected_snaps.append({"Plane": intersection})
 
-        for item in detected_snaps:
-
         return detected_snaps
 
 
