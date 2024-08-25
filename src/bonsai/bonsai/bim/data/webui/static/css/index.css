@@ -202,11 +202,10 @@ footer p {
 }
 
 .table-container {
-    position: absolute;
     display: block;
-    height: calc(100% - var(--margin-small) * 2);
-    width: calc(100% - var(--margin-small) * 2);
-    overflow-x: scroll;
+    height: calc(100vh - var(--margin-small));
+    width: 100%;
+    margin-bottom: var(--margin-medium);
 }
 
 .csv-table {
