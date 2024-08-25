@@ -100,6 +100,7 @@ SETTING = Literal[
     "piecewise-step-type",
     "piecewise-step-param",
     "use-python-opencascade",
+    "no-parallel-mapping"
 ]
 SERIALIZER_SETTING = Literal[
     "use-element-names",
