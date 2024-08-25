@@ -106,12 +106,14 @@ class Raycast(bonsai.core.tool.Raycast):
         else:
             return None, None, None
 
+
     @classmethod
     def ray_cast_by_proximity(cls, context, event, obj, mesh=None):
         region = context.region
         rv3d = context.region_data
         mouse_pos = event.mouse_region_x, event.mouse_region_y
         ray_origin, ray_target, ray_direction = cls.get_viewport_ray_data(context, event)
+        points = []
 
         try:
             loc = view3d_utils.region_2d_to_location_3d(region, rv3d, mouse_pos, ray_direction)
@@ -119,9 +121,9 @@ class Raycast(bonsai.core.tool.Raycast):
             loc = Vector((0, 0, 0))
 
         bm = bmesh.new()
-        if mesh is None:
+        if mesh is None: # Object with faces
             bm.from_mesh(obj.data)
-        else:
+        else: # Object without faces
             verts = [bm.verts.new(obj.data.vertices[i].co) for i in mesh.vertices]
             bm.faces.new(verts)
 
@@ -134,14 +136,14 @@ class Raycast(bonsai.core.tool.Raycast):
             intersection, _ = mathutils.geometry.intersect_point_line(division_point, ray_target, loc)
             distance = (division_point - intersection).length
             if distance < 0.2:
-                return division_point, "Edge Center"
+                points.append((division_point, "Edge Center"))
 
         for vertex in bm.verts:
             world_vertex = obj.matrix_world @ vertex.co
             intersection, _ = mathutils.geometry.intersect_point_line(world_vertex, ray_target, loc)
             distance = (world_vertex - intersection).length
             if distance < 0.2:
-                return world_vertex, "Vertex"
+                points.append((world_vertex, "Vertex"))
 
         for edge in bm.edges:
             v1 = edge.verts[0].co
@@ -151,10 +153,35 @@ class Raycast(bonsai.core.tool.Raycast):
             intersection = mathutils.geometry.intersect_line_line(ray_target, loc, world_v1, world_v2)
             distance = (intersection[0] - intersection[1]).length
             if distance < 0.2:
-                return intersection[1], "Edge"
+                points.append((intersection[1], "Edge"))
 
-        return None, None
+        return points
 
+
+    @classmethod
+    def ray_cast_to_polyline(cls, context, event):
+        region = context.region
+        rv3d = context.region_data
+        mouse_pos = event.mouse_region_x, event.mouse_region_y
+        ray_origin, ray_target, ray_direction = cls.get_viewport_ray_data(context, event)
+
+        try:
+            loc = view3d_utils.region_2d_to_location_3d(region, rv3d, mouse_pos, ray_direction)
+        except:
+            loc = Vector((0, 0, 0))
+
+        polyline_data = bpy.context.scene.BIMModelProperties.polyline_point
+        polyline_points = []
+        for point_data in polyline_data:
+            point = Vector((point_data.x, point_data.y, point_data.z))
+
+
+            intersection, _ = mathutils.geometry.intersect_point_line(point, ray_target, loc)
+            distance = (point - intersection).length
+            if distance < 0.2:
+                polyline_points.append((point, "Vertex"))
+
+        return polyline_points
 
     @classmethod
     def ray_cast_to_plane(cls, context, event, plane_origin, plane_normal):
