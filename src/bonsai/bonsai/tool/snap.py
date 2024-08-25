@@ -140,7 +140,7 @@ class Snap(bonsai.core.tool.Snap):
         polyline_data = bpy.context.scene.BIMModelProperties.polyline_point
         if polyline_data:
             last_point = polyline_data[len(polyline_data) - 1]
-            if (x, y, z) == (last_point.x, last_point.y, last_point.z):
+            if (x, y, z) == (round(last_point.x, 4), round(last_point.y, 4), round(last_point.z, 4)):
                 return
 
         polyline_point = bpy.context.scene.BIMModelProperties.polyline_point.add()
