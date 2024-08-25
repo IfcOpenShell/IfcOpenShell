@@ -700,7 +700,7 @@ class DumbWallGenerator:
         for stroke in layer.active_frame.strokes:
             if len(stroke.points) == 1:
                 continue
-            data = self.create_wall_from_2_points((stroke.points[0].co, stroke.points[-1].co))
+            data = self.create_wall_from_2_points((stroke.points[0].co, stroke.points[-1].co), round=True)
             if data:
                 strokes.append(data)
                 objs.append(data["obj"])
@@ -725,19 +725,21 @@ class DumbWallGenerator:
         bpy.context.scene.grease_pencil.layers.remove(layer)
         return objs
 
-    def create_wall_from_2_points(self, coords):
+    def create_wall_from_2_points(self, coords, round=False):
         direction = coords[1] - coords[0]
         length = direction.length
         if length < 0.1:
             return
         data = {"coords": coords}
 
-        # Round to nearest 50mm (yes, metric for now)
-        self.length = 0.05 * round(length / 0.05)
+        self.length = length
         self.rotation = math.atan2(direction[1], direction[0])
-        # Round to nearest 5 degrees
-        nearest_degree = (math.pi / 180) * 5
-        self.rotation = nearest_degree * round(self.rotation / nearest_degree)
+        if round:
+            # Round to nearest 50mm (yes, metric for now)
+            self.length = 0.05 * round(length / 0.05)
+            # Round to nearest 5 degrees
+            nearest_degree = (math.pi / 180) * 5
+            self.rotation = nearest_degree * round(self.rotation / nearest_degree)
         self.location = coords[0]
         data["obj"] = self.create_wall()
         return data
