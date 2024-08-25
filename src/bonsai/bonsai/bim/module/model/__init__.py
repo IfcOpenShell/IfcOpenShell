@@ -216,6 +216,7 @@ def register():
     bpy.types.VIEW3D_MT_add.append(ui.add_menu)
     bpy.app.handlers.load_post.append(handler.load_post)
 
+    workspace.load_custom_icons()
 
 def unregister():
     if not bpy.app.background:
@@ -241,3 +242,4 @@ def unregister():
     bpy.app.handlers.load_post.remove(handler.load_post)
     bpy.types.VIEW3D_MT_mesh_add.remove(ui.add_mesh_object_menu)
     bpy.types.VIEW3D_MT_add.remove(ui.add_menu)
+    workspace.unload_custom_icons()
