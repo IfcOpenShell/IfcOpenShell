@@ -2333,6 +2333,7 @@ class MeasureTool(bpy.types.Operator):
         self.input_value_xy = [None, None]
         self.input_panel = {"D": "", "A": "", "X": "", "Y": "", "Z": ""}
         self.snap_angle = None
+        self.snapping_points = []
 
     def recalculate_inputs(self, context):
         if self.number_input:
@@ -2361,7 +2362,7 @@ class MeasureTool(bpy.types.Operator):
                 self.is_input_on = False
                 self.input_type = "OFF"
                 PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
-                tool.Snap.clear_snaping_ref()
+                tool.Snap.clear_snapping_ref()
                 tool.Blender.update_viewport()
             else:
                 self.mousemove_count = 0
@@ -2372,7 +2373,8 @@ class MeasureTool(bpy.types.Operator):
                     self.objs_2d_bbox.append(tool.Raycast.get_objects_2d_bounding_boxes(context, obj))
 
             if self.mousemove_count > 3:
-                tool.Snap.snaping_movement(context, event, self.objs_2d_bbox)
+                detected_snaps = tool.Snap.detect_snapping_points(context, event, self.objs_2d_bbox)
+                self.snapping_points = tool.Snap.select_snapping_points(context, event, detected_snaps)
                 PolylineDecorator.set_mouse_position(event)
                 self.input_panel = PolylineDecorator.calculate_distance_and_angle(context, self.is_input_on)
                 PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
@@ -2456,6 +2458,10 @@ class MeasureTool(bpy.types.Operator):
             PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
             tool.Blender.update_viewport()
 
+        if event.value == "PRESS" and event.type == "M":
+            self.snapping_points = tool.Snap.modify_snapping_point_selection(self.snapping_points)
+            tool.Blender.update_viewport()
+            
         if event.shift and event.value == "PRESS" and event.type == "X":
             tool.Snap.set_use_default_container(False)
             PolylineDecorator.set_use_default_container(False)
@@ -2499,7 +2505,8 @@ class MeasureTool(bpy.types.Operator):
             self.visible_objs = tool.Raycast.get_visible_objects(context)
             for obj in self.visible_objs:
                 self.objs_2d_bbox.append(tool.Raycast.get_objects_2d_bounding_boxes(context, obj))
-            tool.Snap.snaping_movement(context, event, self.objs_2d_bbox)
+            detected_snaps = tool.Snap.detect_snapping_points(context, event, self.objs_2d_bbox)
+            self.snapping_points = tool.Snap.select_snapping_points(context, event, detected_snaps)
             PolylineDecorator.set_mouse_position(event)
             self.input_panel = PolylineDecorator.calculate_distance_and_angle(context, self.is_input_on)
             tool.Blender.update_viewport()
