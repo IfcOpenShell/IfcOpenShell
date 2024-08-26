@@ -308,6 +308,7 @@ class PolylineDecorator:
     angle_snap_loc = None
     use_default_container = False
     instructions = None
+    snap_info = None
  
     @classmethod
     def install(cls, context):
@@ -359,6 +360,10 @@ class PolylineDecorator:
     @classmethod
     def set_instructions(cls, instructions):
         cls.instructions = instructions
+
+    @classmethod
+    def set_snap_info(cls, snap_info):
+        cls.snap_info = snap_info
 
     @classmethod
     def calculate_distance_and_angle(cls, context, is_input_on):
@@ -613,6 +618,11 @@ class PolylineDecorator:
         position = (region.width / 2) - (text_w / 2)
         blf.position(self.font_id, position, 10, 0)
         blf.draw(self.font_id, self.instructions)
+
+        text_w, text_h = blf.dimensions(0, self.snap_info)
+        position = (region.width / 2) - (text_w / 2)
+        blf.position(self.font_id, position, 30, 0)
+        blf.draw(self.font_id, self.snap_info)
 
     
     def __call__(self, context):
