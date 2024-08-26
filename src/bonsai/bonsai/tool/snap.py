@@ -100,7 +100,7 @@ class Snap(bonsai.core.tool.Snap):
         return snap_point
 
     @classmethod
-    def update_snaping_point(cls, snap_point, snap_type):
+    def update_snapping_point(cls, snap_point, snap_type):
         try:
             snap_vertex = bpy.context.scene.BIMModelProperties.snap_mouse_point[0]
         except:
@@ -112,7 +112,7 @@ class Snap(bonsai.core.tool.Snap):
         snap_vertex.snap_type = snap_type
 
     @classmethod
-    def update_snaping_ref(cls, snap_point, snap_type):
+    def update_snapping_ref(cls, snap_point, snap_type):
         try:
             snap_vertex = bpy.context.scene.BIMModelProperties.snap_mouse_ref[0]
         except:
@@ -299,9 +299,6 @@ class Snap(bonsai.core.tool.Snap):
 
         return best_result, "Mix"
 
-        # except Exception as e:
-        # cls.update_snaping_point(snap_point[0], snap_point[1])
-
     @classmethod
     def detect_snapping_points(cls, context, event, objs_2d_bbox):
         region = context.region
@@ -387,7 +384,6 @@ class Snap(bonsai.core.tool.Snap):
             else:
                 return None, None, None
 
-
         ray_origin, ray_target, ray_direction = tool.Raycast.get_viewport_ray_data(context, event)
 
         objs_to_raycast = []
@@ -395,7 +391,7 @@ class Snap(bonsai.core.tool.Snap):
             if obj.type == "MESH" and bbox_2d:
                 if tool.Raycast.in_view_2d_bounding_box(cls.mouse_pos, bbox_2d):
                     objs_to_raycast.append(obj)
-        # Obj 
+        # Obj
         snap_obj, hit, face_index = cast_rays_and_get_best_object(objs_to_raycast)
         if hit is not None:
             detected_snaps.append({"Object": (snap_obj, hit, face_index)})
@@ -461,14 +457,13 @@ class Snap(bonsai.core.tool.Snap):
 
         return detected_snaps
 
-
     @classmethod
     def select_snapping_points(cls, context, event, detected_snaps):
         snapping_points = []
         for origin in detected_snaps:
-                
+
             if "Object" in list(origin.keys()):
-                snap_obj, hit, face_index = origin['Object']
+                snap_obj, hit, face_index = origin["Object"]
 
                 matrix = snap_obj.matrix_world.copy()
                 face = snap_obj.data.polygons[face_index]
@@ -483,54 +478,36 @@ class Snap(bonsai.core.tool.Snap):
                     for op in options:
                         snapping_points.append(op)
 
-                # cls.update_snaping_point(snapping_points[0][0], snapping_points[0][1])
-
-                # return snapping_points
-
             elif "Edge-Vertex" in list(origin.keys()):
-                snap_obj, options = origin['Edge-Vertex']
+                snap_obj, options = origin["Edge-Vertex"]
                 for op in options:
                     snapping_points.append(op)
-
-                # cls.update_snaping_point(snapping_points[0][0], snapping_points[0][1])
-                # return snapping_points
 
             elif "Polyline" in list(origin.keys()):
-                options = origin['Polyline']
+                options = origin["Polyline"]
                 for op in options:
                     snapping_points.append(op)
 
-                # cls.update_snaping_point(snapping_points[0][0], snapping_points[0][1])
-                # return snapping_points
-
             elif "Axis" in list(origin.keys()):
-                intersection = origin['Axis']
+                intersection = origin["Axis"]
                 snapping_points.append((intersection, "Axis"))
 
-                # cls.update_snaping_point(snapping_points[0][0], snapping_points[0][1])
-                # return snapping_points
-
             elif "Plane" in list(origin.keys()):
-                intersection = origin['Plane']
+                intersection = origin["Plane"]
                 snapping_points.append((intersection, "Plane"))
 
-                # cls.update_snaping_point(snapping_points[0][0], snapping_points[0][1])
-                # return snapping_points
-
-            cls.update_snaping_point(snapping_points[0][0], snapping_points[0][1])
+            cls.update_snapping_point(snapping_points[0][0], snapping_points[0][1])
             return snapping_points
 
-        
     @classmethod
     def modify_snapping_point_selection(cls, snapping_points):
         shifted_list = snapping_points[1:] + snapping_points[:1]
-        cls.update_snaping_point(shifted_list[0][0], shifted_list[0][1])
+        cls.update_snapping_point(shifted_list[0][0], shifted_list[0][1])
         return shifted_list
-    
 
     @classmethod
     def validate_input(cls, input_number, input_type):
-            
+
         grammar_imperial = """
         start: FORMULA? dim expr?
         dim: imperial
@@ -581,17 +558,17 @@ class Snap(bonsai.core.tool.Snap):
 
             def inches(self, args):
                 if len(args) > 1:
-                    result = (args[0] + args[1])
+                    result = args[0] + args[1]
                 else:
                     result = args[0]
                 return result / 12
-         
+
             def feet(self, args):
                 return args[0]
-        
+
             def imperial(self, args):
                 if len(args) > 1:
-                    result = (args[0] + args[1])
+                    result = args[0] + args[1]
                 else:
                     result = args[0]
                 return result
@@ -625,24 +602,23 @@ class Snap(bonsai.core.tool.Snap):
                     if len(args) > 1:
                         raise ValueError("Invalid input.")
                 dimension = args[i]
-                if len(args) > i+1:
+                if len(args) > i + 1:
                     expression = args[i + 1]
                     return expression(dimension) * factor
                 else:
                     return dimension * factor
 
-
         try:
-            if bpy.context.scene.unit_settings.system == 'IMPERIAL':
+            if bpy.context.scene.unit_settings.system == "IMPERIAL":
                 parser = Lark(grammar_imperial)
                 factor = 0.3048
             else:
                 parser = Lark(grammar_metric)
                 factor = 1
-                if bpy.context.scene.unit_settings.length_unit == 'MILLIMETERS':
+                if bpy.context.scene.unit_settings.length_unit == "MILLIMETERS":
                     factor = 0.001
 
-            if input_type == 'A':
+            if input_type == "A":
                 parser = Lark(grammar_metric)
                 factor = 1
 
