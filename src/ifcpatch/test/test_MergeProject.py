@@ -34,7 +34,7 @@ from pathlib import Path
 from typing import Optional
 
 
-class TestMergeProject(test.bootstrap.IFC4):
+class TestMergeProjects(test.bootstrap.IFC4):
     def setup_project(self, ifc_file: Optional[ifcopenshell.file] = None):
         prefix = None if ifc_file else "MILLI"
         if ifc_file is None:
@@ -57,7 +57,7 @@ class TestMergeProject(test.bootstrap.IFC4):
         second_file = self.setup_project()
         temp_path = Path(tempfile.gettempdir()) / "second.ifc"
         second_file.write(temp_path)
-        output = ifcpatch.execute({"file": self.file, "recipe": "MergeProject", "arguments": [str(temp_path)]})
+        output = ifcpatch.execute({"file": self.file, "recipe": "MergeProjects", "arguments": [str(temp_path)]})
 
         assert self.file == output
         assert len(output.by_type("IfcWall")) == 2
@@ -74,7 +74,7 @@ class TestMergeProject(test.bootstrap.IFC4):
     def test_reusing_geometric_contexts(self):
         self.file = self.setup_project(self.file)
         second_file = self.setup_project()
-        output = ifcpatch.execute({"file": self.file, "recipe": "MergeProject", "arguments": [second_file]})
+        output = ifcpatch.execute({"file": self.file, "recipe": "MergeProjects", "arguments": [second_file]})
         assert len(output.by_type("IfcGeometricRepresentationContext")) == 2
 
     def test_using_the_georeferencing_of_the_original_project(self):
@@ -84,7 +84,7 @@ class TestMergeProject(test.bootstrap.IFC4):
         second_file = self.setup_project()
         ifcopenshell.api.georeference.add_georeferencing(self.file)
         ifcopenshell.api.georeference.add_georeferencing(second_file)
-        output = ifcpatch.execute({"file": self.file, "recipe": "MergeProject", "arguments": [second_file]})
+        output = ifcpatch.execute({"file": self.file, "recipe": "MergeProjects", "arguments": [second_file]})
         assert len(output.by_type("IfcProjectedCRS")) == 1
         assert len(output.by_type("IfcMapConversion")) == 1
 
@@ -143,7 +143,7 @@ class TestMergeProject(test.bootstrap.IFC4):
         assert np.any(np.all(np.isclose(np.array((1.0, 2.0, 3.0)), verts), axis=1))
         assert np.any(np.all(np.isclose(np.array((3.0, 4.0, 5.0)), verts), axis=1))
 
-        output = ifcpatch.execute({"file": self.file, "recipe": "MergeProject", "arguments": [second_file]})
+        output = ifcpatch.execute({"file": self.file, "recipe": "MergeProjects", "arguments": [second_file]})
 
         # In the future we may use proj to support reprojection from different CRSes. For now... nope!
         if self.file.schema != "IFC2X3":
@@ -174,5 +174,5 @@ class TestMergeProject(test.bootstrap.IFC4):
         assert np.any(np.all(np.isclose(np.array((20.410, 25.902, 5.0)), verts, atol=1e-3), axis=1))
 
 
-class TestMergeProjectIFC2X3(test.bootstrap.IFC2X3, TestMergeProject):
+class TestMergeProjectsIFC2X3(test.bootstrap.IFC2X3, TestMergeProjects):
     pass
