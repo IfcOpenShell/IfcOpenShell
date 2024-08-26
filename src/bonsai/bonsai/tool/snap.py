@@ -328,7 +328,8 @@ class Snap(bonsai.core.tool.Snap):
             if not cls.snap_plane_method:
                 camera_rotation = rv3d.view_rotation
                 plane_origin = Vector((0, 0, 0))
-                plane_normal = Vector((0, 1, 1, 1)) * Vector((camera_rotation))
+                view_direction = Vector((0, 0, -1)) @ camera_rotation.to_matrix().transposed()
+                plane_normal = view_direction.normalized()
 
             if cls.snap_plane_method == "XY" or (not cls.snap_plane_method and cls.snap_axis_method in {"X", "Y"}):
                 if cls.use_default_container:
