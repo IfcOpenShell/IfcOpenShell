@@ -59,6 +59,7 @@ last_error = None
 last_actions: deque = deque(maxlen=10)
 FIRST_INSTALLED_BBIM_VERSION: Union[str, None] = None
 REINSTALLED_BBIM_VERSION: Union[str, None] = None
+REGISTERED_BBIM_PACKAGE: str
 
 
 def initialize_bbim_semver():
@@ -237,6 +238,10 @@ if IN_BLENDER:
         def register():
             if platform.system() == "Windows":
                 clean_up_dlls_safe_links()
+
+            import bonsai
+
+            bonsai.REGISTERED_BBIM_PACKAGE = __package__
 
             import bonsai.bim
 

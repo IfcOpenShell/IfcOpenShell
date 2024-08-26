@@ -80,7 +80,7 @@ inline namespace settings {
 
 class SerializerSettings : public SettingsContainer <
 	// @todo should we use tuple_cat here to unify the settings into a single class?
-	std::tuple<UseElementNames, UseElementGuids, UseElementStepIds, UseMaterialNames, UseElementTypes, UseYUp, WriteGltfEcef, FloatingPointDigits>
+	std::tuple<UseElementNames, UseElementGuids, UseElementStepIds, UseElementTypes, UseYUp, WriteGltfEcef, FloatingPointDigits>
 >
 {};
 

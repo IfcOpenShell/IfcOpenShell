@@ -130,3 +130,27 @@ class BIM_PT_demo(bpy.types.Panel):
         if self.props.show_hints:
             row = self.layout.row()
             row.label(text="Name cannot be blank!")
+
+
+class BIM_PT_webui_demo(bpy.types.Panel):
+    bl_label = "Web UI Demo"
+    bl_idname = "BIM_PT_webui_demo"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    # we specify that this panel is closed by default
+    bl_options = {"DEFAULT_CLOSED"}
+    # here we reference the demo panel to create a sub panel
+    # for the web UI demo
+    bl_parent_id = "BIM_PT_demo"
+
+    def draw(self, context):
+        self.props = context.scene.BIMDemoProperties
+
+        row = self.layout.row()
+        # we create an input field for the property webui_message
+        row.prop(self.props, "webui_message")
+
+        row = self.layout.row()
+        # here we create a button referencing the operator send_webui_message
+        row.operator("bim.send_webui_demo_message")

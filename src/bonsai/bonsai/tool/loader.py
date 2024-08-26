@@ -19,12 +19,14 @@
 from __future__ import annotations
 import os
 import re
+import math
 import bpy
 import bmesh
 import ifcopenshell.geom
 import ifcopenshell.util.element
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.placement
+import ifcopenshell.util.representation
 import ifcopenshell.util.shape
 import ifcopenshell.util.unit
 import bonsai.core.tool
@@ -98,7 +100,11 @@ class Loader(bonsai.core.tool.Loader):
         return "{}/{}".format(element.is_a(), getattr(element, "Name", "None"))
 
     @classmethod
-    def link_mesh(cls, shape, mesh: OBJECT_DATA_TYPE) -> None:
+    def link_mesh(
+        cls,
+        shape: Union[ifcopenshell.geom.ShapeElementType, ifcopenshell.geom.ShapeType],
+        mesh: tool.Geometry.TYPES_WITH_MESH_PROPERTIES,
+    ) -> None:
         geometry = shape.geometry if hasattr(shape, "geometry") else shape
         if "-" in geometry.id:
             mesh.BIMMeshProperties.ifc_definition_id = int(geometry.id.split("-")[0])
@@ -646,6 +652,82 @@ class Loader(bonsai.core.tool.Loader):
                     return result
             except:
                 pass
+
+    @classmethod
+    def create_point_cloud_mesh(cls, representation: ifcopenshell.entity_instance) -> Union[bpy.types.Mesh, None]:
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        vertex_list = []
+        for item in representation.Items:
+            if item.is_a("IfcCartesianPointList3D"):
+                vertex_list.extend(Vector(list(coordinates)) * unit_scale for coordinates in item.CoordList)
+            elif item.is_a("IfcCartesianPointList2D"):
+                vertex_list.extend(Vector(list(coordinates)).to_3d() * unit_scale for coordinates in item.CoordList)
+            elif item.is_a("IfcCartesianPoint"):
+                vertex_list.append(Vector(list(item.Coordinates)) * unit_scale)
+
+        if len(vertex_list) == 0:
+            return None
+
+        mesh_name = tool.Geometry.get_representation_name(representation)
+        mesh = bpy.data.meshes.new(mesh_name)
+        mesh.from_pydata(vertex_list, [], [])
+        return mesh
+
+    @classmethod
+    def create_camera(
+        cls,
+        element: ifcopenshell.entity_instance,
+        representation: ifcopenshell.entity_instance,
+        shape: Union[ifcopenshell.geom.ShapeElementType, ifcopenshell.geom.ShapeType],
+    ) -> bpy.types.Camera:
+        from bonsai.bim.module.drawing.prop import get_diagram_scales
+
+        if isinstance(shape, ifcopenshell.geom.ShapeElementType):
+            geometry = shape.geometry
+        else:
+            geometry = shape
+
+        v = geometry.verts
+        x = [v[i] for i in range(0, len(v), 3)]
+        y = [v[i + 1] for i in range(0, len(v), 3)]
+        z = [v[i + 2] for i in range(0, len(v), 3)]
+        width = max(x) - min(x)
+        height = max(y) - min(y)
+        depth = max(z) - min(z)
+
+        camera_type = "ORTHO"
+        if "IfcRectangularPyramid" in {e.is_a() for e in tool.Ifc.get().traverse(representation)}:
+            camera_type = "PERSP"
+
+        camera = bpy.data.cameras.new(tool.Loader.get_mesh_name_from_shape(geometry))
+        camera.type = camera_type
+        camera.show_limits = True
+
+        if camera_type == "ORTHO":
+            camera.clip_start = 0.002  # Technically 0, but Blender doesn't allow this, so 2mm it is!
+            camera.clip_end = depth
+
+            camera.BIMCameraProperties.width = width
+            camera.BIMCameraProperties.height = height
+        elif camera_type == "PERSP":
+            abs_min_z = abs(min(z))
+            abs_max_z = abs(max(z))
+            camera.clip_start = abs_max_z
+            camera.clip_end = abs_min_z
+            max_res = 1000
+
+            camera.BIMCameraProperties.width = width
+            camera.BIMCameraProperties.height = height
+
+            if width > height:
+                fov = 2 * math.atan(width / (2 * abs_min_z))
+            else:
+                fov = 2 * math.atan(height / (2 * abs_min_z))
+
+            camera.angle = fov
+
+        tool.Drawing.import_camera_props(element, camera)
+        return camera
 
     @classmethod
     def get_offset_point(cls, ifc_file: ifcopenshell.file) -> Union[npt.NDArray[np.float64], None]:

@@ -18,7 +18,7 @@ Like all Blender add-ons, they can be installed using ``Edit > Preferences >
 Addons > Install > Choose Downloaded ZIP > Enable Add-on Checkbox``. You can
 enable add-ons permanently by using ``Save User Settings`` from the Addons menu.
 
-Before installing, you will also need to `install the BlenderBIM Add-on
+Before installing, you will also need to `install Bonsai
 <https://bonsaibim.org/download.html>`__ and `install Sverchok
 <https://github.com/nortikin/sverchok#installation>`__.
 

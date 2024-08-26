@@ -882,19 +882,49 @@ class AddSurfaceTexture(bpy.types.Operator):
 class SaveUVToStyle(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.save_uv_to_style"
     bl_label = "Save UV To Style"
+    bl_description = (
+        "Save active object UV to the IfcSurfaceStyle's IfcSurfaceTexture.\n\n"
+        "If object already has IfcSurfaceStyleWithTextures, then it will be used.\n"
+        "Otherwise operator will use currently selected surface style (style will be autoassigned)"
+    )
     bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if not (obj := context.active_object) or not tool.Ifc.get_entity(obj):
+            cls.poll_message_set("No IFC object selected")
+            return False
+        return True
 
     def _execute(self, context):
         context = bpy.context
         ifc_file = tool.Ifc.get()
-        material = context.active_object.active_material
         obj = context.active_object
+        assert obj
 
-        # find active style item
-        style_id = material.BIMStyleProperties.ifc_definition_id
-        style = ifc_file.by_id(style_id)
+        # We need IFC material with a texture style since in IFC
+        # UV indexing (IfcTextureCoordinate) requires some IfcSurfaceTexture.
+        material, style = None, None
+        style_is_assigned = False
+        material = obj.active_material
+        if material:
+            style = tool.Ifc.get_entity(material)
 
-        def get_active_representation_items():
+        if style:
+            style_is_assigned = True
+        else:
+            style_item = tool.Style.get_active_style_in_ui()
+            if not style_item:
+                self.report({"ERROR"}, "Object has no style and no style is selected.")
+                return {"CANCELLED"}
+            style = ifc_file.by_id(style_item.ifc_definition_id)
+
+        texture_style = tool.Style.get_texture_style(style)
+        if not texture_style:
+            self.report({"ERROR"}, "IfcSurfaceStyle has no texture style.")
+            return {"CANCELLED"}
+
+        def get_active_representation_items() -> list[ifcopenshell.entity_instance]:
             representation = tool.Geometry.get_active_representation(obj)
             representation = ifcopenshell.util.representation.resolve_representation(representation)
             items = []
@@ -907,7 +937,7 @@ class SaveUVToStyle(bpy.types.Operator, tool.Ifc.Operator):
         all_styled_items = set(tool.Style.get_styled_items(style))
         active_representation_items = set(get_active_representation_items())
 
-        if not active_representation_items.issubset(all_styled_items):
+        if style_is_assigned and not active_representation_items.issubset(all_styled_items):
             self.report(
                 {"ERROR"},
                 "Not all items of the current representation are styled by the active style, not yet supported",
@@ -927,10 +957,13 @@ class SaveUVToStyle(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"ERROR"}, "Only 1 faceset item is supported.")
             return {"CANCELLED"}
 
-        texture_style = tool.Style.get_texture_style(material)
-        if not texture_style:
-            self.report({"ERROR"}, "No texture style found, not yet supported.")
+        mesh = obj.data
+        assert isinstance(mesh, bpy.types.Mesh)
+        uv_layer = mesh.uv_layers.active
+        if not uv_layer:
+            self.report({"ERROR"}, "Object has no UV.")
             return {"CANCELLED"}
+        uv_layer = uv_layer.uv
 
         # unmap preivously used IfcIndexedTextureMap
         # TODO: remove orphaned data?
@@ -942,9 +975,8 @@ class SaveUVToStyle(bpy.types.Operator, tool.Ifc.Operator):
             if coord.is_a("IfcIndexedTextureMap") and coord.MappedTo in active_representation_items:
                 coord.Maps = list(set(coord.Maps) - textures)
 
-        mesh = obj.data
         uv_indices = []
-        uv_verts = [uv.vector for uv in mesh.uv_layers.active.uv]
+        uv_verts = [uv.vector for uv in uv_layer]
 
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
 
@@ -993,7 +1025,11 @@ class SaveUVToStyle(bpy.types.Operator, tool.Ifc.Operator):
             uv_verts_list.TexCoordsList = uv_verts
             texture_coord.TexCoords = uv_verts_list
 
-        self.report({"INFO"}, f"UV saved to the style {style.Name}")
+        if not style_is_assigned:
+            with context.temp_override(selected_objects=[obj]):
+                bpy.ops.bim.assign_style_to_selected(style_id=style.id())
+
+        self.report({"INFO"}, f"UV saved to the style '{style.Name}'.")
 
         return {"FINISHED"}
 

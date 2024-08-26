@@ -65,6 +65,11 @@ section img {
     font-style: italic;
     color: var(--color-admonition-text);
 }
+img.transparent {
+    width: auto;
+    height: auto;
+    box-shadow: none;
+}
 img.icon {
     width: auto;
     height: auto;
@@ -77,6 +82,14 @@ img.icon {
     font-style: italic;
     font-size: small;
     color: #808080;
+}
+span.menuselection {
+    border: 1px solid var(--color-admonition-title);
+    background-color: var(--color-admonition-title-background);
+    color: var(--color-admonition-text);
+    border-radius: 5px;
+    padding-left: 3px;
+    padding-right: 3px;
 }
 
 

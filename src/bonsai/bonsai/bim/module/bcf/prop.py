@@ -59,11 +59,6 @@ def updateBcfProjectName(self, context):
         bpy.ops.bim.edit_bcf_project_name()
 
 
-def updateBcfAuthor(self, context):
-    if bcfstore.BcfStore.get_bcfxml():
-        bpy.ops.bim.edit_bcf_author()
-
-
 def updateBcfTopicName(self, context):
     if bcfstore.BcfStore.get_bcfxml():
         bpy.ops.bim.edit_bcf_topic_name()
@@ -189,11 +184,36 @@ class BcfTopic(PropertyGroup):
     is_editable: BoolProperty(name="Edit Topic Attributes", default=False, update=updateBcfTopicIsEditable)
 
 
+def get_related_topics(self: "BCFProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
+    props = self
+    active_topic = props.active_topic
+    active_related_topics = active_topic.related_topics.keys()
+    enum_items = []
+    i = 0
+    for t in props.topics:
+        if t.name == active_topic.name:
+            continue
+        if t.name in active_related_topics:
+            continue
+        enum_items.append((t.name, t.title, t.description))
+    return enum_items
+
+
 class BCFProperties(PropertyGroup):
     bcf_file: StringProperty(name="BCF File")
+    bcf_version: EnumProperty(
+        name="BCF Version",
+        description="Currently loaded BCF project version / BCF version to use for created projects",
+        items=[("2", "v2.1", ""), ("3", "v3.0", "")],
+        default="3",
+    )
     comment_text_width: IntProperty(name="Comment Text Width", default=40)
     name: StringProperty(default="", name="Project Name", update=updateBcfProjectName)
-    author: StringProperty(default="john@doe.com", name="Author Email", update=updateBcfAuthor)
+    author: StringProperty(
+        default="john@doe.com",
+        name="Author Email",
+        description="Author name that will be used for added comments, topics",
+    )
     topics: CollectionProperty(name="BCF Topics", type=BcfTopic)
     active_topic_index: IntProperty(name="Active BCF Topic Index", update=refreshBcfTopic)
     file_reference: StringProperty(default="", name="Reference")
@@ -203,14 +223,15 @@ class BCFProperties(PropertyGroup):
     label: StringProperty(
         default="", name="Label", search=lambda s, c, t: get_extensions_items(s, c, t, extensions_attr="topic_labels")
     )
-    bim_snippet_reference: StringProperty(default="", name="Reference")
+    bim_snippet_reference: StringProperty(default="", name="Reference", description="URI or filepath to BimSnippet")
     bim_snippet_type: StringProperty(
         default="", name="Type", search=lambda s, c, t: get_extensions_items(s, c, t, extensions_attr="snippet_types")
     )
     bim_snippet_schema: StringProperty(default="", name="Schema")
     document_reference: StringProperty(default="", name="Referenced Document")
     document_reference_description: StringProperty(default="", name="Description")
-    related_topic: StringProperty(name="Related Topic")
+    document_description: StringProperty(default="", name="Document Description")
+    related_topic: EnumProperty(name="Related Topic", items=get_related_topics)
     comment: StringProperty(default="", name="Comment")
     has_related_viewpoint: BoolProperty(name="Has Related Viewpoint", default=False)
 
@@ -225,7 +246,6 @@ class BCFProperties(PropertyGroup):
         self.bim_snippet_schema = ""
         self.document_reference = ""
         self.document_reference_description = ""
-        self.related_topic = ""
         self.comment = ""
         self.has_related_viewpoint = False
 

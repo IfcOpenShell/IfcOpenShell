@@ -12,7 +12,7 @@ Let's learn IfcOpenShell!
    ifcopenshell
    ifcopenshell-python
    ifcconvert
-   blenderbim
+   bonsai
 
 .. toctree::
    :hidden:

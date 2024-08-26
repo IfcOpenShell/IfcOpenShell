@@ -219,7 +219,7 @@ std::string taxonomy_item_repr(ifcopenshell::geometry::taxonomy::item::ptr i) {
 		if ((ent = self->instance->as<IfcUtil::IfcBaseEntity>()) == nullptr) {
 			return 0;
 		}
-		return ent->data().id();
+		return ent->id();
 	}
 }
 
@@ -741,7 +741,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 
 	template <typename Schema>
 	static boost::variant<IfcGeom::Element*, IfcGeom::Representation::Representation*, IfcGeom::Transformation*> helper_fn_create_shape(const std::string& geometry_library, ifcopenshell::geometry::Settings& settings, IfcUtil::IfcBaseClass* instance, IfcUtil::IfcBaseClass* representation = 0) {
-		IfcParse::IfcFile* file = instance->data().file;
+		IfcParse::IfcFile* file = instance->file_;
 			
 		ifcopenshell::geometry::Converter kernel(geometry_library, file, settings);
 			
@@ -854,7 +854,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 						throw IfcParse::IfcException("Failed to process shape");
 					}
 
-					IfcGeom::Representation::BRep brep(settings, instance->declaration().name(), to_locale_invariant_string(instance->data().id()), shapes);
+					IfcGeom::Representation::BRep brep(settings, instance->declaration().name(), to_locale_invariant_string(instance->as<IfcUtil::IfcBaseEntity>()->id()), shapes);
 					try {
 						if (settings.get<ifcopenshell::geometry::settings::IteratorOutput>().get() == ifcopenshell::geometry::settings::SERIALIZED) {
 							return new IfcGeom::Representation::Serialization(brep);
@@ -902,7 +902,7 @@ ifcopenshell::geometry::taxonomy::item::ptr try_upcast(PyObject* obj0, swig_type
 
 %inline %{
 	ifcopenshell::geometry::taxonomy::item::ptr map_shape(ifcopenshell::geometry::Settings& settings, IfcUtil::IfcBaseClass* instance) {
-        std::unique_ptr<ifcopenshell::geometry::abstract_mapping> mapping(ifcopenshell::geometry::impl::mapping_implementations().construct(instance->data().file, settings));
+        std::unique_ptr<ifcopenshell::geometry::abstract_mapping> mapping(ifcopenshell::geometry::impl::mapping_implementations().construct(instance->file_, settings));
 		return mapping->map(instance);
 	}
 %}

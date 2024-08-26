@@ -72,3 +72,9 @@ def demonstrate_rename_project(ifc, demo, name=None):
         demo.hide_user_hints()
     else:
         demo.show_user_hints()
+
+
+# here this core function uses the web tool to send a message to the web UI
+# we call the send_webui_data method to send any kind of data to the web UI
+def send_webui_demo_message(web, message="Hello"):
+    web.send_webui_data(data=message, data_key="demo_message", event="demo_data")

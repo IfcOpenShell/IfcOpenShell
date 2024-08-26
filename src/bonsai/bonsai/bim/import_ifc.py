@@ -785,7 +785,9 @@ class IfcImporter:
             self.set_matrix_world(obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, placement_matrix))
             self.link_element(product, obj)
 
-    def get_pointcloud_representation(self, product):
+    def get_pointcloud_representation(
+        self, product: ifcopenshell.entity_instance
+    ) -> Union[ifcopenshell.entity_instance, None]:
         if hasattr(product, "Representation") and hasattr(product.Representation, "Representations"):
             representations = product.Representation.Representations
         elif hasattr(product, "RepresentationMaps") and hasattr(product.RepresentationMaps, "RepresentationMaps"):
@@ -825,28 +827,12 @@ class IfcImporter:
     def create_pointcloud(
         self, product: ifcopenshell.entity_instance, representation: ifcopenshell.entity_instance
     ) -> Union[ifcopenshell.entity_instance, None]:
-        placement_matrix = self.get_element_matrix(product)
-        vertex_list = []
-        for item in representation.Items:
-            if item.is_a("IfcCartesianPointList3D"):
-                vertex_list.extend(
-                    mathutils.Vector(list(coordinates)) * self.unit_scale for coordinates in item.CoordList
-                )
-            elif item.is_a("IfcCartesianPointList2D"):
-                vertex_list.extend(
-                    mathutils.Vector(list(coordinates)).to_3d() * self.unit_scale for coordinates in item.CoordList
-                )
-            elif item.is_a("IfcCartesianPoint"):
-                vertex_list.append(mathutils.Vector(list(item.Coordinates)) * self.unit_scale)
-
-        if len(vertex_list) == 0:
-            return None
-
-        mesh_name = tool.Geometry.get_representation_name(representation)
-        mesh = bpy.data.meshes.new(mesh_name)
-        mesh.from_pydata(vertex_list, [], [])
+        mesh = tool.Loader.create_point_cloud_mesh(representation)
+        if mesh is None:
+            return
         tool.Ifc.link(representation, mesh)
 
+        placement_matrix = self.get_element_matrix(product)
         obj = bpy.data.objects.new(tool.Loader.get_name(product), mesh)
         self.set_matrix_world(obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, placement_matrix))
         self.link_element(product, obj)

@@ -119,11 +119,9 @@ nav ul li a.active {
     color: var(--blender-selected-object, var(--nav-link-hover-color));
 }
 
-.warning {
+.warning,
+.warning-icon {
     color: var(--blender-info-warning, var(--warning-color));
-    margin-bottom: var(--margin-small);
-    padding: var(--padding-tiny);
-    display: none;
 }
 
 .table-description {
@@ -142,6 +140,14 @@ nav ul li a.active {
 .table-description tr {
     display: table-row;
     border-bottom: 1px solid var(--blender-tab-outline, var(--border-color));
+}
+
+.table-description tr:nth-child(even) {
+    background-color: var(--blender-even-row);
+}
+
+.table-description tr:nth-child(odd) {
+    background-color: var(--blender-odd-row);
 }
 
 #toggle-theme {
@@ -342,12 +348,6 @@ button:hover {
     border-color: var(--border-color);
 }
 
-/* .gTaskInfo {
-    background-color: #2e2e2e;
-    color: #c7c7c7;
-    border-color: #c7c7c7;;
-} */
-
 /* Dark mode scrollbar */
 :root.dark .frame::-webkit-scrollbar-thumb,
 :root.dark .frame::-webkit-scrollbar-track {
@@ -462,6 +462,11 @@ button:hover {
 :root.blender .glistlbl.gcontainercol .gtaskname,
 :root.blender .glistlbl.gcontainercol .gtasklist {
     background-color: var(--blender-panel-header);
+    border-color: var(--blender-tab-outline);
+}
+
+:root.blender .gtaskcellcurrent {
+    background-color: var(--blender-odd-row);
     border-color: var(--blender-tab-outline);
 }
 

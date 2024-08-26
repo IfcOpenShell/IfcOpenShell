@@ -73,9 +73,6 @@ src/ifcopenshell-python/test/build
 # mypy cache
 .mypy_cache
 
-# bonsai libs
-src/bonsai/bonsai/libs
-
 # bonsai i18n
 src/bonsai/bonsai/translations.py
 

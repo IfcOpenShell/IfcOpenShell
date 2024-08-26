@@ -542,7 +542,7 @@ void HdfSerializer::write_style(surface_style_serialization& data, const ifcopen
 	data.name = s.name.c_str();
 	// @todo
 	data.original_name = s.name.c_str();
-	data.id = s.instance->data().id();
+	data.id = s.instance->as<IfcUtil::IfcBaseClass>()->id();
 	if (s.diffuse) {
 		data.diffuse[0] = s.diffuse.ccomponents()(0);
 		data.diffuse[1] = s.diffuse.ccomponents()(1);

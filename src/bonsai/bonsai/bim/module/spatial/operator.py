@@ -249,8 +249,6 @@ class SelectDecomposedElements(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
     should_filter: bpy.props.BoolProperty(name="Should Filter", default=True, options={"SKIP_SAVE"})
     container: bpy.props.IntProperty()
-    ifc_class: bpy.props.StringProperty()
-    relating_type: bpy.props.IntProperty()
 
     @classmethod
     def description(cls, context, operator):
@@ -262,20 +260,25 @@ class SelectDecomposedElements(bpy.types.Operator, tool.Ifc.Operator):
         return self.execute(context)
 
     def _execute(self, context):
+        ifc_class = relating_type = is_untyped = None
         if self.should_filter:
-            ifc_class = self.ifc_class
-            relating_type = tool.Ifc.get().by_id(self.relating_type) if self.relating_type else None
-            is_untyped = self.relating_type == 0
-        else:
-            ifc_class = ""
-            relating_type = None
-            is_untyped = False
+            active_element = context.scene.BIMSpatialDecompositionProperties.active_element
+            if active_element.is_class:
+                ifc_class = active_element.name
+            elif relating_type := active_element.ifc_definition_id:
+                ifc_class = active_element.ifc_class
+                relating_type = tool.Ifc.get().by_id(relating_type)
+            else:
+                ifc_class = active_element.ifc_class
+                is_untyped = True
+        element_filter = context.scene.BIMSpatialDecompositionProperties.element_filter
         core.select_decomposed_elements(
             tool.Spatial,
             container=tool.Ifc.get().by_id(self.container),
             ifc_class=ifc_class,
             relating_type=relating_type,
             is_untyped=is_untyped,
+            element_filter = element_filter
         )
 
 

@@ -22,6 +22,7 @@
 
 #include "../ifcparse/IfcFile.h"
 #include "../ifcparse/IfcLogger.h"
+#include "../ifcparse/Ifc2x3.h"
 
 #include <boost/preprocessor/stringize.hpp>
 #include <boost/preprocessor/seq/for_each.hpp>
@@ -79,31 +80,31 @@ struct is_ifc4_or_higher<T, std::void_t<decltype(T::IfcMaterialDefinition)>> : s
 
 typedef std::map<std::string, std::map<std::string, std::string>> element_properties;
 
-std::string format_string(const Argument* argument) {
+std::string format_string(const AttributeValue& argument) {
 	// Argument is a runtime tagged variant for the various data types in a IFC model,
 	// in this particular case we only care about flattening it to a string.
 	// @todo mostly duplicated from XmlSerializer.cpp
-	if (argument->isNull()) {
+	if (argument.isNull()) {
 		return "-";
 	}
-	auto argument_type = argument->type();
+	auto argument_type = argument.type();
 	switch (argument_type) {
 	case IfcUtil::Argument_BOOL: {
-		const bool b = *argument;
+		const bool b = argument;
 		return b ? "true" : "false";
 	}
 	case IfcUtil::Argument_DOUBLE: {
-		const double d = *argument;
+		const double d = argument;
 		std::stringstream stream;
 		stream << std::setprecision(std::numeric_limits< double >::max_digits10) << d;
 		return stream.str();
 		break; }
 	case IfcUtil::Argument_STRING:
 	case IfcUtil::Argument_ENUMERATION: {
-		return static_cast<std::string>(*argument);
+		return static_cast<std::string>(argument);
 		break; }
 	case IfcUtil::Argument_INT: {
-		const int v = *argument;
+		const int v = argument;
 		std::stringstream stream;
 		stream << v;
 		return stream.str();
@@ -136,7 +137,7 @@ void process_pset(element_properties& props, const T* inst) {
 				if (!singleval->NominalValue()) {
 					propvalue = "-";
 				} else {
-					props[*pset->Name()][propname] = format_string(singleval->NominalValue()->template as<IfcUtil::IfcBaseClass>()->data().getArgument(0));
+					props[*pset->Name()][propname] = format_string(singleval->NominalValue()->template as<IfcUtil::IfcBaseClass>()->data().get_attribute_value(0));
 				}
 			}
 		}
@@ -148,8 +149,8 @@ void process_pset(element_properties& props, const T* inst) {
 		auto qs = qset->Quantities();
 		for (auto it = qs->begin(); it != qs->end(); ++it) {
 			auto& q = *it;
-			if (q->template as<typename Schema::IfcPhysicalSimpleQuantity>() && q->data().getArgument(3)->type() == IfcUtil::Argument_DOUBLE) {
-				double v = *q->data().getArgument(3);
+			if (q->template as<typename Schema::IfcPhysicalSimpleQuantity>() && q->data().get_attribute_value(3).type() == IfcUtil::Argument_DOUBLE) {
+				double v = q->data().get_attribute_value(3);
 				props[*qset->Name()][q->Name()] = std::to_string(v);
 			}
 		}
@@ -264,7 +265,8 @@ int main(int argc, char** argv) {
 
     for (auto it = elements->begin(); it != elements->end(); ++it) {
         const auto* element = *it;
-        std::cout << element->data().toString() << std::endl;
+		element->toString(std::cout);
+		std::cout << std::endl;
 
         const IfcSchema::IfcWindow* window;
         if ((window = element->as<IfcSchema::IfcWindow>()) != 0) {

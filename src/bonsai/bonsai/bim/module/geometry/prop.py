@@ -97,6 +97,7 @@ class RepresentationItem(PropertyGroup):
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     shape_aspect: StringProperty(name="Shape Aspect")
     shape_aspect_id: IntProperty(name="Shape Aspect IFC ID")
+    tags: StringProperty(name="Tags")
 
 
 class ShapeAspect(PropertyGroup):

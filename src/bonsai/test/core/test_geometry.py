@@ -42,6 +42,7 @@ class TestAddRepresentation:
 
         # Add representation
         geometry.get_object_data("obj").should_be_called().will_return("data")
+        geometry.is_data_supported_for_adding_representation("data").should_be_called().will_return(True)
         geometry.get_cartesian_point_coordinate_offset("obj").should_be_called().will_return("coordinate_offset")
         geometry.get_total_representation_items("obj").should_be_called().will_return(1)
         geometry.should_force_faceted_brep().should_be_called().will_return(False)
@@ -108,6 +109,7 @@ class TestAddRepresentation:
 
         # Add representation
         geometry.get_object_data("obj").should_be_called().will_return("data")
+        geometry.is_data_supported_for_adding_representation("data").should_be_called().will_return(True)
         geometry.get_cartesian_point_coordinate_offset("obj").should_be_called().will_return("coordinate_offset")
         geometry.get_total_representation_items("obj").should_be_called().will_return(1)
         geometry.should_force_faceted_brep().should_be_called().will_return(False)
@@ -158,7 +160,8 @@ class TestAddRepresentation:
         TestEditObjectPlacement.predict(self, ifc, geometry, surveyor)
 
         # Add representation
-        geometry.get_object_data("obj").should_be_called().will_return(None)
+        geometry.get_object_data("obj").should_be_called().will_return("data")
+        geometry.is_data_supported_for_adding_representation("data").should_be_called().will_return(False)
         assert (
             subject.add_representation(
                 ifc,

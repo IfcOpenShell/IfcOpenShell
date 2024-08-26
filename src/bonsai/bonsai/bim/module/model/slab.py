@@ -135,10 +135,13 @@ class DumbSlabGenerator:
         )
 
         props = bpy.context.scene.BIMModelProperties
+
         self.container = None
+        self.container_obj = None
         if container := tool.Root.get_default_container():
             self.container = container
             self.container_obj = tool.Ifc.get_object(container)
+
         self.depth = sum(thicknesses) * unit_scale
         self.width = 3
         self.length = 3
