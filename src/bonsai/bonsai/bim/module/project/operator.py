@@ -2478,16 +2478,22 @@ class MeasureTool(bpy.types.Operator):
             tool.Snap.set_use_default_container(False)
             PolylineDecorator.set_use_default_container(False)
             tool.Snap.set_snap_plane_method("YZ")
+            tool.Snap.set_snap_axis_method(None)
+            tool.Blender.update_viewport()
 
         if event.shift and event.value == "PRESS" and event.type == "Y":
             tool.Snap.set_use_default_container(False)
             PolylineDecorator.set_use_default_container(False)
             tool.Snap.set_snap_plane_method("XZ")
+            tool.Snap.set_snap_axis_method(None)
+            tool.Blender.update_viewport()
 
         if event.shift and event.value == "PRESS" and event.type == "Z":
             tool.Snap.set_use_default_container(False)
             PolylineDecorator.set_use_default_container(False)
             tool.Snap.set_snap_plane_method("XY")
+            tool.Snap.set_snap_axis_method(None)
+            tool.Blender.update_viewport()
 
         if event.type in {"MIDDLEMOUSE", "WHEELUPMOUSE", "WHEELDOWNMOUSE"}:
             return {"PASS_THROUGH"}
@@ -2513,6 +2519,7 @@ class MeasureTool(bpy.types.Operator):
             tool.Snap.set_use_default_container(False)
             PolylineDecorator.set_use_default_container(False)
             tool.Snap.set_snap_plane_method(None)
+            tool.Snap.set_snap_axis_method(None)
             PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
             self.visible_objs = tool.Raycast.get_visible_objects(context)
             for obj in self.visible_objs:
