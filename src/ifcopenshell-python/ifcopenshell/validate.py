@@ -256,11 +256,12 @@ def assert_valid(
         return True
 
 
-def log_internal_cpp_errors(filename: str, logger: Logger) -> None:
+def log_internal_cpp_errors(f: ifcopenshell.file, filename: str, logger: Logger) -> None:
     import re
     import bisect
 
     chr_offset_re = re.compile(r"at offset (\d+)\s*")
+    for_instance_re = re.compile(r"\s*for instance #(\d+)\s*")
 
     log = ifcopenshell.get_log()
     msgs = list(map(json.loads, filter(None, log.split("\n"))))
@@ -285,6 +286,24 @@ def log_internal_cpp_errors(filename: str, logger: Logger) -> None:
                     logger.error("%s:\n\n%s" % (m, line))
                 else:
                     logger.error("For instance:\n    %s\n%s", line, m)
+
+    instance_messages = [for_instance_re.findall(m["message"]) for m in msgs]
+    if instance_messages:
+        for instid, msg in zip(instance_messages, msgs):
+            if instid:
+                m = for_instance_re.sub("", msg["message"])
+                try:
+                    inst = f[int(instid[0])]
+                except:
+                    inst = None
+                if hasattr(logger, "set_state"):
+                    logger.set_state("instance", inst)
+                    logger.set_state("attribute", None)
+                    logger.error(m)
+                elif inst:
+                    logger.error("For instance:\n    %s\n%s", inst, m)
+                else:
+                    logger.error(m)
 
 
 entity_attribute_map: dict[tuple[str, str], tuple[entity_type, tuple[attribute]]] = {}
@@ -368,7 +387,7 @@ def validate(f: Union[ifcopenshell.file, str], logger: Logger, express_rules=Fal
                 logger.error(f"Unsupported schema: {schema_name}")
                 return
 
-        log_internal_cpp_errors(filename, logger)
+        log_internal_cpp_errors(f, filename, logger)
 
     schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(f.schema_identifier)
     used_guids: dict[str, ifcopenshell.entity_instance] = dict()
@@ -490,7 +509,7 @@ def validate(f: Union[ifcopenshell.file, str], logger: Logger, express_rules=Fal
         # Re capturing the log when validate() is finished
         # iterating over every instance so that all attribute counts
         # are verified.
-        log_internal_cpp_errors(filename, logger)
+        log_internal_cpp_errors(f, filename, logger)
 
     # Restore the original value for 'use_attribute_value_derived'
     ifcopenshell.ifcopenshell_wrapper.set_feature("use_attribute_value_derived", attribute_value_derived_org)

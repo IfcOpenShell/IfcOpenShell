@@ -144,8 +144,10 @@ class AddConstrTypeInstance(bpy.types.Operator):
         if self.from_invoke and str(self.relating_type_id) in AuthoringData.data["relating_type_id"]:
             props.relating_type_id = str(self.relating_type_id)
 
+        self.container = None
         self.container_obj = None
         if container := tool.Root.get_default_container():
+            self.container = container
             self.container_obj = tool.Ifc.get_object(container)
 
         relating_type = tool.Ifc.get().by_id(int(relating_type_id))

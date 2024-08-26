@@ -663,11 +663,11 @@ def add_menu(self, context):
 
 
 def add_mesh_object_menu(self, context):
-    self.layout.separator()
-    self.layout.operator("mesh.add_grid", icon_value=bonsai.bim.icons["IFC"].icon_id)
-    self.layout.operator("mesh.add_stair", icon_value=bonsai.bim.icons["IFC"].icon_id)
-    self.layout.operator("mesh.add_clever_stair", icon_value=bonsai.bim.icons["IFC"].icon_id)
-    self.layout.operator("mesh.add_window", icon_value=bonsai.bim.icons["IFC"].icon_id)
-    self.layout.operator("mesh.add_door", icon_value=bonsai.bim.icons["IFC"].icon_id)
-    self.layout.operator("mesh.add_railing", icon_value=bonsai.bim.icons["IFC"].icon_id)
-    self.layout.operator("mesh.add_roof", icon_value=bonsai.bim.icons["IFC"].icon_id)
+    if context.mode == "OBJECT":
+        self.layout.separator()
+        self.layout.operator("mesh.add_grid", icon_value=bonsai.bim.icons["IFC"].icon_id)
+        self.layout.operator("mesh.add_stair", icon_value=bonsai.bim.icons["IFC"].icon_id, text="Stair (Untyped)")
+        self.layout.operator("mesh.add_window", icon_value=bonsai.bim.icons["IFC"].icon_id, text="Window (Untyped)")
+        self.layout.operator("mesh.add_door", icon_value=bonsai.bim.icons["IFC"].icon_id, text="Door (Untyped)")
+        self.layout.operator("mesh.add_railing", icon_value=bonsai.bim.icons["IFC"].icon_id, text="Railing (Untyped)")
+        self.layout.operator("mesh.add_roof", icon_value=bonsai.bim.icons["IFC"].icon_id, text="Roof (Untyped)")

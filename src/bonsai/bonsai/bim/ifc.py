@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import os
 import bpy
 import uuid
@@ -117,13 +118,18 @@ class IfcStore:
             ifc_hash = hashlib.md5(ifc_key.encode("utf-8")).hexdigest()
             IfcStore.cache_path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "cache", f"{ifc_hash}.h5")
             cache_settings = ifcopenshell.geom.settings()
+            serializer_settings = ifcopenshell.geom.serializer_settings()
             try:
-                IfcStore.cache = ifcopenshell.geom.serializers.hdf5(IfcStore.cache_path, cache_settings)
+                IfcStore.cache = ifcopenshell.geom.serializers.hdf5(
+                    IfcStore.cache_path, cache_settings, serializer_settings
+                )
             except:
                 if os.path.exists(IfcStore.cache_path):
                     os.remove(IfcStore.cache_path)
                     try:
-                        IfcStore.cache = ifcopenshell.geom.serializers.hdf5(IfcStore.cache_path, cache_settings)
+                        IfcStore.cache = ifcopenshell.geom.serializers.hdf5(
+                            IfcStore.cache_path, cache_settings, serializer_settings
+                        )
                     except:
                         return
                 else:
@@ -228,7 +234,9 @@ class IfcStore:
             IfcStore.commit_link_element(data)
 
     @staticmethod
-    def link_element(element: ifcopenshell.entity_instance, obj: IFC_CONNECTED_TYPE) -> None:
+    def link_element(
+        element: ifcopenshell.entity_instance, obj: Union[IFC_CONNECTED_TYPE, tool.Geometry.TYPES_WITH_MESH_PROPERTIES]
+    ) -> None:
         # Please use tool.Ifc.link() instead of this method. We want to
         # refactor this class and deprecate usage of IfcStore in favour of
         # tools.

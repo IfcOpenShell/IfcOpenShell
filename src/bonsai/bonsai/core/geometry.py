@@ -17,7 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-from typing import TYPE_CHECKING, Optional, Sequence
+from typing import TYPE_CHECKING, Optional, Sequence, Union
 
 if TYPE_CHECKING:
     import bpy
@@ -47,7 +47,8 @@ def add_representation(
     context: ifcopenshell.entity_instance,
     ifc_representation_class: Optional[str] = None,
     profile_set_usage: Optional[ifcopenshell.entity_instance] = None,
-) -> ifcopenshell.entity_instance:
+) -> Union[ifcopenshell.entity_instance, None]:
+    """Add IFC representation based on object `.data`."""
     element = ifc.get_entity(obj)
     if not element:
         return
@@ -55,7 +56,7 @@ def add_representation(
     edit_object_placement(ifc, geometry, surveyor, obj=obj)
     data = geometry.get_object_data(obj)
 
-    if not data and ifc_representation_class != "IfcTextLiteral":
+    if not geometry.is_data_supported_for_adding_representation(data) and ifc_representation_class != "IfcTextLiteral":
         return
 
     representation = ifc.run(

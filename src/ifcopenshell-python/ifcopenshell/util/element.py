@@ -1256,13 +1256,18 @@ REFERENCE_TYPES: dict[str, ReferenceData] = {
     ),
     "IfcDocumentReference": ReferenceData("DocumentRefForObjects", "IfcRelAssociatesDocument", "RelatingDocument"),
     "IfcLibraryReference": ReferenceData("LibraryRefForObjects", "IfcRelAssociatesLibrary", "RelatingLibrary"),
+    "IfcClassification": ReferenceData(
+        "ClassificationForObjects", "IfcRelAssociatesClassification", "RelatingClassification"
+    ),
+    "IfcDocumentInformation": ReferenceData("DocumentInfoForObjects", "IfcRelAssociatesDocument", "RelatingDocument"),
+    "IfcLibraryInformation": ReferenceData("LibraryInfoForObjects", "IfcRelAssociatesLibrary", "RelatingLibrary"),
 }
 
 
 def get_referenced_elements(reference: ifcopenshell.entity_instance) -> set[ifcopenshell.entity_instance]:
     """Get all elements with assigned `reference`
 
-    :param reference: IfcExternalReference subtype reference
+    :param reference: IfcExternalReference/IfcExternalInformation subtype reference
     :type reference: ifcopenshell.entity_instance
     :return: The elements with assigned `reference`
     :rtype: set[ifcopenshell.entity_instance]
@@ -1287,9 +1292,10 @@ def get_referenced_elements(reference: ifcopenshell.entity_instance) -> set[ifco
                     related_objects.update(rel.RelatedObjects)
 
     else:
-        # IfcExternalReference
-        for external_rel in reference.ExternalReferenceForResources:
-            related_objects.update(external_rel.RelatedResourceObjects)
+        if reference.is_a("IfcExternalReference"):
+            # IfcExternalReference
+            for external_rel in reference.ExternalReferenceForResources:
+                related_objects.update(external_rel.RelatedResourceObjects)
 
         reference_data = REFERENCE_TYPES.get(ifc_class)
         if reference_data:

@@ -76,3 +76,18 @@ class DemonstrateRenameProject(bpy.types.Operator, tool.Ifc.Operator):
         # properties (such as an input field) or data from the scene (like the
         # actively selected object).
         core.demonstrate_rename_project(tool.Ifc, tool.Demo, name=bpy.context.scene.BIMDemoProperties.name)
+
+
+class SendWebUiDemoMessage(bpy.types.Operator):
+    bl_idname = "bim.send_webui_demo_message"
+    bl_label = "Send Web UI Demo Message"
+    bl_description = "Sends a demo message to the currently connected Web UI"
+
+    def execute(self, context):
+        # First, we need to make sure that we are connected to the Web UI
+        # We do that by checking the Web module properties' is_connected prop
+        # and calling the operator connect_websocket_server if we aren't connected to a Web UI
+        if not context.scene.WebProperties.is_connected:
+            bpy.ops.bim.connect_websocket_server(page="demo")
+        core.send_webui_demo_message(tool.Web, message=bpy.context.scene.BIMDemoProperties.webui_message)
+        return {"FINISHED"}

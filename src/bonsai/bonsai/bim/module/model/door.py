@@ -494,6 +494,10 @@ class BIM_OT_add_door(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Door"
     bl_options = {"REGISTER", "UNDO"}
 
+    @classmethod
+    def poll(cls, context):
+        return tool.Ifc.get() and context.mode == "OBJECT"
+
     def _execute(self, context):
         ifc_file = tool.Ifc.get()
         if not ifc_file:

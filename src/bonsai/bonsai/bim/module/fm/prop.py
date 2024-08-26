@@ -41,7 +41,11 @@ def get_engine(self, context):
 class BIMFMProperties(PropertyGroup):
     ifc_files: PointerProperty(type=MultipleFileSelect)
     spreadsheet_files: CollectionProperty(name="Spreadsheets", type=StrProperty)
-    should_load_from_memory: BoolProperty(default=False, name="Load from Memory")
+    should_load_from_memory: BoolProperty(
+        default=False,
+        name="Load from Memory",
+        description="Use IFC file currently loaded in Bonsai",
+    )
     engine: EnumProperty(items=get_engine, name="Engine", options=set())
     format: EnumProperty(
         items=[

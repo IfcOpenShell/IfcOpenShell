@@ -528,7 +528,7 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::face::ptr face, IfcGeom::Co
 		return false;
 	}
 	results.emplace_back(ConversionResult(
-		face->instance->data().id(),
+		face->instance->as<IfcUtil::IfcBaseEntity>()->id(),
 		new OpenCascadeShape(shape),
 		face->surface_style
 	));

@@ -15,8 +15,8 @@ take length values defined in feet, and apply imperial formatting such that it
 shows both feet and inches including fractions.
 
 These three usecases of filtering, getting a value, and formatting that value
-are common and used in many utilities, such as in the BlenderBIM Add-on,
-IfcCSV, IfcDiff, IfcClash, IfcPatch, and IfcFM.
+are common and used in many utilities, such as in Bonsai, IfcCSV, IfcDiff,
+IfcClash, IfcPatch, and IfcFM.
 
 IfcOpenShell provides a custom syntax to consistently and concisely describe
 filters, value queries, and formatting rules.

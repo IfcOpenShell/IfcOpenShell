@@ -41,6 +41,12 @@ def get_element_key(self, context):
     return SelectSimilarData.data["element_key"]
 
 
+def get_colourscheme_key(self, context):
+    if not ColourByPropertyData.is_loaded:
+        ColourByPropertyData.load()
+    return ColourByPropertyData.data["colourscheme_key"]
+
+
 def get_saved_searches(self, context):
     if not SearchData.is_loaded:
         SearchData.load()
@@ -79,6 +85,21 @@ def update_is_container_selected(self, context):
                 obj.select_set(False)
                 new = self.unselected_objects.add()
                 new.obj = obj
+
+
+def update_show_flat_colours(self, context):
+    if self.show_flat_colours:
+        space = tool.Blender.get_view3d_space()
+        space.shading.light = "FLAT"
+        space.shading.color_type = "OBJECT"
+        space.shading.show_object_outline = True
+        space.shading.show_cavity = True
+    else:
+        space = tool.Blender.get_view3d_space()
+        space.shading.type = "SOLID"
+        space.shading.light = "STUDIO"
+        space.shading.show_object_outline = True
+        space.shading.show_cavity = False
 
 
 class BIMFilterClasses(PropertyGroup):
@@ -122,7 +143,43 @@ class BIMSearchProperties(PropertyGroup):
     )
     saved_searches: EnumProperty(items=get_saved_searches, name="Saved Searches")
     saved_colourschemes: EnumProperty(items=get_saved_colourschemes, name="Saved Colourschemes")
+    colourscheme_key: EnumProperty(items=get_colourscheme_key, name="Colourscheme Key")
     colourscheme_query: StringProperty(name="Colourscheme Query", default="class")
+    palette: EnumProperty(
+        items=[
+            ("tab10", "Default (Qualitative)", "10 Contrasting colours to distinguish categories"),
+            ("paired", "Paired (Qualitative)", "12 Contrasting colour pairs to distinguish categories"),
+            ("rocket", "Rocket (Quantitative - Sequential)", "A sequential range from black to red to white"),
+            ("mako", "Mako (Quantitative - Sequential)", "A sequential range from black to blue to white"),
+            (
+                "coolwarm",
+                "CoolWarm (Quantitative - Diverging)",
+                "A diverging linear range from blue to red with white in the middle",
+            ),
+            (
+                "spectral",
+                "Spectral (Quantitative - Diverging)",
+                "A diverging spectral range from red to blue with white in the middle",
+            ),
+        ],
+        name="Palette",
+    )
+    min_mode: EnumProperty(
+        items=[
+            ("AUTO", "Automatic", "Automatically determine the minimum value"),
+            ("MANUAL", "Manual", "Manually specify the minimum value"),
+        ],
+        name="Min Mode",
+    )
+    max_mode: EnumProperty(
+        items=[
+            ("AUTO", "Automatic", "Automatically determine the maximum value"),
+            ("MANUAL", "Manual", "Manually specify the maximum value"),
+        ],
+        name="Max Mode",
+    )
+    min_value: FloatProperty(name="Min Value", default=0)
+    max_value: FloatProperty(name="Max Value", default=100)
     colourscheme: CollectionProperty(type=BIMColour)
     active_colourscheme_index: IntProperty(name="Active Colourscheme Index")
     filter_type: StringProperty(name="Filter Type")
@@ -130,6 +187,7 @@ class BIMSearchProperties(PropertyGroup):
     filter_classes_index: IntProperty(name="Filter Classes Index")
     filter_container: CollectionProperty(type=BIMFilterBuildingStoreys, name="Filter Level")
     filter_container_index: IntProperty(name="Filter Level Index")
+    show_flat_colours: BoolProperty(name="Flat Colours", default=False, update=update_show_flat_colours)
 
 
 def get_classes(self, ifc_product):

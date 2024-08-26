@@ -340,21 +340,15 @@ void set_children_of_relation(Ifc4x3_add2::IfcRelAggregates* t, aggregate_of_ins
 #endif
 
 IfcUtil::IfcBaseClass* get_parent_of_relation(IfcUtil::IfcBaseClass* t) {
-    return *t->data().getArgument(
-        t->declaration().as_entity()->attribute_index("RelatingObject"));
+    return t->as<IfcUtil::IfcBaseEntity>()->get("RelatingObject");
 }
 
 aggregate_of_instance::ptr get_children_of_relation(IfcUtil::IfcBaseClass* t) {
-    return *t->data().getArgument(
-        t->declaration().as_entity()->attribute_index("RelatedElements"));
+    return t->as<IfcUtil::IfcBaseEntity>()->get("RelatedElements");
 }
 
 void set_children_of_relation(IfcUtil::IfcBaseClass* t, aggregate_of_instance::ptr& cs) {
-    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument;
-    attr->set(cs);
-    t->data().setArgument(
-        t->declaration().as_entity()->attribute_index("RelatedElements"),
-        attr);
+    return t->as<IfcUtil::IfcBaseEntity>()->set_attribute_value("RelatedElements", cs);
 }
 } // namespace
 template <typename Schema>
@@ -440,35 +434,19 @@ class IFC_PARSE_API IfcHierarchyHelper : public IfcParse::IfcFile {
             aggregate_of_instance::ptr related_objects(new aggregate_of_instance);
             related_objects->push(related_object);
 
-            IfcEntityInstanceData* data = new IfcEntityInstanceData(&T::Class());
-            {
-                IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
-                attr->set<std::string>(IfcParse::IfcGlobalId());
-                data->setArgument(0, attr);
-            }
-            {
-                IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
-                attr->set(owner_hist);
-                data->setArgument(1, attr);
-            }
+            IfcEntityInstanceData data = IfcEntityInstanceData(storage_t(T::Class().attribute_count()));
+            data.storage_.set(0, (std::string)IfcParse::IfcGlobalId());
+            data.storage_.set(1, owner_hist);
             int relating_index = 4;
             int related_index = 5;
             if (T::Class().name() == "IfcRelContainedInSpatialStructure" || std::is_base_of<typename Schema::IfcRelDefines, T>::value) {
                 // some classes have attributes reversed.
                 std::swap(relating_index, related_index);
             }
-            {
-                IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
-                attr->set(relating_object);
-                data->setArgument(relating_index, attr);
-            }
-            {
-                IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
-                attr->set(related_objects);
-                data->setArgument(related_index, attr);
-            }
+            data.storage_.set(relating_index, relating_object);
+            data.storage_.set(related_index, related_objects);
 
-            T* t = (T*)Schema::get_schema().instantiate(data);
+            T* t = (T*)Schema::get_schema().instantiate(&T::Class(), std::move(data));
             addEntity(t);
         }
     }

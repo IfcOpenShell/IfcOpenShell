@@ -735,7 +735,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcActionSourceTypeEnum (IfcEntityInstanceData* e);
+    IfcActionSourceTypeEnum (IfcEntityInstanceData&& e);
     IfcActionSourceTypeEnum (Value v);
     IfcActionSourceTypeEnum (const std::string& v);
     operator Value() const;
@@ -755,7 +755,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcActionTypeEnum (IfcEntityInstanceData* e);
+    IfcActionTypeEnum (IfcEntityInstanceData&& e);
     IfcActionTypeEnum (Value v);
     IfcActionTypeEnum (const std::string& v);
     operator Value() const;
@@ -784,7 +784,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcActuatorTypeEnum (IfcEntityInstanceData* e);
+    IfcActuatorTypeEnum (IfcEntityInstanceData&& e);
     IfcActuatorTypeEnum (Value v);
     IfcActuatorTypeEnum (const std::string& v);
     operator Value() const;
@@ -808,7 +808,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcAddressTypeEnum (IfcEntityInstanceData* e);
+    IfcAddressTypeEnum (IfcEntityInstanceData&& e);
     IfcAddressTypeEnum (Value v);
     IfcAddressTypeEnum (const std::string& v);
     operator Value() const;
@@ -822,7 +822,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcAheadOrBehind (IfcEntityInstanceData* e);
+    IfcAheadOrBehind (IfcEntityInstanceData&& e);
     IfcAheadOrBehind (Value v);
     IfcAheadOrBehind (const std::string& v);
     operator Value() const;
@@ -846,7 +846,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcAirTerminalBoxTypeEnum (IfcEntityInstanceData* e);
+    IfcAirTerminalBoxTypeEnum (IfcEntityInstanceData&& e);
     IfcAirTerminalBoxTypeEnum (Value v);
     IfcAirTerminalBoxTypeEnum (const std::string& v);
     operator Value() const;
@@ -872,7 +872,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcAirTerminalTypeEnum (IfcEntityInstanceData* e);
+    IfcAirTerminalTypeEnum (IfcEntityInstanceData&& e);
     IfcAirTerminalTypeEnum (Value v);
     IfcAirTerminalTypeEnum (const std::string& v);
     operator Value() const;
@@ -901,7 +901,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcAirToAirHeatRecoveryTypeEnum (IfcEntityInstanceData* e);
+    IfcAirToAirHeatRecoveryTypeEnum (IfcEntityInstanceData&& e);
     IfcAirToAirHeatRecoveryTypeEnum (Value v);
     IfcAirToAirHeatRecoveryTypeEnum (const std::string& v);
     operator Value() const;
@@ -928,7 +928,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcAlarmTypeEnum (IfcEntityInstanceData* e);
+    IfcAlarmTypeEnum (IfcEntityInstanceData&& e);
     IfcAlarmTypeEnum (Value v);
     IfcAlarmTypeEnum (const std::string& v);
     operator Value() const;
@@ -947,7 +947,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcAnalysisModelTypeEnum (IfcEntityInstanceData* e);
+    IfcAnalysisModelTypeEnum (IfcEntityInstanceData&& e);
     IfcAnalysisModelTypeEnum (Value v);
     IfcAnalysisModelTypeEnum (const std::string& v);
     operator Value() const;
@@ -967,7 +967,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcAnalysisTheoryTypeEnum (IfcEntityInstanceData* e);
+    IfcAnalysisTheoryTypeEnum (IfcEntityInstanceData&& e);
     IfcAnalysisTheoryTypeEnum (Value v);
     IfcAnalysisTheoryTypeEnum (const std::string& v);
     operator Value() const;
@@ -992,7 +992,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcArithmeticOperatorEnum (IfcEntityInstanceData* e);
+    IfcArithmeticOperatorEnum (IfcEntityInstanceData&& e);
     IfcArithmeticOperatorEnum (Value v);
     IfcArithmeticOperatorEnum (const std::string& v);
     operator Value() const;
@@ -1017,7 +1017,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcAssemblyPlaceEnum (IfcEntityInstanceData* e);
+    IfcAssemblyPlaceEnum (IfcEntityInstanceData&& e);
     IfcAssemblyPlaceEnum (Value v);
     IfcAssemblyPlaceEnum (const std::string& v);
     operator Value() const;
@@ -1044,7 +1044,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcBSplineCurveForm (IfcEntityInstanceData* e);
+    IfcBSplineCurveForm (IfcEntityInstanceData&& e);
     IfcBSplineCurveForm (Value v);
     IfcBSplineCurveForm (const std::string& v);
     operator Value() const;
@@ -1096,7 +1096,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcBeamTypeEnum (IfcEntityInstanceData* e);
+    IfcBeamTypeEnum (IfcEntityInstanceData&& e);
     IfcBeamTypeEnum (Value v);
     IfcBeamTypeEnum (const std::string& v);
     operator Value() const;
@@ -1149,7 +1149,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcBenchmarkEnum (IfcEntityInstanceData* e);
+    IfcBenchmarkEnum (IfcEntityInstanceData&& e);
     IfcBenchmarkEnum (Value v);
     IfcBenchmarkEnum (const std::string& v);
     operator Value() const;
@@ -1171,7 +1171,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcBoilerTypeEnum (IfcEntityInstanceData* e);
+    IfcBoilerTypeEnum (IfcEntityInstanceData&& e);
     IfcBoilerTypeEnum (Value v);
     IfcBoilerTypeEnum (const std::string& v);
     operator Value() const;
@@ -1193,7 +1193,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcBooleanOperator (IfcEntityInstanceData* e);
+    IfcBooleanOperator (IfcEntityInstanceData&& e);
     IfcBooleanOperator (Value v);
     IfcBooleanOperator (const std::string& v);
     operator Value() const;
@@ -1217,7 +1217,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcBuildingElementProxyTypeEnum (IfcEntityInstanceData* e);
+    IfcBuildingElementProxyTypeEnum (IfcEntityInstanceData&& e);
     IfcBuildingElementProxyTypeEnum (Value v);
     IfcBuildingElementProxyTypeEnum (const std::string& v);
     operator Value() const;
@@ -1240,7 +1240,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcCableCarrierFittingTypeEnum (IfcEntityInstanceData* e);
+    IfcCableCarrierFittingTypeEnum (IfcEntityInstanceData&& e);
     IfcCableCarrierFittingTypeEnum (Value v);
     IfcCableCarrierFittingTypeEnum (const std::string& v);
     operator Value() const;
@@ -1263,7 +1263,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcCableCarrierSegmentTypeEnum (IfcEntityInstanceData* e);
+    IfcCableCarrierSegmentTypeEnum (IfcEntityInstanceData&& e);
     IfcCableCarrierSegmentTypeEnum (Value v);
     IfcCableCarrierSegmentTypeEnum (const std::string& v);
     operator Value() const;
@@ -1288,7 +1288,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcCableSegmentTypeEnum (IfcEntityInstanceData* e);
+    IfcCableSegmentTypeEnum (IfcEntityInstanceData&& e);
     IfcCableSegmentTypeEnum (Value v);
     IfcCableSegmentTypeEnum (const std::string& v);
     operator Value() const;
@@ -1312,7 +1312,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcChangeActionEnum (IfcEntityInstanceData* e);
+    IfcChangeActionEnum (IfcEntityInstanceData&& e);
     IfcChangeActionEnum (Value v);
     IfcChangeActionEnum (const std::string& v);
     operator Value() const;
@@ -1335,7 +1335,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcChillerTypeEnum (IfcEntityInstanceData* e);
+    IfcChillerTypeEnum (IfcEntityInstanceData&& e);
     IfcChillerTypeEnum (Value v);
     IfcChillerTypeEnum (const std::string& v);
     operator Value() const;
@@ -1370,7 +1370,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcCoilTypeEnum (IfcEntityInstanceData* e);
+    IfcCoilTypeEnum (IfcEntityInstanceData&& e);
     IfcCoilTypeEnum (Value v);
     IfcCoilTypeEnum (const std::string& v);
     operator Value() const;
@@ -1397,7 +1397,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcColumnTypeEnum (IfcEntityInstanceData* e);
+    IfcColumnTypeEnum (IfcEntityInstanceData&& e);
     IfcColumnTypeEnum (Value v);
     IfcColumnTypeEnum (const std::string& v);
     operator Value() const;
@@ -1432,7 +1432,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcCompressorTypeEnum (IfcEntityInstanceData* e);
+    IfcCompressorTypeEnum (IfcEntityInstanceData&& e);
     IfcCompressorTypeEnum (Value v);
     IfcCompressorTypeEnum (const std::string& v);
     operator Value() const;
@@ -1458,7 +1458,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcCondenserTypeEnum (IfcEntityInstanceData* e);
+    IfcCondenserTypeEnum (IfcEntityInstanceData&& e);
     IfcCondenserTypeEnum (Value v);
     IfcCondenserTypeEnum (const std::string& v);
     operator Value() const;
@@ -1491,7 +1491,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcConnectionTypeEnum (IfcEntityInstanceData* e);
+    IfcConnectionTypeEnum (IfcEntityInstanceData&& e);
     IfcConnectionTypeEnum (Value v);
     IfcConnectionTypeEnum (const std::string& v);
     operator Value() const;
@@ -1521,7 +1521,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcConstraintEnum (IfcEntityInstanceData* e);
+    IfcConstraintEnum (IfcEntityInstanceData&& e);
     IfcConstraintEnum (Value v);
     IfcConstraintEnum (const std::string& v);
     operator Value() const;
@@ -1548,7 +1548,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcControllerTypeEnum (IfcEntityInstanceData* e);
+    IfcControllerTypeEnum (IfcEntityInstanceData&& e);
     IfcControllerTypeEnum (Value v);
     IfcControllerTypeEnum (const std::string& v);
     operator Value() const;
@@ -1580,7 +1580,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcCooledBeamTypeEnum (IfcEntityInstanceData* e);
+    IfcCooledBeamTypeEnum (IfcEntityInstanceData&& e);
     IfcCooledBeamTypeEnum (Value v);
     IfcCooledBeamTypeEnum (const std::string& v);
     operator Value() const;
@@ -1605,7 +1605,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcCoolingTowerTypeEnum (IfcEntityInstanceData* e);
+    IfcCoolingTowerTypeEnum (IfcEntityInstanceData&& e);
     IfcCoolingTowerTypeEnum (Value v);
     IfcCoolingTowerTypeEnum (const std::string& v);
     operator Value() const;
@@ -1631,7 +1631,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcCostScheduleTypeEnum (IfcEntityInstanceData* e);
+    IfcCostScheduleTypeEnum (IfcEntityInstanceData&& e);
     IfcCostScheduleTypeEnum (Value v);
     IfcCostScheduleTypeEnum (const std::string& v);
     operator Value() const;
@@ -1687,7 +1687,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcCoveringTypeEnum (IfcEntityInstanceData* e);
+    IfcCoveringTypeEnum (IfcEntityInstanceData&& e);
     IfcCoveringTypeEnum (Value v);
     IfcCoveringTypeEnum (const std::string& v);
     operator Value() const;
@@ -1701,7 +1701,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcCurrencyEnum (IfcEntityInstanceData* e);
+    IfcCurrencyEnum (IfcEntityInstanceData&& e);
     IfcCurrencyEnum (Value v);
     IfcCurrencyEnum (const std::string& v);
     operator Value() const;
@@ -1723,7 +1723,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcCurtainWallTypeEnum (IfcEntityInstanceData* e);
+    IfcCurtainWallTypeEnum (IfcEntityInstanceData&& e);
     IfcCurtainWallTypeEnum (Value v);
     IfcCurtainWallTypeEnum (const std::string& v);
     operator Value() const;
@@ -1753,7 +1753,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcDamperTypeEnum (IfcEntityInstanceData* e);
+    IfcDamperTypeEnum (IfcEntityInstanceData&& e);
     IfcDamperTypeEnum (Value v);
     IfcDamperTypeEnum (const std::string& v);
     operator Value() const;
@@ -1774,7 +1774,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcDataOriginEnum (IfcEntityInstanceData* e);
+    IfcDataOriginEnum (IfcEntityInstanceData&& e);
     IfcDataOriginEnum (Value v);
     IfcDataOriginEnum (const std::string& v);
     operator Value() const;
@@ -1844,7 +1844,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcDerivedUnitEnum (IfcEntityInstanceData* e);
+    IfcDerivedUnitEnum (IfcEntityInstanceData&& e);
     IfcDerivedUnitEnum (Value v);
     IfcDerivedUnitEnum (const std::string& v);
     operator Value() const;
@@ -1858,7 +1858,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcDimensionExtentUsage (IfcEntityInstanceData* e);
+    IfcDimensionExtentUsage (IfcEntityInstanceData&& e);
     IfcDimensionExtentUsage (Value v);
     IfcDimensionExtentUsage (const std::string& v);
     operator Value() const;
@@ -1879,7 +1879,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcDirectionSenseEnum (IfcEntityInstanceData* e);
+    IfcDirectionSenseEnum (IfcEntityInstanceData&& e);
     IfcDirectionSenseEnum (Value v);
     IfcDirectionSenseEnum (const std::string& v);
     operator Value() const;
@@ -1908,7 +1908,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcDistributionChamberElementTypeEnum (IfcEntityInstanceData* e);
+    IfcDistributionChamberElementTypeEnum (IfcEntityInstanceData&& e);
     IfcDistributionChamberElementTypeEnum (Value v);
     IfcDistributionChamberElementTypeEnum (const std::string& v);
     operator Value() const;
@@ -1933,7 +1933,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcDocumentConfidentialityEnum (IfcEntityInstanceData* e);
+    IfcDocumentConfidentialityEnum (IfcEntityInstanceData&& e);
     IfcDocumentConfidentialityEnum (Value v);
     IfcDocumentConfidentialityEnum (const std::string& v);
     operator Value() const;
@@ -1949,7 +1949,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcDocumentStatusEnum (IfcEntityInstanceData* e);
+    IfcDocumentStatusEnum (IfcEntityInstanceData&& e);
     IfcDocumentStatusEnum (Value v);
     IfcDocumentStatusEnum (const std::string& v);
     operator Value() const;
@@ -1995,7 +1995,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcDoorPanelOperationEnum (IfcEntityInstanceData* e);
+    IfcDoorPanelOperationEnum (IfcEntityInstanceData&& e);
     IfcDoorPanelOperationEnum (Value v);
     IfcDoorPanelOperationEnum (const std::string& v);
     operator Value() const;
@@ -2015,7 +2015,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcDoorPanelPositionEnum (IfcEntityInstanceData* e);
+    IfcDoorPanelPositionEnum (IfcEntityInstanceData&& e);
     IfcDoorPanelPositionEnum (Value v);
     IfcDoorPanelPositionEnum (const std::string& v);
     operator Value() const;
@@ -2035,7 +2035,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcDoorStyleConstructionEnum (IfcEntityInstanceData* e);
+    IfcDoorStyleConstructionEnum (IfcEntityInstanceData&& e);
     IfcDoorStyleConstructionEnum (Value v);
     IfcDoorStyleConstructionEnum (const std::string& v);
     operator Value() const;
@@ -2217,7 +2217,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcDoorStyleOperationEnum (IfcEntityInstanceData* e);
+    IfcDoorStyleOperationEnum (IfcEntityInstanceData&& e);
     IfcDoorStyleOperationEnum (Value v);
     IfcDoorStyleOperationEnum (const std::string& v);
     operator Value() const;
@@ -2263,7 +2263,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcDuctFittingTypeEnum (IfcEntityInstanceData* e);
+    IfcDuctFittingTypeEnum (IfcEntityInstanceData&& e);
     IfcDuctFittingTypeEnum (Value v);
     IfcDuctFittingTypeEnum (const std::string& v);
     operator Value() const;
@@ -2291,7 +2291,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcDuctSegmentTypeEnum (IfcEntityInstanceData* e);
+    IfcDuctSegmentTypeEnum (IfcEntityInstanceData&& e);
     IfcDuctSegmentTypeEnum (Value v);
     IfcDuctSegmentTypeEnum (const std::string& v);
     operator Value() const;
@@ -2314,7 +2314,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcDuctSilencerTypeEnum (IfcEntityInstanceData* e);
+    IfcDuctSilencerTypeEnum (IfcEntityInstanceData&& e);
     IfcDuctSilencerTypeEnum (Value v);
     IfcDuctSilencerTypeEnum (const std::string& v);
     operator Value() const;
@@ -2356,7 +2356,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcElectricApplianceTypeEnum (IfcEntityInstanceData* e);
+    IfcElectricApplianceTypeEnum (IfcEntityInstanceData&& e);
     IfcElectricApplianceTypeEnum (Value v);
     IfcElectricApplianceTypeEnum (const std::string& v);
     operator Value() const;
@@ -2370,7 +2370,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcElectricCurrentEnum (IfcEntityInstanceData* e);
+    IfcElectricCurrentEnum (IfcEntityInstanceData&& e);
     IfcElectricCurrentEnum (Value v);
     IfcElectricCurrentEnum (const std::string& v);
     operator Value() const;
@@ -2384,7 +2384,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcElectricDistributionPointFunctionEnum (IfcEntityInstanceData* e);
+    IfcElectricDistributionPointFunctionEnum (IfcEntityInstanceData&& e);
     IfcElectricDistributionPointFunctionEnum (Value v);
     IfcElectricDistributionPointFunctionEnum (const std::string& v);
     operator Value() const;
@@ -2407,7 +2407,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcElectricFlowStorageDeviceTypeEnum (IfcEntityInstanceData* e);
+    IfcElectricFlowStorageDeviceTypeEnum (IfcEntityInstanceData&& e);
     IfcElectricFlowStorageDeviceTypeEnum (Value v);
     IfcElectricFlowStorageDeviceTypeEnum (const std::string& v);
     operator Value() const;
@@ -2430,7 +2430,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcElectricGeneratorTypeEnum (IfcEntityInstanceData* e);
+    IfcElectricGeneratorTypeEnum (IfcEntityInstanceData&& e);
     IfcElectricGeneratorTypeEnum (Value v);
     IfcElectricGeneratorTypeEnum (const std::string& v);
     operator Value() const;
@@ -2444,7 +2444,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcElectricHeaterTypeEnum (IfcEntityInstanceData* e);
+    IfcElectricHeaterTypeEnum (IfcEntityInstanceData&& e);
     IfcElectricHeaterTypeEnum (Value v);
     IfcElectricHeaterTypeEnum (const std::string& v);
     operator Value() const;
@@ -2468,7 +2468,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcElectricMotorTypeEnum (IfcEntityInstanceData* e);
+    IfcElectricMotorTypeEnum (IfcEntityInstanceData&& e);
     IfcElectricMotorTypeEnum (Value v);
     IfcElectricMotorTypeEnum (const std::string& v);
     operator Value() const;
@@ -2490,7 +2490,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcElectricTimeControlTypeEnum (IfcEntityInstanceData* e);
+    IfcElectricTimeControlTypeEnum (IfcEntityInstanceData&& e);
     IfcElectricTimeControlTypeEnum (Value v);
     IfcElectricTimeControlTypeEnum (const std::string& v);
     operator Value() const;
@@ -2522,7 +2522,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcElementAssemblyTypeEnum (IfcEntityInstanceData* e);
+    IfcElementAssemblyTypeEnum (IfcEntityInstanceData&& e);
     IfcElementAssemblyTypeEnum (Value v);
     IfcElementAssemblyTypeEnum (const std::string& v);
     operator Value() const;
@@ -2547,7 +2547,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcElementCompositionEnum (IfcEntityInstanceData* e);
+    IfcElementCompositionEnum (IfcEntityInstanceData&& e);
     IfcElementCompositionEnum (Value v);
     IfcElementCompositionEnum (const std::string& v);
     operator Value() const;
@@ -2561,7 +2561,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcEnergySequenceEnum (IfcEntityInstanceData* e);
+    IfcEnergySequenceEnum (IfcEntityInstanceData&& e);
     IfcEnergySequenceEnum (Value v);
     IfcEnergySequenceEnum (const std::string& v);
     operator Value() const;
@@ -2575,7 +2575,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcEnvironmentalImpactCategoryEnum (IfcEntityInstanceData* e);
+    IfcEnvironmentalImpactCategoryEnum (IfcEntityInstanceData&& e);
     IfcEnvironmentalImpactCategoryEnum (Value v);
     IfcEnvironmentalImpactCategoryEnum (const std::string& v);
     operator Value() const;
@@ -2604,7 +2604,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcEvaporativeCoolerTypeEnum (IfcEntityInstanceData* e);
+    IfcEvaporativeCoolerTypeEnum (IfcEntityInstanceData&& e);
     IfcEvaporativeCoolerTypeEnum (Value v);
     IfcEvaporativeCoolerTypeEnum (const std::string& v);
     operator Value() const;
@@ -2630,7 +2630,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcEvaporatorTypeEnum (IfcEntityInstanceData* e);
+    IfcEvaporatorTypeEnum (IfcEntityInstanceData&& e);
     IfcEvaporatorTypeEnum (Value v);
     IfcEvaporatorTypeEnum (const std::string& v);
     operator Value() const;
@@ -2657,7 +2657,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcFanTypeEnum (IfcEntityInstanceData* e);
+    IfcFanTypeEnum (IfcEntityInstanceData&& e);
     IfcFanTypeEnum (Value v);
     IfcFanTypeEnum (const std::string& v);
     operator Value() const;
@@ -2683,7 +2683,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcFilterTypeEnum (IfcEntityInstanceData* e);
+    IfcFilterTypeEnum (IfcEntityInstanceData&& e);
     IfcFilterTypeEnum (Value v);
     IfcFilterTypeEnum (const std::string& v);
     operator Value() const;
@@ -2709,7 +2709,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcFireSuppressionTerminalTypeEnum (IfcEntityInstanceData* e);
+    IfcFireSuppressionTerminalTypeEnum (IfcEntityInstanceData&& e);
     IfcFireSuppressionTerminalTypeEnum (Value v);
     IfcFireSuppressionTerminalTypeEnum (const std::string& v);
     operator Value() const;
@@ -2730,7 +2730,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcFlowDirectionEnum (IfcEntityInstanceData* e);
+    IfcFlowDirectionEnum (IfcEntityInstanceData&& e);
     IfcFlowDirectionEnum (Value v);
     IfcFlowDirectionEnum (const std::string& v);
     operator Value() const;
@@ -2759,7 +2759,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcFlowInstrumentTypeEnum (IfcEntityInstanceData* e);
+    IfcFlowInstrumentTypeEnum (IfcEntityInstanceData&& e);
     IfcFlowInstrumentTypeEnum (Value v);
     IfcFlowInstrumentTypeEnum (const std::string& v);
     operator Value() const;
@@ -2787,7 +2787,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcFlowMeterTypeEnum (IfcEntityInstanceData* e);
+    IfcFlowMeterTypeEnum (IfcEntityInstanceData&& e);
     IfcFlowMeterTypeEnum (Value v);
     IfcFlowMeterTypeEnum (const std::string& v);
     operator Value() const;
@@ -2814,7 +2814,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcFootingTypeEnum (IfcEntityInstanceData* e);
+    IfcFootingTypeEnum (IfcEntityInstanceData&& e);
     IfcFootingTypeEnum (Value v);
     IfcFootingTypeEnum (const std::string& v);
     operator Value() const;
@@ -2828,7 +2828,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcGasTerminalTypeEnum (IfcEntityInstanceData* e);
+    IfcGasTerminalTypeEnum (IfcEntityInstanceData&& e);
     IfcGasTerminalTypeEnum (Value v);
     IfcGasTerminalTypeEnum (const std::string& v);
     operator Value() const;
@@ -2882,7 +2882,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcGeometricProjectionEnum (IfcEntityInstanceData* e);
+    IfcGeometricProjectionEnum (IfcEntityInstanceData&& e);
     IfcGeometricProjectionEnum (Value v);
     IfcGeometricProjectionEnum (const std::string& v);
     operator Value() const;
@@ -2901,7 +2901,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcGlobalOrLocalEnum (IfcEntityInstanceData* e);
+    IfcGlobalOrLocalEnum (IfcEntityInstanceData&& e);
     IfcGlobalOrLocalEnum (Value v);
     IfcGlobalOrLocalEnum (const std::string& v);
     operator Value() const;
@@ -2923,7 +2923,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcHeatExchangerTypeEnum (IfcEntityInstanceData* e);
+    IfcHeatExchangerTypeEnum (IfcEntityInstanceData&& e);
     IfcHeatExchangerTypeEnum (Value v);
     IfcHeatExchangerTypeEnum (const std::string& v);
     operator Value() const;
@@ -2956,7 +2956,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcHumidifierTypeEnum (IfcEntityInstanceData* e);
+    IfcHumidifierTypeEnum (IfcEntityInstanceData&& e);
     IfcHumidifierTypeEnum (Value v);
     IfcHumidifierTypeEnum (const std::string& v);
     operator Value() const;
@@ -3024,7 +3024,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcInternalOrExternalEnum (IfcEntityInstanceData* e);
+    IfcInternalOrExternalEnum (IfcEntityInstanceData&& e);
     IfcInternalOrExternalEnum (Value v);
     IfcInternalOrExternalEnum (const std::string& v);
     operator Value() const;
@@ -3046,7 +3046,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcInventoryTypeEnum (IfcEntityInstanceData* e);
+    IfcInventoryTypeEnum (IfcEntityInstanceData&& e);
     IfcInventoryTypeEnum (Value v);
     IfcInventoryTypeEnum (const std::string& v);
     operator Value() const;
@@ -3066,7 +3066,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcJunctionBoxTypeEnum (IfcEntityInstanceData* e);
+    IfcJunctionBoxTypeEnum (IfcEntityInstanceData&& e);
     IfcJunctionBoxTypeEnum (Value v);
     IfcJunctionBoxTypeEnum (const std::string& v);
     operator Value() const;
@@ -3096,7 +3096,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcLampTypeEnum (IfcEntityInstanceData* e);
+    IfcLampTypeEnum (IfcEntityInstanceData&& e);
     IfcLampTypeEnum (Value v);
     IfcLampTypeEnum (const std::string& v);
     operator Value() const;
@@ -3118,7 +3118,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcLayerSetDirectionEnum (IfcEntityInstanceData* e);
+    IfcLayerSetDirectionEnum (IfcEntityInstanceData&& e);
     IfcLayerSetDirectionEnum (Value v);
     IfcLayerSetDirectionEnum (const std::string& v);
     operator Value() const;
@@ -3145,7 +3145,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcLightDistributionCurveEnum (IfcEntityInstanceData* e);
+    IfcLightDistributionCurveEnum (IfcEntityInstanceData&& e);
     IfcLightDistributionCurveEnum (Value v);
     IfcLightDistributionCurveEnum (const std::string& v);
     operator Value() const;
@@ -3175,7 +3175,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcLightEmissionSourceEnum (IfcEntityInstanceData* e);
+    IfcLightEmissionSourceEnum (IfcEntityInstanceData&& e);
     IfcLightEmissionSourceEnum (Value v);
     IfcLightEmissionSourceEnum (const std::string& v);
     operator Value() const;
@@ -3199,7 +3199,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcLightFixtureTypeEnum (IfcEntityInstanceData* e);
+    IfcLightFixtureTypeEnum (IfcEntityInstanceData&& e);
     IfcLightFixtureTypeEnum (Value v);
     IfcLightFixtureTypeEnum (const std::string& v);
     operator Value() const;
@@ -3233,7 +3233,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcLoadGroupTypeEnum (IfcEntityInstanceData* e);
+    IfcLoadGroupTypeEnum (IfcEntityInstanceData&& e);
     IfcLoadGroupTypeEnum (Value v);
     IfcLoadGroupTypeEnum (const std::string& v);
     operator Value() const;
@@ -3490,7 +3490,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcLogicalOperatorEnum (IfcEntityInstanceData* e);
+    IfcLogicalOperatorEnum (IfcEntityInstanceData&& e);
     IfcLogicalOperatorEnum (Value v);
     IfcLogicalOperatorEnum (const std::string& v);
     operator Value() const;
@@ -3546,7 +3546,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcMemberTypeEnum (IfcEntityInstanceData* e);
+    IfcMemberTypeEnum (IfcEntityInstanceData&& e);
     IfcMemberTypeEnum (Value v);
     IfcMemberTypeEnum (const std::string& v);
     operator Value() const;
@@ -3568,7 +3568,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcMotorConnectionTypeEnum (IfcEntityInstanceData* e);
+    IfcMotorConnectionTypeEnum (IfcEntityInstanceData&& e);
     IfcMotorConnectionTypeEnum (Value v);
     IfcMotorConnectionTypeEnum (const std::string& v);
     operator Value() const;
@@ -3589,7 +3589,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcNullStyle (IfcEntityInstanceData* e);
+    IfcNullStyle (IfcEntityInstanceData&& e);
     IfcNullStyle (Value v);
     IfcNullStyle (const std::string& v);
     operator Value() const;
@@ -3605,7 +3605,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcObjectTypeEnum (IfcEntityInstanceData* e);
+    IfcObjectTypeEnum (IfcEntityInstanceData&& e);
     IfcObjectTypeEnum (Value v);
     IfcObjectTypeEnum (const std::string& v);
     operator Value() const;
@@ -3647,7 +3647,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcObjectiveEnum (IfcEntityInstanceData* e);
+    IfcObjectiveEnum (IfcEntityInstanceData&& e);
     IfcObjectiveEnum (Value v);
     IfcObjectiveEnum (const std::string& v);
     operator Value() const;
@@ -3673,7 +3673,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcOccupantTypeEnum (IfcEntityInstanceData* e);
+    IfcOccupantTypeEnum (IfcEntityInstanceData&& e);
     IfcOccupantTypeEnum (Value v);
     IfcOccupantTypeEnum (const std::string& v);
     operator Value() const;
@@ -3699,7 +3699,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcOutletTypeEnum (IfcEntityInstanceData* e);
+    IfcOutletTypeEnum (IfcEntityInstanceData&& e);
     IfcOutletTypeEnum (Value v);
     IfcOutletTypeEnum (const std::string& v);
     operator Value() const;
@@ -3734,7 +3734,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcPermeableCoveringOperationEnum (IfcEntityInstanceData* e);
+    IfcPermeableCoveringOperationEnum (IfcEntityInstanceData&& e);
     IfcPermeableCoveringOperationEnum (Value v);
     IfcPermeableCoveringOperationEnum (const std::string& v);
     operator Value() const;
@@ -3770,7 +3770,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcPhysicalOrVirtualEnum (IfcEntityInstanceData* e);
+    IfcPhysicalOrVirtualEnum (IfcEntityInstanceData&& e);
     IfcPhysicalOrVirtualEnum (Value v);
     IfcPhysicalOrVirtualEnum (const std::string& v);
     operator Value() const;
@@ -3805,7 +3805,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcPileConstructionEnum (IfcEntityInstanceData* e);
+    IfcPileConstructionEnum (IfcEntityInstanceData&& e);
     IfcPileConstructionEnum (Value v);
     IfcPileConstructionEnum (const std::string& v);
     operator Value() const;
@@ -3831,7 +3831,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcPileTypeEnum (IfcEntityInstanceData* e);
+    IfcPileTypeEnum (IfcEntityInstanceData&& e);
     IfcPileTypeEnum (Value v);
     IfcPileTypeEnum (const std::string& v);
     operator Value() const;
@@ -3875,7 +3875,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcPipeFittingTypeEnum (IfcEntityInstanceData* e);
+    IfcPipeFittingTypeEnum (IfcEntityInstanceData&& e);
     IfcPipeFittingTypeEnum (Value v);
     IfcPipeFittingTypeEnum (const std::string& v);
     operator Value() const;
@@ -3903,7 +3903,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcPipeSegmentTypeEnum (IfcEntityInstanceData* e);
+    IfcPipeSegmentTypeEnum (IfcEntityInstanceData&& e);
     IfcPipeSegmentTypeEnum (Value v);
     IfcPipeSegmentTypeEnum (const std::string& v);
     operator Value() const;
@@ -3934,7 +3934,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcPlateTypeEnum (IfcEntityInstanceData* e);
+    IfcPlateTypeEnum (IfcEntityInstanceData&& e);
     IfcPlateTypeEnum (Value v);
     IfcPlateTypeEnum (const std::string& v);
     operator Value() const;
@@ -3961,7 +3961,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcProcedureTypeEnum (IfcEntityInstanceData* e);
+    IfcProcedureTypeEnum (IfcEntityInstanceData&& e);
     IfcProcedureTypeEnum (Value v);
     IfcProcedureTypeEnum (const std::string& v);
     operator Value() const;
@@ -3982,7 +3982,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcProfileTypeEnum (IfcEntityInstanceData* e);
+    IfcProfileTypeEnum (IfcEntityInstanceData&& e);
     IfcProfileTypeEnum (Value v);
     IfcProfileTypeEnum (const std::string& v);
     operator Value() const;
@@ -3996,7 +3996,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcProjectOrderRecordTypeEnum (IfcEntityInstanceData* e);
+    IfcProjectOrderRecordTypeEnum (IfcEntityInstanceData&& e);
     IfcProjectOrderRecordTypeEnum (Value v);
     IfcProjectOrderRecordTypeEnum (const std::string& v);
     operator Value() const;
@@ -4020,7 +4020,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcProjectOrderTypeEnum (IfcEntityInstanceData* e);
+    IfcProjectOrderTypeEnum (IfcEntityInstanceData&& e);
     IfcProjectOrderTypeEnum (Value v);
     IfcProjectOrderTypeEnum (const std::string& v);
     operator Value() const;
@@ -4039,7 +4039,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcProjectedOrTrueLengthEnum (IfcEntityInstanceData* e);
+    IfcProjectedOrTrueLengthEnum (IfcEntityInstanceData&& e);
     IfcProjectedOrTrueLengthEnum (Value v);
     IfcProjectedOrTrueLengthEnum (const std::string& v);
     operator Value() const;
@@ -4053,7 +4053,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcPropertySourceEnum (IfcEntityInstanceData* e);
+    IfcPropertySourceEnum (IfcEntityInstanceData&& e);
     IfcPropertySourceEnum (Value v);
     IfcPropertySourceEnum (const std::string& v);
     operator Value() const;
@@ -4081,7 +4081,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcProtectiveDeviceTypeEnum (IfcEntityInstanceData* e);
+    IfcProtectiveDeviceTypeEnum (IfcEntityInstanceData&& e);
     IfcProtectiveDeviceTypeEnum (Value v);
     IfcProtectiveDeviceTypeEnum (const std::string& v);
     operator Value() const;
@@ -4122,7 +4122,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcPumpTypeEnum (IfcEntityInstanceData* e);
+    IfcPumpTypeEnum (IfcEntityInstanceData&& e);
     IfcPumpTypeEnum (Value v);
     IfcPumpTypeEnum (const std::string& v);
     operator Value() const;
@@ -4155,7 +4155,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcRailingTypeEnum (IfcEntityInstanceData* e);
+    IfcRailingTypeEnum (IfcEntityInstanceData&& e);
     IfcRailingTypeEnum (Value v);
     IfcRailingTypeEnum (const std::string& v);
     operator Value() const;
@@ -4179,7 +4179,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcRampFlightTypeEnum (IfcEntityInstanceData* e);
+    IfcRampFlightTypeEnum (IfcEntityInstanceData&& e);
     IfcRampFlightTypeEnum (Value v);
     IfcRampFlightTypeEnum (const std::string& v);
     operator Value() const;
@@ -4240,7 +4240,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcRampTypeEnum (IfcEntityInstanceData* e);
+    IfcRampTypeEnum (IfcEntityInstanceData&& e);
     IfcRampTypeEnum (Value v);
     IfcRampTypeEnum (const std::string& v);
     operator Value() const;
@@ -4269,7 +4269,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcReflectanceMethodEnum (IfcEntityInstanceData* e);
+    IfcReflectanceMethodEnum (IfcEntityInstanceData&& e);
     IfcReflectanceMethodEnum (Value v);
     IfcReflectanceMethodEnum (const std::string& v);
     operator Value() const;
@@ -4301,7 +4301,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcReinforcingBarRoleEnum (IfcEntityInstanceData* e);
+    IfcReinforcingBarRoleEnum (IfcEntityInstanceData&& e);
     IfcReinforcingBarRoleEnum (Value v);
     IfcReinforcingBarRoleEnum (const std::string& v);
     operator Value() const;
@@ -4323,7 +4323,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcReinforcingBarSurfaceEnum (IfcEntityInstanceData* e);
+    IfcReinforcingBarSurfaceEnum (IfcEntityInstanceData&& e);
     IfcReinforcingBarSurfaceEnum (Value v);
     IfcReinforcingBarSurfaceEnum (const std::string& v);
     operator Value() const;
@@ -4348,7 +4348,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcResourceConsumptionEnum (IfcEntityInstanceData* e);
+    IfcResourceConsumptionEnum (IfcEntityInstanceData&& e);
     IfcResourceConsumptionEnum (Value v);
     IfcResourceConsumptionEnum (const std::string& v);
     operator Value() const;
@@ -4362,7 +4362,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcRibPlateDirectionEnum (IfcEntityInstanceData* e);
+    IfcRibPlateDirectionEnum (IfcEntityInstanceData&& e);
     IfcRibPlateDirectionEnum (Value v);
     IfcRibPlateDirectionEnum (const std::string& v);
     operator Value() const;
@@ -4404,7 +4404,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcRoleEnum (IfcEntityInstanceData* e);
+    IfcRoleEnum (IfcEntityInstanceData&& e);
     IfcRoleEnum (Value v);
     IfcRoleEnum (const std::string& v);
     operator Value() const;
@@ -4483,7 +4483,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcRoofTypeEnum (IfcEntityInstanceData* e);
+    IfcRoofTypeEnum (IfcEntityInstanceData&& e);
     IfcRoofTypeEnum (Value v);
     IfcRoofTypeEnum (const std::string& v);
     operator Value() const;
@@ -4523,7 +4523,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcSIPrefix (IfcEntityInstanceData* e);
+    IfcSIPrefix (IfcEntityInstanceData&& e);
     IfcSIPrefix (Value v);
     IfcSIPrefix (const std::string& v);
     operator Value() const;
@@ -4575,7 +4575,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcSIUnitName (IfcEntityInstanceData* e);
+    IfcSIUnitName (IfcEntityInstanceData&& e);
     IfcSIUnitName (Value v);
     IfcSIUnitName (const std::string& v);
     operator Value() const;
@@ -4607,7 +4607,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcSanitaryTerminalTypeEnum (IfcEntityInstanceData* e);
+    IfcSanitaryTerminalTypeEnum (IfcEntityInstanceData&& e);
     IfcSanitaryTerminalTypeEnum (Value v);
     IfcSanitaryTerminalTypeEnum (const std::string& v);
     operator Value() const;
@@ -4630,7 +4630,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcSectionTypeEnum (IfcEntityInstanceData* e);
+    IfcSectionTypeEnum (IfcEntityInstanceData&& e);
     IfcSectionTypeEnum (Value v);
     IfcSectionTypeEnum (const std::string& v);
     operator Value() const;
@@ -4671,7 +4671,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcSensorTypeEnum (IfcEntityInstanceData* e);
+    IfcSensorTypeEnum (IfcEntityInstanceData&& e);
     IfcSensorTypeEnum (Value v);
     IfcSensorTypeEnum (const std::string& v);
     operator Value() const;
@@ -4689,7 +4689,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcSequenceEnum (IfcEntityInstanceData* e);
+    IfcSequenceEnum (IfcEntityInstanceData&& e);
     IfcSequenceEnum (Value v);
     IfcSequenceEnum (const std::string& v);
     operator Value() const;
@@ -4703,7 +4703,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcServiceLifeFactorTypeEnum (IfcEntityInstanceData* e);
+    IfcServiceLifeFactorTypeEnum (IfcEntityInstanceData&& e);
     IfcServiceLifeFactorTypeEnum (Value v);
     IfcServiceLifeFactorTypeEnum (const std::string& v);
     operator Value() const;
@@ -4717,7 +4717,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcServiceLifeTypeEnum (IfcEntityInstanceData* e);
+    IfcServiceLifeTypeEnum (IfcEntityInstanceData&& e);
     IfcServiceLifeTypeEnum (Value v);
     IfcServiceLifeTypeEnum (const std::string& v);
     operator Value() const;
@@ -4762,7 +4762,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcSlabTypeEnum (IfcEntityInstanceData* e);
+    IfcSlabTypeEnum (IfcEntityInstanceData&& e);
     IfcSlabTypeEnum (Value v);
     IfcSlabTypeEnum (const std::string& v);
     operator Value() const;
@@ -4776,7 +4776,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcSoundScaleEnum (IfcEntityInstanceData* e);
+    IfcSoundScaleEnum (IfcEntityInstanceData&& e);
     IfcSoundScaleEnum (Value v);
     IfcSoundScaleEnum (const std::string& v);
     operator Value() const;
@@ -4801,7 +4801,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcSpaceHeaterTypeEnum (IfcEntityInstanceData* e);
+    IfcSpaceHeaterTypeEnum (IfcEntityInstanceData&& e);
     IfcSpaceHeaterTypeEnum (Value v);
     IfcSpaceHeaterTypeEnum (const std::string& v);
     operator Value() const;
@@ -4849,7 +4849,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcSpaceTypeEnum (IfcEntityInstanceData* e);
+    IfcSpaceTypeEnum (IfcEntityInstanceData&& e);
     IfcSpaceTypeEnum (Value v);
     IfcSpaceTypeEnum (const std::string& v);
     operator Value() const;
@@ -4871,7 +4871,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcStackTerminalTypeEnum (IfcEntityInstanceData* e);
+    IfcStackTerminalTypeEnum (IfcEntityInstanceData&& e);
     IfcStackTerminalTypeEnum (Value v);
     IfcStackTerminalTypeEnum (const std::string& v);
     operator Value() const;
@@ -4899,7 +4899,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcStairFlightTypeEnum (IfcEntityInstanceData* e);
+    IfcStairFlightTypeEnum (IfcEntityInstanceData&& e);
     IfcStairFlightTypeEnum (Value v);
     IfcStairFlightTypeEnum (const std::string& v);
     operator Value() const;
@@ -5005,7 +5005,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcStairTypeEnum (IfcEntityInstanceData* e);
+    IfcStairTypeEnum (IfcEntityInstanceData&& e);
     IfcStairTypeEnum (Value v);
     IfcStairTypeEnum (const std::string& v);
     operator Value() const;
@@ -5031,7 +5031,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcStateEnum (IfcEntityInstanceData* e);
+    IfcStateEnum (IfcEntityInstanceData&& e);
     IfcStateEnum (Value v);
     IfcStateEnum (const std::string& v);
     operator Value() const;
@@ -5045,7 +5045,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcStructuralCurveTypeEnum (IfcEntityInstanceData* e);
+    IfcStructuralCurveTypeEnum (IfcEntityInstanceData&& e);
     IfcStructuralCurveTypeEnum (Value v);
     IfcStructuralCurveTypeEnum (const std::string& v);
     operator Value() const;
@@ -5059,7 +5059,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcStructuralSurfaceTypeEnum (IfcEntityInstanceData* e);
+    IfcStructuralSurfaceTypeEnum (IfcEntityInstanceData&& e);
     IfcStructuralSurfaceTypeEnum (Value v);
     IfcStructuralSurfaceTypeEnum (const std::string& v);
     operator Value() const;
@@ -5083,7 +5083,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcSurfaceSide (IfcEntityInstanceData* e);
+    IfcSurfaceSide (IfcEntityInstanceData&& e);
     IfcSurfaceSide (Value v);
     IfcSurfaceSide (const std::string& v);
     operator Value() const;
@@ -5097,7 +5097,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcSurfaceTextureEnum (IfcEntityInstanceData* e);
+    IfcSurfaceTextureEnum (IfcEntityInstanceData&& e);
     IfcSurfaceTextureEnum (Value v);
     IfcSurfaceTextureEnum (const std::string& v);
     operator Value() const;
@@ -5126,7 +5126,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcSwitchingDeviceTypeEnum (IfcEntityInstanceData* e);
+    IfcSwitchingDeviceTypeEnum (IfcEntityInstanceData&& e);
     IfcSwitchingDeviceTypeEnum (Value v);
     IfcSwitchingDeviceTypeEnum (const std::string& v);
     operator Value() const;
@@ -5162,7 +5162,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcTankTypeEnum (IfcEntityInstanceData* e);
+    IfcTankTypeEnum (IfcEntityInstanceData&& e);
     IfcTankTypeEnum (Value v);
     IfcTankTypeEnum (const std::string& v);
     operator Value() const;
@@ -5176,7 +5176,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcTendonTypeEnum (IfcEntityInstanceData* e);
+    IfcTendonTypeEnum (IfcEntityInstanceData&& e);
     IfcTendonTypeEnum (Value v);
     IfcTendonTypeEnum (const std::string& v);
     operator Value() const;
@@ -5196,7 +5196,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcTextPath (IfcEntityInstanceData* e);
+    IfcTextPath (IfcEntityInstanceData&& e);
     IfcTextPath (Value v);
     IfcTextPath (const std::string& v);
     operator Value() const;
@@ -5210,7 +5210,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcThermalLoadSourceEnum (IfcEntityInstanceData* e);
+    IfcThermalLoadSourceEnum (IfcEntityInstanceData&& e);
     IfcThermalLoadSourceEnum (Value v);
     IfcThermalLoadSourceEnum (const std::string& v);
     operator Value() const;
@@ -5224,7 +5224,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcThermalLoadTypeEnum (IfcEntityInstanceData* e);
+    IfcThermalLoadTypeEnum (IfcEntityInstanceData&& e);
     IfcThermalLoadTypeEnum (Value v);
     IfcThermalLoadTypeEnum (const std::string& v);
     operator Value() const;
@@ -5248,7 +5248,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcTimeSeriesDataTypeEnum (IfcEntityInstanceData* e);
+    IfcTimeSeriesDataTypeEnum (IfcEntityInstanceData&& e);
     IfcTimeSeriesDataTypeEnum (Value v);
     IfcTimeSeriesDataTypeEnum (const std::string& v);
     operator Value() const;
@@ -5262,7 +5262,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcTimeSeriesScheduleTypeEnum (IfcEntityInstanceData* e);
+    IfcTimeSeriesScheduleTypeEnum (IfcEntityInstanceData&& e);
     IfcTimeSeriesScheduleTypeEnum (Value v);
     IfcTimeSeriesScheduleTypeEnum (const std::string& v);
     operator Value() const;
@@ -5286,7 +5286,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcTransformerTypeEnum (IfcEntityInstanceData* e);
+    IfcTransformerTypeEnum (IfcEntityInstanceData&& e);
     IfcTransformerTypeEnum (Value v);
     IfcTransformerTypeEnum (const std::string& v);
     operator Value() const;
@@ -5315,7 +5315,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcTransitionCode (IfcEntityInstanceData* e);
+    IfcTransitionCode (IfcEntityInstanceData&& e);
     IfcTransitionCode (Value v);
     IfcTransitionCode (const std::string& v);
     operator Value() const;
@@ -5352,7 +5352,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcTransportElementTypeEnum (IfcEntityInstanceData* e);
+    IfcTransportElementTypeEnum (IfcEntityInstanceData&& e);
     IfcTransportElementTypeEnum (Value v);
     IfcTransportElementTypeEnum (const std::string& v);
     operator Value() const;
@@ -5376,7 +5376,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcTrimmingPreference (IfcEntityInstanceData* e);
+    IfcTrimmingPreference (IfcEntityInstanceData&& e);
     IfcTrimmingPreference (Value v);
     IfcTrimmingPreference (const std::string& v);
     operator Value() const;
@@ -5397,7 +5397,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcTubeBundleTypeEnum (IfcEntityInstanceData* e);
+    IfcTubeBundleTypeEnum (IfcEntityInstanceData&& e);
     IfcTubeBundleTypeEnum (Value v);
     IfcTubeBundleTypeEnum (const std::string& v);
     operator Value() const;
@@ -5446,7 +5446,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcUnitEnum (IfcEntityInstanceData* e);
+    IfcUnitEnum (IfcEntityInstanceData&& e);
     IfcUnitEnum (Value v);
     IfcUnitEnum (const std::string& v);
     operator Value() const;
@@ -5471,7 +5471,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcUnitaryEquipmentTypeEnum (IfcEntityInstanceData* e);
+    IfcUnitaryEquipmentTypeEnum (IfcEntityInstanceData&& e);
     IfcUnitaryEquipmentTypeEnum (Value v);
     IfcUnitaryEquipmentTypeEnum (const std::string& v);
     operator Value() const;
@@ -5527,7 +5527,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcValveTypeEnum (IfcEntityInstanceData* e);
+    IfcValveTypeEnum (IfcEntityInstanceData&& e);
     IfcValveTypeEnum (Value v);
     IfcValveTypeEnum (const std::string& v);
     operator Value() const;
@@ -5549,7 +5549,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcVibrationIsolatorTypeEnum (IfcEntityInstanceData* e);
+    IfcVibrationIsolatorTypeEnum (IfcEntityInstanceData&& e);
     IfcVibrationIsolatorTypeEnum (Value v);
     IfcVibrationIsolatorTypeEnum (const std::string& v);
     operator Value() const;
@@ -5599,7 +5599,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcWallTypeEnum (IfcEntityInstanceData* e);
+    IfcWallTypeEnum (IfcEntityInstanceData&& e);
     IfcWallTypeEnum (Value v);
     IfcWallTypeEnum (const std::string& v);
     operator Value() const;
@@ -5626,7 +5626,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcWasteTerminalTypeEnum (IfcEntityInstanceData* e);
+    IfcWasteTerminalTypeEnum (IfcEntityInstanceData&& e);
     IfcWasteTerminalTypeEnum (Value v);
     IfcWasteTerminalTypeEnum (const std::string& v);
     operator Value() const;
@@ -5723,7 +5723,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcWindowPanelOperationEnum (IfcEntityInstanceData* e);
+    IfcWindowPanelOperationEnum (IfcEntityInstanceData&& e);
     IfcWindowPanelOperationEnum (Value v);
     IfcWindowPanelOperationEnum (const std::string& v);
     operator Value() const;
@@ -5800,7 +5800,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcWindowPanelPositionEnum (IfcEntityInstanceData* e);
+    IfcWindowPanelPositionEnum (IfcEntityInstanceData&& e);
     IfcWindowPanelPositionEnum (Value v);
     IfcWindowPanelPositionEnum (const std::string& v);
     operator Value() const;
@@ -5820,7 +5820,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcWindowStyleConstructionEnum (IfcEntityInstanceData* e);
+    IfcWindowStyleConstructionEnum (IfcEntityInstanceData&& e);
     IfcWindowStyleConstructionEnum (Value v);
     IfcWindowStyleConstructionEnum (const std::string& v);
     operator Value() const;
@@ -5907,7 +5907,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcWindowStyleOperationEnum (IfcEntityInstanceData* e);
+    IfcWindowStyleOperationEnum (IfcEntityInstanceData&& e);
     IfcWindowStyleOperationEnum (Value v);
     IfcWindowStyleOperationEnum (const std::string& v);
     operator Value() const;
@@ -5921,7 +5921,7 @@ public:
 
     virtual const IfcParse::enumeration_type& declaration() const;
     static const IfcParse::enumeration_type& Class();
-    IfcWorkControlTypeEnum (IfcEntityInstanceData* e);
+    IfcWorkControlTypeEnum (IfcEntityInstanceData&& e);
     IfcWorkControlTypeEnum (Value v);
     IfcWorkControlTypeEnum (const std::string& v);
     operator Value() const;
@@ -5935,7 +5935,7 @@ class IFC_PARSE_API IfcAbsorbedDoseMeasure : public  IfcUtil::IfcBaseType, publi
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcAbsorbedDoseMeasure (IfcEntityInstanceData* e);
+    explicit IfcAbsorbedDoseMeasure (IfcEntityInstanceData&& e);
     IfcAbsorbedDoseMeasure (double v);
     operator double() const;
 };
@@ -5948,7 +5948,7 @@ class IFC_PARSE_API IfcAccelerationMeasure : public  IfcUtil::IfcBaseType, publi
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcAccelerationMeasure (IfcEntityInstanceData* e);
+    explicit IfcAccelerationMeasure (IfcEntityInstanceData&& e);
     IfcAccelerationMeasure (double v);
     operator double() const;
 };
@@ -5964,7 +5964,7 @@ class IFC_PARSE_API IfcAmountOfSubstanceMeasure : public  IfcUtil::IfcBaseType, 
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcAmountOfSubstanceMeasure (IfcEntityInstanceData* e);
+    explicit IfcAmountOfSubstanceMeasure (IfcEntityInstanceData&& e);
     IfcAmountOfSubstanceMeasure (double v);
     operator double() const;
 };
@@ -5977,7 +5977,7 @@ class IFC_PARSE_API IfcAngularVelocityMeasure : public  IfcUtil::IfcBaseType, pu
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcAngularVelocityMeasure (IfcEntityInstanceData* e);
+    explicit IfcAngularVelocityMeasure (IfcEntityInstanceData&& e);
     IfcAngularVelocityMeasure (double v);
     operator double() const;
 };
@@ -5992,7 +5992,7 @@ class IFC_PARSE_API IfcAreaMeasure : public  IfcUtil::IfcBaseType, public  IfcMe
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcAreaMeasure (IfcEntityInstanceData* e);
+    explicit IfcAreaMeasure (IfcEntityInstanceData&& e);
     IfcAreaMeasure (double v);
     operator double() const;
 };
@@ -6005,7 +6005,7 @@ class IFC_PARSE_API IfcBoolean : public  IfcUtil::IfcBaseType, public  IfcSimple
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcBoolean (IfcEntityInstanceData* e);
+    explicit IfcBoolean (IfcEntityInstanceData&& e);
     IfcBoolean (bool v);
     operator bool() const;
 };
@@ -6024,7 +6024,7 @@ class IFC_PARSE_API IfcComplexNumber : public  IfcUtil::IfcBaseType, public  Ifc
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcComplexNumber (IfcEntityInstanceData* e);
+    explicit IfcComplexNumber (IfcEntityInstanceData&& e);
     IfcComplexNumber (std::vector< double > /*[1:2]*/ v);
     operator std::vector< double > /*[1:2]*/() const;
 };
@@ -6080,7 +6080,7 @@ class IFC_PARSE_API IfcCompoundPlaneAngleMeasure : public  IfcUtil::IfcBaseType,
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcCompoundPlaneAngleMeasure (IfcEntityInstanceData* e);
+    explicit IfcCompoundPlaneAngleMeasure (IfcEntityInstanceData&& e);
     IfcCompoundPlaneAngleMeasure (std::vector< int > /*[3:4]*/ v);
     operator std::vector< int > /*[3:4]*/() const;
 };
@@ -6094,7 +6094,7 @@ class IFC_PARSE_API IfcContextDependentMeasure : public  IfcUtil::IfcBaseType, p
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcContextDependentMeasure (IfcEntityInstanceData* e);
+    explicit IfcContextDependentMeasure (IfcEntityInstanceData&& e);
     IfcContextDependentMeasure (double v);
     operator double() const;
 };
@@ -6108,7 +6108,7 @@ class IFC_PARSE_API IfcCountMeasure : public  IfcUtil::IfcBaseType, public  IfcM
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcCountMeasure (IfcEntityInstanceData* e);
+    explicit IfcCountMeasure (IfcEntityInstanceData&& e);
     IfcCountMeasure (double v);
     operator double() const;
 };
@@ -6123,7 +6123,7 @@ class IFC_PARSE_API IfcCurvatureMeasure : public  IfcUtil::IfcBaseType, public  
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcCurvatureMeasure (IfcEntityInstanceData* e);
+    explicit IfcCurvatureMeasure (IfcEntityInstanceData&& e);
     IfcCurvatureMeasure (double v);
     operator double() const;
 };
@@ -6143,7 +6143,7 @@ class IFC_PARSE_API IfcDayInMonthNumber : public  IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcDayInMonthNumber (IfcEntityInstanceData* e);
+    explicit IfcDayInMonthNumber (IfcEntityInstanceData&& e);
     IfcDayInMonthNumber (int v);
     operator int() const;
 };
@@ -6152,7 +6152,7 @@ class IFC_PARSE_API IfcDaylightSavingHour : public  IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcDaylightSavingHour (IfcEntityInstanceData* e);
+    explicit IfcDaylightSavingHour (IfcEntityInstanceData&& e);
     IfcDaylightSavingHour (int v);
     operator int() const;
 };
@@ -6166,7 +6166,7 @@ class IFC_PARSE_API IfcDescriptiveMeasure : public  IfcUtil::IfcBaseType, public
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcDescriptiveMeasure (IfcEntityInstanceData* e);
+    explicit IfcDescriptiveMeasure (IfcEntityInstanceData&& e);
     IfcDescriptiveMeasure (std::string v);
     operator std::string() const;
 };
@@ -6181,7 +6181,7 @@ class IFC_PARSE_API IfcDimensionCount : public  IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcDimensionCount (IfcEntityInstanceData* e);
+    explicit IfcDimensionCount (IfcEntityInstanceData&& e);
     IfcDimensionCount (int v);
     operator int() const;
 };
@@ -6194,7 +6194,7 @@ class IFC_PARSE_API IfcDoseEquivalentMeasure : public  IfcUtil::IfcBaseType, pub
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcDoseEquivalentMeasure (IfcEntityInstanceData* e);
+    explicit IfcDoseEquivalentMeasure (IfcEntityInstanceData&& e);
     IfcDoseEquivalentMeasure (double v);
     operator double() const;
 };
@@ -6208,7 +6208,7 @@ class IFC_PARSE_API IfcDynamicViscosityMeasure : public  IfcUtil::IfcBaseType, p
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcDynamicViscosityMeasure (IfcEntityInstanceData* e);
+    explicit IfcDynamicViscosityMeasure (IfcEntityInstanceData&& e);
     IfcDynamicViscosityMeasure (double v);
     operator double() const;
 };
@@ -6221,7 +6221,7 @@ class IFC_PARSE_API IfcElectricCapacitanceMeasure : public  IfcUtil::IfcBaseType
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcElectricCapacitanceMeasure (IfcEntityInstanceData* e);
+    explicit IfcElectricCapacitanceMeasure (IfcEntityInstanceData&& e);
     IfcElectricCapacitanceMeasure (double v);
     operator double() const;
 };
@@ -6234,7 +6234,7 @@ class IFC_PARSE_API IfcElectricChargeMeasure : public  IfcUtil::IfcBaseType, pub
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcElectricChargeMeasure (IfcEntityInstanceData* e);
+    explicit IfcElectricChargeMeasure (IfcEntityInstanceData&& e);
     IfcElectricChargeMeasure (double v);
     operator double() const;
 };
@@ -6247,7 +6247,7 @@ class IFC_PARSE_API IfcElectricConductanceMeasure : public  IfcUtil::IfcBaseType
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcElectricConductanceMeasure (IfcEntityInstanceData* e);
+    explicit IfcElectricConductanceMeasure (IfcEntityInstanceData&& e);
     IfcElectricConductanceMeasure (double v);
     operator double() const;
 };
@@ -6262,7 +6262,7 @@ class IFC_PARSE_API IfcElectricCurrentMeasure : public  IfcUtil::IfcBaseType, pu
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcElectricCurrentMeasure (IfcEntityInstanceData* e);
+    explicit IfcElectricCurrentMeasure (IfcEntityInstanceData&& e);
     IfcElectricCurrentMeasure (double v);
     operator double() const;
 };
@@ -6275,7 +6275,7 @@ class IFC_PARSE_API IfcElectricResistanceMeasure : public  IfcUtil::IfcBaseType,
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcElectricResistanceMeasure (IfcEntityInstanceData* e);
+    explicit IfcElectricResistanceMeasure (IfcEntityInstanceData&& e);
     IfcElectricResistanceMeasure (double v);
     operator double() const;
 };
@@ -6288,7 +6288,7 @@ class IFC_PARSE_API IfcElectricVoltageMeasure : public  IfcUtil::IfcBaseType, pu
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcElectricVoltageMeasure (IfcEntityInstanceData* e);
+    explicit IfcElectricVoltageMeasure (IfcEntityInstanceData&& e);
     IfcElectricVoltageMeasure (double v);
     operator double() const;
 };
@@ -6301,7 +6301,7 @@ class IFC_PARSE_API IfcEnergyMeasure : public  IfcUtil::IfcBaseType, public  Ifc
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcEnergyMeasure (IfcEntityInstanceData* e);
+    explicit IfcEnergyMeasure (IfcEntityInstanceData&& e);
     IfcEnergyMeasure (double v);
     operator double() const;
 };
@@ -6323,7 +6323,7 @@ class IFC_PARSE_API IfcFontStyle : public  IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcFontStyle (IfcEntityInstanceData* e);
+    explicit IfcFontStyle (IfcEntityInstanceData&& e);
     IfcFontStyle (std::string v);
     operator std::string() const;
 };
@@ -6343,7 +6343,7 @@ class IFC_PARSE_API IfcFontVariant : public  IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcFontVariant (IfcEntityInstanceData* e);
+    explicit IfcFontVariant (IfcEntityInstanceData&& e);
     IfcFontVariant (std::string v);
     operator std::string() const;
 };
@@ -6374,7 +6374,7 @@ class IFC_PARSE_API IfcFontWeight : public  IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcFontWeight (IfcEntityInstanceData* e);
+    explicit IfcFontWeight (IfcEntityInstanceData&& e);
     IfcFontWeight (std::string v);
     operator std::string() const;
 };
@@ -6387,7 +6387,7 @@ class IFC_PARSE_API IfcForceMeasure : public  IfcUtil::IfcBaseType, public  IfcD
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcForceMeasure (IfcEntityInstanceData* e);
+    explicit IfcForceMeasure (IfcEntityInstanceData&& e);
     IfcForceMeasure (double v);
     operator double() const;
 };
@@ -6400,7 +6400,7 @@ class IFC_PARSE_API IfcFrequencyMeasure : public  IfcUtil::IfcBaseType, public  
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcFrequencyMeasure (IfcEntityInstanceData* e);
+    explicit IfcFrequencyMeasure (IfcEntityInstanceData&& e);
     IfcFrequencyMeasure (double v);
     operator double() const;
 };
@@ -6421,7 +6421,7 @@ class IFC_PARSE_API IfcGloballyUniqueId : public  IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcGloballyUniqueId (IfcEntityInstanceData* e);
+    explicit IfcGloballyUniqueId (IfcEntityInstanceData&& e);
     IfcGloballyUniqueId (std::string v);
     operator std::string() const;
 };
@@ -6434,7 +6434,7 @@ class IFC_PARSE_API IfcHeatFluxDensityMeasure : public  IfcUtil::IfcBaseType, pu
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcHeatFluxDensityMeasure (IfcEntityInstanceData* e);
+    explicit IfcHeatFluxDensityMeasure (IfcEntityInstanceData&& e);
     IfcHeatFluxDensityMeasure (double v);
     operator double() const;
 };
@@ -6445,7 +6445,7 @@ class IFC_PARSE_API IfcHeatingValueMeasure : public  IfcUtil::IfcBaseType, publi
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcHeatingValueMeasure (IfcEntityInstanceData* e);
+    explicit IfcHeatingValueMeasure (IfcEntityInstanceData&& e);
     IfcHeatingValueMeasure (double v);
     operator double() const;
 };
@@ -6454,7 +6454,7 @@ class IFC_PARSE_API IfcHourInDay : public  IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcHourInDay (IfcEntityInstanceData* e);
+    explicit IfcHourInDay (IfcEntityInstanceData&& e);
     IfcHourInDay (int v);
     operator int() const;
 };
@@ -6476,7 +6476,7 @@ class IFC_PARSE_API IfcIdentifier : public  IfcUtil::IfcBaseType, public  IfcSim
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcIdentifier (IfcEntityInstanceData* e);
+    explicit IfcIdentifier (IfcEntityInstanceData&& e);
     IfcIdentifier (std::string v);
     operator std::string() const;
 };
@@ -6489,7 +6489,7 @@ class IFC_PARSE_API IfcIlluminanceMeasure : public  IfcUtil::IfcBaseType, public
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcIlluminanceMeasure (IfcEntityInstanceData* e);
+    explicit IfcIlluminanceMeasure (IfcEntityInstanceData&& e);
     IfcIlluminanceMeasure (double v);
     operator double() const;
 };
@@ -6502,7 +6502,7 @@ class IFC_PARSE_API IfcInductanceMeasure : public  IfcUtil::IfcBaseType, public 
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcInductanceMeasure (IfcEntityInstanceData* e);
+    explicit IfcInductanceMeasure (IfcEntityInstanceData&& e);
     IfcInductanceMeasure (double v);
     operator double() const;
 };
@@ -6517,7 +6517,7 @@ class IFC_PARSE_API IfcInteger : public  IfcUtil::IfcBaseType, public  IfcSimple
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcInteger (IfcEntityInstanceData* e);
+    explicit IfcInteger (IfcEntityInstanceData&& e);
     IfcInteger (int v);
     operator int() const;
 };
@@ -6532,7 +6532,7 @@ class IFC_PARSE_API IfcIntegerCountRateMeasure : public  IfcUtil::IfcBaseType, p
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcIntegerCountRateMeasure (IfcEntityInstanceData* e);
+    explicit IfcIntegerCountRateMeasure (IfcEntityInstanceData&& e);
     IfcIntegerCountRateMeasure (int v);
     operator int() const;
 };
@@ -6543,7 +6543,7 @@ class IFC_PARSE_API IfcIonConcentrationMeasure : public  IfcUtil::IfcBaseType, p
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcIonConcentrationMeasure (IfcEntityInstanceData* e);
+    explicit IfcIonConcentrationMeasure (IfcEntityInstanceData&& e);
     IfcIonConcentrationMeasure (double v);
     operator double() const;
 };
@@ -6556,7 +6556,7 @@ class IFC_PARSE_API IfcIsothermalMoistureCapacityMeasure : public  IfcUtil::IfcB
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcIsothermalMoistureCapacityMeasure (IfcEntityInstanceData* e);
+    explicit IfcIsothermalMoistureCapacityMeasure (IfcEntityInstanceData&& e);
     IfcIsothermalMoistureCapacityMeasure (double v);
     operator double() const;
 };
@@ -6569,7 +6569,7 @@ class IFC_PARSE_API IfcKinematicViscosityMeasure : public  IfcUtil::IfcBaseType,
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcKinematicViscosityMeasure (IfcEntityInstanceData* e);
+    explicit IfcKinematicViscosityMeasure (IfcEntityInstanceData&& e);
     IfcKinematicViscosityMeasure (double v);
     operator double() const;
 };
@@ -6591,7 +6591,7 @@ class IFC_PARSE_API IfcLabel : public  IfcUtil::IfcBaseType, public  IfcConditio
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcLabel (IfcEntityInstanceData* e);
+    explicit IfcLabel (IfcEntityInstanceData&& e);
     IfcLabel (std::string v);
     operator std::string() const;
 };
@@ -6606,7 +6606,7 @@ class IFC_PARSE_API IfcLengthMeasure : public  IfcUtil::IfcBaseType, public  Ifc
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcLengthMeasure (IfcEntityInstanceData* e);
+    explicit IfcLengthMeasure (IfcEntityInstanceData&& e);
     IfcLengthMeasure (double v);
     operator double() const;
 };
@@ -6619,7 +6619,7 @@ class IFC_PARSE_API IfcLinearForceMeasure : public  IfcUtil::IfcBaseType, public
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcLinearForceMeasure (IfcEntityInstanceData* e);
+    explicit IfcLinearForceMeasure (IfcEntityInstanceData&& e);
     IfcLinearForceMeasure (double v);
     operator double() const;
 };
@@ -6632,7 +6632,7 @@ class IFC_PARSE_API IfcLinearMomentMeasure : public  IfcUtil::IfcBaseType, publi
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcLinearMomentMeasure (IfcEntityInstanceData* e);
+    explicit IfcLinearMomentMeasure (IfcEntityInstanceData&& e);
     IfcLinearMomentMeasure (double v);
     operator double() const;
 };
@@ -6645,7 +6645,7 @@ class IFC_PARSE_API IfcLinearStiffnessMeasure : public  IfcUtil::IfcBaseType, pu
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcLinearStiffnessMeasure (IfcEntityInstanceData* e);
+    explicit IfcLinearStiffnessMeasure (IfcEntityInstanceData&& e);
     IfcLinearStiffnessMeasure (double v);
     operator double() const;
 };
@@ -6658,7 +6658,7 @@ class IFC_PARSE_API IfcLinearVelocityMeasure : public  IfcUtil::IfcBaseType, pub
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcLinearVelocityMeasure (IfcEntityInstanceData* e);
+    explicit IfcLinearVelocityMeasure (IfcEntityInstanceData&& e);
     IfcLinearVelocityMeasure (double v);
     operator double() const;
 };
@@ -6671,7 +6671,7 @@ class IFC_PARSE_API IfcLogical : public  IfcUtil::IfcBaseType, public  IfcSimple
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcLogical (IfcEntityInstanceData* e);
+    explicit IfcLogical (IfcEntityInstanceData&& e);
     IfcLogical (boost::logic::tribool v);
     operator boost::logic::tribool() const;
 };
@@ -6684,7 +6684,7 @@ class IFC_PARSE_API IfcLuminousFluxMeasure : public  IfcUtil::IfcBaseType, publi
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcLuminousFluxMeasure (IfcEntityInstanceData* e);
+    explicit IfcLuminousFluxMeasure (IfcEntityInstanceData&& e);
     IfcLuminousFluxMeasure (double v);
     operator double() const;
 };
@@ -6699,7 +6699,7 @@ class IFC_PARSE_API IfcLuminousIntensityDistributionMeasure : public  IfcUtil::I
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcLuminousIntensityDistributionMeasure (IfcEntityInstanceData* e);
+    explicit IfcLuminousIntensityDistributionMeasure (IfcEntityInstanceData&& e);
     IfcLuminousIntensityDistributionMeasure (double v);
     operator double() const;
 };
@@ -6714,7 +6714,7 @@ class IFC_PARSE_API IfcLuminousIntensityMeasure : public  IfcUtil::IfcBaseType, 
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcLuminousIntensityMeasure (IfcEntityInstanceData* e);
+    explicit IfcLuminousIntensityMeasure (IfcEntityInstanceData&& e);
     IfcLuminousIntensityMeasure (double v);
     operator double() const;
 };
@@ -6727,7 +6727,7 @@ class IFC_PARSE_API IfcMagneticFluxDensityMeasure : public  IfcUtil::IfcBaseType
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcMagneticFluxDensityMeasure (IfcEntityInstanceData* e);
+    explicit IfcMagneticFluxDensityMeasure (IfcEntityInstanceData&& e);
     IfcMagneticFluxDensityMeasure (double v);
     operator double() const;
 };
@@ -6740,7 +6740,7 @@ class IFC_PARSE_API IfcMagneticFluxMeasure : public  IfcUtil::IfcBaseType, publi
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcMagneticFluxMeasure (IfcEntityInstanceData* e);
+    explicit IfcMagneticFluxMeasure (IfcEntityInstanceData&& e);
     IfcMagneticFluxMeasure (double v);
     operator double() const;
 };
@@ -6753,7 +6753,7 @@ class IFC_PARSE_API IfcMassDensityMeasure : public  IfcUtil::IfcBaseType, public
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcMassDensityMeasure (IfcEntityInstanceData* e);
+    explicit IfcMassDensityMeasure (IfcEntityInstanceData&& e);
     IfcMassDensityMeasure (double v);
     operator double() const;
 };
@@ -6766,7 +6766,7 @@ class IFC_PARSE_API IfcMassFlowRateMeasure : public  IfcUtil::IfcBaseType, publi
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcMassFlowRateMeasure (IfcEntityInstanceData* e);
+    explicit IfcMassFlowRateMeasure (IfcEntityInstanceData&& e);
     IfcMassFlowRateMeasure (double v);
     operator double() const;
 };
@@ -6781,7 +6781,7 @@ class IFC_PARSE_API IfcMassMeasure : public  IfcUtil::IfcBaseType, public  IfcMe
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcMassMeasure (IfcEntityInstanceData* e);
+    explicit IfcMassMeasure (IfcEntityInstanceData&& e);
     IfcMassMeasure (double v);
     operator double() const;
 };
@@ -6796,7 +6796,7 @@ class IFC_PARSE_API IfcMassPerLengthMeasure : public  IfcUtil::IfcBaseType, publ
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcMassPerLengthMeasure (IfcEntityInstanceData* e);
+    explicit IfcMassPerLengthMeasure (IfcEntityInstanceData&& e);
     IfcMassPerLengthMeasure (double v);
     operator double() const;
 };
@@ -6805,7 +6805,7 @@ class IFC_PARSE_API IfcMinuteInHour : public  IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcMinuteInHour (IfcEntityInstanceData* e);
+    explicit IfcMinuteInHour (IfcEntityInstanceData&& e);
     IfcMinuteInHour (int v);
     operator int() const;
 };
@@ -6818,7 +6818,7 @@ class IFC_PARSE_API IfcModulusOfElasticityMeasure : public  IfcUtil::IfcBaseType
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcModulusOfElasticityMeasure (IfcEntityInstanceData* e);
+    explicit IfcModulusOfElasticityMeasure (IfcEntityInstanceData&& e);
     IfcModulusOfElasticityMeasure (double v);
     operator double() const;
 };
@@ -6831,7 +6831,7 @@ class IFC_PARSE_API IfcModulusOfLinearSubgradeReactionMeasure : public  IfcUtil:
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcModulusOfLinearSubgradeReactionMeasure (IfcEntityInstanceData* e);
+    explicit IfcModulusOfLinearSubgradeReactionMeasure (IfcEntityInstanceData&& e);
     IfcModulusOfLinearSubgradeReactionMeasure (double v);
     operator double() const;
 };
@@ -6844,7 +6844,7 @@ class IFC_PARSE_API IfcModulusOfRotationalSubgradeReactionMeasure : public  IfcU
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcModulusOfRotationalSubgradeReactionMeasure (IfcEntityInstanceData* e);
+    explicit IfcModulusOfRotationalSubgradeReactionMeasure (IfcEntityInstanceData&& e);
     IfcModulusOfRotationalSubgradeReactionMeasure (double v);
     operator double() const;
 };
@@ -6861,7 +6861,7 @@ class IFC_PARSE_API IfcModulusOfSubgradeReactionMeasure : public  IfcUtil::IfcBa
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcModulusOfSubgradeReactionMeasure (IfcEntityInstanceData* e);
+    explicit IfcModulusOfSubgradeReactionMeasure (IfcEntityInstanceData&& e);
     IfcModulusOfSubgradeReactionMeasure (double v);
     operator double() const;
 };
@@ -6874,7 +6874,7 @@ class IFC_PARSE_API IfcMoistureDiffusivityMeasure : public  IfcUtil::IfcBaseType
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcMoistureDiffusivityMeasure (IfcEntityInstanceData* e);
+    explicit IfcMoistureDiffusivityMeasure (IfcEntityInstanceData&& e);
     IfcMoistureDiffusivityMeasure (double v);
     operator double() const;
 };
@@ -6887,7 +6887,7 @@ class IFC_PARSE_API IfcMolecularWeightMeasure : public  IfcUtil::IfcBaseType, pu
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcMolecularWeightMeasure (IfcEntityInstanceData* e);
+    explicit IfcMolecularWeightMeasure (IfcEntityInstanceData&& e);
     IfcMolecularWeightMeasure (double v);
     operator double() const;
 };
@@ -6900,7 +6900,7 @@ class IFC_PARSE_API IfcMomentOfInertiaMeasure : public  IfcUtil::IfcBaseType, pu
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcMomentOfInertiaMeasure (IfcEntityInstanceData* e);
+    explicit IfcMomentOfInertiaMeasure (IfcEntityInstanceData&& e);
     IfcMomentOfInertiaMeasure (double v);
     operator double() const;
 };
@@ -6912,7 +6912,7 @@ class IFC_PARSE_API IfcMonetaryMeasure : public  IfcUtil::IfcBaseType, public  I
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcMonetaryMeasure (IfcEntityInstanceData* e);
+    explicit IfcMonetaryMeasure (IfcEntityInstanceData&& e);
     IfcMonetaryMeasure (double v);
     operator double() const;
 };
@@ -6976,7 +6976,7 @@ class IFC_PARSE_API IfcMonthInYearNumber : public  IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcMonthInYearNumber (IfcEntityInstanceData* e);
+    explicit IfcMonthInYearNumber (IfcEntityInstanceData&& e);
     IfcMonthInYearNumber (int v);
     operator int() const;
 };
@@ -6990,7 +6990,7 @@ class IFC_PARSE_API IfcNumericMeasure : public  IfcUtil::IfcBaseType, public  If
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcNumericMeasure (IfcEntityInstanceData* e);
+    explicit IfcNumericMeasure (IfcEntityInstanceData&& e);
     IfcNumericMeasure (double v);
     operator double() const;
 };
@@ -7001,7 +7001,7 @@ class IFC_PARSE_API IfcPHMeasure : public  IfcUtil::IfcBaseType, public  IfcDeri
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcPHMeasure (IfcEntityInstanceData* e);
+    explicit IfcPHMeasure (IfcEntityInstanceData&& e);
     IfcPHMeasure (double v);
     operator double() const;
 };
@@ -7016,7 +7016,7 @@ class IFC_PARSE_API IfcParameterValue : public  IfcUtil::IfcBaseType, public  If
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcParameterValue (IfcEntityInstanceData* e);
+    explicit IfcParameterValue (IfcEntityInstanceData&& e);
     IfcParameterValue (double v);
     operator double() const;
 };
@@ -7029,7 +7029,7 @@ class IFC_PARSE_API IfcPlanarForceMeasure : public  IfcUtil::IfcBaseType, public
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcPlanarForceMeasure (IfcEntityInstanceData* e);
+    explicit IfcPlanarForceMeasure (IfcEntityInstanceData&& e);
     IfcPlanarForceMeasure (double v);
     operator double() const;
 };
@@ -7048,7 +7048,7 @@ class IFC_PARSE_API IfcPlaneAngleMeasure : public  IfcUtil::IfcBaseType, public 
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcPlaneAngleMeasure (IfcEntityInstanceData* e);
+    explicit IfcPlaneAngleMeasure (IfcEntityInstanceData&& e);
     IfcPlaneAngleMeasure (double v);
     operator double() const;
 };
@@ -7062,7 +7062,7 @@ class IFC_PARSE_API IfcPositiveLengthMeasure : public  IfcLengthMeasure, public 
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcPositiveLengthMeasure (IfcEntityInstanceData* e);
+    explicit IfcPositiveLengthMeasure (IfcEntityInstanceData&& e);
     IfcPositiveLengthMeasure (double v);
     operator double() const;
 };
@@ -7076,7 +7076,7 @@ class IFC_PARSE_API IfcPositivePlaneAngleMeasure : public  IfcPlaneAngleMeasure 
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcPositivePlaneAngleMeasure (IfcEntityInstanceData* e);
+    explicit IfcPositivePlaneAngleMeasure (IfcEntityInstanceData&& e);
     IfcPositivePlaneAngleMeasure (double v);
     operator double() const;
 };
@@ -7089,7 +7089,7 @@ class IFC_PARSE_API IfcPowerMeasure : public  IfcUtil::IfcBaseType, public  IfcD
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcPowerMeasure (IfcEntityInstanceData* e);
+    explicit IfcPowerMeasure (IfcEntityInstanceData&& e);
     IfcPowerMeasure (double v);
     operator double() const;
 };
@@ -7106,7 +7106,7 @@ class IFC_PARSE_API IfcPresentableText : public  IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcPresentableText (IfcEntityInstanceData* e);
+    explicit IfcPresentableText (IfcEntityInstanceData&& e);
     IfcPresentableText (std::string v);
     operator std::string() const;
 };
@@ -7119,7 +7119,7 @@ class IFC_PARSE_API IfcPressureMeasure : public  IfcUtil::IfcBaseType, public  I
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcPressureMeasure (IfcEntityInstanceData* e);
+    explicit IfcPressureMeasure (IfcEntityInstanceData&& e);
     IfcPressureMeasure (double v);
     operator double() const;
 };
@@ -7132,7 +7132,7 @@ class IFC_PARSE_API IfcRadioActivityMeasure : public  IfcUtil::IfcBaseType, publ
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcRadioActivityMeasure (IfcEntityInstanceData* e);
+    explicit IfcRadioActivityMeasure (IfcEntityInstanceData&& e);
     IfcRadioActivityMeasure (double v);
     operator double() const;
 };
@@ -7150,7 +7150,7 @@ class IFC_PARSE_API IfcRatioMeasure : public  IfcUtil::IfcBaseType, public  IfcA
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcRatioMeasure (IfcEntityInstanceData* e);
+    explicit IfcRatioMeasure (IfcEntityInstanceData&& e);
     IfcRatioMeasure (double v);
     operator double() const;
 };
@@ -7165,7 +7165,7 @@ class IFC_PARSE_API IfcReal : public  IfcUtil::IfcBaseType, public  IfcSimpleVal
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcReal (IfcEntityInstanceData* e);
+    explicit IfcReal (IfcEntityInstanceData&& e);
     IfcReal (double v);
     operator double() const;
 };
@@ -7178,7 +7178,7 @@ class IFC_PARSE_API IfcRotationalFrequencyMeasure : public  IfcUtil::IfcBaseType
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcRotationalFrequencyMeasure (IfcEntityInstanceData* e);
+    explicit IfcRotationalFrequencyMeasure (IfcEntityInstanceData&& e);
     IfcRotationalFrequencyMeasure (double v);
     operator double() const;
 };
@@ -7192,7 +7192,7 @@ class IFC_PARSE_API IfcRotationalMassMeasure : public  IfcUtil::IfcBaseType, pub
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcRotationalMassMeasure (IfcEntityInstanceData* e);
+    explicit IfcRotationalMassMeasure (IfcEntityInstanceData&& e);
     IfcRotationalMassMeasure (double v);
     operator double() const;
 };
@@ -7205,7 +7205,7 @@ class IFC_PARSE_API IfcRotationalStiffnessMeasure : public  IfcUtil::IfcBaseType
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcRotationalStiffnessMeasure (IfcEntityInstanceData* e);
+    explicit IfcRotationalStiffnessMeasure (IfcEntityInstanceData&& e);
     IfcRotationalStiffnessMeasure (double v);
     operator double() const;
 };
@@ -7214,7 +7214,7 @@ class IFC_PARSE_API IfcSecondInMinute : public  IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcSecondInMinute (IfcEntityInstanceData* e);
+    explicit IfcSecondInMinute (IfcEntityInstanceData&& e);
     IfcSecondInMinute (double v);
     operator double() const;
 };
@@ -7227,7 +7227,7 @@ class IFC_PARSE_API IfcSectionModulusMeasure : public  IfcUtil::IfcBaseType, pub
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcSectionModulusMeasure (IfcEntityInstanceData* e);
+    explicit IfcSectionModulusMeasure (IfcEntityInstanceData&& e);
     IfcSectionModulusMeasure (double v);
     operator double() const;
 };
@@ -7240,7 +7240,7 @@ class IFC_PARSE_API IfcSectionalAreaIntegralMeasure : public  IfcUtil::IfcBaseTy
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcSectionalAreaIntegralMeasure (IfcEntityInstanceData* e);
+    explicit IfcSectionalAreaIntegralMeasure (IfcEntityInstanceData&& e);
     IfcSectionalAreaIntegralMeasure (double v);
     operator double() const;
 };
@@ -7253,7 +7253,7 @@ class IFC_PARSE_API IfcShearModulusMeasure : public  IfcUtil::IfcBaseType, publi
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcShearModulusMeasure (IfcEntityInstanceData* e);
+    explicit IfcShearModulusMeasure (IfcEntityInstanceData&& e);
     IfcShearModulusMeasure (double v);
     operator double() const;
 };
@@ -7268,7 +7268,7 @@ class IFC_PARSE_API IfcSolidAngleMeasure : public  IfcUtil::IfcBaseType, public 
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcSolidAngleMeasure (IfcEntityInstanceData* e);
+    explicit IfcSolidAngleMeasure (IfcEntityInstanceData&& e);
     IfcSolidAngleMeasure (double v);
     operator double() const;
 };
@@ -7281,7 +7281,7 @@ class IFC_PARSE_API IfcSoundPowerMeasure : public  IfcUtil::IfcBaseType, public 
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcSoundPowerMeasure (IfcEntityInstanceData* e);
+    explicit IfcSoundPowerMeasure (IfcEntityInstanceData&& e);
     IfcSoundPowerMeasure (double v);
     operator double() const;
 };
@@ -7294,7 +7294,7 @@ class IFC_PARSE_API IfcSoundPressureMeasure : public  IfcUtil::IfcBaseType, publ
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcSoundPressureMeasure (IfcEntityInstanceData* e);
+    explicit IfcSoundPressureMeasure (IfcEntityInstanceData&& e);
     IfcSoundPressureMeasure (double v);
     operator double() const;
 };
@@ -7307,7 +7307,7 @@ class IFC_PARSE_API IfcSpecificHeatCapacityMeasure : public  IfcUtil::IfcBaseTyp
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcSpecificHeatCapacityMeasure (IfcEntityInstanceData* e);
+    explicit IfcSpecificHeatCapacityMeasure (IfcEntityInstanceData&& e);
     IfcSpecificHeatCapacityMeasure (double v);
     operator double() const;
 };
@@ -7322,7 +7322,7 @@ class IFC_PARSE_API IfcSpecularExponent : public  IfcUtil::IfcBaseType, public  
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcSpecularExponent (IfcEntityInstanceData* e);
+    explicit IfcSpecularExponent (IfcEntityInstanceData&& e);
     IfcSpecularExponent (double v);
     operator double() const;
 };
@@ -7339,7 +7339,7 @@ class IFC_PARSE_API IfcSpecularRoughness : public  IfcUtil::IfcBaseType, public 
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcSpecularRoughness (IfcEntityInstanceData* e);
+    explicit IfcSpecularRoughness (IfcEntityInstanceData&& e);
     IfcSpecularRoughness (double v);
     operator double() const;
 };
@@ -7352,7 +7352,7 @@ class IFC_PARSE_API IfcTemperatureGradientMeasure : public  IfcUtil::IfcBaseType
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcTemperatureGradientMeasure (IfcEntityInstanceData* e);
+    explicit IfcTemperatureGradientMeasure (IfcEntityInstanceData&& e);
     IfcTemperatureGradientMeasure (double v);
     operator double() const;
 };
@@ -7371,7 +7371,7 @@ class IFC_PARSE_API IfcText : public  IfcUtil::IfcBaseType, public  IfcMetricVal
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcText (IfcEntityInstanceData* e);
+    explicit IfcText (IfcEntityInstanceData&& e);
     IfcText (std::string v);
     operator std::string() const;
 };
@@ -7389,7 +7389,7 @@ class IFC_PARSE_API IfcTextAlignment : public  IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcTextAlignment (IfcEntityInstanceData* e);
+    explicit IfcTextAlignment (IfcEntityInstanceData&& e);
     IfcTextAlignment (std::string v);
     operator std::string() const;
 };
@@ -7410,7 +7410,7 @@ class IFC_PARSE_API IfcTextDecoration : public  IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcTextDecoration (IfcEntityInstanceData* e);
+    explicit IfcTextDecoration (IfcEntityInstanceData&& e);
     IfcTextDecoration (std::string v);
     operator std::string() const;
 };
@@ -7437,7 +7437,7 @@ class IFC_PARSE_API IfcTextFontName : public  IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcTextFontName (IfcEntityInstanceData* e);
+    explicit IfcTextFontName (IfcEntityInstanceData&& e);
     IfcTextFontName (std::string v);
     operator std::string() const;
 };
@@ -7455,7 +7455,7 @@ class IFC_PARSE_API IfcTextTransformation : public  IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcTextTransformation (IfcEntityInstanceData* e);
+    explicit IfcTextTransformation (IfcEntityInstanceData&& e);
     IfcTextTransformation (std::string v);
     operator std::string() const;
 };
@@ -7468,7 +7468,7 @@ class IFC_PARSE_API IfcThermalAdmittanceMeasure : public  IfcUtil::IfcBaseType, 
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcThermalAdmittanceMeasure (IfcEntityInstanceData* e);
+    explicit IfcThermalAdmittanceMeasure (IfcEntityInstanceData&& e);
     IfcThermalAdmittanceMeasure (double v);
     operator double() const;
 };
@@ -7481,7 +7481,7 @@ class IFC_PARSE_API IfcThermalConductivityMeasure : public  IfcUtil::IfcBaseType
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcThermalConductivityMeasure (IfcEntityInstanceData* e);
+    explicit IfcThermalConductivityMeasure (IfcEntityInstanceData&& e);
     IfcThermalConductivityMeasure (double v);
     operator double() const;
 };
@@ -7493,7 +7493,7 @@ class IFC_PARSE_API IfcThermalExpansionCoefficientMeasure : public  IfcUtil::Ifc
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcThermalExpansionCoefficientMeasure (IfcEntityInstanceData* e);
+    explicit IfcThermalExpansionCoefficientMeasure (IfcEntityInstanceData&& e);
     IfcThermalExpansionCoefficientMeasure (double v);
     operator double() const;
 };
@@ -7505,7 +7505,7 @@ class IFC_PARSE_API IfcThermalResistanceMeasure : public  IfcUtil::IfcBaseType, 
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcThermalResistanceMeasure (IfcEntityInstanceData* e);
+    explicit IfcThermalResistanceMeasure (IfcEntityInstanceData&& e);
     IfcThermalResistanceMeasure (double v);
     operator double() const;
 };
@@ -7518,7 +7518,7 @@ class IFC_PARSE_API IfcThermalTransmittanceMeasure : public  IfcUtil::IfcBaseTyp
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcThermalTransmittanceMeasure (IfcEntityInstanceData* e);
+    explicit IfcThermalTransmittanceMeasure (IfcEntityInstanceData&& e);
     IfcThermalTransmittanceMeasure (double v);
     operator double() const;
 };
@@ -7533,7 +7533,7 @@ class IFC_PARSE_API IfcThermodynamicTemperatureMeasure : public  IfcUtil::IfcBas
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcThermodynamicTemperatureMeasure (IfcEntityInstanceData* e);
+    explicit IfcThermodynamicTemperatureMeasure (IfcEntityInstanceData&& e);
     IfcThermodynamicTemperatureMeasure (double v);
     operator double() const;
 };
@@ -7548,7 +7548,7 @@ class IFC_PARSE_API IfcTimeMeasure : public  IfcUtil::IfcBaseType, public  IfcMe
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcTimeMeasure (IfcEntityInstanceData* e);
+    explicit IfcTimeMeasure (IfcEntityInstanceData&& e);
     IfcTimeMeasure (double v);
     operator double() const;
 };
@@ -7560,7 +7560,7 @@ class IFC_PARSE_API IfcTimeStamp : public  IfcUtil::IfcBaseType, public  IfcDeri
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcTimeStamp (IfcEntityInstanceData* e);
+    explicit IfcTimeStamp (IfcEntityInstanceData&& e);
     IfcTimeStamp (int v);
     operator int() const;
 };
@@ -7573,7 +7573,7 @@ class IFC_PARSE_API IfcTorqueMeasure : public  IfcUtil::IfcBaseType, public  Ifc
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcTorqueMeasure (IfcEntityInstanceData* e);
+    explicit IfcTorqueMeasure (IfcEntityInstanceData&& e);
     IfcTorqueMeasure (double v);
     operator double() const;
 };
@@ -7586,7 +7586,7 @@ class IFC_PARSE_API IfcVaporPermeabilityMeasure : public  IfcUtil::IfcBaseType, 
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcVaporPermeabilityMeasure (IfcEntityInstanceData* e);
+    explicit IfcVaporPermeabilityMeasure (IfcEntityInstanceData&& e);
     IfcVaporPermeabilityMeasure (double v);
     operator double() const;
 };
@@ -7601,7 +7601,7 @@ class IFC_PARSE_API IfcVolumeMeasure : public  IfcUtil::IfcBaseType, public  Ifc
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcVolumeMeasure (IfcEntityInstanceData* e);
+    explicit IfcVolumeMeasure (IfcEntityInstanceData&& e);
     IfcVolumeMeasure (double v);
     operator double() const;
 };
@@ -7614,7 +7614,7 @@ class IFC_PARSE_API IfcVolumetricFlowRateMeasure : public  IfcUtil::IfcBaseType,
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcVolumetricFlowRateMeasure (IfcEntityInstanceData* e);
+    explicit IfcVolumetricFlowRateMeasure (IfcEntityInstanceData&& e);
     IfcVolumetricFlowRateMeasure (double v);
     operator double() const;
 };
@@ -7627,7 +7627,7 @@ class IFC_PARSE_API IfcWarpingConstantMeasure : public  IfcUtil::IfcBaseType, pu
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcWarpingConstantMeasure (IfcEntityInstanceData* e);
+    explicit IfcWarpingConstantMeasure (IfcEntityInstanceData&& e);
     IfcWarpingConstantMeasure (double v);
     operator double() const;
 };
@@ -7640,7 +7640,7 @@ class IFC_PARSE_API IfcWarpingMomentMeasure : public  IfcUtil::IfcBaseType, publ
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcWarpingMomentMeasure (IfcEntityInstanceData* e);
+    explicit IfcWarpingMomentMeasure (IfcEntityInstanceData&& e);
     IfcWarpingMomentMeasure (double v);
     operator double() const;
 };
@@ -7649,7 +7649,7 @@ class IFC_PARSE_API IfcYearNumber : public  IfcUtil::IfcBaseType {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcYearNumber (IfcEntityInstanceData* e);
+    explicit IfcYearNumber (IfcEntityInstanceData&& e);
     IfcYearNumber (int v);
     operator int() const;
 };
@@ -7682,7 +7682,7 @@ class IFC_PARSE_API IfcBoxAlignment : public  IfcLabel {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcBoxAlignment (IfcEntityInstanceData* e);
+    explicit IfcBoxAlignment (IfcEntityInstanceData&& e);
     IfcBoxAlignment (std::string v);
     operator std::string() const;
 };
@@ -7695,7 +7695,7 @@ class IFC_PARSE_API IfcNormalisedRatioMeasure : public  IfcRatioMeasure, public 
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcNormalisedRatioMeasure (IfcEntityInstanceData* e);
+    explicit IfcNormalisedRatioMeasure (IfcEntityInstanceData&& e);
     IfcNormalisedRatioMeasure (double v);
     operator double() const;
 };
@@ -7709,7 +7709,7 @@ class IFC_PARSE_API IfcPositiveRatioMeasure : public  IfcRatioMeasure {
 public:
     virtual const IfcParse::type_declaration& declaration() const;
     static const IfcParse::type_declaration& Class();
-    explicit IfcPositiveRatioMeasure (IfcEntityInstanceData* e);
+    explicit IfcPositiveRatioMeasure (IfcEntityInstanceData&& e);
     IfcPositiveRatioMeasure (double v);
     operator double() const;
 };
@@ -7742,7 +7742,7 @@ public:
     void setDescription(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcActorRole (IfcEntityInstanceData* e);
+    IfcActorRole (IfcEntityInstanceData&& e);
     IfcActorRole (::Ifc2x3::IfcRoleEnum::Value v1_Role, boost::optional< std::string > v2_UserDefinedRole, boost::optional< std::string > v3_Description);
     typedef aggregate_of< IfcActorRole > list;
 };
@@ -7769,7 +7769,7 @@ public:
     aggregate_of< IfcOrganization >::ptr OfOrganization() const; // INVERSE IfcOrganization::Addresses
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcAddress (IfcEntityInstanceData* e);
+    IfcAddress (IfcEntityInstanceData&& e);
     IfcAddress (boost::optional< ::Ifc2x3::IfcAddressTypeEnum::Value > v1_Purpose, boost::optional< std::string > v2_Description, boost::optional< std::string > v3_UserDefinedPurpose);
     typedef aggregate_of< IfcAddress > list;
 };
@@ -7792,7 +7792,7 @@ public:
     void setApplicationIdentifier(std::string v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcApplication (IfcEntityInstanceData* e);
+    IfcApplication (IfcEntityInstanceData&& e);
     IfcApplication (::Ifc2x3::IfcOrganization* v1_ApplicationDeveloper, std::string v2_Version, std::string v3_ApplicationFullName, std::string v4_ApplicationIdentifier);
     typedef aggregate_of< IfcApplication > list;
 };
@@ -7843,7 +7843,7 @@ public:
     aggregate_of< IfcAppliedValueRelationship >::ptr IsComponentIn() const; // INVERSE IfcAppliedValueRelationship::Components
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcAppliedValue (IfcEntityInstanceData* e);
+    IfcAppliedValue (IfcEntityInstanceData&& e);
     IfcAppliedValue (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, ::Ifc2x3::IfcAppliedValueSelect* v3_AppliedValue, ::Ifc2x3::IfcMeasureWithUnit* v4_UnitBasis, ::Ifc2x3::IfcDateTimeSelect* v5_ApplicableDate, ::Ifc2x3::IfcDateTimeSelect* v6_FixedUntilDate);
     typedef aggregate_of< IfcAppliedValue > list;
 };
@@ -7888,7 +7888,7 @@ public:
     void setDescription(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcAppliedValueRelationship (IfcEntityInstanceData* e);
+    IfcAppliedValueRelationship (IfcEntityInstanceData&& e);
     IfcAppliedValueRelationship (::Ifc2x3::IfcAppliedValue* v1_ComponentOfTotal, aggregate_of< ::Ifc2x3::IfcAppliedValue >::ptr v2_Components, ::Ifc2x3::IfcArithmeticOperatorEnum::Value v3_ArithmeticOperator, boost::optional< std::string > v4_Name, boost::optional< std::string > v5_Description);
     typedef aggregate_of< IfcAppliedValueRelationship > list;
 };
@@ -7921,7 +7921,7 @@ public:
     aggregate_of< IfcApprovalRelationship >::ptr Relates() const; // INVERSE IfcApprovalRelationship::RelatingApproval
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcApproval (IfcEntityInstanceData* e);
+    IfcApproval (IfcEntityInstanceData&& e);
     IfcApproval (boost::optional< std::string > v1_Description, ::Ifc2x3::IfcDateTimeSelect* v2_ApprovalDateTime, boost::optional< std::string > v3_ApprovalStatus, boost::optional< std::string > v4_ApprovalLevel, boost::optional< std::string > v5_ApprovalQualifier, std::string v6_Name, std::string v7_Identifier);
     typedef aggregate_of< IfcApproval > list;
 };
@@ -7936,7 +7936,7 @@ public:
     void setRole(::Ifc2x3::IfcActorRole* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcApprovalActorRelationship (IfcEntityInstanceData* e);
+    IfcApprovalActorRelationship (IfcEntityInstanceData&& e);
     IfcApprovalActorRelationship (::Ifc2x3::IfcActorSelect* v1_Actor, ::Ifc2x3::IfcApproval* v2_Approval, ::Ifc2x3::IfcActorRole* v3_Role);
     typedef aggregate_of< IfcApprovalActorRelationship > list;
 };
@@ -7949,7 +7949,7 @@ public:
     void setApproval(::Ifc2x3::IfcApproval* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcApprovalPropertyRelationship (IfcEntityInstanceData* e);
+    IfcApprovalPropertyRelationship (IfcEntityInstanceData&& e);
     IfcApprovalPropertyRelationship (aggregate_of< ::Ifc2x3::IfcProperty >::ptr v1_ApprovedProperties, ::Ifc2x3::IfcApproval* v2_Approval);
     typedef aggregate_of< IfcApprovalPropertyRelationship > list;
 };
@@ -7973,7 +7973,7 @@ public:
     void setName(std::string v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcApprovalRelationship (IfcEntityInstanceData* e);
+    IfcApprovalRelationship (IfcEntityInstanceData&& e);
     IfcApprovalRelationship (::Ifc2x3::IfcApproval* v1_RelatedApproval, ::Ifc2x3::IfcApproval* v2_RelatingApproval, boost::optional< std::string > v3_Description, std::string v4_Name);
     typedef aggregate_of< IfcApprovalRelationship > list;
 };
@@ -7999,7 +7999,7 @@ public:
     void setName(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcBoundaryCondition (IfcEntityInstanceData* e);
+    IfcBoundaryCondition (IfcEntityInstanceData&& e);
     IfcBoundaryCondition (boost::optional< std::string > v1_Name);
     typedef aggregate_of< IfcBoundaryCondition > list;
 };
@@ -8032,7 +8032,7 @@ public:
     void setRotationalStiffnessByLengthZ(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcBoundaryEdgeCondition (IfcEntityInstanceData* e);
+    IfcBoundaryEdgeCondition (IfcEntityInstanceData&& e);
     IfcBoundaryEdgeCondition (boost::optional< std::string > v1_Name, boost::optional< double > v2_LinearStiffnessByLengthX, boost::optional< double > v3_LinearStiffnessByLengthY, boost::optional< double > v4_LinearStiffnessByLengthZ, boost::optional< double > v5_RotationalStiffnessByLengthX, boost::optional< double > v6_RotationalStiffnessByLengthY, boost::optional< double > v7_RotationalStiffnessByLengthZ);
     typedef aggregate_of< IfcBoundaryEdgeCondition > list;
 };
@@ -8056,7 +8056,7 @@ public:
     void setLinearStiffnessByAreaZ(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcBoundaryFaceCondition (IfcEntityInstanceData* e);
+    IfcBoundaryFaceCondition (IfcEntityInstanceData&& e);
     IfcBoundaryFaceCondition (boost::optional< std::string > v1_Name, boost::optional< double > v2_LinearStiffnessByAreaX, boost::optional< double > v3_LinearStiffnessByAreaY, boost::optional< double > v4_LinearStiffnessByAreaZ);
     typedef aggregate_of< IfcBoundaryFaceCondition > list;
 };
@@ -8089,7 +8089,7 @@ public:
     void setRotationalStiffnessZ(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcBoundaryNodeCondition (IfcEntityInstanceData* e);
+    IfcBoundaryNodeCondition (IfcEntityInstanceData&& e);
     IfcBoundaryNodeCondition (boost::optional< std::string > v1_Name, boost::optional< double > v2_LinearStiffnessX, boost::optional< double > v3_LinearStiffnessY, boost::optional< double > v4_LinearStiffnessZ, boost::optional< double > v5_RotationalStiffnessX, boost::optional< double > v6_RotationalStiffnessY, boost::optional< double > v7_RotationalStiffnessZ);
     typedef aggregate_of< IfcBoundaryNodeCondition > list;
 };
@@ -8109,7 +8109,7 @@ public:
     void setWarpingStiffness(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcBoundaryNodeConditionWarping (IfcEntityInstanceData* e);
+    IfcBoundaryNodeConditionWarping (IfcEntityInstanceData&& e);
     IfcBoundaryNodeConditionWarping (boost::optional< std::string > v1_Name, boost::optional< double > v2_LinearStiffnessX, boost::optional< double > v3_LinearStiffnessY, boost::optional< double > v4_LinearStiffnessZ, boost::optional< double > v5_RotationalStiffnessX, boost::optional< double > v6_RotationalStiffnessY, boost::optional< double > v7_RotationalStiffnessZ, boost::optional< double > v8_WarpingStiffness);
     typedef aggregate_of< IfcBoundaryNodeConditionWarping > list;
 };
@@ -8124,7 +8124,7 @@ public:
     void setYearComponent(int v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcCalendarDate (IfcEntityInstanceData* e);
+    IfcCalendarDate (IfcEntityInstanceData&& e);
     IfcCalendarDate (int v1_DayComponent, int v2_MonthComponent, int v3_YearComponent);
     typedef aggregate_of< IfcCalendarDate > list;
 };
@@ -8172,7 +8172,7 @@ public:
         aggregate_of< IfcClassificationItem >::ptr Contains() const; // INVERSE IfcClassificationItem::ItemOf
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcClassification (IfcEntityInstanceData* e);
+    IfcClassification (IfcEntityInstanceData&& e);
     IfcClassification (std::string v1_Source, std::string v2_Edition, ::Ifc2x3::IfcCalendarDate* v3_EditionDate, std::string v4_Name);
     typedef aggregate_of< IfcClassification > list;
 };
@@ -8189,7 +8189,7 @@ public:
     aggregate_of< IfcClassificationItemRelationship >::ptr IsClassifyingItemIn() const; // INVERSE IfcClassificationItemRelationship::RelatingItem
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcClassificationItem (IfcEntityInstanceData* e);
+    IfcClassificationItem (IfcEntityInstanceData&& e);
     IfcClassificationItem (::Ifc2x3::IfcClassificationNotationFacet* v1_Notation, ::Ifc2x3::IfcClassification* v2_ItemOf, std::string v3_Title);
     typedef aggregate_of< IfcClassificationItem > list;
 };
@@ -8202,7 +8202,7 @@ public:
     void setRelatedItems(aggregate_of< ::Ifc2x3::IfcClassificationItem >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcClassificationItemRelationship (IfcEntityInstanceData* e);
+    IfcClassificationItemRelationship (IfcEntityInstanceData&& e);
     IfcClassificationItemRelationship (::Ifc2x3::IfcClassificationItem* v1_RelatingItem, aggregate_of< ::Ifc2x3::IfcClassificationItem >::ptr v2_RelatedItems);
     typedef aggregate_of< IfcClassificationItemRelationship > list;
 };
@@ -8213,7 +8213,7 @@ public:
     void setNotationFacets(aggregate_of< ::Ifc2x3::IfcClassificationNotationFacet >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcClassificationNotation (IfcEntityInstanceData* e);
+    IfcClassificationNotation (IfcEntityInstanceData&& e);
     IfcClassificationNotation (aggregate_of< ::Ifc2x3::IfcClassificationNotationFacet >::ptr v1_NotationFacets);
     typedef aggregate_of< IfcClassificationNotation > list;
 };
@@ -8224,7 +8224,7 @@ public:
     void setNotationValue(std::string v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcClassificationNotationFacet (IfcEntityInstanceData* e);
+    IfcClassificationNotationFacet (IfcEntityInstanceData&& e);
     IfcClassificationNotationFacet (std::string v1_NotationValue);
     typedef aggregate_of< IfcClassificationNotationFacet > list;
 };
@@ -8243,7 +8243,7 @@ public:
     void setName(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcColourSpecification (IfcEntityInstanceData* e);
+    IfcColourSpecification (IfcEntityInstanceData&& e);
     IfcColourSpecification (boost::optional< std::string > v1_Name);
     typedef aggregate_of< IfcColourSpecification > list;
 };
@@ -8265,7 +8265,7 @@ class IFC_PARSE_API IfcConnectionGeometry : public  IfcUtil::IfcBaseEntity {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcConnectionGeometry (IfcEntityInstanceData* e);
+    IfcConnectionGeometry (IfcEntityInstanceData&& e);
     IfcConnectionGeometry ();
     typedef aggregate_of< IfcConnectionGeometry > list;
 };
@@ -8295,7 +8295,7 @@ public:
     void setPointOnRelatedElement(::Ifc2x3::IfcPointOrVertexPoint* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcConnectionPointGeometry (IfcEntityInstanceData* e);
+    IfcConnectionPointGeometry (IfcEntityInstanceData&& e);
     IfcConnectionPointGeometry (::Ifc2x3::IfcPointOrVertexPoint* v1_PointOnRelatingElement, ::Ifc2x3::IfcPointOrVertexPoint* v2_PointOnRelatedElement);
     typedef aggregate_of< IfcConnectionPointGeometry > list;
 };
@@ -8310,7 +8310,7 @@ public:
     void setProfileOfPort(::Ifc2x3::IfcProfileDef* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcConnectionPortGeometry (IfcEntityInstanceData* e);
+    IfcConnectionPortGeometry (IfcEntityInstanceData&& e);
     IfcConnectionPortGeometry (::Ifc2x3::IfcAxis2Placement* v1_LocationAtRelatingElement, ::Ifc2x3::IfcAxis2Placement* v2_LocationAtRelatedElement, ::Ifc2x3::IfcProfileDef* v3_ProfileOfPort);
     typedef aggregate_of< IfcConnectionPortGeometry > list;
 };
@@ -8332,7 +8332,7 @@ public:
     void setSurfaceOnRelatedElement(::Ifc2x3::IfcSurfaceOrFaceSurface* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcConnectionSurfaceGeometry (IfcEntityInstanceData* e);
+    IfcConnectionSurfaceGeometry (IfcEntityInstanceData&& e);
     IfcConnectionSurfaceGeometry (::Ifc2x3::IfcSurfaceOrFaceSurface* v1_SurfaceOnRelatingElement, ::Ifc2x3::IfcSurfaceOrFaceSurface* v2_SurfaceOnRelatedElement);
     typedef aggregate_of< IfcConnectionSurfaceGeometry > list;
 };
@@ -8382,7 +8382,7 @@ public:
     aggregate_of< IfcConstraintAggregationRelationship >::ptr IsAggregatedIn() const; // INVERSE IfcConstraintAggregationRelationship::RelatedConstraints
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcConstraint (IfcEntityInstanceData* e);
+    IfcConstraint (IfcEntityInstanceData&& e);
     IfcConstraint (std::string v1_Name, boost::optional< std::string > v2_Description, ::Ifc2x3::IfcConstraintEnum::Value v3_ConstraintGrade, boost::optional< std::string > v4_ConstraintSource, ::Ifc2x3::IfcActorSelect* v5_CreatingActor, ::Ifc2x3::IfcDateTimeSelect* v6_CreationTime, boost::optional< std::string > v7_UserDefinedGrade);
     typedef aggregate_of< IfcConstraint > list;
 };
@@ -8412,7 +8412,7 @@ public:
     void setLogicalAggregator(::Ifc2x3::IfcLogicalOperatorEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcConstraintAggregationRelationship (IfcEntityInstanceData* e);
+    IfcConstraintAggregationRelationship (IfcEntityInstanceData&& e);
     IfcConstraintAggregationRelationship (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, ::Ifc2x3::IfcConstraint* v3_RelatingConstraint, aggregate_of< ::Ifc2x3::IfcConstraint >::ptr v4_RelatedConstraints, ::Ifc2x3::IfcLogicalOperatorEnum::Value v5_LogicalAggregator);
     typedef aggregate_of< IfcConstraintAggregationRelationship > list;
 };
@@ -8425,7 +8425,7 @@ public:
     void setRelatedClassifications(aggregate_of< ::Ifc2x3::IfcClassificationNotationSelect >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcConstraintClassificationRelationship (IfcEntityInstanceData* e);
+    IfcConstraintClassificationRelationship (IfcEntityInstanceData&& e);
     IfcConstraintClassificationRelationship (::Ifc2x3::IfcConstraint* v1_ClassifiedConstraint, aggregate_of< ::Ifc2x3::IfcClassificationNotationSelect >::ptr v2_RelatedClassifications);
     typedef aggregate_of< IfcConstraintClassificationRelationship > list;
 };
@@ -8452,7 +8452,7 @@ public:
     void setRelatedConstraints(aggregate_of< ::Ifc2x3::IfcConstraint >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcConstraintRelationship (IfcEntityInstanceData* e);
+    IfcConstraintRelationship (IfcEntityInstanceData&& e);
     IfcConstraintRelationship (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, ::Ifc2x3::IfcConstraint* v3_RelatingConstraint, aggregate_of< ::Ifc2x3::IfcConstraint >::ptr v4_RelatedConstraints);
     typedef aggregate_of< IfcConstraintRelationship > list;
 };
@@ -8467,7 +8467,7 @@ public:
     void setSense(::Ifc2x3::IfcAheadOrBehind::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcCoordinatedUniversalTimeOffset (IfcEntityInstanceData* e);
+    IfcCoordinatedUniversalTimeOffset (IfcEntityInstanceData&& e);
     IfcCoordinatedUniversalTimeOffset (int v1_HourOffset, boost::optional< int > v2_MinuteOffset, ::Ifc2x3::IfcAheadOrBehind::Value v3_Sense);
     typedef aggregate_of< IfcCoordinatedUniversalTimeOffset > list;
 };
@@ -8527,7 +8527,7 @@ public:
     void setCondition(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcCostValue (IfcEntityInstanceData* e);
+    IfcCostValue (IfcEntityInstanceData&& e);
     IfcCostValue (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, ::Ifc2x3::IfcAppliedValueSelect* v3_AppliedValue, ::Ifc2x3::IfcMeasureWithUnit* v4_UnitBasis, ::Ifc2x3::IfcDateTimeSelect* v5_ApplicableDate, ::Ifc2x3::IfcDateTimeSelect* v6_FixedUntilDate, std::string v7_CostType, boost::optional< std::string > v8_Condition);
     typedef aggregate_of< IfcCostValue > list;
 };
@@ -8563,7 +8563,7 @@ public:
     void setRateSource(::Ifc2x3::IfcLibraryInformation* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcCurrencyRelationship (IfcEntityInstanceData* e);
+    IfcCurrencyRelationship (IfcEntityInstanceData&& e);
     IfcCurrencyRelationship (::Ifc2x3::IfcMonetaryUnit* v1_RelatingMonetaryUnit, ::Ifc2x3::IfcMonetaryUnit* v2_RelatedMonetaryUnit, double v3_ExchangeRate, ::Ifc2x3::IfcDateAndTime* v4_RateDateTime, ::Ifc2x3::IfcLibraryInformation* v5_RateSource);
     typedef aggregate_of< IfcCurrencyRelationship > list;
 };
@@ -8582,7 +8582,7 @@ public:
     void setPatternList(aggregate_of< ::Ifc2x3::IfcCurveStyleFontPattern >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcCurveStyleFont (IfcEntityInstanceData* e);
+    IfcCurveStyleFont (IfcEntityInstanceData&& e);
     IfcCurveStyleFont (boost::optional< std::string > v1_Name, aggregate_of< ::Ifc2x3::IfcCurveStyleFontPattern >::ptr v2_PatternList);
     typedef aggregate_of< IfcCurveStyleFont > list;
 };
@@ -8610,7 +8610,7 @@ public:
     void setCurveFontScaling(double v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcCurveStyleFontAndScaling (IfcEntityInstanceData* e);
+    IfcCurveStyleFontAndScaling (IfcEntityInstanceData&& e);
     IfcCurveStyleFontAndScaling (boost::optional< std::string > v1_Name, ::Ifc2x3::IfcCurveStyleFontSelect* v2_CurveFont, double v3_CurveFontScaling);
     typedef aggregate_of< IfcCurveStyleFontAndScaling > list;
 };
@@ -8633,7 +8633,7 @@ public:
     void setInvisibleSegmentLength(double v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcCurveStyleFontPattern (IfcEntityInstanceData* e);
+    IfcCurveStyleFontPattern (IfcEntityInstanceData&& e);
     IfcCurveStyleFontPattern (double v1_VisibleSegmentLength, double v2_InvisibleSegmentLength);
     typedef aggregate_of< IfcCurveStyleFontPattern > list;
 };
@@ -8646,7 +8646,7 @@ public:
     void setTimeComponent(::Ifc2x3::IfcLocalTime* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcDateAndTime (IfcEntityInstanceData* e);
+    IfcDateAndTime (IfcEntityInstanceData&& e);
     IfcDateAndTime (::Ifc2x3::IfcCalendarDate* v1_DateComponent, ::Ifc2x3::IfcLocalTime* v2_TimeComponent);
     typedef aggregate_of< IfcDateAndTime > list;
 };
@@ -8669,7 +8669,7 @@ public:
     void setUserDefinedType(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcDerivedUnit (IfcEntityInstanceData* e);
+    IfcDerivedUnit (IfcEntityInstanceData&& e);
     IfcDerivedUnit (aggregate_of< ::Ifc2x3::IfcDerivedUnitElement >::ptr v1_Elements, ::Ifc2x3::IfcDerivedUnitEnum::Value v2_UnitType, boost::optional< std::string > v3_UserDefinedType);
     typedef aggregate_of< IfcDerivedUnit > list;
 };
@@ -8692,7 +8692,7 @@ public:
     void setExponent(int v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcDerivedUnitElement (IfcEntityInstanceData* e);
+    IfcDerivedUnitElement (IfcEntityInstanceData&& e);
     IfcDerivedUnitElement (::Ifc2x3::IfcNamedUnit* v1_Unit, int v2_Exponent);
     typedef aggregate_of< IfcDerivedUnitElement > list;
 };
@@ -8738,7 +8738,7 @@ public:
     void setLuminousIntensityExponent(int v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcDimensionalExponents (IfcEntityInstanceData* e);
+    IfcDimensionalExponents (IfcEntityInstanceData&& e);
     IfcDimensionalExponents (int v1_LengthExponent, int v2_MassExponent, int v3_TimeExponent, int v4_ElectricCurrentExponent, int v5_ThermodynamicTemperatureExponent, int v6_AmountOfSubstanceExponent, int v7_LuminousIntensityExponent);
     typedef aggregate_of< IfcDimensionalExponents > list;
 };
@@ -8758,7 +8758,7 @@ public:
     void setMimeSubtype(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcDocumentElectronicFormat (IfcEntityInstanceData* e);
+    IfcDocumentElectronicFormat (IfcEntityInstanceData&& e);
     IfcDocumentElectronicFormat (boost::optional< std::string > v1_FileExtension, boost::optional< std::string > v2_MimeContentType, boost::optional< std::string > v3_MimeSubtype);
     typedef aggregate_of< IfcDocumentElectronicFormat > list;
 };
@@ -8833,7 +8833,7 @@ public:
     aggregate_of< IfcDocumentInformationRelationship >::ptr IsPointer() const; // INVERSE IfcDocumentInformationRelationship::RelatingDocument
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcDocumentInformation (IfcEntityInstanceData* e);
+    IfcDocumentInformation (IfcEntityInstanceData&& e);
     IfcDocumentInformation (std::string v1_DocumentId, std::string v2_Name, boost::optional< std::string > v3_Description, boost::optional< aggregate_of< ::Ifc2x3::IfcDocumentReference >::ptr > v4_DocumentReferences, boost::optional< std::string > v5_Purpose, boost::optional< std::string > v6_IntendedUse, boost::optional< std::string > v7_Scope, boost::optional< std::string > v8_Revision, ::Ifc2x3::IfcActorSelect* v9_DocumentOwner, boost::optional< aggregate_of< ::Ifc2x3::IfcActorSelect >::ptr > v10_Editors, ::Ifc2x3::IfcDateAndTime* v11_CreationTime, ::Ifc2x3::IfcDateAndTime* v12_LastRevisionTime, ::Ifc2x3::IfcDocumentElectronicFormat* v13_ElectronicFormat, ::Ifc2x3::IfcCalendarDate* v14_ValidFrom, ::Ifc2x3::IfcCalendarDate* v15_ValidUntil, boost::optional< ::Ifc2x3::IfcDocumentConfidentialityEnum::Value > v16_Confidentiality, boost::optional< ::Ifc2x3::IfcDocumentStatusEnum::Value > v17_Status);
     typedef aggregate_of< IfcDocumentInformation > list;
 };
@@ -8858,7 +8858,7 @@ public:
     void setRelationshipType(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcDocumentInformationRelationship (IfcEntityInstanceData* e);
+    IfcDocumentInformationRelationship (IfcEntityInstanceData&& e);
     IfcDocumentInformationRelationship (::Ifc2x3::IfcDocumentInformation* v1_RelatingDocument, aggregate_of< ::Ifc2x3::IfcDocumentInformation >::ptr v2_RelatedDocuments, boost::optional< std::string > v3_RelationshipType);
     typedef aggregate_of< IfcDocumentInformationRelationship > list;
 };
@@ -8875,7 +8875,7 @@ public:
     void setRelatedDraughtingCallout(::Ifc2x3::IfcDraughtingCallout* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcDraughtingCalloutRelationship (IfcEntityInstanceData* e);
+    IfcDraughtingCalloutRelationship (IfcEntityInstanceData&& e);
     IfcDraughtingCalloutRelationship (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, ::Ifc2x3::IfcDraughtingCallout* v3_RelatingDraughtingCallout, ::Ifc2x3::IfcDraughtingCallout* v4_RelatedDraughtingCallout);
     typedef aggregate_of< IfcDraughtingCalloutRelationship > list;
 };
@@ -8890,7 +8890,7 @@ public:
     void setUserDefinedCategory(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcEnvironmentalImpactValue (IfcEntityInstanceData* e);
+    IfcEnvironmentalImpactValue (IfcEntityInstanceData&& e);
     IfcEnvironmentalImpactValue (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, ::Ifc2x3::IfcAppliedValueSelect* v3_AppliedValue, ::Ifc2x3::IfcMeasureWithUnit* v4_UnitBasis, ::Ifc2x3::IfcDateTimeSelect* v5_ApplicableDate, ::Ifc2x3::IfcDateTimeSelect* v6_FixedUntilDate, std::string v7_ImpactType, ::Ifc2x3::IfcEnvironmentalImpactCategoryEnum::Value v8_Category, boost::optional< std::string > v9_UserDefinedCategory);
     typedef aggregate_of< IfcEnvironmentalImpactValue > list;
 };
@@ -8917,7 +8917,7 @@ public:
     void setName(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcExternalReference (IfcEntityInstanceData* e);
+    IfcExternalReference (IfcEntityInstanceData&& e);
     IfcExternalReference (boost::optional< std::string > v1_Location, boost::optional< std::string > v2_ItemReference, boost::optional< std::string > v3_Name);
     typedef aggregate_of< IfcExternalReference > list;
 };
@@ -8933,7 +8933,7 @@ class IFC_PARSE_API IfcExternallyDefinedHatchStyle : public  IfcExternalReferenc
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcExternallyDefinedHatchStyle (IfcEntityInstanceData* e);
+    IfcExternallyDefinedHatchStyle (IfcEntityInstanceData&& e);
     IfcExternallyDefinedHatchStyle (boost::optional< std::string > v1_Location, boost::optional< std::string > v2_ItemReference, boost::optional< std::string > v3_Name);
     typedef aggregate_of< IfcExternallyDefinedHatchStyle > list;
 };
@@ -8948,7 +8948,7 @@ class IFC_PARSE_API IfcExternallyDefinedSurfaceStyle : public  IfcExternalRefere
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcExternallyDefinedSurfaceStyle (IfcEntityInstanceData* e);
+    IfcExternallyDefinedSurfaceStyle (IfcEntityInstanceData&& e);
     IfcExternallyDefinedSurfaceStyle (boost::optional< std::string > v1_Location, boost::optional< std::string > v2_ItemReference, boost::optional< std::string > v3_Name);
     typedef aggregate_of< IfcExternallyDefinedSurfaceStyle > list;
 };
@@ -8965,7 +8965,7 @@ class IFC_PARSE_API IfcExternallyDefinedSymbol : public  IfcExternalReference, p
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcExternallyDefinedSymbol (IfcEntityInstanceData* e);
+    IfcExternallyDefinedSymbol (IfcEntityInstanceData&& e);
     IfcExternallyDefinedSymbol (boost::optional< std::string > v1_Location, boost::optional< std::string > v2_ItemReference, boost::optional< std::string > v3_Name);
     typedef aggregate_of< IfcExternallyDefinedSymbol > list;
 };
@@ -8980,7 +8980,7 @@ class IFC_PARSE_API IfcExternallyDefinedTextFont : public  IfcExternalReference,
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcExternallyDefinedTextFont (IfcEntityInstanceData* e);
+    IfcExternallyDefinedTextFont (IfcEntityInstanceData&& e);
     IfcExternallyDefinedTextFont (boost::optional< std::string > v1_Location, boost::optional< std::string > v2_ItemReference, boost::optional< std::string > v3_Name);
     typedef aggregate_of< IfcExternallyDefinedTextFont > list;
 };
@@ -9024,7 +9024,7 @@ public:
     aggregate_of< IfcVirtualGridIntersection >::ptr HasIntersections() const; // INVERSE IfcVirtualGridIntersection::IntersectingAxes
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcGridAxis (IfcEntityInstanceData* e);
+    IfcGridAxis (IfcEntityInstanceData&& e);
     IfcGridAxis (boost::optional< std::string > v1_AxisTag, ::Ifc2x3::IfcCurve* v2_AxisCurve, bool v3_SameSense);
     typedef aggregate_of< IfcGridAxis > list;
 };
@@ -9041,7 +9041,7 @@ public:
     void setListValues(aggregate_of< ::Ifc2x3::IfcValue >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcIrregularTimeSeriesValue (IfcEntityInstanceData* e);
+    IfcIrregularTimeSeriesValue (IfcEntityInstanceData&& e);
     IfcIrregularTimeSeriesValue (::Ifc2x3::IfcDateTimeSelect* v1_TimeStamp, aggregate_of< ::Ifc2x3::IfcValue >::ptr v2_ListValues);
     typedef aggregate_of< IfcIrregularTimeSeriesValue > list;
 };
@@ -9073,7 +9073,7 @@ public:
     void setLibraryReference(boost::optional< aggregate_of< ::Ifc2x3::IfcLibraryReference >::ptr > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcLibraryInformation (IfcEntityInstanceData* e);
+    IfcLibraryInformation (IfcEntityInstanceData&& e);
     IfcLibraryInformation (std::string v1_Name, boost::optional< std::string > v2_Version, ::Ifc2x3::IfcOrganization* v3_Publisher, ::Ifc2x3::IfcCalendarDate* v4_VersionDate, boost::optional< aggregate_of< ::Ifc2x3::IfcLibraryReference >::ptr > v5_LibraryReference);
     typedef aggregate_of< IfcLibraryInformation > list;
 };
@@ -9089,7 +9089,7 @@ public:
         aggregate_of< IfcLibraryInformation >::ptr ReferenceIntoLibrary() const; // INVERSE IfcLibraryInformation::LibraryReference
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcLibraryReference (IfcEntityInstanceData* e);
+    IfcLibraryReference (IfcEntityInstanceData&& e);
     IfcLibraryReference (boost::optional< std::string > v1_Location, boost::optional< std::string > v2_ItemReference, boost::optional< std::string > v3_Name);
     typedef aggregate_of< IfcLibraryReference > list;
 };
@@ -9123,7 +9123,7 @@ public:
     void setLuminousIntensity(std::vector< double > /*[1:?]*/ v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcLightDistributionData (IfcEntityInstanceData* e);
+    IfcLightDistributionData (IfcEntityInstanceData&& e);
     IfcLightDistributionData (double v1_MainPlaneAngle, std::vector< double > /*[1:?]*/ v2_SecondaryPlaneAngle, std::vector< double > /*[1:?]*/ v3_LuminousIntensity);
     typedef aggregate_of< IfcLightDistributionData > list;
 };
@@ -9140,7 +9140,7 @@ public:
     void setDistributionData(aggregate_of< ::Ifc2x3::IfcLightDistributionData >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcLightIntensityDistribution (IfcEntityInstanceData* e);
+    IfcLightIntensityDistribution (IfcEntityInstanceData&& e);
     IfcLightIntensityDistribution (::Ifc2x3::IfcLightDistributionCurveEnum::Value v1_LightDistributionCurve, aggregate_of< ::Ifc2x3::IfcLightDistributionData >::ptr v2_DistributionData);
     typedef aggregate_of< IfcLightIntensityDistribution > list;
 };
@@ -9159,7 +9159,7 @@ public:
     void setDaylightSavingOffset(boost::optional< int > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcLocalTime (IfcEntityInstanceData* e);
+    IfcLocalTime (IfcEntityInstanceData&& e);
     IfcLocalTime (int v1_HourComponent, boost::optional< int > v2_MinuteComponent, boost::optional< double > v3_SecondComponent, ::Ifc2x3::IfcCoordinatedUniversalTimeOffset* v4_Zone, boost::optional< int > v5_DaylightSavingOffset);
     typedef aggregate_of< IfcLocalTime > list;
 };
@@ -9203,7 +9203,7 @@ public:
     aggregate_of< IfcMaterialClassificationRelationship >::ptr ClassifiedAs() const; // INVERSE IfcMaterialClassificationRelationship::ClassifiedMaterial
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcMaterial (IfcEntityInstanceData* e);
+    IfcMaterial (IfcEntityInstanceData&& e);
     IfcMaterial (std::string v1_Name);
     typedef aggregate_of< IfcMaterial > list;
 };
@@ -9222,7 +9222,7 @@ public:
     void setClassifiedMaterial(::Ifc2x3::IfcMaterial* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcMaterialClassificationRelationship (IfcEntityInstanceData* e);
+    IfcMaterialClassificationRelationship (IfcEntityInstanceData&& e);
     IfcMaterialClassificationRelationship (aggregate_of< ::Ifc2x3::IfcClassificationNotationSelect >::ptr v1_MaterialClassifications, ::Ifc2x3::IfcMaterial* v2_ClassifiedMaterial);
     typedef aggregate_of< IfcMaterialClassificationRelationship > list;
 };
@@ -9271,7 +9271,7 @@ public:
         aggregate_of< IfcMaterialLayerSet >::ptr ToMaterialLayerSet() const; // INVERSE IfcMaterialLayerSet::MaterialLayers
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcMaterialLayer (IfcEntityInstanceData* e);
+    IfcMaterialLayer (IfcEntityInstanceData&& e);
     IfcMaterialLayer (::Ifc2x3::IfcMaterial* v1_Material, double v2_LayerThickness, boost::optional< boost::logic::tribool > v3_IsVentilated);
     typedef aggregate_of< IfcMaterialLayer > list;
 };
@@ -9318,7 +9318,7 @@ public:
     void setLayerSetName(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcMaterialLayerSet (IfcEntityInstanceData* e);
+    IfcMaterialLayerSet (IfcEntityInstanceData&& e);
     IfcMaterialLayerSet (aggregate_of< ::Ifc2x3::IfcMaterialLayer >::ptr v1_MaterialLayers, boost::optional< std::string > v2_LayerSetName);
     typedef aggregate_of< IfcMaterialLayerSet > list;
 };
@@ -9443,7 +9443,7 @@ public:
     void setOffsetFromReferenceLine(double v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcMaterialLayerSetUsage (IfcEntityInstanceData* e);
+    IfcMaterialLayerSetUsage (IfcEntityInstanceData&& e);
     IfcMaterialLayerSetUsage (::Ifc2x3::IfcMaterialLayerSet* v1_ForLayerSet, ::Ifc2x3::IfcLayerSetDirectionEnum::Value v2_LayerSetDirection, ::Ifc2x3::IfcDirectionSenseEnum::Value v3_DirectionSense, double v4_OffsetFromReferenceLine);
     typedef aggregate_of< IfcMaterialLayerSetUsage > list;
 };
@@ -9471,7 +9471,7 @@ public:
     void setMaterials(aggregate_of< ::Ifc2x3::IfcMaterial >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcMaterialList (IfcEntityInstanceData* e);
+    IfcMaterialList (IfcEntityInstanceData&& e);
     IfcMaterialList (aggregate_of< ::Ifc2x3::IfcMaterial >::ptr v1_Materials);
     typedef aggregate_of< IfcMaterialList > list;
 };
@@ -9506,7 +9506,7 @@ public:
     void setMaterial(::Ifc2x3::IfcMaterial* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcMaterialProperties (IfcEntityInstanceData* e);
+    IfcMaterialProperties (IfcEntityInstanceData&& e);
     IfcMaterialProperties (::Ifc2x3::IfcMaterial* v1_Material);
     typedef aggregate_of< IfcMaterialProperties > list;
 };
@@ -9530,7 +9530,7 @@ public:
     void setUnitComponent(::Ifc2x3::IfcUnit* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcMeasureWithUnit (IfcEntityInstanceData* e);
+    IfcMeasureWithUnit (IfcEntityInstanceData&& e);
     IfcMeasureWithUnit (::Ifc2x3::IfcValue* v1_ValueComponent, ::Ifc2x3::IfcUnit* v2_UnitComponent);
     typedef aggregate_of< IfcMeasureWithUnit > list;
 };
@@ -9549,7 +9549,7 @@ public:
     void setThermalExpansionCoefficient(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcMechanicalMaterialProperties (IfcEntityInstanceData* e);
+    IfcMechanicalMaterialProperties (IfcEntityInstanceData&& e);
     IfcMechanicalMaterialProperties (::Ifc2x3::IfcMaterial* v1_Material, boost::optional< double > v2_DynamicViscosity, boost::optional< double > v3_YoungModulus, boost::optional< double > v4_ShearModulus, boost::optional< double > v5_PoissonRatio, boost::optional< double > v6_ThermalExpansionCoefficient);
     typedef aggregate_of< IfcMechanicalMaterialProperties > list;
 };
@@ -9572,7 +9572,7 @@ public:
     void setRelaxations(boost::optional< aggregate_of< ::Ifc2x3::IfcRelaxation >::ptr > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcMechanicalSteelMaterialProperties (IfcEntityInstanceData* e);
+    IfcMechanicalSteelMaterialProperties (IfcEntityInstanceData&& e);
     IfcMechanicalSteelMaterialProperties (::Ifc2x3::IfcMaterial* v1_Material, boost::optional< double > v2_DynamicViscosity, boost::optional< double > v3_YoungModulus, boost::optional< double > v4_ShearModulus, boost::optional< double > v5_PoissonRatio, boost::optional< double > v6_ThermalExpansionCoefficient, boost::optional< double > v7_YieldStress, boost::optional< double > v8_UltimateStress, boost::optional< double > v9_UltimateStrain, boost::optional< double > v10_HardeningModule, boost::optional< double > v11_ProportionalStress, boost::optional< double > v12_PlasticStrain, boost::optional< aggregate_of< ::Ifc2x3::IfcRelaxation >::ptr > v13_Relaxations);
     typedef aggregate_of< IfcMechanicalSteelMaterialProperties > list;
 };
@@ -9641,7 +9641,7 @@ public:
     void setDataValue(::Ifc2x3::IfcMetricValueSelect* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcMetric (IfcEntityInstanceData* e);
+    IfcMetric (IfcEntityInstanceData&& e);
     IfcMetric (std::string v1_Name, boost::optional< std::string > v2_Description, ::Ifc2x3::IfcConstraintEnum::Value v3_ConstraintGrade, boost::optional< std::string > v4_ConstraintSource, ::Ifc2x3::IfcActorSelect* v5_CreatingActor, ::Ifc2x3::IfcDateTimeSelect* v6_CreationTime, boost::optional< std::string > v7_UserDefinedGrade, ::Ifc2x3::IfcBenchmarkEnum::Value v8_Benchmark, boost::optional< std::string > v9_ValueSource, ::Ifc2x3::IfcMetricValueSelect* v10_DataValue);
     typedef aggregate_of< IfcMetric > list;
 };
@@ -9657,7 +9657,7 @@ public:
     void setCurrency(::Ifc2x3::IfcCurrencyEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcMonetaryUnit (IfcEntityInstanceData* e);
+    IfcMonetaryUnit (IfcEntityInstanceData&& e);
     IfcMonetaryUnit (::Ifc2x3::IfcCurrencyEnum::Value v1_Currency);
     typedef aggregate_of< IfcMonetaryUnit > list;
 };
@@ -9676,7 +9676,7 @@ public:
     void setUnitType(::Ifc2x3::IfcUnitEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcNamedUnit (IfcEntityInstanceData* e);
+    IfcNamedUnit (IfcEntityInstanceData&& e);
     IfcNamedUnit (::Ifc2x3::IfcDimensionalExponents* v1_Dimensions, ::Ifc2x3::IfcUnitEnum::Value v2_UnitType);
     typedef aggregate_of< IfcNamedUnit > list;
 };
@@ -9697,7 +9697,7 @@ public:
     aggregate_of< IfcLocalPlacement >::ptr ReferencedByPlacements() const; // INVERSE IfcLocalPlacement::PlacementRelTo
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcObjectPlacement (IfcEntityInstanceData* e);
+    IfcObjectPlacement (IfcEntityInstanceData&& e);
     IfcObjectPlacement ();
     typedef aggregate_of< IfcObjectPlacement > list;
 };
@@ -9726,7 +9726,7 @@ public:
     void setUserDefinedQualifier(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcObjective (IfcEntityInstanceData* e);
+    IfcObjective (IfcEntityInstanceData&& e);
     IfcObjective (std::string v1_Name, boost::optional< std::string > v2_Description, ::Ifc2x3::IfcConstraintEnum::Value v3_ConstraintGrade, boost::optional< std::string > v4_ConstraintSource, ::Ifc2x3::IfcActorSelect* v5_CreatingActor, ::Ifc2x3::IfcDateTimeSelect* v6_CreationTime, boost::optional< std::string > v7_UserDefinedGrade, ::Ifc2x3::IfcMetric* v8_BenchmarkValues, ::Ifc2x3::IfcMetric* v9_ResultValues, ::Ifc2x3::IfcObjectiveEnum::Value v10_ObjectiveQualifier, boost::optional< std::string > v11_UserDefinedQualifier);
     typedef aggregate_of< IfcObjective > list;
 };
@@ -9753,7 +9753,7 @@ public:
     void setSolarReflectanceBack(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcOpticalMaterialProperties (IfcEntityInstanceData* e);
+    IfcOpticalMaterialProperties (IfcEntityInstanceData&& e);
     IfcOpticalMaterialProperties (::Ifc2x3::IfcMaterial* v1_Material, boost::optional< double > v2_VisibleTransmittance, boost::optional< double > v3_SolarTransmittance, boost::optional< double > v4_ThermalIrTransmittance, boost::optional< double > v5_ThermalIrEmissivityBack, boost::optional< double > v6_ThermalIrEmissivityFront, boost::optional< double > v7_VisibleReflectanceBack, boost::optional< double > v8_VisibleReflectanceFront, boost::optional< double > v9_SolarReflectanceFront, boost::optional< double > v10_SolarReflectanceBack);
     typedef aggregate_of< IfcOpticalMaterialProperties > list;
 };
@@ -9787,7 +9787,7 @@ public:
     aggregate_of< IfcPersonAndOrganization >::ptr Engages() const; // INVERSE IfcPersonAndOrganization::TheOrganization
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcOrganization (IfcEntityInstanceData* e);
+    IfcOrganization (IfcEntityInstanceData&& e);
     IfcOrganization (boost::optional< std::string > v1_Id, std::string v2_Name, boost::optional< std::string > v3_Description, boost::optional< aggregate_of< ::Ifc2x3::IfcActorRole >::ptr > v4_Roles, boost::optional< aggregate_of< ::Ifc2x3::IfcAddress >::ptr > v5_Addresses);
     typedef aggregate_of< IfcOrganization > list;
 };
@@ -9813,7 +9813,7 @@ public:
     void setRelatedOrganizations(aggregate_of< ::Ifc2x3::IfcOrganization >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcOrganizationRelationship (IfcEntityInstanceData* e);
+    IfcOrganizationRelationship (IfcEntityInstanceData&& e);
     IfcOrganizationRelationship (std::string v1_Name, boost::optional< std::string > v2_Description, ::Ifc2x3::IfcOrganization* v3_RelatingOrganization, aggregate_of< ::Ifc2x3::IfcOrganization >::ptr v4_RelatedOrganizations);
     typedef aggregate_of< IfcOrganizationRelationship > list;
 };
@@ -9855,7 +9855,7 @@ public:
     void setCreationDate(int v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcOwnerHistory (IfcEntityInstanceData* e);
+    IfcOwnerHistory (IfcEntityInstanceData&& e);
     IfcOwnerHistory (::Ifc2x3::IfcPersonAndOrganization* v1_OwningUser, ::Ifc2x3::IfcApplication* v2_OwningApplication, boost::optional< ::Ifc2x3::IfcStateEnum::Value > v3_State, ::Ifc2x3::IfcChangeActionEnum::Value v4_ChangeAction, boost::optional< int > v5_LastModifiedDate, ::Ifc2x3::IfcPersonAndOrganization* v6_LastModifyingUser, ::Ifc2x3::IfcApplication* v7_LastModifyingApplication, int v8_CreationDate);
     typedef aggregate_of< IfcOwnerHistory > list;
 };
@@ -9902,7 +9902,7 @@ public:
         aggregate_of< IfcPersonAndOrganization >::ptr EngagedIn() const; // INVERSE IfcPersonAndOrganization::ThePerson
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcPerson (IfcEntityInstanceData* e);
+    IfcPerson (IfcEntityInstanceData&& e);
     IfcPerson (boost::optional< std::string > v1_Id, boost::optional< std::string > v2_FamilyName, boost::optional< std::string > v3_GivenName, boost::optional< std::vector< std::string > /*[1:?]*/ > v4_MiddleNames, boost::optional< std::vector< std::string > /*[1:?]*/ > v5_PrefixTitles, boost::optional< std::vector< std::string > /*[1:?]*/ > v6_SuffixTitles, boost::optional< aggregate_of< ::Ifc2x3::IfcActorRole >::ptr > v7_Roles, boost::optional< aggregate_of< ::Ifc2x3::IfcAddress >::ptr > v8_Addresses);
     typedef aggregate_of< IfcPerson > list;
 };
@@ -9924,7 +9924,7 @@ public:
     void setRoles(boost::optional< aggregate_of< ::Ifc2x3::IfcActorRole >::ptr > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcPersonAndOrganization (IfcEntityInstanceData* e);
+    IfcPersonAndOrganization (IfcEntityInstanceData&& e);
     IfcPersonAndOrganization (::Ifc2x3::IfcPerson* v1_ThePerson, ::Ifc2x3::IfcOrganization* v2_TheOrganization, boost::optional< aggregate_of< ::Ifc2x3::IfcActorRole >::ptr > v3_Roles);
     typedef aggregate_of< IfcPersonAndOrganization > list;
 };
@@ -9944,7 +9944,7 @@ public:
         aggregate_of< IfcPhysicalComplexQuantity >::ptr PartOfComplex() const; // INVERSE IfcPhysicalComplexQuantity::HasQuantities
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcPhysicalQuantity (IfcEntityInstanceData* e);
+    IfcPhysicalQuantity (IfcEntityInstanceData&& e);
     IfcPhysicalQuantity (std::string v1_Name, boost::optional< std::string > v2_Description);
     typedef aggregate_of< IfcPhysicalQuantity > list;
 };
@@ -9964,7 +9964,7 @@ public:
     void setUnit(::Ifc2x3::IfcNamedUnit* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcPhysicalSimpleQuantity (IfcEntityInstanceData* e);
+    IfcPhysicalSimpleQuantity (IfcEntityInstanceData&& e);
     IfcPhysicalSimpleQuantity (std::string v1_Name, boost::optional< std::string > v2_Description, ::Ifc2x3::IfcNamedUnit* v3_Unit);
     typedef aggregate_of< IfcPhysicalSimpleQuantity > list;
 };
@@ -10002,7 +10002,7 @@ public:
     void setCountry(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcPostalAddress (IfcEntityInstanceData* e);
+    IfcPostalAddress (IfcEntityInstanceData&& e);
     IfcPostalAddress (boost::optional< ::Ifc2x3::IfcAddressTypeEnum::Value > v1_Purpose, boost::optional< std::string > v2_Description, boost::optional< std::string > v3_UserDefinedPurpose, boost::optional< std::string > v4_InternalLocation, boost::optional< std::vector< std::string > /*[1:?]*/ > v5_AddressLines, boost::optional< std::string > v6_PostalBox, boost::optional< std::string > v7_Town, boost::optional< std::string > v8_Region, boost::optional< std::string > v9_PostalCode, boost::optional< std::string > v10_Country);
     typedef aggregate_of< IfcPostalAddress > list;
 };
@@ -10020,7 +10020,7 @@ public:
     void setName(std::string v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcPreDefinedItem (IfcEntityInstanceData* e);
+    IfcPreDefinedItem (IfcEntityInstanceData&& e);
     IfcPreDefinedItem (std::string v1_Name);
     typedef aggregate_of< IfcPreDefinedItem > list;
 };
@@ -10035,7 +10035,7 @@ class IFC_PARSE_API IfcPreDefinedSymbol : public  IfcPreDefinedItem, public  Ifc
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcPreDefinedSymbol (IfcEntityInstanceData* e);
+    IfcPreDefinedSymbol (IfcEntityInstanceData&& e);
     IfcPreDefinedSymbol (std::string v1_Name);
     typedef aggregate_of< IfcPreDefinedSymbol > list;
 };
@@ -10044,7 +10044,7 @@ class IFC_PARSE_API IfcPreDefinedTerminatorSymbol : public  IfcPreDefinedSymbol 
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcPreDefinedTerminatorSymbol (IfcEntityInstanceData* e);
+    IfcPreDefinedTerminatorSymbol (IfcEntityInstanceData&& e);
     IfcPreDefinedTerminatorSymbol (std::string v1_Name);
     typedef aggregate_of< IfcPreDefinedTerminatorSymbol > list;
 };
@@ -10063,7 +10063,7 @@ class IFC_PARSE_API IfcPreDefinedTextFont : public  IfcPreDefinedItem, public  I
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcPreDefinedTextFont (IfcEntityInstanceData* e);
+    IfcPreDefinedTextFont (IfcEntityInstanceData&& e);
     IfcPreDefinedTextFont (std::string v1_Name);
     typedef aggregate_of< IfcPreDefinedTextFont > list;
 };
@@ -10098,7 +10098,7 @@ public:
     void setIdentifier(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcPresentationLayerAssignment (IfcEntityInstanceData* e);
+    IfcPresentationLayerAssignment (IfcEntityInstanceData&& e);
     IfcPresentationLayerAssignment (std::string v1_Name, boost::optional< std::string > v2_Description, aggregate_of< ::Ifc2x3::IfcLayeredItem >::ptr v3_AssignedItems, boost::optional< std::string > v4_Identifier);
     typedef aggregate_of< IfcPresentationLayerAssignment > list;
 };
@@ -10135,7 +10135,7 @@ public:
     void setLayerStyles(aggregate_of< ::Ifc2x3::IfcPresentationStyleSelect >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcPresentationLayerWithStyle (IfcEntityInstanceData* e);
+    IfcPresentationLayerWithStyle (IfcEntityInstanceData&& e);
     IfcPresentationLayerWithStyle (std::string v1_Name, boost::optional< std::string > v2_Description, aggregate_of< ::Ifc2x3::IfcLayeredItem >::ptr v3_AssignedItems, boost::optional< std::string > v4_Identifier, boost::logic::tribool v5_LayerOn, boost::logic::tribool v6_LayerFrozen, boost::logic::tribool v7_LayerBlocked, aggregate_of< ::Ifc2x3::IfcPresentationStyleSelect >::ptr v8_LayerStyles);
     typedef aggregate_of< IfcPresentationLayerWithStyle > list;
 };
@@ -10151,7 +10151,7 @@ public:
     void setName(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcPresentationStyle (IfcEntityInstanceData* e);
+    IfcPresentationStyle (IfcEntityInstanceData&& e);
     IfcPresentationStyle (boost::optional< std::string > v1_Name);
     typedef aggregate_of< IfcPresentationStyle > list;
 };
@@ -10167,7 +10167,7 @@ public:
     void setStyles(aggregate_of< ::Ifc2x3::IfcPresentationStyleSelect >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcPresentationStyleAssignment (IfcEntityInstanceData* e);
+    IfcPresentationStyleAssignment (IfcEntityInstanceData&& e);
     IfcPresentationStyleAssignment (aggregate_of< ::Ifc2x3::IfcPresentationStyleSelect >::ptr v1_Styles);
     typedef aggregate_of< IfcPresentationStyleAssignment > list;
 };
@@ -10201,7 +10201,7 @@ public:
     void setRepresentations(aggregate_of< ::Ifc2x3::IfcRepresentation >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcProductRepresentation (IfcEntityInstanceData* e);
+    IfcProductRepresentation (IfcEntityInstanceData&& e);
     IfcProductRepresentation (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, aggregate_of< ::Ifc2x3::IfcRepresentation >::ptr v3_Representations);
     typedef aggregate_of< IfcProductRepresentation > list;
 };
@@ -10218,7 +10218,7 @@ public:
     void setCO2Content(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcProductsOfCombustionProperties (IfcEntityInstanceData* e);
+    IfcProductsOfCombustionProperties (IfcEntityInstanceData&& e);
     IfcProductsOfCombustionProperties (::Ifc2x3::IfcMaterial* v1_Material, boost::optional< double > v2_SpecificHeatCapacity, boost::optional< double > v3_N20Content, boost::optional< double > v4_COContent, boost::optional< double > v5_CO2Content);
     typedef aggregate_of< IfcProductsOfCombustionProperties > list;
 };
@@ -10402,7 +10402,7 @@ public:
     void setProfileName(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcProfileDef (IfcEntityInstanceData* e);
+    IfcProfileDef (IfcEntityInstanceData&& e);
     IfcProfileDef (::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, boost::optional< std::string > v2_ProfileName);
     typedef aggregate_of< IfcProfileDef > list;
 };
@@ -10426,7 +10426,7 @@ public:
     void setProfileDefinition(::Ifc2x3::IfcProfileDef* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcProfileProperties (IfcEntityInstanceData* e);
+    IfcProfileProperties (IfcEntityInstanceData&& e);
     IfcProfileProperties (boost::optional< std::string > v1_ProfileName, ::Ifc2x3::IfcProfileDef* v2_ProfileDefinition);
     typedef aggregate_of< IfcProfileProperties > list;
 };
@@ -10446,7 +10446,7 @@ public:
     aggregate_of< IfcComplexProperty >::ptr PartOfComplex() const; // INVERSE IfcComplexProperty::HasProperties
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcProperty (IfcEntityInstanceData* e);
+    IfcProperty (IfcEntityInstanceData&& e);
     IfcProperty (std::string v1_Name, boost::optional< std::string > v2_Description);
     typedef aggregate_of< IfcProperty > list;
 };
@@ -10463,7 +10463,7 @@ public:
     void setDescription(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcPropertyConstraintRelationship (IfcEntityInstanceData* e);
+    IfcPropertyConstraintRelationship (IfcEntityInstanceData&& e);
     IfcPropertyConstraintRelationship (::Ifc2x3::IfcConstraint* v1_RelatingConstraint, aggregate_of< ::Ifc2x3::IfcProperty >::ptr v2_RelatedProperties, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description);
     typedef aggregate_of< IfcPropertyConstraintRelationship > list;
 };
@@ -10492,7 +10492,7 @@ public:
     void setExpression(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcPropertyDependencyRelationship (IfcEntityInstanceData* e);
+    IfcPropertyDependencyRelationship (IfcEntityInstanceData&& e);
     IfcPropertyDependencyRelationship (::Ifc2x3::IfcProperty* v1_DependingProperty, ::Ifc2x3::IfcProperty* v2_DependantProperty, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_Expression);
     typedef aggregate_of< IfcPropertyDependencyRelationship > list;
 };
@@ -10555,7 +10555,7 @@ public:
     void setUnit(::Ifc2x3::IfcUnit* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcPropertyEnumeration (IfcEntityInstanceData* e);
+    IfcPropertyEnumeration (IfcEntityInstanceData&& e);
     IfcPropertyEnumeration (std::string v1_Name, aggregate_of< ::Ifc2x3::IfcValue >::ptr v2_EnumerationValues, ::Ifc2x3::IfcUnit* v3_Unit);
     typedef aggregate_of< IfcPropertyEnumeration > list;
 };
@@ -10571,7 +10571,7 @@ public:
     void setAreaValue(double v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcQuantityArea (IfcEntityInstanceData* e);
+    IfcQuantityArea (IfcEntityInstanceData&& e);
     IfcQuantityArea (std::string v1_Name, boost::optional< std::string > v2_Description, ::Ifc2x3::IfcNamedUnit* v3_Unit, double v4_AreaValue);
     typedef aggregate_of< IfcQuantityArea > list;
 };
@@ -10587,7 +10587,7 @@ public:
     void setCountValue(double v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcQuantityCount (IfcEntityInstanceData* e);
+    IfcQuantityCount (IfcEntityInstanceData&& e);
     IfcQuantityCount (std::string v1_Name, boost::optional< std::string > v2_Description, ::Ifc2x3::IfcNamedUnit* v3_Unit, double v4_CountValue);
     typedef aggregate_of< IfcQuantityCount > list;
 };
@@ -10603,7 +10603,7 @@ public:
     void setLengthValue(double v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcQuantityLength (IfcEntityInstanceData* e);
+    IfcQuantityLength (IfcEntityInstanceData&& e);
     IfcQuantityLength (std::string v1_Name, boost::optional< std::string > v2_Description, ::Ifc2x3::IfcNamedUnit* v3_Unit, double v4_LengthValue);
     typedef aggregate_of< IfcQuantityLength > list;
 };
@@ -10619,7 +10619,7 @@ public:
     void setTimeValue(double v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcQuantityTime (IfcEntityInstanceData* e);
+    IfcQuantityTime (IfcEntityInstanceData&& e);
     IfcQuantityTime (std::string v1_Name, boost::optional< std::string > v2_Description, ::Ifc2x3::IfcNamedUnit* v3_Unit, double v4_TimeValue);
     typedef aggregate_of< IfcQuantityTime > list;
 };
@@ -10635,7 +10635,7 @@ public:
     void setVolumeValue(double v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcQuantityVolume (IfcEntityInstanceData* e);
+    IfcQuantityVolume (IfcEntityInstanceData&& e);
     IfcQuantityVolume (std::string v1_Name, boost::optional< std::string > v2_Description, ::Ifc2x3::IfcNamedUnit* v3_Unit, double v4_VolumeValue);
     typedef aggregate_of< IfcQuantityVolume > list;
 };
@@ -10651,7 +10651,7 @@ public:
     void setWeightValue(double v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcQuantityWeight (IfcEntityInstanceData* e);
+    IfcQuantityWeight (IfcEntityInstanceData&& e);
     IfcQuantityWeight (std::string v1_Name, boost::optional< std::string > v2_Description, ::Ifc2x3::IfcNamedUnit* v3_Unit, double v4_WeightValue);
     typedef aggregate_of< IfcQuantityWeight > list;
 };
@@ -10668,7 +10668,7 @@ public:
     void setDescription(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcReferencesValueDocument (IfcEntityInstanceData* e);
+    IfcReferencesValueDocument (IfcEntityInstanceData&& e);
     IfcReferencesValueDocument (::Ifc2x3::IfcDocumentSelect* v1_ReferencedDocument, aggregate_of< ::Ifc2x3::IfcAppliedValue >::ptr v2_ReferencingValues, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description);
     typedef aggregate_of< IfcReferencesValueDocument > list;
 };
@@ -10699,7 +10699,7 @@ public:
     void setBarCount(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcReinforcementBarProperties (IfcEntityInstanceData* e);
+    IfcReinforcementBarProperties (IfcEntityInstanceData&& e);
     IfcReinforcementBarProperties (double v1_TotalCrossSectionArea, std::string v2_SteelGrade, boost::optional< ::Ifc2x3::IfcReinforcingBarSurfaceEnum::Value > v3_BarSurface, boost::optional< double > v4_EffectiveDepth, boost::optional< double > v5_NominalBarDiameter, boost::optional< double > v6_BarCount);
     typedef aggregate_of< IfcReinforcementBarProperties > list;
 };
@@ -10712,7 +10712,7 @@ public:
     void setInitialStress(double v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRelaxation (IfcEntityInstanceData* e);
+    IfcRelaxation (IfcEntityInstanceData&& e);
     IfcRelaxation (double v1_RelaxationValue, double v2_InitialStress);
     typedef aggregate_of< IfcRelaxation > list;
 };
@@ -10782,7 +10782,7 @@ public:
     aggregate_of< IfcProductRepresentation >::ptr OfProductRepresentation() const; // INVERSE IfcProductRepresentation::Representations
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRepresentation (IfcEntityInstanceData* e);
+    IfcRepresentation (IfcEntityInstanceData&& e);
     IfcRepresentation (::Ifc2x3::IfcRepresentationContext* v1_ContextOfItems, boost::optional< std::string > v2_RepresentationIdentifier, boost::optional< std::string > v3_RepresentationType, aggregate_of< ::Ifc2x3::IfcRepresentationItem >::ptr v4_Items);
     typedef aggregate_of< IfcRepresentation > list;
 };
@@ -10807,7 +10807,7 @@ public:
         aggregate_of< IfcRepresentation >::ptr RepresentationsInContext() const; // INVERSE IfcRepresentation::ContextOfItems
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRepresentationContext (IfcEntityInstanceData* e);
+    IfcRepresentationContext (IfcEntityInstanceData&& e);
     IfcRepresentationContext (boost::optional< std::string > v1_ContextIdentifier, boost::optional< std::string > v2_ContextType);
     typedef aggregate_of< IfcRepresentationContext > list;
 };
@@ -10849,7 +10849,7 @@ public:
     aggregate_of< IfcStyledItem >::ptr StyledByItem() const; // INVERSE IfcStyledItem::Item
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRepresentationItem (IfcEntityInstanceData* e);
+    IfcRepresentationItem (IfcEntityInstanceData&& e);
     IfcRepresentationItem ();
     typedef aggregate_of< IfcRepresentationItem > list;
 };
@@ -10876,7 +10876,7 @@ public:
         aggregate_of< IfcMappedItem >::ptr MapUsage() const; // INVERSE IfcMappedItem::MappingSource
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRepresentationMap (IfcEntityInstanceData* e);
+    IfcRepresentationMap (IfcEntityInstanceData&& e);
     IfcRepresentationMap (::Ifc2x3::IfcAxis2Placement* v1_MappingOrigin, ::Ifc2x3::IfcRepresentation* v2_MappedRepresentation);
     typedef aggregate_of< IfcRepresentationMap > list;
 };
@@ -10895,7 +10895,7 @@ public:
     void setDirection(::Ifc2x3::IfcRibPlateDirectionEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRibPlateProfileProperties (IfcEntityInstanceData* e);
+    IfcRibPlateProfileProperties (IfcEntityInstanceData&& e);
     IfcRibPlateProfileProperties (boost::optional< std::string > v1_ProfileName, ::Ifc2x3::IfcProfileDef* v2_ProfileDefinition, boost::optional< double > v3_Thickness, boost::optional< double > v4_RibHeight, boost::optional< double > v5_RibWidth, boost::optional< double > v6_RibSpacing, ::Ifc2x3::IfcRibPlateDirectionEnum::Value v7_Direction);
     typedef aggregate_of< IfcRibPlateProfileProperties > list;
 };
@@ -10928,7 +10928,7 @@ public:
     void setDescription(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRoot (IfcEntityInstanceData* e);
+    IfcRoot (IfcEntityInstanceData&& e);
     IfcRoot (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description);
     typedef aggregate_of< IfcRoot > list;
 };
@@ -10951,7 +10951,7 @@ public:
     void setName(::Ifc2x3::IfcSIUnitName::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcSIUnit (IfcEntityInstanceData* e);
+    IfcSIUnit (IfcEntityInstanceData&& e);
     IfcSIUnit (::Ifc2x3::IfcUnitEnum::Value v2_UnitType, boost::optional< ::Ifc2x3::IfcSIPrefix::Value > v3_Prefix, ::Ifc2x3::IfcSIUnitName::Value v4_Name);
     typedef aggregate_of< IfcSIUnit > list;
 };
@@ -10973,7 +10973,7 @@ public:
     void setEndProfile(::Ifc2x3::IfcProfileDef* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcSectionProperties (IfcEntityInstanceData* e);
+    IfcSectionProperties (IfcEntityInstanceData&& e);
     IfcSectionProperties (::Ifc2x3::IfcSectionTypeEnum::Value v1_SectionType, ::Ifc2x3::IfcProfileDef* v2_StartProfile, ::Ifc2x3::IfcProfileDef* v3_EndProfile);
     typedef aggregate_of< IfcSectionProperties > list;
 };
@@ -11006,7 +11006,7 @@ public:
     void setCrossSectionReinforcementDefinitions(aggregate_of< ::Ifc2x3::IfcReinforcementBarProperties >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcSectionReinforcementProperties (IfcEntityInstanceData* e);
+    IfcSectionReinforcementProperties (IfcEntityInstanceData&& e);
     IfcSectionReinforcementProperties (double v1_LongitudinalStartPosition, double v2_LongitudinalEndPosition, boost::optional< double > v3_TransversePosition, ::Ifc2x3::IfcReinforcingBarRoleEnum::Value v4_ReinforcementRole, ::Ifc2x3::IfcSectionProperties* v5_SectionDefinition, aggregate_of< ::Ifc2x3::IfcReinforcementBarProperties >::ptr v6_CrossSectionReinforcementDefinitions);
     typedef aggregate_of< IfcSectionReinforcementProperties > list;
 };
@@ -11070,7 +11070,7 @@ public:
     void setPartOfProductDefinitionShape(::Ifc2x3::IfcProductDefinitionShape* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcShapeAspect (IfcEntityInstanceData* e);
+    IfcShapeAspect (IfcEntityInstanceData&& e);
     IfcShapeAspect (aggregate_of< ::Ifc2x3::IfcShapeModel >::ptr v1_ShapeRepresentations, boost::optional< std::string > v2_Name, boost::optional< std::string > v3_Description, boost::logic::tribool v4_ProductDefinitional, ::Ifc2x3::IfcProductDefinitionShape* v5_PartOfProductDefinitionShape);
     typedef aggregate_of< IfcShapeAspect > list;
 };
@@ -11097,7 +11097,7 @@ public:
         aggregate_of< IfcShapeAspect >::ptr OfShapeAspect() const; // INVERSE IfcShapeAspect::ShapeRepresentations
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcShapeModel (IfcEntityInstanceData* e);
+    IfcShapeModel (IfcEntityInstanceData&& e);
     IfcShapeModel (::Ifc2x3::IfcRepresentationContext* v1_ContextOfItems, boost::optional< std::string > v2_RepresentationIdentifier, boost::optional< std::string > v3_RepresentationType, aggregate_of< ::Ifc2x3::IfcRepresentationItem >::ptr v4_Items);
     typedef aggregate_of< IfcShapeModel > list;
 };
@@ -11240,7 +11240,7 @@ class IFC_PARSE_API IfcShapeRepresentation : public  IfcShapeModel {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcShapeRepresentation (IfcEntityInstanceData* e);
+    IfcShapeRepresentation (IfcEntityInstanceData&& e);
     IfcShapeRepresentation (::Ifc2x3::IfcRepresentationContext* v1_ContextOfItems, boost::optional< std::string > v2_RepresentationIdentifier, boost::optional< std::string > v3_RepresentationType, aggregate_of< ::Ifc2x3::IfcRepresentationItem >::ptr v4_Items);
     typedef aggregate_of< IfcShapeRepresentation > list;
 };
@@ -11251,7 +11251,7 @@ class IFC_PARSE_API IfcSimpleProperty : public  IfcProperty {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcSimpleProperty (IfcEntityInstanceData* e);
+    IfcSimpleProperty (IfcEntityInstanceData&& e);
     IfcSimpleProperty (std::string v1_Name, boost::optional< std::string > v2_Description);
     typedef aggregate_of< IfcSimpleProperty > list;
 };
@@ -11265,7 +11265,7 @@ public:
     void setName(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcStructuralConnectionCondition (IfcEntityInstanceData* e);
+    IfcStructuralConnectionCondition (IfcEntityInstanceData&& e);
     IfcStructuralConnectionCondition (boost::optional< std::string > v1_Name);
     typedef aggregate_of< IfcStructuralConnectionCondition > list;
 };
@@ -11279,7 +11279,7 @@ public:
     void setName(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcStructuralLoad (IfcEntityInstanceData* e);
+    IfcStructuralLoad (IfcEntityInstanceData&& e);
     IfcStructuralLoad (boost::optional< std::string > v1_Name);
     typedef aggregate_of< IfcStructuralLoad > list;
 };
@@ -11290,7 +11290,7 @@ class IFC_PARSE_API IfcStructuralLoadStatic : public  IfcStructuralLoad {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcStructuralLoadStatic (IfcEntityInstanceData* e);
+    IfcStructuralLoadStatic (IfcEntityInstanceData&& e);
     IfcStructuralLoadStatic (boost::optional< std::string > v1_Name);
     typedef aggregate_of< IfcStructuralLoadStatic > list;
 };
@@ -11309,7 +11309,7 @@ public:
     void setDeltaT_Z(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcStructuralLoadTemperature (IfcEntityInstanceData* e);
+    IfcStructuralLoadTemperature (IfcEntityInstanceData&& e);
     IfcStructuralLoadTemperature (boost::optional< std::string > v1_Name, boost::optional< double > v2_DeltaT_Constant, boost::optional< double > v3_DeltaT_Y, boost::optional< double > v4_DeltaT_Z);
     typedef aggregate_of< IfcStructuralLoadTemperature > list;
 };
@@ -11322,7 +11322,7 @@ class IFC_PARSE_API IfcStyleModel : public  IfcRepresentation {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcStyleModel (IfcEntityInstanceData* e);
+    IfcStyleModel (IfcEntityInstanceData&& e);
     IfcStyleModel (::Ifc2x3::IfcRepresentationContext* v1_ContextOfItems, boost::optional< std::string > v2_RepresentationIdentifier, boost::optional< std::string > v3_RepresentationType, aggregate_of< ::Ifc2x3::IfcRepresentationItem >::ptr v4_Items);
     typedef aggregate_of< IfcStyleModel > list;
 };
@@ -11374,7 +11374,7 @@ public:
     void setName(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcStyledItem (IfcEntityInstanceData* e);
+    IfcStyledItem (IfcEntityInstanceData&& e);
     IfcStyledItem (::Ifc2x3::IfcRepresentationItem* v1_Item, aggregate_of< ::Ifc2x3::IfcPresentationStyleAssignment >::ptr v2_Styles, boost::optional< std::string > v3_Name);
     typedef aggregate_of< IfcStyledItem > list;
 };
@@ -11389,7 +11389,7 @@ class IFC_PARSE_API IfcStyledRepresentation : public  IfcStyleModel {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcStyledRepresentation (IfcEntityInstanceData* e);
+    IfcStyledRepresentation (IfcEntityInstanceData&& e);
     IfcStyledRepresentation (::Ifc2x3::IfcRepresentationContext* v1_ContextOfItems, boost::optional< std::string > v2_RepresentationIdentifier, boost::optional< std::string > v3_RepresentationType, aggregate_of< ::Ifc2x3::IfcRepresentationItem >::ptr v4_Items);
     typedef aggregate_of< IfcStyledRepresentation > list;
 };
@@ -11410,7 +11410,7 @@ public:
     void setStyles(aggregate_of< ::Ifc2x3::IfcSurfaceStyleElementSelect >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcSurfaceStyle (IfcEntityInstanceData* e);
+    IfcSurfaceStyle (IfcEntityInstanceData&& e);
     IfcSurfaceStyle (boost::optional< std::string > v1_Name, ::Ifc2x3::IfcSurfaceSide::Value v2_Side, aggregate_of< ::Ifc2x3::IfcSurfaceStyleElementSelect >::ptr v3_Styles);
     typedef aggregate_of< IfcSurfaceStyle > list;
 };
@@ -11445,7 +11445,7 @@ public:
     void setReflectanceColour(::Ifc2x3::IfcColourRgb* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcSurfaceStyleLighting (IfcEntityInstanceData* e);
+    IfcSurfaceStyleLighting (IfcEntityInstanceData&& e);
     IfcSurfaceStyleLighting (::Ifc2x3::IfcColourRgb* v1_DiffuseTransmissionColour, ::Ifc2x3::IfcColourRgb* v2_DiffuseReflectionColour, ::Ifc2x3::IfcColourRgb* v3_TransmissionColour, ::Ifc2x3::IfcColourRgb* v4_ReflectanceColour);
     typedef aggregate_of< IfcSurfaceStyleLighting > list;
 };
@@ -11464,7 +11464,7 @@ public:
     void setDispersionFactor(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcSurfaceStyleRefraction (IfcEntityInstanceData* e);
+    IfcSurfaceStyleRefraction (IfcEntityInstanceData&& e);
     IfcSurfaceStyleRefraction (boost::optional< double > v1_RefractionIndex, boost::optional< double > v2_DispersionFactor);
     typedef aggregate_of< IfcSurfaceStyleRefraction > list;
 };
@@ -11482,7 +11482,7 @@ public:
     void setSurfaceColour(::Ifc2x3::IfcColourRgb* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcSurfaceStyleShading (IfcEntityInstanceData* e);
+    IfcSurfaceStyleShading (IfcEntityInstanceData&& e);
     IfcSurfaceStyleShading (::Ifc2x3::IfcColourRgb* v1_SurfaceColour);
     typedef aggregate_of< IfcSurfaceStyleShading > list;
 };
@@ -11511,7 +11511,7 @@ public:
     void setTextures(aggregate_of< ::Ifc2x3::IfcSurfaceTexture >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcSurfaceStyleWithTextures (IfcEntityInstanceData* e);
+    IfcSurfaceStyleWithTextures (IfcEntityInstanceData&& e);
     IfcSurfaceStyleWithTextures (aggregate_of< ::Ifc2x3::IfcSurfaceTexture >::ptr v1_Textures);
     typedef aggregate_of< IfcSurfaceStyleWithTextures > list;
 };
@@ -11624,7 +11624,7 @@ public:
     void setTextureTransform(::Ifc2x3::IfcCartesianTransformationOperator2D* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcSurfaceTexture (IfcEntityInstanceData* e);
+    IfcSurfaceTexture (IfcEntityInstanceData&& e);
     IfcSurfaceTexture (bool v1_RepeatS, bool v2_RepeatT, ::Ifc2x3::IfcSurfaceTextureEnum::Value v3_TextureType, ::Ifc2x3::IfcCartesianTransformationOperator2D* v4_TextureTransform);
     typedef aggregate_of< IfcSurfaceTexture > list;
 };
@@ -11640,7 +11640,7 @@ public:
     void setStyleOfSymbol(::Ifc2x3::IfcSymbolStyleSelect* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcSymbolStyle (IfcEntityInstanceData* e);
+    IfcSymbolStyle (IfcEntityInstanceData&& e);
     IfcSymbolStyle (boost::optional< std::string > v1_Name, ::Ifc2x3::IfcSymbolStyleSelect* v2_StyleOfSymbol);
     typedef aggregate_of< IfcSymbolStyle > list;
 };
@@ -11669,7 +11669,7 @@ public:
     void setRows(aggregate_of< ::Ifc2x3::IfcTableRow >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcTable (IfcEntityInstanceData* e);
+    IfcTable (IfcEntityInstanceData&& e);
     IfcTable (std::string v1_Name, aggregate_of< ::Ifc2x3::IfcTableRow >::ptr v2_Rows);
     typedef aggregate_of< IfcTable > list;
 };
@@ -11697,7 +11697,7 @@ public:
         aggregate_of< IfcTable >::ptr OfTable() const; // INVERSE IfcTable::Rows
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcTableRow (IfcEntityInstanceData* e);
+    IfcTableRow (IfcEntityInstanceData&& e);
     IfcTableRow (aggregate_of< ::Ifc2x3::IfcValue >::ptr v1_RowCells, bool v2_IsHeading);
     typedef aggregate_of< IfcTableRow > list;
 };
@@ -11729,7 +11729,7 @@ public:
     void setWWWHomePageURL(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcTelecomAddress (IfcEntityInstanceData* e);
+    IfcTelecomAddress (IfcEntityInstanceData&& e);
     IfcTelecomAddress (boost::optional< ::Ifc2x3::IfcAddressTypeEnum::Value > v1_Purpose, boost::optional< std::string > v2_Description, boost::optional< std::string > v3_UserDefinedPurpose, boost::optional< std::vector< std::string > /*[1:?]*/ > v4_TelephoneNumbers, boost::optional< std::vector< std::string > /*[1:?]*/ > v5_FacsimileNumbers, boost::optional< std::string > v6_PagerNumber, boost::optional< std::vector< std::string > /*[1:?]*/ > v7_ElectronicMailAddresses, boost::optional< std::string > v8_WWWHomePageURL);
     typedef aggregate_of< IfcTelecomAddress > list;
 };
@@ -11780,7 +11780,7 @@ public:
     void setTextFontStyle(::Ifc2x3::IfcTextFontSelect* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcTextStyle (IfcEntityInstanceData* e);
+    IfcTextStyle (IfcEntityInstanceData&& e);
     IfcTextStyle (boost::optional< std::string > v1_Name, ::Ifc2x3::IfcCharacterStyleSelect* v2_TextCharacterAppearance, ::Ifc2x3::IfcTextStyleSelect* v3_TextStyle, ::Ifc2x3::IfcTextFontSelect* v4_TextFontStyle);
     typedef aggregate_of< IfcTextStyle > list;
 };
@@ -11871,7 +11871,7 @@ public:
     void setFontSize(::Ifc2x3::IfcSizeSelect* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcTextStyleFontModel (IfcEntityInstanceData* e);
+    IfcTextStyleFontModel (IfcEntityInstanceData&& e);
     IfcTextStyleFontModel (std::string v1_Name, boost::optional< std::vector< std::string > /*[1:?]*/ > v2_FontFamily, boost::optional< std::string > v3_FontStyle, boost::optional< std::string > v4_FontVariant, boost::optional< std::string > v5_FontWeight, ::Ifc2x3::IfcSizeSelect* v6_FontSize);
     typedef aggregate_of< IfcTextStyleFontModel > list;
 };
@@ -11902,7 +11902,7 @@ public:
     void setBackgroundColour(::Ifc2x3::IfcColour* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcTextStyleForDefinedFont (IfcEntityInstanceData* e);
+    IfcTextStyleForDefinedFont (IfcEntityInstanceData&& e);
     IfcTextStyleForDefinedFont (::Ifc2x3::IfcColour* v1_Colour, ::Ifc2x3::IfcColour* v2_BackgroundColour);
     typedef aggregate_of< IfcTextStyleForDefinedFont > list;
 };
@@ -11945,7 +11945,7 @@ public:
     void setLineHeight(::Ifc2x3::IfcSizeSelect* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcTextStyleTextModel (IfcEntityInstanceData* e);
+    IfcTextStyleTextModel (IfcEntityInstanceData&& e);
     IfcTextStyleTextModel (::Ifc2x3::IfcSizeSelect* v1_TextIndent, boost::optional< std::string > v2_TextAlign, boost::optional< std::string > v3_TextDecoration, ::Ifc2x3::IfcSizeSelect* v4_LetterSpacing, ::Ifc2x3::IfcSizeSelect* v5_WordSpacing, boost::optional< std::string > v6_TextTransform, ::Ifc2x3::IfcSizeSelect* v7_LineHeight);
     typedef aggregate_of< IfcTextStyleTextModel > list;
 };
@@ -11985,7 +11985,7 @@ public:
     void setCharacterSpacing(::Ifc2x3::IfcSizeSelect* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcTextStyleWithBoxCharacteristics (IfcEntityInstanceData* e);
+    IfcTextStyleWithBoxCharacteristics (IfcEntityInstanceData&& e);
     IfcTextStyleWithBoxCharacteristics (boost::optional< double > v1_BoxHeight, boost::optional< double > v2_BoxWidth, boost::optional< double > v3_BoxSlantAngle, boost::optional< double > v4_BoxRotateAngle, ::Ifc2x3::IfcSizeSelect* v5_CharacterSpacing);
     typedef aggregate_of< IfcTextStyleWithBoxCharacteristics > list;
 };
@@ -12005,7 +12005,7 @@ public:
         aggregate_of< IfcAnnotationSurface >::ptr AnnotatedSurface() const; // INVERSE IfcAnnotationSurface::TextureCoordinates
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcTextureCoordinate (IfcEntityInstanceData* e);
+    IfcTextureCoordinate (IfcEntityInstanceData&& e);
     IfcTextureCoordinate ();
     typedef aggregate_of< IfcTextureCoordinate > list;
 };
@@ -12049,7 +12049,7 @@ public:
     void setParameter(aggregate_of< ::Ifc2x3::IfcSimpleValue >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcTextureCoordinateGenerator (IfcEntityInstanceData* e);
+    IfcTextureCoordinateGenerator (IfcEntityInstanceData&& e);
     IfcTextureCoordinateGenerator (std::string v1_Mode, aggregate_of< ::Ifc2x3::IfcSimpleValue >::ptr v2_Parameter);
     typedef aggregate_of< IfcTextureCoordinateGenerator > list;
 };
@@ -12110,7 +12110,7 @@ public:
     void setTextureMaps(aggregate_of< ::Ifc2x3::IfcVertexBasedTextureMap >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcTextureMap (IfcEntityInstanceData* e);
+    IfcTextureMap (IfcEntityInstanceData&& e);
     IfcTextureMap (aggregate_of< ::Ifc2x3::IfcVertexBasedTextureMap >::ptr v1_TextureMaps);
     typedef aggregate_of< IfcTextureMap > list;
 };
@@ -12148,7 +12148,7 @@ public:
     void setCoordinates(std::vector< double > /*[2:2]*/ v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcTextureVertex (IfcEntityInstanceData* e);
+    IfcTextureVertex (IfcEntityInstanceData&& e);
     IfcTextureVertex (std::vector< double > /*[2:2]*/ v1_Coordinates);
     typedef aggregate_of< IfcTextureVertex > list;
 };
@@ -12165,7 +12165,7 @@ public:
     void setThermalConductivity(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcThermalMaterialProperties (IfcEntityInstanceData* e);
+    IfcThermalMaterialProperties (IfcEntityInstanceData&& e);
     IfcThermalMaterialProperties (::Ifc2x3::IfcMaterial* v1_Material, boost::optional< double > v2_SpecificHeatCapacity, boost::optional< double > v3_BoilingPoint, boost::optional< double > v4_FreezingPoint, boost::optional< double > v5_ThermalConductivity);
     typedef aggregate_of< IfcThermalMaterialProperties > list;
 };
@@ -12203,7 +12203,7 @@ public:
         aggregate_of< IfcTimeSeriesReferenceRelationship >::ptr DocumentedBy() const; // INVERSE IfcTimeSeriesReferenceRelationship::ReferencedTimeSeries
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcTimeSeries (IfcEntityInstanceData* e);
+    IfcTimeSeries (IfcEntityInstanceData&& e);
     IfcTimeSeries (std::string v1_Name, boost::optional< std::string > v2_Description, ::Ifc2x3::IfcDateTimeSelect* v3_StartTime, ::Ifc2x3::IfcDateTimeSelect* v4_EndTime, ::Ifc2x3::IfcTimeSeriesDataTypeEnum::Value v5_TimeSeriesDataType, ::Ifc2x3::IfcDataOriginEnum::Value v6_DataOrigin, boost::optional< std::string > v7_UserDefinedDataOrigin, ::Ifc2x3::IfcUnit* v8_Unit);
     typedef aggregate_of< IfcTimeSeries > list;
 };
@@ -12216,7 +12216,7 @@ public:
     void setTimeSeriesReferences(aggregate_of< ::Ifc2x3::IfcDocumentSelect >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcTimeSeriesReferenceRelationship (IfcEntityInstanceData* e);
+    IfcTimeSeriesReferenceRelationship (IfcEntityInstanceData&& e);
     IfcTimeSeriesReferenceRelationship (::Ifc2x3::IfcTimeSeries* v1_ReferencedTimeSeries, aggregate_of< ::Ifc2x3::IfcDocumentSelect >::ptr v2_TimeSeriesReferences);
     typedef aggregate_of< IfcTimeSeriesReferenceRelationship > list;
 };
@@ -12236,7 +12236,7 @@ public:
     void setListValues(aggregate_of< ::Ifc2x3::IfcValue >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcTimeSeriesValue (IfcEntityInstanceData* e);
+    IfcTimeSeriesValue (IfcEntityInstanceData&& e);
     IfcTimeSeriesValue (aggregate_of< ::Ifc2x3::IfcValue >::ptr v1_ListValues);
     typedef aggregate_of< IfcTimeSeriesValue > list;
 };
@@ -12249,7 +12249,7 @@ class IFC_PARSE_API IfcTopologicalRepresentationItem : public  IfcRepresentation
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcTopologicalRepresentationItem (IfcEntityInstanceData* e);
+    IfcTopologicalRepresentationItem (IfcEntityInstanceData&& e);
     IfcTopologicalRepresentationItem ();
     typedef aggregate_of< IfcTopologicalRepresentationItem > list;
 };
@@ -12291,7 +12291,7 @@ class IFC_PARSE_API IfcTopologyRepresentation : public  IfcShapeModel {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcTopologyRepresentation (IfcEntityInstanceData* e);
+    IfcTopologyRepresentation (IfcEntityInstanceData&& e);
     IfcTopologyRepresentation (::Ifc2x3::IfcRepresentationContext* v1_ContextOfItems, boost::optional< std::string > v2_RepresentationIdentifier, boost::optional< std::string > v3_RepresentationType, aggregate_of< ::Ifc2x3::IfcRepresentationItem >::ptr v4_Items);
     typedef aggregate_of< IfcTopologyRepresentation > list;
 };
@@ -12307,7 +12307,7 @@ public:
     void setUnits(aggregate_of< ::Ifc2x3::IfcUnit >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcUnitAssignment (IfcEntityInstanceData* e);
+    IfcUnitAssignment (IfcEntityInstanceData&& e);
     IfcUnitAssignment (aggregate_of< ::Ifc2x3::IfcUnit >::ptr v1_Units);
     typedef aggregate_of< IfcUnitAssignment > list;
 };
@@ -12325,7 +12325,7 @@ class IFC_PARSE_API IfcVertex : public  IfcTopologicalRepresentationItem {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcVertex (IfcEntityInstanceData* e);
+    IfcVertex (IfcEntityInstanceData&& e);
     IfcVertex ();
     typedef aggregate_of< IfcVertex > list;
 };
@@ -12338,7 +12338,7 @@ public:
     void setTexturePoints(aggregate_of< ::Ifc2x3::IfcCartesianPoint >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcVertexBasedTextureMap (IfcEntityInstanceData* e);
+    IfcVertexBasedTextureMap (IfcEntityInstanceData&& e);
     IfcVertexBasedTextureMap (aggregate_of< ::Ifc2x3::IfcTextureVertex >::ptr v1_TextureVertices, aggregate_of< ::Ifc2x3::IfcCartesianPoint >::ptr v2_TexturePoints);
     typedef aggregate_of< IfcVertexBasedTextureMap > list;
 };
@@ -12358,7 +12358,7 @@ public:
     void setVertexGeometry(::Ifc2x3::IfcPoint* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcVertexPoint (IfcEntityInstanceData* e);
+    IfcVertexPoint (IfcEntityInstanceData&& e);
     IfcVertexPoint (::Ifc2x3::IfcPoint* v1_VertexGeometry);
     typedef aggregate_of< IfcVertexPoint > list;
 };
@@ -12431,7 +12431,7 @@ public:
     void setOffsetDistances(std::vector< double > /*[2:3]*/ v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcVirtualGridIntersection (IfcEntityInstanceData* e);
+    IfcVirtualGridIntersection (IfcEntityInstanceData&& e);
     IfcVirtualGridIntersection (aggregate_of< ::Ifc2x3::IfcGridAxis >::ptr v1_IntersectingAxes, std::vector< double > /*[2:3]*/ v2_OffsetDistances);
     typedef aggregate_of< IfcVirtualGridIntersection > list;
 };
@@ -12454,7 +12454,7 @@ public:
     void setDissolvedSolidsContent(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcWaterProperties (IfcEntityInstanceData* e);
+    IfcWaterProperties (IfcEntityInstanceData&& e);
     IfcWaterProperties (::Ifc2x3::IfcMaterial* v1_Material, boost::optional< bool > v2_IsPotable, boost::optional< double > v3_Hardness, boost::optional< double > v4_AlkalinityConcentration, boost::optional< double > v5_AcidityConcentration, boost::optional< double > v6_ImpuritiesContent, boost::optional< double > v7_PHLevel, boost::optional< double > v8_DissolvedSolidsContent);
     typedef aggregate_of< IfcWaterProperties > list;
 };
@@ -12463,7 +12463,7 @@ class IFC_PARSE_API IfcAnnotationOccurrence : public  IfcStyledItem {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcAnnotationOccurrence (IfcEntityInstanceData* e);
+    IfcAnnotationOccurrence (IfcEntityInstanceData&& e);
     IfcAnnotationOccurrence (::Ifc2x3::IfcRepresentationItem* v1_Item, aggregate_of< ::Ifc2x3::IfcPresentationStyleAssignment >::ptr v2_Styles, boost::optional< std::string > v3_Name);
     typedef aggregate_of< IfcAnnotationOccurrence > list;
 };
@@ -12472,7 +12472,7 @@ class IFC_PARSE_API IfcAnnotationSurfaceOccurrence : public  IfcAnnotationOccurr
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcAnnotationSurfaceOccurrence (IfcEntityInstanceData* e);
+    IfcAnnotationSurfaceOccurrence (IfcEntityInstanceData&& e);
     IfcAnnotationSurfaceOccurrence (::Ifc2x3::IfcRepresentationItem* v1_Item, aggregate_of< ::Ifc2x3::IfcPresentationStyleAssignment >::ptr v2_Styles, boost::optional< std::string > v3_Name);
     typedef aggregate_of< IfcAnnotationSurfaceOccurrence > list;
 };
@@ -12481,7 +12481,7 @@ class IFC_PARSE_API IfcAnnotationSymbolOccurrence : public  IfcAnnotationOccurre
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcAnnotationSymbolOccurrence (IfcEntityInstanceData* e);
+    IfcAnnotationSymbolOccurrence (IfcEntityInstanceData&& e);
     IfcAnnotationSymbolOccurrence (::Ifc2x3::IfcRepresentationItem* v1_Item, aggregate_of< ::Ifc2x3::IfcPresentationStyleAssignment >::ptr v2_Styles, boost::optional< std::string > v3_Name);
     typedef aggregate_of< IfcAnnotationSymbolOccurrence > list;
 };
@@ -12490,7 +12490,7 @@ class IFC_PARSE_API IfcAnnotationTextOccurrence : public  IfcAnnotationOccurrenc
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcAnnotationTextOccurrence (IfcEntityInstanceData* e);
+    IfcAnnotationTextOccurrence (IfcEntityInstanceData&& e);
     IfcAnnotationTextOccurrence (::Ifc2x3::IfcRepresentationItem* v1_Item, aggregate_of< ::Ifc2x3::IfcPresentationStyleAssignment >::ptr v2_Styles, boost::optional< std::string > v3_Name);
     typedef aggregate_of< IfcAnnotationTextOccurrence > list;
 };
@@ -12519,7 +12519,7 @@ public:
     void setOuterCurve(::Ifc2x3::IfcCurve* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcArbitraryClosedProfileDef (IfcEntityInstanceData* e);
+    IfcArbitraryClosedProfileDef (IfcEntityInstanceData&& e);
     IfcArbitraryClosedProfileDef (::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, boost::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcCurve* v3_OuterCurve);
     typedef aggregate_of< IfcArbitraryClosedProfileDef > list;
 };
@@ -12545,7 +12545,7 @@ public:
     void setCurve(::Ifc2x3::IfcBoundedCurve* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcArbitraryOpenProfileDef (IfcEntityInstanceData* e);
+    IfcArbitraryOpenProfileDef (IfcEntityInstanceData&& e);
     IfcArbitraryOpenProfileDef (::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, boost::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcBoundedCurve* v3_Curve);
     typedef aggregate_of< IfcArbitraryOpenProfileDef > list;
 };
@@ -12575,7 +12575,7 @@ public:
     void setInnerCurves(aggregate_of< ::Ifc2x3::IfcCurve >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcArbitraryProfileDefWithVoids (IfcEntityInstanceData* e);
+    IfcArbitraryProfileDefWithVoids (IfcEntityInstanceData&& e);
     IfcArbitraryProfileDefWithVoids (::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, boost::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcCurve* v3_OuterCurve, aggregate_of< ::Ifc2x3::IfcCurve >::ptr v4_InnerCurves);
     typedef aggregate_of< IfcArbitraryProfileDefWithVoids > list;
 };
@@ -12598,7 +12598,7 @@ public:
     void setRasterCode(bool v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcBlobTexture (IfcEntityInstanceData* e);
+    IfcBlobTexture (IfcEntityInstanceData&& e);
     IfcBlobTexture (bool v1_RepeatS, bool v2_RepeatT, ::Ifc2x3::IfcSurfaceTextureEnum::Value v3_TextureType, ::Ifc2x3::IfcCartesianTransformationOperator2D* v4_TextureTransform, std::string v5_RasterFormat, bool v6_RasterCode);
     typedef aggregate_of< IfcBlobTexture > list;
 };
@@ -12638,7 +12638,7 @@ public:
     void setThickness(double v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcCenterLineProfileDef (IfcEntityInstanceData* e);
+    IfcCenterLineProfileDef (IfcEntityInstanceData&& e);
     IfcCenterLineProfileDef (::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, boost::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcBoundedCurve* v3_Curve, double v4_Thickness);
     typedef aggregate_of< IfcCenterLineProfileDef > list;
 };
@@ -12670,7 +12670,7 @@ public:
     void setReferencedSource(::Ifc2x3::IfcClassification* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcClassificationReference (IfcEntityInstanceData* e);
+    IfcClassificationReference (IfcEntityInstanceData&& e);
     IfcClassificationReference (boost::optional< std::string > v1_Location, boost::optional< std::string > v2_ItemReference, boost::optional< std::string > v3_Name, ::Ifc2x3::IfcClassification* v4_ReferencedSource);
     typedef aggregate_of< IfcClassificationReference > list;
 };
@@ -12701,7 +12701,7 @@ public:
     void setBlue(double v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcColourRgb (IfcEntityInstanceData* e);
+    IfcColourRgb (IfcEntityInstanceData&& e);
     IfcColourRgb (boost::optional< std::string > v1_Name, double v2_Red, double v3_Green, double v4_Blue);
     typedef aggregate_of< IfcColourRgb > list;
 };
@@ -12721,7 +12721,7 @@ public:
     void setHasProperties(aggregate_of< ::Ifc2x3::IfcProperty >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcComplexProperty (IfcEntityInstanceData* e);
+    IfcComplexProperty (IfcEntityInstanceData&& e);
     IfcComplexProperty (std::string v1_Name, boost::optional< std::string > v2_Description, std::string v3_UsageName, aggregate_of< ::Ifc2x3::IfcProperty >::ptr v4_HasProperties);
     typedef aggregate_of< IfcComplexProperty > list;
 };
@@ -12771,7 +12771,7 @@ public:
     void setLabel(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcCompositeProfileDef (IfcEntityInstanceData* e);
+    IfcCompositeProfileDef (IfcEntityInstanceData&& e);
     IfcCompositeProfileDef (::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, boost::optional< std::string > v2_ProfileName, aggregate_of< ::Ifc2x3::IfcProfileDef >::ptr v3_Profiles, boost::optional< std::string > v4_Label);
     typedef aggregate_of< IfcCompositeProfileDef > list;
 };
@@ -12791,7 +12791,7 @@ public:
     void setCfsFaces(aggregate_of< ::Ifc2x3::IfcFace >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcConnectedFaceSet (IfcEntityInstanceData* e);
+    IfcConnectedFaceSet (IfcEntityInstanceData&& e);
     IfcConnectedFaceSet (aggregate_of< ::Ifc2x3::IfcFace >::ptr v1_CfsFaces);
     typedef aggregate_of< IfcConnectedFaceSet > list;
 };
@@ -12818,7 +12818,7 @@ public:
     void setCurveOnRelatedElement(::Ifc2x3::IfcCurveOrEdgeCurve* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcConnectionCurveGeometry (IfcEntityInstanceData* e);
+    IfcConnectionCurveGeometry (IfcEntityInstanceData&& e);
     IfcConnectionCurveGeometry (::Ifc2x3::IfcCurveOrEdgeCurve* v1_CurveOnRelatingElement, ::Ifc2x3::IfcCurveOrEdgeCurve* v2_CurveOnRelatedElement);
     typedef aggregate_of< IfcConnectionCurveGeometry > list;
 };
@@ -12854,7 +12854,7 @@ public:
     void setEccentricityInZ(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcConnectionPointEccentricity (IfcEntityInstanceData* e);
+    IfcConnectionPointEccentricity (IfcEntityInstanceData&& e);
     IfcConnectionPointEccentricity (::Ifc2x3::IfcPointOrVertexPoint* v1_PointOnRelatingElement, ::Ifc2x3::IfcPointOrVertexPoint* v2_PointOnRelatedElement, boost::optional< double > v3_EccentricityInX, boost::optional< double > v4_EccentricityInY, boost::optional< double > v5_EccentricityInZ);
     typedef aggregate_of< IfcConnectionPointEccentricity > list;
 };
@@ -12872,7 +12872,7 @@ public:
     void setName(std::string v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcContextDependentUnit (IfcEntityInstanceData* e);
+    IfcContextDependentUnit (IfcEntityInstanceData&& e);
     IfcContextDependentUnit (::Ifc2x3::IfcDimensionalExponents* v1_Dimensions, ::Ifc2x3::IfcUnitEnum::Value v2_UnitType, std::string v3_Name);
     typedef aggregate_of< IfcContextDependentUnit > list;
 };
@@ -12933,7 +12933,7 @@ public:
     void setConversionFactor(::Ifc2x3::IfcMeasureWithUnit* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcConversionBasedUnit (IfcEntityInstanceData* e);
+    IfcConversionBasedUnit (IfcEntityInstanceData&& e);
     IfcConversionBasedUnit (::Ifc2x3::IfcDimensionalExponents* v1_Dimensions, ::Ifc2x3::IfcUnitEnum::Value v2_UnitType, std::string v3_Name, ::Ifc2x3::IfcMeasureWithUnit* v4_ConversionFactor);
     typedef aggregate_of< IfcConversionBasedUnit > list;
 };
@@ -12967,7 +12967,7 @@ public:
     void setCurveColour(::Ifc2x3::IfcColour* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcCurveStyle (IfcEntityInstanceData* e);
+    IfcCurveStyle (IfcEntityInstanceData&& e);
     IfcCurveStyle (boost::optional< std::string > v1_Name, ::Ifc2x3::IfcCurveFontOrScaledCurveFontSelect* v2_CurveFont, ::Ifc2x3::IfcSizeSelect* v3_CurveWidth, ::Ifc2x3::IfcColour* v4_CurveColour);
     typedef aggregate_of< IfcCurveStyle > list;
 };
@@ -13068,7 +13068,7 @@ public:
     void setLabel(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcDerivedProfileDef (IfcEntityInstanceData* e);
+    IfcDerivedProfileDef (IfcEntityInstanceData&& e);
     IfcDerivedProfileDef (::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, boost::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcProfileDef* v3_ParentProfile, ::Ifc2x3::IfcCartesianTransformationOperator2D* v4_Operator, boost::optional< std::string > v5_Label);
     typedef aggregate_of< IfcDerivedProfileDef > list;
 };
@@ -13077,7 +13077,7 @@ class IFC_PARSE_API IfcDimensionCalloutRelationship : public  IfcDraughtingCallo
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcDimensionCalloutRelationship (IfcEntityInstanceData* e);
+    IfcDimensionCalloutRelationship (IfcEntityInstanceData&& e);
     IfcDimensionCalloutRelationship (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, ::Ifc2x3::IfcDraughtingCallout* v3_RelatingDraughtingCallout, ::Ifc2x3::IfcDraughtingCallout* v4_RelatedDraughtingCallout);
     typedef aggregate_of< IfcDimensionCalloutRelationship > list;
 };
@@ -13086,7 +13086,7 @@ class IFC_PARSE_API IfcDimensionPair : public  IfcDraughtingCalloutRelationship 
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcDimensionPair (IfcEntityInstanceData* e);
+    IfcDimensionPair (IfcEntityInstanceData&& e);
     IfcDimensionPair (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, ::Ifc2x3::IfcDraughtingCallout* v3_RelatingDraughtingCallout, ::Ifc2x3::IfcDraughtingCallout* v4_RelatedDraughtingCallout);
     typedef aggregate_of< IfcDimensionPair > list;
 };
@@ -13106,7 +13106,7 @@ public:
         aggregate_of< IfcDocumentInformation >::ptr ReferenceToDocument() const; // INVERSE IfcDocumentInformation::DocumentReferences
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcDocumentReference (IfcEntityInstanceData* e);
+    IfcDocumentReference (IfcEntityInstanceData&& e);
     IfcDocumentReference (boost::optional< std::string > v1_Location, boost::optional< std::string > v2_ItemReference, boost::optional< std::string > v3_Name);
     typedef aggregate_of< IfcDocumentReference > list;
 };
@@ -13124,7 +13124,7 @@ class IFC_PARSE_API IfcDraughtingPreDefinedTextFont : public  IfcPreDefinedTextF
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcDraughtingPreDefinedTextFont (IfcEntityInstanceData* e);
+    IfcDraughtingPreDefinedTextFont (IfcEntityInstanceData&& e);
     IfcDraughtingPreDefinedTextFont (std::string v1_Name);
     typedef aggregate_of< IfcDraughtingPreDefinedTextFont > list;
 };
@@ -13187,7 +13187,7 @@ public:
     void setEdgeEnd(::Ifc2x3::IfcVertex* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcEdge (IfcEntityInstanceData* e);
+    IfcEdge (IfcEntityInstanceData&& e);
     IfcEdge (::Ifc2x3::IfcVertex* v1_EdgeStart, ::Ifc2x3::IfcVertex* v2_EdgeEnd);
     typedef aggregate_of< IfcEdge > list;
 };
@@ -13234,7 +13234,7 @@ public:
     void setSameSense(bool v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcEdgeCurve (IfcEntityInstanceData* e);
+    IfcEdgeCurve (IfcEntityInstanceData&& e);
     IfcEdgeCurve (::Ifc2x3::IfcVertex* v1_EdgeStart, ::Ifc2x3::IfcVertex* v2_EdgeEnd, ::Ifc2x3::IfcCurve* v3_EdgeGeometry, bool v4_SameSense);
     typedef aggregate_of< IfcEdgeCurve > list;
 };
@@ -13283,7 +13283,7 @@ public:
     void setName(std::string v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcExtendedMaterialProperties (IfcEntityInstanceData* e);
+    IfcExtendedMaterialProperties (IfcEntityInstanceData&& e);
     IfcExtendedMaterialProperties (::Ifc2x3::IfcMaterial* v1_Material, aggregate_of< ::Ifc2x3::IfcProperty >::ptr v2_ExtendedProperties, boost::optional< std::string > v3_Description, std::string v4_Name);
     typedef aggregate_of< IfcExtendedMaterialProperties > list;
 };
@@ -13338,7 +13338,7 @@ public:
     void setBounds(aggregate_of< ::Ifc2x3::IfcFaceBound >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcFace (IfcEntityInstanceData* e);
+    IfcFace (IfcEntityInstanceData&& e);
     IfcFace (aggregate_of< ::Ifc2x3::IfcFaceBound >::ptr v1_Bounds);
     typedef aggregate_of< IfcFace > list;
 };
@@ -13357,7 +13357,7 @@ public:
     void setOrientation(bool v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcFaceBound (IfcEntityInstanceData* e);
+    IfcFaceBound (IfcEntityInstanceData&& e);
     IfcFaceBound (::Ifc2x3::IfcLoop* v1_Bound, bool v2_Orientation);
     typedef aggregate_of< IfcFaceBound > list;
 };
@@ -13370,7 +13370,7 @@ class IFC_PARSE_API IfcFaceOuterBound : public  IfcFaceBound {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcFaceOuterBound (IfcEntityInstanceData* e);
+    IfcFaceOuterBound (IfcEntityInstanceData&& e);
     IfcFaceOuterBound (::Ifc2x3::IfcLoop* v1_Bound, bool v2_Orientation);
     typedef aggregate_of< IfcFaceOuterBound > list;
 };
@@ -13420,7 +13420,7 @@ public:
     void setSameSense(bool v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcFaceSurface (IfcEntityInstanceData* e);
+    IfcFaceSurface (IfcEntityInstanceData&& e);
     IfcFaceSurface (aggregate_of< ::Ifc2x3::IfcFaceBound >::ptr v1_Bounds, ::Ifc2x3::IfcSurface* v2_FaceSurface, bool v3_SameSense);
     typedef aggregate_of< IfcFaceSurface > list;
 };
@@ -13453,7 +13453,7 @@ public:
     void setCompressionFailureZ(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcFailureConnectionCondition (IfcEntityInstanceData* e);
+    IfcFailureConnectionCondition (IfcEntityInstanceData&& e);
     IfcFailureConnectionCondition (boost::optional< std::string > v1_Name, boost::optional< double > v2_TensionFailureX, boost::optional< double > v3_TensionFailureY, boost::optional< double > v4_TensionFailureZ, boost::optional< double > v5_CompressionFailureX, boost::optional< double > v6_CompressionFailureY, boost::optional< double > v7_CompressionFailureZ);
     typedef aggregate_of< IfcFailureConnectionCondition > list;
 };
@@ -13498,7 +13498,7 @@ public:
     void setFillStyles(aggregate_of< ::Ifc2x3::IfcFillStyleSelect >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcFillAreaStyle (IfcEntityInstanceData* e);
+    IfcFillAreaStyle (IfcEntityInstanceData&& e);
     IfcFillAreaStyle (boost::optional< std::string > v1_Name, aggregate_of< ::Ifc2x3::IfcFillStyleSelect >::ptr v2_FillStyles);
     typedef aggregate_of< IfcFillAreaStyle > list;
 };
@@ -13515,7 +13515,7 @@ public:
     void setHigherHeatingValue(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcFuelProperties (IfcEntityInstanceData* e);
+    IfcFuelProperties (IfcEntityInstanceData&& e);
     IfcFuelProperties (::Ifc2x3::IfcMaterial* v1_Material, boost::optional< double > v2_CombustionTemperature, boost::optional< double > v3_CarbonContent, boost::optional< double > v4_LowerHeatingValue, boost::optional< double > v5_HigherHeatingValue);
     typedef aggregate_of< IfcFuelProperties > list;
 };
@@ -13530,7 +13530,7 @@ public:
     void setMassDensity(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcGeneralMaterialProperties (IfcEntityInstanceData* e);
+    IfcGeneralMaterialProperties (IfcEntityInstanceData&& e);
     IfcGeneralMaterialProperties (::Ifc2x3::IfcMaterial* v1_Material, boost::optional< double > v2_MolecularWeight, boost::optional< double > v3_Porosity, boost::optional< double > v4_MassDensity);
     typedef aggregate_of< IfcGeneralMaterialProperties > list;
 };
@@ -13549,7 +13549,7 @@ public:
     void setCrossSectionArea(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcGeneralProfileProperties (IfcEntityInstanceData* e);
+    IfcGeneralProfileProperties (IfcEntityInstanceData&& e);
     IfcGeneralProfileProperties (boost::optional< std::string > v1_ProfileName, ::Ifc2x3::IfcProfileDef* v2_ProfileDefinition, boost::optional< double > v3_PhysicalWeight, boost::optional< double > v4_Perimeter, boost::optional< double > v5_MinimumPlateThickness, boost::optional< double > v6_MaximumPlateThickness, boost::optional< double > v7_CrossSectionArea);
     typedef aggregate_of< IfcGeneralProfileProperties > list;
 };
@@ -13619,7 +13619,7 @@ public:
         aggregate_of< IfcGeometricRepresentationSubContext >::ptr HasSubContexts() const; // INVERSE IfcGeometricRepresentationSubContext::ParentContext
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcGeometricRepresentationContext (IfcEntityInstanceData* e);
+    IfcGeometricRepresentationContext (IfcEntityInstanceData&& e);
     IfcGeometricRepresentationContext (boost::optional< std::string > v1_ContextIdentifier, boost::optional< std::string > v2_ContextType, int v3_CoordinateSpaceDimension, boost::optional< double > v4_Precision, ::Ifc2x3::IfcAxis2Placement* v5_WorldCoordinateSystem, ::Ifc2x3::IfcDirection* v6_TrueNorth);
     typedef aggregate_of< IfcGeometricRepresentationContext > list;
 };
@@ -13646,7 +13646,7 @@ class IFC_PARSE_API IfcGeometricRepresentationItem : public  IfcRepresentationIt
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcGeometricRepresentationItem (IfcEntityInstanceData* e);
+    IfcGeometricRepresentationItem (IfcEntityInstanceData&& e);
     IfcGeometricRepresentationItem ();
     typedef aggregate_of< IfcGeometricRepresentationItem > list;
 };
@@ -13689,7 +13689,7 @@ public:
     void setUserDefinedTargetView(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcGeometricRepresentationSubContext (IfcEntityInstanceData* e);
+    IfcGeometricRepresentationSubContext (IfcEntityInstanceData&& e);
     IfcGeometricRepresentationSubContext (boost::optional< std::string > v1_ContextIdentifier, boost::optional< std::string > v2_ContextType, ::Ifc2x3::IfcGeometricRepresentationContext* v7_ParentContext, boost::optional< double > v8_TargetScale, ::Ifc2x3::IfcGeometricProjectionEnum::Value v9_TargetView, boost::optional< std::string > v10_UserDefinedTargetView);
     typedef aggregate_of< IfcGeometricRepresentationSubContext > list;
 };
@@ -13707,7 +13707,7 @@ public:
     void setElements(aggregate_of< ::Ifc2x3::IfcGeometricSetSelect >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcGeometricSet (IfcEntityInstanceData* e);
+    IfcGeometricSet (IfcEntityInstanceData&& e);
     IfcGeometricSet (aggregate_of< ::Ifc2x3::IfcGeometricSetSelect >::ptr v1_Elements);
     typedef aggregate_of< IfcGeometricSet > list;
 };
@@ -13768,7 +13768,7 @@ public:
     void setPlacementRefDirection(::Ifc2x3::IfcVirtualGridIntersection* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcGridPlacement (IfcEntityInstanceData* e);
+    IfcGridPlacement (IfcEntityInstanceData&& e);
     IfcGridPlacement (::Ifc2x3::IfcVirtualGridIntersection* v1_PlacementLocation, ::Ifc2x3::IfcVirtualGridIntersection* v2_PlacementRefDirection);
     typedef aggregate_of< IfcGridPlacement > list;
 };
@@ -13797,7 +13797,7 @@ public:
     void setAgreementFlag(bool v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcHalfSpaceSolid (IfcEntityInstanceData* e);
+    IfcHalfSpaceSolid (IfcEntityInstanceData&& e);
     IfcHalfSpaceSolid (::Ifc2x3::IfcSurface* v1_BaseSurface, bool v2_AgreementFlag);
     typedef aggregate_of< IfcHalfSpaceSolid > list;
 };
@@ -13816,7 +13816,7 @@ public:
     void setMoistureDiffusivity(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcHygroscopicMaterialProperties (IfcEntityInstanceData* e);
+    IfcHygroscopicMaterialProperties (IfcEntityInstanceData&& e);
     IfcHygroscopicMaterialProperties (::Ifc2x3::IfcMaterial* v1_Material, boost::optional< double > v2_UpperVaporResistanceFactor, boost::optional< double > v3_LowerVaporResistanceFactor, boost::optional< double > v4_IsothermalMoistureCapacity, boost::optional< double > v5_VaporPermeability, boost::optional< double > v6_MoistureDiffusivity);
     typedef aggregate_of< IfcHygroscopicMaterialProperties > list;
 };
@@ -13862,7 +13862,7 @@ public:
     void setUrlReference(std::string v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcImageTexture (IfcEntityInstanceData* e);
+    IfcImageTexture (IfcEntityInstanceData&& e);
     IfcImageTexture (bool v1_RepeatS, bool v2_RepeatT, ::Ifc2x3::IfcSurfaceTextureEnum::Value v3_TextureType, ::Ifc2x3::IfcCartesianTransformationOperator2D* v4_TextureTransform, std::string v5_UrlReference);
     typedef aggregate_of< IfcImageTexture > list;
 };
@@ -13878,7 +13878,7 @@ public:
     void setValues(aggregate_of< ::Ifc2x3::IfcIrregularTimeSeriesValue >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcIrregularTimeSeries (IfcEntityInstanceData* e);
+    IfcIrregularTimeSeries (IfcEntityInstanceData&& e);
     IfcIrregularTimeSeries (std::string v1_Name, boost::optional< std::string > v2_Description, ::Ifc2x3::IfcDateTimeSelect* v3_StartTime, ::Ifc2x3::IfcDateTimeSelect* v4_EndTime, ::Ifc2x3::IfcTimeSeriesDataTypeEnum::Value v5_TimeSeriesDataType, ::Ifc2x3::IfcDataOriginEnum::Value v6_DataOrigin, boost::optional< std::string > v7_UserDefinedDataOrigin, ::Ifc2x3::IfcUnit* v8_Unit, aggregate_of< ::Ifc2x3::IfcIrregularTimeSeriesValue >::ptr v9_Values);
     typedef aggregate_of< IfcIrregularTimeSeries > list;
 };
@@ -13906,7 +13906,7 @@ public:
     void setIntensity(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcLightSource (IfcEntityInstanceData* e);
+    IfcLightSource (IfcEntityInstanceData&& e);
     IfcLightSource (boost::optional< std::string > v1_Name, ::Ifc2x3::IfcColourRgb* v2_LightColour, boost::optional< double > v3_AmbientIntensity, boost::optional< double > v4_Intensity);
     typedef aggregate_of< IfcLightSource > list;
 };
@@ -13921,7 +13921,7 @@ class IFC_PARSE_API IfcLightSourceAmbient : public  IfcLightSource {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcLightSourceAmbient (IfcEntityInstanceData* e);
+    IfcLightSourceAmbient (IfcEntityInstanceData&& e);
     IfcLightSourceAmbient (boost::optional< std::string > v1_Name, ::Ifc2x3::IfcColourRgb* v2_LightColour, boost::optional< double > v3_AmbientIntensity, boost::optional< double > v4_Intensity);
     typedef aggregate_of< IfcLightSourceAmbient > list;
 };
@@ -13942,7 +13942,7 @@ public:
     void setOrientation(::Ifc2x3::IfcDirection* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcLightSourceDirectional (IfcEntityInstanceData* e);
+    IfcLightSourceDirectional (IfcEntityInstanceData&& e);
     IfcLightSourceDirectional (boost::optional< std::string > v1_Name, ::Ifc2x3::IfcColourRgb* v2_LightColour, boost::optional< double > v3_AmbientIntensity, boost::optional< double > v4_Intensity, ::Ifc2x3::IfcDirection* v5_Orientation);
     typedef aggregate_of< IfcLightSourceDirectional > list;
 };
@@ -13975,7 +13975,7 @@ public:
     void setLightDistributionDataSource(::Ifc2x3::IfcLightDistributionDataSourceSelect* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcLightSourceGoniometric (IfcEntityInstanceData* e);
+    IfcLightSourceGoniometric (IfcEntityInstanceData&& e);
     IfcLightSourceGoniometric (boost::optional< std::string > v1_Name, ::Ifc2x3::IfcColourRgb* v2_LightColour, boost::optional< double > v3_AmbientIntensity, boost::optional< double > v4_Intensity, ::Ifc2x3::IfcAxis2Placement3D* v5_Position, ::Ifc2x3::IfcColourRgb* v6_ColourAppearance, double v7_ColourTemperature, double v8_LuminousFlux, ::Ifc2x3::IfcLightEmissionSourceEnum::Value v9_LightEmissionSource, ::Ifc2x3::IfcLightDistributionDataSourceSelect* v10_LightDistributionDataSource);
     typedef aggregate_of< IfcLightSourceGoniometric > list;
 };
@@ -14015,7 +14015,7 @@ public:
     void setQuadricAttenuation(double v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcLightSourcePositional (IfcEntityInstanceData* e);
+    IfcLightSourcePositional (IfcEntityInstanceData&& e);
     IfcLightSourcePositional (boost::optional< std::string > v1_Name, ::Ifc2x3::IfcColourRgb* v2_LightColour, boost::optional< double > v3_AmbientIntensity, boost::optional< double > v4_Intensity, ::Ifc2x3::IfcCartesianPoint* v5_Position, double v6_Radius, double v7_ConstantAttenuation, double v8_DistanceAttenuation, double v9_QuadricAttenuation);
     typedef aggregate_of< IfcLightSourcePositional > list;
 };
@@ -14053,7 +14053,7 @@ public:
     void setBeamWidthAngle(double v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcLightSourceSpot (IfcEntityInstanceData* e);
+    IfcLightSourceSpot (IfcEntityInstanceData&& e);
     IfcLightSourceSpot (boost::optional< std::string > v1_Name, ::Ifc2x3::IfcColourRgb* v2_LightColour, boost::optional< double > v3_AmbientIntensity, boost::optional< double > v4_Intensity, ::Ifc2x3::IfcCartesianPoint* v5_Position, double v6_Radius, double v7_ConstantAttenuation, double v8_DistanceAttenuation, double v9_QuadricAttenuation, ::Ifc2x3::IfcDirection* v10_Orientation, boost::optional< double > v11_ConcentrationExponent, double v12_SpreadAngle, double v13_BeamWidthAngle);
     typedef aggregate_of< IfcLightSourceSpot > list;
 };
@@ -14119,7 +14119,7 @@ public:
     void setRelativePlacement(::Ifc2x3::IfcAxis2Placement* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcLocalPlacement (IfcEntityInstanceData* e);
+    IfcLocalPlacement (IfcEntityInstanceData&& e);
     IfcLocalPlacement (::Ifc2x3::IfcObjectPlacement* v1_PlacementRelTo, ::Ifc2x3::IfcAxis2Placement* v2_RelativePlacement);
     typedef aggregate_of< IfcLocalPlacement > list;
 };
@@ -14153,7 +14153,7 @@ class IFC_PARSE_API IfcLoop : public  IfcTopologicalRepresentationItem {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcLoop (IfcEntityInstanceData* e);
+    IfcLoop (IfcEntityInstanceData&& e);
     IfcLoop ();
     typedef aggregate_of< IfcLoop > list;
 };
@@ -14186,7 +14186,7 @@ public:
     void setMappingTarget(::Ifc2x3::IfcCartesianTransformationOperator* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcMappedItem (IfcEntityInstanceData* e);
+    IfcMappedItem (IfcEntityInstanceData&& e);
     IfcMappedItem (::Ifc2x3::IfcRepresentationMap* v1_MappingSource, ::Ifc2x3::IfcCartesianTransformationOperator* v2_MappingTarget);
     typedef aggregate_of< IfcMappedItem > list;
 };
@@ -14227,7 +14227,7 @@ public:
     void setRepresentedMaterial(::Ifc2x3::IfcMaterial* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcMaterialDefinitionRepresentation (IfcEntityInstanceData* e);
+    IfcMaterialDefinitionRepresentation (IfcEntityInstanceData&& e);
     IfcMaterialDefinitionRepresentation (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, aggregate_of< ::Ifc2x3::IfcRepresentation >::ptr v3_Representations, ::Ifc2x3::IfcMaterial* v4_RepresentedMaterial);
     typedef aggregate_of< IfcMaterialDefinitionRepresentation > list;
 };
@@ -14248,7 +14248,7 @@ public:
     void setWaterImpermeability(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcMechanicalConcreteMaterialProperties (IfcEntityInstanceData* e);
+    IfcMechanicalConcreteMaterialProperties (IfcEntityInstanceData&& e);
     IfcMechanicalConcreteMaterialProperties (::Ifc2x3::IfcMaterial* v1_Material, boost::optional< double > v2_DynamicViscosity, boost::optional< double > v3_YoungModulus, boost::optional< double > v4_ShearModulus, boost::optional< double > v5_PoissonRatio, boost::optional< double > v6_ThermalExpansionCoefficient, boost::optional< double > v7_CompressiveStrength, boost::optional< double > v8_MaxAggregateSize, boost::optional< std::string > v9_AdmixturesDescription, boost::optional< std::string > v10_Workability, boost::optional< double > v11_ProtectivePoreRatio, boost::optional< std::string > v12_WaterImpermeability);
     typedef aggregate_of< IfcMechanicalConcreteMaterialProperties > list;
 };
@@ -14310,7 +14310,7 @@ public:
     aggregate_of< IfcRelAssociates >::ptr HasAssociations() const; // INVERSE IfcRelAssociates::RelatedObjects
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcObjectDefinition (IfcEntityInstanceData* e);
+    IfcObjectDefinition (IfcEntityInstanceData&& e);
     IfcObjectDefinition (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description);
     typedef aggregate_of< IfcObjectDefinition > list;
 };
@@ -14328,7 +14328,7 @@ public:
     void setRepeatFactor(::Ifc2x3::IfcVector* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcOneDirectionRepeatFactor (IfcEntityInstanceData* e);
+    IfcOneDirectionRepeatFactor (IfcEntityInstanceData&& e);
     IfcOneDirectionRepeatFactor (::Ifc2x3::IfcVector* v1_RepeatFactor);
     typedef aggregate_of< IfcOneDirectionRepeatFactor > list;
 };
@@ -14395,7 +14395,7 @@ class IFC_PARSE_API IfcOpenShell : public  IfcConnectedFaceSet, public  IfcShell
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcOpenShell (IfcEntityInstanceData* e);
+    IfcOpenShell (IfcEntityInstanceData&& e);
     IfcOpenShell (aggregate_of< ::Ifc2x3::IfcFace >::ptr v1_CfsFaces);
     typedef aggregate_of< IfcOpenShell > list;
 };
@@ -14416,7 +14416,7 @@ public:
     void setOrientation(bool v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcOrientedEdge (IfcEntityInstanceData* e);
+    IfcOrientedEdge (IfcEntityInstanceData&& e);
     IfcOrientedEdge (::Ifc2x3::IfcEdge* v3_EdgeElement, bool v4_Orientation);
     typedef aggregate_of< IfcOrientedEdge > list;
 };
@@ -14469,7 +14469,7 @@ public:
     void setPosition(::Ifc2x3::IfcAxis2Placement2D* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcParameterizedProfileDef (IfcEntityInstanceData* e);
+    IfcParameterizedProfileDef (IfcEntityInstanceData&& e);
     IfcParameterizedProfileDef (::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, boost::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D* v3_Position);
     typedef aggregate_of< IfcParameterizedProfileDef > list;
 };
@@ -14494,7 +14494,7 @@ public:
     void setEdgeList(aggregate_of< ::Ifc2x3::IfcOrientedEdge >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcPath (IfcEntityInstanceData* e);
+    IfcPath (IfcEntityInstanceData&& e);
     IfcPath (aggregate_of< ::Ifc2x3::IfcOrientedEdge >::ptr v1_EdgeList);
     typedef aggregate_of< IfcPath > list;
 };
@@ -14523,7 +14523,7 @@ public:
     void setUsage(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcPhysicalComplexQuantity (IfcEntityInstanceData* e);
+    IfcPhysicalComplexQuantity (IfcEntityInstanceData&& e);
     IfcPhysicalComplexQuantity (std::string v1_Name, boost::optional< std::string > v2_Description, aggregate_of< ::Ifc2x3::IfcPhysicalQuantity >::ptr v3_HasQuantities, std::string v4_Discrimination, boost::optional< std::string > v5_Quality, boost::optional< std::string > v6_Usage);
     typedef aggregate_of< IfcPhysicalComplexQuantity > list;
 };
@@ -14563,7 +14563,7 @@ public:
     void setPixel(std::vector< boost::dynamic_bitset<> > /*[1:?]*/ v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcPixelTexture (IfcEntityInstanceData* e);
+    IfcPixelTexture (IfcEntityInstanceData&& e);
     IfcPixelTexture (bool v1_RepeatS, bool v2_RepeatT, ::Ifc2x3::IfcSurfaceTextureEnum::Value v3_TextureType, ::Ifc2x3::IfcCartesianTransformationOperator2D* v4_TextureTransform, int v5_Width, int v6_Height, int v7_ColourComponents, std::vector< boost::dynamic_bitset<> > /*[1:?]*/ v8_Pixel);
     typedef aggregate_of< IfcPixelTexture > list;
 };
@@ -14583,7 +14583,7 @@ public:
     void setLocation(::Ifc2x3::IfcCartesianPoint* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcPlacement (IfcEntityInstanceData* e);
+    IfcPlacement (IfcEntityInstanceData&& e);
     IfcPlacement (::Ifc2x3::IfcCartesianPoint* v1_Location);
     typedef aggregate_of< IfcPlacement > list;
 };
@@ -14602,7 +14602,7 @@ public:
     void setSizeInY(double v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcPlanarExtent (IfcEntityInstanceData* e);
+    IfcPlanarExtent (IfcEntityInstanceData&& e);
     IfcPlanarExtent (double v1_SizeInX, double v2_SizeInY);
     typedef aggregate_of< IfcPlanarExtent > list;
 };
@@ -14615,7 +14615,7 @@ class IFC_PARSE_API IfcPoint : public  IfcGeometricRepresentationItem, public  I
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcPoint (IfcEntityInstanceData* e);
+    IfcPoint (IfcEntityInstanceData&& e);
     IfcPoint ();
     typedef aggregate_of< IfcPoint > list;
 };
@@ -14638,7 +14638,7 @@ public:
     void setPointParameter(double v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcPointOnCurve (IfcEntityInstanceData* e);
+    IfcPointOnCurve (IfcEntityInstanceData&& e);
     IfcPointOnCurve (::Ifc2x3::IfcCurve* v1_BasisCurve, double v2_PointParameter);
     typedef aggregate_of< IfcPointOnCurve > list;
 };
@@ -14664,7 +14664,7 @@ public:
     void setPointParameterV(double v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcPointOnSurface (IfcEntityInstanceData* e);
+    IfcPointOnSurface (IfcEntityInstanceData&& e);
     IfcPointOnSurface (::Ifc2x3::IfcSurface* v1_BasisSurface, double v2_PointParameterU, double v3_PointParameterV);
     typedef aggregate_of< IfcPointOnSurface > list;
 };
@@ -14714,7 +14714,7 @@ public:
     void setPolygon(aggregate_of< ::Ifc2x3::IfcCartesianPoint >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcPolyLoop (IfcEntityInstanceData* e);
+    IfcPolyLoop (IfcEntityInstanceData&& e);
     IfcPolyLoop (aggregate_of< ::Ifc2x3::IfcCartesianPoint >::ptr v1_Polygon);
     typedef aggregate_of< IfcPolyLoop > list;
 };
@@ -14786,7 +14786,7 @@ public:
     void setPolygonalBoundary(::Ifc2x3::IfcBoundedCurve* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcPolygonalBoundedHalfSpace (IfcEntityInstanceData* e);
+    IfcPolygonalBoundedHalfSpace (IfcEntityInstanceData&& e);
     IfcPolygonalBoundedHalfSpace (::Ifc2x3::IfcSurface* v1_BaseSurface, bool v2_AgreementFlag, ::Ifc2x3::IfcAxis2Placement3D* v3_Position, ::Ifc2x3::IfcBoundedCurve* v4_PolygonalBoundary);
     typedef aggregate_of< IfcPolygonalBoundedHalfSpace > list;
 };
@@ -14799,7 +14799,7 @@ class IFC_PARSE_API IfcPreDefinedColour : public  IfcPreDefinedItem, public  Ifc
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcPreDefinedColour (IfcEntityInstanceData* e);
+    IfcPreDefinedColour (IfcEntityInstanceData&& e);
     IfcPreDefinedColour (std::string v1_Name);
     typedef aggregate_of< IfcPreDefinedColour > list;
 };
@@ -14814,7 +14814,7 @@ class IFC_PARSE_API IfcPreDefinedCurveFont : public  IfcPreDefinedItem, public  
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcPreDefinedCurveFont (IfcEntityInstanceData* e);
+    IfcPreDefinedCurveFont (IfcEntityInstanceData&& e);
     IfcPreDefinedCurveFont (std::string v1_Name);
     typedef aggregate_of< IfcPreDefinedCurveFont > list;
 };
@@ -14823,7 +14823,7 @@ class IFC_PARSE_API IfcPreDefinedDimensionSymbol : public  IfcPreDefinedSymbol {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcPreDefinedDimensionSymbol (IfcEntityInstanceData* e);
+    IfcPreDefinedDimensionSymbol (IfcEntityInstanceData&& e);
     IfcPreDefinedDimensionSymbol (std::string v1_Name);
     typedef aggregate_of< IfcPreDefinedDimensionSymbol > list;
 };
@@ -14832,7 +14832,7 @@ class IFC_PARSE_API IfcPreDefinedPointMarkerSymbol : public  IfcPreDefinedSymbol
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcPreDefinedPointMarkerSymbol (IfcEntityInstanceData* e);
+    IfcPreDefinedPointMarkerSymbol (IfcEntityInstanceData&& e);
     IfcPreDefinedPointMarkerSymbol (std::string v1_Name);
     typedef aggregate_of< IfcPreDefinedPointMarkerSymbol > list;
 };
@@ -14854,7 +14854,7 @@ public:
     aggregate_of< IfcShapeAspect >::ptr HasShapeAspects() const; // INVERSE IfcShapeAspect::PartOfProductDefinitionShape
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcProductDefinitionShape (IfcEntityInstanceData* e);
+    IfcProductDefinitionShape (IfcEntityInstanceData&& e);
     IfcProductDefinitionShape (boost::optional< std::string > v1_Name, boost::optional< std::string > v2_Description, aggregate_of< ::Ifc2x3::IfcRepresentation >::ptr v3_Representations);
     typedef aggregate_of< IfcProductDefinitionShape > list;
 };
@@ -14975,7 +14975,7 @@ public:
     void setUnit(::Ifc2x3::IfcUnit* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcPropertyBoundedValue (IfcEntityInstanceData* e);
+    IfcPropertyBoundedValue (IfcEntityInstanceData&& e);
     IfcPropertyBoundedValue (std::string v1_Name, boost::optional< std::string > v2_Description, ::Ifc2x3::IfcValue* v3_UpperBoundValue, ::Ifc2x3::IfcValue* v4_LowerBoundValue, ::Ifc2x3::IfcUnit* v5_Unit);
     typedef aggregate_of< IfcPropertyBoundedValue > list;
 };
@@ -15034,7 +15034,7 @@ public:
         aggregate_of< IfcRelAssociates >::ptr HasAssociations() const; // INVERSE IfcRelAssociates::RelatedObjects
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcPropertyDefinition (IfcEntityInstanceData* e);
+    IfcPropertyDefinition (IfcEntityInstanceData&& e);
     IfcPropertyDefinition (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description);
     typedef aggregate_of< IfcPropertyDefinition > list;
 };
@@ -15127,7 +15127,7 @@ public:
     void setEnumerationReference(::Ifc2x3::IfcPropertyEnumeration* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcPropertyEnumeratedValue (IfcEntityInstanceData* e);
+    IfcPropertyEnumeratedValue (IfcEntityInstanceData&& e);
     IfcPropertyEnumeratedValue (std::string v1_Name, boost::optional< std::string > v2_Description, aggregate_of< ::Ifc2x3::IfcValue >::ptr v3_EnumerationValues, ::Ifc2x3::IfcPropertyEnumeration* v4_EnumerationReference);
     typedef aggregate_of< IfcPropertyEnumeratedValue > list;
 };
@@ -15208,7 +15208,7 @@ public:
     void setUnit(::Ifc2x3::IfcUnit* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcPropertyListValue (IfcEntityInstanceData* e);
+    IfcPropertyListValue (IfcEntityInstanceData&& e);
     IfcPropertyListValue (std::string v1_Name, boost::optional< std::string > v2_Description, aggregate_of< ::Ifc2x3::IfcValue >::ptr v3_ListValues, ::Ifc2x3::IfcUnit* v4_Unit);
     typedef aggregate_of< IfcPropertyListValue > list;
 };
@@ -15239,7 +15239,7 @@ public:
     void setPropertyReference(::Ifc2x3::IfcObjectReferenceSelect* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcPropertyReferenceValue (IfcEntityInstanceData* e);
+    IfcPropertyReferenceValue (IfcEntityInstanceData&& e);
     IfcPropertyReferenceValue (std::string v1_Name, boost::optional< std::string > v2_Description, boost::optional< std::string > v3_UsageName, ::Ifc2x3::IfcObjectReferenceSelect* v4_PropertyReference);
     typedef aggregate_of< IfcPropertyReferenceValue > list;
 };
@@ -15291,7 +15291,7 @@ public:
     aggregate_of< IfcTypeObject >::ptr DefinesType() const; // INVERSE IfcTypeObject::HasPropertySets
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcPropertySetDefinition (IfcEntityInstanceData* e);
+    IfcPropertySetDefinition (IfcEntityInstanceData&& e);
     IfcPropertySetDefinition (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description);
     typedef aggregate_of< IfcPropertySetDefinition > list;
 };
@@ -15353,7 +15353,7 @@ public:
     void setUnit(::Ifc2x3::IfcUnit* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcPropertySingleValue (IfcEntityInstanceData* e);
+    IfcPropertySingleValue (IfcEntityInstanceData&& e);
     IfcPropertySingleValue (std::string v1_Name, boost::optional< std::string > v2_Description, ::Ifc2x3::IfcValue* v3_NominalValue, ::Ifc2x3::IfcUnit* v4_Unit);
     typedef aggregate_of< IfcPropertySingleValue > list;
 };
@@ -15496,7 +15496,7 @@ public:
     void setDefinedUnit(::Ifc2x3::IfcUnit* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcPropertyTableValue (IfcEntityInstanceData* e);
+    IfcPropertyTableValue (IfcEntityInstanceData&& e);
     IfcPropertyTableValue (std::string v1_Name, boost::optional< std::string > v2_Description, aggregate_of< ::Ifc2x3::IfcValue >::ptr v3_DefiningValues, aggregate_of< ::Ifc2x3::IfcValue >::ptr v4_DefinedValues, boost::optional< std::string > v5_Expression, ::Ifc2x3::IfcUnit* v6_DefiningUnit, ::Ifc2x3::IfcUnit* v7_DefinedUnit);
     typedef aggregate_of< IfcPropertyTableValue > list;
 };
@@ -15544,7 +15544,7 @@ public:
     void setYDim(double v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRectangleProfileDef (IfcEntityInstanceData* e);
+    IfcRectangleProfileDef (IfcEntityInstanceData&& e);
     IfcRectangleProfileDef (::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, boost::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D* v3_Position, double v4_XDim, double v5_YDim);
     typedef aggregate_of< IfcRectangleProfileDef > list;
 };
@@ -15563,7 +15563,7 @@ public:
     void setValues(aggregate_of< ::Ifc2x3::IfcTimeSeriesValue >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRegularTimeSeries (IfcEntityInstanceData* e);
+    IfcRegularTimeSeries (IfcEntityInstanceData&& e);
     IfcRegularTimeSeries (std::string v1_Name, boost::optional< std::string > v2_Description, ::Ifc2x3::IfcDateTimeSelect* v3_StartTime, ::Ifc2x3::IfcDateTimeSelect* v4_EndTime, ::Ifc2x3::IfcTimeSeriesDataTypeEnum::Value v5_TimeSeriesDataType, ::Ifc2x3::IfcDataOriginEnum::Value v6_DataOrigin, boost::optional< std::string > v7_UserDefinedDataOrigin, ::Ifc2x3::IfcUnit* v8_Unit, double v9_TimeStep, aggregate_of< ::Ifc2x3::IfcTimeSeriesValue >::ptr v10_Values);
     typedef aggregate_of< IfcRegularTimeSeries > list;
 };
@@ -15603,7 +15603,7 @@ public:
     void setReinforcementSectionDefinitions(aggregate_of< ::Ifc2x3::IfcSectionReinforcementProperties >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcReinforcementDefinitionProperties (IfcEntityInstanceData* e);
+    IfcReinforcementDefinitionProperties (IfcEntityInstanceData&& e);
     IfcReinforcementDefinitionProperties (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_DefinitionType, aggregate_of< ::Ifc2x3::IfcSectionReinforcementProperties >::ptr v6_ReinforcementSectionDefinitions);
     typedef aggregate_of< IfcReinforcementDefinitionProperties > list;
 };
@@ -15619,7 +15619,7 @@ class IFC_PARSE_API IfcRelationship : public  IfcRoot {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRelationship (IfcEntityInstanceData* e);
+    IfcRelationship (IfcEntityInstanceData&& e);
     IfcRelationship (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description);
     typedef aggregate_of< IfcRelationship > list;
 };
@@ -15667,7 +15667,7 @@ public:
     void setRoundingRadius(double v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRoundedRectangleProfileDef (IfcEntityInstanceData* e);
+    IfcRoundedRectangleProfileDef (IfcEntityInstanceData&& e);
     IfcRoundedRectangleProfileDef (::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, boost::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D* v3_Position, double v4_XDim, double v5_YDim, double v6_RoundingRadius);
     typedef aggregate_of< IfcRoundedRectangleProfileDef > list;
 };
@@ -15737,7 +15737,7 @@ public:
     void setCrossSectionPositions(aggregate_of< ::Ifc2x3::IfcAxis2Placement3D >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcSectionedSpine (IfcEntityInstanceData* e);
+    IfcSectionedSpine (IfcEntityInstanceData&& e);
     IfcSectionedSpine (::Ifc2x3::IfcCompositeCurve* v1_SpineCurve, aggregate_of< ::Ifc2x3::IfcProfileDef >::ptr v2_CrossSections, aggregate_of< ::Ifc2x3::IfcAxis2Placement3D >::ptr v3_CrossSectionPositions);
     typedef aggregate_of< IfcSectionedSpine > list;
 };
@@ -15754,7 +15754,7 @@ public:
     void setLowerValue(::Ifc2x3::IfcMeasureValue* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcServiceLifeFactor (IfcEntityInstanceData* e);
+    IfcServiceLifeFactor (IfcEntityInstanceData&& e);
     IfcServiceLifeFactor (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcServiceLifeFactorTypeEnum::Value v5_PredefinedType, ::Ifc2x3::IfcMeasureValue* v6_UpperValue, ::Ifc2x3::IfcMeasureValue* v7_MostUsedValue, ::Ifc2x3::IfcMeasureValue* v8_LowerValue);
     typedef aggregate_of< IfcServiceLifeFactor > list;
 };
@@ -15776,7 +15776,7 @@ public:
     void setSbsmBoundary(aggregate_of< ::Ifc2x3::IfcShell >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcShellBasedSurfaceModel (IfcEntityInstanceData* e);
+    IfcShellBasedSurfaceModel (IfcEntityInstanceData&& e);
     IfcShellBasedSurfaceModel (aggregate_of< ::Ifc2x3::IfcShell >::ptr v1_SbsmBoundary);
     typedef aggregate_of< IfcShellBasedSurfaceModel > list;
 };
@@ -15802,7 +15802,7 @@ public:
     void setSlippageZ(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcSlippageConnectionCondition (IfcEntityInstanceData* e);
+    IfcSlippageConnectionCondition (IfcEntityInstanceData&& e);
     IfcSlippageConnectionCondition (boost::optional< std::string > v1_Name, boost::optional< double > v2_SlippageX, boost::optional< double > v3_SlippageY, boost::optional< double > v4_SlippageZ);
     typedef aggregate_of< IfcSlippageConnectionCondition > list;
 };
@@ -15815,7 +15815,7 @@ class IFC_PARSE_API IfcSolidModel : public  IfcGeometricRepresentationItem, publ
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcSolidModel (IfcEntityInstanceData* e);
+    IfcSolidModel (IfcEntityInstanceData&& e);
     IfcSolidModel ();
     typedef aggregate_of< IfcSolidModel > list;
 };
@@ -15830,7 +15830,7 @@ public:
     void setSoundValues(aggregate_of< ::Ifc2x3::IfcSoundValue >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcSoundProperties (IfcEntityInstanceData* e);
+    IfcSoundProperties (IfcEntityInstanceData&& e);
     IfcSoundProperties (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, bool v5_IsAttenuating, boost::optional< ::Ifc2x3::IfcSoundScaleEnum::Value > v6_SoundScale, aggregate_of< ::Ifc2x3::IfcSoundValue >::ptr v7_SoundValues);
     typedef aggregate_of< IfcSoundProperties > list;
 };
@@ -15845,7 +15845,7 @@ public:
     void setSoundLevelSingleValue(::Ifc2x3::IfcDerivedMeasureValue* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcSoundValue (IfcEntityInstanceData* e);
+    IfcSoundValue (IfcEntityInstanceData&& e);
     IfcSoundValue (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcTimeSeries* v5_SoundLevelTimeSeries, double v6_Frequency, ::Ifc2x3::IfcDerivedMeasureValue* v7_SoundLevelSingleValue);
     typedef aggregate_of< IfcSoundValue > list;
 };
@@ -15874,7 +15874,7 @@ public:
     void setThermalLoadType(::Ifc2x3::IfcThermalLoadTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcSpaceThermalLoadProperties (IfcEntityInstanceData* e);
+    IfcSpaceThermalLoadProperties (IfcEntityInstanceData&& e);
     IfcSpaceThermalLoadProperties (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< double > v5_ApplicableValueRatio, ::Ifc2x3::IfcThermalLoadSourceEnum::Value v6_ThermalLoadSource, ::Ifc2x3::IfcPropertySourceEnum::Value v7_PropertySource, boost::optional< std::string > v8_SourceDescription, double v9_MaximumValue, boost::optional< double > v10_MinimumValue, ::Ifc2x3::IfcTimeSeries* v11_ThermalLoadTimeSeriesValues, boost::optional< std::string > v12_UserDefinedThermalLoadSource, boost::optional< std::string > v13_UserDefinedPropertySource, ::Ifc2x3::IfcThermalLoadTypeEnum::Value v14_ThermalLoadType);
     typedef aggregate_of< IfcSpaceThermalLoadProperties > list;
 };
@@ -15905,7 +15905,7 @@ public:
     void setLinearMomentZ(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcStructuralLoadLinearForce (IfcEntityInstanceData* e);
+    IfcStructuralLoadLinearForce (IfcEntityInstanceData&& e);
     IfcStructuralLoadLinearForce (boost::optional< std::string > v1_Name, boost::optional< double > v2_LinearForceX, boost::optional< double > v3_LinearForceY, boost::optional< double > v4_LinearForceZ, boost::optional< double > v5_LinearMomentX, boost::optional< double > v6_LinearMomentY, boost::optional< double > v7_LinearMomentZ);
     typedef aggregate_of< IfcStructuralLoadLinearForce > list;
 };
@@ -15927,7 +15927,7 @@ public:
     void setPlanarForceZ(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcStructuralLoadPlanarForce (IfcEntityInstanceData* e);
+    IfcStructuralLoadPlanarForce (IfcEntityInstanceData&& e);
     IfcStructuralLoadPlanarForce (boost::optional< std::string > v1_Name, boost::optional< double > v2_PlanarForceX, boost::optional< double > v3_PlanarForceY, boost::optional< double > v4_PlanarForceZ);
     typedef aggregate_of< IfcStructuralLoadPlanarForce > list;
 };
@@ -15958,7 +15958,7 @@ public:
     void setRotationalDisplacementRZ(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcStructuralLoadSingleDisplacement (IfcEntityInstanceData* e);
+    IfcStructuralLoadSingleDisplacement (IfcEntityInstanceData&& e);
     IfcStructuralLoadSingleDisplacement (boost::optional< std::string > v1_Name, boost::optional< double > v2_DisplacementX, boost::optional< double > v3_DisplacementY, boost::optional< double > v4_DisplacementZ, boost::optional< double > v5_RotationalDisplacementRX, boost::optional< double > v6_RotationalDisplacementRY, boost::optional< double > v7_RotationalDisplacementRZ);
     typedef aggregate_of< IfcStructuralLoadSingleDisplacement > list;
 };
@@ -15972,7 +15972,7 @@ public:
     void setDistortion(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcStructuralLoadSingleDisplacementDistortion (IfcEntityInstanceData* e);
+    IfcStructuralLoadSingleDisplacementDistortion (IfcEntityInstanceData&& e);
     IfcStructuralLoadSingleDisplacementDistortion (boost::optional< std::string > v1_Name, boost::optional< double > v2_DisplacementX, boost::optional< double > v3_DisplacementY, boost::optional< double > v4_DisplacementZ, boost::optional< double > v5_RotationalDisplacementRX, boost::optional< double > v6_RotationalDisplacementRY, boost::optional< double > v7_RotationalDisplacementRZ, boost::optional< double > v8_Distortion);
     typedef aggregate_of< IfcStructuralLoadSingleDisplacementDistortion > list;
 };
@@ -16004,7 +16004,7 @@ public:
     void setMomentZ(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcStructuralLoadSingleForce (IfcEntityInstanceData* e);
+    IfcStructuralLoadSingleForce (IfcEntityInstanceData&& e);
     IfcStructuralLoadSingleForce (boost::optional< std::string > v1_Name, boost::optional< double > v2_ForceX, boost::optional< double > v3_ForceY, boost::optional< double > v4_ForceZ, boost::optional< double > v5_MomentX, boost::optional< double > v6_MomentY, boost::optional< double > v7_MomentZ);
     typedef aggregate_of< IfcStructuralLoadSingleForce > list;
 };
@@ -16023,7 +16023,7 @@ public:
     void setWarpingMoment(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcStructuralLoadSingleForceWarping (IfcEntityInstanceData* e);
+    IfcStructuralLoadSingleForceWarping (IfcEntityInstanceData&& e);
     IfcStructuralLoadSingleForceWarping (boost::optional< std::string > v1_Name, boost::optional< double > v2_ForceX, boost::optional< double > v3_ForceY, boost::optional< double > v4_ForceZ, boost::optional< double > v5_MomentX, boost::optional< double > v6_MomentY, boost::optional< double > v7_MomentZ, boost::optional< double > v8_WarpingMoment);
     typedef aggregate_of< IfcStructuralLoadSingleForceWarping > list;
 };
@@ -16064,7 +16064,7 @@ public:
     void setCentreOfGravityInY(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcStructuralProfileProperties (IfcEntityInstanceData* e);
+    IfcStructuralProfileProperties (IfcEntityInstanceData&& e);
     IfcStructuralProfileProperties (boost::optional< std::string > v1_ProfileName, ::Ifc2x3::IfcProfileDef* v2_ProfileDefinition, boost::optional< double > v3_PhysicalWeight, boost::optional< double > v4_Perimeter, boost::optional< double > v5_MinimumPlateThickness, boost::optional< double > v6_MaximumPlateThickness, boost::optional< double > v7_CrossSectionArea, boost::optional< double > v8_TorsionalConstantX, boost::optional< double > v9_MomentOfInertiaYZ, boost::optional< double > v10_MomentOfInertiaY, boost::optional< double > v11_MomentOfInertiaZ, boost::optional< double > v12_WarpingConstant, boost::optional< double > v13_ShearCentreZ, boost::optional< double > v14_ShearCentreY, boost::optional< double > v15_ShearDeformationAreaZ, boost::optional< double > v16_ShearDeformationAreaY, boost::optional< double > v17_MaximumSectionModulusY, boost::optional< double > v18_MinimumSectionModulusY, boost::optional< double > v19_MaximumSectionModulusZ, boost::optional< double > v20_MinimumSectionModulusZ, boost::optional< double > v21_TorsionalSectionModulus, boost::optional< double > v22_CentreOfGravityInX, boost::optional< double > v23_CentreOfGravityInY);
     typedef aggregate_of< IfcStructuralProfileProperties > list;
 };
@@ -16081,7 +16081,7 @@ public:
     void setPlasticShapeFactorZ(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcStructuralSteelProfileProperties (IfcEntityInstanceData* e);
+    IfcStructuralSteelProfileProperties (IfcEntityInstanceData&& e);
     IfcStructuralSteelProfileProperties (boost::optional< std::string > v1_ProfileName, ::Ifc2x3::IfcProfileDef* v2_ProfileDefinition, boost::optional< double > v3_PhysicalWeight, boost::optional< double > v4_Perimeter, boost::optional< double > v5_MinimumPlateThickness, boost::optional< double > v6_MaximumPlateThickness, boost::optional< double > v7_CrossSectionArea, boost::optional< double > v8_TorsionalConstantX, boost::optional< double > v9_MomentOfInertiaYZ, boost::optional< double > v10_MomentOfInertiaY, boost::optional< double > v11_MomentOfInertiaZ, boost::optional< double > v12_WarpingConstant, boost::optional< double > v13_ShearCentreZ, boost::optional< double > v14_ShearCentreY, boost::optional< double > v15_ShearDeformationAreaZ, boost::optional< double > v16_ShearDeformationAreaY, boost::optional< double > v17_MaximumSectionModulusY, boost::optional< double > v18_MinimumSectionModulusY, boost::optional< double > v19_MaximumSectionModulusZ, boost::optional< double > v20_MinimumSectionModulusZ, boost::optional< double > v21_TorsionalSectionModulus, boost::optional< double > v22_CentreOfGravityInX, boost::optional< double > v23_CentreOfGravityInY, boost::optional< double > v24_ShearAreaZ, boost::optional< double > v25_ShearAreaY, boost::optional< double > v26_PlasticShapeFactorY, boost::optional< double > v27_PlasticShapeFactorZ);
     typedef aggregate_of< IfcStructuralSteelProfileProperties > list;
 };
@@ -16102,7 +16102,7 @@ public:
     void setParentEdge(::Ifc2x3::IfcEdge* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcSubedge (IfcEntityInstanceData* e);
+    IfcSubedge (IfcEntityInstanceData&& e);
     IfcSubedge (::Ifc2x3::IfcVertex* v1_EdgeStart, ::Ifc2x3::IfcVertex* v2_EdgeEnd, ::Ifc2x3::IfcEdge* v3_ParentEdge);
     typedef aggregate_of< IfcSubedge > list;
 };
@@ -16120,7 +16120,7 @@ class IFC_PARSE_API IfcSurface : public  IfcGeometricRepresentationItem, public 
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcSurface (IfcEntityInstanceData* e);
+    IfcSurface (IfcEntityInstanceData&& e);
     IfcSurface ();
     typedef aggregate_of< IfcSurface > list;
 };
@@ -16208,7 +16208,7 @@ public:
     void setReflectanceMethod(::Ifc2x3::IfcReflectanceMethodEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcSurfaceStyleRendering (IfcEntityInstanceData* e);
+    IfcSurfaceStyleRendering (IfcEntityInstanceData&& e);
     IfcSurfaceStyleRendering (::Ifc2x3::IfcColourRgb* v1_SurfaceColour, boost::optional< double > v2_Transparency, ::Ifc2x3::IfcColourOrFactor* v3_DiffuseColour, ::Ifc2x3::IfcColourOrFactor* v4_TransmissionColour, ::Ifc2x3::IfcColourOrFactor* v5_DiffuseTransmissionColour, ::Ifc2x3::IfcColourOrFactor* v6_ReflectionColour, ::Ifc2x3::IfcColourOrFactor* v7_SpecularColour, ::Ifc2x3::IfcSpecularHighlightSelect* v8_SpecularHighlight, ::Ifc2x3::IfcReflectanceMethodEnum::Value v9_ReflectanceMethod);
     typedef aggregate_of< IfcSurfaceStyleRendering > list;
 };
@@ -16240,7 +16240,7 @@ public:
     void setPosition(::Ifc2x3::IfcAxis2Placement3D* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcSweptAreaSolid (IfcEntityInstanceData* e);
+    IfcSweptAreaSolid (IfcEntityInstanceData&& e);
     IfcSweptAreaSolid (::Ifc2x3::IfcProfileDef* v1_SweptArea, ::Ifc2x3::IfcAxis2Placement3D* v2_Position);
     typedef aggregate_of< IfcSweptAreaSolid > list;
 };
@@ -16320,7 +16320,7 @@ public:
     void setEndParam(double v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcSweptDiskSolid (IfcEntityInstanceData* e);
+    IfcSweptDiskSolid (IfcEntityInstanceData&& e);
     IfcSweptDiskSolid (::Ifc2x3::IfcCurve* v1_Directrix, double v2_Radius, boost::optional< double > v3_InnerRadius, double v4_StartParam, double v5_EndParam);
     typedef aggregate_of< IfcSweptDiskSolid > list;
 };
@@ -16339,7 +16339,7 @@ public:
     void setPosition(::Ifc2x3::IfcAxis2Placement3D* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcSweptSurface (IfcEntityInstanceData* e);
+    IfcSweptSurface (IfcEntityInstanceData&& e);
     IfcSweptSurface (::Ifc2x3::IfcProfileDef* v1_SweptCurve, ::Ifc2x3::IfcAxis2Placement3D* v2_Position);
     typedef aggregate_of< IfcSweptSurface > list;
 };
@@ -16404,7 +16404,7 @@ public:
     void setCentreOfGravityInY(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcTShapeProfileDef (IfcEntityInstanceData* e);
+    IfcTShapeProfileDef (IfcEntityInstanceData&& e);
     IfcTShapeProfileDef (::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, boost::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D* v3_Position, double v4_Depth, double v5_FlangeWidth, double v6_WebThickness, double v7_FlangeThickness, boost::optional< double > v8_FilletRadius, boost::optional< double > v9_FlangeEdgeRadius, boost::optional< double > v10_WebEdgeRadius, boost::optional< double > v11_WebSlope, boost::optional< double > v12_FlangeSlope, boost::optional< double > v13_CentreOfGravityInY);
     typedef aggregate_of< IfcTShapeProfileDef > list;
 };
@@ -16415,7 +16415,7 @@ public:
     void setAnnotatedCurve(::Ifc2x3::IfcAnnotationCurveOccurrence* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcTerminatorSymbol (IfcEntityInstanceData* e);
+    IfcTerminatorSymbol (IfcEntityInstanceData&& e);
     IfcTerminatorSymbol (::Ifc2x3::IfcRepresentationItem* v1_Item, aggregate_of< ::Ifc2x3::IfcPresentationStyleAssignment >::ptr v2_Styles, boost::optional< std::string > v3_Name, ::Ifc2x3::IfcAnnotationCurveOccurrence* v4_AnnotatedCurve);
     typedef aggregate_of< IfcTerminatorSymbol > list;
 };
@@ -16443,7 +16443,7 @@ public:
     void setPath(::Ifc2x3::IfcTextPath::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcTextLiteral (IfcEntityInstanceData* e);
+    IfcTextLiteral (IfcEntityInstanceData&& e);
     IfcTextLiteral (std::string v1_Literal, ::Ifc2x3::IfcAxis2Placement* v2_Placement, ::Ifc2x3::IfcTextPath::Value v3_Path);
     typedef aggregate_of< IfcTextLiteral > list;
 };
@@ -16466,7 +16466,7 @@ public:
     void setBoxAlignment(std::string v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcTextLiteralWithExtent (IfcEntityInstanceData* e);
+    IfcTextLiteralWithExtent (IfcEntityInstanceData&& e);
     IfcTextLiteralWithExtent (std::string v1_Literal, ::Ifc2x3::IfcAxis2Placement* v2_Placement, ::Ifc2x3::IfcTextPath::Value v3_Path, ::Ifc2x3::IfcPlanarExtent* v4_Extent, std::string v5_BoxAlignment);
     typedef aggregate_of< IfcTextLiteralWithExtent > list;
 };
@@ -16524,7 +16524,7 @@ public:
     void setTopXOffset(double v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcTrapeziumProfileDef (IfcEntityInstanceData* e);
+    IfcTrapeziumProfileDef (IfcEntityInstanceData&& e);
     IfcTrapeziumProfileDef (::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, boost::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D* v3_Position, double v4_BottomXDim, double v5_TopXDim, double v6_YDim, double v7_TopXOffset);
     typedef aggregate_of< IfcTrapeziumProfileDef > list;
 };
@@ -16543,7 +16543,7 @@ public:
     void setSecondRepeatFactor(::Ifc2x3::IfcVector* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcTwoDirectionRepeatFactor (IfcEntityInstanceData* e);
+    IfcTwoDirectionRepeatFactor (IfcEntityInstanceData&& e);
     IfcTwoDirectionRepeatFactor (::Ifc2x3::IfcVector* v1_RepeatFactor, ::Ifc2x3::IfcVector* v2_SecondRepeatFactor);
     typedef aggregate_of< IfcTwoDirectionRepeatFactor > list;
 };
@@ -16597,7 +16597,7 @@ public:
         aggregate_of< IfcRelDefinesByType >::ptr ObjectTypeOf() const; // INVERSE IfcRelDefinesByType::RelatingType
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcTypeObject (IfcEntityInstanceData* e);
+    IfcTypeObject (IfcEntityInstanceData&& e);
     IfcTypeObject (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets);
     typedef aggregate_of< IfcTypeObject > list;
 };
@@ -16677,7 +16677,7 @@ public:
     void setTag(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcTypeProduct (IfcEntityInstanceData* e);
+    IfcTypeProduct (IfcEntityInstanceData&& e);
     IfcTypeProduct (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag);
     typedef aggregate_of< IfcTypeProduct > list;
 };
@@ -16736,7 +16736,7 @@ public:
     void setCentreOfGravityInX(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcUShapeProfileDef (IfcEntityInstanceData* e);
+    IfcUShapeProfileDef (IfcEntityInstanceData&& e);
     IfcUShapeProfileDef (::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, boost::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D* v3_Position, double v4_Depth, double v5_FlangeWidth, double v6_WebThickness, double v7_FlangeThickness, boost::optional< double > v8_FilletRadius, boost::optional< double > v9_EdgeRadius, boost::optional< double > v10_FlangeSlope, boost::optional< double > v11_CentreOfGravityInX);
     typedef aggregate_of< IfcUShapeProfileDef > list;
 };
@@ -16757,7 +16757,7 @@ public:
     void setMagnitude(double v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcVector (IfcEntityInstanceData* e);
+    IfcVector (IfcEntityInstanceData&& e);
     IfcVector (::Ifc2x3::IfcDirection* v1_Orientation, double v2_Magnitude);
     typedef aggregate_of< IfcVector > list;
 };
@@ -16780,7 +16780,7 @@ public:
     void setLoopVertex(::Ifc2x3::IfcVertex* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcVertexLoop (IfcEntityInstanceData* e);
+    IfcVertexLoop (IfcEntityInstanceData&& e);
     IfcVertexLoop (::Ifc2x3::IfcVertex* v1_LoopVertex);
     typedef aggregate_of< IfcVertexLoop > list;
 };
@@ -16915,7 +16915,7 @@ public:
     void setShapeAspectStyle(::Ifc2x3::IfcShapeAspect* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcWindowLiningProperties (IfcEntityInstanceData* e);
+    IfcWindowLiningProperties (IfcEntityInstanceData&& e);
     IfcWindowLiningProperties (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< double > v5_LiningDepth, boost::optional< double > v6_LiningThickness, boost::optional< double > v7_TransomThickness, boost::optional< double > v8_MullionThickness, boost::optional< double > v9_FirstTransomOffset, boost::optional< double > v10_SecondTransomOffset, boost::optional< double > v11_FirstMullionOffset, boost::optional< double > v12_SecondMullionOffset, ::Ifc2x3::IfcShapeAspect* v13_ShapeAspectStyle);
     typedef aggregate_of< IfcWindowLiningProperties > list;
 };
@@ -16985,7 +16985,7 @@ public:
     void setShapeAspectStyle(::Ifc2x3::IfcShapeAspect* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcWindowPanelProperties (IfcEntityInstanceData* e);
+    IfcWindowPanelProperties (IfcEntityInstanceData&& e);
     IfcWindowPanelProperties (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcWindowPanelOperationEnum::Value v5_OperationType, ::Ifc2x3::IfcWindowPanelPositionEnum::Value v6_PanelPosition, boost::optional< double > v7_FrameDepth, boost::optional< double > v8_FrameThickness, ::Ifc2x3::IfcShapeAspect* v9_ShapeAspectStyle);
     typedef aggregate_of< IfcWindowPanelProperties > list;
 };
@@ -17023,7 +17023,7 @@ public:
     void setSizeable(bool v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcWindowStyle (IfcEntityInstanceData* e);
+    IfcWindowStyle (IfcEntityInstanceData&& e);
     IfcWindowStyle (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, ::Ifc2x3::IfcWindowStyleConstructionEnum::Value v9_ConstructionType, ::Ifc2x3::IfcWindowStyleOperationEnum::Value v10_OperationType, bool v11_ParameterTakesPrecedence, bool v12_Sizeable);
     typedef aggregate_of< IfcWindowStyle > list;
 };
@@ -17074,7 +17074,7 @@ public:
     void setEdgeRadius(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcZShapeProfileDef (IfcEntityInstanceData* e);
+    IfcZShapeProfileDef (IfcEntityInstanceData&& e);
     IfcZShapeProfileDef (::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, boost::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D* v3_Position, double v4_Depth, double v5_FlangeWidth, double v6_WebThickness, double v7_FlangeThickness, boost::optional< double > v8_FilletRadius, boost::optional< double > v9_EdgeRadius);
     typedef aggregate_of< IfcZShapeProfileDef > list;
 };
@@ -17083,7 +17083,7 @@ class IFC_PARSE_API IfcAnnotationCurveOccurrence : public  IfcAnnotationOccurren
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcAnnotationCurveOccurrence (IfcEntityInstanceData* e);
+    IfcAnnotationCurveOccurrence (IfcEntityInstanceData&& e);
     IfcAnnotationCurveOccurrence (::Ifc2x3::IfcRepresentationItem* v1_Item, aggregate_of< ::Ifc2x3::IfcPresentationStyleAssignment >::ptr v2_Styles, boost::optional< std::string > v3_Name);
     typedef aggregate_of< IfcAnnotationCurveOccurrence > list;
 };
@@ -17121,7 +17121,7 @@ public:
     void setInnerBoundaries(boost::optional< aggregate_of< ::Ifc2x3::IfcCurve >::ptr > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcAnnotationFillArea (IfcEntityInstanceData* e);
+    IfcAnnotationFillArea (IfcEntityInstanceData&& e);
     IfcAnnotationFillArea (::Ifc2x3::IfcCurve* v1_OuterBoundary, boost::optional< aggregate_of< ::Ifc2x3::IfcCurve >::ptr > v2_InnerBoundaries);
     typedef aggregate_of< IfcAnnotationFillArea > list;
 };
@@ -17134,7 +17134,7 @@ public:
     void setGlobalOrLocal(boost::optional< ::Ifc2x3::IfcGlobalOrLocalEnum::Value > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcAnnotationFillAreaOccurrence (IfcEntityInstanceData* e);
+    IfcAnnotationFillAreaOccurrence (IfcEntityInstanceData&& e);
     IfcAnnotationFillAreaOccurrence (::Ifc2x3::IfcRepresentationItem* v1_Item, aggregate_of< ::Ifc2x3::IfcPresentationStyleAssignment >::ptr v2_Styles, boost::optional< std::string > v3_Name, ::Ifc2x3::IfcPoint* v4_FillStyleTarget, boost::optional< ::Ifc2x3::IfcGlobalOrLocalEnum::Value > v5_GlobalOrLocal);
     typedef aggregate_of< IfcAnnotationFillAreaOccurrence > list;
 };
@@ -17147,7 +17147,7 @@ public:
     void setTextureCoordinates(::Ifc2x3::IfcTextureCoordinate* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcAnnotationSurface (IfcEntityInstanceData* e);
+    IfcAnnotationSurface (IfcEntityInstanceData&& e);
     IfcAnnotationSurface (::Ifc2x3::IfcGeometricRepresentationItem* v1_Item, ::Ifc2x3::IfcTextureCoordinate* v2_TextureCoordinates);
     typedef aggregate_of< IfcAnnotationSurface > list;
 };
@@ -17167,7 +17167,7 @@ public:
     void setAxis(::Ifc2x3::IfcDirection* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcAxis1Placement (IfcEntityInstanceData* e);
+    IfcAxis1Placement (IfcEntityInstanceData&& e);
     IfcAxis1Placement (::Ifc2x3::IfcCartesianPoint* v1_Location, ::Ifc2x3::IfcDirection* v2_Axis);
     typedef aggregate_of< IfcAxis1Placement > list;
 };
@@ -17189,7 +17189,7 @@ public:
     void setRefDirection(::Ifc2x3::IfcDirection* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcAxis2Placement2D (IfcEntityInstanceData* e);
+    IfcAxis2Placement2D (IfcEntityInstanceData&& e);
     IfcAxis2Placement2D (::Ifc2x3::IfcCartesianPoint* v1_Location, ::Ifc2x3::IfcDirection* v2_RefDirection);
     typedef aggregate_of< IfcAxis2Placement2D > list;
 };
@@ -17216,7 +17216,7 @@ public:
     void setRefDirection(::Ifc2x3::IfcDirection* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcAxis2Placement3D (IfcEntityInstanceData* e);
+    IfcAxis2Placement3D (IfcEntityInstanceData&& e);
     IfcAxis2Placement3D (::Ifc2x3::IfcCartesianPoint* v1_Location, ::Ifc2x3::IfcDirection* v2_Axis, ::Ifc2x3::IfcDirection* v3_RefDirection);
     typedef aggregate_of< IfcAxis2Placement3D > list;
 };
@@ -17259,7 +17259,7 @@ public:
     void setSecondOperand(::Ifc2x3::IfcBooleanOperand* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcBooleanResult (IfcEntityInstanceData* e);
+    IfcBooleanResult (IfcEntityInstanceData&& e);
     IfcBooleanResult (::Ifc2x3::IfcBooleanOperator::Value v1_Operator, ::Ifc2x3::IfcBooleanOperand* v2_FirstOperand, ::Ifc2x3::IfcBooleanOperand* v3_SecondOperand);
     typedef aggregate_of< IfcBooleanResult > list;
 };
@@ -17279,7 +17279,7 @@ class IFC_PARSE_API IfcBoundedSurface : public  IfcSurface {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcBoundedSurface (IfcEntityInstanceData* e);
+    IfcBoundedSurface (IfcEntityInstanceData&& e);
     IfcBoundedSurface ();
     typedef aggregate_of< IfcBoundedSurface > list;
 };
@@ -17321,7 +17321,7 @@ public:
     void setZDim(double v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcBoundingBox (IfcEntityInstanceData* e);
+    IfcBoundingBox (IfcEntityInstanceData&& e);
     IfcBoundingBox (::Ifc2x3::IfcCartesianPoint* v1_Corner, double v2_XDim, double v3_YDim, double v4_ZDim);
     typedef aggregate_of< IfcBoundingBox > list;
 };
@@ -17362,7 +17362,7 @@ public:
     void setEnclosure(::Ifc2x3::IfcBoundingBox* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcBoxedHalfSpace (IfcEntityInstanceData* e);
+    IfcBoxedHalfSpace (IfcEntityInstanceData&& e);
     IfcBoxedHalfSpace (::Ifc2x3::IfcSurface* v1_BaseSurface, bool v2_AgreementFlag, ::Ifc2x3::IfcBoundingBox* v3_Enclosure);
     typedef aggregate_of< IfcBoxedHalfSpace > list;
 };
@@ -17409,7 +17409,7 @@ public:
     void setCentreOfGravityInX(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcCShapeProfileDef (IfcEntityInstanceData* e);
+    IfcCShapeProfileDef (IfcEntityInstanceData&& e);
     IfcCShapeProfileDef (::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, boost::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D* v3_Position, double v4_Depth, double v5_Width, double v6_WallThickness, double v7_Girth, boost::optional< double > v8_InternalFilletRadius, boost::optional< double > v9_CentreOfGravityInX);
     typedef aggregate_of< IfcCShapeProfileDef > list;
 };
@@ -17427,7 +17427,7 @@ public:
     void setCoordinates(std::vector< double > /*[1:3]*/ v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcCartesianPoint (IfcEntityInstanceData* e);
+    IfcCartesianPoint (IfcEntityInstanceData&& e);
     IfcCartesianPoint (std::vector< double > /*[1:3]*/ v1_Coordinates);
     typedef aggregate_of< IfcCartesianPoint > list;
 };
@@ -17477,7 +17477,7 @@ public:
     void setScale(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcCartesianTransformationOperator (IfcEntityInstanceData* e);
+    IfcCartesianTransformationOperator (IfcEntityInstanceData&& e);
     IfcCartesianTransformationOperator (::Ifc2x3::IfcDirection* v1_Axis1, ::Ifc2x3::IfcDirection* v2_Axis2, ::Ifc2x3::IfcCartesianPoint* v3_LocalOrigin, boost::optional< double > v4_Scale);
     typedef aggregate_of< IfcCartesianTransformationOperator > list;
 };
@@ -17490,7 +17490,7 @@ class IFC_PARSE_API IfcCartesianTransformationOperator2D : public  IfcCartesianT
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcCartesianTransformationOperator2D (IfcEntityInstanceData* e);
+    IfcCartesianTransformationOperator2D (IfcEntityInstanceData&& e);
     IfcCartesianTransformationOperator2D (::Ifc2x3::IfcDirection* v1_Axis1, ::Ifc2x3::IfcDirection* v2_Axis2, ::Ifc2x3::IfcCartesianPoint* v3_LocalOrigin, boost::optional< double > v4_Scale);
     typedef aggregate_of< IfcCartesianTransformationOperator2D > list;
 };
@@ -17511,7 +17511,7 @@ public:
     void setScale2(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcCartesianTransformationOperator2DnonUniform (IfcEntityInstanceData* e);
+    IfcCartesianTransformationOperator2DnonUniform (IfcEntityInstanceData&& e);
     IfcCartesianTransformationOperator2DnonUniform (::Ifc2x3::IfcDirection* v1_Axis1, ::Ifc2x3::IfcDirection* v2_Axis2, ::Ifc2x3::IfcCartesianPoint* v3_LocalOrigin, boost::optional< double > v4_Scale, boost::optional< double > v5_Scale2);
     typedef aggregate_of< IfcCartesianTransformationOperator2DnonUniform > list;
 };
@@ -17527,7 +17527,7 @@ public:
     void setAxis3(::Ifc2x3::IfcDirection* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcCartesianTransformationOperator3D (IfcEntityInstanceData* e);
+    IfcCartesianTransformationOperator3D (IfcEntityInstanceData&& e);
     IfcCartesianTransformationOperator3D (::Ifc2x3::IfcDirection* v1_Axis1, ::Ifc2x3::IfcDirection* v2_Axis2, ::Ifc2x3::IfcCartesianPoint* v3_LocalOrigin, boost::optional< double > v4_Scale, ::Ifc2x3::IfcDirection* v5_Axis3);
     typedef aggregate_of< IfcCartesianTransformationOperator3D > list;
 };
@@ -17552,7 +17552,7 @@ public:
     void setScale3(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcCartesianTransformationOperator3DnonUniform (IfcEntityInstanceData* e);
+    IfcCartesianTransformationOperator3DnonUniform (IfcEntityInstanceData&& e);
     IfcCartesianTransformationOperator3DnonUniform (::Ifc2x3::IfcDirection* v1_Axis1, ::Ifc2x3::IfcDirection* v2_Axis2, ::Ifc2x3::IfcCartesianPoint* v3_LocalOrigin, boost::optional< double > v4_Scale, ::Ifc2x3::IfcDirection* v5_Axis3, boost::optional< double > v6_Scale2, boost::optional< double > v7_Scale3);
     typedef aggregate_of< IfcCartesianTransformationOperator3DnonUniform > list;
 };
@@ -17575,7 +17575,7 @@ public:
     void setRadius(double v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcCircleProfileDef (IfcEntityInstanceData* e);
+    IfcCircleProfileDef (IfcEntityInstanceData&& e);
     IfcCircleProfileDef (::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, boost::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D* v3_Position, double v4_Radius);
     typedef aggregate_of< IfcCircleProfileDef > list;
 };
@@ -17632,7 +17632,7 @@ class IFC_PARSE_API IfcClosedShell : public  IfcConnectedFaceSet, public  IfcShe
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcClosedShell (IfcEntityInstanceData* e);
+    IfcClosedShell (IfcEntityInstanceData&& e);
     IfcClosedShell (aggregate_of< ::Ifc2x3::IfcFace >::ptr v1_CfsFaces);
     typedef aggregate_of< IfcClosedShell > list;
 };
@@ -17659,7 +17659,7 @@ public:
         aggregate_of< IfcCompositeCurve >::ptr UsingCurves() const; // INVERSE IfcCompositeCurve::Segments
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcCompositeCurveSegment (IfcEntityInstanceData* e);
+    IfcCompositeCurveSegment (IfcEntityInstanceData&& e);
     IfcCompositeCurveSegment (::Ifc2x3::IfcTransitionCode::Value v1_Transition, bool v2_SameSense, ::Ifc2x3::IfcCurve* v3_ParentCurve);
     typedef aggregate_of< IfcCompositeCurveSegment > list;
 };
@@ -17692,7 +17692,7 @@ public:
     void setCentreOfGravityInY(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcCraneRailAShapeProfileDef (IfcEntityInstanceData* e);
+    IfcCraneRailAShapeProfileDef (IfcEntityInstanceData&& e);
     IfcCraneRailAShapeProfileDef (::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, boost::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D* v3_Position, double v4_OverallHeight, double v5_BaseWidth2, boost::optional< double > v6_Radius, double v7_HeadWidth, double v8_HeadDepth2, double v9_HeadDepth3, double v10_WebThickness, double v11_BaseWidth4, double v12_BaseDepth1, double v13_BaseDepth2, double v14_BaseDepth3, boost::optional< double > v15_CentreOfGravityInY);
     typedef aggregate_of< IfcCraneRailAShapeProfileDef > list;
 };
@@ -17719,7 +17719,7 @@ public:
     void setCentreOfGravityInY(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcCraneRailFShapeProfileDef (IfcEntityInstanceData* e);
+    IfcCraneRailFShapeProfileDef (IfcEntityInstanceData&& e);
     IfcCraneRailFShapeProfileDef (::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, boost::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D* v3_Position, double v4_OverallHeight, double v5_HeadWidth, boost::optional< double > v6_Radius, double v7_HeadDepth2, double v8_HeadDepth3, double v9_WebThickness, double v10_BaseDepth1, double v11_BaseDepth2, boost::optional< double > v12_CentreOfGravityInY);
     typedef aggregate_of< IfcCraneRailFShapeProfileDef > list;
 };
@@ -17735,7 +17735,7 @@ public:
     void setPosition(::Ifc2x3::IfcAxis2Placement3D* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcCsgPrimitive3D (IfcEntityInstanceData* e);
+    IfcCsgPrimitive3D (IfcEntityInstanceData&& e);
     IfcCsgPrimitive3D (::Ifc2x3::IfcAxis2Placement3D* v1_Position);
     typedef aggregate_of< IfcCsgPrimitive3D > list;
 };
@@ -17787,7 +17787,7 @@ public:
     void setTreeRootExpression(::Ifc2x3::IfcCsgSelect* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcCsgSolid (IfcEntityInstanceData* e);
+    IfcCsgSolid (IfcEntityInstanceData&& e);
     IfcCsgSolid (::Ifc2x3::IfcCsgSelect* v1_TreeRootExpression);
     typedef aggregate_of< IfcCsgSolid > list;
 };
@@ -17805,7 +17805,7 @@ class IFC_PARSE_API IfcCurve : public  IfcGeometricRepresentationItem, public  I
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcCurve (IfcEntityInstanceData* e);
+    IfcCurve (IfcEntityInstanceData&& e);
     IfcCurve ();
     typedef aggregate_of< IfcCurve > list;
 };
@@ -17835,7 +17835,7 @@ public:
     void setInnerBoundaries(aggregate_of< ::Ifc2x3::IfcCurve >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcCurveBoundedPlane (IfcEntityInstanceData* e);
+    IfcCurveBoundedPlane (IfcEntityInstanceData&& e);
     IfcCurveBoundedPlane (::Ifc2x3::IfcPlane* v1_BasisSurface, ::Ifc2x3::IfcCurve* v2_OuterBoundary, aggregate_of< ::Ifc2x3::IfcCurve >::ptr v3_InnerBoundaries);
     typedef aggregate_of< IfcCurveBoundedPlane > list;
 };
@@ -17856,7 +17856,7 @@ public:
     void setTarget(::Ifc2x3::IfcCartesianTransformationOperator2D* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcDefinedSymbol (IfcEntityInstanceData* e);
+    IfcDefinedSymbol (IfcEntityInstanceData&& e);
     IfcDefinedSymbol (::Ifc2x3::IfcDefinedSymbolSelect* v1_Definition, ::Ifc2x3::IfcCartesianTransformationOperator2D* v2_Target);
     typedef aggregate_of< IfcDefinedSymbol > list;
 };
@@ -17866,7 +17866,7 @@ public:
         aggregate_of< IfcTerminatorSymbol >::ptr AnnotatedBySymbols() const; // INVERSE IfcTerminatorSymbol::AnnotatedCurve
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcDimensionCurve (IfcEntityInstanceData* e);
+    IfcDimensionCurve (IfcEntityInstanceData&& e);
     IfcDimensionCurve (::Ifc2x3::IfcRepresentationItem* v1_Item, aggregate_of< ::Ifc2x3::IfcPresentationStyleAssignment >::ptr v2_Styles, boost::optional< std::string > v3_Name);
     typedef aggregate_of< IfcDimensionCurve > list;
 };
@@ -17877,7 +17877,7 @@ public:
     void setRole(::Ifc2x3::IfcDimensionExtentUsage::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcDimensionCurveTerminator (IfcEntityInstanceData* e);
+    IfcDimensionCurveTerminator (IfcEntityInstanceData&& e);
     IfcDimensionCurveTerminator (::Ifc2x3::IfcRepresentationItem* v1_Item, aggregate_of< ::Ifc2x3::IfcPresentationStyleAssignment >::ptr v2_Styles, boost::optional< std::string > v3_Name, ::Ifc2x3::IfcAnnotationCurveOccurrence* v4_AnnotatedCurve, ::Ifc2x3::IfcDimensionExtentUsage::Value v5_Role);
     typedef aggregate_of< IfcDimensionCurveTerminator > list;
 };
@@ -17895,7 +17895,7 @@ public:
     void setDirectionRatios(std::vector< double > /*[2:3]*/ v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcDirection (IfcEntityInstanceData* e);
+    IfcDirection (IfcEntityInstanceData&& e);
     IfcDirection (std::vector< double > /*[2:3]*/ v1_DirectionRatios);
     typedef aggregate_of< IfcDirection > list;
 };
@@ -18033,7 +18033,7 @@ public:
     void setShapeAspectStyle(::Ifc2x3::IfcShapeAspect* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcDoorLiningProperties (IfcEntityInstanceData* e);
+    IfcDoorLiningProperties (IfcEntityInstanceData&& e);
     IfcDoorLiningProperties (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< double > v5_LiningDepth, boost::optional< double > v6_LiningThickness, boost::optional< double > v7_ThresholdDepth, boost::optional< double > v8_ThresholdThickness, boost::optional< double > v9_TransomThickness, boost::optional< double > v10_TransomOffset, boost::optional< double > v11_LiningOffset, boost::optional< double > v12_ThresholdOffset, boost::optional< double > v13_CasingThickness, boost::optional< double > v14_CasingDepth, ::Ifc2x3::IfcShapeAspect* v15_ShapeAspectStyle);
     typedef aggregate_of< IfcDoorLiningProperties > list;
 };
@@ -18103,7 +18103,7 @@ public:
     void setShapeAspectStyle(::Ifc2x3::IfcShapeAspect* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcDoorPanelProperties (IfcEntityInstanceData* e);
+    IfcDoorPanelProperties (IfcEntityInstanceData&& e);
     IfcDoorPanelProperties (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< double > v5_PanelDepth, ::Ifc2x3::IfcDoorPanelOperationEnum::Value v6_PanelOperation, boost::optional< double > v7_PanelWidth, ::Ifc2x3::IfcDoorPanelPositionEnum::Value v8_PanelPosition, ::Ifc2x3::IfcShapeAspect* v9_ShapeAspectStyle);
     typedef aggregate_of< IfcDoorPanelProperties > list;
 };
@@ -18149,7 +18149,7 @@ public:
     void setSizeable(bool v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcDoorStyle (IfcEntityInstanceData* e);
+    IfcDoorStyle (IfcEntityInstanceData&& e);
     IfcDoorStyle (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, ::Ifc2x3::IfcDoorStyleOperationEnum::Value v9_OperationType, ::Ifc2x3::IfcDoorStyleConstructionEnum::Value v10_ConstructionType, bool v11_ParameterTakesPrecedence, bool v12_Sizeable);
     typedef aggregate_of< IfcDoorStyle > list;
 };
@@ -18162,7 +18162,7 @@ public:
     aggregate_of< IfcDraughtingCalloutRelationship >::ptr IsRelatedToCallout() const; // INVERSE IfcDraughtingCalloutRelationship::RelatingDraughtingCallout
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcDraughtingCallout (IfcEntityInstanceData* e);
+    IfcDraughtingCallout (IfcEntityInstanceData&& e);
     IfcDraughtingCallout (aggregate_of< ::Ifc2x3::IfcDraughtingCalloutElement >::ptr v1_Contents);
     typedef aggregate_of< IfcDraughtingCallout > list;
 };
@@ -18242,7 +18242,7 @@ class IFC_PARSE_API IfcDraughtingPreDefinedColour : public  IfcPreDefinedColour 
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcDraughtingPreDefinedColour (IfcEntityInstanceData* e);
+    IfcDraughtingPreDefinedColour (IfcEntityInstanceData&& e);
     IfcDraughtingPreDefinedColour (std::string v1_Name);
     typedef aggregate_of< IfcDraughtingPreDefinedColour > list;
 };
@@ -18263,7 +18263,7 @@ class IFC_PARSE_API IfcDraughtingPreDefinedCurveFont : public  IfcPreDefinedCurv
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcDraughtingPreDefinedCurveFont (IfcEntityInstanceData* e);
+    IfcDraughtingPreDefinedCurveFont (IfcEntityInstanceData&& e);
     IfcDraughtingPreDefinedCurveFont (std::string v1_Name);
     typedef aggregate_of< IfcDraughtingPreDefinedCurveFont > list;
 };
@@ -18285,7 +18285,7 @@ public:
     void setEdgeList(aggregate_of< ::Ifc2x3::IfcOrientedEdge >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcEdgeLoop (IfcEntityInstanceData* e);
+    IfcEdgeLoop (IfcEntityInstanceData&& e);
     IfcEdgeLoop (aggregate_of< ::Ifc2x3::IfcOrientedEdge >::ptr v1_EdgeList);
     typedef aggregate_of< IfcEdgeLoop > list;
 };
@@ -18378,7 +18378,7 @@ public:
     void setQuantities(aggregate_of< ::Ifc2x3::IfcPhysicalQuantity >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcElementQuantity (IfcEntityInstanceData* e);
+    IfcElementQuantity (IfcEntityInstanceData&& e);
     IfcElementQuantity (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_MethodOfMeasurement, aggregate_of< ::Ifc2x3::IfcPhysicalQuantity >::ptr v6_Quantities);
     typedef aggregate_of< IfcElementQuantity > list;
 };
@@ -18411,7 +18411,7 @@ public:
     void setElementType(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcElementType (IfcEntityInstanceData* e);
+    IfcElementType (IfcEntityInstanceData&& e);
     IfcElementType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
     typedef aggregate_of< IfcElementType > list;
 };
@@ -18427,7 +18427,7 @@ public:
     void setPosition(::Ifc2x3::IfcAxis2Placement3D* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcElementarySurface (IfcEntityInstanceData* e);
+    IfcElementarySurface (IfcEntityInstanceData&& e);
     IfcElementarySurface (::Ifc2x3::IfcAxis2Placement3D* v1_Position);
     typedef aggregate_of< IfcElementarySurface > list;
 };
@@ -18457,7 +18457,7 @@ public:
     void setSemiAxis2(double v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcEllipseProfileDef (IfcEntityInstanceData* e);
+    IfcEllipseProfileDef (IfcEntityInstanceData&& e);
     IfcEllipseProfileDef (::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, boost::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D* v3_Position, double v4_SemiAxis1, double v5_SemiAxis2);
     typedef aggregate_of< IfcEllipseProfileDef > list;
 };
@@ -18470,7 +18470,7 @@ public:
     void setUserDefinedEnergySequence(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcEnergyProperties (IfcEntityInstanceData* e);
+    IfcEnergyProperties (IfcEntityInstanceData&& e);
     IfcEnergyProperties (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< ::Ifc2x3::IfcEnergySequenceEnum::Value > v5_EnergySequence, boost::optional< std::string > v6_UserDefinedEnergySequence);
     typedef aggregate_of< IfcEnergyProperties > list;
 };
@@ -18553,7 +18553,7 @@ public:
     void setDepth(double v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcExtrudedAreaSolid (IfcEntityInstanceData* e);
+    IfcExtrudedAreaSolid (IfcEntityInstanceData&& e);
     IfcExtrudedAreaSolid (::Ifc2x3::IfcProfileDef* v1_SweptArea, ::Ifc2x3::IfcAxis2Placement3D* v2_Position, ::Ifc2x3::IfcDirection* v3_ExtrudedDirection, double v4_Depth);
     typedef aggregate_of< IfcExtrudedAreaSolid > list;
 };
@@ -18576,7 +18576,7 @@ public:
     void setFbsmFaces(aggregate_of< ::Ifc2x3::IfcConnectedFaceSet >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcFaceBasedSurfaceModel (IfcEntityInstanceData* e);
+    IfcFaceBasedSurfaceModel (IfcEntityInstanceData&& e);
     IfcFaceBasedSurfaceModel (aggregate_of< ::Ifc2x3::IfcConnectedFaceSet >::ptr v1_FbsmFaces);
     typedef aggregate_of< IfcFaceBasedSurfaceModel > list;
 };
@@ -18654,7 +18654,7 @@ public:
     void setHatchLineAngle(double v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcFillAreaStyleHatching (IfcEntityInstanceData* e);
+    IfcFillAreaStyleHatching (IfcEntityInstanceData&& e);
     IfcFillAreaStyleHatching (::Ifc2x3::IfcCurveStyle* v1_HatchLineAppearance, ::Ifc2x3::IfcHatchLineDistanceSelect* v2_StartOfNextHatchLine, ::Ifc2x3::IfcCartesianPoint* v3_PointOfReferenceHatchLine, ::Ifc2x3::IfcCartesianPoint* v4_PatternStart, double v5_HatchLineAngle);
     typedef aggregate_of< IfcFillAreaStyleHatching > list;
 };
@@ -18676,7 +18676,7 @@ public:
     void setSymbol(::Ifc2x3::IfcAnnotationSymbolOccurrence* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcFillAreaStyleTileSymbolWithStyle (IfcEntityInstanceData* e);
+    IfcFillAreaStyleTileSymbolWithStyle (IfcEntityInstanceData&& e);
     IfcFillAreaStyleTileSymbolWithStyle (::Ifc2x3::IfcAnnotationSymbolOccurrence* v1_Symbol);
     typedef aggregate_of< IfcFillAreaStyleTileSymbolWithStyle > list;
 };
@@ -18698,7 +18698,7 @@ public:
     void setTilingScale(double v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcFillAreaStyleTiles (IfcEntityInstanceData* e);
+    IfcFillAreaStyleTiles (IfcEntityInstanceData&& e);
     IfcFillAreaStyleTiles (::Ifc2x3::IfcOneDirectionRepeatFactor* v1_TilingPattern, aggregate_of< ::Ifc2x3::IfcFillAreaStyleTileShapeSelect >::ptr v2_Tiles, double v3_TilingScale);
     typedef aggregate_of< IfcFillAreaStyleTiles > list;
 };
@@ -18737,7 +18737,7 @@ public:
     void setPressureSingleValue(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcFluidFlowProperties (IfcEntityInstanceData* e);
+    IfcFluidFlowProperties (IfcEntityInstanceData&& e);
     IfcFluidFlowProperties (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcPropertySourceEnum::Value v5_PropertySource, ::Ifc2x3::IfcTimeSeries* v6_FlowConditionTimeSeries, ::Ifc2x3::IfcTimeSeries* v7_VelocityTimeSeries, ::Ifc2x3::IfcTimeSeries* v8_FlowrateTimeSeries, ::Ifc2x3::IfcMaterial* v9_Fluid, ::Ifc2x3::IfcTimeSeries* v10_PressureTimeSeries, boost::optional< std::string > v11_UserDefinedPropertySource, boost::optional< double > v12_TemperatureSingleValue, boost::optional< double > v13_WetBulbTemperatureSingleValue, ::Ifc2x3::IfcTimeSeries* v14_WetBulbTemperatureTimeSeries, ::Ifc2x3::IfcTimeSeries* v15_TemperatureTimeSeries, ::Ifc2x3::IfcDerivedMeasureValue* v16_FlowrateSingleValue, boost::optional< double > v17_FlowConditionSingleValue, boost::optional< double > v18_VelocitySingleValue, boost::optional< double > v19_PressureSingleValue);
     typedef aggregate_of< IfcFluidFlowProperties > list;
 };
@@ -18773,7 +18773,7 @@ class IFC_PARSE_API IfcFurnishingElementType : public  IfcElementType {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcFurnishingElementType (IfcEntityInstanceData* e);
+    IfcFurnishingElementType (IfcEntityInstanceData&& e);
     IfcFurnishingElementType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
     typedef aggregate_of< IfcFurnishingElementType > list;
 };
@@ -18821,7 +18821,7 @@ public:
     void setAssemblyPlace(::Ifc2x3::IfcAssemblyPlaceEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcFurnitureType (IfcEntityInstanceData* e);
+    IfcFurnitureType (IfcEntityInstanceData&& e);
     IfcFurnitureType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcAssemblyPlaceEnum::Value v10_AssemblyPlace);
     typedef aggregate_of< IfcFurnitureType > list;
 };
@@ -18836,7 +18836,7 @@ class IFC_PARSE_API IfcGeometricCurveSet : public  IfcGeometricSet {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcGeometricCurveSet (IfcEntityInstanceData* e);
+    IfcGeometricCurveSet (IfcEntityInstanceData&& e);
     IfcGeometricCurveSet (aggregate_of< ::Ifc2x3::IfcGeometricSetSelect >::ptr v1_Elements);
     typedef aggregate_of< IfcGeometricCurveSet > list;
 };
@@ -18922,7 +18922,7 @@ public:
     void setFilletRadius(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcIShapeProfileDef (IfcEntityInstanceData* e);
+    IfcIShapeProfileDef (IfcEntityInstanceData&& e);
     IfcIShapeProfileDef (::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, boost::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D* v3_Position, double v4_OverallWidth, double v5_OverallDepth, double v6_WebThickness, double v7_FlangeThickness, boost::optional< double > v8_FilletRadius);
     typedef aggregate_of< IfcIShapeProfileDef > list;
 };
@@ -19003,7 +19003,7 @@ public:
     void setCentreOfGravityInY(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcLShapeProfileDef (IfcEntityInstanceData* e);
+    IfcLShapeProfileDef (IfcEntityInstanceData&& e);
     IfcLShapeProfileDef (::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, boost::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D* v3_Position, double v4_Depth, boost::optional< double > v5_Width, double v6_Thickness, boost::optional< double > v7_FilletRadius, boost::optional< double > v8_EdgeRadius, boost::optional< double > v9_LegSlope, boost::optional< double > v10_CentreOfGravityInX, boost::optional< double > v11_CentreOfGravityInY);
     typedef aggregate_of< IfcLShapeProfileDef > list;
 };
@@ -19030,7 +19030,7 @@ public:
     void setDir(::Ifc2x3::IfcVector* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcLine (IfcEntityInstanceData* e);
+    IfcLine (IfcEntityInstanceData&& e);
     IfcLine (::Ifc2x3::IfcCartesianPoint* v1_Pnt, ::Ifc2x3::IfcVector* v2_Dir);
     typedef aggregate_of< IfcLine > list;
 };
@@ -19104,7 +19104,7 @@ public:
     void setOuter(::Ifc2x3::IfcClosedShell* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcManifoldSolidBrep (IfcEntityInstanceData* e);
+    IfcManifoldSolidBrep (IfcEntityInstanceData&& e);
     IfcManifoldSolidBrep (::Ifc2x3::IfcClosedShell* v1_Outer);
     typedef aggregate_of< IfcManifoldSolidBrep > list;
 };
@@ -19198,7 +19198,7 @@ public:
         aggregate_of< IfcRelDefines >::ptr IsDefinedBy() const; // INVERSE IfcRelDefines::RelatedObjects
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcObject (IfcEntityInstanceData* e);
+    IfcObject (IfcEntityInstanceData&& e);
     IfcObject (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType);
     typedef aggregate_of< IfcObject > list;
 };
@@ -19226,7 +19226,7 @@ public:
     void setSelfIntersect(boost::logic::tribool v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcOffsetCurve2D (IfcEntityInstanceData* e);
+    IfcOffsetCurve2D (IfcEntityInstanceData&& e);
     IfcOffsetCurve2D (::Ifc2x3::IfcCurve* v1_BasisCurve, double v2_Distance, boost::logic::tribool v3_SelfIntersect);
     typedef aggregate_of< IfcOffsetCurve2D > list;
 };
@@ -19261,7 +19261,7 @@ public:
     void setRefDirection(::Ifc2x3::IfcDirection* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcOffsetCurve3D (IfcEntityInstanceData* e);
+    IfcOffsetCurve3D (IfcEntityInstanceData&& e);
     IfcOffsetCurve3D (::Ifc2x3::IfcCurve* v1_BasisCurve, double v2_Distance, boost::logic::tribool v3_SelfIntersect, ::Ifc2x3::IfcDirection* v4_RefDirection);
     typedef aggregate_of< IfcOffsetCurve3D > list;
 };
@@ -19315,7 +19315,7 @@ public:
     void setShapeAspectStyle(::Ifc2x3::IfcShapeAspect* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcPermeableCoveringProperties (IfcEntityInstanceData* e);
+    IfcPermeableCoveringProperties (IfcEntityInstanceData&& e);
     IfcPermeableCoveringProperties (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcPermeableCoveringOperationEnum::Value v5_OperationType, ::Ifc2x3::IfcWindowPanelPositionEnum::Value v6_PanelPosition, boost::optional< double > v7_FrameDepth, boost::optional< double > v8_FrameThickness, ::Ifc2x3::IfcShapeAspect* v9_ShapeAspectStyle);
     typedef aggregate_of< IfcPermeableCoveringProperties > list;
 };
@@ -19333,7 +19333,7 @@ public:
     void setPlacement(::Ifc2x3::IfcAxis2Placement* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcPlanarBox (IfcEntityInstanceData* e);
+    IfcPlanarBox (IfcEntityInstanceData&& e);
     IfcPlanarBox (double v1_SizeInX, double v2_SizeInY, ::Ifc2x3::IfcAxis2Placement* v3_Placement);
     typedef aggregate_of< IfcPlanarBox > list;
 };
@@ -19377,7 +19377,7 @@ class IFC_PARSE_API IfcPlane : public  IfcElementarySurface {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcPlane (IfcEntityInstanceData* e);
+    IfcPlane (IfcEntityInstanceData&& e);
     IfcPlane (::Ifc2x3::IfcAxis2Placement3D* v1_Position);
     typedef aggregate_of< IfcPlane > list;
 };
@@ -19428,7 +19428,7 @@ public:
     aggregate_of< IfcRelSequence >::ptr IsPredecessorTo() const; // INVERSE IfcRelSequence::RelatingProcess
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcProcess (IfcEntityInstanceData* e);
+    IfcProcess (IfcEntityInstanceData&& e);
     IfcProcess (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType);
     typedef aggregate_of< IfcProcess > list;
 };
@@ -19534,7 +19534,7 @@ public:
         aggregate_of< IfcRelAssignsToProduct >::ptr ReferencedBy() const; // INVERSE IfcRelAssignsToProduct::RelatingProduct
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcProduct (IfcEntityInstanceData* e);
+    IfcProduct (IfcEntityInstanceData&& e);
     IfcProduct (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation);
     typedef aggregate_of< IfcProduct > list;
 };
@@ -19594,7 +19594,7 @@ public:
     void setUnitsInContext(::Ifc2x3::IfcUnitAssignment* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcProject (IfcEntityInstanceData* e);
+    IfcProject (IfcEntityInstanceData&& e);
     IfcProject (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< std::string > v6_LongName, boost::optional< std::string > v7_Phase, aggregate_of< ::Ifc2x3::IfcRepresentationContext >::ptr v8_RepresentationContexts, ::Ifc2x3::IfcUnitAssignment* v9_UnitsInContext);
     typedef aggregate_of< IfcProject > list;
 };
@@ -19603,7 +19603,7 @@ class IFC_PARSE_API IfcProjectionCurve : public  IfcAnnotationCurveOccurrence {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcProjectionCurve (IfcEntityInstanceData* e);
+    IfcProjectionCurve (IfcEntityInstanceData&& e);
     IfcProjectionCurve (::Ifc2x3::IfcRepresentationItem* v1_Item, aggregate_of< ::Ifc2x3::IfcPresentationStyleAssignment >::ptr v2_Styles, boost::optional< std::string > v3_Name);
     typedef aggregate_of< IfcProjectionCurve > list;
 };
@@ -19667,7 +19667,7 @@ public:
     void setHasProperties(aggregate_of< ::Ifc2x3::IfcProperty >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcPropertySet (IfcEntityInstanceData* e);
+    IfcPropertySet (IfcEntityInstanceData&& e);
     IfcPropertySet (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcProperty >::ptr v5_HasProperties);
     typedef aggregate_of< IfcPropertySet > list;
 };
@@ -19697,7 +19697,7 @@ public:
     void setTag(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcProxy (IfcEntityInstanceData* e);
+    IfcProxy (IfcEntityInstanceData&& e);
     IfcProxy (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, ::Ifc2x3::IfcObjectTypeEnum::Value v8_ProxyType, boost::optional< std::string > v9_Tag);
     typedef aggregate_of< IfcProxy > list;
 };
@@ -19734,7 +19734,7 @@ public:
     void setOuterFilletRadius(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRectangleHollowProfileDef (IfcEntityInstanceData* e);
+    IfcRectangleHollowProfileDef (IfcEntityInstanceData&& e);
     IfcRectangleHollowProfileDef (::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, boost::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D* v3_Position, double v4_XDim, double v5_YDim, double v6_WallThickness, boost::optional< double > v7_InnerFilletRadius, boost::optional< double > v8_OuterFilletRadius);
     typedef aggregate_of< IfcRectangleHollowProfileDef > list;
 };
@@ -19839,7 +19839,7 @@ public:
     void setHeight(double v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRectangularPyramid (IfcEntityInstanceData* e);
+    IfcRectangularPyramid (IfcEntityInstanceData&& e);
     IfcRectangularPyramid (::Ifc2x3::IfcAxis2Placement3D* v1_Position, double v2_XLength, double v3_YLength, double v4_Height);
     typedef aggregate_of< IfcRectangularPyramid > list;
 };
@@ -19883,7 +19883,7 @@ public:
     void setVsense(bool v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRectangularTrimmedSurface (IfcEntityInstanceData* e);
+    IfcRectangularTrimmedSurface (IfcEntityInstanceData&& e);
     IfcRectangularTrimmedSurface (::Ifc2x3::IfcSurface* v1_BasisSurface, double v2_U1, double v3_V1, double v4_U2, double v5_V2, bool v6_Usense, bool v7_Vsense);
     typedef aggregate_of< IfcRectangularTrimmedSurface > list;
 };
@@ -19909,7 +19909,7 @@ public:
     void setRelatedObjectsType(boost::optional< ::Ifc2x3::IfcObjectTypeEnum::Value > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRelAssigns (IfcEntityInstanceData* e);
+    IfcRelAssigns (IfcEntityInstanceData&& e);
     IfcRelAssigns (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcObjectDefinition >::ptr v5_RelatedObjects, boost::optional< ::Ifc2x3::IfcObjectTypeEnum::Value > v6_RelatedObjectsType);
     typedef aggregate_of< IfcRelAssigns > list;
 };
@@ -19932,7 +19932,7 @@ public:
     void setActingRole(::Ifc2x3::IfcActorRole* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRelAssignsToActor (IfcEntityInstanceData* e);
+    IfcRelAssignsToActor (IfcEntityInstanceData&& e);
     IfcRelAssignsToActor (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcObjectDefinition >::ptr v5_RelatedObjects, boost::optional< ::Ifc2x3::IfcObjectTypeEnum::Value > v6_RelatedObjectsType, ::Ifc2x3::IfcActor* v7_RelatingActor, ::Ifc2x3::IfcActorRole* v8_ActingRole);
     typedef aggregate_of< IfcRelAssignsToActor > list;
 };
@@ -19948,7 +19948,7 @@ public:
     void setRelatingControl(::Ifc2x3::IfcControl* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRelAssignsToControl (IfcEntityInstanceData* e);
+    IfcRelAssignsToControl (IfcEntityInstanceData&& e);
     IfcRelAssignsToControl (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcObjectDefinition >::ptr v5_RelatedObjects, boost::optional< ::Ifc2x3::IfcObjectTypeEnum::Value > v6_RelatedObjectsType, ::Ifc2x3::IfcControl* v7_RelatingControl);
     typedef aggregate_of< IfcRelAssignsToControl > list;
 };
@@ -19972,7 +19972,7 @@ public:
     void setRelatingGroup(::Ifc2x3::IfcGroup* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRelAssignsToGroup (IfcEntityInstanceData* e);
+    IfcRelAssignsToGroup (IfcEntityInstanceData&& e);
     IfcRelAssignsToGroup (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcObjectDefinition >::ptr v5_RelatedObjects, boost::optional< ::Ifc2x3::IfcObjectTypeEnum::Value > v6_RelatedObjectsType, ::Ifc2x3::IfcGroup* v7_RelatingGroup);
     typedef aggregate_of< IfcRelAssignsToGroup > list;
 };
@@ -20010,7 +20010,7 @@ public:
     void setQuantityInProcess(::Ifc2x3::IfcMeasureWithUnit* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRelAssignsToProcess (IfcEntityInstanceData* e);
+    IfcRelAssignsToProcess (IfcEntityInstanceData&& e);
     IfcRelAssignsToProcess (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcObjectDefinition >::ptr v5_RelatedObjects, boost::optional< ::Ifc2x3::IfcObjectTypeEnum::Value > v6_RelatedObjectsType, ::Ifc2x3::IfcProcess* v7_RelatingProcess, ::Ifc2x3::IfcMeasureWithUnit* v8_QuantityInProcess);
     typedef aggregate_of< IfcRelAssignsToProcess > list;
 };
@@ -20031,7 +20031,7 @@ public:
     void setRelatingProduct(::Ifc2x3::IfcProduct* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRelAssignsToProduct (IfcEntityInstanceData* e);
+    IfcRelAssignsToProduct (IfcEntityInstanceData&& e);
     IfcRelAssignsToProduct (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcObjectDefinition >::ptr v5_RelatedObjects, boost::optional< ::Ifc2x3::IfcObjectTypeEnum::Value > v6_RelatedObjectsType, ::Ifc2x3::IfcProduct* v7_RelatingProduct);
     typedef aggregate_of< IfcRelAssignsToProduct > list;
 };
@@ -20040,7 +20040,7 @@ class IFC_PARSE_API IfcRelAssignsToProjectOrder : public  IfcRelAssignsToControl
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRelAssignsToProjectOrder (IfcEntityInstanceData* e);
+    IfcRelAssignsToProjectOrder (IfcEntityInstanceData&& e);
     IfcRelAssignsToProjectOrder (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcObjectDefinition >::ptr v5_RelatedObjects, boost::optional< ::Ifc2x3::IfcObjectTypeEnum::Value > v6_RelatedObjectsType, ::Ifc2x3::IfcControl* v7_RelatingControl);
     typedef aggregate_of< IfcRelAssignsToProjectOrder > list;
 };
@@ -20059,7 +20059,7 @@ public:
     void setRelatingResource(::Ifc2x3::IfcResource* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRelAssignsToResource (IfcEntityInstanceData* e);
+    IfcRelAssignsToResource (IfcEntityInstanceData&& e);
     IfcRelAssignsToResource (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcObjectDefinition >::ptr v5_RelatedObjects, boost::optional< ::Ifc2x3::IfcObjectTypeEnum::Value > v6_RelatedObjectsType, ::Ifc2x3::IfcResource* v7_RelatingResource);
     typedef aggregate_of< IfcRelAssignsToResource > list;
 };
@@ -20113,7 +20113,7 @@ public:
     void setRelatedObjects(aggregate_of< ::Ifc2x3::IfcRoot >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRelAssociates (IfcEntityInstanceData* e);
+    IfcRelAssociates (IfcEntityInstanceData&& e);
     IfcRelAssociates (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcRoot >::ptr v5_RelatedObjects);
     typedef aggregate_of< IfcRelAssociates > list;
 };
@@ -20124,7 +20124,7 @@ public:
     void setRelatingAppliedValue(::Ifc2x3::IfcAppliedValue* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRelAssociatesAppliedValue (IfcEntityInstanceData* e);
+    IfcRelAssociatesAppliedValue (IfcEntityInstanceData&& e);
     IfcRelAssociatesAppliedValue (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcRoot >::ptr v5_RelatedObjects, ::Ifc2x3::IfcAppliedValue* v6_RelatingAppliedValue);
     typedef aggregate_of< IfcRelAssociatesAppliedValue > list;
 };
@@ -20138,7 +20138,7 @@ public:
     void setRelatingApproval(::Ifc2x3::IfcApproval* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRelAssociatesApproval (IfcEntityInstanceData* e);
+    IfcRelAssociatesApproval (IfcEntityInstanceData&& e);
     IfcRelAssociatesApproval (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcRoot >::ptr v5_RelatedObjects, ::Ifc2x3::IfcApproval* v6_RelatingApproval);
     typedef aggregate_of< IfcRelAssociatesApproval > list;
 };
@@ -20179,7 +20179,7 @@ public:
     void setRelatingClassification(::Ifc2x3::IfcClassificationNotationSelect* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRelAssociatesClassification (IfcEntityInstanceData* e);
+    IfcRelAssociatesClassification (IfcEntityInstanceData&& e);
     IfcRelAssociatesClassification (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcRoot >::ptr v5_RelatedObjects, ::Ifc2x3::IfcClassificationNotationSelect* v6_RelatingClassification);
     typedef aggregate_of< IfcRelAssociatesClassification > list;
 };
@@ -20196,7 +20196,7 @@ public:
     void setRelatingConstraint(::Ifc2x3::IfcConstraint* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRelAssociatesConstraint (IfcEntityInstanceData* e);
+    IfcRelAssociatesConstraint (IfcEntityInstanceData&& e);
     IfcRelAssociatesConstraint (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcRoot >::ptr v5_RelatedObjects, std::string v6_Intent, ::Ifc2x3::IfcConstraint* v7_RelatingConstraint);
     typedef aggregate_of< IfcRelAssociatesConstraint > list;
 };
@@ -20214,7 +20214,7 @@ public:
     void setRelatingDocument(::Ifc2x3::IfcDocumentSelect* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRelAssociatesDocument (IfcEntityInstanceData* e);
+    IfcRelAssociatesDocument (IfcEntityInstanceData&& e);
     IfcRelAssociatesDocument (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcRoot >::ptr v5_RelatedObjects, ::Ifc2x3::IfcDocumentSelect* v6_RelatingDocument);
     typedef aggregate_of< IfcRelAssociatesDocument > list;
 };
@@ -20232,7 +20232,7 @@ public:
     void setRelatingLibrary(::Ifc2x3::IfcLibrarySelect* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRelAssociatesLibrary (IfcEntityInstanceData* e);
+    IfcRelAssociatesLibrary (IfcEntityInstanceData&& e);
     IfcRelAssociatesLibrary (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcRoot >::ptr v5_RelatedObjects, ::Ifc2x3::IfcLibrarySelect* v6_RelatingLibrary);
     typedef aggregate_of< IfcRelAssociatesLibrary > list;
 };
@@ -20337,7 +20337,7 @@ public:
     void setRelatingMaterial(::Ifc2x3::IfcMaterialSelect* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRelAssociatesMaterial (IfcEntityInstanceData* e);
+    IfcRelAssociatesMaterial (IfcEntityInstanceData&& e);
     IfcRelAssociatesMaterial (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcRoot >::ptr v5_RelatedObjects, ::Ifc2x3::IfcMaterialSelect* v6_RelatingMaterial);
     typedef aggregate_of< IfcRelAssociatesMaterial > list;
 };
@@ -20352,7 +20352,7 @@ public:
     void setProfileOrientation(::Ifc2x3::IfcOrientationSelect* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRelAssociatesProfileProperties (IfcEntityInstanceData* e);
+    IfcRelAssociatesProfileProperties (IfcEntityInstanceData&& e);
     IfcRelAssociatesProfileProperties (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcRoot >::ptr v5_RelatedObjects, ::Ifc2x3::IfcProfileProperties* v6_RelatingProfileProperties, ::Ifc2x3::IfcShapeAspect* v7_ProfileSectionLocation, ::Ifc2x3::IfcOrientationSelect* v8_ProfileOrientation);
     typedef aggregate_of< IfcRelAssociatesProfileProperties > list;
 };
@@ -20363,7 +20363,7 @@ class IFC_PARSE_API IfcRelConnects : public  IfcRelationship {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRelConnects (IfcEntityInstanceData* e);
+    IfcRelConnects (IfcEntityInstanceData&& e);
     IfcRelConnects (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description);
     typedef aggregate_of< IfcRelConnects > list;
 };
@@ -20402,7 +20402,7 @@ public:
     void setRelatedElement(::Ifc2x3::IfcElement* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRelConnectsElements (IfcEntityInstanceData* e);
+    IfcRelConnectsElements (IfcEntityInstanceData&& e);
     IfcRelConnectsElements (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcConnectionGeometry* v5_ConnectionGeometry, ::Ifc2x3::IfcElement* v6_RelatingElement, ::Ifc2x3::IfcElement* v7_RelatedElement);
     typedef aggregate_of< IfcRelConnectsElements > list;
 };
@@ -20452,7 +20452,7 @@ public:
     void setRelatingConnectionType(::Ifc2x3::IfcConnectionTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRelConnectsPathElements (IfcEntityInstanceData* e);
+    IfcRelConnectsPathElements (IfcEntityInstanceData&& e);
     IfcRelConnectsPathElements (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcConnectionGeometry* v5_ConnectionGeometry, ::Ifc2x3::IfcElement* v6_RelatingElement, ::Ifc2x3::IfcElement* v7_RelatedElement, std::vector< int > /*[0:?]*/ v8_RelatingPriorities, std::vector< int > /*[0:?]*/ v9_RelatedPriorities, ::Ifc2x3::IfcConnectionTypeEnum::Value v10_RelatedConnectionType, ::Ifc2x3::IfcConnectionTypeEnum::Value v11_RelatingConnectionType);
     typedef aggregate_of< IfcRelConnectsPathElements > list;
 };
@@ -20493,7 +20493,7 @@ public:
     void setRelatedElement(::Ifc2x3::IfcElement* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRelConnectsPortToElement (IfcEntityInstanceData* e);
+    IfcRelConnectsPortToElement (IfcEntityInstanceData&& e);
     IfcRelConnectsPortToElement (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcPort* v5_RelatingPort, ::Ifc2x3::IfcElement* v6_RelatedElement);
     typedef aggregate_of< IfcRelConnectsPortToElement > list;
 };
@@ -20523,7 +20523,7 @@ public:
     void setRealizingElement(::Ifc2x3::IfcElement* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRelConnectsPorts (IfcEntityInstanceData* e);
+    IfcRelConnectsPorts (IfcEntityInstanceData&& e);
     IfcRelConnectsPorts (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcPort* v5_RelatingPort, ::Ifc2x3::IfcPort* v6_RelatedPort, ::Ifc2x3::IfcElement* v7_RealizingElement);
     typedef aggregate_of< IfcRelConnectsPorts > list;
 };
@@ -20540,7 +20540,7 @@ public:
     void setRelatedStructuralActivity(::Ifc2x3::IfcStructuralActivity* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRelConnectsStructuralActivity (IfcEntityInstanceData* e);
+    IfcRelConnectsStructuralActivity (IfcEntityInstanceData&& e);
     IfcRelConnectsStructuralActivity (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcStructuralActivityAssignmentSelect* v5_RelatingElement, ::Ifc2x3::IfcStructuralActivity* v6_RelatedStructuralActivity);
     typedef aggregate_of< IfcRelConnectsStructuralActivity > list;
 };
@@ -20553,7 +20553,7 @@ public:
     void setRelatedStructuralMember(::Ifc2x3::IfcStructuralMember* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRelConnectsStructuralElement (IfcEntityInstanceData* e);
+    IfcRelConnectsStructuralElement (IfcEntityInstanceData&& e);
     IfcRelConnectsStructuralElement (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcElement* v5_RelatingElement, ::Ifc2x3::IfcStructuralMember* v6_RelatedStructuralMember);
     typedef aggregate_of< IfcRelConnectsStructuralElement > list;
 };
@@ -20603,7 +20603,7 @@ public:
     void setConditionCoordinateSystem(::Ifc2x3::IfcAxis2Placement3D* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRelConnectsStructuralMember (IfcEntityInstanceData* e);
+    IfcRelConnectsStructuralMember (IfcEntityInstanceData&& e);
     IfcRelConnectsStructuralMember (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcStructuralMember* v5_RelatingStructuralMember, ::Ifc2x3::IfcStructuralConnection* v6_RelatedStructuralConnection, ::Ifc2x3::IfcBoundaryCondition* v7_AppliedCondition, ::Ifc2x3::IfcStructuralConnectionCondition* v8_AdditionalConditions, boost::optional< double > v9_SupportedLength, ::Ifc2x3::IfcAxis2Placement3D* v10_ConditionCoordinateSystem);
     typedef aggregate_of< IfcRelConnectsStructuralMember > list;
 };
@@ -20631,7 +20631,7 @@ public:
     void setConnectionConstraint(::Ifc2x3::IfcConnectionGeometry* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRelConnectsWithEccentricity (IfcEntityInstanceData* e);
+    IfcRelConnectsWithEccentricity (IfcEntityInstanceData&& e);
     IfcRelConnectsWithEccentricity (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcStructuralMember* v5_RelatingStructuralMember, ::Ifc2x3::IfcStructuralConnection* v6_RelatedStructuralConnection, ::Ifc2x3::IfcBoundaryCondition* v7_AppliedCondition, ::Ifc2x3::IfcStructuralConnectionCondition* v8_AdditionalConditions, boost::optional< double > v9_SupportedLength, ::Ifc2x3::IfcAxis2Placement3D* v10_ConditionCoordinateSystem, ::Ifc2x3::IfcConnectionGeometry* v11_ConnectionConstraint);
     typedef aggregate_of< IfcRelConnectsWithEccentricity > list;
 };
@@ -20668,7 +20668,7 @@ public:
     void setConnectionType(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRelConnectsWithRealizingElements (IfcEntityInstanceData* e);
+    IfcRelConnectsWithRealizingElements (IfcEntityInstanceData&& e);
     IfcRelConnectsWithRealizingElements (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcConnectionGeometry* v5_ConnectionGeometry, ::Ifc2x3::IfcElement* v6_RelatingElement, ::Ifc2x3::IfcElement* v7_RelatedElement, aggregate_of< ::Ifc2x3::IfcElement >::ptr v8_RealizingElements, boost::optional< std::string > v9_ConnectionType);
     typedef aggregate_of< IfcRelConnectsWithRealizingElements > list;
 };
@@ -20744,7 +20744,7 @@ public:
     void setRelatingStructure(::Ifc2x3::IfcSpatialStructureElement* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRelContainedInSpatialStructure (IfcEntityInstanceData* e);
+    IfcRelContainedInSpatialStructure (IfcEntityInstanceData&& e);
     IfcRelContainedInSpatialStructure (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcProduct >::ptr v5_RelatedElements, ::Ifc2x3::IfcSpatialStructureElement* v6_RelatingStructure);
     typedef aggregate_of< IfcRelContainedInSpatialStructure > list;
 };
@@ -20776,7 +20776,7 @@ public:
     void setRelatedCoverings(aggregate_of< ::Ifc2x3::IfcCovering >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRelCoversBldgElements (IfcEntityInstanceData* e);
+    IfcRelCoversBldgElements (IfcEntityInstanceData&& e);
     IfcRelCoversBldgElements (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcElement* v5_RelatingBuildingElement, aggregate_of< ::Ifc2x3::IfcCovering >::ptr v6_RelatedCoverings);
     typedef aggregate_of< IfcRelCoversBldgElements > list;
 };
@@ -20815,7 +20815,7 @@ public:
     void setRelatedCoverings(aggregate_of< ::Ifc2x3::IfcCovering >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRelCoversSpaces (IfcEntityInstanceData* e);
+    IfcRelCoversSpaces (IfcEntityInstanceData&& e);
     IfcRelCoversSpaces (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcSpace* v5_RelatedSpace, aggregate_of< ::Ifc2x3::IfcCovering >::ptr v6_RelatedCoverings);
     typedef aggregate_of< IfcRelCoversSpaces > list;
 };
@@ -20857,7 +20857,7 @@ public:
     void setRelatedObjects(aggregate_of< ::Ifc2x3::IfcObjectDefinition >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRelDecomposes (IfcEntityInstanceData* e);
+    IfcRelDecomposes (IfcEntityInstanceData&& e);
     IfcRelDecomposes (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcObjectDefinition* v5_RelatingObject, aggregate_of< ::Ifc2x3::IfcObjectDefinition >::ptr v6_RelatedObjects);
     typedef aggregate_of< IfcRelDecomposes > list;
 };
@@ -20894,7 +20894,7 @@ public:
     void setRelatedObjects(aggregate_of< ::Ifc2x3::IfcObject >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRelDefines (IfcEntityInstanceData* e);
+    IfcRelDefines (IfcEntityInstanceData&& e);
     IfcRelDefines (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcObject >::ptr v5_RelatedObjects);
     typedef aggregate_of< IfcRelDefines > list;
 };
@@ -20920,7 +20920,7 @@ public:
     void setRelatingPropertyDefinition(::Ifc2x3::IfcPropertySetDefinition* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRelDefinesByProperties (IfcEntityInstanceData* e);
+    IfcRelDefinesByProperties (IfcEntityInstanceData&& e);
     IfcRelDefinesByProperties (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcObject >::ptr v5_RelatedObjects, ::Ifc2x3::IfcPropertySetDefinition* v6_RelatingPropertyDefinition);
     typedef aggregate_of< IfcRelDefinesByProperties > list;
 };
@@ -21000,7 +21000,7 @@ public:
     void setRelatingType(::Ifc2x3::IfcTypeObject* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRelDefinesByType (IfcEntityInstanceData* e);
+    IfcRelDefinesByType (IfcEntityInstanceData&& e);
     IfcRelDefinesByType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcObject >::ptr v5_RelatedObjects, ::Ifc2x3::IfcTypeObject* v6_RelatingType);
     typedef aggregate_of< IfcRelDefinesByType > list;
 };
@@ -21025,7 +21025,7 @@ public:
     void setRelatedBuildingElement(::Ifc2x3::IfcElement* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRelFillsElement (IfcEntityInstanceData* e);
+    IfcRelFillsElement (IfcEntityInstanceData&& e);
     IfcRelFillsElement (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcOpeningElement* v5_RelatingOpeningElement, ::Ifc2x3::IfcElement* v6_RelatedBuildingElement);
     typedef aggregate_of< IfcRelFillsElement > list;
 };
@@ -21046,7 +21046,7 @@ public:
     void setRelatingFlowElement(::Ifc2x3::IfcDistributionFlowElement* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRelFlowControlElements (IfcEntityInstanceData* e);
+    IfcRelFlowControlElements (IfcEntityInstanceData&& e);
     IfcRelFlowControlElements (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcDistributionControlElement >::ptr v5_RelatedControlElements, ::Ifc2x3::IfcDistributionFlowElement* v6_RelatingFlowElement);
     typedef aggregate_of< IfcRelFlowControlElements > list;
 };
@@ -21065,7 +21065,7 @@ public:
     void setRelatingSpaceProgram(::Ifc2x3::IfcSpaceProgram* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRelInteractionRequirements (IfcEntityInstanceData* e);
+    IfcRelInteractionRequirements (IfcEntityInstanceData&& e);
     IfcRelInteractionRequirements (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< double > v5_DailyInteraction, boost::optional< double > v6_ImportanceRating, ::Ifc2x3::IfcSpatialStructureElement* v7_LocationOfInteraction, ::Ifc2x3::IfcSpaceProgram* v8_RelatedSpaceProgram, ::Ifc2x3::IfcSpaceProgram* v9_RelatingSpaceProgram);
     typedef aggregate_of< IfcRelInteractionRequirements > list;
 };
@@ -21098,7 +21098,7 @@ class IFC_PARSE_API IfcRelNests : public  IfcRelDecomposes {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRelNests (IfcEntityInstanceData* e);
+    IfcRelNests (IfcEntityInstanceData&& e);
     IfcRelNests (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcObjectDefinition* v5_RelatingObject, aggregate_of< ::Ifc2x3::IfcObjectDefinition >::ptr v6_RelatedObjects);
     typedef aggregate_of< IfcRelNests > list;
 };
@@ -21107,7 +21107,7 @@ class IFC_PARSE_API IfcRelOccupiesSpaces : public  IfcRelAssignsToActor {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRelOccupiesSpaces (IfcEntityInstanceData* e);
+    IfcRelOccupiesSpaces (IfcEntityInstanceData&& e);
     IfcRelOccupiesSpaces (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcObjectDefinition >::ptr v5_RelatedObjects, boost::optional< ::Ifc2x3::IfcObjectTypeEnum::Value > v6_RelatedObjectsType, ::Ifc2x3::IfcActor* v7_RelatingActor, ::Ifc2x3::IfcActorRole* v8_ActingRole);
     typedef aggregate_of< IfcRelOccupiesSpaces > list;
 };
@@ -21118,7 +21118,7 @@ public:
     void setOverridingProperties(aggregate_of< ::Ifc2x3::IfcProperty >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRelOverridesProperties (IfcEntityInstanceData* e);
+    IfcRelOverridesProperties (IfcEntityInstanceData&& e);
     IfcRelOverridesProperties (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcObject >::ptr v5_RelatedObjects, ::Ifc2x3::IfcPropertySetDefinition* v6_RelatingPropertyDefinition, aggregate_of< ::Ifc2x3::IfcProperty >::ptr v7_OverridingProperties);
     typedef aggregate_of< IfcRelOverridesProperties > list;
 };
@@ -21164,7 +21164,7 @@ public:
     void setRelatedFeatureElement(::Ifc2x3::IfcFeatureElementAddition* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRelProjectsElement (IfcEntityInstanceData* e);
+    IfcRelProjectsElement (IfcEntityInstanceData&& e);
     IfcRelProjectsElement (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcElement* v5_RelatingElement, ::Ifc2x3::IfcFeatureElementAddition* v6_RelatedFeatureElement);
     typedef aggregate_of< IfcRelProjectsElement > list;
 };
@@ -21230,7 +21230,7 @@ public:
     void setRelatingStructure(::Ifc2x3::IfcSpatialStructureElement* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRelReferencedInSpatialStructure (IfcEntityInstanceData* e);
+    IfcRelReferencedInSpatialStructure (IfcEntityInstanceData&& e);
     IfcRelReferencedInSpatialStructure (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcProduct >::ptr v5_RelatedElements, ::Ifc2x3::IfcSpatialStructureElement* v6_RelatingStructure);
     typedef aggregate_of< IfcRelReferencedInSpatialStructure > list;
 };
@@ -21239,7 +21239,7 @@ class IFC_PARSE_API IfcRelSchedulesCostItems : public  IfcRelAssignsToControl {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRelSchedulesCostItems (IfcEntityInstanceData* e);
+    IfcRelSchedulesCostItems (IfcEntityInstanceData&& e);
     IfcRelSchedulesCostItems (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcObjectDefinition >::ptr v5_RelatedObjects, boost::optional< ::Ifc2x3::IfcObjectTypeEnum::Value > v6_RelatedObjectsType, ::Ifc2x3::IfcControl* v7_RelatingControl);
     typedef aggregate_of< IfcRelSchedulesCostItems > list;
 };
@@ -21315,7 +21315,7 @@ public:
     void setSequenceType(::Ifc2x3::IfcSequenceEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRelSequence (IfcEntityInstanceData* e);
+    IfcRelSequence (IfcEntityInstanceData&& e);
     IfcRelSequence (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcProcess* v5_RelatingProcess, ::Ifc2x3::IfcProcess* v6_RelatedProcess, double v7_TimeLag, ::Ifc2x3::IfcSequenceEnum::Value v8_SequenceType);
     typedef aggregate_of< IfcRelSequence > list;
 };
@@ -21354,7 +21354,7 @@ public:
     void setRelatedBuildings(aggregate_of< ::Ifc2x3::IfcSpatialStructureElement >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRelServicesBuildings (IfcEntityInstanceData* e);
+    IfcRelServicesBuildings (IfcEntityInstanceData&& e);
     IfcRelServicesBuildings (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcSystem* v5_RelatingSystem, aggregate_of< ::Ifc2x3::IfcSpatialStructureElement >::ptr v6_RelatedBuildings);
     typedef aggregate_of< IfcRelServicesBuildings > list;
 };
@@ -21545,7 +21545,7 @@ public:
     void setInternalOrExternalBoundary(::Ifc2x3::IfcInternalOrExternalEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRelSpaceBoundary (IfcEntityInstanceData* e);
+    IfcRelSpaceBoundary (IfcEntityInstanceData&& e);
     IfcRelSpaceBoundary (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcSpace* v5_RelatingSpace, ::Ifc2x3::IfcElement* v6_RelatedBuildingElement, ::Ifc2x3::IfcConnectionGeometry* v7_ConnectionGeometry, ::Ifc2x3::IfcPhysicalOrVirtualEnum::Value v8_PhysicalOrVirtualBoundary, ::Ifc2x3::IfcInternalOrExternalEnum::Value v9_InternalOrExternalBoundary);
     typedef aggregate_of< IfcRelSpaceBoundary > list;
 };
@@ -21564,7 +21564,7 @@ public:
     void setRelatedOpeningElement(::Ifc2x3::IfcFeatureElementSubtraction* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRelVoidsElement (IfcEntityInstanceData* e);
+    IfcRelVoidsElement (IfcEntityInstanceData&& e);
     IfcRelVoidsElement (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcElement* v5_RelatingBuildingElement, ::Ifc2x3::IfcFeatureElementSubtraction* v6_RelatedOpeningElement);
     typedef aggregate_of< IfcRelVoidsElement > list;
 };
@@ -21586,7 +21586,7 @@ public:
         aggregate_of< IfcRelAssignsToResource >::ptr ResourceOf() const; // INVERSE IfcRelAssignsToResource::RelatingResource
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcResource (IfcEntityInstanceData* e);
+    IfcResource (IfcEntityInstanceData&& e);
     IfcResource (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType);
     typedef aggregate_of< IfcResource > list;
 };
@@ -21676,7 +21676,7 @@ public:
     void setAngle(double v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRevolvedAreaSolid (IfcEntityInstanceData* e);
+    IfcRevolvedAreaSolid (IfcEntityInstanceData&& e);
     IfcRevolvedAreaSolid (::Ifc2x3::IfcProfileDef* v1_SweptArea, ::Ifc2x3::IfcAxis2Placement3D* v2_Position, ::Ifc2x3::IfcAxis1Placement* v3_Axis, double v4_Angle);
     typedef aggregate_of< IfcRevolvedAreaSolid > list;
 };
@@ -21755,7 +21755,7 @@ public:
     void setBottomRadius(double v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRightCircularCone (IfcEntityInstanceData* e);
+    IfcRightCircularCone (IfcEntityInstanceData&& e);
     IfcRightCircularCone (::Ifc2x3::IfcAxis2Placement3D* v1_Position, double v2_Height, double v3_BottomRadius);
     typedef aggregate_of< IfcRightCircularCone > list;
 };
@@ -21850,7 +21850,7 @@ public:
     void setRadius(double v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRightCircularCylinder (IfcEntityInstanceData* e);
+    IfcRightCircularCylinder (IfcEntityInstanceData&& e);
     IfcRightCircularCylinder (::Ifc2x3::IfcAxis2Placement3D* v1_Position, double v2_Height, double v3_Radius);
     typedef aggregate_of< IfcRightCircularCylinder > list;
 };
@@ -21943,7 +21943,7 @@ public:
     aggregate_of< IfcRelContainedInSpatialStructure >::ptr ContainsElements() const; // INVERSE IfcRelContainedInSpatialStructure::RelatingStructure
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcSpatialStructureElement (IfcEntityInstanceData* e);
+    IfcSpatialStructureElement (IfcEntityInstanceData&& e);
     IfcSpatialStructureElement (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_LongName, ::Ifc2x3::IfcElementCompositionEnum::Value v9_CompositionType);
     typedef aggregate_of< IfcSpatialStructureElement > list;
 };
@@ -21985,7 +21985,7 @@ class IFC_PARSE_API IfcSpatialStructureElementType : public  IfcElementType {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcSpatialStructureElementType (IfcEntityInstanceData* e);
+    IfcSpatialStructureElementType (IfcEntityInstanceData&& e);
     IfcSpatialStructureElementType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
     typedef aggregate_of< IfcSpatialStructureElementType > list;
 };
@@ -22046,7 +22046,7 @@ public:
     void setRadius(double v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcSphere (IfcEntityInstanceData* e);
+    IfcSphere (IfcEntityInstanceData&& e);
     IfcSphere (::Ifc2x3::IfcAxis2Placement3D* v1_Position, double v2_Radius);
     typedef aggregate_of< IfcSphere > list;
 };
@@ -22172,7 +22172,7 @@ public:
         aggregate_of< IfcRelConnectsStructuralActivity >::ptr AssignedToStructuralItem() const; // INVERSE IfcRelConnectsStructuralActivity::RelatedStructuralActivity
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcStructuralActivity (IfcEntityInstanceData* e);
+    IfcStructuralActivity (IfcEntityInstanceData&& e);
     IfcStructuralActivity (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, ::Ifc2x3::IfcStructuralLoad* v8_AppliedLoad, ::Ifc2x3::IfcGlobalOrLocalEnum::Value v9_GlobalOrLocal);
     typedef aggregate_of< IfcStructuralActivity > list;
 };
@@ -22268,7 +22268,7 @@ public:
         aggregate_of< IfcRelConnectsStructuralActivity >::ptr AssignedStructuralActivity() const; // INVERSE IfcRelConnectsStructuralActivity::RelatingElement
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcStructuralItem (IfcEntityInstanceData* e);
+    IfcStructuralItem (IfcEntityInstanceData&& e);
     IfcStructuralItem (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation);
     typedef aggregate_of< IfcStructuralItem > list;
 };
@@ -22282,7 +22282,7 @@ public:
     aggregate_of< IfcRelConnectsStructuralMember >::ptr ConnectedBy() const; // INVERSE IfcRelConnectsStructuralMember::RelatingStructuralMember
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcStructuralMember (IfcEntityInstanceData* e);
+    IfcStructuralMember (IfcEntityInstanceData&& e);
     IfcStructuralMember (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation);
     typedef aggregate_of< IfcStructuralMember > list;
 };
@@ -22311,7 +22311,7 @@ public:
         aggregate_of< IfcStructuralAction >::ptr Causes() const; // INVERSE IfcStructuralAction::CausedBy
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcStructuralReaction (IfcEntityInstanceData* e);
+    IfcStructuralReaction (IfcEntityInstanceData&& e);
     IfcStructuralReaction (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, ::Ifc2x3::IfcStructuralLoad* v8_AppliedLoad, ::Ifc2x3::IfcGlobalOrLocalEnum::Value v9_GlobalOrLocal);
     typedef aggregate_of< IfcStructuralReaction > list;
 };
@@ -22345,7 +22345,7 @@ public:
     void setThickness(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcStructuralSurfaceMember (IfcEntityInstanceData* e);
+    IfcStructuralSurfaceMember (IfcEntityInstanceData&& e);
     IfcStructuralSurfaceMember (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, ::Ifc2x3::IfcStructuralSurfaceTypeEnum::Value v8_PredefinedType, boost::optional< double > v9_Thickness);
     typedef aggregate_of< IfcStructuralSurfaceMember > list;
 };
@@ -22375,7 +22375,7 @@ public:
     void setVaryingThicknessLocation(::Ifc2x3::IfcShapeAspect* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcStructuralSurfaceMemberVarying (IfcEntityInstanceData* e);
+    IfcStructuralSurfaceMemberVarying (IfcEntityInstanceData&& e);
     IfcStructuralSurfaceMemberVarying (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, ::Ifc2x3::IfcStructuralSurfaceTypeEnum::Value v8_PredefinedType, boost::optional< double > v9_Thickness, std::vector< double > /*[2:?]*/ v10_SubsequentThickness, ::Ifc2x3::IfcShapeAspect* v11_VaryingThicknessLocation);
     typedef aggregate_of< IfcStructuralSurfaceMemberVarying > list;
 };
@@ -22384,7 +22384,7 @@ class IFC_PARSE_API IfcStructuredDimensionCallout : public  IfcDraughtingCallout
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcStructuredDimensionCallout (IfcEntityInstanceData* e);
+    IfcStructuredDimensionCallout (IfcEntityInstanceData&& e);
     IfcStructuredDimensionCallout (aggregate_of< ::Ifc2x3::IfcDraughtingCalloutElement >::ptr v1_Contents);
     typedef aggregate_of< IfcStructuredDimensionCallout > list;
 };
@@ -22470,7 +22470,7 @@ public:
     void setReferenceSurface(::Ifc2x3::IfcSurface* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcSurfaceCurveSweptAreaSolid (IfcEntityInstanceData* e);
+    IfcSurfaceCurveSweptAreaSolid (IfcEntityInstanceData&& e);
     IfcSurfaceCurveSweptAreaSolid (::Ifc2x3::IfcProfileDef* v1_SweptArea, ::Ifc2x3::IfcAxis2Placement3D* v2_Position, ::Ifc2x3::IfcCurve* v3_Directrix, double v4_StartParam, double v5_EndParam, ::Ifc2x3::IfcSurface* v6_ReferenceSurface);
     typedef aggregate_of< IfcSurfaceCurveSweptAreaSolid > list;
 };
@@ -22497,7 +22497,7 @@ public:
     void setDepth(double v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcSurfaceOfLinearExtrusion (IfcEntityInstanceData* e);
+    IfcSurfaceOfLinearExtrusion (IfcEntityInstanceData&& e);
     IfcSurfaceOfLinearExtrusion (::Ifc2x3::IfcProfileDef* v1_SweptCurve, ::Ifc2x3::IfcAxis2Placement3D* v2_Position, ::Ifc2x3::IfcDirection* v3_ExtrudedDirection, double v4_Depth);
     typedef aggregate_of< IfcSurfaceOfLinearExtrusion > list;
 };
@@ -22525,7 +22525,7 @@ public:
     void setAxisPosition(::Ifc2x3::IfcAxis1Placement* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcSurfaceOfRevolution (IfcEntityInstanceData* e);
+    IfcSurfaceOfRevolution (IfcEntityInstanceData&& e);
     IfcSurfaceOfRevolution (::Ifc2x3::IfcProfileDef* v1_SweptCurve, ::Ifc2x3::IfcAxis2Placement3D* v2_Position, ::Ifc2x3::IfcAxis1Placement* v3_AxisPosition);
     typedef aggregate_of< IfcSurfaceOfRevolution > list;
 };
@@ -22563,7 +22563,7 @@ class IFC_PARSE_API IfcSystemFurnitureElementType : public  IfcFurnishingElement
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcSystemFurnitureElementType (IfcEntityInstanceData* e);
+    IfcSystemFurnitureElementType (IfcEntityInstanceData&& e);
     IfcSystemFurnitureElementType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
     typedef aggregate_of< IfcSystemFurnitureElementType > list;
 };
@@ -22846,7 +22846,7 @@ public:
     void setPriority(boost::optional< int > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcTask (IfcEntityInstanceData* e);
+    IfcTask (IfcEntityInstanceData&& e);
     IfcTask (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, std::string v6_TaskId, boost::optional< std::string > v7_Status, boost::optional< std::string > v8_WorkMethod, bool v9_IsMilestone, boost::optional< int > v10_Priority);
     typedef aggregate_of< IfcTask > list;
 };
@@ -22920,7 +22920,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcTransportElementTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcTransportElementType (IfcEntityInstanceData* e);
+    IfcTransportElementType (IfcEntityInstanceData&& e);
     IfcTransportElementType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcTransportElementTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcTransportElementType > list;
 };
@@ -22947,7 +22947,7 @@ public:
         aggregate_of< IfcRelAssignsToActor >::ptr IsActingUpon() const; // INVERSE IfcRelAssignsToActor::RelatingActor
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcActor (IfcEntityInstanceData* e);
+    IfcActor (IfcEntityInstanceData&& e);
     IfcActor (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcActorSelect* v6_TheActor);
     typedef aggregate_of< IfcActor > list;
 };
@@ -23129,7 +23129,7 @@ public:
         aggregate_of< IfcRelContainedInSpatialStructure >::ptr ContainedInStructure() const; // INVERSE IfcRelContainedInSpatialStructure::RelatedElements
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcAnnotation (IfcEntityInstanceData* e);
+    IfcAnnotation (IfcEntityInstanceData&& e);
     IfcAnnotation (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation);
     typedef aggregate_of< IfcAnnotation > list;
 };
@@ -23185,7 +23185,7 @@ public:
     void setCentreOfGravityInY(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcAsymmetricIShapeProfileDef (IfcEntityInstanceData* e);
+    IfcAsymmetricIShapeProfileDef (IfcEntityInstanceData&& e);
     IfcAsymmetricIShapeProfileDef (::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, boost::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D* v3_Position, double v4_OverallWidth, double v5_OverallDepth, double v6_WebThickness, double v7_FlangeThickness, boost::optional< double > v8_FilletRadius, double v9_TopFlangeWidth, boost::optional< double > v10_TopFlangeThickness, boost::optional< double > v11_TopFlangeFilletRadius, boost::optional< double > v12_CentreOfGravityInY);
     typedef aggregate_of< IfcAsymmetricIShapeProfileDef > list;
 };
@@ -23299,7 +23299,7 @@ public:
     void setZLength(double v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcBlock (IfcEntityInstanceData* e);
+    IfcBlock (IfcEntityInstanceData&& e);
     IfcBlock (::Ifc2x3::IfcAxis2Placement3D* v1_Position, double v2_XLength, double v3_YLength, double v4_ZLength);
     typedef aggregate_of< IfcBlock > list;
 };
@@ -23314,7 +23314,7 @@ class IFC_PARSE_API IfcBooleanClippingResult : public  IfcBooleanResult {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcBooleanClippingResult (IfcEntityInstanceData* e);
+    IfcBooleanClippingResult (IfcEntityInstanceData&& e);
     IfcBooleanClippingResult (::Ifc2x3::IfcBooleanOperator::Value v1_Operator, ::Ifc2x3::IfcBooleanOperand* v2_FirstOperand, ::Ifc2x3::IfcBooleanOperand* v3_SecondOperand);
     typedef aggregate_of< IfcBooleanClippingResult > list;
 };
@@ -23332,7 +23332,7 @@ class IFC_PARSE_API IfcBoundedCurve : public  IfcCurve, public  IfcCurveOrEdgeCu
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcBoundedCurve (IfcEntityInstanceData* e);
+    IfcBoundedCurve (IfcEntityInstanceData&& e);
     IfcBoundedCurve ();
     typedef aggregate_of< IfcBoundedCurve > list;
 };
@@ -23523,7 +23523,7 @@ public:
     void setBuildingAddress(::Ifc2x3::IfcPostalAddress* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcBuilding (IfcEntityInstanceData* e);
+    IfcBuilding (IfcEntityInstanceData&& e);
     IfcBuilding (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_LongName, ::Ifc2x3::IfcElementCompositionEnum::Value v9_CompositionType, boost::optional< double > v10_ElevationOfRefHeight, boost::optional< double > v11_ElevationOfTerrain, ::Ifc2x3::IfcPostalAddress* v12_BuildingAddress);
     typedef aggregate_of< IfcBuilding > list;
 };
@@ -23560,7 +23560,7 @@ class IFC_PARSE_API IfcBuildingElementType : public  IfcElementType {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcBuildingElementType (IfcEntityInstanceData* e);
+    IfcBuildingElementType (IfcEntityInstanceData&& e);
     IfcBuildingElementType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
     typedef aggregate_of< IfcBuildingElementType > list;
 };
@@ -23748,7 +23748,7 @@ public:
     void setElevation(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcBuildingStorey (IfcEntityInstanceData* e);
+    IfcBuildingStorey (IfcEntityInstanceData&& e);
     IfcBuildingStorey (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_LongName, ::Ifc2x3::IfcElementCompositionEnum::Value v9_CompositionType, boost::optional< double > v10_Elevation);
     typedef aggregate_of< IfcBuildingStorey > list;
 };
@@ -23777,7 +23777,7 @@ public:
     void setWallThickness(double v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcCircleHollowProfileDef (IfcEntityInstanceData* e);
+    IfcCircleHollowProfileDef (IfcEntityInstanceData&& e);
     IfcCircleHollowProfileDef (::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, boost::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D* v3_Position, double v4_Radius, double v5_WallThickness);
     typedef aggregate_of< IfcCircleHollowProfileDef > list;
 };
@@ -23886,7 +23886,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcColumnTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcColumnType (IfcEntityInstanceData* e);
+    IfcColumnType (IfcEntityInstanceData&& e);
     IfcColumnType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcColumnTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcColumnType > list;
 };
@@ -23966,7 +23966,7 @@ public:
     void setSelfIntersect(boost::logic::tribool v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcCompositeCurve (IfcEntityInstanceData* e);
+    IfcCompositeCurve (IfcEntityInstanceData&& e);
     IfcCompositeCurve (aggregate_of< ::Ifc2x3::IfcCompositeCurveSegment >::ptr v1_Segments, boost::logic::tribool v2_SelfIntersect);
     typedef aggregate_of< IfcCompositeCurve > list;
 };
@@ -23982,7 +23982,7 @@ public:
     void setPosition(::Ifc2x3::IfcAxis2Placement* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcConic (IfcEntityInstanceData* e);
+    IfcConic (IfcEntityInstanceData&& e);
     IfcConic (::Ifc2x3::IfcAxis2Placement* v1_Position);
     typedef aggregate_of< IfcConic > list;
 };
@@ -24071,7 +24071,7 @@ public:
     void setBaseQuantity(::Ifc2x3::IfcMeasureWithUnit* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcConstructionResource (IfcEntityInstanceData* e);
+    IfcConstructionResource (IfcEntityInstanceData&& e);
     IfcConstructionResource (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< std::string > v6_ResourceIdentifier, boost::optional< std::string > v7_ResourceGroup, boost::optional< ::Ifc2x3::IfcResourceConsumptionEnum::Value > v8_ResourceConsumption, ::Ifc2x3::IfcMeasureWithUnit* v9_BaseQuantity);
     typedef aggregate_of< IfcConstructionResource > list;
 };
@@ -24090,7 +24090,7 @@ public:
         aggregate_of< IfcRelAssignsToControl >::ptr Controls() const; // INVERSE IfcRelAssignsToControl::RelatingControl
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcControl (IfcEntityInstanceData* e);
+    IfcControl (IfcEntityInstanceData&& e);
     IfcControl (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType);
     typedef aggregate_of< IfcControl > list;
 };
@@ -24134,7 +24134,7 @@ class IFC_PARSE_API IfcCostItem : public  IfcControl {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcCostItem (IfcEntityInstanceData* e);
+    IfcCostItem (IfcEntityInstanceData&& e);
     IfcCostItem (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType);
     typedef aggregate_of< IfcCostItem > list;
 };
@@ -24197,7 +24197,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcCostScheduleTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcCostSchedule (IfcEntityInstanceData* e);
+    IfcCostSchedule (IfcEntityInstanceData&& e);
     IfcCostSchedule (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcActorSelect* v6_SubmittedBy, ::Ifc2x3::IfcActorSelect* v7_PreparedBy, ::Ifc2x3::IfcDateTimeSelect* v8_SubmittedOn, boost::optional< std::string > v9_Status, boost::optional< aggregate_of< ::Ifc2x3::IfcActorSelect >::ptr > v10_TargetUsers, ::Ifc2x3::IfcDateTimeSelect* v11_UpdateDate, std::string v12_ID, ::Ifc2x3::IfcCostScheduleTypeEnum::Value v13_PredefinedType);
     typedef aggregate_of< IfcCostSchedule > list;
 };
@@ -24287,7 +24287,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcCoveringTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcCoveringType (IfcEntityInstanceData* e);
+    IfcCoveringType (IfcEntityInstanceData&& e);
     IfcCoveringType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcCoveringTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcCoveringType > list;
 };
@@ -24305,7 +24305,7 @@ class IFC_PARSE_API IfcCrewResource : public  IfcConstructionResource {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcCrewResource (IfcEntityInstanceData* e);
+    IfcCrewResource (IfcEntityInstanceData&& e);
     IfcCrewResource (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< std::string > v6_ResourceIdentifier, boost::optional< std::string > v7_ResourceGroup, boost::optional< ::Ifc2x3::IfcResourceConsumptionEnum::Value > v8_ResourceConsumption, ::Ifc2x3::IfcMeasureWithUnit* v9_BaseQuantity);
     typedef aggregate_of< IfcCrewResource > list;
 };
@@ -24337,7 +24337,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcCurtainWallTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcCurtainWallType (IfcEntityInstanceData* e);
+    IfcCurtainWallType (IfcEntityInstanceData&& e);
     IfcCurtainWallType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcCurtainWallTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcCurtainWallType > list;
 };
@@ -24346,7 +24346,7 @@ class IFC_PARSE_API IfcDimensionCurveDirectedCallout : public  IfcDraughtingCall
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcDimensionCurveDirectedCallout (IfcEntityInstanceData* e);
+    IfcDimensionCurveDirectedCallout (IfcEntityInstanceData&& e);
     IfcDimensionCurveDirectedCallout (aggregate_of< ::Ifc2x3::IfcDraughtingCalloutElement >::ptr v1_Contents);
     typedef aggregate_of< IfcDimensionCurveDirectedCallout > list;
 };
@@ -24382,7 +24382,7 @@ class IFC_PARSE_API IfcDistributionElementType : public  IfcElementType {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcDistributionElementType (IfcEntityInstanceData* e);
+    IfcDistributionElementType (IfcEntityInstanceData&& e);
     IfcDistributionElementType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
     typedef aggregate_of< IfcDistributionElementType > list;
 };
@@ -24455,7 +24455,7 @@ class IFC_PARSE_API IfcDistributionFlowElementType : public  IfcDistributionElem
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcDistributionFlowElementType (IfcEntityInstanceData* e);
+    IfcDistributionFlowElementType (IfcEntityInstanceData&& e);
     IfcDistributionFlowElementType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
     typedef aggregate_of< IfcDistributionFlowElementType > list;
 };
@@ -24480,7 +24480,7 @@ public:
     void setInputPhase(int v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcElectricalBaseProperties (IfcEntityInstanceData* e);
+    IfcElectricalBaseProperties (IfcEntityInstanceData&& e);
     IfcElectricalBaseProperties (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< ::Ifc2x3::IfcEnergySequenceEnum::Value > v5_EnergySequence, boost::optional< std::string > v6_UserDefinedEnergySequence, boost::optional< ::Ifc2x3::IfcElectricCurrentEnum::Value > v7_ElectricCurrentType, double v8_InputVoltage, double v9_InputFrequency, boost::optional< double > v10_FullLoadCurrent, boost::optional< double > v11_MinimumCircuitCurrent, boost::optional< double > v12_MaximumPowerInput, boost::optional< double > v13_RatedPowerInput, int v14_InputPhase);
     typedef aggregate_of< IfcElectricalBaseProperties > list;
 };
@@ -24556,7 +24556,7 @@ public:
     aggregate_of< IfcRelContainedInSpatialStructure >::ptr ContainedInStructure() const; // INVERSE IfcRelContainedInSpatialStructure::RelatedElements
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcElement (IfcEntityInstanceData* e);
+    IfcElement (IfcEntityInstanceData&& e);
     IfcElement (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef aggregate_of< IfcElement > list;
 };
@@ -24666,7 +24666,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcElementAssemblyTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcElementAssembly (IfcEntityInstanceData* e);
+    IfcElementAssembly (IfcEntityInstanceData&& e);
     IfcElementAssembly (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< ::Ifc2x3::IfcAssemblyPlaceEnum::Value > v9_AssemblyPlace, ::Ifc2x3::IfcElementAssemblyTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcElementAssembly > list;
 };
@@ -24751,7 +24751,7 @@ class IFC_PARSE_API IfcElementComponent : public  IfcElement {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcElementComponent (IfcEntityInstanceData* e);
+    IfcElementComponent (IfcEntityInstanceData&& e);
     IfcElementComponent (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef aggregate_of< IfcElementComponent > list;
 };
@@ -24768,7 +24768,7 @@ class IFC_PARSE_API IfcElementComponentType : public  IfcElementType {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcElementComponentType (IfcEntityInstanceData* e);
+    IfcElementComponentType (IfcEntityInstanceData&& e);
     IfcElementComponentType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
     typedef aggregate_of< IfcElementComponentType > list;
 };
@@ -24809,7 +24809,7 @@ public:
     void setSemiAxis2(double v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcEllipse (IfcEntityInstanceData* e);
+    IfcEllipse (IfcEntityInstanceData&& e);
     IfcEllipse (::Ifc2x3::IfcAxis2Placement* v1_Position, double v2_SemiAxis1, double v3_SemiAxis2);
     typedef aggregate_of< IfcEllipse > list;
 };
@@ -24840,7 +24840,7 @@ class IFC_PARSE_API IfcEnergyConversionDeviceType : public  IfcDistributionFlowE
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcEnergyConversionDeviceType (IfcEntityInstanceData* e);
+    IfcEnergyConversionDeviceType (IfcEntityInstanceData&& e);
     IfcEnergyConversionDeviceType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
     typedef aggregate_of< IfcEnergyConversionDeviceType > list;
 };
@@ -24849,7 +24849,7 @@ class IFC_PARSE_API IfcEquipmentElement : public  IfcElement {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcEquipmentElement (IfcEntityInstanceData* e);
+    IfcEquipmentElement (IfcEntityInstanceData&& e);
     IfcEquipmentElement (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef aggregate_of< IfcEquipmentElement > list;
 };
@@ -24858,7 +24858,7 @@ class IFC_PARSE_API IfcEquipmentStandard : public  IfcControl {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcEquipmentStandard (IfcEntityInstanceData* e);
+    IfcEquipmentStandard (IfcEntityInstanceData&& e);
     IfcEquipmentStandard (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType);
     typedef aggregate_of< IfcEquipmentStandard > list;
 };
@@ -24895,7 +24895,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcEvaporativeCoolerTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcEvaporativeCoolerType (IfcEntityInstanceData* e);
+    IfcEvaporativeCoolerType (IfcEntityInstanceData&& e);
     IfcEvaporativeCoolerType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcEvaporativeCoolerTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcEvaporativeCoolerType > list;
 };
@@ -24932,7 +24932,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcEvaporatorTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcEvaporatorType (IfcEntityInstanceData* e);
+    IfcEvaporatorType (IfcEntityInstanceData&& e);
     IfcEvaporatorType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcEvaporatorTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcEvaporatorType > list;
 };
@@ -24964,7 +24964,7 @@ class IFC_PARSE_API IfcFacetedBrep : public  IfcManifoldSolidBrep {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcFacetedBrep (IfcEntityInstanceData* e);
+    IfcFacetedBrep (IfcEntityInstanceData&& e);
     IfcFacetedBrep (::Ifc2x3::IfcClosedShell* v1_Outer);
     typedef aggregate_of< IfcFacetedBrep > list;
 };
@@ -24999,7 +24999,7 @@ public:
     void setVoids(aggregate_of< ::Ifc2x3::IfcClosedShell >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcFacetedBrepWithVoids (IfcEntityInstanceData* e);
+    IfcFacetedBrepWithVoids (IfcEntityInstanceData&& e);
     IfcFacetedBrepWithVoids (::Ifc2x3::IfcClosedShell* v1_Outer, aggregate_of< ::Ifc2x3::IfcClosedShell >::ptr v2_Voids);
     typedef aggregate_of< IfcFacetedBrepWithVoids > list;
 };
@@ -25015,7 +25015,7 @@ class IFC_PARSE_API IfcFastener : public  IfcElementComponent {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcFastener (IfcEntityInstanceData* e);
+    IfcFastener (IfcEntityInstanceData&& e);
     IfcFastener (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef aggregate_of< IfcFastener > list;
 };
@@ -25046,7 +25046,7 @@ class IFC_PARSE_API IfcFastenerType : public  IfcElementComponentType {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcFastenerType (IfcEntityInstanceData* e);
+    IfcFastenerType (IfcEntityInstanceData&& e);
     IfcFastenerType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
     typedef aggregate_of< IfcFastenerType > list;
 };
@@ -25148,7 +25148,7 @@ class IFC_PARSE_API IfcFeatureElement : public  IfcElement {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcFeatureElement (IfcEntityInstanceData* e);
+    IfcFeatureElement (IfcEntityInstanceData&& e);
     IfcFeatureElement (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef aggregate_of< IfcFeatureElement > list;
 };
@@ -25212,7 +25212,7 @@ public:
         aggregate_of< IfcRelProjectsElement >::ptr ProjectsElements() const; // INVERSE IfcRelProjectsElement::RelatedFeatureElement
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcFeatureElementAddition (IfcEntityInstanceData* e);
+    IfcFeatureElementAddition (IfcEntityInstanceData&& e);
     IfcFeatureElementAddition (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef aggregate_of< IfcFeatureElementAddition > list;
 };
@@ -25271,7 +25271,7 @@ public:
         aggregate_of< IfcRelVoidsElement >::ptr VoidsElements() const; // INVERSE IfcRelVoidsElement::RelatedOpeningElement
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcFeatureElementSubtraction (IfcEntityInstanceData* e);
+    IfcFeatureElementSubtraction (IfcEntityInstanceData&& e);
     IfcFeatureElementSubtraction (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef aggregate_of< IfcFeatureElementSubtraction > list;
 };
@@ -25301,7 +25301,7 @@ class IFC_PARSE_API IfcFlowControllerType : public  IfcDistributionFlowElementTy
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcFlowControllerType (IfcEntityInstanceData* e);
+    IfcFlowControllerType (IfcEntityInstanceData&& e);
     IfcFlowControllerType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
     typedef aggregate_of< IfcFlowControllerType > list;
 };
@@ -25332,7 +25332,7 @@ class IFC_PARSE_API IfcFlowFittingType : public  IfcDistributionFlowElementType 
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcFlowFittingType (IfcEntityInstanceData* e);
+    IfcFlowFittingType (IfcEntityInstanceData&& e);
     IfcFlowFittingType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
     typedef aggregate_of< IfcFlowFittingType > list;
 };
@@ -25375,7 +25375,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcFlowMeterTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcFlowMeterType (IfcEntityInstanceData* e);
+    IfcFlowMeterType (IfcEntityInstanceData&& e);
     IfcFlowMeterType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcFlowMeterTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcFlowMeterType > list;
 };
@@ -25405,7 +25405,7 @@ class IFC_PARSE_API IfcFlowMovingDeviceType : public  IfcDistributionFlowElement
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcFlowMovingDeviceType (IfcEntityInstanceData* e);
+    IfcFlowMovingDeviceType (IfcEntityInstanceData&& e);
     IfcFlowMovingDeviceType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
     typedef aggregate_of< IfcFlowMovingDeviceType > list;
 };
@@ -25444,7 +25444,7 @@ class IFC_PARSE_API IfcFlowSegmentType : public  IfcDistributionFlowElementType 
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcFlowSegmentType (IfcEntityInstanceData* e);
+    IfcFlowSegmentType (IfcEntityInstanceData&& e);
     IfcFlowSegmentType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
     typedef aggregate_of< IfcFlowSegmentType > list;
 };
@@ -25459,7 +25459,7 @@ class IFC_PARSE_API IfcFlowStorageDeviceType : public  IfcDistributionFlowElemen
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcFlowStorageDeviceType (IfcEntityInstanceData* e);
+    IfcFlowStorageDeviceType (IfcEntityInstanceData&& e);
     IfcFlowStorageDeviceType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
     typedef aggregate_of< IfcFlowStorageDeviceType > list;
 };
@@ -25474,7 +25474,7 @@ class IFC_PARSE_API IfcFlowTerminalType : public  IfcDistributionFlowElementType
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcFlowTerminalType (IfcEntityInstanceData* e);
+    IfcFlowTerminalType (IfcEntityInstanceData&& e);
     IfcFlowTerminalType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
     typedef aggregate_of< IfcFlowTerminalType > list;
 };
@@ -25490,7 +25490,7 @@ class IFC_PARSE_API IfcFlowTreatmentDeviceType : public  IfcDistributionFlowElem
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcFlowTreatmentDeviceType (IfcEntityInstanceData* e);
+    IfcFlowTreatmentDeviceType (IfcEntityInstanceData&& e);
     IfcFlowTreatmentDeviceType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
     typedef aggregate_of< IfcFlowTreatmentDeviceType > list;
 };
@@ -25602,7 +25602,7 @@ class IFC_PARSE_API IfcFurnishingElement : public  IfcElement {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcFurnishingElement (IfcEntityInstanceData* e);
+    IfcFurnishingElement (IfcEntityInstanceData&& e);
     IfcFurnishingElement (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef aggregate_of< IfcFurnishingElement > list;
 };
@@ -25611,7 +25611,7 @@ class IFC_PARSE_API IfcFurnitureStandard : public  IfcControl {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcFurnitureStandard (IfcEntityInstanceData* e);
+    IfcFurnitureStandard (IfcEntityInstanceData&& e);
     IfcFurnitureStandard (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType);
     typedef aggregate_of< IfcFurnitureStandard > list;
 };
@@ -25622,7 +25622,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcGasTerminalTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcGasTerminalType (IfcEntityInstanceData* e);
+    IfcGasTerminalType (IfcEntityInstanceData&& e);
     IfcGasTerminalType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcGasTerminalTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcGasTerminalType > list;
 };
@@ -25736,7 +25736,7 @@ public:
         aggregate_of< IfcRelContainedInSpatialStructure >::ptr ContainedInStructure() const; // INVERSE IfcRelContainedInSpatialStructure::RelatedElements
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcGrid (IfcEntityInstanceData* e);
+    IfcGrid (IfcEntityInstanceData&& e);
     IfcGrid (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, aggregate_of< ::Ifc2x3::IfcGridAxis >::ptr v8_UAxes, aggregate_of< ::Ifc2x3::IfcGridAxis >::ptr v9_VAxes, boost::optional< aggregate_of< ::Ifc2x3::IfcGridAxis >::ptr > v10_WAxes);
     typedef aggregate_of< IfcGrid > list;
 };
@@ -25775,7 +25775,7 @@ public:
         aggregate_of< IfcRelAssignsToGroup >::ptr IsGroupedBy() const; // INVERSE IfcRelAssignsToGroup::RelatingGroup
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcGroup (IfcEntityInstanceData* e);
+    IfcGroup (IfcEntityInstanceData&& e);
     IfcGroup (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType);
     typedef aggregate_of< IfcGroup > list;
 };
@@ -25815,7 +25815,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcHeatExchangerTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcHeatExchangerType (IfcEntityInstanceData* e);
+    IfcHeatExchangerType (IfcEntityInstanceData&& e);
     IfcHeatExchangerType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcHeatExchangerTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcHeatExchangerType > list;
 };
@@ -25852,7 +25852,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcHumidifierTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcHumidifierType (IfcEntityInstanceData* e);
+    IfcHumidifierType (IfcEntityInstanceData&& e);
     IfcHumidifierType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcHumidifierTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcHumidifierType > list;
 };
@@ -25890,7 +25890,7 @@ public:
     void setOriginalValue(::Ifc2x3::IfcCostValue* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcInventory (IfcEntityInstanceData* e);
+    IfcInventory (IfcEntityInstanceData&& e);
     IfcInventory (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcInventoryTypeEnum::Value v6_InventoryType, ::Ifc2x3::IfcActorSelect* v7_Jurisdiction, aggregate_of< ::Ifc2x3::IfcPerson >::ptr v8_ResponsiblePersons, ::Ifc2x3::IfcCalendarDate* v9_LastUpdateDate, ::Ifc2x3::IfcCostValue* v10_CurrentValue, ::Ifc2x3::IfcCostValue* v11_OriginalValue);
     typedef aggregate_of< IfcInventory > list;
 };
@@ -25928,7 +25928,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcJunctionBoxTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcJunctionBoxType (IfcEntityInstanceData* e);
+    IfcJunctionBoxType (IfcEntityInstanceData&& e);
     IfcJunctionBoxType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcJunctionBoxTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcJunctionBoxType > list;
 };
@@ -25962,7 +25962,7 @@ public:
     void setSkillSet(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcLaborResource (IfcEntityInstanceData* e);
+    IfcLaborResource (IfcEntityInstanceData&& e);
     IfcLaborResource (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< std::string > v6_ResourceIdentifier, boost::optional< std::string > v7_ResourceGroup, boost::optional< ::Ifc2x3::IfcResourceConsumptionEnum::Value > v8_ResourceConsumption, ::Ifc2x3::IfcMeasureWithUnit* v9_BaseQuantity, boost::optional< std::string > v10_SkillSet);
     typedef aggregate_of< IfcLaborResource > list;
 };
@@ -26002,7 +26002,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcLampTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcLampType (IfcEntityInstanceData* e);
+    IfcLampType (IfcEntityInstanceData&& e);
     IfcLampType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcLampTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcLampType > list;
 };
@@ -26044,7 +26044,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcLightFixtureTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcLightFixtureType (IfcEntityInstanceData* e);
+    IfcLightFixtureType (IfcEntityInstanceData&& e);
     IfcLightFixtureType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcLightFixtureTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcLightFixtureType > list;
 };
@@ -26053,7 +26053,7 @@ class IFC_PARSE_API IfcLinearDimension : public  IfcDimensionCurveDirectedCallou
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcLinearDimension (IfcEntityInstanceData* e);
+    IfcLinearDimension (IfcEntityInstanceData&& e);
     IfcLinearDimension (aggregate_of< ::Ifc2x3::IfcDraughtingCalloutElement >::ptr v1_Contents);
     typedef aggregate_of< IfcLinearDimension > list;
 };
@@ -26094,7 +26094,7 @@ public:
     void setNominalLength(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcMechanicalFastener (IfcEntityInstanceData* e);
+    IfcMechanicalFastener (IfcEntityInstanceData&& e);
     IfcMechanicalFastener (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< double > v9_NominalDiameter, boost::optional< double > v10_NominalLength);
     typedef aggregate_of< IfcMechanicalFastener > list;
 };
@@ -26137,7 +26137,7 @@ class IFC_PARSE_API IfcMechanicalFastenerType : public  IfcFastenerType {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcMechanicalFastenerType (IfcEntityInstanceData* e);
+    IfcMechanicalFastenerType (IfcEntityInstanceData&& e);
     IfcMechanicalFastenerType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
     typedef aggregate_of< IfcMechanicalFastenerType > list;
 };
@@ -26249,7 +26249,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcMemberTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcMemberType (IfcEntityInstanceData* e);
+    IfcMemberType (IfcEntityInstanceData&& e);
     IfcMemberType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcMemberTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcMemberType > list;
 };
@@ -26287,7 +26287,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcMotorConnectionTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcMotorConnectionType (IfcEntityInstanceData* e);
+    IfcMotorConnectionType (IfcEntityInstanceData&& e);
     IfcMotorConnectionType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcMotorConnectionTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcMotorConnectionType > list;
 };
@@ -26302,7 +26302,7 @@ public:
     void setPunchList(boost::optional< std::vector< std::string > /*[1:?]*/ > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcMove (IfcEntityInstanceData* e);
+    IfcMove (IfcEntityInstanceData&& e);
     IfcMove (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, std::string v6_TaskId, boost::optional< std::string > v7_Status, boost::optional< std::string > v8_WorkMethod, bool v9_IsMilestone, boost::optional< int > v10_Priority, ::Ifc2x3::IfcSpatialStructureElement* v11_MoveFrom, ::Ifc2x3::IfcSpatialStructureElement* v12_MoveTo, boost::optional< std::vector< std::string > /*[1:?]*/ > v13_PunchList);
     typedef aggregate_of< IfcMove > list;
 };
@@ -26322,7 +26322,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcOccupantTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcOccupant (IfcEntityInstanceData* e);
+    IfcOccupant (IfcEntityInstanceData&& e);
     IfcOccupant (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcActorSelect* v6_TheActor, ::Ifc2x3::IfcOccupantTypeEnum::Value v7_PredefinedType);
     typedef aggregate_of< IfcOccupant > list;
 };
@@ -26533,7 +26533,7 @@ public:
         aggregate_of< IfcRelFillsElement >::ptr HasFillings() const; // INVERSE IfcRelFillsElement::RelatingOpeningElement
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcOpeningElement (IfcEntityInstanceData* e);
+    IfcOpeningElement (IfcEntityInstanceData&& e);
     IfcOpeningElement (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef aggregate_of< IfcOpeningElement > list;
 };
@@ -26544,7 +26544,7 @@ public:
     void setActionID(std::string v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcOrderAction (IfcEntityInstanceData* e);
+    IfcOrderAction (IfcEntityInstanceData&& e);
     IfcOrderAction (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, std::string v6_TaskId, boost::optional< std::string > v7_Status, boost::optional< std::string > v8_WorkMethod, bool v9_IsMilestone, boost::optional< int > v10_Priority, std::string v11_ActionID);
     typedef aggregate_of< IfcOrderAction > list;
 };
@@ -26584,7 +26584,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcOutletTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcOutletType (IfcEntityInstanceData* e);
+    IfcOutletType (IfcEntityInstanceData&& e);
     IfcOutletType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcOutletTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcOutletType > list;
 };
@@ -26600,7 +26600,7 @@ public:
     void setLifeCyclePhase(std::string v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcPerformanceHistory (IfcEntityInstanceData* e);
+    IfcPerformanceHistory (IfcEntityInstanceData&& e);
     IfcPerformanceHistory (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, std::string v6_LifeCyclePhase);
     typedef aggregate_of< IfcPerformanceHistory > list;
 };
@@ -26647,7 +26647,7 @@ public:
     void setPermitID(std::string v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcPermit (IfcEntityInstanceData* e);
+    IfcPermit (IfcEntityInstanceData&& e);
     IfcPermit (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, std::string v6_PermitID);
     typedef aggregate_of< IfcPermit > list;
 };
@@ -26687,7 +26687,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcPipeFittingTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcPipeFittingType (IfcEntityInstanceData* e);
+    IfcPipeFittingType (IfcEntityInstanceData&& e);
     IfcPipeFittingType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcPipeFittingTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcPipeFittingType > list;
 };
@@ -26731,7 +26731,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcPipeSegmentTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcPipeSegmentType (IfcEntityInstanceData* e);
+    IfcPipeSegmentType (IfcEntityInstanceData&& e);
     IfcPipeSegmentType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcPipeSegmentTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcPipeSegmentType > list;
 };
@@ -26819,7 +26819,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcPlateTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcPlateType (IfcEntityInstanceData* e);
+    IfcPlateType (IfcEntityInstanceData&& e);
     IfcPlateType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcPlateTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcPlateType > list;
 };
@@ -26844,7 +26844,7 @@ public:
     void setPoints(aggregate_of< ::Ifc2x3::IfcCartesianPoint >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcPolyline (IfcEntityInstanceData* e);
+    IfcPolyline (IfcEntityInstanceData&& e);
     IfcPolyline (aggregate_of< ::Ifc2x3::IfcCartesianPoint >::ptr v1_Points);
     typedef aggregate_of< IfcPolyline > list;
 };
@@ -26908,7 +26908,7 @@ public:
     aggregate_of< IfcRelConnectsPorts >::ptr ConnectedTo() const; // INVERSE IfcRelConnectsPorts::RelatingPort
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcPort (IfcEntityInstanceData* e);
+    IfcPort (IfcEntityInstanceData&& e);
     IfcPort (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation);
     typedef aggregate_of< IfcPort > list;
 };
@@ -27026,7 +27026,7 @@ public:
     void setUserDefinedProcedureType(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcProcedure (IfcEntityInstanceData* e);
+    IfcProcedure (IfcEntityInstanceData&& e);
     IfcProcedure (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, std::string v6_ProcedureID, ::Ifc2x3::IfcProcedureTypeEnum::Value v7_ProcedureType, boost::optional< std::string > v8_UserDefinedProcedureType);
     typedef aggregate_of< IfcProcedure > list;
 };
@@ -27095,7 +27095,7 @@ public:
     void setStatus(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcProjectOrder (IfcEntityInstanceData* e);
+    IfcProjectOrder (IfcEntityInstanceData&& e);
     IfcProjectOrder (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, std::string v6_ID, ::Ifc2x3::IfcProjectOrderTypeEnum::Value v7_PredefinedType, boost::optional< std::string > v8_Status);
     typedef aggregate_of< IfcProjectOrder > list;
 };
@@ -27108,7 +27108,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcProjectOrderRecordTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcProjectOrderRecord (IfcEntityInstanceData* e);
+    IfcProjectOrderRecord (IfcEntityInstanceData&& e);
     IfcProjectOrderRecord (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, aggregate_of< ::Ifc2x3::IfcRelAssignsToProjectOrder >::ptr v6_Records, ::Ifc2x3::IfcProjectOrderRecordTypeEnum::Value v7_PredefinedType);
     typedef aggregate_of< IfcProjectOrderRecord > list;
 };
@@ -27223,7 +27223,7 @@ class IFC_PARSE_API IfcProjectionElement : public  IfcFeatureElementAddition {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcProjectionElement (IfcEntityInstanceData* e);
+    IfcProjectionElement (IfcEntityInstanceData&& e);
     IfcProjectionElement (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef aggregate_of< IfcProjectionElement > list;
 };
@@ -27269,7 +27269,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcProtectiveDeviceTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcProtectiveDeviceType (IfcEntityInstanceData* e);
+    IfcProtectiveDeviceType (IfcEntityInstanceData&& e);
     IfcProtectiveDeviceType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcProtectiveDeviceTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcProtectiveDeviceType > list;
 };
@@ -27308,7 +27308,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcPumpTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcPumpType (IfcEntityInstanceData* e);
+    IfcPumpType (IfcEntityInstanceData&& e);
     IfcPumpType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcPumpTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcPumpType > list;
 };
@@ -27317,7 +27317,7 @@ class IFC_PARSE_API IfcRadiusDimension : public  IfcDimensionCurveDirectedCallou
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRadiusDimension (IfcEntityInstanceData* e);
+    IfcRadiusDimension (IfcEntityInstanceData&& e);
     IfcRadiusDimension (aggregate_of< ::Ifc2x3::IfcDraughtingCalloutElement >::ptr v1_Contents);
     typedef aggregate_of< IfcRadiusDimension > list;
 };
@@ -27348,7 +27348,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcRailingTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRailingType (IfcEntityInstanceData* e);
+    IfcRailingType (IfcEntityInstanceData&& e);
     IfcRailingType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcRailingTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcRailingType > list;
 };
@@ -27379,7 +27379,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcRampFlightTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRampFlightType (IfcEntityInstanceData* e);
+    IfcRampFlightType (IfcEntityInstanceData&& e);
     IfcRampFlightType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcRampFlightTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcRampFlightType > list;
 };
@@ -27409,7 +27409,7 @@ class IFC_PARSE_API IfcRelAggregates : public  IfcRelDecomposes {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRelAggregates (IfcEntityInstanceData* e);
+    IfcRelAggregates (IfcEntityInstanceData&& e);
     IfcRelAggregates (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, ::Ifc2x3::IfcObjectDefinition* v5_RelatingObject, aggregate_of< ::Ifc2x3::IfcObjectDefinition >::ptr v6_RelatedObjects);
     typedef aggregate_of< IfcRelAggregates > list;
 };
@@ -27420,7 +27420,7 @@ public:
     void setTimeForTask(::Ifc2x3::IfcScheduleTimeControl* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRelAssignsTasks (IfcEntityInstanceData* e);
+    IfcRelAssignsTasks (IfcEntityInstanceData&& e);
     IfcRelAssignsTasks (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, aggregate_of< ::Ifc2x3::IfcObjectDefinition >::ptr v5_RelatedObjects, boost::optional< ::Ifc2x3::IfcObjectTypeEnum::Value > v6_RelatedObjectsType, ::Ifc2x3::IfcControl* v7_RelatingControl, ::Ifc2x3::IfcScheduleTimeControl* v8_TimeForTask);
     typedef aggregate_of< IfcRelAssignsTasks > list;
 };
@@ -27468,7 +27468,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcSanitaryTerminalTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcSanitaryTerminalType (IfcEntityInstanceData* e);
+    IfcSanitaryTerminalType (IfcEntityInstanceData&& e);
     IfcSanitaryTerminalType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcSanitaryTerminalTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcSanitaryTerminalType > list;
 };
@@ -27514,7 +27514,7 @@ public:
         aggregate_of< IfcRelAssignsTasks >::ptr ScheduleTimeControlAssigned() const; // INVERSE IfcRelAssignsTasks::TimeForTask
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcScheduleTimeControl (IfcEntityInstanceData* e);
+    IfcScheduleTimeControl (IfcEntityInstanceData&& e);
     IfcScheduleTimeControl (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcDateTimeSelect* v6_ActualStart, ::Ifc2x3::IfcDateTimeSelect* v7_EarlyStart, ::Ifc2x3::IfcDateTimeSelect* v8_LateStart, ::Ifc2x3::IfcDateTimeSelect* v9_ScheduleStart, ::Ifc2x3::IfcDateTimeSelect* v10_ActualFinish, ::Ifc2x3::IfcDateTimeSelect* v11_EarlyFinish, ::Ifc2x3::IfcDateTimeSelect* v12_LateFinish, ::Ifc2x3::IfcDateTimeSelect* v13_ScheduleFinish, boost::optional< double > v14_ScheduleDuration, boost::optional< double > v15_ActualDuration, boost::optional< double > v16_RemainingTime, boost::optional< double > v17_FreeFloat, boost::optional< double > v18_TotalFloat, boost::optional< bool > v19_IsCritical, ::Ifc2x3::IfcDateTimeSelect* v20_StatusTime, boost::optional< double > v21_StartFloat, boost::optional< double > v22_FinishFloat, boost::optional< double > v23_Completion);
     typedef aggregate_of< IfcScheduleTimeControl > list;
 };
@@ -27527,7 +27527,7 @@ public:
     void setServiceLifeDuration(double v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcServiceLife (IfcEntityInstanceData* e);
+    IfcServiceLife (IfcEntityInstanceData&& e);
     IfcServiceLife (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcServiceLifeTypeEnum::Value v6_ServiceLifeType, double v7_ServiceLifeDuration);
     typedef aggregate_of< IfcServiceLife > list;
 };
@@ -27742,7 +27742,7 @@ public:
     void setSiteAddress(::Ifc2x3::IfcPostalAddress* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcSite (IfcEntityInstanceData* e);
+    IfcSite (IfcEntityInstanceData&& e);
     IfcSite (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_LongName, ::Ifc2x3::IfcElementCompositionEnum::Value v9_CompositionType, boost::optional< std::vector< int > /*[3:4]*/ > v10_RefLatitude, boost::optional< std::vector< int > /*[3:4]*/ > v11_RefLongitude, boost::optional< double > v12_RefElevation, boost::optional< std::string > v13_LandTitleNumber, ::Ifc2x3::IfcPostalAddress* v14_SiteAddress);
     typedef aggregate_of< IfcSite > list;
 };
@@ -27830,7 +27830,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcSlabTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcSlabType (IfcEntityInstanceData* e);
+    IfcSlabType (IfcEntityInstanceData&& e);
     IfcSlabType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcSlabTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcSlabType > list;
 };
@@ -28095,7 +28095,7 @@ public:
     aggregate_of< IfcRelSpaceBoundary >::ptr BoundedBy() const; // INVERSE IfcRelSpaceBoundary::RelatingSpace
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcSpace (IfcEntityInstanceData* e);
+    IfcSpace (IfcEntityInstanceData&& e);
     IfcSpace (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_LongName, ::Ifc2x3::IfcElementCompositionEnum::Value v9_CompositionType, ::Ifc2x3::IfcInternalOrExternalEnum::Value v10_InteriorOrExteriorSpace, boost::optional< double > v11_ElevationWithFlooring);
     typedef aggregate_of< IfcSpace > list;
 };
@@ -28136,7 +28136,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcSpaceHeaterTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcSpaceHeaterType (IfcEntityInstanceData* e);
+    IfcSpaceHeaterType (IfcEntityInstanceData&& e);
     IfcSpaceHeaterType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcSpaceHeaterTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcSpaceHeaterType > list;
 };
@@ -28157,7 +28157,7 @@ public:
     aggregate_of< IfcRelInteractionRequirements >::ptr HasInteractionReqsTo() const; // INVERSE IfcRelInteractionRequirements::RelatingSpaceProgram
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcSpaceProgram (IfcEntityInstanceData* e);
+    IfcSpaceProgram (IfcEntityInstanceData&& e);
     IfcSpaceProgram (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, std::string v6_SpaceProgramIdentifier, boost::optional< double > v7_MaxRequiredArea, boost::optional< double > v8_MinRequiredArea, ::Ifc2x3::IfcSpatialStructureElement* v9_RequestedLocation, double v10_StandardRequiredArea);
     typedef aggregate_of< IfcSpaceProgram > list;
 };
@@ -28249,7 +28249,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcSpaceTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcSpaceType (IfcEntityInstanceData* e);
+    IfcSpaceType (IfcEntityInstanceData&& e);
     IfcSpaceType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcSpaceTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcSpaceType > list;
 };
@@ -28286,7 +28286,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcStackTerminalTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcStackTerminalType (IfcEntityInstanceData* e);
+    IfcStackTerminalType (IfcEntityInstanceData&& e);
     IfcStackTerminalType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcStackTerminalTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcStackTerminalType > list;
 };
@@ -28317,7 +28317,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcStairFlightTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcStairFlightType (IfcEntityInstanceData* e);
+    IfcStairFlightType (IfcEntityInstanceData&& e);
     IfcStairFlightType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcStairFlightTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcStairFlightType > list;
 };
@@ -28349,7 +28349,7 @@ public:
     void setCausedBy(::Ifc2x3::IfcStructuralReaction* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcStructuralAction (IfcEntityInstanceData* e);
+    IfcStructuralAction (IfcEntityInstanceData&& e);
     IfcStructuralAction (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, ::Ifc2x3::IfcStructuralLoad* v8_AppliedLoad, ::Ifc2x3::IfcGlobalOrLocalEnum::Value v9_GlobalOrLocal, bool v10_DestabilizingLoad, ::Ifc2x3::IfcStructuralReaction* v11_CausedBy);
     typedef aggregate_of< IfcStructuralAction > list;
 };
@@ -28364,7 +28364,7 @@ public:
         aggregate_of< IfcRelConnectsStructuralMember >::ptr ConnectsStructuralMembers() const; // INVERSE IfcRelConnectsStructuralMember::RelatedStructuralConnection
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcStructuralConnection (IfcEntityInstanceData* e);
+    IfcStructuralConnection (IfcEntityInstanceData&& e);
     IfcStructuralConnection (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, ::Ifc2x3::IfcBoundaryCondition* v8_AppliedCondition);
     typedef aggregate_of< IfcStructuralConnection > list;
 };
@@ -28389,7 +28389,7 @@ class IFC_PARSE_API IfcStructuralCurveConnection : public  IfcStructuralConnecti
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcStructuralCurveConnection (IfcEntityInstanceData* e);
+    IfcStructuralCurveConnection (IfcEntityInstanceData&& e);
     IfcStructuralCurveConnection (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, ::Ifc2x3::IfcBoundaryCondition* v8_AppliedCondition);
     typedef aggregate_of< IfcStructuralCurveConnection > list;
 };
@@ -28437,7 +28437,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcStructuralCurveTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcStructuralCurveMember (IfcEntityInstanceData* e);
+    IfcStructuralCurveMember (IfcEntityInstanceData&& e);
     IfcStructuralCurveMember (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, ::Ifc2x3::IfcStructuralCurveTypeEnum::Value v8_PredefinedType);
     typedef aggregate_of< IfcStructuralCurveMember > list;
 };
@@ -28465,7 +28465,7 @@ class IFC_PARSE_API IfcStructuralCurveMemberVarying : public  IfcStructuralCurve
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcStructuralCurveMemberVarying (IfcEntityInstanceData* e);
+    IfcStructuralCurveMemberVarying (IfcEntityInstanceData&& e);
     IfcStructuralCurveMemberVarying (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, ::Ifc2x3::IfcStructuralCurveTypeEnum::Value v8_PredefinedType);
     typedef aggregate_of< IfcStructuralCurveMemberVarying > list;
 };
@@ -28482,7 +28482,7 @@ public:
     void setProjectedOrTrue(::Ifc2x3::IfcProjectedOrTrueLengthEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcStructuralLinearAction (IfcEntityInstanceData* e);
+    IfcStructuralLinearAction (IfcEntityInstanceData&& e);
     IfcStructuralLinearAction (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, ::Ifc2x3::IfcStructuralLoad* v8_AppliedLoad, ::Ifc2x3::IfcGlobalOrLocalEnum::Value v9_GlobalOrLocal, bool v10_DestabilizingLoad, ::Ifc2x3::IfcStructuralReaction* v11_CausedBy, ::Ifc2x3::IfcProjectedOrTrueLengthEnum::Value v12_ProjectedOrTrue);
     typedef aggregate_of< IfcStructuralLinearAction > list;
 };
@@ -28495,7 +28495,7 @@ public:
     void setSubsequentAppliedLoads(aggregate_of< ::Ifc2x3::IfcStructuralLoad >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcStructuralLinearActionVarying (IfcEntityInstanceData* e);
+    IfcStructuralLinearActionVarying (IfcEntityInstanceData&& e);
     IfcStructuralLinearActionVarying (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, ::Ifc2x3::IfcStructuralLoad* v8_AppliedLoad, ::Ifc2x3::IfcGlobalOrLocalEnum::Value v9_GlobalOrLocal, bool v10_DestabilizingLoad, ::Ifc2x3::IfcStructuralReaction* v11_CausedBy, ::Ifc2x3::IfcProjectedOrTrueLengthEnum::Value v12_ProjectedOrTrue, ::Ifc2x3::IfcShapeAspect* v13_VaryingAppliedLoadLocation, aggregate_of< ::Ifc2x3::IfcStructuralLoad >::ptr v14_SubsequentAppliedLoads);
     typedef aggregate_of< IfcStructuralLinearActionVarying > list;
 };
@@ -28553,7 +28553,7 @@ public:
     aggregate_of< IfcStructuralAnalysisModel >::ptr LoadGroupFor() const; // INVERSE IfcStructuralAnalysisModel::LoadedBy
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcStructuralLoadGroup (IfcEntityInstanceData* e);
+    IfcStructuralLoadGroup (IfcEntityInstanceData&& e);
     IfcStructuralLoadGroup (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcLoadGroupTypeEnum::Value v6_PredefinedType, ::Ifc2x3::IfcActionTypeEnum::Value v7_ActionType, ::Ifc2x3::IfcActionSourceTypeEnum::Value v8_ActionSource, boost::optional< double > v9_Coefficient, boost::optional< std::string > v10_Purpose);
     typedef aggregate_of< IfcStructuralLoadGroup > list;
 };
@@ -28570,7 +28570,7 @@ public:
     void setProjectedOrTrue(::Ifc2x3::IfcProjectedOrTrueLengthEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcStructuralPlanarAction (IfcEntityInstanceData* e);
+    IfcStructuralPlanarAction (IfcEntityInstanceData&& e);
     IfcStructuralPlanarAction (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, ::Ifc2x3::IfcStructuralLoad* v8_AppliedLoad, ::Ifc2x3::IfcGlobalOrLocalEnum::Value v9_GlobalOrLocal, bool v10_DestabilizingLoad, ::Ifc2x3::IfcStructuralReaction* v11_CausedBy, ::Ifc2x3::IfcProjectedOrTrueLengthEnum::Value v12_ProjectedOrTrue);
     typedef aggregate_of< IfcStructuralPlanarAction > list;
 };
@@ -28583,7 +28583,7 @@ public:
     void setSubsequentAppliedLoads(aggregate_of< ::Ifc2x3::IfcStructuralLoad >::ptr v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcStructuralPlanarActionVarying (IfcEntityInstanceData* e);
+    IfcStructuralPlanarActionVarying (IfcEntityInstanceData&& e);
     IfcStructuralPlanarActionVarying (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, ::Ifc2x3::IfcStructuralLoad* v8_AppliedLoad, ::Ifc2x3::IfcGlobalOrLocalEnum::Value v9_GlobalOrLocal, bool v10_DestabilizingLoad, ::Ifc2x3::IfcStructuralReaction* v11_CausedBy, ::Ifc2x3::IfcProjectedOrTrueLengthEnum::Value v12_ProjectedOrTrue, ::Ifc2x3::IfcShapeAspect* v13_VaryingAppliedLoadLocation, aggregate_of< ::Ifc2x3::IfcStructuralLoad >::ptr v14_SubsequentAppliedLoads);
     typedef aggregate_of< IfcStructuralPlanarActionVarying > list;
 };
@@ -28636,7 +28636,7 @@ class IFC_PARSE_API IfcStructuralPointAction : public  IfcStructuralAction {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcStructuralPointAction (IfcEntityInstanceData* e);
+    IfcStructuralPointAction (IfcEntityInstanceData&& e);
     IfcStructuralPointAction (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, ::Ifc2x3::IfcStructuralLoad* v8_AppliedLoad, ::Ifc2x3::IfcGlobalOrLocalEnum::Value v9_GlobalOrLocal, bool v10_DestabilizingLoad, ::Ifc2x3::IfcStructuralReaction* v11_CausedBy);
     typedef aggregate_of< IfcStructuralPointAction > list;
 };
@@ -28657,7 +28657,7 @@ class IFC_PARSE_API IfcStructuralPointConnection : public  IfcStructuralConnecti
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcStructuralPointConnection (IfcEntityInstanceData* e);
+    IfcStructuralPointConnection (IfcEntityInstanceData&& e);
     IfcStructuralPointConnection (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, ::Ifc2x3::IfcBoundaryCondition* v8_AppliedCondition);
     typedef aggregate_of< IfcStructuralPointConnection > list;
 };
@@ -28708,7 +28708,7 @@ class IFC_PARSE_API IfcStructuralPointReaction : public  IfcStructuralReaction {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcStructuralPointReaction (IfcEntityInstanceData* e);
+    IfcStructuralPointReaction (IfcEntityInstanceData&& e);
     IfcStructuralPointReaction (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, ::Ifc2x3::IfcStructuralLoad* v8_AppliedLoad, ::Ifc2x3::IfcGlobalOrLocalEnum::Value v9_GlobalOrLocal);
     typedef aggregate_of< IfcStructuralPointReaction > list;
 };
@@ -28730,7 +28730,7 @@ public:
         aggregate_of< IfcStructuralAnalysisModel >::ptr ResultGroupFor() const; // INVERSE IfcStructuralAnalysisModel::HasResults
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcStructuralResultGroup (IfcEntityInstanceData* e);
+    IfcStructuralResultGroup (IfcEntityInstanceData&& e);
     IfcStructuralResultGroup (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcAnalysisTheoryTypeEnum::Value v6_TheoryType, ::Ifc2x3::IfcStructuralLoadGroup* v7_ResultForLoadGroup, bool v8_IsLinear);
     typedef aggregate_of< IfcStructuralResultGroup > list;
 };
@@ -28750,7 +28750,7 @@ class IFC_PARSE_API IfcStructuralSurfaceConnection : public  IfcStructuralConnec
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcStructuralSurfaceConnection (IfcEntityInstanceData* e);
+    IfcStructuralSurfaceConnection (IfcEntityInstanceData&& e);
     IfcStructuralSurfaceConnection (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, ::Ifc2x3::IfcBoundaryCondition* v8_AppliedCondition);
     typedef aggregate_of< IfcStructuralSurfaceConnection > list;
 };
@@ -28786,7 +28786,7 @@ public:
     void setJobDescription(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcSubContractResource (IfcEntityInstanceData* e);
+    IfcSubContractResource (IfcEntityInstanceData&& e);
     IfcSubContractResource (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< std::string > v6_ResourceIdentifier, boost::optional< std::string > v7_ResourceGroup, boost::optional< ::Ifc2x3::IfcResourceConsumptionEnum::Value > v8_ResourceConsumption, ::Ifc2x3::IfcMeasureWithUnit* v9_BaseQuantity, ::Ifc2x3::IfcActorSelect* v10_SubContractor, boost::optional< std::string > v11_JobDescription);
     typedef aggregate_of< IfcSubContractResource > list;
 };
@@ -28837,7 +28837,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcSwitchingDeviceTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcSwitchingDeviceType (IfcEntityInstanceData* e);
+    IfcSwitchingDeviceType (IfcEntityInstanceData&& e);
     IfcSwitchingDeviceType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcSwitchingDeviceTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcSwitchingDeviceType > list;
 };
@@ -28863,7 +28863,7 @@ public:
         aggregate_of< IfcRelServicesBuildings >::ptr ServicesBuildings() const; // INVERSE IfcRelServicesBuildings::RelatingSystem
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcSystem (IfcEntityInstanceData* e);
+    IfcSystem (IfcEntityInstanceData&& e);
     IfcSystem (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType);
     typedef aggregate_of< IfcSystem > list;
 };
@@ -28906,7 +28906,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcTankTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcTankType (IfcEntityInstanceData* e);
+    IfcTankType (IfcEntityInstanceData&& e);
     IfcTankType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcTankTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcTankType > list;
 };
@@ -28921,7 +28921,7 @@ public:
     void setTimeSeries(::Ifc2x3::IfcTimeSeries* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcTimeSeriesSchedule (IfcEntityInstanceData* e);
+    IfcTimeSeriesSchedule (IfcEntityInstanceData&& e);
     IfcTimeSeriesSchedule (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< aggregate_of< ::Ifc2x3::IfcDateTimeSelect >::ptr > v6_ApplicableDates, ::Ifc2x3::IfcTimeSeriesScheduleTypeEnum::Value v7_TimeSeriesScheduleType, ::Ifc2x3::IfcTimeSeries* v8_TimeSeries);
     typedef aggregate_of< IfcTimeSeriesSchedule > list;
 };
@@ -28959,7 +28959,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcTransformerTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcTransformerType (IfcEntityInstanceData* e);
+    IfcTransformerType (IfcEntityInstanceData&& e);
     IfcTransformerType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcTransformerTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcTransformerType > list;
 };
@@ -29091,7 +29091,7 @@ public:
     void setCapacityByNumber(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcTransportElement (IfcEntityInstanceData* e);
+    IfcTransportElement (IfcEntityInstanceData&& e);
     IfcTransportElement (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< ::Ifc2x3::IfcTransportElementTypeEnum::Value > v9_OperationType, boost::optional< double > v10_CapacityByWeight, boost::optional< double > v11_CapacityByNumber);
     typedef aggregate_of< IfcTransportElement > list;
 };
@@ -29192,7 +29192,7 @@ public:
     void setMasterRepresentation(::Ifc2x3::IfcTrimmingPreference::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcTrimmedCurve (IfcEntityInstanceData* e);
+    IfcTrimmedCurve (IfcEntityInstanceData&& e);
     IfcTrimmedCurve (::Ifc2x3::IfcCurve* v1_BasisCurve, aggregate_of< ::Ifc2x3::IfcTrimmingSelect >::ptr v2_Trim1, aggregate_of< ::Ifc2x3::IfcTrimmingSelect >::ptr v3_Trim2, bool v4_SenseAgreement, ::Ifc2x3::IfcTrimmingPreference::Value v5_MasterRepresentation);
     typedef aggregate_of< IfcTrimmedCurve > list;
 };
@@ -29232,7 +29232,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcTubeBundleTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcTubeBundleType (IfcEntityInstanceData* e);
+    IfcTubeBundleType (IfcEntityInstanceData&& e);
     IfcTubeBundleType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcTubeBundleTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcTubeBundleType > list;
 };
@@ -29271,7 +29271,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcUnitaryEquipmentTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcUnitaryEquipmentType (IfcEntityInstanceData* e);
+    IfcUnitaryEquipmentType (IfcEntityInstanceData&& e);
     IfcUnitaryEquipmentType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcUnitaryEquipmentTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcUnitaryEquipmentType > list;
 };
@@ -29320,7 +29320,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcValveTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcValveType (IfcEntityInstanceData* e);
+    IfcValveType (IfcEntityInstanceData&& e);
     IfcValveType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcValveTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcValveType > list;
 };
@@ -29414,7 +29414,7 @@ class IFC_PARSE_API IfcVirtualElement : public  IfcElement {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcVirtualElement (IfcEntityInstanceData* e);
+    IfcVirtualElement (IfcEntityInstanceData&& e);
     IfcVirtualElement (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef aggregate_of< IfcVirtualElement > list;
 };
@@ -29509,7 +29509,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcWallTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcWallType (IfcEntityInstanceData* e);
+    IfcWallType (IfcEntityInstanceData&& e);
     IfcWallType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcWallTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcWallType > list;
 };
@@ -29556,7 +29556,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcWasteTerminalTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcWasteTerminalType (IfcEntityInstanceData* e);
+    IfcWasteTerminalType (IfcEntityInstanceData&& e);
     IfcWasteTerminalType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcWasteTerminalTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcWasteTerminalType > list;
 };
@@ -29635,7 +29635,7 @@ public:
     void setUserDefinedControlType(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcWorkControl (IfcEntityInstanceData* e);
+    IfcWorkControl (IfcEntityInstanceData&& e);
     IfcWorkControl (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, std::string v6_Identifier, ::Ifc2x3::IfcDateTimeSelect* v7_CreationDate, boost::optional< aggregate_of< ::Ifc2x3::IfcPerson >::ptr > v8_Creators, boost::optional< std::string > v9_Purpose, boost::optional< double > v10_Duration, boost::optional< double > v11_TotalFloat, ::Ifc2x3::IfcDateTimeSelect* v12_StartTime, ::Ifc2x3::IfcDateTimeSelect* v13_FinishTime, boost::optional< ::Ifc2x3::IfcWorkControlTypeEnum::Value > v14_WorkControlType, boost::optional< std::string > v15_UserDefinedControlType);
     typedef aggregate_of< IfcWorkControl > list;
 };
@@ -29668,7 +29668,7 @@ class IFC_PARSE_API IfcWorkPlan : public  IfcWorkControl {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcWorkPlan (IfcEntityInstanceData* e);
+    IfcWorkPlan (IfcEntityInstanceData&& e);
     IfcWorkPlan (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, std::string v6_Identifier, ::Ifc2x3::IfcDateTimeSelect* v7_CreationDate, boost::optional< aggregate_of< ::Ifc2x3::IfcPerson >::ptr > v8_Creators, boost::optional< std::string > v9_Purpose, boost::optional< double > v10_Duration, boost::optional< double > v11_TotalFloat, ::Ifc2x3::IfcDateTimeSelect* v12_StartTime, ::Ifc2x3::IfcDateTimeSelect* v13_FinishTime, boost::optional< ::Ifc2x3::IfcWorkControlTypeEnum::Value > v14_WorkControlType, boost::optional< std::string > v15_UserDefinedControlType);
     typedef aggregate_of< IfcWorkPlan > list;
 };
@@ -29716,7 +29716,7 @@ class IFC_PARSE_API IfcWorkSchedule : public  IfcWorkControl {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcWorkSchedule (IfcEntityInstanceData* e);
+    IfcWorkSchedule (IfcEntityInstanceData&& e);
     IfcWorkSchedule (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, std::string v6_Identifier, ::Ifc2x3::IfcDateTimeSelect* v7_CreationDate, boost::optional< aggregate_of< ::Ifc2x3::IfcPerson >::ptr > v8_Creators, boost::optional< std::string > v9_Purpose, boost::optional< double > v10_Duration, boost::optional< double > v11_TotalFloat, ::Ifc2x3::IfcDateTimeSelect* v12_StartTime, ::Ifc2x3::IfcDateTimeSelect* v13_FinishTime, boost::optional< ::Ifc2x3::IfcWorkControlTypeEnum::Value > v14_WorkControlType, boost::optional< std::string > v15_UserDefinedControlType);
     typedef aggregate_of< IfcWorkSchedule > list;
 };
@@ -29809,7 +29809,7 @@ class IFC_PARSE_API IfcZone : public  IfcGroup {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcZone (IfcEntityInstanceData* e);
+    IfcZone (IfcEntityInstanceData&& e);
     IfcZone (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType);
     typedef aggregate_of< IfcZone > list;
 };
@@ -29818,7 +29818,7 @@ class IFC_PARSE_API Ifc2DCompositeCurve : public  IfcCompositeCurve {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    Ifc2DCompositeCurve (IfcEntityInstanceData* e);
+    Ifc2DCompositeCurve (IfcEntityInstanceData&& e);
     Ifc2DCompositeCurve (aggregate_of< ::Ifc2x3::IfcCompositeCurveSegment >::ptr v1_Segments, boost::logic::tribool v2_SelfIntersect);
     typedef aggregate_of< Ifc2DCompositeCurve > list;
 };
@@ -29866,7 +29866,7 @@ public:
     void setRequestID(std::string v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcActionRequest (IfcEntityInstanceData* e);
+    IfcActionRequest (IfcEntityInstanceData&& e);
     IfcActionRequest (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, std::string v6_RequestID);
     typedef aggregate_of< IfcActionRequest > list;
 };
@@ -29903,7 +29903,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcAirTerminalBoxTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcAirTerminalBoxType (IfcEntityInstanceData* e);
+    IfcAirTerminalBoxType (IfcEntityInstanceData&& e);
     IfcAirTerminalBoxType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcAirTerminalBoxTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcAirTerminalBoxType > list;
 };
@@ -29939,7 +29939,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcAirTerminalTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcAirTerminalType (IfcEntityInstanceData* e);
+    IfcAirTerminalType (IfcEntityInstanceData&& e);
     IfcAirTerminalType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcAirTerminalTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcAirTerminalType > list;
 };
@@ -29976,7 +29976,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcAirToAirHeatRecoveryTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcAirToAirHeatRecoveryType (IfcEntityInstanceData* e);
+    IfcAirToAirHeatRecoveryType (IfcEntityInstanceData&& e);
     IfcAirToAirHeatRecoveryType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcAirToAirHeatRecoveryTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcAirToAirHeatRecoveryType > list;
 };
@@ -29985,7 +29985,7 @@ class IFC_PARSE_API IfcAngularDimension : public  IfcDimensionCurveDirectedCallo
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcAngularDimension (IfcEntityInstanceData* e);
+    IfcAngularDimension (IfcEntityInstanceData&& e);
     IfcAngularDimension (aggregate_of< ::Ifc2x3::IfcDraughtingCalloutElement >::ptr v1_Contents);
     typedef aggregate_of< IfcAngularDimension > list;
 };
@@ -30047,7 +30047,7 @@ public:
     void setDepreciatedValue(::Ifc2x3::IfcCostValue* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcAsset (IfcEntityInstanceData* e);
+    IfcAsset (IfcEntityInstanceData&& e);
     IfcAsset (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, std::string v6_AssetID, ::Ifc2x3::IfcCostValue* v7_OriginalValue, ::Ifc2x3::IfcCostValue* v8_CurrentValue, ::Ifc2x3::IfcCostValue* v9_TotalReplacementCost, ::Ifc2x3::IfcActorSelect* v10_Owner, ::Ifc2x3::IfcActorSelect* v11_User, ::Ifc2x3::IfcPerson* v12_ResponsiblePerson, ::Ifc2x3::IfcCalendarDate* v13_IncorporationDate, ::Ifc2x3::IfcCostValue* v14_DepreciatedValue);
     typedef aggregate_of< IfcAsset > list;
 };
@@ -30119,7 +30119,7 @@ public:
     void setSelfIntersect(boost::logic::tribool v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcBSplineCurve (IfcEntityInstanceData* e);
+    IfcBSplineCurve (IfcEntityInstanceData&& e);
     IfcBSplineCurve (int v1_Degree, aggregate_of< ::Ifc2x3::IfcCartesianPoint >::ptr v2_ControlPointsList, ::Ifc2x3::IfcBSplineCurveForm::Value v3_CurveForm, boost::logic::tribool v4_ClosedCurve, boost::logic::tribool v5_SelfIntersect);
     typedef aggregate_of< IfcBSplineCurve > list;
 };
@@ -30228,7 +30228,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcBeamTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcBeamType (IfcEntityInstanceData* e);
+    IfcBeamType (IfcEntityInstanceData&& e);
     IfcBeamType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcBeamTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcBeamType > list;
 };
@@ -30237,7 +30237,7 @@ class IFC_PARSE_API IfcBezierCurve : public  IfcBSplineCurve {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcBezierCurve (IfcEntityInstanceData* e);
+    IfcBezierCurve (IfcEntityInstanceData&& e);
     IfcBezierCurve (int v1_Degree, aggregate_of< ::Ifc2x3::IfcCartesianPoint >::ptr v2_ControlPointsList, ::Ifc2x3::IfcBSplineCurveForm::Value v3_CurveForm, boost::logic::tribool v4_ClosedCurve, boost::logic::tribool v5_SelfIntersect);
     typedef aggregate_of< IfcBezierCurve > list;
 };
@@ -30277,7 +30277,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcBoilerTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcBoilerType (IfcEntityInstanceData* e);
+    IfcBoilerType (IfcEntityInstanceData&& e);
     IfcBoilerType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcBoilerTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcBoilerType > list;
 };
@@ -30648,7 +30648,7 @@ class IFC_PARSE_API IfcBuildingElement : public  IfcElement {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcBuildingElement (IfcEntityInstanceData* e);
+    IfcBuildingElement (IfcEntityInstanceData&& e);
     IfcBuildingElement (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef aggregate_of< IfcBuildingElement > list;
 };
@@ -30657,7 +30657,7 @@ class IFC_PARSE_API IfcBuildingElementComponent : public  IfcBuildingElement {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcBuildingElementComponent (IfcEntityInstanceData* e);
+    IfcBuildingElementComponent (IfcEntityInstanceData&& e);
     IfcBuildingElementComponent (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef aggregate_of< IfcBuildingElementComponent > list;
 };
@@ -30682,7 +30682,7 @@ class IFC_PARSE_API IfcBuildingElementPart : public  IfcBuildingElementComponent
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcBuildingElementPart (IfcEntityInstanceData* e);
+    IfcBuildingElementPart (IfcEntityInstanceData&& e);
     IfcBuildingElementPart (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef aggregate_of< IfcBuildingElementPart > list;
 };
@@ -30882,7 +30882,7 @@ public:
     void setCompositionType(boost::optional< ::Ifc2x3::IfcElementCompositionEnum::Value > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcBuildingElementProxy (IfcEntityInstanceData* e);
+    IfcBuildingElementProxy (IfcEntityInstanceData&& e);
     IfcBuildingElementProxy (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< ::Ifc2x3::IfcElementCompositionEnum::Value > v9_CompositionType);
     typedef aggregate_of< IfcBuildingElementProxy > list;
 };
@@ -30927,7 +30927,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcBuildingElementProxyTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcBuildingElementProxyType (IfcEntityInstanceData* e);
+    IfcBuildingElementProxyType (IfcEntityInstanceData&& e);
     IfcBuildingElementProxyType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcBuildingElementProxyTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcBuildingElementProxyType > list;
 };
@@ -30964,7 +30964,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcCableCarrierFittingTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcCableCarrierFittingType (IfcEntityInstanceData* e);
+    IfcCableCarrierFittingType (IfcEntityInstanceData&& e);
     IfcCableCarrierFittingType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcCableCarrierFittingTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcCableCarrierFittingType > list;
 };
@@ -31007,7 +31007,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcCableCarrierSegmentTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcCableCarrierSegmentType (IfcEntityInstanceData* e);
+    IfcCableCarrierSegmentType (IfcEntityInstanceData&& e);
     IfcCableCarrierSegmentType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcCableCarrierSegmentTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcCableCarrierSegmentType > list;
 };
@@ -31059,7 +31059,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcCableSegmentTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcCableSegmentType (IfcEntityInstanceData* e);
+    IfcCableSegmentType (IfcEntityInstanceData&& e);
     IfcCableSegmentType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcCableSegmentTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcCableSegmentType > list;
 };
@@ -31102,7 +31102,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcChillerTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcChillerType (IfcEntityInstanceData* e);
+    IfcChillerType (IfcEntityInstanceData&& e);
     IfcChillerType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcChillerTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcChillerType > list;
 };
@@ -31140,7 +31140,7 @@ public:
     void setRadius(double v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcCircle (IfcEntityInstanceData* e);
+    IfcCircle (IfcEntityInstanceData&& e);
     IfcCircle (::Ifc2x3::IfcAxis2Placement* v1_Position, double v2_Radius);
     typedef aggregate_of< IfcCircle > list;
 };
@@ -31178,7 +31178,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcCoilTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcCoilType (IfcEntityInstanceData* e);
+    IfcCoilType (IfcEntityInstanceData&& e);
     IfcCoilType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcCoilTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcCoilType > list;
 };
@@ -31457,7 +31457,7 @@ class IFC_PARSE_API IfcColumn : public  IfcBuildingElement {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcColumn (IfcEntityInstanceData* e);
+    IfcColumn (IfcEntityInstanceData&& e);
     IfcColumn (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef aggregate_of< IfcColumn > list;
 };
@@ -31495,7 +31495,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcCompressorTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcCompressorType (IfcEntityInstanceData* e);
+    IfcCompressorType (IfcEntityInstanceData&& e);
     IfcCompressorType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcCompressorTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcCompressorType > list;
 };
@@ -31533,7 +31533,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcCondenserTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcCondenserType (IfcEntityInstanceData* e);
+    IfcCondenserType (IfcEntityInstanceData&& e);
     IfcCondenserType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcCondenserTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcCondenserType > list;
 };
@@ -31542,7 +31542,7 @@ class IFC_PARSE_API IfcCondition : public  IfcGroup {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcCondition (IfcEntityInstanceData* e);
+    IfcCondition (IfcEntityInstanceData&& e);
     IfcCondition (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType);
     typedef aggregate_of< IfcCondition > list;
 };
@@ -31555,7 +31555,7 @@ public:
     void setCriterionDateTime(::Ifc2x3::IfcDateTimeSelect* v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcConditionCriterion (IfcEntityInstanceData* e);
+    IfcConditionCriterion (IfcEntityInstanceData&& e);
     IfcConditionCriterion (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcConditionCriterionSelect* v6_Criterion, ::Ifc2x3::IfcDateTimeSelect* v7_CriterionDateTime);
     typedef aggregate_of< IfcConditionCriterion > list;
 };
@@ -31585,7 +31585,7 @@ class IFC_PARSE_API IfcConstructionEquipmentResource : public  IfcConstructionRe
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcConstructionEquipmentResource (IfcEntityInstanceData* e);
+    IfcConstructionEquipmentResource (IfcEntityInstanceData&& e);
     IfcConstructionEquipmentResource (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< std::string > v6_ResourceIdentifier, boost::optional< std::string > v7_ResourceGroup, boost::optional< ::Ifc2x3::IfcResourceConsumptionEnum::Value > v8_ResourceConsumption, ::Ifc2x3::IfcMeasureWithUnit* v9_BaseQuantity);
     typedef aggregate_of< IfcConstructionEquipmentResource > list;
 };
@@ -31623,7 +31623,7 @@ public:
     void setUsageRatio(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcConstructionMaterialResource (IfcEntityInstanceData* e);
+    IfcConstructionMaterialResource (IfcEntityInstanceData&& e);
     IfcConstructionMaterialResource (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< std::string > v6_ResourceIdentifier, boost::optional< std::string > v7_ResourceGroup, boost::optional< ::Ifc2x3::IfcResourceConsumptionEnum::Value > v8_ResourceConsumption, ::Ifc2x3::IfcMeasureWithUnit* v9_BaseQuantity, boost::optional< aggregate_of< ::Ifc2x3::IfcActorSelect >::ptr > v10_Suppliers, boost::optional< double > v11_UsageRatio);
     typedef aggregate_of< IfcConstructionMaterialResource > list;
 };
@@ -31646,7 +31646,7 @@ class IFC_PARSE_API IfcConstructionProductResource : public  IfcConstructionReso
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcConstructionProductResource (IfcEntityInstanceData* e);
+    IfcConstructionProductResource (IfcEntityInstanceData&& e);
     IfcConstructionProductResource (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, boost::optional< std::string > v6_ResourceIdentifier, boost::optional< std::string > v7_ResourceGroup, boost::optional< ::Ifc2x3::IfcResourceConsumptionEnum::Value > v8_ResourceConsumption, ::Ifc2x3::IfcMeasureWithUnit* v9_BaseQuantity);
     typedef aggregate_of< IfcConstructionProductResource > list;
 };
@@ -31686,7 +31686,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcCooledBeamTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcCooledBeamType (IfcEntityInstanceData* e);
+    IfcCooledBeamType (IfcEntityInstanceData&& e);
     IfcCooledBeamType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcCooledBeamTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcCooledBeamType > list;
 };
@@ -31730,7 +31730,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcCoolingTowerTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcCoolingTowerType (IfcEntityInstanceData* e);
+    IfcCoolingTowerType (IfcEntityInstanceData&& e);
     IfcCoolingTowerType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcCoolingTowerTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcCoolingTowerType > list;
 };
@@ -31967,7 +31967,7 @@ public:
     aggregate_of< IfcRelCoversBldgElements >::ptr Covers() const; // INVERSE IfcRelCoversBldgElements::RelatedCoverings
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcCovering (IfcEntityInstanceData* e);
+    IfcCovering (IfcEntityInstanceData&& e);
     IfcCovering (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< ::Ifc2x3::IfcCoveringTypeEnum::Value > v9_PredefinedType);
     typedef aggregate_of< IfcCovering > list;
 };
@@ -32113,7 +32113,7 @@ class IFC_PARSE_API IfcCurtainWall : public  IfcBuildingElement {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcCurtainWall (IfcEntityInstanceData* e);
+    IfcCurtainWall (IfcEntityInstanceData&& e);
     IfcCurtainWall (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef aggregate_of< IfcCurtainWall > list;
 };
@@ -32158,7 +32158,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcDamperTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcDamperType (IfcEntityInstanceData* e);
+    IfcDamperType (IfcEntityInstanceData&& e);
     IfcDamperType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcDamperTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcDamperType > list;
 };
@@ -32167,7 +32167,7 @@ class IFC_PARSE_API IfcDiameterDimension : public  IfcDimensionCurveDirectedCall
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcDiameterDimension (IfcEntityInstanceData* e);
+    IfcDiameterDimension (IfcEntityInstanceData&& e);
     IfcDiameterDimension (aggregate_of< ::Ifc2x3::IfcDraughtingCalloutElement >::ptr v1_Contents);
     typedef aggregate_of< IfcDiameterDimension > list;
 };
@@ -32348,7 +32348,7 @@ class IFC_PARSE_API IfcDiscreteAccessory : public  IfcElementComponent {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcDiscreteAccessory (IfcEntityInstanceData* e);
+    IfcDiscreteAccessory (IfcEntityInstanceData&& e);
     IfcDiscreteAccessory (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef aggregate_of< IfcDiscreteAccessory > list;
 };
@@ -32544,7 +32544,7 @@ class IFC_PARSE_API IfcDiscreteAccessoryType : public  IfcElementComponentType {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcDiscreteAccessoryType (IfcEntityInstanceData* e);
+    IfcDiscreteAccessoryType (IfcEntityInstanceData&& e);
     IfcDiscreteAccessoryType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
     typedef aggregate_of< IfcDiscreteAccessoryType > list;
 };
@@ -32592,7 +32592,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcDistributionChamberElementTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcDistributionChamberElementType (IfcEntityInstanceData* e);
+    IfcDistributionChamberElementType (IfcEntityInstanceData&& e);
     IfcDistributionChamberElementType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcDistributionChamberElementTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcDistributionChamberElementType > list;
 };
@@ -32654,7 +32654,7 @@ class IFC_PARSE_API IfcDistributionControlElementType : public  IfcDistributionE
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcDistributionControlElementType (IfcEntityInstanceData* e);
+    IfcDistributionControlElementType (IfcEntityInstanceData&& e);
     IfcDistributionControlElementType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType);
     typedef aggregate_of< IfcDistributionControlElementType > list;
 };
@@ -32824,7 +32824,7 @@ class IFC_PARSE_API IfcDistributionElement : public  IfcElement {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcDistributionElement (IfcEntityInstanceData* e);
+    IfcDistributionElement (IfcEntityInstanceData&& e);
     IfcDistributionElement (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef aggregate_of< IfcDistributionElement > list;
 };
@@ -32901,7 +32901,7 @@ public:
         aggregate_of< IfcRelFlowControlElements >::ptr HasControlElements() const; // INVERSE IfcRelFlowControlElements::RelatingFlowElement
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcDistributionFlowElement (IfcEntityInstanceData* e);
+    IfcDistributionFlowElement (IfcEntityInstanceData&& e);
     IfcDistributionFlowElement (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef aggregate_of< IfcDistributionFlowElement > list;
 };
@@ -32994,7 +32994,7 @@ public:
     void setFlowDirection(boost::optional< ::Ifc2x3::IfcFlowDirectionEnum::Value > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcDistributionPort (IfcEntityInstanceData* e);
+    IfcDistributionPort (IfcEntityInstanceData&& e);
     IfcDistributionPort (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< ::Ifc2x3::IfcFlowDirectionEnum::Value > v8_FlowDirection);
     typedef aggregate_of< IfcDistributionPort > list;
 };
@@ -33368,7 +33368,7 @@ public:
     void setOverallWidth(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcDoor (IfcEntityInstanceData* e);
+    IfcDoor (IfcEntityInstanceData&& e);
     IfcDoor (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< double > v9_OverallHeight, boost::optional< double > v10_OverallWidth);
     typedef aggregate_of< IfcDoor > list;
 };
@@ -33408,7 +33408,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcDuctFittingTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcDuctFittingType (IfcEntityInstanceData* e);
+    IfcDuctFittingType (IfcEntityInstanceData&& e);
     IfcDuctFittingType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcDuctFittingTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcDuctFittingType > list;
 };
@@ -33448,7 +33448,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcDuctSegmentTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcDuctSegmentType (IfcEntityInstanceData* e);
+    IfcDuctSegmentType (IfcEntityInstanceData&& e);
     IfcDuctSegmentType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcDuctSegmentTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcDuctSegmentType > list;
 };
@@ -33485,7 +33485,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcDuctSilencerTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcDuctSilencerType (IfcEntityInstanceData* e);
+    IfcDuctSilencerType (IfcEntityInstanceData&& e);
     IfcDuctSilencerType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcDuctSilencerTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcDuctSilencerType > list;
 };
@@ -33496,7 +33496,7 @@ public:
     void setFeatureLength(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcEdgeFeature (IfcEntityInstanceData* e);
+    IfcEdgeFeature (IfcEntityInstanceData&& e);
     IfcEdgeFeature (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< double > v9_FeatureLength);
     typedef aggregate_of< IfcEdgeFeature > list;
 };
@@ -33536,7 +33536,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcElectricApplianceTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcElectricApplianceType (IfcEntityInstanceData* e);
+    IfcElectricApplianceType (IfcEntityInstanceData&& e);
     IfcElectricApplianceType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcElectricApplianceTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcElectricApplianceType > list;
 };
@@ -33574,7 +33574,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcElectricFlowStorageDeviceTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcElectricFlowStorageDeviceType (IfcEntityInstanceData* e);
+    IfcElectricFlowStorageDeviceType (IfcEntityInstanceData&& e);
     IfcElectricFlowStorageDeviceType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcElectricFlowStorageDeviceTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcElectricFlowStorageDeviceType > list;
 };
@@ -33617,7 +33617,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcElectricGeneratorTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcElectricGeneratorType (IfcEntityInstanceData* e);
+    IfcElectricGeneratorType (IfcEntityInstanceData&& e);
     IfcElectricGeneratorType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcElectricGeneratorTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcElectricGeneratorType > list;
 };
@@ -33628,7 +33628,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcElectricHeaterTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcElectricHeaterType (IfcEntityInstanceData* e);
+    IfcElectricHeaterType (IfcEntityInstanceData&& e);
     IfcElectricHeaterType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcElectricHeaterTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcElectricHeaterType > list;
 };
@@ -33666,7 +33666,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcElectricMotorTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcElectricMotorType (IfcEntityInstanceData* e);
+    IfcElectricMotorType (IfcEntityInstanceData&& e);
     IfcElectricMotorType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcElectricMotorTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcElectricMotorType > list;
 };
@@ -33704,7 +33704,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcElectricTimeControlTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcElectricTimeControlType (IfcEntityInstanceData* e);
+    IfcElectricTimeControlType (IfcEntityInstanceData&& e);
     IfcElectricTimeControlType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcElectricTimeControlTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcElectricTimeControlType > list;
 };
@@ -33713,7 +33713,7 @@ class IFC_PARSE_API IfcElectricalCircuit : public  IfcSystem {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcElectricalCircuit (IfcEntityInstanceData* e);
+    IfcElectricalCircuit (IfcEntityInstanceData&& e);
     IfcElectricalCircuit (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType);
     typedef aggregate_of< IfcElectricalCircuit > list;
 };
@@ -33722,7 +33722,7 @@ class IFC_PARSE_API IfcElectricalElement : public  IfcElement {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcElectricalElement (IfcEntityInstanceData* e);
+    IfcElectricalElement (IfcEntityInstanceData&& e);
     IfcElectricalElement (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef aggregate_of< IfcElectricalElement > list;
 };
@@ -33739,7 +33739,7 @@ class IFC_PARSE_API IfcEnergyConversionDevice : public  IfcDistributionFlowEleme
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcEnergyConversionDevice (IfcEntityInstanceData* e);
+    IfcEnergyConversionDevice (IfcEntityInstanceData&& e);
     IfcEnergyConversionDevice (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef aggregate_of< IfcEnergyConversionDevice > list;
 };
@@ -33778,7 +33778,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcFanTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcFanType (IfcEntityInstanceData* e);
+    IfcFanType (IfcEntityInstanceData&& e);
     IfcFanType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcFanTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcFanType > list;
 };
@@ -33818,7 +33818,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcFilterTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcFilterType (IfcEntityInstanceData* e);
+    IfcFilterType (IfcEntityInstanceData&& e);
     IfcFilterType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcFilterTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcFilterType > list;
 };
@@ -33862,7 +33862,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcFireSuppressionTerminalTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcFireSuppressionTerminalType (IfcEntityInstanceData* e);
+    IfcFireSuppressionTerminalType (IfcEntityInstanceData&& e);
     IfcFireSuppressionTerminalType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcFireSuppressionTerminalTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcFireSuppressionTerminalType > list;
 };
@@ -33879,7 +33879,7 @@ class IFC_PARSE_API IfcFlowController : public  IfcDistributionFlowElement {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcFlowController (IfcEntityInstanceData* e);
+    IfcFlowController (IfcEntityInstanceData&& e);
     IfcFlowController (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef aggregate_of< IfcFlowController > list;
 };
@@ -33892,7 +33892,7 @@ class IFC_PARSE_API IfcFlowFitting : public  IfcDistributionFlowElement {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcFlowFitting (IfcEntityInstanceData* e);
+    IfcFlowFitting (IfcEntityInstanceData&& e);
     IfcFlowFitting (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef aggregate_of< IfcFlowFitting > list;
 };
@@ -33933,7 +33933,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcFlowInstrumentTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcFlowInstrumentType (IfcEntityInstanceData* e);
+    IfcFlowInstrumentType (IfcEntityInstanceData&& e);
     IfcFlowInstrumentType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcFlowInstrumentTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcFlowInstrumentType > list;
 };
@@ -33946,7 +33946,7 @@ class IFC_PARSE_API IfcFlowMovingDevice : public  IfcDistributionFlowElement {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcFlowMovingDevice (IfcEntityInstanceData* e);
+    IfcFlowMovingDevice (IfcEntityInstanceData&& e);
     IfcFlowMovingDevice (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef aggregate_of< IfcFlowMovingDevice > list;
 };
@@ -33977,7 +33977,7 @@ class IFC_PARSE_API IfcFlowSegment : public  IfcDistributionFlowElement {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcFlowSegment (IfcEntityInstanceData* e);
+    IfcFlowSegment (IfcEntityInstanceData&& e);
     IfcFlowSegment (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef aggregate_of< IfcFlowSegment > list;
 };
@@ -33994,7 +33994,7 @@ class IFC_PARSE_API IfcFlowStorageDevice : public  IfcDistributionFlowElement {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcFlowStorageDevice (IfcEntityInstanceData* e);
+    IfcFlowStorageDevice (IfcEntityInstanceData&& e);
     IfcFlowStorageDevice (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef aggregate_of< IfcFlowStorageDevice > list;
 };
@@ -34013,7 +34013,7 @@ class IFC_PARSE_API IfcFlowTerminal : public  IfcDistributionFlowElement {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcFlowTerminal (IfcEntityInstanceData* e);
+    IfcFlowTerminal (IfcEntityInstanceData&& e);
     IfcFlowTerminal (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef aggregate_of< IfcFlowTerminal > list;
 };
@@ -34026,7 +34026,7 @@ class IFC_PARSE_API IfcFlowTreatmentDevice : public  IfcDistributionFlowElement 
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcFlowTreatmentDevice (IfcEntityInstanceData* e);
+    IfcFlowTreatmentDevice (IfcEntityInstanceData&& e);
     IfcFlowTreatmentDevice (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef aggregate_of< IfcFlowTreatmentDevice > list;
 };
@@ -34061,7 +34061,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcFootingTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcFooting (IfcEntityInstanceData* e);
+    IfcFooting (IfcEntityInstanceData&& e);
     IfcFooting (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, ::Ifc2x3::IfcFootingTypeEnum::Value v9_PredefinedType);
     typedef aggregate_of< IfcFooting > list;
 };
@@ -34319,7 +34319,7 @@ class IFC_PARSE_API IfcMember : public  IfcBuildingElement {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcMember (IfcEntityInstanceData* e);
+    IfcMember (IfcEntityInstanceData&& e);
     IfcMember (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef aggregate_of< IfcMember > list;
 };
@@ -34355,7 +34355,7 @@ public:
     void setConstructionType(boost::optional< ::Ifc2x3::IfcPileConstructionEnum::Value > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcPile (IfcEntityInstanceData* e);
+    IfcPile (IfcEntityInstanceData&& e);
     IfcPile (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, ::Ifc2x3::IfcPileTypeEnum::Value v9_PredefinedType, boost::optional< ::Ifc2x3::IfcPileConstructionEnum::Value > v10_ConstructionType);
     typedef aggregate_of< IfcPile > list;
 };
@@ -34591,7 +34591,7 @@ class IFC_PARSE_API IfcPlate : public  IfcBuildingElement {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcPlate (IfcEntityInstanceData* e);
+    IfcPlate (IfcEntityInstanceData&& e);
     IfcPlate (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef aggregate_of< IfcPlate > list;
 };
@@ -34736,7 +34736,7 @@ public:
     void setPredefinedType(boost::optional< ::Ifc2x3::IfcRailingTypeEnum::Value > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRailing (IfcEntityInstanceData* e);
+    IfcRailing (IfcEntityInstanceData&& e);
     IfcRailing (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< ::Ifc2x3::IfcRailingTypeEnum::Value > v9_PredefinedType);
     typedef aggregate_of< IfcRailing > list;
 };
@@ -34879,7 +34879,7 @@ public:
     void setShapeType(::Ifc2x3::IfcRampTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRamp (IfcEntityInstanceData* e);
+    IfcRamp (IfcEntityInstanceData&& e);
     IfcRamp (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, ::Ifc2x3::IfcRampTypeEnum::Value v9_ShapeType);
     typedef aggregate_of< IfcRamp > list;
 };
@@ -35075,7 +35075,7 @@ class IFC_PARSE_API IfcRampFlight : public  IfcBuildingElement {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRampFlight (IfcEntityInstanceData* e);
+    IfcRampFlight (IfcEntityInstanceData&& e);
     IfcRampFlight (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef aggregate_of< IfcRampFlight > list;
 };
@@ -35086,7 +35086,7 @@ public:
     void setWeightsData(std::vector< double > /*[2:?]*/ v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRationalBezierCurve (IfcEntityInstanceData* e);
+    IfcRationalBezierCurve (IfcEntityInstanceData&& e);
     IfcRationalBezierCurve (int v1_Degree, aggregate_of< ::Ifc2x3::IfcCartesianPoint >::ptr v2_ControlPointsList, ::Ifc2x3::IfcBSplineCurveForm::Value v3_CurveForm, boost::logic::tribool v4_ClosedCurve, boost::logic::tribool v5_SelfIntersect, std::vector< double > /*[2:?]*/ v6_WeightsData);
     typedef aggregate_of< IfcRationalBezierCurve > list;
 };
@@ -35104,7 +35104,7 @@ public:
     void setSteelGrade(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcReinforcingElement (IfcEntityInstanceData* e);
+    IfcReinforcingElement (IfcEntityInstanceData&& e);
     IfcReinforcingElement (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_SteelGrade);
     typedef aggregate_of< IfcReinforcingElement > list;
 };
@@ -35152,7 +35152,7 @@ public:
     void setTransverseBarSpacing(double v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcReinforcingMesh (IfcEntityInstanceData* e);
+    IfcReinforcingMesh (IfcEntityInstanceData&& e);
     IfcReinforcingMesh (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_SteelGrade, boost::optional< double > v10_MeshLength, boost::optional< double > v11_MeshWidth, double v12_LongitudinalBarNominalDiameter, double v13_TransverseBarNominalDiameter, double v14_LongitudinalBarCrossSectionArea, double v15_TransverseBarCrossSectionArea, double v16_LongitudinalBarSpacing, double v17_TransverseBarSpacing);
     typedef aggregate_of< IfcReinforcingMesh > list;
 };
@@ -35307,7 +35307,7 @@ public:
     void setShapeType(::Ifc2x3::IfcRoofTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRoof (IfcEntityInstanceData* e);
+    IfcRoof (IfcEntityInstanceData&& e);
     IfcRoof (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, ::Ifc2x3::IfcRoofTypeEnum::Value v9_ShapeType);
     typedef aggregate_of< IfcRoof > list;
 };
@@ -35318,7 +35318,7 @@ public:
     void setRadius(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcRoundedEdgeFeature (IfcEntityInstanceData* e);
+    IfcRoundedEdgeFeature (IfcEntityInstanceData&& e);
     IfcRoundedEdgeFeature (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< double > v9_FeatureLength, boost::optional< double > v10_Radius);
     typedef aggregate_of< IfcRoundedEdgeFeature > list;
 };
@@ -35377,7 +35377,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcSensorTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcSensorType (IfcEntityInstanceData* e);
+    IfcSensorType (IfcEntityInstanceData&& e);
     IfcSensorType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcSensorTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcSensorType > list;
 };
@@ -35651,7 +35651,7 @@ public:
     void setPredefinedType(boost::optional< ::Ifc2x3::IfcSlabTypeEnum::Value > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcSlab (IfcEntityInstanceData* e);
+    IfcSlab (IfcEntityInstanceData&& e);
     IfcSlab (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< ::Ifc2x3::IfcSlabTypeEnum::Value > v9_PredefinedType);
     typedef aggregate_of< IfcSlab > list;
 };
@@ -35826,7 +35826,7 @@ public:
     void setShapeType(::Ifc2x3::IfcStairTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcStair (IfcEntityInstanceData* e);
+    IfcStair (IfcEntityInstanceData&& e);
     IfcStair (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, ::Ifc2x3::IfcStairTypeEnum::Value v9_ShapeType);
     typedef aggregate_of< IfcStair > list;
 };
@@ -36021,7 +36021,7 @@ public:
     void setTreadLength(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcStairFlight (IfcEntityInstanceData* e);
+    IfcStairFlight (IfcEntityInstanceData&& e);
     IfcStairFlight (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< int > v9_NumberOfRiser, boost::optional< int > v10_NumberOfTreads, boost::optional< double > v11_RiserHeight, boost::optional< double > v12_TreadLength);
     typedef aggregate_of< IfcStairFlight > list;
 };
@@ -36073,7 +36073,7 @@ public:
     void setHasResults(boost::optional< aggregate_of< ::Ifc2x3::IfcStructuralResultGroup >::ptr > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcStructuralAnalysisModel (IfcEntityInstanceData* e);
+    IfcStructuralAnalysisModel (IfcEntityInstanceData&& e);
     IfcStructuralAnalysisModel (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcAnalysisModelTypeEnum::Value v6_PredefinedType, ::Ifc2x3::IfcAxis2Placement3D* v7_OrientationOf2DPlane, boost::optional< aggregate_of< ::Ifc2x3::IfcStructuralLoadGroup >::ptr > v8_LoadedBy, boost::optional< aggregate_of< ::Ifc2x3::IfcStructuralResultGroup >::ptr > v9_HasResults);
     typedef aggregate_of< IfcStructuralAnalysisModel > list;
 };
@@ -36098,7 +36098,7 @@ public:
     void setMinCurvatureRadius(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcTendon (IfcEntityInstanceData* e);
+    IfcTendon (IfcEntityInstanceData&& e);
     IfcTendon (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_SteelGrade, ::Ifc2x3::IfcTendonTypeEnum::Value v10_PredefinedType, double v11_NominalDiameter, double v12_CrossSectionArea, boost::optional< double > v13_TensionForce, boost::optional< double > v14_PreStress, boost::optional< double > v15_FrictionCoefficient, boost::optional< double > v16_AnchorageSlip, boost::optional< double > v17_MinCurvatureRadius);
     typedef aggregate_of< IfcTendon > list;
 };
@@ -36107,7 +36107,7 @@ class IFC_PARSE_API IfcTendonAnchor : public  IfcReinforcingElement {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcTendonAnchor (IfcEntityInstanceData* e);
+    IfcTendonAnchor (IfcEntityInstanceData&& e);
     IfcTendonAnchor (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_SteelGrade);
     typedef aggregate_of< IfcTendonAnchor > list;
 };
@@ -36140,7 +36140,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcVibrationIsolatorTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcVibrationIsolatorType (IfcEntityInstanceData* e);
+    IfcVibrationIsolatorType (IfcEntityInstanceData&& e);
     IfcVibrationIsolatorType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcVibrationIsolatorTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcVibrationIsolatorType > list;
 };
@@ -36390,7 +36390,7 @@ class IFC_PARSE_API IfcWall : public  IfcBuildingElement {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcWall (IfcEntityInstanceData* e);
+    IfcWall (IfcEntityInstanceData&& e);
     IfcWall (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef aggregate_of< IfcWall > list;
 };
@@ -36600,7 +36600,7 @@ class IFC_PARSE_API IfcWallStandardCase : public  IfcWall {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcWallStandardCase (IfcEntityInstanceData* e);
+    IfcWallStandardCase (IfcEntityInstanceData&& e);
     IfcWallStandardCase (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef aggregate_of< IfcWallStandardCase > list;
 };
@@ -36976,7 +36976,7 @@ public:
     void setOverallWidth(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcWindow (IfcEntityInstanceData* e);
+    IfcWindow (IfcEntityInstanceData&& e);
     IfcWindow (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< double > v9_OverallHeight, boost::optional< double > v10_OverallWidth);
     typedef aggregate_of< IfcWindow > list;
 };
@@ -37018,7 +37018,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcActuatorTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcActuatorType (IfcEntityInstanceData* e);
+    IfcActuatorType (IfcEntityInstanceData&& e);
     IfcActuatorType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcActuatorTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcActuatorType > list;
 };
@@ -37055,7 +37055,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcAlarmTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcAlarmType (IfcEntityInstanceData* e);
+    IfcAlarmType (IfcEntityInstanceData&& e);
     IfcAlarmType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcAlarmTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcAlarmType > list;
 };
@@ -37300,7 +37300,7 @@ class IFC_PARSE_API IfcBeam : public  IfcBuildingElement {
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcBeam (IfcEntityInstanceData* e);
+    IfcBeam (IfcEntityInstanceData&& e);
     IfcBeam (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef aggregate_of< IfcBeam > list;
 };
@@ -37313,7 +37313,7 @@ public:
     void setHeight(boost::optional< double > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcChamferEdgeFeature (IfcEntityInstanceData* e);
+    IfcChamferEdgeFeature (IfcEntityInstanceData&& e);
     IfcChamferEdgeFeature (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< double > v9_FeatureLength, boost::optional< double > v10_Width, boost::optional< double > v11_Height);
     typedef aggregate_of< IfcChamferEdgeFeature > list;
 };
@@ -37360,7 +37360,7 @@ public:
     void setPredefinedType(::Ifc2x3::IfcControllerTypeEnum::Value v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcControllerType (IfcEntityInstanceData* e);
+    IfcControllerType (IfcEntityInstanceData&& e);
     IfcControllerType (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ApplicableOccurrence, boost::optional< aggregate_of< ::Ifc2x3::IfcPropertySetDefinition >::ptr > v6_HasPropertySets, boost::optional< aggregate_of< ::Ifc2x3::IfcRepresentationMap >::ptr > v7_RepresentationMaps, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ElementType, ::Ifc2x3::IfcControllerTypeEnum::Value v10_PredefinedType);
     typedef aggregate_of< IfcControllerType > list;
 };
@@ -37399,7 +37399,7 @@ class IFC_PARSE_API IfcDistributionChamberElement : public  IfcDistributionFlowE
 public:
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcDistributionChamberElement (IfcEntityInstanceData* e);
+    IfcDistributionChamberElement (IfcEntityInstanceData&& e);
     IfcDistributionChamberElement (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag);
     typedef aggregate_of< IfcDistributionChamberElement > list;
 };
@@ -37488,7 +37488,7 @@ public:
         aggregate_of< IfcRelFlowControlElements >::ptr AssignedToFlowElement() const; // INVERSE IfcRelFlowControlElements::RelatedControlElements
     virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcDistributionControlElement (IfcEntityInstanceData* e);
+    IfcDistributionControlElement (IfcEntityInstanceData&& e);
     IfcDistributionControlElement (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_ControlElementId);
     typedef aggregate_of< IfcDistributionControlElement > list;
 };
@@ -37501,7 +37501,7 @@ public:
     void setUserDefinedFunction(boost::optional< std::string > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcElectricDistributionPoint (IfcEntityInstanceData* e);
+    IfcElectricDistributionPoint (IfcEntityInstanceData&& e);
     IfcElectricDistributionPoint (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, ::Ifc2x3::IfcElectricDistributionPointFunctionEnum::Value v9_DistributionPointFunction, boost::optional< std::string > v10_UserDefinedFunction);
     typedef aggregate_of< IfcElectricDistributionPoint > list;
 };
@@ -37547,7 +37547,7 @@ public:
     void setBarSurface(boost::optional< ::Ifc2x3::IfcReinforcingBarSurfaceEnum::Value > v);
         virtual const IfcParse::entity& declaration() const;
     static const IfcParse::entity& Class();
-    IfcReinforcingBar (IfcEntityInstanceData* e);
+    IfcReinforcingBar (IfcEntityInstanceData&& e);
     IfcReinforcingBar (std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory* v2_OwnerHistory, boost::optional< std::string > v3_Name, boost::optional< std::string > v4_Description, boost::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement* v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation* v7_Representation, boost::optional< std::string > v8_Tag, boost::optional< std::string > v9_SteelGrade, double v10_NominalDiameter, double v11_CrossSectionArea, boost::optional< double > v12_BarLength, ::Ifc2x3::IfcReinforcingBarRoleEnum::Value v13_BarRole, boost::optional< ::Ifc2x3::IfcReinforcingBarSurfaceEnum::Value > v14_BarSurface);
     typedef aggregate_of< IfcReinforcingBar > list;
 };
