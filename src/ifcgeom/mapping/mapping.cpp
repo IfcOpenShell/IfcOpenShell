@@ -577,6 +577,9 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcStyledItem* inst) {
         if (rendering_style->DiffuseColour() && process_colour(rendering_style->DiffuseColour(), rgb)) {
             const taxonomy::colour& old_diffuse = surface_style->diffuse ? surface_style->diffuse : white;
             surface_style->diffuse = taxonomy::colour(old_diffuse.r() * rgb[0], old_diffuse.g() * rgb[1], old_diffuse.b() * rgb[2]);
+            if (!surface_style->surface) {
+                surface_style->surface = surface_style->diffuse;
+            }
         }
         if (rendering_style->DiffuseTransmissionColour()) {
             // Not supported
