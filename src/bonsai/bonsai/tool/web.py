@@ -387,6 +387,7 @@ class Web(bonsai.core.tool.Web):
                         continue
                     reference_name = os.path.basename(reference.Location)
                     reference_path = os.path.join(ifc_file_dir, reference.Location)
+                    reference_path = os.path.normpath(reference_path)
                     sheets_data.append({"name": reference_name, "path": reference_path})
 
             drawings = [e for e in tool.Ifc.get().by_type("IfcAnnotation") if e.ObjectType == "DRAWING"]
@@ -394,6 +395,7 @@ class Web(bonsai.core.tool.Web):
                 document = tool.Drawing.get_drawing_document(drawing)
                 reference_name = os.path.basename(document.Location)
                 reference_path = os.path.join(ifc_file_dir, document.Location)
+                reference_path = os.path.normpath(reference_path)
                 drawings_data.append({"name": reference_name, "path": reference_path})
 
             cls.send_webui_data(
