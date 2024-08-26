@@ -392,11 +392,13 @@ class PolylineDecorator:
         else:
             # Creates a fake "second to last" point away from the first point but in the same x axis
             # this allows to calculate the angle relative to x axis when there is only one point
-            second_to_last_point = Vector((last_point.x + 10, last_point.y, last_point.z))
+            second_to_last_point = Vector((last_point.x - 1000, last_point.y, last_point.z))
 
         distance = (snap_vector - last_point).length
         if distance > 0:
+            print(snap_vector, last_point, second_to_last_point)
             angle = tool.Cad.angle_3_vectors(snap_vector, last_point, second_to_last_point, degrees=True)
+            print("A", angle)
             if cls.input_panel:
                 cls.input_panel["X"] = str(round(snap_vector.x, 4))
                 cls.input_panel["Y"] = str(round(snap_vector.y, 4))
@@ -473,7 +475,7 @@ class PolylineDecorator:
         else:
             # Creates a fake "second to last" point away from the first point but in the same x axis
             # this allows to calculate the angle relative to x axis when there is only one point
-            second_to_last_point = Vector((last_point.x + 10, last_point.y, last_point.z))
+            second_to_last_point = Vector((last_point.x - 10, last_point.y, last_point.z))
 
         distance = float(cls.input_panel["D"])
 
