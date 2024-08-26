@@ -55,7 +55,6 @@ class WebNamespace(socketio.AsyncNamespace):
         )
 
     async def on_get_svg(self, sid, data):
-        print("hello world!")
         file_path = data["path"]
         with open(file_path, "r") as file:
             svg_data = file.read()
