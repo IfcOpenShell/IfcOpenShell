@@ -325,6 +325,13 @@ class DrawPolylineWall(bpy.types.Operator):
         self.input_panel = {"D": "", "A": "", "X": "", "Y": ""}
         self.snap_angle = None
         self.snapping_points = []
+        self.instructions = """TAB: Cycle Input
+    M: Modify Snap Point
+    C: Close
+    Backspace: Remove
+    X Y: Axis
+    Shift: Lock axis
+"""
 
     def recalculate_inputs(self, context):
         if self.number_input:
@@ -518,6 +525,7 @@ class DrawPolylineWall(bpy.types.Operator):
             tool.Snap.set_use_default_container(True)
             PolylineDecorator.set_use_default_container(True)
             tool.Snap.set_snap_plane_method("XY")
+            PolylineDecorator.set_instructions(self.instructions)
             PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
             self.visible_objs = tool.Raycast.get_visible_objects(context)
             for obj in self.visible_objs:
