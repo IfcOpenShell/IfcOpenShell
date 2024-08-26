@@ -197,7 +197,7 @@ class Snap(bonsai.core.tool.Snap):
         def create_axis_line_data(rot_mat, origin):
             length = 1000
             direction = Vector((1, 0, 0))
-            if cls.snap_plane_method == "YZ":
+            if cls.snap_plane_method == "YZ" or (not cls.snap_plane_method and cls.snap_axis_method == "Z"):
                 direction = Vector((0, 0, 1))
             rot_dir = rot_mat.inverted() @ direction
             start = origin + rot_dir * length
