@@ -192,7 +192,7 @@ class Snap(bonsai.core.tool.Snap):
         def create_axis_line_data(rot_mat, origin):
             length = 1000
             direction = Vector((1, 0, 0))
-            if cls.snap_plane_method == "YZ" or cls.snap_axis_method == "Z":
+            if cls.snap_plane_method == "YZ":
                 direction = Vector((0, 0, 1))
             rot_dir = rot_mat.inverted() @ direction
             start = origin + rot_dir * length
@@ -452,7 +452,7 @@ class Snap(bonsai.core.tool.Snap):
             else:
                 rot_intersection, cls.snap_angle, axis_start, axis_end = cls.snap_on_axis(intersection, None)
         if rot_intersection:
-            detected_snaps.append({"Axis": rot_intersection})
+            detected_snaps.append({"Axis": (rot_intersection, axis_start, axis_end)})
 
         detected_snaps.append({"Plane": intersection})
 
@@ -479,26 +479,41 @@ class Snap(bonsai.core.tool.Snap):
                     for op in options:
                         snapping_points.append(op)
 
-            elif "Edge-Vertex" in list(origin.keys()):
+            if "Edge-Vertex" in list(origin.keys()):
                 snap_obj, options = origin["Edge-Vertex"]
                 for op in options:
                     snapping_points.append(op)
 
-            elif "Polyline" in list(origin.keys()):
+            if "Polyline" in list(origin.keys()):
                 options = origin["Polyline"]
                 for op in options:
                     snapping_points.append(op)
 
-            elif "Axis" in list(origin.keys()):
+            if "Axis" in list(origin.keys()):
                 intersection = origin["Axis"]
-                snapping_points.append((intersection, "Axis"))
+                axis_start = intersection[1]
+                axis_end = intersection[2]
+                snapping_points.append((intersection[0], "Axis"))
 
-            elif "Plane" in list(origin.keys()):
+            if "Plane" in list(origin.keys()):
                 intersection = origin["Plane"]
                 snapping_points.append((intersection, "Plane"))
 
-            cls.update_snapping_point(snapping_points[0][0], snapping_points[0][1])
-            return snapping_points
+
+        # Make Axis first priority
+        if event.shift or cls.snap_axis_method in {"X", "Y", "Z"}:
+            cls.update_snapping_ref(snapping_points[0][0], snapping_points[0][1])
+            for point in snapping_points:
+                if point[1] == "Axis":
+                    if snapping_points[0][1] not in {"Axis", "Plane"}:
+                        mixed_snap =  cls.mix_snap_and_axis(snapping_points[0], axis_start, axis_end, 0)
+                        cls.update_snapping_point(mixed_snap[0], mixed_snap[1])
+                        return snapping_points
+                    cls.update_snapping_point(point[0], point[1])
+                    return snapping_points
+
+        cls.update_snapping_point(snapping_points[0][0], snapping_points[0][1])
+        return snapping_points
 
     @classmethod
     def modify_snapping_point_selection(cls, snapping_points):
