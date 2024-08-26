@@ -148,8 +148,8 @@ Token NoneTokenPtr();
 class IFC_PARSE_API IfcSpfLexer {
   private:
     IfcCharacterDecoder* decoder_;
-    unsigned int skipWhitespace();
-    unsigned int skipComment();
+    unsigned int skipWhitespace() const;
+    unsigned int skipComment() const;
 
   public:
     std::string& GetTempString() const {
@@ -164,106 +164,7 @@ class IFC_PARSE_API IfcSpfLexer {
     void TokenString(unsigned int offset, std::string& result);
 };
 
-/// Argument of type list, e.g.
-/// #1=IfcDirection((1.,0.,0.));
-///                 ==========
-class IFC_PARSE_API ArgumentList : public Argument {
-  private:
-    size_t size_;
-    Argument** list_;
-
-  public:
-    ArgumentList() : size_(0),
-                     list_(0) {}
-    ArgumentList(size_t n) : size_(n),
-                             list_(new Argument* [size_] { 0 }) {}
-    ~ArgumentList();
-
-    void read(IfcSpfLexer* lexer, std::vector<unsigned int>& ids);
-
-    IfcUtil::ArgumentType type() const;
-
-    operator std::vector<int>() const;
-    operator std::vector<double>() const;
-    operator std::vector<std::string>() const;
-    operator std::vector<boost::dynamic_bitset<>>() const;
-    operator aggregate_of_instance::ptr() const;
-
-    operator std::vector<std::vector<int>>() const;
-    operator std::vector<std::vector<double>>() const;
-    operator aggregate_of_aggregate_of_instance::ptr() const;
-
-    bool isNull() const;
-    unsigned int size() const;
-
-    Argument* operator[](unsigned int index) const;
-
-    std::string toString(bool upper = false) const;
-
-    Argument**& arguments() { return list_; }
-    size_t& size() { return size_; }
-};
-
-/// Argument being null, e.g. '$'
-///              == ===
-class IFC_PARSE_API NullArgument : public Argument {
-  public:
-    NullArgument() {}
-    IfcUtil::ArgumentType type() const { return IfcUtil::Argument_NULL; }
-    bool isNull() const { return true; }
-    unsigned int size() const { return 1; }
-    Argument* operator[](unsigned int /*i*/) const { throw IfcException("Argument is not a list of attributes"); }
-    std::string toString(bool /*upper=false*/) const { return "$"; }
-};
-
-/// Argument of type scalar or string, e.g.
-/// #1=IfcVector(#2,1.0);
-///              == ===
-class IFC_PARSE_API TokenArgument : public Argument {
-  public:
-    Token token;
-    TokenArgument(const Token& token);
-
-    IfcUtil::ArgumentType type() const;
-
-    operator int() const;
-    operator bool() const;
-    operator boost::logic::tribool() const;
-    operator double() const;
-    operator std::string() const;
-    operator boost::dynamic_bitset<>() const;
-    operator IfcUtil::IfcBaseClass*() const;
-
-    bool isNull() const;
-    unsigned int size() const;
-
-    Argument* operator[](unsigned int index) const;
-    std::string toString(bool upper = false) const;
-};
-
-/// Argument of an IFC simple type
-/// #1=IfcTrimmedCurve(#2,(IFCPARAMETERVALUE(0.)),(IFCPARAMETERVALUE(1.)),.T.,.PARAMETER.);
-///                        =====================   =====================
-class IFC_PARSE_API EntityArgument : public Argument {
-  private:
-    IfcUtil::IfcBaseClass* entity_;
-
-  public:
-    EntityArgument(const Token& token);
-    ~EntityArgument();
-
-    IfcUtil::ArgumentType type() const;
-
-    operator IfcUtil::IfcBaseClass*() const;
-
-    bool isNull() const;
-    unsigned int size() const;
-
-    Argument* operator[](unsigned int index) const;
-    std::string toString(bool upper = false) const;
-};
-
-IFC_PARSE_API IfcEntityInstanceData* read(unsigned int index, IfcFile* file, boost::optional<unsigned> offset = boost::none);
+IFC_PARSE_API IfcEntityInstanceData read(unsigned int index, IfcFile* file);
 
 IFC_PARSE_API aggregate_of_instance::ptr traverse(IfcUtil::IfcBaseClass* instance, int max_level = -1);
 

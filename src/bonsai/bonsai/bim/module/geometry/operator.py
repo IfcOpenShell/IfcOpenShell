@@ -364,7 +364,8 @@ class UpdateRepresentation(bpy.types.Operator, tool.Ifc.Operator):
             # TODO: write unit tests to see how this bulk operation handles
             # contradictory ifc_representation_class values and when
             # ifc_representation_class is IfcTextLiteral
-            if not obj.data:
+            data = obj.data
+            if not tool.Geometry.is_data_supported_for_adding_representation(data):
                 continue
             self.update_obj_mesh_representation(context, obj)
             tool.Ifc.finish_edit(obj)
@@ -1831,6 +1832,11 @@ class EnableEditingRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
 
         props.items.clear()
 
+        def add_tag(item, tag: str) -> None:
+            if item.tags:
+                item.tags += ","
+            item.tags += tag
+
         if bpy.context.active_object.data and hasattr(bpy.context.active_object.data, "BIMMeshProperties"):
             active_representation_id = bpy.context.active_object.data.BIMMeshProperties.ifc_definition_id
             element = tool.Ifc.get().by_id(active_representation_id)
@@ -1862,6 +1868,10 @@ class EnableEditingRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
                                 shape_aspect = inverse.OfShapeAspect[0]
                                 new.shape_aspect = shape_aspect.Name
                                 new.shape_aspect_id = shape_aspect.id()
+                        elif inverse.is_a("IfcIndexedTextureMap"):
+                            add_tag(new, "UV")
+                        elif inverse.is_a("IfcIndexedColourMap"):
+                            add_tag(new, "Colour")
 
             # sort created items
             sorted_items = sorted(props.items[:], key=lambda i: (not i.shape_aspect, i.shape_aspect))
@@ -1909,7 +1919,7 @@ class RemoveRepresentationItem(bpy.types.Operator, tool.Ifc.Operator):
         bpy.ops.bim.enable_editing_representation_items()
 
 
-def poll_editing_representaiton_item_style(cls, context):
+def poll_editing_representation_item_style(cls, context):
     if not (obj := getattr(context, "active_object", None)):
         return False
     props = obj.BIMGeometryProperties
@@ -1944,7 +1954,7 @@ class EnableEditingRepresentationItemStyle(bpy.types.Operator, tool.Ifc.Operator
 
     @classmethod
     def poll(cls, context):
-        return poll_editing_representaiton_item_style(cls, context)
+        return poll_editing_representation_item_style(cls, context)
 
     def _execute(self, context):
         props = context.active_object.BIMGeometryProperties
@@ -1994,29 +2004,75 @@ class DisableEditingRepresentationItemStyle(bpy.types.Operator, tool.Ifc.Operato
 class UnassignRepresentationItemStyle(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unassign_representation_item_style"
     bl_label = "Unassign Representation Item Style"
+    bl_description = "Will remove the style from all selected objects"
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
     def poll(cls, context):
-        return poll_editing_representaiton_item_style(cls, context)
+        return poll_editing_representation_item_style(cls, context)
 
     def _execute(self, context):
-        obj = context.active_object
-        props = obj.BIMGeometryProperties
-        props.is_editing_item_style = False
+        active_obj = context.active_object
+        active_props = active_obj.BIMGeometryProperties
+        active_props.is_editing_item_style = False
 
-        # get active representation item
-        representation_item_id = props.items[props.active_item_index].ifc_definition_id
-        representation_item = tool.Ifc.get_entity_by_id(representation_item_id)
-        if not representation_item:
-            self.report({"ERROR"}, f"Couldn't find representation item by id {representation_item_id}.")
+        # Get active representation item
+        active_representation_item_id = active_props.items[active_props.active_item_index].ifc_definition_id
+        active_representation_item = tool.Ifc.get_entity_by_id(active_representation_item_id)
+        if not active_representation_item:
+            self.report({"ERROR"}, f"Couldn't find representation item by id {active_representation_item_id}.")
             return {"CANCELLED"}
 
-        tool.Style.assign_style_to_representation_item(representation_item, None)
-        tool.Geometry.reload_representation(obj)
-        # reload items ui
+        # Retrieve styles applied to the active representation item
+        active_styles = set()
+        if hasattr(active_representation_item, 'StyledByItem'):
+            for styled_by_item in active_representation_item.StyledByItem:
+                if hasattr(styled_by_item, 'Styles'):
+                    active_styles.update(styled_by_item.Styles)
+
+        if not active_styles:
+            self.report({"ERROR"}, "Couldn't find any styles associated with the active representation item.")
+            return {"CANCELLED"}
+
+        # Unassign matching styles from the active object itself
+        for style in active_styles:
+            tool.Style.assign_style_to_representation_item(active_representation_item, None)
+            tool.Geometry.reload_representation(active_obj)
+            break  # No need to check further if one matching style is found
+
+        # Iterate over selected objects and unassign matching styles
+        for obj in context.selected_objects:
+            if obj == active_obj:
+                continue  # Skip the active object itself
+
+            # Get the IFC entity directly from the object
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue  # Skip if no IFC entity is found
+
+            representation_item_id = element.Representation.Representations[0].Items[0].id()
+            representation_item = tool.Ifc.get_entity_by_id(representation_item_id)
+
+            if representation_item:
+                # Retrieve styles for the current representation item
+                styles = set()
+                if hasattr(representation_item, 'StyledByItem'):
+                    for styled_by_item in representation_item.StyledByItem:
+                        if hasattr(styled_by_item, 'Styles'):
+                            styles.update(styled_by_item.Styles)
+
+                # Unassign matching styles
+                for style in styles:
+                    if style in active_styles:
+                        tool.Style.assign_style_to_representation_item(representation_item, None)
+                        tool.Geometry.reload_representation(obj)
+                        break  # No need to check further if one matching style is found
+
+        # Reload UI items
         bpy.ops.bim.disable_editing_representation_items()
         bpy.ops.bim.enable_editing_representation_items()
+
+ 
 
 
 class EnableEditingRepresentationItemShapeAspect(bpy.types.Operator, tool.Ifc.Operator):

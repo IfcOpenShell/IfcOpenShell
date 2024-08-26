@@ -1,14 +1,10 @@
 // keeps track of blenders connected in form of
-// {shown:bool, filename:string, headers:array}
+// {shown:bool, filename:string, headers:array, warning: false}
 const connectedClients = {};
 let socket;
 
 // Document ready function
 $(document).ready(function () {
-  var systemTheme = window.matchMedia("(prefers-color-scheme: light)").matches
-    ? "light"
-    : "dark";
-  $(":root").css("color-scheme", systemTheme);
   var defaultTheme = "blender";
   var theme = localStorage.getItem("theme") || defaultTheme;
   setTheme(theme);
@@ -33,10 +29,11 @@ function connectSocket() {
 
 // Function to handle 'blender_connect' event
 function handleBlenderConnect(blenderId) {
-  console.log("blender_connect: ", blenderId);
+  console.log("blender connected: ", blenderId);
   if (!connectedClients.hasOwnProperty(blenderId)) {
     connectedClients[blenderId] = { shown: false, ifc_file: "" };
   }
+
   $("#blender-count").text(function (i, text) {
     return parseInt(text, 10) + 1;
   });
@@ -44,7 +41,7 @@ function handleBlenderConnect(blenderId) {
 
 // Function to handle 'blender_disconnect' event
 function handleBlenderDisconnect(blenderId) {
-  console.log("blender_disconnect: ", blenderId);
+  console.log("blender disconnected: ", blenderId);
   if (connectedClients.hasOwnProperty(blenderId)) {
     delete connectedClients[blenderId];
     removeTableElement(blenderId);
@@ -57,14 +54,14 @@ function handleBlenderDisconnect(blenderId) {
 
 function handleConnectedClients(data) {
   $("#blender-count").text(data.length);
-  console.log(data);
+  // console.log(data);
   data.forEach(function (id) {
     connectedClients[id] = { shown: false, ifc_file: "" };
   });
 }
 
 function handleThemeData(themeData) {
-  console.log(themeData);
+  // console.log(themeData);
 
   function arrayToRgbString(arr) {
     const [r, g, b, a] = arr.map((num) => Math.round(num * 255));
@@ -108,16 +105,19 @@ function handleCsvData(data) {
         shown: true,
         ifc_file: filename,
         headers: [],
+        warning: false,
       };
       addTableElement(blenderId, csvData, filename);
     } else {
       updateTableElement(blenderId, csvData, filename);
+      connectedClients[blenderId].warning = false;
     }
   } else {
     connectedClients[blenderId] = {
       shown: true,
       ifc_file: filename,
       headers: [],
+      warning: false,
     };
     addTableElement(blenderId, csvData, filename);
   }
@@ -135,9 +135,16 @@ function addTableElement(blenderId, csvData, filename) {
   // store headers of the csv data
   const firstLine = csvData.indexOf("\n");
   const csvHeaders = csvData.substring(0, firstLine).split(",");
-  connectedClients[blenderId].headers = csvHeaders;
+  const hasRows = csvData.substring(firstLine + 1).trim().length > 0;
 
-  console.log(connectedClients[blenderId]);
+  if (hasRows) {
+    connectedClients[blenderId].headers = csvHeaders;
+  } else {
+    connectedClients[blenderId].headers = "";
+  }
+
+  // console.log(connectedClients[blenderId]);
+
   const tableContainer = $("<div></div>")
     .addClass("table-container")
     .attr("id", "container-" + blenderId);
@@ -147,19 +154,11 @@ function addTableElement(blenderId, csvData, filename) {
     .text(filename)
     .css("margin-bottom", "10px");
 
-  const warning = $("<div></div>")
-    .attr("id", "warning-" + blenderId)
-    .html(
-      "&#9888; Warning: This table may contain outdated data due to recent changes in Blender."
-    )
-    .addClass("warning");
-
   const tableDiv = $("<div></div>")
     .addClass("csv-table")
     .attr("id", "table-" + blenderId);
 
   tableContainer.append(tableTitle);
-  tableContainer.append(warning);
   tableContainer.append(tableDiv);
   $("#container").append(tableContainer);
 
@@ -192,8 +191,8 @@ function addTableElement(blenderId, csvData, filename) {
 
           // Toggle current column visibility
           column.visible = !column.visible;
-          console.log(column.title, column.visible);
-          // Change menu item checkbox
+          // console.log(column.title, column.visible);
+
           if (column.visible) {
             table.showColumn(column.title);
             checkbox.textContent = "\u2611"; // ☑
@@ -208,24 +207,39 @@ function addTableElement(blenderId, csvData, filename) {
     return menu;
   }
 
+  var containerHeight=$('.table-container').height();
+  var h3Height=$('.table-container>h3').height();
   var table = new Tabulator("#table-" + blenderId, {
-    height: "400px",
+    placeholder: "No data to display",
     resizableColumnGuide: true,
     index: "GlobalId",
     data: csvData,
     importFormat: "csv",
     autoColumns: true,
     selectableRows: 1,
-    layout: "fitColumns",
+    layout: "fitDataFill",
+    height: containerHeight - h3Height - 20 + "px",
+    movableColumns: true,
+    // Our fields are never nested, and we use the "." character in queries
+    nestedFieldSeparator: false,
     autoColumnsDefinitions: function (definitions) {
       menu = createHeaderMenu(definitions, table);
       definitions.forEach((column) => {
         column.visible = true;
+        column.headerFilter = true;
         column.headerMenu = menu;
+        // TODO: more user control to choose function, style at bottomCalc
+        column.topCalc = 'sum';
       });
       return definitions;
     },
   });
+
+  var downloadCsv = $('<a><i class="fa-solid fa-file-csv"></i></a>')
+    .css("margin-left", "10px")
+    .css("cursor", "pointer");
+  tableTitle.append(downloadCsv);
+  downloadCsv.on('click', function() { table.download("csv", "data.csv"); })
 
   table.on("rowSelected", function (row) {
     var index = row.getIndex(); // the guid of the object
@@ -258,6 +272,8 @@ function updateTableElement(blenderId, csvData, filename) {
   // else, replace the whole data and column definations
   const firstLine = csvData.indexOf("\n");
   const newHeaders = csvData.substring(0, firstLine).split(",");
+  const hasRows = csvData.substring(firstLine + 1).trim().length > 0;
+
   const sameHeaders = compareHeaders(
     connectedClients[blenderId].headers,
     newHeaders
@@ -269,10 +285,14 @@ function updateTableElement(blenderId, csvData, filename) {
       table.replaceData(csvData, { importFormat: "csv" });
     } else {
       table.setData(csvData);
-      connectedClients[blenderId].headers = newHeaders;
+
+      if (hasRows) {
+        connectedClients[blenderId].headers = newHeaders;
+      } else {
+        connectedClients[blenderId].headers = "";
+      }
     }
     $("#title-" + blenderId).text(filename);
-    $("#warning-" + blenderId).css("display", "none");
   }
 }
 
@@ -282,12 +302,16 @@ function removeTableElement(blenderId) {
 }
 
 function showWarning(blenderId, isDirty) {
-  $("#warning-" + blenderId).css("display", "block");
+  connectedClients[blenderId].warning = true;
 }
 
 // Utility function to compare two csv header
 function compareHeaders(headers1, headers2) {
-  if (headers1.length !== headers2.length) {
+  if (
+    headers1.length !== headers2.length ||
+    headers1.length == 0 ||
+    headers2.length == 0
+  ) {
     return false;
   }
   for (let i = 0; i < headers1.length; i++) {
@@ -300,6 +324,7 @@ function compareHeaders(headers1, headers2) {
 
 function setTheme(theme) {
   $("html").removeClass("light dark blender").addClass(theme);
+  $(":root").css("color-scheme", theme);
   var stylesheet = $("#tabulator-stylesheet");
   if (theme === "light") {
     stylesheet.attr(
@@ -349,11 +374,28 @@ function toggleClientList() {
 
     const clientDiv = $("<div>")
       .addClass("client")
+      .addClass(`client-${id}`)
       .text(client.ifc_file || "Blender " + counter);
+
+    if (client.warning) {
+      warningIcon = $("<i>")
+        .addClass("fas fa-triangle-exclamation warning")
+        .css("margin-left", "0.5rem");
+      clientDiv.append(warningIcon);
+    }
 
     clientDiv.append(dropdownIcon);
 
     const clientDetailsDiv = $("<div>").addClass("client-details");
+
+    if (client.warning) {
+      warningIcon = $("<i>").addClass("fa-solid fa-triangle-exclamation");
+      const clientWarning = $("<div>")
+        .addClass("client-detail warning")
+        .text(" Might have outdated data due to recent changes in Blender.");
+      clientWarning.prepend(warningIcon);
+      clientDetailsDiv.append(clientWarning);
+    }
 
     if (id) {
       const clientId = $("<div>")
@@ -397,5 +439,6 @@ function toggleClientList() {
 
     clientList.append(clientDiv);
   });
+
   clientList.addClass("show");
 }

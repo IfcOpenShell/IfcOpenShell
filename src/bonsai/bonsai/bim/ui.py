@@ -561,7 +561,7 @@ class BIM_PT_tab_grouping_and_filtering(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_options = {"DEFAULT_CLOSED", "HEADER_LAYOUT_EXPAND"}
+    bl_options = {"HEADER_LAYOUT_EXPAND"}
 
     @classmethod
     def poll(cls, context):

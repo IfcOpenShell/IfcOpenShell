@@ -269,6 +269,7 @@ class RadianceExporterProperties(PropertyGroup):
     should_load_from_memory: BoolProperty(
         name="Load from Memory",
         default=False,
+        description="Use IFC file currently loaded in Bonsai",
     )
 
     radiance_resolution_x: IntProperty(

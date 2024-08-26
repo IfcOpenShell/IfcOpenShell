@@ -18,15 +18,16 @@
 
 import bpy
 import json
+import bisect
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.guid
 import ifcopenshell.util.element
 import ifcopenshell.util.selector
 import bonsai.tool as tool
-from bonsai.bim.ifc import IfcStore
 import bonsai.core.search as core
-from itertools import cycle
+from bonsai.bim.ifc import IfcStore
+from natsort import natsorted
 from bpy.types import PropertyGroup, Operator
 from bpy.props import (
     PointerProperty,
@@ -38,22 +39,6 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
-
-
-colour_list = [
-    (0.651, 0.81, 0.892, 1),
-    (0.121, 0.471, 0.706, 1),
-    (0.699, 0.876, 0.54, 1),
-    (0.199, 0.629, 0.174, 1),
-    (0.983, 0.605, 0.602, 1),
-    (0.89, 0.101, 0.112, 1),
-    (0.989, 0.751, 0.427, 1),
-    (0.986, 0.497, 0.1, 1),
-    (0.792, 0.699, 0.839, 1),
-    (0.414, 0.239, 0.603, 1),
-    (0.993, 0.999, 0.6, 1),
-    (0.693, 0.349, 0.157, 1),
-]
 
 
 class AddFilterGroup(Operator):
@@ -139,6 +124,7 @@ class EditFilterQuery(Operator, tool.Ifc.Operator):
     bl_description = "Edit the underlying filter query for advanced users"
     bl_options = {"REGISTER", "UNDO"}
     query: StringProperty(name="Query")
+    old_query: StringProperty(name="Old Query")
     module: StringProperty()
 
     def _execute(self, context):
@@ -264,39 +250,103 @@ class ColourByProperty(Operator):
 
     def _execute(self, context):
         props = context.scene.BIMSearchProperties
-        query = props.colourscheme_query
+        query = props.colourscheme_query if props.colourscheme_key == "QUERY" else props.colourscheme_key
 
         if not query:
             self.report({"ERROR"}, "No Query Provided")
             return {"CANCELLED"}
 
-        colours = cycle(colour_list)
+        palette = props.palette
+        is_qualitative = palette in ("tab10", "paired")
+
+        if is_qualitative:
+            colours = tool.Search.get_qualitative_palette(palette)
+
         colourscheme = {}
 
-        if len(props.colourscheme):
+        obj_values = {}
+        min_mode = props.min_mode
+        max_mode = props.max_mode
+        min_value = props.min_value if min_mode == "MANUAL" else None
+        max_value = props.max_value if max_mode == "MANUAL" else None
+
+        if is_qualitative and len(props.colourscheme):
             colourscheme = {cs.name: {"colour": cs.colour[0:3], "total": 0} for cs in props.colourscheme}
 
         for obj in context.visible_objects:
             element = tool.Ifc.get_entity(obj)
             if not element:
                 continue
-            value = str(ifcopenshell.util.selector.get_element_value(element, query))
-            if value in colourscheme:
-                colourscheme[value]["total"] += 1
+            value = ifcopenshell.util.selector.get_element_value(element, query)
+            if is_qualitative:
+                value = str(value)
+                if value in colourscheme:
+                    colourscheme[value]["total"] += 1
+                else:
+                    colourscheme[value] = {"colour": next(colours)[0:3], "total": 1}
+                obj.color = (*colourscheme[value]["colour"], 1)
             else:
-                colourscheme[value] = {"colour": next(colours)[0:3], "total": 1}
-            obj.color = (*colourscheme[value]["colour"], 1)
+                if value is None:
+                    obj.color = (0, 0, 0, 1)
+                    if "None" in colourscheme:
+                        colourscheme["None"]["total"] += 1
+                    else:
+                        colourscheme["None"] = {"colour": (0, 0, 0), "total": 1}
+                else:
+                    try:
+                        value = float(value)
+                        if min_mode == "AUTO":
+                            if min_value is None or value < min_value:
+                                min_value = value
+                        if max_mode == "AUTO":
+                            if max_value is None or value > max_value:
+                                max_value = value
+                        obj_values[obj] = value
+                    except:
+                        obj.color = (0, 0, 0, 1)
+
+        if not is_qualitative:
+            steps = 10 if max_value is not None and min_value is not None else 0
+            step_size = (max_value - min_value) / (steps - 1)
+            values = []
+            for i in range(steps):
+                step_value = min_value + i * step_size
+                values.append(step_value)
+                colourscheme[str(step_value)] = {
+                    "colour": tool.Search.get_quantitative_palette(palette, step_value, min_value, max_value),
+                    "total": 0,
+                }
+
+            for obj, value in obj_values.items():
+                index = bisect.bisect_right(values, value)
+                if index >= len(values):
+                    index = -1
+                colourscheme[str(values[index])]["total"] += 1
+                obj.color = (*tool.Search.get_quantitative_palette(palette, value, min_value, max_value), 1)
+
         if areas := [a for a in context.screen.areas if a.type == "VIEW_3D"]:
             areas[0].spaces[0].shading.color_type = "OBJECT"
 
         props.colourscheme.clear()
-        for value in sorted(colourscheme.keys()):
+
+        if is_qualitative:
+            keys = natsorted(colourscheme.keys())
+        else:
+            keys = sorted(colourscheme.keys(), key=self.sort_quantitative_key)
+
+        for value in keys:
             data = colourscheme[value]
             new = props.colourscheme.add()
             new.name = str(value)
             new.total = data["total"]
             new.colour = data["colour"][0:3]
         return {"FINISHED"}
+
+    def sort_quantitative_key(self, value):
+        try:
+            return (0, float(value))
+        except ValueError:
+            return (1, value)
 
     def store_state(self, context):
         if areas := [a for a in context.screen.areas if a.type == "VIEW_3D"]:
@@ -323,21 +373,49 @@ class SelectByProperty(Operator):
 
     def execute(self, context):
         props = context.scene.BIMSearchProperties
-        query = props.colourscheme_query
+        query = props.colourscheme_query if props.colourscheme_key == "QUERY" else props.colourscheme_key
 
         if not query:
             self.report({"ERROR"}, "No Query Provided")
             return {"CANCELLED"}
 
         active_value = props.colourscheme[props.active_colourscheme_index].name
+        palette = props.palette
+
+        is_qualitative = palette in ("tab10", "paired")
+
+        if not is_qualitative:
+            values = []
+            for colour in props.colourscheme:
+                try:
+                    values.append(float(colour.name))
+                except:
+                    pass
+            values = sorted(values)
 
         for obj in context.visible_objects:
             element = tool.Ifc.get_entity(obj)
             if not element:
                 continue
-            value = str(ifcopenshell.util.selector.get_element_value(element, query))
-            if value == active_value:
-                obj.select_set(True)
+            value = ifcopenshell.util.selector.get_element_value(element, query)
+            if is_qualitative:
+                if str(value) == active_value:
+                    obj.select_set(True)
+            else:
+                if active_value == "None":
+                    if value is None:
+                        obj.select_set(True)
+                else:
+                    try:
+                        value = float(value)
+                        index = bisect.bisect_right(values, value)
+                        if index >= len(values):
+                            index = -1
+                        if values[index] == float(active_value):
+                            obj.select_set(True)
+                    except:
+                        pass
+
         return {"FINISHED"}
 
 

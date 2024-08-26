@@ -184,6 +184,8 @@ def create_annotation():
         create_annotation_occurrence(bpy.context)
     else:
         object_type = props.object_type
+        if not bpy.ops.bim.add_annotation.poll():
+            return
         bpy.ops.bim.add_annotation(
             object_type=object_type, data_type=tool.Drawing.ANNOTATION_TYPES_DATA[object_type][-1]
         )

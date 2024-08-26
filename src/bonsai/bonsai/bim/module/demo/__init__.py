@@ -36,8 +36,10 @@ from . import ui, prop, operator
 classes = (
     operator.DemonstrateHelloWorld,
     operator.DemonstrateRenameProject,
+    operator.SendWebUiDemoMessage,
     prop.BIMDemoProperties,
     ui.BIM_PT_demo,
+    ui.BIM_PT_webui_demo,
 )
 
 

@@ -56,10 +56,13 @@ class DumbProfileGenerator:
         self.body_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
         self.axis_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Axis", "GRAPH_VIEW")
         props = bpy.context.scene.BIMModelProperties
+
         self.container = None
+        self.container_obj = None
         if container := tool.Root.get_default_container():
             self.container = container
             self.container_obj = tool.Ifc.get_object(container)
+
         self.depth = props.extrusion_depth
         self.rotation = 0
         self.location = Vector((0, 0, 0))

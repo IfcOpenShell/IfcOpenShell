@@ -44,11 +44,18 @@ class BIM_PT_bcf(Panel):
             row = layout.row(align=True)
             row.operator("bim.new_bcf_project", text="New Project")
             row.operator("bim.load_bcf_project", text="Load Project")
+            layout.prop(props, "bcf_version")
             return
 
         row = layout.row(align=True)
-        row.operator("bim.save_bcf_project", icon="EXPORT", text="Save Project")
+        op = row.operator("bim.save_bcf_project", icon="FILE_TICK", text="Save Current Project")
+        op.save_current_bcf = True
+        row.operator("bim.save_bcf_project", icon="EXPORT", text="Save Project As...")
         row.operator("bim.unload_bcf_project", text="", icon="CANCEL")
+
+        row = layout.row()
+        row.prop(props, "bcf_version", emboss=False)
+        row.enabled = False
 
         row = layout.row()
         row.prop(props, "name")
@@ -116,6 +123,10 @@ class BIM_PT_bcf_metadata(Panel):
     bl_parent_id = "BIM_PT_bcf"
 
     def draw(self, context):
+        # TODO: in bcf v3 documents can be added to the bcf
+        # without adding them to specific topic.
+        # Currently we just handle it the same way as in v2
+        # documents are accessed and managed from topics.
         layout = self.layout
         layout.use_property_split = True
         layout.use_property_decorate = False
@@ -127,6 +138,8 @@ class BIM_PT_bcf_metadata(Panel):
         if not bcfxml or props.active_topic_index >= len(props.topics):
             layout.label(text="No BCF project is loaded")
             return
+        bcf_verison = bcfxml.version.version_id or ""
+        bcf_v3 = bcf_verison.startswith("3")
 
         topic = props.active_topic
         bcf_topic = bcfxml.topics[topic.name]
@@ -195,7 +208,7 @@ class BIM_PT_bcf_metadata(Panel):
         row.operator("bim.add_bcf_label")
 
         layout.label(text="BIM Snippet:")
-        if topic.bim_snippet.schema:
+        if topic.bim_snippet.reference:
             row = layout.row(align=True)
             row.prop(topic.bim_snippet, "type", emboss=False)
             if topic.bim_snippet.schema:
@@ -224,7 +237,7 @@ class BIM_PT_bcf_metadata(Panel):
         for index, doc in enumerate(topic.document_references):
             box = self.layout.box()
             row = box.row(align=True)
-            row.prop(doc, "reference")
+            row.prop(doc, "reference", emboss=False)
             if doc.is_external:
                 row.operator("bim.open_uri", icon="URL", text="").uri = doc.reference
             else:
@@ -234,12 +247,17 @@ class BIM_PT_bcf_metadata(Panel):
 
             row.operator("bim.remove_bcf_document_reference", icon="X", text="").index = index
             row = box.row(align=True)
-            row.prop(doc, "description")
+            row.prop(doc, "description", emboss=False)
         row = layout.row(align=True)
         row.prop(props, "document_reference")
         row.operator("bim.select_bcf_document_reference", icon="FILE_FOLDER", text="")
         row = layout.row()
-        row.prop(props, "document_reference_description")
+        row.prop(
+            props, "document_reference_description", text="Reference Description" if bcf_v3 else "Document Description"
+        )
+        if bcf_v3:
+            row = layout.row()
+            row.prop(props, "document_description")
         row = layout.row()
         row.operator("bim.add_bcf_document_reference")
 
@@ -254,10 +272,14 @@ class BIM_PT_bcf_metadata(Panel):
                 row.operator("bim.remove_bcf_related_topic", icon="X", text="").index = index
             except KeyError:
                 pass
-        row = layout.row()
-        row.prop(props, "related_topic")
-        row = layout.row()
-        row.operator("bim.add_bcf_related_topic")
+
+        if len(props.topics) == len(topic.related_topics) + 1:
+            layout.label(text="No topics to add as related.")
+        else:
+            row = layout.row()
+            row.prop(props, "related_topic")
+            row = layout.row()
+            row.operator("bim.add_bcf_related_topic")
 
 
 class BIM_PT_bcf_comments(Panel):
@@ -293,6 +315,9 @@ class BIM_PT_bcf_comments(Panel):
                 author_text = "*{} ({})".format(comment.modified_author, comment.modified_date)
             row = box.row(align=True)
             row.label(text=author_text, icon="WORDWRAP_ON")
+            if comment.viewpoint:
+                op = row.operator("bim.activate_bcf_viewpoint", icon="SCENE", text="")
+                op.viewpoint_guid = comment.viewpoint
             row.prop(
                 comment, "is_editable", icon="CHECKMARK" if comment.is_editable else "GREASEPENCIL", icon_only=True
             )
