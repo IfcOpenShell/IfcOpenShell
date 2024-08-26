@@ -59,6 +59,9 @@ class GeoreferenceDecorator:
         batch.draw(shader)
 
     def draw_text(self, context):
+        if not GeoreferenceData.is_loaded:
+            GeoreferenceData.load()
+
         self.calculate_angles(context)
         props = context.scene.BIMGeoreferenceProperties
         e, n, h = [round(float(o), 7) for o in props.model_origin.split(",")]
@@ -164,6 +167,9 @@ class GeoreferenceDecorator:
             blf.draw(self.font_id, line)
 
     def draw_geometry(self, context):
+        if not GeoreferenceData.is_loaded:
+            GeoreferenceData.load()
+
         self.calculate_angles(context)
 
         self.addon_prefs = tool.Blender.get_addon_preferences()

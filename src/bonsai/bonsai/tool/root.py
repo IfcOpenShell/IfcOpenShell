@@ -170,7 +170,15 @@ class Root(bonsai.core.tool.Root):
 
     @classmethod
     def is_containable(cls, element: ifcopenshell.entity_instance) -> bool:
-        return element.is_a("IfcElement") or element.is_a("IfcAnnotation") or element.is_a("IfcGrid")
+        if element.is_a("IfcElement") or element.is_a("IfcGrid"):
+            return True
+        if element.is_a("IfcAnnotation"):
+            if element.ObjectType == "DRAWING":
+                return False
+            drawing_group = tool.Drawing.get_drawing_group(element)
+            if not drawing_group:
+                return True
+        return False
 
     @classmethod
     def is_element_a(cls, element: ifcopenshell.entity_instance, ifc_class: str) -> bool:

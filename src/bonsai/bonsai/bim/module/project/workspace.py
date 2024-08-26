@@ -37,6 +37,7 @@ class ExploreTool(bpy.types.WorkSpaceTool):
         ("bim.explore_hotkey", {"type": "C", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_C")]}),
         ("bim.explore_hotkey", {"type": "F", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_F")]}),
         ("bim.explore_hotkey", {"type": "C", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_C")]}),
+        ("bim.explore_hotkey", {"type": "M", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_M")]}),
     )
 
     def draw_settings(context, layout, ws_tool):
@@ -57,6 +58,9 @@ class ExploreTool(bpy.types.WorkSpaceTool):
         row = layout.row(align=True)
         row.label(text="", icon="EVENT_ALT")
         row.label(text="Disable Culling" if LinksData.enable_culling else "Enable Culling", icon="EVENT_C")
+        row = layout.row(align=True)
+        row.label(text="", icon="EVENT_SHIFT")
+        row.label(text="Measure Tool", icon="EVENT_M")
 
 
 class ExploreHotkey(bpy.types.Operator):
@@ -88,3 +92,6 @@ class ExploreHotkey(bpy.types.Operator):
             bpy.ops.bim.disable_culling()
         else:
             bpy.ops.bim.enable_culling("INVOKE_DEFAULT")
+
+    def hotkey_S_M(self):
+        bpy.ops.bim.measure_tool("INVOKE_DEFAULT")

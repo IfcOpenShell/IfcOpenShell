@@ -144,6 +144,7 @@ function addTableElement(blenderId, csvData, filename) {
   }
 
   // console.log(connectedClients[blenderId]);
+
   const tableContainer = $("<div></div>")
     .addClass("table-container")
     .attr("id", "container-" + blenderId);
@@ -206,25 +207,39 @@ function addTableElement(blenderId, csvData, filename) {
     return menu;
   }
 
+  var containerHeight=$('.table-container').height();
+  var h3Height=$('.table-container>h3').height();
   var table = new Tabulator("#table-" + blenderId, {
     placeholder: "No data to display",
-    height: "400px",
     resizableColumnGuide: true,
     index: "GlobalId",
     data: csvData,
     importFormat: "csv",
     autoColumns: true,
     selectableRows: 1,
-    layout: "fitColumns",
+    layout: "fitDataFill",
+    height: containerHeight - h3Height - 20 + "px",
+    movableColumns: true,
+    // Our fields are never nested, and we use the "." character in queries
+    nestedFieldSeparator: false,
     autoColumnsDefinitions: function (definitions) {
       menu = createHeaderMenu(definitions, table);
       definitions.forEach((column) => {
         column.visible = true;
+        column.headerFilter = true;
         column.headerMenu = menu;
+        // TODO: more user control to choose function, style at bottomCalc
+        column.topCalc = 'sum';
       });
       return definitions;
     },
   });
+
+  var downloadCsv = $('<a><i class="fa-solid fa-file-csv"></i></a>')
+    .css("margin-left", "10px")
+    .css("cursor", "pointer");
+  tableTitle.append(downloadCsv);
+  downloadCsv.on('click', function() { table.download("csv", "data.csv"); })
 
   table.on("rowSelected", function (row) {
     var index = row.getIndex(); // the guid of the object

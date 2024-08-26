@@ -44,13 +44,13 @@ class StylesData:
         cls.is_loaded = True
 
     @classmethod
-    def styles_to_blender_material_names(cls):
+    def styles_to_blender_material_names(cls) -> dict[bpy.types.PropertyGroup, Union[str, None]]:
         ifc_file = tool.Ifc.get()
         props = bpy.context.scene.BIMStylesProperties
-        materials = []
+        materials: dict[bpy.types.PropertyGroup, Union[str, None]] = {}
         for style in props.styles:
             material = tool.Ifc.get_object(ifc_file.by_id(style.ifc_definition_id))
-            materials.append(material.name if material is not None else None)
+            materials[style] = material.name if material is not None else None
         return materials
 
     @classmethod

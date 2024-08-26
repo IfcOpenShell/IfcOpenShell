@@ -20,14 +20,6 @@ sio = socketio.AsyncServer(
     cors_allowed_origins="*",
     async_mode="aiohttp",
 )
-
-# sio.instrument(
-#     auth={
-#         "username": "admin",
-#         "password": "admin",
-#     }
-# )
-
 app = web.Application()
 sio.attach(app)
 
@@ -37,6 +29,8 @@ blender_messages = {}
 blender_theme = {}
 
 
+# we define two namespaces, one for Bonsai and one for Web UI
+# each namespace has its own event handlers that are called when an event is emitted by a client
 # Web namespace
 class WebNamespace(socketio.AsyncNamespace):
     def __init__(self, namespace):
@@ -74,7 +68,8 @@ class WebNamespace(socketio.AsyncNamespace):
                 await self.emit("csv_data", {"blenderId": blenderId, "data": messages["csv_data"]}, room=sid)
             if "gantt_data" in messages:
                 await self.emit("gantt_data", {"blenderId": blenderId, "data": messages["gantt_data"]}, room=sid)
-
+            if "demo_data" in messages:
+                await self.emit("demo_data", {"blenderId": blenderId, "data": messages["demo_data"]}, room=sid)
 
 # Blender namespace
 class BlenderNamespace(socketio.AsyncNamespace):
@@ -117,9 +112,15 @@ class BlenderNamespace(socketio.AsyncNamespace):
 
     async def on_theme_data(self, sid, data):
         global blender_theme
-        print(f"Blender theme data")
         blender_theme = data
         await sio.emit("theme_data", data, namespace="/web")
+
+
+    # this function will be called when the event demo_data is emitted 
+    async def on_demo_data(self, sid, data):
+        print(f"Demo data from Blender client {sid}")
+        blender_messages[sid]["demo_data"] = data
+        await sio.emit("demo_data", {"blenderId": sid, "data": data}, namespace="/web")
 
 
 async def schedules(request):
@@ -138,6 +139,15 @@ async def sequencing(request):
 
 async def documentation(request):
     with open("templates/drawings.html", "r") as f:
+        template = f.read()
+    html_content = pystache.render(template, {"port": sio_port, "version": bonsai_version})
+    return web.Response(text=html_content, content_type="text/html")
+
+
+# This is a request handler for the /demo URL endpoint.
+# It serves the demo HTML file after using pystache to render the variables
+async def demo(request):
+    with open("templates/demo.html", "r") as f:
         template = f.read()
     html_content = pystache.render(template, {"port": sio_port, "version": bonsai_version})
     return web.Response(text=html_content, content_type="text/html")
@@ -169,6 +179,7 @@ sio.register_namespace(BlenderNamespace("/blender"))
 app.router.add_get("/", schedules)
 app.router.add_get("/documentation", documentation)
 app.router.add_get("/sequencing", sequencing)
+app.router.add_get("/demo", demo)
 
 # Add static files
 app.router.add_static("/jsgantt/", path="../gantt", name="jsgantt")

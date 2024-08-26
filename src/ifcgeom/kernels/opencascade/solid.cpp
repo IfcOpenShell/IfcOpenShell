@@ -107,7 +107,7 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::solid::ptr solid, IfcGeom::
 		return false;
 	}
 	results.emplace_back(ConversionResult(
-		solid->instance->data().id(),
+		solid->instance->as<IfcUtil::IfcBaseEntity>()->id(),
 		solid->matrix,
 		new OpenCascadeShape(shape),
 		solid->surface_style

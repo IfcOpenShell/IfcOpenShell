@@ -56,6 +56,7 @@
 #include "IfcBaseClass.h"
 #include "IfcException.h"
 #include "utils.h"
+#include "IfcFile.h"
 
 #include <algorithm>
 #include <boost/algorithm/string/replace.hpp>
@@ -121,6 +122,7 @@ aggregate_of_instance::ptr aggregate_of_instance::unique() {
     return return_value;
 }
 
+/*
 //Note: some of these methods are overloaded in derived classes
 Argument::operator int() const { throw IfcParse::IfcException("Argument is not an integer"); }
 Argument::operator bool() const { throw IfcParse::IfcException("Argument is not a boolean"); }
@@ -137,6 +139,7 @@ Argument::operator aggregate_of_instance::ptr() const { throw IfcParse::IfcExcep
 Argument::operator std::vector<std::vector<int>>() const { throw IfcParse::IfcException("Argument is not a list of list of ints"); }
 Argument::operator std::vector<std::vector<double>>() const { throw IfcParse::IfcException("Argument is not a list of list of floats"); }
 Argument::operator aggregate_of_aggregate_of_instance::ptr() const { throw IfcParse::IfcException("Argument is not a list of list of entity instances"); }
+*/
 
 static const char* const argument_type_string[] = {
     "NULL",
@@ -199,8 +202,23 @@ void IfcUtil::unescape_xml(std::string& str) {
     boost::replace_all(str, "&gt;", ">");
 }
 
+/*
 Argument* IfcUtil::IfcBaseEntity::get(const std::string& name) const {
     return data().getArgument(declaration().attribute_index(name));
+}
+*/
+
+AttributeValue IfcUtil::IfcBaseEntity::get(const std::string& name) const
+{
+    auto attrs = declaration().as_entity()->all_attributes();
+    auto iter = attrs.begin();
+    size_t idx = 0;
+    for (; iter != attrs.end(); ++iter, ++idx) {
+        if ((*iter)->name() == name) {
+            return data().get_attribute_value(idx);
+        }
+    }
+    throw IfcParse::IfcException(name + " not found on " + declaration().name());
 }
 
 aggregate_of_instance::ptr IfcUtil::IfcBaseEntity::get_inverse(const std::string& name) const {
@@ -208,7 +226,8 @@ aggregate_of_instance::ptr IfcUtil::IfcBaseEntity::get_inverse(const std::string
     std::vector<const IfcParse::inverse_attribute*>::const_iterator iter = attrs.begin();
     for (; iter != attrs.end(); ++iter) {
         if ((*iter)->name() == name) {
-            return data().getInverse(
+            return file_->getInverse(
+                id_,
                 (*iter)->entity_reference(),
                 (int)(*iter)->entity_reference()->attribute_index((*iter)->attribute_reference()));
         }
@@ -216,10 +235,12 @@ aggregate_of_instance::ptr IfcUtil::IfcBaseEntity::get_inverse(const std::string
     throw IfcParse::IfcException(name + " not found on " + declaration().name());
 }
 
+/*
 void IfcUtil::IfcBaseClass::data(IfcEntityInstanceData* data) {
     delete data_;
     data_ = data;
 }
+*/
 
 IfcUtil::ArgumentType IfcUtil::make_aggregate(IfcUtil::ArgumentType elem_type) {
     switch (elem_type) {

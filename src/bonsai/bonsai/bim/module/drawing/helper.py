@@ -202,7 +202,7 @@ def format_distance(
         if not isArea:
             add_inches = bool(inches) or not suppress_zero_inches
             tx_dist = ""
-            if feet:
+            if feet is not None:
                 tx_dist += str(feet) + "'"
             if feet and add_inches:
                 tx_dist += " - "

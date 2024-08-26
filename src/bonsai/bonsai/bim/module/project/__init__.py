@@ -43,6 +43,7 @@ classes = (
     operator.LoadLinkedProject,
     operator.LoadProject,
     operator.LoadProjectElements,
+    operator.MeasureTool,
     operator.NewProject,
     operator.QueryLinkedElement,
     operator.RefreshClippingPlanes,

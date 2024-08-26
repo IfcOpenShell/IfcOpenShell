@@ -41,8 +41,8 @@ from collections import defaultdict
 from math import radians, pi
 from mathutils import Vector, Matrix
 from bonsai.bim.ifc import IfcStore
-from typing import Union, Iterable, Optional, Literal
-from typing import Iterator
+from typing import Union, Iterable, Optional, Literal, Iterator
+from typing_extensions import TypeIs
 
 
 class Geometry(bonsai.core.tool.Geometry):
@@ -477,7 +477,7 @@ class Geometry(bonsai.core.tool.Geometry):
         return hasher.hexdigest()
 
     @classmethod
-    def get_object_data(cls, obj: bpy.types.Object) -> bpy.types.ID:
+    def get_object_data(cls, obj: bpy.types.Object) -> Union[bpy.types.ID, None]:
         return obj.data
 
     @classmethod
@@ -585,6 +585,16 @@ class Geometry(bonsai.core.tool.Geometry):
         settings.set("keep-bounding-boxes", True)
         context = representation.ContextOfItems
 
+        ifc_importer = bonsai.bim.import_ifc.IfcImporter(ifc_import_settings)
+        ifc_importer.file = tool.Ifc.get()
+
+        # create_shape doesn't support point cloud representations.
+        if representation.RepresentationType in ("PointCloud", "Point"):
+            mesh = tool.Loader.create_point_cloud_mesh(representation)
+            if mesh is None:
+                raise Exception(f"Failed to process point cloud representation: {representation}.")
+            return mesh
+
         if element.is_a("IfcTypeProduct"):
             # You may only specify a single representation when creating shapes for types
             try:
@@ -606,11 +616,8 @@ class Geometry(bonsai.core.tool.Geometry):
                 settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
                 shape = ifcopenshell.geom.create_shape(settings, element, representation)
 
-        ifc_importer = bonsai.bim.import_ifc.IfcImporter(ifc_import_settings)
-        ifc_importer.file = tool.Ifc.get()
-
         if element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
-            mesh = ifc_importer.create_camera(element, shape)
+            mesh = tool.Loader.create_camera(element, representation, shape)
         if element.is_a("IfcAnnotation") and ifc_importer.is_curve_annotation(element):
             mesh = ifc_importer.create_curve(element, shape)
         elif shape:
@@ -645,6 +652,42 @@ class Geometry(bonsai.core.tool.Geometry):
     @classmethod
     def is_box_representation(cls, representation: ifcopenshell.entity_instance) -> bool:
         return representation.ContextOfItems.ContextIdentifier == "Box"
+
+    @classmethod
+    def is_data_supported_for_adding_representation(cls, data: Union[bpy.types.ID, None]) -> TypeIs[
+        Union[
+            bpy.types.Mesh,
+            bpy.types.Curve,
+            bpy.types.Camera,
+        ]
+    ]:
+        supported_types = (
+            bpy.types.Mesh,
+            bpy.types.Curve,
+            bpy.types.Camera,
+        )
+        if not data:
+            return False
+        return isinstance(data, supported_types)
+
+    TYPES_WITH_MESH_PROPERTIES = Union[
+        bpy.types.Mesh,
+        bpy.types.Curve,
+        bpy.types.Camera,
+        bpy.types.PointLight,
+    ]
+
+    @classmethod
+    def has_mesh_properties(cls, data: Union[bpy.types.ID, None]) -> TypeIs[TYPES_WITH_MESH_PROPERTIES]:
+        supported_types = (
+            bpy.types.Mesh,
+            bpy.types.Curve,
+            bpy.types.Camera,
+            bpy.types.PointLight,
+        )
+        if not data:
+            return False
+        return isinstance(data, supported_types)
 
     @classmethod
     def is_edited(cls, obj: bpy.types.Object) -> bool:

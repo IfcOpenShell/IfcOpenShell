@@ -279,3 +279,8 @@ class AddEditProperties(PropertyGroup):
 
 class DeletePsets(PropertyGroup):
     pset_name: StringProperty(name="Pset")
+
+
+class GlobalPsetProperties(PropertyGroup):
+    pset_filter: StringProperty(name="Pset Filter", options={"TEXTEDIT_UPDATE"})
+    qto_filter: StringProperty(name="Qto Filter", options={"TEXTEDIT_UPDATE"})

@@ -18,8 +18,11 @@
 
 import os
 import bcf.v3
+import bcf.v3.bcfxml
+import bcf.v3.document
 import bcf.v3.model
 import bcf.v3.topic
+import bcf.v3.visinfo
 import bpy
 import bcf
 import bcf.bcfxml
@@ -27,8 +30,8 @@ import bcf.v2.bcfxml
 import bcf.v2.model
 import bcf.v2.topic
 import bcf.v2.visinfo
-import bcf.agnostic.visinfo
 import bcf.agnostic.topic
+import bcf.agnostic.visinfo
 import uuid
 import numpy as np
 import tempfile
@@ -52,7 +55,10 @@ class NewBcfProject(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        bcfxml = bcf.v2.bcfxml.BcfXml.create_new("New Project")
+        props = context.scene.BCFProperties
+        bcf_v2 = props.bcf_version == "2"
+        bcf_class = bcf.v2.bcfxml.BcfXml if bcf_v2 else bcf.v3.bcfxml.BcfXml
+        bcfxml = bcf_class.create_new("New Project")
         bcfstore.BcfStore.set(bcfxml, "")
         bpy.ops.bim.load_bcf_project()
         return {"FINISHED"}
@@ -62,27 +68,44 @@ class LoadBcfProject(bpy.types.Operator):
     bl_idname = "bim.load_bcf_project"
     bl_label = "Load BCF Project"
     bl_options = {"REGISTER", "UNDO"}
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH", options={"SKIP_SAVE"})
     filter_glob: bpy.props.StringProperty(default="*.bcf;*.bcfzip", options={"HIDDEN"})
 
     def execute(self, context):
+        # Operator is also used when new project is created by not yet saved.
         if self.filepath:
             bcfstore.BcfStore.set_by_filepath(self.filepath)
+
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
-        # a  BCFv2.1 does not need to have a project, but BBIM likes to have one
+        bcf_v2 = (bcfxml.version.version_id or "").startswith("2")
+
+        # BCF v2.1/v3 does not need to have a project, but BBIM likes to have one
         # https://github.com/buildingSMART/BCF-XML/tree/release_2_1/Documentation#bcf-file-structure
         nameless = "Unknown"
         if bcfxml.project is None:
-            if bcfxml.version.version_id.startswith("2"):
-                print("No project, we will create one for BBIM.")
-                bcfxml.project_info = bcf.v2.model.ProjectExtension(
-                    project=bcf.v2.model.Project(name=nameless, project_id=str(uuid.uuid4())), extension_schema=""
+            print("No project, we will create one for BBIM.")
+            project_info = bcfxml.project_info
+            if bcf_v2:
+                assert isinstance(bcfxml, bcf.v2.bcfxml.BcfXml)
+                if project_info is None:
+                    project_info = bcf.v2.model.ProjectExtension(extension_schema="")
+                    bcfxml.project_info = project_info
+                if project_info.project is None:
+                    project_info.project = bcf.v2.model.Project(name=nameless, project_id=str(uuid.uuid4()))
+            else:
+                assert isinstance(bcfxml, bcf.v3.bcfxml.BcfXml)
+                project_info = bcf.v3.model.ProjectInfo(
+                    project=bcf.v3.model.Project(name=nameless, project_id=str(uuid.uuid4()))
                 )
+                bcfxml.project_info = project_info
+
+        assert bcfxml.project
         if bcfxml.project.name is None:
             bcfxml.project.name = nameless
         context.scene.BCFProperties.name = bcfxml.project.name
         bpy.ops.bim.load_bcf_topics()
+        self.report({"INFO"}, f"BCF Project '{Path(self.filepath).name}' is loaded.")
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -108,7 +131,8 @@ class LoadBcfTopics(bpy.types.Operator):
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
-        context.scene.BCFProperties.topics.clear()
+        props = context.scene.BCFProperties
+        props.topics.clear()
         # workaround, one non standard topic would break reading entire bcf
         # ignored these topics ATM
         # happens on non standard nodes or on missing nodes in markup
@@ -120,8 +144,10 @@ class LoadBcfTopics(bpy.types.Operator):
                 print("Problems on reading topic, thus ignored: {}".format(topic_guid))
                 continue
         for index, topic_guid in enumerate(topics2use):
-            new = context.scene.BCFProperties.topics.add()
+            new = props.topics.add()
             bpy.ops.bim.load_bcf_topic(topic_guid=topic_guid, topic_index=index)
+
+        props.refresh_topic(context)
         return {"FINISHED"}
 
 
@@ -218,10 +244,6 @@ class LoadBcfComments(bpy.types.Operator):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
 
-        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
-            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
-            return {"FINISHED"}
-
         blender_topic = context.scene.BCFProperties.topics.get(self.topic_guid)
         blender_topic.comments.clear()
         for comment in bcfxml.topics[self.topic_guid].comments:
@@ -250,28 +272,9 @@ class EditBcfProjectName(bpy.types.Operator):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
 
-        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
-            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
-            return {"FINISHED"}
-
+        # Bonsai creates default project on load.
+        assert bcfxml.project
         bcfxml.project.name = context.scene.BCFProperties.name
-        return {"FINISHED"}
-
-
-class EditBcfAuthor(bpy.types.Operator):
-    bl_idname = "bim.edit_bcf_author"
-    bl_label = "Edit BCF Author"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        bcfxml = bcfstore.BcfStore.get_bcfxml()
-        assert bcfxml
-
-        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
-            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
-            return {"FINISHED"}
-
-        bcfxml.author = context.scene.BCFProperties.author
         return {"FINISHED"}
 
 
@@ -285,10 +288,6 @@ class EditBcfTopicName(bpy.types.Operator):
         blender_topic = props.active_topic
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
-
-        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
-            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
-            return {"FINISHED"}
 
         topic = bcfxml.topics[blender_topic.name].topic
         topic.title = blender_topic.title
@@ -305,20 +304,34 @@ class EditBcfTopic(bpy.types.Operator):
         blender_topic = props.active_topic
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
-
-        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
-            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
-            return {"FINISHED"}
+        bcf_v2 = (bcfxml.version.version_id or "").startswith("2")
 
         topic = bcfxml.topics[blender_topic.name].topic
-        topic.title = blender_topic.title or None
+        topic.title = blender_topic.title or ""
         topic.priority = blender_topic.priority or None
         topic.due_date = blender_topic.due_date or None
         topic.assigned_to = blender_topic.assigned_to or None
         topic.stage = blender_topic.stage or None
         topic.description = blender_topic.description or None
-        topic.topic_status = blender_topic.status or None
-        topic.topic_type = blender_topic.type or None
+
+        if bcf_v2:
+            assert isinstance(topic, bcf.v2.model.Topic)
+            topic.topic_status = blender_topic.status or None
+            topic.topic_type = blender_topic.type or None
+        else:
+            error_msg = None
+            if not blender_topic.status:
+                error_msg = "Topic Status field is not optional."
+            if not blender_topic.type:
+                error_msg = "Topic Type field is not optional."
+            if error_msg:
+                # Use show_info_message as this operator is not called directly
+                # but from prop callback and user won't see a popup from self.report.
+                tool.Blender.show_info_message(error_msg, "ERROR")
+                self.report({"INFO"}, error_msg)
+                return {"CANCELLED"}
+            topic.topic_status = blender_topic.status
+            topic.topic_type = blender_topic.type
 
         props.refresh_topic(context)
         return {"FINISHED"}
@@ -330,15 +343,23 @@ class SaveBcfProject(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.bcf;*.bcfzip", options={"HIDDEN"})
+    save_current_bcf: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
         bcfxml.save(self.filepath)
         bcfstore.BcfStore.set(bcfxml, self.filepath)
+        self.report({"INFO"}, f"BCF Project '{Path(self.filepath).name}' is saved.")
         return {"FINISHED"}
 
     def invoke(self, context, event):
+        if self.save_current_bcf:
+            path = tool.Bcf.get_path()
+            if path:
+                self.filepath = str(path)
+                return self.execute(context)
+
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
 
@@ -356,10 +377,6 @@ class AddBcfTopic(bpy.types.Operator):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
 
-        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
-            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
-            return {"FINISHED"}
-
         bcfxml.add_topic("New Topic", "", context.scene.BCFProperties.author)
         bpy.ops.bim.load_bcf_topics()
         return {"FINISHED"}
@@ -372,34 +389,38 @@ class AddBcfBimSnippet(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return all(
-            (
-                getattr(context.scene.BCFProperties, attr, False)
-                for attr in ("bim_snippet_reference", "bim_snippet_schema", "bim_snippet_type")
-            )
+        props = context.scene.BCFProperties
+        props_are_filled = all(
+            (getattr(props, attr) for attr in ("bim_snippet_reference", "bim_snippet_schema", "bim_snippet_type"))
         )
+        if not props_are_filled:
+            cls.poll_message_set("Some BIM snippet fields are empty.")
+            return False
+        return True
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
-
-        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
-            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
-            return {"FINISHED"}
+        bcf_v2 = (bcfxml.version.version_id or "").startswith("2")
 
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
         is_external = "://" in props.bim_snippet_reference
-        bim_snippet = bcf.v2.model.BimSnippet(
+        bim_snippet_class = bcf.v2.model.BimSnippet if bcf_v2 else bcf.v3.model.BimSnippet
+        bim_snippet = bim_snippet_class(
             reference=props.bim_snippet_reference if is_external else Path(props.bim_snippet_reference).name,
             reference_schema=props.bim_snippet_schema,
             snippet_type=props.bim_snippet_type,
             is_external=is_external,
         )
-        topic.topic.bim_snippet = bim_snippet
-        with open(props.bim_snippet_reference, "r") as f:
-            topic.bim_snippet = f.read()
+
+        bim_snippet_bytes = None
+        if not is_external:
+            with open(props.bim_snippet_reference, "rb") as f:
+                bim_snippet_bytes = f.read()
+        tool.Bcf.set_topic_bim_snippet(topic, bim_snippet, bim_snippet_bytes)
+
         bpy.ops.bim.load_bcf_topic(topic_guid=topic.guid, topic_index=props.active_topic_index)
         return {"FINISHED"}
 
@@ -409,47 +430,28 @@ class AddBcfRelatedTopic(bpy.types.Operator):
     bl_label = "Add BCF Related Topic"
     bl_options = {"REGISTER", "UNDO"}
 
-    @classmethod
-    def poll(cls, context):
-        bcfxml = bcfstore.BcfStore.get_bcfxml()
-        assert bcfxml
-        props = context.scene.BCFProperties
-        blender_topic = props.active_topic
-        if not props.related_topic:
-            return False
-        if props.related_topic == blender_topic.title:
-            # Prevent adding self as related topic
-            return False
-        related_topic_guid = None
-        for topic in bcfxml.topics.values():
-            if topic.topic.title == props.related_topic:
-                related_topic_guid = topic.guid
-                break
-        if not related_topic_guid:
-            return False
-        if str(related_topic_guid) in [t.name for t in blender_topic.related_topics]:
-            # Prevent adding the same related topic more than once
-            return False
-        return True
-
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
-
-        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
-            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
-            return {"FINISHED"}
+        bcf_v2 = (bcfxml.version.version_id or "").startswith("2")
 
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
-        topic.topic.related_topic.append(
-            bcf.v2.model.TopicRelatedTopic(
-                guid=next((t for t in bcfxml.topics.values() if t.topic.title == props.related_topic)).guid
-            )
-        )
+        related_topics = tool.Bcf.get_topic_related_topics(topic)
+        related_topic_guid = props.related_topic
+
+        if bcf_v2:
+            assert tool.Bcf.is_list_of(related_topics, bcf.v2.model.TopicRelatedTopic)
+            related_topic = bcf.v2.model.TopicRelatedTopic(guid=related_topic_guid)
+            related_topics.append(related_topic)
+        else:
+            assert tool.Bcf.is_list_of(related_topics, bcf.v3.model.TopicRelatedTopicsRelatedTopic)
+            related_topic = bcf.v3.model.TopicRelatedTopicsRelatedTopic(guid=related_topic_guid)
+            related_topics.append(related_topic)
+
+        tool.Bcf.set_topic_related_topics(topic, related_topics)
         bpy.ops.bim.load_bcf_topic(topic_guid=topic.guid, topic_index=props.active_topic_index)
-        props.related_topic = ""
         return {"FINISHED"}
 
 
@@ -465,31 +467,46 @@ class AddBcfHeaderFile(bpy.types.Operator):
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
-
-        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
-            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
-            return {"FINISHED"}
+        bcf_v2 = (bcfxml.version.version_id or "").startswith("2")
 
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
 
         is_external = "://" in props.file_reference
-        filename = Path(props.file_reference).name if os.path.exists(props.file_reference) else None
+        filepath = Path(props.file_reference)
+        file_bytes, filename = None, None
+        if filepath.is_file():
+            filename = filepath.name
+            file_bytes = filepath.read_bytes()
 
-        if filename:
-            with open(props.file_reference, "r") as f:
-                topic.reference_files[filename] = f.read()
+        header_files = tool.Bcf.get_topic_header_files(topic)
+        if filename and file_bytes:
+            topic.reference_files[filename] = file_bytes
+        if bcf_v2:
+            header_file = bcf.v2.model.HeaderFile(
+                filename=filename,
+                date=XmlDateTime.now(),
+                reference=props.file_reference if is_external else filename,
+                ifc_project=props.file_ifc_project,
+                ifc_spatial_structure_element=props.file_ifc_spatial_structure_element,
+                is_external=is_external,
+            )
+            assert tool.Bcf.is_list_of(header_files, bcf.v2.model.HeaderFile)
+            header_files.append(header_file)
+        else:
+            header_file = bcf.v3.model.File(
+                filename=filename,
+                date=XmlDateTime.now(),
+                reference=props.file_reference if is_external else filename,
+                ifc_project=props.file_ifc_project,
+                ifc_spatial_structure_element=props.file_ifc_spatial_structure_element,
+                is_external=is_external,
+            )
+            assert tool.Bcf.is_list_of(header_files, bcf.v3.model.File)
+            header_files.append(header_file)
 
-        header_file = bcf.v2.model.HeaderFile(
-            filename=filename,
-            date=XmlDateTime.now(),
-            reference=props.file_reference if is_external else Path(props.file_reference).name,
-            ifc_project=props.file_ifc_project,
-            ifc_spatial_structure_element=props.file_ifc_spatial_structure_element,
-            is_external=is_external,
-        )
-        topic.header.file.append(header_file)
+        tool.Bcf.set_topic_header_files(topic, header_files)
 
         props.refresh_topic(context)
         return {"FINISHED"}
@@ -524,13 +541,11 @@ class AddBcfViewpoint(bpy.types.Operator):
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
-
-        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
-            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
-            return {"FINISHED"}
+        bcf_v2 = (bcfxml.version.version_id or "").startswith("2")
 
         blender_camera = context.scene.camera
         assert blender_camera
+
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
@@ -538,32 +553,66 @@ class AddBcfViewpoint(bpy.types.Operator):
         direction = blender_camera.matrix_world.to_quaternion() @ Vector((0.0, 0.0, -1.0))
         up = blender_camera.matrix_world.to_quaternion() @ Vector((0.0, 1.0, 0.0))
 
-        camera_view_point = bcf.v2.model.Point(
-            x=blender_camera.location.x, y=blender_camera.location.y, z=blender_camera.location.z
-        )
-        camera_direction = bcf.v2.model.Direction(x=direction.x, y=direction.y, z=direction.z)
-        camera_up_vector = bcf.v2.model.Direction(x=up.x, y=up.y, z=up.z)
-        if blender_camera.data.type == "ORTHO":
-            camera = bcf.v2.model.OrthogonalCamera(
-                view_to_world_scale=blender_camera.data.ortho_scale,
-                camera_view_point=camera_view_point,
-                camera_direction=camera_direction,
-                camera_up_vector=camera_up_vector,
+        blender_render = context.scene.render
+        assert isinstance(blender_camera.data, bpy.types.Camera)
+        visinfo_guid = str(uuid.uuid4())
+        if bcf_v2:
+            camera_view_point = bcf.v2.model.Point(
+                x=blender_camera.location.x, y=blender_camera.location.y, z=blender_camera.location.z
             )
-            visualization_info = bcf.v2.model.VisualizationInfo(orthogonal_camera=camera)
-        elif blender_camera.data.type == "PERSP":
-            camera = bcf.v2.model.PerspectiveCamera(
-                field_of_view=degrees(blender_camera.data.angle),
-                camera_view_point=camera_view_point,
-                camera_direction=camera_direction,
-                camera_up_vector=camera_up_vector,
+            camera_direction = bcf.v2.model.Direction(x=direction.x, y=direction.y, z=direction.z)
+            camera_up_vector = bcf.v2.model.Direction(x=up.x, y=up.y, z=up.z)
+            if blender_camera.data.type == "ORTHO":
+                camera = bcf.v2.model.OrthogonalCamera(
+                    view_to_world_scale=blender_camera.data.ortho_scale,
+                    camera_view_point=camera_view_point,
+                    camera_direction=camera_direction,
+                    camera_up_vector=camera_up_vector,
+                )
+                visualization_info = bcf.v2.model.VisualizationInfo(guid=visinfo_guid, orthogonal_camera=camera)
+            elif blender_camera.data.type == "PERSP":
+                camera = bcf.v2.model.PerspectiveCamera(
+                    field_of_view=degrees(blender_camera.data.angle),
+                    camera_view_point=camera_view_point,
+                    camera_direction=camera_direction,
+                    camera_up_vector=camera_up_vector,
+                )
+                visualization_info = bcf.v2.model.VisualizationInfo(guid=visinfo_guid, perspective_camera=camera)
+            else:
+                self.report({"INFO"}, f"Unsupported camera type: '{blender_camera.data.type}'.")
+                return {"FINISHED"}
+        else:
+            camera_view_point = bcf.v3.model.Point(
+                x=blender_camera.location.x, y=blender_camera.location.y, z=blender_camera.location.z
             )
-            visualization_info = bcf.v2.model.VisualizationInfo(guid=str(uuid.uuid4()), perspective_camera=camera)
+            camera_direction = bcf.v3.model.Direction(x=direction.x, y=direction.y, z=direction.z)
+            camera_up_vector = bcf.v3.model.Direction(x=up.x, y=up.y, z=up.z)
+            cam_aspect = blender_render.resolution_x / blender_render.resolution_y
+            if blender_camera.data.type == "ORTHO":
+                camera = bcf.v3.model.OrthogonalCamera(
+                    view_to_world_scale=blender_camera.data.ortho_scale,
+                    camera_view_point=camera_view_point,
+                    camera_direction=camera_direction,
+                    camera_up_vector=camera_up_vector,
+                    aspect_ratio=cam_aspect,
+                )
+                visualization_info = bcf.v3.model.VisualizationInfo(guid=visinfo_guid, orthogonal_camera=camera)
+            elif blender_camera.data.type == "PERSP":
+                camera = bcf.v3.model.PerspectiveCamera(
+                    field_of_view=degrees(blender_camera.data.angle),
+                    camera_view_point=camera_view_point,
+                    camera_direction=camera_direction,
+                    camera_up_vector=camera_up_vector,
+                    aspect_ratio=cam_aspect,
+                )
+                visualization_info = bcf.v3.model.VisualizationInfo(guid=visinfo_guid, perspective_camera=camera)
+            else:
+                self.report({"INFO"}, f"Unsupported camera type: '{blender_camera.data.type}'.")
+                return {"FINISHED"}
 
         # TODO allow the user to enable or disable snapshotting
         snapshot = None
 
-        blender_render = context.scene.render
         old_file_format = blender_render.image_settings.file_format
         blender_render.image_settings.file_format = "PNG"
         old_filepath = blender_render.filepath
@@ -573,11 +622,27 @@ class AddBcfViewpoint(bpy.types.Operator):
             snapshot = f.read()
         # viewpoint.snapshot = blender_render.filepath
 
-        vizinfo = bcf.v2.visinfo.VisualizationInfoHandler(visualization_info=visualization_info, snapshot=snapshot)
-        topic.viewpoints[vizinfo.guid + ".bcfv"] = vizinfo
-        topic.markup.viewpoints.append(
-            bcf.v2.model.ViewPoint(viewpoint=vizinfo.guid + ".bcfv", guid=vizinfo.guid, snapshot=vizinfo.guid + ".png")
-        )
+        if isinstance(visualization_info, bcf.v2.model.VisualizationInfo):
+            vizinfo = bcf.v2.visinfo.VisualizationInfoHandler(visualization_info=visualization_info, snapshot=snapshot)
+            assert isinstance(topic, bcf.v2.topic.TopicHandler)
+            topic.viewpoints[vizinfo.guid + ".bcfv"] = vizinfo
+            viewpoints = tool.Bcf.get_topic_viewpoints(topic)
+            viewpoint = bcf.v2.model.ViewPoint(
+                viewpoint=vizinfo.guid + ".bcfv", guid=vizinfo.guid, snapshot=vizinfo.guid + ".png"
+            )
+            assert tool.Bcf.is_list_of(viewpoints, bcf.v2.model.ViewPoint)
+            viewpoints.append(viewpoint)
+        else:
+            vizinfo = bcf.v3.visinfo.VisualizationInfoHandler(visualization_info=visualization_info, snapshot=snapshot)
+            assert isinstance(topic, bcf.v3.topic.TopicHandler)
+            topic.viewpoints[vizinfo.guid + ".bcfv"] = vizinfo
+            viewpoints = tool.Bcf.get_topic_viewpoints(topic)
+            viewpoint = bcf.v3.model.ViewPoint(
+                viewpoint=vizinfo.guid + ".bcfv", guid=vizinfo.guid, snapshot=vizinfo.guid + ".png"
+            )
+            assert tool.Bcf.is_list_of(viewpoints, bcf.v3.model.ViewPoint)
+            viewpoints.append(viewpoint)
+        tool.Bcf.set_topic_viewpoints(topic, viewpoints)
 
         def get_ifc_elements(objs: list[bpy.types.Object]) -> list[ifcopenshell.entity_instance]:
             elements = []
@@ -607,27 +672,35 @@ class RemoveBcfViewpoint(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return bcf_prop.getBcfViewpoints(None, context)
+        bcfxml = bcfstore.BcfStore.get_bcfxml()
+        if not bcfxml:
+            return False
+        props = context.scene.BCFProperties
+        topic = props.active_topic
+        if not topic:
+            return False
+
+        topic = props.topics[topic.name]
+        if not tool.Blender.get_enum_safe(topic, "viewpoints"):
+            cls.poll_message_set("No viewpoint selected.")
+            return False
+        return True
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
 
-        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
-            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
-            return {"FINISHED"}
-
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
-        for key, viewpoint in topic.viewpoints.items():
-            if viewpoint.guid == blender_topic.viewpoints:
-                break
-        del topic.viewpoints[key]
-        for i, viewpoint in enumerate(topic.markup.viewpoints):
-            if viewpoint.guid == blender_topic.viewpoints:
-                break
-        del topic.markup.viewpoints[i]
+        del topic.viewpoints[blender_topic.viewpoints]
+
+        viewpoints = tool.Bcf.get_topic_viewpoints(topic)
+        # Only guid is required attribute for a viewpoint.
+        vp_index = next(i for i, vp in enumerate(viewpoints) if vp.guid in blender_topic.viewpoints)
+        del viewpoints[vp_index]
+        tool.Bcf.set_topic_viewpoints(topic, viewpoints)
+
         props.refresh_topic(context)
         return {"FINISHED"}
 
@@ -642,14 +715,12 @@ class RemoveBcfFile(bpy.types.Operator):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
 
-        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
-            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
-            return {"FINISHED"}
-
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
-        del topic.header.file[self.index]
+        header_files = tool.Bcf.get_topic_header_files(topic)
+        del header_files[self.index]
+        tool.Bcf.set_topic_header_files(topic, header_files)
         props.refresh_topic(context)
         return {"FINISHED"}
 
@@ -667,10 +738,6 @@ class RemoveBcfTopic(bpy.types.Operator):
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
-
-        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
-            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
-            return {"FINISHED"}
 
         props = context.scene.BCFProperties
         del bcfxml.topics[props.active_topic.name]
@@ -715,29 +782,65 @@ class AddBcfDocumentReference(bpy.types.Operator):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
 
-        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
-            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
-            return {"FINISHED"}
-
+        bcf_v2 = (bcfxml.version.version_id or "").startswith("2")
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
 
         is_external = "://" in props.document_reference
-        filename = Path(props.document_reference).name if os.path.exists(props.document_reference) else None
 
-        if filename:
-            with open(props.document_reference, "rb") as f:
-                topic.document_references[filename] = f.read()
+        document_path = Path(props.document_reference)
+        document_bytes, filename = None, None
+        if document_path.is_file():
+            filename = document_path.name
+            document_bytes = document_path.read_bytes()
 
-        document_reference = bcf.v2.model.TopicDocumentReference(
-            referenced_document=props.document_reference if is_external else filename,
-            description=props.document_reference_description or None,
-            guid=str(uuid.uuid4()),
-            is_external=is_external,
-        )
+        document_references = tool.Bcf.get_topic_document_references(topic)
+        if bcf_v2:
+            assert isinstance(topic, bcf.v2.topic.TopicHandler)
+            if document_bytes and filename:
+                topic.document_references[filename] = document_bytes
+            assert tool.Bcf.is_list_of(document_references, bcf.v2.model.TopicDocumentReference)
+            document_reference = bcf.v2.model.TopicDocumentReference(
+                referenced_document=props.document_reference if is_external else filename,
+                description=props.document_reference_description or None,
+                guid=str(uuid.uuid4()),
+                is_external=is_external,
+            )
+            document_references.append(document_reference)
+        else:
+            document_guid = None
+            if not is_external:
+                assert filename and document_bytes
+                assert isinstance(bcfxml, bcf.v3.bcfxml.BcfXml)
+                bcf_docs = bcfxml.documents
 
-        topic.topic.document_reference.append(document_reference)
+                if bcf_docs:
+                    doc_definition = bcf_docs.definition
+                else:
+                    doc_definition = bcf.v3.model.DocumentInfo()
+                    bcf_docs = bcf.v3.document.DocumentsHandler(doc_definition)
+                    bcfxml._documents = bcf_docs
+
+                bcf_docs.documents[filename] = document_bytes
+                document_guid = str(uuid.uuid4())
+                document = bcf.v3.model.Document(
+                    filename=filename, description=props.document_description, guid=document_guid
+                )
+                doc_definition_docs = doc_definition.documents
+                if not doc_definition_docs:
+                    doc_definition.documents = (doc_definition_docs := bcf.v3.model.DocumentInfoDocuments())
+                doc_definition_docs.document.append(document)
+
+            assert tool.Bcf.is_list_of(document_references, bcf.v3.model.DocumentReference)
+            document_reference = bcf.v3.model.DocumentReference(
+                document_guid=document_guid,
+                url=props.document_reference if is_external else None,
+                description=props.document_reference_description or None,
+                guid=str(uuid.uuid4()),
+            )
+            document_references.append(document_reference)
+        tool.Bcf.set_topic_document_references(topic, document_references)
 
         bpy.ops.bim.load_bcf_topic(topic_guid=topic.guid, topic_index=props.active_topic_index)
         props.document_reference = ""
@@ -854,14 +957,10 @@ class RemoveBcfBimSnippet(bpy.types.Operator):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
 
-        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
-            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
-            return {"FINISHED"}
-
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
-        topic.topic.bim_snippet = None
+        tool.Bcf.set_topic_bim_snippet(topic, None)
         blender_topic.bim_snippet.schema = ""
         blender_topic.bim_snippet.reference = ""
         blender_topic.bim_snippet.type = ""
@@ -877,15 +976,59 @@ class RemoveBcfDocumentReference(bpy.types.Operator):
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
-
-        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
-            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
-            return {"FINISHED"}
+        bcf_v2 = (bcfxml.version.version_id or "").startswith("2")
 
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
-        del topic.topic.document_reference[self.index]
+
+        document_references = tool.Bcf.get_topic_document_references(topic)
+        topic_index: int = self.index
+        document_reference = document_references[topic_index]
+
+        # Remove document contents.
+        if bcf_v2:
+            assert isinstance(topic, bcf.v2.topic.TopicHandler)
+            assert isinstance(document_reference, bcf.v2.model.TopicDocumentReference)
+            if not document_reference.is_external:
+                ref_document = document_reference.referenced_document
+                assert ref_document
+                del topic.document_references[ref_document]
+        else:
+            assert isinstance(document_reference, bcf.v3.model.DocumentReference)
+            document_guid = document_reference.document_guid
+            # For bcf v3 documents are stored in bcfxml, not in the topic.
+            if document_guid:
+                assert isinstance(bcfxml, bcf.v3.bcfxml.BcfXml)
+
+                # As there's no bcfxml document manager ui yet,
+                # we remove document if it's not referenced by any topic.
+                present_in_other_topics = False
+                for topic_ in bcfxml.topics.values():
+                    if topic_ == topic:
+                        continue
+                    document_references = tool.Bcf.get_topic_document_references(topic_)
+                    assert tool.Bcf.is_list_of(document_references, bcf.v3.model.DocumentReference)
+                    for ref_ in document_references:
+                        if ref_.document_guid == document_guid:
+                            present_in_other_topics = True
+                            break
+                    if present_in_other_topics:
+                        break
+
+                if not present_in_other_topics:
+                    doc_handler = bcfxml.documents
+                    assert doc_handler
+                    docs = doc_handler.definition.documents
+                    assert docs
+                    doc = next(d for d in docs.document if d.guid == document_guid)
+                    del doc_handler.documents[doc.filename]
+                    docs.document.remove(doc)
+
+        # Remove document reference.
+        del document_references[topic_index]
+        tool.Bcf.set_topic_document_references(topic, document_references)
+
         bpy.ops.bim.load_bcf_topic(topic_guid=topic.guid, topic_index=props.active_topic_index)
         return {"FINISHED"}
 
@@ -900,14 +1043,12 @@ class RemoveBcfRelatedTopic(bpy.types.Operator):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
 
-        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
-            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
-            return {"FINISHED"}
-
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
-        del topic.topic.related_topic[self.index]
+        related_topics = tool.Bcf.get_topic_related_topics(topic)
+        del related_topics[self.index]
+        tool.Bcf.set_topic_related_topics(topic, related_topics)
         bpy.ops.bim.load_bcf_topic(topic_guid=topic.guid, topic_index=props.active_topic_index)
         return {"FINISHED"}
 
@@ -922,17 +1063,13 @@ class RemoveBcfComment(bpy.types.Operator):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
 
-        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
-            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
-            return {"FINISHED"}
-
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
-        for i, comment in enumerate(topic.comments):
-            if comment.guid == self.comment_guid:
-                break
-        del topic.comments[i]
+        comments = topic.comments
+        i = next(i for i, c in enumerate(comments) if c.guid == self.comment_guid)
+        del comments[i]
+        topic.coments = comments
         bpy.ops.bim.load_bcf_comments(topic_guid=topic.guid)
         return {"FINISHED"}
 
@@ -947,15 +1084,11 @@ class EditBcfComment(bpy.types.Operator):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
 
-        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
-            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
-            return {"FINISHED"}
-
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         blender_comment = blender_topic.comments.get(self.comment_guid)
         topic = bcfxml.topics[blender_topic.name]
-        for i, comment in enumerate(topic.comments):
+        for comment in topic.comments:
             if comment.guid == self.comment_guid:
                 comment.comment = blender_comment.comment
                 comment.modified_date = XmlDateTime.now()
@@ -974,31 +1107,59 @@ class AddBcfComment(bpy.types.Operator):
     def poll(cls, context):
         props = context.scene.BCFProperties
         if not props.comment:
+            cls.poll_message_set("No comment to add.")
             return False
-        if props.has_related_viewpoint and not bcf_prop.getBcfViewpoints(None, context):
+
+        topic = props.active_topic
+        if not topic:
+            cls.poll_message_set("No topic is active.")
             return False
+
+        if props.has_related_viewpoint:
+            topic = props.topics[topic.name]
+            viewpoint = tool.Blender.get_enum_safe(topic, "viewpoints")
+            if not viewpoint:
+                cls.poll_message_set("No viewpoint is active to add a comment with viewpoint.")
+                return False
         return True
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
-
-        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
-            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
-            return {"FINISHED"}
+        bcf_v2 = (bcfxml.version.version_id or "").startswith("2")
 
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
-        comment = bcf.v2.model.Comment(
-            date=XmlDateTime.now(),
-            author=context.scene.BCFProperties.author,
-            comment=props.comment,
-            guid=str(uuid.uuid4()),
-        )
-        if props.has_related_viewpoint:
-            comment.viewpoint = bcf.v2.model.CommentViewpoint(guid=blender_topic.viewpoints)
-        topic.comments.append(comment)
+        comments = topic.comments
+
+        if bcf_v2:
+            comment = bcf.v2.model.Comment(
+                date=XmlDateTime.now(),
+                author=context.scene.BCFProperties.author,
+                comment=props.comment,
+                guid=str(uuid.uuid4()),
+            )
+            if props.has_related_viewpoint:
+                comment.viewpoint = bcf.v2.model.CommentViewpoint(guid=blender_topic.viewpoints)
+            assert tool.Bcf.is_list_of(comments, bcf.v2.model.Comment)
+            comments.append(comment)
+            assert isinstance(topic, bcf.v2.topic.TopicHandler)
+            topic.comments = comments
+        else:
+            comment = bcf.v3.model.Comment(
+                date=XmlDateTime.now(),
+                author=context.scene.BCFProperties.author,
+                comment=props.comment,
+                guid=str(uuid.uuid4()),
+            )
+            if props.has_related_viewpoint:
+                comment.viewpoint = bcf.v3.model.CommentViewpoint(guid=blender_topic.viewpoints)
+            assert tool.Bcf.is_list_of(comments, bcf.v3.model.Comment)
+            comments.append(comment)
+            assert isinstance(topic, bcf.v3.topic.TopicHandler)
+            topic.comments = comments
+
         bpy.ops.bim.load_bcf_comments(topic_guid=topic.guid)
         props.comment = ""
         props.has_related_viewpoint = False
@@ -1009,26 +1170,47 @@ class ActivateBcfViewpoint(bpy.types.Operator):
     bl_idname = "bim.activate_bcf_viewpoint"
     bl_label = "Activate BCF Viewpoint"
     bl_options = {"REGISTER", "UNDO"}
+    viewpoint_guid: bpy.props.StringProperty(
+        name="Viewpoint GUID",
+        description="Viewpoint GUID from the active topic to activate. If not provided active viewpoint will be used",
+        default="",
+        options={"SKIP_SAVE"},
+    )
 
     @classmethod
     def poll(cls, context):
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         if blender_topic is None:
+            cls.poll_message_set("No topic is active.")
             return False
         bcfxml = bcfstore.BcfStore.get_bcfxml()
+        assert bcfxml
         topic = bcfxml.topics[blender_topic.name]
-        return topic.viewpoints
+        if not topic.viewpoints:
+            cls.poll_message_set("No viewpoints in the active topic.")
+            return False
+        return True
 
     def execute(self, context):
         self.file = IfcStore.get_file()
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
+
         props = context.scene.BCFProperties
         blender_topic = props.active_topic
         topic = bcfxml.topics[blender_topic.name]
+        if self.viewpoint_guid:
+            viewpoint_guid = self.viewpoint_guid
+            if viewpoint_guid not in topic.viewpoints:
+                self.report({"ERROR"}, f"No such viewpoint in the active topic: '{viewpoint_guid}'.")
+                return {"CANCELLED"}
+        else:
+            viewpoint_guid = tool.Blender.get_enum_safe(blender_topic, "viewpoints")
+            if viewpoint_guid is None:
+                self.report({"ERROR"}, "No viewpoint is active.")
+                return {"CANCELLED"}
 
-        viewpoint_guid = blender_topic.viewpoints
         viewpoint = topic.viewpoints[viewpoint_guid]
         obj = bpy.data.objects.get("Viewpoint")
         if not obj:
@@ -1301,9 +1483,8 @@ class ActivateBcfViewpoint(bpy.types.Operator):
             obj = bpy.data.objects.new("Bitmap", None)
             obj.empty_display_type = "IMAGE"
             # image = bpy.data.images.load(os.path.join(bcfxml.filepath, topic.guid, bitmap.reference))
-            # TODO: suuport bcf v3.
             with tempfile.NamedTemporaryFile(delete=False) as f:
-                topic.extract_file(bitmap, f.name)
+                bcf.agnostic.topic.extract_file(topic, bitmap, outfile=Path(f.name))
                 # f.write(bitmap.what)
                 image = bpy.data.images.load(f.name)
             src_width = image.size[0]
@@ -1408,14 +1589,10 @@ class LoadBcfHeaderIfcFile(bpy.types.Operator):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
 
-        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
-            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
-            return {"FINISHED"}
-
         bcf_path = tool.Bcf.get_path()
         topic = bcfxml.topics[context.scene.BCFProperties.active_topic.name]
-        entity = topic.header.file[self.index]
-        ifc_path = str(topic.extract_file(entity))
+        entity = tool.Bcf.get_topic_header_files(topic)[self.index]
+        ifc_path = bcf.agnostic.topic.extract_file(topic, entity)
         bpy.ops.bim.load_project(filepath=ifc_path)
         if bcf_path:
             bpy.ops.bim.load_bcf_project(filepath=bcf_path)
@@ -1433,20 +1610,21 @@ class ExtractBcfFile(bpy.types.Operator):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
 
-        if not (version := (bcfxml.version.version_id or "")).startswith("2"):
-            self.report({"INFO"}, f"BCF {version} is not yet supported: {self.bl_rna.bl_idname}.")
-            return {"FINISHED"}
-
         topic = bcfxml.topics[context.scene.BCFProperties.active_topic.name]
 
         if self.entity_type == "HEADER_FILE":
-            entity = topic.header.file[self.index]
+            entity = tool.Bcf.get_topic_header_files(topic)[self.index]
         elif self.entity_type == "BIM_SNIPPET":
-            entity = topic.markup.topic.bim_snippet
+            entity = topic.topic.bim_snippet
         elif self.entity_type == "DOCUMENT_REFERENCE":
-            entity = topic.markup.topic.document_reference[self.index]
+            entity = tool.Bcf.get_topic_document_references(topic)[self.index]
+        else:
+            assert False
 
-        webbrowser.open(str(topic.extract_file(entity).parent))
+        assert entity
+        filepath = bcf.agnostic.topic.extract_file(topic, entity, bcfxml)
+        assert isinstance(filepath, Path)
+        webbrowser.open(str(filepath.parent))
         return {"FINISHED"}
 
 
@@ -1471,7 +1649,12 @@ class BCFFileHandlerOperator(bpy.types.Operator):
 
         # `files` contain only .bcf files.
         filepath = Path(self.directory)
-        return bpy.ops.bim.load_bcf_project(filepath=(filepath / self.files[0].name).as_posix())
+        filename = self.files[0].name
+        res = bpy.ops.bim.load_bcf_project(filepath=(filepath / filename).as_posix())
+        if res != {"FINISHED"}:
+            return res
+        self.report({"INFO"}, f"BCF Project '{filename}' is loaded.")
+        return {"FINISHED"}
 
 
 class BIM_FH_import_bcf(bpy.types.FileHandler):

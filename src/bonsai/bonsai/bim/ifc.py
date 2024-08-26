@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import os
 import bpy
 import uuid
@@ -228,7 +229,9 @@ class IfcStore:
             IfcStore.commit_link_element(data)
 
     @staticmethod
-    def link_element(element: ifcopenshell.entity_instance, obj: IFC_CONNECTED_TYPE) -> None:
+    def link_element(
+        element: ifcopenshell.entity_instance, obj: Union[IFC_CONNECTED_TYPE, tool.Geometry.TYPES_WITH_MESH_PROPERTIES]
+    ) -> None:
         # Please use tool.Ifc.link() instead of this method. We want to
         # refactor this class and deprecate usage of IfcStore in favour of
         # tools.

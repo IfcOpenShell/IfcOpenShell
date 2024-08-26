@@ -28,7 +28,7 @@ IfcOpenShell depends on:
   for IfcConvert to be able to write tessellated Collada (.dae) files
 - (Optional) `SWIG <http://www.swig.org/>`__ and `Python
   <https://www.python.org/>`__ - for building the IfcOpenShell Python interface
-  and use in the BlenderBIM Add-on
+  and use in Bonsai
 - (Optional) `HDF5 <https://www.hdfgroup.org/solutions/hdf5>`__ - for caching
   geometry using the HDF5 format
 

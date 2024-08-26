@@ -46,7 +46,15 @@ class BcfStore:
     @classmethod
     def set(cls, bcfxml: Union[bcf.bcfxml.BcfXml, None], filepath: str) -> None:
         cls.bcfxml = bcfxml
-        bpy.context.scene.BCFProperties.bcf_file = filepath
+        props = bpy.context.scene.BCFProperties
+        props.bcf_file = filepath
+
+        # Set bcf_version prop on load.
+        if filepath or bcfxml:
+            bcfxml = cls.get_bcfxml()
+            assert bcfxml
+            bcf_v2 = (bcfxml.version.version_id or "").startswith("2")
+            props.bcf_version = "2" if bcf_v2 else "3"
 
     @classmethod
     def set_by_filepath(cls, filepath: str) -> None:

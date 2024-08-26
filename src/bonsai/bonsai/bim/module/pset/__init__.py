@@ -41,6 +41,7 @@ classes = (
     prop.RenameProperties,
     prop.AddEditProperties,
     prop.DeletePsets,
+    prop.GlobalPsetProperties,
     ui.BIM_PT_object_psets,
     ui.BIM_PT_object_qtos,
     ui.BIM_PT_material_psets,
@@ -73,6 +74,7 @@ def register():
     bpy.types.Scene.RenameProperties = bpy.props.CollectionProperty(type=prop.RenameProperties)
     bpy.types.Scene.AddEditProperties = bpy.props.CollectionProperty(type=prop.AddEditProperties)
     bpy.types.Scene.DeletePsets = bpy.props.CollectionProperty(type=prop.DeletePsets)
+    bpy.types.Scene.GlobalPsetProperties = bpy.props.PointerProperty(type=prop.GlobalPsetProperties)
 
 
 def unregister():
@@ -88,3 +90,4 @@ def unregister():
     del bpy.types.Scene.RenameProperties
     del bpy.types.Scene.AddEditProperties
     del bpy.types.Scene.DeletePsets
+    del bpy.types.Scene.GlobalPsetProperties

@@ -347,7 +347,7 @@ Scenario: Remove pset - multiple objects
 
 Scenario: Edit pset length property
     Given an empty IFC project
-    And I press "mesh.add_clever_stair"
+    And I press "mesh.add_stair"
     And the variable "pset" is "tool.Pset.get_element_pset(tool.Ifc.get_entity(bpy.context.active_object), 'Pset_StairFlightCommon').id()"
     And the variable "si_conversion" is "ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())"
     And I press "bim.enable_pset_editing(pset_id={pset}, obj='IfcStairFlight/StairFlight', obj_type='Object')"
@@ -379,7 +379,7 @@ Scenario: Edit pset length property
 
 Scenario: Edit qset length property
     Given an empty IFC project
-    And I press "mesh.add_clever_stair"
+    And I press "mesh.add_stair"
     And I press "bim.perform_quantity_take_off"
     And the variable "pset" is "tool.Pset.get_element_pset(tool.Ifc.get_entity(bpy.context.active_object), 'Qto_StairFlightBaseQuantities').id()"
     And the variable "si_conversion" is "ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())"

@@ -22,23 +22,27 @@ import ifcopenshell
 import bonsai.bim.helper
 import bonsai.core.tool
 import bonsai.tool as tool
+from typing import Union, Literal, Any
+from typing_extensions import assert_never
 
 
 class Unit(bonsai.core.tool.Unit):
+    UNIT_TYPE = Literal["LENGTHUNIT", "AREAUNIT", "VOLUMEUNIT"]
+
     @classmethod
-    def clear_active_unit(cls):
+    def clear_active_unit(cls) -> None:
         bpy.context.scene.BIMUnitProperties.active_unit_id = 0
 
     @classmethod
-    def disable_editing_units(cls):
+    def disable_editing_units(cls) -> None:
         bpy.context.scene.BIMUnitProperties.is_editing = False
 
     @classmethod
-    def enable_editing_units(cls):
+    def enable_editing_units(cls) -> None:
         bpy.context.scene.BIMUnitProperties.is_editing = True
 
     @classmethod
-    def export_unit_attributes(cls):
+    def export_unit_attributes(cls) -> dict[str, Any]:
         def callback(attributes, prop):
             if prop.name == "Dimensions":
                 try:
@@ -51,7 +55,7 @@ class Unit(bonsai.core.tool.Unit):
         return bonsai.bim.helper.export_attributes(props.unit_attributes, callback=callback)
 
     @classmethod
-    def get_scene_unit_name(cls, unit_type):
+    def get_scene_unit_name(cls, unit_type: UNIT_TYPE) -> str:
         if unit_type == "LENGTHUNIT":
             props = bpy.context.scene.unit_settings
             if props.length_unit == "MILES":
@@ -67,9 +71,11 @@ class Unit(bonsai.core.tool.Unit):
             return bpy.context.scene.BIMProperties.area_unit
         elif unit_type == "VOLUMEUNIT":
             return bpy.context.scene.BIMProperties.volume_unit
+        else:
+            assert_never()
 
     @classmethod
-    def get_scene_unit_si_prefix(cls, unit_type):
+    def get_scene_unit_si_prefix(cls, unit_type: UNIT_TYPE) -> Union[str, None]:
         if unit_type == "LENGTHUNIT":
             props = bpy.context.scene.unit_settings
             if props.length_unit == "ADAPTIVE" or props.length_unit == "METERS":
@@ -79,11 +85,13 @@ class Unit(bonsai.core.tool.Unit):
             unit = bpy.context.scene.BIMProperties.area_unit
         elif unit_type == "VOLUMEUNIT":
             unit = bpy.context.scene.BIMProperties.volume_unit
+        else:
+            assert_never(unit_type)
         if "/" in unit:
             return unit.split("/")[0]
 
     @classmethod
-    def import_unit_attributes(cls, unit):
+    def import_unit_attributes(cls, unit: ifcopenshell.entity_instance) -> None:
         def callback(name, prop, data):
             if name == "Dimensions" and data["type"] != "IfcSIUnit":
                 new = bpy.context.scene.BIMUnitProperties.unit_attributes.add()
@@ -99,7 +107,7 @@ class Unit(bonsai.core.tool.Unit):
         bonsai.bim.helper.import_attributes2(unit, props.unit_attributes, callback=callback)
 
     @classmethod
-    def import_units(cls):
+    def import_units(cls) -> None:
         props = bpy.context.scene.BIMUnitProperties
         props.units.clear()
 
@@ -140,19 +148,19 @@ class Unit(bonsai.core.tool.Unit):
             new.ifc_class = unit.is_a()
 
     @classmethod
-    def is_scene_unit_metric(cls):
+    def is_scene_unit_metric(cls) -> bool:
         return bpy.context.scene.unit_settings.system in ["METRIC", "NONE"]
 
     @classmethod
-    def is_unit_class(cls, unit, ifc_class):
+    def is_unit_class(cls, unit: ifcopenshell.entity_instance, ifc_class: str) -> bool:
         return unit.is_a(ifc_class)
 
     @classmethod
-    def set_active_unit(cls, unit):
+    def set_active_unit(cls, unit: ifcopenshell.entity_instance) -> None:
         bpy.context.scene.BIMUnitProperties.active_unit_id = unit.id()
 
     @classmethod
-    def get_project_currency_unit(cls):
+    def get_project_currency_unit(cls) -> Union[ifcopenshell.entity_instance, None]:
         unit_assignments = tool.Ifc.get().by_type("IfcUnitAssignment")
         for assignment in unit_assignments:
             for unit in assignment.Units:
@@ -160,13 +168,13 @@ class Unit(bonsai.core.tool.Unit):
                     return unit
 
     @classmethod
-    def get_currency_name(cls):
+    def get_currency_name(cls) -> Union[str, None]:
         unit = cls.get_project_currency_unit()
         if unit:
             return unit.Currency
 
     @classmethod
-    def blender_format_unit(cls, value):
+    def blender_format_unit(cls, value: float) -> str:
         return bpy.utils.units.to_string(
             bpy.context.scene.unit_settings.system,
             "LENGTH",

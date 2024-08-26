@@ -99,4 +99,8 @@ class CsvProperties(PropertyGroup):
     should_show_group: BoolProperty(default=False, name="Show Grouping")
     should_show_summary: BoolProperty(default=False, name="Show Summary")
     should_show_formatting: BoolProperty(default=False, name="Show Formatting")
-    should_load_from_memory: BoolProperty(default=False, name="Load from Memory")
+    should_load_from_memory: BoolProperty(
+        default=False,
+        name="Load from Memory",
+        description="Use IFC file currently loaded in Bonsai",
+    )

@@ -113,7 +113,7 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::loft::ptr loft, IfcGeom::Co
 		return false;
 	}
 	results.emplace_back(ConversionResult(
-		loft->instance->data().id(),
+		loft->instance->as<IfcUtil::IfcBaseEntity>()->id(),
 		loft->matrix,
 		new OpenCascadeShape(shape),
 		loft->surface_style

@@ -101,8 +101,6 @@ Scenario: Select similar container
     When I press "bim.select_similar_container"
     Then nothing happens
 
-#HERE STARTS TESTS FOR SPATIAL TOOL
-
 Scenario: Execute generate space from cursor position
     Given an empty IFC project
     When I press "bim.generate_space"
@@ -126,3 +124,51 @@ Scenario: Execute toggle space visibility
     And I press "bim.assign_class(ifc_class='IfcSpace', predefined_type='SPACE')"
     When I press "bim.toggle_space_visibility"
     Then nothing happens
+
+Scenario: Spatial decomposition - see panel
+    Given an empty IFC project
+    When I look at the "Spatial Decomposition" panel
+    Then the "BIM_UL_containers_manager" list has 4 items
+    And I don't see the "BIM_UL_elements" list
+
+Scenario: Isolate spatial container
+    Given an empty IFC project
+    And I look at the "Spatial Decomposition" panel
+    When I select the "My Site" item in the "BIM_UL_containers_manager" list
+    And I click "Isolate"
+    Then nothing happens
+
+Scenario: Show spatial container
+    Given an empty IFC project
+    And I look at the "Spatial Decomposition" panel
+    When I select the "My Site" item in the "BIM_UL_containers_manager" list
+    And I click "HIDE_OFF"
+    Then nothing happens
+
+Scenario: Hide spatial container
+    Given an empty IFC project
+    And I look at the "Spatial Decomposition" panel
+    When I select the "My Site" item in the "BIM_UL_containers_manager" list
+    And I click "HIDE_ON"
+    Then nothing happens
+
+Scenario: Select spatial container
+    Given an empty IFC project
+    And I look at the "Spatial Decomposition" panel
+    When I select the "My Site" item in the "BIM_UL_containers_manager" list
+    And I click "OBJECT_DATA"
+    Then the object "IfcSite/My Site" is selected
+
+Scenario: Delete spatial container
+    Given an empty IFC project
+    And I look at the "Spatial Decomposition" panel
+    When I select the "My Building" item in the "BIM_UL_containers_manager" list
+    And I click "X"
+    Then the "BIM_UL_containers_manager" list has 2 items
+
+Scenario: Add spatial container
+    Given an empty IFC project
+    And I look at the "Spatial Decomposition" panel
+    And I set the "subelement_class" property to "IfcExternalSpatialElement"
+    When I click "ADD"
+    Then the "BIM_UL_containers_manager" list has 5 items
