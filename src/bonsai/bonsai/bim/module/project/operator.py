@@ -2328,7 +2328,7 @@ class MeasureTool(bpy.types.Operator):
         self.number_output = ""
         self.number_is_negative = False
         self.is_input_on = False
-        self.input_options = ["D", "A", "X", "Y", "Z"]
+        self.input_options = ["D", "A"]
         self.input_type = "OFF"
         self.input_value_xy = [None, None]
         self.input_panel = {"D": "", "A": "", "X": "", "Y": "", "Z": ""}
@@ -2387,6 +2387,18 @@ class MeasureTool(bpy.types.Operator):
 
         if event.value == "RELEASE" and event.type == "LEFTMOUSE":
             tool.Snap.insert_polyline_point(self.input_panel)
+            tool.Blender.update_viewport()
+
+        if event.value == "PRESS" and event.type == "X":
+            tool.Snap.set_snap_axis_method("X")
+            tool.Blender.update_viewport()
+
+        if event.value == "PRESS" and event.type == "Y":
+            tool.Snap.set_snap_axis_method("Y")
+            tool.Blender.update_viewport()
+
+        if event.value == "PRESS" and event.type == "Z":
+            tool.Snap.set_snap_axis_method("Z")
             tool.Blender.update_viewport()
 
         if event.value == "PRESS" and event.type == "C":
@@ -2500,7 +2512,7 @@ class MeasureTool(bpy.types.Operator):
             PolylineDecorator.install(context)
             tool.Snap.set_use_default_container(False)
             PolylineDecorator.set_use_default_container(False)
-            tool.Snap.set_snap_plane_method("No Plane")
+            tool.Snap.set_snap_plane_method(None)
             PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
             self.visible_objs = tool.Raycast.get_visible_objects(context)
             for obj in self.visible_objs:

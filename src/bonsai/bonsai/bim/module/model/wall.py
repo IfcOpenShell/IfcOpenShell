@@ -319,7 +319,7 @@ class DrawPolylineWall(bpy.types.Operator):
         self.number_output = ""
         self.number_is_negative = False
         self.is_input_on = False
-        self.input_options = ["D", "A", "X", "Y"]
+        self.input_options = ["D", "A"]
         self.input_type = "OFF"
         self.input_value_xy = [None, None]
         self.input_panel = {"D": "", "A": "", "X": "", "Y": ""}
@@ -403,6 +403,14 @@ class DrawPolylineWall(bpy.types.Operator):
 
         if event.value == "RELEASE" and event.type == "LEFTMOUSE":
             tool.Snap.insert_polyline_point(self.input_panel)
+            tool.Blender.update_viewport()
+
+        if event.value == "PRESS" and event.type == "X":
+            tool.Snap.set_snap_axis_method("X")
+            tool.Blender.update_viewport()
+
+        if event.value == "PRESS" and event.type == "Y":
+            tool.Snap.set_snap_axis_method("Y")
             tool.Blender.update_viewport()
 
         if event.value == "PRESS" and event.type == "C":
