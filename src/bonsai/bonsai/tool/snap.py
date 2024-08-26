@@ -106,6 +106,11 @@ class Snap(bonsai.core.tool.Snap):
         except:
             snap_vertex = bpy.context.scene.BIMModelProperties.snap_mouse_point.add()
 
+        info = f"""Snap: {snap_type}
+    Axis:{cls.snap_axis_method}
+    Plane:{cls.snap_plane_method}
+"""
+        PolylineDecorator.set_snap_info(info)
         snap_vertex.x = snap_point[0]
         snap_vertex.y = snap_point[1]
         snap_vertex.z = snap_point[2]
@@ -455,6 +460,7 @@ class Snap(bonsai.core.tool.Snap):
             detected_snaps.append({"Axis": (rot_intersection, axis_start, axis_end)})
 
         detected_snaps.append({"Plane": intersection})
+
 
         return detected_snaps
 
