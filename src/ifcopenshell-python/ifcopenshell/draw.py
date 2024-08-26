@@ -109,7 +109,8 @@ def main(
         )
 
         if settings.cache:
-            cache = ifcopenshell.geom.serializers.hdf5("cache.h5", geom_settings)
+            serializer_settings = ifcopenshell.geom.serializer_settings()
+            cache = ifcopenshell.geom.serializers.hdf5("cache.h5", geom_settings, serializer_settings)
             for it in iterators:
                 it.set_cache(cache)
 
