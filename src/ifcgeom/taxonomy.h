@@ -327,10 +327,10 @@ typedef item const* ptr;
 				style(const std::string& name) : name(name), specularity(std::numeric_limits<double>::quiet_NaN()), transparency(std::numeric_limits<double>::quiet_NaN()), use_surface_color(false) {}
 
 				const colour& get_color() const {
-                    if ((use_surface_color && surface) || !diffuse) {
+                    if (use_surface_color && surface) {
                         return surface;
-					}
-					return diffuse;
+                    }
+                    return diffuse;
 				}
 
 				bool has_specularity() const {
