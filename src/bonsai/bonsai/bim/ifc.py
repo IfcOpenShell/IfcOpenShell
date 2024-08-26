@@ -140,6 +140,8 @@ class IfcStore:
     def update_cache():
         if not IfcStore.cache:
             return
+        assert IfcStore.cache_path
+        assert IfcStore.file
         ifc_key = IfcStore.path + IfcStore.file.wrapped_data.header.file_name.time_stamp
         ifc_hash = hashlib.md5(ifc_key.encode("utf-8")).hexdigest()
         new_cache_path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "cache", f"{ifc_hash}.h5")
