@@ -307,13 +307,15 @@ class PolylineDecorator:
     angle_snap_mat = None
     angle_snap_loc = None
     use_default_container = False
-
+    instructions = None
+ 
     @classmethod
     def install(cls, context):
         if cls.is_installed:
             cls.uninstall()
         handler = cls()
         cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_input_panel, (context,), "WINDOW", "POST_PIXEL"))
+        cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_on_screen_menu, (context,), "WINDOW", "POST_PIXEL"))
         cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_measurements, (context,), "WINDOW", "POST_PIXEL"))
         cls.handlers.append(SpaceView3D.draw_handler_add(handler, (context,), "WINDOW", "POST_VIEW"))
         cls.is_installed = True
@@ -353,6 +355,10 @@ class PolylineDecorator:
     def set_plane(cls, plane_origin, plane_normal):
         cls.plane_origin = plane_origin
         cls.plane_normal = plane_normal
+
+    @classmethod
+    def set_instructions(cls, instructions):
+        cls.instructions = instructions
 
     @classmethod
     def calculate_distance_and_angle(cls, context, is_input_on):
@@ -556,7 +562,7 @@ class PolylineDecorator:
 
 
         self.addon_prefs = tool.Blender.get_addon_preferences()
-        self.font_id = 0
+        self.font_id = 1
         blf.size(self.font_id, 12)
         blf.enable(self.font_id, blf.SHADOW)
         blf.shadow(self.font_id, 6, 0, 0, 0, 1)
@@ -592,6 +598,23 @@ class PolylineDecorator:
             blf.position(self.font_id, coords_angle[0], coords_angle[1], 0)
             blf.draw(self.font_id, "a: " + measurement_prop[i].angle)
 
+    def draw_on_screen_menu(self, context):
+        region = context.region
+
+        self.addon_prefs = tool.Blender.get_addon_preferences()
+        self.font_id = 2
+        blf.size(self.font_id, 12)
+        blf.enable(self.font_id, blf.SHADOW)
+        blf.shadow(self.font_id, 6, 0, 0, 0, 1)
+        color = self.addon_prefs.decorations_colour
+        blf.color(self.font_id, *color)
+
+        text_w, text_h = blf.dimensions(0, self.instructions)
+        position = (region.width / 2) - (text_w / 2)
+        blf.position(self.font_id, position, 10, 0)
+        blf.draw(self.font_id, self.instructions)
+
+    
     def __call__(self, context):
 
         self.addon_prefs = tool.Blender.get_addon_preferences()

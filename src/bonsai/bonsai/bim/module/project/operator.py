@@ -2334,6 +2334,14 @@ class MeasureTool(bpy.types.Operator):
         self.input_panel = {"D": "", "A": "", "X": "", "Y": "", "Z": ""}
         self.snap_angle = None
         self.snapping_points = []
+        self.instructions = """TAB: Cycle Input
+    M: Modify Snap Point
+    C: Close
+    Backspace: Remove
+    X Y Z: Axis
+    S-(X Y Z): Plane
+    Shift: Lock axis
+"""
 
     def recalculate_inputs(self, context):
         if self.number_input:
@@ -2520,6 +2528,7 @@ class MeasureTool(bpy.types.Operator):
             PolylineDecorator.set_use_default_container(False)
             tool.Snap.set_snap_plane_method(None)
             tool.Snap.set_snap_axis_method(None)
+            PolylineDecorator.set_instructions(self.instructions)
             PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
             self.visible_objs = tool.Raycast.get_visible_objects(context)
             for obj in self.visible_objs:
