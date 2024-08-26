@@ -148,7 +148,7 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::sweep_along_curve::ptr scs,
 		return false;
 	}
 	results.emplace_back(ConversionResult(
-		scs->instance->data().id(),
+		scs->instance->as<IfcUtil::IfcBaseEntity>()->id(),
 		scs->matrix,
 		new OpenCascadeShape(shape),
 		scs->surface_style

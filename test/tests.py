@@ -64,10 +64,8 @@ assert "Version" in dir(app)
 g = ifcopenshell.file(schema=f.schema)
 p = g.createIfcCartesianPoint((0.,0.))
 assert len(g.types()) == 1
-assert "IfcPoint" in g.types_with_super()
 g.remove(p)
 assert len(g.types()) == 0
-assert len(g.types_with_super()) == 0
 
 # Some operations on ifcopenshell.entity_instance
 assert f[22].Id == ''
@@ -91,6 +89,9 @@ assert f[288].ConnectedTo == (rel,)
 
 # Some operations on ifcopenshell.guid
 assert len(ifcopenshell.guid.compress(uuid.uuid1().hex)) == 22
+
+# reopen, because we messed with the units
+f = ifcopenshell.open("input/acad2010_walls.ifc")
 
 # Test the BVH tree
 tree_settings = ifcopenshell.geom.settings()

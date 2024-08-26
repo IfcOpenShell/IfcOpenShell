@@ -104,6 +104,13 @@ class Style(bonsai.core.tool.Style):
         return bonsai.bim.helper.export_attributes(props.attributes)
 
     @classmethod
+    def get_active_style_in_ui(cls) -> Union[bpy.types.PropertyGroup, None]:
+        props = bpy.context.scene.BIMStylesProperties
+        if len(props.styles) > props.active_style_index >= 0:
+            return props.styles[props.active_style_index]
+        return None
+
+    @classmethod
     def get_active_style_type(cls) -> str:
         return bpy.context.scene.BIMStylesProperties.style_type
 
@@ -432,18 +439,24 @@ class Style(bonsai.core.tool.Style):
         return attributes
 
     @classmethod
-    def get_surface_rendering_style(cls, obj: bpy.types.Material) -> Union[ifcopenshell.entity_instance, None]:
-        style_elements = cls.get_style_elements(obj)
+    def get_surface_rendering_style(
+        cls, blender_material_or_style: Union[bpy.types.Material, ifcopenshell.entity_instance]
+    ) -> Union[ifcopenshell.entity_instance, None]:
+        style_elements = cls.get_style_elements(blender_material_or_style)
         return style_elements.get("IfcSurfaceStyleRendering", None)
 
     @classmethod
-    def get_texture_style(cls, obj: bpy.types.Material) -> Union[ifcopenshell.entity_instance, None]:
-        style_elements = cls.get_style_elements(obj)
+    def get_texture_style(
+        cls, blender_material_or_style: Union[bpy.types.Material, ifcopenshell.entity_instance]
+    ) -> Union[ifcopenshell.entity_instance, None]:
+        style_elements = cls.get_style_elements(blender_material_or_style)
         return style_elements.get("IfcSurfaceStyleWithTextures", None)
 
     @classmethod
-    def get_external_style(cls, obj: bpy.types.Material) -> Union[ifcopenshell.entity_instance, None]:
-        style_elements = cls.get_style_elements(obj)
+    def get_external_style(
+        cls, blender_material_or_style: Union[bpy.types.Material, ifcopenshell.entity_instance]
+    ) -> Union[ifcopenshell.entity_instance, None]:
+        style_elements = cls.get_style_elements(blender_material_or_style)
         return style_elements.get("IfcExternallyDefinedSurfaceStyle", None)
 
     @classmethod

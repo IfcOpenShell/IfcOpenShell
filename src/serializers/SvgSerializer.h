@@ -77,12 +77,12 @@ struct storey_sorter {
 		if (a_is_storey && b_is_storey) {
 			boost::optional<double> a_elev, b_elev;
 			try {
-				a_elev = static_cast<double>(*a->get("Elevation"));
-				b_elev = static_cast<double>(*b->get("Elevation"));
+				a_elev = static_cast<double>(a->get("Elevation"));
+				b_elev = static_cast<double>(b->get("Elevation"));
 			} catch (...) {};
 			if (a_elev && b_elev) {
 				if (std::equal_to<double>()(*a_elev, *b_elev)) {
-					return std::less<unsigned int>()(a->data().id(), b->data().id());
+					return std::less<unsigned int>()(a->id(), b->id());
 				} else {
 					return std::less<double>()(*a_elev, *b_elev);
 				}
@@ -90,12 +90,12 @@ struct storey_sorter {
 
 			boost::optional<std::string> a_name, b_name;
 			try {
-				a_name = static_cast<std::string>(*a->get("Name"));
-				b_name = static_cast<std::string>(*b->get("Name"));
+				a_name = static_cast<std::string>(a->get("Name"));
+				b_name = static_cast<std::string>(b->get("Name"));
 			} catch (...) {};
 			if (a_name && b_name) {
 				if (std::equal_to<std::string>()(*a_name, *b_name)) {
-					return std::less<unsigned int>()(a->data().id(), b->data().id());
+					return std::less<unsigned int>()(a->id(), b->id());
 				} else {
 					return std::less<std::string>()(*a_name, *b_name);
 				}

@@ -26,6 +26,7 @@ class ConnectToWebsocketServer(bpy.types.Operator):
     bl_idname = "bim.connect_websocket_server"
     bl_label = "Connect/Start websocket server"
     bl_description = "Start/Connect to a Websocket server"
+    page: bpy.props.StringProperty(default="")
 
     def execute(self, context):
         port = context.scene.WebProperties.webserver_port
@@ -33,7 +34,7 @@ class ConnectToWebsocketServer(bpy.types.Operator):
             context.scene.WebProperties.webserver_port = core.generate_port_number(tool.Web)
 
         port = context.scene.WebProperties.webserver_port
-        core.connect_websocket_server(tool.Web, port)
+        core.connect_websocket_server(tool.Web, port, self.page)
         return {"FINISHED"}
 
 
@@ -60,9 +61,10 @@ class killWebsocketServer(bpy.types.Operator):
 class OpenWebBrowser(bpy.types.Operator):
     bl_idname = "bim.open_web_browser"
     bl_label = "Open Web Browser"
-    bl_description = "Open the web UI base URL in your Web Browser"
+    bl_description = "Open the web UI page URL in your Web Browser"
+    page: bpy.props.StringProperty(default="")
 
     def execute(self, context):
         port = context.scene.WebProperties.webserver_port
-        core.open_web_browser(tool.Web, port)
+        core.open_web_browser(tool.Web, port, self.page)
         return {"FINISHED"}

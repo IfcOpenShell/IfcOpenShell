@@ -100,7 +100,9 @@ def draw_psetqto_ui(
     layout: bpy.types.UILayout,
     obj_type: tool.Ifc.OBJECT_TYPE,
     allow_removing: bool = True,
+    filter_keyword: str = "",
 ) -> None:
+    filter_keyword = filter_keyword.lower()
     box = layout.box()
     row = box.row(align=True)
     if "is_expanded" not in pset:
@@ -158,17 +160,24 @@ def draw_psetqto_ui(
                     prop["NominalValue"] is None or prop["NominalValue"] == ""
                 ):
                     continue
+                nominal_value = str(prop["NominalValue"])
+                if (
+                    filter_keyword
+                    and filter_keyword not in prop["Name"].lower()
+                    and filter_keyword not in nominal_value.lower()
+                ):
+                    continue
                 has_props_displayed = True
                 row = box.row(align=True)
                 row.scale_y = 0.8
                 row.label(text=prop["Name"])
-                op = row.operator("bim.select_similar", text=str(prop["NominalValue"]), icon="NONE", emboss=False)
-                op.key = pset["Name"]
+                op = row.operator("bim.select_similar", text=nominal_value, icon="NONE", emboss=False)
+                op.key = '"' + pset["Name"].replace('"', '\\"') + '"."' + prop["Name"].replace('"', '\\"') + '"'
 
             if not has_props_displayed:
                 row = box.row()
                 row.scale_y = 0.8
-                row.label(text="No Properties Set")
+                row.label(text="No Properties")
 
 
 def draw_psetqto_editable_ui(
@@ -185,6 +194,12 @@ class BIM_PT_object_psets(Panel):
     bl_region_type = "WINDOW"
     bl_context = "object"
     bl_parent_id = "BIM_PT_tab_object_metadata"
+    bl_options = {"HEADER_LAYOUT_EXPAND"}
+
+    def draw_header(self, context):
+        row = self.layout.row(align=True)
+        row.label(text="")  # empty text occupies the left of the row
+        row.prop(context.scene.GlobalPsetProperties, "pset_filter", text="", icon="VIEWZOOM")
 
     @classmethod
     def poll(cls, context):
@@ -209,7 +224,15 @@ class BIM_PT_object_psets(Panel):
         op.obj_type = "Object"
 
         if not props.active_pset_id and props.active_pset_name and props.active_pset_type == "PSET":
-            draw_psetqto_ui(context, 0, {}, props, self.layout, "Object")
+            draw_psetqto_ui(
+                context,
+                0,
+                {},
+                props,
+                self.layout,
+                "Object",
+                filter_keyword=context.scene.GlobalPsetProperties.pset_filter,
+            )
 
         if ObjectPsetsData.data["psets"]:
             if ObjectPsetsData.data["is_occurrence"]:
@@ -217,12 +240,29 @@ class BIM_PT_object_psets(Panel):
             else:
                 self.layout.label(text="Type Properties:")
             for pset in ObjectPsetsData.data["psets"]:
-                draw_psetqto_ui(context, pset["id"], pset, props, self.layout, "Object")
+                draw_psetqto_ui(
+                    context,
+                    pset["id"],
+                    pset,
+                    props,
+                    self.layout,
+                    "Object",
+                    filter_keyword=context.scene.GlobalPsetProperties.pset_filter,
+                )
 
         if ObjectPsetsData.data["inherited_psets"]:
             self.layout.label(text="Inherited Type Properties:", icon="CON_CHILDOF")
             for pset in ObjectPsetsData.data["inherited_psets"]:
-                draw_psetqto_ui(context, pset["id"], pset, props, self.layout, "Object", allow_removing=False)
+                draw_psetqto_ui(
+                    context,
+                    pset["id"],
+                    pset,
+                    props,
+                    self.layout,
+                    "Object",
+                    allow_removing=False,
+                    filter_keyword=context.scene.GlobalPsetProperties.pset_filter,
+                )
 
 
 class BIM_PT_object_qtos(Panel):
@@ -232,6 +272,12 @@ class BIM_PT_object_qtos(Panel):
     bl_region_type = "WINDOW"
     bl_context = "object"
     bl_parent_id = "BIM_PT_tab_object_metadata"
+    bl_options = {"HEADER_LAYOUT_EXPAND"}
+
+    def draw_header(self, context):
+        row = self.layout.row(align=True)
+        row.label(text="")  # empty text occupies the left of the row
+        row.prop(context.scene.GlobalPsetProperties, "qto_filter", text="", icon="VIEWZOOM")
 
     @classmethod
     def poll(cls, context):
@@ -256,7 +302,15 @@ class BIM_PT_object_qtos(Panel):
         op.obj_type = "Object"
 
         if not props.active_pset_id and props.active_pset_name and props.active_pset_type == "QTO":
-            draw_psetqto_ui(context, 0, {}, props, self.layout, "Object")
+            draw_psetqto_ui(
+                context,
+                0,
+                {},
+                props,
+                self.layout,
+                "Object",
+                filter_keyword=context.scene.GlobalPsetProperties.qto_filter,
+            )
 
         if ObjectQtosData.data["qtos"]:
             if ObjectQtosData.data["is_occurrence"]:
@@ -264,12 +318,29 @@ class BIM_PT_object_qtos(Panel):
             else:
                 self.layout.label(text="Type Quantities:")
             for qto in ObjectQtosData.data["qtos"]:
-                draw_psetqto_ui(context, qto["id"], qto, props, self.layout, "Object")
+                draw_psetqto_ui(
+                    context,
+                    qto["id"],
+                    qto,
+                    props,
+                    self.layout,
+                    "Object",
+                    filter_keyword=context.scene.GlobalPsetProperties.qto_filter,
+                )
 
         if ObjectQtosData.data["inherited_qsets"]:
             self.layout.label(text="Inherited Type Quantities:", icon="CON_CHILDOF")
             for qset in ObjectQtosData.data["inherited_qsets"]:
-                draw_psetqto_ui(context, qset["id"], qset, props, self.layout, "Object", allow_removing=False)
+                draw_psetqto_ui(
+                    context,
+                    qset["id"],
+                    qset,
+                    props,
+                    self.layout,
+                    "Object",
+                    allow_removing=False,
+                    filter_keyword=context.scene.GlobalPsetProperties.qto_filter,
+                )
 
 
 class BIM_PT_material_psets(Panel):

@@ -115,8 +115,8 @@ class Implementation(codegen.Base):
                     null_check = ""
                     if arg["is_optional"]:
                         attr_check = (
-                            "if(!data_->getArgument(%d) || data_->getArgument(%d)->isNull()) { return %%s; }"
-                            % (arg["index"] - 1, arg["index"] - 1)
+                            "if(data_.get_attribute_value(%d).isNull()) { return %%s; }"
+                            % (arg["index"] - 1,)
                         )
                         if "boost::optional" in arg["full_type"]:
                             null_check = attr_check % "boost::none"
@@ -236,10 +236,16 @@ class Implementation(codegen.Base):
             ]
 
             superclass = (
-                "%s((IfcEntityInstanceData*)0)" % type.supertypes[0]
+                "%s(std::move(e))" % type.supertypes[0]
                 if len(type.supertypes) == 1
-                else "IfcUtil::IfcBaseEntity()"
+                else "IfcUtil::IfcBaseEntity(std::move(e))"
             )
+
+            superclass_num_attrs = (
+                "%s(IfcEntityInstanceData(storage_t(%%d)))" % type.supertypes[0]
+                if len(type.supertypes) == 1
+                else "IfcUtil::IfcBaseEntity(IfcEntityInstanceData(storage_t(%d)))"
+            ) % len(constructor_arguments)
 
             write(
                 templates.entity_implementation,
@@ -250,6 +256,7 @@ class Implementation(codegen.Base):
                 attributes=nl(catnl(attributes)),
                 inverse=nl(catnl(inverse)),
                 superclass=superclass,
+                superclass_num_attrs=superclass_num_attrs,
                 schema_name=schema_name,
                 schema_name_upper=schema_name_upper,
                 index_in_schema=self.names.index(str(name)),
@@ -302,7 +309,7 @@ class Implementation(codegen.Base):
         for class_name, type in mapping.schema.simpletypes.items():
             type_str = mapping.make_type_string(mapping.flatten_type_string(type))
             attr_type = mapping.make_argument_type(type)
-            superclass = mapping.simple_type_parent(class_name)
+            superclass = mapping.simple_type_parent(class_name) or "IfcUtil::IfcBaseType"
 
             simpletype_impl_is = (
                 templates.simpletype_impl_is_with_supertype
@@ -310,7 +317,7 @@ class Implementation(codegen.Base):
                 else templates.simpletype_impl_is_without_supertype
             )
 
-            constructor = templates.constructor_single_initlist if superclass else templates.constructor
+            constructor = templates.constructor_single_initlist#  if superclass else templates.constructor
 
             simpletype_impl_cast = (
                 templates.simpletype_impl_cast_templated
@@ -337,9 +344,10 @@ class Implementation(codegen.Base):
                 map(
                     compose,
                     map(
-                        lambda x: (class_name, attr_type, superclass, "(IfcEntityInstanceData*)0") + x,
+                        lambda x: (class_name, attr_type, superclass) + x,
                         (
                             (
+                                "",
                                 "Class",
                                 templates.function,
                                 "const IfcParse::type_declaration&",
@@ -347,6 +355,7 @@ class Implementation(codegen.Base):
                                 templates.simpletype_impl_class,
                             ),
                             (
+                                "",
                                 "declaration",
                                 templates.const_function,
                                 "const IfcParse::type_declaration&",
@@ -354,14 +363,16 @@ class Implementation(codegen.Base):
                                 templates.simpletype_impl_declaration,
                             ),
                             (
+                                "std::move(e)",
                                 "",
                                 constructor,
                                 "",
-                                ("IfcEntityInstanceData* e",),
-                                templates.simpletype_impl_explicit_constructor,
+                                ("IfcEntityInstanceData&& e",),
+                                "",
                             ),
-                            ("", constructor, "", ("%s v" % type_str,), simpletype_impl_constructor),
-                            ("", templates.cast_function, type_str, (), simpletype_impl_cast),
+                            ("", "", constructor, "", ("%s v" % type_str,), ("set_attribute_value(0, v%s);" % ("->generalize()" if mapping.is_templated_list(type) else ""))) if mapping.simple_type_parent(class_name) is None else \
+                            ("v", "", constructor, "", ("%s v" % type_str,), ""),
+                            ("", "", templates.cast_function, type_str, (), simpletype_impl_cast),
                         ),
                     ),
                 )

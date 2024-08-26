@@ -5,10 +5,6 @@ let socket;
 
 // Document ready function
 $(document).ready(function () {
-  var systemTheme = window.matchMedia("(prefers-color-scheme: light)").matches
-    ? "light"
-    : "dark";
-  $(":root").css("color-scheme", systemTheme);
   var defaultTheme = "blender";
   var theme = localStorage.getItem("theme") || defaultTheme;
   setTheme(theme);
@@ -46,7 +42,7 @@ function handleWebConnect() {
 
 // Function to handle 'blender_connect' event
 function handleBlenderConnect(blenderId) {
-  console.log("blender_connect: ", blenderId);
+  console.log("blender connected: ", blenderId);
   if (!connectedClients.hasOwnProperty(blenderId)) {
     connectedClients[blenderId] = {
       shown: false,
@@ -77,7 +73,7 @@ function handleDefaultData(data) {
 
 // Function to handle 'blender_disconnect' event
 function handleBlenderDisconnect(blenderId) {
-  console.log("blender_disconnect: ", blenderId);
+  console.log("blender disconnected: ", blenderId);
   if (connectedClients.hasOwnProperty(blenderId)) {
     delete connectedClients[blenderId];
     removeSelectOption(blenderId);
@@ -90,7 +86,7 @@ function handleBlenderDisconnect(blenderId) {
 
 function handleConnectedClients(data) {
   $("#blender-count").text(data.length);
-  console.log(data);
+  // console.log(data);
   data.forEach(function (id) {
     connectedClients[id] = {
       shown: false,
@@ -101,7 +97,7 @@ function handleConnectedClients(data) {
 }
 
 function handleThemeData(themeData) {
-  console.log(themeData);
+  // console.log(themeData);
 
   function arrayToRgbString(arr) {
     const [r, g, b, a] = arr.map((num) => Math.round(num * 255));
@@ -145,7 +141,7 @@ function handleDrawingsData(data) {
 
   const hasDrawings = drawings.length > 0 || sheets.length > 0;
 
-  console.log(connectedClients);
+  // console.log(connectedClients);
 
   if (connectedClients.hasOwnProperty(blenderId)) {
     if (!connectedClients[blenderId].shown) {
@@ -203,11 +199,10 @@ function addSelectOption(blenderId, filename) {
 
 function updateSelectOption(blenderId, filename) {
   $("#blender-" + blenderId).text(filename);
-  console.log(blenderId, filename);
+  // console.log(blenderId, filename);
   console.log($("#dropdown-menu").val());
 
   if ($("#dropdown-menu").val() === filename) {
-    console.log("here");
     displayDrawingsNames(blenderId, filename);
   }
 }
@@ -253,7 +248,7 @@ function displayDrawingsNames(blenderId, ifcFile) {
         const msg = {
           path: path,
         };
-        console.log(msg);
+        // console.log(msg);
         socket.emit("get_svg", msg);
 
         $("li").removeClass("selected-svg");
@@ -277,6 +272,7 @@ function displayDrawingsNames(blenderId, ifcFile) {
 
 function setTheme(theme) {
   $("html").removeClass("light dark blender").addClass(theme);
+  $(":root").css("color-scheme", theme);
   if (theme === "light") {
     $("#toggle-theme").html('<i class="fas fa-sun"></i>');
   } else if (theme === "dark") {

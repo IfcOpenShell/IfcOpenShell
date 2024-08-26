@@ -155,6 +155,7 @@ class Header(codegen.Base):
                         tt = mapping.schema.entities[tt.supertypes[0]]
 
                     supertypes = list(type.supertypes) if len(type.supertypes) else ["IfcUtil::IfcBaseEntity"]
+                    direct_superclass = supertypes[0]
                     supertypes.extend(get_select_super_types(name, bases=all_supertypes))
                     supertypes = list(map(case_normalize, supertypes))
                     superclass = create_supertype_statement(supertypes)

@@ -83,11 +83,30 @@ class BIM_PT_colour_by_property(Panel):
         row.operator("bim.save_colourscheme", text="", icon="EXPORT")
 
         row = self.layout.row()
-        row.prop(props, "colourscheme_query", text="Query")
+        bonsai.bim.helper.prop_with_search(self.layout, props, "colourscheme_key", text="Colour By")
+        if props.colourscheme_key == "QUERY":
+            row = self.layout.row()
+            row.prop(props, "colourscheme_query", text="Query")
+
+        row = self.layout.row()
+        row.prop(props, "palette")
+
+        if props.palette not in ("tab10", "paired"):
+            row = self.layout.row(align=True)
+            row.prop(props, "min_mode", text="Min Value")
+            if props.min_mode == "MANUAL":
+                row.prop(props, "min_value", text="")
+
+            row = self.layout.row(align=True)
+            row.prop(props, "max_mode", text="Max Value")
+            if props.max_mode == "MANUAL":
+                row.prop(props, "max_value", text="")
+
 
         row = self.layout.row(align=True)
         row.operator("bim.colour_by_property", icon="BRUSH_DATA")
         row.operator("bim.reset_object_colours")
+        row.prop(props, "show_flat_colours", icon="SHADING_RENDERED", text="")
         row.operator("bim.select_by_property", icon="RESTRICT_SELECT_OFF", text="")
 
         if len(props.colourscheme):

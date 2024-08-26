@@ -63,6 +63,7 @@ class ColourByPropertyData:
         cls.is_loaded = True
         cls.data = {}
         cls.data["saved_colourschemes"] = cls.saved_colourschemes()
+        cls.data["colourscheme_key"] = cls.colourscheme_key()
 
     @classmethod
     def saved_colourschemes(cls):
@@ -80,6 +81,27 @@ class ColourByPropertyData:
             except:
                 pass
         return [(str(g.id()), g.Name or "Unnamed", "") for g in sorted(results, key=lambda x: x.Name or "Unnamed")]
+
+    @classmethod
+    def colourscheme_key(cls):
+        default = [("QUERY", "Custom Query", "Specify a custom query to colour by"), None]
+        obj = bpy.context.active_object
+        if not obj:
+            return default
+        element = tool.Ifc.get_entity(obj)
+        if not element:
+            return default
+        keys = [a.name() for a in element.wrapped_data.declaration().as_entity().all_attributes()]
+        psets = ifcopenshell.util.element.get_psets(element)
+        for pset, properties in psets.items():
+            if pset.endswith("Common"):
+                keys.extend([f'/.*Common/."{name}"' for name in properties.keys() if name != "id"])
+            elif pset.endswith("BaseQuantities"):
+                keys.extend([f'/.*BaseQuantities/."{name}"' for name in properties.keys() if name != "id"])
+            else:
+                keys.extend([f"{pset}.{name}" for name in properties.keys() if name != "id"])
+        results = [(k, k, "") for k in keys]
+        return default + results
 
 
 class SelectSimilarData:

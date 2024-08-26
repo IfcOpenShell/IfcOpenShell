@@ -85,6 +85,36 @@ class Cad:
         return math.degrees(a) if degrees else a
 
     @classmethod
+    def angle_3_vectors(cls, v1, v2, v3, degrees=False):
+        """
+        > takes 3 vectors. The order matters, v2 is the center point.
+        < returns the potentially signed angle as degrees or radians
+        """
+        d1 = v1 - v2
+        d2 = v2 - v3
+
+        axis = d1.cross(d2)
+        axis.normalize()
+        axis = Vector((abs(axis.x), abs(axis.y), abs(axis.z)))
+
+        rotation_axis = d1.cross(d2)
+
+        # Calculate the unsigned angle between the "from" and "to" vectors
+        a = d1.angle(d2)
+
+        # Determine the sign of the angle based on the provided axis
+        if degrees:
+            a = math.degrees(a)
+
+            parameter = rotation_axis.dot(axis)
+
+            sign = 1 if parameter <= 0 else -1
+
+            return a * sign
+        else:
+            return a
+
+    @classmethod
     def is_x(cls, value: float, x: float, tolerance: float | None = None) -> bool:
         """
         > takes a value and a target of x, either as a single value x or an interable of values

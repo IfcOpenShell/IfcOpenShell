@@ -61,7 +61,7 @@ class Web(bonsai.core.tool.Web):
         It then retrieves the port number, and returns it.
 
         Returns:
-            - int: The port number that was generated.
+            int: The port number that was generated.
         """
         print("Generating port number")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -78,10 +78,10 @@ class Web(bonsai.core.tool.Web):
         If the connection is refused, the port is available for use; otherwise, it is in use.
 
         Args:
-           - port (int): The port number to check.
+           port (int): The port number to check.
 
         Returns:
-            - bool: True if the port is available, False if it is in use.
+            bool: True if the port is available, False if it is in use.
         """
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             # connect_ex returns errno.SUCCESS (0) if the connection succeeds
@@ -94,11 +94,10 @@ class Web(bonsai.core.tool.Web):
         Starts a WebSocket server on the specified port.
 
         This method sets up the environment, locates paths, and starts
-        the WebSocket server process. It also handles the creation and updating of a PID file to keep track
-        of running server instances.
+        the WebSocket server process.
 
         Args:
-           - port (int): The port number on which to start the WebSocket server.
+           port (int): The port number on which to start the WebSocket server.
         """
         import addon_utils
 
@@ -143,7 +142,7 @@ class Web(bonsai.core.tool.Web):
         reconnection attempts, starts an asyncio thread, connects to the WebSocket server, and sets the connection status.
 
         Args:
-           - port (int): The port number to connect to the WebSocket server.
+           port (int): The port number to connect to the WebSocket server.
         """
         global ws_thread, sio
 
@@ -223,15 +222,16 @@ class Web(bonsai.core.tool.Web):
         """
         Check if the WebSocket server has started on the specified port.
 
-        This function continuously checks for the existence of the WebSocket server's process ID (PID) in the running_pid JSON file.
+        this method continuously checks for the existence of the WebSocket server's process ID (PID) in the running_pid JSON file.
         It waits for a maximum of 5 seconds before returning False.
 
         Args:
-            - port (int): The port number on which the WebSocket server is expected to be running.
+            port (int): The port number on which the WebSocket server is expected to be running.
 
         Returns:
-            - bool: True if the WebSocket server has started on the specified port within the maximum time limit, False otherwise.
+            bool: True if the WebSocket server has started on the specified port within the maximum time limit, False otherwise.
         """
+        pid = ws_process.pid
         max_time = 5
         start = time.time()
         while True:
@@ -242,7 +242,7 @@ class Web(bonsai.core.tool.Web):
             try:
                 with open(pid_file, "r") as f:
                     data = json.load(f)
-                    if port in data.values():
+                    if data.get(str(pid)) == port:
                         return True
             except:
                 pass
@@ -261,11 +261,11 @@ class Web(bonsai.core.tool.Web):
         Sends data to the Web UI via Websocket connection.
 
         Args:
-            - data (Optional[Any]): The data to send. If None, just sends data from WebData.
-            - data_key (str): The key under which to store the data in the payload. Defaults to "data".
-            - event (str): The WebSocket event to emit. Defaults to "data".
-            - namespace (str): The namespace for the WebSocket event. Defaults to "/blender".
-            - use_web_data (bool): Whether to use data from WebData. Defaults to True.
+            data (Optional[Any]): The data to send. If None, just sends data from WebData.
+            data_key (str): The key under which to store the data in the payload. Defaults to "data".
+            event (str): The WebSocket event to emit. Defaults to "data".
+            namespace (str): The namespace for the WebSocket event. Defaults to "/blender".
+            use_web_data (bool): Whether to use data from WebData. Defaults to True.
         """
 
         global ws_thread
@@ -284,6 +284,14 @@ class Web(bonsai.core.tool.Web):
 
     @classmethod
     def check_operator_queue(cls) -> None | float:
+        """
+        this method checks the operator queue and processes the operators based on the source page.
+        If the WebProperties.is_connected is False, it clears the queue and returns None to unregister the timer.
+        If the queue is not empty, it processes each operator by calling the corresponding handling function.
+
+        Returns:
+            (Optional[float]): Returns None if the WebProperties.is_connected is False, otherwise returns 1.0 to continue the timer.
+        """
         if not bpy.context.scene.WebProperties.is_connected:
             with web_operator_queue.mutex:
                 web_operator_queue.queue.clear()
@@ -299,10 +307,19 @@ class Web(bonsai.core.tool.Web):
                 cls.handle_gantt_operator(operator["operator"])
             elif operator["sourcePage"] == "drawings":
                 cls.handle_drawings_operator(operator["operator"])
+            elif operator["sourcePage"] == "demo":
+                message = operator["operator"]["message"]
+                print(f"Message from demo page: {message}")
         return 1.0
 
     @classmethod
     def handle_csv_operator(cls, operator_data: dict) -> None:
+        """
+        this method handles the Schedules page operators.
+
+        Args:
+            operator_data (dict): A dictionary containing the operator data.
+        """
         if operator_data["type"] == "selection":
             bpy.ops.object.select_all(action="DESELECT")
             guid = operator_data["globalId"]
@@ -313,6 +330,12 @@ class Web(bonsai.core.tool.Web):
 
     @classmethod
     def handle_gantt_operator(cls, operator_data: dict) -> None:
+        """
+        this method handles the Sequencing page operators.
+
+        Args:
+            operator_data (dict): A dictionary containing the operator data.
+        """
         ifc_file = tool.Ifc.get()
         if operator_data["type"] == "editTask":
             task_id = int(operator_data["taskId"])
@@ -345,6 +368,12 @@ class Web(bonsai.core.tool.Web):
 
     @classmethod
     def handle_drawings_operator(cls, operator_data: dict) -> None:
+        """
+        this method handles the Documentation page operators.
+
+        Args:
+            operator_data (dict): A dictionary containing the operator data.
+        """
         if operator_data["type"] == "getDrawings":
             drawings_data = []
             sheets_data = []
@@ -372,11 +401,23 @@ class Web(bonsai.core.tool.Web):
             )
 
     @classmethod
-    def open_web_browser(cls, port: int) -> None:
-        webbrowser.open(f"http://127.0.0.1:{port}/")
+    def open_web_browser(cls, port: int, page: str = "") -> None:
+        """
+        Opens a web browser and navigates to the specified URL.
+
+        Args:
+            port (int): The port number to be used in the URL.
+            page (str): The page name to be appended to the URL. Default is an empty string which points to the index page.
+        """
+        webbrowser.open(f"http://127.0.0.1:{port}/{page}")
 
     @classmethod
     def send_theme_data(cls) -> None:
+        """
+        this method retrieves the theme colors from Blender preferences,
+        calculates the mixed colors, and sends the theme data to the Web UI.
+        """
+
         def get_color(theme, attribute) -> tuple[Any, ...]:
             return tuple(getattr(theme, attribute)[:])
 
@@ -409,7 +450,7 @@ class Web(bonsai.core.tool.Web):
             "top_bar_header_text": get_color(top_bar, "header_text"),
             "active_object": get_color(view_3d, "object_active"),
             "selected_object": get_color(view_3d, "object_selected"),
-            "info_warning": get_color(info, "info_warning"),
+            "info_warning": get_color(info, "info_warning_text"),
             "odd_row": get_color(outliner.space, "back"),
             "even_row": mix_colors(get_color(outliner.space, "back"), get_color(outliner, "row_alternate")),
             "active_highlight": get_color(outliner, "active"),
@@ -422,19 +463,52 @@ class Web(bonsai.core.tool.Web):
 
     @classmethod
     async def sio_connect(cls, url: str) -> None:
+        """
+        Asynchronously establishes a WebSocket connection and sets up event listeners.
+
+        This method connects to the specified URL using WebSocket transport and registers
+        an event listener for the `web_operator` event within the `/blender` namespace.
+
+        Args:
+            url (str): The URL of the WebSocket server to connect to.
+        """
         await sio.connect(url, transports=["websocket"], namespaces="/blender")
         sio.on("web_operator", cls.sio_listen_web_operator, namespace="/blender")
 
     @classmethod
     async def sio_disconnect(cls) -> None:
+        """
+        Asynchronously disconnects the WebSocket connection.
+
+        This method terminates the active WebSocket connection established by the `sio_connect` method.
+        """
         await sio.disconnect()
 
     @classmethod
     async def sio_send(cls, data: Any, event: str = "data", namespace: str = "/blender") -> None:
+        """
+        Asynchronously sends data to the WebSocket server.
+
+        This method emits an event with the provided data to the WebSocket server within the specified namespace.
+
+        Args:
+            data (Any): The data to send to the WebSocket server.
+            event (Optional[str]): The WebSocket event to emit. Defaults to "data".
+            namespace (Optional[str]): The namespace for the WebSocket event. Defaults to "/blender".
+        """
         await sio.emit(event, data, namespace=namespace)
 
     @classmethod
     async def sio_listen_web_operator(cls, data: dict) -> None:
+        """
+        Asynchronously handles incoming `web_operator` events from the WebSocket server.
+
+        This method receives data from the WebSocket server and attempts to place it into the
+        `web_operator_queue`. If the queue is full, the data is discarded.
+
+        Args:
+            data (dict): The data received from the `web_operator` event.
+        """
         try:
             web_operator_queue.put_nowait(data)
         except queue.Full:
@@ -458,9 +532,9 @@ class AsyncioThread(threading.Thread):
         in a separate thread from the main thread.
 
         Args:
-           - *args: Variable length argument list. These arguments are passed to the superclass constructor.
-           - loop: An existing asyncio event loop. If None, a new event loop is created.
-           - **kwargs: Arbitrary keyword arguments. These arguments are passed to the superclass constructor.
+           *args: Variable length argument list. These arguments are passed to the superclass constructor.
+           loop: An existing asyncio event loop. If None, a new event loop is created.
+           **kwargs: Arbitrary keyword arguments. These arguments are passed to the superclass constructor.
         """
         super().__init__(*args, **kwargs)
         self.loop = loop or asyncio.new_event_loop()
@@ -478,7 +552,7 @@ class AsyncioThread(threading.Thread):
         Run a coroutine in the asyncio event loop from a separate thread.
 
         Args:
-           - coro: The coroutine to be run.
+           coro: The coroutine to be run.
 
         Returns:
             The result of the coroutine.

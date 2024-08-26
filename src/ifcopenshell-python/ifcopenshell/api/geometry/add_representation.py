@@ -659,7 +659,7 @@ class Usecase:
         return self.file.createIfcShapeRepresentation(
             self.settings["context"],
             self.settings["context"].ContextIdentifier,
-            "PointCloud",
+            "Point" if self.file.schema == "IFC4X3" else "PointCloud",
             [point_cloud],
         )
 

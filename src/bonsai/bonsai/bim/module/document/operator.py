@@ -20,6 +20,7 @@ import bpy
 import json
 import ifcopenshell.api
 import ifcopenshell.util.attribute
+import ifcopenshell.util.element
 import bonsai.tool as tool
 import bonsai.core.document as core
 from bonsai.bim.ifc import IfcStore
@@ -149,3 +150,25 @@ class UnassignDocument(bpy.types.Operator, tool.Ifc.Operator):
             element = tool.Ifc.get_entity(obj)
             if element:
                 core.unassign_document(tool.Ifc, product=element, document=document)
+
+
+class SelectDocumentObjects(bpy.types.Operator):
+    bl_idname = "bim.select_document_objects"
+    bl_label = "Select Document Objects"
+    bl_options = {"REGISTER", "UNDO"}
+    document: bpy.props.IntProperty(name="Document ID", default=0)
+
+    def execute(self, context):
+        if not self.document or not (relating_document := tool.Ifc.get_entity_by_id(self.document)):
+            self.report({"INFO"}, f"No document found by id '{self.document}'.")
+            return {"FINISHED"}
+
+        i = 0
+        for element in ifcopenshell.util.element.get_referenced_elements(relating_document):
+            obj = tool.Ifc.get_object(element)
+            if not obj or obj not in context.selectable_objects:
+                continue
+            obj.select_set(True)
+            i += 1
+        self.report({"INFO"}, f"{i} objects selected.")
+        return {"FINISHED"}

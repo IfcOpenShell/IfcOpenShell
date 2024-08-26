@@ -27,6 +27,7 @@ class TopicHandler:
     ) -> None:
         self._markup: Optional[mdl.Markup] = None
         self._viewpoints: Optional[dict[str, VisualizationInfoHandler]] = None
+        self._reference_files: Optional[dict[str, bytes]] = None
         self._bim_snippet: Optional[bytes] = None
         self._xml_handler = xml_handler or XmlParserSerializer()
         self._topic_dir = topic_dir
@@ -49,21 +50,35 @@ class TopicHandler:
         return self.markup.topic
 
     @property
-    def guid(self) -> Optional[str]:
+    def guid(self) -> str:
         """Return the GUID of the topic."""
         if self._markup:
             return self.topic.guid
-        return self._topic_dir.name if self._topic_dir else None
+        return self._topic_dir.name if self._topic_dir else ""
 
     @property
     def header(self) -> Optional[mdl.Header]:
         """Return the header of the topic."""
         return self.markup.header
 
+    @header.setter
+    def header(self, header: mdl.Header) -> None:
+        """Set the header of the topic."""
+        self.markup.header = header
+
     @property
     def comments(self) -> list[mdl.Comment]:
         """Return the comments of the topic."""
         return self.topic.comments.comment if self.topic.comments else []
+
+    @comments.setter
+    def comments(self, comments: list[mdl.Comment]) -> None:
+        topic_comments = self.topic.comments
+        if topic_comments is None:
+            if not comments:
+                return
+            self.topic.comments = (topic_comments := mdl.TopicComments())
+        topic_comments.comment = comments
 
     @property
     def bim_snippet(self) -> Optional[bytes]:
@@ -93,6 +108,27 @@ class TopicHandler:
             if bim_snippet_path.exists():
                 return bim_snippet_path.read_bytes()
         return None
+
+    @property
+    def reference_files(self) -> dict[str, bytes]:
+        if self._reference_files is not None:
+            return self._reference_files
+
+        self._reference_files = {}
+        if not self.header:
+            return self._reference_files
+
+        if not self.header.files:
+            return self._reference_files
+
+        for ref in self.header.files.file:
+            if ref.is_external:
+                continue
+            real_path = self._topic_dir
+            for path_part in ref.reference.split("/"):
+                real_path = real_path.parent if path_part == ".." else real_path.joinpath(path_part)
+            self._reference_files[ref.reference] = real_path.read_bytes()
+        return self._reference_files
 
     @classmethod
     def create_new(
@@ -145,6 +181,7 @@ class TopicHandler:
         self._save_xml(destination_zip, self._markup, "markup.bcf")
         self._save_viewpoints(destination_zip, topic_dir)
         self._save_bim_snippet(destination_zip)
+        self._save_reference_files(destination_zip)
 
     def _save_viewpoints(self, destination_zip: ZipFileInterface, topic_dir: str) -> None:
         if not self.topic.viewpoints or not (viewpoints := self.topic.viewpoints.view_point):
@@ -164,6 +201,19 @@ class TopicHandler:
         ref_filename = Path(snippet.reference).name
         if self.bim_snippet:
             destination_zip.writestr(f"{self.topic.guid}/{ref_filename}", self.bim_snippet)
+
+    def _save_reference_files(self, destination_zip: ZipFileInterface) -> None:
+        if not self.header:
+            return
+        if not self.header.files:
+            return
+        for ref in self.header.files.file:
+            if ref.is_external or not ref.reference:
+                continue
+            real_path = self._topic_dir
+            for path_part in ref.reference.split("/"):
+                real_path = real_path.parent if path_part == ".." else real_path.joinpath(path_part)
+            destination_zip.writestr(real_path.at, self.reference_files[ref.reference])
 
     def add_viewpoint(self, element: entity_instance) -> VisualizationInfoHandler:
         """
