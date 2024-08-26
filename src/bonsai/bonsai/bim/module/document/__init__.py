@@ -31,6 +31,7 @@ classes = (
     operator.LoadParentDocument,
     operator.LoadProjectDocuments,
     operator.RemoveDocument,
+    operator.SelectDocumentObjects,
     operator.UnassignDocument,
     prop.Document,
     prop.BIMDocumentProperties,
