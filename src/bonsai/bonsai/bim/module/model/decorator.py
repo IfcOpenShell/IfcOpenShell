@@ -669,7 +669,7 @@ class PolylineDecorator:
                 edges = [[0, 1]]
                 self.draw_batch("LINES", mouse_point + projection_point, (1.0, 0.6, 0.0, 1.0), edges)
 
-        # Polyline with selected points
+        # Create polyline with selected points
         polyline_data = context.scene.BIMModelProperties.polyline_point
         polyline_points = []
         polyline_edges = []
@@ -680,18 +680,6 @@ class PolylineDecorator:
         for i in range(len(polyline_points) - 1):
             polyline_edges.append([i, i + 1])
 
-        self.line_shader.uniform_float("lineWidth", 2.0)
-        self.draw_batch("POINTS", polyline_points, decorator_color_selected)
-        if len(polyline_points) > 1:
-            self.draw_batch("LINES", polyline_points, decorator_color_selected, polyline_edges)
-
-        # Line between last polyline point and mouse
-        edges = [[0, 1]]
-        if polyline_points:
-            if snap_prop.snap_type != "Plane" and projection_point:
-                self.draw_batch("LINES", [polyline_points[-1]] + projection_point, decorator_color_unselected, edges)
-            else:
-                self.draw_batch("LINES", [polyline_points[-1]] + mouse_point, decorator_color_unselected, edges)
 
         # Line for angle axis snap
         if snap_prop.snap_type == "Axis":
@@ -719,3 +707,17 @@ class PolylineDecorator:
 
         if ref_point:
             self.draw_batch("POINTS", ref_point, (1.0, 0.6, 0.0, 1.0))
+
+        # Draw polyline with selected points
+        self.line_shader.uniform_float("lineWidth", 2.0)
+        self.draw_batch("POINTS", polyline_points, decorator_color_selected)
+        if len(polyline_points) > 1:
+            self.draw_batch("LINES", polyline_points, decorator_color_selected, polyline_edges)
+
+        # Line between last polyline point and mouse
+        edges = [[0, 1]]
+        if polyline_points:
+            if snap_prop.snap_type != "Plane" and projection_point:
+                self.draw_batch("LINES", [polyline_points[-1]] + projection_point, decorator_color_unselected, edges)
+            else:
+                self.draw_batch("LINES", [polyline_points[-1]] + mouse_point, decorator_color_unselected, edges)
