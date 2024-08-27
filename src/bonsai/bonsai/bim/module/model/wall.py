@@ -512,6 +512,7 @@ class DrawPolylineWall(bpy.types.Operator):
                 tool.Blender.update_viewport()
         else:
             if event.value == "RELEASE" and event.type in {"ESC"}:
+                tool.Snap.set_snap_axis_method(None)
                 PolylineDecorator.uninstall()
                 tool.Snap.clear_polyline()
                 tool.Blender.update_viewport()

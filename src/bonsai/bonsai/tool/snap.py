@@ -39,6 +39,10 @@ class Snap(bonsai.core.tool.Snap):
 
     @classmethod
     def set_snap_plane_method(cls, value=True):
+        cls.snap_plane_method = value
+
+    @classmethod
+    def cycle_snap_plane_method(cls, value=True):
         if cls.snap_plane_method == value:
             cls.snap_plane_method = None
             return
