@@ -1135,7 +1135,10 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             self.props.z = self.z
 
     def hotkey_S_P(self):
-        bpy.ops.bim.draw_polyline_wall("INVOKE_DEFAULT")
+        mode = bpy.context.mode
+        current_tool = bpy.context.workspace.tools.from_space_view3d_mode(mode)
+        if current_tool.idname == 'bim.wall_tool':
+            bpy.ops.bim.draw_polyline_wall("INVOKE_DEFAULT")
 
     def hotkey_S_L(self):
         if AuthoringData.data["active_class"] in ("IfcOpeningElement",):
