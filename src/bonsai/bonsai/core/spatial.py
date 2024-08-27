@@ -141,8 +141,8 @@ def delete_container(
     spatial.import_spatial_decomposition()
 
 
-def toggle_container_element(spatial: tool.Spatial, ifc_class: str) -> None:
-    spatial.toggle_container_element(ifc_class)
+def toggle_container_element(spatial: tool.Spatial, element_index: int) -> None:
+    spatial.toggle_container_element(element_index)
     spatial.load_contained_elements()
 
 
