@@ -257,6 +257,7 @@ class Spatial(bonsai.core.tool.Spatial):
         keyword: str | None,
     ) -> filter[ifcopenshell.entity_instance]:
         keyword = keyword.lower() if keyword else keyword
+
         def filter_element(element):
             if ifc_class:
                 if not element.is_a(ifc_class):
@@ -273,6 +274,7 @@ class Spatial(bonsai.core.tool.Spatial):
                 if keyword not in f"{element.is_a()} {type_name}".lower():
                     return False
             return True
+
         return filter(filter_element, elements)
 
     @classmethod
