@@ -1779,7 +1779,7 @@ class SaveDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
         if self.index:
             index = int(self.index)
         else:
-            index = context.active_object.data.BIMCameraProperties.active_drawing_style_index
+            index = context.scene.camera.data.BIMCameraProperties.active_drawing_style_index
         scene.DocProperties.drawing_styles[index].raster_style = json.dumps(style)
 
         bpy.ops.bim.save_drawing_styles_data()
@@ -2678,8 +2678,9 @@ class EditElementFilter(bpy.types.Operator, tool.Ifc.Operator):
     filter_mode: bpy.props.StringProperty()
 
     def _execute(self, context):
-        props = context.active_object.data.BIMCameraProperties
         obj = bpy.context.scene.camera
+        assert obj
+        props = obj.data.BIMCameraProperties
         element = tool.Ifc.get_entity(obj)
         pset = tool.Pset.get_element_pset(element, "EPset_Drawing")
         if self.filter_mode == "INCLUDE":
