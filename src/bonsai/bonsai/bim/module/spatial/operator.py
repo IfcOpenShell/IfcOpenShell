@@ -289,7 +289,7 @@ class SelectDecomposedElements(bpy.types.Operator, tool.Ifc.Operator):
             ifc_class=ifc_class,
             relating_type=relating_type,
             is_untyped=is_untyped,
-            element_filter = element_filter
+            element_filter=element_filter,
         )
 
 
