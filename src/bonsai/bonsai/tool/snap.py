@@ -390,11 +390,12 @@ class Snap(bonsai.core.tool.Snap):
 
         # Edge-Vertex
         for obj in objs_to_raycast:
-            options = tool.Raycast.ray_cast_by_proximity(context, event, obj)
-            snap_obj = obj
-            if options:
-                detected_snaps.append({"Edge-Vertex": (snap_obj, options)})
-                break
+            if len(obj.data.polygons) == 0:
+                options = tool.Raycast.ray_cast_by_proximity(context, event, obj)
+                snap_obj = obj
+                if options:
+                    detected_snaps.append({"Edge-Vertex": (snap_obj, options)})
+                    break
         # Polyline
         try:
             polyline_data = bpy.context.scene.BIMModelProperties.polyline_point
@@ -456,7 +457,6 @@ class Snap(bonsai.core.tool.Snap):
         for origin in detected_snaps:
             if "Object" in list(origin.keys()):
                 snap_obj, hit, face_index = origin["Object"]
-
                 matrix = snap_obj.matrix_world.copy()
                 face = snap_obj.data.polygons[face_index]
                 verts = []
