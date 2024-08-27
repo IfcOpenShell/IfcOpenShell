@@ -108,7 +108,7 @@ class Raycast(bonsai.core.tool.Raycast):
 
 
     @classmethod
-    def ray_cast_by_proximity(cls, context, event, obj, mesh=None):
+    def ray_cast_by_proximity(cls, context, event, obj, face=None):
         region = context.region
         rv3d = context.region_data
         mouse_pos = event.mouse_region_x, event.mouse_region_y
@@ -121,26 +121,15 @@ class Raycast(bonsai.core.tool.Raycast):
             loc = Vector((0, 0, 0))
 
         bm = bmesh.new()
-        if mesh is None: # Object with faces
+        if face is None: # Object with faces
             bm.from_mesh(obj.data)
         else: # Object without faces
-            verts = [bm.verts.new(obj.data.vertices[i].co) for i in mesh.vertices]
+            verts = [bm.verts.new(obj.data.vertices[i].co) for i in face.vertices]
             bm.faces.new(verts)
 
-        for edge in bm.edges:
-            v1 = edge.verts[0].co
-            v2 = edge.verts[1].co
-            world_v1 = obj.matrix_world @ v1
-            world_v2 = obj.matrix_world @ v2
-            division_point = (world_v1 + world_v2) / 2 # TODO Make it work for different divisions
-            intersection, _ = mathutils.geometry.intersect_point_line(division_point, ray_target, loc)
-            distance = (division_point - intersection).length
-            if distance < 0.2:
-                points.append((division_point, "Edge Center"))
-
         for vertex in bm.verts:
-            world_vertex = obj.matrix_world @ vertex.co
-            intersection, _ = mathutils.geometry.intersect_point_line(world_vertex, ray_target, loc)
+            world_vertex = obj.matrix_world.copy() @ vertex.co
+            intersection = tool.Cad.point_on_edge(world_vertex, (ray_target, loc))
             distance = (world_vertex - intersection).length
             if distance < 0.2:
                 points.append((world_vertex, "Vertex"))
@@ -148,14 +137,24 @@ class Raycast(bonsai.core.tool.Raycast):
         for edge in bm.edges:
             v1 = edge.verts[0].co
             v2 = edge.verts[1].co
-            world_v1 = obj.matrix_world @ v1
-            world_v2 = obj.matrix_world @ v2
-            intersection = mathutils.geometry.intersect_line_line(ray_target, loc, world_v1, world_v2)
-            if intersection:
-                distance = (intersection[0] - intersection[1]).length
-                if distance < 0.2:
-                    points.append((intersection[1], "Edge"))
+            world_v1 = obj.matrix_world.copy() @ v1
+            world_v2 = obj.matrix_world.copy() @ v2
+            division_point = (world_v1 + world_v2) / 2 # TODO Make it work for different divisions
 
+            intersection = tool.Cad.point_on_edge(division_point, (ray_target, loc))
+            distance = (division_point - intersection).length
+            if distance < 0.2:
+                points.append((division_point, "Edge Center"))
+
+            intersection = tool.Cad.intersect_edges((ray_target, loc), (world_v1, world_v2))
+            if intersection:
+                if tool.Cad.is_point_on_edge(intersection[1], (world_v1, world_v2)):
+                    distance = (intersection[1] - intersection[0]).length
+                    if distance < 0.8:
+                        points.append((intersection[1], "Edge"))
+
+
+        bm.free()
         return points
 
 
