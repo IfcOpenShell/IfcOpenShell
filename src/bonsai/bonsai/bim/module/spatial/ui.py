@@ -262,7 +262,8 @@ class BIM_UL_elements(UIList):
         if item:
             row = layout.row(align=True)
             if item.is_class:
-                row.label(text="", icon="DISCLOSURE_TRI_DOWN")
+                icon_id = "DISCLOSURE_TRI_DOWN" if item.is_expanded else "DISCLOSURE_TRI_RIGHT"
+                row.operator("bim.toggle_container_element", text="", emboss=False, icon=icon_id).ifc_class = item.name
                 row.label(text=item.name)
                 col = row.column()
                 col.alignment = "RIGHT"

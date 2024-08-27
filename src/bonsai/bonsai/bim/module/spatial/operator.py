@@ -243,6 +243,17 @@ class DeleteContainer(bpy.types.Operator, tool.Ifc.Operator):
         core.delete_container(tool.Ifc, tool.Spatial, tool.Geometry, container=tool.Ifc.get().by_id(self.container))
 
 
+class ToggleContainerElement(bpy.types.Operator):
+    bl_idname = "bim.toggle_container_element"
+    bl_label = "Toggle Container Element"
+    bl_options = {"REGISTER", "UNDO"}
+    ifc_class: bpy.props.StringProperty()
+
+    def execute(self, context):
+        core.toggle_container_element(tool.Spatial, ifc_class=self.ifc_class)
+        return {"FINISHED"}
+
+
 class SelectDecomposedElements(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.select_decomposed_elements"
     bl_label = "Select Children"
