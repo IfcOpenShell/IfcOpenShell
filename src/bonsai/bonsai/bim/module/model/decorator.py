@@ -309,14 +309,16 @@ class PolylineDecorator:
     use_default_container = False
     instructions = None
     snap_info = None
- 
+
     @classmethod
     def install(cls, context):
         if cls.is_installed:
             cls.uninstall()
         handler = cls()
         cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_input_panel, (context,), "WINDOW", "POST_PIXEL"))
-        cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_on_screen_menu, (context,), "WINDOW", "POST_PIXEL"))
+        cls.handlers.append(
+            SpaceView3D.draw_handler_add(handler.draw_on_screen_menu, (context,), "WINDOW", "POST_PIXEL")
+        )
         cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_measurements, (context,), "WINDOW", "POST_PIXEL"))
         cls.handlers.append(SpaceView3D.draw_handler_add(handler, (context,), "WINDOW", "POST_VIEW"))
         cls.is_installed = True
@@ -463,7 +465,6 @@ class PolylineDecorator:
             cls.input_panel["AREA"] = str(round(area, 4))
         return cls.input_panel
 
-
     @classmethod
     def calculate_x_y_and_z(cls, context):
         try:
@@ -522,7 +523,7 @@ class PolylineDecorator:
         batch.draw(shader)
 
     def draw_input_panel(self, context):
-        texts = {"D": "Distance:", "A": "Angle:", "X": "X coord:", "Y": "Y coord:", "Z": "Z coord:",  "AREA": "Area:"}
+        texts = {"D": "Distance:", "A": "Angle:", "X": "X coord:", "Y": "Y coord:", "Z": "Z coord:", "AREA": "Area:"}
 
         unit_system = tool.Drawing.get_unit_system()
         if unit_system == "IMPERIAL":
@@ -545,9 +546,11 @@ class PolylineDecorator:
 
             if key != "A" and key != self.input_type:
                 value = float(value)
-                if context.scene.unit_settings.length_unit == 'MILLIMETERS':
+                if context.scene.unit_settings.length_unit == "MILLIMETERS":
                     value = value * 1000
-                formatted_value = format_distance(value*factor, precision=precision, suppress_zero_inches=True, in_unit_length=True)
+                formatted_value = format_distance(
+                    value * factor, precision=precision, suppress_zero_inches=True, in_unit_length=True
+                )
             else:
                 formatted_value = value
 
@@ -565,7 +568,6 @@ class PolylineDecorator:
         rv3d = region.data
         measurement_prop = context.scene.BIMModelProperties.polyline_measurement
 
-
         self.addon_prefs = tool.Blender.get_addon_preferences()
         self.font_id = 1
         blf.size(self.font_id, 12)
@@ -573,12 +575,11 @@ class PolylineDecorator:
         blf.shadow(self.font_id, 6, 0, 0, 0, 1)
         color = self.addon_prefs.decorations_colour
 
-
         blf.color(self.font_id, *color)
         for i in range(len(measurement_prop)):
             if i == 0:
                 continue
-            pos_dim = (Vector(measurement_prop[i].position) + Vector(measurement_prop[i-1].position)) / 2
+            pos_dim = (Vector(measurement_prop[i].position) + Vector(measurement_prop[i - 1].position)) / 2
             coords_dim = view3d_utils.location_3d_to_region_2d(region, rv3d, pos_dim)
 
             unit_system = tool.Drawing.get_unit_system()
@@ -589,16 +590,18 @@ class PolylineDecorator:
                 precision = None
                 factor = 1
 
-            value = measurement_prop[i].dim            
+            value = measurement_prop[i].dim
             value = float(value)
-            if context.scene.unit_settings.length_unit == 'MILLIMETERS':
+            if context.scene.unit_settings.length_unit == "MILLIMETERS":
                 value = value * 1000
-            formatted_value = format_distance(value*factor, precision=precision, suppress_zero_inches=True, in_unit_length=True)
-            
+            formatted_value = format_distance(
+                value * factor, precision=precision, suppress_zero_inches=True, in_unit_length=True
+            )
+
             blf.position(self.font_id, coords_dim[0], coords_dim[1], 0)
             blf.draw(self.font_id, "d: " + formatted_value)
 
-            pos_angle = measurement_prop[i-1].position
+            pos_angle = measurement_prop[i - 1].position
             coords_angle = view3d_utils.location_3d_to_region_2d(region, rv3d, pos_angle)
             blf.position(self.font_id, coords_angle[0], coords_angle[1], 0)
             blf.draw(self.font_id, "a: " + measurement_prop[i].angle)
@@ -624,7 +627,6 @@ class PolylineDecorator:
         blf.position(self.font_id, position, 30, 0)
         blf.draw(self.font_id, self.snap_info)
 
-    
     def __call__(self, context):
 
         self.addon_prefs = tool.Blender.get_addon_preferences()
@@ -654,7 +656,6 @@ class PolylineDecorator:
             ref_point = [Vector((snap_ref.x, snap_ref.y, snap_ref.z))]
         except:
             ref_point = None
-
 
         default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
         projection_point = []

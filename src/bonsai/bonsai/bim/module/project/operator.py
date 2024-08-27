@@ -2481,7 +2481,7 @@ class MeasureTool(bpy.types.Operator):
         if event.value == "PRESS" and event.type == "M":
             self.snapping_points = tool.Snap.modify_snapping_point_selection(self.snapping_points)
             tool.Blender.update_viewport()
-            
+
         if event.shift and event.value == "PRESS" and event.type == "X":
             tool.Snap.set_use_default_container(False)
             PolylineDecorator.set_use_default_container(False)
