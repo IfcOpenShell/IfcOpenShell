@@ -2355,8 +2355,9 @@ class MeasureTool(bpy.types.Operator):
                     self.input_panel = PolylineDecorator.calculate_distance_and_angle(context, self.is_input_on)
                 elif self.input_type in {"D", "A"}:
                     self.input_panel = PolylineDecorator.calculate_x_y_and_z(context)
-
-                self.input_panel[self.input_type] = self.number_output
+                    self.input_panel = PolylineDecorator.calculate_distance_and_angle(context, self.is_input_on)
+                else:
+                    self.input_panel[self.input_type] = self.number_output
 
             PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
             tool.Blender.update_viewport()
