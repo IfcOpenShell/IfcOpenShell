@@ -44,7 +44,10 @@ class Debug(bonsai.core.tool.Debug):
         cache_dir = os.path.join(bpy.context.scene.BIMProperties.data_dir, "cache")
         filelist = [f for f in os.listdir(cache_dir) if f.endswith(".h5")]
         for f in filelist:
-            os.remove(os.path.join(cache_dir, f))
+            try:
+                os.remove(os.path.join(cache_dir, f))
+            except PermissionError:
+                pass
 
     @classmethod
     def debug_geometry(

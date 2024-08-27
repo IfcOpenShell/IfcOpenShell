@@ -57,5 +57,10 @@ class TestPurgeHdf5Cache(NewFile):
         test_file = cache_dir / "test.h5"
         test_file.parent.mkdir(parents=True, exist_ok=True)
         test_file.touch()
+
+        # Ensure it can skip currently loaded cache.
+        loaded_file_path = test_file.with_stem("test_loaded")
+        loaded_file = open(loaded_file_path, "w")
+
         subject.purge_hdf5_cache()
-        assert not [f for f in cache_dir.iterdir() if f.suffix == ".h5"]
+        assert [f for f in cache_dir.iterdir() if f.suffix == ".h5"] == [loaded_file_path]
