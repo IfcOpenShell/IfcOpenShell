@@ -655,13 +655,6 @@ class PolylineDecorator:
         except:
             ref_point = None
 
-        if snap_prop.snap_type in ["Face", "Plane"]:
-            self.draw_batch("POINTS", mouse_point, decorator_color_unselected)
-        else:
-            self.draw_batch("POINTS", mouse_point, (1.0, 0.6, 0.0, 1.0))
-
-        if ref_point:
-            self.draw_batch("POINTS", ref_point, (1.0, 0.6, 0.0, 1.0))
 
         default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
         projection_point = []
@@ -716,3 +709,12 @@ class PolylineDecorator:
                 for i in range(1, len(polyline_points) - 1):
                     edges.append((0, i, i + 1))
                 self.draw_batch("TRIS", polyline_points, (0, 1, 0, 0.1), edges)
+
+        # Mouse points
+        if snap_prop.snap_type in ["Face", "Plane"]:
+            self.draw_batch("POINTS", mouse_point, decorator_color_unselected)
+        else:
+            self.draw_batch("POINTS", mouse_point, (1.0, 0.6, 0.0, 1.0))
+
+        if ref_point:
+            self.draw_batch("POINTS", ref_point, (1.0, 0.6, 0.0, 1.0))
