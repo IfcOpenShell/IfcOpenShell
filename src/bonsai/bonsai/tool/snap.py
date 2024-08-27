@@ -278,35 +278,17 @@ class Snap(bonsai.core.tool.Snap):
         return None, None, None, None
 
     @classmethod
-    def mix_snap_and_axis(cls, snap_point, axis_start, axis_end, elevation):
+    def mix_snap_and_axis(cls, snap_point, axis_start, axis_end):
         # Creates a mixed snap point between the locked axis and
         # the object snap
-        # TODO Use ALT key to give the user the option to choose between the two results.
-        # TODO Create decorator for this
-        snap_point_vector = Vector((snap_point[0].x, snap_point[0].y, snap_point[0].z))
-        snap_point_axis_1 = (
-            Vector((snap_point[0].x + 1000, snap_point[0].y, elevation)),
-            Vector((snap_point[0].x - 1000, snap_point[0].y, elevation)),
-        )
-        snap_point_axis_2 = (
-            Vector((snap_point[0].x, snap_point[0].y + 1000, elevation)),
-            Vector((snap_point[0].x, snap_point[0].y - 1000, elevation)),
-        )
-        snap_angle_axis = (axis_start, axis_end)
-        result_1 = tool.Cad.intersect_edges(snap_angle_axis, snap_point_axis_1)
-        result_1 = Vector((result_1[0].x, result_1[0].y, elevation))
-        distance_1 = (result_1 - snap_point_vector).length
+        intersections = []
+        intersections.append(tool.Cad.intersect_edge_plane(axis_start, axis_end, snap_point[0], Vector((1, 0, 0))))
+        intersections.append(tool.Cad.intersect_edge_plane(axis_start, axis_end, snap_point[0], Vector((0, 1, 0))))
+        intersections.append(tool.Cad.intersect_edge_plane(axis_start, axis_end, snap_point[0], Vector((0, 0, 1))))
+        sorted_intersections = sorted(i for i in intersections if i is not None)
+        if sorted_intersections[0]:
+            return sorted_intersections[0], "Mix"
 
-        result_2 = tool.Cad.intersect_edges(snap_angle_axis, snap_point_axis_2)
-        result_2 = Vector((result_2[0].x, result_2[0].y, elevation))
-        distance_2 = (result_2 - snap_point_vector).length
-
-        if distance_1 < distance_2:
-            best_result = result_1
-        else:
-            best_result = result_2
-
-        return best_result, "Mix"
 
     @classmethod
     def detect_snapping_points(cls, context, event, objs_2d_bbox):
@@ -472,7 +454,6 @@ class Snap(bonsai.core.tool.Snap):
     def select_snapping_points(cls, context, event, detected_snaps):
         snapping_points = []
         for origin in detected_snaps:
-
             if "Object" in list(origin.keys()):
                 snap_obj, hit, face_index = origin["Object"]
 
@@ -489,16 +470,21 @@ class Snap(bonsai.core.tool.Snap):
                     for op in options:
                         snapping_points.append(op)
 
+                break
+
             if "Edge-Vertex" in list(origin.keys()):
                 snap_obj, options = origin["Edge-Vertex"]
                 for op in options:
                     snapping_points.append(op)
+                break
 
             if "Polyline" in list(origin.keys()):
                 options = origin["Polyline"]
                 for op in options:
                     snapping_points.append(op)
+                break
 
+        for origin in detected_snaps:
             if "Axis" in list(origin.keys()):
                 intersection = origin["Axis"]
                 axis_start = intersection[1]
@@ -516,7 +502,7 @@ class Snap(bonsai.core.tool.Snap):
             for point in snapping_points:
                 if point[1] == "Axis":
                     if snapping_points[0][1] not in {"Axis", "Plane"}:
-                        mixed_snap =  cls.mix_snap_and_axis(snapping_points[0], axis_start, axis_end, 0)
+                        mixed_snap =  cls.mix_snap_and_axis(snapping_points[0], axis_start, axis_end)
                         cls.update_snapping_point(mixed_snap[0], mixed_snap[1])
                         return snapping_points
                     cls.update_snapping_point(point[0], point[1])

@@ -143,6 +143,14 @@ class Cad:
         return cls.is_x((v2 - v1).length, 0, tolerance)
 
     @classmethod
+    def intersect_edge_plane(cls, v1, v2, plane_co, plane_no):
+        """
+        > takes an edges as two vector, and a plane as origin point and normal
+        < return the intersection point or None
+        """
+        return geometry.intersect_line_plane(v1, v2, plane_co, plane_no)
+
+    @classmethod
     def intersect_edges(cls, edge1, edge2):
         """
         > takes 2 tuples, each tuple contains 2 vectors
