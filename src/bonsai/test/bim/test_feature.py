@@ -307,7 +307,7 @@ def i_set_the_prop_property_to_value(prop, value):
                     setattr(spied_prop["props"], spied_prop["name"], False)
             elif spied_prop["prop_type"] == "FLOAT":
                 setattr(spied_prop["props"], spied_prop["name"], float(value))
-            elif spied_prop["prop_type"] == "INTEGER":
+            elif spied_prop["prop_type"] == "INT":
                 setattr(spied_prop["props"], spied_prop["name"], int(value))
             elif spied_prop["prop_type"] == "ENUM":
                 enum_identifier = [i for i in spied_prop["enum_items"] if i is not None and i[1] == value]
