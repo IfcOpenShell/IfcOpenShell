@@ -106,7 +106,6 @@ class Raycast(bonsai.core.tool.Raycast):
         else:
             return None, None, None
 
-
     @classmethod
     def ray_cast_by_proximity(cls, context, event, obj, face=None):
         region = context.region
@@ -121,9 +120,9 @@ class Raycast(bonsai.core.tool.Raycast):
             loc = Vector((0, 0, 0))
 
         bm = bmesh.new()
-        if face is None: # Object with faces
+        if face is None:  # Object with faces
             bm.from_mesh(obj.data)
-        else: # Object without faces
+        else:  # Object without faces
             verts = [bm.verts.new(obj.data.vertices[i].co) for i in face.vertices]
             bm.faces.new(verts)
 
@@ -139,7 +138,7 @@ class Raycast(bonsai.core.tool.Raycast):
             v2 = edge.verts[1].co
             world_v1 = obj.matrix_world.copy() @ v1
             world_v2 = obj.matrix_world.copy() @ v2
-            division_point = (world_v1 + world_v2) / 2 # TODO Make it work for different divisions
+            division_point = (world_v1 + world_v2) / 2  # TODO Make it work for different divisions
 
             intersection = tool.Cad.point_on_edge(division_point, (ray_target, loc))
             distance = (division_point - intersection).length
@@ -153,10 +152,8 @@ class Raycast(bonsai.core.tool.Raycast):
                     if distance < 0.8:
                         points.append((intersection[1], "Edge"))
 
-
         bm.free()
         return points
-
 
     @classmethod
     def ray_cast_to_polyline(cls, context, event):
@@ -174,7 +171,6 @@ class Raycast(bonsai.core.tool.Raycast):
         polyline_points = []
         for point_data in polyline_data:
             point = Vector((point_data.x, point_data.y, point_data.z))
-
 
             intersection, _ = mathutils.geometry.intersect_point_line(point, ray_target, loc)
             distance = (point - intersection).length

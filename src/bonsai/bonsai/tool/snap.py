@@ -289,7 +289,6 @@ class Snap(bonsai.core.tool.Snap):
         if sorted_intersections[0]:
             return sorted_intersections[0], "Mix"
 
-
     @classmethod
     def detect_snapping_points(cls, context, event, objs_2d_bbox):
         region = context.region
@@ -453,7 +452,6 @@ class Snap(bonsai.core.tool.Snap):
 
         detected_snaps.append({"Plane": intersection})
 
-
         return detected_snaps
 
     @classmethod
@@ -500,14 +498,13 @@ class Snap(bonsai.core.tool.Snap):
                 intersection = origin["Plane"]
                 snapping_points.append((intersection, "Plane"))
 
-
         # Make Axis first priority
         if event.shift or cls.snap_axis_method in {"X", "Y", "Z"}:
             cls.update_snapping_ref(snapping_points[0][0], snapping_points[0][1])
             for point in snapping_points:
                 if point[1] == "Axis":
                     if snapping_points[0][1] not in {"Axis", "Plane"}:
-                        mixed_snap =  cls.mix_snap_and_axis(snapping_points[0], axis_start, axis_end)
+                        mixed_snap = cls.mix_snap_and_axis(snapping_points[0], axis_start, axis_end)
                         cls.update_snapping_point(mixed_snap[0], mixed_snap[1])
                         return snapping_points
                     cls.update_snapping_point(point[0], point[1])
