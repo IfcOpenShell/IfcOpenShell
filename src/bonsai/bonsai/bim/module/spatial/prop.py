@@ -112,6 +112,7 @@ class Element(PropertyGroup):
     is_type: BoolProperty(name="Is Type", default=False)
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     total: IntProperty(name="Total")
+    is_expanded: BoolProperty(name="Is Expanded", default=False)
 
 
 class BIMSpatialDecompositionProperties(PropertyGroup):
@@ -122,6 +123,7 @@ class BIMSpatialDecompositionProperties(PropertyGroup):
     active_container_index: IntProperty(name="Active Container Index", update=update_active_container_index)
     element_filter: StringProperty(name="Element Filter", default="", options={"TEXTEDIT_UPDATE"})
     elements: CollectionProperty(name="Elements", type=Element)
+    contracted_classes: StringProperty(name="Contracted Classes", default="[]")
     active_element_index: IntProperty(name="Active Element Index")
     total_elements: IntProperty(name="Total Elements")
     subelement_class: bpy.props.EnumProperty(items=get_subelement_class, name="Subelement Class")

@@ -221,22 +221,27 @@ class Spatial(bonsai.core.tool.Spatial):
             results.setdefault(ifc_class, {}).setdefault(ifc_definition_id, {"total": 0, "type_name": type_name})
             results[ifc_class][ifc_definition_id]["total"] += 1
 
+        contracted_classes = json.loads(props.contracted_classes)
         total_elements = 0
         for ifc_class in sorted(results.keys()):
             new = props.elements.add()
             new.name = ifc_class
             new.is_class = True
+            class_is_expanded = ifc_class not in contracted_classes
+            new.is_expanded = class_is_expanded
             total = 0
             for ifc_definition_id in sorted(
                 results[ifc_class].keys(), key=lambda x: results[ifc_class][x]["type_name"]
             ):
-                new2 = props.elements.add()
-                new2.is_type = True
-                new2.name = results[ifc_class][ifc_definition_id]["type_name"]
-                new2.ifc_class = ifc_class
-                new2.total = results[ifc_class][ifc_definition_id]["total"]
-                new2.ifc_definition_id = ifc_definition_id
-                total += new2.total
+                total2 = results[ifc_class][ifc_definition_id]["total"]
+                if class_is_expanded:
+                    new2 = props.elements.add()
+                    new2.is_type = True
+                    new2.name = results[ifc_class][ifc_definition_id]["type_name"]
+                    new2.ifc_class = ifc_class
+                    new2.total = total2
+                    new2.ifc_definition_id = ifc_definition_id
+                total += total2
             new.total = total
             total_elements += total
 
@@ -335,6 +340,16 @@ class Spatial(bonsai.core.tool.Spatial):
         contracted_containers = json.loads(props.contracted_containers)
         contracted_containers.remove(container.id())
         props.contracted_containers = json.dumps(contracted_containers)
+
+    @classmethod
+    def toggle_container_element(cls, ifc_class: str) -> None:
+        props = bpy.context.scene.BIMSpatialDecompositionProperties
+        contracted_classes: list[str] = json.loads(props.contracted_classes)
+        if ifc_class in contracted_classes:
+            contracted_classes.remove(ifc_class)
+        else:
+            contracted_classes.append(ifc_class)
+        props.contracted_classes = json.dumps(contracted_classes)
 
     # HERE STARTS SPATIAL TOOL
 
