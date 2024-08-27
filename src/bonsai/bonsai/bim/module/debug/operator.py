@@ -440,9 +440,11 @@ class SelectExpressFile(bpy.types.Operator):
 class PurgeHdf5Cache(bpy.types.Operator):
     bl_idname = "bim.purge_hdf5_cache"
     bl_label = "Purge HDF5 Cache"
+    bl_description = "Clean up HDF5 cache files except the ones that currently loaded"
 
     def execute(self, context):
         core.purge_hdf5_cache(tool.Debug)
+        self.report({"INFO"}, "HDF5 cache purged.")
         return {"FINISHED"}
 
 
