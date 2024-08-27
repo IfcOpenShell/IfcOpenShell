@@ -294,6 +294,7 @@ class Snap(bonsai.core.tool.Snap):
     def detect_snapping_points(cls, context, event, objs_2d_bbox):
         region = context.region
         rv3d = context.region_data
+        space = context.space_data
         cls.mouse_pos = event.mouse_region_x, event.mouse_region_y
         detected_snaps = []
 
@@ -382,7 +383,11 @@ class Snap(bonsai.core.tool.Snap):
         for obj, bbox_2d in objs_2d_bbox:
             if obj.type == "MESH" and bbox_2d:
                 if tool.Raycast.in_view_2d_bounding_box(cls.mouse_pos, bbox_2d):
-                    objs_to_raycast.append(obj)
+                    if space.local_view:
+                        if obj.local_view_get(context.space_data):
+                            objs_to_raycast.append(obj)
+                    else:
+                        objs_to_raycast.append(obj)
         # Obj
         snap_obj, hit, face_index = cast_rays_and_get_best_object(objs_to_raycast)
         if hit is not None:
