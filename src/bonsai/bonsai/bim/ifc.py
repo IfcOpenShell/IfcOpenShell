@@ -117,22 +117,34 @@ class IfcStore:
             ifc_key = IfcStore.path + IfcStore.file.wrapped_data.header.file_name.time_stamp
             ifc_hash = hashlib.md5(ifc_key.encode("utf-8")).hexdigest()
             IfcStore.cache_path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "cache", f"{ifc_hash}.h5")
+            cache_path = Path(IfcStore.cache_path)
             cache_settings = ifcopenshell.geom.settings()
             serializer_settings = ifcopenshell.geom.serializer_settings()
+            cache_preexists = cache_path.exists()
             try:
                 IfcStore.cache = ifcopenshell.geom.serializers.hdf5(
                     IfcStore.cache_path, cache_settings, serializer_settings
                 )
-            except:
-                if os.path.exists(IfcStore.cache_path):
-                    os.remove(IfcStore.cache_path)
-                    try:
-                        IfcStore.cache = ifcopenshell.geom.serializers.hdf5(
-                            IfcStore.cache_path, cache_settings, serializer_settings
-                        )
-                    except:
-                        return
+                if cache_preexists:
+                    print(f"Successfully loaded existing cache: {cache_path.name}.")
                 else:
+                    print("New cache was created.")
+            except Exception as e:
+                if cache_preexists:
+                    print(f"Failed to create a cache from existing file '{cache_path.name}': {str(e)}.")
+                else:
+                    print(f"Failed to create a cache: {str(e)}.")
+                    # No point to trying again the same operation.
+                    return
+
+                os.remove(IfcStore.cache_path)
+                try:
+                    IfcStore.cache = ifcopenshell.geom.serializers.hdf5(
+                        IfcStore.cache_path, cache_settings, serializer_settings
+                    )
+                    print("New cache was created.")
+                except Exception as e:
+                    print(f"Failed to create a cache: {str(e)}.")
                     return
         return IfcStore.cache
 
