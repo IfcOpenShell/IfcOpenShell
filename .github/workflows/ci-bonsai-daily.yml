@@ -142,6 +142,12 @@ jobs:
           sverchok_zip="$(pwd)/dist/$(ls dist)"
           blender --command extension install-file -r user_default $sverchok_zip
 
+          # Install Sun Position extension.
+          blender --online-mode --command extension sync
+          blender --online-mode --background --python-expr "import bpy; \
+          bpy.ops.extensions.package_install(repo_index=0, pkg_id='sun_position'); \
+          bpy.ops.preferences.addon_enable(module='bl_ext.blender_org.sun_position'); bpy.ops.wm.save_userpref()"
+
           cd ../bonsai
           pip install pytest-blender
           blender --background --python scripts/setup_pytest.py
