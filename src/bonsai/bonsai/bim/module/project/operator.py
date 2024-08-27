@@ -2485,21 +2485,21 @@ class MeasureTool(bpy.types.Operator):
         if event.shift and event.value == "PRESS" and event.type == "X":
             tool.Snap.set_use_default_container(False)
             PolylineDecorator.set_use_default_container(False)
-            tool.Snap.set_snap_plane_method("YZ")
+            tool.Snap.cycle_snap_plane_method("YZ")
             tool.Snap.set_snap_axis_method(None)
             tool.Blender.update_viewport()
 
         if event.shift and event.value == "PRESS" and event.type == "Y":
             tool.Snap.set_use_default_container(False)
             PolylineDecorator.set_use_default_container(False)
-            tool.Snap.set_snap_plane_method("XZ")
+            tool.Snap.cycle_snap_plane_method("XZ")
             tool.Snap.set_snap_axis_method(None)
             tool.Blender.update_viewport()
 
         if event.shift and event.value == "PRESS" and event.type == "Z":
             tool.Snap.set_use_default_container(False)
             PolylineDecorator.set_use_default_container(False)
-            tool.Snap.set_snap_plane_method("XY")
+            tool.Snap.cycle_snap_plane_method("XY")
             tool.Snap.set_snap_axis_method(None)
             tool.Blender.update_viewport()
 
@@ -2514,6 +2514,8 @@ class MeasureTool(bpy.types.Operator):
                 tool.Blender.update_viewport()
         else:
             if event.value == "RELEASE" and event.type in {"ESC"}:
+                tool.Snap.set_snap_plane_method(None)
+                tool.Snap.set_snap_axis_method(None)
                 PolylineDecorator.uninstall()
                 tool.Snap.clear_polyline()
                 tool.Blender.update_viewport()
