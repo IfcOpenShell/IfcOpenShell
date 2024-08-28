@@ -55,10 +55,7 @@ body {
 }
 
 #container {
-    margin-top: var(--margin-medium);
-    margin-left: var(--margin-tiny);
-    margin-right: var(--margin-tiny);
-    margin-bottom: var(--margin-medium);
+    padding: var(--margin-small);
     height: calc(100vh - var(--nav-height));
     box-sizing: border-box;
     display: flex;

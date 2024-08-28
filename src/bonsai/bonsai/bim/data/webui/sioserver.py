@@ -38,9 +38,9 @@ class WebNamespace(socketio.AsyncNamespace):
 
     async def on_connect(self, sid, environ):
         print(f"Web client connected: {sid}")
+        await sio.emit("theme_data", blender_theme, namespace="/web", room=sid)
         if blender_messages:
             await sio.emit("connected_clients", list(blender_messages.keys()), namespace="/web", room=sid)
-            await sio.emit("theme_data", blender_theme, namespace="/web", room=sid)
             await self.send_cached_messages(sid)
 
     async def on_disconnect(self, sid):
@@ -55,7 +55,6 @@ class WebNamespace(socketio.AsyncNamespace):
         )
 
     async def on_get_svg(self, sid, data):
-        print("hello world!")
         file_path = data["path"]
         with open(file_path, "r") as file:
             svg_data = file.read()
@@ -70,6 +69,7 @@ class WebNamespace(socketio.AsyncNamespace):
                 await self.emit("gantt_data", {"blenderId": blenderId, "data": messages["gantt_data"]}, room=sid)
             if "demo_data" in messages:
                 await self.emit("demo_data", {"blenderId": blenderId, "data": messages["demo_data"]}, room=sid)
+
 
 # Blender namespace
 class BlenderNamespace(socketio.AsyncNamespace):
@@ -115,7 +115,7 @@ class BlenderNamespace(socketio.AsyncNamespace):
         blender_theme = data
         await sio.emit("theme_data", data, namespace="/web")
 
-    # this function will be called when the event demo_data is emitted 
+    # this function will be called when the event demo_data is emitted
     async def on_demo_data(self, sid, data):
         print(f"Demo data from Blender client {sid}")
         blender_messages[sid]["demo_data"] = data
