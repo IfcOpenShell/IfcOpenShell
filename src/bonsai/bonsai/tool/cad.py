@@ -172,6 +172,44 @@ class Cad:
         return results
 
     @classmethod
+    def intersect_edges_2(cls, edge1, edge2):
+        """
+        Calculate the closest points on two line segments.
+        Note: This function doesn't use intersect_line_line
+    
+        > edge1: tuple of two vectors (v1, v2) representing the first segment
+        > edge2: tuple of two vectors (v3, v4) representing the second segment
+        < returns: tuple of two vectors (C1, C2) or (None, None) if lines are parallel
+        """
+        # This function seems to work better then intersect_line_line
+        # in orthogonal view
+        # https://en.wikipedia.org/wiki/Skew_lines#Nearest_points
+
+        # Starting and ending points
+        P1, P1_end = edge1
+        P2, P2_end = edge2
+
+        # Directions
+        d1 = (P1_end - P1).normalized()
+        d2 = (P2_end - P2).normalized()
+
+        n = d1.cross(d2)
+    
+        # if n is zero, lines are parallel
+        if n.length == 0:
+            return None, None
+    
+        n2 = d2.cross(n)
+    
+        C1 = P1 + ((P2 - P1).dot(n2) / (d1.dot(n2))) * d1
+    
+        n1 = d1.cross(n)
+    
+        C2 = P2 + ((P1 - P2).dot(n1) / (d2.dot(n1))) * d2
+    
+        return C1, C2
+
+    @classmethod
     def get_intersection(cls, edge1, edge2):
         """
         > takes 2 tuples, each tuple contains 2 vectors

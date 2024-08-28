@@ -98,8 +98,13 @@ class Raycast(bonsai.core.tool.Raycast):
         return ray_origin_obj, ray_target_obj, ray_direction_obj
 
     @classmethod
-    def obj_ray_cast(cls, context, event, obj):
-        ray_origin_obj, _, ray_direction_obj = cls.get_object_ray_data(context, event, obj.matrix_world.copy())
+    def obj_ray_cast(cls, context, event, obj, mouse_pos=None):
+        if mouse_pos:
+            ray_origin_obj, _, ray_direction_obj = cls.get_object_ray_data(
+                context, event, obj.matrix_world.copy(), mouse_pos
+            )
+        else:
+            ray_origin_obj, _, ray_direction_obj = cls.get_object_ray_data(context, event, obj.matrix_world.copy())
         success, location, normal, face_index = obj.ray_cast(ray_origin_obj, ray_direction_obj)
         if success:
             return location, normal, face_index
@@ -113,6 +118,10 @@ class Raycast(bonsai.core.tool.Raycast):
         mouse_pos = event.mouse_region_x, event.mouse_region_y
         ray_origin, ray_target, ray_direction = cls.get_viewport_ray_data(context, event)
         points = []
+
+        # Makes the snapping point more or less sticky then others
+        # It changes the distance and affects how the snapping point is sorted
+        sticky_factor = 0.02
 
         try:
             loc = view3d_utils.region_2d_to_location_3d(region, rv3d, mouse_pos, ray_direction)
@@ -145,12 +154,12 @@ class Raycast(bonsai.core.tool.Raycast):
             if distance < 0.2:
                 points.append((division_point, "Edge Center"))
 
-            intersection = tool.Cad.intersect_edges((ray_target, loc), (world_v1, world_v2))
+            intersection = tool.Cad.intersect_edges_2((ray_target, loc), (world_v1, world_v2))
             if intersection:
                 if tool.Cad.is_point_on_edge(intersection[1], (world_v1, world_v2)):
                     distance = (intersection[1] - intersection[0]).length
                     if distance < 0.8:
-                        points.append((intersection[1], "Edge"))
+                        points.append([distance + 4 * sticky_factor, (intersection[1], "Edge")])
 
         bm.free()
         return points
