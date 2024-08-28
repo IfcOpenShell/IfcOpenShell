@@ -17,6 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import sys
 import bpy
 import bpy.utils.previews
 import bonsai.tool as tool
@@ -239,12 +240,14 @@ class CableTool(BimTool):
         BimToolUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
 
 
+MODIFIERS = {
+    "A": ("EVENT_ALT", "OPTION" if sys.platform == "Darwin" else "ALT"),
+    "C": ("EVENT_CTRL", "CTRL"),
+    "S": ("EVENT_SHIFT", "⇧"),
+}
+
+
 def add_layout_hotkey_operator(layout, text, hotkey, description, ui_context=""):
-    modifiers = {
-        "A": "EVENT_ALT",
-        "C": "EVENT_CTRL",
-        "S": "EVENT_SHIFT",
-    }
     modifier, key = hotkey.split("_")
 
     try:
@@ -252,13 +255,20 @@ def add_layout_hotkey_operator(layout, text, hotkey, description, ui_context="")
     except KeyError:
         custom_icon = custom_icon_previews["IFC"].icon_id
 
+    modifier_icon, modifier_str = MODIFIERS[modifier]
+
     if ui_context == "TOOL_HEADER":
         op = layout.operator("bim.hotkey", text="", icon_value=custom_icon)
     else:
         row = layout.row(align=True)
         op = row.operator("bim.hotkey", text=text, icon_value=custom_icon)
-        row.label(text="", icon=modifiers[modifier])
+        row.label(text="", icon=modifier_icon)
         row.label(text="", icon=f"EVENT_{key}")
+
+    hotkey_description = f"Hotkey: {modifier_str} {key}"
+    if description:
+        description += "\n\n"
+    description += hotkey_description
 
     op.hotkey = hotkey
     op.description = description
@@ -370,9 +380,7 @@ class BimToolUI:
 
             cls.layout.separator()
 
-            add_layout_hotkey_operator(
-                cls.layout, "Regen", "S_G", bpy.ops.bim.recalculate_wall.__doc__ + "\n⇧ G", ui_context
-            )
+            add_layout_hotkey_operator(cls.layout, "Regen", "S_G", bpy.ops.bim.recalculate_wall.__doc__, ui_context)
 
             cls.layout.separator()
 
@@ -380,21 +388,21 @@ class BimToolUI:
                 cls.layout,
                 "Extend",
                 "S_E",
-                "Extends/reduces element to 3D cursor\n⇧ E",
+                "Extends/reduces element to 3D cursor",
                 ui_context,
             )
             add_layout_hotkey_operator(
                 cls.layout,
                 "Butt",
                 "S_T",
-                "Intersects two non-parallel elements to a butt corner junction\n⇧ T",
+                "Intersects two non-parallel elements to a butt corner junction",
                 ui_context,
             )
             add_layout_hotkey_operator(
                 cls.layout,
                 "Mitre",
                 "S_Y",
-                "Intersects two non-parallel elements to a mitred corner junction\n⇧ Y",
+                "Intersects two non-parallel elements to a mitred corner junction",
                 ui_context,
             )
 
@@ -404,12 +412,10 @@ class BimToolUI:
             )
             cls.layout.separator()
 
-            add_layout_hotkey_operator(cls.layout, "Merge", "S_M", bpy.ops.bim.merge_wall.__doc__ + "\n⇧ M", ui_context)
-            add_layout_hotkey_operator(cls.layout, "Split", "S_K", bpy.ops.bim.split_wall.__doc__ + "\n⇧ K", ui_context)
-            add_layout_hotkey_operator(
-                cls.layout, "Rotate 90", "S_R", bpy.ops.bim.rotate_90.__doc__ + "\n⇧ R", ui_context
-            )
-            add_layout_hotkey_operator(cls.layout, "Flip", "S_F", bpy.ops.bim.flip_wall.__doc__ + "\n⇧ F", ui_context)
+            add_layout_hotkey_operator(cls.layout, "Merge", "S_M", bpy.ops.bim.merge_wall.__doc__, ui_context)
+            add_layout_hotkey_operator(cls.layout, "Split", "S_K", bpy.ops.bim.split_wall.__doc__, ui_context)
+            add_layout_hotkey_operator(cls.layout, "Rotate 90", "S_R", bpy.ops.bim.rotate_90.__doc__, ui_context)
+            add_layout_hotkey_operator(cls.layout, "Flip", "S_F", bpy.ops.bim.flip_wall.__doc__, ui_context)
 
             # row.operator("bim.unjoin_walls", icon="X", text="")
 
@@ -596,37 +602,37 @@ class BimToolUI:
             op.x_angle = cls.props.x_angle
 
             row = cls.layout.row()
-            add_layout_hotkey_operator(row, "Regen", "S_G", bpy.ops.bim.recalculate_wall.__doc__ + "\n⇧ G", ui_context)
+            add_layout_hotkey_operator(row, "Regen", "S_G", bpy.ops.bim.recalculate_wall.__doc__, ui_context)
 
             row = cls.layout.row(align=True)
             add_layout_hotkey_operator(
                 row,
                 "Extend",
                 "S_E",
-                "Extends/reduces element to 3D cursor\n⇧ E",
+                "Extends/reduces element to 3D cursor",
                 ui_context,
             )
             add_layout_hotkey_operator(
                 row,
                 "Butt",
                 "S_T",
-                "Intersects two non-parallel elements to a butt corner junction\n⇧ T",
+                "Intersects two non-parallel elements to a butt corner junction",
                 ui_context,
             )
             add_layout_hotkey_operator(
                 row,
                 "Mitre",
                 "S_Y",
-                "Intersects two non-parallel elements to a mitred corner junction\n⇧ Y",
+                "Intersects two non-parallel elements to a mitred corner junction",
                 ui_context,
             )
             row.operator("bim.unjoin_walls", text="", icon_value=custom_icon_previews["UNJOIN_WALLS"].icon_id)
 
             row = cls.layout.row(align=True)
-            add_layout_hotkey_operator(row, "Merge", "S_M", bpy.ops.bim.merge_wall.__doc__ + "\n⇧ M", ui_context)
-            add_layout_hotkey_operator(row, "Split", "S_K", bpy.ops.bim.split_wall.__doc__ + "\n⇧ K", ui_context)
-            add_layout_hotkey_operator(row, "Rotate 90", "S_R", bpy.ops.bim.rotate_90.__doc__ + "\n⇧ R", ui_context)
-            add_layout_hotkey_operator(row, "Flip", "S_F", bpy.ops.bim.flip_wall.__doc__ + "\n⇧ F", ui_context)
+            add_layout_hotkey_operator(row, "Merge", "S_M", bpy.ops.bim.merge_wall.__doc__, ui_context)
+            add_layout_hotkey_operator(row, "Split", "S_K", bpy.ops.bim.split_wall.__doc__, ui_context)
+            add_layout_hotkey_operator(row, "Rotate 90", "S_R", bpy.ops.bim.rotate_90.__doc__, ui_context)
+            add_layout_hotkey_operator(row, "Flip", "S_F", bpy.ops.bim.flip_wall.__doc__, ui_context)
 
         elif AuthoringData.data["active_material_usage"] == "LAYER3":
             if len(context.selected_objects) == 1:
@@ -848,7 +854,7 @@ class BimToolUI:
 
 class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.hotkey"
-    bl_label = "Hotkey"
+    bl_label = ""
     bl_options = {"REGISTER", "UNDO"}
     hotkey: bpy.props.StringProperty()
     description: bpy.props.StringProperty()
@@ -1137,7 +1143,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
     def hotkey_S_P(self):
         mode = bpy.context.mode
         current_tool = bpy.context.workspace.tools.from_space_view3d_mode(mode)
-        if current_tool.idname == 'bim.wall_tool':
+        if current_tool.idname == "bim.wall_tool":
             bpy.ops.bim.draw_polyline_wall("INVOKE_DEFAULT")
 
     def hotkey_S_L(self):
