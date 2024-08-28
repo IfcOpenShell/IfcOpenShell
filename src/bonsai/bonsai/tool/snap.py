@@ -356,7 +356,7 @@ class Snap(bonsai.core.tool.Snap):
                     original_mouse_pos = cls.mouse_pos
                     for value in mouse_offset:
                         cls.mouse_pos = tuple(x + y for x, y in zip(original_mouse_pos, value))
-                        hit, normal, face_index = tool.Raycast.obj_ray_cast(context, event, obj)
+                        hit, normal, face_index = tool.Raycast.obj_ray_cast(context, event, obj, cls.mouse_pos)
                         if hit:
                             break
                     cls.mouse_pos = original_mouse_pos
@@ -370,6 +370,7 @@ class Snap(bonsai.core.tool.Snap):
                         best_hit = hit_world
                         best_face_index = face_index
 
+
             if best_obj is not None:
                 return best_obj, best_hit, best_face_index
 
@@ -381,7 +382,7 @@ class Snap(bonsai.core.tool.Snap):
         objs_to_raycast = []
         for obj, bbox_2d in objs_2d_bbox:
             if obj.type == "MESH" and bbox_2d:
-                if tool.Raycast.in_view_2d_bounding_box(cls.mouse_pos, bbox_2d):
+                if tool.Raycast.intersect_mouse_2d_bounding_box(cls.mouse_pos, bbox_2d, offset):
                     if space.local_view:
                         if obj.local_view_get(context.space_data):
                             objs_to_raycast.append(obj)
