@@ -2355,11 +2355,9 @@ class MeasureTool(bpy.types.Operator):
                     self.input_panel = PolylineDecorator.calculate_distance_and_angle(context, self.is_input_on)
                 elif self.input_type in {"D", "A"}:
                     self.input_panel = PolylineDecorator.calculate_x_y_and_z(context)
-                    self.input_panel = PolylineDecorator.calculate_distance_and_angle(context, self.is_input_on)
-                else:
-                    self.input_panel[self.input_type] = self.number_output
+                    
+                self.input_panel[self.input_type] = self.number_output
 
-            PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
             tool.Blender.update_viewport()
             return is_valid
 
@@ -2379,7 +2377,7 @@ class MeasureTool(bpy.types.Operator):
             if self.mousemove_count == 2:
                 self.objs_2d_bbox = []
                 for obj in self.visible_objs:
-                    self.objs_2d_bbox.append(tool.Raycast.get_objects_2d_bounding_boxes(context, obj))
+                    self.objs_2d_bbox.append(tool.Raycast.get_on_screen_2d_bounding_boxes(context, obj))
 
             if self.mousemove_count > 3:
                 detected_snaps = tool.Snap.detect_snapping_points(context, event, self.objs_2d_bbox)
@@ -2481,6 +2479,8 @@ class MeasureTool(bpy.types.Operator):
 
         if event.value == "PRESS" and event.type == "M":
             self.snapping_points = tool.Snap.modify_snapping_point_selection(self.snapping_points)
+            PolylineDecorator.set_mouse_position(event)
+            self.input_panel = PolylineDecorator.calculate_distance_and_angle(context, self.is_input_on)
             tool.Blender.update_viewport()
 
         if event.shift and event.value == "PRESS" and event.type == "X":
@@ -2535,7 +2535,7 @@ class MeasureTool(bpy.types.Operator):
             PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
             self.visible_objs = tool.Raycast.get_visible_objects(context)
             for obj in self.visible_objs:
-                self.objs_2d_bbox.append(tool.Raycast.get_objects_2d_bounding_boxes(context, obj))
+                self.objs_2d_bbox.append(tool.Raycast.get_on_screen_2d_bounding_boxes(context, obj))
             detected_snaps = tool.Snap.detect_snapping_points(context, event, self.objs_2d_bbox)
             self.snapping_points = tool.Snap.select_snapping_points(context, event, detected_snaps)
             PolylineDecorator.set_mouse_position(event)

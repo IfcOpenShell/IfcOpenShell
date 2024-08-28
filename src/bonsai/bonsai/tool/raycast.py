@@ -41,7 +41,7 @@ class Raycast(bonsai.core.tool.Raycast):
         return all_objs
 
     @classmethod
-    def get_objects_2d_bounding_boxes(cls, context, obj):
+    def get_on_screen_2d_bounding_boxes(cls, context, obj):
         obj_matrix = obj.matrix_world.copy()
         bbox = [obj_matrix @ Vector(v) for v in obj.bound_box]
 
@@ -65,9 +65,16 @@ class Raycast(bonsai.core.tool.Raycast):
         return (obj, bbox_2d)
 
     @classmethod
-    def in_view_2d_bounding_box(cls, mouse_pos, bbox):
+    def intersect_mouse_2d_bounding_box(cls, mouse_pos, bbox, offset=None):
         x, y = mouse_pos
         xmin, xmax, ymin, ymax = bbox
+
+        # extends bbox boundaries to improve snap
+        if offset: 
+            xmin -= offset
+            xmax += offset
+            ymin -= offset
+            ymax += offset
 
         if xmin < x < xmax and ymin < y < ymax:
             return True
@@ -75,10 +82,11 @@ class Raycast(bonsai.core.tool.Raycast):
             return False
 
     @classmethod
-    def get_viewport_ray_data(cls, context, event):
+    def get_viewport_ray_data(cls, context, event, mouse_pos=None):
         region = context.region
         rv3d = context.region_data
-        mouse_pos = event.mouse_region_x, event.mouse_region_y
+        if not mouse_pos:
+            mouse_pos = event.mouse_region_x, event.mouse_region_y
 
         view_vector = view3d_utils.region_2d_to_vector_3d(region, rv3d, mouse_pos)
         ray_origin = view3d_utils.region_2d_to_origin_3d(region, rv3d, mouse_pos)
@@ -88,8 +96,11 @@ class Raycast(bonsai.core.tool.Raycast):
         return ray_origin, ray_target, ray_direction
 
     @classmethod
-    def get_object_ray_data(cls, context, event, obj_matrix):
-        ray_origin, ray_target, _ = cls.get_viewport_ray_data(context, event)
+    def get_object_ray_data(cls, context, event, obj_matrix, mouse_pos=None):
+        if mouse_pos:
+            ray_origin, ray_target, _ = cls.get_viewport_ray_data(context, event, mouse_pos)
+        else:
+            ray_origin, ray_target, _ = cls.get_viewport_ray_data(context, event)
         matrix_inv = obj_matrix.inverted()
         ray_origin_obj = matrix_inv @ ray_origin
         ray_target_obj = matrix_inv @ ray_target
@@ -140,7 +151,7 @@ class Raycast(bonsai.core.tool.Raycast):
             intersection = tool.Cad.point_on_edge(world_vertex, (ray_target, loc))
             distance = (world_vertex - intersection).length
             if distance < 0.2:
-                points.append((world_vertex, "Vertex"))
+                points.append([distance - stick_factor, (world_vertex, "Vertex")])
 
         for edge in bm.edges:
             v1 = edge.verts[0].co
@@ -152,7 +163,7 @@ class Raycast(bonsai.core.tool.Raycast):
             intersection = tool.Cad.point_on_edge(division_point, (ray_target, loc))
             distance = (division_point - intersection).length
             if distance < 0.2:
-                points.append((division_point, "Edge Center"))
+                points.append([distance, (division_point, "Edge Center")])
 
             intersection = tool.Cad.intersect_edges_v2((ray_target, loc), (world_v1, world_v2))
             if intersection:
@@ -162,7 +173,12 @@ class Raycast(bonsai.core.tool.Raycast):
                         points.append([distance + 4 * stick_factor, (intersection[1], "Edge")])
 
         bm.free()
-        return points
+        snapping_points = []
+        sorted_points = sorted(points)
+        for p in sorted_points:
+            snapping_points.append(p[1])
+
+        return snapping_points
 
     @classmethod
     def ray_cast_to_polyline(cls, context, event):
