@@ -383,34 +383,36 @@ class Web(bonsai.core.tool.Web):
             operator_data (dict): A dictionary containing the operator data.
         """
         ifc_file = tool.Ifc.get()
+        if operator_data["type"] == "getWorkSchedules":
+            work_schedules = ifc_file.by_type("IfcWorkSchedule")
+            work_schedules_json = [ws.get_info(recursive=True) for ws in work_schedules]
+            cls.send_webui_data(data=work_schedules_json, data_key="work_schedule_info", event="work_schedule_info")
+        if operator_data["type"] == "loadWorkSchedule":
+            work_schedule = ifc_file.by_id(operator_data["workScheduleId"])
+            print("Generating Gantt chart")
+            bonsai.core.sequence.enable_editing_work_schedule_tasks(tool.Sequence, work_schedule=work_schedule)
+            bonsai.core.sequence.generate_gantt_chart(tool.Sequence, work_schedule=work_schedule)
         if operator_data["type"] == "editTask":
             task_id = int(operator_data["taskId"])
             task = ifc_file.by_id(task_id)
             task_time = task.TaskTime
             column = operator_data["column"]
             new_value = operator_data["value"]
+            if task_time is None:
+                ifcopenshell.api.sequence.add_task_time(ifc_file, task)
+                task_time = task.TaskTime
+            ifcopenshell.api.sequence.edit_task_time(
+                ifc_file, task_time=task_time, attributes={IFC_TASK_ATTRIBUTE_MAP[column]: str(new_value)}
+            )
 
-            try:
-                ifcopenshell.api.sequence.edit_task(
-                    ifc_file, task, attributes={IFC_TASK_ATTRIBUTE_MAP[column]: str(new_value)}
-                )
-            except AttributeError:
-                if task_time is None:
-                    ifcopenshell.api.sequence.add_task_time(ifc_file, task)
-                    task_time = task.TaskTime
-                ifcopenshell.api.sequence.edit_task_time(
-                    ifc_file, task_time=task_time, attributes={IFC_TASK_ATTRIBUTE_MAP[column]: str(new_value)}
-                )
-
-        bpy.ops.bim.load_task_properties()
-
-        # after updating, send new gantt data to handle the case where
-        # changing a task cascades and changes other tasks. as this wouldn't
-        # be reflected in the web ui
-        work_schedule = ifc_file.by_id(operator_data["workScheduleId"])
-        task_json = tool.Sequence.create_tasks_json(work_schedule)
-        gantt_data = {"tasks": task_json, "work_schedule": work_schedule.get_info(recursive=True)}
-        cls.send_webui_data(data=gantt_data, data_key="gantt_data", event="gantt_data")
+            bpy.ops.bim.load_task_properties()
+            # after updating, send new gantt data to handle the case where
+            # changing a task cascades and changes other tasks. as this wouldn't
+            # be reflected in the web ui
+            work_schedule = ifc_file.by_id(operator_data["workScheduleId"])
+            task_json = tool.Sequence.create_tasks_json(work_schedule)
+            gantt_data = {"tasks": task_json, "work_schedule": work_schedule.get_info(recursive=True)}
+            cls.send_webui_data(data=gantt_data, data_key="gantt_data", event="gantt_data")
 
     @classmethod
     def handle_drawings_operator(cls, operator_data: dict) -> None:

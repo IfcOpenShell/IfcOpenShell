@@ -1,3 +1,5 @@
+@import url("./components/card.css");
+
 :root {
     --font-family: Arial, sans-serif;
     --base-font-size: 16px;
