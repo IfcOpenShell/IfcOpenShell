@@ -1779,6 +1779,7 @@ class Drawing(bonsai.core.tool.Drawing):
     @classmethod
     def activate_drawing(cls, camera: bpy.types.Object) -> None:
         selected_objects_before = bpy.context.selected_objects
+        non_ifc_objects_hide = {o: o.hide_get() for o in bpy.context.view_layer.objects if not tool.Ifc.get_entity(o)}
 
         # Sync viewport objects visibility with selectors from EPset_Drawing/Include and /Exclude
         drawing = tool.Ifc.get_entity(camera)
@@ -1859,11 +1860,12 @@ class Drawing(bonsai.core.tool.Drawing):
                 element_obj_names.add(obj.name)
 
         # Note that render visibility is only set on drawing generation time for speed.
-        [
-            obj.hide_set(False)  # Show the object
-            for obj in bpy.context.view_layer.objects
-            if obj.name in element_obj_names or not tool.Ifc.get_entity(obj)
-        ]
+        for obj in bpy.context.view_layer.objects:
+            if obj.name in element_obj_names:
+                obj.hide_set(False)  # Show the object
+                continue
+            if (hide := non_ifc_objects_hide.get(obj)) is not None:
+                obj.hide_set(hide)
 
         cls.import_camera_props(drawing, camera.data)
 

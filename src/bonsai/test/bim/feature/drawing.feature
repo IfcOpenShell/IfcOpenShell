@@ -51,6 +51,29 @@ Scenario: Create drawing after deleting a duplicated object
     When I press "bim.create_drawing"
     Then nothing happens
 
+Scenario: Activate drawing preserves visibility for non-ifc objects
+    Given an empty IFC project
+    And I add a cube
+    And I add a cube
+    And the object "Cube" is visible
+    And the object "Cube.001" is not visible
+    And I press "bim.add_drawing"
+    And the variable "drawing" is "IfcStore.get_file().by_type('IfcAnnotation')[0].id()"
+    And I set "scene.DocProperties.active_drawing_index" to "0"
+    When I press "bim.activate_drawing(drawing={drawing})"
+    Then the object "Cube" is visible
+    And the object "Cube.001" is not visible
+
+Scenario: Activate drawing preserves selection
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I press "bim.add_drawing"
+    And the variable "drawing" is "IfcStore.get_file().by_type('IfcAnnotation')[0].id()"
+    And I set "scene.DocProperties.active_drawing_index" to "0"
+    When I press "bim.activate_drawing(drawing={drawing})"
+    Then the object "Cube" is selected
+
 Scenario: Remove drawing
     Given an empty IFC project
     And I add a cube
