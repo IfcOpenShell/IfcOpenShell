@@ -531,9 +531,10 @@ def get_relating_type_id(self, context):
 
 
 def update_annotation_object_type(self, context):
-    self.relating_type_id = "0"
-    # changing enum doesn't trigger refresh by itself
+    # Refresh enum items before changing property,
+    # otherwise it might map to the wrong item.
     AnnotationData.is_loaded = False
+    self.relating_type_id = "0"
 
 
 def update_sheet_data(self, context):
