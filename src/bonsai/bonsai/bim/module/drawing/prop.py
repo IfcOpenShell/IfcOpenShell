@@ -259,8 +259,12 @@ def update_should_draw_decorations(self, context):
                 continue
             tool.Drawing.update_text_value(obj)
         refresh_drawing_data()
+        if bpy.app.background:
+            return
         decoration.DecorationsHandler.install(context)
     else:
+        if bpy.app.background:
+            return
         decoration.DecorationsHandler.uninstall()
 
 
