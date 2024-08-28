@@ -708,12 +708,6 @@ class PolylineDecorator:
         if ref_point:
             self.draw_batch("POINTS", ref_point, (1.0, 0.6, 0.0, 1.0))
 
-        # Draw polyline with selected points
-        self.line_shader.uniform_float("lineWidth", 2.0)
-        self.draw_batch("POINTS", polyline_points, decorator_color_selected)
-        if len(polyline_points) > 1:
-            self.draw_batch("LINES", polyline_points, decorator_color_selected, polyline_edges)
-
         # Line between last polyline point and mouse
         edges = [[0, 1]]
         if polyline_points:
@@ -721,3 +715,10 @@ class PolylineDecorator:
                 self.draw_batch("LINES", [polyline_points[-1]] + projection_point, decorator_color_unselected, edges)
             else:
                 self.draw_batch("LINES", [polyline_points[-1]] + mouse_point, decorator_color_unselected, edges)
+
+        # Draw polyline with selected points
+        self.line_shader.uniform_float("lineWidth", 2.0)
+        self.draw_batch("POINTS", polyline_points, decorator_color_selected)
+        if len(polyline_points) > 1:
+            self.draw_batch("LINES", polyline_points, decorator_color_selected, polyline_edges)
+
