@@ -536,7 +536,6 @@ def i_deselect_all_objects():
 
 @given(parsers.parse('the object "{name}" is selected'))
 @when(parsers.parse('the object "{name}" is selected'))
-@then(parsers.parse('the object "{name}" is selected'))
 def the_object_name_is_selected(name):
     i_deselect_all_objects()
     additionally_the_object_name_is_selected(name)
