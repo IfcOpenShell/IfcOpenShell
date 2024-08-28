@@ -297,8 +297,8 @@ class Snap(bonsai.core.tool.Snap):
         cls.mouse_pos = event.mouse_region_x, event.mouse_region_y
         detected_snaps = []
 
-        offset = 15
         snap_threshold = 0.3
+        offset = 10
         mouse_offset = (
             (-offset, offset),
             (0, offset),
@@ -487,16 +487,16 @@ class Snap(bonsai.core.tool.Snap):
                     snapping_points.append(op)
                 break
 
+            if "Plane" in list(origin.keys()):
+                intersection = origin["Plane"]
+                snapping_points.append((intersection, "Plane"))
+
         for origin in detected_snaps:
             if "Axis" in list(origin.keys()):
                 intersection = origin["Axis"]
                 axis_start = intersection[1]
                 axis_end = intersection[2]
                 snapping_points.append((intersection[0], "Axis"))
-
-            if "Plane" in list(origin.keys()):
-                intersection = origin["Plane"]
-                snapping_points.append((intersection, "Plane"))
 
         # Make Axis first priority
         if event.shift or cls.snap_axis_method in {"X", "Y", "Z"}:
