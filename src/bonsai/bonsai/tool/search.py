@@ -31,6 +31,7 @@ class Search(bonsai.core.tool.Search):
             return getattr(bpy.context.scene.BIMClashProperties.clash_sets[int(clash_set_index)], ab)[
                 int(clash_source_index)
             ].filter_groups
+        assert False, f"Unsupported module: {module}"
 
     @classmethod
     def import_filter_query(cls, query: str, filter_groups: bpy.types.bpy_prop_collection) -> None:

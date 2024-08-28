@@ -1883,7 +1883,7 @@ class ActivateDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
         bonsai.bim.handler.refresh_ui_data()
         return {"FINISHED"}
 
-    def set_raster_style(self, context):
+    def set_raster_style(self, context: bpy.types.Context) -> None:
         scene = context.scene  # Do not remove. It is used in exec later
         space = self.get_view_3d(context)  # Do not remove. It is used in exec later
         style = json.loads(self.drawing_style.raster_style)
@@ -1897,7 +1897,7 @@ class ActivateDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
                 # Differences in Blender versions mean result in failures here
                 print(f"Failed to set shading style {path} to {value}")
 
-    def set_query(self, context):
+    def set_query(self, context: bpy.types.Context) -> None:
         self.include_global_ids = []
         self.exclude_global_ids = []
         for ifc_file in context.scene.DocProperties.ifc_files:
@@ -1916,7 +1916,7 @@ class ActivateDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
         if self.drawing_style.exclude_query:
             self.parse_filter_query("EXCLUDE", context)
 
-    def parse_filter_query(self, mode, context):
+    def parse_filter_query(self, mode: Literal["INCLUDE", "EXCLUDE"], context: bpy.types.Context) -> None:
         if mode == "INCLUDE":
             objects = context.scene.objects
         elif mode == "EXCLUDE":
@@ -1935,7 +1935,7 @@ class ActivateDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
                 if global_id in self.exclude_global_ids:
                     obj.hide_viewport = True  # Note: this breaks alt-H
 
-    def get_view_3d(self, context):
+    def get_view_3d(self, context: bpy.types.Context) -> bpy.types.Space:
         for area in context.screen.areas:
             if area.type != "VIEW_3D":
                 continue
@@ -1943,6 +1943,7 @@ class ActivateDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
                 if space.type != "VIEW_3D":
                     continue
                 return space
+        assert False, "Space is not found."
 
 
 class RemoveSheet(bpy.types.Operator, tool.Ifc.Operator):
