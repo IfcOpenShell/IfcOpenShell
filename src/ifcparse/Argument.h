@@ -29,11 +29,7 @@
 #include <string>
 #include <vector>
 
-class aggregate_of_instance;
-class aggregate_of_aggregate_of_instance;
-
 namespace IfcUtil {
-class IfcBaseClass;
 
 IFC_PARSE_API const char* ArgumentTypeToString(ArgumentType argument_type);
 
@@ -41,34 +37,5 @@ IFC_PARSE_API const char* ArgumentTypeToString(ArgumentType argument_type);
 IFC_PARSE_API bool valid_binary_string(const std::string& string);
 } // namespace IfcUtil
 
-class IFC_PARSE_API Argument {
-  public:
-    virtual operator int() const;
-    virtual operator bool() const;
-    virtual operator boost::logic::tribool() const;
-    virtual operator double() const;
-    virtual operator std::string() const;
-    virtual operator boost::dynamic_bitset<>() const;
-    virtual operator IfcUtil::IfcBaseClass*() const;
-
-    virtual operator std::vector<int>() const;
-    virtual operator std::vector<double>() const;
-    virtual operator std::vector<std::string>() const;
-    virtual operator std::vector<boost::dynamic_bitset<>>() const;
-    virtual operator boost::shared_ptr<aggregate_of_instance>() const;
-
-    virtual operator std::vector<std::vector<int>>() const;
-    virtual operator std::vector<std::vector<double>>() const;
-    virtual operator boost::shared_ptr<aggregate_of_aggregate_of_instance>() const;
-
-    virtual bool isNull() const = 0;
-    virtual unsigned int size() const = 0;
-
-    virtual IfcUtil::ArgumentType type() const = 0;
-    virtual Argument* operator[](unsigned int index) const = 0;
-    virtual std::string toString(bool upper = false) const = 0;
-
-    virtual ~Argument(){};
-};
 
 #endif

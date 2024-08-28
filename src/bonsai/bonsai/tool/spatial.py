@@ -39,7 +39,8 @@ import json
 from math import pi
 from mathutils import Vector, Matrix
 from shapely import Polygon
-from typing import Generator, Optional, Union, Literal, List
+from typing import Generator, Optional, Union, Literal, List, Any, Iterable
+from collections import defaultdict
 
 
 class Spatial(bonsai.core.tool.Spatial):
@@ -139,7 +140,7 @@ class Spatial(bonsai.core.tool.Spatial):
         target_obj.matrix_world = relative_to_obj.matrix_world @ matrix
 
     @classmethod
-    def select_products(cls, products: list[ifcopenshell.entity_instance], unhide: bool = False) -> None:
+    def select_products(cls, products: Iterable[ifcopenshell.entity_instance], unhide: bool = False) -> None:
         bpy.ops.object.select_all(action="DESELECT")
         for product in products:
             obj = tool.Ifc.get_object(product)
@@ -206,7 +207,7 @@ class Spatial(bonsai.core.tool.Spatial):
 
         container = tool.Ifc.get().by_id(container.ifc_definition_id)
 
-        results = {}
+        results: defaultdict[str, dict[int, Any]] = defaultdict(dict)
         if props.should_include_children:
             elements = ifcopenshell.util.element.get_decomposition(container, is_recursive=True)
         else:
@@ -218,25 +219,48 @@ class Spatial(bonsai.core.tool.Spatial):
             ifc_class = element.is_a()
             ifc_definition_id = element_type.id() if element_type else 0
             type_name = element_type.Name or "Unnamed" if element_type else f"Untyped {element.is_a()}"
-            results.setdefault(ifc_class, {}).setdefault(ifc_definition_id, {"total": 0, "type_name": type_name})
-            results[ifc_class][ifc_definition_id]["total"] += 1
+            class_data = results.setdefault(ifc_class, {})
+            type_data = class_data.setdefault(ifc_definition_id, {"type_name": type_name, "elements": []})
+            type_data["elements"].append(element)
 
+        expanded_elements = json.loads(props.expanded_elements)
+        expanded_classes = expanded_elements.get("CLASS", [])
+        expanded_ifc_ids = expanded_elements.get("IFC_ID", [])
+        expanded_untyped = expanded_elements.get("UNTYPED_CLASSES", [])
         total_elements = 0
         for ifc_class in sorted(results.keys()):
             new = props.elements.add()
             new.name = ifc_class
-            new.is_class = True
+            new.type = "CLASS"
+            class_is_expanded = ifc_class in expanded_classes
+            new.is_expanded = class_is_expanded
             total = 0
             for ifc_definition_id in sorted(
                 results[ifc_class].keys(), key=lambda x: results[ifc_class][x]["type_name"]
             ):
-                new2 = props.elements.add()
-                new2.is_type = True
-                new2.name = results[ifc_class][ifc_definition_id]["type_name"]
-                new2.ifc_class = ifc_class
-                new2.total = results[ifc_class][ifc_definition_id]["total"]
-                new2.ifc_definition_id = ifc_definition_id
-                total += new2.total
+                type_data = results[ifc_class][ifc_definition_id]
+                total2 = len(type_data["elements"])
+                if class_is_expanded:
+                    new2 = props.elements.add()
+                    new2.type = "TYPE"
+                    new2.name = type_data["type_name"]
+                    new2.ifc_class = ifc_class
+                    new2.total = total2
+                    new2.ifc_definition_id = ifc_definition_id
+                    if ifc_definition_id == 0:
+                        type_is_expanded = ifc_class in expanded_untyped
+                    else:
+                        type_is_expanded = ifc_definition_id in expanded_ifc_ids
+                    new2.is_expanded = type_is_expanded
+
+                    if type_is_expanded:
+                        for element in type_data["elements"]:
+                            occurrence = props.elements.add()
+                            occurrence.name = element.Name or "Unnamed"
+                            occurrence.ifc_definition_id = element.id()
+                            occurrence.type = "OCCURRENCE"
+
+                total += total2
             new.total = total
             total_elements += total
 
@@ -248,11 +272,12 @@ class Spatial(bonsai.core.tool.Spatial):
         elements: List[ifcopenshell.entity_instance],
         ifc_class: str | None,
         relating_type: ifcopenshell.entity_instance | None,
-        is_untyped: bool | None,
+        is_untyped: bool,
         keyword: str | None,
     ) -> filter[ifcopenshell.entity_instance]:
         keyword = keyword.lower() if keyword else keyword
-        def filter_element(element):
+
+        def filter_element(element: ifcopenshell.entity_instance) -> bool:
             if ifc_class:
                 if not element.is_a(ifc_class):
                     return False
@@ -268,6 +293,7 @@ class Spatial(bonsai.core.tool.Spatial):
                 if keyword not in f"{element.is_a()} {type_name}".lower():
                     return False
             return True
+
         return filter(filter_element, elements)
 
     @classmethod
@@ -335,6 +361,28 @@ class Spatial(bonsai.core.tool.Spatial):
         contracted_containers = json.loads(props.contracted_containers)
         contracted_containers.remove(container.id())
         props.contracted_containers = json.dumps(contracted_containers)
+
+    @classmethod
+    def toggle_container_element(cls, element_index: int) -> None:
+        props = bpy.context.scene.BIMSpatialDecompositionProperties
+        expanded_elements: dict[str, list[Union[str, int]]] = json.loads(props.expanded_elements)
+        element = props.elements[element_index]
+        if element.type == "CLASS":
+            element_type = "CLASS"
+            filtered_item = element.name
+        else:
+            if element.ifc_definition_id == 0:
+                element_type = "UNTYPED_CLASSES"
+                filtered_item = element.ifc_class
+            else:
+                element_type = "IFC_ID"
+                filtered_item = element.ifc_definition_id
+        expanded_elements_list: list[Union[str, int]] = expanded_elements.setdefault(element_type, [])
+        if filtered_item in expanded_elements_list:
+            expanded_elements_list.remove(filtered_item)
+        else:
+            expanded_elements_list.append(filtered_item)
+        props.expanded_elements = json.dumps(expanded_elements)
 
     # HERE STARTS SPATIAL TOOL
 

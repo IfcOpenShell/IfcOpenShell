@@ -723,6 +723,7 @@ class Root:
     def get_object_representation(cls, obj): pass
     def get_representation_context(cls, representation): pass
     def is_containable(cls, element): pass
+    def is_drawing_annotation(cls, element): pass
     def is_element_a(cls, element, ifc_class): pass
     def is_spatial_element(cls, element): pass
     def link_object_data(cls, source_obj, destination_obj): pass

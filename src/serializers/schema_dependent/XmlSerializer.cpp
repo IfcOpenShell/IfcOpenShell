@@ -57,7 +57,7 @@ std::map<std::string, std::string> POSTFIX_SCHEMA(argument_name_map);
 
 // Format an IFC attribute and maybe returns as string. Only literal scalar 
 // values are converted. Things like entity instances and lists are omitted.
-boost::optional<std::string> format_attribute(ifcopenshell::geometry::abstract_mapping* mapping, const Argument* argument, IfcUtil::ArgumentType argument_type, const std::string& argument_name) {
+boost::optional<std::string> format_attribute(ifcopenshell::geometry::abstract_mapping* mapping, AttributeValue argument, IfcUtil::ArgumentType argument_type, const std::string& argument_name) {
 	boost::optional<std::string> value;
 	
 	// Hard-code lat-lon as it represents an array
@@ -65,7 +65,7 @@ boost::optional<std::string> format_attribute(ifcopenshell::geometry::abstract_m
 	if (argument_name == "IfcSite.RefLatitude" ||
 		argument_name == "IfcSite.RefLongitude")
 	{
-		std::vector<int> angle = *argument;
+		std::vector<int> angle = argument;
 		double deg;
 		if (angle.size() >= 3) {
 			deg = angle[0] + angle[1] / 60. + angle[2] / 3600.;
@@ -83,30 +83,30 @@ boost::optional<std::string> format_attribute(ifcopenshell::geometry::abstract_m
 
 	switch(argument_type) {
 		case IfcUtil::Argument_BOOL: {
-			const bool b = *argument;
+			const bool b = argument;
 			value = b ? "true" : "false";
 			break; }
 		case IfcUtil::Argument_DOUBLE: {
-			const double d = *argument;
+			const double d = argument;
 			std::stringstream stream;
 			stream << std::setprecision (std::numeric_limits< double >::max_digits10) << d;
 			value = stream.str();
 			break; }
 		case IfcUtil::Argument_STRING:
 		case IfcUtil::Argument_ENUMERATION: {
-			value = static_cast<std::string>(*argument);
+			value = static_cast<std::string>(argument);
 			break; }
 		case IfcUtil::Argument_INT: {
-			const int v = *argument;
+			const int v = argument;
 			std::stringstream stream;
 			stream << v;
 			value = stream.str();
 			break; }
 		case IfcUtil::Argument_ENTITY_INSTANCE: {
-			IfcUtil::IfcBaseClass* e = *argument;
+			IfcUtil::IfcBaseClass* e = argument;
 			if (!e->declaration().as_entity()) {
 				IfcUtil::IfcBaseType* f = e->as<IfcUtil::IfcBaseType>();
-				value = format_attribute(mapping, f->data().getArgument(0), f->data().getArgument(0)->type(), argument_name);
+				value = format_attribute(mapping, f->data().get_attribute_value(0), f->data().get_attribute_value(0).type(), argument_name);
 			} else if (e->declaration().is(IfcSchema::IfcSIUnit::Class()) || e->declaration().is(IfcSchema::IfcConversionBasedUnit::Class())) {
 				// Some string concatenation to have a unit name as a XML attribute.
 
@@ -155,13 +155,13 @@ ptree* format_entity_instance(ifcopenshell::geometry::abstract_mapping* mapping,
 	const unsigned n = instance->declaration().attribute_count();
 	for (unsigned i = 0; i < n; ++i) {
 		try {
-		    instance->data().getArgument(i);
+		    instance->data().get_attribute_value(i);
 		} catch (const std::exception&) {
 		    Logger::Error("Expected " + boost::lexical_cast<std::string>(n) + " attributes for:", instance);
 		    break;
 		}		
-		const Argument* argument = instance->data().getArgument(i);
-		if (argument->isNull()) continue;
+		auto argument = instance->data().get_attribute_value(i);
+		if (argument.isNull()) continue;
 
 		std::string argument_name = instance->declaration().attribute_by_index(i)->name();
 		std::map<std::string, std::string>::const_iterator argument_name_it;
@@ -169,7 +169,7 @@ ptree* format_entity_instance(ifcopenshell::geometry::abstract_mapping* mapping,
 		if (argument_name_it != POSTFIX_SCHEMA(argument_name_map).end()) {
 			argument_name = argument_name_it->second;
 		}
-		const IfcUtil::ArgumentType argument_type = instance->data().getArgument(i)->type();
+		const IfcUtil::ArgumentType argument_type = instance->data().get_attribute_value(i).type();
 
 		const std::string qualified_name = instance->declaration().name() + "." + argument_name;
 		boost::optional<std::string> value;
@@ -202,7 +202,7 @@ ptree* format_entity_instance(ifcopenshell::geometry::abstract_mapping* mapping,
 }
 
 std::string qualify_unrooted_instance(IfcUtil::IfcBaseInterface* inst) {
-	return inst->declaration().name() + "_" + boost::lexical_cast<std::string>(inst->data().id());
+	return inst->declaration().name() + "_" + boost::lexical_cast<std::string>(inst->as<IfcUtil::IfcBaseEntity>()->id());
 }
 
 // A function to be called recursively. Template specialization is used 

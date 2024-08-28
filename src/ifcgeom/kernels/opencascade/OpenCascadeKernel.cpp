@@ -408,7 +408,7 @@ bool IfcGeom::OpenCascadeKernel::convert_impl(const taxonomy::revolve::ptr r, If
 	TopoDS_Shape shape = BRepPrimAPI_MakeRevol(face, ax);
 
 	results.emplace_back(ConversionResult(
-		r->instance->data().id(),
+		r->instance->as<IfcUtil::IfcBaseEntity>()->id(),
 		r->matrix,
 		new OpenCascadeShape(shape),
 		r->surface_style

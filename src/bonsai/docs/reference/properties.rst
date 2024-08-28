@@ -3,58 +3,29 @@ Properties
 
 .. container:: location-scene
 
-   |location| Scene Properties
+   |location| Properties
 
    .. |location| image:: /images/location-scene.svg
 
-Bonsai adds new functionality to the `Property Editor` -> `Scene` tab.
+The properties panel shows information about the IFC model and the actively
+selected IFC object in the 3D Viewport.
 
-.. figure:: images/interface_property-editor_project-overview_start-up.png
-   :alt: Property editor on Blender start-up
+Tab bar
+-------
 
-   The property editor on Blender startup.
+A horizontal row of icons are provided to switch between what type of
+properties are shown. Alternatively, a dropdown list may also be used.
 
-Most of these sub-tabs become available with a created or loaded IFC file.
-Don't worry, the default Blender scene properties are still reachable under their own dedicated sub-tab.
+.. image:: images/properties-tabs.png
 
-.. figure:: images/interface_property-editor_icons.png
-   :alt: Overview over the added property sub-tabs by Bonsai
-
-   Overview over the added property sub-tabs by Bonsai.
-
-1. Project Overview
-2. Object Information
-3. Geometry and Materials
-4. Drawings and Documents
-5. Services and Systems
-6. Structural Analyses
-7. Costing and Scheduling
-8. Facility Management
-9. Quality and Coordination
-10. Blender Properties
-11. Switch Tab
-
-You can also select the needed panel via the drop-down menue.
-
-.. figure:: images/interface_property-editor_panel-dropdown.png
-   :alt: Bonsai property editor sub-tabs drop-down menue
-
-   Switching between Bonsai property editor sub-tabs via the drop-down menue.
-
-
-.. toctree::
-   :hidden:
-   :maxdepth: 1
-   :caption: Contents:
-
-   project_overview/index
-   object_information/index
-   geometry_and_materials/index
-   drawings_and_documents/index
-   services_and_systems/index
-   structural_analysis/index
-   costing_and_scheduling/index
-   facility_management/index
-   quality_and_coordination/index
-   blender
-   switch_tab
+- **Project Overview**: Overall project information.
+- **Object Information**: Simple properties and relationships about the actively selected object.
+- **Geometry and Materials**: Geometric, material, and style data.
+- **Drawings and Documents**: Drawings, sheets, schedules, and other documents.
+- **Services and Systems**: Mechanical, electrical, hydraulic, fire systems, and building physics.
+- **Structural Analysis**: Structural analytical models and analysis.
+- **Costing and Scheduling**: Project staging, quantity take-off, cost schedules, work schedules and animation, and resource management.
+- **Facility Management**: Facility management integration, Brickschema integration.
+- **Quality and Coordination**: Model auditing and fixing, clash detection, BCF collaboration, and debugging.
+- **Blender Properties**: (Only visible at the bottom of the dropdown menu) Shows default Blender panels for Blender users who do not want to see IFC information.
+- **Switch Tab** (:kbd:`Ctrl` + :kbd:`Tab`): (Only visible at the end of the tab icons) Toggles between the two last active tabs.

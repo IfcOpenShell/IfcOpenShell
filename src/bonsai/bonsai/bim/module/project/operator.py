@@ -2303,7 +2303,27 @@ class MeasureTool(bpy.types.Operator):
         self.action_count = 0
         self.visible_objs = []
         self.objs_2d_bbox = []
-        self.number_options = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "+", "-", "*", "-", "/"}
+        self.number_options = {
+            "0",
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6",
+            "7",
+            "8",
+            "9",
+            " ",
+            ".",
+            "+",
+            "-",
+            "*",
+            "/",
+            "'",
+            '"',
+            "=",
+        }
         self.number_input = []
         self.number_output = ""
         self.number_is_negative = False
@@ -2313,23 +2333,33 @@ class MeasureTool(bpy.types.Operator):
         self.input_value_xy = [None, None]
         self.input_panel = {"D": "", "A": "", "X": "", "Y": "", "Z": ""}
         self.snap_angle = None
+        self.snapping_points = []
+        self.instructions = """TAB: Cycle Input
+    M: Modify Snap Point
+    C: Close
+    Backspace: Remove
+    X Y Z: Axis
+    S-(X Y Z): Plane
+    Shift: Lock axis
+"""
 
     def recalculate_inputs(self, context):
         if self.number_input:
-            is_valid, self.number_output = tool.Snap.validate_input(self.number_output)
+            is_valid, self.number_output = tool.Snap.validate_input(self.number_output, self.input_type)
             self.input_panel[self.input_type] = self.number_output
             if not is_valid:
                 self.report({"WARNING"}, "The number typed is not valid.")
+                return is_valid
             else:
                 if self.input_type in {"X", "Y", "Z"}:
                     self.input_panel = PolylineDecorator.calculate_distance_and_angle(context, self.is_input_on)
                 elif self.input_type in {"D", "A"}:
                     self.input_panel = PolylineDecorator.calculate_x_y_and_z(context)
-
+                    
                 self.input_panel[self.input_type] = self.number_output
 
-            PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
             tool.Blender.update_viewport()
+            return is_valid
 
     def modal(self, context, event):
 
@@ -2339,7 +2369,7 @@ class MeasureTool(bpy.types.Operator):
                 self.is_input_on = False
                 self.input_type = "OFF"
                 PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
-                tool.Snap.clear_snaping_ref()
+                tool.Snap.clear_snapping_ref()
                 tool.Blender.update_viewport()
             else:
                 self.mousemove_count = 0
@@ -2347,10 +2377,11 @@ class MeasureTool(bpy.types.Operator):
             if self.mousemove_count == 2:
                 self.objs_2d_bbox = []
                 for obj in self.visible_objs:
-                    self.objs_2d_bbox.append(tool.Raycast.get_objects_2d_bounding_boxes(context, obj))
+                    self.objs_2d_bbox.append(tool.Raycast.get_on_screen_2d_bounding_boxes(context, obj))
 
             if self.mousemove_count > 3:
-                tool.Snap.snaping_movement(context, event, self.objs_2d_bbox)
+                detected_snaps = tool.Snap.detect_snapping_points(context, event, self.objs_2d_bbox)
+                self.snapping_points = tool.Snap.select_snapping_points(context, event, detected_snaps)
                 PolylineDecorator.set_mouse_position(event)
                 self.input_panel = PolylineDecorator.calculate_distance_and_angle(context, self.is_input_on)
                 PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
@@ -2363,6 +2394,18 @@ class MeasureTool(bpy.types.Operator):
 
         if event.value == "RELEASE" and event.type == "LEFTMOUSE":
             tool.Snap.insert_polyline_point(self.input_panel)
+            tool.Blender.update_viewport()
+
+        if event.value == "PRESS" and event.type == "X":
+            tool.Snap.set_snap_axis_method("X")
+            tool.Blender.update_viewport()
+
+        if event.value == "PRESS" and event.type == "Y":
+            tool.Snap.set_snap_axis_method("Y")
+            tool.Blender.update_viewport()
+
+        if event.value == "PRESS" and event.type == "Z":
+            tool.Snap.set_snap_axis_method("Z")
             tool.Blender.update_viewport()
 
         if event.value == "PRESS" and event.type == "C":
@@ -2395,7 +2438,7 @@ class MeasureTool(bpy.types.Operator):
             PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
             tool.Blender.update_viewport()
 
-        if event.value == "PRESS" and event.type in self.input_options and not event.shift:
+        if event.value == "PRESS" and event.type in {"D", "A"} and not event.shift:
             self.recalculate_inputs(context)
             self.is_input_on = True
             self.input_type = event.type
@@ -2424,8 +2467,9 @@ class MeasureTool(bpy.types.Operator):
                     tool.Blender.update_viewport()
 
         if self.is_input_on and event.value == "RELEASE" and event.type in {"RET", "NUMPAD_ENTER", "RIGHTMOUSE"}:
-            self.recalculate_inputs(context)
-            tool.Snap.insert_polyline_point(self.input_panel)
+            is_valid = self.recalculate_inputs(context)
+            if is_valid:
+                tool.Snap.insert_polyline_point(self.input_panel)
             self.is_input_on = False
             self.input_type = "OFF"
             self.number_input = []
@@ -2433,20 +2477,32 @@ class MeasureTool(bpy.types.Operator):
             PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
             tool.Blender.update_viewport()
 
+        if event.value == "PRESS" and event.type == "M":
+            self.snapping_points = tool.Snap.modify_snapping_point_selection(self.snapping_points)
+            PolylineDecorator.set_mouse_position(event)
+            self.input_panel = PolylineDecorator.calculate_distance_and_angle(context, self.is_input_on)
+            tool.Blender.update_viewport()
+
         if event.shift and event.value == "PRESS" and event.type == "X":
             tool.Snap.set_use_default_container(False)
             PolylineDecorator.set_use_default_container(False)
-            tool.Snap.set_snap_plane_method("YZ")
+            tool.Snap.cycle_snap_plane_method("YZ")
+            tool.Snap.set_snap_axis_method(None)
+            tool.Blender.update_viewport()
 
         if event.shift and event.value == "PRESS" and event.type == "Y":
             tool.Snap.set_use_default_container(False)
             PolylineDecorator.set_use_default_container(False)
-            tool.Snap.set_snap_plane_method("XZ")
+            tool.Snap.cycle_snap_plane_method("XZ")
+            tool.Snap.set_snap_axis_method(None)
+            tool.Blender.update_viewport()
 
         if event.shift and event.value == "PRESS" and event.type == "Z":
             tool.Snap.set_use_default_container(False)
             PolylineDecorator.set_use_default_container(False)
-            tool.Snap.set_snap_plane_method("XY")
+            tool.Snap.cycle_snap_plane_method("XY")
+            tool.Snap.set_snap_axis_method(None)
+            tool.Blender.update_viewport()
 
         if event.type in {"MIDDLEMOUSE", "WHEELUPMOUSE", "WHEELDOWNMOUSE"}:
             return {"PASS_THROUGH"}
@@ -2459,6 +2515,8 @@ class MeasureTool(bpy.types.Operator):
                 tool.Blender.update_viewport()
         else:
             if event.value == "RELEASE" and event.type in {"ESC"}:
+                tool.Snap.set_snap_plane_method(None)
+                tool.Snap.set_snap_axis_method(None)
                 PolylineDecorator.uninstall()
                 tool.Snap.clear_polyline()
                 tool.Blender.update_viewport()
@@ -2471,12 +2529,15 @@ class MeasureTool(bpy.types.Operator):
             PolylineDecorator.install(context)
             tool.Snap.set_use_default_container(False)
             PolylineDecorator.set_use_default_container(False)
-            tool.Snap.set_snap_plane_method("No Plane")
+            tool.Snap.set_snap_plane_method(None)
+            tool.Snap.set_snap_axis_method(None)
+            PolylineDecorator.set_instructions(self.instructions)
             PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
             self.visible_objs = tool.Raycast.get_visible_objects(context)
             for obj in self.visible_objs:
-                self.objs_2d_bbox.append(tool.Raycast.get_objects_2d_bounding_boxes(context, obj))
-            tool.Snap.snaping_movement(context, event, self.objs_2d_bbox)
+                self.objs_2d_bbox.append(tool.Raycast.get_on_screen_2d_bounding_boxes(context, obj))
+            detected_snaps = tool.Snap.detect_snapping_points(context, event, self.objs_2d_bbox)
+            self.snapping_points = tool.Snap.select_snapping_points(context, event, detected_snaps)
             PolylineDecorator.set_mouse_position(event)
             self.input_panel = PolylineDecorator.calculate_distance_and_angle(context, self.is_input_on)
             tool.Blender.update_viewport()

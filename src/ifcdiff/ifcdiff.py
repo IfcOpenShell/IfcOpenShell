@@ -34,7 +34,7 @@ import ifcopenshell.util.placement
 import ifcopenshell.util.classification
 import ifcopenshell.util.representation
 from deepdiff import DeepDiff
-from ordered_set import OrderedSet
+from orderly_set import OrderedSet
 from typing import Optional, Union, Literal, Any
 
 

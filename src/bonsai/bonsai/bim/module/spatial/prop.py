@@ -107,21 +107,31 @@ class BIMContainer(PropertyGroup):
 
 class Element(PropertyGroup):
     name: StringProperty(name="Name")
-    ifc_class: StringProperty(name="Name")
-    is_class: BoolProperty(name="Is Class", default=False)
-    is_type: BoolProperty(name="Is Type", default=False)
-    ifc_definition_id: IntProperty(name="IFC Definition ID")
+    ifc_class: StringProperty(name="Name", description="Type or element IFC class, empty if 'type' is 'CLASS'")
+    ifc_definition_id: IntProperty(
+        name="IFC Definition ID",
+        description="ID of the element type / occurrence. 0 if 'type' is 'CLASS' or if it's 'TYPE' but it represents untyped elements",
+    )
     total: IntProperty(name="Total")
+    is_expanded: BoolProperty(name="Is Expanded", default=False)
+    type: EnumProperty(
+        name="Element Type",
+        items=(
+            ("CLASS", "CLASS", "CLASS"),
+            ("TYPE", "TYPE", "TYPE"),
+            ("OCCURRENCE", "OCCURRENCE", "OCCURRENCE"),
+        ),
+    )
 
 
 class BIMSpatialDecompositionProperties(PropertyGroup):
     container_filter: StringProperty(name="Container Filter", default="", options={"TEXTEDIT_UPDATE"})
     containers: CollectionProperty(name="Containers", type=BIMContainer)
     contracted_containers: StringProperty(name="Contracted containers", default="[]")
-    expanded_containers: StringProperty(name="Expanded containers", default="[]")
     active_container_index: IntProperty(name="Active Container Index", update=update_active_container_index)
     element_filter: StringProperty(name="Element Filter", default="", options={"TEXTEDIT_UPDATE"})
     elements: CollectionProperty(name="Elements", type=Element)
+    expanded_elements: StringProperty(name="Expanded Elements", default="{}")
     active_element_index: IntProperty(name="Active Element Index")
     total_elements: IntProperty(name="Total Elements")
     subelement_class: bpy.props.EnumProperty(items=get_subelement_class, name="Subelement Class")

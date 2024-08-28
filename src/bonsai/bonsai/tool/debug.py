@@ -19,31 +19,40 @@
 import os
 import bpy
 import ifcopenshell.express
+import ifcopenshell.express.schema
+import ifcopenshell.express.schema_class
+import ifcopenshell.util.element
 import bonsai.core.tool
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
+from mathutils import Vector
 
 
 class Debug(bonsai.core.tool.Debug):
     @classmethod
-    def add_schema_identifier(cls, schema):
+    def add_schema_identifier(cls, schema: ifcopenshell.express.schema_class.SchemaClass) -> None:
         IfcStore.schema_identifiers.append(schema.schema_name)
 
     @classmethod
-    def load_express(cls, filename):
+    def load_express(cls, filename: str) -> ifcopenshell.express.schema_class.SchemaClass:
         schema = ifcopenshell.express.parse(filename)
         ifcopenshell.register_schema(schema)
         return schema
 
     @classmethod
-    def purge_hdf5_cache(cls):
+    def purge_hdf5_cache(cls) -> None:
         cache_dir = os.path.join(bpy.context.scene.BIMProperties.data_dir, "cache")
         filelist = [f for f in os.listdir(cache_dir) if f.endswith(".h5")]
         for f in filelist:
-            os.remove(os.path.join(cache_dir, f))
+            try:
+                os.remove(os.path.join(cache_dir, f))
+            except PermissionError:
+                pass
 
     @classmethod
-    def debug_geometry(cls, verts=[], edges=[], name="Debug"):
+    def debug_geometry(
+        cls, verts: list[Vector] = [], edges: list[tuple[int, int]] = [], name: str = "Debug"
+    ) -> bpy.types.Object:
         mesh = bpy.data.meshes.new("Debug")
         mesh.from_pydata(verts, edges, [])
         obj = bpy.data.objects.new(name, mesh)
@@ -51,13 +60,13 @@ class Debug(bonsai.core.tool.Debug):
         return obj
 
     @classmethod
-    def remove_unused_elements(cls, elements):
+    def remove_unused_elements(cls, elements: list[ifcopenshell.entity_instance]) -> None:
         ifc_file = tool.Ifc.get()
         for element in elements:
             ifcopenshell.util.element.remove_deep2(ifc_file, element)
 
     @classmethod
-    def print_unused_elements_stats(cls, requested_ifc_class="", ignore_classes=tuple()):
+    def print_unused_elements_stats(cls, requested_ifc_class: str = "", ignore_classes: tuple[str] = tuple()) -> int:
         ifc_file = tool.Ifc.get()
 
         # get list of ifc classes used in model

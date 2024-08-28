@@ -33,7 +33,7 @@ from pytest_bdd import scenarios, given, when, then, parsers
 from mathutils import Vector
 from math import radians
 from pathlib import Path
-from typing import Union
+from typing import Union, Any
 
 scenarios("feature")
 
@@ -49,17 +49,18 @@ webbrowser.open = lambda x: True
 
 
 class PanelSpy:
-    def __init__(self, panel):
+    def __init__(self, panel: type[bpy.types.Panel]):
         self.is_spy_dirty = True
         self.panel = panel
 
     def refresh_spy(self):
         if self.is_spy_dirty:
             self.is_spy_dirty = False
-            self.spied_attr = None
-            self.spied_labels = []
-            self.spied_props = []
-            self.spied_operators = []
+            self.spied_attr: Union[str, None] = None
+            self.spied_labels: list[str] = []
+            self.spied_props: list[dict[str, Any]] = []
+            self.spied_operators: list[dict[str, Any]] = []
+            self.spied_lists: list[dict[str, Any]] = []
             self.panel.draw(self, bpy.context)
 
     def __getattr__(self, attr):
@@ -69,17 +70,53 @@ class PanelSpy:
         return self
 
     def __call__(self, *args, **kwargs):
-        if self.spied_attr in ("row", "column"):
+        if self.spied_attr in ("row", "column", "box"):
             return self
+        elif self.spied_attr == "template_list":
+            listtype_name, list_id, dataptr, propname, active_dataptr, active_propname = args
+            spied_data = {
+                "listtype_name": listtype_name,
+                "list_id": list_id,
+                "dataptr": dataptr,
+                "propname": propname,
+                "active_dataptr": active_dataptr,
+                "active_propname": active_propname,
+            }
+            self.spied_lists.append(spied_data)
+            return TemplateListSpy(spied_data)
+        elif self.spied_attr == "context_pointer_set":
+            return lambda *args, **kwargs: None
         elif self.spied_attr == "label":
             self.spied_labels.append(kwargs["text"])
             return self
         elif self.spied_attr == "prop":
             props, name = args
+            props: bpy.types.bpy_struct
             text = kwargs.get("text", props.bl_rna.properties[name].name)
             icon = kwargs.get("icon", None)
+            prop_type = props.bl_rna.properties[name].type
+            enum_items = []
+            if prop_type == "ENUM":
+                prop_keywords = props.__annotations__[name].keywords
+                items = prop_keywords.get("items")
+                if items is not None:
+                    if isinstance(items, (list, tuple)):
+                        enum_items = items
+                    else:
+                        # items are retrieved through a callback, not a static list / tuple :
+                        enum_items = items(props, bpy.context)
             value = getattr(props, name)
-            spied_prop = {"props": props, "name": name, "text": text, "icon": icon, "value": value}
+            if text:
+                self.spied_labels.append(text)
+            spied_prop = {
+                "props": props,
+                "name": name,
+                "text": text,
+                "icon": icon,
+                "value": value,
+                "prop_type": prop_type,
+                "enum_items": enum_items,
+            }
             self.spied_props.append(spied_prop)
         elif self.spied_attr == "operator":
             operator = args[0]
@@ -89,6 +126,8 @@ class PanelSpy:
             bl_label = getattr(bpy.types, bl_idname).bl_label
             text = kwargs.get("text", bl_label)
             icon = kwargs.get("icon", None)
+            if text:
+                self.spied_labels.append(text)
             spied_operator = {"operator": operator, "icon": icon, "text": text, "kwargs": {}}
             self.spied_operators.append(spied_operator)
             return OperatorSpy(spied_operator)
@@ -101,12 +140,20 @@ class OperatorSpy:
         self.spied_data = spied_data
 
     def __setattr__(self, name, value):
-        if name != "spied_data":
+        if name == "spied_data":
+            # Allow direct setting of spied_data only during initialization
+            super().__setattr__(name, value)
+        else:
             self.spied_data["kwargs"][name] = value
 
 
+class TemplateListSpy:
+    def __init__(self, spied_data):
+        self.spied_data = spied_data
+
+
 panel_name_cache = {}
-panel_spy = None
+panel_spy: PanelSpy = None
 
 
 def replace_variables(value):
@@ -182,6 +229,8 @@ def i_look_at_the_panel_panel(panel):
                 panel_name_cache[panel_type.bl_label] = panel_type.bl_idname
             except:
                 pass
+    if panel not in panel_name_cache:
+        assert False, f"Panel {panel} not found in {panel_name_cache}"
     panel_spy = PanelSpy(getattr(bpy.types, panel_name_cache[panel]))
     panel_spy.refresh_spy()
 
@@ -200,6 +249,14 @@ def i_see_text(text):
 def i_dont_see_text(text):
     panel_spy.refresh_spy()
     assert not [l for l in panel_spy.spied_labels if text in l], f"Text {text} found in {panel_spy.spied_labels}"
+
+
+@given(parsers.parse('I don\'t see the "{name}" list'))
+@when(parsers.parse('I don\'t see the "{name}" list'))
+@then(parsers.parse('I don\'t see the "{name}" list'))
+def i_dont_see_the_name_list(name):
+    panel_spy.refresh_spy()
+    assert name not in [l["listtype_name"] for l in panel_spy.spied_lists]
 
 
 @given(parsers.parse('I see the "{prop}" property'))
@@ -240,12 +297,57 @@ def i_see_the_prop_property_is_value(prop, value):
 @when(parsers.parse('I set the "{prop}" property to "{value}"'))
 @then(parsers.parse('I set the "{prop}" property to "{value}"'))
 def i_set_the_prop_property_to_value(prop, value):
+    value = value.strip()
     panel_spy.refresh_spy()
     for spied_prop in panel_spy.spied_props:
         if prop in (spied_prop["name"], spied_prop["text"], spied_prop["icon"]):
-            setattr(spied_prop["props"], spied_prop["name"], value)
+            if spied_prop["prop_type"] == "BOOLEAN":
+                if value == "TRUE":
+                    setattr(spied_prop["props"], spied_prop["name"], True)
+                elif value == "FALSE":
+                    setattr(spied_prop["props"], spied_prop["name"], False)
+            elif spied_prop["prop_type"] == "FLOAT":
+                setattr(spied_prop["props"], spied_prop["name"], float(value))
+            elif spied_prop["prop_type"] == "INT":
+                setattr(spied_prop["props"], spied_prop["name"], int(value))
+            elif spied_prop["prop_type"] == "ENUM":
+                enum_identifier = [i for i in spied_prop["enum_items"] if i is not None and i[1] == value]
+                if not enum_identifier:
+                    assert False, f"Could not find value {value} in enum {spied_prop['enum_items']}"
+                setattr(spied_prop["props"], spied_prop["name"], enum_identifier[0][0])
+            else:
+                setattr(spied_prop["props"], spied_prop["name"], value)
+            panel_spy.is_spy_dirty = True
             return
     assert False, f"Property {prop} not found in {panel_spy.spied_props}"
+
+
+@then(parsers.parse('The "{name}" list has {total} items'))
+def the_name_list_has_total_items(name, total):
+    total = int(total)
+    panel_spy.refresh_spy()
+    for spied_list in panel_spy.spied_lists:
+        if name == spied_list["listtype_name"]:
+            actual_total = len(getattr(spied_list["dataptr"], spied_list["propname"]))
+            assert actual_total == total, f"The actual number of items in {name} is {actual_total} not {total}"
+            return
+    assert False, f"List {name} not found in {panel_spy.spied_lists}"
+
+
+@when(parsers.parse('I select the "{item_name}" item in the "{list_name}" list'))
+def i_select_the_item_name_item_in_the_list_name_list(item_name, list_name):
+    panel_spy.refresh_spy()
+    for spied_list in panel_spy.spied_lists:
+        if list_name == spied_list["listtype_name"]:
+            item_names = []
+            for i, item in enumerate(getattr(spied_list["dataptr"], spied_list["propname"])):
+                item_names.append(item.name)
+                if item.name == item_name:
+                    setattr(spied_list["active_dataptr"], spied_list["active_propname"], i)
+                    panel_spy.is_spy_dirty = True
+                    return
+            assert False, f"Could not find item {item_name} in {item_names}"
+    assert False, f"List {list_name} not found in {panel_spy.spied_lists}"
 
 
 @when("I load a new pset template file")
@@ -374,10 +476,31 @@ def i_click_button(button):
     panel_spy.refresh_spy()
     for spied_operator in panel_spy.spied_operators:
         if spied_operator["text"] == button or spied_operator["icon"] == button:
-            spied_operator["operator"](**spied_operator["kwargs"])
+            spied_operator["operator"]("INVOKE_DEFAULT", **spied_operator["kwargs"])
             panel_spy.is_spy_dirty = True
             return
+    # Users can also "click" on booleans to toggle them
+    for spied_prop in panel_spy.spied_props:
+        if button in (spied_prop["name"], spied_prop["text"], spied_prop["icon"]):
+            val = getattr(spied_prop["props"], spied_prop["name"])
+            setattr(spied_prop["props"], spied_prop["name"], not bool(val))
+            return
     assert False, f"Could not find {button} in {panel_spy.spied_operators}"
+
+
+@given(parsers.parse('I click "{button}" and expect error "{error_msg}"'))
+@when(parsers.parse('I click "{button}" and expect error "{error_msg}"'))
+def i_click_button_and_expect_error_error_msg(button, error_msg):
+    try:
+        i_click_button(button)
+    except Exception as e:
+        actual_error_msg = str(e).strip()
+        if str(e).strip() != error_msg:
+            traceback.print_exc()
+            msg = f"Got different exception clickign {button} - '{actual_error_msg}' instead of '{error_msg}'"
+            assert False, msg
+        return
+    assert False, f"No error message {error_msg} raised when I pressed {button}"
 
 
 @given(parsers.parse('I evaluate expression "{expression}"'))
@@ -714,6 +837,30 @@ def the_object_name_is_not_a_void(name):
     except AssertionError:
         return
     assert False, "A void was found"
+
+
+@given(parsers.parse('the object "{name}" is visible'))
+def given_the_object_name_is_visible(name):
+    obj = the_object_name_exists(name)
+    obj.hide_set(False)
+
+
+@given(parsers.parse('the object "{name}" is not visible'))
+def given_the_object_name_is_not_visible(name):
+    obj = the_object_name_exists(name)
+    obj.hide_set(True)
+
+
+@then(parsers.parse('the object "{name}" is visible'))
+def the_object_name_is_visible(name):
+    obj = the_object_name_exists(name)
+    assert obj.hide_get() == False
+
+
+@then(parsers.parse('the object "{name}" is not visible'))
+def the_object_name_is_not_visible(name):
+    obj = the_object_name_exists(name)
+    assert obj.hide_get() == True
 
 
 @then(parsers.parse('the object "{name}" is an "{ifc_class}"'))

@@ -16,21 +16,21 @@ you will need to categorise your 3D elements (such as "Wall", "Column",
 Creating a single object
 ------------------------
 
-In the **Properties** panel on the right, ensure the icon for the **Scene
-Properties** tab is active showing the **Project Overview**. Click on **Create
-Project** to create a blank IFC project.
+Go to :menuselection:`Topbar --> File --> New IFC Project`, and select **New
+Metric (m) Project**. This will begin a blank IFC4 project.
 
 .. image:: images/create-project.png
 
-In the left **Outliner** panel, you will see a hierarchy of spaces that has
-been automatically created for you. This hierarchy is known is the **Spatial
-Tree**.
+In the :menuselection:`Properties --> Project Overview --> Spatial
+Decomposition` panel, you will see a hierarchy of spaces that has been
+automatically created for you. This hierarchy is known is the **Spatial Tree**.
 
 .. image:: images/default-spatial-tree.png
 
 There are many ways to create objects. In practice, you should use an element
 type library, and we will see how to do this later. For now, we will only add a
-single element. In the **Add** menu, add a cube.
+single element. In the :menuselection:`3D Viewport --> Add --> Mesh` menu, select
+**Cube**.
 
 .. image:: images/add-cube.png
 
@@ -45,10 +45,10 @@ Class**.
    Class**!
 
 Select the cube (selected objects are highlighted in orange, careful not to
-select anything else!) and switch to the **Object Information** tab. Let's
-pretend our Cube is a column, so select **IfcElement** from the **Products**
-dropdown, **IfcColumn** from the **Class** drop-down, and press **Assign IFC
-Class**.
+select anything else!) and switch to the :menuselection:`Properties --> Object
+Information` tab. Let's pretend our Cube is a column, so select **IfcElement**
+from the **Products** dropdown, **IfcColumn** from the **Class** drop-down, and
+press **Assign IFC Class**.
 
 .. image:: images/assign-class.png
 
@@ -58,19 +58,21 @@ Class**.
    the shape of your object. You can have a monkey-shaped wall if you want!
 
 All IFC objects must also belong inside the **Spatial Tree**. In the
-**Outliner** panel, you will see that your newly created **IfcColumn/Cube** has
-been automatically placed in **IfcBuildingStorey/My Storey**.
+:menuselection:`Properties --> Object Information --> Spatial Container` panel,
+you will see that your newly created **IfcColumn/Cube** has been automatically
+placed in **IfcBuildingStorey/My Storey**.
 
-.. image:: images/outliner-cube.png
+.. image:: images/cube-spatial-tree.png
 
-In the top left **File** menu, Save your new IFC model on your computer.
+Go to :menuselection:`Topbar --> File` and click **Save IFC Project** to save
+your new IFC model on your computer.
 
 .. image:: images/save-project.png
 
-Congratulations! You have now created your first OpenBIM model from Blender! You
-can open the IFC file in any other program, and you will see something similar
-to the image below. Three simple open source online viewers you can test with
-are `IfcPipeline <https://view.ifcopenshell.org>`__, `ThatOpenEditor
+Congratulations! You have now created your first IFC model with Bonsai! You can
+open the IFC file in any other program, and you will see something similar to
+the image below. Three simple open source online viewers you can test with are
+`IfcPipeline <https://view.ifcopenshell.org>`__, `ThatOpenEditor
 <https://platform.thatopen.com/app>`__, and `3DViewer
 <https://3dviewer.net/>`__.
 

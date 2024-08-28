@@ -141,6 +141,11 @@ def delete_container(
     spatial.import_spatial_decomposition()
 
 
+def toggle_container_element(spatial: tool.Spatial, element_index: int) -> None:
+    spatial.toggle_container_element(element_index)
+    spatial.load_contained_elements()
+
+
 def select_decomposed_elements(
     spatial: tool.Spatial,
     container: ifcopenshell.entity_instance,

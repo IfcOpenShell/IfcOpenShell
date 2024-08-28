@@ -38,6 +38,7 @@ classes = (
     operator.SelectSimilarContainer,
     operator.SetContainerVisibility,
     operator.SetDefaultContainer,
+    operator.ToggleContainerElement,
     prop.Element,
     prop.BIMObjectSpatialProperties,
     prop.BIMContainer,

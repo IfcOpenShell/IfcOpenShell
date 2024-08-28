@@ -169,7 +169,7 @@ cd "%DEPS_DIR%"
 :: VERSIONS
 set HDF5_VERSION=1.8.22
 set HDF5_VERSION_MAJOR=1.8
-set OCCT_VERSION=7.7.1
+set OCCT_VERSION=7.5.3
 :: NOTE If updating the default Python version, change PY_VER_MAJOR_MINOR accordingly in run-cmake.bat
 set PYTHON_VERSION=3.11.7
 

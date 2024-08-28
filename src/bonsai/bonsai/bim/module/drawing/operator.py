@@ -1463,7 +1463,7 @@ class ActivateModel(bpy.types.Operator):
     bl_idname = "bim.activate_model"
     bl_label = "Activate Model"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Activates the model view"
+    bl_description = "Activate the model view, hide all annotations"
 
     def execute(self, context):
         dprops = bpy.context.scene.DocProperties
@@ -1471,10 +1471,23 @@ class ActivateModel(bpy.types.Operator):
 
         CutDecorator.uninstall()
 
-        # save current visibility statuses
+        # Preserve current visibility statuses for:
+        # - non-ifc objects
+        # - type product
+        # - annotations (so we won't unhide other drawings)
+        ifc_file = tool.Ifc.get()
         visibility_status: dict[bpy.types.Object, bool] = {}
         for obj in bpy.data.objects:
-            visibility_status[obj] = obj.hide_get()
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                hide = obj.hide_get()
+            elif element.is_a("IfcAnnotation"):
+                hide = True
+            elif element.is_a("IfcTypeProduct"):
+                hide = obj.hide_get()
+            else:
+                continue
+            visibility_status[obj] = hide
 
         if not bpy.app.background:
             with context.temp_override(**tool.Blender.get_viewport_context()):
@@ -1779,7 +1792,7 @@ class SaveDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
         if self.index:
             index = int(self.index)
         else:
-            index = context.active_object.data.BIMCameraProperties.active_drawing_style_index
+            index = context.scene.camera.data.BIMCameraProperties.active_drawing_style_index
         scene.DocProperties.drawing_styles[index].raster_style = json.dumps(style)
 
         bpy.ops.bim.save_drawing_styles_data()
@@ -1875,7 +1888,7 @@ class ActivateDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
         bonsai.bim.handler.refresh_ui_data()
         return {"FINISHED"}
 
-    def set_raster_style(self, context):
+    def set_raster_style(self, context: bpy.types.Context) -> None:
         scene = context.scene  # Do not remove. It is used in exec later
         space = self.get_view_3d(context)  # Do not remove. It is used in exec later
         style = json.loads(self.drawing_style.raster_style)
@@ -1889,7 +1902,7 @@ class ActivateDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
                 # Differences in Blender versions mean result in failures here
                 print(f"Failed to set shading style {path} to {value}")
 
-    def set_query(self, context):
+    def set_query(self, context: bpy.types.Context) -> None:
         self.include_global_ids = []
         self.exclude_global_ids = []
         for ifc_file in context.scene.DocProperties.ifc_files:
@@ -1908,7 +1921,7 @@ class ActivateDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
         if self.drawing_style.exclude_query:
             self.parse_filter_query("EXCLUDE", context)
 
-    def parse_filter_query(self, mode, context):
+    def parse_filter_query(self, mode: Literal["INCLUDE", "EXCLUDE"], context: bpy.types.Context) -> None:
         if mode == "INCLUDE":
             objects = context.scene.objects
         elif mode == "EXCLUDE":
@@ -1927,7 +1940,7 @@ class ActivateDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
                 if global_id in self.exclude_global_ids:
                     obj.hide_viewport = True  # Note: this breaks alt-H
 
-    def get_view_3d(self, context):
+    def get_view_3d(self, context: bpy.types.Context) -> bpy.types.Space:
         for area in context.screen.areas:
             if area.type != "VIEW_3D":
                 continue
@@ -1935,6 +1948,7 @@ class ActivateDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
                 if space.type != "VIEW_3D":
                     continue
                 return space
+        assert False, "Space is not found."
 
 
 class RemoveSheet(bpy.types.Operator, tool.Ifc.Operator):
@@ -2678,8 +2692,9 @@ class EditElementFilter(bpy.types.Operator, tool.Ifc.Operator):
     filter_mode: bpy.props.StringProperty()
 
     def _execute(self, context):
-        props = context.active_object.data.BIMCameraProperties
         obj = bpy.context.scene.camera
+        assert obj
+        props = obj.data.BIMCameraProperties
         element = tool.Ifc.get_entity(obj)
         pset = tool.Pset.get_element_pset(element, "EPset_Drawing")
         if self.filter_mode == "INCLUDE":

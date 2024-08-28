@@ -39,7 +39,7 @@
 
 #ifdef IFOPSH_SIMPLE_KERNEL
 
-#include <CGAL/Simple_cartesian.h>
+#include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 
 #define Kernel_ SimpleKernel_
 #define CgalShape SimpleCgalShape
@@ -55,7 +55,7 @@
 #define cgal_vertex_descriptor_t cgal_simple_vertex_descriptor_t
 #define cgal_face_descriptor_t cgal_simple_face_descriptor_t
 
-typedef CGAL::Simple_cartesian<double> Kernel_; 
+typedef CGAL::Exact_predicates_inexact_constructions_kernel Kernel_;
 
 #else
 

@@ -1669,20 +1669,17 @@ class Drawing(bonsai.core.tool.Drawing):
             elements = {e for e in (elements & base_elements) if e.is_a() != "IfcSpace"}
 
         updated_set = set()
-
         for i in elements:
             # exclude annotations to avoid including annotations from other drawings
             if not i.is_a("IfcAnnotation"):
                 updated_set.add(i)
                 # add aggregate too, if element is host by one
-                if i.Decomposes:
-                    aggregate = i.Decomposes[0].RelatingObject
+                if decomposes := i.Decomposes:
+                    aggregate = decomposes[0].RelatingObject
                     # remove IfcProject for class iterator. See https://github.com/IfcOpenShell/IfcOpenShell/issues/4361#issuecomment-2081223615
-                    if not aggregate.is_a("IfcProject"):
+                    if aggregate.is_a("IfcProduct"):
                         updated_set.add(aggregate)
-
-        # After the iteration is complete, update elements with updated set
-        elements.update(updated_set)
+        elements = updated_set
 
         # add annotations from the current drawing
         annotations = tool.Drawing.get_group_elements(tool.Drawing.get_drawing_group(drawing))
@@ -1782,6 +1779,7 @@ class Drawing(bonsai.core.tool.Drawing):
     @classmethod
     def activate_drawing(cls, camera: bpy.types.Object) -> None:
         selected_objects_before = bpy.context.selected_objects
+        non_ifc_objects_hide = {o: o.hide_get() for o in bpy.context.view_layer.objects if not tool.Ifc.get_entity(o)}
 
         # Sync viewport objects visibility with selectors from EPset_Drawing/Include and /Exclude
         drawing = tool.Ifc.get_entity(camera)
@@ -1862,11 +1860,12 @@ class Drawing(bonsai.core.tool.Drawing):
                 element_obj_names.add(obj.name)
 
         # Note that render visibility is only set on drawing generation time for speed.
-        [
-            obj.hide_set(False)  # Show the object
-            for obj in bpy.context.view_layer.objects
-            if obj.name in element_obj_names or not tool.Ifc.get_entity(obj)
-        ]
+        for obj in bpy.context.view_layer.objects:
+            if obj.name in element_obj_names:
+                obj.hide_set(False)  # Show the object
+                continue
+            if (hide := non_ifc_objects_hide.get(obj)) is not None:
+                obj.hide_set(hide)
 
         cls.import_camera_props(drawing, camera.data)
 

@@ -36,6 +36,8 @@ import queue
 import json
 from time import sleep
 from pathlib import Path
+import bonsai.core.sequence
+import bonsai.core.cost
 
 sio = None
 ws_process = None
@@ -310,6 +312,8 @@ class Web(bonsai.core.tool.Web):
             elif operator["sourcePage"] == "demo":
                 message = operator["operator"]["message"]
                 print(f"Message from demo page: {message}")
+            elif operator["sourcePage"] == "cost":
+                cls.handle_cost_operator(operator["operator"])
         return 1.0
 
     @classmethod
@@ -328,6 +332,48 @@ class Web(bonsai.core.tool.Web):
             bpy.context.view_layer.objects.active = obj
             obj.select_set(True)
 
+
+    @classmethod
+    def handle_cost_operator(cls, operator_data: dict) -> None:
+        """
+        this method handles the Cost page operators.
+
+        Args:
+            operator_data (dict): A dictionary containing the operator data.
+        """
+        print("Handling cost operator")
+        ifc_file = tool.Ifc.get()
+        if operator_data["type"] == "getCostSchedules":
+            cost_schedules = ifc_file.by_type("IfcCostSchedule")
+            cost_schedules_json = [cs.get_info(recursive=True) for cs in cost_schedules]
+            currency = tool.Cost.currency()
+            cls.send_webui_data(data={
+                "cost_schedules": cost_schedules_json,
+                "currency": currency
+            }, data_key="cost_schedules", event="cost_schedules")
+        if operator_data["type"] == "loadCostSchedule":
+            cost_schedule = ifc_file.by_id(operator_data["costScheduleId"])
+            bonsai.core.cost.enable_editing_cost_items(tool.Cost, cost_schedule=cost_schedule)
+            json_data = tool.Cost.create_cost_schedule_json(cost_schedule)
+            cls.send_webui_data(data=json_data, data_key="cost_items", event="cost_items")
+        if operator_data["type"] == "addCostItem":
+            bpy.ops.bim.add_cost_item(cost_item=operator_data["costItemId"])
+            cost_schedule = tool.Cost.get_cost_schedule(cost_item=tool.Ifc.get().by_id(operator_data["costItemId"]))
+            json_data = tool.Cost.create_cost_schedule_json(cost_schedule)
+            cls.send_webui_data(data=json_data, data_key="cost_items", event="cost_items")
+        if operator_data["type"] == "selectAssignedElements":
+            cost_item = tool.Ifc.get().by_id(operator_data["costItemId"])
+            products = tool.Cost.get_cost_item_products(cost_item, is_deep=True)
+            tool.Spatial.select_products(products, unhide=True)
+        if operator_data["type"] == "editCostItemName":
+            cost_item = tool.Ifc.get().by_id(operator_data["costItemId"])
+            tool.Ifc.run(
+                "cost.edit_cost_item",
+                cost_item=cost_item,
+                attributes = {"Name": operator_data["name"]}
+            )
+            tool.Cost.load_cost_schedule_tree()
+
     @classmethod
     def handle_gantt_operator(cls, operator_data: dict) -> None:
         """
@@ -337,34 +383,36 @@ class Web(bonsai.core.tool.Web):
             operator_data (dict): A dictionary containing the operator data.
         """
         ifc_file = tool.Ifc.get()
+        if operator_data["type"] == "getWorkSchedules":
+            work_schedules = ifc_file.by_type("IfcWorkSchedule")
+            work_schedules_json = [ws.get_info(recursive=True) for ws in work_schedules]
+            cls.send_webui_data(data=work_schedules_json, data_key="work_schedule_info", event="work_schedule_info")
+        if operator_data["type"] == "loadWorkSchedule":
+            work_schedule = ifc_file.by_id(operator_data["workScheduleId"])
+            print("Generating Gantt chart")
+            bonsai.core.sequence.enable_editing_work_schedule_tasks(tool.Sequence, work_schedule=work_schedule)
+            bonsai.core.sequence.generate_gantt_chart(tool.Sequence, work_schedule=work_schedule)
         if operator_data["type"] == "editTask":
             task_id = int(operator_data["taskId"])
             task = ifc_file.by_id(task_id)
             task_time = task.TaskTime
             column = operator_data["column"]
             new_value = operator_data["value"]
+            if task_time is None:
+                ifcopenshell.api.sequence.add_task_time(ifc_file, task)
+                task_time = task.TaskTime
+            ifcopenshell.api.sequence.edit_task_time(
+                ifc_file, task_time=task_time, attributes={IFC_TASK_ATTRIBUTE_MAP[column]: str(new_value)}
+            )
 
-            try:
-                ifcopenshell.api.sequence.edit_task(
-                    ifc_file, task, attributes={IFC_TASK_ATTRIBUTE_MAP[column]: str(new_value)}
-                )
-            except AttributeError:
-                if task_time is None:
-                    ifcopenshell.api.sequence.add_task_time(ifc_file, task)
-                    task_time = task.TaskTime
-                ifcopenshell.api.sequence.edit_task_time(
-                    ifc_file, task_time=task_time, attributes={IFC_TASK_ATTRIBUTE_MAP[column]: str(new_value)}
-                )
-
-        bpy.ops.bim.load_task_properties()
-
-        # after updating, send new gantt data to handle the case where
-        # changing a task cascades and changes other tasks. as this wouldn't
-        # be reflected in the web ui
-        work_schedule = ifc_file.by_id(operator_data["workScheduleId"])
-        task_json = tool.Sequence.create_tasks_json(work_schedule)
-        gantt_data = {"tasks": task_json, "work_schedule": work_schedule.get_info(recursive=True)}
-        cls.send_webui_data(data=gantt_data, data_key="gantt_data", event="gantt_data")
+            bpy.ops.bim.load_task_properties()
+            # after updating, send new gantt data to handle the case where
+            # changing a task cascades and changes other tasks. as this wouldn't
+            # be reflected in the web ui
+            work_schedule = ifc_file.by_id(operator_data["workScheduleId"])
+            task_json = tool.Sequence.create_tasks_json(work_schedule)
+            gantt_data = {"tasks": task_json, "work_schedule": work_schedule.get_info(recursive=True)}
+            cls.send_webui_data(data=gantt_data, data_key="gantt_data", event="gantt_data")
 
     @classmethod
     def handle_drawings_operator(cls, operator_data: dict) -> None:
