@@ -1669,20 +1669,17 @@ class Drawing(bonsai.core.tool.Drawing):
             elements = {e for e in (elements & base_elements) if e.is_a() != "IfcSpace"}
 
         updated_set = set()
-
         for i in elements:
             # exclude annotations to avoid including annotations from other drawings
             if not i.is_a("IfcAnnotation"):
                 updated_set.add(i)
                 # add aggregate too, if element is host by one
-                if i.Decomposes:
-                    aggregate = i.Decomposes[0].RelatingObject
+                if decomposes := i.Decomposes:
+                    aggregate = decomposes[0].RelatingObject
                     # remove IfcProject for class iterator. See https://github.com/IfcOpenShell/IfcOpenShell/issues/4361#issuecomment-2081223615
-                    if not aggregate.is_a("IfcProject"):
+                    if aggregate.is_a("IfcProduct"):
                         updated_set.add(aggregate)
-
-        # After the iteration is complete, update elements with updated set
-        elements.update(updated_set)
+        elements = updated_set
 
         # add annotations from the current drawing
         annotations = tool.Drawing.get_group_elements(tool.Drawing.get_drawing_group(drawing))
