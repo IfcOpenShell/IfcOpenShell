@@ -63,4 +63,6 @@ class TestPurgeHdf5Cache(NewFile):
         loaded_file = open(loaded_file_path, "w")
 
         subject.purge_hdf5_cache()
-        assert [f for f in cache_dir.iterdir() if f.suffix == ".h5"] == [loaded_file_path]
+        # On Unix loaded files are not locked.
+        paths = [loaded_file_path] if os.name == "nt" else []
+        assert [f for f in cache_dir.iterdir() if f.suffix == ".h5"] == paths
