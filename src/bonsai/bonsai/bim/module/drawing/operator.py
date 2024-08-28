@@ -1463,7 +1463,7 @@ class ActivateModel(bpy.types.Operator):
     bl_idname = "bim.activate_model"
     bl_label = "Activate Model"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Activates the model view"
+    bl_description = "Activate the model view, hide all annotations"
 
     def execute(self, context):
         dprops = bpy.context.scene.DocProperties
@@ -1477,12 +1477,17 @@ class ActivateModel(bpy.types.Operator):
         # - annotations (so we won't unhide other drawings)
         ifc_file = tool.Ifc.get()
         visibility_status: dict[bpy.types.Object, bool] = {}
-        drawing_groups = [g for g in ifc_file.by_type("IfcGroup", include_subtypes=False)]
         for obj in bpy.data.objects:
             element = tool.Ifc.get_entity(obj)
-            if element and not element.is_a("IfcAnnotation") and not element.is_a("IfcTypeProduct"):
+            if not element:
+                hide = obj.hide_get()
+            elif element.is_a("IfcAnnotation"):
+                hide = True
+            elif element.is_a("IfcTypeProduct"):
+                hide = obj.hide_get()
+            else:
                 continue
-            visibility_status[obj] = obj.hide_get()
+            visibility_status[obj] = hide
 
         if not bpy.app.background:
             with context.temp_override(**tool.Blender.get_viewport_context()):
