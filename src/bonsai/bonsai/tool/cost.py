@@ -807,3 +807,48 @@ class Cost(bonsai.core.tool.Cost):
         return {
             "Currency": currency,
         }
+
+    @classmethod
+    def create_cost_schedule_json(cls, cost_schedule: ifcopenshell.entity_instance) -> dict:
+        from bonsai.bim.module.cost.data import CostSchedulesData
+        if not CostSchedulesData.is_loaded:
+            CostSchedulesData.load()
+        cost_items =  CostSchedulesData.data["cost_items"]
+        data = []
+        for rel in cost_schedule.Controls or []:
+            for cost_item in rel.RelatedObjects or []:
+                cls.create_cost_item_json(cost_item, cost_items, data)
+        return data
+
+    @classmethod
+    def create_cost_item_json(cls, cost_item: ifcopenshell.entity_instance, cost_items: dict, data: list):
+        if cost_item.id() in cost_items.keys():
+            cost_item_data = cost_items[cost_item.id()]
+            cost_item_data["id"] = cost_item.id()
+            cost_item_data["name"] = cost_item.Name
+            cost_item_data["is_nested_by"] = []
+            cost_item_data["is_sum"] = cls.is_cost_item_sum(cost_item)
+            data.append(cost_item_data)
+        else:
+            return None
+        for rel in cost_item.IsNestedBy or []:
+            for sub_cost_item in rel.RelatedObjects or []:
+                cls.create_cost_item_json(sub_cost_item, cost_items,cost_item_data["is_nested_by"])
+
+    @classmethod
+    def is_cost_item_sum(cls, cost_item: ifcopenshell.entity_instance) -> bool:
+        cost_values = []
+        if cost_item.is_a("IfcCostItem"):
+            cost_values = cost_item.CostValues
+        elif cost_item.is_a("IfcCostValue"):
+            cost_values = cost_item.Components
+        for cost_value in cost_values or []:
+            if cost_value.Category == "*":
+                return True
+        return False
+
+    @classmethod
+    def currency(cls):
+        unit = tool.Unit.get_project_currency_unit()
+        if unit:
+            return {"id": unit.id(), "name": unit.Currency}

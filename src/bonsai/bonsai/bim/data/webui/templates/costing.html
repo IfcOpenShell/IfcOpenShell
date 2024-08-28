@@ -3,8 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Bonsai Web UI</title>
-    <link rel="stylesheet" href="/static/css/index.css" id="index-stylesheet" />
+    <title>BlenderBIM Web UI</title>
+    <link rel="stylesheet" href="/static/css/gantt.css" id="index-stylesheet" />
+    <link rel="stylesheet" href="/static/css/components/card.css" />
     <link
       rel="stylesheet"
       id="tabulator-stylesheet"
@@ -29,7 +30,34 @@
     <script>
       var SOCKET_PORT = {{port}};
     </script>
-    <script defer src="./static/js/index.js"></script>
+    <script type="module" defer src="./static/js/cost.js"></script>
+    <style>
+
+      table {
+          width: 100%;
+          border-collapse: collapse;
+      }
+      .nested {
+          display: none;
+      }
+      .expand-collapse {
+          cursor: pointer;
+      }
+      .caret-cell {
+          border: none;
+          background: none;
+          padding: 0;
+      }
+      td {
+          justify-content: space-between;
+      }
+      .flex-container {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          width: 100%;
+      }
+  </style>
   </head>
   <body>
     <nav>
@@ -40,13 +68,13 @@
       />
       <ul>
         <li>
-          <a href="/" class="active"
+          <a href="/"
             ><i class="fa-solid fa-table"></i> Schedules</a
           >
         </li>
         <li>
-          <a href="/costing"
-            ><i class="fa-solid fa-exclamation-triangle"></i>Costing</a
+            <a href="/costing" class="active"
+            ><i class="fa-solid fa-table"></i>Costing</a
           >
         </li>
         <li>
@@ -81,9 +109,12 @@
       </button>
       <div id="client-list"></div>
     </div>
-    <div id="container"></div>
+    <div id="cost-schedules"></div>
+    <div id="UI"></div>
+    <div id="cost-items"></div>
+
     <footer>
-      <p>Bonsai Version: {{version}}</p>
+      <p>BlenderBIM Version: {{version}}</p>
     </footer>
   </body>
 </html>
