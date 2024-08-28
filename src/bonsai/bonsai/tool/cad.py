@@ -172,7 +172,7 @@ class Cad:
         return results
 
     @classmethod
-    def intersect_edges_2(cls, edge1, edge2):
+    def intersect_edges_v2(cls, edge1, edge2):
         """
         Calculate the closest points on two line segments.
         Note: This function doesn't use intersect_line_line
