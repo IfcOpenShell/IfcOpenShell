@@ -1471,9 +1471,17 @@ class ActivateModel(bpy.types.Operator):
 
         CutDecorator.uninstall()
 
-        # save current visibility statuses
+        # Preserve current visibility statuses for:
+        # - non-ifc objects
+        # - type product
+        # - annotations (so we won't unhide other drawings)
+        ifc_file = tool.Ifc.get()
         visibility_status: dict[bpy.types.Object, bool] = {}
+        drawing_groups = [g for g in ifc_file.by_type("IfcGroup", include_subtypes=False)]
         for obj in bpy.data.objects:
+            element = tool.Ifc.get_entity(obj)
+            if element and not element.is_a("IfcAnnotation") and not element.is_a("IfcTypeProduct"):
+                continue
             visibility_status[obj] = obj.hide_get()
 
         if not bpy.app.background:
