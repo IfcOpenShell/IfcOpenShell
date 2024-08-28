@@ -84,12 +84,13 @@ class ColourByPropertyData:
 
     @classmethod
     def colourscheme_key(cls):
+        default = [("QUERY", "Custom Query", "Specify a custom query to colour by"), None]
         obj = bpy.context.active_object
         if not obj:
-            return []
+            return default
         element = tool.Ifc.get_entity(obj)
         if not element:
-            return []
+            return default
         keys = [a.name() for a in element.wrapped_data.declaration().as_entity().all_attributes()]
         psets = ifcopenshell.util.element.get_psets(element)
         for pset, properties in psets.items():
@@ -100,7 +101,7 @@ class ColourByPropertyData:
             else:
                 keys.extend([f"{pset}.{name}" for name in properties.keys() if name != "id"])
         results = [(k, k, "") for k in keys]
-        return [("QUERY", "Custom Query", "Specify a custom query to colour by"), None] + results
+        return default + results
 
 
 class SelectSimilarData:

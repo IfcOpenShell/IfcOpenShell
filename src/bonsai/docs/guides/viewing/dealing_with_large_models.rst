@@ -18,6 +18,30 @@ Models may be large in terms of different metrics, such as:
 There are always solutions to all of these, but an understanding of the type of
 size limitation you are up against will always help.
 
+Linking in models
+-----------------
+
+Bonsai defaults to authoring IFCs. This allows full editing and inspection of
+all element properties and relationships. However, sometimes only geometry and
+basic attributes such as names are sufficient. Example usecases include CG
+visualisation, overall federated model coordination, or pure geometric checks.
+
+For these usecases, it's much more efficient to link a model rather than to
+open a model. In the **Links Panel**, click on **Link IFC**, and browse to your
+IFC. You can also bulk select multiple IFCs.
+
+You will not be able to directly edit geometry or data in a linked model, but
+you will be able to efficiently load multiple huge models easily and navigate
+it with a reasonable FPS.
+
+Activate the **Explore Tool** to quickly navigate these linked models. You can
+**Enable Culling** to improve FPS speeds further, and use the :kbd:`RMB` to query
+data about a selected object.
+
+Once loaded, the linked model is cached as a ``.cache.blend`` file for
+subsequent loads in the same folder as the ``.ifc``. The data is cached in a
+``.cache.sqlite`` file.
+
 Large filesizes
 ---------------
 
@@ -137,45 +161,6 @@ combined with other filters.
 
 Using Blender 3.3 and above will result in a faster load time (~50%) compared to
 older Blender versions.
-
-Coordination only models
-------------------------
-
-Bonsai defaults to authoring IFCs. This allows full editing and inspection of
-all element properties and relationships. However, sometimes only geometry and
-basic attributes such as names are sufficient. Example usecases include CG
-visualisation, overall federated model coordination, or pure geometric checks.
-
-Click on :ref:`Enable Advanced Mode <Project Info Advanced Loading Mode>` checkbox when loading a model and you will be presented
-with model loading options in the **Project Info** panel. Enable **For
-Coordination Only**, which will exclude non geometric elements, openings, and
-types from being imported. This leads to slightly faster imports, and a
-decreased object count.
-
-Enabling **For Coordination Only** also allows you to specify a **Merge Mode**.
-This combines objects to keep object counts low. Blender is very good at
-handling less objects with more complexity, rather than the other way around.
-When a **Merge Mode** is activated, import times will increase (~50%) but object
-counts will be drastically reduced, which is critical for the federation of
-large models. **Merge Modes** include:
-
-- **IFC Class**, where objects of the same IFC class are merged. This is useful
-  if you have models where only the class is meaningful for other disciplines,
-  such as structural models.
-- **IFC Type**, where objects of the same construction type are merged. This is
-  useful where the main identification of interest is the element type, not the
-  element instance.
-- **Material**, where objects of the same material are merged. This is useful if
-  the model is used for purely visual exploration such as CG visualisation.
-
-Once loaded, the model may be saved as a ``.blend`` file for subsequent loads.
-You can think of the ``.blend`` file as a geometry cache, which is very, very
-fast to load. If it no longer necessary to access IFC data, consider pressing
-the **Unload Project** icon so that future loads of the ``.blend`` file will be
-very fast.
-
-With these strategies, a federated 1GB IFC model can easily load in 10 seconds
-from the saved Blender files.
 
 Processing models headlessly
 ----------------------------

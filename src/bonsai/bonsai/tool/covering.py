@@ -49,6 +49,8 @@ class Covering(bonsai.core.tool.Covering):
     def covering_poll_wall_selected(
         cls, operator: type[bpy.types.Operator], context: bpy.types.Context, covering_type: str
     ) -> bool:
+        if not tool.Ifc.get():
+            return False
         if not context.selected_objects or not context.active_object:
             operator.poll_message_set("No objects selected.")
             return False
@@ -62,6 +64,8 @@ class Covering(bonsai.core.tool.Covering):
     def covering_poll_relating_type_check(
         cls, operator: type[bpy.types.Operator], context: bpy.types.Context, covering_type: str
     ) -> bool:
+        if not tool.Ifc.get():
+            return False
         props = context.scene.BIMModelProperties
         relating_type_id = tool.Blender.get_enum_safe(props, "relating_type_id")
         if relating_type_id is not None:

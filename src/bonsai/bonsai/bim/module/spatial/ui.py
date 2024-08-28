@@ -258,21 +258,31 @@ class BIM_UL_elements(UIList):
     def __init__(self):
         self.use_filter_show = True
 
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_toggle(self, row: bpy.types.UILayout, is_expanded: bool, index: int):
+        icon_id = "DISCLOSURE_TRI_DOWN" if is_expanded else "DISCLOSURE_TRI_RIGHT"
+        row.operator("bim.toggle_container_element", text="", emboss=False, icon=icon_id).element_index = index
+
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index, fit_flag):
         if item:
             row = layout.row(align=True)
-            if item.is_class:
-                row.label(text="", icon="DISCLOSURE_TRI_DOWN")
+            item_type = item.type
+            if item_type == "CLASS":
+                self.draw_toggle(row, item.is_expanded, index)
                 row.label(text=item.name)
                 col = row.column()
                 col.alignment = "RIGHT"
                 col.label(text=str(item.total))
-            elif item.is_type:
+            elif item_type == "TYPE":
                 row.label(text="", icon="BLANK1")
+                self.draw_toggle(row, item.is_expanded, index)
                 row.label(text=item.name)
                 col = row.column()
                 col.alignment = "RIGHT"
                 col.label(text=str(item.total))
+            else:  # OCCURRENCE
+                for _ in range(2):
+                    row.label(text="", icon="BLANK1")
+                row.label(text=item.name)
 
     def draw_filter(self, context, layout):
         row = layout.row()

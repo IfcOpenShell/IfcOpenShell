@@ -122,6 +122,7 @@ def switch_representation(
             return
 
     entity = ifc.get_entity(obj)
+    assert entity
     current_obj_data = geometry.get_object_data(obj)
 
     if not current_obj_data and geometry.is_text_literal(representation):

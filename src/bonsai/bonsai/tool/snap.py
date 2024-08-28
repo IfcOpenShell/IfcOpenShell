@@ -30,7 +30,8 @@ class Snap(bonsai.core.tool.Snap):
     mouse_pos = None
     snap_angle = None
     use_default_container = False
-    snap_plane_method = "No Plane"
+    snap_plane_method = None
+    snap_axis_method = None
 
     @classmethod
     def set_use_default_container(cls, value=True):
@@ -39,6 +40,20 @@ class Snap(bonsai.core.tool.Snap):
     @classmethod
     def set_snap_plane_method(cls, value=True):
         cls.snap_plane_method = value
+
+    @classmethod
+    def cycle_snap_plane_method(cls, value=True):
+        if cls.snap_plane_method == value:
+            cls.snap_plane_method = None
+            return
+        cls.snap_plane_method = value
+
+    @classmethod
+    def set_snap_axis_method(cls, value=True):
+        if cls.snap_axis_method == value:
+            cls.snap_axis_method = None
+            return
+        cls.snap_axis_method = value
 
     @classmethod
     def get_snap_points_on_raycasted_face(cls, context, event, obj, face_index):
@@ -89,19 +104,24 @@ class Snap(bonsai.core.tool.Snap):
         return snap_point
 
     @classmethod
-    def update_snaping_point(cls, snap_point, snap_type):
+    def update_snapping_point(cls, snap_point, snap_type):
         try:
             snap_vertex = bpy.context.scene.BIMModelProperties.snap_mouse_point[0]
         except:
             snap_vertex = bpy.context.scene.BIMModelProperties.snap_mouse_point.add()
 
+        info = f"""Snap: {snap_type}
+    Axis:{cls.snap_axis_method}
+    Plane:{cls.snap_plane_method}
+"""
+        PolylineDecorator.set_snap_info(info)
         snap_vertex.x = snap_point[0]
         snap_vertex.y = snap_point[1]
         snap_vertex.z = snap_point[2]
         snap_vertex.snap_type = snap_type
 
     @classmethod
-    def update_snaping_ref(cls, snap_point, snap_type):
+    def update_snapping_ref(cls, snap_point, snap_type):
         try:
             snap_vertex = bpy.context.scene.BIMModelProperties.snap_mouse_ref[0]
         except:
@@ -113,7 +133,7 @@ class Snap(bonsai.core.tool.Snap):
         snap_vertex.snap_type = snap_type
 
     @classmethod
-    def clear_snaping_ref(cls):
+    def clear_snapping_ref(cls):
         bpy.context.scene.BIMModelProperties.snap_mouse_ref.clear()
 
     @classmethod
@@ -140,7 +160,7 @@ class Snap(bonsai.core.tool.Snap):
         polyline_data = bpy.context.scene.BIMModelProperties.polyline_point
         if polyline_data:
             last_point = polyline_data[len(polyline_data) - 1]
-            if (x, y, z) == (last_point.x, last_point.y, last_point.z):
+            if (x, y, z) == (round(last_point.x, 4), round(last_point.y, 4), round(last_point.z, 4)):
                 return
 
         polyline_point = bpy.context.scene.BIMModelProperties.polyline_point.add()
@@ -181,7 +201,7 @@ class Snap(bonsai.core.tool.Snap):
         def create_axis_line_data(rot_mat, origin):
             length = 1000
             direction = Vector((1, 0, 0))
-            if cls.snap_plane_method == "YZ":
+            if cls.snap_plane_method == "YZ" or (not cls.snap_plane_method and cls.snap_axis_method == "Z"):
                 direction = Vector((0, 0, 1))
             rot_dir = rot_mat.inverted() @ direction
             start = origin + rot_dir * length
@@ -233,8 +253,6 @@ class Snap(bonsai.core.tool.Snap):
         if cls.snap_plane_method == "YZ":
             pivot_axis = "X"
 
-        rectangle_data = create_axis_rectangle_data(last_point)
-        PolylineDecorator.set_axis_rectangle(rectangle_data)
         for axis in snap_axis:
             rot_mat = Matrix.Rotation(math.radians(360 - axis), 3, pivot_axis)
             start, end = create_axis_line_data(rot_mat, last_point)
@@ -260,47 +278,27 @@ class Snap(bonsai.core.tool.Snap):
         return None, None, None, None
 
     @classmethod
-    def mix_snap_and_axis(cls, snap_point, axis_start, axis_end, elevation):
+    def mix_snap_and_axis(cls, snap_point, axis_start, axis_end):
         # Creates a mixed snap point between the locked axis and
         # the object snap
-        # TODO Use ALT key to give the user the option to choose between the two results.
-        # TODO Create decorator for this
-        snap_point_vector = Vector((snap_point[0].x, snap_point[0].y, snap_point[0].z))
-        snap_point_axis_1 = (
-            Vector((snap_point[0].x + 1000, snap_point[0].y, elevation)),
-            Vector((snap_point[0].x - 1000, snap_point[0].y, elevation)),
-        )
-        snap_point_axis_2 = (
-            Vector((snap_point[0].x, snap_point[0].y + 1000, elevation)),
-            Vector((snap_point[0].x, snap_point[0].y - 1000, elevation)),
-        )
-        snap_angle_axis = (axis_start, axis_end)
-        result_1 = tool.Cad.intersect_edges(snap_angle_axis, snap_point_axis_1)
-        result_1 = Vector((result_1[0].x, result_1[0].y, elevation))
-        distance_1 = (result_1 - snap_point_vector).length
-
-        result_2 = tool.Cad.intersect_edges(snap_angle_axis, snap_point_axis_2)
-        result_2 = Vector((result_2[0].x, result_2[0].y, elevation))
-        distance_2 = (result_2 - snap_point_vector).length
-
-        if distance_1 < distance_2:
-            best_result = result_1
-        else:
-            best_result = result_2
-
-        return best_result, "Mix"
-
-        # except Exception as e:
-        # cls.update_snaping_point(snap_point[0], snap_point[1])
+        intersections = []
+        intersections.append(tool.Cad.intersect_edge_plane(axis_start, axis_end, snap_point[0], Vector((1, 0, 0))))
+        intersections.append(tool.Cad.intersect_edge_plane(axis_start, axis_end, snap_point[0], Vector((0, 1, 0))))
+        intersections.append(tool.Cad.intersect_edge_plane(axis_start, axis_end, snap_point[0], Vector((0, 0, 1))))
+        sorted_intersections = sorted(i for i in intersections if i is not None)
+        if sorted_intersections[0]:
+            return sorted_intersections[0], "Mix"
 
     @classmethod
-    def snaping_movement(cls, context, event, objs_2d_bbox):
+    def detect_snapping_points(cls, context, event, objs_2d_bbox):
         region = context.region
         rv3d = context.region_data
+        space = context.space_data
         cls.mouse_pos = event.mouse_region_x, event.mouse_region_y
+        detected_snaps = []
 
-        offset = 15
         snap_threshold = 0.3
+        offset = 10
         mouse_offset = (
             (-offset, offset),
             (0, offset),
@@ -316,13 +314,15 @@ class Snap(bonsai.core.tool.Snap):
         def select_plane_method():
             if not last_polyline_point:
                 plane_origin = Vector((0, 0, 0))
+                plane_normal = Vector((0, 0, 1))
 
-            if cls.snap_plane_method == "No Plane":
+            if not cls.snap_plane_method:
                 camera_rotation = rv3d.view_rotation
                 plane_origin = Vector((0, 0, 0))
-                plane_normal = Vector((0, 1, 1, 1)) * Vector((camera_rotation))
+                view_direction = Vector((0, 0, -1)) @ camera_rotation.to_matrix().transposed()
+                plane_normal = view_direction.normalized()
 
-            if cls.snap_plane_method == "XY":
+            if cls.snap_plane_method == "XY" or (not cls.snap_plane_method and cls.snap_axis_method in {"X", "Y"}):
                 if cls.use_default_container:
                     plane_origin = Vector((0, 0, elevation))
                 elif not last_polyline_point:
@@ -331,7 +331,7 @@ class Snap(bonsai.core.tool.Snap):
                     plane_origin = Vector((last_polyline_point.x, last_polyline_point.y, last_polyline_point.z))
                 plane_normal = Vector((0, 0, 1))
 
-            elif cls.snap_plane_method == "XZ":
+            elif cls.snap_plane_method == "XZ" or (not cls.snap_plane_method and cls.snap_axis_method == "Z"):
                 if last_polyline_point:
                     plane_origin = Vector((last_polyline_point.x, last_polyline_point.y, last_polyline_point.z))
                 plane_normal = Vector((0, 1, 0))
@@ -356,7 +356,7 @@ class Snap(bonsai.core.tool.Snap):
                     original_mouse_pos = cls.mouse_pos
                     for value in mouse_offset:
                         cls.mouse_pos = tuple(x + y for x, y in zip(original_mouse_pos, value))
-                        hit, normal, face_index = tool.Raycast.obj_ray_cast(context, event, obj)
+                        hit, normal, face_index = tool.Raycast.obj_ray_cast(context, event, obj, cls.mouse_pos)
                         if hit:
                             break
                     cls.mouse_pos = original_mouse_pos
@@ -370,18 +370,49 @@ class Snap(bonsai.core.tool.Snap):
                         best_hit = hit_world
                         best_face_index = face_index
 
+
             if best_obj is not None:
                 return best_obj, best_hit, best_face_index
 
             else:
                 return None, None, None
 
+        ray_origin, ray_target, ray_direction = tool.Raycast.get_viewport_ray_data(context, event)
+
+        objs_to_raycast = []
+        for obj, bbox_2d in objs_2d_bbox:
+            if obj.type == "MESH" and bbox_2d:
+                if tool.Raycast.intersect_mouse_2d_bounding_box(cls.mouse_pos, bbox_2d, offset):
+                    if space.local_view:
+                        if obj.local_view_get(context.space_data):
+                            objs_to_raycast.append(obj)
+                    else:
+                        objs_to_raycast.append(obj)
+        # Obj
+        snap_obj, hit, face_index = cast_rays_and_get_best_object(objs_to_raycast)
+        if hit is not None:
+            detected_snaps.append({"Object": (snap_obj, hit, face_index)})
+
+        # Edge-Vertex
+        for obj in objs_to_raycast:
+            if len(obj.data.polygons) == 0:
+                options = tool.Raycast.ray_cast_by_proximity(context, event, obj)
+                snap_obj = obj
+                if options:
+                    detected_snaps.append({"Edge-Vertex": (snap_obj, options)})
+                    break
+        # Polyline
         try:
             polyline_data = bpy.context.scene.BIMModelProperties.polyline_point
             last_polyline_point = polyline_data[len(polyline_data) - 1]
         except:
             last_polyline_point = None
+        snap_points = tool.Raycast.ray_cast_to_polyline(context, event)
+        # snap_point = cls.select_snap_point(snap_points, intersection, snap_threshold)
+        if snap_points:
+            detected_snaps.append({"Polyline": snap_points})
 
+        # Axis and Plane
         elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
 
         plane_origin, plane_normal = select_plane_method()
@@ -390,75 +421,139 @@ class Snap(bonsai.core.tool.Snap):
 
         axis_start = None
         axis_end = None
-        if cls.snap_plane_method in {"XY", "XZ", "YZ"}:
-            # Locks snap into an angle axis
-            if event.shift:
+
+        # TODO It only work for XY plane. Make it work also for None plane_method
+        rot_intersection = None
+        if not cls.snap_plane_method:
+            if cls.snap_axis_method == "X":
+                cls.snap_angle = 180
+            if cls.snap_axis_method == "Y":
+                cls.snap_angle = 90
+            if cls.snap_axis_method == "Z":
+                cls.snap_angle = 90
+            if cls.snap_axis_method:
+                rot_intersection, _, axis_start, axis_end = cls.snap_on_axis(intersection, cls.snap_angle)
+
+        if cls.snap_plane_method:
+            if cls.snap_plane_method in {"XY", "XZ"} and cls.snap_axis_method == "X":
+                cls.snap_angle = 180
+            if cls.snap_plane_method in {"XY", "YZ"} and cls.snap_axis_method == "Y":
+                cls.snap_angle = 90
+            if cls.snap_plane_method in {"YZ"} and cls.snap_axis_method == "Z":
+                cls.snap_angle = 180
+            if cls.snap_plane_method in {"XZ"} and cls.snap_axis_method == "Z":
+                cls.snap_angle = 90
+            if event.shift or cls.snap_axis_method:
+                # Doesn't update snap_angle so that it keeps in the same axis
                 rot_intersection, _, axis_start, axis_end = cls.snap_on_axis(intersection, cls.snap_angle)
             else:
-                cls.snap_angle = None
-                rot_intersection, cls.snap_angle, _, _ = cls.snap_on_axis(intersection)
-        else:
-            rot_intersection = None
-
-        ray_origin, ray_target, ray_direction = tool.Raycast.get_viewport_ray_data(context, event)
-
-        objs_to_raycast = []
-        for obj, bbox_2d in objs_2d_bbox:
-            if obj.type == "MESH" and bbox_2d:
-                if tool.Raycast.in_view_2d_bounding_box(cls.mouse_pos, bbox_2d):
-                    objs_to_raycast.append(obj)
-
-        # Try to get object using object raycast method
-        # If it fails use the raycast by proximity
-        snap_obj, hit, face_index = cast_rays_and_get_best_object(objs_to_raycast)
-        if snap_obj is None:
-            for obj in objs_to_raycast:
-                hit, hit_type = tool.Raycast.ray_cast_by_proximity(context, event, obj)
-                snap_obj = obj
-                if hit is not None:
-                    break
-
-        if snap_obj is not None:
-            # Objects with faces
-            if face_index is not None:
-                snap_point = cls.get_snap_points_on_raycasted_face(context, event, snap_obj, face_index)
-                if snap_point[0] is None:
-                    cls.update_snaping_point(hit, "Face")
-                    return
-            # Objects with only edges or verts
-            else:
-                if hit is not None:
-                    snap_point = (hit, hit_type)
-                else:
-                    snap_point = None
-
-        # If there are no objects to snap to, it will try snaping in the polyline
-        else:
-            snap_points = cls.get_snap_points_on_polyline()
-            snap_point = cls.select_snap_point(snap_points, intersection, snap_threshold)
-
-        if snap_point:
-            if event.shift and axis_start:
-                snap_result, snap_type = cls.mix_snap_and_axis(snap_point, axis_start, axis_end, elevation)
-                cls.update_snaping_point(snap_result, snap_type)
-                cls.update_snaping_ref(snap_point[0], snap_point[1])
-                return
-            else:
-                cls.update_snaping_point(snap_point[0], snap_point[1])
-                return
-        # If theres no snapping point from objects and polyline
-        # It will snap to the plane
+                rot_intersection, cls.snap_angle, axis_start, axis_end = cls.snap_on_axis(intersection, None)
         if rot_intersection:
-            cls.update_snaping_point(rot_intersection, "Axis")
-        else:
-            cls.update_snaping_point(intersection, "Plane")
+            detected_snaps.append({"Axis": (rot_intersection, axis_start, axis_end)})
+
+        detected_snaps.append({"Plane": intersection})
+
+        return detected_snaps
 
     @classmethod
-    def validate_input(cls, input_number):
-        grammar = """
-        start: dim expr?
-        dim: NUMBER
-        expr: (ADD | SUB | MUL | DIV) NUMBER
+    def select_snapping_points(cls, context, event, detected_snaps):
+        snapping_points = []
+        for origin in detected_snaps:
+            if "Object" in list(origin.keys()):
+                snap_obj, hit, face_index = origin["Object"]
+                matrix = snap_obj.matrix_world.copy()
+                face = snap_obj.data.polygons[face_index]
+                verts = []
+                for i in face.vertices:
+                    verts.append(matrix @ snap_obj.data.vertices[i].co)
+
+                options = tool.Raycast.ray_cast_by_proximity(context, event, snap_obj, face)
+                if not options:
+                    snapping_points.append((hit, "Face"))
+                else:
+                    for op in options:
+                        snapping_points.append(op)
+
+                break
+
+            if "Edge-Vertex" in list(origin.keys()):
+                snap_obj, options = origin["Edge-Vertex"]
+                for op in options:
+                    snapping_points.append(op)
+                break
+
+            if "Polyline" in list(origin.keys()):
+                options = origin["Polyline"]
+                for op in options:
+                    snapping_points.append(op)
+                break
+
+            if "Plane" in list(origin.keys()):
+                intersection = origin["Plane"]
+                snapping_points.append((intersection, "Plane"))
+
+        for origin in detected_snaps:
+            if "Axis" in list(origin.keys()):
+                intersection = origin["Axis"]
+                axis_start = intersection[1]
+                axis_end = intersection[2]
+                snapping_points.append((intersection[0], "Axis"))
+
+        # Make Axis first priority
+        if event.shift or cls.snap_axis_method in {"X", "Y", "Z"}:
+            cls.update_snapping_ref(snapping_points[0][0], snapping_points[0][1])
+            for point in snapping_points:
+                if point[1] == "Axis":
+                    if snapping_points[0][1] not in {"Axis", "Plane"}:
+                        mixed_snap = cls.mix_snap_and_axis(snapping_points[0], axis_start, axis_end)
+                        cls.update_snapping_point(mixed_snap[0], mixed_snap[1])
+                        return snapping_points
+                    cls.update_snapping_point(point[0], point[1])
+                    return snapping_points
+
+        cls.update_snapping_point(snapping_points[0][0], snapping_points[0][1])
+        return snapping_points
+
+    @classmethod
+    def modify_snapping_point_selection(cls, snapping_points):
+        shifted_list = snapping_points[1:] + snapping_points[:1]
+        cls.update_snapping_point(shifted_list[0][0], shifted_list[0][1])
+        return shifted_list
+
+    @classmethod
+    def validate_input(cls, input_number, input_type):
+
+        grammar_imperial = """
+        start: FORMULA? dim expr?
+        dim: imperial
+
+        FORMULA: "="
+
+        imperial: feet? "-"? inches?
+        feet: NUMBER? " "? fraction? "'"
+        inches: NUMBER? " "? fraction? "\\""
+        fraction: NUMBER "/" NUMBER
+
+        expr: (ADD | SUB) dim | (MUL | DIV) NUMBER
+
+        NUMBER: /-?\\d+(?:\\.\\d+)?/
+        ADD: "+"
+        SUB: "-"
+        MUL: "*"
+        DIV: "/"
+
+        %ignore " "
+        """
+
+        grammar_metric = """
+        start: FORMULA? dim expr?
+        dim: metric
+
+        FORMULA: "="
+
+        metric: NUMBER
+
+        expr: (ADD | SUB | MUL | DIV) dim
 
         NUMBER: /-?\\d+(?:\\.\\d+)?/
         ADD: "+"
@@ -470,8 +565,34 @@ class Snap(bonsai.core.tool.Snap):
         """
 
         class InputTransform(Transformer):
+            def NUMBER(self, n):
+                return float(n)
+
+            def fraction(self, numbers):
+                return numbers[0] / numbers[1]
+
+            def inches(self, args):
+                if len(args) > 1:
+                    result = args[0] + args[1]
+                else:
+                    result = args[0]
+                return result / 12
+
+            def feet(self, args):
+                return args[0]
+
+            def imperial(self, args):
+                if len(args) > 1:
+                    result = args[0] + args[1]
+                else:
+                    result = args[0]
+                return result
+
+            def metric(self, args):
+                return args[0]
+
             def dim(self, args):
-                return float(args[0])
+                return args[0]
 
             def expr(self, args):
                 op = args[0]
@@ -485,17 +606,41 @@ class Snap(bonsai.core.tool.Snap):
                 elif op == "/":
                     return lambda x: x / value
 
+            def FORMULA(cls, args):
+                return args[0]
+
             def start(self, args):
-                dimension = args[0]
-                if len(args) > 1:
-                    expression = args[1]
-                    return expression(dimension)
+                i = 0
+                if args[0] == "=":
+                    i += 1
                 else:
-                    return dimension
+                    if len(args) > 1:
+                        raise ValueError("Invalid input.")
+                dimension = args[i]
+                if len(args) > i + 1:
+                    expression = args[i + 1]
+                    return expression(dimension) * factor
+                else:
+                    return dimension * factor
 
         try:
-            parser = Lark(grammar, parser="lalr", transformer=InputTransform())
-            result = parser.parse(input_number)
+            if bpy.context.scene.unit_settings.system == "IMPERIAL":
+                parser = Lark(grammar_imperial)
+                factor = 0.3048
+            else:
+                parser = Lark(grammar_metric)
+                factor = 1
+                if bpy.context.scene.unit_settings.length_unit == "MILLIMETERS":
+                    factor = 0.001
+
+            if input_type == "A":
+                parser = Lark(grammar_metric)
+                factor = 1
+
+            parse_tree = parser.parse(input_number)
+
+            transformer = InputTransform()
+            result = transformer.transform(parse_tree)
             return True, str(result)
         except:
             return False, "0"

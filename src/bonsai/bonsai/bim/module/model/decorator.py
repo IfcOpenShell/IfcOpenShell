@@ -28,6 +28,7 @@ from bpy_extras import view3d_utils
 from mathutils import Vector, Matrix
 from gpu_extras.batch import batch_for_shader
 from typing import Union
+from bonsai.bim.module.drawing.helper import format_distance
 
 
 def transparent_color(color, alpha=0.1):
@@ -306,6 +307,8 @@ class PolylineDecorator:
     angle_snap_mat = None
     angle_snap_loc = None
     use_default_container = False
+    instructions = None
+    snap_info = None
 
     @classmethod
     def install(cls, context):
@@ -313,6 +316,9 @@ class PolylineDecorator:
             cls.uninstall()
         handler = cls()
         cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_input_panel, (context,), "WINDOW", "POST_PIXEL"))
+        cls.handlers.append(
+            SpaceView3D.draw_handler_add(handler.draw_on_screen_menu, (context,), "WINDOW", "POST_PIXEL")
+        )
         cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_measurements, (context,), "WINDOW", "POST_PIXEL"))
         cls.handlers.append(SpaceView3D.draw_handler_add(handler, (context,), "WINDOW", "POST_VIEW"))
         cls.is_installed = True
@@ -354,6 +360,14 @@ class PolylineDecorator:
         cls.plane_normal = plane_normal
 
     @classmethod
+    def set_instructions(cls, instructions):
+        cls.instructions = instructions
+
+    @classmethod
+    def set_snap_info(cls, snap_info):
+        cls.snap_info = snap_info
+
+    @classmethod
     def calculate_distance_and_angle(cls, context, is_input_on):
 
         try:
@@ -391,7 +405,7 @@ class PolylineDecorator:
         else:
             # Creates a fake "second to last" point away from the first point but in the same x axis
             # this allows to calculate the angle relative to x axis when there is only one point
-            second_to_last_point = Vector((last_point.x + 10, last_point.y, last_point.z))
+            second_to_last_point = Vector((last_point.x - 1000, last_point.y, last_point.z))
 
         distance = (snap_vector - last_point).length
         if distance > 0:
@@ -451,7 +465,6 @@ class PolylineDecorator:
             cls.input_panel["AREA"] = str(round(area, 4))
         return cls.input_panel
 
-
     @classmethod
     def calculate_x_y_and_z(cls, context):
         try:
@@ -472,7 +485,7 @@ class PolylineDecorator:
         else:
             # Creates a fake "second to last" point away from the first point but in the same x axis
             # this allows to calculate the angle relative to x axis when there is only one point
-            second_to_last_point = Vector((last_point.x + 10, last_point.y, last_point.z))
+            second_to_last_point = Vector((last_point.x - 10, last_point.y, last_point.z))
 
         distance = float(cls.input_panel["D"])
 
@@ -510,7 +523,16 @@ class PolylineDecorator:
         batch.draw(shader)
 
     def draw_input_panel(self, context):
-        texts = {"D": "Distance:", "A": "Angle:", "X": "X coord:", "Y": "Y coord:", "Z": "Z coord:",  "AREA": "Area:"}
+        texts = {"D": "Distance:", "A": "Angle:", "X": "X coord:", "Y": "Y coord:", "Z": "Z coord:", "AREA": "Area:"}
+
+        unit_system = tool.Drawing.get_unit_system()
+        if unit_system == "IMPERIAL":
+            precision = context.scene.DocProperties.imperial_precision
+            factor = 3.28084
+        else:
+            precision = None
+            factor = 1
+
         self.addon_prefs = tool.Blender.get_addon_preferences()
         self.font_id = 0
         blf.size(self.font_id, 12)
@@ -521,6 +543,17 @@ class PolylineDecorator:
         offset = 20
         new_line = 20
         for i, (key, value) in enumerate(self.input_panel.items()):
+
+            if key != "A" and key != self.input_type:
+                value = float(value)
+                if context.scene.unit_settings.length_unit == "MILLIMETERS":
+                    value = value * 1000
+                formatted_value = format_distance(
+                    value * factor, precision=precision, suppress_zero_inches=True, in_unit_length=True
+                )
+            else:
+                formatted_value = value
+
             if key not in list(texts.keys()):
                 continue
             if key == self.input_type:
@@ -528,35 +561,71 @@ class PolylineDecorator:
             else:
                 blf.color(self.font_id, *color)
             blf.position(self.font_id, self.mouse_pos[0] + offset, self.mouse_pos[1] - (new_line * i), 0)
-            blf.draw(self.font_id, texts[key] + value)
+            blf.draw(self.font_id, texts[key] + formatted_value)
 
     def draw_measurements(self, context):
         region = context.region
         rv3d = region.data
         measurement_prop = context.scene.BIMModelProperties.polyline_measurement
 
-
         self.addon_prefs = tool.Blender.get_addon_preferences()
-        self.font_id = 0
+        self.font_id = 1
         blf.size(self.font_id, 12)
         blf.enable(self.font_id, blf.SHADOW)
         blf.shadow(self.font_id, 6, 0, 0, 0, 1)
         color = self.addon_prefs.decorations_colour
 
-
         blf.color(self.font_id, *color)
         for i in range(len(measurement_prop)):
             if i == 0:
                 continue
-            pos_dim = (Vector(measurement_prop[i].position) + Vector(measurement_prop[i-1].position)) / 2
+            pos_dim = (Vector(measurement_prop[i].position) + Vector(measurement_prop[i - 1].position)) / 2
             coords_dim = view3d_utils.location_3d_to_region_2d(region, rv3d, pos_dim)
-            blf.position(self.font_id, coords_dim[0], coords_dim[1], 0)
-            blf.draw(self.font_id, "d: " + measurement_prop[i].dim)
 
-            pos_angle = measurement_prop[i-1].position
+            unit_system = tool.Drawing.get_unit_system()
+            if unit_system == "IMPERIAL":
+                precision = context.scene.DocProperties.imperial_precision
+                factor = 3.28084
+            else:
+                precision = None
+                factor = 1
+
+            value = measurement_prop[i].dim
+            value = float(value)
+            if context.scene.unit_settings.length_unit == "MILLIMETERS":
+                value = value * 1000
+            formatted_value = format_distance(
+                value * factor, precision=precision, suppress_zero_inches=True, in_unit_length=True
+            )
+
+            blf.position(self.font_id, coords_dim[0], coords_dim[1], 0)
+            blf.draw(self.font_id, "d: " + formatted_value)
+
+            pos_angle = measurement_prop[i - 1].position
             coords_angle = view3d_utils.location_3d_to_region_2d(region, rv3d, pos_angle)
             blf.position(self.font_id, coords_angle[0], coords_angle[1], 0)
             blf.draw(self.font_id, "a: " + measurement_prop[i].angle)
+
+    def draw_on_screen_menu(self, context):
+        region = context.region
+
+        self.addon_prefs = tool.Blender.get_addon_preferences()
+        self.font_id = 2
+        blf.size(self.font_id, 12)
+        blf.enable(self.font_id, blf.SHADOW)
+        blf.shadow(self.font_id, 6, 0, 0, 0, 1)
+        color = self.addon_prefs.decorations_colour
+        blf.color(self.font_id, *color)
+
+        text_w, text_h = blf.dimensions(0, self.instructions)
+        position = (region.width / 2) - (text_w / 2)
+        blf.position(self.font_id, position, 10, 0)
+        blf.draw(self.font_id, self.instructions)
+
+        text_w, text_h = blf.dimensions(0, self.snap_info)
+        position = (region.width / 2) - (text_w / 2)
+        blf.position(self.font_id, position, 30, 0)
+        blf.draw(self.font_id, self.snap_info)
 
     def __call__(self, context):
 
@@ -588,14 +657,6 @@ class PolylineDecorator:
         except:
             ref_point = None
 
-        if snap_prop.snap_type in ["Face", "Plane"]:
-            self.draw_batch("POINTS", mouse_point, decorator_color_unselected)
-        else:
-            self.draw_batch("POINTS", mouse_point, (1.0, 0.6, 0.0, 1.0))
-
-        if ref_point:
-            self.draw_batch("POINTS", ref_point, (1.0, 0.6, 0.0, 1.0))
-
         default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
         projection_point = []
         if self.use_default_container:
@@ -608,7 +669,7 @@ class PolylineDecorator:
                 edges = [[0, 1]]
                 self.draw_batch("LINES", mouse_point + projection_point, (1.0, 0.6, 0.0, 1.0), edges)
 
-        # Polyline with selected points
+        # Create polyline with selected points
         polyline_data = context.scene.BIMModelProperties.polyline_point
         polyline_points = []
         polyline_edges = []
@@ -619,18 +680,6 @@ class PolylineDecorator:
         for i in range(len(polyline_points) - 1):
             polyline_edges.append([i, i + 1])
 
-        self.line_shader.uniform_float("lineWidth", 2.0)
-        self.draw_batch("POINTS", polyline_points, decorator_color_selected)
-        if len(polyline_points) > 1:
-            self.draw_batch("LINES", polyline_points, decorator_color_selected, polyline_edges)
-
-        # Line between last polyline point and mouse
-        edges = [[0, 1]]
-        if polyline_points:
-            if snap_prop.snap_type != "Plane" and projection_point:
-                self.draw_batch("LINES", [polyline_points[-1]] + projection_point, decorator_color_unselected, edges)
-            else:
-                self.draw_batch("LINES", [polyline_points[-1]] + mouse_point, decorator_color_unselected, edges)
 
         # Line for angle axis snap
         if snap_prop.snap_type == "Axis":
@@ -649,3 +698,27 @@ class PolylineDecorator:
                 for i in range(1, len(polyline_points) - 1):
                     edges.append((0, i, i + 1))
                 self.draw_batch("TRIS", polyline_points, (0, 1, 0, 0.1), edges)
+
+        # Mouse points
+        if snap_prop.snap_type in ["Face", "Plane"]:
+            self.draw_batch("POINTS", mouse_point, decorator_color_unselected)
+        else:
+            self.draw_batch("POINTS", mouse_point, (1.0, 0.6, 0.0, 1.0))
+
+        if ref_point:
+            self.draw_batch("POINTS", ref_point, (1.0, 0.6, 0.0, 1.0))
+
+        # Line between last polyline point and mouse
+        edges = [[0, 1]]
+        if polyline_points:
+            if snap_prop.snap_type != "Plane" and projection_point:
+                self.draw_batch("LINES", [polyline_points[-1]] + projection_point, decorator_color_unselected, edges)
+            else:
+                self.draw_batch("LINES", [polyline_points[-1]] + mouse_point, decorator_color_unselected, edges)
+
+        # Draw polyline with selected points
+        self.line_shader.uniform_float("lineWidth", 2.0)
+        self.draw_batch("POINTS", polyline_points, decorator_color_selected)
+        if len(polyline_points) > 1:
+            self.draw_batch("LINES", polyline_points, decorator_color_selected, polyline_edges)
+

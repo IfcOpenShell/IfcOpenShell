@@ -52,15 +52,11 @@ and data-rich OpenBIM with Blender :)
       :caption: Guides
       :maxdepth: 2
 
-      guides/viewing/index
-      guides/authoring/index
-      guides/drawings/index
-      guides/structural_analysis/index
-      guides/services/index
-      guides/costing_and_scheduling/index
-      guides/facility_management/index
-      guides/coordination/index
+      guides/viewing/dealing_with_large_models
+      guides/authoring/georeferencing
+      guides/authoring/git_support
       guides/development/index
+      guides/authoring/other_addons
       guides/troubleshooting
 
    .. toctree::
@@ -68,7 +64,8 @@ and data-rich OpenBIM with Blender :)
       :caption: Reference
       :maxdepth: 2
 
-      reference/workspace
+      reference/interface
+      reference/topbar
       reference/properties
 
 Need more help? Join the `live chat <https://osarch.org/chat/>`__ or `community

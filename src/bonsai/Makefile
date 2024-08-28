@@ -81,7 +81,7 @@ BLENDER_PLATFORM:=windows-x64
 endif
 
 # Current build commit hash.
-OLD:=d51fa2c
+OLD:=7e6607a
 .PHONY: bump
 bump:
 	cd . && $(SED) -b "s/$(OLD)/$(NEW)/" Makefile

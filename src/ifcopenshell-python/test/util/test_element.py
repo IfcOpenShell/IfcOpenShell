@@ -823,6 +823,7 @@ class TestGetReferencedElements(test.bootstrap.IFC4):
             name="Foobar",
             classification=result,
         )
+        assert reference
         assert subject.get_referenced_elements(reference) == set(elements)
 
     def test_get_elements_referenced_by_library_reference(self):
@@ -842,6 +843,24 @@ class TestGetReferencedElements(test.bootstrap.IFC4):
         ]
         ifcopenshell.api.document.assign_document(self.file, document=reference, products=elements)
         assert subject.get_referenced_elements(reference) == set(elements)
+
+    def test_get_elements_referenced_by_document_info(self):
+        project = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        info = ifcopenshell.api.document.add_information(self.file)
+        assert subject.get_referenced_elements(info) == set([project])
+
+    def test_get_elements_referenced_by_classification(self):
+        project = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        info = ifcopenshell.api.classification.add_classification(self.file, classification="Name")
+        assert subject.get_referenced_elements(info) == set([project])
+
+    def test_get_elements_referenced_by_library(self):
+        info = ifcopenshell.api.library.add_library(self.file, name="Name")
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        rel = self.file.create_entity("IfcRelAssociatesLibrary")
+        rel.RelatingLibrary = info
+        rel.RelatedObjects = [element]
+        assert subject.get_referenced_elements(info) == set([element])
 
 
 class TestGetReferencedElementsIFC2X3(test.bootstrap.IFC2X3, TestGetReferencedElements):

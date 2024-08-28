@@ -243,6 +243,17 @@ class DeleteContainer(bpy.types.Operator, tool.Ifc.Operator):
         core.delete_container(tool.Ifc, tool.Spatial, tool.Geometry, container=tool.Ifc.get().by_id(self.container))
 
 
+class ToggleContainerElement(bpy.types.Operator):
+    bl_idname = "bim.toggle_container_element"
+    bl_label = "Toggle Container Element"
+    bl_options = {"REGISTER", "UNDO"}
+    element_index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        core.toggle_container_element(tool.Spatial, element_index=self.element_index)
+        return {"FINISHED"}
+
+
 class SelectDecomposedElements(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.select_decomposed_elements"
     bl_label = "Select Children"
@@ -260,25 +271,33 @@ class SelectDecomposedElements(bpy.types.Operator, tool.Ifc.Operator):
         return self.execute(context)
 
     def _execute(self, context):
-        ifc_class = relating_type = is_untyped = None
+        ifc_class = relating_type = None
+        is_untyped = False
+        ifc_file = tool.Ifc.get()
         if self.should_filter:
             active_element = context.scene.BIMSpatialDecompositionProperties.active_element
-            if active_element.is_class:
+            element_type = active_element.type
+            if element_type == "CLASS":
                 ifc_class = active_element.name
-            elif relating_type := active_element.ifc_definition_id:
+            elif element_type == "TYPE":
                 ifc_class = active_element.ifc_class
-                relating_type = tool.Ifc.get().by_id(relating_type)
-            else:
-                ifc_class = active_element.ifc_class
-                is_untyped = True
+                if ifc_id := active_element.ifc_definition_id:
+                    relating_type = ifc_file.by_id(ifc_id)
+            else:  # OCCURRENCE
+                occurrence = ifc_file.by_id(active_element.ifc_definition_id)
+                obj = tool.Ifc.get_object(occurrence)
+                assert isinstance(obj, bpy.types.Object)
+                tool.Blender.set_active_object(obj)
+                return
+
         element_filter = context.scene.BIMSpatialDecompositionProperties.element_filter
         core.select_decomposed_elements(
             tool.Spatial,
-            container=tool.Ifc.get().by_id(self.container),
+            container=ifc_file.by_id(self.container),
             ifc_class=ifc_class,
             relating_type=relating_type,
             is_untyped=is_untyped,
-            element_filter = element_filter
+            element_filter=element_filter,
         )
 
 

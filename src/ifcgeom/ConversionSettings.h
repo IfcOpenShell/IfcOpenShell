@@ -312,6 +312,12 @@ namespace ifcopenshell {
 				static constexpr bool defaultvalue = false;
 			};
 
+			struct NoParallelMapping : public SettingBase<NoParallelMapping, bool> {
+				static constexpr const char* const name = "no-parallel-mapping";
+				static constexpr const char* const description = "Perform mapping upfront (single-threaded) as opposed to in parallel. May decrease performance, but also decrease output size (in the future)";
+				static constexpr bool defaultvalue = false;
+			};
+
 			struct ForceSpaceTransparency : public SettingBase<ForceSpaceTransparency, double> {
 				static constexpr const char* const name = "force-space-transparency";
 				static constexpr const char* const description = "Overrides transparency of spaces in geometry output.";
@@ -440,7 +446,7 @@ namespace ifcopenshell {
 		};
 
 		class IFC_GEOM_API Settings : public SettingsContainer<
-                                          std::tuple<MesherLinearDeflection, MesherAngularDeflection, ReorientShells, LengthUnit, PlaneUnit, Precision, OutputDimensionality, LayersetFirst, DisableBooleanResult, NoWireIntersectionCheck, NoWireIntersectionTolerance, PrecisionFactor, DebugBooleanOperations, BooleanAttempt2d, WeldVertices, UseWorldCoords, UseMaterialNames, ConvertBackUnits, ContextIds, ContextTypes, ContextIdentifiers, IteratorOutput, DisableOpeningSubtractions, ApplyDefaultMaterials, DontEmitNormals, GenerateUvs, ApplyLayerSets, UseElementHierarchy, ValidateQuantities, EdgeArrows, BuildingLocalPlacement, SiteLocalPlacement, ForceSpaceTransparency, CircleSegments, KeepBoundingBoxes, PiecewiseStepType, PiecewiseStepParam>
+                                          std::tuple<MesherLinearDeflection, MesherAngularDeflection, ReorientShells, LengthUnit, PlaneUnit, Precision, OutputDimensionality, LayersetFirst, DisableBooleanResult, NoWireIntersectionCheck, NoWireIntersectionTolerance, PrecisionFactor, DebugBooleanOperations, BooleanAttempt2d, WeldVertices, UseWorldCoords, UseMaterialNames, ConvertBackUnits, ContextIds, ContextTypes, ContextIdentifiers, IteratorOutput, DisableOpeningSubtractions, ApplyDefaultMaterials, DontEmitNormals, GenerateUvs, ApplyLayerSets, UseElementHierarchy, ValidateQuantities, EdgeArrows, BuildingLocalPlacement, SiteLocalPlacement, ForceSpaceTransparency, CircleSegments, KeepBoundingBoxes, PiecewiseStepType, PiecewiseStepParam, NoParallelMapping>
 		>
 		{};
 }
