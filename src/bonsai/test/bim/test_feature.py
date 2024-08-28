@@ -840,6 +840,30 @@ def the_object_name_is_not_a_void(name):
     assert False, "A void was found"
 
 
+@given(parsers.parse('the object "{name}" is visible'))
+def given_the_object_name_is_visible(name):
+    obj = the_object_name_exists(name)
+    obj.hide_set(False)
+
+
+@given(parsers.parse('the object "{name}" is not visible'))
+def given_the_object_name_is_not_visible(name):
+    obj = the_object_name_exists(name)
+    obj.hide_set(True)
+
+
+@then(parsers.parse('the object "{name}" is visible'))
+def the_object_name_is_visible(name):
+    obj = the_object_name_exists(name)
+    assert obj.hide_get() == False
+
+
+@then(parsers.parse('the object "{name}" is not visible'))
+def the_object_name_is_not_visible(name):
+    obj = the_object_name_exists(name)
+    assert obj.hide_get() == True
+
+
 @then(parsers.parse('the object "{name}" is an "{ifc_class}"'))
 def the_object_name_is_an_ifc_class(name, ifc_class):
     ifc = an_ifc_file_exists()
