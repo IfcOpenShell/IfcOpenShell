@@ -36,6 +36,8 @@ import queue
 import json
 from time import sleep
 from pathlib import Path
+import bonsai.core.sequence
+import bonsai.core.cost
 
 sio = None
 ws_process = None
@@ -310,6 +312,8 @@ class Web(bonsai.core.tool.Web):
             elif operator["sourcePage"] == "demo":
                 message = operator["operator"]["message"]
                 print(f"Message from demo page: {message}")
+            elif operator["sourcePage"] == "cost":
+                cls.handle_cost_operator(operator["operator"])
         return 1.0
 
     @classmethod
@@ -327,6 +331,48 @@ class Web(bonsai.core.tool.Web):
             obj = tool.Ifc.get_object(ele)
             bpy.context.view_layer.objects.active = obj
             obj.select_set(True)
+
+
+    @classmethod
+    def handle_cost_operator(cls, operator_data: dict) -> None:
+        """
+        this method handles the Cost page operators.
+
+        Args:
+            operator_data (dict): A dictionary containing the operator data.
+        """
+        print("Handling cost operator")
+        ifc_file = tool.Ifc.get()
+        if operator_data["type"] == "getCostSchedules":
+            cost_schedules = ifc_file.by_type("IfcCostSchedule")
+            cost_schedules_json = [cs.get_info(recursive=True) for cs in cost_schedules]
+            currency = tool.Cost.currency()
+            cls.send_webui_data(data={
+                "cost_schedules": cost_schedules_json,
+                "currency": currency
+            }, data_key="cost_schedules", event="cost_schedules")
+        if operator_data["type"] == "loadCostSchedule":
+            cost_schedule = ifc_file.by_id(operator_data["costScheduleId"])
+            bonsai.core.cost.enable_editing_cost_items(tool.Cost, cost_schedule=cost_schedule)
+            json_data = tool.Cost.create_cost_schedule_json(cost_schedule)
+            cls.send_webui_data(data=json_data, data_key="cost_items", event="cost_items")
+        if operator_data["type"] == "addCostItem":
+            bpy.ops.bim.add_cost_item(cost_item=operator_data["costItemId"])
+            cost_schedule = tool.Cost.get_cost_schedule(cost_item=tool.Ifc.get().by_id(operator_data["costItemId"]))
+            json_data = tool.Cost.create_cost_schedule_json(cost_schedule)
+            cls.send_webui_data(data=json_data, data_key="cost_items", event="cost_items")
+        if operator_data["type"] == "selectAssignedElements":
+            cost_item = tool.Ifc.get().by_id(operator_data["costItemId"])
+            products = tool.Cost.get_cost_item_products(cost_item, is_deep=True)
+            tool.Spatial.select_products(products, unhide=True)
+        if operator_data["type"] == "editCostItemName":
+            cost_item = tool.Ifc.get().by_id(operator_data["costItemId"])
+            tool.Ifc.run(
+                "cost.edit_cost_item",
+                cost_item=cost_item,
+                attributes = {"Name": operator_data["name"]}
+            )
+            tool.Cost.load_cost_schedule_tree()
 
     @classmethod
     def handle_gantt_operator(cls, operator_data: dict) -> None:

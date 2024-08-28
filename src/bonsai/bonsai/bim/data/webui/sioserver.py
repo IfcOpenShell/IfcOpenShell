@@ -115,16 +115,30 @@ class BlenderNamespace(socketio.AsyncNamespace):
         blender_theme = data
         await sio.emit("theme_data", data, namespace="/web")
 
-
     # this function will be called when the event demo_data is emitted 
     async def on_demo_data(self, sid, data):
         print(f"Demo data from Blender client {sid}")
         blender_messages[sid]["demo_data"] = data
         await sio.emit("demo_data", {"blenderId": sid, "data": data}, namespace="/web")
 
+    async def on_cost_items(self, sid, data):
+        print(f"Cost items data from Blender client {sid}")
+        blender_messages[sid]["cost_items"] = data
+        await sio.emit("cost_items", {"blenderId": sid, "data": data}, namespace="/web")
+
+    async def on_cost_schedules(self, sid, data):
+        print(f"Cost schedule info from Blender client {sid}")
+        blender_messages[sid]["cost_schedules"] = data
+        await sio.emit("cost_schedules", {"blenderId": sid, "data": data}, namespace="/web")
 
 async def schedules(request):
     with open("templates/index.html", "r") as f:
+        template = f.read()
+    html_content = pystache.render(template, {"port": sio_port, "version": bonsai_version})
+    return web.Response(text=html_content, content_type="text/html")
+
+async def costing(request):
+    with open("templates/costing.html", "r") as f:
         template = f.read()
     html_content = pystache.render(template, {"port": sio_port, "version": bonsai_version})
     return web.Response(text=html_content, content_type="text/html")
@@ -179,6 +193,7 @@ sio.register_namespace(BlenderNamespace("/blender"))
 app.router.add_get("/", schedules)
 app.router.add_get("/documentation", documentation)
 app.router.add_get("/sequencing", sequencing)
+app.router.add_get("/costing", costing)
 app.router.add_get("/demo", demo)
 
 # Add static files

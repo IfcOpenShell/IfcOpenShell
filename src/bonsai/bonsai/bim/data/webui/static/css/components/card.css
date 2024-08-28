@@ -1,0 +1,58 @@
+:root.blender .flex-row {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+  }
+
+/* CSS for the work schedule cards */
+:root.blender #work_schedules {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    padding: 20px;
+  }
+  
+:root.blender .card {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    width: 300px;
+    margin: 10px;
+    transition: transform 0.2s;
+  }
+  
+:root.blender .card:hover {
+    transform: scale(1.05);
+  }
+  
+:root.blender  .card-body {
+    padding: 20px;
+  }
+  
+:root.blender .card-title {
+    font-size: 1.25rem;
+    margin-bottom: 10px;
+  }
+  
+:root.blender .card-text {
+    font-size: 1rem;
+    margin-bottom: 20px;
+  }
+  
+:root.blender .btn-primary {
+    background-color: #007bff;
+    border: none;
+    color: white;
+    padding: 10px 20px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 1rem;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+:root.blender .btn-primary:hover {
+    background-color: #0056b3;
+  }
