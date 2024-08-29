@@ -471,11 +471,35 @@ class CreateDrawing(bpy.types.Operator):
                 geom_settings = ifcopenshell.geom.settings()
                 geom_settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
                 geom_settings.set("iterator-output", ifcopenshell.ifcopenshell_wrapper.NATIVE)
+                # See bug 5231 - offset no longer available in v0.8.0
+                absolute_placements = set()
+                placement_replacements = {}
                 if ifc.by_id(context[0]).ContextType == "Plan" and "PLAN_VIEW" in target_view:
-                    offset = ifcopenshell.ifcopenshell_wrapper.float_array_3()
                     # A 2mm Z offset to combat Z-fighting in plan or RCPs
-                    offset[2] = 0.002 if target_view == "PLAN_VIEW" else -0.002
-                    geom_settings.offset = offset
+                    offset_z = 0.002 if target_view == "PLAN_VIEW" else -0.002
+
+                    for product in self.file.by_type("IfcProduct"):
+                        if not product.ObjectPlacement:
+                            continue
+                        absolute_placement = self.get_absolute_placement(product.ObjectPlacement)
+                        if absolute_placement.is_a("IfcLocalPlacement"):
+                            absolute_placements.add(absolute_placement)
+
+                    transformation = np.eye(4)
+                    transformation[2][3] = offset_z
+
+                    # Don't use undo system in case we bork up a parent caller
+                    for placement in absolute_placements:
+                        old = placement.RelativePlacement
+                        new = self.get_relative_placement(
+                            ifc, transformation @ ifcopenshell.util.placement.get_local_placement(placement)
+                        )
+                        placement.RelativePlacement = new
+                        placement_replacements[placement] = (old, new)
+
+                    # offset = ifcopenshell.ifcopenshell_wrapper.float_array_3()
+                    # offset[2] = 0.002 if target_view == "PLAN_VIEW" else -0.002
+                    # geom_settings.offset = offset
                 geom_settings.set("context-ids", context)
                 it = ifcopenshell.geom.iterator(
                     geom_settings, ifc, multiprocessing.cpu_count(), include=drawing_elements
@@ -486,6 +510,36 @@ class CreateDrawing(bpy.types.Operator):
                     self.serialiser.write(elem)
                     tree.add_element(elem)
                 drawing_elements -= processed
+
+                for placement, oldnew in placement_replacements.items():
+                    old, new = oldnew
+                    placement.RelativePlacement = old
+                    ifcopenshell.util.element.remove_deep2(ifc, new)
+                placement_replacements = {}
+
+    def get_absolute_placement(self, object_placement):
+        if object_placement.PlacementRelTo:
+            return self.get_absolute_placement(object_placement.PlacementRelTo)
+        return object_placement
+
+    def get_relative_placement(self, ifc, m):
+        x = np.array((m[0][0], m[1][0], m[2][0]))
+        z = np.array((m[0][2], m[1][2], m[2][2]))
+        o = np.array((m[0][3], m[1][3], m[2][3]))
+        object_matrix = ifcopenshell.util.placement.a2p(o, z, x)
+        return self.create_ifc_axis_2_placement_3d(
+            ifc,
+            object_matrix[:, 3][0:3],
+            object_matrix[:, 2][0:3],
+            object_matrix[:, 0][0:3],
+        )
+
+    def create_ifc_axis_2_placement_3d(self, ifc, point, up, forward):
+        return self.file.createIfcAxis2Placement3D(
+            self.file.createIfcCartesianPoint(point.tolist()),
+            self.file.createIfcDirection(up.tolist()),
+            self.file.createIfcDirection(forward.tolist()),
+        )
 
     def generate_linework(self, context: bpy.types.Context) -> Union[str, None]:
         if not ifcopenshell.util.element.get_pset(self.drawing, "EPset_Drawing", "HasLinework"):
