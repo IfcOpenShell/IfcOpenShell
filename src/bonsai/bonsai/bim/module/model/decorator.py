@@ -375,9 +375,8 @@ class PolylineDecorator:
             default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
             last_point_data = polyline_data[len(polyline_data) - 1]
         except:
-            last_point_data = None
-            second_to_last_point_data = None
             default_container_elevation = 0
+            last_point_data = None
 
         snap_prop = context.scene.BIMModelProperties.snap_mouse_point[0]
 
@@ -411,12 +410,12 @@ class PolylineDecorator:
         if distance > 0:
             angle = tool.Cad.angle_3_vectors(snap_vector, last_point, second_to_last_point, degrees=True)
             if cls.input_panel:
-                cls.input_panel["X"] = str(round(snap_vector.x, 4))
-                cls.input_panel["Y"] = str(round(snap_vector.y, 4))
+                cls.input_panel["X"] = str(round(snap_vector.x, 3))
+                cls.input_panel["Y"] = str(round(snap_vector.y, 3))
                 if "Z" in list(cls.input_panel.keys()):
-                    cls.input_panel["Z"] = str(round(snap_vector.z, 4))
-                cls.input_panel["D"] = str(round(distance, 4))
-                cls.input_panel["A"] = str(round(angle, 4))
+                    cls.input_panel["Z"] = str(round(snap_vector.z, 3))
+                cls.input_panel["D"] = str(round(distance, 3))
+                cls.input_panel["A"] = str(round(angle, 3))
 
                 return cls.input_panel
 
@@ -507,10 +506,10 @@ class PolylineDecorator:
             y = coords[1]
             z = coords[2]
             if cls.input_panel:
-                cls.input_panel["X"] = str(round(x, 4))
-                cls.input_panel["Y"] = str(round(y, 4))
+                cls.input_panel["X"] = str(round(x, 3))
+                cls.input_panel["Y"] = str(round(y, 3))
                 if "Z" in list(cls.input_panel.keys()):
-                    cls.input_panel["Z"] = str(round(z, 4))
+                    cls.input_panel["Z"] = str(round(z, 3))
 
                 return cls.input_panel
 
@@ -522,9 +521,8 @@ class PolylineDecorator:
         shader.uniform_float("color", color)
         batch.draw(shader)
 
-    def draw_input_panel(self, context):
-        texts = {"D": "Distance:", "A": "Angle:", "X": "X coord:", "Y": "Y coord:", "Z": "Z coord:", "AREA": "Area:"}
-
+    @classmethod
+    def format_input_panel_units(cls, context, value):
         unit_system = tool.Drawing.get_unit_system()
         if unit_system == "IMPERIAL":
             precision = context.scene.DocProperties.imperial_precision
@@ -532,6 +530,15 @@ class PolylineDecorator:
         else:
             precision = None
             factor = 1
+            if context.scene.unit_settings.length_unit == "MILLIMETERS":
+                factor = 1000
+
+        return format_distance(
+                    value * factor, precision=precision, suppress_zero_inches=True, in_unit_length=True
+                )
+
+    def draw_input_panel(self, context):
+        texts = {"D": "Distance: ", "A": "Angle: ", "X": "X coord: ", "Y": "Y coord: ", "Z": "Z coord:", "AREA": "Area: "}
 
         self.addon_prefs = tool.Blender.get_addon_preferences()
         self.font_id = 0
@@ -546,11 +553,7 @@ class PolylineDecorator:
 
             if key != "A" and key != self.input_type:
                 value = float(value)
-                if context.scene.unit_settings.length_unit == "MILLIMETERS":
-                    value = value * 1000
-                formatted_value = format_distance(
-                    value * factor, precision=precision, suppress_zero_inches=True, in_unit_length=True
-                )
+                formatted_value = self.format_input_panel_units(context, value)
             else:
                 formatted_value = value
 
@@ -582,21 +585,9 @@ class PolylineDecorator:
             pos_dim = (Vector(measurement_prop[i].position) + Vector(measurement_prop[i - 1].position)) / 2
             coords_dim = view3d_utils.location_3d_to_region_2d(region, rv3d, pos_dim)
 
-            unit_system = tool.Drawing.get_unit_system()
-            if unit_system == "IMPERIAL":
-                precision = context.scene.DocProperties.imperial_precision
-                factor = 3.28084
-            else:
-                precision = None
-                factor = 1
-
             value = measurement_prop[i].dim
             value = float(value)
-            if context.scene.unit_settings.length_unit == "MILLIMETERS":
-                value = value * 1000
-            formatted_value = format_distance(
-                value * factor, precision=precision, suppress_zero_inches=True, in_unit_length=True
-            )
+            formatted_value = self.format_input_panel_units(context, value)
 
             blf.position(self.font_id, coords_dim[0], coords_dim[1], 0)
             blf.draw(self.font_id, "d: " + formatted_value)
