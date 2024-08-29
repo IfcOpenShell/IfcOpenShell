@@ -429,7 +429,15 @@ class DrawPolylineWall(bpy.types.Operator):
             index = self.input_options.index(self.input_type)
             size = len(self.input_options)
             self.input_type = self.input_options[((index + 1) % size)]
-            self.number_input = []
+
+            self.number_input = self.input_panel[self.input_type]
+            self.number_input = list(self.number_input)
+            self.number_output = "".join(self.number_input)
+            if self.input_type != "A":
+                self.number_output = PolylineDecorator.format_input_panel_units(context, float(self.number_output))
+                
+            self.input_panel[self.input_type] = self.number_output
+
             PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
             tool.Blender.update_viewport()
 
@@ -437,7 +445,13 @@ class DrawPolylineWall(bpy.types.Operator):
             self.recalculate_inputs(context)
             self.is_input_on = True
             self.input_type = "D"
-            self.number_input = []
+
+            self.number_input = self.input_panel[self.input_type]
+            self.number_input = list(self.number_input)
+            self.number_output = "".join(self.number_input)
+            self.number_output = PolylineDecorator.format_input_panel_units(context, float(self.number_output))
+            self.input_panel[self.input_type] = self.number_output
+
             PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
             tool.Blender.update_viewport()
 
@@ -507,6 +521,7 @@ class DrawPolylineWall(bpy.types.Operator):
 
         if self.is_input_on:
             if event.value == "RELEASE" and event.type in {"ESC"}:
+                self.recalculate_inputs(context)
                 self.is_input_on = False
                 self.input_type = "OFF"
                 PolylineDecorator.set_input_panel(self.input_panel, self.input_type)

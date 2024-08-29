@@ -524,14 +524,14 @@ class Snap(bonsai.core.tool.Snap):
     def validate_input(cls, input_number, input_type):
 
         grammar_imperial = """
-        start: FORMULA? dim expr?
+        start: (FORMULA dim expr) | dim
         dim: imperial
 
         FORMULA: "="
 
         imperial: feet? "-"? inches?
-        feet: NUMBER? " "? fraction? "'"
-        inches: NUMBER? " "? fraction? "\\""
+        feet: NUMBER? "-"? fraction? "'"
+        inches: NUMBER? "-"? fraction? "\\""
         fraction: NUMBER "/" NUMBER
 
         expr: (ADD | SUB) dim | (MUL | DIV) NUMBER
@@ -583,7 +583,10 @@ class Snap(bonsai.core.tool.Snap):
 
             def imperial(self, args):
                 if len(args) > 1:
-                    result = args[0] + args[1]
+                    if args[0] <= 0:
+                        result = args[0] - args[1]
+                    else:
+                        result = args[0] + args[1]
                 else:
                     result = args[0]
                 return result
