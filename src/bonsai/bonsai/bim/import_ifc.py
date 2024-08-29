@@ -715,9 +715,17 @@ class IfcImporter:
         if not products:
             return results
         if tool.Loader.settings.should_use_cpu_multiprocessing:
-            iterator = ifcopenshell.geom.iterator(settings, self.file, multiprocessing.cpu_count(), include=products)
+            iterator = ifcopenshell.geom.iterator(
+                settings,
+                self.file,
+                multiprocessing.cpu_count(),
+                include=products,
+                geometry_library=self.ifc_import_settings.geometry_library,
+            )
         else:
-            iterator = ifcopenshell.geom.iterator(settings, self.file, include=products)
+            iterator = ifcopenshell.geom.iterator(
+                settings, self.file, include=products, geometry_library=self.ifc_import_settings.geometry_library
+            )
         if self.ifc_import_settings.should_cache:
             cache = IfcStore.get_cache()
             if cache:
@@ -1473,6 +1481,7 @@ class IfcImportSettings:
         self.logger: logging.Logger = None
         self.input_file = None
         self.diff_file = None
+        self.geometry_library = "opencascade"
         self.should_use_cpu_multiprocessing = True
         self.should_merge_materials_by_colour = False
         self.should_load_geometry = True
@@ -1508,6 +1517,7 @@ class IfcImportSettings:
             logger = logging.getLogger("ImportIFC")
         settings.logger = logger
         settings.diff_file = scene_diff.diff_json_file
+        settings.geometry_library = props.geometry_library
         settings.should_use_cpu_multiprocessing = props.should_use_cpu_multiprocessing
         settings.should_merge_materials_by_colour = props.should_merge_materials_by_colour
         settings.should_load_geometry = props.should_load_geometry
