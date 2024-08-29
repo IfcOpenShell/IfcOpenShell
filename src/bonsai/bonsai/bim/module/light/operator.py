@@ -565,7 +565,7 @@ class RefreshIFCMaterials(bpy.types.Operator):
                 if render_item.is_a("IfcSurfaceStyleRendering"):
                     style_id = f"IfcSurfaceStyleRendering-{render_item.id()}"
                     style_name = style.Name or f"Unnamed Style {render_item.id()}"
-                    
+
                     # Extract color and transparency
                     color = (1.0, 1.0, 1.0)  # Default white
                     transparency = 0.0  # Default opaque
@@ -573,15 +573,15 @@ class RefreshIFCMaterials(bpy.types.Operator):
                         color = (
                             render_item.SurfaceColour.Red,
                             render_item.SurfaceColour.Green,
-                            render_item.SurfaceColour.Blue
+                            render_item.SurfaceColour.Blue,
                         )
-                    if hasattr(render_item, 'Transparency') and render_item.Transparency is not None:
+                    if hasattr(render_item, "Transparency") and render_item.Transparency is not None:
                         transparency = render_item.Transparency
-                    
+
                     # Add material with color
                     material = props.add_material_mapping(style_id, style_name)
                     material.color = color
-                    
+
                     # If transparency is high, consider it as glass
                     if transparency > 0.5:
                         material.category = "Glass"
