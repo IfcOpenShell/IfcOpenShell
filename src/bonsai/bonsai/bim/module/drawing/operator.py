@@ -2937,5 +2937,5 @@ class OpenDocumentationWebUi(bpy.types.Operator):
         if not context.scene.WebProperties.is_connected:
             bpy.ops.bim.connect_websocket_server(page="documentation")
         else:
-            bpy.ops.bim.bim.open_web_browser(page="documentation")
+            bpy.ops.bim.open_web_browser(page="documentation")
         return {"FINISHED"}
