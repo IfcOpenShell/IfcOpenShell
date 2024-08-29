@@ -143,6 +143,15 @@ class BIMProjectProperties(PropertyGroup):
     active_filter_category_index: IntProperty(name="Active Filter Category Index")
     filter_query: StringProperty(name="Filter Query")
     should_filter_spatial_elements: BoolProperty(name="Filter Spatial Elements", default=False)
+    geometry_library: bpy.props.EnumProperty(
+        items=[
+            ("opencascade", "OpenCASCADE", "Best for stability and accuracy"),
+            ("cgal", "CGAL", "Best for speed"),
+            ("cgal-simple", "CGAL Simple", "CGAL without booleans"),
+            ("hybrid-cgal-simple-opencascade", "Hybrid CGAL-OCC", "First CGAL then fallback to OCC"),
+        ],
+        name="Geometry Library",
+    )
     should_use_cpu_multiprocessing: BoolProperty(name="CPU Multiprocessing", default=True)
     should_merge_materials_by_colour: BoolProperty(name="Merge Materials by Colour", default=False)
     should_stream: BoolProperty(name="Stream Data From IFC-SPF (Only for advanced users)", default=False)
