@@ -204,7 +204,12 @@ class CreateDrawing(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return bool(tool.Ifc.get() and tool.Drawing.is_drawing_active())
+        if not tool.Ifc.get():
+            return False
+        if not tool.Drawing.is_drawing_active():
+            cls.poll_message_set("No active drawing.")
+            return False
+        return True
 
     def invoke(self, context, event):
         # printing all drawings on shift+click
