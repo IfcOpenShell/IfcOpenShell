@@ -1,4 +1,7 @@
 {
+  "Glass": {
+    "Clear Glass": "void BRTDfunc clear_glass\n10\n        sr_clear_r sr_clear_g sr_clear_b\n        st_clear_r st_clear_g st_clear_b\n        0 0 0\n        glaze1.cal\n0\n19\n        0 0 0\n        0 0 0\n        0 0 0\n        1\n        0.074 0.077 0.079\n        0.074 0.077 0.079\n        0.862 0.890 0.886\n"
+  },
   "Wall": {
     "White Painted Room Walls": "void plastic white_painted_room_walls \n0\n0\n5 0.8316 0.8116 0.7226 0.0036 0.2",
     "White Painted Corridor Walls": "void plastic white_painted_corridor_walls \n0\n0\n5 0.8143 0.7984 0.715 0.0039 0.2",
