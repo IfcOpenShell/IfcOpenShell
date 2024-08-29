@@ -568,6 +568,7 @@ class Loader(bonsai.core.tool.Loader):
             settings.set("context-ids", [context.id()])
             settings.set("apply-default-materials", False)
             settings.set("keep-bounding-boxes", True)
+            settings.set("layerset-first", True)
             if is_gross:
                 settings.set("disable-opening-subtractions", True)
             results.append(settings)

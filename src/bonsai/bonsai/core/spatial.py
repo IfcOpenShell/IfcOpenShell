@@ -141,8 +141,8 @@ def delete_container(
     spatial.import_spatial_decomposition()
 
 
-def toggle_container_element(spatial: tool.Spatial, element_index: int) -> None:
-    spatial.toggle_container_element(element_index)
+def toggle_container_element(spatial: tool.Spatial, element_index: int, is_recursive: bool) -> None:
+    spatial.toggle_container_element(element_index, is_recursive=is_recursive)
     spatial.load_contained_elements()
 
 

@@ -204,7 +204,12 @@ class CreateDrawing(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return bool(tool.Ifc.get() and tool.Drawing.is_drawing_active())
+        if not tool.Ifc.get():
+            return False
+        if not tool.Drawing.is_drawing_active():
+            cls.poll_message_set("No active drawing.")
+            return False
+        return True
 
     def invoke(self, context, event):
         # printing all drawings on shift+click
@@ -1765,7 +1770,10 @@ class ReloadDrawingStyles(bpy.types.Operator):
             drawing_style.raster_style = json.dumps(style_data["raster_style"])
 
         if current_style is not None:
-            camera_props.active_drawing_style_index = styles.index(current_style)
+            try:
+                camera_props.active_drawing_style_index = styles.index(current_style)
+            except ValueError:
+                self.report({"INFO"}, f"Could not find style {current_style} in EPset_Drawing.ShadingStyles.")
 
         return {"FINISHED"}
 
@@ -2937,5 +2945,5 @@ class OpenDocumentationWebUi(bpy.types.Operator):
         if not context.scene.WebProperties.is_connected:
             bpy.ops.bim.connect_websocket_server(page="documentation")
         else:
-            bpy.ops.bim.bim.open_web_browser(page="documentation")
+            bpy.ops.bim.open_web_browser(page="documentation")
         return {"FINISHED"}
