@@ -79,26 +79,19 @@ class Collector(bonsai.core.tool.Collector):
                 cls.link_to_collection_safe(obj, collection)
                 project_obj = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
                 cls.link_to_collection_safe(collection, project_obj.BIMObjectProperties.collection)
+        elif element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
+            if collection := cls._create_own_collection(obj):
+                cls.link_to_collection_safe(obj, collection)
+                project_obj = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
+                cls.link_to_collection_safe(collection, project_obj.BIMObjectProperties.collection)
+        elif element.is_a("IfcAnnotation") and (drawing_obj := cls.get_annotation_drawing_obj(element)):
+            cls.link_to_collection_safe(obj, drawing_obj.BIMObjectProperties.collection)
         elif container := ifcopenshell.util.element.get_container(element):
             container_obj = tool.Ifc.get_object(container)
             if not (collection := container_obj.BIMObjectProperties.collection):
                 cls.assign(container_obj)
                 collection = container_obj.BIMObjectProperties.collection
             cls.link_to_collection_safe(obj, collection)
-        elif element.is_a("IfcAnnotation"):
-            if element.ObjectType == "DRAWING":
-                if collection := cls._create_own_collection(obj):
-                    cls.link_to_collection_safe(obj, collection)
-                    project_obj = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
-                    cls.link_to_collection_safe(collection, project_obj.BIMObjectProperties.collection)
-            else:
-                for rel in element.HasAssignments or []:
-                    if rel.is_a("IfcRelAssignsToGroup") and rel.RelatingGroup.ObjectType == "DRAWING":
-                        for related_object in rel.RelatedObjects:
-                            if related_object.is_a("IfcAnnotation") and related_object.ObjectType == "DRAWING":
-                                drawing_obj = tool.Ifc.get_object(related_object)
-                                if drawing_obj:
-                                    cls.link_to_collection_safe(obj, drawing_obj.BIMObjectProperties.collection)
         else:
             collection = cls._create_project_child_collection("Unsorted")
             collection.hide_viewport = False
@@ -125,6 +118,14 @@ class Collector(bonsai.core.tool.Collector):
         obj.BIMObjectProperties.collection = collection
         collection.BIMCollectionProperties.obj = obj
         return collection
+
+    @classmethod
+    def get_annotation_drawing_obj(cls, element: ifcopenshell.entity_instance) -> bpy.types.Object | None:
+        for rel in element.HasAssignments or []:
+            if rel.is_a("IfcRelAssignsToGroup") and rel.RelatingGroup.ObjectType == "DRAWING":
+                for related_object in rel.RelatedObjects:
+                    if related_object.is_a("IfcAnnotation") and related_object.ObjectType == "DRAWING":
+                        return tool.Ifc.get_object(related_object)
 
     @classmethod
     def link_to_collection_safe(
