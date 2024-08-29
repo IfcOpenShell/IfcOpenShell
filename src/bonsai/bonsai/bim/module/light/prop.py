@@ -32,6 +32,7 @@ from bpy.props import (
     FloatVectorProperty,
     BoolProperty,
     CollectionProperty,
+    PointerProperty,
 )
 import os
 from bpy.types import PropertyGroup
@@ -107,6 +108,11 @@ def update_display_sun_path(self, context):
         SolarDecorator.uninstall()
 
 
+def update_resolution(self, context):
+    context.scene.render.resolution_x = self.radiance_resolution_x
+    context.scene.render.resolution_y = self.radiance_resolution_y
+
+
 def update_sun_path():
     if not SolarData.is_loaded:
         SolarData.load()
@@ -142,6 +148,10 @@ def update_sun_path():
     rotation_euler = Euler((elevation - pi / 2, 0, -azimuth))
     rotation_quaternion = rotation_euler.to_quaternion()
 
+    props.azimuth = azimuth
+    props.elevation = elevation
+    props.UTC_zone = zone
+
     if sun_vector.z < 0:
         bpy.context.scene.display.light_direction = mat @ Vector((0, 0, 1))
     else:
@@ -162,13 +172,10 @@ class RadianceMaterial(PropertyGroup):
     category: StringProperty(name="Category")
     subcategory: StringProperty(name="Subcategory")
     is_mapped: BoolProperty(name="Is Mapped", default=False)
+    color: FloatVectorProperty(name="Color", subtype="COLOR", default=(1.0, 1.0, 1.0), min=0.0, max=1.0, size=3)
 
 
 class RadianceExporterProperties(PropertyGroup):
-
-    def update_json_file(self, context):
-        if self.json_file:
-            self.json_file = bpy.path.abspath(self.json_file)
 
     def update_output_dir(self, context):
         if self.output_dir:
@@ -184,7 +191,25 @@ class RadianceExporterProperties(PropertyGroup):
         item.style_id = style_id
         item.category = ""
         item.subcategory = ""
+        item.color = (1.0, 1.0, 1.0)  # Default white
         return item
+
+    def import_mappings(self, filepath):
+        with open(filepath, "r") as f:
+            mappings = json.load(f)
+
+        for style_id, mapping in mappings.items():
+            material = self.get_material_mapping(mapping["name"])
+            if material:
+                material.style_id = style_id
+                material.category = mapping["category"]
+                material.subcategory = mapping["subcategory"]
+                material.is_mapped = True
+            else:
+                new_material = self.add_material_mapping(style_id, mapping["name"])
+                new_material.category = mapping["category"]
+                new_material.subcategory = mapping["subcategory"]
+                new_material.is_mapped = True
 
     def get_material_mapping(self, style_name):
         return next((item for item in self.materials if item.name == style_name), None)
@@ -213,12 +238,6 @@ class RadianceExporterProperties(PropertyGroup):
             item.subcategory = ""
             item.is_mapped = False
 
-    use_json_file: BoolProperty(
-        name="Upload JSON",
-        description="Toggle between uploading a JSON file and using in-UI material mapping",
-        default=False,
-    )
-
     is_exporting: bpy.props.BoolProperty(
         name="Is Exporting", description="Whether the OBJ export is in progress", default=False
     )
@@ -237,6 +256,7 @@ class RadianceExporterProperties(PropertyGroup):
         ("Plant", "Plant", ""),
         ("Exterior", "Exterior", ""),
         ("Color Swatch", "Color Swatch", ""),
+        ("Glass", "Glass", ""),
     ]
 
     def update_material_mapping(self, context):
@@ -269,14 +289,13 @@ class RadianceExporterProperties(PropertyGroup):
     should_load_from_memory: BoolProperty(
         name="Load from Memory",
         default=False,
-        description="Use IFC file currently loaded in Bonsai",
     )
 
     radiance_resolution_x: IntProperty(
-        name="X", description="Horizontal resolution of the output image", default=1920, min=1
+        name="X", description="Horizontal resolution of the output image", default=1920, min=1, update=update_resolution
     )
     radiance_resolution_y: IntProperty(
-        name="Y", description="Vertical resolution of the output image", default=1080, min=1
+        name="Y", description="Vertical resolution of the output image", default=1080, min=1, update=update_resolution
     )
     output_dir: StringProperty(
         name="Output Directory",
@@ -291,13 +310,6 @@ class RadianceExporterProperties(PropertyGroup):
         default="",
         subtype="FILE_PATH",
         update=lambda self, context: self.update_ifc_file(context),
-    )
-    json_file: StringProperty(
-        name="JSON File",
-        description="Path to the JSON file",
-        default="",
-        subtype="FILE_PATH",
-        update=lambda self, context: self.update_json_file(context),
     )
 
     radiance_quality: EnumProperty(
@@ -350,6 +362,17 @@ class RadianceExporterProperties(PropertyGroup):
         default="Noon",
     )
 
+    use_active_camera: BoolProperty(
+        name="Use Active Camera", description="Use the active camera in the scene", default=True
+    )
+
+    selected_camera: PointerProperty(
+        type=bpy.types.Object,
+        name="Camera",
+        description="Select a camera to use for rendering",
+        poll=lambda self, object: object.type == "CAMERA",
+    )
+
 
 class BIMSolarProperties(PropertyGroup):
     sites: EnumProperty(items=get_sites, name="Sites")
@@ -364,6 +387,9 @@ class BIMSolarProperties(PropertyGroup):
     sun_position: FloatVectorProperty(name="Sun Position", subtype="XYZ", default=(0, 0, 0))
     sun_path_origin: FloatVectorProperty(name="Sun Path Origin", subtype="XYZ", default=(0, 0, 0))
     sun_path_size: FloatProperty(name="Sun Path Size", min=0.1, default=50, update=update_sun_path_size)
+    azimuth: FloatProperty(name="Azimuth")
+    elevation: FloatProperty(name="Elevation")
+    UTC_zone: FloatProperty(name="UTC Zone")
     display_shadows: BoolProperty(
         name="Display Shadows",
         default=False,
