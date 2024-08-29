@@ -1770,7 +1770,10 @@ class ReloadDrawingStyles(bpy.types.Operator):
             drawing_style.raster_style = json.dumps(style_data["raster_style"])
 
         if current_style is not None:
-            camera_props.active_drawing_style_index = styles.index(current_style)
+            try:
+                camera_props.active_drawing_style_index = styles.index(current_style)
+            except ValueError:
+                self.report({"INFO"}, f"Could not find style {current_style} in EPset_Drawing.ShadingStyles.")
 
         return {"FINISHED"}
 
