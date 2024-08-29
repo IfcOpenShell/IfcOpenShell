@@ -773,6 +773,25 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 					Py_INCREF(Py_None);
 					return static_cast<PyObject*>(Py_None); 
 				}
+			} else if constexpr (std::is_same_v<U, IfcUtil::IfcBaseClass*>) {
+				return get_info_cpp(v);
+			} else if constexpr (std::is_same_v<U, aggregate_of_instance::ptr>) {
+				auto r = PyTuple_New(v->size());
+				for (unsigned i = 0; i < v->size(); ++i) {
+					PyTuple_SetItem(r, i, get_info_cpp((*v)[i]));
+				}
+				return r;
+			} else if constexpr (std::is_same_v<U, aggregate_of_aggregate_of_instance::ptr>) {
+				auto rs = PyTuple_New(v->size());
+				for (auto it = v->begin(); it != v->end(); ++it) {
+					auto v_i = it;
+					auto r = PyTuple_New(v_i->size());
+					for (unsigned i = 0; i < v_i->size(); ++i) {
+						PyTuple_SetItem(r, i, get_info_cpp((*v_i)[i]));
+					}
+					PyTuple_SetItem(rs, std::distance(v->begin(), it), r);
+				}
+				return rs;
             } else if constexpr (std::is_same_v<U, empty_aggregate_t> || std::is_same_v<U, empty_aggregate_of_aggregate_t> || std::is_same_v<U, Blank>) {
                 Py_INCREF(Py_None);
 				return static_cast<PyObject*>(Py_None); 
