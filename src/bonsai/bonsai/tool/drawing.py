@@ -1875,7 +1875,7 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def get_elements_in_camera_view(
-        cls, camera: bpy.types.Object, objs: list[ifcopenshell.entity_instance]
+        cls, camera: bpy.types.Object, objs: list[bpy.types.Object]
     ) -> set[ifcopenshell.entity_instance]:
         props = camera.data.BIMCameraProperties
         x = props.width
@@ -1886,7 +1886,8 @@ class Drawing(bonsai.core.tool.Drawing):
             [
                 tool.Ifc.get_entity(o)
                 for o in objs
-                if cls.is_in_camera_view(o, camera_inverse_matrix, x, y, camera.data.clip_start, camera.data.clip_end)
+                if o
+                and cls.is_in_camera_view(o, camera_inverse_matrix, x, y, camera.data.clip_start, camera.data.clip_end)
                 and tool.Ifc.get_entity(o)
             ]
         )
