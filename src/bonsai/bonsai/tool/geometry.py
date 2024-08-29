@@ -582,6 +582,7 @@ class Geometry(bonsai.core.tool.Geometry):
         settings = ifcopenshell.geom.settings()
         settings.set("weld-vertices", True)
         settings.set("apply-default-materials", False)
+        settings.set("layerset-first", True)
         settings.set("keep-bounding-boxes", True)
         context = representation.ContextOfItems
 
