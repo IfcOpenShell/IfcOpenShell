@@ -247,10 +247,17 @@ class ToggleContainerElement(bpy.types.Operator):
     bl_idname = "bim.toggle_container_element"
     bl_label = "Toggle Container Element"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Toggle children\nALT+CLICK to recursively toggle children"
     element_index: bpy.props.IntProperty()
+    is_recursive: bpy.props.BoolProperty(name="Is Recursive", default=False, options={"SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        if event.type == "LEFTMOUSE" and event.alt:
+            self.is_recursive = True
+        return self.execute(context)
 
     def execute(self, context):
-        core.toggle_container_element(tool.Spatial, element_index=self.element_index)
+        core.toggle_container_element(tool.Spatial, element_index=self.element_index, is_recursive=self.is_recursive)
         return {"FINISHED"}
 
 
