@@ -85,32 +85,39 @@ class Cad:
         return math.degrees(a) if degrees else a
 
     @classmethod
-    def angle_3_vectors(cls, v1, v2, v3, degrees=False):
+    def angle_3_vectors(cls, v1, v2, v3, new_angle=None, degrees=False):
         """
         > takes 3 vectors. The order matters, v2 is the center point.
         < returns the signed angle as degrees or radians
+        < if a new angle is provided, return the rotation vector
         """
         d1 = v1 - v2
         d2 = v3 - v2
 
-        axis = d1.cross(d2)
-        print(axis)
-        print(round(axis.z, 2))
-        axis.normalize()
+        d1.normalize()
+        d2.normalize()
+
+        axis = d1.cross(d2).normalized()
 
         # Calculate the unsigned angle between the "d1" and "d2" vectors
         a = d1.angle(d2)
 
 
         # Determine the sign of the angle based on the provided axis
+        # If new_angle, determine the direction of the rotation
         parameter = round(axis.z, 2) < 0 or (round(axis.y, 2) == 0 and round(axis.x < 0)) or (round(axis.x, 2) == 0 and round(axis.y < 0))
-        sign = -1 if parameter else 1
-
-        if degrees:
-            a = math.degrees(a)
-            return a * sign
+        if new_angle:
+            rot_mat = Matrix.Rotation(new_angle, 3, axis)
+            rot_vector = (d1 @ rot_mat) if parameter else (rot_mat @ d1)
+            return rot_vector
         else:
-            return a
+            sign = -1 if parameter else 1
+
+            if degrees:
+                a = math.degrees(a)
+                return a * sign
+            else:
+                return a
 
     @classmethod
     def is_x(cls, value: float, x: float, tolerance: float | None = None) -> bool:
