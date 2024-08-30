@@ -386,9 +386,15 @@ class PolylineDecorator:
             last_point = Vector((0, 0, 0))
 
         if is_input_on:
-            snap_vector = Vector(
-                (float(cls.input_panel["X"]), float(cls.input_panel["Y"]), default_container_elevation)
-            )
+            if cls.use_default_container:
+                print("FOI")
+                snap_vector = Vector(
+                    (float(cls.input_panel["X"]), float(cls.input_panel["Y"]), default_container_elevation)
+                )
+            else:
+                snap_vector = Vector(
+                    (float(cls.input_panel["X"]), float(cls.input_panel["Y"]), float(cls.input_panel["Z"]))
+                )
         else:
             if cls.use_default_container:
                 snap_vector = Vector((snap_prop.x, snap_prop.y, default_container_elevation))
@@ -404,7 +410,7 @@ class PolylineDecorator:
         else:
             # Creates a fake "second to last" point away from the first point but in the same x axis
             # this allows to calculate the angle relative to x axis when there is only one point
-            second_to_last_point = Vector((last_point.x - 1000, last_point.y, last_point.z))
+            second_to_last_point = Vector((last_point.x + 1000, last_point.y, last_point.z))
 
         distance = (snap_vector - last_point).length
         if distance > 0:
@@ -475,7 +481,7 @@ class PolylineDecorator:
         snap_prop = context.scene.BIMModelProperties.snap_mouse_point[0]
         snap_vector = Vector((snap_prop.x, snap_prop.y, snap_prop.z))
         last_point = Vector((last_point_data.x, last_point_data.y, last_point_data.z))
-        second_to_last_point = None
+
         if len(polyline_data) > 1:
             second_to_last_point_data = polyline_data[len(polyline_data) - 2]
             second_to_last_point = Vector(
@@ -484,23 +490,27 @@ class PolylineDecorator:
         else:
             # Creates a fake "second to last" point away from the first point but in the same x axis
             # this allows to calculate the angle relative to x axis when there is only one point
-            second_to_last_point = Vector((last_point.x - 10, last_point.y, last_point.z))
+            second_to_last_point = Vector((last_point.x + 1000, last_point.y, last_point.z))
 
         distance = float(cls.input_panel["D"])
 
         if distance < 0 or distance > 0:
-            angle_rad = radians(180 - float(cls.input_panel["A"]))
-            ref_vec = second_to_last_point - last_point
-            dir_vec = last_point - snap_vector
+            new_angle = radians(float(cls.input_panel["A"]))
+            print(cls.input_panel["A"])
+            # new_angle = radians(30)
+            v1 = second_to_last_point - last_point
+            v2 = last_point - snap_vector
+            
+            # Calculate the axis of rotation
+            axis = v1.cross(v2).normalized()
 
-            rot_axis = ref_vec.cross(dir_vec)
-            rot_axis.normalize()
-            rot_axis = Vector((abs(rot_axis.x), abs(rot_axis.y), abs(rot_axis.z)))
 
-            rot_mat = Matrix.Rotation(angle_rad, 3, rot_axis)
-
-            ref_vec.normalize()
-            coords = ((ref_vec @ rot_mat) * distance) + last_point
+            # Calculate the rotated vector
+            # rotated_vector = v2 * math.cos(new_angle) + axis * math.sin(new_angle) * v1.length + v1 * (1 - math.cos(new_angle)) * (dot_product / v1.length**2)
+            # dir_vec = snap_vector - last_point
+            # coords = dir_vec.normalized() * distance + last_point
+            rot_mat = Matrix.Rotation(new_angle, 3, axis)
+            coords = (v1.normalized() @ rot_mat) * distance + last_point
 
             x = coords[0]
             y = coords[1]
@@ -511,6 +521,7 @@ class PolylineDecorator:
                 if "Z" in list(cls.input_panel.keys()):
                     cls.input_panel["Z"] = str(round(z, 3))
 
+                print(cls.input_panel)
                 return cls.input_panel
 
         return cls.input_panel
