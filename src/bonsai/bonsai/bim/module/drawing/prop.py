@@ -395,6 +395,11 @@ class BIMCameraProperties(PropertyGroup):
         default="NONE",
         name="Fill Mode",
     )
+    cut_mode: EnumProperty(
+        items=[("BISECT", "Bisect", ""), ("OPENCASCADE", "OpenCASCADE", "")],
+        default="BISECT",
+        name="Cut Mode",
+    )
     has_underlay: BoolProperty(name="Underlay", default=False, update=update_has_underlay)
     has_linework: BoolProperty(name="Linework", default=True, update=update_has_linework)
     has_annotation: BoolProperty(name="Annotation", default=True, update=update_has_annotation)

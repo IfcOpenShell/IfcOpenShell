@@ -66,6 +66,7 @@ class BIM_PT_camera(Panel):
         row = self.layout.row()
         row.prop(props, "fill_mode")
         row = self.layout.row()
+        row.prop(props, "cut_mode")
 
         row = self.layout.row()
         row.prop(props, "width")

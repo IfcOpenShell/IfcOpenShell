@@ -265,8 +265,13 @@ class CreateDrawing(bpy.types.Operator):
                     underlay_svg = self.generate_underlay(context)
 
                 with profile("Generate linework"):
+                    self.projection_mode = "FREESTYLE"
+                    self.projection_mode = "OPENCASCADE"
                     if tool.Drawing.is_camera_orthographic():
-                        linework_svg = self.generate_linework(context)
+                        if self.projection_mode == "OPENCASCADE":
+                            linework_svg = self.generate_linework(context)
+                        elif self.projection_mode == "FREESTYLE":
+                            pass
 
                 with profile("Generate annotation"):
                     if tool.Drawing.is_camera_orthographic():
@@ -543,6 +548,44 @@ class CreateDrawing(bpy.types.Operator):
             self.file.createIfcDirection(forward.tolist()),
         )
 
+    def generate_bisect_linework(self, context: bpy.types.Context, root):
+        camera_matrix_i = context.scene.camera.matrix_world.inverted()
+
+        group = root.find("{http://www.w3.org/2000/svg}g")
+        raw_width, raw_height = self.get_camera_dimensions()
+        x_offset = raw_width / 2
+        y_offset = raw_height / 2
+        svg_scale = self.scale * 1000  # IFC is in meters, SVG is in mm
+
+        for obj in context.visible_objects:
+            if obj.type != "MESH":
+                continue
+            if not (element := tool.Ifc.get_entity(obj)):
+                continue
+            if not tool.Drawing.is_intersecting_camera(obj, context.scene.camera):
+                continue
+            verts, edges = tool.Drawing.bisect_mesh(obj, context.scene.camera)
+
+            g = etree.SubElement(root, "{http://www.w3.org/2000/svg}g")
+            g.attrib["{http://www.ifcopenshell.org/ns}guid"] = element.GlobalId
+            g.attrib["{http://www.ifcopenshell.org/ns}name"] = element.Name or ""
+
+            lines = []
+            for edge in edges:
+                start = [round(o, 5) for o in (camera_matrix_i @ Vector(verts[edge[0]])).xy]
+                end = [round(o, 5) for o in (camera_matrix_i @ Vector(verts[edge[1]])).xy]
+                coords = [start, end]
+                d = " ".join(
+                    [
+                        "L{},{}".format((x_offset + p[0]) * svg_scale, (y_offset - p[1]) * svg_scale)
+                        for p in coords
+                    ]
+                )
+                d = "M{}".format(d[1:])
+                path = etree.SubElement(g, "{http://www.w3.org/2000/svg}path")
+                path.attrib["d"] = d
+            group.append(g)
+
     def generate_linework(self, context: bpy.types.Context) -> Union[str, None]:
         if not ifcopenshell.util.element.get_pset(self.drawing, "EPset_Drawing", "HasLinework"):
             return
@@ -629,8 +672,13 @@ class CreateDrawing(bpy.types.Operator):
 
             return svg_path
 
-        self.move_projection_to_bottom(root)
-        self.merge_linework_and_add_metadata(root)
+        if self.camera.data.BIMCameraProperties.cut_mode == "BISECT":
+            self.remove_cut_linework(root)
+            self.generate_bisect_linework(context, root)
+            self.merge_linework_and_add_metadata(root)
+        elif self.camera.data.BIMCameraProperties.cut_mode == "OPENCASCADE":
+            self.move_projection_to_bottom(root)
+            self.merge_linework_and_add_metadata(root)
 
         if self.camera.data.BIMCameraProperties.fill_mode == "SHAPELY":
             # shapely variant
@@ -1006,6 +1054,11 @@ class CreateDrawing(bpy.types.Operator):
                     return IfcStore.session_files[link.name].by_guid(guid)
                 except:
                     continue
+
+    def remove_cut_linework(self, root):
+        for el in root.findall(".//{http://www.w3.org/2000/svg}g[@{http://www.ifcopenshell.org/ns}guid]"):
+            if "projection" not in el.get("class", "").split():
+                el.getparent().remove(el)
 
     def merge_linework_and_add_metadata(self, root):
         join_criteria = ifcopenshell.util.element.get_pset(self.camera_element, "EPset_Drawing", "JoinCriteria")
