@@ -387,7 +387,6 @@ class PolylineDecorator:
 
         if is_input_on:
             if cls.use_default_container:
-                print("FOI")
                 snap_vector = Vector(
                     (float(cls.input_panel["X"]), float(cls.input_panel["Y"]), default_container_elevation)
                 )
@@ -414,7 +413,7 @@ class PolylineDecorator:
 
         distance = (snap_vector - last_point).length
         if distance > 0:
-            angle = tool.Cad.angle_3_vectors(snap_vector, last_point, second_to_last_point, degrees=True)
+            angle = tool.Cad.angle_3_vectors(second_to_last_point, last_point, snap_vector, degrees=True)
             if cls.input_panel:
                 cls.input_panel["X"] = str(round(snap_vector.x, 3))
                 cls.input_panel["Y"] = str(round(snap_vector.y, 3))
@@ -495,22 +494,24 @@ class PolylineDecorator:
         distance = float(cls.input_panel["D"])
 
         if distance < 0 or distance > 0:
-            new_angle = radians(float(cls.input_panel["A"]))
-            print(cls.input_panel["A"])
-            # new_angle = radians(30)
+            angle = radians(float(cls.input_panel["A"]))
+
+            # TODO This is basically the reverse process of tool.Cad.angle_3_vectors
+            # Combine them into a single function
             v1 = second_to_last_point - last_point
-            v2 = last_point - snap_vector
+            v2 = snap_vector - last_point
+
+            v1.normalize()
+            v2.normalize()
             
             # Calculate the axis of rotation
             axis = v1.cross(v2).normalized()
+            rot_mat = Matrix.Rotation(angle, 3, axis)
+            parameter = round(axis.z, 2) < 0 or (round(axis.y, 2) == 0 and round(axis.x < 0)) or (round(axis.x, 2) == 0 and round(axis.y < 0))
 
+            rot_vector = (v1 @ rot_mat) if parameter else (rot_mat @ v1)
 
-            # Calculate the rotated vector
-            # rotated_vector = v2 * math.cos(new_angle) + axis * math.sin(new_angle) * v1.length + v1 * (1 - math.cos(new_angle)) * (dot_product / v1.length**2)
-            # dir_vec = snap_vector - last_point
-            # coords = dir_vec.normalized() * distance + last_point
-            rot_mat = Matrix.Rotation(new_angle, 3, axis)
-            coords = (v1.normalized() @ rot_mat) * distance + last_point
+            coords = rot_vector * distance + last_point
 
             x = coords[0]
             y = coords[1]
@@ -521,7 +522,6 @@ class PolylineDecorator:
                 if "Z" in list(cls.input_panel.keys()):
                     cls.input_panel["Z"] = str(round(z, 3))
 
-                print(cls.input_panel)
                 return cls.input_panel
 
         return cls.input_panel

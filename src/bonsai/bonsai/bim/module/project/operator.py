@@ -2327,7 +2327,7 @@ class MeasureTool(bpy.types.Operator):
         self.number_is_negative = False
         self.is_input_on = False
         self.input_options = ["D", "A", "X", "Y", "Z"]
-        self.input_type = "OFF"
+        self.input_type = None
         self.input_value_xy = [None, None]
         self.input_panel = {"D": "", "A": "", "X": "", "Y": "", "Z": ""}
         self.snap_angle = None
@@ -2352,11 +2352,8 @@ class MeasureTool(bpy.types.Operator):
                 if self.input_type in {"X", "Y", "Z"}:
                     self.input_panel = PolylineDecorator.calculate_distance_and_angle(context, self.is_input_on)
                 elif self.input_type in {"D", "A"}:
-                    print("!")
                     self.input_panel = PolylineDecorator.calculate_x_y_and_z(context)
-                    print("!", self.input_panel)
-                    self.input_panel = PolylineDecorator.calculate_distance_and_angle(context, self.is_input_on)
-                    print("!2", self.input_panel)
+                    # self.input_panel = PolylineDecorator.calculate_distance_and_angle(context, self.is_input_on)
                 else:
                     self.input_panel[self.input_type] = self.number_output
             tool.Blender.update_viewport()
@@ -2368,7 +2365,7 @@ class MeasureTool(bpy.types.Operator):
             if event.type == "MOUSEMOVE" or event.type == "INBETWEEN_MOUSEMOVE":
                 self.mousemove_count += 1
                 self.is_input_on = False
-                self.input_type = "OFF"
+                self.input_type = None
                 PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
                 tool.Snap.clear_snapping_ref()
                 tool.Blender.update_viewport()
@@ -2492,7 +2489,7 @@ class MeasureTool(bpy.types.Operator):
             if is_valid:
                 tool.Snap.insert_polyline_point(self.input_panel)
             self.is_input_on = False
-            self.input_type = "OFF"
+            self.input_type = None
             self.number_input = []
             self.number_output = ""
             PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
@@ -2532,7 +2529,7 @@ class MeasureTool(bpy.types.Operator):
             if event.value == "RELEASE" and event.type in {"ESC"}:
                 self.recalculate_inputs(context)
                 self.is_input_on = False
-                self.input_type = "OFF"
+                self.input_type = None
                 PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
                 tool.Blender.update_viewport()
         else:
