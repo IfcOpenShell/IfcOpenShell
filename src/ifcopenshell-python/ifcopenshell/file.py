@@ -24,10 +24,13 @@ import zipfile
 import functools
 import ifcopenshell
 from pathlib import Path
-from typing import Optional, Any, Union, Callable, Generator, Literal
+from typing import Optional, Any, Union, Callable, Generator, Literal, TYPE_CHECKING
 
 from . import ifcopenshell_wrapper
 from .entity_instance import entity_instance
+
+if TYPE_CHECKING:
+    import ifcopenshell.util.schema
 
 
 class Transaction:
@@ -406,7 +409,7 @@ class file:
         return e
 
     @property
-    def schema(self) -> Literal["IFC2X3", "IFC4", "IFC4X3"]:
+    def schema(self) -> ifcopenshell.util.schema.IFC_SCHEMA:
         """General IFC schema version: IFC2X3, IFC4, IFC4X3."""
         prefixes = ("IFC", "X", "_ADD", "_TC")
         reg = "".join(f"(?P<{s}>{s}\\d+)?" for s in prefixes)

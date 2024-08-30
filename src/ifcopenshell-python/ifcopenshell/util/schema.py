@@ -22,11 +22,12 @@ import time
 import ifcopenshell
 import ifcopenshell.util.attribute
 import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
-from typing import Union, Any
+from typing import Union, Any, Literal
 
 # This is highly experimental and incomplete, however, it may work for simple datasets.
 
 cwd = os.path.dirname(os.path.realpath(__file__))
+IFC_SCHEMA = Literal["IFC2X3", "IFC4", "IFC4X3"]
 
 
 def get_fallback_schema(version: str) -> str:

@@ -23,8 +23,8 @@ from typing import List
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 
-entity_to_type_map = {}
-type_to_entity_map = {}
+entity_to_type_map: dict[ifcopenshell.util.schema.IFC_SCHEMA, dict[str, list[str]]] = {}
+type_to_entity_map: dict[ifcopenshell.util.schema.IFC_SCHEMA, dict[str, list[str]]] = {}
 
 mapped_schemas = {
     "IFC2X3": "entity_to_type_map_2x3.json",

@@ -28,7 +28,7 @@ class Patcher:
         src: str,
         file: ifcopenshell.file,
         logger: Logger,
-        schema: typing.Literal["IFC2X3", "IFC4", "IFC4X3"] = "IFC4",
+        schema: ifcopenshell.util.schema.IFC_SCHEMA = "IFC4",
     ):
         """Migrate from one IFC version to another
 
