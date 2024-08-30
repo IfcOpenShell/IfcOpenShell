@@ -64,9 +64,8 @@ class BIM_PT_camera(Panel):
         row.prop(dprops, "should_use_annotation_cache", text="", icon="FILE_REFRESH")
 
         row = self.layout.row()
-        row.prop(props, "calculate_shapely_surfaces")
+        row.prop(props, "fill_mode")
         row = self.layout.row()
-        row.prop(props, "calculate_svgfill_surfaces")
 
         row = self.layout.row()
         row.prop(props, "width")

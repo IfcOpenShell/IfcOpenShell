@@ -390,8 +390,11 @@ class DocProperties(PropertyGroup):
 
 
 class BIMCameraProperties(PropertyGroup):
-    calculate_shapely_surfaces: BoolProperty(name="Calculate Shapely Surfaces", default=False)
-    calculate_svgfill_surfaces: BoolProperty(name="Calculate SVGFill Surfaces", default=False)
+    fill_mode: EnumProperty(
+        items=[("NONE", "None", ""), ("SHAPELY", "Shapely", ""), ("SVGFILL", "SVGFill", "")],
+        default="NONE",
+        name="Fill Mode",
+    )
     has_underlay: BoolProperty(name="Underlay", default=False, update=update_has_underlay)
     has_linework: BoolProperty(name="Linework", default=True, update=update_has_linework)
     has_annotation: BoolProperty(name="Annotation", default=True, update=update_has_annotation)
