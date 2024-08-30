@@ -17,7 +17,6 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-import re
 import bpy
 import json
 import time
@@ -43,8 +42,6 @@ import bonsai.core.drawing as core
 import bonsai.bim.module.drawing.svgwriter as svgwriter
 import bonsai.bim.module.drawing.annotation as annotation
 import bonsai.bim.module.drawing.sheeter as sheeter
-import bonsai.bim.module.drawing.scheduler as scheduler
-import bonsai.bim.module.drawing.helper as helper
 import bonsai.bim.export_ifc
 from bonsai.bim.module.drawing.decoration import CutDecorator
 from bonsai.bim.module.drawing.data import DecoratorData, DrawingsData
@@ -635,7 +632,7 @@ class CreateDrawing(bpy.types.Operator):
         self.move_projection_to_bottom(root)
         self.merge_linework_and_add_metadata(root)
 
-        if self.camera.data.BIMCameraProperties.calculate_shapely_surfaces:
+        if self.camera.data.BIMCameraProperties.fill_mode == "SHAPELY":
             # shapely variant
             group = root.find("{http://www.w3.org/2000/svg}g")
             nm = group.attrib["{http://www.ifcopenshell.org/ns}name"]
@@ -720,7 +717,7 @@ class CreateDrawing(bpy.types.Operator):
                             path.set("class", " ".join(list(classes)))
                             group.insert(0, path)
 
-        if self.camera.data.BIMCameraProperties.calculate_svgfill_surfaces:
+        if self.camera.data.BIMCameraProperties.fill_mode == "SVGFILL":
             results = etree.tostring(root).decode("utf8")
             svg_data_1 = results
             from xml.dom.minidom import parseString
