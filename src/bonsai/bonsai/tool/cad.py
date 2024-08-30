@@ -91,25 +91,21 @@ class Cad:
         < returns the potentially signed angle as degrees or radians
         """
         d1 = v1 - v2
-        d2 = v2 - v3
+        d2 = v3 - v2
 
         axis = d1.cross(d2)
         axis.normalize()
-        axis = Vector((abs(axis.x), abs(axis.y), abs(axis.z)))
 
-        rotation_axis = d1.cross(d2)
-
-        # Calculate the unsigned angle between the "from" and "to" vectors
+        # Calculate the unsigned angle between the "d1" and "d2" vectors
         a = d1.angle(d2)
 
+
         # Determine the sign of the angle based on the provided axis
+        parameter = axis.z < 0
+        sign = -1 if parameter <= 0 else 1
+
         if degrees:
             a = math.degrees(a)
-
-            parameter = rotation_axis.dot(axis)
-
-            sign = 1 if parameter <= 0 else -1
-
             return a * sign
         else:
             return a
