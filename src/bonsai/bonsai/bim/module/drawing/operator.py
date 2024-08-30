@@ -572,8 +572,8 @@ class CreateDrawing(bpy.types.Operator):
 
             lines = []
             for edge in edges:
-                start = [round(o, 5) for o in (camera_matrix_i @ Vector(verts[edge[0]])).xy]
-                end = [round(o, 5) for o in (camera_matrix_i @ Vector(verts[edge[1]])).xy]
+                start = [o for o in (camera_matrix_i @ Vector(verts[edge[0]])).xy]
+                end = [o for o in (camera_matrix_i @ Vector(verts[edge[1]])).xy]
                 coords = [start, end]
                 d = " ".join(
                     [
@@ -1035,6 +1035,7 @@ class CreateDrawing(bpy.types.Operator):
 
         bm = bmesh.new()
         bm.from_mesh(obj.data)
+        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.000001)
         for edge in bm.edges:
             if not edge.is_manifold:
                 bm.free()
