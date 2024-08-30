@@ -1124,10 +1124,34 @@ class CreateDrawing(bpy.types.Operator):
             if results:
                 for path in old_paths:
                     path.getparent().remove(path)
+
+            # polygonize_full will create polygons for everything, including
+            # interior "holes". As a result we do two passes. The first pass
+            # records polygon interior rings. The second pass uses this to
+            # check if the exterior ring matches an interior ring. If it does,
+            # it's a hole. Skip it!
+
+            interior_hashes = set()
             for result in results:
                 for geom in result.geoms:
-                    path = etree.SubElement(el, "{http://www.w3.org/2000/svg}path")
                     if isinstance(geom, shapely.Polygon):
+                        for interior in geom.interiors:
+                            # Sorted because coordinate ordering may differ,
+                            # and frozenset because shapely sometimes emits
+                            # duplicate coordinates.
+                            interior_hashes.add(hash(frozenset(sorted(interior.coords))))
+                    elif isinstance(geom, shapely.LineString):
+                        path = etree.SubElement(el, "{http://www.w3.org/2000/svg}path")
+                        d = "M" + " L".join([",".join([str(o) for o in co]) for co in geom.coords]) + " Z"
+                        path.attrib["d"] = d
+
+            for result in results:
+                for geom in result.geoms:
+                    if isinstance(geom, shapely.Polygon):
+                        path = etree.SubElement(el, "{http://www.w3.org/2000/svg}path")
+                        if hash(frozenset(sorted(geom.exterior.coords))) in interior_hashes:
+                            # This is a "hole", as its exterior perfectly matches an interior.
+                            continue
                         d = (
                             "M"
                             + " L".join([",".join([str(o) for o in co]) for co in geom.exterior.coords[0:-1]])
@@ -1139,9 +1163,8 @@ class CreateDrawing(bpy.types.Operator):
                                 + " L".join([",".join([str(o) for o in co]) for co in interior.coords[0:-1]])
                                 + " Z"
                             )
-                    elif isinstance(geom, shapely.LineString):
-                        d = "M" + " L".join([",".join([str(o) for o in co]) for co in geom.coords]) + " Z"
-                    path.attrib["d"] = d
+                        path.attrib["d"] = d
+
 
             # Architectural convention only merges these objects. E.g. pipe segments and fittings shouldn't merge.
             if not element.is_a("IfcWall") and not element.is_a("IfcSlab"):
