@@ -32,7 +32,6 @@ from typing import Union, Optional, Sequence
 import json
 import math
 import time
-import sun_position
 import ifcopenshell
 import webbrowser
 import ifcopenshell.geom
@@ -198,6 +197,7 @@ class RadianceRender(bpy.types.Operator):
         print(f"Camera position: {camera_position}")
         print(f"Camera direction: {camera_direction}")
 
+        # sun_position = tool.Blender.get_sun_position_addon()
         #     azimuth, elevation = sun_position.sun_calc.get_sun_coordinates(
         #     sun_pos_props.time,
         #     sun_pos_props.latitude,
