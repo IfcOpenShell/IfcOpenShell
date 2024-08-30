@@ -22,6 +22,7 @@ import numpy as np
 import ifcopenshell.api
 import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
 import ifcopenshell.util.element
+import ifcopenshell.util.schema
 import bonsai.core.tool
 import bonsai.bim.handler
 import bonsai.tool as tool
@@ -60,7 +61,7 @@ class Ifc(bonsai.core.tool.Ifc):
         return IfcStore.path
 
     @classmethod
-    def get_schema(cls) -> str:
+    def get_schema(cls) -> ifcopenshell.util.schema.IFC_SCHEMA:
         if IfcStore.get_file():
             return IfcStore.get_file().schema
 

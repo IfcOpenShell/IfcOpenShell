@@ -19,7 +19,6 @@
 import bpy
 import mathutils
 import numpy as np
-from functools import reduce
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.system
