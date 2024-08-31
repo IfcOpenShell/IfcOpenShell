@@ -186,7 +186,7 @@ class RadianceExporterProperties(PropertyGroup):
             self.ifc_file = bpy.path.abspath(self.ifc_file)
 
     def get_categories(self, context):
-        return [(k, k, "") for k in spectraldb.keys()]
+        return sorted([(k, k, "") for k in spectraldb.keys()])
 
     def add_material_mapping(self, style_id, style_name):
         item = self.materials.add()
@@ -276,7 +276,7 @@ class RadianceExporterProperties(PropertyGroup):
 
     def get_subcategories(self, context):
         if self.category in spectraldb:
-            return [(k, k, "") for k in spectraldb[self.category].keys()]
+            return sorted([(k, k, "") for k in spectraldb[self.category].keys()])
         return []
 
     subcategory: bpy.props.EnumProperty(
