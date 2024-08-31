@@ -489,7 +489,7 @@ if(COLLADA_SUPPORT)
     if("${OPENCOLLADA_LIBRARY_DIR}" STREQUAL "")
         message(STATUS "No OpenCOLLADA library directory specified")
         find_library(OPENCOLLADA_FRAMEWORK_LIB NAMES OpenCOLLADAFramework
-            PATHS /usr/lib64/opencollada /usr/lib/opencollada /usr/lib64 /usr/lib /usr/local/lib64 /usr/local/lib)
+            PATHS /usr/lib/opencollada /usr/lib64/opencollada /usr/lib64 /usr/lib /usr/local/lib64 /usr/local/lib)
         get_filename_component(OPENCOLLADA_LIBRARY_DIR ${OPENCOLLADA_FRAMEWORK_LIB} PATH)
     endif()
 
@@ -1085,7 +1085,7 @@ if(BUILD_CONVERT)
         # Only set RPATHs when building shared libraries (i.e. IfcParse and
         # IfcGeom are dynamically linked). Not necessarily a perfect solution
         # but probably a good indication of whether RPATHs are necessary.
-        SET_INSTALL_RPATHS(IfcConvert "${IFCOPENSHELL_LIBRARY_DIR};${OCC_LIBRARY_DIR};${Boost_LIBRARY_DIRS};${OPENCOLLADA_LIBRARY_DIR}")
+        SET_INSTALL_RPATHS(IfcConvert "${OCC_LIBRARY_DIR};${Boost_LIBRARY_DIRS};${OPENCOLLADA_LIBRARY_DIR}")
     endif()
 
     install(TARGETS IfcConvert
@@ -1115,7 +1115,7 @@ if(BUILD_GEOMSERVER)
     target_link_libraries(IfcGeomServer ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES})
 
     if((NOT WIN32) AND BUILD_SHARED_LIBS)
-        SET_INSTALL_RPATHS(IfcGeomServer "${IFCOPENSHELL_LIBRARY_DIR};${OCC_LIBRARY_DIR};${Boost_LIBRARY_DIRS}")
+        SET_INSTALL_RPATHS(IfcGeomServer "${OCC_LIBRARY_DIR};${Boost_LIBRARY_DIRS}")
     endif()
 
     install(TARGETS IfcGeomServer
