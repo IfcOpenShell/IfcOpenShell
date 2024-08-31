@@ -27,12 +27,11 @@ with open(os.path.join(os.path.dirname(__file__), "spectraldb.json"), "r") as f:
 
 class MATERIAL_UL_radiance_materials(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
-        if self.layout_type in {'DEFAULT', 'COMPACT'}:
+        if self.layout_type in {"DEFAULT", "COMPACT"}:
             row = layout.row(align=True)
-            
-            # Adding color preview or glass icon
+
             if item.category == "Glass":
-                row.label(icon='SHADING_TEXTURE')
+                row.label(icon="SHADING_TEXTURE")
             else:
                 color_rect = row.row()
                 color_rect.prop(item, "color", text="")

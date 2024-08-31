@@ -17,7 +17,6 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from bonsai.bim.helper import prop_with_search 
 import pytz
 import tzfpy
 import json
@@ -186,7 +185,8 @@ class RadianceExporterProperties(PropertyGroup):
         if self.ifc_file:
             self.ifc_file = bpy.path.abspath(self.ifc_file)
 
-    
+    def get_categories(self, context):
+        return [(k, k, "") for k in spectraldb.keys()]
 
     def add_material_mapping(self, style_id, style_name):
         item = self.materials.add()
@@ -271,7 +271,7 @@ class RadianceExporterProperties(PropertyGroup):
             print(f"Material '{active_material.name}' mapped to {self.category} - {self.subcategory}")
 
     category: bpy.props.EnumProperty(
-        items=categories, name="Category", description="Material category", update=update_material_mapping
+        items=get_categories, name="Category", description="Material category", update=update_material_mapping
     )
 
     def get_subcategories(self, context):
