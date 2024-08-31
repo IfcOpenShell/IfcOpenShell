@@ -599,6 +599,8 @@ class PolylineDecorator:
             blf.position(self.font_id, coords_dim[0], coords_dim[1], 0)
             blf.draw(self.font_id, "d: " + formatted_value)
 
+            if i == 1:
+                continue
             pos_angle = measurement_prop[i - 1].position
             coords_angle = view3d_utils.location_3d_to_region_2d(region, rv3d, pos_angle)
             blf.position(self.font_id, coords_angle[0], coords_angle[1], 0)
