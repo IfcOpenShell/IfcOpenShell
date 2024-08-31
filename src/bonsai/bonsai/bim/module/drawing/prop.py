@@ -390,13 +390,28 @@ class DocProperties(PropertyGroup):
 
 
 class BIMCameraProperties(PropertyGroup):
+    linework_mode: EnumProperty(
+        items=[
+            ("OPENCASCADE", "OpenCASCADE", "Slower, more accurate, with more features"),
+            ("FREESTYLE", "Freestyle", "Faster, less accurate, no fill support"),
+        ],
+        default="OPENCASCADE",
+        name="Linework Mode",
+    )
     fill_mode: EnumProperty(
-        items=[("NONE", "None", ""), ("SHAPELY", "Shapely", ""), ("SVGFILL", "SVGFill", "")],
+        items=[
+            ("NONE", "None", "Disable filling areas seen in projection"),
+            ("SHAPELY", "Shapely", "Recommended"),
+            ("SVGFILL", "SVGFill", "Experimental"),
+        ],
         default="NONE",
         name="Fill Mode",
     )
     cut_mode: EnumProperty(
-        items=[("BISECT", "Bisect", ""), ("OPENCASCADE", "OpenCASCADE", "")],
+        items=[
+            ("BISECT", "Bisect", "Faster, more forgiving to bad geometry"),
+            ("OPENCASCADE", "OpenCASCADE", "More technically correct"),
+        ],
         default="BISECT",
         name="Cut Mode",
     )

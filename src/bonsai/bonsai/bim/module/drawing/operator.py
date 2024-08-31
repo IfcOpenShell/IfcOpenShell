@@ -47,6 +47,7 @@ from bonsai.bim.module.drawing.decoration import CutDecorator
 from bonsai.bim.module.drawing.data import DecoratorData, DrawingsData
 from typing import NamedTuple, List, Union, Optional, Literal
 from lxml import etree
+from math import radians
 from mathutils import Vector, Color, Matrix
 from timeit import default_timer as timer
 from bonsai.bim.module.drawing.prop import RasterStyleProperty, RASTER_STYLE_PROPERTIES_EXCLUDE
@@ -254,6 +255,7 @@ class CreateDrawing(bpy.types.Operator):
                     self.svg_writer.camera_projection = tuple(
                         self.camera.matrix_world.to_quaternion() @ Vector((0, 0, -1))
                     )
+                    self.svg_writer.calculate_scale()
 
                     self.svg_writer.setup_drawing_resource_paths(self.camera_element)
 
@@ -265,13 +267,11 @@ class CreateDrawing(bpy.types.Operator):
                     underlay_svg = self.generate_underlay(context)
 
                 with profile("Generate linework"):
-                    self.projection_mode = "FREESTYLE"
-                    self.projection_mode = "OPENCASCADE"
                     if tool.Drawing.is_camera_orthographic():
-                        if self.projection_mode == "OPENCASCADE":
+                        if self.camera.data.BIMCameraProperties.linework_mode == "OPENCASCADE":
                             linework_svg = self.generate_linework(context)
-                        elif self.projection_mode == "FREESTYLE":
-                            pass
+                        elif self.camera.data.BIMCameraProperties.linework_mode == "FREESTYLE":
+                            linework_svg = self.generate_freestyle_linework(context)
 
                 with profile("Generate annotation"):
                     if tool.Drawing.is_camera_orthographic():
@@ -576,15 +576,127 @@ class CreateDrawing(bpy.types.Operator):
                 end = [o for o in (camera_matrix_i @ Vector(verts[edge[1]])).xy]
                 coords = [start, end]
                 d = " ".join(
-                    [
-                        "L{},{}".format((x_offset + p[0]) * svg_scale, (y_offset - p[1]) * svg_scale)
-                        for p in coords
-                    ]
+                    ["L{},{}".format((x_offset + p[0]) * svg_scale, (y_offset - p[1]) * svg_scale) for p in coords]
                 )
                 d = "M{}".format(d[1:])
                 path = etree.SubElement(g, "{http://www.w3.org/2000/svg}path")
                 path.attrib["d"] = d
             group.append(g)
+
+    def generate_freestyle_linework(self, context: bpy.types.Context) -> str | None:
+        if not ifcopenshell.util.element.get_pset(self.drawing, "EPset_Drawing", "HasLinework"):
+            return
+        svg_path = self.get_svg_path(cache_type="linework")
+        if os.path.isfile(svg_path) and self.props.should_use_linework_cache:
+            return svg_path
+
+        context.scene.render.engine = "BLENDER_WORKBENCH"
+        context.scene.render.use_freestyle = True
+        context.scene.svg_export.use_svg_export = True
+
+        linesets = context.view_layer.freestyle_settings.linesets
+        if len(linesets) == 1 and linesets[0].name == "LineSet":
+            context.view_layer.freestyle_settings.crease_angle = radians(140)
+            context.view_layer.freestyle_settings.use_culling = True
+            lineset = linesets[0]
+            lineset.edge_type_negation = "EXCLUSIVE"
+            lineset.select_silhouette = False
+            lineset.select_crease = False
+            lineset.select_border = False
+            lineset.select_edge_mark = False
+            lineset.select_contour = False
+            lineset.select_external_contour = False
+            lineset.select_material_boundary = False
+            lineset.select_suggestive_contour = True
+            lineset.select_ridge_valley = True
+
+        edge_mesh = bpy.data.meshes.new("Temp Merged Edges")
+        edge_obj = bpy.data.objects.new("Temp Merged Edges", edge_mesh)
+        context.scene.collection.objects.link(edge_obj)
+        edge_bm = bmesh.new()
+
+        visible_object_names = {obj.name for obj in bpy.context.visible_objects}
+        for obj in bpy.context.view_layer.objects:
+            is_visible = obj.name in visible_object_names
+            obj.hide_render = not is_visible
+            if (
+                is_visible
+                and obj.type == "MESH"
+                and len(obj.data.edges)
+                and not len(obj.data.polygons)
+                and not obj.name.startswith("IfcAnnotation")
+            ):
+                tmp_mesh = None
+                try:
+                    tmp_mesh = obj.data.copy()
+                    tmp_mesh.transform(obj.matrix_world)
+                    edge_bm.from_mesh(tmp_mesh)
+                finally:
+                    if tmp_mesh:
+                        bpy.data.meshes.remove(tmp_mesh)
+
+        ret = bmesh.ops.extrude_edge_only(edge_bm, edges=edge_bm.edges)
+        verts_extruded = [e for e in ret["geom"] if isinstance(e, bmesh.types.BMVert)]
+
+        cam_z = self.camera.matrix_world.to_3x3() @ self.camera.data.view_frame(scene=None)[-1].normalized()
+        cam_z *= 0.001
+
+        for v in verts_extruded:
+            v.co += cam_z
+
+        edge_bm.to_mesh(edge_mesh)
+        edge_bm.free()
+
+        actual_path = svg_path[0:-4] + "0001.svg"
+        context.scene.render.filepath = svg_path[0:-4]
+        bpy.ops.render.render(write_still=False)
+
+        os.rename(actual_path, svg_path)
+
+        bpy.data.objects.remove(edge_obj)
+        bpy.data.meshes.remove(edge_mesh)
+
+        context.scene.render.use_freestyle = False
+        context.scene.svg_export.use_svg_export = False
+
+        tree = etree.parse(svg_path)
+        root = tree.getroot()
+
+        freestyle_width = float(root.attrib["width"])
+        freestyle_height = float(root.attrib["height"])
+        svg_width = self.svg_writer.width
+        svg_height = self.svg_writer.height
+
+        group = root.find(".//{http://www.w3.org/2000/svg}g")
+        group.attrib["class"] = "projection"
+
+        # Resize Freestyle to our proper width / height and purge all other attributes
+        for path in root.findall(".//{http://www.w3.org/2000/svg}path"):
+            for key in path.attrib:
+                if key == "fill":
+                    continue
+                elif key != "d":
+                    del path.attrib[key]
+                    continue
+                d = path.attrib[key]
+                coords = d.strip().split()[1:]
+                new_d = "M"
+                for i in range(0, len(coords), 2):
+                    x = float(coords[i][:-1])
+                    y = float(coords[i + 1])
+                    x = x / freestyle_width * svg_width
+                    y = y / freestyle_height * svg_height
+                    new_d += f" {x},{y}"
+                path.attrib["d"] = new_d
+            pass
+
+        self.generate_bisect_linework(context, root)
+        self.merge_linework_and_add_metadata(root)
+
+        with open(svg_path, "wb") as svg:
+            svg.write(etree.tostring(root))
+
+        return svg_path
 
     def generate_linework(self, context: bpy.types.Context) -> Union[str, None]:
         if not ifcopenshell.util.element.get_pset(self.drawing, "EPset_Drawing", "HasLinework"):
@@ -930,7 +1042,6 @@ class CreateDrawing(bpy.types.Operator):
 
         group = root.findall(".//{http://www.w3.org/2000/svg}g")[0]
 
-        self.svg_writer.calculate_scale()
         x_offset = self.svg_writer.raw_width / 2
         y_offset = self.svg_writer.raw_height / 2
 
@@ -1164,7 +1275,6 @@ class CreateDrawing(bpy.types.Operator):
                                 + " Z"
                             )
                         path.attrib["d"] = d
-
 
             # Architectural convention only merges these objects. E.g. pipe segments and fittings shouldn't merge.
             if not element.is_a("IfcWall") and not element.is_a("IfcSlab"):
