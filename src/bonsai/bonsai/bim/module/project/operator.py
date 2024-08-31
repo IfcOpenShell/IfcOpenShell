@@ -1712,7 +1712,7 @@ class LoadLinkedProject(bpy.types.Operator):
         mesh.polygons.foreach_set("loop_total", loop_total)
         mesh.polygons.foreach_set("use_smooth", [0] * total_faces)
 
-        if material_ids.size > 0:
+        if material_ids.size > 0 and len(mesh.polygons) == len(material_ids):
             mesh.polygons.foreach_set("material_index", material_ids)
 
         mesh.update()
