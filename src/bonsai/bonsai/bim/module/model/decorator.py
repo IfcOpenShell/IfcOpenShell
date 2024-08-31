@@ -414,6 +414,10 @@ class PolylineDecorator:
         distance = (snap_vector - last_point).length
         if distance > 0:
             angle = tool.Cad.angle_3_vectors(second_to_last_point, last_point, snap_vector, new_angle=None, degrees=True)
+
+            # Round angle to the nearest 0.05
+            angle = round(angle / 0.05) * 0.05
+
             if cls.input_panel:
                 cls.input_panel["X"] = str(round(snap_vector.x, 3))
                 cls.input_panel["Y"] = str(round(snap_vector.y, 3))
