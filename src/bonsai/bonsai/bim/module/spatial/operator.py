@@ -78,14 +78,18 @@ class AssignContainer(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Assign Container"
     bl_description = "Assign current default container to the selected objects"
     bl_options = {"REGISTER", "UNDO"}
+    container: bpy.props.IntProperty(options={"SKIP_SAVE"})
 
     def _execute(self, context):
         props = context.active_object.BIMObjectSpatialProperties
-        if (container_obj := props.container_obj) and (container := tool.Ifc.get_entity(container_obj)):
-            for element_obj in context.selected_objects:
-                core.assign_container(
-                    tool.Ifc, tool.Collector, tool.Spatial, container=container, element_obj=element_obj
-                )
+        if self.container:
+            container = tool.Ifc.get().by_id(self.container)
+        elif (container_obj := props.container_obj) and (container := tool.Ifc.get_entity(container_obj)):
+            pass
+        for element_obj in context.selected_objects:
+            core.assign_container(
+                tool.Ifc, tool.Collector, tool.Spatial, container=container, element_obj=element_obj
+            )
 
 
 class EnableEditingContainer(bpy.types.Operator, tool.Ifc.Operator):
