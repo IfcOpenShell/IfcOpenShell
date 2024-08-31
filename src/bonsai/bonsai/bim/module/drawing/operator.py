@@ -272,6 +272,8 @@ class CreateDrawing(bpy.types.Operator):
                             linework_svg = self.generate_linework(context)
                         elif self.camera.data.BIMCameraProperties.linework_mode == "FREESTYLE":
                             linework_svg = self.generate_freestyle_linework(context)
+                    elif self.camera.data.BIMCameraProperties.linework_mode == "FREESTYLE":
+                        linework_svg = self.generate_freestyle_linework(context)
 
                 with profile("Generate annotation"):
                     if tool.Drawing.is_camera_orthographic():
@@ -651,7 +653,7 @@ class CreateDrawing(bpy.types.Operator):
         context.scene.render.filepath = svg_path[0:-4]
         bpy.ops.render.render(write_still=False)
 
-        os.rename(actual_path, svg_path)
+        os.replace(actual_path, svg_path)
 
         bpy.data.objects.remove(edge_obj)
         bpy.data.meshes.remove(edge_mesh)
@@ -1813,7 +1815,9 @@ class ActivateDrawing(bpy.types.Operator):
             if ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing", "HasUnderlay"):
                 bpy.ops.bim.reload_drawing_styles()
                 bpy.ops.bim.activate_drawing_style()
-            core.sync_references(tool.Ifc, tool.Collector, tool.Drawing, drawing=tool.Ifc.get().by_id(self.drawing))
+
+            if tool.Drawing.is_camera_orthographic():
+                core.sync_references(tool.Ifc, tool.Collector, tool.Drawing, drawing=tool.Ifc.get().by_id(self.drawing))
             CutDecorator.install(context)
             tool.Drawing.show_decorations()
 
