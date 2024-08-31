@@ -32,7 +32,6 @@ from typing import Union, Optional, Sequence
 import json
 import math
 import time
-import sun_position
 import ifcopenshell
 import webbrowser
 import ifcopenshell.geom
@@ -166,21 +165,6 @@ class RadianceRender(bpy.types.Operator):
         sun_props = context.scene.BIMSolarProperties
         sun_pos_props = context.scene.sun_pos_properties
         sky_file_path = os.path.join(output_dir, "sky.rad")
-        # latitude = sun_props.latitude
-        # longitude = sun_props.longitude
-        # month = sun_props.month
-        # day = sun_props.day
-        # hour = sun_props.hour
-        # minute = sun_props.minute
-
-        # print("Sun Properties:")
-        # print("Latitude: ", latitude)
-        # print("Longitude: ", longitude)
-        # print("Timezone: ", timezone)
-        # print("Month: ", month)
-        # print("Day: ", day)
-        # print("Hour: ", hour)
-        # print("Minute: ", minute)
 
         print("Setting up camera...")
         if props.use_active_camera:
@@ -198,15 +182,6 @@ class RadianceRender(bpy.types.Operator):
         print(f"Camera position: {camera_position}")
         print(f"Camera direction: {camera_direction}")
 
-        #     azimuth, elevation = sun_position.sun_calc.get_sun_coordinates(
-        #     sun_pos_props.time,
-        #     sun_pos_props.latitude,
-        #     sun_pos_props.longitude,
-        #     -sun_pos_props.UTC_zone,
-        #     sun_pos_props.month,
-        #     sun_pos_props.day,
-        #     sun_pos_props.year,
-        # )
 
         dt = datetime(sun_pos_props.year, sun_props.month, sun_props.day, sun_props.hour, sun_props.minute)
 
@@ -218,11 +193,11 @@ class RadianceRender(bpy.types.Operator):
             longitude=sun_props.longitude,
             year=sun_pos_props.year,
             timezone=-int(sun_props.UTC_zone),
-            # sunny_with_sun=False,
-            # sunny_without_sun=False,
-            # cloudy=False,
-            # ground_reflectance=0.2,
-            # turbidity=3.0,
+            sunny_with_sun=False,
+            sunny_without_sun=False,
+            cloudy=False,
+            ground_reflectance=0.2,
+            turbidity=3.0,
         )
 
         sky_description_str = sky_description.decode("utf-8")
@@ -565,28 +540,22 @@ class RefreshIFCMaterials(bpy.types.Operator):
                 if render_item.is_a("IfcSurfaceStyleRendering"):
                     style_id = f"IfcSurfaceStyleRendering-{render_item.id()}"
                     style_name = style.Name or f"Unnamed Style {render_item.id()}"
-
-                    # Extract color and transparency
+                    
+                    # Extract color
                     color = (1.0, 1.0, 1.0)  # Default white
-                    transparency = 0.0  # Default opaque
                     if render_item.SurfaceColour:
                         color = (
                             render_item.SurfaceColour.Red,
                             render_item.SurfaceColour.Green,
-                            render_item.SurfaceColour.Blue,
+                            render_item.SurfaceColour.Blue
                         )
-                    if hasattr(render_item, "Transparency") and render_item.Transparency is not None:
-                        transparency = render_item.Transparency
-
-                    # Add material with color
+                    
                     material = props.add_material_mapping(style_id, style_name)
                     material.color = color
-
-                    # If transparency is high, consider it as glass
-                    if transparency > 0.5:
-                        material.category = "Glass"
-                        material.subcategory = "Clear Glass"
-                        material.is_mapped = True
+                    
+                    material.category = ""
+                    material.subcategory = ""
+                    material.is_mapped = False
 
         props.active_material_index = 0 if props.materials else -1
 

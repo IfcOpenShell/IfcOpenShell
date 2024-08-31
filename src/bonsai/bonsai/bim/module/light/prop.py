@@ -17,6 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+from bonsai.bim.helper import prop_with_search 
 import pytz
 import tzfpy
 import json
@@ -184,6 +185,8 @@ class RadianceExporterProperties(PropertyGroup):
     def update_ifc_file(self, context):
         if self.ifc_file:
             self.ifc_file = bpy.path.abspath(self.ifc_file)
+
+    
 
     def add_material_mapping(self, style_id, style_name):
         item = self.materials.add()
