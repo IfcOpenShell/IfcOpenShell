@@ -474,12 +474,12 @@ class PolylineDecorator:
         try:
             polyline_data = context.scene.BIMModelProperties.polyline_point
             last_point_data = polyline_data[len(polyline_data) - 1]
+            last_point = Vector((last_point_data.x, last_point_data.y, last_point_data.z))
         except:
-            return
+            last_point = Vector((0, 0, 0))
 
         snap_prop = context.scene.BIMModelProperties.snap_mouse_point[0]
         snap_vector = Vector((snap_prop.x, snap_prop.y, snap_prop.z))
-        last_point = Vector((last_point_data.x, last_point_data.y, last_point_data.z))
 
         if len(polyline_data) > 1:
             second_to_last_point_data = polyline_data[len(polyline_data) - 2]
@@ -510,6 +510,11 @@ class PolylineDecorator:
                     cls.input_panel["Z"] = str(round(z, 3))
 
                 return cls.input_panel
+
+        cls.input_panel["X"] = str(round(last_point.x, 3))
+        cls.input_panel["Y"] = str(round(last_point.y, 3))
+        if "Z" in list(cls.input_panel.keys()):
+            cls.input_panel["Z"] = str(round(last_point.z, 3))
 
         return cls.input_panel
 
