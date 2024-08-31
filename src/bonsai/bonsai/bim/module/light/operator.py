@@ -326,10 +326,10 @@ ground_glow source ground
             with open(sky_file_path, "w") as f:
                 f.write(sky_description_str)
                 f.write("\n")
-                # f.write("skyfunc glow sky_glow\n0\n0\n4 .9 .9 1.15 0\n")
-                # f.write("sky_glow source sky\n0\n0\n4 0 0 1 180\n")
-                # f.write("skyfunc glow ground_glow\n0\n0\n4 1.4 .9 .6 0\n")
-                # f.write("ground_glow source ground\n0\n0\n4 0 0 -1 180\n")
+                f.write("skyfunc glow sky_glow\n0\n0\n4 .9 .9 1.15 0\n")
+                f.write("sky_glow source sky\n0\n0\n4 0 0 1 180\n")
+                f.write("skyfunc glow ground_glow\n0\n0\n4 1.4 .9 .6 0\n")
+                f.write("ground_glow source ground\n0\n0\n4 0 0 -1 180\n")
 
         # props = context.scene.radiance_exporter_properties
 
