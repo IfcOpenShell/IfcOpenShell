@@ -94,7 +94,8 @@ Blender geometry that represents what the model might've looked at at some
 point. At worst, you might be looking at a completely wrong model.
 
 If you continue to open and save ``.blend`` files, you will run the risk of
-editing something that doesn't actually exist in your IFC model. This will
+editing something that doesn't actually exist in your IFC model (e.g you can
+meet an error similar to "RuntimeError: Instance #1234 not found"). This will
 create unpredictable, and sometimes unrecoverable errors.
 
 To avoid this issue, only open and save IFCs.
