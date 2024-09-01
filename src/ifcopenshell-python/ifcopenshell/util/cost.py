@@ -246,6 +246,26 @@ def get_cost_item_assignments(
         ]
 
 
+def get_cost_values(cost_item: ifcopenshell.entity_instance) -> list[dict[str, str]]:
+    results = []
+    for cost_value in cost_item.CostValues or []:
+        label = "{0:.2f}".format(calculate_applied_value(cost_item, cost_value))
+        label += " = {}".format(serialise_cost_value(cost_value))
+        results.append(
+            {
+                "id": cost_value.id(),
+                "label": label,
+                "name": cost_value.Name,
+                "category": cost_value.Category,
+                "applied_value": (
+                    get_primitive_applied_value(cost_value.AppliedValue) if cost_value.AppliedValue else None
+                ),
+            }
+        )
+    print(results)
+    return results
+
+
 class CostValueUnserialiser:
     def parse(self, formula: str):
         l = lark.Lark(

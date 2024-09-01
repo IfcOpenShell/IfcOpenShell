@@ -520,6 +520,26 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 	}
 }
 
+// Expose FileDescription and FileName header entities
+// to make them readable even if they were not filled properly before.
+// Though it is invalid IFC, technically.
+// FileSchema is not exposed as IFC file won't load if it's invalid.
+
+%extend IfcParse::FileDescription {
+    AttributeValue description() const { return $self->getArgument(0); }
+    AttributeValue implementation_level() const { return $self->getArgument(1); }
+};
+
+%extend IfcParse::FileName {
+    AttributeValue name() const { return $self->getArgument(0); }
+    AttributeValue time_stamp() const { return $self->getArgument(1); }
+    AttributeValue author() const { return $self->getArgument(2); }
+    AttributeValue organization() const { return $self->getArgument(3); }
+    AttributeValue preprocessor_version() const { return $self->getArgument(4); }
+    AttributeValue originating_system() const { return $self->getArgument(5); }
+    AttributeValue authorization() const { return $self->getArgument(6); }
+};
+
 %extend IfcParse::IfcSpfHeader {
 	%pythoncode %{
         # Hide the getters with read-only property implementations

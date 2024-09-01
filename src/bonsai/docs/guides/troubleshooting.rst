@@ -30,13 +30,13 @@ Updating
 
 We always recommend to use the latest version.
 
-Open up Blender, click on ``Edit > Preferences``, and select the **Get
-Extensions** tab. If an update is available, you will see a button next to the
+Open up Blender, click on :menuselection:`Topbar --> Edit --> Preferences -->
+Get Extensions`. If an update is available, you will see a button next to the
 **Bonsai** add-on.
 
 Updates are typically available every 2 months. If you need something more
-frequent, check out :ref:`devs/installation:unstable installation` which is
-updated every day.
+frequent, check out :ref:`guides/development/installation:Unstable
+installation` which is updated every day.
 
 .. image:: images/update.png
 
@@ -94,7 +94,8 @@ Blender geometry that represents what the model might've looked at at some
 point. At worst, you might be looking at a completely wrong model.
 
 If you continue to open and save ``.blend`` files, you will run the risk of
-editing something that doesn't actually exist in your IFC model. This will
+editing something that doesn't actually exist in your IFC model (e.g you can
+meet an error similar to "RuntimeError: Instance #1234 not found"). This will
 create unpredictable, and sometimes unrecoverable errors.
 
 To avoid this issue, only open and save IFCs.

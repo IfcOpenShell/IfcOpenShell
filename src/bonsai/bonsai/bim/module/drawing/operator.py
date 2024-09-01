@@ -17,7 +17,6 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-import re
 import bpy
 import json
 import time
@@ -43,13 +42,12 @@ import bonsai.core.drawing as core
 import bonsai.bim.module.drawing.svgwriter as svgwriter
 import bonsai.bim.module.drawing.annotation as annotation
 import bonsai.bim.module.drawing.sheeter as sheeter
-import bonsai.bim.module.drawing.scheduler as scheduler
-import bonsai.bim.module.drawing.helper as helper
 import bonsai.bim.export_ifc
 from bonsai.bim.module.drawing.decoration import CutDecorator
 from bonsai.bim.module.drawing.data import DecoratorData, DrawingsData
 from typing import NamedTuple, List, Union, Optional, Literal
 from lxml import etree
+from math import radians
 from mathutils import Vector, Color, Matrix
 from timeit import default_timer as timer
 from bonsai.bim.module.drawing.prop import RasterStyleProperty, RASTER_STYLE_PROPERTIES_EXCLUDE
@@ -257,6 +255,7 @@ class CreateDrawing(bpy.types.Operator):
                     self.svg_writer.camera_projection = tuple(
                         self.camera.matrix_world.to_quaternion() @ Vector((0, 0, -1))
                     )
+                    self.svg_writer.calculate_scale()
 
                     self.svg_writer.setup_drawing_resource_paths(self.camera_element)
 
@@ -269,7 +268,12 @@ class CreateDrawing(bpy.types.Operator):
 
                 with profile("Generate linework"):
                     if tool.Drawing.is_camera_orthographic():
-                        linework_svg = self.generate_linework(context)
+                        if self.camera.data.BIMCameraProperties.linework_mode == "OPENCASCADE":
+                            linework_svg = self.generate_linework(context)
+                        elif self.camera.data.BIMCameraProperties.linework_mode == "FREESTYLE":
+                            linework_svg = self.generate_freestyle_linework(context)
+                    elif self.camera.data.BIMCameraProperties.linework_mode == "FREESTYLE":
+                        linework_svg = self.generate_freestyle_linework(context)
 
                 with profile("Generate annotation"):
                     if tool.Drawing.is_camera_orthographic():
@@ -546,6 +550,156 @@ class CreateDrawing(bpy.types.Operator):
             self.file.createIfcDirection(forward.tolist()),
         )
 
+    def generate_bisect_linework(self, context: bpy.types.Context, root):
+        camera_matrix_i = context.scene.camera.matrix_world.inverted()
+
+        group = root.find("{http://www.w3.org/2000/svg}g")
+        raw_width, raw_height = self.get_camera_dimensions()
+        x_offset = raw_width / 2
+        y_offset = raw_height / 2
+        svg_scale = self.scale * 1000  # IFC is in meters, SVG is in mm
+
+        for obj in context.visible_objects:
+            if obj.type != "MESH":
+                continue
+            if not (element := tool.Ifc.get_entity(obj)):
+                continue
+            if not tool.Drawing.is_intersecting_camera(obj, context.scene.camera):
+                continue
+            verts, edges = tool.Drawing.bisect_mesh(obj, context.scene.camera)
+
+            g = etree.SubElement(root, "{http://www.w3.org/2000/svg}g")
+            g.attrib["{http://www.ifcopenshell.org/ns}guid"] = element.GlobalId
+            g.attrib["{http://www.ifcopenshell.org/ns}name"] = element.Name or ""
+
+            lines = []
+            for edge in edges:
+                start = [o for o in (camera_matrix_i @ Vector(verts[edge[0]])).xy]
+                end = [o for o in (camera_matrix_i @ Vector(verts[edge[1]])).xy]
+                coords = [start, end]
+                d = " ".join(
+                    ["L{},{}".format((x_offset + p[0]) * svg_scale, (y_offset - p[1]) * svg_scale) for p in coords]
+                )
+                d = "M{}".format(d[1:])
+                path = etree.SubElement(g, "{http://www.w3.org/2000/svg}path")
+                path.attrib["d"] = d
+            group.append(g)
+
+    def generate_freestyle_linework(self, context: bpy.types.Context) -> str | None:
+        if not ifcopenshell.util.element.get_pset(self.drawing, "EPset_Drawing", "HasLinework"):
+            return
+        svg_path = self.get_svg_path(cache_type="linework")
+        if os.path.isfile(svg_path) and self.props.should_use_linework_cache:
+            return svg_path
+
+        context.scene.render.engine = "BLENDER_WORKBENCH"
+        context.scene.render.use_freestyle = True
+        context.scene.svg_export.use_svg_export = True
+
+        linesets = context.view_layer.freestyle_settings.linesets
+        if len(linesets) == 1 and linesets[0].name == "LineSet":
+            context.view_layer.freestyle_settings.crease_angle = radians(140)
+            context.view_layer.freestyle_settings.use_culling = True
+            lineset = linesets[0]
+            lineset.edge_type_negation = "EXCLUSIVE"
+            lineset.select_silhouette = False
+            lineset.select_crease = False
+            lineset.select_border = False
+            lineset.select_edge_mark = False
+            lineset.select_contour = False
+            lineset.select_external_contour = False
+            lineset.select_material_boundary = False
+            lineset.select_suggestive_contour = True
+            lineset.select_ridge_valley = True
+
+        edge_mesh = bpy.data.meshes.new("Temp Merged Edges")
+        edge_obj = bpy.data.objects.new("Temp Merged Edges", edge_mesh)
+        context.scene.collection.objects.link(edge_obj)
+        edge_bm = bmesh.new()
+
+        visible_object_names = {obj.name for obj in bpy.context.visible_objects}
+        for obj in bpy.context.view_layer.objects:
+            is_visible = obj.name in visible_object_names
+            obj.hide_render = not is_visible
+            if (
+                is_visible
+                and obj.type == "MESH"
+                and len(obj.data.edges)
+                and not len(obj.data.polygons)
+                and not obj.name.startswith("IfcAnnotation")
+            ):
+                tmp_mesh = None
+                try:
+                    tmp_mesh = obj.data.copy()
+                    tmp_mesh.transform(obj.matrix_world)
+                    edge_bm.from_mesh(tmp_mesh)
+                finally:
+                    if tmp_mesh:
+                        bpy.data.meshes.remove(tmp_mesh)
+
+        ret = bmesh.ops.extrude_edge_only(edge_bm, edges=edge_bm.edges)
+        verts_extruded = [e for e in ret["geom"] if isinstance(e, bmesh.types.BMVert)]
+
+        cam_z = self.camera.matrix_world.to_3x3() @ self.camera.data.view_frame(scene=None)[-1].normalized()
+        cam_z *= 0.001
+
+        for v in verts_extruded:
+            v.co += cam_z
+
+        edge_bm.to_mesh(edge_mesh)
+        edge_bm.free()
+
+        actual_path = svg_path[0:-4] + "0001.svg"
+        context.scene.render.filepath = svg_path[0:-4]
+        bpy.ops.render.render(write_still=False)
+
+        os.replace(actual_path, svg_path)
+
+        bpy.data.objects.remove(edge_obj)
+        bpy.data.meshes.remove(edge_mesh)
+
+        context.scene.render.use_freestyle = False
+        context.scene.svg_export.use_svg_export = False
+
+        tree = etree.parse(svg_path)
+        root = tree.getroot()
+
+        freestyle_width = float(root.attrib["width"])
+        freestyle_height = float(root.attrib["height"])
+        svg_width = self.svg_writer.width
+        svg_height = self.svg_writer.height
+
+        group = root.find(".//{http://www.w3.org/2000/svg}g")
+        group.attrib["class"] = "projection"
+
+        # Resize Freestyle to our proper width / height and purge all other attributes
+        for path in root.findall(".//{http://www.w3.org/2000/svg}path"):
+            for key in path.attrib:
+                if key == "fill":
+                    continue
+                elif key != "d":
+                    del path.attrib[key]
+                    continue
+                d = path.attrib[key]
+                coords = d.strip().split()[1:]
+                new_d = "M"
+                for i in range(0, len(coords), 2):
+                    x = float(coords[i][:-1])
+                    y = float(coords[i + 1])
+                    x = x / freestyle_width * svg_width
+                    y = y / freestyle_height * svg_height
+                    new_d += f" {x},{y}"
+                path.attrib["d"] = new_d
+            pass
+
+        self.generate_bisect_linework(context, root)
+        self.merge_linework_and_add_metadata(root)
+
+        with open(svg_path, "wb") as svg:
+            svg.write(etree.tostring(root))
+
+        return svg_path
+
     def generate_linework(self, context: bpy.types.Context) -> Union[str, None]:
         if not ifcopenshell.util.element.get_pset(self.drawing, "EPset_Drawing", "HasLinework"):
             return
@@ -632,10 +786,15 @@ class CreateDrawing(bpy.types.Operator):
 
             return svg_path
 
-        self.move_projection_to_bottom(root)
-        self.merge_linework_and_add_metadata(root)
+        if self.camera.data.BIMCameraProperties.cut_mode == "BISECT":
+            self.remove_cut_linework(root)
+            self.generate_bisect_linework(context, root)
+            self.merge_linework_and_add_metadata(root)
+        elif self.camera.data.BIMCameraProperties.cut_mode == "OPENCASCADE":
+            self.move_projection_to_bottom(root)
+            self.merge_linework_and_add_metadata(root)
 
-        if self.camera.data.BIMCameraProperties.calculate_shapely_surfaces:
+        if self.camera.data.BIMCameraProperties.fill_mode == "SHAPELY":
             # shapely variant
             group = root.find("{http://www.w3.org/2000/svg}g")
             nm = group.attrib["{http://www.ifcopenshell.org/ns}name"]
@@ -720,7 +879,7 @@ class CreateDrawing(bpy.types.Operator):
                             path.set("class", " ".join(list(classes)))
                             group.insert(0, path)
 
-        if self.camera.data.BIMCameraProperties.calculate_svgfill_surfaces:
+        if self.camera.data.BIMCameraProperties.fill_mode == "SVGFILL":
             results = etree.tostring(root).decode("utf8")
             svg_data_1 = results
             from xml.dom.minidom import parseString
@@ -885,7 +1044,6 @@ class CreateDrawing(bpy.types.Operator):
 
         group = root.findall(".//{http://www.w3.org/2000/svg}g")[0]
 
-        self.svg_writer.calculate_scale()
         x_offset = self.svg_writer.raw_width / 2
         y_offset = self.svg_writer.raw_height / 2
 
@@ -990,6 +1148,7 @@ class CreateDrawing(bpy.types.Operator):
 
         bm = bmesh.new()
         bm.from_mesh(obj.data)
+        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.000001)
         for edge in bm.edges:
             if not edge.is_manifold:
                 bm.free()
@@ -1009,6 +1168,11 @@ class CreateDrawing(bpy.types.Operator):
                     return IfcStore.session_files[link.name].by_guid(guid)
                 except:
                     continue
+
+    def remove_cut_linework(self, root):
+        for el in root.findall(".//{http://www.w3.org/2000/svg}g[@{http://www.ifcopenshell.org/ns}guid]"):
+            if "projection" not in el.get("class", "").split():
+                el.getparent().remove(el)
 
     def merge_linework_and_add_metadata(self, root):
         join_criteria = ifcopenshell.util.element.get_pset(self.camera_element, "EPset_Drawing", "JoinCriteria")
@@ -1073,10 +1237,34 @@ class CreateDrawing(bpy.types.Operator):
             if results:
                 for path in old_paths:
                     path.getparent().remove(path)
+
+            # polygonize_full will create polygons for everything, including
+            # interior "holes". As a result we do two passes. The first pass
+            # records polygon interior rings. The second pass uses this to
+            # check if the exterior ring matches an interior ring. If it does,
+            # it's a hole. Skip it!
+
+            interior_hashes = set()
             for result in results:
                 for geom in result.geoms:
-                    path = etree.SubElement(el, "{http://www.w3.org/2000/svg}path")
                     if isinstance(geom, shapely.Polygon):
+                        for interior in geom.interiors:
+                            # Sorted because coordinate ordering may differ,
+                            # and frozenset because shapely sometimes emits
+                            # duplicate coordinates.
+                            interior_hashes.add(hash(frozenset(sorted(interior.coords))))
+                    elif isinstance(geom, shapely.LineString):
+                        path = etree.SubElement(el, "{http://www.w3.org/2000/svg}path")
+                        d = "M" + " L".join([",".join([str(o) for o in co]) for co in geom.coords]) + " Z"
+                        path.attrib["d"] = d
+
+            for result in results:
+                for geom in result.geoms:
+                    if isinstance(geom, shapely.Polygon):
+                        path = etree.SubElement(el, "{http://www.w3.org/2000/svg}path")
+                        if hash(frozenset(sorted(geom.exterior.coords))) in interior_hashes:
+                            # This is a "hole", as its exterior perfectly matches an interior.
+                            continue
                         d = (
                             "M"
                             + " L".join([",".join([str(o) for o in co]) for co in geom.exterior.coords[0:-1]])
@@ -1088,9 +1276,7 @@ class CreateDrawing(bpy.types.Operator):
                                 + " L".join([",".join([str(o) for o in co]) for co in interior.coords[0:-1]])
                                 + " Z"
                             )
-                    elif isinstance(geom, shapely.LineString):
-                        d = "M" + " L".join([",".join([str(o) for o in co]) for co in geom.coords]) + " Z"
-                    path.attrib["d"] = d
+                        path.attrib["d"] = d
 
             # Architectural convention only merges these objects. E.g. pipe segments and fittings shouldn't merge.
             if not element.is_a("IfcWall") and not element.is_a("IfcSlab"):
@@ -1629,7 +1815,9 @@ class ActivateDrawing(bpy.types.Operator):
             if ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing", "HasUnderlay"):
                 bpy.ops.bim.reload_drawing_styles()
                 bpy.ops.bim.activate_drawing_style()
-            core.sync_references(tool.Ifc, tool.Collector, tool.Drawing, drawing=tool.Ifc.get().by_id(self.drawing))
+
+            if tool.Drawing.is_camera_orthographic():
+                core.sync_references(tool.Ifc, tool.Collector, tool.Drawing, drawing=tool.Ifc.get().by_id(self.drawing))
             CutDecorator.install(context)
             tool.Drawing.show_decorations()
 
