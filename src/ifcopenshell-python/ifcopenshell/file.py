@@ -409,7 +409,7 @@ class file:
     def schema(self) -> Literal["IFC2X3", "IFC4", "IFC4X3"]:
         """General IFC schema version: IFC2X3, IFC4, IFC4X3."""
         prefixes = ("IFC", "X", "_ADD", "_TC")
-        reg = "".join(f"(?P<{s}>{s}\d+)?" for s in prefixes)
+        reg = "".join(f"(?P<{s}>{s}\\d+)?" for s in prefixes)
         match = re.match(reg, self.wrapped_data.schema)
         version_tuple = tuple(
             map(
