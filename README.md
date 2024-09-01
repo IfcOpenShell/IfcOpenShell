@@ -24,8 +24,8 @@ For more information, see:
   * [IfcOpenShell Python Hello World Tutorial](https://docs.ifcopenshell.org/ifcopenshell-python/hello_world.html)
 * [Bonsai Website](https://bonsaibim.org)
 * [Bonsai Documentation](https://docs.bonsaibim.org/index.html)
-  * [Add-on Installation](https://docs.bonsaibim.org/users/installation.html)
-  * [Exploring an IFC model](https://docs.bonsaibim.org/users/exploring_an_ifc_model.html)
+  * [Add-on Installation](https://docs.bonsaibim.org/quickstart/installation.html)
+  * [Exploring an IFC model](https://docs.bonsaibim.org/quickstart/explore_model.html)
  
 Development is sponsored through your generous donations!
 
