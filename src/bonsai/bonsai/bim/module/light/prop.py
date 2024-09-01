@@ -52,41 +52,28 @@ def get_sites(self, context):
 
 
 def update_latlong(self, context):
-    sun_props = context.scene.sun_pos_properties
-    sun_props.latitude = self.latitude
-    sun_props.longitude = self.longitude
-    update_sun_path()
+    update_sun_path(self)
 
 
 def update_hourminute(self, context):
-    sun_props = context.scene.sun_pos_properties
-    sun_props.time = self.hour + (self.minute / 60)
-    update_sun_path()
+    update_sun_path(self)
 
 
 def update_date(self, context):
-    sun_props = context.scene.sun_pos_properties
-    sun_props.month = self.month
-    sun_props.day = self.day
-    update_sun_path()
+    update_sun_path(self)
 
 
 def update_true_north(self, context):
-    sun_props = context.scene.sun_pos_properties
-    # Preserve IFC sign convention
-    sun_props.north_offset = radians(self.true_north * -1)
-    update_sun_path()
+    update_sun_path(self)
 
 
 def update_sun_path_size(self, context):
-    sun_props = context.scene.sun_pos_properties
-    sun_props.sun_distance = self.sun_path_size
-    update_sun_path()
+    update_sun_path(self)
 
 
 def update_display_shadows(self, context):
     if self.display_shadows:
-        update_sun_path()
+        update_sun_path(self)
         context.scene.render.engine = "BLENDER_WORKBENCH"
         context.scene.display.shading.light = "FLAT"
         context.scene.display.shading.show_shadows = True
@@ -102,7 +89,7 @@ def update_display_shadows(self, context):
 
 def update_display_sun_path(self, context):
     if self.display_sun_path:
-        update_sun_path()
+        update_sun_path(self)
         SolarDecorator.install(bpy.context)
     else:
         SolarDecorator.uninstall()
@@ -113,7 +100,7 @@ def update_resolution(self, context):
     context.scene.render.resolution_y = self.radiance_resolution_y
 
 
-def update_sun_path():
+def update_sun_path(self):
     if not SolarData.is_loaded:
         SolarData.load()
 
@@ -122,6 +109,16 @@ def update_sun_path():
 
     props = bpy.context.scene.BIMSolarProperties
     sun_props = bpy.context.scene.sun_pos_properties
+
+    sun_props.sun_distance = self.sun_path_size
+    sun_props.latitude = self.latitude
+    sun_props.longitude = self.longitude
+    sun_props.month = self.month
+    sun_props.day = self.day
+    sun_props.time = self.hour + (self.minute / 60)
+    # Preserve IFC sign convention
+    sun_props.north_offset = radians(self.true_north * -1)
+
     props.timezone = tzfpy.get_tz(props.longitude, props.latitude)
     timezone = pytz.timezone(props.timezone)
     dt = datetime.datetime(sun_props.year, sun_props.month, sun_props.day, props.hour, props.minute)
