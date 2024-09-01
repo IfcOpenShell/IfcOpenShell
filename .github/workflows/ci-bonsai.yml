@@ -24,7 +24,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        pyver: [py310, py311, py312]
+        pyver: [py311, py312]
         config:
           - {
             name: "Windows Build",
@@ -32,15 +32,15 @@ jobs:
           }
           - {
             name: "Linux Build",
-            short_name: linux
+            short_name: linux,
           }
           - {
             name: "MacOS Build",
-            short_name: macos
+            short_name: macos,
           }
           - {
             name: "MacOS ARM Build",
-            short_name: macosm1
+            short_name: macosm1,
           }
     steps:
       - uses: actions/checkout@v2
@@ -53,8 +53,7 @@ jobs:
         run: echo "version=$(cat VERSION)" >> $GITHUB_OUTPUT
       - name: Compile
         run: |
-          cd src/bonsai &&
-          make dist PLATFORM=${{ matrix.config.short_name }} PYVERSION=${{ matrix.pyver }} IS_STABLE=TRUE
+          cd src/bonsai && make dist PLATFORM=${{ matrix.config.short_name }} PYVERSION=${{ matrix.pyver }} IS_STABLE=TRUE
       - name: Find zip file name
         id: find_zip
         run: |
