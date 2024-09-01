@@ -30,13 +30,13 @@ Updating
 
 We always recommend to use the latest version.
 
-Open up Blender, click on ``Edit > Preferences``, and select the **Get
-Extensions** tab. If an update is available, you will see a button next to the
+Open up Blender, click on :menuselection:`Topbar --> Edit --> Preferences -->
+Get Extensions`. If an update is available, you will see a button next to the
 **Bonsai** add-on.
 
 Updates are typically available every 2 months. If you need something more
-frequent, check out :ref:`devs/installation:unstable installation` which is
-updated every day.
+frequent, check out :ref:`guides/development/installation:Unstable
+installation` which is updated every day.
 
 .. image:: images/update.png
 
