@@ -106,7 +106,7 @@ class Cad:
         # Determine the sign of the angle based on the provided axis
         # If new_angle, determine the direction of the rotation
         parameter = round(axis.z, 2) < 0 or (round(axis.y, 2) == 0 and round(axis.x < 0)) or (round(axis.x, 2) == 0 and round(axis.y < 0))
-        if new_angle:
+        if new_angle is not None:
             rot_mat = Matrix.Rotation(new_angle, 3, axis)
             rot_vector = (d1 @ rot_mat) if parameter else (rot_mat @ d1)
             return rot_vector
