@@ -811,9 +811,8 @@ class Cost(bonsai.core.tool.Cost):
     @classmethod
     def create_cost_schedule_json(cls, cost_schedule: ifcopenshell.entity_instance) -> dict:
         from bonsai.bim.module.cost.data import CostSchedulesData
-        if not CostSchedulesData.is_loaded:
-            CostSchedulesData.load()
-        cost_items =  CostSchedulesData.data["cost_items"]
+        CostSchedulesData.load()
+        cost_items = CostSchedulesData.data["cost_items"]
         data = []
         for rel in cost_schedule.Controls or []:
             for cost_item in rel.RelatedObjects or []:
@@ -852,3 +851,9 @@ class Cost(bonsai.core.tool.Cost):
         unit = tool.Unit.get_project_currency_unit()
         if unit:
             return {"id": unit.id(), "name": unit.Currency}
+
+    @classmethod
+    def generate_cost_schedule_browser(cls, cost_schedule_data: list[dict[str, Any]]) -> None:
+        if not bpy.context.scene.WebProperties.is_connected:
+            bpy.ops.bim.connect_websocket_server(page="costing")
+        tool.Web.send_webui_data(data=cost_schedule_data, data_key="cost_items", event="cost_items")

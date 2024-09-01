@@ -73,7 +73,8 @@ class BIM_PT_cost_schedules(Panel):
             row1.label(text="Schedule tools")
             row1 = col.row(align=True)
             row1.alignment = "RIGHT"
-            row1.operator("bim.export_cost_schedules", text="Export", icon="EXPORT").cost_schedule = cost_schedule["id"]
+            row1.operator("bim.export_cost_schedules", text="Export spreadsheet", icon="EXPORT").cost_schedule = cost_schedule["id"]
+            row1.operator("bim.generate_cost_schedule_browser", text="Generate spreadsheet browsser", icon="URL").cost_schedule = cost_schedule["id"]
             row2 = col.row(align=True)
             row2.alignment = "RIGHT"
             op = row2.operator("bim.select_cost_schedule_products", icon="RESTRICT_SELECT_OFF", text="Assigned")

@@ -1,0 +1,89 @@
+
+th {
+    position: relative;
+}
+.resizer {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 5px;
+    height: 100%;
+    cursor: col-resize;
+    user-select: none;
+}
+.context-menu {
+    display: none;
+    position: absolute;
+    background-color: rgb(51, 51, 51);
+    border: 1px solid #ccc;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    color: white;
+}
+.context-menu button {
+    display: block;
+    width: 100%;
+    padding: 8px;
+    border: none;
+    background: none;
+    text-align: left;
+    cursor: pointer;
+}
+.context-menu button:hover {
+    background-color: #f0f0f0;
+    color: black;
+}
+
+/* Context menu button is clicked, should zoom into object and change color */
+.context-menu button:active {
+    background-color: #ff9634;
+    color: rgba(37, 51, 77, 0.466);
+    /* zoom */
+    transform: scale(0.9);
+}
+
+#cost-items tr:hover {
+    background-color: #f0f0f0;
+    color : black;
+}
+
+.form-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    background-color: #363636;
+    padding: 10px;
+}
+
+.cost-values-form {
+    position: absolute; /* Set initial position to absolute */
+    background-color: white;
+    border: 1px solid black;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    z-index: 9999;
+    cursor: move; /* Change cursor to move */
+}
+
+.cost-values-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.cost-values-table th, .cost-values-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+}
+
+.cost-values-table th {
+    background-color: #f2f2f2;
+    text-align: left;
+}
+
+.close-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 20px;
+    cursor: pointer;
+}

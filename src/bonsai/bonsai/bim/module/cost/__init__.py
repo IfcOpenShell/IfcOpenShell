@@ -79,6 +79,7 @@ classes = (
     operator.SelectUnassignedProducts,
     operator.UnassignCostItemQuantity,
     operator.UnassignCostItemType,
+    operator.GenerateCostScheduleBrowser,
     prop.CostItem,
     prop.CostItemQuantity,
     prop.CostItemType,

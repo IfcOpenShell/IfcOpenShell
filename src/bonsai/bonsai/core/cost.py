@@ -398,3 +398,8 @@ def add_currency(ifc: tool.Ifc, cost: tool.Cost) -> ifcopenshell.entity_instance
     ifc.run("unit.edit_monetary_unit", unit=unit, attributes=attributes)
     ifc.run("unit.assign_unit", units=[unit])
     return unit
+
+
+def generate_cost_schedule_browser(cost: tool.Cost, cost_schedule: ifcopenshell.entity_instance) -> bpy.types.Panel:
+    cost_schedule_data = cost.create_cost_schedule_json(cost_schedule)
+    return cost.generate_cost_schedule_browser(cost_schedule_data)

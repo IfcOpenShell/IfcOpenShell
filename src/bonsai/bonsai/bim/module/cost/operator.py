@@ -790,3 +790,14 @@ class AddCurrency(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         core.add_currency(tool.Ifc, tool.Cost)
+
+
+class GenerateCostScheduleBrowser(bpy.types.Operator):
+    bl_idname = "bim.generate_cost_schedule_browser"
+    bl_label = "Generate Cost Schedule Browser"
+    bl_options = {"REGISTER", "UNDO"}
+    cost_schedule: bpy.props.IntProperty()
+
+    def execute(self, context):
+        core.generate_cost_schedule_browser(tool.Cost, cost_schedule=tool.Ifc.get().by_id(self.cost_schedule))
+        return {"FINISHED"}
