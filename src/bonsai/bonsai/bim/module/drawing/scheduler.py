@@ -81,11 +81,11 @@ class Scheduler:
         with open(stylesheet_path, "r") as stylesheet:
             css = stylesheet.read()
 
-        matches = re.search("--font-size-pt:\s*([0-9.]+);", css)
+        matches = re.search(r"--font-size-pt:\s*([0-9.]+);", css)
         self.font_size_pt = float(matches.groups()[0]) if matches else 12  # Default to 12pt
-        matches = re.search("--font-size-px:\s*([0-9.]+);", css)
+        matches = re.search(r"--font-size-px:\s*([0-9.]+);", css)
         self.font_size_px = float(matches.groups()[0]) if matches else 4.13  # Magic number 4.13px ~= 12pt
-        matches = re.search("--font-width:\s*([0-9.]+);", css)
+        matches = re.search(r"--font-width:\s*([0-9.]+);", css)
         self.font_width = float(matches.groups()[0]) if matches else 0.45  # A magic number for OpenGost
 
         self.svg.defs.add(self.svg.style(css))
