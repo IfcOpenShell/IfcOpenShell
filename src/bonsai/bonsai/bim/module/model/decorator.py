@@ -477,13 +477,20 @@ class PolylineDecorator:
     def calculate_x_y_and_z(cls, context):
         try:
             polyline_data = context.scene.BIMModelProperties.polyline_point
+            default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
             last_point_data = polyline_data[len(polyline_data) - 1]
             last_point = Vector((last_point_data.x, last_point_data.y, last_point_data.z))
         except:
+            default_container_elevation = 0
             last_point = Vector((0, 0, 0))
 
         snap_prop = context.scene.BIMModelProperties.snap_mouse_point[0]
         snap_vector = Vector((snap_prop.x, snap_prop.y, snap_prop.z))
+
+        if cls.use_default_container:
+            snap_vector = Vector((snap_prop.x, snap_prop.y, default_container_elevation))
+        else:
+            snap_vector = Vector((snap_prop.x, snap_prop.y, snap_prop.z))
 
         if len(polyline_data) > 1:
             second_to_last_point_data = polyline_data[len(polyline_data) - 2]
