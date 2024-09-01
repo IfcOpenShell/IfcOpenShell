@@ -112,8 +112,14 @@ CREATE_VECTOR_TYPEMAP_OUT(IfcGeom::ConversionResultShape *)
 	}
 };
 
+%typemap(out) const item_name::ptr& {
+	$result = item_to_pyobject(*$1);
+};
+
 %enddef
 
+vector_of_item(ifcopenshell::geometry::taxonomy::item)
+vector_of_item(ifcopenshell::geometry::taxonomy::boolean_result)
 vector_of_item(ifcopenshell::geometry::taxonomy::bspline_curve)
 vector_of_item(ifcopenshell::geometry::taxonomy::bspline_surface)
 vector_of_item(ifcopenshell::geometry::taxonomy::circle)
@@ -141,3 +147,4 @@ vector_of_item(ifcopenshell::geometry::taxonomy::sphere)
 vector_of_item(ifcopenshell::geometry::taxonomy::torus)
 vector_of_item(ifcopenshell::geometry::taxonomy::style)
 vector_of_item(ifcopenshell::geometry::taxonomy::sweep_along_curve)
+vector_of_item(ifcopenshell::geometry::taxonomy::geom_item)
