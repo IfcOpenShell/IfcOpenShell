@@ -480,6 +480,8 @@ class DrawPolylineWall(bpy.types.Operator):
                     else:
                         self.number_input = self.number_input[:-1]
                     self.number_output = "".join(self.number_input)
+                    if not self.number_input:
+                        self.number_output = "0"
                     self.input_panel[self.input_type] = self.number_output
                     PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
                     tool.Blender.update_viewport()
