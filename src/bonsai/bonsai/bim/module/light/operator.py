@@ -386,7 +386,6 @@ ground_glow source ground
         self.report({"INFO"}, "Exported Scene file to: {}".format(scene_file))
 
         print("Setting up Radiance scene...")
-
         scene = pr.Scene("ascene")
 
         material_path = os.path.join(output_dir, "materials.rad")

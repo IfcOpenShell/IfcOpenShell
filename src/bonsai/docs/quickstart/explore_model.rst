@@ -121,49 +121,34 @@ pressing the button on the top right of the **Viewport** panel. The hotkey is
 Overview of all objects
 -----------------------
 
-The **Outliner** panel on the top right shows a hierarchy of all the currently
-loaded physical **Objects** in your IFC project. These **Objects** correlate to
-what you can see in the **Viewport** panel.
+All physical **Elements** are organised in a hierarchy of **Spatial
+Containers**. By default, this hierarchy represents a breakdown of spaces, from
+large spaces such as a site and a building, down to smaller spaces like
+building storeys and room spaces. The hierarchy will always begin with an
+**IfcProject**.
 
-Every **Object** in the **Outliner** represents an IFC **Element**. These
-**Objects** have a name with the pattern ``Class/Name``. The class prefix
-represents the type of object, and the name is the name of the object.  Examples
-of classes you will see are ``IfcBuilding``, or ``IfcWall``. This naming
-convention makes it easy to quickly spot types of objects.
+The :menuselection:`Properties --> Project Overview --> Spatial Decomposition`
+panel shows this hierarchy. Below, it shows a list of all **Elements**
+contained inside the actively selected **Spatial Container**.
 
-.. image:: images/outliner.png
+.. image:: images/spatial-tree.png
 
-Objects are organised in a hierarchy. By default, this hierarchy represents a
-breakdown of spaces, from large spaces such as a site and a building, down to
-smaller spaces like building storeys and room spaces. The hierarchy will always
-begin with an **IfcProject** object. You can click on the triangle to toggle the
-hierarchy.
+With a **Spatial Container** selected, use the **Isolate** button or **Hide /
+Show Icons** to quickly focus or control visibility. Use the search filters at
+the bottom of the **Container** or **Element** lists to quickly find objects,
+and use the **Select Icon** to select them.
+
+.. image:: images/spatial-tree-features.png
+
+**Elements** are grouped into IFC **Classes**, such as Wall, Slab, or Door.
+Within that, **Elements** are grouped into **Construction Types**. You'll see a
+count of how many objects of that type exist. In the example above, there is
+only one stair contained in the building storey.
 
 .. tip::
 
-   In large projects with deep hierarchies, you can ``Shift-LMB`` click the
-   triangle to recursively toggle the hierarchy. You can also click and drag the
-   ``MMB`` to pan left and right.
-
-When there are lots of objects, you can type a name in the filter box to quickly
-identify objects by name or type.
-
-.. image:: images/outliner-filter.png
-
-Clicking on an object in the **Outliner** panel also selects the corresponding
-object in the **Viewport** panel. A good strategy to find objects is to then use
-``View > Frame Selected`` to zoom to it in the **Viewport**.
-
-The **Outliner** panel is also great for isolating portions of your project. You
-can include and exclude portions by clicking on the **Tick Icon** next to
-collections of objects in the hierarchy.
-
-Let's isolate a single building storey. Start by disabling the **Tick Icon**
-next to the **IfcProject** collection. This will hide everything in the project.
-Then navigate through the hierarchy and enable the **Tick Icon** next to an
-**IfcBuildingStory**.
-
-.. image:: images/outliner-isolate.png
+   Hold :kbd:`Alt` when clicking on triangles in the hierarchy to show / hide
+   children recursively.
 
 Viewing element classes
 -----------------------
@@ -185,16 +170,15 @@ properties and relationships it is allowed to have. For example, a Wall
    worry about memorising all the available **Classes**, you'll get a feel for them
    as you explore more.
 
-To view an object's class, click on an object in the **Viewport** or **Outliner**
-panel, then switch to the **Object Information** tab in the **Properties** panel.
-You can see the **Class** name in the **Object Metadata** subpanel.
+To view an object's class, click on an object in the :menuselection:`3D
+Viewport`, then go to :menuselection:`Properties --> Object Information -->
+Object Metadata` to see the **Class** name.
 
 .. image:: images/element-class.png
 
-In this case, the **Class** of our roof is an **IfcSlab**. You'll notice this is
-the same **Class** name used as a prefix for the object name in the **Outliner**
-panel. You can also see the name of the actively selected object in the top left
-of the **Viewport** panel.
+In this case, the **Class** of our roof is an **IfcSlab**. You can also see the
+name of the actively selected object in the top left of the :menuselection:`3D
+Viewport`.
 
 .. warning::
 
@@ -219,24 +203,26 @@ not see it all the time.
     classes and predefined types you should see.
 
 Press the **Select Icon** to select all objects that are of the same
-**IfcSlab** **Class**. Then, you can isolate these elements by going to ``Object
-> Show/Hide > Hide Unselected`` (hotkey ``Shift-H``). To show all elements again, you can use
-``Object > Show/Hide > Show Hidden Objects`` (hotkey ``Alt-H``). If you want to
-hide elements instead, you can use ``Object > Show/Hidden > Hide Selected``
-(hotkey ``H``).
+**IfcSlab** **Class**. Then, you can isolate these elements by going to
+:menuselection:`3D Viewport --> Object --> Show/Hide --> Hide Unselected`
+(:kbd:`Shift-H`). To show all elements again, you can use :menuselection:`3D
+Viewport --> Object --> Show/Hide --> Show Hidden Objects` (:kbd:`Alt-H`). If
+you want to hide elements instead, you can use :menuselection:`3D Viewport -->
+Object --> Show/Hidden --> Hide Selected` (:kbd:`H`).
 
 .. image:: images/element-class-select.png
 
 .. note::
 
    Remember that Blender's hotkeys are context sensitive. Make sure your mouse
-   is hovering over the **Viewport** panel when you press a hotkey or no cake
-   for you.
+   is hovering over the :menuselection:`Viewport` panel when you press a hotkey
+   or no cake for you.
 
 You can also see statistics about the number of selected objects. If you right
-click on the bottom right status bar and enable **Scene Statistics** you will
-see information like **Objects 4/4**, which means that 4 objects are selected
-out of 4 available objects. This is a great way of counting objects like toilets.
+click on the bottom right :menuselection:`Status Bar` and enable **Scene
+Statistics** you will see information like **Objects 4/4**, which means that 4
+objects are selected out of 4 available objects. This is a great way of
+counting objects like toilets.
 
 .. image:: images/scene-statistics.png
 
@@ -244,7 +230,7 @@ Viewing attributes and properties
 ---------------------------------
 
 You can view the **Attributes**, **Properties**, and **Quantities** of the
-selected object in the **Object Properties** tab.
+selected object in the :menuselection:`Properties --> Object Information` tab.
 
 Let's focus on **Attributes** first. Scroll down to the **Attributes**
 subpanel. **Attributes** are a limited set of fundamental data (usually less
@@ -279,7 +265,8 @@ have different **Properties** depending on what information they want to store.
 Each **Property** has a name and a value, and are grouped into **Property
 Sets**. Each **Property Set** also has a name. 
 
-You can find **Properties** in the **Object Property Sets** subpanel.
+You can find **Properties** in the :menuselection:`Properties --> Object
+Information --> Property Sets` panel.
 
 .. image:: images/psets.png
 
@@ -303,7 +290,8 @@ value, and are grouped into **Quantity Sets**. Similarly, there are also common
 quantities defined as part of the international standard, denoted by the prefix
 ``Qto_``. This prefix is short for "Quantity Take-Off".
 
-You can find **Quantities** in the **Object Quantity Sets** subpanel.
+You can find **Quantities** in the :menuselection:`Properties --> Object
+Information --> Quantity Sets` panel.
 
 .. image:: images/qtos.png
 
@@ -313,16 +301,17 @@ Finding the location of objects
 Every object in the built environment has a location in the world. For example,
 a chair will be located in a space, and a wall is typically located in a
 building storey. You've already seen this hierarchy of spaces in the
-**Outliner** panel, where an IFC project is broken down into site, building,
-storeys, and spaces.
+:menuselection:`Properties --> Project Overview --> Spatial Decomposition`
+panel, where an IFC project is broken down into site, building, storeys, and
+spaces.
 
 Sometimes, objects may have multiple relevant locations, such
 as a multi-storey column which can be related to multiple building storeys.
 Even in these cases, IFC enforces one location to be its primary
 location, known as its **Spatial Container**.
 
-If you click on any object, you can see its location in the **Spatial
-Container** subpanel in the **Object Information** tab.
+If you click on any object, you can see its location in the
+:menuselection:`Properties --> Object Information --> Spatial Container` panel.
 
 Press the **Select Icon** to select all objects that are in the same location.
 
@@ -334,20 +323,22 @@ Checking construction types
 Almost everything in the built environment will have a **Construction Type**.
 For example, an architect will specify a door type for every door in a project.
 
-You can see a list of **Construction Types** in the **Outliner** panel in the
-**Types** collection. For example, if the architect has a wall types schedule
-with the wall type names of ``WT01``, ``WT02``, and ``WT03``, you should see
-three **IfcWallType** objects with those same names in the **Outliner**.
+You can see a list of **Construction Types** in the :menuselection:`Outliner`
+in the **Types** collection. For example, if the architect has a wall types
+schedule with the wall type names of ``WT01``, ``WT02``, and ``WT03``, you
+should see three **IfcWallType** objects with those same names in the
+**Outliner**.
 
 You can click on these types to see more details about them in the
-**Properties** panel.
+:menuselection:`Properties` panel.
 
 .. image:: images/outliner-types.png
 
-When selecting an object, you can also see its construction type in **Object
-Information** under the **Type** subpanel. You can press the **Select Icon** to
-select all objects that are of the same **Construction Type**. You can use the
-hide and isolate hotkeys to quickly view them in the model.
+When selecting an object, you can also see its construction type in
+:menuselection:`Properties --> Object Information --> Type`. You can press the
+**Select Icon** to select all objects that are of the same **Construction
+Type**. You can use the hide and isolate hotkeys to quickly view them in the
+model.
 
 .. image:: images/properties-types.png
 
@@ -361,10 +352,10 @@ geometry of the pump, so all occurrences of that pump will have the same
 geometry.
 
 You can visually inspect types in isolation to the rest of the model. Types are
-hidden by default, so first enable the visibility of the **Types** collection in
-the **Outliner** by pressing the **Visibility Icon**. Then, select a type, and
-click on ``View > Local View > Toggle Local View`` (hotkey ``/``) in the
-**Viewport**. Toggle the view to see the entire model again.
+hidden by default, so first enable the visibility of the **Types** collection
+in the **Outliner** by pressing the **Visibility Icon**. Then, select a type,
+and click on :menuselection:`3D Viewport --> View --> Local View --> Toggle
+Local View` (:kbd:`/`). Toggle the view to see the entire model again.
 
 .. image:: images/type-local-view.png
 
@@ -383,8 +374,8 @@ resources. For example, a **Material** might be blockwork. Another
 **Material** might be in-situ concrete. **Materials** are grouped into
 categories like steel, concrete, brick, block, and so on.
 
-We can see a list of **Materials** used in the project in the **Materials**
-subpanel in the **Geometry and Materials** tab.
+We can see a list of **Materials** used in the project in the
+:menuselection:`Properties --> Geometry and Materials --> Materials` panel.
 
 Press the **Select Icon** to select all objects that are of the selected
 material.
@@ -395,18 +386,20 @@ Taking simple measurements
 --------------------------
 
 The simplest form of measurement is the one that's already taken for you. The
-**Viewing attributes and properties** section describes how to view
-pre-calculated **Quantities**.
+:ref:`quickstart/explore_model:Viewing attributes and properties` section
+describes how to view pre-calculated **Quantities**.
 
 Sometimes, you may wish to take manual measurements yourself. You can view the
 overall X, Y, and Z dimensions of the currently selected object in the
-**Derived Coordinates** subpanel in the **Geometry and Materials** tab.
+:menuselection:`Properties --> Geometry and Materials --> Placement --> Derived
+Coordinates` panel.
 
 .. image:: images/dimensions.png
 
 Another way to manually measure from two points is to use the **Measure** tool.
 First, press the **Snap Icon** to enable snapping. Then choose snap targets in
-the **Snap Menu** in the top middle section of the **Viewport** panel.
+the **Snap Menu** in the top middle section of the :menuselection:`3D
+Viewport`.
 
 .. image:: images/snap-targets.png
 
@@ -418,12 +411,12 @@ the **Snap Menu** in the top middle section of the **Viewport** panel.
    measurements will automatically snap to the nearest object's surface.
 
 Now that you have configured snapping, press the **Measure Tool Icon** on the
-left of the **Viewport** panel. **Click** and **Drag** in the 3D viewport to
-take a measurement. A circle will appear guiding the first point of your
-measurement. While **Dragging**, press the ``X`` key to lock the measurement
-line along the X axis. Alternatively, press the ``Y`` or ``Z`` key to lock the
-measurement line along the Y or Z axis. Let go of the mouse to finish your
-measurement.
+left of the :menuselection:`3D Viewport`. **Click** and **Drag** in the 3D
+viewport to take a measurement. A circle will appear guiding the first point of
+your measurement. While **Dragging**, press the ``X`` key to lock the
+measurement line along the X axis. Alternatively, press the ``Y`` or ``Z`` key
+to lock the measurement line along the Y or Z axis. Let go of the mouse to
+finish your measurement.
 
 .. image:: images/measure-tool.png
 

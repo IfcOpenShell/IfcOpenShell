@@ -30,6 +30,7 @@ class MATERIAL_UL_radiance_materials(bpy.types.UIList):
         if self.layout_type in {"DEFAULT", "COMPACT"}:
             row = layout.row(align=True)
 
+            # Adding color preview or glass icon
             if item.category == "Glass":
                 row.label(icon="SHADING_TEXTURE")
             else:
