@@ -342,9 +342,10 @@ class RadianceExporterProperties(PropertyGroup):
         name="Output File Format",
         description="Format of the output image file",
         items=[
-            ("HDR", "HDR + Tiff", "High Dynamic Range"),
+            ("HDR", "HDR", "High Dynamic Range (HDR) file only"),
+            ("HDR_TIFF", "HDR + Tiff", "High Dynamic Range (HDR) and Tiff files"),
         ],
-        default="HDR",
+        default="HDR_TIFF",
     )
 
     use_hdr: BoolProperty(

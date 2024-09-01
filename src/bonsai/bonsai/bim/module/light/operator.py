@@ -468,21 +468,23 @@ class RadianceRender(bpy.types.Operator):
         end_time = time.time()
         print(f"Render completed in {end_time - start_time:.2f} seconds")
 
-        output_hdr_path = os.path.join(output_dir, f"{output_file_name}.{output_file_format.lower()}")
+        output_hdr_path = os.path.join(output_dir, f"{output_file_name}.hdr")
         print(f"Saving HDR output to: {output_hdr_path}")
-        if output_file_format == "HDR":
-            with open(output_hdr_path, "wb") as wtr:
-                wtr.write(image)
-        else:
-            pass
-        print("Applying tone mapping...")
-        pcond_image = pr.pcond(hdr=output_hdr_path, human=True)
+        with open(output_hdr_path, "wb") as wtr:
+            wtr.write(image)
 
-        tiff_path = os.path.join(output_dir, f"{output_file_name}.tiff")
-        print(f"Saving TIFF output to: {tiff_path}")
-        pr.ra_tiff(inp=pcond_image, out=tiff_path, lzw=True)
+        if output_file_format == "HDR_TIFF":
+            print("Applying tone mapping...")
+            pcond_image = pr.pcond(hdr=output_hdr_path, human=True)
+
+            tiff_path = os.path.join(output_dir, f"{output_file_name}.tiff")
+            print(f"Saving TIFF output to: {tiff_path}")
+            pr.ra_tiff(inp=pcond_image, out=tiff_path, lzw=True)
+
         print("Radiance rendering process completed successfully.")
-        self.report({"INFO"}, "Radiance rendering completed. Output: {}".format(tiff_path))
+        self.report({"INFO"}, f"Radiance rendering completed. HDR Output: {output_hdr_path}")
+        if output_file_format == "HDR_TIFF":
+            self.report({"INFO"}, f"TIFF Output: {tiff_path}")
         return {"FINISHED"}
 
     # def get_active_camera(self, context):
