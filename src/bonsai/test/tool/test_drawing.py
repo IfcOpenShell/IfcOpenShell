@@ -69,11 +69,13 @@ class TestCreateSvgSheet(NewFile):
         ifc = ifcopenshell.file()
         ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
         tool.Ifc.set(ifc)
+        ifc_path = Path("test/files/temp/test.ifc").absolute()
+        bpy.ops.bim.save_project(filepath=str(ifc_path), should_save_as=True)
         document = ifc.createIfcDocumentInformation(
             Identification="X",
             Name="FOOBAR",
-            Scope="DOCUMENTATION",
-            Location=os.path.join(bpy.context.scene.BIMProperties.data_dir, "cache", "X - FOOBAR.svg"),
+            Scope="SHEET",
+            Location=(ifc_path.parent / "layouts" / "X - FOOBAR.svg").as_posix(),
         )
         uri = subject.create_svg_sheet(document, "A1")
         assert uri.endswith(".svg")
