@@ -88,7 +88,7 @@ void expand(const std::string& s, std::vector<unsigned char>& v) {
 }
 
 // A random number generator for the UUID
-static boost::uuids::basic_random_generator<boost::mt19937> gen;
+static boost::uuids::basic_random_generator<std::mt19937> gen;
 
 IfcParse::IfcGlobalId::IfcGlobalId() {
     uuid_data_ = gen();
