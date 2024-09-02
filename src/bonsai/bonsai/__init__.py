@@ -56,7 +56,7 @@ bbim_semver: dict[str, Any] = {}
 
 # Accessed from bonsai dependency:
 last_error = None
-last_actions: deque = deque(maxlen=10)
+last_actions: deque = deque(maxlen=20)
 FIRST_INSTALLED_BBIM_VERSION: Union[str, None] = None
 REINSTALLED_BBIM_VERSION: Union[str, None] = None
 REGISTERED_BBIM_PACKAGE: str
