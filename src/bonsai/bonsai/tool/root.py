@@ -170,7 +170,11 @@ class Root(bonsai.core.tool.Root):
 
     @classmethod
     def is_containable(cls, element: ifcopenshell.entity_instance) -> bool:
-        if element.is_a("IfcElement") or element.is_a("IfcGrid") or element.is_a("IfcAnnotation"):
+        if (
+            (element.is_a("IfcElement") and not element.is_a("IfcFeatureElement"))
+            or element.is_a("IfcGrid")
+            or element.is_a("IfcAnnotation")
+        ):
             return True
         return False
 
