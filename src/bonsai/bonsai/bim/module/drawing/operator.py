@@ -692,8 +692,9 @@ class CreateDrawing(bpy.types.Operator):
                 path.attrib["d"] = new_d
             pass
 
-        self.generate_bisect_linework(context, root)
-        self.merge_linework_and_add_metadata(root)
+        if tool.Drawing.is_camera_orthographic():
+            self.generate_bisect_linework(context, root)
+            self.merge_linework_and_add_metadata(root)
 
         with open(svg_path, "wb") as svg:
             svg.write(etree.tostring(root))
