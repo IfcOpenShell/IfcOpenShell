@@ -164,7 +164,7 @@ class TestGetDecomposedElements(NewFile):
         site = ifc.createIfcSite()
         wall = ifc.createIfcWall()
         ifcopenshell.api.run("spatial.assign_container", ifc, products=[wall], relating_structure=site)
-        assert subject.get_decomposed_elements(site) == [wall]
+        assert subject.get_decomposed_elements(site) == {wall}
 
 
 class TestGetObjectMatrix(NewFile):
