@@ -524,9 +524,14 @@ def validate(f: Union[ifcopenshell.file, str], logger: Logger, express_rules=Fal
 class LogDetectionHandler(Handler):
     message_logged = False
 
+    def __init__(self):
+        super().__init__()
+        self.default_handler = logging.StreamHandler()
+
     def emit(self, record):
         if not self.message_logged:
             self.message_logged = True
+        self.default_handler.emit(record)
 
 
 if __name__ == "__main__":
