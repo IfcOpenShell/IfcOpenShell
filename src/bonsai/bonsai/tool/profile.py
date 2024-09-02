@@ -17,6 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.api.profile
 import ifcopenshell.geom
 import ifcopenshell.util.element
 import ifcopenshell.util.unit
@@ -77,6 +78,21 @@ class Profile(bonsai.core.tool.Profile):
                     if profile:
                         return profile
         return None
+
+    @classmethod
+    def get_default_profile(cls) -> ifcopenshell.entity_instance:
+        """Return first found IfcProfileDef in IFC file or create a new default profile."""
+        ifc_file = tool.Ifc.get()
+        profile = next(iter(ifc_file.by_type("IfcProfileDef")), None)
+        if profile:
+            return profile
+        profile = ifcopenshell.api.profile.add_parameterized_profile(ifc_file, ifc_class="IfcRectangleProfileDef")
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+        profile.ProfileType = "AREA"
+        profile.ProfileName = "Default Profile"
+        profile.XDim = 0.1 / si_conversion
+        profile.YDim = 0.1 / si_conversion
+        return profile
 
     @classmethod
     def get_model_profiles(cls) -> list[ifcopenshell.entity_instance]:

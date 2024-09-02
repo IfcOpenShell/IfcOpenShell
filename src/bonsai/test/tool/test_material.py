@@ -150,3 +150,36 @@ class TestIsMaterialUsedInSets(NewFile):
         material_set.MaterialLayers = [material_set_item]
         material_set_item.Material = material
         assert subject.is_material_used_in_sets(material) is True
+
+
+class TestEnsureNewMaterialSetIsValid(NewFile):
+    def test_material_constituent_set(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        material_set = ifc.create_entity("IfcMaterialConstituentSet")
+        subject.ensure_new_material_set_is_valid(material_set)
+        assert len(constituents := material_set.MaterialConstituents) == 1
+        assert constituents[0].Material
+
+    def test_material_layer_set(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        material_set = ifc.create_entity("IfcMaterialLayerSet")
+        subject.ensure_new_material_set_is_valid(material_set)
+        assert len(layers := material_set.MaterialLayers) == 1
+        assert layers[0].Material
+
+    def test_material_profile_set(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        material_set = ifc.create_entity("IfcMaterialProfileSet")
+        subject.ensure_new_material_set_is_valid(material_set)
+        assert len(profiles := material_set.MaterialProfiles) == 1
+        assert profiles[0].Profile
+
+    def test_material_list(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        material_set = ifc.create_entity("IfcMaterialList")
+        subject.ensure_new_material_set_is_valid(material_set)
+        assert len(material_set.Materials) == 1
