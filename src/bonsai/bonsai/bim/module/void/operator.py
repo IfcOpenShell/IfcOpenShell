@@ -43,7 +43,6 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
         return True
 
     def _execute(self, context):
-        props = context.scene.BIMModelProperties
         selected_objects = context.selected_objects
         target_object = selected_objects[0]
 
