@@ -1481,11 +1481,19 @@ class AddDrawingToSheet(bpy.types.Operator, tool.Ifc.Operator):
     @classmethod
     def poll(cls, context):
         props = context.scene.DocProperties
-        return props.drawings and props.sheets and context.scene.BIMProperties.data_dir
+        # Won't be visible in UI anyway.
+        if not props.sheets or not context.scene.BIMProperties.data_dir:
+            return False
+        if not tool.Drawing.get_active_drawing_item():
+            cls.poll_message_set("No drawing selected.")
+            return False
+        return True
 
     def _execute(self, context):
         props = context.scene.DocProperties
-        active_drawing = props.drawings[props.active_drawing_index]
+        active_drawing = tool.Drawing.get_active_drawing_item()
+        assert active_drawing
+
         active_sheet = tool.Drawing.get_active_sheet(context)
         drawing = tool.Ifc.get().by_id(active_drawing.ifc_definition_id)
         drawing_reference = tool.Drawing.get_drawing_document(drawing)
