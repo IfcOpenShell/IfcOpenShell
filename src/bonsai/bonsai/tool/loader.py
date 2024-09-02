@@ -61,21 +61,6 @@ class Loader(bonsai.core.tool.Loader):
         cls.settings = settings
 
     @classmethod
-    def create_project_collection(cls, name: str) -> bpy.types.Collection:
-        project_obj = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
-        project_collection = project_obj.BIMObjectProperties.collection
-        for collection in project_collection.children:
-            if collection.name == name:
-                return collection
-        collection = bpy.data.collections.new(name)
-        project_collection.children.link(collection)
-        if name == "Types":
-            project_layer = bpy.context.view_layer.layer_collection.children.get(project_collection.name)
-            if project_layer:
-                project_layer.children[collection.name].hide_viewport = True
-        return collection
-
-    @classmethod
     def get_mesh_name_from_shape(cls, geometry: ifcopenshell.geom.ShapeType) -> str:
         representation_id = geometry.id
         if "-" in representation_id:

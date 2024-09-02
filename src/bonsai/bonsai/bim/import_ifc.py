@@ -1137,11 +1137,7 @@ class IfcImporter:
         except:
             # Occurs when reloading a project
             pass
-        project_collection = bpy.context.view_layer.layer_collection.children[self.project["blender"].name]
-        if types_collection := project_collection.children.get("IfcTypeProduct"):
-            types_collection.hide_viewport = False
-            for obj in types_collection.collection.objects:  # turn off all objects inside Types collection.
-                obj.hide_set(True)
+        tool.Collector.reset_default_visibility()
 
     def clean_mesh(self):
         obj = None
@@ -1155,19 +1151,11 @@ class IfcImporter:
         if not last_obj:
             return
 
-        # Temporarily unhide types collection to make sure all objects will be cleaned
-        project_collection = bpy.context.view_layer.layer_collection.children[self.project["blender"].name]
-        if types_collection := project_collection.children.get("IfcTypeProduct"):
-            types_collection.hide_viewport = False
-            bpy.context.view_layer.objects.active = last_obj
-
         bpy.ops.object.editmode_toggle()
         bpy.ops.mesh.tris_convert_to_quads()
         bpy.ops.mesh.normals_make_consistent()
         bpy.ops.object.editmode_toggle()
 
-        if types_collection:
-            types_collection.hide_viewport = True
         bpy.context.view_layer.objects.active = last_obj
         IfcStore.edited_objs.clear()
 

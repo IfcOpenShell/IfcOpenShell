@@ -130,10 +130,11 @@ def main(
         if settings.drawing_guid:
             found_guid = False
             for f in files:
-                try: 
+                try:
                     f.by_guid(settings.drawing_guid)
                     found_guid = True
-                except: pass
+                except:
+                    pass
             if not found_guid:
                 raise ValueError(f"Unable to find guid {settings.drawing_guid!r}")
             sr.setElevationRefGuid(settings.drawing_guid)
