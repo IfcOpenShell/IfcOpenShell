@@ -1,0 +1,10 @@
+ISO-10303-21;
+HEADER;
+FILE_DESCRIPTION(('ViewDefinition[DesignTransferView]'),'2;1');
+FILE_NAME('test.ifc','2024-08-30T12:34:53+05:00',('author','author email'),('organization','organization email'),'IfcOpenShell','Bonsai','Nobody');
+FILE_SCHEMA(('IFC4'));
+ENDSEC;
+DATA;
+#1=IFCPROJECT('1iBd2lkrX61vZxF9AnXLa0',$,'My Project',$,$,$,$,$,$);
+ENDSEC;
+END-ISO-10303-21;
