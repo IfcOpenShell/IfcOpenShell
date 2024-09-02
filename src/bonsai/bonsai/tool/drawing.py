@@ -387,12 +387,8 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def ensure_unique_identification(cls, identification: str) -> str:
-        if tool.Ifc.get_schema() == "IFC2X3":
-            ids = [d.DocumentId for d in tool.Ifc.get().by_type("IfcDocumentInformation") if d.Scope == "DOCUMENTATION"]
-        else:
-            ids = [
-                d.Identification for d in tool.Ifc.get().by_type("IfcDocumentInformation") if d.Scope == "DOCUMENTATION"
-            ]
+        attr = "DocumentId" if tool.Ifc.get_schema() == "IFC2X3" else "Identification"
+        ids = [getattr(d, attr) for d in tool.Ifc.get().by_type("IfcDocumentInformation") if d.Scope == "SHEET"]
         while identification in ids:
             identification += "-X"
         return identification
@@ -568,7 +564,7 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def generate_sheet_identification(cls) -> str:
-        number = len([d for d in tool.Ifc.get().by_type("IfcDocumentInformation") if d.Scope == "DOCUMENTATION"])
+        number = len([d for d in tool.Ifc.get().by_type("IfcDocumentInformation") if d.Scope == "SHEET"])
         return "A" + str(number).zfill(2)
 
     @classmethod
