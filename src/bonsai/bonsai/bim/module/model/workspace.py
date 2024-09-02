@@ -811,9 +811,7 @@ class BimToolUI:
             else:
                 text = ""
             if not AuthoringData.data["ifc_element_type"]:
-
                 prop_with_search(row, cls.props, "ifc_class", text="")
-                row.operator("bim.add_constr_type_instance", text=text, icon_value=custom_icon_previews["ADD"].icon_id)
 
             row = cls.layout.row(align=True)
             if AuthoringData.data["relating_type_id"]:
