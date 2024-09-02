@@ -450,6 +450,7 @@ class EnableEditingRailingPath(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         obj = context.active_object
+        [o.select_set(False) for o in context.selected_objects if o != obj]
         props = obj.BIMRailingProperties
         data = tool.Model.get_modeling_bbim_pset_data(obj, "BBIM_Railing")["data_dict"]
         # required since we could load pset from .ifc and BIMRoofProperties won't be set
