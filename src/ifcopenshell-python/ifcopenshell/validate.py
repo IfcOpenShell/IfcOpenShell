@@ -600,6 +600,7 @@ if __name__ == "__main__":
 
     filenames = [x for x in sys.argv[1:] if not x.startswith("--")]
     flags = set(x for x in sys.argv[1:] if x.startswith("--"))
+    some_file_is_invalid = False
 
     for fn in filenames:
         handler = None
@@ -636,5 +637,10 @@ if __name__ == "__main__":
         else:  # json_logger.
             invalid_ifc = bool(logger.statements)
 
-        if not invalid_ifc:
+        if invalid_ifc:
+            some_file_is_invalid = True
+        else:
             print("No validation issues found.")
+
+    if some_file_is_invalid:
+        exit(1)
