@@ -1041,6 +1041,8 @@ class DumbWallJoiner:
         self.recreate_wall(element1, wall1, axis, body)
 
     def split(self, wall1, target):
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+
         element1 = tool.Ifc.get_entity(wall1)
         if not element1:
             return
@@ -1064,6 +1066,7 @@ class DumbWallJoiner:
             r.RelatedOpeningElement for r in element1.HasOpenings if not r.RelatedOpeningElement.HasFillings
         ]:
             opening_matrix = Matrix(ifcopenshell.util.placement.get_local_placement(opening.ObjectPlacement).tolist())
+            opening_matrix.translation *= unit_scale
             opening_location = opening_matrix.translation
             _, opening_position = mathutils.geometry.intersect_point_line(opening_location.to_2d(), *axis1["reference"])
             if opening_position > cut_percentage:
@@ -1075,6 +1078,7 @@ class DumbWallJoiner:
             r.RelatedOpeningElement for r in element2.HasOpenings if not r.RelatedOpeningElement.HasFillings
         ]:
             opening_matrix = Matrix(ifcopenshell.util.placement.get_local_placement(opening.ObjectPlacement).tolist())
+            opening_matrix.translation *= unit_scale
             opening_location = opening_matrix.translation
             _, opening_position = mathutils.geometry.intersect_point_line(opening_location.to_2d(), *axis1["reference"])
             if opening_position < cut_percentage:
@@ -1097,6 +1101,8 @@ class DumbWallJoiner:
         self.recreate_wall(element2, wall2, axis2["reference"], axis2["reference"])
 
     def flip(self, wall1):
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+
         if tool.Ifc.is_moved(wall1):
             bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=wall1)
 
@@ -1125,6 +1131,7 @@ class DumbWallJoiner:
         filling_matrixes = {}
         for opening in [r.RelatedOpeningElement for r in element1.HasOpenings]:
             opening_matrix = Matrix(ifcopenshell.util.placement.get_local_placement(opening.ObjectPlacement).tolist())
+            opening_matrix.translation *= unit_scale
             location = opening_matrix.translation
             location_on_base = tool.Cad.point_on_edge(location, axis1["base"])
             location_on_side = tool.Cad.point_on_edge(location, axis1["side"])
