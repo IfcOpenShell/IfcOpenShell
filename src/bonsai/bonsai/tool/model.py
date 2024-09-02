@@ -456,7 +456,7 @@ class Model(bonsai.core.tool.Model):
         ifc_importer.material_creator.load_existing_materials()
         ifc_importer.create_generic_elements(set(openings))
         for opening_obj in ifc_importer.added_data.values():
-            bpy.context.scene.collection.objects.link(opening_obj)
+            tool.Collector.assign(opening_obj, should_clean_users_collection=False)
         return ifc_importer.added_data.values()
 
     @classmethod
