@@ -72,10 +72,6 @@ class AddEmptyType(bpy.types.Operator, AddObjectHelper):
         return {"FINISHED"}
 
 
-def add_empty_type_button(self, context):
-    self.layout.operator(AddEmptyType.bl_idname, icon="FILE_3D")
-
-
 class AddDefaultType(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_default_type"
     bl_label = "Add Default Type"
