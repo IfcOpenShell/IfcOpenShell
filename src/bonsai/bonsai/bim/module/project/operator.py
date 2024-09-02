@@ -502,19 +502,8 @@ class AppendLibraryElement(bpy.types.Operator):
         logger = logging.getLogger("ImportIFC")
         ifc_import_settings = import_ifc.IfcImportSettings.factory(context, IfcStore.path, logger)
 
-        type_collection = bpy.data.collections.get("Types")
-        if not type_collection:
-            type_collection = bpy.data.collections.new("Types")
-            for collection in bpy.context.view_layer.layer_collection.children:
-                collection_obj = collection.collection.BIMCollectionProperties.obj
-                if collection_obj and tool.Ifc.get_entity(collection_obj).is_a("IfcProject"):
-                    collection.collection.children.link(type_collection)
-                    collection.children["Types"].hide_viewport = True
-                    break
-
         ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
         ifc_importer.file = self.file
-        ifc_importer.type_collection = type_collection
         ifc_importer.process_context_filter()
         ifc_importer.material_creator.load_existing_materials()
         self.import_materials(element, ifc_importer)
