@@ -76,7 +76,7 @@ class DereferenceStructure(bpy.types.Operator, tool.Ifc.Operator):
 class AssignContainer(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_container"
     bl_label = "Assign Container"
-    bl_description = "Assign current default container to the selected objects"
+    bl_description = "Assign the selected objects to the selected container"
     bl_options = {"REGISTER", "UNDO"}
     container: bpy.props.IntProperty(options={"SKIP_SAVE"})
 
