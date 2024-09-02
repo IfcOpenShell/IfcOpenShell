@@ -220,18 +220,18 @@ class TestEnsureUniqueIdentification(NewFile):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
         assert subject.ensure_unique_identification("FOOBAR") == "FOOBAR"
-        ifc.createIfcDocumentInformation(Identification="FOOBAR", Scope="DOCUMENTATION")
+        ifc.createIfcDocumentInformation(Identification="FOOBAR", Scope="SHEET")
         assert subject.ensure_unique_identification("FOOBAR") == "FOOBAR-X"
-        ifc.createIfcDocumentInformation(Identification="FOOBAR-X", Scope="DOCUMENTATION")
+        ifc.createIfcDocumentInformation(Identification="FOOBAR-X", Scope="SHEET")
         assert subject.ensure_unique_identification("FOOBAR") == "FOOBAR-X-X"
 
     def test_unique_document_id_ifc2x3(self):
         ifc = ifcopenshell.file(schema="IFC2X3")
         tool.Ifc.set(ifc)
         assert subject.ensure_unique_identification("FOOBAR") == "FOOBAR"
-        ifc.createIfcDocumentInformation(DocumentId="FOOBAR", Scope="DOCUMENTATION")
+        ifc.createIfcDocumentInformation(DocumentId="FOOBAR", Scope="SHEET")
         assert subject.ensure_unique_identification("FOOBAR") == "FOOBAR-X"
-        ifc.createIfcDocumentInformation(DocumentId="FOOBAR-X", Scope="DOCUMENTATION")
+        ifc.createIfcDocumentInformation(DocumentId="FOOBAR-X", Scope="SHEET")
         assert subject.ensure_unique_identification("FOOBAR") == "FOOBAR-X-X"
 
 
