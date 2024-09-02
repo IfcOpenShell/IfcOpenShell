@@ -156,6 +156,7 @@ class DuplicateMaterial(bpy.types.Operator, tool.Ifc.Operator):
 class AddMaterialSet(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_material_set"
     bl_label = "Add Material Set"
+    bl_description = "Create a new material set, will use a default material/profile as a placeholder"
     bl_options = {"REGISTER", "UNDO"}
     set_type: bpy.props.StringProperty()
 
