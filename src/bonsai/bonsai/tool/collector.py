@@ -103,7 +103,7 @@ class Collector(bonsai.core.tool.Collector):
             project_obj = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
             project_obj.BIMObjectProperties.collection.children.link(collection)
             if layer_collection := tool.Blender.get_layer_collection(collection):
-                layer_collection.hide_viewport = True
+                cls.set_layer_collection_visibility(layer_collection)
         return collection
 
     @classmethod
@@ -148,21 +148,24 @@ class Collector(bonsai.core.tool.Collector):
         collection.children.link(obj_or_col)
 
     @classmethod
+    def set_layer_collection_visibility(cls, layer_collection):
+        name = layer_collection.collection.name
+        if name in (
+            "IfcTypeProduct",
+            "IfcStructuralItem",
+            "Unsorted",
+        ):
+            layer_collection.hide_viewport = True
+        elif name.startswith("IfcAnnotation"):
+            layer_collection.hide_viewport = True
+        else:
+            layer_collection.hide_viewport = False
+
+    @classmethod
     def reset_default_visibility(cls):
         project = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
         project_collection = project.BIMObjectProperties.collection
         for layer_collection in bpy.context.view_layer.layer_collection.children:
             if layer_collection.collection == project_collection:
                 for layer_collection2 in layer_collection.children:
-                    name = layer_collection2.collection.name
-                    if name in (
-                        "IfcTypeProduct",
-                        "IfcOpeningElement",
-                        "IfcStructuralItem",
-                        "Unsorted",
-                    ):
-                        layer_collection2.hide_viewport = True
-                    elif name.startswith("IfcAnnotation"):
-                        layer_collection2.hide_viewport = True
-                    else:
-                        layer_collection2.hide_viewport = False
+                    cls.set_layer_collection_visibility(layer_collection2)
