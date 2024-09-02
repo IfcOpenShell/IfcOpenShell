@@ -265,6 +265,17 @@ class ToggleContainerElement(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class SelectDecomposedElement(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.select_decomposed_element"
+    bl_label = "Select Decomposed Element"
+    bl_options = {"REGISTER", "UNDO"}
+    element: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        if self.element:
+            core.select_decomposed_element(tool.Ifc, tool.Spatial, element=tool.Ifc.get().by_id(self.element))
+
+
 class SelectDecomposedElements(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.select_decomposed_elements"
     bl_label = "Select Children"
