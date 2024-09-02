@@ -171,6 +171,11 @@ class BIM_PT_spatial_decomposition(Panel):
         )
         row.prop(self.props, "should_include_children", text="", icon="OUTLINER")
         row.operator("bim.assign_container", icon="FOLDER_REDIRECT", text="").container = ifc_definition_id
+        op = row.operator("bim.select_decomposed_element", icon="OBJECT_DATA", text="")
+        if active_element := self.props.active_element:
+            op.element = active_element.ifc_definition_id
+        else:
+            op.element = 0
         op = row.operator("bim.select_decomposed_elements", icon="RESTRICT_SELECT_OFF", text="")
         op.container = ifc_definition_id
 

@@ -159,6 +159,10 @@ def select_decomposed_elements(
     spatial.select_products(elements)
 
 
+def select_decomposed_element(ifc: tool.Ifc, spatial: tool.Spatial, element: ifcopenshell.entity_instance) -> None:
+    spatial.set_active_object(ifc.get_object(element))
+
+
 def generate_space(ifc: tool.Ifc, model: tool.Model, root: tool.Root, spatial: tool.Spatial, type: tool.Type) -> None:
     if not root.get_default_container():
         raise NoDefaultContainer()
