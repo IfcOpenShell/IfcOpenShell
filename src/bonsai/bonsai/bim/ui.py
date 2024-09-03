@@ -446,8 +446,11 @@ class BIM_PT_tabs(Panel):
             op = box.operator("bim.open_uri", text="How Can I Fix This?")
             op.uri = "https://docs.bonsaibim.org/users/troubleshooting.html"
 
+        if not tool.Ifc.get():
+            return
+
         props = context.scene.BIMProperties
-        if (tool.Ifc.get() or props.ifc_file) and props.has_blend_warning:
+        if props.has_blend_warning:
             box = self.layout.box()
             box.alert = True
             row = box.row(align=True)
@@ -461,6 +464,14 @@ class BIM_PT_tabs(Panel):
             box.alert = True
             row = box.row(align=True)
             row.label(text="Geometry changes will be lost", icon="ERROR")
+            op = row.operator("bim.open_uri", text="", icon="QUESTION")
+            op.uri = "https://docs.bonsaibim.org/users/troubleshooting.html#incompatible-blender-features"
+
+        if (o := context.active_object) and [round(x, 4) for x in list(o.matrix_world.to_scale())] != [1, 1, 1]:
+            box = self.layout.box()
+            box.alert = True
+            row = box.row(align=True)
+            row.label(text="Object scaling will be lost", icon="ERROR")
             op = row.operator("bim.open_uri", text="", icon="QUESTION")
             op.uri = "https://docs.bonsaibim.org/users/troubleshooting.html#incompatible-blender-features"
 
