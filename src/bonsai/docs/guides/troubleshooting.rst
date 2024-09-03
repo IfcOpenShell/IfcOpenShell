@@ -58,10 +58,10 @@ can `report a bug <https://github.com/ifcopenshell/ifcopenshell/issues>`_ or
    with factory settings.
 
    To quickly test in a clean environment, first :ref:`find your Blender
-   configuration folder<users/troubleshooting:Where is the add-on
+   configuration folder<guides/troubleshooting:Where is the add-on
    installed?>`.  Rename the folder from ``X.XX`` to something else like
    ``X.XX_backup``, then restart Blender and try follow the :doc:`installation
-   instructions</users/quickstart/installation>` again.
+   instructions</quickstart/installation>` again.
 
    If this fixes your issue, consider disabling other add-ons one by one until
    you find a conflict as a next step to isolating the issue.
@@ -99,6 +99,23 @@ meet an error similar to "RuntimeError: Instance #1234 not found"). This will
 create unpredictable, and sometimes unrecoverable errors.
 
 To avoid this issue, only open and save IFCs.
+
+Incompatible Blender features
+-----------------------------
+
+Blender offers features such as animation, sculpting, modifiers, and more that
+are not available in IFC. As :ref:`Bonsai uses IFC as its native data
+store<guides/troubleshooting:Saving and loading blend files>`, using these
+incompatible features may result in data loss.
+
+1. **Manual geometry editing**. Manually changing the mode to Edit or Object
+   mode in the :menuselection:`3D Viewport` top left dropdown menu. This
+   changes the Blender mesh editing mode, but any changes may be incompatible
+   with the IFC geometry. This is because IFC geometry may not be a mesh, or
+   have parametric constraints. Any changes made in this manner may have
+   unpredictable effects and changes may be discarded. Instead, always use the
+   :kbd:`Tab` key to toggle object editing, or use the IFC Object / Edit mode
+   toggle in the top right of the :menuselection:`3D Viewport`.
 
 Where is the add-on installed?
 ------------------------------
