@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.api.pset
 import ifcopenshell.util.element
 
 
@@ -24,9 +25,6 @@ def remove_profile(file: ifcopenshell.file, profile: ifcopenshell.entity_instanc
     """Removes a profile
 
     :param profile: The IfcProfileDef to remove.
-    :type profile: ifcopenshell.entity_instance
-    :return: None
-    :rtype: None
 
     Example:
 
@@ -38,11 +36,26 @@ def remove_profile(file: ifcopenshell.file, profile: ifcopenshell.entity_instanc
         ifcopenshell.api.profile.remove_profile(model, profile=circle)
     """
     settings = {"profile": profile}
+    is_ifc2x3 = file.schema == "IFC2X3"
 
     subelements = set()
     for attribute in settings["profile"]:
         if isinstance(attribute, ifcopenshell.entity_instance):
             subelements.add(attribute)
+
+    # Clean up profile proprty sets.
+    profile_psets = []
+    if is_ifc2x3:
+        for pset in file.by_type("IfcProfileProperties"):
+            if pset.ProfileDefinition != profile:
+                continue
+            profile_psets.append(pset)
+    else:
+        profile_psets = profile.HasProperties
+
+    for pset in profile_psets:
+        ifcopenshell.api.pset.remove_pset(file, product=profile, pset=pset)
+
     file.remove(settings["profile"])
     for subelement in subelements:
         ifcopenshell.util.element.remove_deep2(file, subelement)
