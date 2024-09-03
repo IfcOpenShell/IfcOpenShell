@@ -29,6 +29,7 @@ from mathutils import Vector, Matrix
 class AddArray(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_array"
     bl_label = "Add Array"
+    bl_description = "Add Bonsai parametric array to the active IFC element"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
