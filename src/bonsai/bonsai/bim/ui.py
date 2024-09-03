@@ -444,7 +444,7 @@ class BIM_PT_tabs(Panel):
                 box.label(text="View the console for full logs.", icon="CONSOLE")
             box.operator("bim.copy_debug_information", text="Copy Error Message To Clipboard")
             op = box.operator("bim.open_uri", text="How Can I Fix This?")
-            op.uri = "https://docs.bonsaibim.org/users/troubleshooting.html"
+            op.uri = "https://docs.bonsaibim.org/guides/troubleshooting.html"
 
         if not tool.Ifc.get():
             return
@@ -456,7 +456,7 @@ class BIM_PT_tabs(Panel):
             row = box.row(align=True)
             row.label(text="Your model may be outdated", icon="ERROR")
             op = row.operator("bim.open_uri", text="", icon="QUESTION")
-            op.uri = "https://docs.bonsaibim.org/users/troubleshooting.html#saving-and-loading-blend-files"
+            op.uri = "https://docs.bonsaibim.org/guides/troubleshooting.html#saving-and-loading-blend-files"
             row.operator("bim.close_blend_warning", text="", icon="CANCEL")
 
         if context.mode != context.scene.BIMGeometryProperties.mode:
@@ -465,7 +465,7 @@ class BIM_PT_tabs(Panel):
             row = box.row(align=True)
             row.label(text="Geometry changes will be lost", icon="ERROR")
             op = row.operator("bim.open_uri", text="", icon="QUESTION")
-            op.uri = "https://docs.bonsaibim.org/users/troubleshooting.html#incompatible-blender-features"
+            op.uri = "https://docs.bonsaibim.org/guides/troubleshooting.html#incompatible-blender-features"
 
         if (o := context.active_object) and [round(x, 4) for x in list(o.matrix_world.to_scale())] != [1, 1, 1]:
             box = self.layout.box()
@@ -473,7 +473,7 @@ class BIM_PT_tabs(Panel):
             row = box.row(align=True)
             row.label(text="Object scaling will be lost", icon="ERROR")
             op = row.operator("bim.open_uri", text="", icon="QUESTION")
-            op.uri = "https://docs.bonsaibim.org/users/troubleshooting.html#incompatible-blender-features"
+            op.uri = "https://docs.bonsaibim.org/guides/troubleshooting.html#incompatible-blender-features"
 
     def draw_tab_entry(self, row, icon, tab_name, enabled=True, highlight=False):
         tab_entry = row.row(align=True)
