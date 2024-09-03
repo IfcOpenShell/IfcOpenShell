@@ -68,7 +68,28 @@ class RemoveProfileDef(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         props = context.scene.BIMProfileProperties
         current_index = props.active_profile_index
-        ifcopenshell.api.run("profile.remove_profile", tool.Ifc.get(), profile=tool.Ifc.get().by_id(self.profile))
+
+        ifc_file = tool.Ifc.get()
+        profile = ifc_file.by_id(self.profile)
+
+        # Save user from creating invalid IFC.
+        inverse_classes = {i.is_a() for i in ifc_file.get_inverse(profile)}
+        schema = ifcopenshell.schema_by_name(ifc_file.schema)
+
+        # Allow removing profile with IfcProfileProperties.
+        for inverse_class in inverse_classes.copy():
+            declaration = schema.declaration_by_name(inverse_class)
+            if declaration._is("IfcProfileProperties"):
+                inverse_classes.remove(inverse_class)
+
+        if inverse_classes:
+            error_msg = "Cannot remove profile as it's still part of other IFC entities:"
+            for inverse_class in inverse_classes:
+                error_msg += "\n- " + inverse_class
+            self.report({"ERROR"}, error_msg)
+            return {"CANCELLED"}
+
+        ifcopenshell.api.run("profile.remove_profile", ifc_file, profile=profile)
         bpy.ops.bim.load_profiles()
 
         # preserve selected index if possible
