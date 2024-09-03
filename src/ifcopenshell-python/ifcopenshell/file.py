@@ -32,6 +32,21 @@ from .entity_instance import entity_instance
 if TYPE_CHECKING:
     import ifcopenshell.util.schema
 
+HEADER_FIELDS = {
+    "file_description": [
+        "description",
+        "implementation_level"
+    ],
+    "file_name": [
+        "name",
+        "time_stamp",
+        "author",
+        "organization",
+        "preprocessor_version",
+        "originating_system",
+        "authorization"
+    ]
+}
 
 class Transaction:
     def __init__(self, ifc_file):
@@ -615,6 +630,11 @@ class file:
 
     def __iter__(self) -> Generator[ifcopenshell.entity_instance, None, None]:
         return iter(self[id] for id in self.wrapped_data.entity_names())
+
+    def assign_header_from(self, other):
+        for k, vs in HEADER_FIELDS.items():
+            for v in vs:
+                setattr(getattr(self.header, k), v, getattr(getattr(other.header, k), v))
 
     def write(self, path: "os.PathLike | str", format: Optional[str] = None, zipped: bool = False) -> None:
         """Write ifc model to file.
