@@ -425,7 +425,7 @@ class BIMCameraProperties(PropertyGroup):
     custom_scale_denominator: bpy.props.StringProperty(default="100", update=update_diagram_scale)
     raster_x: IntProperty(name="Raster X", default=1000)
     raster_y: IntProperty(name="Raster Y", default=1000)
-    dpi: IntProperty(name="DPI", default=)
+    dpi: IntProperty(name="DPI", default=75)
     width: FloatProperty(name="Width", default=50, subtype="DISTANCE")
     height: FloatProperty(name="Height", default=50, subtype="DISTANCE")
     is_nts: BoolProperty(name="Is NTS", update=update_is_nts)
