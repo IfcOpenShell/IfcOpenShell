@@ -112,6 +112,7 @@ class BIMContainer(PropertyGroup):
 class Element(PropertyGroup):
     name: StringProperty(name="Name")
     ifc_class: StringProperty(name="Name", description="Type or element IFC class, empty if 'type' is 'CLASS'")
+    identification: StringProperty(name="Identification", description="Identification if 'type' is 'CLASSIFICATION'")
     ifc_definition_id: IntProperty(
         name="IFC Definition ID",
         description="ID of the element type / occurrence. 0 if 'type' is 'CLASS' or if it's 'TYPE' but it represents untyped elements",
@@ -125,6 +126,7 @@ class Element(PropertyGroup):
         items=(
             ("CLASS", "CLASS", "CLASS"),
             ("TYPE", "TYPE", "TYPE"),
+            ("CLASSIFICATION", "CLASSIFICATION", "CLASSIFICATION"),
             ("OCCURRENCE", "OCCURRENCE", "OCCURRENCE"),
         ),
     )
@@ -145,6 +147,7 @@ class BIMSpatialDecompositionProperties(PropertyGroup):
         items=(
             ("TYPE", "Class > Type > Occurrence", "Show a breakdown by IfcClass, relating type, and occurrence"),
             ("DECOMPOSITION", "Element Decomposition", "Show a breakdown by element decomposition"),
+            ("CLASSIFICATION", "Element Classification", "Show a breakdown by element classification"),
         ),
         update=update_element_mode,
     )

@@ -293,34 +293,61 @@ class SelectDecomposedElements(bpy.types.Operator, tool.Ifc.Operator):
         return self.execute(context)
 
     def _execute(self, context):
-        ifc_class = relating_type = None
-        is_untyped = False
         ifc_file = tool.Ifc.get()
-        if self.should_filter:
-            active_element = context.scene.BIMSpatialDecompositionProperties.active_element
-            element_type = active_element.type
-            if element_type == "CLASS":
-                ifc_class = active_element.name
-            elif element_type == "TYPE":
-                ifc_class = active_element.ifc_class
-                if ifc_id := active_element.ifc_definition_id:
-                    relating_type = ifc_file.by_id(ifc_id)
-            else:  # OCCURRENCE
-                occurrence = ifc_file.by_id(active_element.ifc_definition_id)
-                obj = tool.Ifc.get_object(occurrence)
-                assert isinstance(obj, bpy.types.Object)
-                tool.Blender.set_active_object(obj)
+        container = ifc_file.by_id(self.container)
+        props = context.scene.BIMSpatialDecompositionProperties
+        element_filter = props.element_filter
+        active_element = props.active_element
+
+        if not self.should_filter and not element_filter:
+            tool.Spatial.select_products(tool.Spatial.get_decomposed_elements(container))
+            return
+
+        if props.element_mode == "TYPE":
+            if active_element.type == "OCCURRENCE":
+                if obj := tool.Ifc.get_object(ifc_file.by_id(active_element.ifc_definition_id)):
+                    tool.Blender.set_active_object(obj)
                 return
 
-        element_filter = context.scene.BIMSpatialDecompositionProperties.element_filter
-        core.select_decomposed_elements(
-            tool.Spatial,
-            container=ifc_file.by_id(self.container),
-            ifc_class=ifc_class,
-            relating_type=relating_type,
-            is_untyped=is_untyped,
-            element_filter=element_filter,
-        )
+            ifc_class = relating_type = None
+            is_untyped = False
+
+            if self.should_filter:
+                if active_element.type == "CLASS":
+                    ifc_class = active_element.name
+                elif active_element.type == "TYPE":
+                    ifc_class = active_element.ifc_class
+                    if ifc_id := active_element.ifc_definition_id:
+                        relating_type = ifc_file.by_id(ifc_id)
+
+            elements = tool.Spatial.get_decomposed_elements(container)
+            elements = tool.Spatial.filter_elements(elements, ifc_class, relating_type, is_untyped, element_filter)
+            tool.Spatial.select_products(elements)
+        elif props.element_mode == "DECOMPOSITION":
+            occurrence = ifc_file.by_id(active_element.ifc_definition_id)
+            elements = ifcopenshell.util.element.get_decomposition(occurrence)
+            elements.add(occurrence)
+            tool.Spatial.select_products(elements)
+        elif props.element_mode == "CLASSIFICATION":
+            if active_element.type == "OCCURRENCE":
+                if obj := tool.Ifc.get_object(ifc_file.by_id(active_element.ifc_definition_id)):
+                    tool.Blender.set_active_object(obj)
+                return
+
+            if active_element.type == "CLASSIFICATION":
+                identification = active_element.identification
+                elements = tool.Spatial.get_decomposed_elements(container)
+
+                def filter_element(element: ifcopenshell.entity_instance) -> bool:
+                    references = ifcopenshell.util.classification.get_references(element)
+                    if identification == "Unclassified":
+                        if not references:
+                            return True
+                    elif any([r for r in references if r[1].startswith(identification)]):
+                        return True
+                    return False
+
+                tool.Spatial.select_products(filter(filter_element, elements))
 
 
 class SetDefaultContainer(bpy.types.Operator, tool.Ifc.Operator):

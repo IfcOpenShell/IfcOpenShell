@@ -146,19 +146,6 @@ def toggle_container_element(spatial: tool.Spatial, element_index: int, is_recur
     spatial.load_contained_elements()
 
 
-def select_decomposed_elements(
-    spatial: tool.Spatial,
-    container: ifcopenshell.entity_instance,
-    ifc_class: str | None = None,
-    relating_type: ifcopenshell.entity_instance | None = None,
-    is_untyped: bool = False,
-    element_filter: str | None = None,
-) -> None:
-    elements = spatial.get_decomposed_elements(container)
-    elements = spatial.filter_elements(elements, ifc_class, relating_type, is_untyped, element_filter)
-    spatial.select_products(elements)
-
-
 def select_decomposed_element(ifc: tool.Ifc, spatial: tool.Spatial, element: ifcopenshell.entity_instance) -> None:
     spatial.set_active_object(ifc.get_object(element))
 
