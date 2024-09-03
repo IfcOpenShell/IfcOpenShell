@@ -278,27 +278,15 @@ class BIM_UL_elements(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index, fit_flag):
         if item:
             row = layout.row(align=True)
-            item_type = item.type
             for _ in range(item.level):
                 row.label(text="", icon="BLANK1")
             if item.has_children:
                 self.draw_toggle(row, item.is_expanded, index)
-            if item_type == "CLASS":
-                row.label(text=item.name)
+            row.label(text=item.name)
+            if item.total:
                 col = row.column()
                 col.alignment = "RIGHT"
                 col.label(text=str(item.total))
-            elif item_type == "TYPE":
-                row.label(text=item.name)
-                col = row.column()
-                col.alignment = "RIGHT"
-                col.label(text=str(item.total))
-            elif item_type == "OCCURRENCE":
-                row.label(text=item.name)
-                if item.total:
-                    col = row.column()
-                    col.alignment = "RIGHT"
-                    col.label(text=str(item.total))
 
     def draw_filter(self, context, layout):
         row = layout.row()
