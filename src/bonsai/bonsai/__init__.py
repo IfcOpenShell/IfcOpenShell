@@ -329,7 +329,7 @@ if IN_BLENDER:
 
                 layout.operator("bim.copy_debug_information", text="Copy Error Message To Clipboard")
                 op = layout.operator("bim.open_uri", text="How Can I Fix This?")
-                op.uri = "https://docs.bonsaibim.org/users/troubleshooting.html#installation-issues"
+                op.uri = "https://docs.bonsaibim.org/guides/troubleshooting.html#installation-issues"
 
                 layout.label(text="Try Reinstalling:", icon="IMPORT")
                 op = layout.operator("bim.open_uri", text="Re-download Add-on")
