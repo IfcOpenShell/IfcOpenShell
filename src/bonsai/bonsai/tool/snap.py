@@ -70,17 +70,6 @@ class Snap(bonsai.core.tool.Snap):
 
         return snap_point
 
-    @classmethod
-    def get_snap_points_on_polyline(cls):
-        snap_points = {}
-        polyline_data = bpy.context.scene.BIMModelProperties.polyline_point
-        polyline_points = []
-        for point_data in polyline_data:
-            point = Vector((point_data.x, point_data.y, point_data.z))
-            polyline_points.append(point)
-        snap_points.update({tuple(point): "Polyline Point" for point in polyline_points})
-
-        return snap_points
 
     @classmethod
     def select_snap_point(cls, snap_points, hit, threshold):
