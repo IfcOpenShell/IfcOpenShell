@@ -382,20 +382,13 @@ class Geometry(bonsai.core.tool.Geometry):
 
     @classmethod
     def get_representations_iter(cls, element: ifcopenshell.entity_instance) -> Iterator[ifcopenshell.entity_instance]:
-        if element.is_a("IfcProduct") and (rep := element.Representation):
-            for r in rep.Representations:
-                yield r
-        elif element.is_a("IfcTypeProduct") and (maps := element.RepresentationMaps):
-            for r in maps:
-                yield r.MappedRepresentation
+        return ifcopenshell.util.representation.get_representations_iter(element)
 
     @classmethod
     def get_representation_by_context(
         cls, element: ifcopenshell.entity_instance, context: ifcopenshell.entity_instance
     ) -> Union[ifcopenshell.entity_instance, None]:
-        for r in cls.get_representations_iter(element):
-            if r.ContextOfItems == context:
-                return r
+        return ifcopenshell.util.representation.get_representation(element, context)
 
     @classmethod
     def get_cartesian_point_coordinate_offset(cls, obj: bpy.types.Object) -> Union[Vector, None]:
