@@ -114,6 +114,12 @@ void json_message(T& out, const boost::optional<const IfcUtil::IfcBaseClass*>& c
     property_tree.put(time_string, string_as<typename T::char_type>(get_time()));
 
     boost::property_tree::write_json(out, property_tree, false);
+
+    // Append a newline after the JSON object if the Boost version is 1.86 or higher
+#if BOOST_VERSION >= 108600
+    out << '\n';
+#endif
+
 }
 } // namespace
 
