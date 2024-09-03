@@ -588,6 +588,9 @@ if USE_OCCT and "occ" in targets:
     if OCCT_VERSION == "7.7.1":
         patches.append("./patches/occt/no_ExpToCasExe.patch")
     
+    if OCCT_VERSION == "7.7.2":
+        patches.append("./patches/occt/no_ExpToCasExe_7_7_2.patch")
+    
     if "wasm" in flags:
         patches.append("./patches/occt/no_em_js.patch")
 
