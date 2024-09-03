@@ -226,6 +226,14 @@ class Spatial(bonsai.core.tool.Spatial):
             return
 
         container = tool.Ifc.get().by_id(container.ifc_definition_id)
+        if props.element_mode == "TYPE":
+            cls.load_contained_elements_by_type(container)
+        elif props.element_mode == "DECOMPOSITION":
+            cls.load_contained_elements_by_decomposition(container)
+
+    @classmethod
+    def load_contained_elements_by_type(cls, container: ifcopenshell.entity_instance) -> None:
+        props = bpy.context.scene.BIMSpatialDecompositionProperties
         results = cls.get_grouped_elements_in_container(container)
 
         expanded_elements = json.loads(props.expanded_elements)
@@ -239,6 +247,7 @@ class Spatial(bonsai.core.tool.Spatial):
             new = props.elements.add()
             new.name = ifc_class
             new.type = "CLASS"
+            new.has_children = True
             class_is_expanded = ifc_class in expanded_classes
             class_is_expanded_r = ifc_class in expanded_classes_r
             new.is_expanded = class_is_expanded or class_is_expanded_r
@@ -251,6 +260,8 @@ class Spatial(bonsai.core.tool.Spatial):
                 if new.is_expanded:
                     new2 = props.elements.add()
                     new2.type = "TYPE"
+                    new2.has_children = True
+                    new2.level = 1
                     new2.name = type_data["type_name"]
                     new2.ifc_class = ifc_class
                     new2.total = total2
@@ -265,6 +276,7 @@ class Spatial(bonsai.core.tool.Spatial):
                         for element in type_data["elements"]:
                             occurrence = props.elements.add()
                             occurrence.name = element.Name or "Unnamed"
+                            occurrence.level = 2
                             occurrence.ifc_definition_id = element.id()
                             occurrence.type = "OCCURRENCE"
 
@@ -273,6 +285,35 @@ class Spatial(bonsai.core.tool.Spatial):
             total_elements += total
 
         props.total_elements = total_elements
+
+    @classmethod
+    def load_contained_elements_by_decomposition(cls, container: ifcopenshell.entity_instance) -> None:
+        props = bpy.context.scene.BIMSpatialDecompositionProperties
+        expanded_elements = json.loads(props.expanded_elements)
+        expanded_ifc_ids = expanded_elements.get("IFC_ID", [])
+
+        def add_elements(elements, level=0):
+            for element in sorted(elements, key=lambda x: f"{x.is_a()}/{x.Name or 'Unnamed'}"):
+                ifc_definition_id = element.id()
+                name = f"{element.is_a()}/{element.Name or 'Unnamed'}"
+                new = props.elements.add()
+                new.name = name
+                new.level = level
+                new.ifc_definition_id = ifc_definition_id
+                new.type = "OCCURRENCE"
+                children = [
+                    e
+                    for e in ifcopenshell.util.element.get_decomposition(element, is_recursive=False)
+                    if not e.is_a("IfcFeatureElement")
+                ]
+                if children:
+                    new.has_children = True
+                    new.total = len(children)
+                    if ifc_definition_id in expanded_ifc_ids:
+                        add_elements(children, level=level + 1)
+
+        elements = ifcopenshell.util.element.get_decomposition(container, is_recursive=False)
+        add_elements(elements)
 
     @classmethod
     def filter_elements(
@@ -373,7 +414,14 @@ class Spatial(bonsai.core.tool.Spatial):
     @classmethod
     def toggle_container_element(cls, element_index: int, is_recursive: bool) -> None:
         props = bpy.context.scene.BIMSpatialDecompositionProperties
+        if props.element_mode == "TYPE":
+            cls.toggle_container_element_by_type(element_index, is_recursive)
+        elif props.element_mode == "DECOMPOSITION":
+            cls.toggle_container_element_by_decomposition(element_index, is_recursive)
 
+    @classmethod
+    def toggle_container_element_by_type(cls, element_index: int, is_recursive: bool) -> None:
+        props = bpy.context.scene.BIMSpatialDecompositionProperties
         expanded_elements: dict[str, list[Union[str, int]]] = json.loads(props.expanded_elements)
 
         element = props.elements[element_index]
@@ -417,6 +465,39 @@ class Spatial(bonsai.core.tool.Spatial):
                         expanded_elements_list.remove(filtered_item)
                     elif should_expand is True and filtered_item not in expanded_elements_list:
                         expanded_elements_list.append(filtered_item)
+
+        props.expanded_elements = json.dumps(expanded_elements)
+
+    @classmethod
+    def toggle_container_element_by_decomposition(cls, element_index: int, is_recursive: bool) -> None:
+        props = bpy.context.scene.BIMSpatialDecompositionProperties
+        element = props.elements[element_index]
+        expanded_elements: dict[str, list[Union[str, int]]] = json.loads(props.expanded_elements)
+        expanded_elements_list: list[Union[str, int]] = expanded_elements.setdefault("IFC_ID", [])
+        ifc_definition_id = element.ifc_definition_id
+        if ifc_definition_id in expanded_elements_list:
+            expanded_elements_list.remove(ifc_definition_id)
+            should_expand = False
+        else:
+            expanded_elements_list.append(ifc_definition_id)
+            should_expand = True
+
+        if is_recursive:
+            queue = [tool.Ifc.get().by_id(ifc_definition_id)]
+            while queue:
+                element = queue.pop()
+                children = [
+                    e
+                    for e in ifcopenshell.util.element.get_decomposition(element, is_recursive=False)
+                    if not e.is_a("IfcFeatureElement")
+                ]
+                ifc_definition_id = element.id()
+                if children:
+                    if should_expand is False and ifc_definition_id in expanded_elements_list:
+                        expanded_elements_list.remove(ifc_definition_id)
+                    elif should_expand is True and ifc_definition_id not in expanded_elements_list:
+                        expanded_elements_list.append(ifc_definition_id)
+                    queue.extend(children)
 
         props.expanded_elements = json.dumps(expanded_elements)
 
