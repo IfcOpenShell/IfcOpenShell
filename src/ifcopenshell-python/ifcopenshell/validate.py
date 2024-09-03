@@ -407,7 +407,7 @@ def validate(f: Union[ifcopenshell.file, str], logger: Logger, express_rules=Fal
                 rule = "Rule IfcRoot.UR1:\n    The attribute GlobalId should be unique"
                 previous_element = used_guids[guid]
                 logger.error(
-                    "On instance:\n    %s\n   %s\n%s\nViolated by:\n    %s\n    %s",
+                    "On instance:\n    %s\n    %s\n%s\nViolated by:\n    %s\n    %s",
                     inst,
                     annotate_inst_attr_pos(inst, 0),
                     rule,
