@@ -38,17 +38,23 @@ class TestAddPset(test.bootstrap.IFC4):
         assert "Pset_WallCommon" in ifcopenshell.util.element.get_psets(element)
 
     def test_adding_a_pset_to_a_material(self):
+        is_ifc2x3 = self.file.schema == "IFC2X3"
         material = ifcopenshell.api.material.add_material(self.file)
         pset = ifcopenshell.api.pset.add_pset(self.file, product=material, name="Pset_MaterialCommon")
         assert pset.is_a("IfcMaterialProperties")
+        if is_ifc2x3:
+            assert pset.is_a() == "IfcExtendedMaterialProperties"
         assert pset.Name == "Pset_MaterialCommon"
         assert pset.Material == material
 
     def test_adding_a_pset_to_a_profile(self):
+        is_ifc2x3 = self.file.schema == "IFC2X3"
         profile = ifcopenshell.api.profile.add_parameterized_profile(self.file, ifc_class="IfcCircleProfileDef")
         pset = ifcopenshell.api.pset.add_pset(self.file, product=profile, name="Pset_ProfileMechanical")
         assert pset.is_a("IfcProfileProperties")
-        if self.file.schema != "IFC2X3":
+        if is_ifc2x3:
+            assert pset.is_a() == "IfcGeneralProfileProperties"
+        else:
             assert pset.Name == "Pset_ProfileMechanical"
         assert pset.ProfileDefinition == profile
 
@@ -65,3 +71,24 @@ class TestAddPsetIFC2X3(test.bootstrap.IFC2X3, TestAddPset):
         pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="Custom_Pset")
         assert pset.is_a("IfcPropertySet")
         assert "Custom_Pset" in ifcopenshell.util.element.get_psets(element)
+
+    def test_adding_a_pset_subclass_to_a_profile(self):
+        profile = ifcopenshell.api.profile.add_parameterized_profile(self.file, ifc_class="IfcCircleProfileDef")
+        pset = ifcopenshell.api.pset.add_pset(
+            self.file,
+            product=profile,
+            name="Pset_ProfileMechanical",
+            ifc2x3_subclass="IfcStructuralSteelProfileProperties",
+        )
+        assert pset.is_a() == "IfcStructuralSteelProfileProperties"
+
+    def test_adding_a_material_subclass_to_a_profile(self):
+        is_ifc2x3 = self.file.schema == "IFC2X3"
+        material = ifcopenshell.api.material.add_material(self.file)
+        pset = ifcopenshell.api.pset.add_pset(
+            self.file,
+            product=material,
+            name="Pset_MaterialCommon",
+            ifc2x3_subclass="IfcFuelProperties",
+        )
+        assert pset.is_a() == "IfcFuelProperties"
