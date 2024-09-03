@@ -116,6 +116,10 @@ incompatible features may result in data loss.
    unpredictable effects and changes may be discarded. Instead, always use the
    :kbd:`Tab` key to toggle object editing, or use the IFC Object / Edit mode
    toggle in the top right of the :menuselection:`3D Viewport`.
+2. **Object scaling**. Bonsai does not support scaled objects in IFC. Any
+   objects that have been scaled in object mode will have their scale reset to
+   1, and scaling an object may result in unpredictable operations. Instead,
+   scale objects within edit mode.
 
 Where is the add-on installed?
 ------------------------------
