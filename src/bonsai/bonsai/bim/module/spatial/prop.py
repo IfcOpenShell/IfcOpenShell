@@ -64,6 +64,10 @@ def update_should_include_children(self, context):
     tool.Spatial.load_contained_elements()
 
 
+def update_element_mode(self, context):
+    tool.Spatial.load_contained_elements()
+
+
 def update_container_obj(self, context):
     if self.container_obj is None or not (obj := context.active_object):
         return
@@ -112,6 +116,8 @@ class Element(PropertyGroup):
         name="IFC Definition ID",
         description="ID of the element type / occurrence. 0 if 'type' is 'CLASS' or if it's 'TYPE' but it represents untyped elements",
     )
+    level: IntProperty(name="Level", default=0)
+    has_children: BoolProperty(name="Has Children", default=False)
     total: IntProperty(name="Total")
     is_expanded: BoolProperty(name="Is Expanded", default=False)
     type: EnumProperty(
@@ -134,6 +140,14 @@ class BIMSpatialDecompositionProperties(PropertyGroup):
     expanded_elements: StringProperty(name="Expanded Elements", default="{}")
     active_element_index: IntProperty(name="Active Element Index")
     total_elements: IntProperty(name="Total Elements")
+    element_mode: EnumProperty(
+        name="Element Mode",
+        items=(
+            ("TYPE", "Class > Type > Occurrence", "Show a breakdown by IfcClass, relating type, and occurrence"),
+            ("DECOMPOSITION", "Element Decomposition", "Show a breakdown by element decomposition"),
+        ),
+        update=update_element_mode,
+    )
     subelement_class: bpy.props.EnumProperty(items=get_subelement_class, name="Subelement Class")
     default_container: IntProperty(name="Default Container", default=0)
     should_include_children: BoolProperty(
