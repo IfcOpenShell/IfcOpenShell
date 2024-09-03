@@ -427,6 +427,7 @@ class BIM_OT_add_window(bpy.types.Operator, tool.Ifc.Operator):
 class AddWindow(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_window"
     bl_label = "Add Window"
+    bl_description = "Add Bonsai parametric window to the active IFC element"
     bl_options = {"REGISTER"}
 
     def _execute(self, context):

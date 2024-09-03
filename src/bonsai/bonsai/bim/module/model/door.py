@@ -534,6 +534,7 @@ class BIM_OT_add_door(bpy.types.Operator, tool.Ifc.Operator):
 class AddDoor(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_door"
     bl_label = "Add Door"
+    bl_description = "Add Bonsai parametric door to the active IFC element"
     bl_options = {"REGISTER"}
 
     def _execute(self, context):
