@@ -167,10 +167,12 @@ class Snap(bonsai.core.tool.Snap):
         polyline_data = bpy.context.scene.BIMModelProperties.polyline_point
         if len(polyline_data) > 2:
             first_point = polyline_data[0]
-            polyline_point = bpy.context.scene.BIMModelProperties.polyline_point.add()
-            polyline_point.x = first_point.x
-            polyline_point.y = first_point.y
-            polyline_point.z = first_point.z
+            last_point = polyline_data[-1]
+            if not(first_point.x == last_point.x and first_point.y == last_point.y and first_point.z == last_point.z):
+                polyline_point = bpy.context.scene.BIMModelProperties.polyline_point.add()
+                polyline_point.x = first_point.x
+                polyline_point.y = first_point.y
+                polyline_point.z = first_point.z
 
     @classmethod
     def clear_polyline(cls):
