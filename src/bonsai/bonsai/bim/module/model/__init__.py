@@ -231,6 +231,7 @@ def unregister():
         bpy.utils.unregister_tool(workspace.CableCarrierTool)
         bpy.utils.unregister_tool(workspace.CableTool)
         bpy.utils.unregister_tool(workspace.BimTool)
+        
     del bpy.types.Scene.BIMModelProperties
     del bpy.types.Object.BIMArrayProperties
     del bpy.types.Object.BIMStairProperties
@@ -239,7 +240,9 @@ def unregister():
     del bpy.types.Object.BIMDoorProperties
     del bpy.types.Object.BIMRailingProperties
     del bpy.types.Object.BIMRoofProperties
+
     bpy.app.handlers.load_post.remove(handler.load_post)
     bpy.types.VIEW3D_MT_mesh_add.remove(ui.add_mesh_object_menu)
     bpy.types.VIEW3D_MT_add.remove(ui.add_menu)
+
     workspace.unload_custom_icons()
