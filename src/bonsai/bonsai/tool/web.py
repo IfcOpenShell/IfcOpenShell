@@ -364,6 +364,15 @@ class Web(bonsai.core.tool.Web):
             bpy.ops.bim.add_cost_item(cost_item=operator_data["costItemId"])
             cost_schedule = tool.Cost.get_cost_schedule(cost_item=tool.Ifc.get().by_id(operator_data["costItemId"]))
             cls.load_cost_schedule_web_ui(cost_schedule)
+        if operator_data["type"] == "deleteCostItem":
+            cost_schedule = tool.Cost.get_cost_schedule(cost_item=tool.Ifc.get().by_id(operator_data["costItemId"]))
+            bpy.ops.bim.remove_cost_item(cost_item=operator_data["costItemId"])
+            cls.load_cost_schedule_web_ui(cost_schedule)
+        if operator_data["type"] == "duplicateCostItem":
+            cost_item = tool.Ifc.get().by_id(operator_data["costItemId"])
+            cost_schedule = tool.Cost.get_cost_schedule(cost_item=cost_item)
+            new_cost_item = ifcopenshell.api.cost.copy_cost_item(ifc_file, cost_item)
+            cls.load_cost_schedule_web_ui(cost_schedule)
         if operator_data["type"] == "editCostItemName":
             cost_item = tool.Ifc.get().by_id(operator_data["costItemId"])
             tool.Ifc.run(
@@ -391,18 +400,25 @@ class Web(bonsai.core.tool.Web):
                 data_key="cost_value", 
                 event="cost_value"
             )
+        if operator_data["type"] == "deleteCostValue":
+            bpy.ops.bim.remove_cost_value(
+                parent=operator_data["costItemId"],
+                cost_value=operator_data["costValueId"]
+                )
+            cost_item = ifc_file.by_id(operator_data["costItemId"])
+            cost_schedule = tool.Cost.get_cost_schedule(cost_item=cost_item)
+            cls.load_cost_schedule_web_ui(cost_schedule)
         if operator_data["type"] == "editCostValues":
             cost_item_id = operator_data["costItemId"]
-            print('Editing cost values', cost_item_id)
-            print(cost_item_id)
-            print(type(operator_data["costValues"]))
+            cost_item = ifc_file.by_id(cost_item_id)
+            cost_schedule = tool.Cost.get_cost_schedule(cost_item=cost_item)
             for value_data in operator_data["costValues"] or []:
-                print(value_data)
+                print("editing cost value data", value_data)
                 value = ifc_file.by_id(value_data["id"])
-                print(value.get_info())
                 if value_data["costType"] == "FIXED":
                     attributes= {
                         "AppliedValue": value_data["appliedValue"],
+                        "Category": None
                     }
                 elif value_data["costType"] == "CATEGORY":
                     attributes= {
@@ -418,12 +434,8 @@ class Web(bonsai.core.tool.Web):
                     cost_value=value,
                     attributes= attributes
                 )
+                print(value.get_info())
             tool.Cost.load_cost_schedule_tree()
-            cost_item = ifc_file.by_id(operator_data["costItemId"])
-            if not cost_item:
-                print("Cost item not found")
-                return
-            cost_schedule = tool.Cost.get_cost_schedule(cost_item=cost_item)
             cls.load_cost_schedule_web_ui(cost_schedule)
 
 
