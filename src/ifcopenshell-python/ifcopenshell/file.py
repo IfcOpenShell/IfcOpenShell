@@ -35,7 +35,7 @@ if TYPE_CHECKING:
 HEADER_FIELDS = {
     "file_description": [
         "description",
-        "implementation_level"
+        "implementation_level",
     ],
     "file_name": [
         "name",
@@ -44,9 +44,10 @@ HEADER_FIELDS = {
         "organization",
         "preprocessor_version",
         "originating_system",
-        "authorization"
-    ]
+        "authorization",
+    ],
 }
+
 
 class Transaction:
     def __init__(self, ifc_file):
