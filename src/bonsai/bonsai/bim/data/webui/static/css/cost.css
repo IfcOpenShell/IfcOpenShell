@@ -1,0 +1,137 @@
+@import url("./shared.css");
+@import url("./components/card.css");
+@import url("./components/contextMenu.css");
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    /* prevent text from being selceted */
+    user-select: none;
+}
+
+
+td:not(:first-child) {
+    text-align: center;
+    justify-content: space-between;
+    align-items: center;
+
+}
+
+td {
+
+    border-right: 1px solid #ddd;
+    padding-left: 0.5em;
+    padding-right: 0.5em;
+
+}
+
+.nested {
+    display: none;
+}
+
+.expand-collapse {
+    cursor: pointer;
+}
+
+.caret-cell {
+    border: none;
+    background: none;
+    padding: 0;
+}
+
+.flex-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+input {
+    width: 100%;
+    border: 1px solid #e1e4e8;
+    border-radius: 6px;
+    background-color:inherit;
+    padding: 6px 8px;
+    font-size: 14px;
+    line-height: 20px;
+    color:inherit;
+    transition: border-color 0.2s cubic-bezier(0.3, 0, 0.5, 1);
+    height: inherit;
+    margin-left: 0.5em;
+    margin-right: 0.5em;
+}
+
+input:focus {
+    border-color: #0366d6;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(3, 102, 214, 0.3);
+}
+
+
+#cost-items tr:hover, .highlighted {
+    background-color: #ffb936;
+    color : black;
+}
+
+.highlight {
+    background-color: #ffb936;
+    color : black;
+}
+
+.form-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    background-color: #363636;
+    padding: 10px;
+}
+
+.cost-values-form {
+    position: absolute;
+    background-color: white;
+    border: 1px solid black;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    z-index: 9999;
+    cursor: move;
+}
+
+.cost-values-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.cost-values-table th, .cost-values-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+}
+
+.cost-values-table th {
+    background-color: #444444;
+    text-align: center;
+}
+
+.close-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+.action-button {
+    background-color: #28a745; /* GitHub green color */
+    border: none;
+    color: #fff; /* White text color */
+    padding: 0.5em 1em; /* Adjust padding as needed */
+    cursor: pointer;
+    border-radius: 6px; /* Slightly rounded corners */
+    font-weight: bold; /* Make the text bold */
+    text-decoration: none; /* Remove underline */
+    display: inline-block; /* Make the button inline */
+    transition: background-color 0.3s ease; /* Add a smooth transition */
+}
+
+.action-button:hover {
+    background-color: #218838; /* Darker green color on hover */
+}

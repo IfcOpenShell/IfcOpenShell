@@ -29,7 +29,7 @@ function connectSocket() {
   socket.on("blender_disconnect", handleBlenderDisconnect);
   socket.on("connect", handleWebConnect);
   socket.on("connected_clients", handleConnectedClients);
-  socket.on("default_data", handleDefaultData);
+  //socket.on("default_data", handleDefaultData);
   socket.on("theme_data", handleThemeData);
   socket.on("drawings_data", handleDrawingsData);
   socket.on("svg_data", handleSvgData);
@@ -37,6 +37,7 @@ function connectSocket() {
 
 // function used to get drawings data from Bonsai
 function handleWebConnect() {
+  console.log("Handle Web Connect")
   getDrawingsData();
 }
 
@@ -73,7 +74,6 @@ function handleDefaultData(data) {
 
 // Function to handle 'blender_disconnect' event
 function handleBlenderDisconnect(blenderId) {
-  console.log("blender disconnected: ", blenderId);
   if (connectedClients.hasOwnProperty(blenderId)) {
     delete connectedClients[blenderId];
     removeSelectOption(blenderId);
@@ -97,8 +97,6 @@ function handleConnectedClients(data) {
 }
 
 function handleThemeData(themeData) {
-  // console.log(themeData);
-
   function arrayToRgbString(arr) {
     const [r, g, b, a] = arr.map((num) => Math.round(num * 255));
     if (a !== undefined) {
@@ -129,6 +127,7 @@ function handleThemeData(themeData) {
 }
 
 function handleDrawingsData(data) {
+  console.log("Running handleDrawingsData");
   const blenderId = data["blenderId"];
 
   console.log(data);
