@@ -422,6 +422,18 @@ def get_properties(
     return results
 
 
+def get_elements_using_pset(pset: ifcopenshell.entity_instance) -> set[ifcopenshell.entity_instance]:
+    """Retrieve the elements (or element types) that are using the provided property set."""
+    is_ifc2x3 = pset.file.schema == "IFC2X3"
+    elements = set()
+    rels = pset.PropertyDefinitionOf if is_ifc2x3 else pset.DefinesOccurrence
+    for rel in rels:
+        elements.update(rel.RelatedObjects)
+    for element_type in pset.DefinesType:
+        elements.add(element_type)
+    return elements
+
+
 def get_predefined_type(element: ifcopenshell.entity_instance) -> str:
     """Retrieves the PrefefinedType attribute of an element.
 

@@ -19,6 +19,7 @@
 import bpy
 import json
 import ifcopenshell.api
+import ifcopenshell.api.pset
 import ifcopenshell.util.attribute
 import ifcopenshell.util.element
 import ifcopenshell.util.pset
@@ -188,6 +189,36 @@ class AddPset(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         core.add_pset(tool.Ifc, tool.Pset, tool.Blender, obj_name=self.obj, obj_type=self.obj_type)
+
+
+class UnsharePset(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.unshare_pset"
+    bl_label = "Unshare Pset"
+    bl_description = (
+        "Click to copy a pset as linked only to the active object.\n"
+        "Otherwise changing a pset shared by multiple elements "
+        "will change it's properties for all the elements it's linked to, not just for the active object"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+    description_: bpy.props.StringProperty(name="Custom Tooltip Description")
+    pset_id: bpy.props.IntProperty()
+    obj: bpy.props.StringProperty()
+    obj_type: bpy.props.StringProperty()
+
+    @classmethod
+    def description(cls, context, properties):
+        if not properties.description_:
+            return cls.bl_description
+        return f"{properties.description_}{cls.bl_description}"
+
+    def _execute(self, context):
+        # TODO: move to core
+        ifc_file = tool.Ifc.get()
+        pset = ifc_file.by_id(self.pset_id)
+        element_id = tool.Blender.get_obj_ifc_definition_id(self.obj, self.obj_type)
+        assert element_id
+        element = ifc_file.by_id(element_id)
+        ifcopenshell.api.pset.unshare_pset(ifc_file, [element], pset)
 
 
 class AddQto(bpy.types.Operator, tool.Ifc.Operator):

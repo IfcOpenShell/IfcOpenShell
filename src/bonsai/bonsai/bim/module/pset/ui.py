@@ -120,7 +120,17 @@ def draw_psetqto_ui(
         op.obj = obj_name
         op.obj_type = obj_type
     elif not props.active_pset_id:
-        row.label(text=pset["Name"], icon="COPY_ID")
+        row.label(text=f'{pset["Name"]}', icon="COPY_ID")
+
+        if (shared := pset["shared_pset_uses"]) > 1:
+            unshare_pset_row = row.row(align=True)
+            unshare_pset_row.alignment = "RIGHT"
+            op = unshare_pset_row.operator("bim.unshare_pset", text=str(shared))
+            op.description_ = f"Pset is reused by {shared} elements.\n\n"
+            op.pset_id = pset_id
+            op.obj = obj_name
+            op.obj_type = obj_type
+
         op = row.operator("bim.enable_pset_editing", icon="GREASEPENCIL", text="")
         op.pset_id = pset_id
         op.obj = obj_name
