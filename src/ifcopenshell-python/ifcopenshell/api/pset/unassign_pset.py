@@ -18,23 +18,19 @@
 
 import ifcopenshell
 import ifcopenshell.api.owner
-import ifcopenshell.api.pset
 import ifcopenshell.guid
 import ifcopenshell.util.element
 
 
-def unshare_pset(
+def unassign_pset(
     file: ifcopenshell.file,
     products: list[ifcopenshell.entity_instance],
     pset: ifcopenshell.entity_instance,
-) -> list[ifcopenshell.entity_instance]:
-    """Copy a shared pset as linked only to the provided elements.
+) -> None:
+    """Unassign property set from the provided elements.
 
-    Note that method will create a copy of the pset for each element provided.
-
-    :param products: Elements (or element types) to link the pset to.
-    :param pset: Shared property set.
-    :return: List of copied property sets.
+    :param products: Elements (or element types) to assign the pset from.
+    :param pset: Property set.
 
     Example:
 
@@ -47,16 +43,13 @@ def unshare_pset(
         # Pset is now shared by 2 elements.
         assert ifcopenshell.util.element.get_elements_using_pset(pset) == {element1, element2}
 
-        new_psets = ifcopenshell.api.pset.unshare_pset(self.file, [element2], pset)
-
-        # element2 was unassigned from the original pset.
+        ifcopenshell.api.pset.unassign_pset(self.file, [element2], pset)
+        # Pset was unassigned from element2.
         assert ifcopenshell.util.element.get_elements_using_pset(pset) == {element1}
-        new_pset = new_psets[0]
 
-        # New pset was created and was assigned to element2.
-        assert new_pset != pset
-        assert ifcopenshell.util.element.get_elements_using_pset(new_pset) == {element2}
     """
+    is_ifc2x3 = file.schema == "IFC2X3"
+
     products_occurrences: set[ifcopenshell.entity_instance] = set()
     products_types: set[ifcopenshell.entity_instance] = set()
     for product in products:
@@ -65,12 +58,23 @@ def unshare_pset(
         else:
             products_occurrences.add(product)
 
-    ifcopenshell.api.pset.unassign_pset(file, products, pset)
+    # Check occurrences using pset.
+    if products_occurrences:
+        rels = pset.PropertyDefinitionOf if is_ifc2x3 else pset.DefinesOccurrence
+        for rel in rels:
+            objs = set(rel.RelatedObjects)
+            if not any(p in objs for p in products_occurrences):
+                continue
+            objs.difference_update(products_occurrences)
+            if objs:
+                rel.RelatedObjects = list(objs)
+            else:
+                history = rel.OwnerHistory
+                file.remove(rel)
+                if history:
+                    ifcopenshell.util.element.remove_deep2(file, history)
 
-    pset_copies: list[ifcopenshell.entity_instance] = []
-    for product in products:
-        pset_copy = ifcopenshell.util.element.copy_deep(file, pset)
-        pset_copies.append(pset_copy)
-        ifcopenshell.api.pset.assign_pset(file, [product], pset_copy)
-
-    return pset_copies
+    for product in products_types:
+        psets = list(product.HasPropertySets)
+        psets.remove(pset)
+        product.HasPropertySets = psets or None

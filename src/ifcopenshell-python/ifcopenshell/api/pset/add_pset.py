@@ -18,6 +18,7 @@
 
 import ifcopenshell
 import ifcopenshell.api.owner
+import ifcopenshell.api.pset
 import ifcopenshell.guid
 from typing import Optional
 
@@ -107,16 +108,9 @@ def add_pset(
                 "Name": settings["name"],
             },
         )
-        file.create_entity(
-            "IfcRelDefinesByProperties",
-            **{
-                "GlobalId": ifcopenshell.guid.new(),
-                "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
-                "RelatedObjects": [settings["product"]],
-                "RelatingPropertyDefinition": pset,
-            },
-        )
+        ifcopenshell.api.pset.assign_pset(file, [settings["product"]], pset)
         return pset
+
     elif settings["product"].is_a("IfcTypeObject"):
         for definition in settings["product"].HasPropertySets or []:
             if definition.Name == settings["name"]:
@@ -130,10 +124,9 @@ def add_pset(
                 "Name": settings["name"],
             },
         )
-        has_property_sets = list(settings["product"].HasPropertySets or [])
-        has_property_sets.append(pset)
-        settings["product"].HasPropertySets = has_property_sets
+        ifcopenshell.api.pset.assign_pset(file, [settings["product"]], pset)
         return pset
+
     # in IFC2X3 IfcMaterialDefinition not yet existed
     elif settings["product"].is_a("IfcMaterialDefinition") or settings["product"].is_a("IfcMaterial"):
         kwargs = {"Material": settings["product"]}

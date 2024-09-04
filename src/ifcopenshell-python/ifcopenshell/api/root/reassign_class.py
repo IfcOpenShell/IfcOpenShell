@@ -19,6 +19,7 @@
 import ifcopenshell
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.geometry
+import ifcopenshell.api.pset
 import ifcopenshell.api.spatial
 import ifcopenshell.api.type
 import ifcopenshell.guid
@@ -126,18 +127,12 @@ class Usecase:
 
         if switch_type == "type_to_occurrence":
             occurrences = ifcopenshell.util.element.get_types(element)
+            # Don't need to reassign as psets are linked to type directly, without rel.
             psets_to_reassign = element.HasPropertySets or []
 
             element = self.reassign_class(element, ifc_class, predefined_type)
             ifcopenshell.api.type.unassign_type(self.file, occurrences)
 
-            for pset in psets_to_reassign:
-                rel = self.file.create_entity(
-                    "IfcRelDefinesByProperties",
-                    GlobalId=ifcopenshell.guid.new(),
-                    RelatedObjects=[element],
-                    RelatingPropertyDefinition=pset,
-                )
         else:  # occurrence_to_type
             element_type = ifcopenshell.util.element.get_type(element)
             # Handle element type.
@@ -150,28 +145,17 @@ class Usecase:
             elif ifcopenshell.util.element.get_aggregate(element):
                 ifcopenshell.api.aggregate.unassign_object(self.file, [element])
 
-            for rel in element.IsDefinedBy:
-                pset: ifcopenshell.entity_instance = rel.RelatingPropertyDefinition
-                objs = list(rel.RelatedObjects)
-                objs.remove(element)
-                if objs:
-                    rel.RelatedObjects = objs
-                else:
-                    history = getattr(rel, "OwnerHistory", None)
-                    self.file.remove(rel)
-                    if history:
-                        ifcopenshell.util.element.remove_deep2(self.file, history)
-                psets_to_reassign.append(pset)
-
             psets = ifcopenshell.util.element.get_psets(element)
             for pset_name in psets:
                 pset = self.file.by_id(psets[pset_name]["id"])
+                psets_to_reassign.append(pset)
+                ifcopenshell.api.pset.unassign_pset(self.file, [element], pset)
 
             element = self.reassign_class(element, ifc_class, predefined_type)
 
-            # Reassign psets.
-            if psets_to_reassign:
-                element.HasPropertySets = psets_to_reassign
+        # Reassign psets.
+        for pset in psets_to_reassign:
+            ifcopenshell.api.pset.assign_pset(self.file, [element], pset)
 
         # Reassign representations.
         for rep in representations:

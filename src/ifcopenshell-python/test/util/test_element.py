@@ -260,6 +260,18 @@ class TestGetPropertiesIFC4(test.bootstrap.IFC4):
         }
 
 
+class TestGetElementsUsingPset(test.bootstrap.IFC4):
+    def test_run(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        pset = self.file.create_entity("IfcPropertySet")
+        ifcopenshell.api.pset.assign_pset(self.file, [element, element_type], pset)
+        assert subject.get_elements_using_pset(pset) == {element, element_type}
+
+
+class TestGetElementsUsingPsetIFC2X3(test.bootstrap.IFC2X3, TestGetElementsUsingPset): ...
+
+
 class TestGetPredefinedTypeIFC4(test.bootstrap.IFC4):
     def test_getting_an_element_predefined_type(self):
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
