@@ -29,6 +29,7 @@ from .add_qto import add_qto
 from .edit_pset import edit_pset
 from .edit_qto import edit_qto
 from .remove_pset import remove_pset
+from .unshare_pset import unshare_pset
 
 wrap_usecases(__path__, __name__)
 
@@ -38,4 +39,5 @@ __all__ = [
     "edit_pset",
     "edit_qto",
     "remove_pset",
+    "unshare_pset",
 ]
