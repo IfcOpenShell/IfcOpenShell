@@ -79,6 +79,7 @@ class Drawing(bonsai.core.tool.Drawing):
         "IMAGE":         ("Image",            "Add reference image attached to the drawing", "TEXTURE", "mesh"),
     }
     # fmt: on
+    selected_objects_saved: list = []  # tracks selection status of objects
 
     @classmethod
     def canonicalise_class_name(cls, name: str) -> str:
@@ -1783,7 +1784,12 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def activate_drawing(cls, camera: bpy.types.Object) -> None:
-        selected_objects_before = bpy.context.selected_objects
+        dprops = bpy.context.scene.DocProperties
+        if dprops.active_drawing_id:
+            cls.selected_objects_saved = cls.selected_objects_saved + bpy.context.selected_objects
+        else:
+            cls.selected_objects_saved = bpy.context.selected_objects
+        selected_objects_before = cls.selected_objects_saved
         non_ifc_objects_hide = {o: o.hide_get() for o in bpy.context.view_layer.objects if not tool.Ifc.get_entity(o)}
 
         # Sync viewport objects visibility with selectors from EPset_Drawing/Include and /Exclude
@@ -1875,7 +1881,10 @@ class Drawing(bonsai.core.tool.Drawing):
         cls.import_camera_props(drawing, camera.data)
 
         for obj in selected_objects_before:
-            obj.select_set(True)
+            try:  # Check for deleted objects
+                obj.select_set(True)
+            except ReferenceError:
+                continue
 
     @classmethod
     def get_elements_in_camera_view(
