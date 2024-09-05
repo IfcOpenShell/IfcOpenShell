@@ -21,7 +21,6 @@ import ifcopenshell.api.pset
 import ifcopenshell.guid
 import ifcopenshell.util.element
 import ifcopenshell.util.selector
-from typing import Union
 from logging import Logger
 
 
@@ -79,7 +78,7 @@ class Patcher:
         new_psets = []
         for pset, elements in psets.items():
             # Let the first element to keep the original property set.
-            elements = list(elements)[1:]
+            elements = list(elements)
             new_psets.extend(ifcopenshell.api.pset.unshare_pset(self.file, elements, pset))
 
         print(f"{len(new_psets)} new psets were created.")
