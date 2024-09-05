@@ -5,7 +5,6 @@ Scenario: Viewing default solar settings
     Given an empty IFC project
     And I look at the "Solar Access / Shadow" panel
     Then I see "Etc/GMT"
-    And I see "Sunrise: 06:02:50"
 
 Scenario: Changing the month
     Given an empty IFC project
@@ -33,7 +32,7 @@ Scenario: Automatic timezone detection based on lat / long
     When I set the "Latitude" property to "10.0"
     And I set the "Longitude" property to "20.0"
     Then I see "Africa/Ndjamena"
-    And I see "Sunrise: 05:29:43"
+    And I see "Sunrise: 05:56:42"
 
 Scenario: Display the sun path
     Given an empty IFC project

@@ -128,6 +128,15 @@ def main(
     # it's up to user to keep them valid for the provided projects.
     if settings.drawing_guid or settings.drawing_object_type:
         if settings.drawing_guid:
+            found_guid = False
+            for f in files:
+                try:
+                    f.by_guid(settings.drawing_guid)
+                    found_guid = True
+                except:
+                    pass
+            if not found_guid:
+                raise ValueError(f"Unable to find guid {settings.drawing_guid!r}")
             sr.setElevationRefGuid(settings.drawing_guid)
         elif settings.drawing_object_type:
             sr.setElevationRef(settings.drawing_object_type)

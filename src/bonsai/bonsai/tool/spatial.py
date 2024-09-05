@@ -26,6 +26,7 @@ import ifcopenshell.geom
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
+import ifcopenshell.util.classification
 import ifcopenshell.util.shape_builder
 import ifcopenshell.util.type
 import ifcopenshell.util.unit
@@ -199,7 +200,52 @@ class Spatial(bonsai.core.tool.Spatial):
         src_obj.location.xy = destination_obj.location.xy
 
     @classmethod
-    def get_grouped_elements_in_container(cls, container: ifcopenshell.entity_instance) -> dict:
+    def get_container_elements_grouped_by_classification(cls, container: ifcopenshell.entity_instance) -> dict:
+        props = bpy.context.scene.BIMSpatialDecompositionProperties
+        results = {}
+        if props.should_include_children:
+            elements = ifcopenshell.util.element.get_decomposition(container, is_recursive=True)
+        else:
+            elements = ifcopenshell.util.element.get_contained(container)
+        flat_results: dict[str, Any] = {}
+        reference_names: dict[str, str] = {}
+        for element in elements:
+            if element.is_a("IfcOpeningElement") or tool.Root.is_spatial_element(element):
+                continue
+            references = ifcopenshell.util.classification.get_references(element)
+            if not references:
+                flat_results.setdefault("Unclassified", []).append(element)
+            else:
+                for reference in references:
+                    identification = reference[1] or ""
+                    reference_names[identification] = reference[2]
+                    flat_results.setdefault(identification, []).append(element)
+
+        for flat_key in sorted(flat_results.keys()):
+            current_results = results
+
+            while True:
+                has_parent = None
+                for key in current_results:
+                    if flat_key.startswith(key):
+                        has_parent = True
+                        new_current_results = current_results[key]["children"]
+                        break
+                if has_parent:
+                    current_results = new_current_results
+                else:
+                    break
+
+            current_results[flat_key] = {
+                "Name": "Unclassified" if flat_key == "Unclassified" else reference_names[flat_key],
+                "elements": flat_results[flat_key],
+                "children": {},
+            }
+
+        return results
+
+    @classmethod
+    def get_container_elements_grouped_by_type(cls, container: ifcopenshell.entity_instance) -> dict:
         props = bpy.context.scene.BIMSpatialDecompositionProperties
         results: defaultdict[str, dict[int, Any]] = defaultdict(dict)
         if props.should_include_children:
@@ -226,7 +272,17 @@ class Spatial(bonsai.core.tool.Spatial):
             return
 
         container = tool.Ifc.get().by_id(container.ifc_definition_id)
-        results = cls.get_grouped_elements_in_container(container)
+        if props.element_mode == "TYPE":
+            cls.load_contained_elements_by_type(container)
+        elif props.element_mode == "DECOMPOSITION":
+            cls.load_contained_elements_by_decomposition(container)
+        elif props.element_mode == "CLASSIFICATION":
+            cls.load_contained_elements_by_classification(container)
+
+    @classmethod
+    def load_contained_elements_by_type(cls, container: ifcopenshell.entity_instance) -> None:
+        props = bpy.context.scene.BIMSpatialDecompositionProperties
+        results = cls.get_container_elements_grouped_by_type(container)
 
         expanded_elements = json.loads(props.expanded_elements)
         expanded_classes = expanded_elements.get("CLASS", [])
@@ -239,6 +295,7 @@ class Spatial(bonsai.core.tool.Spatial):
             new = props.elements.add()
             new.name = ifc_class
             new.type = "CLASS"
+            new.has_children = True
             class_is_expanded = ifc_class in expanded_classes
             class_is_expanded_r = ifc_class in expanded_classes_r
             new.is_expanded = class_is_expanded or class_is_expanded_r
@@ -251,6 +308,8 @@ class Spatial(bonsai.core.tool.Spatial):
                 if new.is_expanded:
                     new2 = props.elements.add()
                     new2.type = "TYPE"
+                    new2.has_children = True
+                    new2.level = 1
                     new2.name = type_data["type_name"]
                     new2.ifc_class = ifc_class
                     new2.total = total2
@@ -265,6 +324,7 @@ class Spatial(bonsai.core.tool.Spatial):
                         for element in type_data["elements"]:
                             occurrence = props.elements.add()
                             occurrence.name = element.Name or "Unnamed"
+                            occurrence.level = 2
                             occurrence.ifc_definition_id = element.id()
                             occurrence.type = "OCCURRENCE"
 
@@ -273,6 +333,69 @@ class Spatial(bonsai.core.tool.Spatial):
             total_elements += total
 
         props.total_elements = total_elements
+
+    @classmethod
+    def load_contained_elements_by_decomposition(cls, container: ifcopenshell.entity_instance) -> None:
+        props = bpy.context.scene.BIMSpatialDecompositionProperties
+        expanded_elements = json.loads(props.expanded_elements)
+        expanded_ifc_ids = expanded_elements.get("IFC_ID", [])
+
+        def add_elements(elements, level=0):
+            for element in sorted(elements, key=lambda x: f"{x.is_a()}/{x.Name or 'Unnamed'}"):
+                ifc_definition_id = element.id()
+                new = props.elements.add()
+                new.name = f"{element.is_a()}/{element.Name or 'Unnamed'}"
+                new.level = level
+                new.ifc_definition_id = ifc_definition_id
+                new.type = "OCCURRENCE"
+                children = [
+                    e
+                    for e in ifcopenshell.util.element.get_decomposition(element, is_recursive=False)
+                    if not e.is_a("IfcFeatureElement")
+                ]
+                if children:
+                    new.has_children = True
+                    new.total = len(children)
+                    if ifc_definition_id in expanded_ifc_ids:
+                        new.is_expanded = True
+                        add_elements(children, level=level + 1)
+
+        elements = ifcopenshell.util.element.get_decomposition(container, is_recursive=False)
+        add_elements(elements)
+
+    @classmethod
+    def load_contained_elements_by_classification(cls, container: ifcopenshell.entity_instance) -> None:
+        props = bpy.context.scene.BIMSpatialDecompositionProperties
+        expanded_elements = json.loads(props.expanded_elements)
+        expanded_classifications = expanded_elements.get("CLASSIFICATION", [])
+        expanded_classifications_r = expanded_elements.get("CLASSIFICATION_R", [])
+
+        def add_elements(results, level=0):
+            for identification in sorted(results.keys()):
+                data = results[identification]
+                new = props.elements.add()
+                new.name = f"{identification}:{data['Name']}"
+                new.type = "CLASSIFICATION"
+                new.identification = identification
+                new.has_children = True
+                new.level = level
+
+                is_expanded = identification in expanded_classifications
+                is_expanded_r = any([c for c in expanded_classifications_r if identification.startswith(c)])
+
+                if is_expanded or is_expanded_r:
+                    new.is_expanded = True
+                    add_elements(data["children"], level=level + 1)
+
+                    for element in sorted(data["elements"], key=lambda x: f"{x.is_a()}/{x.Name or 'Unnamed'}"):
+                        new2 = props.elements.add()
+                        new2.name = f"{element.is_a()}/{element.Name or 'Unnamed'}"
+                        new2.type = "OCCURRENCE"
+                        new2.level = level + 1
+                        new2.ifc_definition_id = element.id()
+
+        results = cls.get_container_elements_grouped_by_classification(container)
+        add_elements(results)
 
     @classmethod
     def filter_elements(
@@ -373,7 +496,16 @@ class Spatial(bonsai.core.tool.Spatial):
     @classmethod
     def toggle_container_element(cls, element_index: int, is_recursive: bool) -> None:
         props = bpy.context.scene.BIMSpatialDecompositionProperties
+        if props.element_mode == "TYPE":
+            cls.toggle_container_element_by_type(element_index, is_recursive)
+        elif props.element_mode == "DECOMPOSITION":
+            cls.toggle_container_element_by_decomposition(element_index, is_recursive)
+        elif props.element_mode == "CLASSIFICATION":
+            cls.toggle_container_element_by_classification(element_index, is_recursive)
 
+    @classmethod
+    def toggle_container_element_by_type(cls, element_index: int, is_recursive: bool) -> None:
+        props = bpy.context.scene.BIMSpatialDecompositionProperties
         expanded_elements: dict[str, list[Union[str, int]]] = json.loads(props.expanded_elements)
 
         element = props.elements[element_index]
@@ -400,7 +532,7 @@ class Spatial(bonsai.core.tool.Spatial):
 
         if is_recursive and element.type == "CLASS":
             container = tool.Ifc.get().by_id(props.active_container.ifc_definition_id)
-            results = cls.get_grouped_elements_in_container(container)
+            results = cls.get_container_elements_grouped_by_type(container)
             for ifc_class in results.keys():
                 if ifc_class != element.name:
                     continue
@@ -417,6 +549,64 @@ class Spatial(bonsai.core.tool.Spatial):
                         expanded_elements_list.remove(filtered_item)
                     elif should_expand is True and filtered_item not in expanded_elements_list:
                         expanded_elements_list.append(filtered_item)
+
+        props.expanded_elements = json.dumps(expanded_elements)
+
+    @classmethod
+    def toggle_container_element_by_decomposition(cls, element_index: int, is_recursive: bool) -> None:
+        props = bpy.context.scene.BIMSpatialDecompositionProperties
+        element = props.elements[element_index]
+        expanded_elements: dict[str, list[Union[str, int]]] = json.loads(props.expanded_elements)
+        expanded_elements_list: list[Union[str, int]] = expanded_elements.setdefault("IFC_ID", [])
+        ifc_definition_id = element.ifc_definition_id
+        if ifc_definition_id in expanded_elements_list:
+            expanded_elements_list.remove(ifc_definition_id)
+            should_expand = False
+        else:
+            expanded_elements_list.append(ifc_definition_id)
+            should_expand = True
+
+        if is_recursive:
+            queue = [tool.Ifc.get().by_id(ifc_definition_id)]
+            while queue:
+                element = queue.pop()
+                children = [
+                    e
+                    for e in ifcopenshell.util.element.get_decomposition(element, is_recursive=False)
+                    if not e.is_a("IfcFeatureElement")
+                ]
+                ifc_definition_id = element.id()
+                if children:
+                    if should_expand is False and ifc_definition_id in expanded_elements_list:
+                        expanded_elements_list.remove(ifc_definition_id)
+                    elif should_expand is True and ifc_definition_id not in expanded_elements_list:
+                        expanded_elements_list.append(ifc_definition_id)
+                    queue.extend(children)
+
+        props.expanded_elements = json.dumps(expanded_elements)
+
+    @classmethod
+    def toggle_container_element_by_classification(cls, element_index: int, is_recursive: bool) -> None:
+        props = bpy.context.scene.BIMSpatialDecompositionProperties
+        expanded_elements: dict[str, list[str]] = json.loads(props.expanded_elements)
+        expanded_elements_list: list[str] = expanded_elements.setdefault("CLASSIFICATION", [])
+
+        element = props.elements[element_index]
+        identification = element.identification
+
+        if identification in expanded_elements_list:
+            expanded_elements_list.remove(identification)
+            should_expand = False
+        else:
+            expanded_elements_list.append(identification)
+            should_expand = True
+
+        if is_recursive:
+            expanded_elements_list = expanded_elements.setdefault("CLASSIFICATION_R", [])
+            if should_expand is False and identification in expanded_elements_list:
+                expanded_elements_list.remove(identification)
+            elif should_expand is True and identification not in expanded_elements_list:
+                expanded_elements_list.append(identification)
 
         props.expanded_elements = json.dumps(expanded_elements)
 

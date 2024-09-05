@@ -510,6 +510,7 @@ class Material:
     def enable_editing_materials(cls): pass
     def ensure_material_assigned(cls, elements, material_type, material): pass
     def ensure_material_unassigned(cls, elements): pass
+    def ensure_new_material_set_is_valid(cls, material): pass
     def get_active_material_item(cls): pass
     def get_active_material_type(cls): pass
     def get_default_material(cls): pass

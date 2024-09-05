@@ -414,8 +414,8 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                 ifc_class="IfcWindowType" if tool.Ifc.get_schema() != "IFC2X3" else "IfcWindowStyle",
                 should_add_representation=False,
             )
-            tool.Blender.select_and_activate_single_object(context, obj)
-            bpy.ops.bim.add_window(obj=obj.name)
+            with context.temp_override(active_object=obj):
+                bpy.ops.bim.add_window()
 
         elif template == "DOOR":
             mesh = bpy.data.meshes.new(name)
@@ -429,8 +429,8 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                 ifc_class="IfcDoorType" if tool.Ifc.get_schema() != "IFC2X3" else "IfcDoorStyle",
                 should_add_representation=False,
             )
-            tool.Blender.select_and_activate_single_object(context, obj)
-            bpy.ops.bim.add_door(obj=obj.name)
+            with context.temp_override(active_object=obj):
+                bpy.ops.bim.add_door()
 
         elif template == "STAIR":
             mesh = bpy.data.meshes.new(name)
@@ -444,8 +444,8 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                 ifc_class=ifc_class,
                 should_add_representation=False,
             )
-            tool.Blender.select_and_activate_single_object(context, obj)
-            bpy.ops.bim.add_stair()
+            with context.temp_override(active_object=obj):
+                bpy.ops.bim.add_stair()
 
         elif template == "RAILING":
             mesh = bpy.data.meshes.new(name)
@@ -460,8 +460,8 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                 should_add_representation=True,
                 context=body,
             )
-            tool.Blender.select_and_activate_single_object(context, obj)
-            bpy.ops.bim.add_railing()
+            with context.temp_override(active_object=obj):
+                bpy.ops.bim.add_railing()
 
         elif template == "ROOF":
             mesh = bpy.data.meshes.new(name)
@@ -476,8 +476,8 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                 should_add_representation=True,
                 context=body,
             )
-            tool.Blender.select_and_activate_single_object(context, obj)
-            bpy.ops.bim.add_roof()
+            with context.temp_override(active_object=obj):
+                bpy.ops.bim.add_roof()
 
         bpy.ops.bim.load_type_thumbnails(ifc_class=ifc_class)
         props.type_class = props.type_class

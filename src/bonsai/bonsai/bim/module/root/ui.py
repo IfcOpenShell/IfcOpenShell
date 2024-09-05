@@ -83,8 +83,7 @@ class BIM_PT_class(Panel):
     def draw_class_dropdowns(self, context, ifc_predefined_types, is_reassigning_class=False):
         props = context.scene.BIMRootProperties
         layout = self.layout
-        if not is_reassigning_class:
-            prop_with_search(layout, props, "ifc_product")
+        prop_with_search(layout, props, "ifc_product")
         prop_with_search(layout, props, "ifc_class")
         if ifc_predefined_types:
             prop_with_search(layout, props, "ifc_predefined_type")

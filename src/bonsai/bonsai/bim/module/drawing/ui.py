@@ -64,9 +64,15 @@ class BIM_PT_camera(Panel):
         row.prop(dprops, "should_use_annotation_cache", text="", icon="FILE_REFRESH")
 
         row = self.layout.row()
-        row.prop(props, "calculate_shapely_surfaces")
-        row = self.layout.row()
-        row.prop(props, "calculate_svgfill_surfaces")
+        row.prop(props, "linework_mode")
+        if props.linework_mode == "OPENCASCADE":
+            row = self.layout.row()
+            row.prop(props, "fill_mode")
+            row = self.layout.row()
+            row.prop(props, "cut_mode")
+        elif not hasattr(context.scene, "svg_export"):
+            row = self.layout.row()
+            row.label(text="Freestyle SVG Exporter Not Installed", icon="ERROR")
 
         row = self.layout.row()
         row.prop(props, "width")

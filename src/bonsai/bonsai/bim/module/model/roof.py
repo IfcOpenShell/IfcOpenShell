@@ -541,6 +541,7 @@ class BIM_OT_add_roof(bpy.types.Operator, tool.Ifc.Operator):
 class AddRoof(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_roof"
     bl_label = "Add Roof"
+    bl_description = "Add Bonsai parametric roof to the active IFC element"
     bl_options = {"REGISTER"}
 
     def _execute(self, context):
@@ -644,6 +645,7 @@ class EnableEditingRoofPath(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         obj = context.active_object
+        [o.select_set(False) for o in context.selected_objects if o != obj]
         props = obj.BIMRoofProperties
         data = tool.Model.get_modeling_bbim_pset_data(obj, "BBIM_Roof")["data_dict"]
         # required since we could load pset from .ifc and BIMRoofProperties won't be set

@@ -437,6 +437,8 @@ def consume_iterator(
                 break
 
 
+# Overloads need to cover different return types
+# based on `with_progress` argument.
 @overload
 def iterate(
     settings: settings,
@@ -445,7 +447,8 @@ def iterate(
     include: Optional[Union[list[entity_instance], list[str]]] = None,
     exclude: Optional[Union[list[entity_instance], list[str]]] = None,
     with_progress: Literal[False] = False,
-    cache: Optional[serializers.hdf5] = None,
+    cache: Optional[str] = None,
+    serializer_settings: Optional[serializer_settings] = None,
     geometry_library: GEOMETRY_LIBRARY = "opencascade",
 ) -> Generator[IteratorOutput, None, None]: ...
 @overload
@@ -456,7 +459,8 @@ def iterate(
     include: Optional[Union[list[entity_instance], list[str]]] = None,
     exclude: Optional[Union[list[entity_instance], list[str]]] = None,
     with_progress: Literal[True] = True,
-    cache: Optional[serializers.hdf5] = None,
+    cache: Optional[str] = None,
+    serializer_settings: Optional[serializer_settings] = None,
     geometry_library: GEOMETRY_LIBRARY = "opencascade",
 ) -> Generator[tuple[int, IteratorOutput], None, None]: ...
 @overload
@@ -467,7 +471,8 @@ def iterate(
     include: Optional[Union[list[entity_instance], list[str]]] = None,
     exclude: Optional[Union[list[entity_instance], list[str]]] = None,
     with_progress: bool = False,
-    cache: Optional[serializers.hdf5] = None,
+    cache: Optional[str] = None,
+    serializer_settings: Optional[serializer_settings] = None,
     geometry_library: GEOMETRY_LIBRARY = "opencascade",
 ) -> Generator[Union[IteratorOutput, tuple[int, IteratorOutput]], None, None]: ...
 def iterate(
@@ -477,12 +482,19 @@ def iterate(
     include: Optional[Union[list[entity_instance], list[str]]] = None,
     exclude: Optional[Union[list[entity_instance], list[str]]] = None,
     with_progress: bool = False,
-    cache: Optional[serializers.hdf5] = None,
+    cache: Optional[str] = None,
+    serializer_settings: Optional[serializer_settings] = None,
     geometry_library: GEOMETRY_LIBRARY = "opencascade",
 ) -> Generator[Union[IteratorOutput, tuple[int, IteratorOutput]], None, None]:
+    """Get a geometry iterator for the provided file.
+
+    :param cache: .h5 cache filepath (might not exist, will be created).
+    :param serializer_settings: Settings for cache serializer. Required if `cache` is provided.
+    """
     it = iterator(settings, file_or_filename, num_threads, include, exclude, geometry_library)
     if cache:
-        hdf5_cache = serializers.hdf5(cache, settings)
+        assert serializer_settings, "`serializer_settings` argument is not optional if `cache` is provided."
+        hdf5_cache = serializers.hdf5(cache, settings, serializer_settings)
         it.set_cache(hdf5_cache)
     yield from consume_iterator(it, with_progress=with_progress)
 

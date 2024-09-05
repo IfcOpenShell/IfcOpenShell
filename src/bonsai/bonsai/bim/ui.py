@@ -421,33 +421,59 @@ class BIM_PT_tabs(Panel):
 
             row = self.layout.row(align=True)
             row.prop(aprops, "tab", text="")
-
-            if bonsai.REINSTALLED_BBIM_VERSION:
-                box = self.layout.box()
-                box.alert = True
-
-                box.label(text="Bonsai requires Blender to restart.", icon="ERROR")
-                box.label(text="Bonsai was reinstalled in the current session:")
-                box.label(text=f"{bonsai.FIRST_INSTALLED_BBIM_VERSION} -> {bonsai.REINSTALLED_BBIM_VERSION}")
-                box.label(text="Please restart Blender to avoid potential issues.")
-                box.operator("bim.restart_blender", text="Restart Blender", icon="BLENDER")
-
-            if bonsai.last_error:
-                box = self.layout.box()
-                box.alert = True
-                row = box.row(align=True)
-                row.label(text="Bonsai experienced an error :(", icon="ERROR")
-                row.operator("bim.close_error", text="", icon="CANCEL")
-                if platform.system() == "Windows":
-                    box.operator("wm.console_toggle", text="View the console for full logs.", icon="CONSOLE")
-                else:
-                    box.label(text="View the console for full logs.", icon="CONSOLE")
-                box.operator("bim.copy_debug_information", text="Copy Error Message To Clipboard")
-                op = box.operator("bim.open_uri", text="How Can I Fix This?")
-                op.uri = "https://docs.bonsaibim.org/users/troubleshooting.html"
-
         except:
             pass  # Prior to load_post, we may not have any area properties setup
+
+        if bonsai.REINSTALLED_BBIM_VERSION:
+            box = self.layout.box()
+            box.alert = True
+            box.label(text="Bonsai requires Blender to restart.", icon="ERROR")
+            box.label(text="Bonsai was reinstalled in the current session:")
+            box.label(text=f"{bonsai.FIRST_INSTALLED_BBIM_VERSION} -> {bonsai.REINSTALLED_BBIM_VERSION}")
+            box.operator("bim.restart_blender", text="Restart Blender", icon="BLENDER")
+
+        if bonsai.last_error:
+            box = self.layout.box()
+            box.alert = True
+            row = box.row(align=True)
+            row.label(text="Bonsai experienced an error :(", icon="ERROR")
+            row.operator("bim.close_error", text="", icon="CANCEL")
+            if platform.system() == "Windows":
+                box.operator("wm.console_toggle", text="View the console for full logs.", icon="CONSOLE")
+            else:
+                box.label(text="View the console for full logs.", icon="CONSOLE")
+            box.operator("bim.copy_debug_information", text="Copy Error Message To Clipboard")
+            op = box.operator("bim.open_uri", text="How Can I Fix This?")
+            op.uri = "https://docs.bonsaibim.org/guides/troubleshooting.html"
+
+        if not tool.Ifc.get():
+            return
+
+        props = context.scene.BIMProperties
+        if props.has_blend_warning:
+            box = self.layout.box()
+            box.alert = True
+            row = box.row(align=True)
+            row.label(text="Your model may be outdated", icon="ERROR")
+            op = row.operator("bim.open_uri", text="", icon="QUESTION")
+            op.uri = "https://docs.bonsaibim.org/guides/troubleshooting.html#saving-and-loading-blend-files"
+            row.operator("bim.close_blend_warning", text="", icon="CANCEL")
+
+        if context.mode != context.scene.BIMGeometryProperties.mode:
+            box = self.layout.box()
+            box.alert = True
+            row = box.row(align=True)
+            row.label(text="Geometry changes will be lost", icon="ERROR")
+            op = row.operator("bim.open_uri", text="", icon="QUESTION")
+            op.uri = "https://docs.bonsaibim.org/guides/troubleshooting.html#incompatible-blender-features"
+
+        if (o := context.active_object) and [round(x, 4) for x in list(o.matrix_world.to_scale())] != [1, 1, 1]:
+            box = self.layout.box()
+            box.alert = True
+            row = box.row(align=True)
+            row.label(text="Object scaling will be lost", icon="ERROR")
+            op = row.operator("bim.open_uri", text="", icon="QUESTION")
+            op.uri = "https://docs.bonsaibim.org/guides/troubleshooting.html#incompatible-blender-features"
 
     def draw_tab_entry(self, row, icon, tab_name, enabled=True, highlight=False):
         tab_entry = row.row(align=True)

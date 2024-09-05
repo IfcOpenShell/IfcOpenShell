@@ -46,18 +46,22 @@ def refresh():
 
 class Data:
     @classmethod
-    def psetqtos(cls, element, psets_only=False, qtos_only=False):
+    def psetqtos(cls, element: ifcopenshell.entity_instance, psets_only: bool = False, qtos_only: bool = False):
+        ifc_file = tool.Ifc.get()
         results = []
         psetqtos = ifcopenshell.util.element.get_psets(
             element, psets_only=psets_only, qtos_only=qtos_only, should_inherit=False
         )
         for name, data in sorted(psetqtos.items()):
+            pset = ifc_file.by_id(data["id"])
+            pset_uses = ifcopenshell.util.element.get_elements_using_pset(pset)
             results.append(
                 {
                     "id": data["id"],
                     "Name": name,
                     "is_expanded": is_expanded.get(data["id"], True),
                     "Properties": [{"Name": k, "NominalValue": v} for k, v in sorted(data.items()) if k != "id"],
+                    "shared_pset_uses": len(pset_uses),
                 }
             )
         return sorted(results, key=lambda v: v["Name"])

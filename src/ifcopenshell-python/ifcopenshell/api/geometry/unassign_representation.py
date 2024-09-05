@@ -18,6 +18,7 @@
 
 import ifcopenshell.api.geometry
 import ifcopenshell.util.element
+from typing import Any
 
 
 def unassign_representation(
@@ -30,13 +31,20 @@ def unassign_representation(
 
 
 class Usecase:
-    def execute(self):
-        if self.settings["product"].is_a("IfcProduct"):
-            self.unassign_product_representation(self.settings["product"], self.settings["representation"])
-        elif self.settings["product"].is_a("IfcTypeProduct"):
+    file: ifcopenshell.file
+    settings: dict[str, Any]
+
+    def execute(self) -> None:
+        product: ifcopenshell.entity_instance = self.settings["product"]
+        representation: ifcopenshell.entity_instance = self.settings["representation"]
+        if product.is_a("IfcProduct"):
+            self.unassign_product_representation(product, representation)
+        elif product.is_a("IfcTypeProduct"):
             self.unassign_type_representation()
 
-    def unassign_product_representation(self, product, representation):
+    def unassign_product_representation(
+        self, product: ifcopenshell.entity_instance, representation: ifcopenshell.entity_instance
+    ) -> None:
         representations = list(product.Representation.Representations or [])
         if representation not in representations:
             return
@@ -46,8 +54,7 @@ class Usecase:
         else:
             product.Representation.Representations = representations
 
-    def unassign_type_representation(self):
-
+    def unassign_type_representation(self) -> None:
         matching_representation_map = None
         representation_maps = self.settings["product"].RepresentationMaps or []
 
@@ -63,11 +70,11 @@ class Usecase:
             ] or None
             self.remove_representation_map_only(matching_representation_map)
 
-    def remove_representation_map_only(self, representation_map):
+    def remove_representation_map_only(self, representation_map: ifcopenshell.entity_instance) -> None:
         representation_map.MappedRepresentation = self.file.createIfcShapeRepresentation()
         ifcopenshell.util.element.remove_deep2(self.file, representation_map)
 
-    def unassign_products_using_mapped_representation(self, representation_map):
+    def unassign_products_using_mapped_representation(self, representation_map: ifcopenshell.entity_instance) -> None:
         mapped_representations = []
         just_representations = []
         for map_usage in representation_map.MapUsage or []:

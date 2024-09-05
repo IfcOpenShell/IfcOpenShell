@@ -66,7 +66,6 @@ class FilledOpeningGenerator:
         target: Optional[Vector] = None,
     ) -> None:
         props = bpy.context.scene.BIMModelProperties
-        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         opening_thickness_si = 0.0
 
         filling = tool.Ifc.get_entity(filling_obj)

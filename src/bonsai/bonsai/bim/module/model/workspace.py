@@ -29,16 +29,36 @@ from bonsai.bim.module.model.data import AuthoringData
 from bonsai.bim.module.system.data import PortData
 from bonsai.bim.module.model.prop import get_ifc_class
 
-custom_icon_previews = None
+
+def check_display_mode():
+    global display_mode
+    try:
+        theme = bpy.context.preferences.themes['Default']
+        text_color = theme.user_interface.wcol_menu_item.text
+        background_color = theme.user_interface.wcol_menu_item.outline
+        print(f"text_color = {text_color}")
+        print(f"background_color = {background_color}")
+        if sum(text_color) < 2.6:
+            display_mode = "lm"
+        else:
+            display_mode = "dm"
+    except:
+        display_mode = "dm"
 
 
 def load_custom_icons():
     global custom_icon_previews
+    if display_mode is None:
+        check_display_mode()
+    
     icons_dir = os.path.join(os.path.dirname(__file__), "..", "..", "data", "icons")
     custom_icon_previews = bpy.utils.previews.new()
+    
+    prefix = f"{display_mode}_"
+    
     for entry in os.scandir(icons_dir):
-        if entry.name.endswith(".png"):
-            name = os.path.splitext(entry.name)[0]
+        if entry.name.endswith(".png") and entry.name.startswith(prefix):
+            name = os.path.splitext(entry.name)[0].replace(prefix, "", 1)
             custom_icon_previews.load(name.upper(), entry.path, "IMAGE")
 
 
@@ -238,13 +258,6 @@ class CableTool(BimTool):
     @classmethod
     def draw_settings(cls, context, layout, ws_tool):
         BimToolUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
-
-
-MODIFIERS = {
-    "A": ("EVENT_ALT", "OPTION" if sys.platform == "Darwin" else "ALT"),
-    "C": ("EVENT_CTRL", "CTRL"),
-    "S": ("EVENT_SHIFT", "⇧"),
-}
 
 
 def add_layout_hotkey_operator(layout, text, hotkey, description, ui_context=""):
@@ -811,14 +824,12 @@ class BimToolUI:
             else:
                 text = ""
             if not AuthoringData.data["ifc_element_type"]:
-
                 prop_with_search(row, cls.props, "ifc_class", text="")
-                row.operator("bim.add_constr_type_instance", text=text, icon_value=custom_icon_previews["ADD"].icon_id)
 
             row = cls.layout.row(align=True)
             if AuthoringData.data["relating_type_id"]:
                 prop_with_search(row, cls.props, "relating_type_id", text="")
-                row.operator("bim.add_constr_type_instance", text=text, icon_value=custom_icon_previews["ADD"].icon_id)
+                row.operator("bim.add_constr_type_instance", text=text, icon_value=custom_icon_previews[f"ADD"].icon_id)
 
             else:
                 row.label(text="No Construction Type", icon="FILE_3D")
@@ -1170,6 +1181,13 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         else:
             bpy.ops.bim.show_openings()
 
+custom_icon_previews = None
+display_mode = None
 
 LIST_OF_TOOLS = [cls.bl_idname for cls in (BimTool.__subclasses__() + [BimTool])]
 TOOLS_TO_CLASSES_MAP = {cls.bl_idname: cls.ifc_element_type for cls in BimTool.__subclasses__()}
+MODIFIERS = {
+    "A": ("EVENT_ALT", "OPTION" if sys.platform == "Darwin" else "ALT"),
+    "C": ("EVENT_CTRL", "CTRL"),
+    "S": ("EVENT_SHIFT", "⇧"),
+}

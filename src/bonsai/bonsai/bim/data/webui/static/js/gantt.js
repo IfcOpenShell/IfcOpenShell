@@ -82,7 +82,6 @@ function handleBlenderDisconnect(blenderId) {
 
 function handleConnectedClients(data) {
   $("#blender-count").text(data.length);
-  // console.log(data);
   data.forEach(function (id) {
     connectedClients[id] = {
       shown: false,
@@ -115,7 +114,6 @@ function handleThemeData(themeData) {
   }
 
   const cssRule = generateCssVariableRule(themeData.theme);
-  console.log(cssRule);
 
   var styleElement = $("#gantt-stylesheet")[0];
   if (styleElement) {
@@ -133,7 +131,6 @@ function handleWorkScheduleData(data) {
   const workSchedules = data["data"]["work_schedule_info"];
 
   workSchedules.forEach((workSchedule) => {
-    console.log(workSchedule);
     const mainContainer = CostUI.text(new Date(workSchedule.CreationDate).toLocaleDateString());
     const callback = () => loadWorkSchedule(workSchedule.id);
     const card = CostUI.createCard(workSchedule.Name,mainContainer, callback);
@@ -142,10 +139,7 @@ function handleWorkScheduleData(data) {
 }
 
 function handleGanttData(data) {
-  console.log("running handleGanttData");
   const blenderId = data["blenderId"];
-
-  console.log(data);
 
   const filename = data["data"]["ifc_file"];
   const ganttTasks = data["data"]["gantt_data"]["tasks"];
@@ -183,7 +177,6 @@ function handleDefaultData(data) {
   const blenderId = data["blenderId"];
   const isDirty = data["data"]["is_dirty"];
   showWarning(blenderId, isDirty);
-  console.log('default data',data);
 }
 
 // Function to add a new gantt with data and filename

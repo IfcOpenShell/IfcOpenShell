@@ -159,18 +159,31 @@ class BIM_PT_spatial_decomposition(Panel):
 
         if not self.props.total_elements:
             row = self.layout.row(align=True)
-            row.label(text=f"{self.props.active_container.ifc_class} > No Contained Elements", icon="FILE_3D")
+            row.label(text=f"{self.props.active_container.ifc_class} > No Elements", icon="FILE_3D")
+            row.operator("bim.assign_container", icon="FOLDER_REDIRECT", text="").container = ifc_definition_id
+
+            row = self.layout.row(align=True)
+            row.prop(self.props, "element_mode", text="", icon="FILEBROWSER")
             row.prop(self.props, "should_include_children", text="", icon="OUTLINER")
             return
 
         row = self.layout.row(align=True)
         row.label(
-            text=f"{self.props.active_container.ifc_class} > {self.props.total_elements} Contained Elements",
+            text=f"{self.props.active_container.ifc_class} > {self.props.total_elements} Elements",
             icon="FILE_3D",
         )
-        row.prop(self.props, "should_include_children", text="", icon="OUTLINER")
+        row.operator("bim.assign_container", icon="FOLDER_REDIRECT", text="").container = ifc_definition_id
+        op = row.operator("bim.select_decomposed_element", icon="OBJECT_DATA", text="")
+        if active_element := self.props.active_element:
+            op.element = active_element.ifc_definition_id
+        else:
+            op.element = 0
         op = row.operator("bim.select_decomposed_elements", icon="RESTRICT_SELECT_OFF", text="")
         op.container = ifc_definition_id
+
+        row = self.layout.row(align=True)
+        row.prop(self.props, "element_mode", text="", icon="FILEBROWSER")
+        row.prop(self.props, "should_include_children", text="", icon="OUTLINER")
 
         self.layout.template_list(
             "BIM_UL_elements",
@@ -265,24 +278,15 @@ class BIM_UL_elements(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index, fit_flag):
         if item:
             row = layout.row(align=True)
-            item_type = item.type
-            if item_type == "CLASS":
-                self.draw_toggle(row, item.is_expanded, index)
-                row.label(text=item.name)
-                col = row.column()
-                col.alignment = "RIGHT"
-                col.label(text=str(item.total))
-            elif item_type == "TYPE":
+            for _ in range(item.level):
                 row.label(text="", icon="BLANK1")
+            if item.has_children:
                 self.draw_toggle(row, item.is_expanded, index)
-                row.label(text=item.name)
+            row.label(text=item.name)
+            if item.total:
                 col = row.column()
                 col.alignment = "RIGHT"
                 col.label(text=str(item.total))
-            else:  # OCCURRENCE
-                for _ in range(2):
-                    row.label(text="", icon="BLANK1")
-                row.label(text=item.name)
 
     def draw_filter(self, context, layout):
         row = layout.row()

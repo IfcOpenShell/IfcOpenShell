@@ -70,17 +70,6 @@ class Snap(bonsai.core.tool.Snap):
 
         return snap_point
 
-    @classmethod
-    def get_snap_points_on_polyline(cls):
-        snap_points = {}
-        polyline_data = bpy.context.scene.BIMModelProperties.polyline_point
-        polyline_points = []
-        for point_data in polyline_data:
-            point = Vector((point_data.x, point_data.y, point_data.z))
-            polyline_points.append(point)
-        snap_points.update({tuple(point): "Polyline Point" for point in polyline_points})
-
-        return snap_points
 
     @classmethod
     def select_snap_point(cls, snap_points, hit, threshold):
@@ -178,10 +167,12 @@ class Snap(bonsai.core.tool.Snap):
         polyline_data = bpy.context.scene.BIMModelProperties.polyline_point
         if len(polyline_data) > 2:
             first_point = polyline_data[0]
-            polyline_point = bpy.context.scene.BIMModelProperties.polyline_point.add()
-            polyline_point.x = first_point.x
-            polyline_point.y = first_point.y
-            polyline_point.z = first_point.z
+            last_point = polyline_data[-1]
+            if not(first_point.x == last_point.x and first_point.y == last_point.y and first_point.z == last_point.z):
+                polyline_point = bpy.context.scene.BIMModelProperties.polyline_point.add()
+                polyline_point.x = first_point.x
+                polyline_point.y = first_point.y
+                polyline_point.z = first_point.z
 
     @classmethod
     def clear_polyline(cls):
@@ -524,14 +515,14 @@ class Snap(bonsai.core.tool.Snap):
     def validate_input(cls, input_number, input_type):
 
         grammar_imperial = """
-        start: FORMULA? dim expr?
+        start: (FORMULA dim expr) | dim
         dim: imperial
 
         FORMULA: "="
 
         imperial: feet? "-"? inches?
-        feet: NUMBER? " "? fraction? "'"
-        inches: NUMBER? " "? fraction? "\\""
+        feet: NUMBER? "-"? fraction? "'"
+        inches: NUMBER? "-"? fraction? "\\""
         fraction: NUMBER "/" NUMBER
 
         expr: (ADD | SUB) dim | (MUL | DIV) NUMBER
@@ -583,7 +574,10 @@ class Snap(bonsai.core.tool.Snap):
 
             def imperial(self, args):
                 if len(args) > 1:
-                    result = args[0] + args[1]
+                    if args[0] <= 0:
+                        result = args[0] - args[1]
+                    else:
+                        result = args[0] + args[1]
                 else:
                     result = args[0]
                 return result

@@ -19,7 +19,6 @@
 import bpy
 import mathutils
 import numpy as np
-from functools import reduce
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.system
@@ -71,10 +70,6 @@ class AddEmptyType(bpy.types.Operator, AddObjectHelper):
         context.scene.BIMRootProperties.ifc_product = "IfcElementType"
         tool.Blender.select_and_activate_single_object(context, obj)
         return {"FINISHED"}
-
-
-def add_empty_type_button(self, context):
-    self.layout.operator(AddEmptyType.bl_idname, icon="FILE_3D")
 
 
 class AddDefaultType(bpy.types.Operator, tool.Ifc.Operator):

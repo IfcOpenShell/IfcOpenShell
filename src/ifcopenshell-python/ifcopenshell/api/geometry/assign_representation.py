@@ -19,6 +19,7 @@
 import ifcopenshell.api.owner
 import ifcopenshell.api.geometry
 import ifcopenshell.util.element
+from typing import Any
 
 
 def assign_representation(
@@ -31,7 +32,10 @@ def assign_representation(
 
 
 class Usecase:
-    def execute(self):
+    file: ifcopenshell.file
+    settings: dict[str, Any]
+
+    def execute(self) -> None:
         if self.settings["product"].is_a("IfcProduct"):
             product_type = ifcopenshell.util.element.get_type(self.settings["product"])
             if (
@@ -73,7 +77,9 @@ class Usecase:
                     self.assign_product_representation(element, mapped_representation)
         ifcopenshell.api.owner.update_owner_history(self.file, **{"element": self.settings["product"]})
 
-    def assign_product_representation(self, product, representation):
+    def assign_product_representation(
+        self, product: ifcopenshell.entity_instance, representation: ifcopenshell.entity_instance
+    ) -> None:
         definition = product.Representation
         if not definition:
             definition = self.file.createIfcProductDefinitionShape()

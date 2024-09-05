@@ -422,6 +422,18 @@ def get_properties(
     return results
 
 
+def get_elements_using_pset(pset: ifcopenshell.entity_instance) -> set[ifcopenshell.entity_instance]:
+    """Retrieve the elements (or element types) that are using the provided property set."""
+    is_ifc2x3 = pset.file.schema == "IFC2X3"
+    elements = set()
+    rels = pset.PropertyDefinitionOf if is_ifc2x3 else pset.DefinesOccurrence
+    for rel in rels:
+        elements.update(rel.RelatedObjects)
+    for element_type in pset.DefinesType:
+        elements.add(element_type)
+    return elements
+
+
 def get_predefined_type(element: ifcopenshell.entity_instance) -> str:
     """Retrieves the PrefefinedType attribute of an element.
 
@@ -947,7 +959,7 @@ def get_structure_referenced_elements(structure: ifcopenshell.entity_instance) -
     return referenced
 
 
-def get_decomposition(element: ifcopenshell.entity_instance, is_recursive=True) -> list[ifcopenshell.entity_instance]:
+def get_decomposition(element: ifcopenshell.entity_instance, is_recursive=True) -> set[ifcopenshell.entity_instance]:
     """
     Retrieves all subelements of an element based on the spatial decomposition
     hierarchy. This includes all subspaces and elements contained in subspaces,
@@ -966,29 +978,29 @@ def get_decomposition(element: ifcopenshell.entity_instance, is_recursive=True) 
         decomposition = ifcopenshell.util.element.get_decomposition(element)
     """
     queue = [element]
-    results = []
+    results = set()
     while queue:
         element = queue.pop()
         for rel in getattr(element, "ContainsElements", []):
             related = rel.RelatedElements
             queue.extend(related)
-            results.extend(related)
+            results.update(related)
         for rel in getattr(element, "IsDecomposedBy", []):
             related = rel.RelatedObjects
             queue.extend(related)
-            results.extend(related)
+            results.update(related)
         for rel in getattr(element, "HasOpenings", []):
             related = rel.RelatedOpeningElement
             queue.append(related)
-            results.append(related)
+            results.add(related)
         for rel in getattr(element, "HasFillings", []):
             related = rel.RelatedBuildingElement
             queue.append(related)
-            results.append(related)
+            results.add(related)
         for rel in getattr(element, "IsNestedBy", []):
             related = rel.RelatedObjects
             queue.extend(related)
-            results.extend(related)
+            results.update(related)
         if not is_recursive:
             break
     return results

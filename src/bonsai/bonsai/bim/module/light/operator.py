@@ -30,11 +30,16 @@ import bonsai.tool as tool
 from pathlib import Path
 from typing import Union, Optional, Sequence
 import json
+import math
+import time
 import ifcopenshell
+import webbrowser
 import ifcopenshell.geom
 import multiprocessing
 from mathutils import Vector
 from bonsai.bim.module.light.data import SolarData
+from bpy_extras.io_utils import ExportHelper
+from bpy_extras.io_utils import ImportHelper
 
 ifc_materials = []
 
@@ -95,14 +100,10 @@ class ExportOBJ(bpy.types.Operator):
             while True:
                 shape = iterator.get()
                 materials = shape.geometry.materials
-                # print(shape.geometry)
                 material_ids = shape.geometry.material_ids
                 # material_names = shape.geometry.material_names
-                # print(material_ids)
 
                 for material in materials:
-                    # print(material, dir(material))
-                    # print(material.name)
                     ifc_materials.append(material.name)
 
                 serialiser.write(shape)
@@ -129,10 +130,15 @@ class RadianceRender(bpy.types.Operator):
             self.report({"ERROR"}, "PyRadiance is not available. Cannot perform rendering.")
             return {"CANCELLED"}
 
-        # Get the resolution from the user input
-
+        print("Starting Radiance rendering process...")
         props = context.scene.radiance_exporter_properties
         resolution_x, resolution_y = props.radiance_resolution_x, props.radiance_resolution_y
+
+        context.scene.render.resolution_x = resolution_x
+        context.scene.render.resolution_y = resolution_y
+
+        aspect_ratio = resolution_x / resolution_y
+
         quality = props.radiance_quality.upper()
         detail = props.radiance_detail.upper()
         variability = props.radiance_variability.upper()
@@ -141,6 +147,11 @@ class RadianceRender(bpy.types.Operator):
         output_file_format = props.output_file_format
         use_hdr = props.use_hdr
         choose_hdr_image = props.choose_hdr_image
+
+        print(f"Resolution: {resolution_x}x{resolution_y}")
+        print(f"Quality: {quality}, Detail: {detail}, Variability: {variability}")
+        print(f"Output directory: {output_dir}")
+
         if use_hdr:
             hdr_image = "noon_grass_2k.hdr"
             hdr_mask = "noon_grass_2k_mask.hdr"
@@ -148,30 +159,34 @@ class RadianceRender(bpy.types.Operator):
             hdr_image_path = os.path.join(os.path.dirname(__file__), "HDRs", hdr_image)
             hdr_mask_path = os.path.join(os.path.dirname(__file__), "HDRs", hdr_mask)
             sky_map_cal_path = os.path.join(os.path.dirname(__file__), "HDRs", sky_map_cal)
-        # os.chdir(output_dir)
 
         obj_file_path = os.path.join(output_dir, "model.obj")
 
         sun_props = context.scene.BIMSolarProperties
+        sun_pos_props = context.scene.sun_pos_properties
         sky_file_path = os.path.join(output_dir, "sky.rad")
-        latitude = sun_props.latitude
-        longitude = sun_props.longitude
-        timezone = sun_props.timezone
-        month = sun_props.month
-        day = sun_props.day
-        hour = sun_props.hour
-        minute = sun_props.minute
+        # latitude = sun_props.latitude
+        # longitude = sun_props.longitude
+        # month = sun_props.month
+        # day = sun_props.day
+        # hour = sun_props.hour
+        # minute = sun_props.minute
 
-        print("Sun Properties:")
-        print("Latitude: ", latitude)
-        print("Longitude: ", longitude)
-        print("Timezone: ", timezone)
-        print("Month: ", month)
-        print("Day: ", day)
-        print("Hour: ", hour)
-        print("Minute: ", minute)
+        # print("Sun Properties:")
+        # print("Latitude: ", latitude)
+        # print("Longitude: ", longitude)
+        # print("Timezone: ", timezone)
+        # print("Month: ", month)
+        # print("Day: ", day)
+        # print("Hour: ", hour)
+        # print("Minute: ", minute)
 
-        camera = self.get_active_camera(context)
+        print("Setting up camera...")
+        if props.use_active_camera:
+            camera = context.scene.camera
+        else:
+            camera = props.selected_camera
+
         if camera is None:
             self.report({"ERROR"}, "No active camera found in the scene. Please add a camera and set it as active.")
             return {"CANCELLED"}
@@ -179,19 +194,35 @@ class RadianceRender(bpy.types.Operator):
         # Get camera position and direction
         camera_position, camera_direction = self.get_camera_data(camera)
 
-        dt = datetime(2024, month, day, hour, minute)
+        print(f"Camera position: {camera_position}")
+        print(f"Camera direction: {camera_direction}")
+
+        # sun_position = tool.Blender.get_sun_position_addon()
+        #     azimuth, elevation = sun_position.sun_calc.get_sun_coordinates(
+        #     sun_pos_props.time,
+        #     sun_pos_props.latitude,
+        #     sun_pos_props.longitude,
+        #     -sun_pos_props.UTC_zone,
+        #     sun_pos_props.month,
+        #     sun_pos_props.day,
+        #     sun_pos_props.year,
+        # )
+
+        dt = datetime(sun_pos_props.year, sun_props.month, sun_props.day, sun_props.hour, sun_props.minute)
 
         sky_description = pr.gensky(
             dt=dt,
-            latitude=latitude,
-            longitude=longitude,
-            timezone=timezone,
-            year=2024,
-            sunny_with_sun=True,
-            sunny_without_sun=False,
-            cloudy=False,
-            ground_reflectance=0.2,
-            turbidity=3.0,
+            # azimuth=64.1,
+            # altitude=-26.6,
+            latitude=sun_props.latitude,
+            longitude=sun_props.longitude,
+            year=sun_pos_props.year,
+            timezone=-int(sun_props.UTC_zone),
+            # sunny_with_sun=False,
+            # sunny_without_sun=False,
+            # cloudy=False,
+            # ground_reflectance=0.2,
+            # turbidity=3.0,
         )
 
         sky_description_str = sky_description.decode("utf-8")
@@ -292,11 +323,7 @@ ground_glow source ground
 
         props = context.scene.radiance_exporter_properties
 
-        if props.use_json_file:
-            with open(props.json_file, "r") as file:
-                data = json.load(file)
-        else:
-            data = props.get_mappings_dict()
+        data = props.get_mappings_dict()
 
         materials_file = os.path.join(output_dir, "materials.rad")
         written_materials = set()
@@ -317,9 +344,6 @@ ground_glow source ground
             for material in default_materials:
                 file.write(material)
                 written_materials.add(material.split()[2])  # Add material name to written set
-
-            print(data)
-            print(default_materials)
 
             for style_id in all_materials:
                 material = next((m for m in props.materials if m.style_id == style_id), None)
@@ -351,7 +375,7 @@ ground_glow source ground
 
         self.report({"INFO"}, "Exported Scene file to: {}".format(scene_file))
 
-        # Py Radiance Rendering code
+        print("Setting up Radiance scene...")
         scene = pr.Scene("ascene")
 
         material_path = os.path.join(output_dir, "materials.rad")
@@ -360,10 +384,39 @@ ground_glow source ground
         scene.add_material(material_path)
         scene.add_surface(scene_path)
         scene.add_source(sky_file_path)
+        print("Setting up view...")
+        if camera.data.type == "PERSP":
+            # Perspective camera
+            camera_fov = camera.data.angle
+            # Calculate vertical FOV based on the desired aspect ratio
+            vertical_fov = 2 * math.atan(math.tan(camera_fov / 2) / aspect_ratio)
 
-        aview = pr.View(position=camera_position, direction=camera_direction)
+            aview = pr.View(
+                vtype="v",  # Perspective view
+                position=camera_position,
+                direction=camera_direction,
+                vup=(0, 0, 1),  # Assuming Z is up
+                horiz=math.degrees(camera_fov),
+                vert=math.degrees(vertical_fov),
+            )
+        else:  # 'ORTHO'
+            # Orthographic camera
+            # Calculate the view size based on the camera's orthographic scale
+            ortho_scale = camera.data.ortho_scale
+            view_width = ortho_scale
+            view_height = ortho_scale / aspect_ratio
+
+            aview = pr.View(
+                vtype="l",  # Parallel projection (orthographic)
+                position=camera_position,
+                direction=camera_direction,
+                vup=(0, 0, 1),  # Assuming Z is up
+                horiz=view_width,
+                vert=view_height,
+            )
         scene.add_view(aview)
-
+        print("Starting render...")
+        start_time = time.time()
         image = pr.render(
             scene,
             ambbounce=1,
@@ -371,32 +424,34 @@ ground_glow source ground
             quality=quality,
             detail=detail,
             variability=variability,
+            nproc=multiprocessing.cpu_count(),
         )
+        end_time = time.time()
+        print(f"Render completed in {end_time - start_time:.2f} seconds")
 
         output_hdr_path = os.path.join(output_dir, f"{output_file_name}.{output_file_format.lower()}")
-
+        print(f"Saving HDR output to: {output_hdr_path}")
         if output_file_format == "HDR":
             with open(output_hdr_path, "wb") as wtr:
                 wtr.write(image)
         else:
             pass
-
+        print("Applying tone mapping...")
         pcond_image = pr.pcond(hdr=output_hdr_path, human=True)
 
         tiff_path = os.path.join(output_dir, f"{output_file_name}.tiff")
-
+        print(f"Saving TIFF output to: {tiff_path}")
         pr.ra_tiff(inp=pcond_image, out=tiff_path, lzw=True)
-
+        print("Radiance rendering process completed successfully.")
         self.report({"INFO"}, "Radiance rendering completed. Output: {}".format(tiff_path))
         return {"FINISHED"}
 
     def get_active_camera(self, context):
-        if context.scene.camera:
+        props = context.scene.radiance_exporter_properties
+        if props.use_active_camera:
             return context.scene.camera
-        for obj in context.scene.objects:
-            if obj.type == "CAMERA":
-                return obj
-        return None
+        else:
+            return props.selected_camera
 
     def get_camera_data(self, camera):
         # Get camera position
@@ -509,9 +564,29 @@ class RefreshIFCMaterials(bpy.types.Operator):
             for render_item in style.Styles:
                 if render_item.is_a("IfcSurfaceStyleRendering"):
                     style_id = f"IfcSurfaceStyleRendering-{render_item.id()}"
-                    ifc_materials.append(style_id)
                     style_name = style.Name or f"Unnamed Style {render_item.id()}"
-                    props.add_material_mapping(style_id, style_name)
+
+                    # Extract color and transparency
+                    color = (1.0, 1.0, 1.0)  # Default white
+                    transparency = 0.0  # Default opaque
+                    if render_item.SurfaceColour:
+                        color = (
+                            render_item.SurfaceColour.Red,
+                            render_item.SurfaceColour.Green,
+                            render_item.SurfaceColour.Blue,
+                        )
+                    if hasattr(render_item, "Transparency") and render_item.Transparency is not None:
+                        transparency = render_item.Transparency
+
+                    # Add material with color
+                    material = props.add_material_mapping(style_id, style_name)
+                    material.color = color
+
+                    # If transparency is high, consider it as glass
+                    if transparency > 0.5:
+                        material.category = "Glass"
+                        material.subcategory = "Clear Glass"
+                        material.is_mapped = True
 
         props.active_material_index = 0 if props.materials else -1
 
@@ -530,4 +605,71 @@ class UnmapMaterial(bpy.types.Operator):
         props = context.scene.radiance_exporter_properties
         material = props.materials[self.material_index]
         props.unmap_material(material.name)
+        return {"FINISHED"}
+
+
+class RADIANCE_OT_select_camera(bpy.types.Operator):
+    bl_idname = "radiance.select_camera"
+    bl_label = "Select Camera"
+    bl_description = "Select a camera from the viewport"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.object is not None and context.object.type == "CAMERA"
+
+    def execute(self, context):
+        props = context.scene.radiance_exporter_properties
+        props.selected_camera = context.object
+        props.use_active_camera = False
+        return {"FINISHED"}
+
+
+class RADIANCE_OT_export_material_mappings(bpy.types.Operator, ExportHelper):
+    bl_idname = "radiance.export_material_mappings"
+    bl_label = "Export Material Mappings"
+    bl_description = "Export material mappings to a JSON file"
+
+    filename_ext = ".json"
+
+    def execute(self, context):
+        props = context.scene.radiance_exporter_properties
+        mappings = {}
+
+        for material in props.materials:
+            if material.is_mapped:
+                mappings[material.style_id] = {
+                    "name": material.name,
+                    "category": material.category,
+                    "subcategory": material.subcategory,
+                }
+
+        with open(self.filepath, "w") as f:
+            json.dump(mappings, f, indent=4)
+
+        self.report({"INFO"}, f"Material mappings exported to {self.filepath}")
+        return {"FINISHED"}
+
+
+class RADIANCE_OT_import_material_mappings(bpy.types.Operator, ImportHelper):
+    bl_idname = "radiance.import_material_mappings"
+    bl_label = "Import Material Mappings"
+    bl_description = "Import material mappings from a JSON file"
+
+    filename_ext = ".json"
+
+    def execute(self, context):
+        props = context.scene.radiance_exporter_properties
+        props.import_mappings(self.filepath)
+        self.report({"INFO"}, f"Material mappings imported from {self.filepath}")
+        return {"FINISHED"}
+
+
+class RADIANCE_OT_open_spectraldb(bpy.types.Operator):
+    bl_idname = "radiance.open_spectraldb"
+    bl_label = "Open SpectralDB"
+    bl_description = "Open the SpectralDB website for reference"
+
+    def execute(self, context):
+        webbrowser.open("https://spectraldb.com")
         return {"FINISHED"}

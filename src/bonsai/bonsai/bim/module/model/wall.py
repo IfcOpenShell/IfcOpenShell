@@ -429,7 +429,15 @@ class DrawPolylineWall(bpy.types.Operator):
             index = self.input_options.index(self.input_type)
             size = len(self.input_options)
             self.input_type = self.input_options[((index + 1) % size)]
-            self.number_input = []
+
+            self.number_input = self.input_panel[self.input_type]
+            self.number_input = list(self.number_input)
+            self.number_output = "".join(self.number_input)
+            if self.input_type != "A":
+                self.number_output = PolylineDecorator.format_input_panel_units(context, float(self.number_output))
+                
+            self.input_panel[self.input_type] = self.number_output
+
             PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
             tool.Blender.update_viewport()
 
@@ -437,7 +445,13 @@ class DrawPolylineWall(bpy.types.Operator):
             self.recalculate_inputs(context)
             self.is_input_on = True
             self.input_type = "D"
-            self.number_input = []
+
+            self.number_input = self.input_panel[self.input_type]
+            self.number_input = list(self.number_input)
+            self.number_output = "".join(self.number_input)
+            self.number_output = PolylineDecorator.format_input_panel_units(context, float(self.number_output))
+            self.input_panel[self.input_type] = self.number_output
+
             PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
             tool.Blender.update_viewport()
 
@@ -466,6 +480,8 @@ class DrawPolylineWall(bpy.types.Operator):
                     else:
                         self.number_input = self.number_input[:-1]
                     self.number_output = "".join(self.number_input)
+                    if not self.number_input:
+                        self.number_output = "0"
                     self.input_panel[self.input_type] = self.number_output
                     PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
                     tool.Blender.update_viewport()
@@ -507,6 +523,7 @@ class DrawPolylineWall(bpy.types.Operator):
 
         if self.is_input_on:
             if event.value == "RELEASE" and event.type in {"ESC"}:
+                self.recalculate_inputs(context)
                 self.is_input_on = False
                 self.input_type = "OFF"
                 PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
@@ -1024,6 +1041,8 @@ class DumbWallJoiner:
         self.recreate_wall(element1, wall1, axis, body)
 
     def split(self, wall1, target):
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+
         element1 = tool.Ifc.get_entity(wall1)
         if not element1:
             return
@@ -1047,6 +1066,7 @@ class DumbWallJoiner:
             r.RelatedOpeningElement for r in element1.HasOpenings if not r.RelatedOpeningElement.HasFillings
         ]:
             opening_matrix = Matrix(ifcopenshell.util.placement.get_local_placement(opening.ObjectPlacement).tolist())
+            opening_matrix.translation *= unit_scale
             opening_location = opening_matrix.translation
             _, opening_position = mathutils.geometry.intersect_point_line(opening_location.to_2d(), *axis1["reference"])
             if opening_position > cut_percentage:
@@ -1058,6 +1078,7 @@ class DumbWallJoiner:
             r.RelatedOpeningElement for r in element2.HasOpenings if not r.RelatedOpeningElement.HasFillings
         ]:
             opening_matrix = Matrix(ifcopenshell.util.placement.get_local_placement(opening.ObjectPlacement).tolist())
+            opening_matrix.translation *= unit_scale
             opening_location = opening_matrix.translation
             _, opening_position = mathutils.geometry.intersect_point_line(opening_location.to_2d(), *axis1["reference"])
             if opening_position < cut_percentage:
@@ -1080,6 +1101,8 @@ class DumbWallJoiner:
         self.recreate_wall(element2, wall2, axis2["reference"], axis2["reference"])
 
     def flip(self, wall1):
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+
         if tool.Ifc.is_moved(wall1):
             bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=wall1)
 
@@ -1108,6 +1131,7 @@ class DumbWallJoiner:
         filling_matrixes = {}
         for opening in [r.RelatedOpeningElement for r in element1.HasOpenings]:
             opening_matrix = Matrix(ifcopenshell.util.placement.get_local_placement(opening.ObjectPlacement).tolist())
+            opening_matrix.translation *= unit_scale
             location = opening_matrix.translation
             location_on_base = tool.Cad.point_on_edge(location, axis1["base"])
             location_on_side = tool.Cad.point_on_edge(location, axis1["side"])

@@ -59,11 +59,9 @@ class Collector(bonsai.core.tool.Collector):
             cls.link_to_collection_safe(obj, collection)
         elif element.is_a("IfcLinearPositioningElement"):
             collection = cls._create_project_child_collection("IfcLinearPositioningElement")
-            collection.hide_viewport = False
             cls.link_to_collection_safe(obj, collection)
         elif element.is_a("IfcReferent"):
             collection = cls._create_project_child_collection("IfcReferent")
-            collection.hide_viewport = False
             cls.link_to_collection_safe(obj, collection)
         elif tool.Ifc.get_schema() == "IFC2X3" and element.is_a("IfcSpatialStructureElement"):
             if collection := cls._create_own_collection(obj):
@@ -94,7 +92,6 @@ class Collector(bonsai.core.tool.Collector):
             cls.link_to_collection_safe(obj, collection)
         else:
             collection = cls._create_project_child_collection("Unsorted")
-            collection.hide_viewport = False
             cls.link_to_collection_safe(obj, collection)
 
     @classmethod
@@ -105,7 +102,8 @@ class Collector(bonsai.core.tool.Collector):
             collection = bpy.data.collections.new(name)
             project_obj = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
             project_obj.BIMObjectProperties.collection.children.link(collection)
-            collection.hide_viewport = True
+            if layer_collection := tool.Blender.get_layer_collection(collection):
+                cls.set_layer_collection_visibility(layer_collection)
         return collection
 
     @classmethod
@@ -148,3 +146,26 @@ class Collector(bonsai.core.tool.Collector):
         if collection.children.find(obj_or_col.name) != -1:
             return
         collection.children.link(obj_or_col)
+
+    @classmethod
+    def set_layer_collection_visibility(cls, layer_collection):
+        name = layer_collection.collection.name
+        if name in (
+            "IfcTypeProduct",
+            "IfcStructuralItem",
+            "Unsorted",
+        ):
+            layer_collection.hide_viewport = True
+        elif name.startswith("IfcAnnotation"):
+            layer_collection.hide_viewport = True
+        else:
+            layer_collection.hide_viewport = False
+
+    @classmethod
+    def reset_default_visibility(cls):
+        project = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
+        project_collection = project.BIMObjectProperties.collection
+        for layer_collection in bpy.context.view_layer.layer_collection.children:
+            if layer_collection.collection == project_collection:
+                for layer_collection2 in layer_collection.children:
+                    cls.set_layer_collection_visibility(layer_collection2)

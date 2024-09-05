@@ -33,6 +33,7 @@ classes = (
     operator.ReferenceStructure,
     operator.RemoveContainer,
     operator.SelectContainer,
+    operator.SelectDecomposedElement,
     operator.SelectDecomposedElements,
     operator.SelectProduct,
     operator.SelectSimilarContainer,

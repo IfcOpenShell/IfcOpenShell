@@ -265,16 +265,10 @@ class CostSchedulesData:
 
     @classmethod
     def cost_values(cls):
-        results = []
         ifc_id = bpy.context.scene.BIMCostProperties.active_cost_item_id
         if not ifc_id:
-            return results
-        cost_item = tool.Ifc.get().by_id(ifc_id)
-        for cost_value in cost_item.CostValues or []:
-            label = "{0:.2f}".format(ifcopenshell.util.cost.calculate_applied_value(cost_item, cost_value))
-            label += " = {}".format(ifcopenshell.util.cost.serialise_cost_value(cost_value))
-            results.append({"id": cost_value.id(), "label": label, "name": cost_value.Name})
-        return results
+            return []
+        return ifcopenshell.util.cost.get_cost_values(tool.Ifc.get().by_id(ifc_id))
 
     @classmethod
     def quantity_types(cls):

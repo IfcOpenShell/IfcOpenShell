@@ -325,6 +325,7 @@ class BIM_OT_add_railing(bpy.types.Operator, tool.Ifc.Operator):
 class AddRailing(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_railing"
     bl_label = "Add Railing"
+    bl_description = "Add Bonsai parametric railing to the active IFC element"
     bl_options = {"REGISTER"}
 
     def _execute(self, context):
@@ -450,6 +451,7 @@ class EnableEditingRailingPath(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         obj = context.active_object
+        [o.select_set(False) for o in context.selected_objects if o != obj]
         props = obj.BIMRailingProperties
         data = tool.Model.get_modeling_bbim_pset_data(obj, "BBIM_Railing")["data_dict"]
         # required since we could load pset from .ifc and BIMRoofProperties won't be set

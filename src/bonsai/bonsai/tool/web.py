@@ -21,6 +21,7 @@ from bonsai.bim.module.web.data import WebData
 import bonsai.core.tool
 import bonsai.tool as tool
 import ifcopenshell.api.sequence
+import ifcopenshell.api.cost
 from typing import Any, Dict, Optional
 import time
 import socket
@@ -354,17 +355,24 @@ class Web(bonsai.core.tool.Web):
         if operator_data["type"] == "loadCostSchedule":
             cost_schedule = ifc_file.by_id(operator_data["costScheduleId"])
             bonsai.core.cost.enable_editing_cost_items(tool.Cost, cost_schedule=cost_schedule)
-            json_data = tool.Cost.create_cost_schedule_json(cost_schedule)
-            cls.send_webui_data(data=json_data, data_key="cost_items", event="cost_items")
-        if operator_data["type"] == "addCostItem":
-            bpy.ops.bim.add_cost_item(cost_item=operator_data["costItemId"])
-            cost_schedule = tool.Cost.get_cost_schedule(cost_item=tool.Ifc.get().by_id(operator_data["costItemId"]))
-            json_data = tool.Cost.create_cost_schedule_json(cost_schedule)
-            cls.send_webui_data(data=json_data, data_key="cost_items", event="cost_items")
+            cls.load_cost_schedule_web_ui(cost_schedule)
         if operator_data["type"] == "selectAssignedElements":
             cost_item = tool.Ifc.get().by_id(operator_data["costItemId"])
             products = tool.Cost.get_cost_item_products(cost_item, is_deep=True)
             tool.Spatial.select_products(products, unhide=True)
+        if operator_data["type"] == "addCostItem":
+            bpy.ops.bim.add_cost_item(cost_item=operator_data["costItemId"])
+            cost_schedule = tool.Cost.get_cost_schedule(cost_item=tool.Ifc.get().by_id(operator_data["costItemId"]))
+            cls.load_cost_schedule_web_ui(cost_schedule)
+        if operator_data["type"] == "deleteCostItem":
+            cost_schedule = tool.Cost.get_cost_schedule(cost_item=tool.Ifc.get().by_id(operator_data["costItemId"]))
+            bpy.ops.bim.remove_cost_item(cost_item=operator_data["costItemId"])
+            cls.load_cost_schedule_web_ui(cost_schedule)
+        if operator_data["type"] == "duplicateCostItem":
+            cost_item = tool.Ifc.get().by_id(operator_data["costItemId"])
+            cost_schedule = tool.Cost.get_cost_schedule(cost_item=cost_item)
+            new_cost_item = ifcopenshell.api.cost.copy_cost_item(ifc_file, cost_item)
+            cls.load_cost_schedule_web_ui(cost_schedule)
         if operator_data["type"] == "editCostItemName":
             cost_item = tool.Ifc.get().by_id(operator_data["costItemId"])
             tool.Ifc.run(
@@ -373,6 +381,68 @@ class Web(bonsai.core.tool.Web):
                 attributes = {"Name": operator_data["name"]}
             )
             tool.Cost.load_cost_schedule_tree()
+        if operator_data["type"] == "enableEditingCostValues":
+            cost_item = tool.Ifc.get().by_id(operator_data["costItemId"])
+            cost_values = ifcopenshell.util.cost.get_cost_values(cost_item)
+            cls.send_webui_data(data={
+                "cost_values": cost_values,
+                "cost_item_id": operator_data["costItemId"]
+            }, data_key="cost_values", event="cost_values")
+        if operator_data["type"] == "addCostValue":
+            value = ifcopenshell.api.cost.add_cost_value(
+                ifc_file,
+                parent=ifc_file.by_id(operator_data["costItemId"]),
+            )
+            cls.send_webui_data(
+                data={
+                "cost_value_id" : value.id(), 
+                "cost_item_id":operator_data["costItemId"]}, 
+                data_key="cost_value", 
+                event="cost_value"
+            )
+        if operator_data["type"] == "deleteCostValue":
+            bpy.ops.bim.remove_cost_value(
+                parent=operator_data["costItemId"],
+                cost_value=operator_data["costValueId"]
+                )
+            cost_item = ifc_file.by_id(operator_data["costItemId"])
+            cost_schedule = tool.Cost.get_cost_schedule(cost_item=cost_item)
+            cls.load_cost_schedule_web_ui(cost_schedule)
+        if operator_data["type"] == "editCostValues":
+            cost_item_id = operator_data["costItemId"]
+            cost_item = ifc_file.by_id(cost_item_id)
+            cost_schedule = tool.Cost.get_cost_schedule(cost_item=cost_item)
+            for value_data in operator_data["costValues"] or []:
+                print("editing cost value data", value_data)
+                value = ifc_file.by_id(value_data["id"])
+                if value_data["costType"] == "FIXED":
+                    attributes= {
+                        "AppliedValue": value_data["appliedValue"],
+                        "Category": None
+                    }
+                elif value_data["costType"] == "CATEGORY":
+                    attributes= {
+                        "AppliedValue": value_data["appliedValue"],
+                        "Category": value_data["costCategory"],
+                    }
+                elif value_data["costType"] == "SUM":
+                    attributes= {
+                        "Category": '*'
+                    }
+                ifcopenshell.api.cost.edit_cost_value(
+                    file=ifc_file,
+                    cost_value=value,
+                    attributes= attributes
+                )
+                print(value.get_info())
+            tool.Cost.load_cost_schedule_tree()
+            cls.load_cost_schedule_web_ui(cost_schedule)
+
+
+    @classmethod
+    def load_cost_schedule_web_ui(cls, cost_schedule):
+        json_data = tool.Cost.create_cost_schedule_json(cost_schedule)
+        cls.send_webui_data(data=json_data, data_key="cost_items", event="cost_items")
 
     @classmethod
     def handle_gantt_operator(cls, operator_data: dict) -> None:

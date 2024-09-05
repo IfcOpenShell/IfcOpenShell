@@ -2201,7 +2201,7 @@ void IfcFile::setDefaultHeaderValues() {
     const std::string empty_string;
     std::vector<std::string> file_description;
     std::vector<std::string> schema_identifiers;
-    std::vector<std::string> empty_vector;
+    std::vector<std::string> string_vector = {""};
 
     file_description.push_back("ViewDefinition [CoordinationView]");
     if (schema() != nullptr) {
@@ -2213,8 +2213,8 @@ void IfcFile::setDefaultHeaderValues() {
 
     header().file_name().name(empty_string);
     header().file_name().time_stamp(createTimestamp());
-    header().file_name().author(empty_vector);
-    header().file_name().organization(empty_vector);
+    header().file_name().author(string_vector);
+    header().file_name().organization(string_vector);
     header().file_name().preprocessor_version("IfcOpenShell " IFCOPENSHELL_VERSION);
     header().file_name().originating_system("IfcOpenShell " IFCOPENSHELL_VERSION);
     header().file_name().authorization(empty_string);

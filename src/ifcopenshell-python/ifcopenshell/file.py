@@ -27,15 +27,34 @@ from pathlib import Path
 from typing import Any
 from typing import Callable
 from typing import Generator
-from typing import Literal
 from typing import Optional
+from typing import TYPE_CHECKING
 from typing import Union
 
 from . import ifcopenshell_wrapper
 from .entity_instance import entity_instance
-from .util.constants import IFC_TYPES
+# from .util.constants import IFC_TYPES
 from .util.constants import IFC_UNIT_ASSIGNMENT
 from .util.unit import get_measure_unit_type
+
+if TYPE_CHECKING:
+    import ifcopenshell.util.schema
+
+HEADER_FIELDS = {
+    "file_description": [
+        "description",
+        "implementation_level",
+    ],
+    "file_name": [
+        "name",
+        "time_stamp",
+        "author",
+        "organization",
+        "preprocessor_version",
+        "originating_system",
+        "authorization",
+    ],
+}
 
 
 class Transaction:
@@ -415,10 +434,10 @@ class file:
         return e
 
     @property
-    def schema(self) -> Literal["IFC2X3", "IFC4", "IFC4X3"]:
+    def schema(self) -> ifcopenshell.util.schema.IFC_SCHEMA:
         """General IFC schema version: IFC2X3, IFC4, IFC4X3."""
         prefixes = ("IFC", "X", "_ADD", "_TC")
-        reg = "".join(f"(?P<{s}>{s}\d+)?" for s in prefixes)
+        reg = "".join(f"(?P<{s}>{s}\\d+)?" for s in prefixes)
         match = re.match(reg, self.wrapped_data.schema)
         version_tuple = tuple(
             map(
@@ -643,6 +662,11 @@ class file:
 
     def __iter__(self) -> Generator[ifcopenshell.entity_instance, None, None]:
         return iter(self[id] for id in self.wrapped_data.entity_names())
+
+    def assign_header_from(self, other):
+        for k, vs in HEADER_FIELDS.items():
+            for v in vs:
+                setattr(getattr(self.header, k), v, getattr(getattr(other.header, k), v))
 
     def write(self, path: "os.PathLike | str", format: Optional[str] = None, zipped: bool = False) -> None:
         """Write ifc model to file.
