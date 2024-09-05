@@ -57,6 +57,22 @@ def unshare_pset(
         assert new_pset != pset
         assert ifcopenshell.util.element.get_elements_by_pset(new_pset) == {element2}
     """
+
+    if not products:
+        raise Exception("No products provided.")
+
+    # If pset has no other elements besides the provided products,
+    # then we skip the first product, so it won't get additional pset copy
+    # leaving the original pset orphaned.
+    pset_elements = ifcopenshell.util.element.get_elements_by_pset(pset)
+    products_original = products
+
+    if set(products) == pset_elements:
+        products = products[1:]
+
+    if not products:
+        raise Exception(f"Provided product is the only element to which pset is assigned: {products_original[0]}.")
+
     products_occurrences: set[ifcopenshell.entity_instance] = set()
     products_types: set[ifcopenshell.entity_instance] = set()
     for product in products:
