@@ -70,7 +70,7 @@ class Raycast(bonsai.core.tool.Raycast):
         xmin, xmax, ymin, ymax = bbox
 
         # extends bbox boundaries to improve snap
-        if offset: 
+        if offset:
             xmin -= offset
             xmax += offset
             ymin -= offset
@@ -193,7 +193,9 @@ class Raycast(bonsai.core.tool.Raycast):
             loc = Vector((0, 0, 0))
 
         polyline_data = bpy.context.scene.BIMModelProperties.polyline_point
-        polyline_data = polyline_data[: len(polyline_data) - 1] # It doesn't make sense to snap to the last point created
+        polyline_data = polyline_data[
+            : len(polyline_data) - 1
+        ]  # It doesn't make sense to snap to the last point created
         polyline_points = []
         for point_data in polyline_data:
             point = Vector((point_data.x, point_data.y, point_data.z))

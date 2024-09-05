@@ -811,6 +811,7 @@ class Cost(bonsai.core.tool.Cost):
     @classmethod
     def create_cost_schedule_json(cls, cost_schedule: ifcopenshell.entity_instance) -> dict:
         from bonsai.bim.module.cost.data import CostSchedulesData
+
         CostSchedulesData.load()
         cost_items = CostSchedulesData.data["cost_items"]
         data = []
@@ -832,7 +833,7 @@ class Cost(bonsai.core.tool.Cost):
             return None
         for rel in cost_item.IsNestedBy or []:
             for sub_cost_item in rel.RelatedObjects or []:
-                cls.create_cost_item_json(sub_cost_item, cost_items,cost_item_data["is_nested_by"])
+                cls.create_cost_item_json(sub_cost_item, cost_items, cost_item_data["is_nested_by"])
 
     @classmethod
     def is_cost_item_sum(cls, cost_item: ifcopenshell.entity_instance) -> bool:

@@ -87,9 +87,7 @@ class AssignContainer(bpy.types.Operator, tool.Ifc.Operator):
         elif (container_obj := props.container_obj) and (container := tool.Ifc.get_entity(container_obj)):
             pass
         for element_obj in context.selected_objects:
-            core.assign_container(
-                tool.Ifc, tool.Collector, tool.Spatial, container=container, element_obj=element_obj
-            )
+            core.assign_container(tool.Ifc, tool.Collector, tool.Spatial, container=container, element_obj=element_obj)
 
 
 class EnableEditingContainer(bpy.types.Operator, tool.Ifc.Operator):

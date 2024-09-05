@@ -413,7 +413,9 @@ class PolylineDecorator:
 
         distance = (snap_vector - last_point).length
         if distance > 0:
-            angle = tool.Cad.angle_3_vectors(second_to_last_point, last_point, snap_vector, new_angle=None, degrees=True)
+            angle = tool.Cad.angle_3_vectors(
+                second_to_last_point, last_point, snap_vector, new_angle=None, degrees=True
+            )
 
             # Round angle to the nearest 0.05
             angle = round(angle / 0.05) * 0.05
@@ -547,12 +549,17 @@ class PolylineDecorator:
             if context.scene.unit_settings.length_unit == "MILLIMETERS":
                 factor = 1000
 
-        return format_distance(
-                    value * factor, precision=precision, suppress_zero_inches=True, in_unit_length=True
-                )
+        return format_distance(value * factor, precision=precision, suppress_zero_inches=True, in_unit_length=True)
 
     def draw_input_panel(self, context):
-        texts = {"D": "Distance: ", "A": "Angle: ", "X": "X coord: ", "Y": "Y coord: ", "Z": "Z coord:", "AREA": "Area: "}
+        texts = {
+            "D": "Distance: ",
+            "A": "Angle: ",
+            "X": "X coord: ",
+            "Y": "Y coord: ",
+            "Z": "Z coord:",
+            "AREA": "Area: ",
+        }
 
         self.addon_prefs = tool.Blender.get_addon_preferences()
         self.font_id = 0
@@ -687,7 +694,6 @@ class PolylineDecorator:
         for i in range(len(polyline_points) - 1):
             polyline_edges.append([i, i + 1])
 
-
         # Line for angle axis snap
         if snap_prop.snap_type == "Axis":
             self.line_shader.uniform_float("lineWidth", 0.75)
@@ -728,4 +734,3 @@ class PolylineDecorator:
         self.draw_batch("POINTS", polyline_points, decorator_color_selected)
         if len(polyline_points) > 1:
             self.draw_batch("LINES", polyline_points, decorator_color_selected, polyline_edges)
-
