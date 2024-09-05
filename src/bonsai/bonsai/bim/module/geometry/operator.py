@@ -278,7 +278,7 @@ class SwitchRepresentation(bpy.types.Operator, tool.Ifc.Operator):
 
     @classmethod
     def poll(cls, context):
-        if context.active_object.mode == "OBJECT":
+        if (obj := context.active_object) and obj.mode == "OBJECT":
             return True
         cls.poll_message_set("Only available in OBJECT mode - Press TAB in the viewport")
         return False
