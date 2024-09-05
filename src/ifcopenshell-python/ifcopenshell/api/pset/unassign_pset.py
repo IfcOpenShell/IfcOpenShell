@@ -41,11 +41,11 @@ def unassign_pset(
         ifcopenshell.api.pset.assign_pset(self.file, [element1, element2], pset)
 
         # Pset is now shared by 2 elements.
-        assert ifcopenshell.util.element.get_elements_using_pset(pset) == {element1, element2}
+        assert ifcopenshell.util.element.get_elements_by_pset(pset) == {element1, element2}
 
         ifcopenshell.api.pset.unassign_pset(self.file, [element2], pset)
         # Pset was unassigned from element2.
-        assert ifcopenshell.util.element.get_elements_using_pset(pset) == {element1}
+        assert ifcopenshell.util.element.get_elements_by_pset(pset) == {element1}
 
     """
     is_ifc2x3 = file.schema == "IFC2X3"

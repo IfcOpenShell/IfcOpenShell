@@ -54,7 +54,7 @@ class Data:
         )
         for name, data in sorted(psetqtos.items()):
             pset = ifc_file.by_id(data["id"])
-            pset_uses = ifcopenshell.util.element.get_elements_using_pset(pset)
+            pset_uses = ifcopenshell.util.element.get_elements_by_pset(pset)
             results.append(
                 {
                     "id": data["id"],

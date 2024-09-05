@@ -41,7 +41,7 @@ class TestUnsharePset(test.bootstrap.IFC4):
 
         used_elements = set()
         for pset in psets:
-            pset_elements = ifcopenshell.util.element.get_elements_using_pset(pset)
+            pset_elements = ifcopenshell.util.element.get_elements_by_pset(pset)
             assert len(pset_elements) == 1
             used_elements.update(pset_elements)
 
