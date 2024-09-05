@@ -70,7 +70,6 @@ class Snap(bonsai.core.tool.Snap):
 
         return snap_point
 
-
     @classmethod
     def select_snap_point(cls, snap_points, hit, threshold):
         shortest_distance = None
@@ -168,7 +167,7 @@ class Snap(bonsai.core.tool.Snap):
         if len(polyline_data) > 2:
             first_point = polyline_data[0]
             last_point = polyline_data[-1]
-            if not(first_point.x == last_point.x and first_point.y == last_point.y and first_point.z == last_point.z):
+            if not (first_point.x == last_point.x and first_point.y == last_point.y and first_point.z == last_point.z):
                 polyline_point = bpy.context.scene.BIMModelProperties.polyline_point.add()
                 polyline_point.x = first_point.x
                 polyline_point.y = first_point.y
@@ -360,7 +359,6 @@ class Snap(bonsai.core.tool.Snap):
                         best_obj = obj
                         best_hit = hit_world
                         best_face_index = face_index
-
 
             if best_obj is not None:
                 return best_obj, best_hit, best_face_index

@@ -218,6 +218,7 @@ def register():
 
     workspace.load_custom_icons()
 
+
 def unregister():
     if not bpy.app.background:
         bpy.utils.unregister_tool(workspace.WallTool)
@@ -231,7 +232,7 @@ def unregister():
         bpy.utils.unregister_tool(workspace.CableCarrierTool)
         bpy.utils.unregister_tool(workspace.CableTool)
         bpy.utils.unregister_tool(workspace.BimTool)
-        
+
     del bpy.types.Scene.BIMModelProperties
     del bpy.types.Object.BIMArrayProperties
     del bpy.types.Object.BIMStairProperties

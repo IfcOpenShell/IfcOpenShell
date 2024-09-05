@@ -435,7 +435,7 @@ class DrawPolylineWall(bpy.types.Operator):
             self.number_output = "".join(self.number_input)
             if self.input_type != "A":
                 self.number_output = PolylineDecorator.format_input_panel_units(context, float(self.number_output))
-                
+
             self.input_panel[self.input_type] = self.number_output
 
             PolylineDecorator.set_input_panel(self.input_panel, self.input_type)

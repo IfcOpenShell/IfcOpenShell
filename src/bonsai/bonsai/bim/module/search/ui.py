@@ -102,7 +102,6 @@ class BIM_PT_colour_by_property(Panel):
             if props.max_mode == "MANUAL":
                 row.prop(props, "max_value", text="")
 
-
         row = self.layout.row(align=True)
         row.operator("bim.colour_by_property", icon="BRUSH_DATA")
         row.operator("bim.reset_object_colours")

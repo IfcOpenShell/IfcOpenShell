@@ -111,10 +111,12 @@ class PolylinePoint(PropertyGroup):
     y: bpy.props.FloatProperty(name="Y")
     z: bpy.props.FloatProperty(name="Z")
 
+
 class PolylineMeasurement(PropertyGroup):
     dim: bpy.props.StringProperty(name="Dimension")
     angle: bpy.props.StringProperty(name="Angle")
     position: bpy.props.FloatVectorProperty(name="Decorator Position", size=3)
+
 
 class BIMModelProperties(PropertyGroup):
     ifc_class: bpy.props.EnumProperty(items=get_ifc_class, name="Construction Class", update=update_ifc_class)

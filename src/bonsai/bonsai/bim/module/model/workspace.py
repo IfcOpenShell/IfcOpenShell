@@ -33,7 +33,7 @@ from bonsai.bim.module.model.prop import get_ifc_class
 def check_display_mode():
     global display_mode
     try:
-        theme = bpy.context.preferences.themes['Default']
+        theme = bpy.context.preferences.themes["Default"]
         text_color = theme.user_interface.wcol_menu_item.text
         background_color = theme.user_interface.wcol_menu_item.outline
         print(f"text_color = {text_color}")
@@ -50,12 +50,12 @@ def load_custom_icons():
     global custom_icon_previews
     if display_mode is None:
         check_display_mode()
-    
+
     icons_dir = os.path.join(os.path.dirname(__file__), "..", "..", "data", "icons")
     custom_icon_previews = bpy.utils.previews.new()
-    
+
     prefix = f"{display_mode}_"
-    
+
     for entry in os.scandir(icons_dir):
         if entry.name.endswith(".png") and entry.name.startswith(prefix):
             name = os.path.splitext(entry.name)[0].replace(prefix, "", 1)
@@ -1180,6 +1180,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             bpy.ops.bim.edit_openings()
         else:
             bpy.ops.bim.show_openings()
+
 
 custom_icon_previews = None
 display_mode = None
