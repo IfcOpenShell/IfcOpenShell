@@ -1149,7 +1149,15 @@ void IfcUtil::IfcBaseClass::set_attribute_value(size_t i, const T& t) {
         apply_individual_instance_visitor(current_attribute, (int) i).apply(visitor);
     }
 
-    data_.storage_.set(i, t);
+    if constexpr (std::is_pointer_v<T>) {
+        if (t) {
+            data_.storage_.set(i, t);
+        } else {
+            data_.storage_.set(i, Blank{});
+        }
+    } else {
+        data_.storage_.set(i, t);
+    }
     auto new_attribute = data_.get_attribute_value(i);
 
     if (file_ != nullptr) {
