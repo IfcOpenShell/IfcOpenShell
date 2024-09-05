@@ -151,7 +151,14 @@ std::pair<char const*, size_t> vector_to_buffer(const T& t) {
 std::string taxonomy_item_repr(ifcopenshell::geometry::taxonomy::item::ptr i) {
 	std::ostringstream oss;
 	i->print(oss);
-	return oss.str();
+	std::string result = oss.str();
+
+	// Strip new line at the end of the printed result.
+	// result is probably always ends with \n but just to be safe.
+	if (!result.empty() && result.back() == '\n') {
+		result.pop_back();
+	}
+	return result;  
 }
 %}
 
