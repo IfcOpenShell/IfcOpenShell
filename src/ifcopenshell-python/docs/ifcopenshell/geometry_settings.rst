@@ -61,7 +61,7 @@ APPLY_DEFAULT_MATERIALS
 +------+-------------------+---------+
 | Type | IfcConvert Option | Default |
 +======+===================+=========+
-| BOOL | Always enabled    | False   |
+| BOOL | Always enabled    | True    |
 +------+-------------------+---------+
 
 Given the command invocation:
@@ -82,6 +82,8 @@ The interactive session below shows how with this setting enabled you will get a
     >>> import ifcopenshell, ifcopenshell.geom
     >>> f = ifcopenshell.open("model.ifc")
     >>> s = ifcopenshell.geom.settings()
+    >>> # By default setting is enabled, we disable it for demonstration.
+    >>> s.set("apply-default-materials", False)
     >>> c = f["3bXiCStxP6Fgxdej$yc50U"]
     >>>
     >>> shp = ifcopenshell.geom.create_shape(s, c)
@@ -90,12 +92,12 @@ The interactive session below shows how with this setting enabled you will get a
     >>> [(m.name, m.diffuse) for m in shp.geometry.materials]
     []
     >>>
-    >>> s.set(s.APPLY_DEFAULT_MATERIALS, True)
+    >>> s.set("apply-default-materials", True)
     >>> shp = ifcopenshell.geom.create_shape(s, c)
     >>> shp.geometry.material_ids
     (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
     >>> [(m.name, m.diffuse) for m in shp.geometry.materials]
-    [('IfcCovering', (0.7, 0.7, 0.7))]
+    [('IfcCovering', colour 0.7 0.7 0.7)]
 
 This is enabled by default for the IfcConvert serializers as they will not gracefully handle -1 material indices and allows users to quickly assign colours based on entity types in their modelling applications.
 
@@ -611,7 +613,8 @@ USE_PYTHON_OPENCASCADE
 
     Only available in Python when an import of ``OCC.Core.BRepTools`` or ``OCC.BRepTools`` succeeds.
 
-This implies ``USE_WORLD_COORDS`` ``USE_BREP_DATA`` and ``DISABLE_TRIANGULATION``. The serialized TopoDS_Shape of ``USE_BREP_DATA`` is deserialized by Python OpenCASCADE.
+This implies ``USE_WORLD_COORDS`` and ``ITERATOR_OUTPUT`` set to ``SERIALIZED``. 
+The serialized TopoDS_Shape from iterator output is deserialized by Python OpenCASCADE.
 
 USE_WORLD_COORDS
 ----------------
