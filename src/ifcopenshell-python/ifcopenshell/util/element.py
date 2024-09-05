@@ -441,7 +441,7 @@ def get_properties(
     return results
 
 
-def get_elements_using_pset(pset: ifcopenshell.entity_instance) -> set[ifcopenshell.entity_instance]:
+def get_elements_by_pset(pset: ifcopenshell.entity_instance) -> set[ifcopenshell.entity_instance]:
     """Retrieve the elements (or element types) that are using the provided property set."""
     is_ifc2x3 = pset.file.schema == "IFC2X3"
     elements = set()

@@ -45,17 +45,17 @@ def unshare_pset(
         ifcopenshell.api.pset.assign_pset(self.file, [element1, element2], pset)
 
         # Pset is now shared by 2 elements.
-        assert ifcopenshell.util.element.get_elements_using_pset(pset) == {element1, element2}
+        assert ifcopenshell.util.element.get_elements_by_pset(pset) == {element1, element2}
 
         new_psets = ifcopenshell.api.pset.unshare_pset(self.file, [element2], pset)
 
         # element2 was unassigned from the original pset.
-        assert ifcopenshell.util.element.get_elements_using_pset(pset) == {element1}
+        assert ifcopenshell.util.element.get_elements_by_pset(pset) == {element1}
         new_pset = new_psets[0]
 
         # New pset was created and was assigned to element2.
         assert new_pset != pset
-        assert ifcopenshell.util.element.get_elements_using_pset(new_pset) == {element2}
+        assert ifcopenshell.util.element.get_elements_by_pset(new_pset) == {element2}
     """
     products_occurrences: set[ifcopenshell.entity_instance] = set()
     products_types: set[ifcopenshell.entity_instance] = set()

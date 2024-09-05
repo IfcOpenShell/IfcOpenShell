@@ -65,7 +65,7 @@ class Patcher:
         all_psets = self.file.by_type("IfcPropertySetDefinition")
         psets: dict[ifcopenshell.entity_instance, set[ifcopenshell.entity_instance]] = {}
         for pset in all_psets:
-            elements = ifcopenshell.util.element.get_elements_using_pset(pset)
+            elements = ifcopenshell.util.element.get_elements_by_pset(pset)
             # Skip non shared psets.
             if len(elements) < 2:
                 continue
