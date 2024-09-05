@@ -88,7 +88,8 @@ def main(
     )
 
     # this is required for serialization
-    geom_settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
+    dimensionality = W.CURVES_SURFACES_AND_SOLIDS if settings.include_curves else W.SURFACES_AND_SOLIDS
+    geom_settings.set("dimensionality", dimensionality)
     geom_settings.set("iterator-output", ifcopenshell.ifcopenshell_wrapper.NATIVE)
     geom_settings.set("apply-default-materials", True)
 
