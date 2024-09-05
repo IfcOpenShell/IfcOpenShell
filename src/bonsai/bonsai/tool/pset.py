@@ -151,6 +151,27 @@ class Pset(bonsai.core.tool.Pset):
         )
 
     @classmethod
+    def get_selected_pset_elements(
+        cls, obj_name: str, obj_type: tool.Ifc.OBJECT_TYPE, pset: ifcopenshell.entity_instance
+    ) -> list[ifcopenshell.entity_instance]:
+        ifc_file = tool.Ifc.get()
+        pset_elements = ifcopenshell.util.element.get_elements_by_pset(pset)
+        elements: list[ifcopenshell.entity_instance]
+
+        if obj_type == "Object":
+            elements = [
+                element
+                for obj in tool.Blender.get_selected_objects()
+                if (element := tool.Ifc.get_entity(obj)) and element in pset_elements
+            ]
+        else:
+            element_id = tool.Blender.get_obj_ifc_definition_id(obj_name, obj_type)
+            assert element_id
+            elements = [ifc_file.by_id(element_id)]
+
+        return elements
+
+    @classmethod
     def import_enumerated_value_from_template(
         cls, prop_template: ifcopenshell.entity_instance, data: dict[str, Any], props: bpy.types.PropertyGroup
     ) -> None:

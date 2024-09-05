@@ -465,6 +465,7 @@ class Georeference:
 class Ifc:
     def get(cls): pass
     def get_entity(cls, obj): pass
+    def get_entity_by_id(cls, element_id): pass
     def get_object(cls, entity): pass
     def get_path(cls): pass
     def get_schema(cls): pass
@@ -651,6 +652,7 @@ class Pset:
     def get_prop_template_primitive_type(cls, prop_template): pass
     def get_pset_name(cls, obj, obj_type, pset_type): pass
     def get_pset_template(cls, name): pass
+    def get_selected_pset_elements(cls, obj_name, obj_type, pset): pass
     def import_enumerated_value_from_template(cls, prop_template, data, props): pass
     def import_pset_from_existing(cls, pset, props): pass
     def import_pset_from_template(cls, pset_template, pset, props): pass
