@@ -195,7 +195,8 @@ class UnsharePset(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unshare_pset"
     bl_label = "Unshare Pset"
     bl_description = (
-        "Click to copy a pset as linked only to the active object.\n"
+        "Click to copy a pset as linked only to the selected objects. "
+        "If multiple objects are selected, each will get a separate pset copy.\n\n"
         "Otherwise changing a pset shared by multiple elements "
         "will change it's properties for all the elements it's linked to, not just for the active object"
     )
@@ -214,11 +215,23 @@ class UnsharePset(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         # TODO: move to core
         ifc_file = tool.Ifc.get()
+        obj_type: tool.Ifc.OBJECT_TYPE = self.obj_type
+        elements: list[ifcopenshell.entity_instance]
+
         pset = ifc_file.by_id(self.pset_id)
-        element_id = tool.Blender.get_obj_ifc_definition_id(self.obj, self.obj_type)
-        assert element_id
-        element = ifc_file.by_id(element_id)
-        ifcopenshell.api.pset.unshare_pset(ifc_file, [element], pset)
+        pset_elements = ifcopenshell.util.element.get_elements_by_pset(pset)
+
+        if obj_type == "Object":
+            elements = [
+                element
+                for obj in tool.Blender.get_selected_objects()
+                if (element := tool.Ifc.get_entity(obj)) and element in pset_elements
+            ]
+        else:
+            element_id = tool.Blender.get_obj_ifc_definition_id(self.obj, obj_type)
+            assert element_id
+            elements = [ifc_file.by_id(element_id)]
+        ifcopenshell.api.pset.unshare_pset(ifc_file, elements, pset)
 
 
 class AddQto(bpy.types.Operator, tool.Ifc.Operator):
