@@ -183,6 +183,14 @@ class ExportIfcCsv(bpy.types.Operator):
     filename_ext = ".csv"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.CsvProperties
+        if not props.should_load_from_memory and not props.csv_ifc_file:
+            cls.poll_message_set("Select an IFC file or use 'load from memory' if it's loaded in Bonsai.")
+            return False
+        return True
+
     def invoke(self, context, event):
         props = context.scene.CsvProperties
         if props.format == "web":
@@ -267,6 +275,14 @@ class ImportIfcCsv(bpy.types.Operator):
     bl_label = "Import to IFC"
     filter_glob: bpy.props.StringProperty(default="*.csv;*.ods;*.xlsx", options={"HIDDEN"})
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.CsvProperties
+        if not props.should_load_from_memory and not props.csv_ifc_file:
+            cls.poll_message_set("Select an IFC file or use 'load from memory' if it's loaded in Bonsai.")
+            return False
+        return True
 
     def invoke(self, context, event):
         self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".csv")

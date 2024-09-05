@@ -37,7 +37,12 @@ class ExecuteIfcTester(bpy.types.Operator, tool.Ifc.Operator):
     @classmethod
     def poll(cls, context):
         props = context.scene.IfcTesterProperties
-        return (props.ifc_files.single_file or props.should_load_from_memory) and props.specs
+        if not props.should_load_from_memory and not props.ifc_files.single_file:
+            cls.poll_message_set("Select an IFC file or use 'load from memory' if it's loaded in Bonsai.")
+            return False
+        if not props.specs:
+            return False
+        return True
 
     def execute(self, context):
         props = context.scene.IfcTesterProperties
