@@ -57,6 +57,16 @@ if (WITH_CGAL)
 endif()
 
 SET_SOURCE_FILES_PROPERTIES(IfcPython.i PROPERTIES CPLUSPLUS ON)
+# Rebuild on changes in other .i files.
+SET_PROPERTY(
+	SOURCE IfcPython.i
+	PROPERTY DEPENDS
+		IfcGeomWrapper.i
+		IfcParseWrapper.i
+		utils/type_conversion.i
+		utils/typemaps_in.i
+		utils/typemaps_out.i
+)
 swig_add_library(ifcopenshell_wrapper LANGUAGE python SOURCES IfcPython.i)
 if("$ENV{LDFLAGS}" MATCHES ".undefined.suppress")
 # On osx there is some state in the python dylib. With `-Wl,undefined,suppress` we can ignore the missing symbols at compile time.
