@@ -1762,7 +1762,7 @@ class Drawing(bonsai.core.tool.Drawing):
     def is_drawing_active(cls) -> bool:
         camera = bpy.context.scene.camera
         area = tool.Blender.get_view3d_area()
-        return camera and camera.type == "CAMERA" and camera.BIMObjectProperties.ifc_definition_id and area
+        return (camera is not None) and (camera.type == "CAMERA") and (camera.BIMObjectProperties.ifc_definition_id) and (area is not None)
 
     @classmethod
     def is_camera_orthographic(cls) -> bool:
