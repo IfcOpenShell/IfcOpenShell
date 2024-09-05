@@ -76,17 +76,29 @@ def get_pset(
     """
     pset = None
     type_pset = None
+    ifc_file = element.file
+    is_ifc2x3 = ifc_file.schema == "IFC2X3"
 
     if element.is_a("IfcTypeObject"):
         for definition in element.HasPropertySets or []:
             if definition.Name == name:
                 pset = definition
                 break
-    elif element.is_a("IfcMaterialDefinition") or element.is_a("IfcProfileDef"):
-        for definition in element.HasProperties or []:
-            if definition.Name == name:
-                pset = definition
-                break
+    elif (
+        (is_ifc2x3_material := (is_ifc2x3 and element.is_a("IfcMaterial")))
+        or element.is_a("IfcMaterialDefinition")
+        or element.is_a("IfcProfileDef")
+    ):
+        if is_ifc2x3_material:
+            for definition in ifc_file.by_type("IfcExtendedMaterialProperties"):
+                if definition.Material == element and definition.Name == name:
+                    pset = definition
+                    break
+        else:
+            for definition in element.HasProperties or []:
+                if definition.Name == name:
+                    pset = definition
+                    break
     elif (is_defined_by := getattr(element, "IsDefinedBy", None)) is not None:
         # other IfcObjectDefinition
         if should_inherit:
@@ -101,7 +113,11 @@ def get_pset(
                     break
 
     if pset:
-        if psets_only and not pset.is_a("IfcPropertySet"):
+        if (
+            psets_only
+            and not pset.is_a("IfcPropertySet")
+            and not (is_ifc2x3 and pset.is_a("IfcExtendedMaterialProperties"))
+        ):
             pset = None
         elif qtos_only and not pset.is_a("IfcElementQuantity"):
             pset = None
@@ -221,6 +237,9 @@ def get_property_definition(
         elif ifc_class == "IfcMaterialProperties" or ifc_class == "IfcProfileProperties":
             # IfcExtendedProperties
             return get_property(definition.Properties, prop, verbose=verbose)
+        elif ifc_class == "IfcExtendedMaterialProperties":
+            # IFC2X3.
+            return get_property(definition.ExtendedProperties, prop, verbose=verbose)
         else:
             # Entity introduced in IFC4
             # definition.is_a('IfcPreDefinedPropertySet'):
