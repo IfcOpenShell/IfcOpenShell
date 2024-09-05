@@ -563,7 +563,8 @@ class PolylineDecorator:
 
         self.addon_prefs = tool.Blender.get_addon_preferences()
         self.font_id = 0
-        blf.size(self.font_id, 12)
+        font_size = tool.Blender.scale_font_size(12)
+        blf.size(self.font_id, font_size)
         blf.enable(self.font_id, blf.SHADOW)
         blf.shadow(self.font_id, 6, 0, 0, 0, 1)
         color = self.addon_prefs.decorations_colour
@@ -594,7 +595,8 @@ class PolylineDecorator:
 
         self.addon_prefs = tool.Blender.get_addon_preferences()
         self.font_id = 1
-        blf.size(self.font_id, 12)
+        font_size = tool.Blender.scale_font_size(12)
+        blf.size(self.font_id, font_size)
         blf.enable(self.font_id, blf.SHADOW)
         blf.shadow(self.font_id, 6, 0, 0, 0, 1)
         color = self.addon_prefs.decorations_colour
@@ -625,7 +627,8 @@ class PolylineDecorator:
 
         self.addon_prefs = tool.Blender.get_addon_preferences()
         self.font_id = 2
-        blf.size(self.font_id, 12)
+        font_size = tool.Blender.scale_font_size(12)
+        blf.size(self.font_id, font_size)
         blf.enable(self.font_id, blf.SHADOW)
         blf.shadow(self.font_id, 6, 0, 0, 0, 1)
         color = self.addon_prefs.decorations_colour
