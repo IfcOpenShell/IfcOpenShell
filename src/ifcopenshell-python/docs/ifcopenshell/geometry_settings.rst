@@ -25,7 +25,7 @@ Here's an example of changing settings in Python:
 .. code-block:: python
 
     settings = ifcopenshell.geom.settings()
-    settings.set(settings.APPLY_DEFAULT_MATERIALS, True)
+    settings.set("apply-default-materials", True)
     settings.set_deflection_tolerance(1e-3)
 
 angular_tolerance
@@ -53,7 +53,7 @@ Here is an example in Python:
 .. code-block:: python
 
     settings = ifcopenshell.geom.settings()
-    settings.set_angular_tolerance(0.5)
+    settings.set("mesher-angular-deflection", 0.5)
 
 APPLY_DEFAULT_MATERIALS
 -----------------------
@@ -178,7 +178,7 @@ Here is an example in Python:
 
     settings = ifcopenshell.geom.settings()
     contexts = [c.id() for c in ifc_file.by_type("IfcGeometricRepresentationContext") if c.ContextIdentifier == "Body"]
-    settings.set_context_ids(contexts)
+    settings.set("context-ids", contexts)
 
 
 CONVERT_BACK_UNITS
@@ -228,7 +228,7 @@ Here is an example in Python:
 .. code-block:: python
 
     settings = ifcopenshell.geom.settings()
-    settings.set_deflection_tolerance(1e-3)
+    settings.set("mesher-linear-deflection", 1e-3)
 
 DISABLE_BOOLEAN_RESULT
 ----------------------
@@ -273,7 +273,7 @@ For example, if you want to set this setting in a python script you can use the 
 .. code-block:: python
     
     settings = ifcopenshell.geom.settings()
-    settings.set(settings.DISABLE_OPENING_SUBTRACTIONS, True)
+    settings.set("disable-opening-subtractions", True)
 
 
 DISABLE_TRIANGULATION

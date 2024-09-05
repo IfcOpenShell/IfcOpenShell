@@ -365,7 +365,7 @@ def create_shape(
     """
     Return a geometric representation from STEP-based IFCREPRESENTATIONSHAPE
     or
-    Return an OpenCASCADE BRep if settings.USE_PYTHON_OPENCASCADE == True
+    Return an OpenCASCADE BRep if 'use-python-opencascade' is True
 
     Note that in Python, you must store a reference to the element returned by this function to prevent garbage
     collection when you access its children. See #1124.
@@ -391,7 +391,7 @@ def create_shape(
     .. code:: python
 
         settings = ifcopenshell.geom.settings()
-        settings.set(settings.USE_PYTHON_OPENCASCADE, True)
+        settings.set("use-python-opencascade", True)
 
         ifc_file = ifcopenshell.open(file_path)
         products = ifc_file.by_type("IfcProduct")
