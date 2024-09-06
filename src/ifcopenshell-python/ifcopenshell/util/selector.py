@@ -507,6 +507,11 @@ def set_element_value(
             return
         elif key == "id":
             return
+        elif key == "predefined_type":
+            print(
+                f"WARNING. Assigning 'predefined_type' is not yet supported. Skipping value '{value}' for element: '{element}'."
+            )
+            return
         elif key == "classification":
             element = ifcopenshell.util.classification.get_references(element)
         elif key in ("x", "y", "z", "easting", "northing", "elevation") and hasattr(element, "ObjectPlacement"):
