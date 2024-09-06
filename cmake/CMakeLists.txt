@@ -29,7 +29,7 @@ endif()
 
 cmake_policy(SET CMP0048 NEW)
 cmake_policy(SET CMP0074 NEW)
-cmake_policy(SET CMP0078 OLD)
+cmake_policy(SET CMP0078 NEW)
 cmake_policy(SET CMP0086 NEW)
 if (POLICY CMP0144)
     cmake_policy(SET CMP0144 NEW) # find_package() uses upper-case <PACKAGENAME>_ROOT variables.
