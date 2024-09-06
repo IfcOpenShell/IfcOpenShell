@@ -74,11 +74,10 @@ class UnassignType(bpy.types.Operator):
                 continue
             ifcopenshell.api.run("type.unassign_type", self.file, related_objects=[element])
 
-            active_representation = tool.Geometry.get_active_representation(obj)
-            active_context = active_representation.ContextOfItems
-            new_active_representation = None
-
             if element.Representation:
+                new_active_representation = None
+                active_representation = tool.Geometry.get_active_representation(obj)
+                active_context = active_representation.ContextOfItems
                 representations = []
                 for representation in element.Representation.Representations:
                     resolved_representation = ifcopenshell.util.representation.resolve_representation(representation)
@@ -97,16 +96,16 @@ class UnassignType(bpy.types.Operator):
                             new_active_representation = copied_representation
                 element.Representation.Representations = representations
 
-            if new_active_representation:
-                bonsai.core.geometry.switch_representation(
-                    tool.Ifc,
-                    tool.Geometry,
-                    obj=obj,
-                    representation=new_active_representation,
-                    should_reload=False,
-                    is_global=False,
-                    should_sync_changes_first=False,
-                )
+                if new_active_representation:
+                    bonsai.core.geometry.switch_representation(
+                        tool.Ifc,
+                        tool.Geometry,
+                        obj=obj,
+                        representation=new_active_representation,
+                        should_reload=False,
+                        is_global=False,
+                        should_sync_changes_first=False,
+                    )
         return {"FINISHED"}
 
 
