@@ -288,9 +288,10 @@ class ExportIfcCsv(bpy.types.Operator):
         ]
 
 
-class ImportIfcCsv(bpy.types.Operator):
+class ImportIfcCsv(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.import_ifccsv"
     bl_label = "Import to IFC"
+    bl_options = {"REGISTER", "UNDO"}
     filter_glob: bpy.props.StringProperty(default="*.csv;*.ods;*.xlsx", options={"HIDDEN"})
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
@@ -308,7 +309,7 @@ class ImportIfcCsv(bpy.types.Operator):
         WindowManager.fileselect_add(self)
         return {"RUNNING_MODAL"}
 
-    def execute(self, context):
+    def _execute(self, context):
         import ifccsv
 
         props = context.scene.CsvProperties
