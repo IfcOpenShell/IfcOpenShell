@@ -136,7 +136,6 @@ classes = (
     ui.BIM_PT_roof,
     ui.LaunchTypeManager,
     ui.BIM_MT_model,
-    ui.BIM_PT_Grids,
     grid.BIM_OT_add_object,
     stair.BIM_OT_add_stair,
     stair.AddStair,

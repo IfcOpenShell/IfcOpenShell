@@ -522,8 +522,8 @@ class BIM_PT_tab_project_info(Panel):
         pass
 
 
-class BIM_PT_tab_spatial_decomposition(Panel):
-    bl_label = "Spatial Decomposition"
+class BIM_PT_tab_spatial(Panel):
+    bl_label = "Spatial"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
