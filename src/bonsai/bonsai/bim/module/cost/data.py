@@ -280,8 +280,7 @@ class CostSchedulesData:
     @classmethod
     def get_cost_schedule_types(cls):
         types = ifcopenshell.util.cost.get_cost_schedule_types(tool.Ifc.get())
-        return [(t['name'], t['name'], t['description']) for t in types]
-
+        return [(t["name"], t["name"], t["description"]) for t in types]
 
 
 class CostItemRatesData:

@@ -266,6 +266,7 @@ def get_cost_values(cost_item: ifcopenshell.entity_instance) -> list[dict[str, s
     print(results)
     return results
 
+
 def get_cost_schedule_types(file):
     schema: ifcopenshell_wrapper.schema_definition = ifcopenshell_wrapper.schema_by_name(file.schema)
     results = []
@@ -274,12 +275,15 @@ def get_cost_schedule_types(file):
     for attribute in declaration.attributes():
         if attribute.name() == "PredefinedType":
             for enumeration in attribute.type_of_attribute().declared_type().enumeration_items():
-                results.append({
-                    "name": enumeration,
-                    'description': get_predefined_type_doc(version, "IfcCostSchedule",enumeration),
-                })
+                results.append(
+                    {
+                        "name": enumeration,
+                        "description": get_predefined_type_doc(version, "IfcCostSchedule", enumeration),
+                    }
+                )
             break
     return results
+
 
 class CostValueUnserialiser:
     def parse(self, formula: str):

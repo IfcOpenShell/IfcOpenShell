@@ -344,24 +344,23 @@ class Web(bonsai.core.tool.Web):
         """
         ifc_file = tool.Ifc.get()
         if operator_data["type"] == "getPredefinedTypes":
-            print('getting predefined types')
+            print("getting predefined types")
             predefined_types = ifcopenshell.util.cost.get_cost_schedule_types(ifc_file)
             cls.send_webui_data(data=predefined_types, data_key="predefined_types", event="predefined_types")
         if operator_data["type"] == "addCostSchedule":
             bonsai.core.cost.add_cost_schedule(
-                tool.Ifc, 
-                name=operator_data["name"],
-                predefined_type=operator_data["type"]
-                )
+                tool.Ifc, name=operator_data["name"], predefined_type=operator_data["type"]
+            )
             cost_schedules = ifc_file.by_type("IfcCostSchedule")
             cost_schedules_json = [cs.get_info(recursive=True) for cs in cost_schedules]
             currency = tool.Cost.currency()
-            cls.send_webui_data(data={
-                "cost_schedules": cost_schedules_json,
-                "currency": currency
-            }, data_key="cost_schedules", event="cost_schedules")
+            cls.send_webui_data(
+                data={"cost_schedules": cost_schedules_json, "currency": currency},
+                data_key="cost_schedules",
+                event="cost_schedules",
+            )
         if operator_data["type"] == "getCostSchedules":
-            print('getting cost schedules')
+            print("getting cost schedules")
             cost_schedules = ifc_file.by_type("IfcCostSchedule")
             cost_schedules_json = [cs.get_info(recursive=True) for cs in cost_schedules]
             currency = tool.Cost.currency()
@@ -371,22 +370,18 @@ class Web(bonsai.core.tool.Web):
                 event="cost_schedules",
             )
         if operator_data["type"] == "loadCostSchedule":
-            print('loading cost schedule')
+            print("loading cost schedule")
             cost_schedule = ifc_file.by_id(operator_data["costScheduleId"])
             bonsai.core.cost.enable_editing_cost_items(tool.Cost, cost_schedule=cost_schedule)
             cls.load_cost_schedule_web_ui(cost_schedule)
         if operator_data["type"] == "selectAssignedElements":
-            print('selecting assigned elements')
+            print("selecting assigned elements")
             cost_item = tool.Ifc.get().by_id(operator_data["costItemId"])
             products = tool.Cost.get_cost_item_products(cost_item, is_deep=True)
             tool.Spatial.select_products(products, unhide=True)
         if operator_data["type"] == "addSummaryCostItem":
-            cost_schedule=ifc_file.by_id(operator_data["costScheduleId"])
-            bonsai.core.cost.add_summary_cost_item(
-                tool.Ifc,
-                tool.Cost,
-                cost_schedule=cost_schedule
-            )
+            cost_schedule = ifc_file.by_id(operator_data["costScheduleId"])
+            bonsai.core.cost.add_summary_cost_item(tool.Ifc, tool.Cost, cost_schedule=cost_schedule)
             cls.load_cost_schedule_web_ui(cost_schedule)
         if operator_data["type"] == "addCostItem":
             bpy.ops.bim.add_cost_item(cost_item=operator_data["costItemId"])
@@ -452,10 +447,11 @@ class Web(bonsai.core.tool.Web):
     @classmethod
     def load_cost_schedule_web_ui(cls, cost_schedule):
         json_data = tool.Cost.create_cost_schedule_json(cost_schedule)
-        cls.send_webui_data(data={
-            "cost_items": json_data,
-            "cost_schedule_id": cost_schedule.id()
-        }, data_key="cost_items", event="cost_items")
+        cls.send_webui_data(
+            data={"cost_items": json_data, "cost_schedule_id": cost_schedule.id()},
+            data_key="cost_items",
+            event="cost_items",
+        )
 
     @classmethod
     def handle_gantt_operator(cls, operator_data: dict) -> None:
