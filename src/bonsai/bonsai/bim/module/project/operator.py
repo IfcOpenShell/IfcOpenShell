@@ -2527,6 +2527,7 @@ class MeasureTool(bpy.types.Operator):
     def invoke(self, context, event):
         if context.space_data.type == "VIEW_3D":
             PolylineDecorator.install(context)
+            tool.Snap.clear_snapping_point()
             tool.Snap.set_use_default_container(False)
             PolylineDecorator.set_use_default_container(False)
             tool.Polyline.set_use_default_container(False)
