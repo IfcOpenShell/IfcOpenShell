@@ -92,10 +92,21 @@ class Geometry(bonsai.core.tool.Geometry):
         bpy.data.meshes.remove(data)
 
     @classmethod
-    def is_deletable(cls, element: ifcopenshell.entity_instance) -> bool:
-        if element.is_a("IfcProject") or tool.Root.is_spatial_element(element):
-            return False
-        return True
+    def is_lockable(cls, element: ifcopenshell.entity_instance) -> bool:
+        if (
+            element.is_a("IfcProject")
+            or tool.Root.is_spatial_element(element)
+            or element.is_a("IfcPositioningElement")
+            or element.is_a("IfcGrid")
+            or element.is_a("IfcGridAxis")
+        ):
+            return True
+        return False
+
+    @classmethod
+    def lock_object(cls, obj: bpy.types.Object) -> None:
+        obj.lock_location = (True, True, True)
+        obj.lock_rotation = (True, True, True)
 
     @classmethod
     def delete_ifc_object(cls, obj: bpy.types.Object) -> None:
