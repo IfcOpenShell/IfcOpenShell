@@ -539,9 +539,11 @@ class DrawPolylineWall(bpy.types.Operator):
     def invoke(self, context, event):
         if context.space_data.type == "VIEW_3D":
             PolylineDecorator.install(context)
+            tool.Snap.clear_snapping_point()
             tool.Snap.set_use_default_container(True)
             PolylineDecorator.set_use_default_container(True)
             tool.Polyline.set_use_default_container(True)
+            tool.Snap.set_snap_axis_method(None)
             tool.Snap.set_snap_plane_method("XY")
             PolylineDecorator.set_instructions(self.instructions)
             PolylineDecorator.set_input_ui(self.input_ui, self.input_type)
