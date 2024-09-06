@@ -45,13 +45,16 @@ class PolylineUI:
             self._AREA = ""
 
     def set_value(self, attribute_name, value):
-        if isinstance(value, float):
-            value = round(value, 3)
         value = str(value)
         setattr(self, f"_{attribute_name}", value)
 
     def get_text_value(self, attribute_name):
-        return getattr(self, f"_{attribute_name}")
+        value = getattr(self, f"_{attribute_name}")
+        try:
+            value = f"{float(value):.3g}"
+        except:
+            pass
+        return value
 
     def get_number_value(self, attribute_name):
         value = getattr(self, f"_{attribute_name}")
