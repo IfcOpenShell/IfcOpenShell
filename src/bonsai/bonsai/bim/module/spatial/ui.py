@@ -108,7 +108,6 @@ class BIM_PT_spatial_decomposition(Panel):
         icon = "VIEW_LOCKED" if context.scene.BIMSpatialDecompositionProperties.is_locked else "VIEW_UNLOCKED"
         row.prop(context.scene.BIMSpatialDecompositionProperties, "is_locked", text="", icon=icon)
 
-
     def draw(self, context):
         if not SpatialDecompositionData.is_loaded:
             SpatialDecompositionData.load()

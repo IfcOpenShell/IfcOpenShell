@@ -115,6 +115,7 @@ def update_spatial_is_locked(self, context):
             else:
                 tool.Geometry.unlock_object(obj)
 
+
 def poll_container_obj(self, obj):
     return obj is None or tool.Ifc.get_entity(obj)
 

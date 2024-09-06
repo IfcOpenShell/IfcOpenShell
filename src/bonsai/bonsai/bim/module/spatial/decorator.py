@@ -89,7 +89,6 @@ class GridDecorator:
                 blf.position(font_id, coords_2d[0], coords_2d[1], 0)
                 blf.draw(font_id, tag)
 
-
     def draw(self, context):
         self.addon_prefs = tool.Blender.get_addon_preferences()
         selected_elements_color = self.addon_prefs.decorator_color_selected
