@@ -18,7 +18,8 @@
 
 import ifcopenshell.api.owner
 import ifcopenshell.util.element
-from typing import Any
+from typing import Any, Union
+from types import EllipsisType
 
 
 def edit_attributes(file: ifcopenshell.file, product: ifcopenshell.entity_instance, attributes: dict[str, Any]) -> None:
@@ -52,25 +53,35 @@ def edit_attributes(file: ifcopenshell.file, product: ifcopenshell.entity_instan
         ifcopenshell.api.attribute.edit_attributes(model,
             product=element, attributes={"Name": "Waldo"})
     """
-    settings = {"product": product, "attributes": attributes or {}}
 
-    for name, value in settings["attributes"].items():
-        setattr(settings["product"], name, value)
-    if hasattr(settings["product"], "PredefinedType"):
-        if hasattr(settings["product"], "ElementType"):
-            if settings["product"].ElementType is None and settings["product"].PredefinedType == "USERDEFINED":
-                settings["product"].PredefinedType = "NOTDEFINED"
-            elif settings["product"].ElementType and settings["product"].PredefinedType != "USERDEFINED":
-                settings["product"].PredefinedType = "USERDEFINED"
-        elif hasattr(settings["product"], "ObjectType"):
-            relating_type = ifcopenshell.util.element.get_type(settings["product"])
+    def getattr_safe(element: ifcopenshell.entity_instance, attr: str) -> Union[Any, EllipsisType]:
+        """Return attribute value or Ellipsis if attribute doesn't exist.
+
+        Useful as an alternative to hasattr - hasattr under the hood just does
+        getattr but doesn't return a value. That helps reduce times IFC is accessed.
+        """
+        return getattr(element, attr, ...)
+
+    for name, value in attributes.items():
+        setattr(product, name, value)
+
+    if (predefined_type := getattr_safe(product, "PredefinedType")) is not ...:
+        if (element_type := getattr_safe(product, "ElementType")) is not ...:
+            if element_type is None and predefined_type == "USERDEFINED":
+                product.PredefinedType = "NOTDEFINED"
+            elif element_type and predefined_type != "USERDEFINED":
+                product.PredefinedType = "USERDEFINED"
+
+        elif (object_type := getattr_safe(product, "ObjectType")) is not ...:
+            relating_type = ifcopenshell.util.element.get_type(product)
             # Allow for None due to https://github.com/buildingSMART/IFC4.3.x-development/issues/818
             if relating_type and relating_type.PredefinedType not in ("NOTDEFINED", None):
-                settings["product"].ObjectType = None
-                settings["product"].PredefinedType = None
-            elif settings["product"].ObjectType is None and settings["product"].PredefinedType == "USERDEFINED":
-                settings["product"].PredefinedType = "NOTDEFINED"
-            elif settings["product"].ObjectType and settings["product"].PredefinedType != "USERDEFINED":
-                settings["product"].PredefinedType = "USERDEFINED"
-    if hasattr(settings["product"], "OwnerHistory"):
-        ifcopenshell.api.owner.update_owner_history(file, **{"element": settings["product"]})
+                product.ObjectType = None
+                product.PredefinedType = None
+            elif object_type is None and predefined_type == "USERDEFINED":
+                product.PredefinedType = "NOTDEFINED"
+            elif object_type and predefined_type != "USERDEFINED":
+                product.PredefinedType = "USERDEFINED"
+
+    if hasattr(product, "OwnerHistory"):
+        ifcopenshell.api.owner.update_owner_history(file, **{"element": product})
