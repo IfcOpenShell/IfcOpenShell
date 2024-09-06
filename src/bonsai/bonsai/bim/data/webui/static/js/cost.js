@@ -1,7 +1,9 @@
-import { CostUI } from './utilities/costui.js';
+import { CostUI } from "./utilities/costui.js";
 
 const connectedClients = {};
 let socket;
+
+let isScheduleLoad = {};
 
 $(document).ready(function () {
   var defaultTheme = "blender";
@@ -21,10 +23,26 @@ function connectSocket() {
   socket.on("connected_clients", handleConnectedClients);
   socket.on("theme_data", handleThemeData);
   socket.on("connect", handleWebConnect);
+  socket.on("predefined_types", handlePredefinedTypes);
   socket.on("cost_schedules", handleCostSchedulesData);
   socket.on("cost_items", handleCostItemsData);
   socket.on("cost_values", handleCostValuesData);
   socket.on("cost_value", handleCostValueData);
+}
+
+function handlePredefinedTypes(data) {
+  CostUI.enableAddingCostSchedule(
+    data.data["predefined_types"],
+    addCostSchedule
+  );
+}
+
+function addCostSchedule(name, predefinedType) {
+  executeOperator({
+    type: "addCostSchedule",
+    name: name,
+    predefinedType: predefinedType,
+  });
 }
 
 function handleBlenderConnect(blenderId) {
@@ -35,7 +53,6 @@ function handleBlenderConnect(blenderId) {
   $("#blender-count").text(function (i, text) {
     return parseInt(text, 10) + 1;
   });
-  console.log("Blender connected", blenderId);
 }
 
 function handleBlenderDisconnect(blenderId) {
@@ -53,24 +70,24 @@ function removeTableElement(blenderId) {
   $("#cost-items-" + blenderId).remove();
 }
 
-
 const costValueCallbacks = {
-  'editCostValues': editCostValues,
-  'addCostValue': addCostValue,
-  'deleteCostValue': deleteCostValue,
+  editCostValues: editCostValues,
+  addCostValue: addCostValue,
+  deleteCostValue: deleteCostValue,
 };
 
 function handleCostValueData(data) {
-
   const costItemId = data.data["cost_value"]["cost_item_id"];
   const costValueId = data.data["cost_value"]["cost_value_id"];
-  console.log("Handling cost value data", costItemId, costValueId);
   CostUI.addNewCostValueRow(costItemId, costValueId, costValueCallbacks);
-
 }
 
 function deleteCostValue(costItemId, costValueId) {
-  executeOperator({ type: "deleteCostValue", costItemId: costItemId, costValueId: costValueId });
+  executeOperator({
+    type: "deleteCostValue",
+    costItemId: costItemId,
+    costValueId: costValueId,
+  });
 }
 
 function handleConnectedClients(data) {
@@ -86,14 +103,13 @@ function handleCostValuesData(data) {
     costValues: data.data["cost_values"]["cost_values"],
     costItemId: data.data["cost_values"]["cost_item_id"],
     callbacks: {
-      'editCostValues': editCostValues,
-      'addCostValue': addCostValue,
-      'deleteCostValue': deleteCostValue,
+      editCostValues: editCostValues,
+      addCostValue: addCostValue,
+      deleteCostValue: deleteCostValue,
     },
   });
 
   CostUI.highlightCostItem(data.data["cost_values"]["cost_item_id"]);
-
 }
 
 function addCostValue(costItemId) {
@@ -101,10 +117,10 @@ function addCostValue(costItemId) {
 }
 
 function editCostValues(costItemId, costValues) {
-  executeOperator({ 
-    type: "editCostValues", 
-    costItemId: costItemId, 
-    costValues: costValues 
+  executeOperator({
+    type: "editCostValues",
+    costItemId: costItemId,
+    costValues: costValues,
   });
 }
 
@@ -159,7 +175,11 @@ function addCostItem(costItemId) {
 }
 
 function editCostItemName(costItemId, name) {
-  executeOperator({ type: "editCostItemName", costItemId: costItemId, name: name });
+  executeOperator({
+    type: "editCostItemName",
+    costItemId: costItemId,
+    name: name,
+  });
 }
 
 function selectAssignedElements(costItemId) {
@@ -167,44 +187,52 @@ function selectAssignedElements(costItemId) {
 }
 
 function handleWebConnect() {
+  executeOperator({ type: "getPredefinedTypes" });
   getCostSchedules();
+}
+
+function addSummaryCostItem(costScheduleId) {
+  executeOperator({
+    type: "addSummaryCostItem",
+    costScheduleId: costScheduleId,
+  });
 }
 
 function handleCostSchedulesData(data) {
   const blenderId = data.blenderId;
   const costSchedules = data.data["cost_schedules"]["cost_schedules"];
-  const currency = data.data["cost_schedules"]["currency"]["name"];
-  const costScheduleDiv = $("#cost-schedules");
+  if (costSchedules.length === 0) {
+    return;
+  }
+  const currency = data.data["cost_schedules"]["currency"]
+    ? data.data["cost_schedules"]["currency"]["name"]
+    : "Undefined";
+  const costScheduleDiv = document.getElementById("cost-schedules");
+  costScheduleDiv.innerHTML = "";
   costSchedules.forEach((costSchedule) => {
     costSchedule.UpdateDate = new Date(costSchedule.UpdateDate);
     const mainContainer = CostUI.text("Updated On: " + costSchedule.UpdateDate);
     const callback = () => loadCostSchedule(costSchedule.id, blenderId);
 
-
     const card = CostUI.createCard(costSchedule.Name, mainContainer, callback);
     costScheduleDiv.append(card);
   });
-
-  const firstCostSchedule = costSchedules[0];
-  if (firstCostSchedule) {
-    loadCostSchedule(firstCostSchedule.id, blenderId);
-  }
-
 }
 
 function handleCostItemsData(data) {
-  console.log("Handling cost items data", data);
   CostUI.createCostSchedule({
-    data: data.data["cost_items"],
+    data: data.data["cost_items"]["cost_items"],
+    costScheduleId: data.data["cost_items"]["cost_schedule_id"],
     blenderID: data.blenderId,
     callbacks: {
-      "addCostItem": addCostItem,
-      "deleteCostItem": deleteCostItem,
-      "duplicateCostItem": duplicateCostItem,
-      "selectAssignedElements": selectAssignedElements,
-      'editCostItemName': editCostItemName,
-      'enableEditingCostValues': enableEditingCostValues,
-    }
+      addCostItem: addCostItem,
+      deleteCostItem: deleteCostItem,
+      duplicateCostItem: duplicateCostItem,
+      selectAssignedElements: selectAssignedElements,
+      editCostItemName: editCostItemName,
+      enableEditingCostValues: enableEditingCostValues,
+      addSummaryCostItem: addSummaryCostItem,
+    },
   });
 }
 
@@ -224,7 +252,10 @@ function executeOperator(operator, blenderId) {
 }
 
 function loadCostSchedule(costScheduleId, blenderId) {
-  executeOperator({ type: "loadCostSchedule", costScheduleId: costScheduleId }, blenderId);
+  executeOperator(
+    { type: "loadCostSchedule", costScheduleId: costScheduleId },
+    blenderId
+  );
 }
 
 function getCostSchedules(blenderId) {
@@ -232,5 +263,5 @@ function getCostSchedules(blenderId) {
 }
 
 function enableEditingCostValues(costItemId) {
-  executeOperator({ type: "enableEditingCostValues", costItemId: costItemId});
+  executeOperator({ type: "enableEditingCostValues", costItemId: costItemId });
 }

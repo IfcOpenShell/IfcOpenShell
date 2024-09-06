@@ -176,6 +176,11 @@ class BlenderNamespace(socketio.AsyncNamespace):
         blender_messages[sid]["cost_value"] = data
         await sio.emit("cost_value", {"blenderId": sid, "data": data}, namespace="/web")
 
+    async def on_predefined_types(self, sid, data):
+        print(f"Predefined types from Blender client {sid}")
+        blender_messages[sid]["predefined_types"] = data
+        await sio.emit("predefined_types", {"blenderId": sid, "data": data}, namespace="/web")
+
 async def schedules(request):
     with open("templates/index.html", "r") as f:
         template = f.read()

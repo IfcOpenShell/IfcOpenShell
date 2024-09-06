@@ -279,19 +279,9 @@ class CostSchedulesData:
 
     @classmethod
     def get_cost_schedule_types(cls):
-        results = []
-        declaration = tool.Ifc().schema().declaration_by_name("IfcCostSchedule")
-        version = tool.Ifc.get_schema()
-        for attribute in declaration.attributes():
-            if attribute.name() == "PredefinedType":
-                results.extend(
-                    [
-                        (e, e, get_predefined_type_doc(version, "IfcCostSchedule", e))
-                        for e in attribute.type_of_attribute().declared_type().enumeration_items()
-                    ]
-                )
-                break
-        return results
+        types = ifcopenshell.util.cost.get_cost_schedule_types(tool.Ifc.get())
+        return [(t['name'], t['name'], t['description']) for t in types]
+
 
 
 class CostItemRatesData:
