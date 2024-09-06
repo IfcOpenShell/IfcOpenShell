@@ -2434,7 +2434,7 @@ class MeasureTool(bpy.types.Operator):
 
         if self.input_type in self.input_options:
             if (event.ascii in self.number_options) or (event.value == "RELEASE" and event.type == "BACK_SPACE"):
-                if not self.is_typing and event.ascii != "=":
+                if not self.is_typing and not (event.ascii == "=" or event.type == "BACK_SPACE"):
                     self.number_input = []
 
                 if event.type == "BACK_SPACE":
