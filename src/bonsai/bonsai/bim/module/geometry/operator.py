@@ -2032,9 +2032,9 @@ class UnassignRepresentationItemStyle(bpy.types.Operator, tool.Ifc.Operator):
 
         # Retrieve styles applied to the active representation item
         active_styles = set()
-        if hasattr(active_representation_item, 'StyledByItem'):
+        if hasattr(active_representation_item, "StyledByItem"):
             for styled_by_item in active_representation_item.StyledByItem:
-                if hasattr(styled_by_item, 'Styles'):
+                if hasattr(styled_by_item, "Styles"):
                     active_styles.update(styled_by_item.Styles)
 
         if not active_styles:
@@ -2063,9 +2063,9 @@ class UnassignRepresentationItemStyle(bpy.types.Operator, tool.Ifc.Operator):
             if representation_item:
                 # Retrieve styles for the current representation item
                 styles = set()
-                if hasattr(representation_item, 'StyledByItem'):
+                if hasattr(representation_item, "StyledByItem"):
                     for styled_by_item in representation_item.StyledByItem:
-                        if hasattr(styled_by_item, 'Styles'):
+                        if hasattr(styled_by_item, "Styles"):
                             styles.update(styled_by_item.Styles)
 
                 # Unassign matching styles
@@ -2078,8 +2078,6 @@ class UnassignRepresentationItemStyle(bpy.types.Operator, tool.Ifc.Operator):
         # Reload UI items
         bpy.ops.bim.disable_editing_representation_items()
         bpy.ops.bim.enable_editing_representation_items()
-
- 
 
 
 class EnableEditingRepresentationItemShapeAspect(bpy.types.Operator, tool.Ifc.Operator):

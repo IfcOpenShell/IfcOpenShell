@@ -1737,8 +1737,7 @@ class Drawing(bonsai.core.tool.Drawing):
         if product:
             product_obj = tool.Ifc.get_object(product)
             product_obj.select_set(True)
-            context.view_layer.objects.active = product_obj  
-
+            context.view_layer.objects.active = product_obj
 
     @classmethod
     def is_drawing_active(cls) -> bool:

@@ -132,6 +132,7 @@ def get_subtypes(
         print(ifcopenshell.util.schema.get_subtypes(declaration))
         [<entity IfcFlowSegment>, <entity IfcCableCarrierSegment>, ..., <entity IfcPipeSegment>]
     """
+
     def get_classes(decl):
         results = []
         if not decl.is_abstract():
