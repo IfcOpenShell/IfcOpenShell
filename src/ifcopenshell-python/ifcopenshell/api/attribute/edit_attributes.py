@@ -29,6 +29,13 @@ def edit_attributes(file: ifcopenshell.file, product: ifcopenshell.entity_instan
     to also ensure that ownership history is updated. This function provides
     that convenience.
 
+    The method will maintain consistency for PredefinedType attribute
+    based on whether ElementType/ObjectType and whether occurrence is typed:
+
+    - PredefinedType and ObjectType to be `None` if occurrence is typed
+    - PredefinedType to be "NOTDEFINED" if ElementType/ObjectType is None
+    - PredefinedType to be "USERDEFINED" if ElementType/ObjectType is not None
+
     :param product: The product you want to edit. This may be any rooted IFC
         entity.
     :type product: ifcopenshell.entity_instance
