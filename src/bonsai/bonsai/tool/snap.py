@@ -110,6 +110,10 @@ class Snap(bonsai.core.tool.Snap):
         snap_vertex.snap_type = snap_type
 
     @classmethod
+    def clear_snapping_point(cls):
+        bpy.context.scene.BIMModelProperties.snap_mouse_point.clear()
+
+    @classmethod
     def update_snapping_ref(cls, snap_point, snap_type):
         try:
             snap_vertex = bpy.context.scene.BIMModelProperties.snap_mouse_ref[0]
@@ -413,6 +417,7 @@ class Snap(bonsai.core.tool.Snap):
 
         # TODO It only work for XY plane. Make it work also for None plane_method
         rot_intersection = None
+        cls.snap_angle = None
         if not cls.snap_plane_method:
             if cls.snap_axis_method == "X":
                 cls.snap_angle = 180
