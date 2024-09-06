@@ -41,7 +41,7 @@ class Collector(bonsai.core.tool.Collector):
         element = tool.Ifc.get_entity(obj)
         assert element
 
-        if tool.Geometry.is_lockable(element):
+        if tool.Geometry.is_locked(element):
             tool.Geometry.lock_object(obj)
 
         if element.is_a("IfcGridAxis"):

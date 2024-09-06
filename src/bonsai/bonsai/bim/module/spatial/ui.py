@@ -96,10 +96,18 @@ class BIM_PT_spatial_decomposition(Panel):
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_parent_id = "BIM_PT_tab_spatial"
+    bl_options = {"HEADER_LAYOUT_EXPAND"}
 
     @classmethod
     def poll(cls, context):
         return tool.Ifc.get()
+
+    def draw_header(self, context):
+        row = self.layout.row(align=True)
+        row.label(text="")  # empty text occupies the left of the row
+        icon = "VIEW_LOCKED" if context.scene.BIMSpatialDecompositionProperties.is_locked else "VIEW_UNLOCKED"
+        row.prop(context.scene.BIMSpatialDecompositionProperties, "is_locked", text="", icon=icon)
+
 
     def draw(self, context):
         if not SpatialDecompositionData.is_loaded:
@@ -203,9 +211,16 @@ class BIM_PT_grids(Panel):
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_parent_id = "BIM_PT_tab_spatial"
+    bl_options = {"HEADER_LAYOUT_EXPAND"}
 
     def draw(self, context):
         self.layout.row().operator("mesh.add_grid", icon="ADD", text="Add Grids")
+
+    def draw_header(self, context):
+        row = self.layout.row(align=True)
+        row.label(text="")  # empty text occupies the left of the row
+        icon = "VIEW_LOCKED" if context.scene.BIMGridProperties.is_locked else "VIEW_UNLOCKED"
+        row.prop(context.scene.BIMGridProperties, "is_locked", text="", icon=icon)
 
 
 class BIM_UL_containers_manager(UIList):
