@@ -146,9 +146,10 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcOffsetCurveByDistances* inst
 
    auto offsets = taxonomy::make<taxonomy::piecewise_function>(start,offset_spans,&settings_);
 
-	auto composition = [pw_curve, offsets](double u) -> Eigen::Matrix4d {
-      auto p = pw_curve->evaluate(u);
-		auto offset = offsets->evaluate(u);
+   taxonomy::piecewise_function_evaluator pw_evaluator(pw_curve), offsets_evaluator(offsets);
+   auto composition = [pw_evaluator, offsets_evaluator](double u) -> Eigen::Matrix4d {
+      auto p = pw_evaluator.evaluate(u);
+      auto offset = offsets_evaluator.evaluate(u);
       Eigen::Matrix4d m = p * offset;
       return m;
 	};

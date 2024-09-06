@@ -31,7 +31,8 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcPointByDistanceExpression* i
    //auto item = map(basis_curve);
    //auto pw_curve = ifcopenshell::geometry::piecewise_from_item(item);
    auto pw_curve = taxonomy::dcast<taxonomy::piecewise_function>(map(inst->BasisCurve()));
-   auto m = pw_curve->evaluate(u);
+   taxonomy::piecewise_function_evaluator evaluator(pw_curve);
+   auto m = evaluator.evaluate(u);
 
    auto o = m.col(3).head<3>();
    auto z = m.col(2).head<3>();

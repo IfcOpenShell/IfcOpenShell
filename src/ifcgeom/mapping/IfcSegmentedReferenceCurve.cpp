@@ -68,11 +68,12 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSegmentedReferenceCurve* ins
     }
 
     // define the callback function for the segmented reference curve
-	auto composition = [gradient, cant](double u)->Eigen::Matrix4d {
+    taxonomy::piecewise_function_evaluator gradient_evaluator(gradient), cant_evaluator(cant);
+    auto composition = [gradient_evaluator, cant_evaluator](double u) -> Eigen::Matrix4d {
       // u is distance from start of cant curve
       // add cant->start() to u to get the distance from start of gradient curve
-		auto g = gradient->evaluate(u+cant->start());
-		auto c = cant->evaluate(u);
+      auto g = gradient_evaluator.evaluate(u + cant_evaluator.get_pwf()->start());
+      auto c = cant_evaluator.evaluate(u);
 
       // Need to multiply g and c so the axis vectors
       // from cant have the correct rotation applied so

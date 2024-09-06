@@ -220,7 +220,8 @@ bool ifcopenshell::geometry::kernels::AbstractKernel::convert_impl(const taxonom
 }
 
 bool ifcopenshell::geometry::kernels::AbstractKernel::convert_impl(const taxonomy::piecewise_function::ptr item, IfcGeom::ConversionResults& cs) {
-	auto expl = item->evaluate();
+   taxonomy::piecewise_function_evaluator evaluator(item);
+   auto expl = evaluator.evaluate();
 	expl->instance = item->instance;
 	return convert(expl, cs);
 }

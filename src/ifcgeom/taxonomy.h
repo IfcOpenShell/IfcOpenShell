@@ -348,7 +348,7 @@ typedef item const* ptr;
 				DECLARE_PTR(implicit_item)
 				using geom_item::geom_item;
 
-				virtual item::ptr evaluate() const = 0;
+				//virtual item::ptr evaluate() const = 0;
 			};
 
 			struct piecewise_function_impl; // forward declaration
@@ -379,39 +379,58 @@ typedef item const* ptr;
 					return boost::hash<decltype(v)>{}(v);
 				}
 
-				/// @brief returns a vector of "distance along" points where the evaluate function computes loop points
-				std::vector<double> evaluation_points() const;
-
-				/// @brief returns a vector of "distance along" points between ustart and uend
-            /// @param ustart starting location
-            /// @param uend ending location
-            /// @param nsteps number of steps to evaluate
-            std::vector<double> evaluation_points(double ustart, double uend, unsigned nsteps) const;
-
-            /// @brief evaluates the piecewise function between start and end
-				/// evaluation point step size is taken from the settings object
-            item::ptr evaluate() const override;
-
-            /// @brief evaluates the piecewise function between ustart and uend
-				/// if ustart and uend are out of range, the range of values evaluated
-				/// are constrained to start_ and start_+length_
-            /// @param ustart starting location
-            /// @param uend ending location
-            /// @param nsteps number of steps to evaluate
-            /// @return taxonomy::loop::ptr
-            item::ptr evaluate(double ustart, double uend, unsigned nsteps) const;
-
-				/// @brief evaluates the piecewise function at u
-				/// @param u u is constrained to be between start_ and start_+length
-				/// @return 4x4 placement matrix
-				Eigen::Matrix4d evaluate(double u) const;
-
             private:
 				    // note: it would be better if this were a std::unique_ptr, but that requires having the full definition
 					 // of piecewise_function_impl in this header file, which defeats the purpose of the PIMPL idiom.
 					 // if this is a std::unique_ptr, then the _ifcopenshell_wrapper library doesn't compile
                 piecewise_function_impl* impl_ = nullptr;
 			};
+
+			/// @brief utility class to evaluate piecewise_function objects
+			class piecewise_function_evaluator {
+              public:
+                piecewise_function_evaluator(piecewise_function::const_ptr pwf);
+
+					 piecewise_function::const_ptr get_pwf() const;
+
+                /// @brief returns a vector of "distance along" points where the evaluate function computes loop points
+                std::vector<double> evaluation_points() const;
+
+                /// @brief returns a vector of "distance along" points between ustart and uend
+                /// @param ustart starting location
+                /// @param uend ending location
+                /// @param nsteps number of steps to evaluate
+                std::vector<double> evaluation_points(double ustart, double uend, unsigned nsteps) const;
+
+                /// @brief evaluates the piecewise function between start and end
+                /// evaluation point step size is taken from the settings object
+                item::ptr evaluate() const;
+
+                /// @brief evaluates the piecewise function between ustart and uend
+                /// if ustart and uend are out of range, the range of values evaluated
+                /// are constrained to start_ and start_+length_
+                /// @param ustart starting location
+                /// @param uend ending location
+                /// @param nsteps number of steps to evaluate
+                /// @return taxonomy::loop::ptr
+                item::ptr evaluate(double ustart, double uend, unsigned nsteps) const;
+
+                /// @brief evaluates the piecewise function at u
+                /// @param u u is constrained to be between start_ and start_+length
+                /// @return 4x4 placement matrix
+                Eigen::Matrix4d evaluate(double u) const;
+
+              private:
+                item::ptr evaluate(const std::vector<double>& dist) const;
+                std::tuple<double, double, const std::function<Eigen::Matrix4d(double u)>*> get_span(double u) const;
+
+					 piecewise_function::const_ptr pwf_;
+
+					 mutable double current_span_start_ = 0;
+                mutable double current_span_end_ = 0;
+                mutable const std::function<Eigen::Matrix4d(double u)>* current_span_fn_ = nullptr;
+                mutable boost::optional<std::vector<double>> eval_points_;
+            };
 
 #ifdef TAXONOMY_USE_SHARED_PTR
 			typedef std::shared_ptr<item> ptr;

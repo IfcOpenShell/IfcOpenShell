@@ -114,7 +114,8 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSectionedSolidHorizontal* in
 	// @todo currently only the case is handled where directrix returns a piecewise_function
 	// @todo this "if" statement is not really required because the function returns at the start if the Directrix is not a piecewise function
 	if (pwf) {
-		double start = std::max(0., cross_sections.front().dist_along);
+      taxonomy::piecewise_function_evaluator evaluator(pwf);
+      double start = std::max(0., cross_sections.front().dist_along);
 		double end = std::min(pwf->length(), cross_sections.back().dist_along);
 
 		if (end - start < 1.e-9) {
@@ -232,7 +233,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSectionedSolidHorizontal* in
 				}
 			}
 
-			auto m4 = pwf->evaluate(dist_along);
+			auto m4 = evaluator.evaluate(dist_along);
 			/* {
 				std::wcout << "#" << pwf->instance->data().id() << " " << dist_along << ": " << m4.col(3).row(2).value() << std::endl;
 			}*/
