@@ -92,6 +92,12 @@ class Geometry(bonsai.core.tool.Geometry):
         bpy.data.meshes.remove(data)
 
     @classmethod
+    def is_deletable(cls, element: ifcopenshell.entity_instance) -> bool:
+        if element.is_a("IfcProject") or tool.Root.is_spatial_element(element):
+            return False
+        return True
+
+    @classmethod
     def delete_ifc_object(cls, obj: bpy.types.Object) -> None:
         element = tool.Ifc.get_entity(obj)
         if not element:
@@ -138,7 +144,7 @@ class Geometry(bonsai.core.tool.Geometry):
                 if element.VoidsElements:
                     bpy.ops.bim.remove_opening(opening_id=element.id())
         else:
-            is_spatial = element.is_a("IfcSpatialElement") or element.is_a("IfcSpatialStructureElement")
+            is_spatial = tool.Root.is_spatial_element(element)
             if getattr(element, "HasOpenings", None):
                 for rel in element.HasOpenings:
                     bpy.ops.bim.remove_opening(opening_id=rel.RelatedOpeningElement.id())
