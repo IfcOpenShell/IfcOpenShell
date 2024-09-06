@@ -74,12 +74,32 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSegmentedReferenceCurve* ins
 		auto g = gradient->evaluate(u+cant->start());
 		auto c = cant->evaluate(u);
 
-      c.col(3)(0) = 0.0;        // x is distance along. zero it out so it doesn't add to the x from gradient curve
-      c.col(1).swap(c.col(2));  // c is 2D in distance along - y plane, swap y and z so elevations become z
-      c.row(1).swap(c.row(2));
+      // Need to multiply g and c so the axis vectors
+      // from cant have the correct rotation applied so
+      // they are relative to the gradient curve coordinate system
+      //
+      // However, the coordinate points don't need to have the rotations
+      // of g applied. Save off the x,y,z and cant values
+      auto x = g(0, 3);
+      auto y = g(1, 3);
+      auto z = g(2, 3);
+      auto s = c(1, 3); // superelevation
 
-      Eigen::Matrix4d m;
-      m = g * c;
+      // change column 3 to (0,0,0,1)
+      Eigen::Vector4d p(0, 0, 0, 1);
+      g.col(3) = p;
+      c.col(3) = p;
+
+      // multiply g and c to get the axes in the correct orientation
+      Eigen::Matrix4d m = g * c;
+
+      // reinstate the values for x and y.
+      // z is the gradient curve z value plus the superelevation
+      // that comes from the cant.
+      m(0, 3) = x;
+      m(1, 3) = y;
+      m(2, 3) = z + s;
+
       return m;
 	};
 
