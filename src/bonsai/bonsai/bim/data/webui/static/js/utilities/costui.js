@@ -264,7 +264,6 @@ static createContextMenu(callbacks) {
       const typeSelect = document.createElement("select");
       typeSelect.name = "Predefined Type";
 
-      console.log(types);
       types.forEach((type) => {
         const option = document.createElement("option");
         option.value = type.name;
@@ -289,7 +288,6 @@ static createContextMenu(callbacks) {
         formData.forEach((value, key) => {
           data[key] = value;
         });
-        console.log("Data:", data);
         addCostSchedule(data.name, data["Predefined Type"]);
         form.remove();
       });
@@ -438,7 +436,6 @@ static createContextMenu(callbacks) {
     expandButton.addEventListener("click", function (event) {
       event.stopPropagation();
       let isExpanded = CostUI.isRowExpanded(row.id);
-      console.log("Row is expanded", isExpanded);
       if (event.shiftKey) {
         if (isExpanded) {
           CostUI.contractRow(row.id, true);
