@@ -95,8 +95,7 @@ class BIM_PT_spatial_decomposition(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_tab_spatial_decomposition"
-    bl_options = {"HIDE_HEADER"}
+    bl_parent_id = "BIM_PT_tab_spatial"
 
     @classmethod
     def poll(cls, context):
@@ -194,6 +193,19 @@ class BIM_PT_spatial_decomposition(Panel):
             "active_element_index",
             sort_lock=True,
         )
+
+
+class BIM_PT_grids(Panel):
+    bl_label = "Grids"
+    bl_idname = "BIM_PT_grids"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_tab_spatial"
+
+    def draw(self, context):
+        self.layout.row().operator("mesh.add_grid", icon="ADD", text="Add Grids")
 
 
 class BIM_UL_containers_manager(UIList):

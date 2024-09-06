@@ -48,6 +48,7 @@ classes = (
     ui.BIM_UL_containers_manager,
     ui.BIM_UL_elements,
     ui.BIM_PT_spatial_decomposition,
+    ui.BIM_PT_grids,
     workspace.Hotkey,
 )
 
