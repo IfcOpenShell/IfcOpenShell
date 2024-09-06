@@ -613,9 +613,10 @@ class OverrideDelete(bpy.types.Operator):
 
     def draw(self, context):
         row = self.layout.row()
-        row.label(text="Warning: Faster deletion will use more memory.", icon="ERROR")
-        row = self.layout.row()
         row.prop(self, "is_batch", text="Enable Faster Deletion")
+        if self.is_batch:
+            row = self.layout.row()
+            row.label(text="Warning: Faster deletion will use more memory.", icon="ERROR")
 
     def _execute(self, context):
         start_time = time()
@@ -627,7 +628,7 @@ class OverrideDelete(bpy.types.Operator):
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
             if element:
-                if tool.Geometry.is_lockable(element):
+                if tool.Geometry.is_locked(element):
                     continue
                 if ifcopenshell.util.element.get_pset(element, "BBIM_Array"):
                     self.report({"INFO"}, "Elements that are part of an array cannot be deleted.")
@@ -737,9 +738,10 @@ class OverrideOutlinerDelete(bpy.types.Operator):
 
     def draw(self, context):
         row = self.layout.row()
-        row.label(text="Warning: Faster deletion will use more memory.", icon="ERROR")
-        row = self.layout.row()
         row.prop(self, "is_batch", text="Enable Faster Deletion")
+        if self.is_batch:
+            row = self.layout.row()
+            row.label(text="Warning: Faster deletion will use more memory.", icon="ERROR")
 
     def _execute(self, context):
         if self.is_batch:
@@ -757,7 +759,7 @@ class OverrideOutlinerDelete(bpy.types.Operator):
                 objects_to_delete.add(bpy.data.objects.get(item.name))
         for obj in objects_to_delete:
             if element := tool.Ifc.get_entity(obj):
-                if tool.Geometry.is_lockable(element):
+                if tool.Geometry.is_locked(element):
                     if collection := obj.BIMObjectProperties.collection:
                         collections_to_delete.discard(collection)
                     continue

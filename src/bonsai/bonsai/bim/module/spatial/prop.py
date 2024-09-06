@@ -86,6 +86,35 @@ def update_container_obj(self, context):
     self.container_obj = None
 
 
+def update_grid_is_locked(self, context):
+    if not tool.Ifc.get():
+        return
+    if tool.Ifc.get().schema in ("IFC2X3", "IFC4"):
+        elements = tool.Ifc.get().by_type("IfcGrid") + tool.Ifc.get().by_type("IfcGridAxis")
+    else:
+        elements = tool.Ifc.get().by_type("IfcPositioningElement")
+    for element in elements:
+        if obj := tool.Ifc.get_object(element):
+            if self.is_locked:
+                tool.Geometry.lock_object(obj)
+            else:
+                tool.Geometry.unlock_object(obj)
+
+
+def update_spatial_is_locked(self, context):
+    if not tool.Ifc.get():
+        return
+    if tool.Ifc.get().schema == "IFC2X3":
+        elements = tool.Ifc.get().by_type("IfcSpatialStructureElement")
+    else:
+        elements = tool.Ifc.get().by_type("IfcSpatialElement")
+    for element in elements:
+        if obj := tool.Ifc.get_object(element):
+            if self.is_locked:
+                tool.Geometry.lock_object(obj)
+            else:
+                tool.Geometry.unlock_object(obj)
+
 def poll_container_obj(self, obj):
     return obj is None or tool.Ifc.get_entity(obj)
 
@@ -133,6 +162,7 @@ class Element(PropertyGroup):
 
 
 class BIMSpatialDecompositionProperties(PropertyGroup):
+    is_locked: BoolProperty(name="Is Locked", default=True, update=update_spatial_is_locked)
     container_filter: StringProperty(name="Container Filter", default="", options={"TEXTEDIT_UPDATE"})
     containers: CollectionProperty(name="Containers", type=BIMContainer)
     contracted_containers: StringProperty(name="Contracted containers", default="[]")
@@ -169,4 +199,5 @@ class BIMSpatialDecompositionProperties(PropertyGroup):
 
 
 class BIMGridProperties(PropertyGroup):
+    is_locked: BoolProperty(name="Is Locked", default=True, update=update_grid_is_locked)
     grid_axes: CollectionProperty(name="Grid Axes", type=ObjProperty)
