@@ -53,14 +53,11 @@ class AssignType(bpy.types.Operator, tool.Ifc.Operator):
                 obj.name = tool.Model.generate_occurrence_name(type, element.is_a())
 
 
-class UnassignType(bpy.types.Operator):
+class UnassignType(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unassign_type"
     bl_label = "Unassign Type"
     bl_options = {"REGISTER", "UNDO"}
     related_object: bpy.props.StringProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         def exclude_callback(attribute):

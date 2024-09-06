@@ -305,14 +305,11 @@ class BIM_OT_clear_list(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BIM_OT_rename_parameters(bpy.types.Operator):
+class BIM_OT_rename_parameters(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Rename Parameters"
     bl_idname = "bim.rename_parameters"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Rename parameters that are subclasses of IfcElement"
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         props_to_map = context.scene.RenameProperties
@@ -342,14 +339,11 @@ class BIM_OT_rename_parameters(bpy.types.Operator):
                     obj_prop.Name = prop2map.new_property_name
 
 
-class BIM_OT_add_edit_custom_property(bpy.types.Operator):
+class BIM_OT_add_edit_custom_property(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Add or Edit a Custom Property"
     bl_idname = "bim.add_edit_custom_property"
     bl_options = {"REGISTER", "UNDO"}
     index: bpy.props.IntProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         self.file = IfcStore.get_file()
@@ -399,15 +393,12 @@ class BIM_OT_add_edit_custom_property(bpy.types.Operator):
         return prop_enum_value
 
 
-class BIM_OT_bulk_remove_psets(bpy.types.Operator):
+class BIM_OT_bulk_remove_psets(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Bulk Remove Psets from Selected Objects"
     bl_idname = "bim.bulk_remove_psets"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Bulk remove psets from selected objects"
     index: bpy.props.IntProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         self.file = IfcStore.get_file()

@@ -74,15 +74,12 @@ class DisableReassignClass(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class ReassignClass(bpy.types.Operator):
+class ReassignClass(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.reassign_class"
     bl_label = "Reassign IFC Class"
     bl_description = "Reassign IFC class for selected objects"
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         if self.obj:
@@ -211,7 +208,7 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
         context.view_layer.objects.active = active_object
 
 
-class UnlinkObject(bpy.types.Operator):
+class UnlinkObject(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unlink_object"
     bl_label = "Unlink Object"
     bl_description = (
@@ -224,9 +221,6 @@ class UnlinkObject(bpy.types.Operator):
     obj: bpy.props.StringProperty(name="Object Name")
     should_delete: bpy.props.BoolProperty(name="Delete IFC Element", default=True)
     skip_invoke: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         if self.obj:

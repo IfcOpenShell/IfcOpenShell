@@ -523,7 +523,7 @@ class AssignProcess(bpy.types.Operator, tool.Ifc.Operator):
             pass  # TODO
 
 
-class UnassignProcess(bpy.types.Operator):
+class UnassignProcess(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unassign_process"
     bl_label = "Unassign Process"
     bl_options = {"REGISTER", "UNDO"}
@@ -531,9 +531,6 @@ class UnassignProcess(bpy.types.Operator):
     related_object_type: bpy.props.StringProperty()
     related_object: bpy.props.IntProperty()
     resource: bpy.props.IntProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         if self.related_object_type == "RESOURCE":
@@ -877,15 +874,12 @@ class RemoveWorkTime(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
-class AssignRecurrencePattern(bpy.types.Operator):
+class AssignRecurrencePattern(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_recurrence_pattern"
     bl_label = "Assign Recurrence Pattern"
     bl_options = {"REGISTER", "UNDO"}
     work_time: bpy.props.IntProperty()
     recurrence_type: bpy.props.StringProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         core.assign_recurrence_pattern(
@@ -894,14 +888,11 @@ class AssignRecurrencePattern(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class UnassignRecurrencePattern(bpy.types.Operator):
+class UnassignRecurrencePattern(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unassign_recurrence_pattern"
     bl_label = "Unassign Recurrence Pattern"
     bl_options = {"REGISTER", "UNDO"}
     recurrence_pattern: bpy.props.IntProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         core.unassign_recurrence_pattern(tool.Ifc, recurrence_pattern=tool.Ifc.get().by_id(self.recurrence_pattern))

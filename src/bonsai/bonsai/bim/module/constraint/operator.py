@@ -77,13 +77,10 @@ class DisableEditingConstraint(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class AddObjective(bpy.types.Operator):
+class AddObjective(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_objective"
     bl_label = "Add Objective"
     bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         result = ifcopenshell.api.run("constraint.add_objective", IfcStore.get_file())
@@ -92,13 +89,10 @@ class AddObjective(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class EditObjective(bpy.types.Operator):
+class EditObjective(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_objective"
     bl_label = "Edit Objective"
     bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         props = context.scene.BIMConstraintProperties
@@ -120,14 +114,11 @@ class EditObjective(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class RemoveConstraint(bpy.types.Operator):
+class RemoveConstraint(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_constraint"
     bl_label = "Remove Constraint"
     bl_options = {"REGISTER", "UNDO"}
     constraint: bpy.props.IntProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         props = context.scene.BIMConstraintProperties
@@ -168,15 +159,12 @@ class DisableAssigningConstraint(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class AssignConstraint(bpy.types.Operator):
+class AssignConstraint(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_constraint"
     bl_label = "Assign Constraint"
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     constraint: bpy.props.IntProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         self.file = tool.Ifc.get()
@@ -194,15 +182,12 @@ class AssignConstraint(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class UnassignConstraint(bpy.types.Operator):
+class UnassignConstraint(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unassign_constraint"
     bl_label = "Unassign Constraint"
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     constraint: bpy.props.IntProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         self.file = tool.Ifc.get()
