@@ -367,16 +367,13 @@ class SaveLibraryFile(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class AppendEntireLibrary(bpy.types.Operator):
+class AppendEntireLibrary(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.append_entire_library"
     bl_label = "Append Entire Library"
 
     @classmethod
     def poll(cls, context):
         return IfcStore.get_file()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         self.file = IfcStore.get_file()
@@ -389,7 +386,7 @@ class AppendEntireLibrary(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class AppendLibraryElementByQuery(bpy.types.Operator):
+class AppendLibraryElementByQuery(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.append_library_element_by_query"
     bl_label = "Append Library Element By Query"
     query: bpy.props.StringProperty(name="Query")
@@ -397,9 +394,6 @@ class AppendLibraryElementByQuery(bpy.types.Operator):
     @classmethod
     def poll(cls, context):
         return IfcStore.get_file()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         self.file = IfcStore.get_file()
@@ -416,7 +410,7 @@ class AppendLibraryElementByQuery(bpy.types.Operator):
         self.layout.prop(self, "query")
 
 
-class AppendLibraryElement(bpy.types.Operator):
+class AppendLibraryElement(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.append_library_element"
     bl_label = "Append Library Element"
     bl_options = {"REGISTER", "UNDO"}
@@ -430,9 +424,6 @@ class AppendLibraryElement(bpy.types.Operator):
         if bpy.app.version > (3, 0, 0) and not poll:
             cls.poll_message_set("Please create or load a project first.")
         return poll
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         self.file = IfcStore.get_file()

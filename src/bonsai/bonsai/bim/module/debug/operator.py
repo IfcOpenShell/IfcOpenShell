@@ -224,7 +224,7 @@ class CreateAllShapes(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class CreateShapeFromStepId(bpy.types.Operator):
+class CreateShapeFromStepId(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.create_shape_from_step_id"
     bl_label = "Create Shape From STEP ID"
     bl_description = "Recreate a mesh object from a STEP ID"
@@ -235,9 +235,6 @@ class CreateShapeFromStepId(bpy.types.Operator):
     @classmethod
     def poll(cls, context):
         return IfcStore.get_file()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         logger = logging.getLogger("ImportIFC")

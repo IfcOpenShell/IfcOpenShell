@@ -112,7 +112,7 @@ class AddDefaultType(bpy.types.Operator, tool.Ifc.Operator):
         bpy.ops.bim.add_type()
 
 
-class AddConstrTypeInstance(bpy.types.Operator):
+class AddConstrTypeInstance(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_constr_type_instance"
     bl_label = "Add"
     bl_options = {"REGISTER", "UNDO"}
@@ -122,9 +122,6 @@ class AddConstrTypeInstance(bpy.types.Operator):
 
     def invoke(self, context, event):
         return self.execute(context)
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         props = context.scene.BIMModelProperties

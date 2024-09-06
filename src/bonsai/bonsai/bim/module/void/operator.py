@@ -175,15 +175,12 @@ class RemoveOpening(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
-class AddFilling(bpy.types.Operator):
+class AddFilling(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_filling"
     bl_label = "Add Filling"
     bl_options = {"REGISTER", "UNDO"}
     opening: bpy.props.StringProperty()
     obj: bpy.props.StringProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         obj = context.scene.objects.get(self.obj, context.active_object)

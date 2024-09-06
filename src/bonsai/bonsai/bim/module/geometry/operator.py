@@ -1233,7 +1233,7 @@ class DuplicateLinkedAggregateTo3dCursor(bpy.types.Operator):
         )
 
 
-class RefreshLinkedAggregate(bpy.types.Operator):
+class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.refresh_linked_aggregate"
     bl_label = "IFC Refresh Linked Aggregate"
     bl_options = {"REGISTER", "UNDO"}
@@ -1241,14 +1241,6 @@ class RefreshLinkedAggregate(bpy.types.Operator):
     @classmethod
     def poll(cls, context):
         return len(context.selected_objects) > 0
-
-    def execute(self, context):
-        # Deep magick from the dawn of time
-        if IfcStore.get_file():
-            IfcStore.execute_ifc_operator(self, context)
-            return {"FINISHED"}
-
-        return {"FINISHED"}
 
     def _execute(self, context):
         self.new_active_obj = None
@@ -1576,14 +1568,11 @@ class OverridePasteBuffer(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class OverrideModeSetEdit(bpy.types.Operator):
+class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
     bl_description = "Switch from Object mode to Edit mode"
     bl_idname = "bim.override_mode_set_edit"
     bl_label = "IFC Mode Set Edit"
     bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         selected_objs = tool.Blender.get_selected_objects()
@@ -1702,14 +1691,11 @@ class OverrideModeSetEdit(bpy.types.Operator):
         return self.execute(context)
 
 
-class OverrideModeSetObject(bpy.types.Operator):
+class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.override_mode_set_object"
     bl_label = "IFC Mode Set Object"
     bl_options = {"REGISTER", "UNDO"}
     should_save: bpy.props.BoolProperty(name="Should Save", default=True)
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         if not context.active_object:
