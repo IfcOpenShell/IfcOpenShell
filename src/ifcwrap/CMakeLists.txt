@@ -75,7 +75,7 @@ else()
 SWIG_LINK_LIBRARIES(ifcopenshell_wrapper ${IFCOPENSHELL_LIBRARIES} ${PYTHON_LIBRARIES} ${LIBSVGFILL})
 endif()
 if ((NOT WIN32) AND BUILD_SHARED_LIBS)
-    SET_INSTALL_RPATHS(${SWIG_MODULE_ifcopenshell_wrapper_REAL_NAME} "${IFCDIRS};${OCC_LIBRARY_DIR}")
+    SET_INSTALL_RPATHS(ifcopenshell_wrapper "${IFCDIRS};${OCC_LIBRARY_DIR}")
 endif()
 
 # Try to find the Python interpreter to get the site-packages
@@ -88,7 +88,7 @@ IF((PYTHONINTERP_FOUND AND NOT "${PYTHON_EXECUTABLE}" STREQUAL "") OR PYTHON_MOD
         OUTPUT_VARIABLE PYTHON_EXTENSION_SUFFIX
         OUTPUT_STRIP_TRAILING_WHITESPACE
     )
-    SET_TARGET_PROPERTIES(${SWIG_MODULE_ifcopenshell_wrapper_REAL_NAME} PROPERTIES SUFFIX ${PYTHON_EXTENSION_SUFFIX})
+    SET_TARGET_PROPERTIES(ifcopenshell_wrapper PROPERTIES SUFFIX ${PYTHON_EXTENSION_SUFFIX})
     if (PYTHON_MODULE_INSTALL_DIR)
 	set(python_package_dir "${PYTHON_MODULE_INSTALL_DIR}")
     else()
@@ -121,10 +121,10 @@ IF((PYTHONINTERP_FOUND AND NOT "${PYTHON_EXECUTABLE}" STREQUAL "") OR PYTHON_MOD
         ENDFOREACH()
         INSTALL(FILES "${CMAKE_BINARY_DIR}/ifcwrap/ifcopenshell_wrapper.py"
                 DESTINATION "${python_package_dir}/ifcopenshell")
-        INSTALL(TARGETS _ifcopenshell_wrapper
+        INSTALL(TARGETS ifcopenshell_wrapper
                 DESTINATION "${python_package_dir}/ifcopenshell")
 	if (MSVC)
-	    install(FILES $<TARGET_PDB_FILE:_ifcopenshell_wrapper> DESTINATION bin OPTIONAL)
+	    INSTALL(FILES $<TARGET_PDB_FILE:ifcopenshell_wrapper> DESTINATION bin OPTIONAL)
 	endif()
     ENDIF()
 ELSE()
