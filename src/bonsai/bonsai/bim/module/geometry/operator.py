@@ -627,6 +627,8 @@ class OverrideDelete(bpy.types.Operator):
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
             if element:
+                if not tool.Geometry.is_deletable(element):
+                    continue
                 if ifcopenshell.util.element.get_pset(element, "BBIM_Array"):
                     self.report({"INFO"}, "Elements that are part of an array cannot be deleted.")
                     return {"FINISHED"}
@@ -754,7 +756,11 @@ class OverrideOutlinerDelete(bpy.types.Operator):
             elif item.bl_rna.identifier == "Object":
                 objects_to_delete.add(bpy.data.objects.get(item.name))
         for obj in objects_to_delete:
-            if tool.Ifc.get_entity(obj):
+            if element := tool.Ifc.get_entity(obj):
+                if not tool.Geometry.is_deletable(element):
+                    if collection := obj.BIMObjectProperties.collection:
+                        collections_to_delete.discard(collection)
+                    continue
                 tool.Geometry.delete_ifc_object(obj)
             else:
                 bpy.data.objects.remove(obj)
