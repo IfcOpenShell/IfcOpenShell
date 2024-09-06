@@ -21,6 +21,7 @@
 from py2neo.data import Node, Relationship
 from uuid import uuid4
 import ifcopenshell
+import ifcopenshell.util.schema
 from py2neo import Graph
 
 
@@ -33,9 +34,10 @@ def create_pure_node_from_ifc_entity(ifc_entity, ifc_file, hierarchy=True):
         node["id"] = str(uuid4())
     node["name"] = ifc_entity.is_a()
     if hierarchy:
-        for label in ifc_file.wrapped_data.types_with_super():
-            if ifc_entity.is_a(label):
-                node.add_label(label)
+        node.add_label(ifc_entity.is_a())
+        declaration = ifcopenshell.util.schema.get_declaration(ifc_entity)
+        for supertype in ifcopenshell.util.schema.get_supertypes(declaration):
+            node.add_label(supertype.name())
     else:
         node.add_label(ifc_entity.is_a())
     attributes_type = ["ENTITY INSTANCE", "AGGREGATE OF ENTITY INSTANCE", "DERIVED"]
