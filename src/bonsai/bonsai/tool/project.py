@@ -209,3 +209,7 @@ class Project(bonsai.core.tool.Project):
     @classmethod
     def get_appendable_asset_types(cls) -> tuple[str, ...]:
         return tuple(e for e in APPENDABLE_ASSET_TYPES if e != "IfcProduct")
+
+    @classmethod
+    def run_root_reload_grid_decorator(cls) -> None:
+        tool.Root.reload_grid_decorator()

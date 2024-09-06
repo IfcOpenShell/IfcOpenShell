@@ -17,7 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from bonsai.bim.prop import StrProperty, Attribute
+from bonsai.bim.prop import ObjProperty
 from bonsai.bim.module.spatial.data import SpatialDecompositionData
 from bpy.types import PropertyGroup
 from bpy.props import (
@@ -166,3 +166,7 @@ class BIMSpatialDecompositionProperties(PropertyGroup):
     def active_element(self):
         if self.elements and self.active_element_index < len(self.elements):
             return self.elements[self.active_element_index]
+
+
+class BIMGridProperties(PropertyGroup):
+    grid_axes: CollectionProperty(name="Grid Axes", type=ObjProperty)

@@ -107,4 +107,5 @@ def create_project(
     project.load_default_thumbnails()
     project.set_default_context()
     project.set_default_modeling_dimensions()
+    project.run_root_reload_grid_decorator()
     georeference.set_model_origin()
