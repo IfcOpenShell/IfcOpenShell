@@ -874,10 +874,9 @@ class OverrideDuplicateMove(bpy.types.Operator):
                     )
                     obj.select_set(False)
                     continue  # For now, don't copy drawings until we stabilise a bit more. It's tricky.
-                elif element.is_a("IfcProject"):
-                    self.report({"INFO"}, "Did not duplicate. IFC can only have one project.")
+                elif tool.Geometry.is_locked(element):
                     obj.select_set(False)
-                    continue  # Only one IfcProject is allowed.
+                    continue
 
             linked_non_ifc_object = linked and not element
 
@@ -944,6 +943,7 @@ class OverrideDuplicateMove(bpy.types.Operator):
         tool.Root.recreate_decompositions(decomposition_relationships, old_to_new)
         OverrideDuplicateMove.remove_linked_aggregate_data(old_to_new)
         bonsai.bim.handler.refresh_ui_data()
+        tool.Root.reload_grid_decorator()
         return old_to_new
 
     @staticmethod
