@@ -211,10 +211,15 @@ function handleCostSchedulesData(data) {
   costScheduleDiv.innerHTML = "";
   costSchedules.forEach((costSchedule) => {
     costSchedule.UpdateDate = new Date(costSchedule.UpdateDate);
-    const mainContainer = CostUI.text("Updated On: " + costSchedule.UpdateDate);
+    const predefinedType = CostUI.text("Predefined Type: " + costSchedule.PredefinedType)
+    const updatedOn = CostUI.text("Updated On: " + costSchedule.UpdateDate);
+    const div = document.createElement("div");
+    
+    div.appendChild(predefinedType);
+    div.appendChild(updatedOn);
     const callback = () => loadCostSchedule(costSchedule.id, blenderId);
 
-    const card = CostUI.createCard(costSchedule.Name, mainContainer, callback);
+    const card = CostUI.createCard(costSchedule.Name, div, callback);
     costScheduleDiv.append(card);
   });
 }
