@@ -19,7 +19,8 @@
 import lark
 import ifcopenshell
 from typing import Optional, Union, Literal, Generator, Any
-
+import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
+from ifcopenshell.util.doc import get_predefined_type_doc
 
 arithmetic_operator_symbols = {"ADD": "+", "DIVIDE": "/", "MULTIPLY": "*", "SUBTRACT": "-"}
 symbol_arithmetic_operators = {"+": "ADD", "/": "DIVIDE", "*": "MULTIPLY", "-": "SUBTRACT"}
@@ -265,6 +266,20 @@ def get_cost_values(cost_item: ifcopenshell.entity_instance) -> list[dict[str, s
     print(results)
     return results
 
+def get_cost_schedule_types(file):
+    schema: ifcopenshell_wrapper.schema_definition = ifcopenshell_wrapper.schema_by_name(file.schema)
+    results = []
+    declaration = schema.declaration_by_name("IfcCostSchedule")
+    version = file.schema_identifier
+    for attribute in declaration.attributes():
+        if attribute.name() == "PredefinedType":
+            for enumeration in attribute.type_of_attribute().declared_type().enumeration_items():
+                results.append({
+                    "name": enumeration,
+                    'description': get_predefined_type_doc(version, "IfcCostSchedule",enumeration),
+                })
+            break
+    return results
 
 class CostValueUnserialiser:
     def parse(self, formula: str):
