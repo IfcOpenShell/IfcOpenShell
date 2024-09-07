@@ -628,6 +628,10 @@ class OverrideDelete(bpy.types.Operator):
 
         self.process_arrays(context)
         for obj in context.selected_objects:
+            try:
+                obj.name
+            except:
+                continue
             element = tool.Ifc.get_entity(obj)
             if element:
                 if tool.Geometry.is_locked(element):
