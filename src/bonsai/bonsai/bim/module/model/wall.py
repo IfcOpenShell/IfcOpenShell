@@ -541,6 +541,7 @@ class DrawPolylineWall(bpy.types.Operator):
             PolylineDecorator.install(context)
             tool.Snap.clear_snapping_point()
             tool.Snap.set_use_default_container(True)
+            tool.Snap.clear_snap_angle()
             PolylineDecorator.set_use_default_container(True)
             tool.Polyline.set_use_default_container(True)
             tool.Snap.set_snap_axis_method(None)
