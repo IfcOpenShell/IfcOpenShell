@@ -153,26 +153,29 @@ class SheetBuilder:
             drawing_path = tool.Drawing.get_document_uri(tool.Drawing.get_drawing_reference(drawing))
             drawing_tree = ET.parse(drawing_path)
             drawing_root = drawing_tree.getroot()
-            view_width = self.convert_to_mm(drawing_root.attrib.get("width"))
-            view_height = self.convert_to_mm(drawing_root.attrib.get("height"))
+            view_width = round(self.convert_to_mm(drawing_root.attrib.get("width")), 2)
+            view_height = round(self.convert_to_mm(drawing_root.attrib.get("height")), 2)
 
             foreground = drawing_view.find(f'.//{SVG}image[@data-type="foreground"]')
-            height = float(foreground.attrib["height"])
-            width = float(foreground.attrib["width"])
-            readjust = Vector((width - view_width, height - view_height)) / 2
+            current_width = round(float(foreground.attrib["width"]), 2)
+            current_height = round(float(foreground.attrib["height"]), 2)
 
-            for image in drawing_view.findall(f"{SVG}image"):
-                x = float(image.attrib["x"])
-                y = float(image.attrib["y"])
-                if image.attrib["data-type"] == "view-title":
-                    image.attrib["x"] = str(x + readjust.x)
-                    # negate y offset because view-title comes AFTER foreground
-                    image.attrib["y"] = str(y - readjust.y)
-                else:
-                    image.attrib["x"] = str(x + readjust.x)
-                    image.attrib["y"] = str(y + readjust.y)
-                    image.attrib["width"] = str(view_width)
-                    image.attrib["height"] = str(view_height)
+            # Check if the dimensions have changed
+            if current_width != view_width or current_height != view_height:
+                readjust = Vector((current_width - view_width, current_height - view_height)) / 2
+
+                for image in drawing_view.findall(f"{SVG}image"):
+                    x = float(image.attrib["x"])
+                    y = float(image.attrib["y"])
+                    if image.attrib["data-type"] == "view-title":
+                        image.attrib["x"] = str(x + readjust.x)
+                        # negate y offset because view-title comes AFTER foreground
+                        image.attrib["y"] = str(y - readjust.y)
+                    else:
+                        image.attrib["x"] = str(x + readjust.x)
+                        image.attrib["y"] = str(y + readjust.y)
+                        image.attrib["width"] = str(view_width)
+                        image.attrib["height"] = str(view_height)
 
         layout_tree.write(layout_path)
 
