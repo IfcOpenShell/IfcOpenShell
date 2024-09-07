@@ -85,6 +85,8 @@ def unshare_pset(
 
     pset_copies: list[ifcopenshell.entity_instance] = []
     for product in products:
+        # No need to consider about profile/material properties since
+        # they are assigned to 1 element directly and therefore cannot be shared.
         pset_copy = ifcopenshell.util.element.copy_deep(file, pset)
         pset_copies.append(pset_copy)
         ifcopenshell.api.pset.assign_pset(file, [product], pset_copy)

@@ -31,6 +31,7 @@ from bpy.props import (
     CollectionProperty,
 )
 import bonsai.tool as tool
+import bonsai.core.geometry
 import ifcopenshell
 import ifcopenshell.util.element
 
@@ -42,12 +43,19 @@ def get_subelement_class(self, context):
 
 
 def update_elevation(self, context):
+    try:
+        elevation = float(self.elevation)
+        if self.elevation != str(elevation):
+            self.elevation = str(elevation)
+            return
+    except:
+        elevation = 0
     if ifc_definition_id := self.ifc_definition_id:
         entity = tool.Ifc.get().by_id(ifc_definition_id)
-        obj = tool.Ifc.get_object(entity)
-        if not obj:
-            return
-        obj.location.z = self.elevation
+        if obj := tool.Ifc.get_object(entity):
+            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+            obj.matrix_world[2][3] = elevation * unit_scale
+            bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj)
 
 
 def update_name(self, context):
@@ -132,7 +140,7 @@ class BIMContainer(PropertyGroup):
     ifc_class: StringProperty(name="IFC Class")
     description: StringProperty(name="Description")
     long_name: StringProperty(name="Long Name")
-    elevation: FloatProperty(name="Elevation", subtype="DISTANCE", update=update_elevation)
+    elevation: StringProperty(name="Elevation", update=update_elevation)
     level_index: IntProperty(name="Level Index")
     has_children: BoolProperty(name="Has Children")
     is_expanded: BoolProperty(name="Is Expanded")

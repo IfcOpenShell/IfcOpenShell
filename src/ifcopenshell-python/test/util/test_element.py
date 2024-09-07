@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell.api.profile
 import pytest
 import test.bootstrap
 import ifcopenshell.api.void
@@ -267,6 +268,16 @@ class TestGetElementsUsingPset(test.bootstrap.IFC4):
         pset = self.file.create_entity("IfcPropertySet")
         ifcopenshell.api.pset.assign_pset(self.file, [element, element_type], pset)
         assert subject.get_elements_by_pset(pset) == {element, element_type}
+
+    def test_get_material_for_pset(self):
+        material = ifcopenshell.api.material.add_material(self.file)
+        pset = ifcopenshell.api.pset.add_pset(self.file, material, "FooBar")
+        assert subject.get_elements_by_pset(pset) == {material}
+
+    def test_get_profile_for_pset(self):
+        profile = ifcopenshell.api.profile.add_parameterized_profile(self.file, ifc_class="IfcRectangleProfileDef")
+        pset = ifcopenshell.api.pset.add_pset(self.file, profile, "FooBar")
+        assert subject.get_elements_by_pset(pset) == {profile}
 
 
 class TestGetElementsUsingPsetIFC2X3(test.bootstrap.IFC2X3, TestGetElementsUsingPset): ...

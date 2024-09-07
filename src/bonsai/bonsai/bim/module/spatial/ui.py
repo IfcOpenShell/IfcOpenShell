@@ -229,7 +229,6 @@ class BIM_UL_containers_manager(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
             row = layout.row(align=True)
-            self.draw_hierarchy(row, item)
             icon = {
                 "IfcProject": "FILE",
                 "IfcSite": "WORLD",
@@ -243,12 +242,18 @@ class BIM_UL_containers_manager(UIList):
                 "IfcRailwayPart": "MOD_FLUID",
                 "IfcRoadPart": "MOD_FLUID",
             }.get(item.ifc_class, "META_PLANE")
-            row.prop(item, "name", emboss=False, text="", icon=icon)
+            split = row.split(factor=0.85)
             if item.long_name:
-                row.prop(item, "long_name", emboss=False, text="")
-            col = row.column()
-            col.alignment = "RIGHT"
-            col.prop(item, "elevation", emboss=False, text="")
+                split2 = split.split(factor=0.7)
+                row = split2.row(align=True)
+                self.draw_hierarchy(row, item)
+                row.prop(item, "name", emboss=False, text="", icon=icon)
+                split2.prop(item, "long_name", emboss=False, text="")
+            else:
+                row = split.row(align=True)
+                self.draw_hierarchy(row, item)
+                row.prop(item, "name", emboss=False, text="", icon=icon)
+            split.prop(item, "elevation", emboss=False, text="")
 
     def draw_hierarchy(self, row, item):
         if item.level_index:

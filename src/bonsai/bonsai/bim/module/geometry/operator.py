@@ -28,6 +28,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.placement
 import ifcopenshell.api
+import ifcopenshell.api.grid
 import bonsai.core.geometry
 import bonsai.core.geometry as core
 import bonsai.core.aggregate
@@ -175,24 +176,23 @@ class AddRepresentation(bpy.types.Operator, tool.Ifc.Operator):
             )
             return {"FINISH"}
 
-        # NOTE: `data` is temporary data generated to add a representation.
-        data: bpy.types.Mesh
+        new_rep_data: bpy.types.Mesh | None = None
         if conversion_method == "OUTLINE":
             if ifc_context.ContextType == "Plan":
-                data = tool.Geometry.generate_outline_mesh(obj, axis="+Z")
+                new_rep_data = tool.Geometry.generate_outline_mesh(obj, axis="+Z")
             elif ifc_context.ContextIdentifier == "Profile":
-                data = tool.Geometry.generate_outline_mesh(obj, axis="-Y")
+                new_rep_data = tool.Geometry.generate_outline_mesh(obj, axis="-Y")
             else:
-                data = tool.Geometry.generate_outline_mesh(obj, axis="+Z")
-            tool.Geometry.change_object_data(obj, data, is_global=True)
+                new_rep_data = tool.Geometry.generate_outline_mesh(obj, axis="+Z")
+            tool.Geometry.change_object_data(obj, new_rep_data, is_global=True)
         elif conversion_method == "BOX":
             if ifc_context.ContextType == "Plan":
-                data = tool.Geometry.generate_2d_box_mesh(obj, axis="Z")
+                new_rep_data = tool.Geometry.generate_2d_box_mesh(obj, axis="Z")
             elif ifc_context.ContextIdentifier == "Profile":
-                data = tool.Geometry.generate_2d_box_mesh(obj, axis="Y")
+                new_rep_data = tool.Geometry.generate_2d_box_mesh(obj, axis="Y")
             else:
-                data = tool.Geometry.generate_3d_box_mesh(obj)
-            tool.Geometry.change_object_data(obj, data, is_global=True)
+                new_rep_data = tool.Geometry.generate_3d_box_mesh(obj)
+            tool.Geometry.change_object_data(obj, new_rep_data, is_global=True)
         elif conversion_method in ("OBJECT", "CUBE"):
             if conversion_method == "OBJECT":
                 if not (source_obj := props.representation_from_object):
@@ -201,17 +201,17 @@ class AddRepresentation(bpy.types.Operator, tool.Ifc.Operator):
 
                 depsgraph = context.evaluated_depsgraph_get()
                 eval_obj = source_obj.evaluated_get(depsgraph)
-                data = bpy.data.meshes.new_from_object(eval_obj)
+                new_rep_data = bpy.data.meshes.new_from_object(eval_obj)
             else:  # CUBE
-                data = bpy.data.meshes.new("Cube")
-                bm = tool.Blender.get_bmesh_for_mesh(data)
+                new_rep_data = bpy.data.meshes.new("Cube")
+                bm = tool.Blender.get_bmesh_for_mesh(new_rep_data)
                 bmesh.ops.create_cube(bm, size=1)
-                tool.Blender.apply_bmesh(data, bm)
+                tool.Blender.apply_bmesh(new_rep_data, bm)
 
             if original_data:
-                tool.Geometry.change_object_data(obj, data, is_global=True)
+                tool.Geometry.change_object_data(obj, new_rep_data, is_global=True)
             else:
-                obj = tool.Geometry.recreate_object_with_data(obj, data, is_global=True)
+                obj = tool.Geometry.recreate_object_with_data(obj, new_rep_data, is_global=True)
 
         try:
             core.add_representation(
@@ -227,11 +227,13 @@ class AddRepresentation(bpy.types.Operator, tool.Ifc.Operator):
             # Object might be recreated, need to set it as active again.
             if context.active_object != obj:
                 tool.Blender.set_active_object(obj)
-            bpy.data.meshes.remove(data)
+            if new_rep_data:
+                bpy.data.meshes.remove(new_rep_data)
         except core.IncompatibleRepresentationError:
             if obj.data != original_data:
                 tool.Geometry.change_object_data(obj, original_data, is_global=True)
-                bpy.data.meshes.remove(data)
+                if new_rep_data:
+                    bpy.data.meshes.remove(new_rep_data)
             self.report({"ERROR"}, "No compatible representation for the context could be created.")
             return {"CANCELLED"}
 
@@ -384,7 +386,7 @@ class UpdateRepresentation(bpy.types.Operator, tool.Ifc.Operator):
 
         if product.is_a("IfcGridAxis"):
             # Grid geometry does not follow the "representation" paradigm and needs to be treated specially
-            ifcopenshell.api.run("grid.create_axis_curve", self.file, **{"axis_curve": obj, "grid_axis": product})
+            ifcopenshell.api.grid.create_axis_curve(self.file, axis_curve=obj, grid_axis=product)
             return
         elif product.is_a("IfcRelSpaceBoundary"):
             # TODO refactor
@@ -626,6 +628,10 @@ class OverrideDelete(bpy.types.Operator):
 
         self.process_arrays(context)
         for obj in context.selected_objects:
+            try:
+                obj.name
+            except:
+                continue
             element = tool.Ifc.get_entity(obj)
             if element:
                 if tool.Geometry.is_locked(element):
@@ -1593,6 +1599,9 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
             element = tool.Ifc.get_entity(obj)
             if not element:
                 continue
+            if tool.Geometry.is_locked(element):
+                obj.select_set(False)
+                continue
             representation = tool.Geometry.get_active_representation(obj)
             if not representation:
                 continue
@@ -1792,6 +1801,14 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
                     self.edited_objs.append(obj)
                 elif getattr(element, "HasOpenings", None):
                     self.unchanged_objs_with_openings.append(obj)
+                else:
+                    tool.Ifc.finish_edit(obj)
+            elif element.is_a("IfcGridAxis"):
+                if not tool.Geometry.has_geometric_data(obj):
+                    self.is_valid = False
+                    self.should_save = False
+                if obj.data.BIMMeshProperties.mesh_checksum != tool.Geometry.get_mesh_checksum(obj.data):
+                    self.edited_objs.append(obj)
                 else:
                     tool.Ifc.finish_edit(obj)
 
