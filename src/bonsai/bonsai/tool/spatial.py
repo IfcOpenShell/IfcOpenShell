@@ -448,8 +448,7 @@ class Spatial(bonsai.core.tool.Spatial):
         new.long_name = element.LongName or ""
         if not element.is_a("IfcProject"):
             ifc_file = tool.Ifc.get()
-            si_conversion = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
-            new.elevation = ifcopenshell.util.placement.get_storey_elevation(element) * si_conversion
+            new.elevation = str(ifcopenshell.util.placement.get_storey_elevation(element))
         new.is_expanded = element.id() not in cls.contracted_containers
         new.level_index = level_index
         children = ifcopenshell.util.element.get_parts(element)
