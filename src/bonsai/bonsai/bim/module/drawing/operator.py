@@ -1806,7 +1806,7 @@ class ActivateDrawing(bpy.types.Operator):
         dprops = bpy.context.scene.DocProperties
 
         if self.switch_camera_only:
-            camera = tool.Drawing.import_drawing(drawing)
+            camera = tool.Ifc.get_object(drawing)
             tool.Blender.activate_camera(camera)
         else:
             if not self.camera_view_point:
