@@ -1594,6 +1594,9 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
             element = tool.Ifc.get_entity(obj)
             if not element:
                 continue
+            if tool.Geometry.is_locked(element):
+                obj.select_set(False)
+                continue
             representation = tool.Geometry.get_active_representation(obj)
             if not representation:
                 continue
