@@ -65,6 +65,8 @@ def update_name(self, context):
 
 def update_active_container_index(self, context):
     SpatialDecompositionData.data["subelement_class"] = SpatialDecompositionData.subelement_class()
+    if tool.Blender.get_enum_safe(self, "subelement_class") is None:
+        self.subelement_class = SpatialDecompositionData.data["subelement_class"][0][0]
     tool.Spatial.load_contained_elements()
 
 
