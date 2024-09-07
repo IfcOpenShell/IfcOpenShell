@@ -24,6 +24,7 @@ import logging
 import numpy as np
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.grid
 import ifcopenshell.geom
 import ifcopenshell.guid
 import ifcopenshell.util.element
@@ -118,12 +119,12 @@ class Geometry(bonsai.core.tool.Geometry):
         element = tool.Ifc.get_entity(obj)
         if not element:
             return
-        if element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
+        elif element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
             return bonsai.core.drawing.remove_drawing(tool.Ifc, tool.Drawing, drawing=element)
-        if element.is_a("IfcRelSpaceBoundary"):
+        elif element.is_a("IfcRelSpaceBoundary"):
             ifcopenshell.api.run("boundary.remove_boundary", tool.Ifc.get(), boundary=element)
             return bpy.data.objects.remove(obj)
-        if element.is_a("IfcGridAxis"):
+        elif element.is_a("IfcGridAxis"):
             is_last_axis = False
             # Deleting the last W axis is OK
             if ((grid := element.PartOfU) and len(grid[0].UAxes) == 1) or (
@@ -134,6 +135,12 @@ class Geometry(bonsai.core.tool.Geometry):
                 return
             ifcopenshell.api.run("grid.remove_grid_axis", tool.Ifc.get(), axis=element)
             return bpy.data.objects.remove(obj)
+        elif element.is_a("IfcGrid"):
+            axes = list(element.UAxes or []) + list(element.VAxes or []) + list(element.WAxes or [])
+            for axis in axes:
+                if axis_obj := tool.Ifc.get_object(axis):
+                    bpy.data.objects.remove(axis_obj)
+                ifcopenshell.api.grid.remove_grid_axis(tool.Ifc.get(), axis=axis)
 
         collection = obj.BIMObjectProperties.collection
         if collection:
