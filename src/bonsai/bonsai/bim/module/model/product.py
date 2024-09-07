@@ -117,8 +117,8 @@ class AddConstrTypeInstance(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Add"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Add Type Instance to the model"
-    relating_type_id: bpy.props.IntProperty()
-    from_invoke: bpy.props.BoolProperty(default=False)
+    relating_type_id: bpy.props.IntProperty(default=0, options={"SKIP_SAVE"})
+    from_invoke: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
 
     def invoke(self, context, event):
         return self.execute(context)
