@@ -55,7 +55,6 @@ def update_elevation(self, context):
         if obj := tool.Ifc.get_object(entity):
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
             obj.matrix_world[2][3] = elevation * unit_scale
-            print('editing!')
             bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj)
 
 
