@@ -456,7 +456,7 @@ class BIM_PT_tabs(Panel):
             op.uri = "https://docs.bonsaibim.org/guides/troubleshooting.html#saving-and-loading-blend-files"
             row.operator("bim.close_blend_warning", text="", icon="CANCEL")
 
-        if context.mode != context.scene.BIMGeometryProperties.mode:
+        if not context.mode.startswith(context.scene.BIMGeometryProperties.mode):
             box = self.layout.box()
             box.alert = True
             row = box.row(align=True)

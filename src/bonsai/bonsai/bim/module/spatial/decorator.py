@@ -67,6 +67,9 @@ class GridDecorator:
         for axis in context.scene.BIMGridProperties.grid_axes:
             if not (obj := axis.obj):
                 continue
+            if obj.select_get() and context.mode != "OBJECT":
+                continue
+
             tag = obj.name.split("/")[-1]
             matrix_world = obj.matrix_world
             v1 = matrix_world @ obj.data.vertices[0].co
@@ -115,6 +118,8 @@ class GridDecorator:
         for axis in context.scene.BIMGridProperties.grid_axes:
             if obj := axis.obj:
                 if obj.select_get():
+                    if context.mode != "OBJECT":
+                        continue
                     edges = selected_edges
                     verts = selected_verts
                 else:
