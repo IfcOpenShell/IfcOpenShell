@@ -100,7 +100,7 @@ class ToolState:
     Shift: Lock axis
 """
     snap_info: str = None
-    # input_state: str = None | "Select" | "Edit"
+    mode: str = None
     input_type: str = None
 
 

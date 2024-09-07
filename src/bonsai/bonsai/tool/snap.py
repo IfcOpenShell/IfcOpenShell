@@ -27,10 +27,8 @@ from lark import Lark, Transformer
 
 
 class Snap(bonsai.core.tool.Snap):
-    snap_angle = None
     tool_state = None
     snap_plane_method = None
-    snap_axis_method = None
 
     @classmethod
     def set_tool_state(cls, tool_state):
@@ -41,22 +39,11 @@ class Snap(bonsai.core.tool.Snap):
         cls.snap_plane_method = value
 
     @classmethod
-    def clear_snap_angle(cls):
-        cls.snap_angle = None
-
-    @classmethod
     def cycle_snap_plane_method(cls, value=True):
         if cls.snap_plane_method == value:
             cls.snap_plane_method = None
             return
         cls.snap_plane_method = value
-
-    @classmethod
-    def set_snap_axis_method(cls, value=True):
-        if cls.snap_axis_method == value:
-            cls.snap_axis_method = None
-            return
-        cls.snap_axis_method = value
 
     @classmethod
     def get_snap_points_on_raycasted_face(cls, context, event, obj, face_index):
@@ -102,11 +89,6 @@ class Snap(bonsai.core.tool.Snap):
         except:
             snap_vertex = bpy.context.scene.BIMModelProperties.snap_mouse_point.add()
 
-        info = f"""Snap: {snap_type}
-    Axis:{cls.snap_axis_method}
-    Plane:{cls.snap_plane_method}
-"""
-        PolylineDecorator.set_snap_info(info)
         snap_vertex.x = snap_point[0]
         snap_vertex.y = snap_point[1]
         snap_vertex.z = snap_point[2]
@@ -194,12 +176,12 @@ class Snap(bonsai.core.tool.Snap):
         polyline_measurement.remove(len(polyline_measurement) - 1)
 
     @classmethod
-    def snap_on_axis(cls, intersection, lock_axis=None):
+    def snap_on_axis(cls, intersection, tool_state, lock_angle=False):
 
         def create_axis_line_data(rot_mat, origin):
             length = 1000
             direction = Vector((1, 0, 0))
-            if cls.snap_plane_method == "YZ" or (not cls.snap_plane_method and cls.snap_axis_method == "Z"):
+            if tool_state.plane_method == "YZ" or (not tool_state.plane_method and tool_state.axis_method == "Z"):
                 direction = Vector((0, 0, 1))
             rot_dir = rot_mat.inverted() @ direction
             start = origin + rot_dir * length
@@ -210,13 +192,13 @@ class Snap(bonsai.core.tool.Snap):
         def create_axis_rectangle_data(origin):
             size = 0.5
             direction = Vector((1, 0, 0))
-            if cls.snap_plane_method == "YZ":
+            if tool_state.plane_method == "YZ":
                 direction = Vector((0, 0, 1))
             rot_mat = Matrix.Rotation(math.radians(360), 3, pivot_axis)
             rot_dir = rot_mat.inverted() @ direction
             v1 = origin + rot_dir * 0
             v2 = origin + rot_dir * size
-            if cls.snap_plane_method == "XY":
+            if tool_state.plane_method == "XY":
                 angle = 270
             else:
                 angle = 90
@@ -238,17 +220,17 @@ class Snap(bonsai.core.tool.Snap):
         # Translates intersection point based on last_point
         translated_intersection = intersection - last_point
         snap_axis = []
-        if not lock_axis:
+        if not tool_state.snap_angle:
             for i in range(1, 25):
                 angle = 15 * i
                 snap_axis.append(angle)
         else:
-            snap_axis = [lock_axis]
+            snap_axis = [tool_state.snap_angle]
 
         pivot_axis = "Z"
-        if cls.snap_plane_method == "XZ":
+        if tool_state.plane_method == "XZ":
             pivot_axis = "Y"
-        if cls.snap_plane_method == "YZ":
+        if tool_state.plane_method == "YZ":
             pivot_axis = "X"
 
         for axis in snap_axis:
@@ -256,10 +238,10 @@ class Snap(bonsai.core.tool.Snap):
             start, end = create_axis_line_data(rot_mat, last_point)
             rot_intersection = rot_mat @ translated_intersection
             proximity = rot_intersection.y
-            if cls.snap_plane_method == "XZ":
+            if tool_state.plane_method == "XZ":
                 proximity = rot_intersection.z
             PolylineDecorator.set_angle_axis_line(start, end)
-            if lock_axis:
+            if lock_angle:
                 is_on_rot_axis = True
             else:
                 is_on_rot_axis = abs(proximity) <= 0.15
@@ -267,7 +249,7 @@ class Snap(bonsai.core.tool.Snap):
             if is_on_rot_axis:
                 # Snap to axis
                 rot_intersection = Vector((rot_intersection.x, 0, rot_intersection.z))
-                if cls.snap_plane_method == "XZ":
+                if tool_state.plane_method == "XZ":
                     rot_intersection = Vector((rot_intersection.x, rot_intersection.y, 0))
                 # Convert it back
                 snap_intersection = rot_mat.inverted() @ rot_intersection + last_point
@@ -313,13 +295,13 @@ class Snap(bonsai.core.tool.Snap):
                 plane_origin = Vector((0, 0, 0))
                 plane_normal = Vector((0, 0, 1))
 
-            if not cls.snap_plane_method:
+            if not tool_state.plane_method:
                 camera_rotation = rv3d.view_rotation
                 plane_origin = Vector((0, 0, 0))
                 view_direction = Vector((0, 0, -1)) @ camera_rotation.to_matrix().transposed()
                 plane_normal = view_direction.normalized()
 
-            if cls.snap_plane_method == "XY" or (not cls.snap_plane_method and cls.snap_axis_method in {"X", "Y"}):
+            if tool_state.plane_method == "XY" or (not tool_state.plane_method and tool_state.axis_method in {"X", "Y"}):
                 if cls.tool_state.use_default_container:
                     plane_origin = Vector((0, 0, elevation))
                 elif not last_polyline_point:
@@ -328,12 +310,12 @@ class Snap(bonsai.core.tool.Snap):
                     plane_origin = Vector((last_polyline_point.x, last_polyline_point.y, last_polyline_point.z))
                 plane_normal = Vector((0, 0, 1))
 
-            elif cls.snap_plane_method == "XZ" or (not cls.snap_plane_method and cls.snap_axis_method == "Z"):
+            elif tool_state.plane_method == "XZ" or (not tool_state.plane_method and tool_state.axis_method == "Z"):
                 if last_polyline_point:
                     plane_origin = Vector((last_polyline_point.x, last_polyline_point.y, last_polyline_point.z))
                 plane_normal = Vector((0, 1, 0))
 
-            elif cls.snap_plane_method == "YZ":
+            elif tool_state.plane_method == "YZ":
                 if last_polyline_point:
                     plane_origin = Vector((last_polyline_point.x, last_polyline_point.y, last_polyline_point.z))
                 plane_normal = Vector((1, 0, 0))
@@ -419,31 +401,31 @@ class Snap(bonsai.core.tool.Snap):
 
         # TODO It only work for XY plane. Make it work also for None plane_method
         rot_intersection = None
-        if not cls.snap_plane_method:
-            if cls.snap_axis_method == "X":
+        if not tool_state.plane_method:
+            if tool_state.axis_method == "X":
                 tool_state.snap_angle = 180
-            if cls.snap_axis_method == "Y":
+            if tool_state.axis_method == "Y":
                 tool_state.snap_angle = 90
-            if cls.snap_axis_method == "Z":
+            if tool_state.axis_method == "Z":
                 tool_state.snap_angle = 90
-            if cls.snap_axis_method:
+            if tool_state.axis_method:
                 # Doesn't update snap_angle so that it keeps in the same axis
-                rot_intersection, _, axis_start, axis_end = cls.snap_on_axis(intersection, tool_state.snap_angle)
+                rot_intersection, _, axis_start, axis_end = cls.snap_on_axis(intersection, tool_state, True)
 
-        if cls.snap_plane_method:
-            if cls.snap_plane_method in {"XY", "XZ"} and cls.snap_axis_method == "X":
+        if tool_state.plane_method:
+            if tool_state.plane_method in {"XY", "XZ"} and tool_state.axis_method == "X":
                 tool_state.snap_angle = 180
-            if cls.snap_plane_method in {"XY", "YZ"} and cls.snap_axis_method == "Y":
+            if tool_state.plane_method in {"XY", "YZ"} and tool_state.axis_method == "Y":
                 tool_state.snap_angle = 90
-            if cls.snap_plane_method in {"YZ"} and cls.snap_axis_method == "Z":
+            if tool_state.plane_method in {"YZ"} and tool_state.axis_method == "Z":
                 tool_state.snap_angle = 180
-            if cls.snap_plane_method in {"XZ"} and cls.snap_axis_method == "Z":
+            if tool_state.plane_method in {"XZ"} and tool_state.axis_method == "Z":
                 tool_state.snap_angle = 90
-            if event.shift or cls.snap_axis_method:
+            if event.shift or tool_state.axis_method:
                 # Doesn't update snap_angle so that it keeps in the same axis
-                rot_intersection, _, axis_start, axis_end = cls.snap_on_axis(intersection, tool_state.snap_angle)
+                rot_intersection, _, axis_start, axis_end = cls.snap_on_axis(intersection, tool_state, True)
             else:
-                rot_intersection, tool_state.snap_angle, axis_start, axis_end = cls.snap_on_axis(intersection, None)
+                rot_intersection, tool_state.snap_angle, axis_start, axis_end = cls.snap_on_axis(intersection, tool_state, False)
         if rot_intersection:
             detected_snaps.append({"Axis": (rot_intersection, axis_start, axis_end)})
 
@@ -452,7 +434,7 @@ class Snap(bonsai.core.tool.Snap):
         return detected_snaps
 
     @classmethod
-    def select_snapping_points(cls, context, event, detected_snaps):
+    def select_snapping_points(cls, context, event, tool_state, detected_snaps):
         snapping_points = []
         for origin in detected_snaps:
             if "Object" in list(origin.keys()):
@@ -497,7 +479,7 @@ class Snap(bonsai.core.tool.Snap):
                 snapping_points.append((intersection, "Plane"))
 
         # Make Axis first priority
-        if event.shift or cls.snap_axis_method in {"X", "Y", "Z"}:
+        if event.shift or tool_state.axis_method in {"X", "Y", "Z"}:
             cls.update_snapping_ref(snapping_points[0][0], snapping_points[0][1])
             for point in snapping_points:
                 if point[1] == "Axis":
