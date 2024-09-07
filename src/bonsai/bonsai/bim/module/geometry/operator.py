@@ -28,6 +28,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.placement
 import ifcopenshell.api
+import ifcopenshell.api.grid
 import bonsai.core.geometry
 import bonsai.core.geometry as core
 import bonsai.core.aggregate
@@ -384,7 +385,7 @@ class UpdateRepresentation(bpy.types.Operator, tool.Ifc.Operator):
 
         if product.is_a("IfcGridAxis"):
             # Grid geometry does not follow the "representation" paradigm and needs to be treated specially
-            ifcopenshell.api.run("grid.create_axis_curve", self.file, **{"axis_curve": obj, "grid_axis": product})
+            ifcopenshell.api.grid.create_axis_curve(self.file, axis_curve=obj, grid_axis=product)
             return
         elif product.is_a("IfcRelSpaceBoundary"):
             # TODO refactor
@@ -1792,6 +1793,14 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
                     self.edited_objs.append(obj)
                 elif getattr(element, "HasOpenings", None):
                     self.unchanged_objs_with_openings.append(obj)
+                else:
+                    tool.Ifc.finish_edit(obj)
+            elif element.is_a("IfcGridAxis"):
+                if not tool.Geometry.has_geometric_data(obj):
+                    self.is_valid = False
+                    self.should_save = False
+                if obj.data.BIMMeshProperties.mesh_checksum != tool.Geometry.get_mesh_checksum(obj.data):
+                    self.edited_objs.append(obj)
                 else:
                     tool.Ifc.finish_edit(obj)
 
