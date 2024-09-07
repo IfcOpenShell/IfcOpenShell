@@ -100,7 +100,7 @@ class Profile(bonsai.core.tool.Profile):
 
     @classmethod
     def duplicate_profile(cls, profile: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
-        new_profile = ifcopenshell.util.element.copy_deep(tool.Ifc.get(), profile)
+        new_profile = ifcopenshell.api.profile.copy_profile(tool.Ifc.get(), profile)
         # In UI unnamed profiles are not available, so we don't handle them.
         new_profile.ProfileName = profile.ProfileName + "_copy"
         return new_profile
