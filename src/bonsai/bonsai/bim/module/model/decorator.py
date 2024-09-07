@@ -301,7 +301,8 @@ class ProfileDecorator:
 class PolylineDecorator:
     is_installed = False
     handlers = []
-    mouse_pos = None
+    event = None
+
     input_type = None
     input_ui = None
     angle_snap_mat = None
@@ -333,30 +334,27 @@ class PolylineDecorator:
         cls.is_installed = False
 
     @classmethod
-    def set_mouse_position(cls, event):
-        cls.mouse_pos = event.mouse_region_x, event.mouse_region_y
+    def update(cls, event, tool_state, input_ui):
+        cls.event = event
+        cls.tool_state = tool_state
+        cls.input_ui = input_ui
 
     @classmethod
-    def set_input_ui(cls, input_ui, input_type):
+    def set_input_ui(cls, input_ui):
         cls.input_ui = input_ui
-        cls.input_type = input_type
 
     @classmethod
     def set_angle_axis_line(cls, start, end):
         cls.axis_start = start
         cls.axis_end = end
 
-    @classmethod
-    def set_axis_rectangle(cls, corners):
-        cls.axis_rectangle = [*corners]
+    # @classmethod
+    # def set_axis_rectangle(cls, corners):
+    #     cls.axis_rectangle = [*corners]
 
     @classmethod
-    def set_use_default_container(cls, value=False):
-        cls.use_default_container = value
-
-    @classmethod
-    def set_instructions(cls, instructions):
-        cls.instructions = instructions
+    def set_tool_state(cls, tool_state):
+        cls.tool_state = tool_state
 
     @classmethod
     def set_snap_info(cls, snap_info):
@@ -379,6 +377,8 @@ class PolylineDecorator:
             "Z": "Z coord:",
             "AREA": "Area: ",
         }
+        mouse_pos = self.event.mouse_region_x, self.event.mouse_region_y
+
 
         self.addon_prefs = tool.Blender.get_addon_preferences()
         self.font_id = 0
@@ -392,18 +392,18 @@ class PolylineDecorator:
         new_line = 20
         for i, (key, field_name) in enumerate(texts.items()):
 
-            if key != self.input_type:
+            if key != self.tool_state.input_type:
                 formatted_value = self.input_ui.get_formatted_value(key)
             else:
                 formatted_value = self.input_ui.get_text_value(key)
 
             if formatted_value is None:
                 continue
-            if key == self.input_type:
+            if key == self.tool_state.input_type:
                 blf.color(self.font_id, *color_highlight)
             else:
                 blf.color(self.font_id, *color)
-            blf.position(self.font_id, self.mouse_pos[0] + offset, self.mouse_pos[1] - (new_line * i), 0)
+            blf.position(self.font_id, mouse_pos[0] + offset, mouse_pos[1] - (new_line * i), 0)
             blf.draw(self.font_id, field_name + formatted_value)
 
 
@@ -452,10 +452,10 @@ class PolylineDecorator:
         color = self.addon_prefs.decorations_colour
         blf.color(self.font_id, *color)
 
-        text_w, text_h = blf.dimensions(0, self.instructions)
+        text_w, text_h = blf.dimensions(0, self.tool_state.instructions)
         position = (region.width / 2) - (text_w / 2)
         blf.position(self.font_id, position, 10, 0)
-        blf.draw(self.font_id, self.instructions)
+        blf.draw(self.font_id, self.tool_state.instructions)
 
         text_w, text_h = blf.dimensions(0, self.snap_info)
         position = (region.width / 2) - (text_w / 2)
@@ -494,7 +494,7 @@ class PolylineDecorator:
 
         default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
         projection_point = []
-        if self.use_default_container:
+        if self.tool_state.use_default_container:
             # When a point is above the plane it projects the point
             # to the plane and creates a line
             if snap_prop.snap_type != "Plane" and snap_prop.z != 0:
@@ -520,10 +520,10 @@ class PolylineDecorator:
             self.line_shader.uniform_float("lineWidth", 0.75)
             self.draw_batch("LINES", [self.axis_start, self.axis_end], decorator_color_unselected, [(0, 1)])
 
-        try:
-            self.draw_batch("TRIS", self.axis_rectangle, (1, 1, 1, 0.1), [(0, 1, 3), (0, 2, 3)])
-        except:
-            pass
+        # try:
+        #     self.draw_batch("TRIS", self.axis_rectangle, (1, 1, 1, 0.1), [(0, 1, 3), (0, 2, 3)])
+        # except:
+        #     pass
 
         # Area highlight
         # if "AREA" in list(self.input_panel.keys()): # TODO Change to input_ui
