@@ -661,65 +661,65 @@ class BimToolUI:
 
         cls.layout.row(align=True).label(text="Align")
         add_layout_hotkey_operator(
-            cls.layout, 
-            "Exterior", 
-            "S_X", 
-            "Align selected Elements to the Exterior of the last selected object", 
+            cls.layout,
+            "Exterior",
+            "S_X",
+            "Align selected Elements to the Exterior of the last selected object",
             ui_context)
         add_layout_hotkey_operator(
-            cls.layout, 
-            "Centerline", 
-            "S_C", 
-            "Align selected Elements to the Centerline of the last selected object", 
+            cls.layout,
+            "Centerline",
+            "S_C",
+            "Align selected Elements to the Centerline of the last selected object",
             ui_context)
         add_layout_hotkey_operator(
-            cls.layout, 
-            "Interior", 
-            "S_V", 
-            "Align selected Elements to the Interior of the last selected object", 
+            cls.layout,
+            "Interior",
+            "S_V",
+            "Align selected Elements to the Interior of the last selected object",
             ui_context)
         add_layout_hotkey_operator(
-            cls.layout, 
-            "Mirror", 
-            "S_M", 
-            "Mirrors the selected Elements along a mirror plane set by the last selected object", 
+            cls.layout,
+            "Mirror",
+            "S_M",
+            "Mirrors the selected Elements along a mirror plane set by the last selected object",
             ui_context)
 
         cls.layout.row(align=True).label(text="Mode")
         add_layout_hotkey_operator(
-            cls.layout, 
-            "Void", 
-            "A_O", 
-            "Toggle display of Voids in the selected Elements", 
+            cls.layout,
+            "Void",
+            "A_O",
+            "Toggle display of Voids in the selected Elements",
             ui_context)
         add_layout_hotkey_operator(
-            cls.layout, 
-            "Decomposition", 
-            "A_D", 
-            "Select decomposition", 
+            cls.layout,
+            "Decomposition",
+            "A_D",
+            "Select decomposition",
             ui_context)
 
         cls.layout.row(align=True).label(text="Aggregation")
         add_layout_hotkey_operator(
-            cls.layout, 
-            "Assign", 
-            "C_P", 
-            "Assign element to Aggregation", 
+            cls.layout,
+            "Assign",
+            "C_P",
+            "Assign element to Aggregation",
             ui_context)
         add_layout_hotkey_operator(
-            cls.layout, 
-            "Unassign", 
-            "A_P", 
-            "Unassign element from Aggregation", 
+            cls.layout,
+            "Unassign",
+            "A_P",
+            "Unassign element from Aggregation",
             ui_context
         )
 
         cls.layout.row(align=True).label(text="Qto")
         add_layout_hotkey_operator(
-            cls.layout, 
-            "Perform Quantity Take-off", 
-            "S_Q", 
-            "Perform a quantity take off on selected objects based of a QTO rule configuration", 
+            cls.layout,
+            "Perform Quantity Take-off",
+            "S_Q",
+            "Perform a quantity take off on selected objects based of a QTO rule configuration",
             ui_context
         )
 
@@ -744,10 +744,10 @@ class BimToolUI:
 
             row = cls.layout.row()
             add_layout_hotkey_operator(
-                row, 
-                "Regen", 
-                "S_G", 
-                "Regenerate selected Element", 
+                row,
+                "Regen",
+                "S_G",
+                "Regenerate selected Element",
                 ui_context)
 
             row = cls.layout.row(align=True)
@@ -776,44 +776,44 @@ class BimToolUI:
 
             row = cls.layout.row(align=True)
             add_layout_hotkey_operator(
-                row, 
-                "Merge", 
-                "S_M", 
-                "Merge selected Elements", 
+                row,
+                "Merge",
+                "S_M",
+                "Merge selected Elements",
                 ui_context)
             add_layout_hotkey_operator(
-                row, 
-                "Split", 
-                "S_K", 
-                "Split selected Element into two Elements at the cursor location", 
+                row,
+                "Split",
+                "S_K",
+                "Split selected Element into two Elements at the cursor location",
                 ui_context)
             add_layout_hotkey_operator(
-                row, 
-                "Rotate 90", 
-                "S_R", 
-                "Rotate the selected Element by 90 degrees", 
+                row,
+                "Rotate 90",
+                "S_R",
+                "Rotate the selected Element by 90 degrees",
                 ui_context)
             add_layout_hotkey_operator(
-                row, 
-                "Flip", 
-                "S_F", 
-                "Flip Element about its local axes, keep the position", 
+                row,
+                "Flip",
+                "S_F",
+                "Flip Element about its local axes, keep the position",
                 ui_context)
 
         elif AuthoringData.data["active_material_usage"] == "LAYER3":
             if len(context.selected_objects) == 1:
                 add_layout_hotkey_operator(
-                    cls.layout, 
-                    "Edit Profile", 
-                    "S_E", 
-                    "Edit associated Profile Element", 
+                    cls.layout,
+                    "Edit Profile",
+                    "S_E",
+                    "Edit associated Profile Element",
                     ui_context)
             elif "LAYER2" in AuthoringData.data["selected_material_usages"]:
                 add_layout_hotkey_operator(
-                    cls.layout, 
-                    "Extend Wall To Slab", 
-                    "S_E", 
-                    "Extend the selected Wall to the selected Slab", 
+                    cls.layout,
+                    "Extend Wall To Slab",
+                    "S_E",
+                    "Extend the selected Wall to the selected Slab",
                     ui_context)
 
             row = cls.layout.row(align=True)
@@ -843,10 +843,10 @@ class BimToolUI:
                 ui_context,
             )
             add_layout_hotkey_operator(
-                cls.layout, 
-                "Flip", 
-                "S_F", 
-                "Flip object about its local axes, keep the position", 
+                cls.layout,
+                "Flip",
+                "S_F",
+                "Flip object about its local axes, keep the position",
                 ui_context)
 
             if AuthoringData.data["active_class"] in (
@@ -857,10 +857,10 @@ class BimToolUI:
             ):
 
                 add_layout_hotkey_operator(
-                    cls.layout, 
-                    "Add Fitting", 
-                    "S_Y", 
-                    "Add a Fitting based on currently selected Elements and cursor", 
+                    cls.layout,
+                    "Add Fitting",
+                    "S_Y",
+                    "Add a Fitting based on currently selected Elements and cursor",
                     ui_context)
                 if context.region.type != "TOOL_HEADER":
                     cls.layout.operator("bim.mep_add_bend")
@@ -890,16 +890,16 @@ class BimToolUI:
                     ui_context,
                 )
                 add_layout_hotkey_operator(
-                    cls.layout, 
-                    "Rotate 90", 
-                    "S_R", 
-                    "Rotate the selected element by 90 degrees", 
+                    cls.layout,
+                    "Rotate 90",
+                    "S_R",
+                    "Rotate the selected element by 90 degrees",
                     ui_context)
                 add_layout_hotkey_operator(
-                    cls.layout, 
-                    "Regen", 
-                    "S_G", 
-                    "Regenerate selected element", 
+                    cls.layout,
+                    "Regen",
+                    "S_G",
+                    "Regenerate selected element",
                     ui_context
                 )
             row.operator("bim.extend_profile", icon="X", text="").join_type = ""
@@ -927,33 +927,33 @@ class BimToolUI:
                 row.prop(data=cls.props, property="rl1", text="RL")
 
             add_layout_hotkey_operator(
-                cls.layout, 
-                "Regen", 
-                "S_G", 
-                "Regenerate selected Element", 
+                cls.layout,
+                "Regen",
+                "S_G",
+                "Regenerate selected Element",
                 ui_context)
             add_layout_hotkey_operator(
-                cls.layout, 
-                "Flip", 
-                "S_F", 
-                "Flip object about its local axes, keep the position", 
+                cls.layout,
+                "Flip",
+                "S_F",
+                "Flip object about its local axes, keep the position",
                 ui_context)
 
         elif AuthoringData.data["active_representation_type"] == "SweptSolid":
             if not tool.Model.is_parametric_window_active() and not tool.Model.is_parametric_door_active():
                 add_layout_hotkey_operator(
-                    cls.layout, 
-                    "Edit Profile", 
-                    "S_E", 
-                    "Edit assosiated Profile Element", 
+                    cls.layout,
+                    "Edit Profile",
+                    "S_E",
+                    "Edit assosiated Profile Element",
                     ui_context)
 
         elif AuthoringData.data["active_class"] in ("IfcSpace",):
             add_layout_hotkey_operator(
-                cls.layout, 
-                "Regen", 
-                "S_G", 
-                "Regenerate selected Space", 
+                cls.layout,
+                "Regen",
+                "S_G",
+                "Regenerate selected Space",
                 ui_context)
 
         elif tool.Model.is_parametric_roof_active() and not context.active_object.BIMRoofProperties.is_editing_path:
@@ -963,10 +963,10 @@ class BimToolUI:
 
         if context.region.type != "TOOL_HEADER" and PortData.data["total_ports"] > 0:
             add_layout_hotkey_operator(
-                cls.layout, 
-                "Regen MEP", 
-                "S_G", 
-                "Regenerates the positions and segment lengths of a distribution element and all connected elements", 
+                cls.layout,
+                "Regen MEP",
+                "S_G",
+                "Regenerates the positions and segment lengths of a distribution element and all connected elements",
                 ui_context)
             cls.layout.operator("bim.mep_connect_elements")
 
@@ -993,64 +993,64 @@ class BimToolUI:
 
         row = cls.layout.row(align=True)
         add_layout_hotkey_operator(
-            row, 
-            "Exterior", 
-            "S_X", 
-            "Align selected Elements to the Exterior of the last selected object", 
+            row,
+            "Exterior",
+            "S_X",
+            "Align selected Elements to the Exterior of the last selected object",
             ui_context)
         add_layout_hotkey_operator(
-            row, 
-            "Centerline", 
-            "S_C", 
-            "Align selected Elements to the Centerline of the last selected object", 
+            row,
+            "Centerline",
+            "S_C",
+            "Align selected Elements to the Centerline of the last selected object",
             ui_context)
         add_layout_hotkey_operator(
-            row, 
-            "Interior", 
-            "S_V", 
-            "Align selected Elements to the Interior of the last selected object", 
+            row,
+            "Interior",
+            "S_V",
+            "Align selected Elements to the Interior of the last selected object",
             ui_context)
         add_layout_hotkey_operator(
-            row, 
-            "Mirror", 
-            "S_M", 
-            "Mirrors the selected Elements along a mirror plane set by the last selected object", 
-            ui_context)
-
-        row = cls.layout.row(align=True)
-        add_layout_hotkey_operator(
-            row, 
-            "Void", 
-            "A_O", 
-            "Toggle display of Voids in the selected Elements", 
-            ui_context)
-        add_layout_hotkey_operator(
-            row, 
-            "Decomposition", 
-            "A_D", 
-            "Select decomposition", 
+            row,
+            "Mirror",
+            "S_M",
+            "Mirrors the selected Elements along a mirror plane set by the last selected object",
             ui_context)
 
         row = cls.layout.row(align=True)
         add_layout_hotkey_operator(
-            row, 
-            "Assign", 
-            "C_P", 
-            "Assign element to Aggregation", 
+            row,
+            "Void",
+            "A_O",
+            "Toggle display of Voids in the selected Elements",
             ui_context)
         add_layout_hotkey_operator(
-            row, 
-            "Unassign", 
-            "A_P", 
-            "Unassign element from Aggregation", 
+            row,
+            "Decomposition",
+            "A_D",
+            "Select decomposition",
+            ui_context)
+
+        row = cls.layout.row(align=True)
+        add_layout_hotkey_operator(
+            row,
+            "Assign",
+            "C_P",
+            "Assign element to Aggregation",
+            ui_context)
+        add_layout_hotkey_operator(
+            row,
+            "Unassign",
+            "A_P",
+            "Unassign element from Aggregation",
             ui_context)
 
         row = cls.layout.row()
         add_layout_hotkey_operator(
-            row, 
-            "Perform Quantity Take-off", 
-            "S_Q", 
-            "Perform a quantity take off on selected objects based of a QTO rule configuration", 
+            row,
+            "Perform Quantity Take-off",
+            "S_Q",
+            "Perform a quantity take off on selected objects based of a QTO rule configuration",
             ui_context)
 
     @classmethod

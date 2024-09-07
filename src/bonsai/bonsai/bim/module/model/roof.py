@@ -640,7 +640,7 @@ class FinishEditingRoof(bpy.types.Operator, tool.Ifc.Operator):
 
 class EnableEditingRoofPath(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_roof_path"
-    bl_label = ""
+    bl_label = "Edit Roof"
     bl_description = "Enable Editing Roof Path"
     bl_options = {"REGISTER"}
 
