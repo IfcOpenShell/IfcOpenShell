@@ -334,10 +334,13 @@ class PolylineDecorator:
         cls.is_installed = False
 
     @classmethod
-    def update(cls, event, tool_state, input_ui):
+    def update(cls, event, tool_state, input_ui, snapping_point):
         cls.event = event
         cls.tool_state = tool_state
         cls.input_ui = input_ui
+        cls.snap_info = f"""Snap: {snapping_point[1]}
+    Axis:{tool_state.axis_method}
+    Plane: {tool_state.plane_method}"""
 
     @classmethod
     def set_input_ui(cls, input_ui):
@@ -356,9 +359,6 @@ class PolylineDecorator:
     def set_tool_state(cls, tool_state):
         cls.tool_state = tool_state
 
-    @classmethod
-    def set_snap_info(cls, snap_info):
-        cls.snap_info = snap_info
 
 
     def draw_batch(self, shader_type, content_pos, color, indices=None):
