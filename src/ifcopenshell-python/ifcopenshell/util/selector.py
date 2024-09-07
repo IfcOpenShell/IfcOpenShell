@@ -21,7 +21,6 @@ import lark
 import numpy as np
 import ifcopenshell.api.pset
 import ifcopenshell.api.geometry
-import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util
 import ifcopenshell.util.attribute
 import ifcopenshell.util.fm
