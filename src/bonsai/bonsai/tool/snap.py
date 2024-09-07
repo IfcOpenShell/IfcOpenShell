@@ -42,6 +42,10 @@ class Snap(bonsai.core.tool.Snap):
         cls.snap_plane_method = value
 
     @classmethod
+    def clear_snap_angle(cls):
+        cls.snap_angle = None
+
+    @classmethod
     def cycle_snap_plane_method(cls, value=True):
         if cls.snap_plane_method == value:
             cls.snap_plane_method = None
@@ -417,7 +421,6 @@ class Snap(bonsai.core.tool.Snap):
 
         # TODO It only work for XY plane. Make it work also for None plane_method
         rot_intersection = None
-        cls.snap_angle = None
         if not cls.snap_plane_method:
             if cls.snap_axis_method == "X":
                 cls.snap_angle = 180
