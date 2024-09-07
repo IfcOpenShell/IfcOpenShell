@@ -83,6 +83,26 @@ class PolylineUI:
 
         return format_distance(value * factor, precision=precision, suppress_zero_inches=True, in_unit_length=True)
 
+@dataclass
+class ToolState:
+    use_default_container: bool = None
+    snap_angle: float = None
+    is_input_on: bool = None
+    # angle_axis_start: Vector
+    # angle_axis_end: Vector
+    axis_method: str = None
+    plane_method: str = None
+    instructions: str = """TAB: Cycle Input
+    M: Modify Snap Point
+    C: Close
+    Backspace: Remove
+    X Y: Axis
+    Shift: Lock axis
+"""
+    snap_info: str = None
+    # input_state: str = None | "Select" | "Edit"
+    input_type: str = None
+
 
 class Polyline(bonsai.core.tool.Polyline):
 
@@ -91,37 +111,11 @@ class Polyline(bonsai.core.tool.Polyline):
         return PolylineUI(init_z=init_z, init_area=init_area)
 
     @classmethod
-    def set_mouse_position(cls, event):
-        cls.mouse_pos = event.mouse_region_x, event.mouse_region_y
+    def create_tool_state(cls):
+        return ToolState()
 
     @classmethod
-    def set_angle_axis_line(cls, start, end):
-        cls.axis_start = start
-        cls.axis_end = end
-
-    @classmethod
-    def set_axis_rectangle(cls, corners):
-        cls.axis_rectangle = [*corners]
-
-    @classmethod
-    def set_use_default_container(cls, value=False):
-        cls.use_default_container = value
-
-    @classmethod
-    def set_plane(cls, plane_origin, plane_normal):
-        cls.plane_origin = plane_origin
-        cls.plane_normal = plane_normal
-
-    @classmethod
-    def set_instructions(cls, instructions):
-        cls.instructions = instructions
-
-    @classmethod
-    def set_snap_info(cls, snap_info):
-        cls.snap_info = snap_info
-
-    @classmethod
-    def calculate_distance_and_angle(cls, context, is_input_on, input_ui):
+    def calculate_distance_and_angle(cls, context, input_ui, tool_state):
 
         try:
             polyline_data = context.scene.BIMModelProperties.polyline_point
@@ -138,8 +132,8 @@ class Polyline(bonsai.core.tool.Polyline):
         else:
             last_point = Vector((0, 0, 0))
 
-        if is_input_on:
-            if cls.use_default_container:
+        if tool_state.is_input_on:
+            if tool_state.use_default_container:
                 snap_vector = Vector(
                     (input_ui.get_number_value("X"), input_ui.get_number_value("Y"), default_container_elevation)
                 )
@@ -148,7 +142,7 @@ class Polyline(bonsai.core.tool.Polyline):
                     (input_ui.get_number_value("X"), input_ui.get_number_value("Y"), input_ui.get_number_value("Z"))
                 )
         else:
-            if cls.use_default_container:
+            if tool_state.use_default_container:
                 snap_vector = Vector((snap_prop.x, snap_prop.y, default_container_elevation))
             else:
                 snap_vector = Vector((snap_prop.x, snap_prop.y, snap_prop.z))
@@ -229,7 +223,7 @@ class Polyline(bonsai.core.tool.Polyline):
         return
 
     @classmethod
-    def calculate_x_y_and_z(cls, context, input_ui):
+    def calculate_x_y_and_z(cls, context, input_ui, tool_state):
         try:
             polyline_data = context.scene.BIMModelProperties.polyline_point
             default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
@@ -242,7 +236,7 @@ class Polyline(bonsai.core.tool.Polyline):
         snap_prop = context.scene.BIMModelProperties.snap_mouse_point[0]
         snap_vector = Vector((snap_prop.x, snap_prop.y, snap_prop.z))
 
-        if cls.use_default_container:
+        if tool_state.use_default_container:
             snap_vector = Vector((snap_prop.x, snap_prop.y, default_container_elevation))
         else:
             snap_vector = Vector((snap_prop.x, snap_prop.y, snap_prop.z))

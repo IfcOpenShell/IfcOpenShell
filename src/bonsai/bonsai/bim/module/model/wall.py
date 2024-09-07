@@ -321,6 +321,7 @@ class DrawPolylineWall(bpy.types.Operator):
         self.is_input_on = False
         self.input_options = ["D", "A", "X", "Y"]
         self.input_type = None
+        self.input_type = None
         self.input_value_xy = [None, None]
         self.input_ui = tool.Polyline.create_input_ui()
         self.is_typing = False
@@ -333,6 +334,7 @@ class DrawPolylineWall(bpy.types.Operator):
     X Y: Axis
     Shift: Lock axis
 """
+        self.tool_state = tool.Polyline.create_tool_state()
 
     def recalculate_inputs(self, context):
         if self.number_input:
@@ -343,10 +345,10 @@ class DrawPolylineWall(bpy.types.Operator):
                 return is_valid
             else:
                 if self.input_type in {"X", "Y"}:
-                    tool.Polyline.calculate_distance_and_angle(context, self.is_input_on, self.input_ui)
+                    tool.Polyline.calculate_distance_and_angle(context, self.input_ui, self.tool_state)
                 elif self.input_type in {"D", "A"}:
-                    tool.Polyline.calculate_x_y_and_z(context, self.input_ui)
-                    tool.Polyline.calculate_distance_and_angle(context, self.is_input_on, self.input_ui)
+                    tool.Polyline.calculate_x_y_and_z(context, self.input_ui, self.tool_state)
+                    tool.Polyline.calculate_distance_and_angle(context, self.input_ui, self.tool_state)
                 else:
                     self.input_ui.set_value(self.input_type, self.number_output)
             tool.Blender.update_viewport()
@@ -384,8 +386,10 @@ class DrawPolylineWall(bpy.types.Operator):
             if event.type == "MOUSEMOVE" or event.type == "INBETWEEN_MOUSEMOVE":
                 self.mousemove_count += 1
                 self.is_input_on = False
+                self.tool_state.is_input_on = False
                 self.input_type = None
-                PolylineDecorator.set_input_ui(self.input_ui, self.input_type)
+                self.tool_state.input_type = None
+                PolylineDecorator.update(event, self.tool_state, self.input_ui)
                 tool.Snap.clear_snapping_ref()
                 tool.Blender.update_viewport()
             else:
@@ -397,10 +401,9 @@ class DrawPolylineWall(bpy.types.Operator):
                     self.objs_2d_bbox.append(tool.Raycast.get_on_screen_2d_bounding_boxes(context, obj))
 
             if self.mousemove_count > 3:
-                detected_snaps = tool.Snap.detect_snapping_points(context, event, self.objs_2d_bbox)
+                detected_snaps = tool.Snap.detect_snapping_points(context, event, self.objs_2d_bbox, self.tool_state)
                 self.snapping_points = tool.Snap.select_snapping_points(context, event, detected_snaps)
-                PolylineDecorator.set_mouse_position(event)
-                tool.Polyline.calculate_distance_and_angle(context, self.is_input_on, self.input_ui)
+                tool.Polyline.calculate_distance_and_angle(context, self.input_ui, self.tool_state)
                 tool.Blender.update_viewport()
                 return {"RUNNING_MODAL"}
 
@@ -422,7 +425,7 @@ class DrawPolylineWall(bpy.types.Operator):
 
         if event.value == "PRESS" and event.type == "C":
             tool.Snap.close_polyline()
-            PolylineDecorator.set_input_ui(self.input_ui, self.input_type)
+            PolylineDecorator.update(event, self.tool_state, self.input_ui)
             tool.Blender.update_viewport()
 
         if self.is_input_on and event.value == "PRESS" and event.type == "TAB":
@@ -430,39 +433,48 @@ class DrawPolylineWall(bpy.types.Operator):
             index = self.input_options.index(self.input_type)
             size = len(self.input_options)
             self.input_type = self.input_options[((index + 1) % size)]
+            self.tool_state.input_type = self.input_options[((index + 1) % size)]
             self.is_typing = False
             self.number_input = self.input_ui.get_formatted_value(self.input_type)
             self.number_input = list(self.number_input)
             self.number_output = "".join(self.number_input)
             self.input_ui.set_value(self.input_type, self.number_output)
-            PolylineDecorator.set_input_ui(self.input_ui, self.input_type)
+            PolylineDecorator.update(event, self.tool_state, self.input_ui)
             tool.Blender.update_viewport()
 
         if not self.is_input_on and event.value == "RELEASE" and event.type == "TAB":
             self.recalculate_inputs(context)
             self.is_input_on = True
+            self.tool_state.is_input_on = True
             self.input_type = "D"
+            self.tool_state.input_type = "D"
             self.is_typing = False
             self.number_input = self.input_ui.get_formatted_value(self.input_type)
             self.number_input = list(self.number_input)
             self.number_output = "".join(self.number_input)
             self.input_ui.set_value(self.input_type, self.number_output)
-            PolylineDecorator.set_input_ui(self.input_ui, self.input_type)
+            PolylineDecorator.update(event, self.tool_state, self.input_ui)
             tool.Blender.update_viewport()
 
         if not self.is_input_on and event.ascii in self.number_options:
             self.recalculate_inputs(context)
             self.is_input_on = True
+            self.tool_state.is_input_on = True
             self.input_type = "D"
-            PolylineDecorator.set_input_ui(self.input_ui, self.input_type)
+            self.tool_state.input_type = "D"
+            # PolylineDecorator.set_input_ui(self.input_ui)
+            # PolylineDecorator.set_tool_state(self.tool_state)
+            PolylineDecorator.update(event, self.tool_state, self.input_ui)
             tool.Blender.update_viewport()
 
         if event.value == "RELEASE" and event.type in {"D", "A"}:
             self.recalculate_inputs(context)
             self.is_input_on = True
+            self.tool_state.is_input_on = True
             self.input_type = event.type
+            self.tool_state.input_type = event.type
             self.input_ui.set_value(self.input_type, "")
-            PolylineDecorator.set_input_ui(self.input_ui, self.input_type)
+            PolylineDecorator.update(event, self.tool_state, self.input_ui)
             tool.Blender.update_viewport()
 
         if self.input_type in self.input_options:
@@ -489,7 +501,7 @@ class DrawPolylineWall(bpy.types.Operator):
                 self.is_typing = True
                 self.number_output = "".join(self.number_input)
                 self.input_ui.set_value(self.input_type, self.number_output)
-                PolylineDecorator.set_input_ui(self.input_ui, self.input_type)
+                PolylineDecorator.update(event, self.tool_state, self.input_ui)
                 tool.Blender.update_viewport()
 
         if not self.is_input_on and event.value == "RELEASE" and event.type in {"RET", "NUMPAD_ENTER", "RIGHTMOUSE"}:
@@ -504,16 +516,18 @@ class DrawPolylineWall(bpy.types.Operator):
             if is_valid:
                 tool.Snap.insert_polyline_point(self.input_ui)
             self.is_input_on = False
+            self.tool_state.is_input_on = False
             self.input_type = None
+            self.tool_state.input_type = None
             self.number_input = []
             self.number_output = ""
-            PolylineDecorator.set_input_ui(self.input_ui, self.input_type)
+            PolylineDecorator.update(event, self.tool_state, self.input_ui)
             tool.Blender.update_viewport()
 
         if event.value == "PRESS" and event.type == "M":
             self.snapping_points = tool.Snap.modify_snapping_point_selection(self.snapping_points)
-            PolylineDecorator.set_mouse_position(event)
-            tool.Polyline.calculate_distance_and_angle(context, self.is_input_on, self.input_ui)
+            tool.Polyline.calculate_distance_and_angle(context, self.input_ui, self.tool_state)
+            PolylineDecorator.update(event, self.tool_state, self.input_ui)
             tool.Blender.update_viewport()
 
         if event.type in {"MIDDLEMOUSE", "WHEELUPMOUSE", "WHEELDOWNMOUSE"}:
@@ -523,8 +537,10 @@ class DrawPolylineWall(bpy.types.Operator):
             if event.value == "RELEASE" and event.type in {"ESC"}:
                 self.recalculate_inputs(context)
                 self.is_input_on = False
+                self.tool_state.is_input_on = False
                 self.input_type = None
-                PolylineDecorator.set_input_ui(self.input_ui, self.input_type)
+                self.tool_state.input_type = None
+                PolylineDecorator.update(event, self.tool_state, self.input_ui)
                 tool.Blender.update_viewport()
         else:
             if event.value == "RELEASE" and event.type in {"ESC"}:
@@ -540,21 +556,19 @@ class DrawPolylineWall(bpy.types.Operator):
         if context.space_data.type == "VIEW_3D":
             PolylineDecorator.install(context)
             tool.Snap.clear_snapping_point()
-            tool.Snap.set_use_default_container(True)
-            tool.Snap.clear_snap_angle()
-            PolylineDecorator.set_use_default_container(True)
-            tool.Polyline.set_use_default_container(True)
+
+            self.tool_state.use_default_container = True
+            tool.Snap.set_tool_state(self.tool_state)
+
             tool.Snap.set_snap_axis_method(None)
             tool.Snap.set_snap_plane_method("XY")
-            PolylineDecorator.set_instructions(self.instructions)
-            PolylineDecorator.set_input_ui(self.input_ui, self.input_type)
+            PolylineDecorator.update(event, self.tool_state, self.input_ui)
             self.visible_objs = tool.Raycast.get_visible_objects(context)
             for obj in self.visible_objs:
                 self.objs_2d_bbox.append(tool.Raycast.get_on_screen_2d_bounding_boxes(context, obj))
-            detected_snaps = tool.Snap.detect_snapping_points(context, event, self.objs_2d_bbox)
+            detected_snaps = tool.Snap.detect_snapping_points(context, event, self.objs_2d_bbox, self.tool_state)
             self.snapping_points = tool.Snap.select_snapping_points(context, event, detected_snaps)
-            PolylineDecorator.set_mouse_position(event)
-            tool.Polyline.calculate_distance_and_angle(context, self.is_input_on, self.input_ui)
+            tool.Polyline.calculate_distance_and_angle(context, self.input_ui, self.tool_state)
 
             tool.Blender.update_viewport()
             context.window_manager.modal_handler_add(self)
