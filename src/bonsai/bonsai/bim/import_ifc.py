@@ -40,28 +40,32 @@ from typing import Dict, Union, Optional, Any
 
 
 class MaterialCreator:
+    mesh: bpy.types.Mesh
+    obj: bpy.types.Object
+
     def __init__(self, ifc_import_settings: IfcImportSettings, ifc_importer: IfcImporter):
-        self.mesh: bpy.types.Mesh = None
-        self.obj: bpy.types.Object = None
         self.styles: Dict[int, bpy.types.Material] = {}
         self.parsed_meshes: set[str] = set()
         self.ifc_import_settings = ifc_import_settings
         self.ifc_importer = ifc_importer
 
-    def create(self, element: ifcopenshell.entity_instance, obj: bpy.types.Object, mesh: OBJECT_DATA_TYPE) -> None:
-        self.mesh = mesh
-        # as ifcopenshell triangulates the mesh, we need to merge it to quads again
-        self.obj = obj
-        if (hasattr(element, "Representation") and not element.Representation) or (
-            hasattr(element, "RepresentationMaps") and not element.RepresentationMaps
+    def create(
+        self, element: ifcopenshell.entity_instance, obj: bpy.types.Object, mesh: Union[OBJECT_DATA_TYPE, None]
+    ) -> None:
+        if ((rep := getattr(element, "Representation", ...) is not ...) and not rep) or (
+            (rep := getattr(element, "RepresentationMaps", ...) is not ...) and not rep
         ):
             return
-        if not self.mesh or self.mesh.name in self.parsed_meshes:
+
+        if not mesh or mesh.name in self.parsed_meshes:
             return
 
         # We don't support curve styles yet.
         if isinstance(mesh, bpy.types.Curve):
             return
+
+        self.mesh = mesh
+        self.obj = obj
 
         # mesh["ios_materials"] can contain:
         # - ifc style id if style assigned to the representation items directly
