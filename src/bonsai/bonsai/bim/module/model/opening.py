@@ -431,7 +431,8 @@ class FlipFill(bpy.types.Operator, tool.Ifc.Operator):
 
 class AddPotentialOpening(Operator, AddObjectHelper):
     bl_idname = "bim.add_potential_opening"
-    bl_label = "Add Potential Opening"
+    bl_label = ""
+    bl_description = "Add a Void object which can be applied on an Element"
     bl_options = {"REGISTER", "UNDO"}
     x: FloatProperty(name="X", default=0.5)
     y: FloatProperty(name="Y", default=0.5)
@@ -753,7 +754,8 @@ class ShowOpenings(Operator, tool.Ifc.Operator):
 
 class HideOpenings(Operator, tool.Ifc.Operator):
     bl_idname = "bim.hide_openings"
-    bl_label = "Hide Openings"
+    bl_label = ""
+    bl_description = "Hide Voids"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
@@ -779,7 +781,8 @@ class HideOpenings(Operator, tool.Ifc.Operator):
 
 class EditOpenings(Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_openings"
-    bl_label = "Edit Openings"
+    bl_label = ""
+    bl_description = "Edit Voids"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
@@ -842,9 +845,10 @@ class EditOpenings(Operator, tool.Ifc.Operator):
 
 class CloneOpening(Operator, tool.Ifc.Operator):
     bl_idname = "bim.clone_opening"
-    bl_label = "Clone Opening"
+    bl_label = ""
+    bl_description = "Clone Void"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Create and assign to the selected element the selected opening and assign to it the same representation and object placement"
+    bl_description = "Clone the selected Void and assign to the selected Element"
 
     def _execute(self, context):
         objects = bpy.context.selected_objects
