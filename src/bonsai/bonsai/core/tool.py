@@ -580,6 +580,9 @@ class Nest:
 class Patch:
     def run_migrate_patch(cls, infile, outfile, schema): pass
 
+@interface
+class Polyline:
+    pass
 
 @interface
 class Owner:
