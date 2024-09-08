@@ -3,7 +3,7 @@ import { CostUI } from "./utilities/costui.js";
 const connectedClients = {};
 let socket;
 
-let isScheduleLoad = {};
+let loadedSchedules = {};
 
 $(document).ready(function () {
   var defaultTheme = "blender";
@@ -11,7 +11,21 @@ $(document).ready(function () {
   setTheme(theme);
 
   connectSocket();
-  CostUI.createColorPicker();
+
+  const settingsMenu = CostUI.Form({
+    id: "settings-menu",
+    name: "Settings",
+    icon: "fa-solid fa-gear",
+    shouldHide: true,
+  });
+  settingsMenu.style.display = "none";
+  const picker = CostUI.createColorPicker();
+  settingsMenu.appendChild(picker);
+
+  const settingsButton = document.getElementById("settings-button");
+  settingsButton.addEventListener("click", function () {
+    settingsMenu.style.display = "block";
+  });
 });
 
 function connectSocket() {
@@ -28,6 +42,46 @@ function connectSocket() {
   socket.on("cost_items", handleCostItemsData);
   socket.on("cost_values", handleCostValuesData);
   socket.on("cost_value", handleCostValueData);
+  socket.on("selected_products", handleSelectedProducts);
+}
+
+function handleSelectedProducts(data) {
+  const costItemId = data.data["selected_products"]["cost_item_id"];
+  const products = data.data["selected_products"]["selected_products"];
+  const assigned_products = data.data["selected_products"]["assigned_products"];
+  const quantityNames =
+    data.data["selected_products"]["product_quantity_names"];
+  const formId = "selected-products-" + costItemId;
+  const form = CostUI.Form({
+    id: formId,
+    name: "Selected Products",
+    icon: "fa-solid fa-cart-shopping",
+  });
+  CostUI.highlightElement(costItemId);
+  const selectedProductsTable = CostUI.createProductTable({
+    form,
+    products,
+    quantityNames,
+    costItemId,
+    callbacks: {
+      addProductAssignments: addProductAssignments,
+      getSelectedProducts: getSelectedProducts,
+    },
+  });
+  if (assigned_products.length > 0) {
+    const assignedProductsText = CostUI.Text(
+      "Assigned Products",
+      "fa-solid fa-box",
+      "x-large"
+    );
+    form.appendChild(assignedProductsText);
+    const assignmentsTable = CostUI.createAssignmentsTable({
+      form,
+      products: assigned_products,
+      quantityNames,
+      costItemId,
+    });
+  }
 }
 
 function handlePredefinedTypes(data) {
@@ -35,6 +89,15 @@ function handlePredefinedTypes(data) {
     data.data["predefined_types"],
     addCostSchedule
   );
+}
+
+function addProductAssignments({ costItemId, selectedQuantity, productIds }) {
+  executeOperator({
+    type: "addProductAssignments",
+    costItemId: costItemId,
+    propName: selectedQuantity,
+    productIds: productIds,
+  });
 }
 
 function addCostSchedule(name, predefinedType) {
@@ -109,7 +172,7 @@ function handleCostValuesData(data) {
     },
   });
 
-  CostUI.highlightCostItem(data.data["cost_values"]["cost_item_id"]);
+  CostUI.highlightElement(data.data["cost_values"]["cost_item_id"]);
 }
 
 function addCostValue(costItemId) {
@@ -200,6 +263,9 @@ function addSummaryCostItem(costScheduleId) {
 
 function handleCostSchedulesData(data) {
   const blenderId = data.blenderId;
+  const loadedSchedule = loadedSchedules[blenderId]
+    ? loadedSchedules[blenderId]
+    : null;
   const costSchedules = data.data["cost_schedules"]["cost_schedules"];
   if (costSchedules.length === 0) {
     return;
@@ -210,24 +276,50 @@ function handleCostSchedulesData(data) {
   const costScheduleDiv = document.getElementById("cost-schedules");
   costScheduleDiv.innerHTML = "";
   costSchedules.forEach((costSchedule) => {
-    costSchedule.UpdateDate = new Date(costSchedule.UpdateDate);
-    const predefinedType = CostUI.text("Predefined Type: " + costSchedule.PredefinedType)
-    const updatedOn = CostUI.text("Updated On: " + costSchedule.UpdateDate);
+    const predefinedType = CostUI.Text(
+      "Predefined Type: " + costSchedule.PredefinedType,
+      "fa-solid fa-paperclip"
+    );
+    // simplyfying the date
+    const updatedDate = new Date(costSchedule.UpdateDate).toLocaleDateString();
+    const updatedOn = CostUI.Text(
+      "Updated On: " + updatedDate,
+      "fa-solid fa-pen-nib"
+    );
     const div = document.createElement("div");
-    
+
     div.appendChild(predefinedType);
     div.appendChild(updatedOn);
     const callback = () => loadCostSchedule(costSchedule.id, blenderId);
 
-    const card = CostUI.createCard(costSchedule.Name, div, callback);
+    const card = CostUI.createCard(
+      costSchedule.id,
+      costSchedule.Name,
+      div,
+      callback
+    );
     costScheduleDiv.append(card);
   });
+  loadedSchedule ? CostUI.highlightElement("schedule-" + loadedSchedule) : null;
 }
 
 function handleCostItemsData(data) {
+  const cards = document.querySelectorAll("[id^='schedule-']");
+  cards.forEach((card) => {
+    if (card.id === "schedule-" + data.data["cost_items"]["cost_schedule_id"]) {
+      card.classList.add("highlighted");
+    } else {
+      card.classList.remove("highlighted");
+    }
+  });
+
+  const costScheduleId = data.data["cost_items"]["cost_schedule_id"];
+  loadedSchedules[data.blenderId] = costScheduleId;
+  CostUI.highlightElement("schedule-" + costScheduleId);
+
   CostUI.createCostSchedule({
     data: data.data["cost_items"]["cost_items"],
-    costScheduleId: data.data["cost_items"]["cost_schedule_id"],
+    costScheduleId: costScheduleId,
     blenderID: data.blenderId,
     callbacks: {
       addCostItem: addCostItem,
@@ -237,8 +329,13 @@ function handleCostItemsData(data) {
       editCostItemName: editCostItemName,
       enableEditingCostValues: enableEditingCostValues,
       addSummaryCostItem: addSummaryCostItem,
+      getSelectedProducts: getSelectedProducts,
     },
   });
+}
+
+function getSelectedProducts(costItemId) {
+  executeOperator({ type: "getSelectedProducts", costItemId: costItemId });
 }
 
 function duplicateCostItem(costItemId) {

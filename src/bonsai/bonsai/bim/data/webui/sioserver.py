@@ -180,6 +180,11 @@ class BlenderNamespace(socketio.AsyncNamespace):
         print(f"Predefined types from Blender client {sid}")
         blender_messages[sid]["predefined_types"] = data
         await sio.emit("predefined_types", {"blenderId": sid, "data": data}, namespace="/web")
+    
+    async def on_selected_products(self, sid, data):
+        print(f"Selected products from Blender client {sid}")
+        blender_messages[sid]["selected_products"] = data
+        await sio.emit("selected_products", {"blenderId": sid, "data": data}, namespace="/web")
 
 async def schedules(request):
     with open("templates/index.html", "r") as f:

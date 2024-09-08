@@ -1,130 +1,75 @@
 @import url("./shared.css");
 @import url("./components/card.css");
 @import url("./components/contextMenu.css");
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-    user-select: none;
-}
-
-td:not(:first-child) {
-    text-align: center;
-    justify-content: space-between;
-    align-items: center;
-}
-
-td {
-    border-right: 1px solid #ddd;
-    padding-left: 0.5em;
-    padding-right: 0.5em;
-}
-
-.nested {
-    display: none;
-}
-
-.expand-collapse {
-    cursor: pointer;
-}
-
-.caret-cell {
-    border: none;
-    background: none;
-    padding: 0;
-}
-
-input, select {
-    background-color: var(--blender-button-background, var(--bg-color));
-    color: var(--blender-button-text, var(--text-color));
-    border-color: var(--blender-button-border, var(--border-color));
-    transition: filter 0.2s ease;
-    border-radius: 6px;
-    padding: 6px 8px;
-    font-size: 14px;
-    line-height: 20px;
-    transition: border-color 0.2s cubic-bezier(0.3, 0, 0.5, 1);
-    height: inherit;
-    margin-left: 0.5em;
-    margin-right: 0.5em;
-}
-
-input:focus {
-    border-color: #28a745;
-    outline: none;
-    box-shadow: 0 0 0 3px #28a745;
-}
-
-#cost-items tr:hover, .highlighted {
-    background-color: #ffb936;
-    color : black;
-}
-
-.highlight {
-    background-color: #ffb936;
-    color : black;
-}
+@import url("./components/costTable.css");
 
 .form-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-    background-color: #363636;
-    padding: 10px;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  margin-bottom: 10px;
+  background-color: #363636;
+  padding: 10px;
+  /* trext size  */
+  font-size: 1.5em;
+}
+
+span {
+  margin-left: var(--margin-small);
 }
 
 .floating-form {
-    min-width: 40%;
-    height: auto;
-    position: absolute;
-    background-color: #363636;
-    border: 1px solid black;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    z-index: 9999;
-    cursor: move;
-    padding: 20px;
-    user-select: none;
-}
-
-.cost-values-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.cost-values-table th, .cost-values-table td {
-    border: 1px solid #ddd;
-    padding: 8px;
-}
-
-.cost-values-table th {
-    background-color: #444444;
-    text-align: center;
-}
-
-.close-button {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    font-size: 20px;
-    cursor: pointer;
+  min-width: 40%;
+  max-width: 80%;
+  max-height: 80vh;
+  height: auto;
+  position: absolute;
+  background-color: #363636;
+  border: 1px solid black;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  z-index: 9999;
+  cursor: move;
+  padding: 20px;
+  user-select: none;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .action-button {
-    background-color: #28a745;
-    border: none;
-    color: #fff;
-    padding: 0.5em 1em;
-    cursor: pointer;
-    border-radius: 6px;
-    font-weight: bold;
-    text-decoration: none;
-    display: inline-block;
-    transition: background-color 0.3s ease;
-    width: fit-content;
-    margin-left: 0.5em;
+  background-color: #28a745;
+  border: none;
+  color: #fff;
+  padding: 0.5em 1em;
+  cursor: pointer;
+  border-radius: 6px;
+  font-weight: bold;
+  text-decoration: none;
+  display: inline-block;
+  transition: background-color 0.3s ease;
+  width: fit-content;
+  margin: 0.5em;
 }
 
 .action-button:hover {
-    background-color: #218838;
+  background-color: #218838;
+}
+
+.close-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.settings-menu {
+  display: none;
+  position: absolute;
+  background-color: #363636;
+  border: 1px solid black;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  z-index: 9999;
+  cursor: move;
+  padding: 20px;
+  user-select: none;
 }
