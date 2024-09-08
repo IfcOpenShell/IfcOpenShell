@@ -1,5 +1,5 @@
 # Bonsai - OpenBIM Blender Add-on
-# Copyright (C) 2022 Cyril Waechter <cyril@biminsight.ch>
+# Copyright (C) 2024 Bruno Perdigão <contact@brunopo.com>
 #
 # This file is part of Bonsai.
 #
@@ -20,99 +20,98 @@ import bpy
 import bonsai.core.tool
 import bonsai.tool as tool
 from bonsai.bim.module.drawing.helper import format_distance
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from lark import Lark, Transformer
-from math import sin, cos, radians, degrees, atan2, acos
-from mathutils import Vector, Matrix
+from math import radians
+from mathutils import Vector 
 from typing import Optional
-
-
-@dataclass
-class PolylineUI:
-    _D: str = ""
-    _A: str = ""
-    _X: str = ""
-    _Y: str = ""
-    _Z: Optional[str] = None
-    _AREA: Optional[str] = None
-    init_z: bool = False
-    init_area: bool = False
-
-    def __post_init__(self):
-        if self.init_z:
-            self._Z = ""
-        if self.init_area:
-            self._AREA = ""
-
-    def set_value(self, attribute_name, value):
-        value = str(value)
-        setattr(self, f"_{attribute_name}", value)
-
-    def get_text_value(self, attribute_name):
-        value = getattr(self, f"_{attribute_name}")
-        return value
-
-    def get_number_value(self, attribute_name):
-        value = getattr(self, f"_{attribute_name}")
-        if value:
-            return float(value)
-        else:
-            return value
-
-    def get_formatted_value(self, attribute_name):
-        value = self.get_number_value(attribute_name)
-        context = bpy.context
-        if value is None:
-            return None
-        if attribute_name == 'A':
-            value = float(self.get_text_value(attribute_name)) 
-            return f"{value:.2f}"
-        else:
-            return self.format_input_ui_units(context, value)
-
-    def format_input_ui_units(cls, context, value):
-        unit_system = tool.Drawing.get_unit_system()
-        if unit_system == "IMPERIAL":
-            precision = context.scene.DocProperties.imperial_precision
-            factor = 3.28084
-        else:
-            precision = None
-            factor = 1
-            if context.scene.unit_settings.length_unit == "MILLIMETERS":
-                factor = 1000
-
-        return format_distance(value * factor, precision=precision, suppress_zero_inches=True, in_unit_length=True)
-
-@dataclass
-class ToolState:
-    use_default_container: bool = None
-    snap_angle: float = None
-    is_input_on: bool = None
-    # angle_axis_start: Vector
-    # angle_axis_end: Vector
-    axis_method: str = None
-    plane_method: str = None
-    instructions: str = """TAB: Cycle Input
-    M: Modify Snap Point
-    C: Close
-    Backspace: Remove
-    X Y: Axis
-    Shift: Lock axis
-"""
-    snap_info: str = None
-    mode: str = None
-    input_type: str = None
 
 
 class Polyline(bonsai.core.tool.Polyline):
 
+    @dataclass
+    class PolylineUI:
+        _D: str = ""
+        _A: str = ""
+        _X: str = ""
+        _Y: str = ""
+        _Z: Optional[str] = None
+        _AREA: Optional[str] = None
+        init_z: bool = False
+        init_area: bool = False
+
+        def __post_init__(self):
+            if self.init_z:
+                self._Z = ""
+            if self.init_area:
+                self._AREA = ""
+
+        def set_value(self, attribute_name, value):
+            value = str(value)
+            setattr(self, f"_{attribute_name}", value)
+
+        def get_text_value(self, attribute_name):
+            value = getattr(self, f"_{attribute_name}")
+            return value
+
+        def get_number_value(self, attribute_name):
+            value = getattr(self, f"_{attribute_name}")
+            if value:
+                return float(value)
+            else:
+                return value
+
+        def get_formatted_value(self, attribute_name):
+            value = self.get_number_value(attribute_name)
+            context = bpy.context
+            if value is None:
+                return None
+            if attribute_name == 'A':
+                value = float(self.get_text_value(attribute_name)) 
+                return f"{value:.2f}"
+            else:
+                return self.format_input_ui_units(context, value)
+
+        def format_input_ui_units(cls, context, value):
+            unit_system = tool.Drawing.get_unit_system()
+            if unit_system == "IMPERIAL":
+                precision = context.scene.DocProperties.imperial_precision
+                factor = 3.28084
+            else:
+                precision = None
+                factor = 1
+                if context.scene.unit_settings.length_unit == "MILLIMETERS":
+                    factor = 1000
+
+            return format_distance(value * factor, precision=precision, suppress_zero_inches=True, in_unit_length=True)
+
+    @dataclass
+    class ToolState:
+        use_default_container: bool = None
+        snap_angle: float = None
+        is_input_on: bool = None
+        # angle_axis_start: Vector
+        # angle_axis_end: Vector
+        axis_method: str = None
+        plane_method: str = None
+        instructions: str = """TAB: Cycle Input
+        M: Modify Snap Point
+        C: Close
+        Backspace: Remove
+        X Y: Axis
+        Shift: Lock axis
+    """
+        snap_info: str = None
+        mode: str = None
+        input_type: str = None
+
     @classmethod
     def create_input_ui(cls, init_z=False, init_area=False):
-        return PolylineUI(init_z=init_z, init_area=init_area)
+        return cls.PolylineUI(init_z=init_z, init_area=init_area)
 
     @classmethod
     def create_tool_state(cls):
-        return ToolState()
+        return cls.ToolState()
 
     @classmethod
     def calculate_distance_and_angle(cls, context, input_ui, tool_state):
