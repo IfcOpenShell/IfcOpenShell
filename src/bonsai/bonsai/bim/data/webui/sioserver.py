@@ -70,6 +70,8 @@ class WebNamespace(socketio.AsyncNamespace):
                 await self.emit("gantt_data", {"blenderId": blenderId, "data": messages["gantt_data"]}, room=sid)
             if "demo_data" in messages:
                 await self.emit("demo_data", {"blenderId": blenderId, "data": messages["demo_data"]}, room=sid)
+            if 'cost_items' in messages:
+                await self.emit("cost_items", {"blenderId": blenderId, "data": messages["cost_items"]}, room=sid)
 
     async def process_svg(self, file_path):
         def encode_image(filepath):
