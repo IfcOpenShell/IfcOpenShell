@@ -69,7 +69,7 @@ export class CostUI {
         `;
     document.head.appendChild(style);
   }
-static createContextMenu(callbacks) {
+  static createContextMenu(callbacks) {
     const contextMenu = document.createElement("div");
     contextMenu.id = "context-menu";
     contextMenu.classList.add("context-menu");
@@ -78,93 +78,107 @@ static createContextMenu(callbacks) {
                     <button id="add-cost-item-button">Add sub-cost</button>
                     <button id="duplicate-button">Duplicate</button>
                     <button id="delete-cost-item">Delete</button>
+                    <button id="assign-selection">Assign Selection</button>
             `;
     document.body.appendChild(contextMenu);
 
     document.addEventListener("contextmenu", function (event) {
-        event.preventDefault();
-        const targetRow = event.target.closest("tr");
-        const targetCell = event.target.closest("td");
-        if (targetRow && targetRow.parentElement.id === "cost-items") {
-            const contextMenu = document.getElementById("context-menu");
-            contextMenu.style.display = "block";
-            contextMenu.style.left = `${event.pageX}px`;
-            contextMenu.style.top = `${event.pageY}px`;
+      event.preventDefault();
+      const targetRow = event.target.closest("tr");
+      const targetCell = event.target.closest("td");
+      if (targetRow && targetRow.parentElement.id === "cost-items") {
+        const contextMenu = document.getElementById("context-menu");
+        contextMenu.style.display = "block";
+        contextMenu.style.left = `${event.pageX}px`;
+        contextMenu.style.top = `${event.pageY}px`;
 
-            contextMenu.targetRow = targetRow;
-            contextMenu.targetCell = targetCell;
-        } else {
-            document.getElementById("context-menu").style.display = "none";
-        }
+        contextMenu.targetRow = targetRow;
+        contextMenu.targetCell = targetCell;
+      } else {
+        document.getElementById("context-menu").style.display = "none";
+      }
     });
 
     document.addEventListener("click", function (event) {
-        const contextMenu = document.getElementById("context-menu");
-        if (!contextMenu.contains(event.target)) {
-            contextMenu.style.display = "none";
-        }
+      const contextMenu = document.getElementById("context-menu");
+      if (!contextMenu.contains(event.target)) {
+        contextMenu.style.display = "none";
+      }
     });
 
     const editCostValuesButton = document.getElementById(
-        "edit-cost-values-button"
+      "edit-cost-values-button"
     );
     editCostValuesButton.addEventListener("click", function () {
-        const targetRow = document.getElementById("context-menu").targetRow;
-        const targetCell = document.getElementById("context-menu").targetCell;
-        if (targetRow) {
-            const costItemId = parseInt(targetRow.getAttribute("id"));
-            callbacks.enableEditingCostValues
-                ? callbacks.enableEditingCostValues(costItemId)
-                : null;
-        }
-        document.getElementById("context-menu").style.display = "none";
+      const targetRow = document.getElementById("context-menu").targetRow;
+      const targetCell = document.getElementById("context-menu").targetCell;
+      if (targetRow) {
+        const costItemId = parseInt(targetRow.getAttribute("id"));
+        callbacks.enableEditingCostValues
+          ? callbacks.enableEditingCostValues(costItemId)
+          : null;
+      }
+      document.getElementById("context-menu").style.display = "none";
     });
 
     const addButton = document.getElementById("add-cost-item-button");
     if (!addButton.dataset.listenerAdded) {
-        function addCostItemHandler(e) {
-            e.stopPropagation();
-            const targetRow = document.getElementById("context-menu").targetRow;
-            if (targetRow) {
-                const costItemId = parseInt(targetRow.getAttribute("id"));
-                callbacks.addCostItem ? callbacks.addCostItem(costItemId) : null;
-            }
-            document.getElementById("context-menu").style.display = "none";
+      function addCostItemHandler(e) {
+        e.stopPropagation();
+        const targetRow = document.getElementById("context-menu").targetRow;
+        if (targetRow) {
+          const costItemId = parseInt(targetRow.getAttribute("id"));
+          callbacks.addCostItem ? callbacks.addCostItem(costItemId) : null;
         }
-        addButton.addEventListener("click", addCostItemHandler);
-        addButton.dataset.listenerAdded = "true";
+        document.getElementById("context-menu").style.display = "none";
+      }
+      addButton.addEventListener("click", addCostItemHandler);
+      addButton.dataset.listenerAdded = "true";
     }
 
     const deleteCostItem = document.getElementById("delete-cost-item");
     if (deleteCostItem && !deleteCostItem.hasListener) {
-        deleteCostItem.addEventListener("click", function () {
-            const targetRow = document.getElementById("context-menu").targetRow;
-            if (targetRow) {
-                const costItemId = parseInt(targetRow.getAttribute("id"));
-                let expandedState =
-                    JSON.parse(localStorage.getItem("expandedState")) || {};
-                expandedState = CostUI.deleteRow(targetRow, expandedState);
-                localStorage.setItem("expandedState", JSON.stringify(expandedState));
-                callbacks.deleteCostItem(costItemId);
-            }
-            document.getElementById("context-menu").style.display = "none";
-        });
-        deleteCostItem.hasListener = true;
+      deleteCostItem.addEventListener("click", function () {
+        const targetRow = document.getElementById("context-menu").targetRow;
+        if (targetRow) {
+          const costItemId = parseInt(targetRow.getAttribute("id"));
+          let expandedState =
+            JSON.parse(localStorage.getItem("expandedState")) || {};
+          expandedState = CostUI.deleteRow(targetRow, expandedState);
+          localStorage.setItem("expandedState", JSON.stringify(expandedState));
+          callbacks.deleteCostItem(costItemId);
+        }
+        document.getElementById("context-menu").style.display = "none";
+      });
+      deleteCostItem.hasListener = true;
     }
 
     const duplicateButton = document.getElementById("duplicate-button");
     if (duplicateButton && !duplicateButton.hasListener) {
-        duplicateButton.addEventListener("click", function () {
-            const targetRow = document.getElementById("context-menu").targetRow;
-            if (targetRow) {
-                const costItemId = parseInt(targetRow.getAttribute("id"));
-                callbacks.duplicateCostItem(costItemId);
-            }
-            document.getElementById("context-menu").style.display = "none";
-        });
-        duplicateButton.hasListener = true;
+      duplicateButton.addEventListener("click", function () {
+        const targetRow = document.getElementById("context-menu").targetRow;
+        if (targetRow) {
+          const costItemId = parseInt(targetRow.getAttribute("id"));
+          callbacks.duplicateCostItem(costItemId);
+        }
+        document.getElementById("context-menu").style.display = "none";
+      });
+      duplicateButton.hasListener = true;
     }
-}
+
+    const getSelectedProducts = document.getElementById("assign-selection");
+    if (getSelectedProducts && !getSelectedProducts.hasListener) {
+      getSelectedProducts.addEventListener("click", function () {
+        const targetRow = document.getElementById("context-menu").targetRow;
+        if (targetRow) {
+          const costItemId = parseInt(targetRow.getAttribute("id"));
+          callbacks.getSelectedProducts(costItemId);
+        }
+        document.getElementById("context-menu").style.display = "none";
+      });
+      getSelectedProducts.hasListener = true;
+    }
+  }
 
   static deleteRow(targetRow, expandedState) {
     if (!targetRow) {
@@ -244,7 +258,6 @@ static createContextMenu(callbacks) {
       const form = CostUI.Form({
         id: "add-cost-schedule-form",
         name: name,
-        className: "floating-form",
       });
 
       const nameLabel = document.createElement("label");
@@ -279,8 +292,6 @@ static createContextMenu(callbacks) {
       submitButton.classList.add("action-button");
       form.appendChild(submitButton);
 
-      document.body.appendChild(form);
-
       form.addEventListener("submit", function (event) {
         event.preventDefault();
         const formData = new FormData(form);
@@ -296,7 +307,7 @@ static createContextMenu(callbacks) {
 
   static createColorPicker() {
     const div = document.createElement("div");
-    div.classList.add("card");
+    div.classList.add("row-container");
     const colorPicker = document.createElement("input");
     colorPicker.type = "color";
     colorPicker.id = "color-picker";
@@ -305,7 +316,6 @@ static createContextMenu(callbacks) {
     colorText.textContent = "Select a color to change row color:";
     div.appendChild(colorText);
     div.appendChild(colorPicker);
-    document.getElementById("UI").appendChild(div);
 
     colorPicker.addEventListener("input", function () {
       const baseColor = colorPicker.value;
@@ -314,6 +324,7 @@ static createContextMenu(callbacks) {
     });
     const colorScheme = CostUI.generateColorScheme("#000000");
     CostUI.applyColorScheme("cost-items", colorScheme);
+    return div;
   }
 
   static createCostSchedule({
@@ -373,7 +384,10 @@ static createContextMenu(callbacks) {
     const totalQuantity = costItem.TotalCostQuantity
       ? parseFloat(costItem.TotalCostQuantity).toFixed(2)
       : "-";
-    const row = CostUI.createTableRow(costItem, nestingLevel, parentID);
+    const appliedValue = costItem.TotalAppliedValue
+      ? parseFloat(costItem.TotalAppliedValue).toFixed(2)
+      : "-";
+    const row = CostUI.createCostItemRow(costItem, nestingLevel, parentID);
     const expandButton = CostUI.createExpandButton(costItem);
     const nameCell = CostUI.createNameCell(
       costItem,
@@ -383,9 +397,7 @@ static createContextMenu(callbacks) {
     );
     const totalCostQuantityCell = CostUI.createTableCell(totalQuantity);
     const unitSymbolCell = CostUI.createTableCell(costItem.UnitSymbol);
-    const totalAppliedValueCell = CostUI.createTableCell(
-      costItem.TotalAppliedValue
-    );
+    const totalAppliedValueCell = CostUI.createTableCell(appliedValue);
     const totalCostCell = CostUI.createTotalCostCell(costItem);
     const flexContainerCell = CostUI.createFlexContainerCell(
       costItem,
@@ -411,7 +423,7 @@ static createContextMenu(callbacks) {
     return row;
   }
 
-  static createTableRow(costItem, nestingLevel, parentID) {
+  static createCostItemRow(costItem, nestingLevel, parentID) {
     const row = document.createElement("tr");
     row.setAttribute("id", costItem.id);
     row.setAttribute("parent-id", parentID);
@@ -613,17 +625,17 @@ static createContextMenu(callbacks) {
     return selectButton;
   }
 
-  static highlightCostItem(id) {
-    const row = document.getElementById(id);
-    if (row) {
-      row.classList.add("highlighted");
+  static highlightElement(id) {
+    const element = document.getElementById(id);
+    if (element) {
+      element.classList.add("highlighted");
     }
   }
 
-  static unhighlightCostItem(id) {
-    const row = document.getElementById(id);
-    if (row) {
-      row.classList.remove("highlighted");
+  static unhighlightElement(id) {
+    const element = document.getElementById(id);
+    if (element) {
+      element.classList.remove("highlighted");
     }
   }
 
@@ -636,15 +648,26 @@ static createContextMenu(callbacks) {
     return ids;
   }
 
-  static text(label) {
-    const text = document.createElement("p");
+  static Text(label, icon = null, size = "medium") {
+    const text = document.createElement("span");
     text.textContent = label;
-    return text;
+    if (icon === null) {
+      return text;
+    }
+    const div = document.createElement("div");
+    div.classList.add("row-container");
+    const i = document.createElement("i");
+    i.className = icon;
+    div.appendChild(i);
+    div.appendChild(text);
+    div.style.fontSize = size;
+    return div;
   }
 
-  static createCard(title, mainContainer, callback) {
+  static createCard(id, title, mainContainer, callback) {
     const card = document.createElement("div");
     card.classList.add("card");
+    card.id = "schedule-" + id;
 
     const cardBody = document.createElement("div");
     cardBody.classList.add("card-body");
@@ -684,30 +707,26 @@ static createContextMenu(callbacks) {
 
     let formName = "Cost Values: " + costItemName;
     const form = CostUI.Form({
+      icon: "fa-dollar-sign",
       id: formId,
       name: formName,
-      className: "floating-form",
     });
 
-    const table = CostUI.createCostValuesTable(costItemId, [
-      "Type",
-      "Category",
-      "Value",
-      "",
-    ]);
+    const { tableContainer, table } = CostUI.addTable({
+      headers: ["Type", "Category", "Value", ""],
+      className: "cost-values-table",
+      id: "cost-values-table-" + costItemId,
+    });
 
     costValues.forEach((costValue) => {
       const tr = CostUI.createCostvaluesRow(costItemId, costValue, callbacks);
       table.appendChild(tr);
     });
 
-    form.appendChild(table);
-
     const addButton = CostUI.createAddCostValueButton(costItemId, callbacks);
+
+    form.appendChild(tableContainer);
     form.appendChild(addButton);
-
-    document.body.appendChild(form);
-
     return form;
   }
 
@@ -735,10 +754,13 @@ static createContextMenu(callbacks) {
     table.appendChild(tr);
   }
 
-  static createCostValuesTable(costItemId, headers) {
+  static addTable({ id, className, headers }) {
+    const div = document.createElement("div");
+    div.classList.add("table-container");
     const table = document.createElement("table");
-    table.classList.add("cost-values-table");
-    table.id = "cost-values-table-" + costItemId;
+    div.appendChild(table);
+    table.classList.add(className);
+    table.id = id;
 
     const headerRow = document.createElement("tr");
     headers.forEach((headerText) => {
@@ -746,9 +768,17 @@ static createContextMenu(callbacks) {
       th.textContent = headerText;
       headerRow.appendChild(th);
     });
-    table.appendChild(headerRow);
-
-    return table;
+    const thead = document.createElement("thead");
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+    table.get_header_row = function () {
+      return headerRow;
+    };
+    table.get_header_by_name = function (name) {
+      const headers = headerRow.querySelectorAll("th");
+      return Array.from(headers).find((header) => header.textContent === name);
+    };
+    return { tableContainer: div, table: table };
   }
 
   static createCostvaluesRow(costItemId, costValue, costValueCallbacks) {
@@ -917,19 +947,31 @@ static createContextMenu(callbacks) {
     return addButton;
   }
 
-  static Form({ id, name, className }) {
-    const form = document.createElement("form");
-    form.id = id;
-    form.classList.add(className);
-    form.style.position = "absolute";
-    form.style.top = "50%";
-    form.style.left = "50%";
-    form.style.transform = "translate(-50%, -50%)";
-    const header = CostUI.createHeader(name);
-    const closeButton = CostUI.createCloseButton(form);
+  static Form({ id, name, icon = "fa-solid fa-file", shouldHide = false }) {
+    let form;
+    if (document.getElementById(id)) {
+      form = document.getElementById(id);
+    } else {
+      form = document.createElement("form");
+      form.id = id;
+      form.classList.add("floating-form");
+      form.style.position = "absolute";
+      form.style.top = "50%";
+      form.style.left = "50%";
+      form.style.transform = "translate(-50%, -50%)";
+    }
+
+    const header = CostUI.createHeader(name, icon);
+    let closeButton;
+    if (shouldHide) {
+      closeButton = CostUI.createHideButton(form);
+    } else {
+      closeButton = CostUI.createCloseButton(form);
+    }
     form.appendChild(header);
     form.appendChild(closeButton);
     CostUI.makeFormDraggable(form);
+    document.body.appendChild(form);
     return form;
   }
   static makeFormDraggable(form) {
@@ -990,11 +1032,26 @@ static createContextMenu(callbacks) {
     }
   }
 
-  static createHeader(text) {
+  static createHeader(text, icon) {
     const header = document.createElement("div");
+    const i = document.createElement("i");
+    i.className = icon;
     header.classList.add("form-header");
-    header.textContent = text;
+    const span = document.createElement("span");
+    span.textContent = text;
+    header.appendChild(i);
+    header.appendChild(span);
     return header;
+  }
+
+  static createHideButton(form) {
+    const hideButton = document.createElement("span");
+    hideButton.classList.add("close-button");
+    hideButton.innerHTML = "&minus;";
+    hideButton.addEventListener("click", function () {
+      form.style.display = "none";
+    });
+    return hideButton;
   }
 
   static createCloseButton(form) {
@@ -1003,10 +1060,361 @@ static createContextMenu(callbacks) {
     closeButton.innerHTML = "&times;";
     closeButton.addEventListener("click", function () {
       form.remove();
-      const costItemId = form.id.split("-")[3];
-      CostUI.unhighlightCostItem(costItemId);
+      const costItemId = form.id.split("-").pop();
+      CostUI.unhighlightElement(costItemId);
     });
 
     return closeButton;
+  }
+
+  static createProductRow(product, shouldAddQto = false) {
+    const row = document.createElement("tr");
+
+    const cellData = {
+      id: product.info.id,
+      class: product.info.class,
+      name: product.info.name,
+      type: product.info.type,
+      count: "1",
+    };
+
+    for (const [key, value] of Object.entries(cellData)) {
+      const cell = document.createElement("td");
+      cell.textContent = value;
+      row.appendChild(cell);
+    }
+
+    if (shouldAddQto) {
+      const quantitySets = product.qtos;
+      Object.entries(quantitySets).forEach(([qtoName, qto]) => {
+        Object.entries(qto).forEach(([key, value]) => {
+          if (key !== "id") {
+            const cell = document.createElement("td");
+            // check if value is a number
+            cell.textContent = parseFloat(value).toFixed(2);
+            row.appendChild(cell);
+          }
+        });
+      });
+    }
+
+    return row;
+  }
+
+  static addQuantityHeaders(table, products, shouldAddQto = true) {
+    const headerRow = table.get_header_row();
+    const countHeader = table.get_header_by_name("Count");
+    const quantitySums = { count: 0 };
+    const quantityHeaders = { count: countHeader };
+    if (!shouldAddQto) return { quantitySums, quantityHeaders };
+    if (products.length > 0) {
+      const quantitySets = products[0].qtos;
+      Object.entries(quantitySets).forEach(([qtoName, qto]) => {
+        Object.keys(qto).forEach((key) => {
+          if (key !== "id") {
+            const qtoHeader = document.createElement("th");
+            qtoHeader.textContent = key;
+            qtoHeader.style.cursor = "pointer";
+            headerRow.appendChild(qtoHeader);
+            quantitySums[key] = 0;
+            quantityHeaders[key] = qtoHeader;
+          }
+        });
+      });
+    }
+
+    return { quantitySums, quantityHeaders };
+  }
+
+  static getAssinedQuantity(products, costItemId) {
+    let quantityAssigned = null;
+    products.forEach((product) => {
+      const product_id = product.info.id;
+      const assignedQuantities = product.assigned_quantities;
+      if (assignedQuantities.length > 0) {
+        assignedQuantities.forEach((assignedQuantity) => {
+          if (assignedQuantity.cost_item_id === costItemId) {
+            product.isProductAssigned = true;
+            quantityAssigned = assignedQuantity.name;
+          }
+        });
+      }
+    });
+    return quantityAssigned;
+  }
+
+  static calculateSums(qtos, quantitySums) {
+    Object.entries(qtos).forEach(([qtoName, qto]) => {
+      Object.entries(qto).forEach(([key, value]) => {
+        if (key !== "id") {
+          quantitySums[key] += parseFloat(value);
+        }
+      });
+    });
+  }
+
+  static countProducts(products, quantitySums) {
+    products.forEach((product) => {
+      quantitySums.count += 1;
+    });
+  }
+
+  static addSubTotalRow(quantitySums, shouldAddQto = true) {
+    const subtotalRow = document.createElement("tr");
+
+    const cells = [
+      { textContent: "Subtotal", colSpan: 4, style: { border: "none" } },
+      { textContent: "", style: { border: "none" } },
+      { textContent: "", style: { border: "none" } },
+      { textContent: "", style: { border: "none" } },
+      { textContent: quantitySums.count },
+    ];
+
+    cells.forEach((cellData) => {
+      const cell = document.createElement("td");
+      if (cellData.textContent !== undefined)
+        cell.textContent = cellData.textContent;
+      if (cellData.colSpan !== undefined) cell.colSpan = cellData.colSpan;
+      if (cellData.style !== undefined)
+        Object.assign(cell.style, cellData.style);
+      subtotalRow.appendChild(cell);
+    });
+
+    if (shouldAddQto) {
+      Object.keys(quantitySums).forEach((key) => {
+        if (key !== "count") {
+          const subtotalCell = document.createElement("td");
+          subtotalCell.textContent = quantitySums[key].toFixed(2);
+          subtotalRow.appendChild(subtotalCell);
+        }
+      });
+    }
+
+    subtotalRow.style.fontWeight = "bold";
+
+    return subtotalRow;
+  }
+
+  static createProductTable({
+    form,
+    products,
+    quantityNames,
+    costItemId,
+    callbacks,
+  }) {
+    const { tableContainer, table } = CostUI.addTable({
+      headers: ["Step Id", "Class", "Name", "Type", "Count"],
+      className: "product-table",
+      id: "cost-values-table-" + costItemId,
+    });
+
+    const tbody = document.createElement("tbody");
+    table.appendChild(tbody);
+    form.appendChild(tableContainer);
+
+    const quantityAssigned = CostUI.getAssinedQuantity(products, costItemId);
+    const areProductsSameClass = products.every(
+      (product) => product.info.class === products[0].info.class
+    );
+
+    const shouldAddQto = areProductsSameClass ? true : false;
+    const headerRow = table.get_header_row();
+    const { quantitySums, quantityHeaders } = CostUI.addQuantityHeaders(
+      table,
+      products,
+      shouldAddQto
+    );
+
+    if (shouldAddQto) {
+      CostUI.highlightColumn(
+        table,
+        headerRow,
+        quantityHeaders,
+        quantityAssigned
+      );
+
+      products.forEach((product) => {
+        const row = CostUI.createProductRow(product, shouldAddQto);
+        tbody.appendChild(row);
+
+        const isProductAssigned = product.assigned_quantities
+          ? product.assigned_quantities.some(
+              (assignedQuantity) => assignedQuantity.cost_item_id === costItemId
+            )
+          : false;
+        isProductAssigned ? row.classList.add("highlighted") : null;
+
+        CostUI.calculateSums(product.qtos, quantitySums);
+      });
+    } else {
+      products.forEach((product) => {
+        const row = CostUI.createProductRow(product, shouldAddQto);
+        tbody.appendChild(row);
+      });
+    }
+
+    CostUI.countProducts(products, quantitySums);
+
+    const subtotalRow = CostUI.addSubTotalRow(quantitySums, shouldAddQto);
+    tbody.appendChild(subtotalRow);
+
+    const quantitySelect = document.createElement("select");
+
+    if (shouldAddQto) {
+      quantityNames.forEach((name) => {
+        const option = document.createElement("option");
+        option.value = name;
+        option.text = name;
+        quantitySelect.appendChild(option);
+      });
+    }
+
+    const option = document.createElement("option");
+    option.value = "count";
+    option.text = "count";
+    quantitySelect.appendChild(option);
+
+    quantitySelect.addEventListener("change", (event) => {
+      const selectedQuantity = event.target.value;
+
+      Object.values(quantityHeaders).forEach((header) => {
+        header.classList.remove("highlighted");
+      });
+      table.querySelectorAll("td").forEach((cell) => {
+        cell.classList.remove("highlighted");
+      });
+
+      if (quantityHeaders[selectedQuantity]) {
+        quantityHeaders[selectedQuantity].classList.add("highlighted");
+        const columnIndex = Array.from(headerRow.children).indexOf(
+          quantityHeaders[selectedQuantity]
+        );
+        table.querySelectorAll(`tr`).forEach((row) => {
+          row.children[columnIndex].classList.add("highlighted");
+        });
+      }
+    });
+
+    Object.entries(quantityHeaders).forEach(([key, header]) => {
+      header.addEventListener("click", () => {
+        quantitySelect.value = key;
+        const event = new Event("change");
+        quantitySelect.dispatchEvent(event);
+      });
+    });
+
+    quantityAssigned
+      ? CostUI.highlightColumn(
+          table,
+          headerRow,
+          quantityHeaders,
+          quantityAssigned
+        )
+      : null;
+
+    quantitySelect.value = quantityAssigned ? quantityAssigned : "count";
+
+    const productIds = products.map((product) => product.info.id);
+    callbacks.emptyForm = () => {
+      form.innerHTML = "";
+    };
+    const addProductAssignmentsButton = CostUI.addProductAssignmentsButton(
+      costItemId,
+      productIds,
+      quantitySelect,
+      callbacks
+    );
+
+    form.appendChild(quantitySelect);
+    form.appendChild(addProductAssignmentsButton);
+    return table;
+  }
+
+  static createAssignmentsTable({
+    form,
+    products,
+    costItemId,
+    quantityNames,
+    callbacks,
+  }) {
+    const { tableContainer, table } = CostUI.addTable({
+      headers: ["Step Id", "Class", "Name", "Type", "Count"],
+      className: "product-table",
+      id: "cost-values-table-" + costItemId,
+    });
+
+    const tbody = document.createElement("tbody");
+    table.appendChild(tbody);
+    form.appendChild(tableContainer);
+
+    let quantityAssigned = CostUI.getAssinedQuantity(products, costItemId);
+    const shouldAddQto = quantityAssigned ? true : false;
+    const headerRow = table.get_header_row();
+    const { quantitySums, quantityHeaders } = CostUI.addQuantityHeaders(
+      table,
+      products,
+      shouldAddQto
+    );
+
+    shouldAddQto
+      ? CostUI.highlightColumn(
+          table,
+          headerRow,
+          quantityHeaders,
+          quantityAssigned
+        )
+      : null;
+
+    products.forEach((product) => {
+      const row = CostUI.createProductRow(product, shouldAddQto);
+      tbody.appendChild(row);
+      shouldAddQto ? CostUI.calculateSums(product.qtos, quantitySums) : null;
+    });
+
+    CostUI.countProducts(products, quantitySums);
+
+    const subtotalRow = CostUI.addSubTotalRow(quantitySums, shouldAddQto);
+    tbody.appendChild(subtotalRow);
+  }
+
+  static highlightColumn(table, headerRow, quantityHeaders, quantityAssigned) {
+    if (quantityAssigned) {
+      if (quantityHeaders[quantityAssigned]) {
+        quantityHeaders[quantityAssigned].classList.add("highlighted");
+        const columnIndex = Array.from(headerRow.children).indexOf(
+          quantityHeaders[quantityAssigned]
+        );
+        table.querySelectorAll(`tr`).forEach((row) => {
+          row.children[columnIndex].classList.add("highlighted");
+        });
+      }
+    }
+  }
+  static addProductAssignmentsButton(
+    costItemId,
+    productIds,
+    quantitySelect,
+    callbacks
+  ) {
+    const addProductAssignmentsButton = document.createElement("button");
+    addProductAssignmentsButton.textContent = "Add Product Assignments";
+    addProductAssignmentsButton.addEventListener("click", (event) => {
+      event.preventDefault();
+      let propName = quantitySelect.value;
+      if (propName === "count") {
+        propName = "";
+      }
+      callbacks.addProductAssignments
+        ? callbacks.addProductAssignments({
+            costItemId,
+            selectedQuantity: propName,
+            productIds,
+          })
+        : null;
+      callbacks.emptyForm ? callbacks.emptyForm() : null;
+      callbacks.getSelectedProducts(costItemId);
+    });
+    addProductAssignmentsButton.classList.add("action-button");
+    return addProductAssignmentsButton;
   }
 }

@@ -19,6 +19,7 @@
 import ifcopenshell.util.cost
 import bpy
 from bonsai.bim.module.web.data import WebData
+from ifcopenshell.util.element import get_psets, get_type
 import bonsai.core.tool
 import bonsai.tool as tool
 import ifcopenshell.api.sequence
@@ -342,6 +343,48 @@ class Web(bonsai.core.tool.Web):
         Args:
             operator_data (dict): A dictionary containing the operator data.
         """
+        def selection_data(cost_item, elements):
+            print(cost_item, elements)
+            if not elements:
+                return []
+            if not cost_item:
+                return [
+                    {
+                        "info": {
+                            "id": element.id(),
+                            "name": element.Name,
+                            "class": element.is_a(),
+                            "type": get_type(element).Name if get_type(element) else None,
+                        },
+                        "qtos": get_psets(element, qtos_only=True),
+                    }
+                    for element in elements or []
+                ]
+            data = []
+            for element in elements or []:
+                psets = get_psets(element, qtos_only=True)
+                element_type = get_type(element)
+                quantities, unit = tool.Cost.get_assigned_quantities(cost_item, element)
+                data.append(
+                    {
+                        "info": {
+                            "id": element.id(),
+                            "name": element.Name,
+                            "class": element.is_a(),
+                            "type": element_type.Name if element_type else None,
+                        },
+                        "qtos": psets,
+                        "assigned_quantities": [{
+                            'cost_item_id': cost_item.id(),
+                            'product_id': element.id(),
+                            "name": q.Name,
+                            "value": q[3],
+                            "type": q.Unit,
+                        } for q in quantities or []],
+                        "unit": unit,
+                    }
+                )
+            return data
         ifc_file = tool.Ifc.get()
         if operator_data["type"] == "getPredefinedTypes":
             print("getting predefined types")
@@ -349,10 +392,9 @@ class Web(bonsai.core.tool.Web):
             cls.send_webui_data(data=predefined_types, data_key="predefined_types", event="predefined_types")
         if operator_data["type"] == "addCostSchedule":
             bonsai.core.cost.add_cost_schedule(
-                tool.Ifc, name=operator_data["name"], predefined_type=operator_data["type"]
+                tool.Ifc, name=operator_data["name"], predefined_type=operator_data["predefinedType"]
             )
-            cost_schedules = ifc_file.by_type("IfcCostSchedule")
-            cost_schedules_json = [cs.get_info(recursive=True) for cs in cost_schedules]
+            cost_schedules_json = [cs.get_info(recursive=True) for cs in ifc_file.by_type("IfcCostSchedule")]
             currency = tool.Cost.currency()
             cls.send_webui_data(
                 data={"cost_schedules": cost_schedules_json, "currency": currency},
@@ -361,8 +403,7 @@ class Web(bonsai.core.tool.Web):
             )
         if operator_data["type"] == "getCostSchedules":
             print("getting cost schedules")
-            cost_schedules = ifc_file.by_type("IfcCostSchedule")
-            cost_schedules_json = [cs.get_info(recursive=True) for cs in cost_schedules]
+            cost_schedules_json = [cs.get_info(recursive=True) for cs in ifc_file.by_type("IfcCostSchedule")]
             currency = tool.Cost.currency()
             cls.send_webui_data(
                 data={"cost_schedules": cost_schedules_json, "currency": currency},
@@ -379,11 +420,34 @@ class Web(bonsai.core.tool.Web):
             cost_item = tool.Ifc.get().by_id(operator_data["costItemId"])
             products = tool.Cost.get_cost_item_products(cost_item, is_deep=True)
             tool.Spatial.select_products(products, unhide=True)
+        if operator_data["type"] == "getSelectedProducts":
+            cost_item_id = operator_data["costItemId"]
+            cost_item = ifc_file.by_id(cost_item_id)
+            if not cost_item:
+                print('---> cost item not found')
+                return
+
+            selected_products = list(tool.Spatial.get_selected_products())
+            selected_products_data = selection_data(cost_item, selected_products)
+
+            assigned_products = tool.Cost.get_cost_item_products(cost_item, is_deep=False)
+            assigned_products_data = selection_data(cost_item, assigned_products)
+
+            names = ifcopenshell.util.cost.get_product_quantity_names(selected_products)
+            cls.send_webui_data(data={
+                "selected_products": selected_products_data,
+                'assigned_products': assigned_products_data,
+                "product_quantity_names": names,
+                "cost_item_id": cost_item_id
+            }, data_key="selected_products", event="selected_products")
+
         if operator_data["type"] == "addSummaryCostItem":
             cost_schedule = ifc_file.by_id(operator_data["costScheduleId"])
             bonsai.core.cost.add_summary_cost_item(tool.Ifc, tool.Cost, cost_schedule=cost_schedule)
             cls.load_cost_schedule_web_ui(cost_schedule)
         if operator_data["type"] == "addCostItem":
+            if not operator_data["costItemId"]:
+                return
             bpy.ops.bim.add_cost_item(cost_item=operator_data["costItemId"])
             cost_schedule = tool.Cost.get_cost_schedule(cost_item=tool.Ifc.get().by_id(operator_data["costItemId"]))
             cls.load_cost_schedule_web_ui(cost_schedule)
@@ -442,6 +506,18 @@ class Web(bonsai.core.tool.Web):
                 ifcopenshell.api.cost.edit_cost_value(file=ifc_file, cost_value=value, attributes=attributes)
                 print(value.get_info())
             tool.Cost.load_cost_schedule_tree()
+            cls.load_cost_schedule_web_ui(cost_schedule)
+        if operator_data["type"] == "addProductAssignments":
+            prop_name = operator_data["propName"]
+            if prop_name == "count":
+                prop_name = ""
+            print(prop_name)
+            bpy.ops.bim.assign_cost_item_quantity(
+                cost_item=operator_data["costItemId"], 
+                related_object_type= "PRODUCT", 
+                prop_name=prop_name
+            )
+            cost_schedule = tool.Cost.get_cost_schedule(cost_item=tool.Ifc.get().by_id(operator_data["costItemId"]))
             cls.load_cost_schedule_web_ui(cost_schedule)
 
     @classmethod

@@ -318,18 +318,9 @@ class CostItemQuantitiesData:
 
     @classmethod
     def product_quantity_names(cls):
-        total_selected_objects = len(bpy.context.selected_objects)
-        names = set()
-        for obj in bpy.context.selected_objects:
-            element = tool.Ifc.get_entity(obj)
-            if not element:
-                continue
-            potential_names = set()
-            qtos = ifcopenshell.util.element.get_psets(element, qtos_only=True)
-            for qset, quantities in qtos.items():
-                potential_names.update(quantities.keys())
-            names = names.intersection(potential_names) if names else potential_names
-        return [(n, n, "") for n in names if n != "id"]
+        elements = tool.Spatial.get_selected_products()
+        names = ifcopenshell.util.cost.get_product_quantity_names(elements)
+        return [(n, n, "") for n in names]
 
     @classmethod
     def process_quantity_names(cls):

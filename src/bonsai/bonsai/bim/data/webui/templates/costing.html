@@ -75,6 +75,9 @@
       <button id="toggle-theme" onclick="toggleTheme()">
         <i class="fas fa-moon"></i>
       </button>
+      <button id="settings-button">
+        <i class="fa-solid fa-gear"></i>
+      </button>
     </nav>
     <div id="connected-list-div">
       <button id="show-connected-button" onclick="toggleClientList()">
@@ -91,8 +94,8 @@
     </div>
     
     <div id="cost-schedules" class="row-container"></div>
-    <div id="UI" class="row-container"></div>
-    <div id="cost-items"></div>
+    
+    <div id="cost-items" class="table-container"></div>
 
     <footer>
       <p>BlenderBIM Version: {{version}}</p>

@@ -288,7 +288,7 @@ class Cost(bonsai.core.tool.Cost):
         unit = ""
         for quantities in ifcopenshell.util.element.get_psets(product, qtos_only=True).values():
             for qto in tool.Ifc.get().by_id(quantities["id"]).Quantities or []:
-                for quantity in cost_item.CostQuantities:
+                for quantity in cost_item.CostQuantities or []:
                     if quantity == qto:
                         selected_quantitites.append(quantity)
                         if not unit:
