@@ -19,6 +19,7 @@
 
 #include "mapping.h"
 #include "../profile_helper.h"
+#include "../piecewise_function_evaluator.h"
 
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geometry;
@@ -31,7 +32,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcPointByDistanceExpression* i
    //auto item = map(basis_curve);
    //auto pw_curve = ifcopenshell::geometry::piecewise_from_item(item);
    auto pw_curve = taxonomy::dcast<taxonomy::piecewise_function>(map(inst->BasisCurve()));
-   taxonomy::piecewise_function_evaluator evaluator(pw_curve);
+   piecewise_function_evaluator evaluator(pw_curve,&settings_);
    auto m = evaluator.evaluate(u);
 
    auto o = m.col(3).head<3>();

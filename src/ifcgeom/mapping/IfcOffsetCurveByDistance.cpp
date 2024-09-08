@@ -19,6 +19,7 @@
 
 #include "mapping.h"
 #include "../profile_helper.h"
+#include "../piecewise_function_evaluator.h"
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geometry;
 
@@ -144,9 +145,9 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcOffsetCurveByDistances* inst
          offset_spans.emplace_back(l, fn);
     }
 
-   auto offsets = taxonomy::make<taxonomy::piecewise_function>(start,offset_spans,&settings_);
+   auto offsets = taxonomy::make<taxonomy::piecewise_function>(start,offset_spans);
 
-   taxonomy::piecewise_function_evaluator pw_evaluator(pw_curve), offsets_evaluator(offsets);
+   piecewise_function_evaluator pw_evaluator(pw_curve, &settings_), offsets_evaluator(offsets, &settings_);
    auto composition = [pw_evaluator, offsets_evaluator](double u) -> Eigen::Matrix4d {
       auto p = pw_evaluator.evaluate(u);
       auto offset = offsets_evaluator.evaluate(u);
@@ -158,7 +159,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcOffsetCurveByDistances* inst
    // this may change depending on decisions in the bSI-IF
    taxonomy::piecewise_function::spans_t spans;
    spans.emplace_back(basis_curve_length, composition);
-	auto pwf = taxonomy::make<taxonomy::piecewise_function>(start,spans,&settings_,inst);
+	auto pwf = taxonomy::make<taxonomy::piecewise_function>(start,spans,inst);
 	return pwf;
 }
 

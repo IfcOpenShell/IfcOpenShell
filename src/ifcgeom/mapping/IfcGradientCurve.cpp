@@ -18,6 +18,7 @@
  ********************************************************************************/
 
 #include "mapping.h"
+#include "../piecewise_function_evaluator.h"
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geometry;
 
@@ -55,7 +56,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcGradientCurve* inst) {
    double gradient_start = m(0, 3); // start of vertical (row 0, col 3) - "Distance Along" horizontal curve
 
 	// create the vertical pwf
-	auto vertical = taxonomy::make<taxonomy::piecewise_function>(gradient_start, pwfs, &settings_);
+	auto vertical = taxonomy::make<taxonomy::piecewise_function>(gradient_start, pwfs);
 
 	// Determine the valid domain of the PWF... the valid domain is where both
 	// the base curve and gradient curves are defined
@@ -69,7 +70,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcGradientCurve* inst) {
    }
 
 	// define the callback function for the gradient curve
-   taxonomy::piecewise_function_evaluator horizontal_evaluator(horizontal), vertical_evaluator(vertical);
+   piecewise_function_evaluator horizontal_evaluator(horizontal, &settings_), vertical_evaluator(vertical, &settings_);
    auto composition = [horizontal_evaluator, vertical_evaluator](double u) -> Eigen::Matrix4d {
 		// u is distance from start of gradient curve (vertical)
 		// add vertical->start() to u to get distance from start of horizontal
@@ -87,7 +88,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcGradientCurve* inst) {
 
 	taxonomy::piecewise_function::spans_t spans;
    spans.emplace_back(length, composition);
-   auto pwf = taxonomy::make<taxonomy::piecewise_function>(start, spans, &settings_, inst);
+   auto pwf = taxonomy::make<taxonomy::piecewise_function>(start, spans, inst);
    return pwf;
 }
 

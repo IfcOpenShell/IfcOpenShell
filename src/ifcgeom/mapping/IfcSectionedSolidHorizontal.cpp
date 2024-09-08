@@ -22,6 +22,7 @@
 using namespace ifcopenshell::geometry;
 
 #include "../../ifcgeom/profile_helper.h"
+#include "../piecewise_function_evaluator.h"
 
 #include <boost/range/combine.hpp>
 
@@ -114,7 +115,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSectionedSolidHorizontal* in
 	// @todo currently only the case is handled where directrix returns a piecewise_function
 	// @todo this "if" statement is not really required because the function returns at the start if the Directrix is not a piecewise function
 	if (pwf) {
-      taxonomy::piecewise_function_evaluator evaluator(pwf);
+      piecewise_function_evaluator evaluator(pwf,&settings_);
       double start = std::max(0., cross_sections.front().dist_along);
 		double end = std::min(pwf->length(), cross_sections.back().dist_along);
 

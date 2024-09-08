@@ -21,6 +21,8 @@
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geometry;
 
+#include "../piecewise_function_evaluator.h"
+
 #ifdef SCHEMA_HAS_IfcSegmentedReferenceCurve
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSegmentedReferenceCurve* inst) {
@@ -53,7 +55,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSegmentedReferenceCurve* ins
     const Eigen::Matrix4d& m = p->ccomponents();
     double cant_start = m(0, 3); // start of cant curve
 
-   auto cant = taxonomy::make<taxonomy::piecewise_function>(cant_start,pwfs,&settings_);
+   auto cant = taxonomy::make<taxonomy::piecewise_function>(cant_start,pwfs);
 
     // Determine the valid domain of the PWF... the valid domain is where 
     // horizontal, gradient and cant curves are defined
@@ -68,7 +70,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSegmentedReferenceCurve* ins
     }
 
     // define the callback function for the segmented reference curve
-    taxonomy::piecewise_function_evaluator gradient_evaluator(gradient), cant_evaluator(cant);
+    piecewise_function_evaluator gradient_evaluator(gradient, &settings_), cant_evaluator(cant, &settings_);
     auto composition = [gradient_evaluator, cant_evaluator](double u) -> Eigen::Matrix4d {
       // u is distance from start of cant curve
       // add cant->start() to u to get the distance from start of gradient curve
@@ -106,7 +108,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSegmentedReferenceCurve* ins
 
 	taxonomy::piecewise_function::spans_t spans;
    spans.emplace_back(length, composition);
-   auto pwf = taxonomy::make<taxonomy::piecewise_function>(start, spans, &settings_, inst);
+   auto pwf = taxonomy::make<taxonomy::piecewise_function>(start, spans, inst);
    return pwf;
 }
 

@@ -12,12 +12,10 @@ namespace taxonomy {
 struct piecewise_function_impl {
     using spans_t = std::vector<std::pair<double, std::function<Eigen::Matrix4d(double u)>>>;
 
-    piecewise_function_impl(double start, const spans_t& s, ifcopenshell::geometry::Settings* settings = nullptr);
-    piecewise_function_impl(double start, const std::vector<piecewise_function::ptr>& pwfs, ifcopenshell::geometry::Settings* settings = nullptr);
+    piecewise_function_impl(double start, const spans_t& s);
+    piecewise_function_impl(double start, const std::vector<piecewise_function::ptr>& pwfs);
     piecewise_function_impl(piecewise_function_impl&&) = default;
     piecewise_function_impl(const piecewise_function_impl&) = default;
-
-    const ifcopenshell::geometry::Settings* settings_ = nullptr;
 
     const spans_t& spans() const;
     bool is_empty() const;

@@ -7,13 +7,10 @@ namespace geometry {
 
 namespace taxonomy {
 
-piecewise_function_impl::piecewise_function_impl(double start, const spans_t& s, ifcopenshell::geometry::Settings* settings) : start_(start),
-                                                                                                                settings_(settings),
-                                                                                                                spans_(s) {
+piecewise_function_impl::piecewise_function_impl(double start, const spans_t& s) : start_(start), spans_(s) {
 }
 
-piecewise_function_impl::piecewise_function_impl(double start, const std::vector<piecewise_function::ptr>& pwfs, ifcopenshell::geometry::Settings* settings) : start_(start),
-                                                                                                                                                settings_(settings) {
+piecewise_function_impl::piecewise_function_impl(double start, const std::vector<piecewise_function::ptr>& pwfs) : start_(start) {
     for (auto& pwf : pwfs) {
         spans_.insert(spans_.end(), pwf->spans().begin(), pwf->spans().end());
     }
