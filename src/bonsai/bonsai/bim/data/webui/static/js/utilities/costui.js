@@ -29,7 +29,6 @@ export class CostUI {
     const tr = document.createElement("tr");
     thead.appendChild(tr);
 
-
     for (let i = 0; i < columnHeaders.length; i++) {
       const th = document.createElement("th");
       th.textContent = columnHeaders[i];
@@ -73,7 +72,7 @@ export class CostUI {
     document.head.appendChild(style);
   }
 
-static createContextMenu(callbacks) {
+  static createContextMenu(callbacks) {
     const contextMenu = document.createElement("div");
     contextMenu.id = "context-menu";
     contextMenu.classList.add("context-menu");
@@ -187,43 +186,55 @@ static createContextMenu(callbacks) {
     function getColumnNames(tableId) {
       const table = document.getElementById(tableId);
       const headerRow = table.querySelector("thead tr");
-      return Array.from(headerRow.children).map(headerCell => headerCell.textContent.trim());
+      return Array.from(headerRow.children).map((headerCell) =>
+        headerCell.textContent.trim()
+      );
     }
-    
+
     // Add double-click event listener
-    document.getElementById("cost-items").addEventListener("dblclick", function (event) {
-      const targetRow = event.target.closest("tr");
-      const targetCell = event.target.closest("td");
-      if (targetRow && targetCell) {
-        const columnIndex = Array.from(targetRow.children).indexOf(targetCell);
-        const costItemId = parseInt(targetRow.getAttribute("id"));
-        const cellContent = targetCell.textContent;
-    
-        // Get column names from the table header
-        const columnNames = getColumnNames("cost-items");
-        const cellName = columnNames[columnIndex];
-    
-        console.log("Column Name: ", cellName);
-        console.log("Content: ", cellContent);
-    
-        // Implement different behaviors based on the column index
-        switch (columnIndex) {
-          case 0:
-            // Behavior for the first column
-            callbacks.firstColumnDoubleClick ? callbacks.firstColumnDoubleClick(costItemId) : null;
-            break;
-          case 1:
-            // Behavior for the second column
-            callbacks.secondColumnDoubleClick ? callbacks.secondColumnDoubleClick(costItemId) : null;
-            break;
-          // Add more cases as needed for other columns
-          default:
-            // Default behavior
-            callbacks.defaultDoubleClick ? callbacks.defaultDoubleClick(costItemId) : null;
-            break;
+    document
+      .getElementById("cost-items")
+      .addEventListener("dblclick", function (event) {
+        const targetRow = event.target.closest("tr");
+        const targetCell = event.target.closest("td");
+        if (targetRow && targetCell) {
+          const columnIndex = Array.from(targetRow.children).indexOf(
+            targetCell
+          );
+          const costItemId = parseInt(targetRow.getAttribute("id"));
+          const cellContent = targetCell.textContent;
+
+          // Get column names from the table header
+          const columnNames = getColumnNames("cost-items");
+          const cellName = columnNames[columnIndex];
+
+          console.log("Column Name: ", cellName);
+          console.log("Content: ", cellContent);
+
+          // Implement different behaviors based on the column index
+          switch (columnIndex) {
+            case 0:
+              // Behavior for the first column
+              callbacks.firstColumnDoubleClick
+                ? callbacks.firstColumnDoubleClick(costItemId)
+                : null;
+              break;
+            case 1:
+              // Behavior for the second column
+              callbacks.secondColumnDoubleClick
+                ? callbacks.secondColumnDoubleClick(costItemId)
+                : null;
+              break;
+            // Add more cases as needed for other columns
+            default:
+              // Default behavior
+              callbacks.defaultDoubleClick
+                ? callbacks.defaultDoubleClick(costItemId)
+                : null;
+              break;
+          }
         }
-      }
-    });
+      });
   }
 
   static deleteCostItemRow(targetRow, expandedState) {
@@ -719,7 +730,11 @@ static createContextMenu(callbacks) {
     const cardBody = document.createElement("div");
     cardBody.classList.add("card-body");
 
-    const cardTitle = CostUI.Text(title, "fa-solid fa-money-bill-wave", "large");
+    const cardTitle = CostUI.Text(
+      title,
+      "fa-solid fa-money-bill-wave",
+      "large"
+    );
     cardTitle.classList.add("card-title");
 
     const cardButton = document.createElement("button");
@@ -805,12 +820,15 @@ static createContextMenu(callbacks) {
     div.classList.add("table-container");
     const table = document.createElement("table");
     div.appendChild(table);
-    table.classList.add(className);
+    if (className !== "") {
+      table.classList.add(className);
+    }
     table.id = id;
 
     const headerRow = document.createElement("tr");
     headers.forEach((headerText) => {
       const th = document.createElement("th");
+      th.style.position = "relative";
       th.textContent = headerText;
       headerRow.appendChild(th);
     });
@@ -1212,7 +1230,7 @@ static createContextMenu(callbacks) {
       { textContent: "", style: { border: "none" } },
       { textContent: "", style: { border: "none" } },
       { textContent: "", style: { border: "none" } },
-      { textContent: "Subtotal", colSpan: 4, style: { border: "none" } },
+      { textContent: "Subtotal", colSpan: 1, style: { border: "none" } },
       { textContent: quantitySums.count },
     ];
 
@@ -1250,23 +1268,19 @@ static createContextMenu(callbacks) {
   }) {
     if (products.length === 0) {
       const noProductsMessage = document.createElement("p");
-      noProductsMessage.textContent = "Your Blender Selection is empty! Select objects first.";
+      noProductsMessage.textContent =
+        "Your Blender Selection is empty! Select objects first.";
       form.appendChild(noProductsMessage);
       return;
     }
     const { tableContainer, table } = CostUI.addTable({
       headers: ["Step Id", "Class", "Name", "Type", "Count"],
-      className: "product-table",
+      className: "",
       id: "cost-values-table-" + costItemId,
     });
     form.appendChild(tableContainer);
-
-    const scrollableBody = document.createElement("div");
-    scrollableBody.classList.add("table-scrollable-body");
-
     const tbody = document.createElement("tbody");
-    scrollableBody.appendChild(tbody);
-    table.appendChild(scrollableBody);
+    table.appendChild(tbody);
 
     const quantityAssigned = CostUI.getAssinedQuantity(products, costItemId);
     const areProductsSameClass = products.every(
@@ -1395,16 +1409,13 @@ static createContextMenu(callbacks) {
   }) {
     const { tableContainer, table } = CostUI.addTable({
       headers: ["Step Id", "Class", "Name", "Type", "Count"],
-      className: "product-table",
+      className: "",
       id: "cost-values-table-" + costItemId,
     });
 
     form.appendChild(tableContainer);
-    const scrollableBody = document.createElement("div");
-    scrollableBody.classList.add("table-scrollable-body");
     const tbody = document.createElement("tbody");
-    scrollableBody.appendChild(tbody);
-    table.appendChild(scrollableBody);
+    table.appendChild(tbody);
 
     let quantityAssigned = CostUI.getAssinedQuantity(products, costItemId);
     const shouldAddQto = quantityAssigned ? true : false;
@@ -1487,22 +1498,22 @@ static createContextMenu(callbacks) {
       icon: "fa-solid fa-gear",
       shouldHide: true,
     });
-  
+
     const picker = CostUI.createColorPicker();
     const tableFontSize = CostUI.createFontSizePicker();
     settingsMenu.appendChild(picker);
     settingsMenu.appendChild(tableFontSize);
-  
+
     settingsMenu.style.display = "none";
     const settingsButton = document.getElementById("settings-button");
     settingsButton.addEventListener("click", function () {
       settingsMenu.style.display = "block";
     });
-  
+
     // Apply saved settings on page load
     CostUI.applySavedSettings();
   }
-  
+
   static createFontSizePicker() {
     const div = document.createElement("div");
     const fontSizeText = document.createElement("p");
@@ -1520,7 +1531,7 @@ static createContextMenu(callbacks) {
     });
     return div;
   }
-  
+
   static createColorPicker() {
     const div = document.createElement("div");
     const colorText = document.createElement("p");
@@ -1538,26 +1549,26 @@ static createContextMenu(callbacks) {
     });
     return div;
   }
-  
+
   static saveFontSize(fontSize) {
     localStorage.setItem("tableFontSize", fontSize);
   }
-  
+
   static saveColor(color) {
     localStorage.setItem("tableColor", color);
   }
-  
+
   static applyFontSizeToAllTables(fontSize) {
-    document.documentElement.style.setProperty('--fontSize', fontSize);
+    document.documentElement.style.setProperty("--fontSize", fontSize);
   }
-  
+
   static applyColorToAllTables(color) {
     const tables = document.querySelectorAll("table");
     tables.forEach((table) => {
       table.style.backgroundColor = color;
     });
   }
-  
+
   static applySavedSettings() {
     console.log("Applying saved settings");
     const savedFontSize = localStorage.getItem("tableFontSize");
@@ -1568,7 +1579,7 @@ static createContextMenu(callbacks) {
         fontSizePicker.value = parseInt(savedFontSize, 10);
       }
     }
-  
+
     const savedColor = localStorage.getItem("tableColor");
     if (savedColor) {
       CostUI.applyColorToAllTables(savedColor);
@@ -1585,20 +1596,20 @@ static createContextMenu(callbacks) {
 
   static addRibbonButton({ text, icon, callback }) {
     const ribbonBar = CostUI.getRibbonBar();
-    
+
     const button = document.createElement("button");
     button.classList.add("action-button", ...icon.split(" "));
     button.dataset.tooltip = text; // Use dataset to set the tooltip attribute
-    
+
     button.addEventListener("click", () => callback(button));
-    
+
     ribbonBar.appendChild(button);
   }
-  
+
   static toggleSchedulesContainer(button) {
     const schedulesContainer = CostUI.getSchedulesContainer();
     const isHidden = schedulesContainer.style.display === "none";
-    
+
     if (isHidden) {
       CostUI.displaySchedulesContainer();
       button.classList.remove("fa-eye");
@@ -1611,16 +1622,16 @@ static createContextMenu(callbacks) {
       button.dataset.tooltip = "Display Schedules";
     }
   }
-  
+
   static getSchedulesContainer() {
     return document.getElementById("cost-schedules");
   }
-  
+
   static displaySchedulesContainer() {
     const schedulesContainer = CostUI.getSchedulesContainer();
     schedulesContainer.style.display = "flex";
   }
-  
+
   static hideSchedulesContainer() {
     const schedulesContainer = CostUI.getSchedulesContainer();
     schedulesContainer.style.display = "none";
@@ -1633,7 +1644,7 @@ static createContextMenu(callbacks) {
   static toggleSettingsMenu(button) {
     const settingsMenu = CostUI.getSettingsMenu();
     const isHidden = settingsMenu.style.display === "none";
-    
+
     if (isHidden) {
       settingsMenu.style.display = "block";
       button.classList.remove("fa-gear");

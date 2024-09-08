@@ -1,18 +1,30 @@
 @import url("./shared.css");
 @import url("./components/card.css");
 @import url("./components/contextMenu.css");
-@import url("./components/costTable.css");
 @import url("./components/headerBar.css");
 
+:root {
+  --fontSize: 14px;
+  --background-color: #363636;
+  --button-background: #28a745;
+  --button-hover-background: #218838;
+  --scrollbar-track-color: #f1f1f1;
+  --scrollbar-thumb-color: #888;
+  --scrollbar-thumb-hover-color: #555;
+}
+body {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 .form-header {
   display: flex;
   justify-content: flex-start;
   align-items: center;
   margin-bottom: 10px;
-  background-color: #363636;
+  background-color: var(--background-color);
   padding: 10px;
-  /* trext size  */
-  font-size: 1.5em;
+  font-size: var(--fontSize);
 }
 
 span {
@@ -20,14 +32,12 @@ span {
 }
 
 .floating-form {
-  height: 40vh;
   width: 50vw;
+  height: 50vh;
   max-height: 80vh;
-  height: auto;
   position: absolute;
-  background-color: #363636;
+  background-color: var(--background-color);
   border: 1px solid black;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   z-index: 9999;
   cursor: move;
   padding: 20px;
@@ -36,8 +46,12 @@ span {
   overflow-x: hidden;
 }
 
+.floating-form table tr {
+  margin-bottom: 10px;
+}
+
 .action-button {
-  background-color: #28a745;
+  background-color: var(--button-background);
   border: none;
   color: #fff;
   padding: 0.5em 1em;
@@ -52,7 +66,7 @@ span {
 }
 
 .action-button:hover {
-  background-color: #218838;
+  background-color: var(--button-hover-background);
 }
 
 .close-button {
@@ -66,11 +80,218 @@ span {
 .settings-menu {
   display: none;
   position: absolute;
-  background-color: #363636;
+  background-color: var(--background-color);
   border: 1px solid black;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   z-index: 9999;
   cursor: move;
   padding: 20px;
   user-select: none;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track-color);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb-color);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover-color);
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb-color) var(--scrollbar-track-color);
+}
+
+/* Edge, IE */
+* {
+  -ms-overflow-style: -ms-autohiding-scrollbar;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.table-container {
+  margin-top: 1em;
+  overflow-x: auto;
+  overflow-y: auto;
+  position: relative;
+}
+
+.floating-form .table-container {
+  height: 50%;
+  max-height: 50%;
+}
+
+#cost-items {
+  max-height: calc(100vh - var(--margin-small));
+}
+
+/* if id starts with cost-values-form */
+[id^="cost-values-form"] table {
+  /* fixed */
+  max-height: 50%;
+  table-layout: fixed;
+}
+
+table {
+  width: 100%;
+  height: 100%;
+  border-collapse: collapse;
+  user-select: none;
+  font-size: var(--fontSize);
+  -webkit-font-smoothing: antialiased; /* Improve font rendering */
+  -moz-osx-font-smoothing: grayscale; /* Improve font rendering */
+}
+
+thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background-color: #727272;
+  font-size: large;
+}
+
+tbody {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+}
+
+td,
+th {
+  padding: 0;
+  margin: 0;
+  border-left: 1px solid #ddd;
+  border-right: 1px solid #ddd;
+  text-align: center;
+  border-bottom: 0;
+  border-top: 0;
+}
+
+th {
+  border-bottom: 1px solid #ddd;
+}
+
+td {
+  align-items: center;
+}
+
+/* first td of a row, must be flex */
+td:first-child {
+  display: flex;
+  align-items: center;
+}
+
+.nested {
+  display: none;
+}
+
+.expand-collapse {
+  cursor: pointer;
+}
+
+.caret-cell {
+  border: none;
+  background: none;
+  padding: 0;
+}
+
+input,
+select {
+  background-color: var(--blender-button-background, var(--bg-color));
+  color: var(--blender-button-text, var(--text-color));
+  border-color: var(--blender-button-border, var(--border-color));
+  transition: filter 0.2s ease;
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 14px;
+  line-height: 20px;
+  transition: border-color 0.2s cubic-bezier(0.3, 0, 0.5, 1);
+  margin-left: 0.5em;
+  margin-right: 0.5em;
+  font-size: var(--fontSize);
+  min-width: 50px; /* Minimum width to prevent it from becoming too small */
+}
+
+input:focus {
+  border-color: #28a745;
+  outline: none;
+  box-shadow: 0 0 0 3px #28a745;
+  color: #ddd;
+}
+
+#cost-items tr:hover,
+.highlighted {
+  background-color: #28a74657;
+}
+
+.highlighted {
+  background-color: #28a74657;
+}
+
+.cost-values-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.cost-values-table th,
+.cost-values-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+
+.cost-values-table th {
+  background-color: #444444;
+  text-align: center;
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+  table {
+    font-size: 12px;
+  }
+
+  td,
+  th {
+    padding: 2px;
+    font-size: 12px;
+  }
+
+  input {
+    padding: 2px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  table {
+    font-size: 10px;
+  }
+
+  td,
+  th {
+    padding: 2px;
+  }
+
+  input {
+    padding: 1px;
+    font-size: 10px;
+  }
+}
+
+form table {
+  max-height: 50%;
 }

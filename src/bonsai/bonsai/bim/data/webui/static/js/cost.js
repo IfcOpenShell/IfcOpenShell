@@ -17,16 +17,15 @@ $(document).ready(function () {
     icon: "fa-regular fa-eye-slash",
     callback: (button) => {
       CostUI.toggleSchedulesContainer(button);
-    }
+    },
   });
   CostUI.addRibbonButton({
     text: "Settings",
     icon: "fas fa-cog",
     callback: (button) => {
       CostUI.toggleSettingsMenu(button);
-    }
+    },
   });
-  
 });
 
 function connectSocket() {
@@ -86,7 +85,6 @@ function handleSelectedProducts(data) {
 }
 
 function handlePredefinedTypes(data) {
-
   CostUI.enableAddingCostSchedule(
     data.data["predefined_types"],
     addCostSchedule
