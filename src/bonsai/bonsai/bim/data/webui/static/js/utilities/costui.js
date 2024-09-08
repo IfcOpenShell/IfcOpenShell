@@ -25,7 +25,10 @@ export class CostUI {
       "Total Cost",
       "Action",
     ];
+    const thead = document.createElement("thead");
     const tr = document.createElement("tr");
+    thead.appendChild(tr);
+
 
     for (let i = 0; i < columnHeaders.length; i++) {
       const th = document.createElement("th");
@@ -41,7 +44,7 @@ export class CostUI {
       }
     }
 
-    tbody.appendChild(tr);
+    table.appendChild(thead);
     table.appendChild(tbody);
     document.getElementById("cost-items").appendChild(table);
 
@@ -69,7 +72,8 @@ export class CostUI {
         `;
     document.head.appendChild(style);
   }
-  static createContextMenu(callbacks) {
+
+static createContextMenu(callbacks) {
     const contextMenu = document.createElement("div");
     contextMenu.id = "context-menu";
     contextMenu.classList.add("context-menu");
@@ -144,7 +148,7 @@ export class CostUI {
           const costItemId = parseInt(targetRow.getAttribute("id"));
           let expandedState =
             JSON.parse(localStorage.getItem("expandedState")) || {};
-          expandedState = CostUI.deleteRow(targetRow, expandedState);
+          expandedState = CostUI.deleteCostItemRow(targetRow, expandedState);
           localStorage.setItem("expandedState", JSON.stringify(expandedState));
           callbacks.deleteCostItem(costItemId);
         }
@@ -178,9 +182,51 @@ export class CostUI {
       });
       getSelectedProducts.hasListener = true;
     }
+
+    // Function to get column names from the table header
+    function getColumnNames(tableId) {
+      const table = document.getElementById(tableId);
+      const headerRow = table.querySelector("thead tr");
+      return Array.from(headerRow.children).map(headerCell => headerCell.textContent.trim());
+    }
+    
+    // Add double-click event listener
+    document.getElementById("cost-items").addEventListener("dblclick", function (event) {
+      const targetRow = event.target.closest("tr");
+      const targetCell = event.target.closest("td");
+      if (targetRow && targetCell) {
+        const columnIndex = Array.from(targetRow.children).indexOf(targetCell);
+        const costItemId = parseInt(targetRow.getAttribute("id"));
+        const cellContent = targetCell.textContent;
+    
+        // Get column names from the table header
+        const columnNames = getColumnNames("cost-items");
+        const cellName = columnNames[columnIndex];
+    
+        console.log("Column Name: ", cellName);
+        console.log("Content: ", cellContent);
+    
+        // Implement different behaviors based on the column index
+        switch (columnIndex) {
+          case 0:
+            // Behavior for the first column
+            callbacks.firstColumnDoubleClick ? callbacks.firstColumnDoubleClick(costItemId) : null;
+            break;
+          case 1:
+            // Behavior for the second column
+            callbacks.secondColumnDoubleClick ? callbacks.secondColumnDoubleClick(costItemId) : null;
+            break;
+          // Add more cases as needed for other columns
+          default:
+            // Default behavior
+            callbacks.defaultDoubleClick ? callbacks.defaultDoubleClick(costItemId) : null;
+            break;
+        }
+      }
+    });
   }
 
-  static deleteRow(targetRow, expandedState) {
+  static deleteCostItemRow(targetRow, expandedState) {
     if (!targetRow) {
       return;
     }
@@ -188,7 +234,7 @@ export class CostUI {
     targetRow.remove();
     const subRows = document.querySelectorAll(`[parent-id='${targetRow.id}']`);
     subRows.forEach((subRow) => {
-      CostUI.deleteRow(subRow, expandedState);
+      CostUI.deleteCostItemRow(subRow, expandedState);
     });
     return expandedState;
   }
@@ -258,6 +304,7 @@ export class CostUI {
       const form = CostUI.Form({
         id: "add-cost-schedule-form",
         name: name,
+        icon: "fa-solid fa-money-bill-wave",
       });
 
       const nameLabel = document.createElement("label");
@@ -672,9 +719,8 @@ export class CostUI {
     const cardBody = document.createElement("div");
     cardBody.classList.add("card-body");
 
-    const cardTitle = document.createElement("h5");
+    const cardTitle = CostUI.Text(title, "fa-solid fa-money-bill-wave", "large");
     cardTitle.classList.add("card-title");
-    cardTitle.textContent = title;
 
     const cardButton = document.createElement("button");
     cardButton.classList.add("action-button");
@@ -1163,10 +1209,10 @@ export class CostUI {
     const subtotalRow = document.createElement("tr");
 
     const cells = [
+      { textContent: "", style: { border: "none" } },
+      { textContent: "", style: { border: "none" } },
+      { textContent: "", style: { border: "none" } },
       { textContent: "Subtotal", colSpan: 4, style: { border: "none" } },
-      { textContent: "", style: { border: "none" } },
-      { textContent: "", style: { border: "none" } },
-      { textContent: "", style: { border: "none" } },
       { textContent: quantitySums.count },
     ];
 
@@ -1202,15 +1248,25 @@ export class CostUI {
     costItemId,
     callbacks,
   }) {
+    if (products.length === 0) {
+      const noProductsMessage = document.createElement("p");
+      noProductsMessage.textContent = "Your Blender Selection is empty! Select objects first.";
+      form.appendChild(noProductsMessage);
+      return;
+    }
     const { tableContainer, table } = CostUI.addTable({
       headers: ["Step Id", "Class", "Name", "Type", "Count"],
       className: "product-table",
       id: "cost-values-table-" + costItemId,
     });
+    form.appendChild(tableContainer);
+
+    const scrollableBody = document.createElement("div");
+    scrollableBody.classList.add("table-scrollable-body");
 
     const tbody = document.createElement("tbody");
-    table.appendChild(tbody);
-    form.appendChild(tableContainer);
+    scrollableBody.appendChild(tbody);
+    table.appendChild(scrollableBody);
 
     const quantityAssigned = CostUI.getAssinedQuantity(products, costItemId);
     const areProductsSameClass = products.every(
@@ -1343,9 +1399,12 @@ export class CostUI {
       id: "cost-values-table-" + costItemId,
     });
 
-    const tbody = document.createElement("tbody");
-    table.appendChild(tbody);
     form.appendChild(tableContainer);
+    const scrollableBody = document.createElement("div");
+    scrollableBody.classList.add("table-scrollable-body");
+    const tbody = document.createElement("tbody");
+    scrollableBody.appendChild(tbody);
+    table.appendChild(scrollableBody);
 
     let quantityAssigned = CostUI.getAssinedQuantity(products, costItemId);
     const shouldAddQto = quantityAssigned ? true : false;
@@ -1416,5 +1475,175 @@ export class CostUI {
     });
     addProductAssignmentsButton.classList.add("action-button");
     return addProductAssignmentsButton;
+  }
+
+  static addSettingsMenu() {
+    if (document.getElementById("settings-menu")) {
+      return document.getElementById("settings-menu");
+    }
+    const settingsMenu = CostUI.Form({
+      id: "settings-menu",
+      name: "Settings",
+      icon: "fa-solid fa-gear",
+      shouldHide: true,
+    });
+  
+    const picker = CostUI.createColorPicker();
+    const tableFontSize = CostUI.createFontSizePicker();
+    settingsMenu.appendChild(picker);
+    settingsMenu.appendChild(tableFontSize);
+  
+    settingsMenu.style.display = "none";
+    const settingsButton = document.getElementById("settings-button");
+    settingsButton.addEventListener("click", function () {
+      settingsMenu.style.display = "block";
+    });
+  
+    // Apply saved settings on page load
+    CostUI.applySavedSettings();
+  }
+  
+  static createFontSizePicker() {
+    const div = document.createElement("div");
+    const fontSizeText = document.createElement("p");
+    fontSizeText.textContent = "Select a font size for the table:";
+    div.appendChild(fontSizeText);
+    const fontSizePicker = document.createElement("input");
+    fontSizePicker.type = "number";
+    fontSizePicker.id = "font-size-picker";
+    fontSizePicker.value = localStorage.getItem("tableFontSize") || 14;
+    div.appendChild(fontSizePicker);
+    fontSizePicker.addEventListener("input", function () {
+      const fontSize = fontSizePicker.value + "px";
+      CostUI.saveFontSize(fontSize);
+      CostUI.applyFontSizeToAllTables(fontSize);
+    });
+    return div;
+  }
+  
+  static createColorPicker() {
+    const div = document.createElement("div");
+    const colorText = document.createElement("p");
+    colorText.textContent = "Select a color for the table:";
+    div.appendChild(colorText);
+    const colorPicker = document.createElement("input");
+    colorPicker.type = "color";
+    colorPicker.id = "color-picker";
+    colorPicker.value = localStorage.getItem("tableColor") || "#ffffff";
+    div.appendChild(colorPicker);
+    colorPicker.addEventListener("input", function () {
+      const color = colorPicker.value;
+      CostUI.saveColor(color);
+      CostUI.applyColorToAllTables(color);
+    });
+    return div;
+  }
+  
+  static saveFontSize(fontSize) {
+    localStorage.setItem("tableFontSize", fontSize);
+  }
+  
+  static saveColor(color) {
+    localStorage.setItem("tableColor", color);
+  }
+  
+  static applyFontSizeToAllTables(fontSize) {
+    document.documentElement.style.setProperty('--fontSize', fontSize);
+  }
+  
+  static applyColorToAllTables(color) {
+    const tables = document.querySelectorAll("table");
+    tables.forEach((table) => {
+      table.style.backgroundColor = color;
+    });
+  }
+  
+  static applySavedSettings() {
+    console.log("Applying saved settings");
+    const savedFontSize = localStorage.getItem("tableFontSize");
+    if (savedFontSize) {
+      CostUI.applyFontSizeToAllTables(savedFontSize);
+      const fontSizePicker = document.getElementById("font-size-picker");
+      if (fontSizePicker) {
+        fontSizePicker.value = parseInt(savedFontSize, 10);
+      }
+    }
+  
+    const savedColor = localStorage.getItem("tableColor");
+    if (savedColor) {
+      CostUI.applyColorToAllTables(savedColor);
+      const colorPicker = document.getElementById("color-picker");
+      if (colorPicker) {
+        colorPicker.value = savedColor;
+      }
+    }
+  }
+
+  static getRibbonBar() {
+    return document.getElementById("ribbon-bar");
+  }
+
+  static addRibbonButton({ text, icon, callback }) {
+    const ribbonBar = CostUI.getRibbonBar();
+    
+    const button = document.createElement("button");
+    button.classList.add("action-button", ...icon.split(" "));
+    button.dataset.tooltip = text; // Use dataset to set the tooltip attribute
+    
+    button.addEventListener("click", () => callback(button));
+    
+    ribbonBar.appendChild(button);
+  }
+  
+  static toggleSchedulesContainer(button) {
+    const schedulesContainer = CostUI.getSchedulesContainer();
+    const isHidden = schedulesContainer.style.display === "none";
+    
+    if (isHidden) {
+      CostUI.displaySchedulesContainer();
+      button.classList.remove("fa-eye");
+      button.classList.add("fa-eye-slash");
+      button.dataset.tooltip = "Hide Schedules";
+    } else {
+      CostUI.hideSchedulesContainer();
+      button.classList.remove("fa-eye-slash");
+      button.classList.add("fa-eye");
+      button.dataset.tooltip = "Display Schedules";
+    }
+  }
+  
+  static getSchedulesContainer() {
+    return document.getElementById("cost-schedules");
+  }
+  
+  static displaySchedulesContainer() {
+    const schedulesContainer = CostUI.getSchedulesContainer();
+    schedulesContainer.style.display = "flex";
+  }
+  
+  static hideSchedulesContainer() {
+    const schedulesContainer = CostUI.getSchedulesContainer();
+    schedulesContainer.style.display = "none";
+  }
+
+  static getSettingsMenu() {
+    return document.getElementById("settings-menu");
+  }
+
+  static toggleSettingsMenu(button) {
+    const settingsMenu = CostUI.getSettingsMenu();
+    const isHidden = settingsMenu.style.display === "none";
+    
+    if (isHidden) {
+      settingsMenu.style.display = "block";
+      button.classList.remove("fa-gear");
+      button.classList.add("fa-times");
+      button.dataset.tooltip = "Close Settings";
+    } else {
+      settingsMenu.style.display = "none";
+      button.classList.remove("fa-times");
+      button.classList.add("fa-gear");
+      button.dataset.tooltip = "Open Settings";
+    }
   }
 }

@@ -126,7 +126,10 @@ function handleWorkScheduleData(data) {
   const workSchedules = data["data"]["work_schedule_info"];
 
   workSchedules.forEach((workSchedule) => {
-    const mainContainer = CostUI.text(new Date(workSchedule.CreationDate).toLocaleDateString());
+    const mainContainer = CostUI.Text(
+      "Created On: " + new Date(workSchedule.CreationDate).toLocaleDateString(),
+      "fa-solid fa-pen-nib"
+    );
     const callback = () => loadWorkSchedule(workSchedule.id);
     const card = CostUI.createCard(workSchedule.id, workSchedule.Name,mainContainer, callback);
     workSchedulesDiv.append(card);
