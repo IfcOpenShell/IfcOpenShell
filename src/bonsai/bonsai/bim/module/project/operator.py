@@ -53,6 +53,7 @@ from ifcopenshell.geom import ShapeElementType
 from bonsai.bim.module.project.data import LinksData
 from bonsai.bim.module.project.decorator import ProjectDecorator, ClippingPlaneDecorator
 from bonsai.bim.module.model.decorator import PolylineDecorator
+from bonsai.bim.module.model.polyline import PolylineOperator
 from typing import Union
 
 
@@ -2268,7 +2269,7 @@ if bpy.app.version >= (4, 1, 0):
             return True
 
 
-class MeasureTool(bpy.types.Operator):
+class MeasureTool(bpy.types.Operator, PolylineOperator):
     bl_idname = "bim.measure_tool"
     bl_options = {"REGISTER", "UNDO"}
     bl_label = "Measure Tool"
@@ -2278,42 +2279,9 @@ class MeasureTool(bpy.types.Operator):
         return context.space_data.type == "VIEW_3D"
 
     def __init__(self):
-        self.mousemove_count = 0
-        self.action_count = 0
-        self.visible_objs = []
-        self.objs_2d_bbox = []
-        self.number_options = {
-            "0",
-            "1",
-            "2",
-            "3",
-            "4",
-            "5",
-            "6",
-            "7",
-            "8",
-            "9",
-            " ",
-            ".",
-            "+",
-            "-",
-            "*",
-            "/",
-            "'",
-            '"',
-            "=",
-        }
-        self.number_input = []
-        self.number_output = ""
-        self.number_is_negative = False
-        self.is_input_on = False
-        self.input_options = ["D", "A", "X", "Y", "Z"]
-        self.input_type = None
-        self.input_value_xy = [None, None]
+        super().__init__()
         self.input_ui = tool.Polyline.create_input_ui(init_z=True)
-        self.is_typing = False
-        self.snap_angle = None
-        self.snapping_points = []
+        self.input_options = ["D", "A", "X", "Y", "Z"]
         self.instructions = """TAB: Cycle Input
     M: Modify Snap Point
     C: Close
@@ -2323,228 +2291,34 @@ class MeasureTool(bpy.types.Operator):
     Shift: Lock axis
 """
 
-    def recalculate_inputs(self, context):
-        if self.number_input:
-            is_valid, self.number_output = tool.Polyline.validate_input(self.number_output, self.input_type)
-            self.input_ui.set_value(self.input_type, self.number_output)
-            if not is_valid:
-                self.report({"WARNING"}, "The number typed is not valid.")
-                return is_valid
-            else:
-                if self.input_type in {"X", "Y", "Z"}:
-                    tool.Polyline.calculate_distance_and_angle(context, self.is_input_on, self.input_ui)
-                elif self.input_type in {"D", "A"}:
-                    tool.Polyline.calculate_x_y_and_z(context, self.input_ui)
-                    tool.Polyline.calculate_distance_and_angle(context, self.is_input_on, self.input_ui)
-                else:
-                    self.input_ui.set_value(self.input_type, self.number_output)
-            tool.Blender.update_viewport()
-            return is_valid
-
     def modal(self, context, event):
+        if event.type in {"MIDDLEMOUSE", "WHEELUPMOUSE", "WHEELDOWNMOUSE"}:
+            return {"PASS_THROUGH"}
 
-        if not self.is_input_on:
-            if event.type == "MOUSEMOVE" or event.type == "INBETWEEN_MOUSEMOVE":
-                self.mousemove_count += 1
-                self.is_input_on = False
-                self.input_type = None
-                PolylineDecorator.set_input_ui(self.input_ui, self.input_type)
-                tool.Snap.clear_snapping_ref()
-                tool.Blender.update_viewport()
-            else:
-                self.mousemove_count = 0
+        self.handle_mouse_move(context, event)
 
-            if self.mousemove_count == 2:
-                self.objs_2d_bbox = []
-                for obj in self.visible_objs:
-                    self.objs_2d_bbox.append(tool.Raycast.get_on_screen_2d_bounding_boxes(context, obj))
+        self.choose_axis(event, z=True)
 
-            if self.mousemove_count > 3:
-                detected_snaps = tool.Snap.detect_snapping_points(context, event, self.objs_2d_bbox)
-                self.snapping_points = tool.Snap.select_snapping_points(context, event, detected_snaps)
-                PolylineDecorator.set_mouse_position(event)
-                tool.Polyline.calculate_distance_and_angle(context, self.is_input_on, self.input_ui)
-                tool.Blender.update_viewport()
-                return {"RUNNING_MODAL"}
+        self.choose_plane(event)
 
-            if event.value == "RELEASE" and event.type == "BACK_SPACE":
-                tool.Snap.remove_last_polyline_point()
-                tool.Blender.update_viewport()
+        self.handle_snap_selection(context, event)
 
-        if event.value == "RELEASE" and event.type == "LEFTMOUSE":
-            tool.Snap.insert_polyline_point(self.input_ui)
-            tool.Blender.update_viewport()
-
-        if event.value == "PRESS" and event.type == "X":
-            tool.Snap.set_snap_axis_method("X")
-            tool.Blender.update_viewport()
-
-        if event.value == "PRESS" and event.type == "Y":
-            tool.Snap.set_snap_axis_method("Y")
-            tool.Blender.update_viewport()
-
-        if event.value == "PRESS" and event.type == "Z":
-            tool.Snap.set_snap_axis_method("Z")
-            tool.Blender.update_viewport()
-
-        if event.value == "PRESS" and event.type == "C":
-            tool.Snap.close_polyline()
-            PolylineDecorator.set_input_ui(self.input_ui, self.input_type)
-            tool.Blender.update_viewport()
-
-        if self.is_input_on and event.value == "PRESS" and event.type == "TAB":
-            self.recalculate_inputs(context)
-            index = self.input_options.index(self.input_type)
-            size = len(self.input_options)
-            self.input_type = self.input_options[((index + 1) % size)]
-            self.is_typing = False
-            self.number_input = self.input_ui.get_formatted_value(self.input_type)
-            self.number_input = list(self.number_input)
-            self.number_output = "".join(self.number_input)
-            self.input_ui.set_value(self.input_type, self.number_output)
-            PolylineDecorator.set_input_ui(self.input_ui, self.input_type)
-            tool.Blender.update_viewport()
-
-        if not self.is_input_on and event.value == "RELEASE" and event.type == "TAB":
-            self.recalculate_inputs(context)
-            self.is_input_on = True
-            self.input_type = "D"
-            self.is_typing = False
-            self.number_input = self.input_ui.get_formatted_value(self.input_type)
-            self.number_input = list(self.number_input)
-            self.number_output = "".join(self.number_input)
-            self.input_ui.set_value(self.input_type, self.number_output)
-            PolylineDecorator.set_input_ui(self.input_ui, self.input_type)
-            tool.Blender.update_viewport()
-
-        if not self.is_input_on and event.ascii in self.number_options:
-            self.recalculate_inputs(context)
-            self.is_input_on = True
-            self.input_type = "D"
-            PolylineDecorator.set_input_ui(self.input_ui, self.input_type)
-            tool.Blender.update_viewport()
-
-        if event.value == "RELEASE" and event.type in {"D", "A"}:
-            self.recalculate_inputs(context)
-            self.is_input_on = True
-            self.input_type = event.type
-            self.input_ui.set_value(self.input_type, "")
-            PolylineDecorator.set_input_ui(self.input_ui, self.input_type)
-            tool.Blender.update_viewport()
-
-        if self.input_type in self.input_options:
-            if (event.ascii in self.number_options) or (event.value == "RELEASE" and event.type == "BACK_SPACE"):
-                if not self.is_typing and not (event.ascii == "=" or event.type == "BACK_SPACE"):
-                    self.number_input = []
-
-                if event.type == "BACK_SPACE":
-                    if len(self.number_input) <= 1:
-                        self.number_input = []
-                    else:
-                        self.number_input.pop(-1)
-                elif event.ascii == "=":
-                    if self.number_input[0] == "=":
-                        self.number_input.pop(0)
-                    else:
-                        self.number_input.insert(0, "=")
-                else:
-                    self.number_input.append(event.ascii)
-
-                if not self.number_input:
-                    self.number_output = "0"
-
-                self.is_typing = True
-                self.number_output = "".join(self.number_input)
-                self.input_ui.set_value(self.input_type, self.number_output)
-                PolylineDecorator.set_input_ui(self.input_ui, self.input_type)
-                tool.Blender.update_viewport()
-
-        if not self.is_input_on and event.value == "RELEASE" and event.type in {"RET", "NUMPAD_ENTER", "RIGHTMOUSE"}:
+        if not self.tool_state.is_input_on and event.value == "RELEASE" and event.type in {"RET", "NUMPAD_ENTER", "RIGHTMOUSE"}:
             PolylineDecorator.uninstall()
             tool.Snap.clear_polyline()
             tool.Blender.update_viewport()
             return {"FINISHED"}
 
-        if self.is_input_on and event.value == "RELEASE" and event.type in {"RET", "NUMPAD_ENTER", "RIGHTMOUSE"}:
-            is_valid = self.recalculate_inputs(context)
-            if is_valid:
-                tool.Snap.insert_polyline_point(self.input_ui)
-            self.is_input_on = False
-            self.input_type = None
-            self.number_input = []
-            self.number_output = ""
-            PolylineDecorator.set_input_ui(self.input_ui, self.input_type)
-            tool.Blender.update_viewport()
+        self.handle_keyboard_input(context, event)
 
-        if event.value == "PRESS" and event.type == "M":
-            self.snapping_points = tool.Snap.modify_snapping_point_selection(self.snapping_points)
-            PolylineDecorator.set_mouse_position(event)
-            tool.Polyline.calculate_distance_and_angle(context, self.is_input_on, self.input_ui)
-            tool.Blender.update_viewport()
+        self.handle_inserting_polyline(context, event)
 
-        if event.shift and event.value == "PRESS" and event.type == "X":
-            tool.Snap.set_use_default_container(False)
-            PolylineDecorator.set_use_default_container(False)
-            tool.Snap.cycle_snap_plane_method("YZ")
-            tool.Snap.set_snap_axis_method(None)
-            tool.Blender.update_viewport()
-
-        if event.shift and event.value == "PRESS" and event.type == "Y":
-            tool.Snap.set_use_default_container(False)
-            PolylineDecorator.set_use_default_container(False)
-            tool.Snap.cycle_snap_plane_method("XZ")
-            tool.Snap.set_snap_axis_method(None)
-            tool.Blender.update_viewport()
-
-        if event.shift and event.value == "PRESS" and event.type == "Z":
-            tool.Snap.set_use_default_container(False)
-            PolylineDecorator.set_use_default_container(False)
-            tool.Snap.cycle_snap_plane_method("XY")
-            tool.Snap.set_snap_axis_method(None)
-            tool.Blender.update_viewport()
-
-        if event.type in {"MIDDLEMOUSE", "WHEELUPMOUSE", "WHEELDOWNMOUSE"}:
-            return {"PASS_THROUGH"}
-
-        if self.is_input_on:
-            if event.value == "RELEASE" and event.type in {"ESC"}:
-                self.recalculate_inputs(context)
-                self.is_input_on = False
-                self.input_type = None
-                PolylineDecorator.set_input_ui(self.input_ui, self.input_type)
-                tool.Blender.update_viewport()
-        else:
-            if event.value == "RELEASE" and event.type in {"ESC"}:
-                tool.Snap.set_snap_plane_method(None)
-                tool.Snap.set_snap_axis_method(None)
-                PolylineDecorator.uninstall()
-                tool.Snap.clear_polyline()
-                tool.Blender.update_viewport()
-                return {"CANCELLED"}
+        result = self.handle_cancelation(context, event)
+        if result is not None:
+            return result
 
         return {"RUNNING_MODAL"}
 
     def invoke(self, context, event):
-        if context.space_data.type == "VIEW_3D":
-            PolylineDecorator.install(context)
-            tool.Snap.clear_snapping_point()
-            tool.Snap.set_use_default_container(False)
-            PolylineDecorator.set_use_default_container(False)
-            tool.Polyline.set_use_default_container(False)
-            tool.Snap.set_snap_plane_method(None)
-            tool.Snap.set_snap_axis_method(None)
-            PolylineDecorator.set_instructions(self.instructions)
-            PolylineDecorator.set_input_ui(self.input_ui, self.input_type)
-            self.visible_objs = tool.Raycast.get_visible_objects(context)
-            for obj in self.visible_objs:
-                self.objs_2d_bbox.append(tool.Raycast.get_on_screen_2d_bounding_boxes(context, obj))
-            detected_snaps = tool.Snap.detect_snapping_points(context, event, self.objs_2d_bbox)
-            self.snapping_points = tool.Snap.select_snapping_points(context, event, detected_snaps)
-            PolylineDecorator.set_mouse_position(event)
-            tool.Polyline.calculate_distance_and_angle(context, self.is_input_on, self.input_ui)
-            tool.Blender.update_viewport()
-            context.window_manager.modal_handler_add(self)
-            return {"RUNNING_MODAL"}
-        else:
-            self.report({"WARNING"}, "Active space must be a View3d")
-            return {"CANCELLED"}
+        super().invoke(context, event)
+        return {"RUNNING_MODAL"}

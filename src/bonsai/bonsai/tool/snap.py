@@ -118,10 +118,10 @@ class Snap(bonsai.core.tool.Snap):
     def insert_polyline_point(cls, input_ui):
         x = input_ui.get_number_value("X")
         y = input_ui.get_number_value("Y")
-        try:
+        if input_ui.get_number_value("Z") is not None:
             z = input_ui.get_number_value("Z")
-        except:
-            z = Vector((0, 0, 0))
+        else:
+            z = 0
         d = input_ui.get_formatted_value("D")
         a = input_ui.get_formatted_value("A")
 
