@@ -11,21 +11,22 @@ $(document).ready(function () {
   setTheme(theme);
 
   connectSocket();
-
-  const settingsMenu = CostUI.Form({
-    id: "settings-menu",
-    name: "Settings",
-    icon: "fa-solid fa-gear",
-    shouldHide: true,
+  CostUI.addSettingsMenu();
+  CostUI.addRibbonButton({
+    text: "Hide Schedules",
+    icon: "fa-regular fa-eye-slash",
+    callback: (button) => {
+      CostUI.toggleSchedulesContainer(button);
+    }
   });
-  settingsMenu.style.display = "none";
-  const picker = CostUI.createColorPicker();
-  settingsMenu.appendChild(picker);
-
-  const settingsButton = document.getElementById("settings-button");
-  settingsButton.addEventListener("click", function () {
-    settingsMenu.style.display = "block";
+  CostUI.addRibbonButton({
+    text: "Settings",
+    icon: "fas fa-cog",
+    callback: (button) => {
+      CostUI.toggleSettingsMenu(button);
+    }
   });
+  
 });
 
 function connectSocket() {
@@ -85,6 +86,7 @@ function handleSelectedProducts(data) {
 }
 
 function handlePredefinedTypes(data) {
+
   CostUI.enableAddingCostSchedule(
     data.data["predefined_types"],
     addCostSchedule
@@ -233,6 +235,65 @@ function setTheme(theme) {
   localStorage.setItem("theme", theme);
 }
 
+function toggleClientList() {
+  var clientList = $("#client-list");
+
+  if (clientList.hasClass("show")) {
+    clientList.removeClass("show");
+    return;
+  }
+
+  clientList.empty();
+  var counter = 0;
+
+  $.each(connectedClients, function (id, client) {
+    counter++;
+
+    const dropdownIcon = $("<i>")
+      .addClass("fas fa-chevron-down")
+      .css("margin-left", "0.5rem");
+
+    const clientDiv = $("<div>")
+      .addClass("client")
+      .text(client.ifc_file || "Blender " + counter);
+
+    clientDiv.append(dropdownIcon);
+
+    const clientDetailsDiv = $("<div>").addClass("client-details");
+
+    if (id) {
+      const clientId = $("<div>")
+        .addClass("client-detail")
+        .text(`Blender ID: ${id}`);
+      clientDetailsDiv.append(clientId);
+    }
+
+    if (!client.has_drawings) {
+      const clientShown = $("<div>")
+        .addClass("client-detail")
+        .text("No drawings exist for this IFC File yet");
+      clientDetailsDiv.append(clientShown);
+    } else {
+      const clientNumbers = $("<div>")
+        .addClass("client-detail")
+        .text(
+          `${allDrawings[client.ifc_file].drawings.length} Drawing(s), 
+          ${allDrawings[client.ifc_file].sheets.length} Sheet(s)`
+        );
+      clientDetailsDiv.append(clientNumbers);
+    }
+
+    clientDiv.append(clientDetailsDiv);
+
+    clientDiv.on("click", function () {
+      clientDetailsDiv.toggleClass("show");
+    });
+
+    clientList.append(clientDiv);
+  });
+  clientList.addClass("show");
+}
+
 function addCostItem(costItemId) {
   executeOperator({ type: "addCostItem", costItemId: costItemId });
 }
@@ -304,6 +365,7 @@ function handleCostSchedulesData(data) {
 }
 
 function handleCostItemsData(data) {
+  console.log(data);
   const cards = document.querySelectorAll("[id^='schedule-']");
   cards.forEach((card) => {
     if (card.id === "schedule-" + data.data["cost_items"]["cost_schedule_id"]) {

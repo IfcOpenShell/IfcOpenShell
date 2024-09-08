@@ -4,7 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>BlenderBIM Web UI</title>
-    <link rel="stylesheet" type="text/css" href="/static/css/cost.css" id="index-stylesheet" />
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="/static/css/cost.css"
+      id="index-stylesheet"
+    />
     <link
       rel="stylesheet"
       id="tabulator-stylesheet"
@@ -30,9 +35,6 @@
       var SOCKET_PORT = {{port}};
     </script>
     <script type="module" defer src="./static/js/cost.js"></script>
-    <style>
-
-  </style>
   </head>
   <body>
     <nav>
@@ -43,12 +45,10 @@
       />
       <ul>
         <li>
-          <a href="/"
-            ><i class="fa-solid fa-table"></i> Schedules</a
-          >
+          <a href="/"><i class="fa-solid fa-table"></i> Schedules</a>
         </li>
         <li>
-            <a href="/costing" class="active"
+          <a href="/costing" class="active"
             ><i class="fa-solid fa-money-bill-trend-up"></i> Costing</a
           >
         </li>
@@ -78,25 +78,26 @@
       <button id="settings-button">
         <i class="fa-solid fa-gear"></i>
       </button>
+      <div id="connected-list-div">
+        <button id="show-connected-button" onclick="toggleClientList()">
+          Connected Blenders:
+          <span id="blender-count">0</span>
+          <i class="fas fa-chevron-down"></i>
+        </button>
+        <div id="client-list"></div>
+      </div>
     </nav>
-    <div id="connected-list-div">
-      <button id="show-connected-button" onclick="toggleClientList()">
-        Connected Blenders:
-        <span id="blender-count">0</span>
-        <i class="fas fa-chevron-down"></i>
-      </button>
-      <div id="client-list"></div>
+    <div class="row-container">
+      <div id="ribbon-bar" class="ribbon-bar">
+        <button
+          id="add-cost-schedule"
+          class="action-button fas fa-plus"
+          data-tooltip="Add New Schedule"
+        ></button>
+      </div>
     </div>
-    <h1>Costing</h1>
-    <div id="" > 
-      <li id="add-cost-schedule" class="action-button fas fa-plus"> </li>
-      Add New Schedule
-    </div>
-    
     <div id="cost-schedules" class="row-container"></div>
-    
     <div id="cost-items" class="table-container"></div>
-
     <footer>
       <p>BlenderBIM Version: {{version}}</p>
     </footer>

@@ -219,7 +219,6 @@ button:hover {
 }
 
 .row-container {
-  width: 100%;
   border-collapse: collapse;
   display: flex;
   justify-content: flex-start;

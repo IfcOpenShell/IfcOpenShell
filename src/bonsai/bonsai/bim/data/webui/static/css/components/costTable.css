@@ -1,34 +1,70 @@
-table {
-  width: 100%;
-  height: 80%;
-  border-collapse: collapse;
-  user-select: none;
+:root {
+  --fontSize: 14px;
+}
+body {
+  margin: 0;
+  padding: 0;
 }
 
 .table-container {
-  max-height: 70vh;
   margin-top: 1em;
-  overflow-y: auto;
   overflow-x: auto;
+  position: relative;
 }
 
-form table {
-  height: 50%;
+#cost-items {
+  height: calc(100vh - var(--margin-small));
 }
 
-form .table-container {
-  max-height: 50vh;
+
+.table-scrollable-body {
+  max-height: 70vh;
+  overflow-y: auto;
+  display: block;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  user-select: none;
+  table-layout: fixed;
+  font-size: var(--fontSize);
+}
+
+thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background-color: #727272;
+  font-size: larger;
+}
+
+tbody {
+  width: 100%;
 }
 
 td,
 th {
-  border: 1px solid #ddd;
-  padding: 8px;
-  text-align: left;
+  padding: 0;
+  margin: 0;
+  border-left: 1px solid #ddd;
+  border-right: 1px solid #ddd;
+  text-align: center;
+  border-bottom: 0;
+  border-top: 0;
+}
+
+th {
+  border-bottom: 1px solid #ddd;
 }
 
 td {
   align-items: center;
+}
+
+td,
+th {
+  box-sizing: border-box; /* Include padding and border in the element's total width and height */
 }
 
 /* first td of a row, must be flex */
@@ -65,7 +101,7 @@ select {
   height: inherit;
   margin-left: 0.5em;
   margin-right: 0.5em;
-
+  font-size: var(--fontSize);
   min-width: 50px; /* Minimum width to prevent it from becoming too small */
 }
 
@@ -101,6 +137,7 @@ input:focus {
   background-color: #444444;
   text-align: center;
 }
+
 /* Responsive Styles */
 @media (max-width: 768px) {
   table {
