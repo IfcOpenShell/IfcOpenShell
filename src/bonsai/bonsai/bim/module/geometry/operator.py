@@ -1639,11 +1639,14 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
                 if len(context.selected_objects) == 1 and context.active_object == context.selected_objects[0]:
                     tool.Blender.select_and_activate_single_object(context, obj)
                     operator()
+                    context.scene.BIMGeometryProperties.is_changing_mode = True
+                    if context.scene.BIMGeometryProperties.mode != "EDIT":
+                        context.scene.BIMGeometryProperties.mode = "EDIT"
+                    context.scene.BIMGeometryProperties.is_changing_mode = False
                     return {"FINISHED"}
-                else:
-                    self.report({"INFO"}, "Only a single profile-based representation can be edited at a time.")
-                    obj.select_set(False)
-                    continue
+                self.report({"INFO"}, "Only a single profile-based representation can be edited at a time.")
+                obj.select_set(False)
+                continue
 
             if tool.Geometry.is_meshlike(representation):
                 tool.Ifc.edit(obj)
