@@ -100,7 +100,10 @@ class Cad:
         axis = d1.cross(d2).normalized()
 
         # Calculate the unsigned angle between the "d1" and "d2" vectors
-        a = d1.angle(d2)
+        try:
+            a = d1.angle(d2)
+        except:
+            a = 0
 
         # Determine the sign of the angle based on the provided axis
         # If new_angle, determine the direction of the rotation
