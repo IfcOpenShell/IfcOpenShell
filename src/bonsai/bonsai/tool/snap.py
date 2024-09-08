@@ -70,6 +70,7 @@ class Snap(bonsai.core.tool.Snap):
 
         return snap_point
 
+    # TODO Remove this function
     @classmethod
     def select_snap_point(cls, snap_points, hit, threshold):
         shortest_distance = None
@@ -125,15 +126,15 @@ class Snap(bonsai.core.tool.Snap):
         bpy.context.scene.BIMModelProperties.snap_mouse_ref.clear()
 
     @classmethod
-    def insert_polyline_point(cls, input_panel):
-        x = float(input_panel["X"])
-        y = float(input_panel["Y"])
+    def insert_polyline_point(cls, input_ui):
+        x = input_ui.get_number_value("X")
+        y = input_ui.get_number_value("Y")
         try:
-            z = float(input_panel["Z"])
+            z = input_ui.get_number_value("Z")
         except:
             z = Vector((0, 0, 0))
-        d = input_panel["D"]
-        a = input_panel["A"]
+        d = input_ui.get_formatted_value("D")
+        a = input_ui.get_formatted_value("A")
 
         snap_vertex = bpy.context.scene.BIMModelProperties.snap_mouse_point[0]
         if cls.use_default_container:
@@ -405,7 +406,6 @@ class Snap(bonsai.core.tool.Snap):
         elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
 
         plane_origin, plane_normal = select_plane_method()
-        PolylineDecorator.set_plane(plane_origin, plane_normal)
         intersection = tool.Raycast.ray_cast_to_plane(context, event, plane_origin, plane_normal)
 
         axis_start = None
