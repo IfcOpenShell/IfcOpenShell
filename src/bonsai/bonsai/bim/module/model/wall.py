@@ -914,58 +914,6 @@ class DumbWallGenerator:
         return [c for c in classes if "StandardCase" not in c][0]
 
 
-def calculate_quantities(usecase_path, ifc_file, settings):
-    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
-    obj = settings["blender_object"]
-    product = ifc_file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-    parametric = ifcopenshell.util.element.get_psets(product).get("EPset_Parametric")
-    if not parametric or "Engine" not in parametric or parametric["Engine"] != "Bonsai.DumbLayer2":
-        return
-    qto = ifcopenshell.api.run(
-        "pset.add_qto", ifc_file, should_run_listeners=False, product=product, name="Qto_WallBaseQuantities"
-    )
-    length = obj.dimensions[0] / unit_scale
-    width = obj.dimensions[1] / unit_scale
-    height = obj.dimensions[2] / unit_scale
-
-    bm_gross = bmesh.new()
-    bm_gross.from_mesh(obj.data)
-    bm_gross.faces.ensure_lookup_table()
-
-    bm_net = bmesh.new()
-    depsgraph = bpy.context.evaluated_depsgraph_get()
-    evaluated_mesh = obj.evaluated_get(depsgraph).data
-    bm_net.from_mesh(evaluated_mesh)
-    bm_net.faces.ensure_lookup_table()
-
-    gross_footprint_area = sum([f.calc_area() for f in bm_gross.faces if f.normal.z < -0.9])
-    net_footprint_area = sum([f.calc_area() for f in bm_net.faces if f.normal.z < -0.9])
-    gross_side_area = sum([f.calc_area() for f in bm_gross.faces if f.normal.y > 0.9])
-    net_side_area = sum([f.calc_area() for f in bm_net.faces if f.normal.y > 0.9])
-    gross_volume = bm_gross.calc_volume()
-    net_volume = bm_net.calc_volume()
-    bm_gross.free()
-    bm_net.free()
-
-    ifcopenshell.api.run(
-        "pset.edit_qto",
-        ifc_file,
-        should_run_listeners=False,
-        qto=qto,
-        properties={
-            "Length": round(length, 2),
-            "Width": round(width, 2),
-            "Height": round(height, 2),
-            "GrossFootprintArea": round(gross_footprint_area, 2),
-            "NetFootprintArea": round(net_footprint_area, 2),
-            "GrossSideArea": round(gross_side_area, 2),
-            "NetSideArea": round(net_side_area, 2),
-            "GrossVolume": round(gross_volume, 2),
-            "NetVolume": round(net_volume, 2),
-        },
-    )
-
-
 class DumbWallPlaner:
     def regenerate_from_layer(self, usecase_path, ifc_file, settings):
         if settings["attributes"].get("LayerThickness") is None:

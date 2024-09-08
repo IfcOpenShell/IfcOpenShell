@@ -43,18 +43,12 @@ def load_post(*args):
     )
 
     ifcopenshell.api.add_post_listener(
-        "geometry.add_representation", "Bonsai.DumbWall.CalculateQuantities", wall.calculate_quantities
-    )
-    ifcopenshell.api.add_post_listener(
         "material.edit_layer", "Bonsai.DumbWall.RegenerateFromLayer", wall.DumbWallPlaner().regenerate_from_layer
     )
     ifcopenshell.api.add_post_listener(
         "type.assign_type", "Bonsai.DumbWall.RegenerateFromType", wall.DumbWallPlaner().regenerate_from_type
     )
 
-    ifcopenshell.api.add_post_listener(
-        "geometry.add_representation", "Bonsai.DumbSlab.CalculateQuantities", slab.calculate_quantities
-    )
     ifcopenshell.api.add_post_listener(
         "material.edit_layer", "Bonsai.DumbSlab.RegenerateFromLayer", slab.DumbSlabPlaner().regenerate_from_layer
     )
