@@ -446,7 +446,8 @@ class FlipRailingPathOrder(bpy.types.Operator, tool.Ifc.Operator):
 
 class EnableEditingRailingPath(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_railing_path"
-    bl_label = "Enable Editing Railing Path"
+    bl_label = "Edit Railing"
+    bl_description = "Enable Editing Railing Path"
     bl_options = {"REGISTER"}
 
     def _execute(self, context):

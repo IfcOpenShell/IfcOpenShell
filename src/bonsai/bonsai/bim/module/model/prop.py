@@ -135,7 +135,7 @@ class BIMModelProperties(PropertyGroup):
         description="Code that will be evaluated to generate occurrence name for CUSTOM occurrence name style",
     )
     getter_enum = {"ifc_class": get_ifc_class, "relating_type": get_relating_type_id}
-    extrusion_depth: bpy.props.FloatProperty(min=0.001, default=42.0, subtype="DISTANCE")
+    extrusion_depth: bpy.props.FloatProperty(name="Extrusion Depth", min=0.001, default=42.0, subtype="DISTANCE")
     cardinal_point: bpy.props.EnumProperty(
         items=(
             # TODO: complain to buildingSMART
@@ -162,7 +162,7 @@ class BIMModelProperties(PropertyGroup):
         name="Cardinal Point",
         default="5",
     )
-    length: bpy.props.FloatProperty(default=42.0, subtype="DISTANCE")
+    length: bpy.props.FloatProperty(name="Length", default=42.0, subtype="DISTANCE")
     openings: bpy.props.CollectionProperty(type=ObjProperty)
     x: bpy.props.FloatProperty(name="X", default=0.5, subtype="DISTANCE", description="Size by X axis for the opening")
     y: bpy.props.FloatProperty(name="Y", default=0.5, subtype="DISTANCE", description="Size by Y axis for the opening")
