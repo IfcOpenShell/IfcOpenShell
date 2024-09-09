@@ -30,11 +30,11 @@ from bonsai.bim.module.model.opening import FilledOpeningGenerator
 
 class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_opening"
-    bl_label = "Apply Void"
+    bl_label = "Apply Opening"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = (
-        "Apply a Void object on an Element. " 
-        "The Element and the Void to be applied should be selected. The order of selection is not important"
+        "Apply an Opening object on an Element. " 
+        "The Element and the Opening to be applied should be selected. The order of selection is not important"
     )
 
     @classmethod
