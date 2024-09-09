@@ -33,7 +33,7 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Apply Opening"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = (
-        "Apply an Opening object on an Element. " 
+        "Apply an Opening object on an Element. "
         "The Element and the Opening to be applied should be selected. The order of selection is not important"
     )
 
