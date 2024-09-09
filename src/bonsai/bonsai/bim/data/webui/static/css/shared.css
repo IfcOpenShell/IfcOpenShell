@@ -51,7 +51,7 @@
   --border-color: #222;
 }
 
-*:not(td, tr, td, .gmain) {
+*:not(td, tr, td, th, button, .gmain) {
   border-radius: var(--border-radius) !important;
 }
 

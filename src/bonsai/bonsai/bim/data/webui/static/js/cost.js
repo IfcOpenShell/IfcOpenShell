@@ -11,21 +11,7 @@ $(document).ready(function () {
   setTheme(theme);
 
   connectSocket();
-  CostUI.addSettingsMenu();
-  CostUI.addRibbonButton({
-    text: "Hide Schedules",
-    icon: "fa-regular fa-eye-slash",
-    callback: (button) => {
-      CostUI.toggleSchedulesContainer(button);
-    },
-  });
-  CostUI.addRibbonButton({
-    text: "Settings",
-    icon: "fas fa-cog",
-    callback: (button) => {
-      CostUI.toggleSettingsMenu(button);
-    },
-  });
+  CostUI.createRibbon();
 });
 
 function connectSocket() {
@@ -54,9 +40,15 @@ function handleSelectedProducts(data) {
   const formId = "selected-products-" + costItemId;
   const form = CostUI.Form({
     id: formId,
-    name: "Selected Products",
-    icon: "fa-solid fa-cart-shopping",
+    name: "Edit Product Assignments for: " + CostUI.getCostItemName(costItemId),
+    icon: "fa-solid fa-box",
   });
+  const numberOfProducts = CostUI.Text(
+    "Selection basket : " + products.length + " products",
+    "fa-solid fa-cart-shopping",
+    "large"
+  );
+  form.appendChild(numberOfProducts);
   CostUI.highlightElement(costItemId);
   const selectedProductsTable = CostUI.createProductTable({
     form,
@@ -68,11 +60,12 @@ function handleSelectedProducts(data) {
       getSelectedProducts: getSelectedProducts,
     },
   });
+
   if (assigned_products.length > 0) {
     const assignedProductsText = CostUI.Text(
       "Assigned Products",
-      "fa-solid fa-box",
-      "x-large"
+      "fa-solid fa-solid fa-paperclip",
+      "large"
     );
     form.appendChild(assignedProductsText);
     const assignmentsTable = CostUI.createAssignmentsTable({
@@ -339,7 +332,6 @@ function handleCostSchedulesData(data) {
       "Predefined Type: " + costSchedule.PredefinedType,
       "fa-solid fa-paperclip"
     );
-    // simplyfying the date
     const updatedDate = new Date(costSchedule.UpdateDate).toLocaleDateString();
     const updatedOn = CostUI.Text(
       "Updated On: " + updatedDate,
@@ -363,7 +355,6 @@ function handleCostSchedulesData(data) {
 }
 
 function handleCostItemsData(data) {
-  console.log(data);
   const cards = document.querySelectorAll("[id^='schedule-']");
   cards.forEach((card) => {
     if (card.id === "schedule-" + data.data["cost_items"]["cost_schedule_id"]) {

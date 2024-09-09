@@ -182,7 +182,6 @@ export class CostUI {
       getSelectedProducts.hasListener = true;
     }
 
-    // Function to get column names from the table header
     function getColumnNames(tableId) {
       const table = document.getElementById(tableId);
       const headerRow = table.querySelector("thead tr");
@@ -191,7 +190,6 @@ export class CostUI {
       );
     }
 
-    // Add double-click event listener
     document
       .getElementById("cost-items")
       .addEventListener("dblclick", function (event) {
@@ -202,36 +200,12 @@ export class CostUI {
             targetCell
           );
           const costItemId = parseInt(targetRow.getAttribute("id"));
-          const cellContent = targetCell.textContent;
+          const columnName = getColumnNames("cost-items")[columnIndex];
 
-          // Get column names from the table header
-          const columnNames = getColumnNames("cost-items");
-          const cellName = columnNames[columnIndex];
-
-          console.log("Column Name: ", cellName);
-          console.log("Content: ", cellContent);
-
-          // Implement different behaviors based on the column index
-          switch (columnIndex) {
-            case 0:
-              // Behavior for the first column
-              callbacks.firstColumnDoubleClick
-                ? callbacks.firstColumnDoubleClick(costItemId)
-                : null;
-              break;
-            case 1:
-              // Behavior for the second column
-              callbacks.secondColumnDoubleClick
-                ? callbacks.secondColumnDoubleClick(costItemId)
-                : null;
-              break;
-            // Add more cases as needed for other columns
-            default:
-              // Default behavior
-              callbacks.defaultDoubleClick
-                ? callbacks.defaultDoubleClick(costItemId)
-                : null;
-              break;
+          if (columnName === "Cost") {
+            callbacks.enableEditingCostValues
+              ? callbacks.enableEditingCostValues(costItemId)
+              : null;
           }
         }
       });
@@ -345,21 +319,24 @@ export class CostUI {
       form.appendChild(typeSelect);
 
       const submitButton = document.createElement("button");
-      submitButton.type = "submit";
       submitButton.textContent = "Add";
       submitButton.classList.add("action-button");
       form.appendChild(submitButton);
 
-      form.addEventListener("submit", function (event) {
-        event.preventDefault();
-        const formData = new FormData(form);
-        const data = {};
-        formData.forEach((value, key) => {
-          data[key] = value;
+      document
+        .getElementById("add-cost-schedule-form")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          const formData = new FormData(
+            document.getElementById("add-cost-schedule-form")
+          );
+          const data = {};
+          formData.forEach((value, key) => {
+            data[key] = value;
+          });
+          addCostSchedule(data.name, data["Predefined Type"]);
+          document.getElementById("add-cost-schedule-form").remove();
         });
-        addCostSchedule(data.name, data["Predefined Type"]);
-        form.remove();
-      });
     });
   }
 
@@ -1012,19 +989,20 @@ export class CostUI {
   }
 
   static Form({ id, name, icon = "fa-solid fa-file", shouldHide = false }) {
-    let form;
     if (document.getElementById(id)) {
-      form = document.getElementById(id);
-    } else {
-      form = document.createElement("form");
-      form.id = id;
-      form.classList.add("floating-form");
-      form.style.position = "absolute";
-      form.style.top = "50%";
-      form.style.left = "50%";
-      form.style.transform = "translate(-50%, -50%)";
+      const formContainer = document
+        .getElementById(id)
+        .querySelector(".form-container");
+      formContainer.innerHTML = "";
+      return formContainer;
     }
-
+    const form = document.createElement("form");
+    form.id = id;
+    form.classList.add("floating-form");
+    form.style.position = "absolute";
+    form.style.top = "50%";
+    form.style.left = "50%";
+    form.style.transform = "translate(-50%, -50%)";
     const header = CostUI.createHeader(name, icon);
     let closeButton;
     if (shouldHide) {
@@ -1035,8 +1013,12 @@ export class CostUI {
     form.appendChild(header);
     form.appendChild(closeButton);
     CostUI.makeFormDraggable(form);
+
+    const formContainer = document.createElement("div");
+    formContainer.classList.add("form-container");
+    form.appendChild(formContainer);
     document.body.appendChild(form);
-    return form;
+    return formContainer;
   }
   static makeFormDraggable(form) {
     let pos1 = 0,
@@ -1154,7 +1136,6 @@ export class CostUI {
         Object.entries(qto).forEach(([key, value]) => {
           if (key !== "id") {
             const cell = document.createElement("td");
-            // check if value is a number
             cell.textContent = parseFloat(value).toFixed(2);
             row.appendChild(cell);
           }
@@ -1254,7 +1235,7 @@ export class CostUI {
       });
     }
 
-    subtotalRow.style.fontWeight = "bold";
+    subtotalRow.classList.add("subtotal-row");
 
     return subtotalRow;
   }
@@ -1489,9 +1470,6 @@ export class CostUI {
   }
 
   static addSettingsMenu() {
-    if (document.getElementById("settings-menu")) {
-      return document.getElementById("settings-menu");
-    }
     const settingsMenu = CostUI.Form({
       id: "settings-menu",
       name: "Settings",
@@ -1503,14 +1481,7 @@ export class CostUI {
     const tableFontSize = CostUI.createFontSizePicker();
     settingsMenu.appendChild(picker);
     settingsMenu.appendChild(tableFontSize);
-
-    settingsMenu.style.display = "none";
-    const settingsButton = document.getElementById("settings-button");
-    settingsButton.addEventListener("click", function () {
-      settingsMenu.style.display = "block";
-    });
-
-    // Apply saved settings on page load
+    document.getElementById("settings-menu").style.display = "none";
     CostUI.applySavedSettings();
   }
 
@@ -1570,7 +1541,6 @@ export class CostUI {
   }
 
   static applySavedSettings() {
-    console.log("Applying saved settings");
     const savedFontSize = localStorage.getItem("tableFontSize");
     if (savedFontSize) {
       CostUI.applyFontSizeToAllTables(savedFontSize);
@@ -1599,7 +1569,7 @@ export class CostUI {
 
     const button = document.createElement("button");
     button.classList.add("action-button", ...icon.split(" "));
-    button.dataset.tooltip = text; // Use dataset to set the tooltip attribute
+    button.dataset.tooltip = text;
 
     button.addEventListener("click", () => callback(button));
 
@@ -1641,20 +1611,30 @@ export class CostUI {
     return document.getElementById("settings-menu");
   }
 
-  static toggleSettingsMenu(button) {
+  static toggleSettingsMenu() {
     const settingsMenu = CostUI.getSettingsMenu();
-    const isHidden = settingsMenu.style.display === "none";
-
-    if (isHidden) {
+    if (settingsMenu.style.display === "none") {
       settingsMenu.style.display = "block";
-      button.classList.remove("fa-gear");
-      button.classList.add("fa-times");
-      button.dataset.tooltip = "Close Settings";
     } else {
       settingsMenu.style.display = "none";
-      button.classList.remove("fa-times");
-      button.classList.add("fa-gear");
-      button.dataset.tooltip = "Open Settings";
     }
+  }
+
+  static createRibbon() {
+    CostUI.addSettingsMenu();
+    CostUI.addRibbonButton({
+      text: "Hide Schedules",
+      icon: "fa-regular fa-eye-slash",
+      callback: (button) => {
+        CostUI.toggleSchedulesContainer(button);
+      },
+    });
+    CostUI.addRibbonButton({
+      text: "Settings",
+      icon: "fas fa-cog",
+      callback: () => {
+        CostUI.toggleSettingsMenu();
+      },
+    });
   }
 }
