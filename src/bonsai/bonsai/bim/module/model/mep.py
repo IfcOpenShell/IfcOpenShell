@@ -647,9 +647,7 @@ class MEPAddObstruction(bpy.types.Operator, tool.Ifc.Operator):
 class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.mep_add_transition"
     bl_label = "Add Transition"
-    bl_description = (
-        "Adds transition between two selected MEP Elements"
-    )
+    bl_description = "Adds transition between two selected MEP Elements"
     bl_options = {"REGISTER", "UNDO"}
     start_length: bpy.props.FloatProperty(
         name="Start Length", description="Transition start length in SI units", default=0.1, subtype="DISTANCE", min=0
