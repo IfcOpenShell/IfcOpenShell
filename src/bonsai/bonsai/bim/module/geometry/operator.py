@@ -1855,7 +1855,8 @@ class EnableEditingRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
         if bpy.context.active_object.data and hasattr(bpy.context.active_object.data, "BIMMeshProperties"):
             active_representation_id = bpy.context.active_object.data.BIMMeshProperties.ifc_definition_id
             element = tool.Ifc.get().by_id(active_representation_id)
-            if not element.is_a("IfcShapeRepresentation"):
+            # IfcShapeRepresentation or IfcTopologyRepresentation.
+            if not element.is_a("IfcShapeModel"):
                 return
             queue = list(element.Items)
             while queue:
