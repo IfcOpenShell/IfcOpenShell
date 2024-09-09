@@ -219,8 +219,8 @@ class Helper:
             if len(loop) == 1 and all([is_in_group(v, "IFCCIRCLE") for v in loop[0].verts]):
                 v1, v2 = loop[0].verts
                 mid = v1.co.lerp(v2.co, 0.5)
-                mid = (position_i @ mid).to_2d()
-                v1 = (position_i @ v1.co).to_2d()
+                mid = (position_i @ (mid / unit_scale)).to_2d()
+                v1 = (position_i @ (v1.co / unit_scale)).to_2d()
                 radius = (mid - v1).length
                 curves.append(
                     tmp.createIfcCircle(tmp.createIfcAxis2Placement2D(tmp.createIfcCartesianPoint(list(mid))), radius)

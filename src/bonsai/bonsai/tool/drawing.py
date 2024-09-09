@@ -691,8 +691,8 @@ class Drawing(bonsai.core.tool.Drawing):
         shape = ifcopenshell.geom.create_shape(settings, drawing)
         camera = tool.Loader.create_camera(drawing, representation, shape)
         tool.Loader.link_mesh(shape, camera)
-
         obj = bpy.data.objects.new(tool.Loader.get_name(drawing), camera)
+
         cls.import_camera_props(drawing, camera)
         tool.Ifc.link(drawing, obj)
 
@@ -705,6 +705,25 @@ class Drawing(bonsai.core.tool.Drawing):
         tool.Geometry.record_object_position(obj)
         tool.Collector.assign(obj)
 
+        return obj
+
+    @classmethod
+    def import_temporary_drawing_camera(cls, drawing: ifcopenshell.entity_instance) -> bpy.types.Object:
+        settings = ifcopenshell.geom.settings()
+
+        representation = ifcopenshell.util.representation.get_representation(drawing, "Model", "Body", "MODEL_VIEW")
+        assert representation
+
+        shape = ifcopenshell.geom.create_shape(settings, drawing)
+        camera = tool.Loader.create_camera(drawing, representation, shape)
+        if obj := bpy.data.objects.get("TemporaryDrawingCamera"):
+            obj.data = camera
+        else:
+            obj = bpy.data.objects.new(tool.Loader.get_name(drawing), camera)
+        mat = Matrix(ifcopenshell.util.shape.get_shape_matrix(shape))
+        obj.matrix_world = mat
+        if cls.get_drawing_target_view(drawing) == "REFLECTED_PLAN_VIEW":
+            obj.matrix_world[1][1] *= -1
         return obj
 
     @classmethod
