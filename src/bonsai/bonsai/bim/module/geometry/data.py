@@ -161,7 +161,8 @@ class RepresentationItemsData:
         assert obj
         element = tool.Geometry.get_active_representation(obj)
         if element:
-            if not element.is_a("IfcShapeRepresentation"):
+            # IfcShapeRepresentation or IfcTopologyRepresentation.
+            if not element.is_a("IfcShapeModel"):
                 return 0
             queue = list(element.Items)
             while queue:
