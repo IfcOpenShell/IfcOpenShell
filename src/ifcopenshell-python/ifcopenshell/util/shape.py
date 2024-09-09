@@ -229,7 +229,7 @@ def get_shape_bbox_centroid(shape: ShapeType, geometry: ShapeType) -> npt.NDArra
     return (get_shape_matrix(shape) @ np.array([*centroid, 1.0]))[0:3]
 
 
-def get_vertices(geometry: ShapeType) -> npt.NDArray[np.float64]:
+def get_vertices(geometry: ShapeType, is_2d: bool = False) -> npt.NDArray[np.float64]:
     """Get all the vertices as a numpy array
 
     Vertices are in local coordinates.
@@ -238,9 +238,12 @@ def get_vertices(geometry: ShapeType) -> npt.NDArray[np.float64]:
 
     :param geometry: Geometry output calculated by IfcOpenShell
     :type geometry: geometry
+    :param is_2d: Set to True to to get XY coordinates only.
     :return: A numpy array listing all the vertices. Each vertex is a numpy array with XYZ coordinates.
     :rtype: np.array[np.array[float]]
     """
+    if is_2d:
+        return np.frombuffer(geometry.verts_buffer, "d").reshape(-1, 3)[:, :2]
     return np.frombuffer(geometry.verts_buffer, "d").reshape(-1, 3)
 
 
