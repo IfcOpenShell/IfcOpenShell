@@ -22,6 +22,7 @@ from typing import Optional, Union, Literal, Generator, Any
 import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
 from ifcopenshell.util.doc import get_predefined_type_doc
 from ifcopenshell.util.element import get_psets
+
 arithmetic_operator_symbols = {"ADD": "+", "DIVIDE": "/", "MULTIPLY": "*", "SUBTRACT": "-"}
 symbol_arithmetic_operators = {"+": "ADD", "/": "DIVIDE", "*": "MULTIPLY", "-": "SUBTRACT"}
 FILTER_BY_TYPE = Literal["PRODUCT", "RESOURCE", "PROCESS"]

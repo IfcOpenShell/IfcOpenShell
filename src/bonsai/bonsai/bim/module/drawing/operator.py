@@ -1568,7 +1568,7 @@ class CreateSheets(bpy.types.Operator, tool.Ifc.Operator):
         active_sheet = props.sheets[props.active_sheet_index]
         sheet = tool.Ifc.get().by_id(active_sheet.ifc_definition_id)
 
-		# Update any drawing boundary changes
+        # Update any drawing boundary changes
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.update_sheet_drawing_sizes(sheet)
 
