@@ -12,8 +12,6 @@ class piecewise_function_evaluator {
   public:
     piecewise_function_evaluator(taxonomy::piecewise_function::const_ptr pwf, ifcopenshell::geometry::Settings* settings=nullptr);
 
-    taxonomy::piecewise_function::const_ptr get_pwf() const;
-
     /// @brief returns a vector of "distance along" points where the evaluate function computes loop points
     std::vector<double> evaluation_points() const;
 

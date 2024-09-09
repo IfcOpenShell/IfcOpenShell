@@ -71,10 +71,10 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcGradientCurve* inst) {
 
 	// define the callback function for the gradient curve
    piecewise_function_evaluator horizontal_evaluator(horizontal, &settings_), vertical_evaluator(vertical, &settings_);
-   auto composition = [horizontal_evaluator, vertical_evaluator](double u) -> Eigen::Matrix4d {
+   auto composition = [horizontal_evaluator, vertical_evaluator,start=vertical->start()](double u) -> Eigen::Matrix4d {
 		// u is distance from start of gradient curve (vertical)
 		// add vertical->start() to u to get distance from start of horizontal
-      auto xy = horizontal_evaluator.evaluate(u + vertical_evaluator.get_pwf()->start());
+      auto xy = horizontal_evaluator.evaluate(u + start);
       auto uz = vertical_evaluator.evaluate(u);
 
       uz.col(3)(0) = 0.0; // x is distance along. zero it out so it doesn't add to the x from horizontal

@@ -7,10 +7,6 @@ using namespace ifcopenshell::geometry;
 piecewise_function_evaluator::piecewise_function_evaluator(taxonomy::piecewise_function::const_ptr pwf, ifcopenshell::geometry::Settings* settings) : pwf_(pwf), settings_(settings) {
 }
 
-taxonomy::piecewise_function::const_ptr piecewise_function_evaluator::get_pwf() const {
-    return pwf_;
-}
-
 std::vector<double> piecewise_function_evaluator::evaluation_points() const {
     if (!eval_points_.has_value()) {
         double curve_length = pwf_->length();
