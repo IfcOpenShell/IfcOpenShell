@@ -570,7 +570,10 @@ class IfcImporter:
                 mesh = self.meshes.get(mesh_name)
                 if mesh is None:
                     shape = tool.Loader.create_generic_shape(representation)
-                    if shape:
+                    # Skip elements without geometry - e.g. annotations with IfcTextLiterals.
+                    if shape and not shape.verts_buffer:
+                        pass
+                    elif shape:
                         mesh = self.create_mesh(element, shape)
                         tool.Loader.link_mesh(shape, mesh)
                         self.meshes[mesh_name] = mesh
