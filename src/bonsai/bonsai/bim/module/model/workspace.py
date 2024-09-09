@@ -636,10 +636,10 @@ class BimToolUI:
 
         row = cls.layout.row(align=True)
         if len(context.selected_objects) > 1:
-            row.operator("bim.add_opening", text="Apply Void", icon_value=custom_icon_previews["VOID"].icon_id)
+            row.operator("bim.add_opening", text="Apply Opening", icon_value=custom_icon_previews["VOID"].icon_id)
         else:
             row.operator(
-                "bim.add_potential_opening", text="Add Void", icon_value=custom_icon_previews["ADD_VOID"].icon_id
+                "bim.add_potential_opening", text="Add Opening", icon_value=custom_icon_previews["ADD_VOID"].icon_id
             )
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_O")
@@ -688,9 +688,9 @@ class BimToolUI:
         cls.layout.row(align=True).label(text="Mode")
         add_layout_hotkey_operator(
             cls.layout,
-            "Void",
+            "Opening",
             "A_O",
-            "Toggle display of Voids in the selected Elements",
+            "Toggle display of Openings in the selected Elements",
             ui_context)
         add_layout_hotkey_operator(
             cls.layout,
@@ -1020,9 +1020,9 @@ class BimToolUI:
         row = cls.layout.row(align=True)
         add_layout_hotkey_operator(
             row,
-            "Void",
+            "Opening",
             "A_O",
-            "Toggle display of Voids in the selected Elements",
+            "Toggle display of Openings in the selected Elements",
             ui_context)
         add_layout_hotkey_operator(
             row,

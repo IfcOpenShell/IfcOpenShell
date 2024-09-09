@@ -157,7 +157,7 @@ class RecalculateWall(bpy.types.Operator, tool.Ifc.Operator):
 
 class ChangeExtrusionDepth(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.change_extrusion_depth"
-    bl_label = ""
+    bl_label = "Update"
     bl_description = "Update Height"
     bl_options = {"REGISTER", "UNDO"}
     depth: bpy.props.FloatProperty()
@@ -199,7 +199,7 @@ class ChangeExtrusionDepth(bpy.types.Operator, tool.Ifc.Operator):
 
 class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.change_extrusion_x_angle"
-    bl_label = ""
+    bl_label = "Update"
     bl_description = "Update Angle"
     bl_options = {"REGISTER", "UNDO"}
     x_angle: bpy.props.FloatProperty(name="X Angle", default=0, subtype="ANGLE")
@@ -253,7 +253,7 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
 
 class ChangeLayerLength(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.change_layer_length"
-    bl_label = ""
+    bl_label = "Update"
     bl_description = "Update Length"
     bl_options = {"REGISTER", "UNDO"}
     length: bpy.props.FloatProperty()

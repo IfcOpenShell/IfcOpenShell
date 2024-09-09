@@ -879,7 +879,7 @@ def update_enum_property_search_prop(self, context):
 
 class BIM_OT_enum_property_search(bpy.types.Operator):
     bl_idname = "bim.enum_property_search"
-    bl_label = ""
+    bl_label = "Search"
     bl_description = "Search For Property"
     bl_options = {"REGISTER", "UNDO"}
     first_launch: bpy.props.BoolProperty(default=True, options={"SKIP_SAVE"})
