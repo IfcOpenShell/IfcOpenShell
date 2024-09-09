@@ -454,7 +454,7 @@ class Spatial(bonsai.core.tool.Spatial):
         children = ifcopenshell.util.element.get_parts(element)
         if children:
             children_elevations = [ifcopenshell.util.placement.get_storey_elevation(el) for el in children]
-            children_names = [[int(x) if x.isdigit() else x for x in (el.Name or "").split()] for el in children]
+            children_names = [[x.zfill(5) if x.isdigit() else x for x in (el.Name or "").split()] for el in children]
             children = sorted(children, key=dict(zip(children, tuple(zip(children_elevations, children_names)))).get)
         new.has_children = bool(children)
         new.ifc_definition_id = element.id()
