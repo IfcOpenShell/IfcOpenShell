@@ -146,7 +146,7 @@ IfcGeom::OpenCascadeKernel::faceset_helper::faceset_helper(
 
 		auto num_retained = std::count(retained.begin(), retained.end(), true);
 
-		if (pnts.size() != num_retained) {
+		if (unique.size() != num_retained) {
 			Logger::Notice("Collapsed vertices from " + std::to_string(pnts.size()) + " (" + std::to_string(unique.size()) + " unique) to " + std::to_string(num_retained));
 		}
 
