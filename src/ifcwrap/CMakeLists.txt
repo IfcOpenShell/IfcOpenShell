@@ -121,10 +121,10 @@ IF((PYTHONINTERP_FOUND AND NOT "${PYTHON_EXECUTABLE}" STREQUAL "") OR PYTHON_MOD
         ENDFOREACH()
         INSTALL(FILES "${CMAKE_BINARY_DIR}/ifcwrap/ifcopenshell_wrapper.py"
                 DESTINATION "${python_package_dir}/ifcopenshell")
-        INSTALL(TARGETS ifcopenshell_wrapper
+        INSTALL(TARGETS ${SWIG_MODULE_ifcopenshell_wrapper_REAL_NAME}
                 DESTINATION "${python_package_dir}/ifcopenshell")
 	if (MSVC)
-	    INSTALL(FILES $<TARGET_PDB_FILE:ifcopenshell_wrapper> DESTINATION bin OPTIONAL)
+	    INSTALL(FILES $<TARGET_PDB_FILE:${SWIG_MODULE_ifcopenshell_wrapper_REAL_NAME}> DESTINATION bin OPTIONAL)
 	endif()
     ENDIF()
 ELSE()
