@@ -52,7 +52,7 @@ namespace geometry {
 						try {
 							if (inst->as<IfcSchema::IfcRepresentationItem>() && !inst->as<IfcSchema::IfcStyledItem>() &&
 								/* @todo */
-								(item->kind() == taxonomy::SOLID || item->kind() == taxonomy::SHELL || item->kind() == taxonomy::COLLECTION || item->kind() == taxonomy::EXTRUSION || item->kind() == taxonomy::LOFT || item->kind() == taxonomy::BOOLEAN_RESULT || item->kind() == taxonomy::REVOLVE || item->kind() == taxonomy::SWEEP_ALONG_CURVE)
+								(item->kind() == taxonomy::SOLID || item->kind() == taxonomy::SHELL || item->kind() == taxonomy::COLLECTION || item->kind() == taxonomy::EXTRUSION || item->kind() == taxonomy::LOFT || item->kind() == taxonomy::BOOLEAN_RESULT || item->kind() == taxonomy::REVOLVE || item->kind() == taxonomy::SWEEP_ALONG_CURVE || item->kind() == taxonomy::FACE)
 								) {
 								auto style = find_style(inst->as<IfcSchema::IfcRepresentationItem>());
 								if (style) {
