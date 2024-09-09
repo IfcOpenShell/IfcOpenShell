@@ -205,7 +205,6 @@ void ColladaSerializer::ColladaExporter::ColladaScene::add(
 
 	const auto& posmatrix = transformation_towrite;
 
-	// @todo check
 	double matrix_array[4][4] = {
 		{ (double)posmatrix(0,0), (double)posmatrix(0,1), (double)posmatrix(0,2), (double)posmatrix(0,3) },
 		{ (double)posmatrix(1,0), (double)posmatrix(1,1), (double)posmatrix(1,2), (double)posmatrix(1,3) },
@@ -249,10 +248,10 @@ void ColladaSerializer::ColladaExporter::ColladaScene::addParent(const IfcGeom::
 	const auto& posmatrix = transformation_towrite;
 
 	double matrix_array[4][4] = {
-		{ (double)posmatrix(0,0), (double)posmatrix(1,0), (double)posmatrix(2,0), (double)posmatrix(3,0) },
-		{ (double)posmatrix(0,1), (double)posmatrix(1,1), (double)posmatrix(2,1), (double)posmatrix(3,1) },
-		{ (double)posmatrix(0,2), (double)posmatrix(1,2), (double)posmatrix(2,2), (double)posmatrix(3,2) },
-		{ (double)posmatrix(0,3), (double)posmatrix(1,3), (double)posmatrix(2,3), (double)posmatrix(3,3) }
+		{ (double)posmatrix(0,0), (double)posmatrix(0,1), (double)posmatrix(0,2), (double)posmatrix(0,3) },
+		{ (double)posmatrix(1,0), (double)posmatrix(1,1), (double)posmatrix(1,2), (double)posmatrix(1,3) },
+		{ (double)posmatrix(2,0), (double)posmatrix(2,1), (double)posmatrix(2,2), (double)posmatrix(2,3) },
+		{ (double)posmatrix(3,0), (double)posmatrix(3,1), (double)posmatrix(3,2), (double)posmatrix(3,3) }
 	};
 
     std::string name = serializer->object_id(&parent);
