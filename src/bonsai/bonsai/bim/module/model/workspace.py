@@ -284,7 +284,10 @@ def add_layout_hotkey_operator(layout, text, hotkey, description, ui_context="")
     description += hotkey_description
 
     op.hotkey = hotkey
-    op.description = description
+    if ui_context == "TOOL_HEADER":
+        op.description = text + "\n" + description
+    else:
+        op.description = description
     return op
 
 
@@ -367,7 +370,11 @@ class BimToolUI:
             row = cls.layout.row(align=True)
             row.prop(data=cls.props, property="rl2", text="RL")
         elif cls.props.ifc_class in ("IfcSpaceType"):
-            add_layout_hotkey_operator(cls.layout, "Generate", "S_G", bpy.ops.bim.generate_space.__doc__)
+            add_layout_hotkey_operator(
+                cls.layout,
+                "Generate",
+                "S_G",
+                "Generate a space at the cursor position")
         else:
             row = cls.layout.row(align=True)
             row.prop(data=cls.props, property="rl_mode", text="RL")
@@ -393,7 +400,12 @@ class BimToolUI:
 
             cls.layout.separator()
 
-            add_layout_hotkey_operator(cls.layout, "Regen", "S_G", bpy.ops.bim.recalculate_wall.__doc__, ui_context)
+            add_layout_hotkey_operator(
+                cls.layout,
+                "Regen",
+                "S_G",
+                "Regenerate selected Element",
+                ui_context)
 
             cls.layout.separator()
 
@@ -401,21 +413,21 @@ class BimToolUI:
                 cls.layout,
                 "Extend",
                 "S_E",
-                "Extends/reduces element to 3D cursor",
+                "Extends/ reduces Element to 3D cursor",
                 ui_context,
             )
             add_layout_hotkey_operator(
                 cls.layout,
                 "Butt",
                 "S_T",
-                "Intersects two non-parallel elements to a butt corner junction",
+                "Intersects two non-parallel Elements to a butt corner junction",
                 ui_context,
             )
             add_layout_hotkey_operator(
                 cls.layout,
                 "Mitre",
                 "S_Y",
-                "Intersects two non-parallel elements to a mitred corner junction",
+                "Intersects two non-parallel Elements to a mitred corner junction",
                 ui_context,
             )
 
@@ -425,18 +437,48 @@ class BimToolUI:
             )
             cls.layout.separator()
 
-            add_layout_hotkey_operator(cls.layout, "Merge", "S_M", bpy.ops.bim.merge_wall.__doc__, ui_context)
-            add_layout_hotkey_operator(cls.layout, "Split", "S_K", bpy.ops.bim.split_wall.__doc__, ui_context)
-            add_layout_hotkey_operator(cls.layout, "Rotate 90", "S_R", bpy.ops.bim.rotate_90.__doc__, ui_context)
-            add_layout_hotkey_operator(cls.layout, "Flip", "S_F", bpy.ops.bim.flip_wall.__doc__, ui_context)
+            add_layout_hotkey_operator(
+                cls.layout,
+                "Merge",
+                "S_M",
+                "Merge selected Elements",
+                ui_context)
+            add_layout_hotkey_operator(
+                cls.layout,
+                "Split",
+                "S_K",
+                "Split selected Element into two Elements at the cursor location",
+                ui_context)
+            add_layout_hotkey_operator(
+                cls.layout,
+                "Rotate 90",
+                "S_R",
+                "Rotate the selected Element by 90 degrees",
+                ui_context)
+            add_layout_hotkey_operator(
+                cls.layout,
+                "Flip",
+                "S_F",
+                "Flip Element about its local axes, keep the position",
+                ui_context)
 
             # row.operator("bim.unjoin_walls", icon="X", text="")
 
         elif AuthoringData.data["active_material_usage"] == "LAYER3":
             if len(context.selected_objects) == 1:
-                add_layout_hotkey_operator(cls.layout, "Edit Profile", "S_E", "", ui_context)
+                add_layout_hotkey_operator(
+                    cls.layout,
+                    "Edit Profile",
+                    "S_E",
+                    "Edit associated Profile Element",
+                    ui_context)
             elif "LAYER2" in AuthoringData.data["selected_material_usages"]:
-                add_layout_hotkey_operator(cls.layout, "Extend Wall To Slab", "S_E", "", ui_context)
+                add_layout_hotkey_operator(
+                    cls.layout,
+                    "Extend Wall To Slab",
+                    "S_E",
+                    "Extend the selected Wall to the selected Slab",
+                    ui_context)
 
             row = cls.layout.row(align=True)
             row.prop(data=cls.props, property="x_angle", text="Angle")
@@ -461,10 +503,15 @@ class BimToolUI:
                 cls.layout,
                 "Extend",
                 "S_E",
-                "",
+                "Extends/ reduces element to 3D cursor",
                 ui_context,
             )
-            add_layout_hotkey_operator(cls.layout, "Flip", "S_F", bpy.ops.bim.flip_object.__doc__, ui_context)
+            add_layout_hotkey_operator(
+                cls.layout,
+                "Flip",
+                "S_F",
+                "Flip object about its local axes, keep the position",
+                ui_context)
 
             if AuthoringData.data["active_class"] in (
                 "IfcCableCarrierSegment",
@@ -473,7 +520,12 @@ class BimToolUI:
                 "IfcPipeSegment",
             ):
 
-                add_layout_hotkey_operator(cls.layout, "Add Fitting", "S_Y", "", ui_context)
+                add_layout_hotkey_operator(
+                    cls.layout,
+                    "Add Fitting",
+                    "S_Y",
+                    "Add a Fitting based on currently selected Elements and cursor",
+                    ui_context)
                 cls.layout.operator("bim.mep_add_bend")
                 cls.layout.operator("bim.mep_add_transition")
                 cls.layout.operator("bim.mep_add_obstruction")
@@ -483,26 +535,35 @@ class BimToolUI:
                     cls.layout,
                     "Edit Axis",
                     "A_E",
-                    "",
+                    "Edit axis of element",
                     ui_context,
                 )
                 add_layout_hotkey_operator(
                     cls.layout,
                     "Butt",
                     "S_T",
-                    "",
+                    "Intersects two non-parallel Elements to a butt corner junction",
                     ui_context,
                 )
                 add_layout_hotkey_operator(
                     cls.layout,
                     "Mitre",
                     "S_Y",
-                    "",
+                    "Intersects two non-parallel Elements to a mitred corner junction",
                     ui_context,
                 )
-                add_layout_hotkey_operator(cls.layout, "Rotate 90", "S_R", bpy.ops.bim.rotate_90.__doc__, ui_context)
                 add_layout_hotkey_operator(
-                    cls.layout, "Regen", "S_G", bpy.ops.bim.recalculate_profile.__doc__, ui_context
+                    cls.layout,
+                    "Rotate 90",
+                    "S_R",
+                    "Rotate the selected element by 90 degrees",
+                    ui_context)
+                add_layout_hotkey_operator(
+                    cls.layout,
+                    "Regen",
+                    "S_G",
+                    "Regenerate selected element",
+                    ui_context
                 )
             row.operator("bim.extend_profile", icon="X", text="").join_type = ""
 
@@ -528,15 +589,35 @@ class BimToolUI:
                 row = cls.layout.row(align=True)
                 row.prop(data=cls.props, property="rl1", text="RL")
 
-            add_layout_hotkey_operator(cls.layout, "Regen", "S_G", bpy.ops.bim.recalculate_fill.__doc__, ui_context)
-            add_layout_hotkey_operator(cls.layout, "Flip", "S_F", "", ui_context)
+            add_layout_hotkey_operator(
+                cls.layout,
+                "Regen",
+                "S_G",
+                "Regenerate selected Element",
+                ui_context)
+            add_layout_hotkey_operator(
+                cls.layout,
+                "Flip",
+                "S_F",
+                "Flip object about its local axes, keep the position",
+                ui_context)
 
         elif AuthoringData.data["active_representation_type"] == "SweptSolid":
             if not tool.Model.is_parametric_window_active() and not tool.Model.is_parametric_door_active():
-                add_layout_hotkey_operator(cls.layout, "Edit Profile", "S_E", "", ui_context)
+                add_layout_hotkey_operator(
+                    cls.layout,
+                    "Edit Profile",
+                    "S_E",
+                    "Edit assosiated Profile Element",
+                    ui_context)
 
         elif AuthoringData.data["active_class"] in ("IfcSpace",):
-            add_layout_hotkey_operator(cls.layout, "Regen", "S_G", bpy.ops.bim.generate_space.__doc__, ui_context)
+            add_layout_hotkey_operator(
+                cls.layout,
+                "Regen",
+                "S_G",
+                "Regenerate selected Space",
+                ui_context)
 
         elif tool.Model.is_parametric_roof_active() and not context.active_object.BIMRoofProperties.is_editing_path:
             row = cls.layout.row(align=True)
@@ -545,16 +626,20 @@ class BimToolUI:
 
         if context.region.type != "TOOL_HEADER" and PortData.data["total_ports"] > 0:
             add_layout_hotkey_operator(
-                cls.layout, "Regen MEP", "S_G", bpy.ops.bim.regenerate_distribution_element.__doc__, ui_context
+                cls.layout,
+                "Regen MEP",
+                "S_G",
+                "Regenerates the positions and segment lengths of a distribution element and all connected elements",
+                ui_context
             )
             cls.layout.operator("bim.mep_connect_elements")
 
         row = cls.layout.row(align=True)
         if len(context.selected_objects) > 1:
-            row.operator("bim.add_opening", text="Apply Void", icon_value=custom_icon_previews["VOID"].icon_id)
+            row.operator("bim.add_opening", text="Apply Opening", icon_value=custom_icon_previews["VOID"].icon_id)
         else:
             row.operator(
-                "bim.add_potential_opening", text="Add Void", icon_value=custom_icon_previews["ADD_VOID"].icon_id
+                "bim.add_potential_opening", text="Add Opening", icon_value=custom_icon_previews["ADD_VOID"].icon_id
             )
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_O")
@@ -575,24 +660,67 @@ class BimToolUI:
                 row.operator("bim.clone_opening", text="Clone Opening")
 
         cls.layout.row(align=True).label(text="Align")
-        add_layout_hotkey_operator(cls.layout, "Exterior", "S_X", "", ui_context)
-        add_layout_hotkey_operator(cls.layout, "Centerline", "S_C", "", ui_context)
-        add_layout_hotkey_operator(cls.layout, "Interior", "S_V", "", ui_context)
-        add_layout_hotkey_operator(cls.layout, "Mirror", "S_M", bpy.ops.bim.mirror_elements.__doc__, ui_context)
+        add_layout_hotkey_operator(
+            cls.layout,
+            "Exterior",
+            "S_X",
+            "Align selected Elements to the Exterior of the last selected object",
+            ui_context)
+        add_layout_hotkey_operator(
+            cls.layout,
+            "Centerline",
+            "S_C",
+            "Align selected Elements to the Centerline of the last selected object",
+            ui_context)
+        add_layout_hotkey_operator(
+            cls.layout,
+            "Interior",
+            "S_V",
+            "Align selected Elements to the Interior of the last selected object",
+            ui_context)
+        add_layout_hotkey_operator(
+            cls.layout,
+            "Mirror",
+            "S_M",
+            "Mirrors the selected Elements along a mirror plane set by the last selected object",
+            ui_context)
 
         cls.layout.row(align=True).label(text="Mode")
-        add_layout_hotkey_operator(cls.layout, "Void", "A_O", "Toggle openings", ui_context)
-        add_layout_hotkey_operator(cls.layout, "Decomposition", "A_D", "Select decomposition", ui_context)
+        add_layout_hotkey_operator(
+            cls.layout,
+            "Opening",
+            "A_O",
+            "Toggle display of Openings in the selected Elements",
+            ui_context)
+        add_layout_hotkey_operator(
+            cls.layout,
+            "Decomposition",
+            "A_D",
+            "Select decomposition",
+            ui_context)
 
         cls.layout.row(align=True).label(text="Aggregation")
-        add_layout_hotkey_operator(cls.layout, "Assign", "C_P", bpy.ops.bim.aggregate_assign_object.__doc__, ui_context)
         add_layout_hotkey_operator(
-            cls.layout, "Unassign", "A_P", bpy.ops.bim.aggregate_unassign_object.__doc__, ui_context
+            cls.layout,
+            "Assign",
+            "C_P",
+            "Assign element to Aggregation",
+            ui_context)
+        add_layout_hotkey_operator(
+            cls.layout,
+            "Unassign",
+            "A_P",
+            "Unassign element from Aggregation",
+            ui_context
         )
 
         cls.layout.row(align=True).label(text="Qto")
         add_layout_hotkey_operator(
-            cls.layout, "Perform Quantity Take-off", "S_Q", bpy.ops.bim.perform_quantity_take_off.__doc__, ui_context
+            cls.layout,
+            "Perform Quantity Take-off",
+            "S_Q",
+            "Perform a quantity take off on selected objects based of a QTO rule configuration",
+            ui_context
         )
 
     @classmethod
@@ -615,43 +743,78 @@ class BimToolUI:
             op.x_angle = cls.props.x_angle
 
             row = cls.layout.row()
-            add_layout_hotkey_operator(row, "Regen", "S_G", bpy.ops.bim.recalculate_wall.__doc__, ui_context)
+            add_layout_hotkey_operator(
+                row,
+                "Regen",
+                "S_G",
+                "Regenerate selected Element",
+                ui_context)
 
             row = cls.layout.row(align=True)
             add_layout_hotkey_operator(
                 row,
                 "Extend",
                 "S_E",
-                "Extends/reduces element to 3D cursor",
+                "Extends/reduces Element to 3D cursor",
                 ui_context,
             )
             add_layout_hotkey_operator(
                 row,
                 "Butt",
                 "S_T",
-                "Intersects two non-parallel elements to a butt corner junction",
+                "Intersects two non-parallel Elements to a butt corner junction",
                 ui_context,
             )
             add_layout_hotkey_operator(
                 row,
                 "Mitre",
                 "S_Y",
-                "Intersects two non-parallel elements to a mitred corner junction",
+                "Intersects two non-parallel Elements to a mitred corner junction",
                 ui_context,
             )
             row.operator("bim.unjoin_walls", text="", icon_value=custom_icon_previews["UNJOIN_WALLS"].icon_id)
 
             row = cls.layout.row(align=True)
-            add_layout_hotkey_operator(row, "Merge", "S_M", bpy.ops.bim.merge_wall.__doc__, ui_context)
-            add_layout_hotkey_operator(row, "Split", "S_K", bpy.ops.bim.split_wall.__doc__, ui_context)
-            add_layout_hotkey_operator(row, "Rotate 90", "S_R", bpy.ops.bim.rotate_90.__doc__, ui_context)
-            add_layout_hotkey_operator(row, "Flip", "S_F", bpy.ops.bim.flip_wall.__doc__, ui_context)
+            add_layout_hotkey_operator(
+                row,
+                "Merge",
+                "S_M",
+                "Merge selected Elements",
+                ui_context)
+            add_layout_hotkey_operator(
+                row,
+                "Split",
+                "S_K",
+                "Split selected Element into two Elements at the cursor location",
+                ui_context)
+            add_layout_hotkey_operator(
+                row,
+                "Rotate 90",
+                "S_R",
+                "Rotate the selected Element by 90 degrees",
+                ui_context)
+            add_layout_hotkey_operator(
+                row,
+                "Flip",
+                "S_F",
+                "Flip Element about its local axes, keep the position",
+                ui_context)
 
         elif AuthoringData.data["active_material_usage"] == "LAYER3":
             if len(context.selected_objects) == 1:
-                add_layout_hotkey_operator(cls.layout, "Edit Profile", "S_E", "", ui_context)
+                add_layout_hotkey_operator(
+                    cls.layout,
+                    "Edit Profile",
+                    "S_E",
+                    "Edit associated Profile Element",
+                    ui_context)
             elif "LAYER2" in AuthoringData.data["selected_material_usages"]:
-                add_layout_hotkey_operator(cls.layout, "Extend Wall To Slab", "S_E", "", ui_context)
+                add_layout_hotkey_operator(
+                    cls.layout,
+                    "Extend Wall To Slab",
+                    "S_E",
+                    "Extend the selected Wall to the selected Slab",
+                    ui_context)
 
             row = cls.layout.row(align=True)
             row.prop(data=cls.props, property="x_angle", text="Angle")
@@ -676,10 +839,15 @@ class BimToolUI:
                 cls.layout,
                 "Extend",
                 "S_E",
-                "",
+                "Extends/ reduces element to 3D cursor",
                 ui_context,
             )
-            add_layout_hotkey_operator(cls.layout, "Flip", "S_F", bpy.ops.bim.flip_object.__doc__, ui_context)
+            add_layout_hotkey_operator(
+                cls.layout,
+                "Flip",
+                "S_F",
+                "Flip object about its local axes, keep the position",
+                ui_context)
 
             if AuthoringData.data["active_class"] in (
                 "IfcCableCarrierSegment",
@@ -688,7 +856,12 @@ class BimToolUI:
                 "IfcPipeSegment",
             ):
 
-                add_layout_hotkey_operator(cls.layout, "Add Fitting", "S_Y", "", ui_context)
+                add_layout_hotkey_operator(
+                    cls.layout,
+                    "Add Fitting",
+                    "S_Y",
+                    "Add a Fitting based on currently selected Elements and cursor",
+                    ui_context)
                 if context.region.type != "TOOL_HEADER":
                     cls.layout.operator("bim.mep_add_bend")
                     cls.layout.operator("bim.mep_add_transition")
@@ -699,26 +872,35 @@ class BimToolUI:
                     cls.layout,
                     "Edit Axis",
                     "A_E",
-                    "",
+                    "Edit axis of Element",
                     ui_context,
                 )
                 add_layout_hotkey_operator(
                     cls.layout,
                     "Butt",
                     "S_T",
-                    "",
+                    "Intersects two non-parallel Elements to a butt corner junction",
                     ui_context,
                 )
                 add_layout_hotkey_operator(
                     cls.layout,
                     "Mitre",
                     "S_Y",
-                    "",
+                    "Intersects two non-parallel Elements to a mitred corner junction",
                     ui_context,
                 )
-                add_layout_hotkey_operator(cls.layout, "Rotate 90", "S_R", bpy.ops.bim.rotate_90.__doc__, ui_context)
                 add_layout_hotkey_operator(
-                    cls.layout, "Regen", "S_G", bpy.ops.bim.recalculate_profile.__doc__, ui_context
+                    cls.layout,
+                    "Rotate 90",
+                    "S_R",
+                    "Rotate the selected element by 90 degrees",
+                    ui_context)
+                add_layout_hotkey_operator(
+                    cls.layout,
+                    "Regen",
+                    "S_G",
+                    "Regenerate selected element",
+                    ui_context
                 )
             row.operator("bim.extend_profile", icon="X", text="").join_type = ""
 
@@ -744,15 +926,35 @@ class BimToolUI:
                 row = cls.layout.row(align=True)
                 row.prop(data=cls.props, property="rl1", text="RL")
 
-            add_layout_hotkey_operator(cls.layout, "Regen", "S_G", bpy.ops.bim.recalculate_fill.__doc__, ui_context)
-            add_layout_hotkey_operator(cls.layout, "Flip", "S_F", "", ui_context)
+            add_layout_hotkey_operator(
+                cls.layout,
+                "Regen",
+                "S_G",
+                "Regenerate selected Element",
+                ui_context)
+            add_layout_hotkey_operator(
+                cls.layout,
+                "Flip",
+                "S_F",
+                "Flip object about its local axes, keep the position",
+                ui_context)
 
         elif AuthoringData.data["active_representation_type"] == "SweptSolid":
             if not tool.Model.is_parametric_window_active() and not tool.Model.is_parametric_door_active():
-                add_layout_hotkey_operator(cls.layout, "Edit Profile", "S_E", "", ui_context)
+                add_layout_hotkey_operator(
+                    cls.layout,
+                    "Edit Profile",
+                    "S_E",
+                    "Edit assosiated Profile Element",
+                    ui_context)
 
         elif AuthoringData.data["active_class"] in ("IfcSpace",):
-            add_layout_hotkey_operator(cls.layout, "Regen", "S_G", bpy.ops.bim.generate_space.__doc__, ui_context)
+            add_layout_hotkey_operator(
+                cls.layout,
+                "Regen",
+                "S_G",
+                "Regenerate selected Space",
+                ui_context)
 
         elif tool.Model.is_parametric_roof_active() and not context.active_object.BIMRoofProperties.is_editing_path:
             row = cls.layout.row(align=True)
@@ -761,8 +963,11 @@ class BimToolUI:
 
         if context.region.type != "TOOL_HEADER" and PortData.data["total_ports"] > 0:
             add_layout_hotkey_operator(
-                cls.layout, "Regen MEP", "S_G", bpy.ops.bim.regenerate_distribution_element.__doc__, ui_context
-            )
+                cls.layout,
+                "Regen MEP",
+                "S_G",
+                "Regenerates the positions and segment lengths of a distribution element and all connected elements",
+                ui_context)
             cls.layout.operator("bim.mep_connect_elements")
 
         row = cls.layout.row(align=True)
@@ -787,23 +992,66 @@ class BimToolUI:
                 row.operator("bim.clone_opening", text="Clone Opening")
 
         row = cls.layout.row(align=True)
-        add_layout_hotkey_operator(row, "Exterior", "S_X", "", ui_context)
-        add_layout_hotkey_operator(row, "Centerline", "S_C", "", ui_context)
-        add_layout_hotkey_operator(row, "Interior", "S_V", "", ui_context)
-        add_layout_hotkey_operator(row, "Mirror", "S_M", bpy.ops.bim.mirror_elements.__doc__, ui_context)
+        add_layout_hotkey_operator(
+            row,
+            "Exterior",
+            "S_X",
+            "Align selected Elements to the Exterior of the last selected object",
+            ui_context)
+        add_layout_hotkey_operator(
+            row,
+            "Centerline",
+            "S_C",
+            "Align selected Elements to the Centerline of the last selected object",
+            ui_context)
+        add_layout_hotkey_operator(
+            row,
+            "Interior",
+            "S_V",
+            "Align selected Elements to the Interior of the last selected object",
+            ui_context)
+        add_layout_hotkey_operator(
+            row,
+            "Mirror",
+            "S_M",
+            "Mirrors the selected Elements along a mirror plane set by the last selected object",
+            ui_context)
 
         row = cls.layout.row(align=True)
-        add_layout_hotkey_operator(row, "Void", "A_O", "Toggle openings", ui_context)
-        add_layout_hotkey_operator(row, "Decomposition", "A_D", "Select decomposition", ui_context)
+        add_layout_hotkey_operator(
+            row,
+            "Opening",
+            "A_O",
+            "Toggle display of Openings in the selected Elements",
+            ui_context)
+        add_layout_hotkey_operator(
+            row,
+            "Decomposition",
+            "A_D",
+            "Select decomposition",
+            ui_context)
 
         row = cls.layout.row(align=True)
-        add_layout_hotkey_operator(row, "Assign", "C_P", bpy.ops.bim.aggregate_assign_object.__doc__, ui_context)
-        add_layout_hotkey_operator(row, "Unassign", "A_P", bpy.ops.bim.aggregate_unassign_object.__doc__, ui_context)
+        add_layout_hotkey_operator(
+            row,
+            "Assign",
+            "C_P",
+            "Assign element to Aggregation",
+            ui_context)
+        add_layout_hotkey_operator(
+            row,
+            "Unassign",
+            "A_P",
+            "Unassign element from Aggregation",
+            ui_context)
 
         row = cls.layout.row()
         add_layout_hotkey_operator(
-            row, "Perform Quantity Take-off", "S_Q", bpy.ops.bim.perform_quantity_take_off.__doc__, ui_context
-        )
+            row,
+            "Perform Quantity Take-off",
+            "S_Q",
+            "Perform a quantity take off on selected objects based of a QTO rule configuration",
+            ui_context)
 
     @classmethod
     def draw_container(cls, context):
