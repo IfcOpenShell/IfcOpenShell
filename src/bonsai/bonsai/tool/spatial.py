@@ -42,6 +42,7 @@ from mathutils import Vector, Matrix
 from shapely import Polygon
 from typing import Generator, Optional, Union, Literal, List, Any, Iterable
 from collections import defaultdict
+from natsort import natsorted
 
 
 class Spatial(bonsai.core.tool.Spatial):
@@ -454,8 +455,8 @@ class Spatial(bonsai.core.tool.Spatial):
         children = ifcopenshell.util.element.get_parts(element)
         if children:
             children_elevations = [ifcopenshell.util.placement.get_storey_elevation(el) for el in children]
-            children_names = [[x.zfill(5) if x.isdigit() else x for x in (el.Name or "").split()] for el in children]
-            children = sorted(children, key=dict(zip(children, tuple(zip(children_elevations, children_names)))).get)
+            children_names = [el.Name or "" for el in children]
+            children = natsorted(children, key=dict(zip(children, tuple(zip(children_elevations, children_names)))).get)
         new.has_children = bool(children)
         new.ifc_definition_id = element.id()
         if new.is_expanded:
