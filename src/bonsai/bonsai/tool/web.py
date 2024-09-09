@@ -343,6 +343,7 @@ class Web(bonsai.core.tool.Web):
         Args:
             operator_data (dict): A dictionary containing the operator data.
         """
+
         def selection_data(cost_item, elements):
             print(cost_item, elements)
             if not elements:
@@ -374,17 +375,21 @@ class Web(bonsai.core.tool.Web):
                             "type": element_type.Name if element_type else None,
                         },
                         "qtos": psets,
-                        "assigned_quantities": [{
-                            'cost_item_id': cost_item.id(),
-                            'product_id': element.id(),
-                            "name": q.Name,
-                            "value": q[3],
-                            "type": q.Unit,
-                        } for q in quantities or []],
+                        "assigned_quantities": [
+                            {
+                                "cost_item_id": cost_item.id(),
+                                "product_id": element.id(),
+                                "name": q.Name,
+                                "value": q[3],
+                                "type": q.Unit,
+                            }
+                            for q in quantities or []
+                        ],
                         "unit": unit,
                     }
                 )
             return data
+
         ifc_file = tool.Ifc.get()
         if operator_data["type"] == "getPredefinedTypes":
             print("getting predefined types")
@@ -424,7 +429,7 @@ class Web(bonsai.core.tool.Web):
             cost_item_id = operator_data["costItemId"]
             cost_item = ifc_file.by_id(cost_item_id)
             if not cost_item:
-                print('---> cost item not found')
+                print("---> cost item not found")
                 return
 
             selected_products = list(tool.Spatial.get_selected_products())
@@ -434,12 +439,16 @@ class Web(bonsai.core.tool.Web):
             assigned_products_data = selection_data(cost_item, assigned_products)
 
             names = ifcopenshell.util.cost.get_product_quantity_names(selected_products)
-            cls.send_webui_data(data={
-                "selected_products": selected_products_data,
-                'assigned_products': assigned_products_data,
-                "product_quantity_names": names,
-                "cost_item_id": cost_item_id
-            }, data_key="selected_products", event="selected_products")
+            cls.send_webui_data(
+                data={
+                    "selected_products": selected_products_data,
+                    "assigned_products": assigned_products_data,
+                    "product_quantity_names": names,
+                    "cost_item_id": cost_item_id,
+                },
+                data_key="selected_products",
+                event="selected_products",
+            )
 
         if operator_data["type"] == "addSummaryCostItem":
             cost_schedule = ifc_file.by_id(operator_data["costScheduleId"])
@@ -513,9 +522,7 @@ class Web(bonsai.core.tool.Web):
                 prop_name = ""
             print(prop_name)
             bpy.ops.bim.assign_cost_item_quantity(
-                cost_item=operator_data["costItemId"], 
-                related_object_type= "PRODUCT", 
-                prop_name=prop_name
+                cost_item=operator_data["costItemId"], related_object_type="PRODUCT", prop_name=prop_name
             )
             cost_schedule = tool.Cost.get_cost_schedule(cost_item=tool.Ifc.get().by_id(operator_data["costItemId"]))
             cls.load_cost_schedule_web_ui(cost_schedule)
