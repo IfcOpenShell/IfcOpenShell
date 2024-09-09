@@ -3,6 +3,8 @@
   gap: 10px;
   margin-bottom: 20px;
   border: 1px solid #444;
+  width: 100%;
+  justify-content: center;
 }
 
 .ribbon-bar .action-button {

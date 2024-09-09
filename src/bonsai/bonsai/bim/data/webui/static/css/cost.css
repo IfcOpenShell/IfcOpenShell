@@ -11,43 +11,53 @@
   --scrollbar-track-color: #f1f1f1;
   --scrollbar-thumb-color: #888;
   --scrollbar-thumb-hover-color: #555;
+  --padding-small: 5px;
+  --padding-medium: 10px;
 }
 body {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
+
 .form-header {
   display: flex;
   justify-content: flex-start;
   align-items: center;
   margin-bottom: 10px;
-  background-color: var(--background-color);
-  padding: 10px;
-  font-size: var(--fontSize);
+  background-color: #323936;
+  padding: var(--padding-medium);
+  font-size: large;
+  border-bottom: 1px solid #ddd;
+  border-radius: 6px 6px 0 0;
 }
 
-span {
+.floating-form span {
+  padding: var(--padding-small);
   margin-left: var(--margin-small);
 }
 
 .floating-form {
   width: 50vw;
-  height: 50vh;
   max-height: 80vh;
   position: absolute;
   background-color: var(--background-color);
   border: 1px solid black;
   z-index: 9999;
   cursor: move;
-  padding: 20px;
   user-select: none;
-  overflow-y: auto;
-  overflow-x: hidden;
+  resize: both;
 }
 
 .floating-form table tr {
   margin-bottom: 10px;
+}
+
+
+.form-container {
+  padding: var(--padding-medium);
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .action-button {
@@ -128,22 +138,26 @@ body {
   overflow-x: auto;
   overflow-y: auto;
   position: relative;
+  border: 1px solid #ddd;
 }
 
 .floating-form .table-container {
-  height: 50%;
-  max-height: 50%;
+  max-height: 70%;
 }
 
 #cost-items {
   max-height: calc(100vh - var(--margin-small));
 }
 
-/* if id starts with cost-values-form */
 [id^="cost-values-form"] table {
   /* fixed */
   max-height: 50%;
   table-layout: fixed;
+}
+
+
+[id^="selected-products"] .form-container {
+  height: 50vh;
 }
 
 table {
@@ -152,8 +166,9 @@ table {
   border-collapse: collapse;
   user-select: none;
   font-size: var(--fontSize);
-  -webkit-font-smoothing: antialiased; /* Improve font rendering */
-  -moz-osx-font-smoothing: grayscale; /* Improve font rendering */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  border: 1px solid #ddd;
 }
 
 thead {
@@ -161,7 +176,6 @@ thead {
   top: 0;
   z-index: 1;
   background-color: #727272;
-  font-size: large;
 }
 
 tbody {
@@ -172,13 +186,9 @@ tbody {
 
 td,
 th {
-  padding: 0;
-  margin: 0;
   border-left: 1px solid #ddd;
   border-right: 1px solid #ddd;
   text-align: center;
-  border-bottom: 0;
-  border-top: 0;
 }
 
 th {
@@ -189,7 +199,6 @@ td {
   align-items: center;
 }
 
-/* first td of a row, must be flex */
 td:first-child {
   display: flex;
   align-items: center;
@@ -223,7 +232,7 @@ select {
   margin-left: 0.5em;
   margin-right: 0.5em;
   font-size: var(--fontSize);
-  min-width: 50px; /* Minimum width to prevent it from becoming too small */
+  min-width: 50px;
 }
 
 input:focus {
@@ -258,7 +267,6 @@ input:focus {
   text-align: center;
 }
 
-/* Responsive Styles */
 @media (max-width: 768px) {
   table {
     font-size: 12px;
@@ -294,4 +302,10 @@ input:focus {
 
 form table {
   max-height: 50%;
+}
+
+
+.subtotal-row {
+  background-color: var(--button-hover-background);
+  font-weight: bold;
 }
