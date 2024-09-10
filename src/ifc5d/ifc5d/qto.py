@@ -24,6 +24,7 @@ import ifcopenshell.api.pset
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.selector
+import ifcopenshell.util.shape
 import ifcopenshell.util.representation
 import multiprocessing
 from collections import namedtuple

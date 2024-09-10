@@ -36,7 +36,18 @@ RECURRENCE_TYPE = Literal[
 ]
 
 
-def derive_date(task, attribute_name, date=None, is_earliest=False, is_latest=False):
+def derive_date(
+    task: ifcopenshell.entity_instance,
+    attribute_name: str,
+    date=None,
+    is_earliest: bool = False,
+    is_latest: bool = False,
+):
+    """
+
+    :param task: IfcTask.
+
+    """
     if task.TaskTime:
         current_date = (
             ifcopenshell.util.date.ifc2datetime(getattr(task.TaskTime, attribute_name))
