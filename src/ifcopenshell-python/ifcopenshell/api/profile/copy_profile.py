@@ -42,6 +42,6 @@ def copy_profile(file: ifcopenshell.file, profile: ifcopenshell.entity_instance)
     inverses = file.get_inverse(profile)
     psets = [i for i in inverses if i.is_a("IfcProfileProperties")]
     for pset in psets:
-        new_pset = ifcopenshell.util.element.copy_deep(file, pset, exclude=["IfcProfileDef"])
+        new_pset = ifcopenshell.util.element.copy(file, pset)
         new_pset.ProfileDefinition = new_profile
     return new_profile
