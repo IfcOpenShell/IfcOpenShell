@@ -87,7 +87,8 @@ def unshare_pset(
     for product in products:
         # No need to consider about profile/material properties since
         # they are assigned to 1 element directly and therefore cannot be shared.
-        pset_copy = ifcopenshell.util.element.copy_deep(file, pset)
+        # Don't copy_deep to keep it light - edit_pset supports unsharing shared props.
+        pset_copy = ifcopenshell.util.element.copy(file, pset)
         pset_copies.append(pset_copy)
         ifcopenshell.api.pset.assign_pset(file, [product], pset_copy)
 
