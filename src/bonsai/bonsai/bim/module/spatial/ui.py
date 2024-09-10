@@ -105,6 +105,8 @@ class BIM_PT_spatial_decomposition(Panel):
     def draw_header(self, context):
         row = self.layout.row(align=True)
         row.label(text="")  # empty text occupies the left of the row
+        row.operator("bim.toggle_spatial_elements", text="", icon="HIDE_OFF").is_visible = True
+        row.operator("bim.toggle_spatial_elements", text="", icon="HIDE_ON").is_visible = False
         icon = "VIEW_LOCKED" if context.scene.BIMSpatialDecompositionProperties.is_locked else "VIEW_UNLOCKED"
         row.prop(context.scene.BIMSpatialDecompositionProperties, "is_locked", text="", icon=icon)
 
@@ -218,6 +220,8 @@ class BIM_PT_grids(Panel):
     def draw_header(self, context):
         row = self.layout.row(align=True)
         row.label(text="")  # empty text occupies the left of the row
+        row.operator("bim.toggle_grids", text="", icon="HIDE_OFF").is_visible = True
+        row.operator("bim.toggle_grids", text="", icon="HIDE_ON").is_visible = False
         icon = "VIEW_LOCKED" if context.scene.BIMGridProperties.is_locked else "VIEW_UNLOCKED"
         row.prop(context.scene.BIMGridProperties, "is_locked", text="", icon=icon)
 

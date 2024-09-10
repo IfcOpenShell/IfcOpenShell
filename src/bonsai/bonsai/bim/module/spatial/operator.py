@@ -404,3 +404,33 @@ class SetContainerVisibility(bpy.types.Operator, tool.Ifc.Operator):
                     collection.hide_viewport = should_hide
             if self.should_include_children:
                 queue.extend(ifcopenshell.util.element.get_parts(container))
+
+
+class ToggleGrids(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.toggle_grids"
+    bl_label = "Toggle Grids"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Show or hide grids and grid axes"
+    is_visible: bpy.props.BoolProperty(name="Is Visible", default=False, options={"SKIP_SAVE"})
+
+    def _execute(self, context):
+        for element in (tool.Ifc.get().by_type("IfcGrid") + tool.Ifc.get().by_type("IfcGridAxis")):
+            if obj := tool.Ifc.get_object(element):
+                obj.hide_set(not self.is_visible)
+
+
+class ToggleSpatialElements(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.toggle_spatial_elements"
+    bl_label = "Toggle Spatial Elements"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Show or hide spatial elements, such as buildings, sites, etc"
+    is_visible: bpy.props.BoolProperty(name="Is Visible", default=False, options={"SKIP_SAVE"})
+
+    def _execute(self, context):
+        if tool.Ifc.get().schema == "IFC2X3":
+            elements = tool.Ifc.get().by_type("IfcSpatialStructureElement")
+        else:
+            elements = tool.Ifc.get().by_type("IfcSpatialElement")
+        for element in elements:
+            if obj := tool.Ifc.get_object(element):
+                obj.hide_set(not self.is_visible)

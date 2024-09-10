@@ -40,6 +40,8 @@ classes = (
     operator.SetContainerVisibility,
     operator.SetDefaultContainer,
     operator.ToggleContainerElement,
+    operator.ToggleGrids,
+    operator.ToggleSpatialElements,
     prop.Element,
     prop.BIMObjectSpatialProperties,
     prop.BIMContainer,
