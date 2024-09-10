@@ -414,7 +414,7 @@ class ToggleGrids(bpy.types.Operator, tool.Ifc.Operator):
     is_visible: bpy.props.BoolProperty(name="Is Visible", default=False, options={"SKIP_SAVE"})
 
     def _execute(self, context):
-        for element in (tool.Ifc.get().by_type("IfcGrid") + tool.Ifc.get().by_type("IfcGridAxis")):
+        for element in tool.Ifc.get().by_type("IfcGrid") + tool.Ifc.get().by_type("IfcGridAxis"):
             if obj := tool.Ifc.get_object(element):
                 obj.hide_set(not self.is_visible)
 
