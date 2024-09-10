@@ -169,8 +169,7 @@ class Usecase:
                 continue
             if isinstance(value, dict):
                 complex_qto = self.file.create_entity(
-                    "IfcPhysicalComplexQuantity",
-                    Name=name, Discrimination=value["Discrimination"]
+                    "IfcPhysicalComplexQuantity", Name=name, Discrimination=value["Discrimination"]
                 )
                 properties.append(complex_qto)
                 ifcopenshell.api.pset.edit_qto(self.file, qto=complex_qto, properties=value["HasQuantities"])
