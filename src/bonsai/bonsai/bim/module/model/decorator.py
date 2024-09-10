@@ -316,9 +316,6 @@ class PolylineDecorator:
         if cls.is_installed:
             cls.uninstall()
         handler = cls()
-        cls.handlers.append(
-            SpaceView3D.draw_handler_add(handler.draw_on_screen_menu, (context,), "WINDOW", "POST_PIXEL")
-        )
         cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_measurements, (context,), "WINDOW", "POST_PIXEL"))
         cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_input_ui, (context,), "WINDOW", "POST_PIXEL"))
         cls.handlers.append(SpaceView3D.draw_handler_add(handler, (context,), "WINDOW", "POST_VIEW"))
@@ -338,9 +335,6 @@ class PolylineDecorator:
         cls.event = event
         cls.tool_state = tool_state
         cls.input_ui = input_ui
-        cls.snap_info = f"""Snap: {snapping_point[1]}
-    Axis:{tool_state.axis_method}
-    Plane: {tool_state.plane_method}"""
 
     @classmethod
     def set_input_ui(cls, input_ui):
@@ -440,27 +434,6 @@ class PolylineDecorator:
             blf.draw(self.font_id, "a: " + measurement_prop[i].angle)
 
 
-    def draw_on_screen_menu(self, context):
-        region = context.region
-
-        self.addon_prefs = tool.Blender.get_addon_preferences()
-        self.font_id = 2
-        font_size = tool.Blender.scale_font_size(12)
-        blf.size(self.font_id, font_size)
-        blf.enable(self.font_id, blf.SHADOW)
-        blf.shadow(self.font_id, 6, 0, 0, 0, 1)
-        color = self.addon_prefs.decorations_colour
-        blf.color(self.font_id, *color)
-
-        text_w, text_h = blf.dimensions(0, self.tool_state.instructions)
-        position = (region.width / 2) - (text_w / 2)
-        blf.position(self.font_id, position, 10, 0)
-        blf.draw(self.font_id, self.tool_state.instructions)
-
-        text_w, text_h = blf.dimensions(0, self.snap_info)
-        position = (region.width / 2) - (text_w / 2)
-        blf.position(self.font_id, position, 30, 0)
-        blf.draw(self.font_id, self.snap_info)
 
     def __call__(self, context):
 
