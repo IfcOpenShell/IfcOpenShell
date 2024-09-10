@@ -45,7 +45,7 @@ class piecewise_function_evaluator {
 
     taxonomy::piecewise_function::const_ptr pwf_;
 
-    const ifcopenshell::geometry::Settings* settings_ = nullptr;
+    ifcopenshell::geometry::Settings settings_;
 
     mutable double current_span_start_ = 0;
     mutable double current_span_end_ = 0;

@@ -4,15 +4,18 @@
 using namespace ifcopenshell::geometry;
 
 
-piecewise_function_evaluator::piecewise_function_evaluator(taxonomy::piecewise_function::const_ptr pwf, ifcopenshell::geometry::Settings* settings) : pwf_(pwf), settings_(settings) {
+piecewise_function_evaluator::piecewise_function_evaluator(taxonomy::piecewise_function::const_ptr pwf, ifcopenshell::geometry::Settings* settings) : pwf_(pwf) {
+    if (settings) {
+        settings_ = *settings;
+    }
 }
 
 std::vector<double> piecewise_function_evaluator::evaluation_points() const {
     if (!eval_points_.has_value()) {
         double curve_length = pwf_->length();
 
-        auto param_type = settings_ ? settings_->get<ifcopenshell::geometry::settings::PiecewiseStepType>().get() : ifcopenshell::geometry::settings::PiecewiseStepMethod::MAXSTEPSIZE;
-        auto param = settings_ ? settings_->get<ifcopenshell::geometry::settings::PiecewiseStepParam>().get() : 0.5;
+        auto param_type = settings_.get<ifcopenshell::geometry::settings::PiecewiseStepType>().get();
+        auto param = settings_.get<ifcopenshell::geometry::settings::PiecewiseStepParam>().get();
         unsigned num_steps = 0;
         if (param_type == ifcopenshell::geometry::settings::PiecewiseStepMethod::MAXSTEPSIZE) {
             // parameter is max step size
@@ -88,7 +91,7 @@ std::tuple<double, double, const std::function<Eigen::Matrix4d(double u)>*> piec
     double span_start = s;
     for (auto& [length, fn] : pwf_->spans()) {
         double span_end = span_start + length;
-        auto tolerance = settings_ ? settings_->get<ifcopenshell::geometry::settings::Precision>().get() : 0.001;
+        auto tolerance = settings_.get<ifcopenshell::geometry::settings::Precision>().get();
         if (span_start <= u && u < span_end + tolerance) {
             return {span_start, span_end, &fn};
         }
