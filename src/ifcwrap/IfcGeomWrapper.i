@@ -246,6 +246,7 @@ namespace {
 %include "../ifcgeom/Iterator.h"
 %include "../ifcgeom/GeometrySerializer.h"
 %include "../ifcgeom/taxonomy.h"
+%include "../ifcgeom/piecewise_function_evaluator.h"
 
 %include "../serializers/SvgSerializer.h"
 %include "../serializers/HdfSerializer.h"

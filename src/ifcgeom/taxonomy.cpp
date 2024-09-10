@@ -464,12 +464,12 @@ ifcopenshell::geometry::taxonomy::solid::ptr ifcopenshell::geometry::create_box(
 }
 
 ///////////////////
-piecewise_function::piecewise_function(double start, const spans_t& s, ifcopenshell::geometry::Settings* settings, const IfcUtil::IfcBaseInterface* instance) : implicit_item(instance) {
-    impl_ = new piecewise_function_impl(start, s, settings);
+piecewise_function::piecewise_function(double start, const spans_t& s, const IfcUtil::IfcBaseInterface* instance) : implicit_item(instance) {
+    impl_ = new piecewise_function_impl(start, s);
 }
 
-piecewise_function::piecewise_function(double start, const std::vector<piecewise_function::ptr>& pwfs, ifcopenshell::geometry::Settings* settings, const IfcUtil::IfcBaseInterface* instance) : implicit_item(instance) {
-    impl_ = new piecewise_function_impl(start, pwfs, settings);
+piecewise_function::piecewise_function(double start, const std::vector<piecewise_function::ptr>& pwfs, const IfcUtil::IfcBaseInterface* instance) : implicit_item(instance) {
+    impl_ = new piecewise_function_impl(start, pwfs);
 };
 
 piecewise_function::piecewise_function(const piecewise_function& other) : implicit_item(other) {
@@ -486,11 +486,6 @@ double piecewise_function::start() const { return impl_->start(); }
 double piecewise_function::end() const { return impl_->end(); }
 double piecewise_function::length() const {   return impl_->length(); }
 
-std::vector<double> piecewise_function::evaluation_points() const { return impl_->evaluation_points(); }
-std::vector<double> piecewise_function::evaluation_points(double ustart, double uend, unsigned nsteps) const { return impl_->evaluation_points(ustart, uend, nsteps); }
-item::ptr piecewise_function::evaluate() const { return impl_->evaluate(); }
-item::ptr piecewise_function::evaluate(double ustart, double uend, unsigned nsteps) const { return impl_->evaluate(ustart, uend, nsteps); }
-Eigen::Matrix4d piecewise_function::evaluate(double u) const { return impl_->evaluate(u); }
 
 ifcopenshell::geometry::taxonomy::collection::ptr ifcopenshell::geometry::flatten(const taxonomy::collection::ptr& deep) {
 	auto flat = make<taxonomy::collection>();

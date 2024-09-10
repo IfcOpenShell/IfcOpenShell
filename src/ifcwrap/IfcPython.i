@@ -84,6 +84,7 @@
 %{
 	#include "../ifcgeom/Iterator.h"
 	#include "../ifcgeom/taxonomy.h"
+	#include "../ifcgeom/piecewise_function_evaluator.h"
 #ifdef IFOPSH_WITH_OPENCASCADE
 	#include "../ifcgeom/Serialization/Serialization.h"
 	#include "../ifcgeom/kernels/opencascade/IfcGeomTree.h"
@@ -159,6 +160,7 @@
 %module ifcopenshell_wrapper %{
 	#include "../ifcgeom/Converter.h"
 	#include "../ifcgeom/taxonomy.h"
+	#include "../ifcgeom/piecewise_function_evaluator.h"
 #ifdef IFOPSH_WITH_OPENCASCADE
 	#include "../ifcgeom/Serialization/Serialization.h"
 	#include "../ifcgeom/kernels/opencascade/IfcGeomTree.h"
