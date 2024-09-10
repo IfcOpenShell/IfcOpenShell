@@ -149,6 +149,7 @@ class AddProfileDef(bpy.types.Operator, tool.Ifc.Operator):
             profile = ifcopenshell.api.run("profile.add_arbitrary_profile", tool.Ifc.get(), profile=points)
         else:
             profile = ifcopenshell.api.run("profile.add_parameterized_profile", tool.Ifc.get(), ifc_class=profile_class)
+            tool.Profile.set_default_profile_attrs(profile)
         profile.ProfileName = "New Profile"
         bpy.ops.bim.load_profiles()
 
