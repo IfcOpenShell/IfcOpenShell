@@ -53,7 +53,6 @@ body {
   margin-bottom: 10px;
 }
 
-
 .form-container {
   padding: var(--padding-medium);
   overflow-y: auto;
@@ -155,7 +154,6 @@ body {
   table-layout: fixed;
 }
 
-
 [id^="selected-products"] .form-container {
   height: 50vh;
 }
@@ -186,7 +184,6 @@ tbody {
 
 td,
 th {
-  border-left: 1px solid #ddd;
   border-right: 1px solid #ddd;
   text-align: center;
 }
@@ -304,8 +301,38 @@ form table {
   max-height: 50%;
 }
 
-
 .subtotal-row {
   background-color: var(--button-hover-background);
   font-weight: bold;
+}
+
+[id^="cost-items"] th:nth-child(1),
+[id^="cost-items"] td:nth-child(1) {
+  width: auto;
+}
+[id^="cost-items"] th:not(:nth-child(1)),
+[id^="cost-items"] td:not(:nth-child(1)) {
+  width: 10%;
+}
+
+[id^="cost-items"] th:last-child,
+[id^="cost-items"] td:last-child {
+  width: fit-content;
+  min-width: fit-content;
+  max-width: 50%;
+}
+
+.actions-column {
+  transition: opacity 0.3s ease-in-out;
+  opacity: 0;
+}
+
+[id^="cost-items"] tr:hover .actions-column {
+  opacity: 1;
+}
+
+.clickable-cell:hover {
+  border: 1px solid #28a746;
+  border-radius: 6px;
+  cursor: pointer;
 }

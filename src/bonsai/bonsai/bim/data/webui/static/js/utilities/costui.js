@@ -9,7 +9,7 @@ export class CostUI {
   static removeCostSchedule(id) {
     document.getElementById("cost-items-" + id).remove();
   }
-  static createTable(id, callbacks) {
+  static createCostTable(id, currency, callbacks) {
     CostUI.isCostScheduleLoaded(id) ? CostUI.removeCostSchedule(id) : null;
 
     const table = document.createElement("table");
@@ -21,9 +21,9 @@ export class CostUI {
       "Name",
       "Quantity",
       "Unit",
-      "Cost",
-      "Total Cost",
-      "Action",
+      "Cost (" + currency + ")",
+      "Total Cost (" + currency + ")",
+      "Actions",
     ];
     const thead = document.createElement("thead");
     const tr = document.createElement("tr");
@@ -47,7 +47,6 @@ export class CostUI {
     table.appendChild(tbody);
     document.getElementById("cost-items").appendChild(table);
 
-    CostUI.addTableStyles(id);
     CostUI.createContextMenu(callbacks);
     table.get_blender_id = function () {
       return this.getAttribute("id").split("-")[2];
@@ -56,20 +55,12 @@ export class CostUI {
     return [table, tbody];
   }
 
-  static addTableStyles(id) {
-    const style = document.createElement("style");
-    style.textContent = `
-            #cost-items-${id} th:nth-child(1),
-            #cost-items-${id} td:nth-child(1) {
-                width: auto;
-            }
-            #cost-items-${id} th:not(:nth-child(1)),
-            #cost-items-${id} td:not(:nth-child(1)) {
-                width: 100px; /* Set a fixed width for other columns */
-            }
-
-        `;
-    document.head.appendChild(style);
+  static deleteCostItem(costItemId, callback) {
+    const costItemRow = document.getElementById(costItemId);
+    let expandedState = JSON.parse(localStorage.getItem("expandedState")) || {};
+    expandedState = CostUI.deleteCostItemRow(costItemRow, expandedState);
+    localStorage.setItem("expandedState", JSON.stringify(expandedState));
+    callback(costItemId);
   }
 
   static createContextMenu(callbacks) {
@@ -139,21 +130,17 @@ export class CostUI {
       addButton.dataset.listenerAdded = "true";
     }
 
-    const deleteCostItem = document.getElementById("delete-cost-item");
-    if (deleteCostItem && !deleteCostItem.hasListener) {
-      deleteCostItem.addEventListener("click", function () {
+    const deleteCostItemButton = document.getElementById("delete-cost-item");
+    if (deleteCostItemButton && !deleteCostItemButton.hasListener) {
+      deleteCostItemButton.addEventListener("click", function () {
         const targetRow = document.getElementById("context-menu").targetRow;
         if (targetRow) {
           const costItemId = parseInt(targetRow.getAttribute("id"));
-          let expandedState =
-            JSON.parse(localStorage.getItem("expandedState")) || {};
-          expandedState = CostUI.deleteCostItemRow(targetRow, expandedState);
-          localStorage.setItem("expandedState", JSON.stringify(expandedState));
-          callbacks.deleteCostItem(costItemId);
+          CostUI.deleteCostItem(costItemId, callbacks.deleteCostItem);
         }
         document.getElementById("context-menu").style.display = "none";
       });
-      deleteCostItem.hasListener = true;
+      deleteCostItemButton.hasListener = true;
     }
 
     const duplicateButton = document.getElementById("duplicate-button");
@@ -175,7 +162,7 @@ export class CostUI {
         const targetRow = document.getElementById("context-menu").targetRow;
         if (targetRow) {
           const costItemId = parseInt(targetRow.getAttribute("id"));
-          callbacks.getSelectedProducts(costItemId);
+          callbacks.enableEditingQuantities(costItemId);
         }
         document.getElementById("context-menu").style.display = "none";
       });
@@ -192,7 +179,7 @@ export class CostUI {
 
     document
       .getElementById("cost-items")
-      .addEventListener("dblclick", function (event) {
+      .addEventListener("click", function (event) {
         const targetRow = event.target.closest("tr");
         const targetCell = event.target.closest("td");
         if (targetRow && targetCell) {
@@ -202,9 +189,14 @@ export class CostUI {
           const costItemId = parseInt(targetRow.getAttribute("id"));
           const columnName = getColumnNames("cost-items")[columnIndex];
 
-          if (columnName === "Cost") {
+          if (columnName.includes("Cost") && !columnName.includes("Total")) {
             callbacks.enableEditingCostValues
               ? callbacks.enableEditingCostValues(costItemId)
+              : null;
+          }
+          if (columnName === "Quantity") {
+            callbacks.enableEditingQuantities
+              ? callbacks.enableEditingQuantities(costItemId)
               : null;
           }
         }
@@ -363,13 +355,18 @@ export class CostUI {
   }
 
   static createCostSchedule({
-    data,
+    costItems,
+    currency,
     costScheduleId,
     blenderID,
     callbacks = {},
   }) {
-    const [table, tbody] = CostUI.createTable(blenderID, callbacks);
-    if (data.length === 0) {
+    const [table, tbody] = CostUI.createCostTable(
+      blenderID,
+      currency,
+      callbacks
+    );
+    if (costItems.length === 0) {
       const tr = document.createElement("tr");
       const td = document.createElement("td");
       td.colSpan = 6;
@@ -387,24 +384,29 @@ export class CostUI {
       td.appendChild(addSummaryCostItemButton);
       addSummaryCostItemButton.classList.add("action-button");
     } else {
-      CostUI.createCostItem(data, tbody, 0, null, callbacks);
+      CostUI.createCostTree(costItems, tbody, 0, null, callbacks);
       CostUI.applyExpandedState();
     }
   }
 
-  static createCostItem(
-    data,
+  static createCostTree(
+    costItems,
     container,
     nestingLevel = 0,
     parentID = null,
     callbacks = {}
   ) {
-    data.forEach((costItem) => {
-      const row = CostUI.createRow(costItem, nestingLevel, parentID, callbacks);
+    costItems.forEach((costItem) => {
+      const row = CostUI.addCostItemRow(
+        costItem,
+        nestingLevel,
+        parentID,
+        callbacks
+      );
       container.appendChild(row);
 
       if (costItem.is_nested_by && costItem.is_nested_by.length > 0) {
-        CostUI.createCostItem(
+        CostUI.createCostTree(
           costItem.is_nested_by,
           container,
           nestingLevel + 1,
@@ -415,7 +417,7 @@ export class CostUI {
     });
   }
 
-  static createRow(costItem, nestingLevel, parentID, callbacks = {}) {
+  static addCostItemRow(costItem, nestingLevel, parentID, callbacks = {}) {
     const totalQuantity = costItem.TotalCostQuantity
       ? parseFloat(costItem.TotalCostQuantity).toFixed(2)
       : "-";
@@ -431,20 +433,21 @@ export class CostUI {
       callbacks
     );
     const totalCostQuantityCell = CostUI.createTableCell(totalQuantity);
+    totalCostQuantityCell.classList.add("clickable-cell");
     const unitSymbolCell = CostUI.createTableCell(costItem.UnitSymbol);
     const totalAppliedValueCell = CostUI.createTableCell(appliedValue);
+    totalAppliedValueCell.classList.add("clickable-cell");
     const totalCostCell = CostUI.createTotalCostCell(costItem);
-    const flexContainerCell = CostUI.createFlexContainerCell(
-      costItem,
-      callbacks
-    );
+    const actionsCell = CostUI.costItemActions(costItem, callbacks);
+
+    actionsCell.classList.add("actions-column");
 
     row.appendChild(nameCell);
     row.appendChild(totalCostQuantityCell);
     row.appendChild(unitSymbolCell);
     row.appendChild(totalAppliedValueCell);
     row.appendChild(totalCostCell);
-    row.appendChild(flexContainerCell);
+    row.appendChild(actionsCell);
 
     row.get_id = function () {
       return this.getAttribute("id");
@@ -636,28 +639,90 @@ export class CostUI {
     return totalCostCell;
   }
 
-  static createFlexContainerCell(costItem, callbacks) {
+  static costItemActions(costItem, callbacks) {
     const divFlex = document.createElement("div");
     divFlex.classList.add("row-container");
-    const selectButton = CostUI.createSelectButton(costItem, callbacks);
-    divFlex.appendChild(selectButton);
+    const addCostItem = CostUI.addCostItemButton(
+      costItem.id,
+      callbacks.addCostItem
+    );
+    const selectButton = CostUI.createSelectButton(
+      costItem.id,
+      callbacks.selectAssignedElements
+    );
+    const deleteButton = CostUI.deleteCostItemButton(
+      costItem.id,
+      callbacks.deleteCostItem
+    );
+    const duplicateButton = CostUI.duplicateCostItemButton(
+      costItem.id,
+      callbacks.duplicateCostItem
+    );
 
-    const flexContainerCell = document.createElement("td");
-    flexContainerCell.appendChild(divFlex);
-    return flexContainerCell;
+    [addCostItem, duplicateButton, selectButton, deleteButton].forEach(
+      (button) => {
+        divFlex.appendChild(button);
+      }
+    );
+
+    const actionsCell = document.createElement("td");
+    actionsCell.appendChild(divFlex);
+    return actionsCell;
   }
 
-  static createSelectButton(costItem, callbacks) {
-    const selectButton = document.createElement("button");
-    selectButton.classList.add("action-button");
-    selectButton.textContent = "Select";
-    selectButton.addEventListener("click", function (e) {
-      e.stopPropagation();
-      callbacks.selectAssignedElements
-        ? callbacks.selectAssignedElements(costItem.id)
-        : null;
-    });
+  static duplicateCostItemButton(costItemId, duplicateCostItem) {
+    const duplicateButton = CostUI.createButton(
+      "Duplicate",
+      "fa-solid fa-copy"
+    );
+    duplicateButton.addEventListener(
+      "click",
+      duplicateCostItem.bind(null, costItemId)
+    );
+    return duplicateButton;
+  }
+
+  static addCostItemButton(costItemId, addCostItem) {
+    const addCostItemButton = CostUI.createButton(
+      "Add Sub-Cost",
+      "fa-solid fa-plus"
+    );
+    addCostItemButton.addEventListener(
+      "click",
+      addCostItem.bind(null, costItemId)
+    );
+    return addCostItemButton;
+  }
+
+  static createSelectButton(costItemId, selectAssignedElements) {
+    const selectButton = CostUI.createButton(
+      "Select",
+      "fa-solid fa-arrow-pointer"
+    );
+    selectButton.addEventListener(
+      "click",
+      selectAssignedElements.bind(null, costItemId)
+    );
     return selectButton;
+  }
+
+  static deleteCostItemButton(costItemId, deleteCostItem) {
+    const deleteButton = CostUI.createButton("Delete", "fa-solid fa-trash");
+    deleteButton.addEventListener(
+      "click",
+      CostUI.deleteCostItem.bind(null, costItemId, deleteCostItem)
+    );
+    return deleteButton;
+  }
+
+  static createButton(text, icon) {
+    const button = document.createElement("button");
+    !icon ? (button.textContent = text) : null;
+    icon
+      ? button.classList.add("action-button", ...icon.split(" "))
+      : button.classList.add("action-button");
+    button.dataset.tooltip = text;
+    return button;
   }
 
   static highlightElement(id) {
@@ -1479,6 +1544,7 @@ export class CostUI {
 
     const picker = CostUI.createColorPicker();
     const tableFontSize = CostUI.createFontSizePicker();
+    const currencyPicker = CostUI.createCurrencyPicker();
     settingsMenu.appendChild(picker);
     settingsMenu.appendChild(tableFontSize);
     document.getElementById("settings-menu").style.display = "none";
@@ -1519,6 +1585,32 @@ export class CostUI {
       CostUI.applyColorToAllTables(color);
     });
     return div;
+  }
+
+  static createCurrencyPicker() {
+    const currency = CostUI.getCurrency();
+    const div = document.createElement("div");
+    const currencyText = document.createElement("p");
+    currencyText.textContent = "Select a currency for the table:";
+    div.appendChild(currencyText);
+    const currencyPicker = document.createElement("input");
+    currencyPicker.type = "text";
+    currencyPicker.id = "currency-picker";
+    currencyPicker.value = currency;
+    div.appendChild(currencyPicker);
+    currencyPicker.addEventListener("input", function () {
+      const currency = currencyPicker.value;
+      CostUI.saveCurrency(currency);
+    });
+    return div;
+  }
+
+  static saveCurrency(currency) {
+    localStorage.setItem("tableCurrency", currency);
+  }
+
+  static getCurrency() {
+    return localStorage.getItem("tableCurrency");
   }
 
   static saveFontSize(fontSize) {
@@ -1636,5 +1728,51 @@ export class CostUI {
         CostUI.toggleSettingsMenu();
       },
     });
+  }
+
+  static editQuantities({
+    costItemId,
+    selectedProducts,
+    quantityNames,
+    assignedProducts,
+    callbacks,
+  }) {
+    const formId = "selected-products-" + costItemId;
+    const form = CostUI.Form({
+      id: formId,
+      name:
+        "Edit Product Assignments for: " + CostUI.getCostItemName(costItemId),
+      icon: "fa-solid fa-box",
+    });
+    const numberOfProducts = CostUI.Text(
+      "Selection basket : " + selectedProducts.length + " products",
+      "fa-solid fa-cart-shopping",
+      "large"
+    );
+    form.appendChild(numberOfProducts);
+    CostUI.highlightElement(costItemId);
+    const selectedProductsTable = CostUI.createProductTable({
+      form,
+      products: selectedProducts,
+      quantityNames,
+      costItemId,
+      callbacks,
+    });
+
+    if (assignedProducts.length > 0) {
+      const assignedProductsText = CostUI.Text(
+        "Assigned Products",
+        "fa-solid fa-solid fa-paperclip",
+        "large"
+      );
+      form.appendChild(assignedProductsText);
+      const assignmentsTable = CostUI.createAssignmentsTable({
+        form,
+        products: assignedProducts,
+        quantityNames,
+        costItemId,
+        callbacks,
+      });
+    }
   }
 }

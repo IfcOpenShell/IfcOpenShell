@@ -425,7 +425,7 @@ class Web(bonsai.core.tool.Web):
             cost_item = tool.Ifc.get().by_id(operator_data["costItemId"])
             products = tool.Cost.get_cost_item_products(cost_item, is_deep=True)
             tool.Spatial.select_products(products, unhide=True)
-        if operator_data["type"] == "getSelectedProducts":
+        if operator_data["type"] == "enableEditingQuantities":
             cost_item_id = operator_data["costItemId"]
             cost_item = ifc_file.by_id(cost_item_id)
             if not cost_item:
@@ -446,8 +446,8 @@ class Web(bonsai.core.tool.Web):
                     "product_quantity_names": names,
                     "cost_item_id": cost_item_id,
                 },
-                data_key="selected_products",
-                event="selected_products",
+                data_key="quantities",
+                event="quantities",
             )
 
         if operator_data["type"] == "addSummaryCostItem":
@@ -531,7 +531,11 @@ class Web(bonsai.core.tool.Web):
     def load_cost_schedule_web_ui(cls, cost_schedule):
         json_data = tool.Cost.create_cost_schedule_json(cost_schedule)
         cls.send_webui_data(
-            data={"cost_items": json_data, "cost_schedule_id": cost_schedule.id()},
+            data={
+                "cost_items": json_data,
+                "cost_schedule_id": cost_schedule.id(),
+                "currency": tool.Cost.currency(),
+                },
             data_key="cost_items",
             event="cost_items",
         )

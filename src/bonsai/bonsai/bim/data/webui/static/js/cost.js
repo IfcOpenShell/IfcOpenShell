@@ -28,53 +28,25 @@ function connectSocket() {
   socket.on("cost_items", handleCostItemsData);
   socket.on("cost_values", handleCostValuesData);
   socket.on("cost_value", handleCostValueData);
-  socket.on("selected_products", handleSelectedProducts);
+  socket.on("quantities", handleEditQuantities);
 }
 
-function handleSelectedProducts(data) {
-  const costItemId = data.data["selected_products"]["cost_item_id"];
-  const products = data.data["selected_products"]["selected_products"];
-  const assigned_products = data.data["selected_products"]["assigned_products"];
-  const quantityNames =
-    data.data["selected_products"]["product_quantity_names"];
-  const formId = "selected-products-" + costItemId;
-  const form = CostUI.Form({
-    id: formId,
-    name: "Edit Product Assignments for: " + CostUI.getCostItemName(costItemId),
-    icon: "fa-solid fa-box",
-  });
-  const numberOfProducts = CostUI.Text(
-    "Selection basket : " + products.length + " products",
-    "fa-solid fa-cart-shopping",
-    "large"
-  );
-  form.appendChild(numberOfProducts);
-  CostUI.highlightElement(costItemId);
-  const selectedProductsTable = CostUI.createProductTable({
-    form,
-    products,
-    quantityNames,
-    costItemId,
+function handleEditQuantities(data) {
+  const costItemId = data.data["quantities"]["cost_item_id"];
+  const products = data.data["quantities"]["selected_products"];
+  const assigned_products = data.data["quantities"]["assigned_products"];
+  const quantityNames = data.data["quantities"]["product_quantity_names"];
+
+  CostUI.editQuantities({
+    costItemId: costItemId,
+    selectedProducts: products,
+    assignedProducts: assigned_products,
+    quantityNames: quantityNames,
     callbacks: {
       addProductAssignments: addProductAssignments,
-      getSelectedProducts: getSelectedProducts,
+      enableEditingQuantities: enableEditingQuantities,
     },
   });
-
-  if (assigned_products.length > 0) {
-    const assignedProductsText = CostUI.Text(
-      "Assigned Products",
-      "fa-solid fa-solid fa-paperclip",
-      "large"
-    );
-    form.appendChild(assignedProductsText);
-    const assignmentsTable = CostUI.createAssignmentsTable({
-      form,
-      products: assigned_products,
-      quantityNames,
-      costItemId,
-    });
-  }
 }
 
 function handlePredefinedTypes(data) {
@@ -322,9 +294,6 @@ function handleCostSchedulesData(data) {
   if (costSchedules.length === 0) {
     return;
   }
-  const currency = data.data["cost_schedules"]["currency"]
-    ? data.data["cost_schedules"]["currency"]["name"]
-    : "Undefined";
   const costScheduleDiv = document.getElementById("cost-schedules");
   costScheduleDiv.innerHTML = "";
   costSchedules.forEach((costSchedule) => {
@@ -368,8 +337,13 @@ function handleCostItemsData(data) {
   loadedSchedules[data.blenderId] = costScheduleId;
   CostUI.highlightElement("schedule-" + costScheduleId);
 
+  const currency = data.data["cost_items"]["currency"]
+    ? data.data["cost_items"]["currency"]["name"]
+    : "Undefined";
+
   CostUI.createCostSchedule({
-    data: data.data["cost_items"]["cost_items"],
+    costItems: data.data["cost_items"]["cost_items"],
+    currency: currency,
     costScheduleId: costScheduleId,
     blenderID: data.blenderId,
     callbacks: {
@@ -380,13 +354,13 @@ function handleCostItemsData(data) {
       editCostItemName: editCostItemName,
       enableEditingCostValues: enableEditingCostValues,
       addSummaryCostItem: addSummaryCostItem,
-      getSelectedProducts: getSelectedProducts,
+      enableEditingQuantities: enableEditingQuantities,
     },
   });
 }
 
-function getSelectedProducts(costItemId) {
-  executeOperator({ type: "getSelectedProducts", costItemId: costItemId });
+function enableEditingQuantities(costItemId) {
+  executeOperator({ type: "enableEditingQuantities", costItemId: costItemId });
 }
 
 function duplicateCostItem(costItemId) {
