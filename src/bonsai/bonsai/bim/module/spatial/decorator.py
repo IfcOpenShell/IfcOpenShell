@@ -65,7 +65,7 @@ class GridDecorator:
         blf.enable(font_id, blf.SHADOW)
 
         for axis in context.scene.BIMGridProperties.grid_axes:
-            if not (obj := axis.obj):
+            if not (obj := axis.obj) or obj.hide_get() == True:
                 continue
             if obj.select_get() and context.mode != "OBJECT":
                 continue
@@ -112,11 +112,10 @@ class GridDecorator:
 
         selected_verts = []
         selected_edges = []
-        selected_tags = []
         unselected_verts = []
         unselected_edges = []
         for axis in context.scene.BIMGridProperties.grid_axes:
-            if obj := axis.obj:
+            if (obj := axis.obj) and obj.hide_get() == False:
                 if obj.select_get():
                     if context.mode != "OBJECT":
                         continue
@@ -132,8 +131,8 @@ class GridDecorator:
                 v2 = matrix_world @ obj.data.vertices[1].co
                 verts.extend([v1, v2])
 
-        if selected_verts:
-            self.draw_batch("LINES", selected_verts, selected_elements_color, selected_edges)
-
         if unselected_verts:
             self.draw_batch("LINES", unselected_verts, unselected_elements_color, unselected_edges)
+
+        if selected_verts:
+            self.draw_batch("LINES", selected_verts, selected_elements_color, selected_edges)
