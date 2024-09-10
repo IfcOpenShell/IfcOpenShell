@@ -18,6 +18,7 @@
  ********************************************************************************/
 
 #include "mapping.h"
+#include "../piecewise_function_evaluator.h"
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geometry;
 
@@ -55,7 +56,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcGradientCurve* inst) {
    double gradient_start = m(0, 3); // start of vertical (row 0, col 3) - "Distance Along" horizontal curve
 
 	// create the vertical pwf
-	auto vertical = taxonomy::make<taxonomy::piecewise_function>(gradient_start, pwfs, &settings_);
+	auto vertical = taxonomy::make<taxonomy::piecewise_function>(gradient_start, pwfs);
 
 	// Determine the valid domain of the PWF... the valid domain is where both
 	// the base curve and gradient curves are defined
@@ -69,11 +70,12 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcGradientCurve* inst) {
    }
 
 	// define the callback function for the gradient curve
-	auto composition = [horizontal, vertical](double u)->Eigen::Matrix4d {
+   piecewise_function_evaluator horizontal_evaluator(horizontal, &settings_), vertical_evaluator(vertical, &settings_);
+   auto composition = [horizontal_evaluator, vertical_evaluator,start=vertical->start()](double u) -> Eigen::Matrix4d {
 		// u is distance from start of gradient curve (vertical)
 		// add vertical->start() to u to get distance from start of horizontal
-      auto xy = horizontal->evaluate(u + vertical->start());
-		auto uz = vertical->evaluate(u);
+      auto xy = horizontal_evaluator.evaluate(u + start);
+      auto uz = vertical_evaluator.evaluate(u);
 
       uz.col(3)(0) = 0.0; // x is distance along. zero it out so it doesn't add to the x from horizontal
       uz.col(1).swap(uz.col(2)); // uz is 2D in distance along - y plane, swap y and z so elevations become z
@@ -86,7 +88,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcGradientCurve* inst) {
 
 	taxonomy::piecewise_function::spans_t spans;
    spans.emplace_back(length, composition);
-   auto pwf = taxonomy::make<taxonomy::piecewise_function>(start, spans, &settings_, inst);
+   auto pwf = taxonomy::make<taxonomy::piecewise_function>(start, spans, inst);
    return pwf;
 }
 

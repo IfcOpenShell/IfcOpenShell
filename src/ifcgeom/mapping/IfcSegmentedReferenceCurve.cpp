@@ -21,6 +21,8 @@
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geometry;
 
+#include "../piecewise_function_evaluator.h"
+
 #ifdef SCHEMA_HAS_IfcSegmentedReferenceCurve
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSegmentedReferenceCurve* inst) {
@@ -53,7 +55,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSegmentedReferenceCurve* ins
     const Eigen::Matrix4d& m = p->ccomponents();
     double cant_start = m(0, 3); // start of cant curve
 
-   auto cant = taxonomy::make<taxonomy::piecewise_function>(cant_start,pwfs,&settings_);
+   auto cant = taxonomy::make<taxonomy::piecewise_function>(cant_start,pwfs);
 
     // Determine the valid domain of the PWF... the valid domain is where 
     // horizontal, gradient and cant curves are defined
@@ -68,11 +70,12 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSegmentedReferenceCurve* ins
     }
 
     // define the callback function for the segmented reference curve
-	auto composition = [gradient, cant](double u)->Eigen::Matrix4d {
+    piecewise_function_evaluator gradient_evaluator(gradient, &settings_), cant_evaluator(cant, &settings_);
+    auto composition = [gradient_evaluator, cant_evaluator, start = cant->start()](double u) -> Eigen::Matrix4d {
       // u is distance from start of cant curve
       // add cant->start() to u to get the distance from start of gradient curve
-		auto g = gradient->evaluate(u+cant->start());
-		auto c = cant->evaluate(u);
+      auto g = gradient_evaluator.evaluate(u + start);
+      auto c = cant_evaluator.evaluate(u);
 
       // Need to multiply g and c so the axis vectors
       // from cant have the correct rotation applied so
@@ -105,7 +108,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSegmentedReferenceCurve* ins
 
 	taxonomy::piecewise_function::spans_t spans;
    spans.emplace_back(length, composition);
-   auto pwf = taxonomy::make<taxonomy::piecewise_function>(start, spans, &settings_, inst);
+   auto pwf = taxonomy::make<taxonomy::piecewise_function>(start, spans, inst);
    return pwf;
 }
 
