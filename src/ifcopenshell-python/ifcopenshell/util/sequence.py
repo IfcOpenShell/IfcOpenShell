@@ -459,12 +459,9 @@ def get_related_products(
     """Gets the related products being output by a task
 
     :param relating_product: One of the products already output by the task.
-    :type relating_product: ifcopenshell.entity_instance, optional
     :param related_object: The IfcTask that you want to get all the related
         products for.
-    :type related_object: ifcopenshell.entity_instance, optional
     :return: A set of IfcProducts output by the IfcTask.
-    :rtype: set[ifcopenshell.entity_instance]
 
     Example:
 
@@ -489,17 +486,18 @@ def get_related_products(
         products = ifcopenshell.util.sequence.get_related_products(related_object=task)
     """
 
+    assert relating_product or related_object, "Either relating_product or related_object must be provided."
+
     products = set()
-    related_object = None
-    if related_object:
-        related_object = related_object
-    elif relating_product:
+    if not related_object and relating_product:
         for reference in relating_product.ReferencedBy:
             if reference.is_a("IfcRelAssignsToProduct"):
                 related_object = reference.RelatedObjects[0]
+
     if related_object:
         assignments = related_object.HasAssignments
         for assignment in assignments:
             if assignment.is_a("IfcRelAssignsToProduct"):
                 products.add(assignment.RelatingProduct.id())
+
     return products
