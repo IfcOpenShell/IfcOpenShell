@@ -327,6 +327,8 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator):
         if event.type in {"MIDDLEMOUSE", "WHEELUPMOUSE", "WHEELDOWNMOUSE"}:
             return {"PASS_THROUGH"}
 
+        self.handle_instructions(context)
+
         self.handle_mouse_move(context, event)
 
         self.choose_axis(event)
@@ -335,6 +337,7 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator):
 
         if not self.tool_state.is_input_on and event.value == "RELEASE" and event.type in {"RET", "NUMPAD_ENTER", "RIGHTMOUSE"}:
             self.create_walls_from_polyline(context)
+            context.workspace.status_text_set(text=None)
             PolylineDecorator.uninstall()
             tool.Snap.clear_polyline()
             tool.Blender.update_viewport()

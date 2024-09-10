@@ -88,12 +88,20 @@ class PolylineOperator:
         self.snap_angle = None
         self.snapping_points = []
         self.instructions = """TAB: Cycle Input
-    M: Modify Snap Point
-    C: Close
-    Backspace: Remove
-    X Y: Axis
-    Shift: Lock axis
-"""
+        D: Distance Input
+        A: Angle Input
+        M: Modify Snap Point
+        C: Close Polyline
+        BACKSPACE: Remove Point
+        X, Y: Choose Axis
+        SHIFT: Lock axis
+        """
+        self.snap_info = """
+        Snap: 
+        Axis:
+        Plane: 
+        """
+
         self.tool_state = tool.Polyline.create_tool_state()
 
     def recalculate_inputs(self, context):
@@ -154,6 +162,14 @@ class PolylineOperator:
                 self.tool_state.axis_method = None
                 tool.Blender.update_viewport()
 
+    def handle_instructions(self, context):
+        self.snap_info = f"""|
+        Axis: {self.tool_state.axis_method}
+        Plane: {self.tool_state.plane_method}
+        Snap: {self.snapping_points[0][1]}
+        """
+        context.workspace.status_text_set(self.instructions + self.snap_info)
+        
     def handle_keyboard_input(self, context, event):
 
         if self.tool_state.is_input_on and event.value == "PRESS" and event.type == "TAB":
@@ -279,6 +295,7 @@ class PolylineOperator:
         else:
             if event.value == "RELEASE" and event.type in {"ESC"}:
                 self.tool_state.axis_method = None
+                context.workspace.status_text_set(text=None)
                 PolylineDecorator.uninstall()
                 tool.Snap.clear_polyline()
                 tool.Blender.update_viewport()

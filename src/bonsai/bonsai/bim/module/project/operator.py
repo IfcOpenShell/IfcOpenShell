@@ -2283,17 +2283,21 @@ class MeasureTool(bpy.types.Operator, PolylineOperator):
         self.input_ui = tool.Polyline.create_input_ui(init_z=True)
         self.input_options = ["D", "A", "X", "Y", "Z"]
         self.instructions = """TAB: Cycle Input
-    M: Modify Snap Point
-    C: Close
-    Backspace: Remove
-    X Y Z: Axis
-    S-(X Y Z): Plane
-    Shift: Lock axis
-"""
+        D: Distance Input
+        A: Angle Input
+        M: Modify Snap Point
+        C: Close Polyline
+        BACKSPACE: Remove Point
+        X, Y, Z: Choose Axis
+        S-X, S-Y, S-Z: Choose Plane
+        SHIFT: Lock axis
+        """
 
     def modal(self, context, event):
         if event.type in {"MIDDLEMOUSE", "WHEELUPMOUSE", "WHEELDOWNMOUSE"}:
             return {"PASS_THROUGH"}
+
+        self.handle_instructions(context)
 
         self.handle_mouse_move(context, event)
 
@@ -2304,6 +2308,7 @@ class MeasureTool(bpy.types.Operator, PolylineOperator):
         self.handle_snap_selection(context, event)
 
         if not self.tool_state.is_input_on and event.value == "RELEASE" and event.type in {"RET", "NUMPAD_ENTER", "RIGHTMOUSE"}:
+            context.workspace.status_text_set(text=None)
             PolylineDecorator.uninstall()
             tool.Snap.clear_polyline()
             tool.Blender.update_viewport()
