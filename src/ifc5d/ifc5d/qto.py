@@ -28,19 +28,25 @@ import ifcopenshell.util.shape
 import ifcopenshell.util.representation
 import multiprocessing
 from collections import namedtuple
-from typing import Any
+from typing import Any, Literal, get_args
 
 
 Function = namedtuple("Function", ["measure", "name", "description"])
-rules = {}
+RULE_SET = Literal["IFC4QtoBaseQuantities", "IFC4QtoBaseQuantitiesBlender"]
+rules: dict[RULE_SET, dict[str, Any]] = {}
 
 cwd = os.path.dirname(os.path.realpath(__file__))
-for name in ("IFC4QtoBaseQuantities", "IFC4QtoBaseQuantitiesBlender"):
+for name in get_args(RULE_SET):
     with open(os.path.join(cwd, name + ".json"), "r") as f:
         rules[name] = json.load(f)
 
 
 def quantify(ifc_file: ifcopenshell.file, elements: set[ifcopenshell.entity_instance], rules: dict) -> dict:
+    """
+
+    :param rules: Set of rules from `ifc5d.qto.rules`.
+
+    """
     results = {}
     for calculator, queries in rules["calculators"].items():
         calculator = calculators[calculator]
@@ -52,6 +58,11 @@ def quantify(ifc_file: ifcopenshell.file, elements: set[ifcopenshell.entity_inst
 
 
 def edit_qtos(ifc_file: ifcopenshell.file, results: dict[ifcopenshell.entity_instance, Any]) -> None:
+    """
+
+    :param results: Results from `ifc5d.qto.quantify`.
+
+    """
     for element, qtos in results.items():
         for name, quantities in qtos.items():
             qto = ifcopenshell.util.element.get_pset(element, name, should_inherit=False)
