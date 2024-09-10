@@ -51,5 +51,10 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcEllipse* inst) {
 	el->radius = x;
 	el->radius2 = y;
 
-	return el;
+	auto e = taxonomy::make<taxonomy::edge>();
+	e->basis = el;
+	e->start = 0.;
+	e->end = 2 * boost::math::constants::pi<double>();
+
+	return e;
 }
