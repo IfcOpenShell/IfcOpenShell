@@ -35,10 +35,5 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCircle* inst) {
 	c->radius = r;
 	c->matrix = taxonomy::cast<taxonomy::matrix4>(map(placement));
 
-	auto e = taxonomy::make<taxonomy::edge>();
-	e->basis = c;
-	e->start = 0.;
-	e->end = 2 * boost::math::constants::pi<double>();
-
-	return e;
+	return c;
 }
