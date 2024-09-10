@@ -40,7 +40,11 @@ class Profile(bonsai.core.tool.Profile):
         settings = ifcopenshell.geom.settings()
         settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
         shape = ifcopenshell.geom.create_shape(settings, profile)
+
         verts = shape.verts
+        if not verts:
+            raise RuntimeError("Profile shape has no vertices, it probably is invalid.")
+
         edges = shape.edges
 
         grouped_verts = [[verts[i], verts[i + 1]] for i in range(0, len(verts), 3)]
