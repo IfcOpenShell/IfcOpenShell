@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import bpy
 import ifcopenshell
 import ifcopenshell.api.profile
 import ifcopenshell.geom
@@ -104,3 +105,10 @@ class Profile(bonsai.core.tool.Profile):
         # In UI unnamed profiles are not available, so we don't handle them.
         new_profile.ProfileName = profile.ProfileName + "_copy"
         return new_profile
+
+    @classmethod
+    def get_active_profile_ui(cls) -> Union[bpy.types.PropertyGroup, None]:
+        props = bpy.context.scene.BIMProfileProperties
+        index = props.active_profile_index
+        if len(props.profiles) > index >= 0:
+            return props.profiles[index]

@@ -290,9 +290,18 @@ class ProfilePsetsData(Data):
 
     @classmethod
     def load(cls):
-        pprops = bpy.context.scene.BIMProfileProperties
-        ifc_definition_id = pprops.profiles[pprops.active_profile_index].ifc_definition_id
-        cls.data = {"psets": cls.psetqtos(tool.Ifc.get().by_id(ifc_definition_id), psets_only=True)}
+        active_profile = tool.Profile.get_active_profile_ui()
+        if active_profile:
+            ifc_definition_id = active_profile.ifc_definition_id
+            psets_data = cls.psetqtos(tool.Ifc.get().by_id(ifc_definition_id), psets_only=True)
+        else:
+            ifc_definition_id = 0
+            psets_data = []
+
+        cls.data = {
+            "ifc_definition_id": ifc_definition_id,
+            "psets": psets_data,
+        }
         cls.is_loaded = True
 
 
