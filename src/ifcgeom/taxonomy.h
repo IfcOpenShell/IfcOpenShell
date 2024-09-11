@@ -1089,6 +1089,7 @@ typedef item const* ptr;
 				static const size_t max = std::tuple_size<impl::SurfacesTuple>::value;
 			};
 
+			boost::optional<face::ptr> loop_to_face_upgrade_impl(ptr item);
 			template <typename T>
 			class loop_to_face_upgrade {
 			private:
@@ -1096,15 +1097,7 @@ typedef item const* ptr;
 			public:
 				loop_to_face_upgrade(taxonomy::ptr item) {
 					if constexpr (std::is_same_v<T, face>) {
-						auto loop = taxonomy::dcast<taxonomy::loop>(item);
-						if (loop) {
-							loop->external = true;
-
-							face_ = taxonomy::make<taxonomy::face>();
-							(*face_)->instance = loop->instance;
-							(*face_)->matrix = loop->matrix;
-							(*face_)->children = { taxonomy::clone(loop) };
-						}
+						face_ = loop_to_face_upgrade_impl(item);
 					}
 				}
 
@@ -1122,6 +1115,7 @@ typedef item const* ptr;
 				}
 			};
 
+			boost::optional<edge::ptr> curve_to_edge_upgrade_impl(ptr item);
 			template <typename T>
 			class curve_to_edge_upgrade {
 			private:
@@ -1129,28 +1123,7 @@ typedef item const* ptr;
 			public:
 				curve_to_edge_upgrade(taxonomy::ptr item) {
 					if constexpr (std::is_same_v<T, edge>) {
-						auto circle = taxonomy::dcast<taxonomy::circle>(item);
-						auto ellipse = taxonomy::dcast<taxonomy::ellipse>(item);
-						auto line = taxonomy::dcast<taxonomy::line>(item);
-						auto bspline_curve = taxonomy::dcast<taxonomy::bspline_curve>(item);
-						if (circle || ellipse || line || bspline_curve) {
-							edge_ = taxonomy::make<taxonomy::edge>();
-							if (circle) {
-								(*edge_)->basis = circle;
-							} else if (ellipse) {
-								(*edge_)->basis = ellipse;
-							} else if (line) {
-								(*edge_)->basis = line;
-							} else if (bspline_curve) {
-								(*edge_)->basis = bspline_curve;
-							}
-
-							if (circle || ellipse) {
-								// @todo
-								(*edge_)->start = 0.;
-								(*edge_)->end = 2 * boost::math::constants::pi<double>();
-							}
-						}
+						edge_ = taxonomy::curve_to_edge_upgrade_impl(item);
 					}
 				}
 
@@ -1168,7 +1141,7 @@ typedef item const* ptr;
 				}
 			};
 
-
+			boost::optional<loop::ptr> curve_to_loop_upgrade_impl(ptr item);
 			template <typename T>
 			class curve_to_loop_upgrade {
 			private:
@@ -1176,31 +1149,7 @@ typedef item const* ptr;
 			public:
 				curve_to_loop_upgrade(taxonomy::ptr item) {
 					if constexpr (std::is_same_v<T, loop>) {
-						auto circle = taxonomy::dcast<taxonomy::circle>(item);
-						auto ellipse = taxonomy::dcast<taxonomy::ellipse>(item);
-						auto line = taxonomy::dcast<taxonomy::line>(item);
-						auto bspline_curve = taxonomy::dcast<taxonomy::bspline_curve>(item);
-						if (circle || ellipse || line || bspline_curve) {
-							auto edge = taxonomy::make<taxonomy::edge>();
-							if (circle) {
-								edge->basis = circle;
-							} else if (ellipse) {
-								edge->basis = ellipse;
-							} else if (line) {
-								edge->basis = line;
-							} else if (bspline_curve) {
-								edge->basis = bspline_curve;
-							}
-
-							if (circle || ellipse) {
-								// @todo
-								edge->start = 0.;
-								edge->end = 2 * boost::math::constants::pi<double>();
-							}
-
-							loop_ = taxonomy::make<taxonomy::loop>();
-							(*loop_)->children.push_back(edge);
-						}
+						loop_ = curve_to_loop_upgrade_impl(item);
 					}
 				}
 
@@ -1218,6 +1167,7 @@ typedef item const* ptr;
 				}
 			};
 
+			boost::optional<loop::ptr> edge_to_loop_upgrade_impl(ptr item);
 			template <typename T>
 			class edge_to_loop_upgrade {
 			private:
@@ -1225,11 +1175,7 @@ typedef item const* ptr;
 			public:
 				edge_to_loop_upgrade(taxonomy::ptr item) {
 					if constexpr (std::is_same_v<T, loop>) {
-						auto edge = taxonomy::dcast<taxonomy::edge>(item);
-						if (edge) {
-							loop_ = taxonomy::make<taxonomy::loop>();
-							(*loop_)->children.push_back(edge);
-						}
+						loop_ = edge_to_loop_upgrade_impl(item);
 					}
 				}
 
@@ -1247,7 +1193,7 @@ typedef item const* ptr;
 				}
 			};
 
-
+			boost::optional<face::ptr> curve_to_face_upgrade_impl(ptr item);
 			template <typename T>
 			class curve_to_face_upgrade {
 			private:
@@ -1255,36 +1201,7 @@ typedef item const* ptr;
 			public:
 				curve_to_face_upgrade(taxonomy::ptr item) {
 					if constexpr (std::is_same_v<T, edge>) {
-						auto circle = taxonomy::dcast<taxonomy::circle>(item);
-						auto ellipse = taxonomy::dcast<taxonomy::ellipse>(item);
-						auto line = taxonomy::dcast<taxonomy::line>(item);
-						auto bspline_curve = taxonomy::dcast<taxonomy::bspline_curve>(item);
-						if (circle || ellipse || line || bspline_curve) {
-							auto edge = taxonomy::make<taxonomy::edge>();
-							if (circle) {
-								edge->basis = circle;
-							} else if (ellipse) {
-								edge->basis = ellipse;
-							} else if (line) {
-								edge->basis = line;
-							} else if (bspline_curve) {
-								edge->basis = bspline_curve;
-							}
-
-							if (circle || ellipse) {
-								// @todo
-								edge->start = 0.;
-								edge->end = 2 * boost::math::constants::pi<double>();
-							}
-							
-							auto loop = taxonomy::make<taxonomy::loop>();
-							loop->children.push_back(edge);
-
-							face_ = taxonomy::make<taxonomy::face>();
-							(*face_)->instance = loop->instance;
-							(*face_)->matrix = loop->matrix;
-							(*face_)->children = { taxonomy::clone(loop) };
-						}
+						face_ = curve_to_face_upgrade_impl(item);
 					}
 				}
 
@@ -1302,6 +1219,7 @@ typedef item const* ptr;
 				}
 			};
 
+			boost::optional<piecewise_function::ptr> loop_to_piecewise_function_upgrade_impl(ptr item);
             template <typename T>
             class loop_to_piecewise_function_upgrade {
               private:
@@ -1310,36 +1228,7 @@ typedef item const* ptr;
               public:
                loop_to_piecewise_function_upgrade(taxonomy::ptr item) {
 					if constexpr (std::is_same_v<T, piecewise_function>) {
-						auto loop = taxonomy::dcast<taxonomy::loop>(item);
-						if (loop) {
-							if (loop->pwf.is_initialized()) {
-								pwf_ = loop->pwf;
-							} else {
-                        taxonomy::piecewise_function::spans_t spans;
-								spans.reserve(loop->children.size());
-								for (auto& edge : loop->children) {
-									// the edge could be an arc or trimmed circle in the case of IfcIndexPolyCurve - support for this isn't implemented yet
-									if (edge->basis) {
-										Logger::Message(Logger::Severity::LOG_NOTICE, "Shape of basis curve ignored - edge is treated as a straight line edge");
-									}
-
-									const auto& s = boost::get<taxonomy::point3::ptr>(edge->start)->ccomponents();
-									const auto& e = boost::get<taxonomy::point3::ptr>(edge->end)->ccomponents();
-									Eigen::Vector3d v = e - s;
-									auto l = v.norm(); // the norm of a vector is a measure of its length
-									v.normalize();     // normalize the vector so that it is a unit direction vector
-									std::function<Eigen::Matrix4d(double)> fn = [s, v](double u) {
-										Eigen::Vector3d o(s + u * v), axis(0, 0, 1), refDirection(v);
-										auto Y = axis.cross(refDirection).normalized();
-										axis = refDirection.cross(Y).normalized();
-										return taxonomy::make<taxonomy::matrix4>(o, axis, refDirection)->components();
-									};
-									spans.emplace_back(l, fn);
-								}
-								pwf_ = taxonomy::make<taxonomy::piecewise_function>(0.0,spans);
-								loop->pwf = pwf_;
-							}
-						}
+						pwf_ = loop_to_piecewise_function_upgrade_impl(item);
                     }
                 }
 

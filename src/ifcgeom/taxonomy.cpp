@@ -599,3 +599,156 @@ void ifcopenshell::geometry::taxonomy::extrusion::print(std::ostream& o, int ind
 	direction->print(o, indent + 4);
 	basis->print(o, indent + 4);
 }
+
+boost::optional<face::ptr> ifcopenshell::geometry::taxonomy::loop_to_face_upgrade_impl(ptr item) {
+	boost::optional<face::ptr> face_;
+	auto loop_ = dcast<loop>(item);
+		if (loop_) {
+			loop_->external = true;
+
+			face_ = make<face>();
+			(*face_)->instance = loop_->instance;
+			(*face_)->matrix = loop_->matrix;
+			(*face_)->children = { clone(loop_) };
+		}
+	return face_;
+}
+
+boost::optional<edge::ptr> ifcopenshell::geometry::taxonomy::curve_to_edge_upgrade_impl(ptr item) {
+	boost::optional<edge::ptr> edge_;
+	auto circle_ = dcast<circle>(item);
+	auto ellipse_ = dcast<ellipse>(item);
+	auto line_ = dcast<line>(item);
+	auto bspline_curve_ = dcast<bspline_curve>(item);
+	if (circle_ || ellipse_ || line_ || bspline_curve_) {
+		edge_ = make<edge>();
+		if (circle_) {
+			(*edge_)->basis = circle_;
+		} else if (ellipse_) {
+			(*edge_)->basis = ellipse_;
+		} else if (line_) {
+			(*edge_)->basis = line_;
+		} else if (bspline_curve_) {
+			(*edge_)->basis = bspline_curve_;
+		}
+
+		if (circle_ || ellipse_) {
+			// @todo
+			(*edge_)->start = 0.;
+			(*edge_)->end = 2 * boost::math::constants::pi<double>();
+		}
+	}
+	return edge_;
+}
+
+boost::optional<loop::ptr> ifcopenshell::geometry::taxonomy::curve_to_loop_upgrade_impl(ptr item) {
+	boost::optional<loop::ptr> loop_;
+	auto circle_ = dcast<circle>(item);
+	auto ellipse_ = dcast<ellipse>(item);
+	auto line_ = dcast<line>(item);
+	auto bspline_curve_ = dcast<bspline_curve>(item);
+	if (circle_ || ellipse_ || line_ || bspline_curve_) {
+		auto edge_ = make<edge>();
+		if (circle_) {
+			edge_->basis = circle_;
+		} else if (ellipse_) {
+			edge_->basis = ellipse_;
+		} else if (line_) {
+			edge_->basis = line_;
+		} else if (bspline_curve_) {
+			edge_->basis = bspline_curve_;
+		}
+
+		if (circle_ || ellipse_) {
+			// @todo
+			edge_->start = 0.;
+			edge_->end = 2 * boost::math::constants::pi<double>();
+		}
+
+		loop_ = make<loop>();
+		(*loop_)->children.push_back(edge_);
+	}
+	return loop_;
+}
+
+boost::optional<loop::ptr> ifcopenshell::geometry::taxonomy::edge_to_loop_upgrade_impl(ptr item) {
+	boost::optional<loop::ptr> loop_;
+	auto edge_ = dcast<edge>(item);
+	if (edge_) {
+		loop_ = make<loop>();
+		(*loop_)->children.push_back(edge_);
+	}
+	return loop_;
+}
+
+boost::optional<face::ptr> ifcopenshell::geometry::taxonomy::curve_to_face_upgrade_impl(ptr item) {
+    boost::optional<face::ptr> face_;
+    auto circle_ = dcast<circle>(item);
+    auto ellipse_ = dcast<ellipse>(item);
+    auto line_ = dcast<line>(item);
+    auto bspline_curve_ = dcast<bspline_curve>(item);
+
+    if (circle_ || ellipse_ || line_ || bspline_curve_) {
+        auto edge_ = make<edge>();
+        if (circle_) {
+            edge_->basis = circle_;
+        } else if (ellipse_) {
+            edge_->basis = ellipse_;
+        } else if (line_) {
+            edge_->basis = line_;
+        } else if (bspline_curve_) {
+            edge_->basis = bspline_curve_;
+        }
+
+        if (circle_ || ellipse_) {
+            // @todo
+            edge_->start = 0.;
+            edge_->end = 2 * boost::math::constants::pi<double>();
+        }
+
+        auto loop_ = make<loop>();
+        loop_->children.push_back(edge_);
+
+        face_ = make<face>();
+        (*face_)->instance = loop_->instance;
+        (*face_)->matrix = loop_->matrix;
+        (*face_)->children = { clone(loop_) };
+    }
+    return face_;
+}
+
+
+boost::optional<piecewise_function::ptr> ifcopenshell::geometry::taxonomy::loop_to_piecewise_function_upgrade_impl(ptr item) {
+	boost::optional<piecewise_function::ptr> pwf_;
+	auto loop_ = dcast<loop>(item);
+	if (loop_) {
+		if (loop_->pwf.is_initialized()) {
+			pwf_ = loop_->pwf;
+		} else {
+			piecewise_function::spans_t spans;
+			spans.reserve(loop_->children.size());
+			for (auto& edge_ : loop_->children) {
+				// the edge could be an arc or trimmed circle in the case of IfcIndexPolyCurve - support for this isn't implemented yet
+				if (edge_->basis) {
+					Logger::Message(Logger::Severity::LOG_NOTICE, "Shape of basis curve ignored - edge is treated as a straight line edge");
+				}
+
+				const auto& s = boost::get<point3::ptr>(edge_->start)->ccomponents();
+				const auto& e = boost::get<point3::ptr>(edge_->end)->ccomponents();
+				Eigen::Vector3d v = e - s;
+				auto l = v.norm(); // the norm of a vector is a measure of its length
+				v.normalize();     // normalize the vector so that it is a unit direction vector
+				std::function<Eigen::Matrix4d(double)> fn = [s, v](double u) {
+					Eigen::Vector3d o(s + u * v), axis(0, 0, 1), refDirection(v);
+					auto Y = axis.cross(refDirection).normalized();
+					axis = refDirection.cross(Y).normalized();
+					return make<matrix4>(o, axis, refDirection)->components();
+				};
+				spans.emplace_back(l, fn);
+			}
+			pwf_ = make<piecewise_function>(0.0,spans);
+			loop_->pwf = pwf_;
+		}
+	}
+	return pwf_;
+}
