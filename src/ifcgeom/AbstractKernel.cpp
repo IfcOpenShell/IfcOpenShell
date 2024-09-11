@@ -29,16 +29,9 @@ bool ifcopenshell::geometry::kernels::AbstractKernel::convert(const taxonomy::pt
 	try {
 		return dispatch_conversion<0>::dispatch(this, item->kind(), item, results);
 	} catch (std::exception& e) {
-		std::string prev_exception;
+		std::string prev_exception = std::string(e.what());
 		try {
-			prev_exception = std::string(e.what());
-			// Try to upgrade. Works for circles and ellipses.
-			auto concrete_item = ifcopenshell::geometry::taxonomy::template dcast<ifcopenshell::geometry::taxonomy::edge>(item);
-			if (concrete_item) {
-				return convert_impl(concrete_item, results);
-			}
-			Logger::Error(prev_exception + " Upgrade also didn't worked.", item->instance);
-			return false;
+			return dispatch_with_upgrade<0>::dispatch(this, item, results);
 		} catch (std::exception& e) {
 			Logger::Error(prev_exception + " Conversion for upgraded element failed with: " + std::string(e.what()), item->instance);
 			return false;

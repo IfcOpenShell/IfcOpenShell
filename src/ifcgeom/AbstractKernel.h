@@ -102,6 +102,26 @@ namespace {
 		}
 	};
 
+	template <size_t N>
+	struct dispatch_with_upgrade {
+		static bool dispatch(ifcopenshell::geometry::kernels::AbstractKernel* kernel, const ifcopenshell::geometry::taxonomy::ptr item, IfcGeom::ConversionResults& results) {
+			auto concrete_item = ifcopenshell::geometry::taxonomy::template dcast<ifcopenshell::geometry::taxonomy::type_by_kind::type<N>>(item);
+			if (concrete_item) {
+				return kernel->convert_impl(concrete_item, results);
+			} else {
+				return dispatch_with_upgrade<N + 1>::dispatch(kernel, item, results);
+			}
+		}
+	};
+
+	template <>
+	struct dispatch_with_upgrade<ifcopenshell::geometry::taxonomy::type_by_kind::max> {
+		static bool dispatch(ifcopenshell::geometry::kernels::AbstractKernel*, const ifcopenshell::geometry::taxonomy::ptr item, IfcGeom::ConversionResults&) {
+			Logger::Error("No conversion with upgrade for " + std::to_string(item->kind()));
+			return false;
+		}
+	};
+
 	template <class T, class Tuple>
 	struct TupleTypeIndex;
 
