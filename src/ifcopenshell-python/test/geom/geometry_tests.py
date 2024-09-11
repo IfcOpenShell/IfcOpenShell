@@ -52,7 +52,15 @@ class TestCreatingShapes(test.bootstrap.IFC4):
         assert shape.verts
 
     def test_create_IfcBSplineCurve(self):
-        item = item = self.file.create_entity(
+        points = [
+            (6.4062, 19.4575766757, 13.352536093),
+            (5.8477429418, 19.9080686796, 14.1328111323),
+            (3.6139147091, 20.3256826827, 14.8561398035),
+            (1.1790137971e-05, 20.2853841412, 14.7863406821),
+            (1.1790137971e-05, 18.5102818197, 11.7117732726),
+            (1.16078600148, 18.0665062393, 10.9431314203),
+        ]
+        item = self.file.create_entity(
             "IfcBSplineCurveWithKnots",
             Degree=3,
             ControlPointsList=[self.file.create_entity("IfcCartesianPoint", p) for p in points],
