@@ -48,8 +48,7 @@ from natsort import natsorted
 class Spatial(bonsai.core.tool.Spatial):
     @classmethod
     def can_contain(cls, container: ifcopenshell.entity_instance, element_obj: Union[bpy.types.Object, None]) -> bool:
-        element = tool.Ifc.get_entity(element_obj)
-        if not element:
+        if not (element := tool.Ifc.get_entity(element_obj)):
             return False
         if tool.Ifc.get_schema() == "IFC2X3":
             if not container.is_a("IfcSpatialStructureElement"):
