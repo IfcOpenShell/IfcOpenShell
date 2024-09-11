@@ -36,16 +36,48 @@ function handleEditQuantities(data) {
   const products = data.data["quantities"]["selected_products"];
   const assigned_products = data.data["quantities"]["assigned_products"];
   const quantityNames = data.data["quantities"]["product_quantity_names"];
+  const costQuantities = data.data["quantities"]["cost_quantities"];
 
-  CostUI.editQuantities({
+  CostUI.enableEditingQuantities({
     costItemId: costItemId,
     selectedProducts: products,
     assignedProducts: assigned_products,
     quantityNames: quantityNames,
+    costQuantities: costQuantities,
     callbacks: {
       addProductAssignments: addProductAssignments,
       enableEditingQuantities: enableEditingQuantities,
+      addQuantity: addQuantity,
+      editQuantity: editQuantity,
+      deleteQuantity: deleteQuantity,
     },
+  });
+}
+
+function addQuantity(costItemId, ifcClass) {
+  executeOperator({
+    type: "AddCostItemQuantity",
+    costItemId: costItemId,
+    ifcClass: ifcClass,
+  });
+
+  //CostUI.addQuantity(costItemId, quantityName);
+}
+
+function editQuantity(costItemId, quantityId, attributes) {
+  executeOperator({
+    type: "editCostItemQuantity",
+    costItemId: costItemId,
+    quantityId: quantityId,
+    attributes: attributes,
+  });
+}
+
+function deleteQuantity(costItemId, quantityId) {
+  executeOperator({
+    type: "deleteCostItemQuantity",
+    costItemId: costItemId,
+    quantityId: quantityId,
   });
 }
 
