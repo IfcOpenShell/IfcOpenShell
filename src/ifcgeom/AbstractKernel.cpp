@@ -29,8 +29,22 @@ bool ifcopenshell::geometry::kernels::AbstractKernel::convert(const taxonomy::pt
 	try {
 		return dispatch_conversion<0>::dispatch(this, item->kind(), item, results);
 	} catch (std::exception& e) {
-		Logger::Error(e, item->instance);
-		return false;
+		std::string prev_exception;
+		try {
+			prev_exception = std::string(e.what());
+			// Try to upgrade. Works for circles and ellipses.
+			auto concrete_item = ifcopenshell::geometry::taxonomy::template dcast<ifcopenshell::geometry::taxonomy::edge>(item);
+			if (concrete_item) {
+				return convert_impl(concrete_item, results);
+			}
+			Logger::Error(prev_exception + " Upgrade also didn't worked.", item->instance);
+			return false;
+		} catch (std::exception& e) {
+			Logger::Error(prev_exception + " Conversion for upgraded element failed with: " + std::string(e.what()), item->instance);
+			return false;
+		} catch (...) {
+			return false;
+		}
 	} catch (...) {
 		// @todo we can't log OCCT exceptions here, can we do some reraising to solve this?
 		return false;

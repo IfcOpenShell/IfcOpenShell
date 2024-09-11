@@ -624,12 +624,16 @@ boost::optional<edge::ptr> ifcopenshell::geometry::taxonomy::curve_to_edge_upgra
 		edge_ = make<edge>();
 		if (circle_) {
 			(*edge_)->basis = circle_;
+			(*edge_)->instance = circle_->instance;
 		} else if (ellipse_) {
 			(*edge_)->basis = ellipse_;
+			(*edge_)->instance = ellipse_->instance;
 		} else if (line_) {
 			(*edge_)->basis = line_;
+			(*edge_)->instance = line_->instance;
 		} else if (bspline_curve_) {
 			(*edge_)->basis = bspline_curve_;
+			(*edge_)->instance = bspline_curve_->instance;
 		}
 
 		if (circle_ || ellipse_) {
