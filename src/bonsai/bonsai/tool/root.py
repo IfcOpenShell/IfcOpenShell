@@ -28,6 +28,7 @@ import bonsai.core.geometry
 import bonsai.tool as tool
 from typing import Union, Optional, Any
 from bonsai.bim.module.spatial.decorator import GridDecorator
+from bonsai.bim.module.geometry.decorator import ItemDecorator
 
 
 class Root(bonsai.core.tool.Root):
@@ -213,6 +214,12 @@ class Root(bonsai.core.tool.Root):
                 new = axes.add()
                 new.obj = obj
         GridDecorator.install(bpy.context)
+
+    @classmethod
+    def reload_item_decorator(cls) -> None:
+        item_objs = bpy.context.scene.BIMGeometryProperties.item_objs
+        item_objs.clear()
+        ItemDecorator.install(bpy.context)
 
     @classmethod
     def link_object_data(cls, source_obj: bpy.types.Object, destination_obj: bpy.types.Object) -> None:

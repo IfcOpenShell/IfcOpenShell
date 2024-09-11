@@ -820,6 +820,7 @@ class LoadProjectElements(bpy.types.Operator):
         tool.Project.set_default_context()
         tool.Project.set_default_modeling_dimensions()
         tool.Root.reload_grid_decorator()
+        tool.Root.reload_item_decorator()
         return {"FINISHED"}
 
     def get_decomposition_elements(self):
