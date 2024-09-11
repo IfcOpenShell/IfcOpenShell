@@ -372,10 +372,6 @@ class ShapeBuilder:
             "ProfileType": profile_type,
             "OuterCurve": outer_curve,
         }
-        if self.file.schema == "IFC2X3":
-            kwargs["Position"] = self.file.create_entity(
-                "IfcAxis2Placement2D", self.file.create_entity("IfcCartesianPoint", [0.0, 0.0])
-            )
 
         if inner_curves:
             if not isinstance(inner_curves, collections.abc.Iterable):
