@@ -793,11 +793,15 @@ export class CostUI {
   }
 
   static getRowNameCell(costItemId) {
-    return document.getElementById(costItemId).querySelector("td input");
+    return document.getElementById(costItemId)
+      ? document.getElementById(costItemId).querySelector("td input")
+      : null;
   }
 
   static getCostItemName(costItemId) {
-    return CostUI.getRowNameCell(costItemId).value;
+    return CostUI.getRowNameCell(costItemId)
+      ? CostUI.getRowNameCell(costItemId).value
+      : "Unnamed";
   }
 
   static createCostValuesForm({ costItemId, costValues, callbacks }) {
@@ -840,7 +844,6 @@ export class CostUI {
   static addNewCostValueRow(costItemId, costValueId, costValueCallbacks) {
     const table = CostUI.getCostValuesTable(costItemId);
     if (!table) {
-      console.log("Cost values table not found for cost item ID:", costItemId);
       return;
     }
     const tr = CostUI.createCostvaluesRow(
@@ -908,8 +911,8 @@ export class CostUI {
     } else if (costValue.applied_value) {
       costType = "FIXED";
     }
-
-    const typeCell = CostUI.createTableDropdown("type", costType);
+    const options = ["FIXED", "CATEGORY", "SUM"];
+    const typeCell = CostUI.createTableDropdown("type", options, costType);
     const dropdown = typeCell.querySelector("select");
     dropdown.addEventListener("change", function () {
       const selectedType = this.value;
@@ -1012,12 +1015,11 @@ export class CostUI {
     }
   }
 
-  static createTableDropdown(name, value = "FIXED") {
+  static createTableDropdown(name, options, value = "FIXED") {
     const cell = document.createElement("td");
     const dropdown = document.createElement("select");
     dropdown.name = name;
 
-    const options = ["FIXED", "CATEGORY", "SUM"];
     options.forEach((optionValue) => {
       const option = document.createElement("option");
       option.value = optionValue;
@@ -1306,7 +1308,7 @@ export class CostUI {
   }
 
   static createProductTable({
-    form,
+    container,
     products,
     quantityNames,
     costItemId,
@@ -1316,7 +1318,7 @@ export class CostUI {
       const noProductsMessage = document.createElement("p");
       noProductsMessage.textContent =
         "Your Blender Selection is empty! Select objects first.";
-      form.appendChild(noProductsMessage);
+      container.appendChild(noProductsMessage);
       return;
     }
     const { tableContainer, table } = CostUI.addTable({
@@ -1324,7 +1326,7 @@ export class CostUI {
       className: "",
       id: "cost-values-table-" + costItemId,
     });
-    form.appendChild(tableContainer);
+    container.appendChild(tableContainer);
     const tbody = document.createElement("tbody");
     table.appendChild(tbody);
 
@@ -1432,7 +1434,7 @@ export class CostUI {
 
     const productIds = products.map((product) => product.info.id);
     callbacks.emptyForm = () => {
-      form.innerHTML = "";
+      container.innerHTML = "";
     };
     const addProductAssignmentsButton = CostUI.addProductAssignmentsButton(
       costItemId,
@@ -1441,13 +1443,13 @@ export class CostUI {
       callbacks
     );
 
-    form.appendChild(quantitySelect);
-    form.appendChild(addProductAssignmentsButton);
+    container.appendChild(quantitySelect);
+    container.appendChild(addProductAssignmentsButton);
     return table;
   }
 
   static createAssignmentsTable({
-    form,
+    container,
     products,
     costItemId,
     quantityNames,
@@ -1459,7 +1461,7 @@ export class CostUI {
       id: "cost-values-table-" + costItemId,
     });
 
-    form.appendChild(tableContainer);
+    container.appendChild(tableContainer);
     const tbody = document.createElement("tbody");
     table.appendChild(tbody);
 
@@ -1512,8 +1514,10 @@ export class CostUI {
     quantitySelect,
     callbacks
   ) {
-    const addProductAssignmentsButton = document.createElement("button");
-    addProductAssignmentsButton.textContent = "Add Product Assignments";
+    const addProductAssignmentsButton = CostUI.createButton(
+      "Add Product Assignments",
+      "fa-solid fa-plus"
+    );
     addProductAssignmentsButton.addEventListener("click", (event) => {
       event.preventDefault();
       let propName = quantitySelect.value;
@@ -1528,7 +1532,7 @@ export class CostUI {
           })
         : null;
       callbacks.emptyForm ? callbacks.emptyForm() : null;
-      callbacks.getSelectedProducts(costItemId);
+      callbacks.enableEditingQuantities(costItemId);
     });
     addProductAssignmentsButton.classList.add("action-button");
     return addProductAssignmentsButton;
@@ -1730,49 +1734,424 @@ export class CostUI {
     });
   }
 
-  static editQuantities({
+  static enableEditingQuantities({
     costItemId,
     selectedProducts,
-    quantityNames,
     assignedProducts,
+    quantityNames,
+    costQuantities,
     callbacks,
   }) {
-    const formId = "selected-products-" + costItemId;
+    CostUI.highlightElement(costItemId);
     const form = CostUI.Form({
-      id: formId,
-      name:
-        "Edit Product Assignments for: " + CostUI.getCostItemName(costItemId),
+      id: "enable-editing-quantities-" + costItemId,
+      name: "Editing Quantities for: " + CostUI.getCostItemName(costItemId),
       icon: "fa-solid fa-box",
     });
-    const numberOfProducts = CostUI.Text(
-      "Selection basket : " + selectedProducts.length + " products",
-      "fa-solid fa-cart-shopping",
-      "large"
-    );
-    form.appendChild(numberOfProducts);
-    CostUI.highlightElement(costItemId);
-    const selectedProductsTable = CostUI.createProductTable({
-      form,
+
+    const ribbonBar = CostUI.createRibbonBar();
+    form.appendChild(ribbonBar);
+
+    const selectedProductsSection = CostUI.selectedProductsSection({
       products: selectedProducts,
       quantityNames,
       costItemId,
       callbacks,
     });
 
-    if (assignedProducts.length > 0) {
+    const assignedProductsSection = CostUI.assignedProductsSection({
+      products: assignedProducts,
+      quantityNames,
+      costItemId,
+      callbacks,
+    });
+
+    const manualQuantitiesSection = CostUI.manualQuantitiesSection({
+      costItemId,
+      costQuantities,
+      has_assigned_products: assignedProducts.length > 0,
+      callbacks,
+    });
+
+    form.appendChild(selectedProductsSection);
+    form.appendChild(assignedProductsSection);
+    form.appendChild(manualQuantitiesSection);
+
+    const summarySection = CostUI.createSummarySection({
+      selectedProducts,
+      assignedProducts,
+      costQuantities,
+    });
+    form.appendChild(summarySection);
+
+    CostUI.addEventListeners({
+      switchBar: ribbonBar,
+      costItemId,
+      selectedProductsSection,
+      assignedProductsSection,
+      manualQuantitiesSection,
+    });
+
+    const lastActiveSection =
+      localStorage.getItem("lastActiveSection") || "selected-products";
+    const lastActiveButton = document.getElementById(
+      `${lastActiveSection}-btn`
+    );
+    if (lastActiveButton) {
+      lastActiveButton.click();
+    }
+  }
+
+  static createRibbonBar() {
+    const ribbonBar = document.createElement("div");
+    ribbonBar.className = "switch-bar";
+    ribbonBar.innerHTML = `
+      <button class="action-button" id="selected-products-btn">Selected Products</button>
+      <button class="action-button" id="assigned-products-btn">Assigned Products</button>
+      <button class="action-button" id="manual-quantities-btn">Manual Quantities</button>
+    `;
+    return ribbonBar;
+  }
+
+  static createSummarySection({
+    selectedProducts,
+    assignedProducts,
+    costQuantities,
+  }) {
+    const summarySection = document.createElement("div");
+    summarySection.classList.add("summary-section");
+
+    const manualQuantities = costQuantities.quantities.filter(
+      (quantity) => !quantity.fromProduct
+    );
+    const paramaterQuantities = costQuantities.quantities.filter(
+      (quantity) => quantity.fromProduct
+    );
+
+    const table = document.createElement("table");
+    table.classList.add("summary-table");
+
+    const thead = document.createElement("thead");
+    const headerRow = document.createElement("tr");
+    const headers = ["Category", "Count"];
+    headers.forEach((headerText) => {
+      const th = document.createElement("th");
+      th.textContent = headerText;
+      headerRow.appendChild(th);
+    });
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+    const tbody = document.createElement("tbody");
+
+    const data = [
+      { category: "Assigned Products", count: assignedProducts.length },
+      { category: "Manual Quantities", count: manualQuantities.length },
+      {
+        category: "Product derived Quantities",
+        count: paramaterQuantities.length,
+      },
+    ];
+
+    data.forEach((item) => {
+      const row = document.createElement("tr");
+      const categoryCell = document.createElement("td");
+      categoryCell.textContent = item.category;
+      const countCell = document.createElement("td");
+      countCell.textContent = item.count;
+      row.appendChild(categoryCell);
+      row.appendChild(countCell);
+      tbody.appendChild(row);
+    });
+
+    table.appendChild(tbody);
+    summarySection.appendChild(table);
+
+    return summarySection;
+  }
+
+  static addEventListeners({
+    switchBar,
+    costItemId,
+    selectedProductsSection,
+    assignedProductsSection,
+    manualQuantitiesSection,
+  }) {
+    const buttons = switchBar.querySelectorAll(".action-button");
+
+    buttons.forEach((button) => {
+      button.addEventListener("click", (e) => {
+        e.preventDefault();
+        const sectionName = button.id.replace("-btn", "");
+        const sectionId = sectionName + "-section-" + costItemId;
+
+        if (selectedProductsSection)
+          selectedProductsSection.style.display = "none";
+        if (assignedProductsSection)
+          assignedProductsSection.style.display = "none";
+        if (manualQuantitiesSection)
+          manualQuantitiesSection.style.display = "none";
+
+        const section = document.getElementById(sectionId);
+        if (section) {
+          section.style.display = "block";
+        }
+        buttons.forEach((btn) => btn.classList.remove("active-btn"));
+        button.classList.add("active-btn");
+
+        localStorage.setItem("lastActiveSection", sectionName);
+      });
+    });
+  }
+
+  static getSection(costItemId, sectionName) {
+    return document.getElementById(`${sectionName}-${costItemId}`);
+  }
+
+  static selectedProductsSection({
+    products,
+    quantityNames,
+    costItemId,
+    callbacks,
+  }) {
+    const selectedProductsSection = document.createElement("div");
+    selectedProductsSection.id = "selected-products-section-" + costItemId;
+    selectedProductsSection.classList.add("form-section");
+    const numberOfProducts = CostUI.Text(
+      "Selection basket : " + products.length + " products",
+      "fa-solid fa-cart-shopping",
+      "medium"
+    );
+    selectedProductsSection.appendChild(numberOfProducts);
+
+    const selectedProductsTable = CostUI.createProductTable({
+      container: selectedProductsSection,
+      products: products,
+      quantityNames,
+      costItemId,
+      callbacks,
+    });
+    return selectedProductsSection;
+  }
+
+  static assignedProductsSection({
+    products,
+    quantityNames,
+    costItemId,
+    callbacks,
+  }) {
+    const assignedProductsSection = document.createElement("div");
+    assignedProductsSection.id = "assigned-products-section-" + costItemId;
+    assignedProductsSection.style.display = "none";
+    assignedProductsSection.classList.add("form-section");
+    if (products.length > 0) {
+      let text = " Assigned Products : " + products.length;
       const assignedProductsText = CostUI.Text(
-        "Assigned Products",
+        text,
         "fa-solid fa-solid fa-paperclip",
-        "large"
+        "medium"
       );
-      form.appendChild(assignedProductsText);
+      assignedProductsSection.appendChild(assignedProductsText);
       const assignmentsTable = CostUI.createAssignmentsTable({
-        form,
-        products: assignedProducts,
+        container: assignedProductsSection,
+        products: products,
         quantityNames,
         costItemId,
         callbacks,
       });
     }
+
+    return assignedProductsSection;
+  }
+
+  static manualQuantitiesSection({
+    costItemId,
+    costQuantities,
+    has_assigned_products,
+    callbacks,
+  }) {
+    const manualQuantitiesSection = document.createElement("div");
+    manualQuantitiesSection.classList.add("form-section");
+    manualQuantitiesSection.id = "manual-quantities-section-" + costItemId;
+    manualQuantitiesSection.style.display = "none";
+
+    const title = CostUI.Text(
+      "Manual Quantities",
+      "fa-solid fa-ruler",
+      "medium"
+    );
+    manualQuantitiesSection.appendChild(title);
+    const unitSymbol = costQuantities.unit_symbol;
+
+    let quantityType = costQuantities.quantity_type;
+
+    if (quantityType) {
+      const text = CostUI.Text(
+        quantityType + " (" + unitSymbol + " )",
+        "fa-solid fa-ruler",
+        "small"
+      );
+      manualQuantitiesSection.appendChild(text);
+    } else {
+      // add dropdown to chose quantity type , from "IfcQuantityArea", "IfcQuantityLength", "IfcQuantityVolume", "IfcQuantityCount", "IfcQuantityWeight  "
+      const quantityTypes = [
+        "IfcQuantityArea",
+        "IfcQuantityLength",
+        "IfcQuantityVolume",
+        "IfcQuantityCount",
+        "IfcQuantityWeight",
+      ];
+      const dropdown = CostUI.createTableDropdown(
+        "type",
+        quantityTypes,
+        "IfcQuantityArea"
+      );
+      dropdown.id = "quantity-type-dropdown-" + costItemId;
+      manualQuantitiesSection.appendChild(dropdown);
+    }
+
+    // if quantity is ty IfcQuantityCount, and the costQuantities
+    if (quantityType === "IfcQuantityCount" && has_assigned_products) {
+      // write text that one of the quantities is assigned to the product selection
+      const text = CostUI.Text(
+        " One of the quantities is assigned to the product selection",
+        "fa-solid fa-warning",
+        "small"
+      );
+      manualQuantitiesSection.appendChild(text);
+    }
+
+    let paramaterQuantities = costQuantities.quantities.filter(
+      (quantity) => quantity.fromProduct
+    );
+    let manualQuantities = costQuantities.quantities.filter(
+      (quantity) => !quantity.fromProduct
+    );
+
+    let headerNames = ["Name", "Value" + " (" + unitSymbol + " )", "Actions"];
+
+    if (manualQuantities.length > 0) {
+      headerNames = [];
+      Object.entries(manualQuantities[0]).forEach(([key, value]) => {
+        if (key !== "id" && key !== "fromProduct") {
+          headerNames.push(key);
+        }
+      });
+      headerNames.push("Actions");
+    }
+
+    const { tableContainer, table } = CostUI.addTable({
+      headers: headerNames,
+      className: "manual-quantities-table",
+      id: "manual-quantities-table-" + costItemId,
+    });
+
+    manualQuantities.forEach((quantity) => {
+      const tr = CostUI.createManualQuantityRow(
+        costItemId,
+        quantity,
+        callbacks
+      );
+      table.appendChild(tr);
+    });
+    const addButton = CostUI.createAddManualQuantityButton(
+      costItemId,
+      quantityType,
+      callbacks
+    );
+
+    manualQuantitiesSection.appendChild(tableContainer);
+    // manualQuantitiesSection.appendChild(tableContainer2);
+    manualQuantitiesSection.appendChild(addButton);
+    return manualQuantitiesSection;
+  }
+
+  static createManualQuantityRow(costItemId, quantity, callbacks) {
+    const tr = document.createElement("tr");
+    tr.id = quantity.id;
+
+    // get quantity keys and values to create the table row cells
+    // Label cell
+
+    Object.entries(quantity).forEach(([key, value]) => {
+      if (key !== "id" && key !== "fromProduct") {
+        if (key === "Name") {
+          // create input
+          const cell = document.createElement("td");
+          const input = document.createElement("input");
+          input.type = "text";
+          input.value = value;
+          cell.appendChild(input);
+          tr.appendChild(cell);
+
+          input.addEventListener("keydown", function (e) {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              callbacks.editQuantity(costItemId, quantity.id, {
+                [key]: input.value,
+              });
+            }
+          });
+        }
+
+        // if key contains value
+        else if (key.toLowerCase().includes("value")) {
+          const cell = document.createElement("td");
+          const input = document.createElement("input");
+          input.type = "number";
+          input.value = value;
+          cell.appendChild(input);
+
+          input.addEventListener("keydown", function (e) {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              callbacks.editQuantity(costItemId, quantity.id, {
+                [key]: parseFloat(input.value), // Dynamically set the key and parse the value as a double
+              });
+            }
+          });
+          tr.appendChild(cell);
+        } else {
+          const cell = document.createElement("td");
+          cell.textContent = value;
+          tr.appendChild(cell);
+        }
+      }
+    });
+
+    // Add delete button
+    const deleteButton = CostUI.createButton("Delete", "fa-solid fa-trash");
+    const deleteCell = document.createElement("td");
+    deleteButton.addEventListener("click", function (e) {
+      e.preventDefault();
+      callbacks.deleteQuantity(costItemId, quantity.id);
+      tr.remove();
+    });
+    deleteCell.appendChild(deleteButton);
+    tr.appendChild(deleteCell);
+
+    return tr;
+  }
+
+  static createAddManualQuantityButton(costItemId, quantityType, callbacks) {
+    const addButton = CostUI.createButton(
+      "Add Manual Quantity",
+      "fa-solid fa-plus"
+    );
+
+    addButton.addEventListener("click", function (e) {
+      e.preventDefault();
+      let type = quantityType;
+      if (!type) {
+        // get quantityType from dropdown
+        const qtoSection = document.getElementById(
+          "manual-quantities-section-" + costItemId
+        );
+        const dropdown = qtoSection.querySelector("select");
+        type = dropdown ? dropdown.value : null;
+      }
+      callbacks.addQuantity(costItemId, type);
+    });
+
+    return addButton;
   }
 }

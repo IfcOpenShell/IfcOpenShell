@@ -344,52 +344,6 @@ class Web(bonsai.core.tool.Web):
             operator_data (dict): A dictionary containing the operator data.
         """
 
-        def selection_data(cost_item, elements):
-            print(cost_item, elements)
-            if not elements:
-                return []
-            if not cost_item:
-                return [
-                    {
-                        "info": {
-                            "id": element.id(),
-                            "name": element.Name,
-                            "class": element.is_a(),
-                            "type": get_type(element).Name if get_type(element) else None,
-                        },
-                        "qtos": get_psets(element, qtos_only=True),
-                    }
-                    for element in elements or []
-                ]
-            data = []
-            for element in elements or []:
-                psets = get_psets(element, qtos_only=True)
-                element_type = get_type(element)
-                quantities, unit = tool.Cost.get_assigned_quantities(cost_item, element)
-                data.append(
-                    {
-                        "info": {
-                            "id": element.id(),
-                            "name": element.Name,
-                            "class": element.is_a(),
-                            "type": element_type.Name if element_type else None,
-                        },
-                        "qtos": psets,
-                        "assigned_quantities": [
-                            {
-                                "cost_item_id": cost_item.id(),
-                                "product_id": element.id(),
-                                "name": q.Name,
-                                "value": q[3],
-                                "type": q.Unit,
-                            }
-                            for q in quantities or []
-                        ],
-                        "unit": unit,
-                    }
-                )
-            return data
-
         ifc_file = tool.Ifc.get()
         if operator_data["type"] == "getPredefinedTypes":
             print("getting predefined types")
@@ -425,31 +379,6 @@ class Web(bonsai.core.tool.Web):
             cost_item = tool.Ifc.get().by_id(operator_data["costItemId"])
             products = tool.Cost.get_cost_item_products(cost_item, is_deep=True)
             tool.Spatial.select_products(products, unhide=True)
-        if operator_data["type"] == "enableEditingQuantities":
-            cost_item_id = operator_data["costItemId"]
-            cost_item = ifc_file.by_id(cost_item_id)
-            if not cost_item:
-                print("---> cost item not found")
-                return
-
-            selected_products = list(tool.Spatial.get_selected_products())
-            selected_products_data = selection_data(cost_item, selected_products)
-
-            assigned_products = tool.Cost.get_cost_item_products(cost_item, is_deep=False)
-            assigned_products_data = selection_data(cost_item, assigned_products)
-
-            names = ifcopenshell.util.cost.get_product_quantity_names(selected_products)
-            cls.send_webui_data(
-                data={
-                    "selected_products": selected_products_data,
-                    "assigned_products": assigned_products_data,
-                    "product_quantity_names": names,
-                    "cost_item_id": cost_item_id,
-                },
-                data_key="quantities",
-                event="quantities",
-            )
-
         if operator_data["type"] == "addSummaryCostItem":
             cost_schedule = ifc_file.by_id(operator_data["costScheduleId"])
             bonsai.core.cost.add_summary_cost_item(tool.Ifc, tool.Cost, cost_schedule=cost_schedule)
@@ -520,12 +449,109 @@ class Web(bonsai.core.tool.Web):
             prop_name = operator_data["propName"]
             if prop_name == "count":
                 prop_name = ""
-            print(prop_name)
             bpy.ops.bim.assign_cost_item_quantity(
                 cost_item=operator_data["costItemId"], related_object_type="PRODUCT", prop_name=prop_name
             )
             cost_schedule = tool.Cost.get_cost_schedule(cost_item=tool.Ifc.get().by_id(operator_data["costItemId"]))
             cls.load_cost_schedule_web_ui(cost_schedule)
+        if operator_data["type"] == "enableEditingQuantities":
+            cost_item_id = operator_data["costItemId"]
+            cost_item = ifc_file.by_id(cost_item_id)
+            cls.enableEditingCostItemQuantities(cost_item)
+        if operator_data["type"] == "AddCostItemQuantity":
+            cost_item_id = operator_data["costItemId"]
+            cost_item = ifc_file.by_id(cost_item_id)
+            cost_schedule = tool.Cost.get_cost_schedule(cost_item)
+            bpy.ops.bim.add_cost_item_quantity(cost_item=cost_item_id, ifc_class=operator_data["ifcClass"])
+            cls.load_cost_schedule_web_ui(cost_schedule)
+            cls.enableEditingCostItemQuantities(cost_item)
+        if operator_data["type"] == "editCostItemQuantity":
+            cost_item_id = operator_data["costItemId"]
+            cost_item = ifc_file.by_id(cost_item_id)
+            cost_schedule = tool.Cost.get_cost_schedule(cost_item)
+            physical_quantity = tool.Ifc.get().by_id(operator_data["quantityId"])
+            attributes = operator_data["attributes"]
+            tool.Ifc.run("cost.edit_cost_item_quantity", physical_quantity=physical_quantity, attributes=attributes)
+            tool.Cost.load_cost_item_quantities(ifc_file.by_id(operator_data["costItemId"]))
+            cls.load_cost_schedule_web_ui(cost_schedule)
+            cls.enableEditingCostItemQuantities(cost_item)
+        if operator_data["type"] == "deleteCostItemQuantity":
+            bpy.ops.bim.remove_cost_item_quantity(cost_item=operator_data["costItemId"], physical_quantity=operator_data["quantityId"])
+            cost_item_id = operator_data["costItemId"]
+            cost_item = ifc_file.by_id(cost_item_id)
+            cost_schedule = tool.Cost.get_cost_schedule(cost_item)
+            cls.load_cost_schedule_web_ui(cost_schedule)
+            cls.enableEditingCostItemQuantities(cost_item)
+
+    @classmethod
+    def enableEditingCostItemQuantities(cls, cost_item):
+        if not cost_item:
+            return
+        selected_products = list(tool.Spatial.get_selected_products())
+        selected_products_data = cls.selection_data(cost_item, selected_products)
+
+        assigned_products = tool.Cost.get_cost_item_products(cost_item, is_deep=False)
+        assigned_products_data = cls.selection_data(cost_item, assigned_products)
+
+        names = ifcopenshell.util.cost.get_product_quantity_names(selected_products)
+        cls.send_webui_data(
+            data={
+                "selected_products": selected_products_data,
+                "assigned_products": assigned_products_data,
+                "product_quantity_names": names,
+                "cost_item_id": cost_item.id(),
+                "cost_quantities": tool.Cost.get_cost_quantities(cost_item),
+            },
+            data_key="quantities",
+            event="quantities",
+        )
+
+
+    @classmethod
+    def selection_data(cls, cost_item, elements):
+        if not elements:
+            return []
+        if not cost_item:
+            return [
+                {
+                    "info": {
+                        "id": element.id(),
+                        "name": element.Name,
+                        "class": element.is_a(),
+                        "type": get_type(element).Name if get_type(element) else None,
+                    },
+                    "qtos": get_psets(element, qtos_only=True),
+                }
+                for element in elements or []
+            ]
+        data = []
+        for element in elements or []:
+            psets = get_psets(element, qtos_only=True)
+            element_type = get_type(element)
+            quantities, unit = tool.Cost.get_assigned_quantities(cost_item, element)
+            data.append(
+                {
+                    "info": {
+                        "id": element.id(),
+                        "name": element.Name,
+                        "class": element.is_a(),
+                        "type": element_type.Name if element_type else None,
+                    },
+                    "qtos": psets,
+                    "assigned_quantities": [
+                        {
+                            "cost_item_id": cost_item.id(),
+                            "product_id": element.id(),
+                            "name": q.Name,
+                            "value": q[3],
+                            "type": q.Unit,
+                        }
+                        for q in quantities or []
+                    ],
+                    "unit": unit,
+                }
+            )
+        return data
 
     @classmethod
     def load_cost_schedule_web_ui(cls, cost_schedule):
