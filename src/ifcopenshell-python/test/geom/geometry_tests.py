@@ -38,3 +38,27 @@ class TestCreatingShapes(test.bootstrap.IFC4):
         settings = ifcopenshell.geom.settings()
         shape = ifcopenshell.geom.create_shape(settings, item)
         assert shape.verts
+
+    def test_create_IfcLine(self):
+        item = self.file.create_entity(
+            "IfcLine",
+            Pnt=self.file.create_entity("IfcCartesianPoint", (0.0, 0.0)),
+            Dir=self.file.create_entity(
+                "IfcVector", Orientation=self.file.create_entity("IfcDirection", (1.0, 0.0)), Magnitude=1.0
+            ),
+        )
+        settings = ifcopenshell.geom.settings()
+        shape = ifcopenshell.geom.create_shape(settings, item)
+        assert shape.verts
+
+    def test_create_IfcBSplineCurve(self):
+        item = item = self.file.create_entity(
+            "IfcBSplineCurveWithKnots",
+            Degree=3,
+            ControlPointsList=[self.file.create_entity("IfcCartesianPoint", p) for p in points],
+            KnotMultiplicities=(4, 1, 1, 4),
+            Knots=(0.0, 1 / 3, 2 / 3, 1.0),
+        )
+        settings = ifcopenshell.geom.settings()
+        shape = ifcopenshell.geom.create_shape(settings, item)
+        assert shape.verts
