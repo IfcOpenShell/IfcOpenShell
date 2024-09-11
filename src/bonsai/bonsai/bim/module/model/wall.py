@@ -335,7 +335,11 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator):
 
         self.handle_snap_selection(context, event)
 
-        if not self.tool_state.is_input_on and event.value == "RELEASE" and event.type in {"RET", "NUMPAD_ENTER", "RIGHTMOUSE"}:
+        if (
+            not self.tool_state.is_input_on
+            and event.value == "RELEASE"
+            and event.type in {"RET", "NUMPAD_ENTER", "RIGHTMOUSE"}
+        ):
             self.create_walls_from_polyline(context)
             context.workspace.status_text_set(text=None)
             PolylineDecorator.uninstall()

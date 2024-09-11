@@ -169,7 +169,7 @@ class PolylineOperator:
         Snap: {self.snapping_points[0][1]}
         """
         context.workspace.status_text_set(self.instructions + self.snap_info)
-        
+
     def handle_keyboard_input(self, context, event):
 
         if self.tool_state.is_input_on and event.value == "PRESS" and event.type == "TAB":
@@ -330,7 +330,6 @@ class PolylineOperator:
             if event.value == "RELEASE" and event.type == "BACK_SPACE":
                 tool.Snap.remove_last_polyline_point()
                 tool.Blender.update_viewport()
-
 
     def invoke(self, context, event):
         PolylineDecorator.install(context)

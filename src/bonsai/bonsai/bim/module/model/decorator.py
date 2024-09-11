@@ -353,14 +353,11 @@ class PolylineDecorator:
     def set_tool_state(cls, tool_state):
         cls.tool_state = tool_state
 
-
-
     def draw_batch(self, shader_type, content_pos, color, indices=None):
         shader = self.line_shader if shader_type == "LINES" else self.shader
         batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
         shader.uniform_float("color", color)
         batch.draw(shader)
-
 
     def draw_input_ui(self, context):
         texts = {
@@ -372,7 +369,6 @@ class PolylineDecorator:
             "AREA": "Area: ",
         }
         mouse_pos = self.event.mouse_region_x, self.event.mouse_region_y
-
 
         self.addon_prefs = tool.Blender.get_addon_preferences()
         self.font_id = 0
@@ -399,7 +395,6 @@ class PolylineDecorator:
                 blf.color(self.font_id, *color)
             blf.position(self.font_id, mouse_pos[0] + offset, mouse_pos[1] - (new_line * i), 0)
             blf.draw(self.font_id, field_name + formatted_value)
-
 
     def draw_measurements(self, context):
         region = context.region
@@ -432,8 +427,6 @@ class PolylineDecorator:
             coords_angle = view3d_utils.location_3d_to_region_2d(region, rv3d, pos_angle)
             blf.position(self.font_id, coords_angle[0], coords_angle[1], 0)
             blf.draw(self.font_id, "a: " + measurement_prop[i].angle)
-
-
 
     def __call__(self, context):
 

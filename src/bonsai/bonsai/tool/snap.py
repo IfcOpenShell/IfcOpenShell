@@ -301,7 +301,9 @@ class Snap(bonsai.core.tool.Snap):
                 view_direction = Vector((0, 0, -1)) @ camera_rotation.to_matrix().transposed()
                 plane_normal = view_direction.normalized()
 
-            if tool_state.plane_method == "XY" or (not tool_state.plane_method and tool_state.axis_method in {"X", "Y"}):
+            if tool_state.plane_method == "XY" or (
+                not tool_state.plane_method and tool_state.axis_method in {"X", "Y"}
+            ):
                 if cls.tool_state.use_default_container:
                     plane_origin = Vector((0, 0, elevation))
                 elif not last_polyline_point:
@@ -425,7 +427,9 @@ class Snap(bonsai.core.tool.Snap):
                 # Doesn't update snap_angle so that it keeps in the same axis
                 rot_intersection, _, axis_start, axis_end = cls.snap_on_axis(intersection, tool_state, True)
             else:
-                rot_intersection, tool_state.snap_angle, axis_start, axis_end = cls.snap_on_axis(intersection, tool_state, False)
+                rot_intersection, tool_state.snap_angle, axis_start, axis_end = cls.snap_on_axis(
+                    intersection, tool_state, False
+                )
         if rot_intersection:
             detected_snaps.append({"Axis": (rot_intersection, axis_start, axis_end)})
 
@@ -466,7 +470,6 @@ class Snap(bonsai.core.tool.Snap):
                     snapping_points.append(op)
                 break
 
-
         for origin in detected_snaps:
             if "Axis" in list(origin.keys()):
                 intersection = origin["Axis"]
@@ -498,4 +501,3 @@ class Snap(bonsai.core.tool.Snap):
         shifted_list = snapping_points[1:] + snapping_points[:1]
         cls.update_snapping_point(shifted_list[0][0], shifted_list[0][1])
         return shifted_list
-
