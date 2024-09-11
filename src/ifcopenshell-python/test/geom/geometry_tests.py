@@ -31,12 +31,10 @@ class TestCreatingShapes(test.bootstrap.IFC4):
         assert shape.verts
 
     def test_create_IfcEllipse(self):
-        ifc_position = self.file.create_entity(
-            "IfcAxis2Placement2D",
-            self.file.create_entity("IfcCartesianPoint", V(0, 0)),
-            RefDirection=self.file.create_entity("IfcDirection", V(1, 0)),
+        builder = ShapeBuilder(self.file)
+        item = self.file.create_entity(
+            "IfcEllipse", Position=builder.create_axis2_placement_2d(), SemiAxis1=1.0, SemiAxis2=0.5
         )
-        item = self.file.create_entity("IfcEllipse", Position=ifc_position, SemiAxis1=1.0, SemiAxis2=0.5)
         settings = ifcopenshell.geom.settings()
         shape = ifcopenshell.geom.create_shape(settings, item)
         assert shape.verts
