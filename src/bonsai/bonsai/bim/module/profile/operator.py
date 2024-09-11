@@ -18,6 +18,7 @@
 
 import bpy
 import ifcopenshell.api
+import ifcopenshell.util.element
 import bonsai.bim.helper
 import bonsai.tool as tool
 import bonsai.bim.module.model.profile as model_profile

@@ -34,6 +34,7 @@ import bonsai.tool as tool
 import bonsai.core.geometry
 import ifcopenshell
 import ifcopenshell.util.element
+import ifcopenshell.util.unit
 
 
 def get_subelement_class(self, context):

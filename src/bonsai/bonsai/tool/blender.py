@@ -803,7 +803,7 @@ class Blender(bonsai.core.tool.Blender):
         return collections_mapping
 
     @classmethod
-    def is_editable(cls, obj):
+    def is_editable(cls, obj: bpy.types.Object) -> bool:
         if obj.type not in cls.OBJECT_TYPES_THAT_SUPPORT_EDIT_MODE:
             return False
         if not (element := tool.Ifc.get_entity(obj)):

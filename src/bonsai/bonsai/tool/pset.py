@@ -327,4 +327,3 @@ class Pset(bonsai.core.tool.Pset):
                 return value
             except:
                 return value
-        return value
