@@ -535,7 +535,7 @@ class Web(bonsai.core.tool.Web):
                 "cost_items": json_data,
                 "cost_schedule_id": cost_schedule.id(),
                 "currency": tool.Cost.currency(),
-                },
+            },
             data_key="cost_items",
             event="cost_items",
         )

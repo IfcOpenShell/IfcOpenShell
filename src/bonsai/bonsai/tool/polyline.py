@@ -23,7 +23,7 @@ from bonsai.bim.module.drawing.helper import format_distance
 from dataclasses import dataclass
 from lark import Lark, Transformer
 from math import radians
-from mathutils import Vector 
+from mathutils import Vector
 from typing import Optional
 
 
@@ -66,8 +66,8 @@ class Polyline(bonsai.core.tool.Polyline):
             context = bpy.context
             if value is None:
                 return None
-            if attribute_name == 'A':
-                value = float(self.get_text_value(attribute_name)) 
+            if attribute_name == "A":
+                value = float(self.get_text_value(attribute_name))
                 return f"{value:.2f}"
             else:
                 return self.format_input_ui_units(context, value)
@@ -276,7 +276,6 @@ class Polyline(bonsai.core.tool.Polyline):
             input_ui.set_value("Z", last_point.z)
 
         return
-
 
     @classmethod
     def validate_input(cls, input_number, input_type):
