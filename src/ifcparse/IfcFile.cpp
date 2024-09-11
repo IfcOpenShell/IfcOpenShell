@@ -130,10 +130,48 @@ namespace {
                 if (aggregate_storage.which() == 0) {
                     aggregate_storage = std::vector<std::decay_t<decltype(v)>>{ v };
                 } else {
-                    auto* vec_ptr = boost::get<std::vector<std::decay_t<decltype(v)>>>(&aggregate_storage);
-                    if (vec_ptr) {
+                    if (auto* vec_ptr = boost::get<std::vector<std::decay_t<decltype(v)>>>(&aggregate_storage)) {
                         vec_ptr->push_back(v);
                     } else {
+                        if constexpr (std::is_same_v<std::decay_t<decltype(v)>, int>) {
+                            auto* vec_ptr2 = boost::get<std::vector<double>>(&aggregate_storage);
+                            if (vec_ptr2) {
+                                // double[] + int
+                                vec_ptr2->push_back((double) v);
+                            }
+                        }
+                        if constexpr (std::is_same_v<std::decay_t<decltype(v)>, double>) {
+                            auto* vec_ptr2 = boost::get<std::vector<int>>(&aggregate_storage);
+                            if (vec_ptr2) {
+                                // int[] -> double[] + double
+                                std::vector<double> ps(vec_ptr2->begin(), vec_ptr2->end());
+                                ps.push_back(v);
+                                aggregate_storage = ps;
+                            }
+                        }
+
+                        if constexpr (std::is_same_v<std::decay_t<decltype(v)>, std::vector<int>>) {
+                            auto* vec_ptr2 = boost::get<std::vector<std::vector<double>>>(&aggregate_storage);
+                            if (vec_ptr2) {
+                                // double[][] + int[]
+                                std::vector<double> vd(v.begin(), v.end());
+                                vec_ptr2->push_back(vd);
+                            }
+                        }
+                        if constexpr (std::is_same_v<std::decay_t<decltype(v)>, std::vector<double>>) {
+                            auto* vec_ptr2 = boost::get<std::vector<std::vector<int>>>(&aggregate_storage);
+                            if (vec_ptr2) {
+                                // int[][] -> double[][] + double[]
+                                std::vector<std::vector<double>> vvd;
+                                for (auto& vv : *vec_ptr2) {
+                                    std::vector<double> vd(vv.begin(), vv.end());
+                                    vvd.push_back(vd);
+                                }
+                                vvd.push_back(v);
+                                aggregate_storage = vvd;
+                            }
+                        }
+
                         // @todo would be cool if we can trace this back to file offset
                         auto current = boost::apply_visitor([](auto v) { 
                             if constexpr (!std::is_same_v<decltype(v), Blank>) {
@@ -145,6 +183,7 @@ namespace {
                                 return std::string{};
                             }
                         }, aggregate_storage);
+
                         Logger::Error("Inconsistent aggregate valuation while attempting to append " + std::string(typeid(decltype(v)).name()) + " to an aggregate of " + current);
 
                         // @todo boolean -> logical upgrade
