@@ -709,7 +709,7 @@ void IfcParse::IfcFile::load(unsigned entity_instance_name, const IfcParse::enti
             load(entity_instance_name, entity, context.push(), attribute_index == -1 ? (int) attribute_index_within_data : attribute_index);
         } else {
             return_value++;
-            if (TokenFunc::isIdentifier(next)) {
+            if (TokenFunc::isIdentifier(next) && entity) {
                 register_inverse(entity_instance_name, entity, next, attribute_index == -1 ? attribute_index_within_data : attribute_index);
             }
 
