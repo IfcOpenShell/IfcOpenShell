@@ -1066,6 +1066,7 @@ typedef item const* ptr;
 				typedef std::tuple<matrix4, point3, direction3, line, circle, ellipse, bspline_curve, offset_curve, plane, cylinder, sphere, torus, bspline_surface, edge, loop, face, shell, solid, loft, extrusion, revolve, sweep_along_curve, node, collection, boolean_result, piecewise_function> KindsTuple;
 				typedef std::tuple<line, circle, ellipse, bspline_curve, offset_curve, loop, edge> CurvesTuple;
 				typedef std::tuple<plane, cylinder, sphere, torus, bspline_surface, extrusion, revolve> SurfacesTuple;
+				typedef std::tuple<edge, loop, face, piecewise_function> UpgradesTuple;
 			}
 
 			struct type_by_kind {
@@ -1087,6 +1088,13 @@ typedef item const* ptr;
 				using type = typename std::tuple_element<N, impl::SurfacesTuple>::type;
 
 				static const size_t max = std::tuple_size<impl::SurfacesTuple>::value;
+			};
+
+			struct upgrades {
+				template <std::size_t N>
+				using type = typename std::tuple_element<N, impl::UpgradesTuple>::type;
+
+				static const size_t max = std::tuple_size<impl::UpgradesTuple>::value;
 			};
 
 			boost::optional<face::ptr> loop_to_face_upgrade_impl(ptr item);
