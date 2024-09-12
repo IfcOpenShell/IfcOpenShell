@@ -127,6 +127,14 @@ def update_spatial_is_locked(self, context):
                 tool.Geometry.unlock_object(obj)
 
 
+def update_spatial_is_visible(self: "BIMSpatialDecompositionProperties", context: bpy.types.Context) -> None:
+    bpy.ops.bim.toggle_spatial_elements(is_visible=self.is_visible)
+
+
+def update_grid_is_visible(self: "BIMGridProperties", context: bpy.types.Context) -> None:
+    bpy.ops.bim.toggle_grids(is_visible=self.is_visible)
+
+
 def poll_container_obj(self, obj):
     return obj is None or tool.Ifc.get_entity(obj)
 
@@ -174,7 +182,18 @@ class Element(PropertyGroup):
 
 
 class BIMSpatialDecompositionProperties(PropertyGroup):
-    is_locked: BoolProperty(name="Is Locked", default=True, update=update_spatial_is_locked)
+    is_locked: BoolProperty(
+        name="Is Locked",
+        description="Prevent all spatial elements from being edited, removed, duplicated",
+        default=True,
+        update=update_spatial_is_locked,
+    )
+    is_visible: BoolProperty(
+        name="Is Visible",
+        description="Show or hide spatial elements, such as buildings, sites, etc",
+        default=True,
+        update=update_spatial_is_visible,
+    )
     container_filter: StringProperty(name="Container Filter", default="", options={"TEXTEDIT_UPDATE"})
     containers: CollectionProperty(name="Containers", type=BIMContainer)
     contracted_containers: StringProperty(name="Contracted containers", default="[]")
@@ -211,5 +230,16 @@ class BIMSpatialDecompositionProperties(PropertyGroup):
 
 
 class BIMGridProperties(PropertyGroup):
-    is_locked: BoolProperty(name="Is Locked", default=True, update=update_grid_is_locked)
+    is_locked: BoolProperty(
+        name="Is Locked",
+        description="Prevent all grids and grid axes from being edited, removed, duplicated",
+        default=True,
+        update=update_grid_is_locked,
+    )
+    is_visible: BoolProperty(
+        name="Is Visible",
+        description="Show or hide grids and grid axes",
+        default=True,
+        update=update_grid_is_visible,
+    )
     grid_axes: CollectionProperty(name="Grid Axes", type=ObjProperty)
