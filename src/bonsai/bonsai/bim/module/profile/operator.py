@@ -98,17 +98,18 @@ class RemoveProfileDef(bpy.types.Operator, tool.Ifc.Operator):
             props.active_profile_index = min(current_index, len(props.profiles) - 1)
 
 
-class EnableEditingProfile(bpy.types.Operator, tool.Ifc.Operator):
+class EnableEditingProfile(bpy.types.Operator):
     bl_idname = "bim.enable_editing_profile"
     bl_label = "Enable Editing Profile"
     bl_options = {"REGISTER", "UNDO"}
     profile: bpy.props.IntProperty()
 
-    def _execute(self, context):
+    def execute(self, context):
         props = context.scene.BIMProfileProperties
         props.profile_attributes.clear()
         bonsai.bim.helper.import_attributes2(tool.Ifc.get().by_id(self.profile), props.profile_attributes)
         props.active_profile_id = self.profile
+        return {"FINISHED"}
 
 
 class DisableEditingProfile(bpy.types.Operator):
@@ -176,12 +177,12 @@ class DuplicateProfileDef(bpy.types.Operator, tool.Ifc.Operator):
         bpy.ops.bim.load_profiles()
 
 
-class EnableEditingArbitraryProfile(bpy.types.Operator, tool.Ifc.Operator):
+class EnableEditingArbitraryProfile(bpy.types.Operator):
     bl_idname = "bim.enable_editing_arbitrary_profile"
     bl_label = "Enable Editing Arbitrary Profile"
     bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
+    def execute(self, context):
         props = context.scene.BIMProfileProperties
         active_profile = props.profiles[props.active_profile_index]
         profile_id = active_profile.ifc_definition_id
@@ -194,6 +195,7 @@ class EnableEditingArbitraryProfile(bpy.types.Operator, tool.Ifc.Operator):
         bpy.ops.object.mode_set(mode="EDIT")
         ProfileDecorator.install(context, exit_edit_mode_callback=lambda: disable_editing_arbitrary_profile(context))
         tool.Blender.set_viewport_tool("bim.cad_tool")
+        return {"FINISHED"}
 
 
 def disable_editing_arbitrary_profile(context):
@@ -212,13 +214,14 @@ def disable_editing_arbitrary_profile(context):
     refresh()
 
 
-class DisableEditingArbitraryProfile(bpy.types.Operator, tool.Ifc.Operator):
+class DisableEditingArbitraryProfile(bpy.types.Operator):
     bl_idname = "bim.disable_editing_arbitrary_profile"
     bl_label = "Disable Editing Arbitrary Profile"
     bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
-        return disable_editing_arbitrary_profile(context)
+    def execute(self, context):
+        disable_editing_arbitrary_profile(context)
+        return {"FINISHED"}
 
 
 class EditArbitraryProfile(bpy.types.Operator, tool.Ifc.Operator):
