@@ -20,6 +20,22 @@ body {
   box-sizing: border-box;
 }
 
+.floating-form {
+  width: 50vw;
+  max-height: 80vh;
+  position: absolute;
+  background-color: var(--background-color);
+  border: 1px solid black;
+  z-index: 9999;
+  cursor: move;
+  user-select: none;
+  padding-bottom: var(--padding-medium);
+}
+
+[id^="enable-editing-quantities"].floating-form {
+  height: 70vh;
+}
+
 .form-header {
   display: flex;
   justify-content: flex-start;
@@ -30,37 +46,44 @@ body {
   font-size: large;
   border-bottom: 1px solid #ddd;
   border-radius: 6px 6px 0 0;
+  height: 5%;
 }
 
-.floating-form span {
-  padding: var(--padding-small);
-  margin-left: var(--margin-small);
+.form-container {
+  height: 95%;
+  padding-left: var(--padding-medium);
+  padding-right: var(--padding-medium);
 }
 
-.floating-form {
-  width: 50vw;
-  max-height: 80vh;
-  position: absolute;
-  background-color: var(--background-color);
-  border: 1px solid black;
-  z-index: 9999;
-  cursor: move;
-  user-select: none;
-  resize: both;
+.form-section {
+  margin-bottom: 1em;
+  height: 65%;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
+
+.form-section h3 {
+  margin-bottom: 0.5em;
+}
+
+.summary-section {
+  margin-top: 1em;
+}
+
+.summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  text-align: left;
+}
+
 
 .floating-form table tr {
   margin-bottom: 10px;
 }
 
-
-.form-container {
-  padding: var(--padding-medium);
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-
 .action-button {
+  position:relative;
   background-color: var(--button-background);
   border: none;
   color: #fff;
@@ -73,6 +96,32 @@ body {
   transition: background-color 0.3s ease;
   width: fit-content;
   margin: 0.5em;
+  z-index: 11000;
+}
+
+.action-button::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: -30px;
+  background-color: #333;
+  color: #fff;
+  padding: 5px 10px;
+  border-radius: 5px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+  font-size: 12px;
+}
+
+.action-button:hover::after {
+  opacity: 1;
+}
+
+.active-btn {
+  background-color: #887821;
+  /* make a nic shadow */
+  box-shadow: 0 0 10px #887821;
 }
 
 .action-button:hover {
@@ -142,7 +191,7 @@ body {
 }
 
 .floating-form .table-container {
-  max-height: 70%;
+  max-height: 80%;
 }
 
 #cost-items {
@@ -150,11 +199,9 @@ body {
 }
 
 [id^="cost-values-form"] table {
-  /* fixed */
   max-height: 50%;
   table-layout: fixed;
 }
-
 
 [id^="selected-products"] .form-container {
   height: 50vh;
@@ -186,9 +233,9 @@ tbody {
 
 td,
 th {
-  border-left: 1px solid #ddd;
   border-right: 1px solid #ddd;
   text-align: center;
+  height: 100%;
 }
 
 th {
@@ -224,15 +271,7 @@ select {
   color: var(--blender-button-text, var(--text-color));
   border-color: var(--blender-button-border, var(--border-color));
   transition: filter 0.2s ease;
-  border-radius: 6px;
-  padding: 6px 8px;
-  font-size: 14px;
-  line-height: 20px;
   transition: border-color 0.2s cubic-bezier(0.3, 0, 0.5, 1);
-  margin-left: 0.5em;
-  margin-right: 0.5em;
-  font-size: var(--fontSize);
-  min-width: 50px;
 }
 
 input:focus {
@@ -240,6 +279,31 @@ input:focus {
   outline: none;
   box-shadow: 0 0 0 3px #28a745;
   color: #ddd;
+}
+
+#cost-items input, #cost-items
+select {
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 14px;
+  line-height: 20px;
+  margin-left: 0.5em;
+  margin-right: 0.5em;
+  font-size: var(--fontSize);
+  min-width: 50px;
+}
+
+form input {
+  border-radius: 6px;
+  padding: 3px 4px;
+  font-size: 12px;
+  line-height: 10px;
+  margin-left: 0.2em;
+  margin-right: 0.2em;
+  font-size: inherit;
+  height: inherit;
+  width: inherit;
+  box-sizing: border-box;
 }
 
 #cost-items tr:hover,
@@ -304,8 +368,38 @@ form table {
   max-height: 50%;
 }
 
-
 .subtotal-row {
   background-color: var(--button-hover-background);
   font-weight: bold;
+}
+
+[id^="cost-items"] th:nth-child(1),
+[id^="cost-items"] td:nth-child(1) {
+  width: auto;
+}
+[id^="cost-items"] th:not(:nth-child(1)),
+[id^="cost-items"] td:not(:nth-child(1)) {
+  width: 10%;
+}
+
+[id^="cost-items"] th:last-child,
+[id^="cost-items"] td:last-child {
+  width: fit-content;
+  min-width: fit-content;
+  max-width: 50%;
+}
+
+.actions-column {
+  transition: opacity 0.3s ease-in-out;
+  opacity: 0;
+}
+
+[id^="cost-items"] tr:hover .actions-column {
+  opacity: 1;
+}
+
+.clickable-cell:hover {
+  border: 1px solid #94a728;
+  border-radius: 6px;
+  cursor: pointer;
 }

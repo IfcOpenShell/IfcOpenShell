@@ -43,19 +43,22 @@ class BIM_PT_profiles(Panel):
         self.props = context.scene.BIMProfileProperties
 
         active_profile = None
-        if self.props.is_editing and self.props.profiles and self.props.active_profile_index < len(self.props.profiles):
+        if self.props.is_editing and (active_profile := tool.Profile.get_active_profile_ui()):
             preview_collection = ProfileData.preview_collection
             box = self.layout.box()
-            active_profile = self.props.profiles[self.props.active_profile_index]
             profile_id = active_profile.ifc_definition_id
-            profile_id_str = str(profile_id)
-            if profile_id_str in preview_collection:
-                preview_image = preview_collection[profile_id_str]
-            else:
-                preview_image = preview_collection.new(profile_id_str)
-                generate_thumbnail_for_active_profile()
 
-            box.template_icon(icon_value=preview_image.icon_id, scale=5)
+            if profile_id in ProfileData.failed_previews:
+                box.label(text="Failed to load preview (invalid profile).", icon="ERROR")
+            else:
+                profile_id_str = str(profile_id)
+                if profile_id_str in preview_collection:
+                    preview_image = preview_collection[profile_id_str]
+                else:
+                    preview_image = preview_collection.new(profile_id_str)
+                    generate_thumbnail_for_active_profile()
+
+                box.template_icon(icon_value=preview_image.icon_id, scale=5)
 
         row = self.layout.row(align=True)
         row.label(text=f"{ProfileData.data['total_profiles']} Named Profiles", icon="ITALIC")

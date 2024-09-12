@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 
 
 def purge_unused_profiles(ifc: tool.Ifc, profile: tool.Profile) -> int:
-    """Purge profiles that have no invserses.
+    """Purge profiles that have no inverses.
 
     :return: Number of removed profiles.
     """

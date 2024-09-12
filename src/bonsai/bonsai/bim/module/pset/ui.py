@@ -664,7 +664,15 @@ class BIM_PT_profile_psets(Panel):
         return False
 
     def draw(self, context):
-        if not ProfilePsetsData.is_loaded:
+        active_profile = tool.Profile.get_active_profile_ui()
+
+        if not active_profile:
+            return
+
+        if (
+            not ProfilePsetsData.is_loaded
+            or active_profile.ifc_definition_id != ProfilePsetsData.data["ifc_definition_id"]
+        ):
             ProfilePsetsData.load()
 
         props = context.scene.ProfilePsetProperties

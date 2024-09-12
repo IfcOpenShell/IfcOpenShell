@@ -1855,6 +1855,8 @@ class Drawing(bonsai.core.tool.Drawing):
         element_obj_names = set()
         for element in filtered_elements:
             obj = tool.Ifc.get_object(element)
+            if not obj:
+                continue
             current_representation = tool.Geometry.get_active_representation(obj)
             if current_representation:
                 subcontext = current_representation.ContextOfItems

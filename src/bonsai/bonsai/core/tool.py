@@ -582,6 +582,16 @@ class Patch:
 
 
 @interface
+class Polyline:
+    def create_input_ui(cls, init_z=False, init_area=False):  pass
+    def create_tool_state(cls): pass
+    def calculate_distance_and_angle(cls, context, input_ui, tool_state): pass
+    def calculate_area(cls, context, input_ui): pass
+    def calculate_x_y_and_z(cls, context, input_ui, tool_state): pass
+    def validate_input(cls, input_number, input_type): pass
+
+
+@interface
 class Owner:
     def add_address_attribute(cls, name): pass
     def add_person_attribute(cls, name): pass
@@ -668,9 +678,11 @@ class Qto:
     def get_rounded_value(cls, new_quantity): pass
     def set_qto_result(cls, result): pass
 
+
 @interface
 class Raycast:
     pass
+
 
 @interface
 class Resource:
@@ -945,9 +957,11 @@ class Spatial:
 class Covering:
     def get_z_from_ceiling_height(cls): pass
 
+
 @interface
 class Snap:
     pass
+
 
 @interface
 class Structural:

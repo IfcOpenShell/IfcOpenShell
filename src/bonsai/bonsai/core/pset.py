@@ -89,9 +89,12 @@ def enable_pset_editing(
         pset_tool.enable_proposed_pset(props, pset_name, pset_type, has_template)
 
 
-def add_proposed_prop(pset: tool.Pset, obj_name: str, obj_type: tool.Ifc.OBJECT_TYPE, name: str, value: Any) -> None:
+def add_proposed_prop(
+    pset: tool.Pset, obj_name: str, obj_type: tool.Ifc.OBJECT_TYPE, name: str, value: Any
+) -> Union[None, str]:
     props = pset.get_pset_props(obj_name, obj_type)
-    pset.add_proposed_property(name, pset.cast_string_to_primitive(value), props)
+    res = pset.add_proposed_property(name, pset.cast_string_to_primitive(value), props)
+    return res
 
 
 def unshare_pset(

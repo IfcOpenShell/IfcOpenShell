@@ -18,6 +18,7 @@
  ********************************************************************************/
 
 #include "mapping.h"
+#include "../piecewise_function_evaluator.h"
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geometry;
 
@@ -34,6 +35,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcFixedReferenceSweptAreaSolid
 
 	// @todo currently only the case is handled where directrix returns a piecewise_function
 	if (auto pwf = taxonomy::dcast<taxonomy::piecewise_function>(dir)) {
+      piecewise_function_evaluator evaluator(pwf,&settings_);
 		double start = 0;
 		double end = pwf->length();
 #ifdef SCHEMA_HAS_IfcDirectrixCurveSweptAreaSolid
@@ -53,20 +55,9 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcFixedReferenceSweptAreaSolid
 			}
 		}
 #endif
-		auto curve_length = end - start;
-		auto param_type = settings_.get<ifcopenshell::geometry::settings::PiecewiseStepType>().get();
-		auto param = settings_.get<ifcopenshell::geometry::settings::PiecewiseStepParam>().get();
-		size_t num_steps = 0;
-		if (param_type == ifcopenshell::geometry::settings::PiecewiseStepMethod::MAXSTEPSIZE) {
-			// parameter is max step size
-			num_steps = (size_t) std::ceil(curve_length / param);
-		} else {
-			// parameter is minimum number of steps
-			num_steps = (size_t) std::ceil(param);
-		}
-		for (size_t i = 0; i <= num_steps; ++i) {
-			auto distalong = start + curve_length / num_steps * i;
-			auto m4 = pwf->evaluate(distalong);
+      auto evaluation_points = evaluator.evaluation_points();
+      for (const auto& dist_along : evaluation_points) {
+          auto m4 = evaluator.evaluate(dist_along);
 			
 			/*
 			std::stringstream ss;

@@ -3,6 +3,7 @@
 #include "../ifcgeom/IfcGeomElement.h"
 #include "../ifcgeom/ConversionSettings.h"
 #include "../ifcgeom/abstract_mapping.h"
+#include "../ifcgeom/piecewise_function_evaluator.h"
 
 #ifdef IFOPSH_WITH_OPENCASCADE
 #include "../ifcgeom/kernels/opencascade/OpenCascadeKernel.h"
@@ -227,7 +228,8 @@ bool ifcopenshell::geometry::kernels::AbstractKernel::convert_impl(const taxonom
 }
 
 bool ifcopenshell::geometry::kernels::AbstractKernel::convert_impl(const taxonomy::piecewise_function::ptr item, IfcGeom::ConversionResults& cs) {
-	auto expl = item->evaluate();
+   piecewise_function_evaluator evaluator(item);
+   auto expl = evaluator.evaluate();
 	expl->instance = item->instance;
 	return convert(expl, cs);
 }

@@ -246,6 +246,7 @@ namespace {
 %include "../ifcgeom/Iterator.h"
 %include "../ifcgeom/GeometrySerializer.h"
 %include "../ifcgeom/taxonomy.h"
+%include "../ifcgeom/piecewise_function_evaluator.h"
 
 %include "../serializers/SvgSerializer.h"
 %include "../serializers/HdfSerializer.h"
@@ -315,7 +316,7 @@ assign_children_access(loop, edge);
 assign_children_access(face, loop);
 assign_children_access(shell, face);
 assign_children_access(solid, shell);
-assign_children_access(loft, face);
+assign_children_access(loft, geom_item);
 assign_children_access(boolean_result, geom_item);
 
 %define assign_matrix_access(item_name)

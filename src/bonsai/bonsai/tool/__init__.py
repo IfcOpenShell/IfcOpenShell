@@ -44,6 +44,7 @@ from bonsai.tool.model import Model
 from bonsai.tool.nest import Nest
 from bonsai.tool.owner import Owner
 from bonsai.tool.patch import Patch
+from bonsai.tool.polyline import Polyline
 from bonsai.tool.project import Project
 from bonsai.tool.profile import Profile
 from bonsai.tool.pset import Pset

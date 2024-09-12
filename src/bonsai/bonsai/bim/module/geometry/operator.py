@@ -98,10 +98,19 @@ class OverrideMeshSeparate(bpy.types.Operator, tool.Ifc.Operator):
 
 class OverrideOriginSet(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.override_origin_set"
+    blender_op = bpy.ops.object.origin_set.get_rna_type()
     bl_label = "IFC Origin Set"
+    bl_description = (
+        blender_op.description + ".\nAlso makes sure changes are in sync with IFC (opeartor works only on IFC objects)"
+    )
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
-    origin_type: bpy.props.StringProperty()
+    blender_type_prop = blender_op.properties["type"]
+    origin_type: bpy.props.EnumProperty(
+        name=blender_type_prop.name,
+        default=blender_type_prop.default,
+        items=[(i.identifier, i.name, i.description) for i in blender_type_prop.enum_items],
+    )
 
     def _execute(self, context):
         objs = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
@@ -635,6 +644,7 @@ class OverrideDelete(bpy.types.Operator):
             element = tool.Ifc.get_entity(obj)
             if element:
                 if tool.Geometry.is_locked(element):
+                    self.report({"ERROR"}, f"Element '{obj.name}' is locked and cannot be deleted.")
                     continue
                 if ifcopenshell.util.element.get_pset(element, "BBIM_Array"):
                     self.report({"INFO"}, "Elements that are part of an array cannot be deleted.")
@@ -766,6 +776,7 @@ class OverrideOutlinerDelete(bpy.types.Operator):
         for obj in objects_to_delete:
             if element := tool.Ifc.get_entity(obj):
                 if tool.Geometry.is_locked(element):
+                    self.report({"ERROR"}, f"Element '{obj.name}' is locked and cannot be deleted.")
                     if collection := obj.BIMObjectProperties.collection:
                         collections_to_delete.discard(collection)
                     continue
@@ -882,6 +893,7 @@ class OverrideDuplicateMove(bpy.types.Operator):
                     continue  # For now, don't copy drawings until we stabilise a bit more. It's tricky.
                 elif tool.Geometry.is_locked(element):
                     obj.select_set(False)
+                    self.report({"ERROR"}, f"Element '{obj.name}' is locked and cannot be duplicated.")
                     continue
 
             linked_non_ifc_object = linked and not element
@@ -1600,6 +1612,7 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
             if not element:
                 continue
             if tool.Geometry.is_locked(element):
+                self.report({"ERROR"}, f"Element '{obj.name}' is locked and cannot be edited.")
                 obj.select_set(False)
                 continue
             representation = tool.Geometry.get_active_representation(obj)
@@ -2214,3 +2227,96 @@ class RemoveRepresentationItemFromShapeAspect(bpy.types.Operator, tool.Ifc.Opera
 
         if not styled_item.Styles:
             ifc_file.remove(styled_item)
+
+
+class ImportRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.xxx_import_representation_items"
+    bl_label = "Import Representation Items"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        obj = context.active_object
+        tool.Geometry.apply_item_ids_as_vertex_groups(obj)
+        tool.Geometry.dissolve_triangulated_edges(obj)
+        bm_dict = self.separate_faces_by_vertex_group(obj)
+        # bm_dict = self.separate_faces_by_id(obj)
+        props = context.scene.BIMGeometryProperties
+        props.item_objs.clear()
+
+        for item_id, bm in bm_dict.items():
+            item_mesh = bpy.data.meshes.new(f"mesh_id_{item_id}")
+            bm.to_mesh(item_mesh)
+            bm.free()
+
+            item = tool.Ifc.get().by_id(item_id)
+            item_obj = bpy.data.objects.new(f"Item/{item.is_a()}/{item_id}", item_mesh)
+            item_obj.matrix_world = obj.matrix_world
+            item_obj.show_in_front = True
+            bpy.context.collection.objects.link(item_obj)
+
+            new = props.item_objs.add()
+            new.obj = item_obj
+
+            verts = [list(co) for co in item_obj.bound_box]
+            edges = [(0, 3), (3, 7), (7, 4), (4, 0), (0, 1), (3, 2), (7, 6), (4, 5), (1, 2), (2, 6), (6, 5), (5, 1)]
+            new.verts = json.dumps(verts)
+            new.edges = json.dumps(edges)
+
+    def separate_faces_by_id(self, obj):
+        mesh = obj.data
+        bm = bmesh.new()
+        bm.from_mesh(mesh)
+        results = {}
+        face_ids = mesh["ios_item_ids"]
+        unique_ids = set(face_ids)
+
+        for item_id in unique_ids:
+            item_bm = bmesh.new()
+            for face, face_id in zip(bm.faces, face_ids):
+                if face_id == item_id:
+                    # Copy the face and its vertices into the new BMesh
+                    new_face_verts = [item_bm.verts.new(v.co) for v in face.verts]
+                    item_bm.faces.new(new_face_verts)
+            item_bm.verts.ensure_lookup_table()
+            item_bm.faces.ensure_lookup_table()
+            results[item_id] = item_bm
+
+        return results
+
+    def separate_faces_by_vertex_group(self, obj):
+        mesh = obj.data
+        bm = bmesh.new()
+        bm.from_mesh(mesh)
+
+        # Ensure the bmesh has up-to-date vertex weights (vertex groups)
+        bm.verts.layers.deform.verify()
+
+        results = {}
+        for vgroup in obj.vertex_groups:
+            group_bm = bmesh.new()
+            deform_layer = bm.verts.layers.deform.active
+
+            # Iterate over the faces and check if all vertices of the face belong to the vertex group
+            for face in bm.faces:
+                face_in_group = True
+                for vert in face.verts:
+                    # Get the vertex groups the vertex belongs to
+                    deform = vert[deform_layer]
+
+                    # If this vertex does not belong to the current vertex group, mark the face as outside the group
+                    if vgroup.index not in deform:
+                        face_in_group = False
+                        break
+
+                # If all vertices of the face belong to the current vertex group, add the face to the new BMesh
+                if face_in_group:
+                    new_face_verts = [group_bm.verts.new(v.co) for v in face.verts]
+                    group_bm.faces.new(new_face_verts)
+
+            # Ensure the mesh is valid and doesn't have duplicate elements
+            group_bm.verts.ensure_lookup_table()
+            group_bm.faces.ensure_lookup_table()
+
+            results[int(vgroup.name.split("_")[3])] = group_bm
+
+        return results

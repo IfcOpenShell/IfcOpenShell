@@ -515,12 +515,12 @@ class RenameType(bpy.types.Operator, tool.Ifc.Operator):
         self.layout.prop(self, "name")
 
 
-class AutoRenameOccurrences(bpy.types.Operator, tool.Ifc.Operator):
+class AutoRenameOccurrences(bpy.types.Operator):
     bl_idname = "bim.auto_rename_occurrences"
     bl_label = "Auto Rename Occurrences"
     bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
+    def execute(self, context):
         obj = context.active_object
         element_type = tool.Ifc.get_entity(obj)
         if element_type and element_type.is_a("IfcTypeObject"):
@@ -529,6 +529,7 @@ class AutoRenameOccurrences(bpy.types.Operator, tool.Ifc.Operator):
                 occurrence.Name = tool.Model.generate_occurrence_name(element_type, occurrence.is_a())
                 if obj:
                     tool.Root.set_object_name(obj, occurrence)
+        return {"FINISHED"}
 
 
 class DuplicateType(bpy.types.Operator, tool.Ifc.Operator):
@@ -555,13 +556,3 @@ class DuplicateType(bpy.types.Operator, tool.Ifc.Operator):
         context.scene.BIMModelProperties.ifc_class = new.is_a()
         context.scene.BIMModelProperties.relating_type_id = str(new_obj.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}
-
-
-class PurgeUnusedTypes(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.purge_unused_types"
-    bl_label = "Purge Unused Types"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def _execute(self, context):
-        purged_types = core.purge_unused_types(tool.Ifc, tool.Type, tool.Geometry)
-        self.report({"INFO"}, f"{purged_types} types were purged.")
