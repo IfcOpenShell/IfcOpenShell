@@ -415,14 +415,14 @@ class PolylineDecorator:
         new_line = 20
         for i, (key, field_name) in enumerate(texts.items()):
 
-            if key != self.tool_state.input_type:
+            if self.tool_state and key != self.tool_state.input_type:
                 formatted_value = self.input_ui.get_formatted_value(key)
             else:
                 formatted_value = self.input_ui.get_text_value(key)
 
             if formatted_value is None:
                 continue
-            if key == self.tool_state.input_type:
+            if self.tool_state and key == self.tool_state.input_type:
                 blf.color(self.font_id, *color_highlight)
             else:
                 blf.color(self.font_id, *color)
@@ -493,7 +493,7 @@ class PolylineDecorator:
 
         default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
         projection_point = []
-        if self.tool_state.use_default_container:
+        if self.tool_state and self.tool_state.use_default_container:
             # When a point is above the plane it projects the point
             # to the plane and creates a line
             if snap_prop.snap_type != "Plane" and snap_prop.z != 0:
