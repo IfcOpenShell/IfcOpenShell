@@ -98,10 +98,19 @@ class OverrideMeshSeparate(bpy.types.Operator, tool.Ifc.Operator):
 
 class OverrideOriginSet(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.override_origin_set"
+    blender_op = bpy.ops.object.origin_set.get_rna_type()
     bl_label = "IFC Origin Set"
+    bl_description = (
+        blender_op.description + ".\nAlso makes sure changes are in sync with IFC (opeartor works only on IFC objects)"
+    )
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
-    origin_type: bpy.props.StringProperty()
+    blender_type_prop = blender_op.properties["type"]
+    origin_type: bpy.props.EnumProperty(
+        name=blender_type_prop.name,
+        default=blender_type_prop.default,
+        items=[(i.identifier, i.name, i.description) for i in blender_type_prop.enum_items],
+    )
 
     def _execute(self, context):
         objs = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
