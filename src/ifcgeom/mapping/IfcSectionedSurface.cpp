@@ -24,24 +24,24 @@ using namespace ifcopenshell::geometry;
 #include "../../ifcgeom/profile_helper.h"
 #include "../../ifcgeom/infra_sweep_helper.h"
 
-#ifdef SCHEMA_HAS_IfcSectionedSolidHorizontal
+#ifdef SCHEMA_HAS_IfcSectionedSurface
 
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSectionedSolidHorizontal* inst) {
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSectionedSurface* inst) {
 	std::vector<cross_section> cross_sections;
 
 	auto dir = map(inst->Directrix());
 	auto pwf = taxonomy::dcast<taxonomy::piecewise_function>(dir);
 	if (!pwf) {
 		// Only implement on alignment curves
-        Logger::Warning("IfcSectionedSolidHorizontal is only implemented for piecewise function Directrix curves", inst);
+        Logger::Warning("IfcSectionedSurface is only implemented for piecewise function Directrix curves", inst);
         return nullptr;
 	}
 
 	{	
 	auto css = inst->CrossSections();
 	auto csps = inst->CrossSectionPositions();
-	std::vector<taxonomy::face::ptr> faces;
+	std::vector<taxonomy::geom_item::ptr> faces;
 
 	// The PointByDistanceExpressesions are factored out into (a) a cartesian offset relative to the
 	// reference frame along a certain curve location (b) the longitude.
@@ -52,7 +52,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSectionedSolidHorizontal* in
 	std::vector<double> longitudes;
 
 	for (auto& cs : *css) {
-		faces.push_back(std::move(taxonomy::cast<taxonomy::face>(map(cs))));
+		faces.push_back(std::move(taxonomy::cast<taxonomy::geom_item>(map(cs))));
 	}
 #ifdef SCHEMA_HAS_IfcPointByDistanceExpression
 	for (auto& csp : *csps) {

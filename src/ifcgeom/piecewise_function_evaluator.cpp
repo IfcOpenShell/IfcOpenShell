@@ -4,7 +4,7 @@
 using namespace ifcopenshell::geometry;
 
 
-piecewise_function_evaluator::piecewise_function_evaluator(taxonomy::piecewise_function::const_ptr pwf, ifcopenshell::geometry::Settings* settings) : pwf_(pwf) {
+piecewise_function_evaluator::piecewise_function_evaluator(taxonomy::piecewise_function::const_ptr pwf, const ifcopenshell::geometry::Settings* settings) : pwf_(pwf) {
     if (settings) {
         settings_ = *settings;
     }

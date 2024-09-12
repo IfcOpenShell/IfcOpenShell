@@ -316,7 +316,7 @@ assign_children_access(loop, edge);
 assign_children_access(face, loop);
 assign_children_access(shell, face);
 assign_children_access(solid, shell);
-assign_children_access(loft, face);
+assign_children_access(loft, geom_item);
 assign_children_access(boolean_result, geom_item);
 
 %define assign_matrix_access(item_name)

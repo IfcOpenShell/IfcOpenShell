@@ -810,7 +810,7 @@ typedef item const* ptr;
 				}
 			};
 
-			struct loft : public collection_base<face> {
+			struct loft : public collection_base<geom_item> {
 				DECLARE_PTR(loft)
 
 				item::ptr axis;
