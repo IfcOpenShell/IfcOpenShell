@@ -433,6 +433,14 @@ class BIM_OT_bulk_remove_psets(bpy.types.Operator, tool.Ifc.Operator):
 class AddProposedProp(bpy.types.Operator):
     bl_idname = "bim.add_proposed_prop"
     bl_label = "Add Proposed Prop"
+    bl_description = (
+        "Add proposed property to the custom property set.\n\n"
+        "Property type will be deduced from the provided value. Possible types:\n"
+        "- provide an integer or a float to create integer/real property\n"
+        "- 'true', 'false' to add a boolean property\n"
+        "- 'null' or '' (empty value) to add a null property\n"
+        "- any other value will be added as a string property"
+    )
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     obj_type: bpy.props.StringProperty()
