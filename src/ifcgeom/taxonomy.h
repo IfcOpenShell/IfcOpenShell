@@ -1270,13 +1270,13 @@ typedef item const* ptr;
 					}
 				}
 				{
-					edge_to_loop_upgrade<T> upg(u);
+					curve_to_face_upgrade<T> upg(u);
 					if (upg) {
 						return upg;
 					}
 				}
 				{
-					curve_to_face_upgrade<T> upg(u);
+					edge_to_loop_upgrade<T> upg(u);
 					if (upg) {
 						return upg;
 					}
