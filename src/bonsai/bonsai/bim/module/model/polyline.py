@@ -231,7 +231,7 @@ class PolylineOperator:
                     else:
                         self.number_input.pop(-1)
                 elif event.ascii == "=":
-                    if self.number_input[0] == "=":
+                    if self.number_input and self.number_input[0] == "=":
                         self.number_input.pop(0)
                     else:
                         self.number_input.insert(0, "=")
