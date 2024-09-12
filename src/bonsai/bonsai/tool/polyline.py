@@ -283,6 +283,7 @@ class Polyline(bonsai.core.tool.Polyline):
         vertices = []
         polyline_data = context.scene.BIMPolylineProperties.polyline_point
         if len(polyline_data) < 2:
+            context.scene.BIMPolylineProperties.product_preview.clear()
             return
         for point in polyline_data:
             vertices.append(
