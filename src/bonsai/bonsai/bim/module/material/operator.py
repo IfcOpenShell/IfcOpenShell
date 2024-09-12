@@ -32,43 +32,47 @@ from bonsai.bim.module.material.prop import purge as material_prop_purge
 from bonsai.bim.ifc import IfcStore
 
 
-class LoadMaterials(bpy.types.Operator, tool.Ifc.Operator):
+class LoadMaterials(bpy.types.Operator):
     bl_idname = "bim.load_materials"
     bl_label = "Load Materials"
     bl_description = "Display list of named materials"
     bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
+    def execute(self, context):
         core.load_materials(tool.Material, context.scene.BIMMaterialProperties.material_type)
+        return {"FINISHED"}
 
 
-class DisableEditingMaterials(bpy.types.Operator, tool.Ifc.Operator):
+class DisableEditingMaterials(bpy.types.Operator):
     bl_idname = "bim.disable_editing_materials"
     bl_label = "Disable Editing Materials"
     bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
+    def execute(self, context):
         core.disable_editing_materials(tool.Material)
+        return {"FINISHED"}
 
 
-class SelectByMaterial(bpy.types.Operator, tool.Ifc.Operator):
+class SelectByMaterial(bpy.types.Operator):
     bl_idname = "bim.select_by_material"
     bl_label = "Select By Material"
     bl_options = {"REGISTER", "UNDO"}
     material: bpy.props.IntProperty()
 
-    def _execute(self, context):
+    def execute(self, context):
         core.select_by_material(tool.Material, tool.Spatial, material=tool.Ifc.get().by_id(self.material))
+        return {"FINISHED"}
 
 
-class EnableEditingMaterial(bpy.types.Operator, tool.Ifc.Operator):
+class EnableEditingMaterial(bpy.types.Operator):
     bl_idname = "bim.enable_editing_material"
     bl_label = "Enable Editing Material"
     bl_options = {"REGISTER", "UNDO"}
     material: bpy.props.IntProperty()
 
-    def _execute(self, context):
+    def execute(self, context):
         core.enable_editing_material(tool.Material, material=tool.Ifc.get().by_id(self.material))
+        return {"FINISHED"}
 
 
 class EditMaterial(bpy.types.Operator, tool.Ifc.Operator):
@@ -81,14 +85,15 @@ class EditMaterial(bpy.types.Operator, tool.Ifc.Operator):
         core.edit_material(tool.Ifc, tool.Material, material=tool.Ifc.get().by_id(self.material))
 
 
-class DisableEditingMaterial(bpy.types.Operator, tool.Ifc.Operator):
+class DisableEditingMaterial(bpy.types.Operator):
     bl_idname = "bim.disable_editing_material"
     bl_label = "Disable Editing Material"
     bl_options = {"REGISTER", "UNDO"}
     material: bpy.props.IntProperty()
 
-    def _execute(self, context):
+    def execute(self, context):
         core.disable_editing_material(tool.Material)
+        return {"FINISHED"}
 
 
 class AssignParameterizedProfile(bpy.types.Operator, tool.Ifc.Operator):
@@ -776,13 +781,13 @@ class ContractMaterialCategory(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class EnableEditingMaterialStyle(bpy.types.Operator, tool.Ifc.Operator):
+class EnableEditingMaterialStyle(bpy.types.Operator):
     bl_idname = "bim.enable_editing_material_style"
     bl_label = "Enable Editing Material Style"
     bl_options = {"REGISTER", "UNDO"}
     material: bpy.props.IntProperty()
 
-    def _execute(self, context):
+    def execute(self, context):
         props = bpy.context.scene.BIMMaterialProperties
         props.active_material_id = self.material
         props.editing_material_type = "STYLE"
@@ -800,6 +805,7 @@ class EnableEditingMaterialStyle(bpy.types.Operator, tool.Ifc.Operator):
         style = rep.Items[0].Styles[0]
         if style.Name:  # props.styles only has named styles
             props.styles = str(rep.Items[0].Styles[0].id())
+        return {"FINISHED"}
 
 
 class EditMaterialStyle(bpy.types.Operator, tool.Ifc.Operator):
