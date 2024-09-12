@@ -309,6 +309,7 @@ class PolylineDecorator:
     use_default_container = False
     instructions = None
     snap_info = None
+    tool_state = None
 
 
     @classmethod
@@ -372,7 +373,6 @@ class PolylineDecorator:
         points = []
         edges = []
         for i in range(len(prop)):
-            print(prop[i].x, prop[i].y, prop[i].z)
             points.append(Vector((
                                      prop[i].x,
                                      prop[i].y,
@@ -383,8 +383,6 @@ class PolylineDecorator:
         edges.extend(bottom_loop)
         upper_loop = [[i + n for i in edges] for edges in bottom_loop]
         edges.extend(upper_loop)
-        print(bottom_loop)
-        print(upper_loop)
         connections = [[i, j] for i, j in zip(range(n), range(n, n*2))]
         edges.extend(connections)
         if len(points) > 1:
@@ -400,7 +398,10 @@ class PolylineDecorator:
             "Z": "Z coord:",
             "AREA": "Area: ",
         }
-        mouse_pos = self.event.mouse_region_x, self.event.mouse_region_y
+        try:
+            mouse_pos = self.event.mouse_region_x, self.event.mouse_region_y
+        except:
+            mouse_pos = (None, None)
 
         self.addon_prefs = tool.Blender.get_addon_preferences()
         self.font_id = 0
@@ -550,7 +551,6 @@ class PolylineDecorator:
 
         # Draw polyline with selected points
         self.line_shader.uniform_float("lineWidth", 2.0)
-        print("PP", polyline_points)
         self.draw_batch("POINTS", polyline_points, decorator_color_selected)
         if len(polyline_points) > 1:
             self.draw_batch("LINES", polyline_points, decorator_color_selected, polyline_edges)
