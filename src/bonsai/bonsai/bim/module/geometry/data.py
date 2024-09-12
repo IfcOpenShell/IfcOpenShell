@@ -52,7 +52,11 @@ class ViewportData:
             ("OBJECT", "IFC Object Mode", "", "OBJECT_DATAMODE", 0),
             ("EDIT", "IFC Edit Mode", "", "EDITMODE_HLT", 1),
         ]
-        if not obj or not tool.Blender.is_editable(obj):
+        if (
+            not obj
+            or not tool.Blender.is_editable(obj)
+            or ((element := tool.Ifc.get_entity(obj)) and tool.Geometry.is_locked(element))
+        ):
             return obj_mode
         return mesh_modes
 
