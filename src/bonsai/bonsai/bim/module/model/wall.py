@@ -317,6 +317,8 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator):
     def modal(self, context, event):
         if not self.relating_type:
             self.report({"WARNING"}, "You need to select a wall type.")
+            PolylineDecorator.uninstall()
+            tool.Blender.update_viewport()
             return {"FINISHED"}
 
         PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
