@@ -1308,6 +1308,12 @@ typedef item const* ptr;
 					}
 				}
 				{
+					curve_to_loop_upgrade<T> upg(u);
+					if (upg) {
+						return upg;
+					}
+				}
+				{
 					curve_to_face_upgrade<T> upg(u);
 					if (upg) {
 						return upg;
