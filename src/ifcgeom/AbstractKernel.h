@@ -86,7 +86,7 @@ namespace {
 	struct dispatch_conversion {
 		static bool dispatch(ifcopenshell::geometry::kernels::AbstractKernel* kernel, ifcopenshell::geometry::taxonomy::kinds item_kind, const ifcopenshell::geometry::taxonomy::ptr item, IfcGeom::ConversionResults& results) {
 			if (N == item_kind) {
-				auto concrete_item = ifcopenshell::geometry::taxonomy::template cast<ifcopenshell::geometry::taxonomy::type_by_kind::type<N>>(item);
+				auto concrete_item = std::static_pointer_cast<ifcopenshell::geometry::taxonomy::type_by_kind::type<N>>(item);
 				return kernel->convert_impl(concrete_item, results);
 			} else {
 				return dispatch_conversion<N + 1>::dispatch(kernel, item_kind, item, results);
