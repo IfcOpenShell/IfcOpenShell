@@ -644,6 +644,7 @@ class OverrideDelete(bpy.types.Operator):
             element = tool.Ifc.get_entity(obj)
             if element:
                 if tool.Geometry.is_locked(element):
+                    self.report({"ERROR"}, f"Element '{obj.name}' is locked and cannot be deleted.")
                     continue
                 if ifcopenshell.util.element.get_pset(element, "BBIM_Array"):
                     self.report({"INFO"}, "Elements that are part of an array cannot be deleted.")
@@ -775,6 +776,7 @@ class OverrideOutlinerDelete(bpy.types.Operator):
         for obj in objects_to_delete:
             if element := tool.Ifc.get_entity(obj):
                 if tool.Geometry.is_locked(element):
+                    self.report({"ERROR"}, f"Element '{obj.name}' is locked and cannot be deleted.")
                     if collection := obj.BIMObjectProperties.collection:
                         collections_to_delete.discard(collection)
                     continue
@@ -891,6 +893,7 @@ class OverrideDuplicateMove(bpy.types.Operator):
                     continue  # For now, don't copy drawings until we stabilise a bit more. It's tricky.
                 elif tool.Geometry.is_locked(element):
                     obj.select_set(False)
+                    self.report({"ERROR"}, f"Element '{obj.name}' is locked and cannot be duplicated.")
                     continue
 
             linked_non_ifc_object = linked and not element
@@ -1609,6 +1612,7 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
             if not element:
                 continue
             if tool.Geometry.is_locked(element):
+                self.report({"ERROR"}, f"Element '{obj.name}' is locked and cannot be edited.")
                 obj.select_set(False)
                 continue
             representation = tool.Geometry.get_active_representation(obj)
