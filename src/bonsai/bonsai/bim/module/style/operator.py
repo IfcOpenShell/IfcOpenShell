@@ -460,7 +460,8 @@ class LoadStyles(bpy.types.Operator, tool.Ifc.Operator):
     style_type: bpy.props.StringProperty()
 
     def _execute(self, context):
-        core.load_styles(tool.Style, style_type=self.style_type)
+        style_type = self.style_type if self.style_type else context.scene.BIMStylesProperties.style_type
+        core.load_styles(tool.Style, style_type=style_type)
 
 
 class SelectByStyle(bpy.types.Operator, tool.Ifc.Operator):

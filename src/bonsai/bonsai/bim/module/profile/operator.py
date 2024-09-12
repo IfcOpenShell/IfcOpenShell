@@ -264,18 +264,3 @@ class EditArbitraryProfile(bpy.types.Operator, tool.Ifc.Operator):
         props.active_arbitrary_profile_id = 0
 
         model_profile.DumbProfileRegenerator().regenerate_from_profile_def(profile)
-
-
-class PurgeUnusedProfiles(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.purge_unused_profiles"
-    bl_label = "Purge Unused Profiles"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def _execute(self, context):
-        props = context.scene.BIMProfileProperties
-        purged_profiles = core.purge_unused_profiles(tool.Ifc, tool.Profile)
-        self.report({"INFO"}, f"{purged_profiles} profiles were purged.")
-
-        if props.is_editing:
-            refresh()
-            bpy.ops.bim.load_profiles()
