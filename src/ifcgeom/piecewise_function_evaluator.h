@@ -10,7 +10,7 @@ namespace ifcopenshell { namespace geometry {
 /// @brief utility class to evaluate piecewise_function objects
 class piecewise_function_evaluator {
   public:
-    piecewise_function_evaluator(taxonomy::piecewise_function::const_ptr pwf, ifcopenshell::geometry::Settings* settings=nullptr);
+    piecewise_function_evaluator(taxonomy::piecewise_function::const_ptr pwf, const ifcopenshell::geometry::Settings* settings=nullptr);
 
     /// @brief returns a vector of "distance along" points where the evaluate function computes loop points
     std::vector<double> evaluation_points() const;

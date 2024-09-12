@@ -313,7 +313,7 @@ namespace {
 	}
 
 	bool compare(const loft& a, const loft& b) {
-		return compare_collection<face>(a, b);
+		return compare_collection<geom_item>(a, b);
 	}
 
 	bool compare(const collection& a, const collection& b) {
