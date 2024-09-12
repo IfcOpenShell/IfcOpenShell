@@ -32,6 +32,8 @@ import ifcopenshell.util.representation
 import ifcopenshell.util.unit
 import bonsai.tool as tool
 import bonsai.core.debug as core
+import bonsai.core.profile
+import bonsai.core.type
 import bonsai.bim.handler
 import bonsai.bim.import_ifc as import_ifc
 from pathlib import Path
@@ -606,6 +608,57 @@ class PurgeUnusedElementsByClass(bpy.types.Operator, tool.Ifc.Operator):
                 print("Finished 20 batches. Manually stopping in case of infinite loop.")
         self.report({"INFO"}, f"Auto purged {total_purged} orphaned elements")
         tool.Ifc.get().write(self.filepath)
+
+
+class PurgeUnusedObjects(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.purge_unused_objects"
+    bl_label = "Purge Unused Objects"
+    bl_options = {"REGISTER", "UNDO"}
+
+    object_type: bpy.props.EnumProperty(
+        name="Object Type",
+        items=(
+            ("TYPE", "Type", ""),
+            ("PROFILE", "Profile", ""),
+            ("STYLE", "Style", ""),
+            ("MATERIAL", "Material", ""),
+        ),
+    )
+
+    def _execute(self, context):
+        object_type = self.object_type
+        if object_type == "TYPE":
+            purged = bonsai.core.type.purge_unused_types(tool.Ifc, tool.Type, tool.Geometry)
+        elif object_type == "PROFILE":
+            purged = bonsai.core.profile.purge_unused_profiles(tool.Ifc, tool.Profile)
+        elif object_type == "STYLE":
+            purged = tool.Debug.purge_unused_class("IfcPresentationStyle")
+        elif object_type == "MATERIAL":
+            ifc_file = tool.Ifc.get()
+            is_ifc2x3 = ifc_file.schema == "IFC2X3"
+            if is_ifc2x3:
+                purged = tool.Debug.purge_unused_class("IfcMaterial")
+            else:
+                purged = tool.Debug.purge_unused_class("IfcMaterialDefinition")
+        else:
+            self.report({"ERROR"}, f"Invalid object type {object_type}.")
+            return {"CANCELLED"}
+
+        self.report({"INFO"}, f"{purged} unused {object_type.lower()}s were purged.")
+
+        if purged == 0:
+            return
+
+        scene = context.scene
+        if object_type == "PROFILE":
+            if scene.BIMProfileProperties.is_editing:
+                bpy.ops.bim.load_profiles()
+        elif object_type == "STYLE":
+            if scene.BIMStylesProperties.is_editing:
+                bpy.ops.bim.load_styles()
+        elif object_type == "MATERIAL":
+            if scene.BIMMaterialProperties.is_editing:
+                bpy.ops.bim.load_materials()
 
 
 class PipInstall(bpy.types.Operator):

@@ -347,8 +347,6 @@ typedef item const* ptr;
 			struct implicit_item : public geom_item {
 				DECLARE_PTR(implicit_item)
 				using geom_item::geom_item;
-
-				virtual item::ptr evaluate() const = 0;
 			};
 
 			struct piecewise_function_impl; // forward declaration
@@ -357,13 +355,11 @@ typedef item const* ptr;
 
 				using spans_t = std::vector<std::pair<double, std::function<Eigen::Matrix4d(double u)>>>;
 
-            piecewise_function(double start, const spans_t& s, ifcopenshell::geometry::Settings* settings = nullptr, const IfcUtil::IfcBaseInterface* instance = nullptr);
-            piecewise_function(double start, const std::vector<piecewise_function::ptr>& pwfs, ifcopenshell::geometry::Settings* settings = nullptr, const IfcUtil::IfcBaseInterface* instance = nullptr);
+            piecewise_function(double start, const spans_t& s, const IfcUtil::IfcBaseInterface* instance = nullptr);
+            piecewise_function(double start, const std::vector<piecewise_function::ptr>& pwfs, const IfcUtil::IfcBaseInterface* instance = nullptr);
             piecewise_function(piecewise_function&&) = default;
             piecewise_function(const piecewise_function&);
             virtual ~piecewise_function();
-
-				const ifcopenshell::geometry::Settings* settings_ = nullptr;
 
 				const spans_t& spans() const;
 				bool is_empty() const;
@@ -378,33 +374,6 @@ typedef item const* ptr;
 					auto v = std::make_tuple(static_cast<size_t>(PIECEWISE_FUNCTION), 0);
 					return boost::hash<decltype(v)>{}(v);
 				}
-
-				/// @brief returns a vector of "distance along" points where the evaluate function computes loop points
-				std::vector<double> evaluation_points() const;
-
-				/// @brief returns a vector of "distance along" points between ustart and uend
-            /// @param ustart starting location
-            /// @param uend ending location
-            /// @param nsteps number of steps to evaluate
-            std::vector<double> evaluation_points(double ustart, double uend, unsigned nsteps) const;
-
-            /// @brief evaluates the piecewise function between start and end
-				/// evaluation point step size is taken from the settings object
-            item::ptr evaluate() const override;
-
-            /// @brief evaluates the piecewise function between ustart and uend
-				/// if ustart and uend are out of range, the range of values evaluated
-				/// are constrained to start_ and start_+length_
-            /// @param ustart starting location
-            /// @param uend ending location
-            /// @param nsteps number of steps to evaluate
-            /// @return taxonomy::loop::ptr
-            item::ptr evaluate(double ustart, double uend, unsigned nsteps) const;
-
-				/// @brief evaluates the piecewise function at u
-				/// @param u u is constrained to be between start_ and start_+length
-				/// @return 4x4 placement matrix
-				Eigen::Matrix4d evaluate(double u) const;
 
             private:
 				    // note: it would be better if this were a std::unique_ptr, but that requires having the full definition
@@ -841,7 +810,7 @@ typedef item const* ptr;
 				}
 			};
 
-			struct loft : public collection_base<face> {
+			struct loft : public collection_base<geom_item> {
 				DECLARE_PTR(loft)
 
 				item::ptr axis;

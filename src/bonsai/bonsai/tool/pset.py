@@ -297,9 +297,9 @@ class Pset(bonsai.core.tool.Pset):
         return bonsai.bim.schema.ifc.psetqto.get_by_name(name)
 
     @classmethod
-    def add_proposed_property(cls, name: str, value: Any, props: bpy.types.PropertyGroup) -> None:
+    def add_proposed_property(cls, name: str, value: Any, props: bpy.types.PropertyGroup) -> Union[None, str]:
         if props.properties.get(name):
-            return
+            return f"Property '{name}' already exists."
         prop = props.properties.add()
         prop.name = name
         metadata = prop.metadata
@@ -327,4 +327,3 @@ class Pset(bonsai.core.tool.Pset):
                 return value
             except:
                 return value
-        return value

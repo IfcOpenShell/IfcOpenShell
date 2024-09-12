@@ -368,6 +368,7 @@ class ShapeBuilder:
             "ProfileType": profile_type,
             "OuterCurve": outer_curve,
         }
+
         if self.file.schema == "IFC2X3":
             kwargs["Position"] = self.create_axis2_placement_2d()
 

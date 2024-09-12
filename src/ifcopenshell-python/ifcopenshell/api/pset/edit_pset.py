@@ -167,6 +167,9 @@ def edit_pset(
 
 
 class Usecase:
+    file: ifcopenshell.file
+    settings: dict[str, Any]
+
     def execute(self) -> None:
         self.update_pset_name()
         self.load_pset_template()
@@ -378,7 +381,7 @@ class Usecase:
                 properties.append(self.file.create_entity("IfcPropertySingleValue", **args))
         return properties
 
-    def assign_new_properties(self, props: ifcopenshell.entity_instance) -> None:
+    def assign_new_properties(self, props: list[ifcopenshell.entity_instance]) -> None:
         if hasattr(self.settings["pset"], "HasProperties"):
             self.settings["pset"].HasProperties = props
 

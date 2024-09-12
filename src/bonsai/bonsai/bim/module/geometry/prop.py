@@ -18,7 +18,7 @@
 
 import bpy
 import bonsai.tool as tool
-from bonsai.bim.prop import StrProperty, Attribute
+from bonsai.bim.prop import StrProperty, Attribute, ObjProperty
 from bonsai.bim.module.geometry.data import RepresentationsData, ViewportData
 from bpy.types import PropertyGroup
 from bpy.props import (
@@ -100,6 +100,16 @@ class RepresentationItem(PropertyGroup):
     tags: StringProperty(name="Tags")
 
 
+class RepresentationItemObject(PropertyGroup):
+    name: StringProperty(name="Name")
+    ifc_definition_id: IntProperty(name="IFC Definition ID")
+    obj: PointerProperty(type=bpy.types.Object)
+    verts: StringProperty(name="Verts")
+    edges: StringProperty(name="Edges")
+    special_verts: StringProperty(name="Special Verts")
+    special_edges: StringProperty(name="Special Edges")
+
+
 class ShapeAspect(PropertyGroup):
     name: StringProperty(
         name="Name",
@@ -137,6 +147,7 @@ class BIMGeometryProperties(PropertyGroup):
     should_force_triangulation: BoolProperty(name="Force Triangulation", default=False)
     is_changing_mode: BoolProperty(name="Is Changing Mode", default=False)
     mode: EnumProperty(items=get_mode, name="IFC Interaction Mode", update=update_mode)
+    item_objs: CollectionProperty(name="Item Objects", type=RepresentationItemObject)
 
     def is_object_valid_for_representation_copy(self, obj: bpy.types.Object) -> bool:
         return bool(obj != bpy.context.active_object and obj.data)
