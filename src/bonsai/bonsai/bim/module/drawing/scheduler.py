@@ -554,6 +554,8 @@ class Scheduler:
             text_params["font-style"] = "italic"
         if text_color:
             text_params["fill"] = text_color
+        
+        text_params["class_"] = "schedule"
 
         if len(text_lines) == 1 and not wrap_text:
             text_params.update(box_alignment_params)
