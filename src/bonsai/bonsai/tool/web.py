@@ -476,7 +476,9 @@ class Web(bonsai.core.tool.Web):
             cls.load_cost_schedule_web_ui(cost_schedule)
             cls.enableEditingCostItemQuantities(cost_item)
         if operator_data["type"] == "deleteCostItemQuantity":
-            bpy.ops.bim.remove_cost_item_quantity(cost_item=operator_data["costItemId"], physical_quantity=operator_data["quantityId"])
+            bpy.ops.bim.remove_cost_item_quantity(
+                cost_item=operator_data["costItemId"], physical_quantity=operator_data["quantityId"]
+            )
             cost_item_id = operator_data["costItemId"]
             cost_item = ifc_file.by_id(cost_item_id)
             cost_schedule = tool.Cost.get_cost_schedule(cost_item)
@@ -505,7 +507,6 @@ class Web(bonsai.core.tool.Web):
             data_key="quantities",
             event="quantities",
         )
-
 
     @classmethod
     def selection_data(cls, cost_item, elements):
