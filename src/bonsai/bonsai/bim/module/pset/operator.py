@@ -440,5 +440,8 @@ class AddProposedProp(bpy.types.Operator):
     prop_value: bpy.props.StringProperty()
 
     def execute(self, context):
-        core.add_proposed_prop(tool.Pset, self.obj, self.obj_type, self.prop_name, self.prop_value)
+        res = core.add_proposed_prop(tool.Pset, self.obj, self.obj_type, self.prop_name, self.prop_value)
+        if res:
+            self.report({"ERROR"}, res)
+            return {"CANCELLED"}
         return {"FINISHED"}
