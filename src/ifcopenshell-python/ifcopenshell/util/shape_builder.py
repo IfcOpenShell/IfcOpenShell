@@ -228,10 +228,8 @@ class ShapeBuilder:
         :return: IfcCircle
         :rtype: ifcopenshell.entity_instance
         """
-        ifc_center = self.file.createIfcAxis2Placement2D(self.file.createIfcCartesianPoint(center))
+        ifc_center = self.create_axis2_placement_2d(center)
         ifc_curve = self.file.createIfcCircle(ifc_center, radius)
-
-        #  self.file_file.createIfcAxis2Placement2D(tool.Ifc.get().createIfcCartesianPoint(center[0:2]))
         return ifc_curve
 
     def plane(
@@ -324,9 +322,7 @@ class ShapeBuilder:
         for further extrusion.
         """
         direction = self.file.createIfcDirection(ref_x_direction)
-        ifc_position = self.file.createIfcAxis2Placement2D(
-            self.file.createIfcCartesianPoint(position), RefDirection=direction
-        )
+        ifc_position = self.create_axis2_placement_2d(position, direction)
         ifc_ellipse = self.file.createIfcEllipse(
             Position=ifc_position, SemiAxis1=x_axis_radius, SemiAxis2=y_axis_radius
         )
@@ -372,6 +368,9 @@ class ShapeBuilder:
             "ProfileType": profile_type,
             "OuterCurve": outer_curve,
         }
+
+        if self.file.schema == "IFC2X3":
+            kwargs["Position"] = self.create_axis2_placement_2d()
 
         if inner_curves:
             if not isinstance(inner_curves, collections.abc.Iterable):
@@ -578,6 +577,17 @@ class ShapeBuilder:
             matrix = np.eye(4, dtype=float)
         return self.create_axis2_placement_3d(
             position=matrix[:, 3][:3].tolist(), z_axis=matrix[:, 2][:3].tolist(), x_axis=matrix[:, 0][:3].tolist()
+        )
+
+    def create_axis2_placement_2d(
+        self, position: VectorTuple = (0.0, 0.0), x_direction: Optional[VectorTuple] = None
+    ) -> ifcopenshell.entity_instance:
+        """Create IfcAxis2Placement2D."""
+        ref_direction = self.file.create_entity("IfcDirection", x_direction) if x_direction else None
+        return self.file.create_entity(
+            "IfcAxis2Placement2D",
+            Location=self.file.create_entity("IfcCartesianPoint", position),
+            RefDirection=ref_direction,
         )
 
     def mirror(
