@@ -18,6 +18,7 @@
 
 import ifcopenshell.api.style
 import ifcopenshell.util.element
+from typing import Any
 
 
 def remove_style(file: ifcopenshell.file, style: ifcopenshell.entity_instance) -> None:
@@ -47,6 +48,9 @@ def remove_style(file: ifcopenshell.file, style: ifcopenshell.entity_instance) -
 
 
 class Usecase:
+    file: ifcopenshell.file
+    settings: dict[str, Any]
+
     def execute(self):
         self.purge_styled_items(self.settings["style"])
         for style in self.settings["style"].Styles or []:
