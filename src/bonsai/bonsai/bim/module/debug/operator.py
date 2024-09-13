@@ -632,14 +632,11 @@ class PurgeUnusedObjects(bpy.types.Operator, tool.Ifc.Operator):
         elif object_type == "PROFILE":
             purged = bonsai.core.profile.purge_unused_profiles(tool.Ifc, tool.Profile)
         elif object_type == "STYLE":
+            # It's okay to remove IfcPresentationStyle if just remove_deep
+            # as there are no white listed inverses.
             purged = tool.Debug.purge_unused_class("IfcPresentationStyle")
         elif object_type == "MATERIAL":
-            ifc_file = tool.Ifc.get()
-            is_ifc2x3 = ifc_file.schema == "IFC2X3"
-            if is_ifc2x3:
-                purged = tool.Debug.purge_unused_class("IfcMaterial")
-            else:
-                purged = tool.Debug.purge_unused_class("IfcMaterialDefinition")
+            purged = tool.Material.purge_unused_materials()
         else:
             self.report({"ERROR"}, f"Invalid object type {object_type}.")
             return {"CANCELLED"}
