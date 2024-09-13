@@ -322,7 +322,11 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator):
                     DumbWallJoiner().join_V(wall1["obj"], wall2["obj"])
 
     def modal(self, context, event):
-        super().modal(context, event)
+        PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
+        tool.Blender.update_viewport()
+
+        if event.type in {"MIDDLEMOUSE", "WHEELUPMOUSE", "WHEELDOWNMOUSE"}:
+            return {"PASS_THROUGH"}
 
         self.handle_instructions(context)
 
@@ -347,6 +351,11 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator):
         self.handle_keyboard_input(context, event)
 
         self.handle_inserting_polyline(context, event)
+
+        if event.type in {"LEFTMOUSE", "RIGHTMOUSE", "ENTER", "NUMPAD_ENTER"}:
+            tool.Polyline.offset_polyline(context)
+            # tool.Polyline.create_wall_preview(context)
+            print(context.scene.BIMPolylineProperties.product_preview)
 
         result = self.handle_cancelation(context, event)
         if result is not None:
@@ -511,7 +520,7 @@ class DumbWallGenerator:
         )
 
     def derive_from_polyline(self):
-        polyline_data = bpy.context.scene.BIMModelProperties.polyline_point
+        polyline_data = bpy.context.scene.BIMPolylineProperties.polyline_point
         is_polyline_closed = False
         if len(polyline_data) > 3:
             first_vec = Vector((polyline_data[0].x, polyline_data[0].y, polyline_data[0].z))
