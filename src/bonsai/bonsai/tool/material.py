@@ -388,3 +388,29 @@ class Material(bonsai.core.tool.Material):
             material.Materials = [default_material]
         else:
             assert False, f"Invalid material type found: {material_type}."
+
+    @classmethod
+    def purge_unused_materials(cls) -> int:
+        ifc_file = tool.Ifc.get()
+        is_ifc2x3 = ifc_file.schema == "IFC2X3"
+        ifc_class = "IfcMaterial" if is_ifc2x3 else "IfcMaterialDefinition"
+
+        skip_inverses = {
+            "IfcMaterialDefinitionRepresentation",
+            "IfcMaterialProperties",
+        }
+
+        def is_safe_to_purge(material: ifcopenshell.entity_instance) -> bool:
+            for i in ifc_file.get_inverse(material):
+                if i.is_a() not in skip_inverses:
+                    return False
+            return True
+
+        materials = ifc_file.by_type(ifc_class)
+        i = 0
+        for material in materials:
+            if ifc_file.get_total_inverses(material) != 0 and not is_safe_to_purge(material):
+                continue
+            ifcopenshell.api.material.remove_material(ifc_file, material)
+            i += 1
+        return i
