@@ -352,7 +352,7 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator):
 
         self.handle_inserting_polyline(context, event)
 
-        if event.type in {"LEFTMOUSE", "RIGHTMOUSE", "ENTER", "NUMPAD_ENTER", "BACK_SPACE"}:
+        if event.type in {"LEFTMOUSE", "RIGHTMOUSE", "RET", "NUMPAD_ENTER", "BACK_SPACE"}:
             tool.Polyline.create_wall_preview_vertices(context, self.relating_type)
 
         cancel = self.handle_cancelation(context, event)
