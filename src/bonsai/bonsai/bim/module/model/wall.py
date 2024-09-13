@@ -296,23 +296,16 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator):
 
     def __init__(self):
         super().__init__()
+        self.relating_type = None
+        relating_type_id = bpy.context.scene.BIMModelProperties.relating_type_id
+        if relating_type_id:
+            self.relating_type = tool.Ifc.get().by_id(int(relating_type_id))
 
     def create_walls_from_polyline(self, context):
-        props = context.scene.BIMModelProperties
-        relating_type_id = props.relating_type_id
-
-        if not relating_type_id:
+        if not self.relating_type:
             return {"FINISHED"}
 
-        self.container = None
-        self.container_obj = None
-        if container := tool.Root.get_default_container():
-            self.container = container
-            self.container_obj = tool.Ifc.get_object(container)
-
-        relating_type = tool.Ifc.get().by_id(int(relating_type_id))
-
-        walls, is_polyline_closed = DumbWallGenerator(relating_type).generate(True)
+        walls, is_polyline_closed = DumbWallGenerator(self.relating_type).generate(True)
         if walls:
             if is_polyline_closed:
                 for wall1, wall2 in zip(walls, walls[1:] + [walls[0]]):
@@ -322,6 +315,10 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator):
                     DumbWallJoiner().join_V(wall1["obj"], wall2["obj"])
 
     def modal(self, context, event):
+        if not self.relating_type:
+            self.report({"WARNING"}, "You need to select a wall type.")
+            return {"FINISHED"}
+
         PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
         tool.Blender.update_viewport()
 
@@ -344,6 +341,7 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator):
             self.create_walls_from_polyline(context)
             context.workspace.status_text_set(text=None)
             PolylineDecorator.uninstall()
+            context.scene.BIMPolylineProperties.product_preview.clear()
             tool.Snap.clear_polyline()
             tool.Blender.update_viewport()
             return {"FINISHED"}
@@ -352,14 +350,13 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator):
 
         self.handle_inserting_polyline(context, event)
 
-        if event.type in {"LEFTMOUSE", "RIGHTMOUSE", "ENTER", "NUMPAD_ENTER"}:
-            tool.Polyline.offset_polyline(context)
-            # tool.Polyline.create_wall_preview(context)
-            print(context.scene.BIMPolylineProperties.product_preview)
+        if event.type in {"LEFTMOUSE", "RIGHTMOUSE", "ENTER", "NUMPAD_ENTER", "BACK_SPACE"}:
+            tool.Polyline.create_wall_preview_vertices(context, self.relating_type)
 
-        result = self.handle_cancelation(context, event)
-        if result is not None:
-            return result
+        cancel = self.handle_cancelation(context, event)
+        if cancel is not None:
+            context.scene.BIMPolylineProperties.product_preview.clear()
+            return cancel
 
         return {"RUNNING_MODAL"}
 
