@@ -319,8 +319,8 @@ class PolylineDecorator:
         handler = cls()
         cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_measurements, (context,), "WINDOW", "POST_PIXEL"))
         cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_input_ui, (context,), "WINDOW", "POST_PIXEL"))
-        cls.handlers.append(SpaceView3D.draw_handler_add(handler, (context,), "WINDOW", "POST_VIEW"))
         cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_product_preview, (context,), "WINDOW", "POST_VIEW"))
+        cls.handlers.append(SpaceView3D.draw_handler_add(handler, (context,), "WINDOW", "POST_VIEW"))
         cls.is_installed = True
 
 
@@ -368,6 +368,7 @@ class PolylineDecorator:
         batch.draw(shader)
 
     def draw_product_preview(self, context):
+        decorator_color = self.addon_prefs.decorations_colour
         polyline = context.scene.BIMPolylineProperties.polyline_point
         prop = context.scene.BIMPolylineProperties.product_preview
         points = []
@@ -385,8 +386,10 @@ class PolylineDecorator:
         edges.extend(upper_loop)
         connections = [[i, j] for i, j in zip(range(n), range(n, n*2))]
         edges.extend(connections)
+
+        self.line_shader.uniform_float("lineWidth", 0.5)
         if len(points) > 1:
-            self.draw_batch("LINES", points, (0.0, 0.0, 0.0, 1.0), edges)
+            self.draw_batch("LINES", points, decorator_color, edges)
             
         
     def draw_input_ui(self, context):
@@ -470,6 +473,12 @@ class PolylineDecorator:
         decorator_color_error = self.addon_prefs.decorator_color_error
         decorator_color_unselected = self.addon_prefs.decorator_color_unselected
         decorator_color_background = self.addon_prefs.decorator_color_background
+        theme = context.preferences.themes.items()[0][1]
+        decorator_color_vertex_selected = (*theme.view_3d.vertex_select, 1) #unwrap color values and adds alpha=1
+        decorator_color_x_axis = (*theme.user_interface.axis_x, 1)
+        decorator_color_y_axis = (*theme.user_interface.axis_y, 1)
+        decorator_color_z_axis = (*theme.user_interface.axis_z, 1)
+
 
         gpu.state.blend_set("ALPHA")
         self.line_shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
@@ -516,8 +525,22 @@ class PolylineDecorator:
 
         # Line for angle axis snap
         if snap_prop.snap_type == "Axis":
+            axis_color = decorator_color
+            if (math.isclose(self.axis_start.y, self.axis_end.y, rel_tol=0.001)
+                and math.isclose(self.axis_start.z, self.axis_end.z, rel_tol=0.001)
+                ):
+                axis_color = decorator_color_x_axis
+            if (math.isclose(self.axis_start.x, self.axis_end.x, rel_tol=0.001)
+                and math.isclose(self.axis_start.z, self.axis_end.z, rel_tol=0.001)
+                ):
+                axis_color = decorator_color_y_axis
+            if (math.isclose(self.axis_start.x, self.axis_end.x, rel_tol=0.001)
+                and math.isclose(self.axis_start.y, self.axis_end.y, rel_tol=0.001)
+                ):
+                axis_color = decorator_color_z_axis
+                
             self.line_shader.uniform_float("lineWidth", 0.75)
-            self.draw_batch("LINES", [self.axis_start, self.axis_end], decorator_color_unselected, [(0, 1)])
+            self.draw_batch("LINES", [self.axis_start, self.axis_end], axis_color, [(0, 1)])
 
         # try:
         #     self.draw_batch("TRIS", self.axis_rectangle, (1, 1, 1, 0.1), [(0, 1, 3), (0, 2, 3)])
@@ -534,25 +557,25 @@ class PolylineDecorator:
 
         # Mouse points
         if snap_prop.snap_type in ["Face", "Plane"]:
-            self.draw_batch("POINTS", mouse_point, decorator_color_unselected)
+            self.draw_batch("POINTS", mouse_point, decorator_color)
         else:
-            self.draw_batch("POINTS", mouse_point, (1.0, 0.6, 0.0, 1.0))
+            self.draw_batch("POINTS", mouse_point, decorator_color_vertex_selected)
 
         if ref_point:
-            self.draw_batch("POINTS", ref_point, (1.0, 0.6, 0.0, 1.0))
+            self.draw_batch("POINTS", ref_point, decorator_color_vertex_selected)
 
         # Line between last polyline point and mouse
         edges = [[0, 1]]
         if polyline_points:
             if snap_prop.snap_type != "Plane" and projection_point:
-                self.draw_batch("LINES", [polyline_points[-1]] + projection_point, decorator_color_unselected, edges)
+                self.draw_batch("LINES", [polyline_points[-1]] + projection_point, decorator_color, edges)
             else:
-                self.draw_batch("LINES", [polyline_points[-1]] + mouse_point, decorator_color_unselected, edges)
+                self.draw_batch("LINES", [polyline_points[-1]] + mouse_point, decorator_color, edges)
 
         # Draw polyline with selected points
         self.line_shader.uniform_float("lineWidth", 2.0)
-        self.draw_batch("POINTS", polyline_points, decorator_color_selected)
+        self.draw_batch("POINTS", polyline_points, decorator_color_special)
         if len(polyline_points) > 1:
-            self.draw_batch("LINES", polyline_points, decorator_color_selected, polyline_edges)
+            self.draw_batch("LINES", polyline_points, decorator_color_special, polyline_edges)
 
 
