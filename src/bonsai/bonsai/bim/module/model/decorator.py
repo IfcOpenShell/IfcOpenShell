@@ -432,6 +432,19 @@ class PolylineDecorator:
             blf.position(self.font_id, mouse_pos[0] + offset, mouse_pos[1] - (new_line * i), 0)
             blf.draw(self.font_id, field_name + formatted_value)
 
+    def draw_text_background(self, context, coords_dim, text_dim):
+        padding = 5
+        theme = context.preferences.themes.items()[0][1]
+        color = (*theme.user_interface.wcol_menu_back.inner[:3], 0.5) #unwrap color values and adds alpha
+        top_left = (coords_dim[0]- padding, coords_dim[1] + text_dim[1] + padding)
+        bottom_left = (coords_dim[0] - padding, coords_dim[1] - padding)
+        top_right = (coords_dim[0] + text_dim[0] + padding, coords_dim[1] + text_dim[1] + padding)
+        bottom_right = (coords_dim[0] + text_dim[0] + padding, coords_dim[1] - padding)
+
+        verts = [top_left, bottom_left, top_right, bottom_right]
+        gpu.state.blend_set("ALPHA")
+        self.draw_batch("TRIS", verts, color, [(0, 1, 2), (1, 2, 3)])
+
     def draw_measurements(self, context):
         region = context.region
         rv3d = region.data
@@ -439,6 +452,7 @@ class PolylineDecorator:
 
         self.addon_prefs = tool.Blender.get_addon_preferences()
         self.font_id = 1
+        self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
         font_size = tool.Blender.scale_font_size(12)
         blf.size(self.font_id, font_size)
         blf.enable(self.font_id, blf.SHADOW)
@@ -455,14 +469,21 @@ class PolylineDecorator:
             formatted_value = measurement_prop[i].dim
 
             blf.position(self.font_id, coords_dim[0], coords_dim[1], 0)
-            blf.draw(self.font_id, "d: " + formatted_value)
+            text = "d: " + formatted_value
+            text_dim = blf.dimensions(self.font_id, text)
+            self.draw_text_background(context, coords_dim, text_dim)
+            blf.draw(self.font_id, text)
+
 
             if i == 1:
                 continue
             pos_angle = measurement_prop[i - 1].position
             coords_angle = view3d_utils.location_3d_to_region_2d(region, rv3d, pos_angle)
             blf.position(self.font_id, coords_angle[0], coords_angle[1], 0)
-            blf.draw(self.font_id, "a: " + measurement_prop[i].angle)
+            text = "a: " + measurement_prop[i].angle
+            text_dim = blf.dimensions(self.font_id, text)
+            self.draw_text_background(context, coords_angle, text_dim)
+            blf.draw(self.font_id, text)
 
     def __call__(self, context):
 
