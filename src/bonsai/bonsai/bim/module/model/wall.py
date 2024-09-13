@@ -325,6 +325,7 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator):
         tool.Blender.update_viewport()
 
         if event.type in {"MIDDLEMOUSE", "WHEELUPMOUSE", "WHEELDOWNMOUSE"}:
+            self.handle_mouse_move(context, event)
             return {"PASS_THROUGH"}
 
         self.handle_instructions(context)
