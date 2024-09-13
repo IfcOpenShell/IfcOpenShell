@@ -77,3 +77,7 @@ class TestUnassignRepresentation(test.bootstrap.IFC4):
         assert len(self.file.by_type("IfcShapeRepresentation")) == 1
         assert not wall.Representation
         assert len(self.file.by_type("IfcProductDefinitionShape")) == 0
+
+
+class TestUnassignRepresentationIFC2X3(test.bootstrap.IFC2X3, TestUnassignRepresentation):
+    pass
