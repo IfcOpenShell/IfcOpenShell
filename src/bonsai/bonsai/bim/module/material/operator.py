@@ -794,11 +794,11 @@ class EnableEditingMaterialStyle(bpy.types.Operator):
 
         # set already applied style and context if possible
         if not 0 <= props.active_material_index < len(props.materials):
-            return
+            return {"FINISHED"}
 
         material = tool.Ifc.get().by_id(props.materials[props.active_material_index].ifc_definition_id)
         if not material.HasRepresentation:
-            return
+            return {"FINISHED"}
 
         rep = material.HasRepresentation[0].Representations[0]  # IfcStyledRepresentation
         props.contexts = str(rep.ContextOfItems.id())
