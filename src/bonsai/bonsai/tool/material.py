@@ -413,4 +413,9 @@ class Material(bonsai.core.tool.Material):
                 continue
             ifcopenshell.api.material.remove_material(ifc_file, material)
             i += 1
+
+        if i == 0:
+            return 0
+
+        i += cls.purge_unused_materials()
         return i
