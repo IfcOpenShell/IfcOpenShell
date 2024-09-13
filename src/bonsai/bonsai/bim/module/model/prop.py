@@ -99,25 +99,6 @@ def is_object_array_applicable(self, obj):
     return ifcopenshell.util.element.get_pset(element, "BBIM_Array")
 
 
-class SnapMousePoint(PropertyGroup):
-    x: bpy.props.FloatProperty(name="X")
-    y: bpy.props.FloatProperty(name="Y")
-    z: bpy.props.FloatProperty(name="Z")
-    snap_type: bpy.props.StringProperty(name="Snap Type")
-
-
-class PolylinePoint(PropertyGroup):
-    x: bpy.props.FloatProperty(name="X")
-    y: bpy.props.FloatProperty(name="Y")
-    z: bpy.props.FloatProperty(name="Z")
-
-
-class PolylineMeasurement(PropertyGroup):
-    dim: bpy.props.StringProperty(name="Dimension")
-    angle: bpy.props.StringProperty(name="Angle")
-    position: bpy.props.FloatVectorProperty(name="Decorator Position", size=3)
-
-
 class BIMModelProperties(PropertyGroup):
     ifc_class: bpy.props.EnumProperty(items=get_ifc_class, name="Construction Class", update=update_ifc_class)
     relating_type_id: bpy.props.EnumProperty(
@@ -209,10 +190,7 @@ class BIMModelProperties(PropertyGroup):
     type_predefined_type: bpy.props.EnumProperty(items=get_type_predefined_type, name="Predefined Type", default=None)
     type_name: bpy.props.StringProperty(name="Name", default="TYPEX")
     boundary_class: bpy.props.EnumProperty(items=get_boundary_class, name="Boundary Class")
-    snap_mouse_point: bpy.props.CollectionProperty(type=SnapMousePoint)
-    snap_mouse_ref: bpy.props.CollectionProperty(type=SnapMousePoint)
-    polyline_point: bpy.props.CollectionProperty(type=PolylinePoint)
-    polyline_measurement: bpy.props.CollectionProperty(type=PolylineMeasurement)
+
 
 
 class BIMArrayProperties(PropertyGroup):
@@ -796,3 +774,30 @@ class BIMRoofProperties(PropertyGroup):
 
     def update_percentage(self):
         self.percentage = math.tan(self.angle) * 100
+
+
+class SnapMousePoint(PropertyGroup):
+    x: bpy.props.FloatProperty(name="X")
+    y: bpy.props.FloatProperty(name="Y")
+    z: bpy.props.FloatProperty(name="Z")
+    snap_type: bpy.props.StringProperty(name="Snap Type")
+
+
+class PolylinePoint(PropertyGroup):
+    x: bpy.props.FloatProperty(name="X")
+    y: bpy.props.FloatProperty(name="Y")
+    z: bpy.props.FloatProperty(name="Z")
+
+
+class PolylineMeasurement(PropertyGroup):
+    dim: bpy.props.StringProperty(name="Dimension")
+    angle: bpy.props.StringProperty(name="Angle")
+    position: bpy.props.FloatVectorProperty(name="Decorator Position", size=3)
+
+
+class BIMPolylineProperties(PropertyGroup):
+    snap_mouse_point: bpy.props.CollectionProperty(type=SnapMousePoint)
+    snap_mouse_ref: bpy.props.CollectionProperty(type=SnapMousePoint)
+    polyline_point: bpy.props.CollectionProperty(type=PolylinePoint)
+    polyline_measurement: bpy.props.CollectionProperty(type=PolylineMeasurement)
+    product_preview: bpy.props.CollectionProperty(type=PolylinePoint)

@@ -17,6 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import bmesh
 import bonsai.core.tool
 import bonsai.tool as tool
 from bonsai.bim.module.drawing.helper import format_distance
@@ -117,14 +118,14 @@ class Polyline(bonsai.core.tool.Polyline):
     def calculate_distance_and_angle(cls, context, input_ui, tool_state):
 
         try:
-            polyline_data = context.scene.BIMModelProperties.polyline_point
+            polyline_data = context.scene.BIMPolylineProperties.polyline_point
             default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
             last_point_data = polyline_data[len(polyline_data) - 1]
         except:
             default_container_elevation = 0
             last_point_data = None
 
-        snap_prop = context.scene.BIMModelProperties.snap_mouse_point[0]
+        snap_prop = context.scene.BIMPolylineProperties.snap_mouse_point[0]
 
         if last_point_data:
             last_point = Vector((last_point_data.x, last_point_data.y, last_point_data.z))
@@ -181,7 +182,7 @@ class Polyline(bonsai.core.tool.Polyline):
     @classmethod
     def calculate_area(cls, context, input_ui):
         try:
-            polyline_data = context.scene.BIMModelProperties.polyline_point
+            polyline_data = context.scene.BIMPolylineProperties.polyline_point
         except:
             return input_ui
 
@@ -224,7 +225,7 @@ class Polyline(bonsai.core.tool.Polyline):
     @classmethod
     def calculate_x_y_and_z(cls, context, input_ui, tool_state):
         try:
-            polyline_data = context.scene.BIMModelProperties.polyline_point
+            polyline_data = context.scene.BIMPolylineProperties.polyline_point
             default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
             last_point_data = polyline_data[len(polyline_data) - 1]
             last_point = Vector((last_point_data.x, last_point_data.y, last_point_data.z))
@@ -232,7 +233,7 @@ class Polyline(bonsai.core.tool.Polyline):
             default_container_elevation = 0
             last_point = Vector((0, 0, 0))
 
-        snap_prop = context.scene.BIMModelProperties.snap_mouse_point[0]
+        snap_prop = context.scene.BIMPolylineProperties.snap_mouse_point[0]
         snap_vector = Vector((snap_prop.x, snap_prop.y, snap_prop.z))
 
         if tool_state.use_default_container:
@@ -277,6 +278,58 @@ class Polyline(bonsai.core.tool.Polyline):
 
         return
 
+    @classmethod
+    def offset_polyline(cls, context):
+        vertices = []
+        polyline_data = context.scene.BIMPolylineProperties.polyline_point
+        if len(polyline_data) < 2:
+            return
+        for point in polyline_data:
+            vertices.append(
+                Vector((point.x, point.y, point.z))
+            )
+        bm = bmesh.new()
+
+        new_verts = [bm.verts.new(v) for v in vertices]
+        new_edges = [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
+
+        # bm.verts.ensure_lookup_table()
+        # bm.edges.ensure_lookup_table()
+        bm.verts.index_update()
+        bm.edges.index_update()
+        print("LEN", len(vertices), len(bm.verts), len(polyline_data))
+
+
+        new_verts = tool.Cad.offset_edges(bm, .15) # TODO Change to Wall Thickness
+        print("NV", new_verts)
+        if new_verts is not None:
+            context.scene.BIMPolylineProperties.product_preview.clear()
+            for v in vertices:
+                prop = context.scene.BIMPolylineProperties.product_preview.add()
+                prop.x = v.x
+                prop.y = v.y
+                prop.z = v.z
+
+            for v in new_verts[::-1]:
+                prop = context.scene.BIMPolylineProperties.product_preview.add()
+                prop.x = v.co.x
+                prop.y = v.co.y
+                prop.z = v.co.z
+
+            for v in vertices:
+                prop = context.scene.BIMPolylineProperties.product_preview.add()
+                prop.x = v.x
+                prop.y = v.y
+                prop.z = 3 # TODO Change to Wall Height
+
+            for v in new_verts[::-1]:
+                prop = context.scene.BIMPolylineProperties.product_preview.add()
+                prop.x = v.co.x
+                prop.y = v.co.y
+                prop.z = 3 # TODO Change to Wall Height
+        # return new_verts
+        
+        
     @classmethod
     def validate_input(cls, input_number, input_type):
 

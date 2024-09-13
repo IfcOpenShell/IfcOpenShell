@@ -319,6 +319,7 @@ class PolylineDecorator:
         cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_measurements, (context,), "WINDOW", "POST_PIXEL"))
         cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_input_ui, (context,), "WINDOW", "POST_PIXEL"))
         cls.handlers.append(SpaceView3D.draw_handler_add(handler, (context,), "WINDOW", "POST_VIEW"))
+        cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_product_preview, (context,), "WINDOW", "POST_VIEW"))
         cls.is_installed = True
 
 
@@ -365,6 +366,31 @@ class PolylineDecorator:
         shader.uniform_float("color", color)
         batch.draw(shader)
 
+    def draw_product_preview(self, context):
+        polyline = context.scene.BIMPolylineProperties.polyline_point
+        prop = context.scene.BIMPolylineProperties.product_preview
+        points = []
+        edges = []
+        for i in range(len(prop)):
+            print(prop[i].x, prop[i].y, prop[i].z)
+            points.append(Vector((
+                                     prop[i].x,
+                                     prop[i].y,
+                                     prop[i].z
+                                 )))
+        n = len(points) // 2
+        bottom_loop = [[i, (i + 1) % (n)] for i in range(n)]
+        edges.extend(bottom_loop)
+        upper_loop = [[i + n for i in edges] for edges in bottom_loop]
+        edges.extend(upper_loop)
+        print(bottom_loop)
+        print(upper_loop)
+        connections = [[i, j] for i, j in zip(range(n), range(n, n*2))]
+        edges.extend(connections)
+        if len(points) > 1:
+            self.draw_batch("LINES", points, (0.0, 0.0, 0.0, 1.0), edges)
+            
+        
     def draw_input_ui(self, context):
         texts = {
             "D": "Distance: ",
@@ -405,7 +431,7 @@ class PolylineDecorator:
     def draw_measurements(self, context):
         region = context.region
         rv3d = region.data
-        measurement_prop = context.scene.BIMModelProperties.polyline_measurement
+        measurement_prop = context.scene.BIMPolylineProperties.polyline_measurement
 
         self.addon_prefs = tool.Blender.get_addon_preferences()
         self.font_id = 1
@@ -454,12 +480,12 @@ class PolylineDecorator:
         self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
         gpu.state.point_size_set(10)
 
-        snap_prop = context.scene.BIMModelProperties.snap_mouse_point[0]
+        snap_prop = context.scene.BIMPolylineProperties.snap_mouse_point[0]
         # Point related to the mouse
         mouse_point = [Vector((snap_prop.x, snap_prop.y, snap_prop.z))]
 
         try:
-            snap_ref = context.scene.BIMModelProperties.snap_mouse_ref[0]
+            snap_ref = context.scene.BIMPolylineProperties.snap_mouse_ref[0]
             ref_point = [Vector((snap_ref.x, snap_ref.y, snap_ref.z))]
         except:
             ref_point = None
@@ -477,7 +503,7 @@ class PolylineDecorator:
                 self.draw_batch("LINES", mouse_point + projection_point, (1.0, 0.6, 0.0, 1.0), edges)
 
         # Create polyline with selected points
-        polyline_data = context.scene.BIMModelProperties.polyline_point
+        polyline_data = context.scene.BIMPolylineProperties.polyline_point
         polyline_points = []
         polyline_edges = []
         for point_prop in polyline_data:
@@ -524,6 +550,9 @@ class PolylineDecorator:
 
         # Draw polyline with selected points
         self.line_shader.uniform_float("lineWidth", 2.0)
+        print("PP", polyline_points)
         self.draw_batch("POINTS", polyline_points, decorator_color_selected)
         if len(polyline_points) > 1:
             self.draw_batch("LINES", polyline_points, decorator_color_selected, polyline_edges)
+
+

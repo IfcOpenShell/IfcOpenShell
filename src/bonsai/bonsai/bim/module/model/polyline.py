@@ -266,6 +266,7 @@ class PolylineOperator:
             is_valid = self.recalculate_inputs(context)
             if is_valid:
                 tool.Snap.insert_polyline_point(self.input_ui)
+
             self.tool_state.mode = "Mouse"
             self.tool_state.is_input_on = False
             self.input_type = None
