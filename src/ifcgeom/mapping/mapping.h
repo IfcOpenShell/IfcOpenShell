@@ -30,6 +30,8 @@ namespace geometry {
 
 		const IfcParse::declaration* placement_rel_to_type_;
 		const IfcUtil::IfcBaseEntity* placement_rel_to_instance_;
+
+		Eigen::Matrix4d offset_and_rotation_ = Eigen::Matrix4d::Identity();
 		
 		void initialize_units_();
 		void addRepresentationsFromContextIds(IfcSchema::IfcRepresentation::list::ptr&);

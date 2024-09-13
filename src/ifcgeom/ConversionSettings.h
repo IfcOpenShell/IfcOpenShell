@@ -24,6 +24,7 @@ namespace po = boost::program_options;
 namespace std {
 	istream& operator>>(istream& in, set<int>& ints);
 	istream& operator>>(istream& in, set<string>& ints);
+	istream& operator>>(istream& in, vector<double>& vs);
 }
 #endif
 
@@ -43,7 +44,10 @@ namespace ifcopenshell {
 			struct SettingBase {
 				typedef T base_type;
 
-				boost::optional<T> value;
+				// boost program options does not seem to handle optional<vector> types, so in case
+				// of vector settings we need to strip away the optional and detect argument presence
+				// with !vector::empty()
+				std::conditional_t<std::is_same_v<T, std::vector<double>>, T, boost::optional<T>> value;
 
 				SettingBase() {}
 
@@ -59,24 +63,34 @@ namespace ifcopenshell {
 						// @todo bool_switch doesn't work with optional unfortunately...
 						value.emplace();
 						desc.add_options()(Derived::name, apply_default(po::bool_switch(&*value)), Derived::description);
+					} else if constexpr (std::is_same_v<T, std::vector<double>>) {
+						desc.add_options()(Derived::name, apply_default(po::value(&value)->multitoken()), Derived::description);
 					} else {
 						desc.add_options()(Derived::name, apply_default(po::value(&value)), Derived::description);
 					}
 				}
 
 				T get() const {
-					if (value) {
-						return value.get();
+					if constexpr (std::is_same_v<T, std::vector<double>>) {
+						return value;
+					} else {
+						if (value) {
+							return value.get();
+						}
+						if constexpr (HasDefault<Derived>()) {
+							return Derived::defaultvalue;
+						}
+						throw std::runtime_error("Setting not set");
 					}
-					if constexpr (HasDefault<Derived>()) {
-						return Derived::defaultvalue;
-					}
-					throw std::runtime_error("Setting not set");
 				}
 
 				bool has() const {
-					// @todo this is not reliable, better use vmap[...].defaulted()
-					return !!value;
+					if constexpr (std::is_same_v<T, std::vector<double>>) {
+						return !value.empty();
+					} else {
+						// @todo this is not reliable, better use vmap[...].defaulted()
+						return !!value;
+					}
 				}
 			};
 
@@ -354,12 +368,22 @@ namespace ifcopenshell {
                static constexpr const char* const description = "Indicates the parameter value for defining step size when evaluating piecewise curves.";
                static constexpr double defaultvalue = 0.5; // ceiling of this value is used when PiecewiseStepMethod is MinSteps
          };
+
+			struct ModelOffset : public SettingBase<ModelOffset, std::vector<double>> {
+				static constexpr const char* const name = "model-offset";
+				static constexpr const char* const description = "Applies an arbitrary offset of form 'x,y,z' to all placements.";
+			};
+
+			struct ModelRotation : public SettingBase<ModelRotation, std::vector<double>> {
+				static constexpr const char* const name = "model-rotation";
+				static constexpr const char* const description = "Applies an arbitrary quaternion rotation of form 'x,y,z,w' to all placements.";
+			};
 		}
 
 		template <typename settings_t>
 		class IFC_GEOM_API SettingsContainer {
 		public:
-         typedef boost::variant<bool, int, double, std::string, std::set<int>, std::set<std::string>, IteratorOutputOptions, PiecewiseStepMethod, OutputDimensionalityTypes> value_variant_t;
+         typedef boost::variant<bool, int, double, std::string, std::set<int>, std::set<std::string>, std::vector<double>, IteratorOutputOptions, PiecewiseStepMethod, OutputDimensionalityTypes> value_variant_t;
 		private:
 			settings_t settings;
 
@@ -446,7 +470,7 @@ namespace ifcopenshell {
 		};
 
 		class IFC_GEOM_API Settings : public SettingsContainer<
-                                          std::tuple<MesherLinearDeflection, MesherAngularDeflection, ReorientShells, LengthUnit, PlaneUnit, Precision, OutputDimensionality, LayersetFirst, DisableBooleanResult, NoWireIntersectionCheck, NoWireIntersectionTolerance, PrecisionFactor, DebugBooleanOperations, BooleanAttempt2d, WeldVertices, UseWorldCoords, UseMaterialNames, ConvertBackUnits, ContextIds, ContextTypes, ContextIdentifiers, IteratorOutput, DisableOpeningSubtractions, ApplyDefaultMaterials, DontEmitNormals, GenerateUvs, ApplyLayerSets, UseElementHierarchy, ValidateQuantities, EdgeArrows, BuildingLocalPlacement, SiteLocalPlacement, ForceSpaceTransparency, CircleSegments, KeepBoundingBoxes, PiecewiseStepType, PiecewiseStepParam, NoParallelMapping>
+                                          std::tuple<MesherLinearDeflection, MesherAngularDeflection, ReorientShells, LengthUnit, PlaneUnit, Precision, OutputDimensionality, LayersetFirst, DisableBooleanResult, NoWireIntersectionCheck, NoWireIntersectionTolerance, PrecisionFactor, DebugBooleanOperations, BooleanAttempt2d, WeldVertices, UseWorldCoords, UseMaterialNames, ConvertBackUnits, ContextIds, ContextTypes, ContextIdentifiers, IteratorOutput, DisableOpeningSubtractions, ApplyDefaultMaterials, DontEmitNormals, GenerateUvs, ApplyLayerSets, UseElementHierarchy, ValidateQuantities, EdgeArrows, BuildingLocalPlacement, SiteLocalPlacement, ForceSpaceTransparency, CircleSegments, KeepBoundingBoxes, PiecewiseStepType, PiecewiseStepParam, NoParallelMapping, ModelOffset, ModelRotation>
 		>
 		{};
 }
