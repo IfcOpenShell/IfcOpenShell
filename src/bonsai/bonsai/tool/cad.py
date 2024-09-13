@@ -640,15 +640,12 @@ class Cad:
 
         verts = set()
         [verts.update(e.verts) for e in edges]
-        print("V", verts)
-        print("E", edges)
 
         rotation = Matrix.Rotation(math.pi / 2, 2, "Z")
         rotation_i = Matrix.Rotation(-math.pi / 2, 2, "Z")
 
         # Create loops from edges
         loop_edges = set(edges)
-        print("L1", loop_edges)
         loops = []
         while loop_edges:
             edge = loop_edges.pop()
@@ -668,7 +665,6 @@ class Cad:
                         has_found_connected_edge = True
             loops.append(loop)
 
-        print("L2", loops)
         for loop in loops:
             all_verts = {v.index for e in loop for v in e.verts}
             possible_v1s = []
@@ -707,7 +703,6 @@ class Cad:
 
             v1 = start
 
-            print("V1", v1)
             new_verts = []
             processed_verts = set()
             # [v0] --> v1 --> v2
@@ -742,7 +737,6 @@ class Cad:
 
                 normals = []
                 v1co = (wp.inverted() @ mw @ v1.co).to_2d()
-                print("V1CO", v1co)
                 if v2:
                     v2co = (wp.inverted() @ mw @ v2.co).to_2d()
                     direction = (v2co - v1co).normalized()
@@ -774,11 +768,6 @@ class Cad:
                     break
 
                 v1 = v2
-            print("INSIDE1", new_verts)
 
-        print("INSIDE2", new_verts)
         return new_verts
-            # [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
-            # if is_closed:
-            #     bm.edges.new((new_verts[len(new_verts) - 1], new_verts[0]))
 

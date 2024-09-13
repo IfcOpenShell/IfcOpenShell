@@ -23,8 +23,8 @@ import bonsai.tool as tool
 from bonsai.bim.module.drawing.helper import format_distance
 from dataclasses import dataclass
 from lark import Lark, Transformer
-from math import radians
-from mathutils import Vector
+from math import degrees, radians, sin, cos
+from mathutils import Vector 
 from typing import Optional
 
 
@@ -279,7 +279,7 @@ class Polyline(bonsai.core.tool.Polyline):
         return
 
     @classmethod
-    def offset_polyline(cls, context):
+    def create_wall_preview_vertices(cls, context, relating_type):
         vertices = []
         polyline_data = context.scene.BIMPolylineProperties.polyline_point
         if len(polyline_data) < 2:
@@ -297,37 +297,49 @@ class Polyline(bonsai.core.tool.Polyline):
         # bm.edges.ensure_lookup_table()
         bm.verts.index_update()
         bm.edges.index_update()
-        print("LEN", len(vertices), len(bm.verts), len(polyline_data))
 
 
-        new_verts = tool.Cad.offset_edges(bm, .15) # TODO Change to Wall Thickness
-        print("NV", new_verts)
+        # Get thickness from object type
+        layers = tool.Model.get_material_layer_parameters(relating_type)
+        if not layers["thickness"]:
+            return
+        thickness = layers['thickness']
+
+        height = float(context.scene.BIMModelProperties.extrusion_depth)
+        rl = float(context.scene.BIMModelProperties.rl1)
+        x_angle = float(context.scene.BIMModelProperties.x_angle)
+        height = height * (1 / cos(x_angle))
+        direction = Vector((0.0, sin(x_angle), cos(x_angle)))
+        scaled_direction = direction * height
+
+        new_verts = tool.Cad.offset_edges(bm, thickness)
         if new_verts is not None:
             context.scene.BIMPolylineProperties.product_preview.clear()
             for v in vertices:
                 prop = context.scene.BIMPolylineProperties.product_preview.add()
                 prop.x = v.x
                 prop.y = v.y
-                prop.z = v.z
+                prop.z = v.z + rl
 
             for v in new_verts[::-1]:
                 prop = context.scene.BIMPolylineProperties.product_preview.add()
                 prop.x = v.co.x
                 prop.y = v.co.y
-                prop.z = v.co.z
+                prop.z = v.co.z + rl
 
-            for v in vertices:
+            for i, v in enumerate(vertices):
+                new_v = v + scaled_direction
                 prop = context.scene.BIMPolylineProperties.product_preview.add()
-                prop.x = v.x
-                prop.y = v.y
-                prop.z = 3 # TODO Change to Wall Height
+                prop.x = new_v.x
+                prop.y = new_v.y
+                prop.z = new_v.z + rl
 
             for v in new_verts[::-1]:
+                new_v = Vector((v.co.x, v.co.y, v.co.z)) + scaled_direction
                 prop = context.scene.BIMPolylineProperties.product_preview.add()
-                prop.x = v.co.x
-                prop.y = v.co.y
-                prop.z = 3 # TODO Change to Wall Height
-        # return new_verts
+                prop.x = new_v.x
+                prop.y = new_v.y
+                prop.z = new_v.z + rl
         
         
     @classmethod
