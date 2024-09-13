@@ -331,6 +331,14 @@ class PolylineOperator:
                 tool.Snap.remove_last_polyline_point()
                 tool.Blender.update_viewport()
 
+
+    def modal(self, context, event):
+        PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
+        tool.Blender.update_viewport()
+        if event.type in {"MIDDLEMOUSE", "WHEELUPMOUSE", "WHEELDOWNMOUSE"}:
+            return {"PASS_THROUGH"}
+
+
     def invoke(self, context, event):
         PolylineDecorator.install(context)
         tool.Snap.clear_snapping_point()
@@ -347,7 +355,5 @@ class PolylineOperator:
         self.snapping_points = tool.Snap.select_snapping_points(context, event, self.tool_state, detected_snaps)
         tool.Polyline.calculate_distance_and_angle(context, self.input_ui, self.tool_state)
 
-        PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
         tool.Blender.update_viewport()
         context.window_manager.modal_handler_add(self)
-        # return {"RUNNING_MODAL"}

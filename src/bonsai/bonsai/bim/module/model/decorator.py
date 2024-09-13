@@ -302,7 +302,6 @@ class PolylineDecorator:
     is_installed = False
     handlers = []
     event = None
-
     input_type = None
     input_ui = None
     angle_snap_mat = None
@@ -310,6 +309,7 @@ class PolylineDecorator:
     use_default_container = False
     instructions = None
     snap_info = None
+
 
     @classmethod
     def install(cls, context):
@@ -321,6 +321,7 @@ class PolylineDecorator:
         cls.handlers.append(SpaceView3D.draw_handler_add(handler, (context,), "WINDOW", "POST_VIEW"))
         cls.is_installed = True
 
+
     @classmethod
     def uninstall(cls):
         for handler in cls.handlers:
@@ -330,24 +331,29 @@ class PolylineDecorator:
                 pass
         cls.is_installed = False
 
+
     @classmethod
     def update(cls, event, tool_state, input_ui, snapping_point):
         cls.event = event
         cls.tool_state = tool_state
         cls.input_ui = input_ui
 
+
     @classmethod
     def set_input_ui(cls, input_ui):
         cls.input_ui = input_ui
+
 
     @classmethod
     def set_angle_axis_line(cls, start, end):
         cls.axis_start = start
         cls.axis_end = end
 
+
     # @classmethod
     # def set_axis_rectangle(cls, corners):
     #     cls.axis_rectangle = [*corners]
+
 
     @classmethod
     def set_tool_state(cls, tool_state):
