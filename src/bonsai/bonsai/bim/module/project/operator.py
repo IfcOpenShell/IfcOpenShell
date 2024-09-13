@@ -645,9 +645,25 @@ class LoadProject(bpy.types.Operator, IFCFileSelector):
     bl_description = "Load an existing IFC project"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH", options={"SKIP_SAVE"})
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml;*.ifcsqlite", options={"HIDDEN"})
-    is_advanced: bpy.props.BoolProperty(name="Enable Advanced Mode", default=False)
+    is_advanced: bpy.props.BoolProperty(
+        name="Enable Advanced Mode",
+        description="Load IFC file with advanced settings. Checking this option will skip loading IFC file and will open advanced load settings",
+        default=False,
+    )
     use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
-    should_start_fresh_session: bpy.props.BoolProperty(name="Should Start Fresh Session", default=True)
+    should_start_fresh_session: bpy.props.BoolProperty(
+        name="Should Start Fresh Session",
+        description="Clear current Blender session before loading IFC",
+        default=True,
+    )
+    import_without_ifc_data: bpy.props.BoolProperty(
+        name="Import Without IFC Data",
+        description=(
+            "Import IFC objects as Blender objects without any IFC metadata and authoring capabilities."
+            "Can be useful for work with purely IFC geometry"
+        ),
+        default=False,
+    )
     use_detailed_tooltip: bpy.props.BoolProperty(default=False, options={"HIDDEN"})
 
     @classmethod
@@ -721,6 +737,10 @@ class LoadProject(bpy.types.Operator, IFCFileSelector):
                 for obj in bpy.data.objects:
                     bpy.data.objects.remove(obj)
 
+            # To be safe from any accidental IFC data in the previous session.
+            if not self.is_advanced and not self.should_start_fresh_session:
+                bpy.ops.bim.convert_to_blender()
+
             filepath = Path(self.get_filepath())
             context.scene.BIMProperties.ifc_file = filepath.as_posix()
             context.scene.BIMProjectProperties.is_loading = True
@@ -730,7 +750,7 @@ class LoadProject(bpy.types.Operator, IFCFileSelector):
 
             if not self.is_advanced:
                 bpy.ops.bim.load_project_elements()
-                if not self.should_start_fresh_session:
+                if self.import_without_ifc_data:
                     bpy.ops.bim.convert_to_blender()
         except:
             bonsai.last_error = traceback.format_exc()
@@ -745,6 +765,8 @@ class LoadProject(bpy.types.Operator, IFCFileSelector):
 
     def draw(self, context):
         self.layout.prop(self, "is_advanced")
+        self.layout.prop(self, "should_start_fresh_session")
+        self.layout.prop(self, "import_without_ifc_data")
         IFCFileSelector.draw(self, context)
 
 

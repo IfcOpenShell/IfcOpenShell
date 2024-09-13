@@ -27,6 +27,7 @@ from bonsai.bim.module.project.data import ProjectData, LinksData
 
 def file_import_menu(self, context):
     op = self.layout.operator("bim.load_project", text="IFC (Geometry Only) (.ifc/.ifczip/.ifcxml)")
+    op.import_without_ifc_data = True
     op.should_start_fresh_session = False
 
 
