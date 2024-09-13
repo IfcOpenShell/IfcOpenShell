@@ -84,6 +84,9 @@ endif
 OLD:=f5e02d1
 .PHONY: bump
 bump:
+ifndef NEW
+	$(error ERROR: 'NEW' variable is not set (should be set with new commmit hash). Example use for 'bump' command: 'make bump NEW=0123456'.)
+endif
 	cd . && $(SED) -b "s/$(OLD)/$(NEW)/" Makefile
 	cd ../ifcopenshell-python/ && $(SED) -b "s/$(OLD)/$(NEW)/" Makefile
 
