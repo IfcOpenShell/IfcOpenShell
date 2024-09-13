@@ -280,6 +280,20 @@ class Polyline(bonsai.core.tool.Polyline):
 
     @classmethod
     def create_wall_preview_vertices(cls, context, relating_type):
+        def create_bmesh_from_vertices(vertices):
+            bm = bmesh.new()
+
+            new_verts = [bm.verts.new(v) for v in base_vertices]
+            if is_closed:
+                new_edges = [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
+                new_edges.append(bm.edges.new((new_verts[-1], new_verts[0]))) # Add an edge between the last an first point to make it closed.
+            else:
+                new_edges = [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
+
+            bm.verts.index_update()
+            bm.edges.index_update()
+            return bm
+            
         # Get properties from object type
         layers = tool.Model.get_material_layer_parameters(relating_type)
         if not layers["thickness"]:
@@ -288,9 +302,7 @@ class Polyline(bonsai.core.tool.Polyline):
 
         height = float(context.scene.BIMModelProperties.extrusion_depth)
         rl = float(context.scene.BIMModelProperties.rl1)
-        print("RL", rl)
         x_angle = float(context.scene.BIMModelProperties.x_angle)
-        # height = height * (1 / cos(x_angle))
         angle_distortion = height * tan(x_angle)
 
         base_vertices = []
@@ -304,28 +316,28 @@ class Polyline(bonsai.core.tool.Polyline):
                 Vector((point.x, point.y, point.z))
             )
 
-        bm_base = bmesh.new()
+        is_closed = False
+        if (base_vertices[0].x == base_vertices[-1].x and
+            base_vertices[0].y == base_vertices[-1].y and
+            base_vertices[0].z == base_vertices[-1].z): 
+            is_closed = True
+            base_vertices.pop(-1) # Remove the last point. The edges are going to inform that the shape is closed.
 
-        new_verts = [bm_base.verts.new(v) for v in base_vertices]
-        new_edges = [bm_base.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
 
-        bm_base.verts.index_update()
-        bm_base.edges.index_update()
+        bm_base = create_bmesh_from_vertices(base_vertices)
+        bm_top = create_bmesh_from_vertices(base_vertices)
 
         offset_base_verts = tool.Cad.offset_edges(bm_base, thickness)
-
-        bm_top = bmesh.new()
-
-        new_verts = [bm_top.verts.new(v) for v in base_vertices]
-        new_edges = [bm_top.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
-
-        bm_top.verts.index_update()
-        bm_top.edges.index_update()
-
         top_vertices = tool.Cad.offset_edges(bm_top, angle_distortion)
         offset_top_verts = tool.Cad.offset_edges(bm_top, angle_distortion + thickness)
 
-        if new_verts is not None:
+        if is_closed:
+            base_vertices.append(base_vertices[0])
+            offset_base_verts.append(offset_base_verts[0])
+            top_vertices.append(top_vertices[0])
+            offset_top_verts.append(offset_top_verts[0])
+
+        if offset_base_verts is not None:
             context.scene.BIMPolylineProperties.product_preview.clear()
             for v in base_vertices:
                 prop = context.scene.BIMPolylineProperties.product_preview.add()
@@ -356,8 +368,8 @@ class Polyline(bonsai.core.tool.Polyline):
                 prop.z = new_v.z + rl + height
 
         
-        # bm_base.free()
-        # bm_top.free()
+        bm_base.free()
+        bm_top.free()
         
         
     @classmethod

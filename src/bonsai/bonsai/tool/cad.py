@@ -635,8 +635,8 @@ class Cad:
 
         edges = [e for e in bm.edges]
 
-        # if len(edges) < 1:
-        #     return self.cancel_message("NO_EDGES")
+        if len(edges) < 1:
+            return 
 
         verts = set()
         [verts.update(e.verts) for e in edges]
