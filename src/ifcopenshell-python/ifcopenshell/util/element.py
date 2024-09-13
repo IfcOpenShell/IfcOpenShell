@@ -706,18 +706,15 @@ def get_styles(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entit
 # since we have entity_instance.file, so we can deprecate it.
 def get_elements_by_material(
     ifc_file: ifcopenshell.file, material: ifcopenshell.entity_instance
-) -> list[ifcopenshell.entity_instance]:
+) -> set[ifcopenshell.entity_instance]:
     """Retrieves the elements related to a material.
 
     This includes elements using the material as part of a material set or set
     usage.
 
     :param ifc_file: The IFC file
-    :type ifc_file: ifcopenshell.file
     :param material: The IFC Material entity
-    :type material: ifcopenshell.entity_instance
-    :return: A list of elements using the to the material
-    :rtype: list[ifcopenshell.entity_instance]
+    :return: A set of elements using the to the material
 
     Example:
 
