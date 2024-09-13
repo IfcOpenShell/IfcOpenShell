@@ -375,6 +375,9 @@ assign_matrix_access(revolve);
 	void set_(const std::string& name, const std::set<std::string>& val) {
 		return $self->set(name, val);
 	}
+	void set_(const std::string& name, const std::vector<double>& val) {
+		return $self->set(name, val);
+	}
 	ifcopenshell::geometry::Settings::value_variant_t get_(const std::string& name) {
 		return $self->get(name);
 	}
