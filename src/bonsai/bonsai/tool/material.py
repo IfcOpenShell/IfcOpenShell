@@ -407,6 +407,14 @@ class Material(bonsai.core.tool.Material):
             return True
 
         materials = ifc_file.by_type(ifc_class)
+        # Not IfcMaterialDefinition...
+        materials += ifc_file.by_type("IfcMaterialList")
+        # In IFC2X3 materials don't have a common class.
+        if is_ifc2x3:
+            materials += ifc_file.by_type("IfcMaterialLayer")
+            materials += ifc_file.by_type("IfcMaterialLayerSet")
+            materials += ifc_file.by_type("IfcMaterialLayerSetUsage")
+
         i = 0
         for material in materials:
             if ifc_file.get_total_inverses(material) != 0 and not is_safe_to_purge(material):
