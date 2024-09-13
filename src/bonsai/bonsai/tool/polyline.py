@@ -23,8 +23,8 @@ import bonsai.tool as tool
 from bonsai.bim.module.drawing.helper import format_distance
 from dataclasses import dataclass
 from lark import Lark, Transformer
-from math import degrees, radians, sin, cos
-from mathutils import Vector 
+from math import degrees, radians, sin, cos, tan
+from mathutils import Vector, Matrix
 from typing import Optional
 
 
@@ -280,27 +280,7 @@ class Polyline(bonsai.core.tool.Polyline):
 
     @classmethod
     def create_wall_preview_vertices(cls, context, relating_type):
-        vertices = []
-        polyline_data = context.scene.BIMPolylineProperties.polyline_point
-        if len(polyline_data) < 2:
-            context.scene.BIMPolylineProperties.product_preview.clear()
-            return
-        for point in polyline_data:
-            vertices.append(
-                Vector((point.x, point.y, point.z))
-            )
-        bm = bmesh.new()
-
-        new_verts = [bm.verts.new(v) for v in vertices]
-        new_edges = [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
-
-        # bm.verts.ensure_lookup_table()
-        # bm.edges.ensure_lookup_table()
-        bm.verts.index_update()
-        bm.edges.index_update()
-
-
-        # Get thickness from object type
+        # Get properties from object type
         layers = tool.Model.get_material_layer_parameters(relating_type)
         if not layers["thickness"]:
             return
@@ -308,39 +288,76 @@ class Polyline(bonsai.core.tool.Polyline):
 
         height = float(context.scene.BIMModelProperties.extrusion_depth)
         rl = float(context.scene.BIMModelProperties.rl1)
+        print("RL", rl)
         x_angle = float(context.scene.BIMModelProperties.x_angle)
-        height = height * (1 / cos(x_angle))
-        direction = Vector((0.0, sin(x_angle), cos(x_angle)))
-        scaled_direction = direction * height
+        # height = height * (1 / cos(x_angle))
+        angle_distortion = height * tan(x_angle)
 
-        new_verts = tool.Cad.offset_edges(bm, thickness)
+        base_vertices = []
+        top_vertices = []
+        polyline_data = context.scene.BIMPolylineProperties.polyline_point
+        if len(polyline_data) < 2:
+            context.scene.BIMPolylineProperties.product_preview.clear()
+            return
+        for point in polyline_data:
+            base_vertices.append(
+                Vector((point.x, point.y, point.z))
+            )
+
+        bm_base = bmesh.new()
+
+        new_verts = [bm_base.verts.new(v) for v in base_vertices]
+        new_edges = [bm_base.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
+
+        bm_base.verts.index_update()
+        bm_base.edges.index_update()
+
+        offset_base_verts = tool.Cad.offset_edges(bm_base, thickness)
+
+        bm_top = bmesh.new()
+
+        new_verts = [bm_top.verts.new(v) for v in base_vertices]
+        new_edges = [bm_top.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
+
+        bm_top.verts.index_update()
+        bm_top.edges.index_update()
+
+        top_vertices = tool.Cad.offset_edges(bm_top, angle_distortion)
+        offset_top_verts = tool.Cad.offset_edges(bm_top, angle_distortion + thickness)
+
         if new_verts is not None:
             context.scene.BIMPolylineProperties.product_preview.clear()
-            for v in vertices:
+            for v in base_vertices:
                 prop = context.scene.BIMPolylineProperties.product_preview.add()
                 prop.x = v.x
                 prop.y = v.y
                 prop.z = v.z + rl
 
-            for v in new_verts[::-1]:
-                prop = context.scene.BIMPolylineProperties.product_preview.add()
-                prop.x = v.co.x
-                prop.y = v.co.y
-                prop.z = v.co.z + rl
-
-            for i, v in enumerate(vertices):
-                new_v = v + scaled_direction
+            for v in offset_base_verts[::-1]:
+                new_v = Vector((v.co.x, v.co.y, v.co.z))
                 prop = context.scene.BIMPolylineProperties.product_preview.add()
                 prop.x = new_v.x
                 prop.y = new_v.y
                 prop.z = new_v.z + rl
 
-            for v in new_verts[::-1]:
-                new_v = Vector((v.co.x, v.co.y, v.co.z)) + scaled_direction
+            for v in top_vertices:
+                # new_v = v #+ scaled_direction
+                new_v = Vector((v.co.x, v.co.y, v.co.z))
                 prop = context.scene.BIMPolylineProperties.product_preview.add()
                 prop.x = new_v.x
                 prop.y = new_v.y
-                prop.z = new_v.z + rl
+                prop.z = new_v.z + rl + height
+
+            for v in offset_top_verts[::-1]:
+                new_v = Vector((v.co.x, v.co.y, v.co.z))# + scaled_direction
+                prop = context.scene.BIMPolylineProperties.product_preview.add()
+                prop.x = new_v.x
+                prop.y = new_v.y
+                prop.z = new_v.z + rl + height
+
+        
+        # bm_base.free()
+        # bm_top.free()
         
         
     @classmethod
