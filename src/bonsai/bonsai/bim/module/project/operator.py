@@ -2294,8 +2294,8 @@ if bpy.app.version >= (4, 1, 0):
 
 class MeasureTool(bpy.types.Operator, PolylineOperator):
     bl_idname = "bim.measure_tool"
-    bl_options = {"REGISTER", "UNDO"}
     bl_label = "Measure Tool"
+    bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
     def poll(cls, context):
@@ -2317,8 +2317,7 @@ class MeasureTool(bpy.types.Operator, PolylineOperator):
         """
 
     def modal(self, context, event):
-        if event.type in {"MIDDLEMOUSE", "WHEELUPMOUSE", "WHEELDOWNMOUSE"}:
-            return {"PASS_THROUGH"}
+        super().modal(context, event)
 
         self.handle_instructions(context)
 

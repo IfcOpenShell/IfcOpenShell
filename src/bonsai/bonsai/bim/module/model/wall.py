@@ -297,8 +297,6 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator):
     def __init__(self):
         super().__init__()
 
-    # TODO This is creating a hack in generate function from DumbWallGenerator
-    # Come up with a better solution
     def create_walls_from_polyline(self, context):
         props = context.scene.BIMModelProperties
         relating_type_id = props.relating_type_id
@@ -324,8 +322,7 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator):
                     DumbWallJoiner().join_V(wall1["obj"], wall2["obj"])
 
     def modal(self, context, event):
-        if event.type in {"MIDDLEMOUSE", "WHEELUPMOUSE", "WHEELDOWNMOUSE"}:
-            return {"PASS_THROUGH"}
+        super().modal(context, event)
 
         self.handle_instructions(context)
 
