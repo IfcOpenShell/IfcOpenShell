@@ -332,13 +332,11 @@ class PolylineOperator:
                 tool.Snap.remove_last_polyline_point()
                 tool.Blender.update_viewport()
 
-
     def modal(self, context, event):
         PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
         tool.Blender.update_viewport()
         if event.type in {"MIDDLEMOUSE", "WHEELUPMOUSE", "WHEELDOWNMOUSE"}:
             return {"PASS_THROUGH"}
-
 
     def invoke(self, context, event):
         PolylineDecorator.install(context)

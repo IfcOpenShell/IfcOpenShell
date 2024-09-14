@@ -192,7 +192,6 @@ class BIMModelProperties(PropertyGroup):
     boundary_class: bpy.props.EnumProperty(items=get_boundary_class, name="Boundary Class")
 
 
-
 class BIMArrayProperties(PropertyGroup):
     is_editing: bpy.props.IntProperty(
         default=-1, description="Currently edited array index. -1 if not in array editing mode."

@@ -629,14 +629,14 @@ class Cad:
 
     @classmethod
     def offset_edges(cls, bm, distance, mw=Matrix.Identity(4), wp=Matrix.Identity(4)):
-        
+
         bm.verts.ensure_lookup_table()
         bm.edges.ensure_lookup_table()
 
         edges = [e for e in bm.edges]
 
         if len(edges) < 1:
-            return 
+            return
 
         verts = set()
         [verts.update(e.verts) for e in edges]
@@ -770,4 +770,3 @@ class Cad:
                 v1 = v2
 
         return new_verts
-

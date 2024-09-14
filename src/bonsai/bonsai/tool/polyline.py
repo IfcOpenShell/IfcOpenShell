@@ -286,19 +286,21 @@ class Polyline(bonsai.core.tool.Polyline):
             new_verts = [bm.verts.new(v) for v in base_vertices]
             if is_closed:
                 new_edges = [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
-                new_edges.append(bm.edges.new((new_verts[-1], new_verts[0]))) # Add an edge between the last an first point to make it closed.
+                new_edges.append(
+                    bm.edges.new((new_verts[-1], new_verts[0]))
+                )  # Add an edge between the last an first point to make it closed.
             else:
                 new_edges = [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
 
             bm.verts.index_update()
             bm.edges.index_update()
             return bm
-            
+
         # Get properties from object type
         layers = tool.Model.get_material_layer_parameters(relating_type)
         if not layers["thickness"]:
             return
-        thickness = layers['thickness']
+        thickness = layers["thickness"]
 
         height = float(context.scene.BIMModelProperties.extrusion_depth)
         rl = float(context.scene.BIMModelProperties.rl1)
@@ -312,17 +314,16 @@ class Polyline(bonsai.core.tool.Polyline):
             context.scene.BIMPolylineProperties.product_preview.clear()
             return
         for point in polyline_data:
-            base_vertices.append(
-                Vector((point.x, point.y, point.z))
-            )
+            base_vertices.append(Vector((point.x, point.y, point.z)))
 
         is_closed = False
-        if (base_vertices[0].x == base_vertices[-1].x and
-            base_vertices[0].y == base_vertices[-1].y and
-            base_vertices[0].z == base_vertices[-1].z): 
+        if (
+            base_vertices[0].x == base_vertices[-1].x
+            and base_vertices[0].y == base_vertices[-1].y
+            and base_vertices[0].z == base_vertices[-1].z
+        ):
             is_closed = True
-            base_vertices.pop(-1) # Remove the last point. The edges are going to inform that the shape is closed.
-
+            base_vertices.pop(-1)  # Remove the last point. The edges are going to inform that the shape is closed.
 
         bm_base = create_bmesh_from_vertices(base_vertices)
         bm_top = create_bmesh_from_vertices(base_vertices)
@@ -361,17 +362,15 @@ class Polyline(bonsai.core.tool.Polyline):
                 prop.z = new_v.z + rl + height
 
             for v in offset_top_verts[::-1]:
-                new_v = Vector((v.co.x, v.co.y, v.co.z))# + scaled_direction
+                new_v = Vector((v.co.x, v.co.y, v.co.z))  # + scaled_direction
                 prop = context.scene.BIMPolylineProperties.product_preview.add()
                 prop.x = new_v.x
                 prop.y = new_v.y
                 prop.z = new_v.z + rl + height
 
-        
         bm_base.free()
         bm_top.free()
-        
-        
+
     @classmethod
     def validate_input(cls, input_number, input_type):
 
