@@ -100,7 +100,7 @@ class IfcGit:
     def add_file_to_repo(cls, repo: git.Repo, path_file: str) -> None:
         if os.name == "nt":
             cls.dos2unix(path_file)
-        repo.index.add(path_file)
+        repo.index.add(os.path.normpath(path_file))
         repo.index.commit(message="Added " + os.path.relpath(path_file, repo.working_dir))
         bpy.ops.ifcgit.refresh()
 
@@ -124,7 +124,7 @@ class IfcGit:
         repo = IfcGitRepo.repo
         if os.name == "nt":
             cls.dos2unix(path_file)
-        repo.index.add(path_file)
+        repo.index.add(os.path.normpath(path_file))
         repo.index.commit(message=props.commit_message)
         props.commit_message = ""
 
@@ -511,7 +511,7 @@ class IfcGit:
                         else:
                             if os.name == "nt":
                                 cls.dos2unix(path_ifc)
-                            repo.index.add(path_ifc)
+                            repo.index.add(os.path.normpath(path_ifc))
                             repo.git.commit("--no-edit")
                     except git.exc.GitError:
                         operator.report({"ERROR"}, "Unknown IFC Merge failure")
