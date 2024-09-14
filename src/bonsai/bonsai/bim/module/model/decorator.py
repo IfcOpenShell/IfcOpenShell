@@ -312,7 +312,6 @@ class PolylineDecorator:
     snap_info = None
     tool_state = None
 
-
     @classmethod
     def install(cls, context):
         if cls.is_installed:
@@ -321,10 +320,11 @@ class PolylineDecorator:
         cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_snap_point, (context,), "WINDOW", "POST_PIXEL"))
         cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_measurements, (context,), "WINDOW", "POST_PIXEL"))
         cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_input_ui, (context,), "WINDOW", "POST_PIXEL"))
-        cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_product_preview, (context,), "WINDOW", "POST_VIEW"))
+        cls.handlers.append(
+            SpaceView3D.draw_handler_add(handler.draw_product_preview, (context,), "WINDOW", "POST_VIEW")
+        )
         cls.handlers.append(SpaceView3D.draw_handler_add(handler, (context,), "WINDOW", "POST_VIEW"))
         cls.is_installed = True
-
 
     @classmethod
     def uninstall(cls):
@@ -335,29 +335,24 @@ class PolylineDecorator:
                 pass
         cls.is_installed = False
 
-
     @classmethod
     def update(cls, event, tool_state, input_ui, snapping_point):
         cls.event = event
         cls.tool_state = tool_state
         cls.input_ui = input_ui
 
-
     @classmethod
     def set_input_ui(cls, input_ui):
         cls.input_ui = input_ui
-
 
     @classmethod
     def set_angle_axis_line(cls, start, end):
         cls.axis_start = start
         cls.axis_end = end
 
-
     # @classmethod
     # def set_axis_rectangle(cls, corners):
     #     cls.axis_rectangle = [*corners]
-
 
     @classmethod
     def set_tool_state(cls, tool_state):
@@ -376,24 +371,19 @@ class PolylineDecorator:
         points = []
         edges = []
         for i in range(len(prop)):
-            points.append(Vector((
-                                     prop[i].x,
-                                     prop[i].y,
-                                     prop[i].z
-                                 )))
+            points.append(Vector((prop[i].x, prop[i].y, prop[i].z)))
         n = len(points) // 2
         bottom_loop = [[i, (i + 1) % (n)] for i in range(n)]
         edges.extend(bottom_loop)
         upper_loop = [[i + n for i in edges] for edges in bottom_loop]
         edges.extend(upper_loop)
-        connections = [[i, j] for i, j in zip(range(n), range(n, n*2))]
+        connections = [[i, j] for i, j in zip(range(n), range(n, n * 2))]
         edges.extend(connections)
 
         self.line_shader.uniform_float("lineWidth", 0.5)
         if len(points) > 1:
             self.draw_batch("LINES", points, decorator_color, edges)
-            
-        
+
     def draw_input_ui(self, context):
         texts = {
             "D": "Distance: ",
@@ -437,8 +427,8 @@ class PolylineDecorator:
     def draw_text_background(self, context, coords_dim, text_dim):
         padding = 5
         theme = context.preferences.themes.items()[0][1]
-        color = (*theme.user_interface.wcol_menu_back.inner[:3], 0.5) #unwrap color values and adds alpha
-        top_left = (coords_dim[0]- padding, coords_dim[1] + text_dim[1] + padding)
+        color = (*theme.user_interface.wcol_menu_back.inner[:3], 0.5)  # unwrap color values and adds alpha
+        top_left = (coords_dim[0] - padding, coords_dim[1] + text_dim[1] + padding)
         bottom_left = (coords_dim[0] - padding, coords_dim[1] - padding)
         top_right = (coords_dim[0] + text_dim[0] + padding, coords_dim[1] + text_dim[1] + padding)
         bottom_right = (coords_dim[0] + text_dim[0] + padding, coords_dim[1] - padding)
@@ -476,7 +466,6 @@ class PolylineDecorator:
             self.draw_text_background(context, coords_dim, text_dim)
             blf.draw(self.font_id, text)
 
-
             if i == 1:
                 continue
             pos_angle = measurement_prop[i - 1].position
@@ -494,7 +483,7 @@ class PolylineDecorator:
         self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
         self.line_shader.uniform_float("lineWidth", 1.0)
         theme = context.preferences.themes.items()[0][1]
-        decorator_color_object_active = (*theme.view_3d.object_active, 1) #unwrap color values and adds alpha=1
+        decorator_color_object_active = (*theme.view_3d.object_active, 1)  # unwrap color values and adds alpha=1
 
         region = context.region
         rv3d = region.data
@@ -521,14 +510,12 @@ class PolylineDecorator:
             p3 = (coords[0] - padding, coords[1] - padding)
             verts = [p1, p2, p3]
             edges = [[0, 1], [1, 2], [2, 0]]
-            
+
         if snap_prop.snap_type == "Face":
             draw_circle_2d(coords, decorator_color_object_active, padding)
             return
-            
 
         self.draw_batch("LINES", verts, decorator_color_object_active, edges)
-                
 
     def __call__(self, context):
 
@@ -540,11 +527,10 @@ class PolylineDecorator:
         decorator_color_unselected = self.addon_prefs.decorator_color_unselected
         decorator_color_background = self.addon_prefs.decorator_color_background
         theme = context.preferences.themes.items()[0][1]
-        decorator_color_object_active = (*theme.view_3d.object_active, 1) #unwrap color values and adds alpha=1
+        decorator_color_object_active = (*theme.view_3d.object_active, 1)  # unwrap color values and adds alpha=1
         decorator_color_x_axis = (*theme.user_interface.axis_x, 1)
         decorator_color_y_axis = (*theme.user_interface.axis_y, 1)
         decorator_color_z_axis = (*theme.user_interface.axis_z, 1)
-
 
         gpu.state.blend_set("ALPHA")
         self.line_shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
@@ -592,19 +578,19 @@ class PolylineDecorator:
         # Line for angle axis snap
         if snap_prop.snap_type == "Axis":
             axis_color = decorator_color
-            if (math.isclose(self.axis_start.y, self.axis_end.y, rel_tol=0.001)
-                and math.isclose(self.axis_start.z, self.axis_end.z, rel_tol=0.001)
-                ):
+            if math.isclose(self.axis_start.y, self.axis_end.y, rel_tol=0.001) and math.isclose(
+                self.axis_start.z, self.axis_end.z, rel_tol=0.001
+            ):
                 axis_color = decorator_color_x_axis
-            if (math.isclose(self.axis_start.x, self.axis_end.x, rel_tol=0.001)
-                and math.isclose(self.axis_start.z, self.axis_end.z, rel_tol=0.001)
-                ):
+            if math.isclose(self.axis_start.x, self.axis_end.x, rel_tol=0.001) and math.isclose(
+                self.axis_start.z, self.axis_end.z, rel_tol=0.001
+            ):
                 axis_color = decorator_color_y_axis
-            if (math.isclose(self.axis_start.x, self.axis_end.x, rel_tol=0.001)
-                and math.isclose(self.axis_start.y, self.axis_end.y, rel_tol=0.001)
-                ):
+            if math.isclose(self.axis_start.x, self.axis_end.x, rel_tol=0.001) and math.isclose(
+                self.axis_start.y, self.axis_end.y, rel_tol=0.001
+            ):
                 axis_color = decorator_color_z_axis
-                
+
             self.line_shader.uniform_float("lineWidth", 0.75)
             self.draw_batch("LINES", [self.axis_start, self.axis_end], axis_color, [(0, 1)])
 
@@ -637,11 +623,9 @@ class PolylineDecorator:
                 self.draw_batch("LINES", [polyline_points[-1]] + mouse_point, decorator_color, edges)
 
         # Draw polyline with selected points
-        print("EDGES",polyline_edges)
+        print("EDGES", polyline_edges)
         self.line_shader.uniform_float("lineWidth", 2.0)
         print("VS", polyline_points)
         self.draw_batch("POINTS", polyline_points, decorator_color_special)
         if len(polyline_points) > 1:
             self.draw_batch("LINES", polyline_points, decorator_color_special, polyline_edges)
-
-
