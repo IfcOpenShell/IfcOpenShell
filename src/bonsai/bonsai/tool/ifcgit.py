@@ -79,7 +79,7 @@ class IfcGit:
         else:
             return None
 
-        if IfcGitRepo.repo is not None and IfcGitRepo.repo.working_dir == path_dir:
+        if IfcGitRepo.repo is not None and os.path.exists(IfcGitRepo.repo.git_dir) and IfcGitRepo.repo.working_dir == path_dir:
             return IfcGitRepo.repo
 
         try:
@@ -88,9 +88,11 @@ class IfcGit:
             parentdir_path = os.path.abspath(os.path.join(path_dir, os.pardir))
             if parentdir_path == path_dir:
                 # root folder
+                IfcGitRepo.repo = None
                 return None
             return cls.repo_from_path(parentdir_path)
         except git.exc.NoSuchPathError:
+            IfcGitRepo.repo = None
             return None
         if repo:
             IfcGitRepo.repo = repo

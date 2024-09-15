@@ -154,15 +154,17 @@ class IfcGitData:
     @classmethod
     def commit(cls):
         props = bpy.context.scene.IfcGitProperties
-        if len(props.ifcgit_commits) > 0:
+        if cls.repo() and len(props.ifcgit_commits) > 0:
             item = props.ifcgit_commits[props.commit_index]
-            if cls.repo():
+            try:
                 return cls.repo().commit(rev=item.hexsha)
+            except ValueError:
+                return
 
     @classmethod
     def current_revision(cls):
         props = bpy.context.scene.IfcGitProperties
-        if len(props.ifcgit_commits) > 0:
+        if cls.repo() and cls.repo().head.is_valid() and len(props.ifcgit_commits) > 0:
             return tool.IfcGitRepo.repo.commit()
 
     @classmethod
