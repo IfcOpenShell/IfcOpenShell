@@ -79,7 +79,11 @@ class IfcGit:
         else:
             return None
 
-        if IfcGitRepo.repo is not None and os.path.exists(IfcGitRepo.repo.git_dir) and IfcGitRepo.repo.working_dir == path_dir:
+        if (
+            IfcGitRepo.repo is not None
+            and os.path.exists(IfcGitRepo.repo.git_dir)
+            and IfcGitRepo.repo.working_dir == path_dir
+        ):
             return IfcGitRepo.repo
 
         try:
