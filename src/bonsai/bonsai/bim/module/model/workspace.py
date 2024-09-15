@@ -500,7 +500,7 @@ class ModifySelectedUI:
             add_layout_hotkey_operator(row, "Edit Axis", "A_E", "", ui_context)
 
         row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
-        add_layout_hotkey_operator(row, "Show Openings", "A_O", "Toggle openings", ui_context)
+        add_layout_hotkey_operator(row, "Toggle Openings", "A_O", "Toggle openings", ui_context)
         row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
         add_layout_hotkey_operator(row, "Decomposition", "A_D", "Select decomposition", ui_context)
 
@@ -610,7 +610,7 @@ class ModifySelectedUI:
             row.label(text="", icon="BLANK1") if ui_context != "TOOL_HEADER" else row
             row.label(text="", icon="BLANK1") if ui_context != "TOOL_HEADER" else row
 
-            cls.draw_void(context,row)
+            cls.draw_void(context)
 
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             add_layout_hotkey_operator(row, "Regen", "S_G", bpy.ops.bim.regenerate_distribution_element.__doc__, ui_context)
@@ -618,7 +618,7 @@ class ModifySelectedUI:
     @classmethod
     def draw_void(cls, context):
         ui_context = str(context.region.type)
-        row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+        row = cls.layout.row(align=True)
         if len(context.selected_objects) > 1:
             row.operator("bim.add_opening", text="Apply Void", icon_value=custom_icon_previews["VOID"].icon_id)
         else:
