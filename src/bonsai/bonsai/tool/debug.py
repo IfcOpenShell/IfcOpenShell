@@ -26,6 +26,7 @@ import bonsai.core.tool
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
 from mathutils import Vector
+from typing import Iterable
 
 
 class Debug(bonsai.core.tool.Debug):
@@ -66,7 +67,7 @@ class Debug(bonsai.core.tool.Debug):
             ifcopenshell.util.element.remove_deep2(ifc_file, element)
 
     @classmethod
-    def print_unused_elements_stats(cls, requested_ifc_class: str = "", ignore_classes: tuple[str] = tuple()) -> int:
+    def print_unused_elements_stats(cls, requested_ifc_class: str = "", ignore_classes: Iterable[str] = tuple()) -> int:
         ifc_file = tool.Ifc.get()
 
         # get list of ifc classes used in model

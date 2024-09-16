@@ -53,13 +53,16 @@ Example:
     for wall in walls:
         print(wall.Name)
 """
-
+from __future__ import annotations
 import os
 import sys
 import zipfile
 import tempfile
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional, Union, TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    import ifcopenshell.express.schema_class
 
 
 if hasattr(os, "uname"):
@@ -161,20 +164,17 @@ def open(path: Union[os.PathLike, str], format: Optional[str] = None, should_str
     return file(f)
 
 
-def create_entity(type, schema="IFC4", *args, **kwargs):
+def create_entity(type: str, schema: str = "IFC4", *args: Any, **kwargs: Any) -> entity_instance:
     """Creates a new IFC entity that does not belong to an IFC file object
 
     Note that it is more common to create entities within a existing file
     object. See :meth:`ifcopenshell.file.create_entity`.
 
     :param type: Case insensitive name of the IFC class
-    :type type: string
     :param schema: The IFC schema identifier
-    :type schema: string
     :param args: The positional arguments of the IFC class
     :param kwargs: The keyword arguments of the IFC class
     :returns: An entity instance
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -191,11 +191,10 @@ def create_entity(type, schema="IFC4", *args, **kwargs):
     return e
 
 
-def register_schema(schema):
+def register_schema(schema: ifcopenshell.express.schema_class.SchemaClass) -> None:
     """Registers a custom IFC schema
 
     :param schema: A schema object
-    :type schema: ifcopenshell.express.schema_class.SchemaClass
 
     Example:
 
@@ -212,13 +211,13 @@ def register_schema(schema):
 
 
 def schema_by_name(
-    schema: Optional[str] = None, schema_version: Optional[tuple[int, ...]] = None
+    schema: Optional[str] = None,
+    schema_version: Optional[tuple[int, ...]] = None,
 ) -> ifcopenshell_wrapper.schema_definition:
     """Returns an object allowing you to query the IFC schema itself
 
     :param schema: Which IFC schema to use, chosen from "IFC2X3", "IFC4",
         or "IFC4X3". These refer to the ISO approved versions of IFC.
-    :type schema: string, optional
     :param schema_version: If you want to specify an exact version of IFC
         that may not be an ISO approved version, use this argument instead
         of ``schema``. IFC versions on technical.buildingsmart.org are
@@ -227,10 +226,9 @@ def schema_by_name(
         ADD2 TC1, which is the official version approved by ISO when people
         refer to "IFC4". Generally you should not use this argument unless
         you are testing non-ISO IFC releases.
-    :type schema_version: tuple[int, ...], optional
     :return: Schema definition object.
-    :rtype: ifocpenshell_wrapper.schema_definition
     """
+    assert schema_version or schema, "Either schema or schema_version must be specified."
     if schema_version:
         prefixes = ("IFC", "X", "_ADD", "_TC")
         schema = "".join("".join(map(str, t)) if t[1] else "" for t in zip(prefixes, schema_version))
