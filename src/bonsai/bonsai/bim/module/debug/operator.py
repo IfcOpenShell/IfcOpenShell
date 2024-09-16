@@ -469,7 +469,7 @@ class PrintUnusedElementStats(bpy.types.Operator, tool.Ifc.Operator):
     ignore_contexts: bpy.props.BoolProperty(name="Ignore Contexts", default=True)
     ignore_relationships: bpy.props.BoolProperty(name="Ignore Relationships", default=True)
     ignore_types: bpy.props.BoolProperty(name="Ignore Types", default=True)
-    ignore_styled_items: bpy.props.BoolProperty(name="Ignoer Styled Items", default=True)
+    ignore_styled_items: bpy.props.BoolProperty(name="Ignore Styled Items", default=True)
 
     def _execute(self, context):
         props = context.scene.BIMDebugProperties
