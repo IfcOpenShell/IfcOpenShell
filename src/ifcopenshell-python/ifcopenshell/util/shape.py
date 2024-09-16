@@ -280,6 +280,16 @@ def get_faces(geometry: ShapeType) -> npt.NDArray[np.int32]:
     return np.frombuffer(geometry.faces_buffer, dtype="i").reshape(-1, 3)
 
 
+def get_material_colors(geometry: ShapeType) -> npt.NDArray[np.float64]:
+    """Get material colors as a numpy array.
+
+    :return: A numpy array listing RGBA color for each shape's material.
+    """
+    # colors_buffer comes from geometry.materials and doesn't account
+    # for colors that can be set by some other way (e.g. IfcIndexedColourMap).
+    return np.frombuffer(geometry.colors_buffer, dtype="d").reshape(-1, 4)
+
+
 def get_representation_item_ids(geometry: ShapeType) -> npt.NDArray[np.int32]:
     """Get representation item ids for the geometry faces."""
     return np.frombuffer(geometry.item_ids_buffer, dtype="i")
