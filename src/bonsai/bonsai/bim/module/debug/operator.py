@@ -532,6 +532,7 @@ class PurgeUnusedElementsByClass(bpy.types.Operator, tool.Ifc.Operator):
         # IfcStructuralConnectionCondition
         # IfcStructuralLoad
 
+        # Keep list sorted alphabetically.
         whitelisted_classes = [
             "IfcActorRole",
             "IfcAddress",
@@ -559,13 +560,13 @@ class PurgeUnusedElementsByClass(bpy.types.Operator, tool.Ifc.Operator):
             "IfcPresentationItem",
             "IfcProductDefinitionShape",
             "IfcPropertyAbstraction",
+            "IfcPropertyDefinition",  # A bit of a questionable one, and the odd one out from IfcRoot.
             "IfcRecurrencePattern",
             "IfcReference",
             "IfcRepresentation",
             "IfcRepresentationContext",
             "IfcRepresentationItem",
             "IfcRepresentationMap",
-            "IfcPropertyDefinition",  # A bit of a questionable one, and the odd one out from IfcRoot.
             "IfcSchedulingTime",
             "IfcShapeAspect",
             "IfcTable",
