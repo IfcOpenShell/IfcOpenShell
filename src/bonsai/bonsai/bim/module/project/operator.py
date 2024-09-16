@@ -1320,6 +1320,8 @@ class ExportIFCBase:
         ifc_exporter.export()
         settings.logger.info("Export finished in {:.2f} seconds".format(time.time() - start))
         print("Export finished in {:.2f} seconds".format(time.time() - start))
+        # New project created in Bonsai should be in recent projects too.
+        tool.Project.add_recent_ifc_project(Path(output_file))
         scene = context.scene
         if not scene.DocProperties.ifc_files:
             new = scene.DocProperties.ifc_files.add()
