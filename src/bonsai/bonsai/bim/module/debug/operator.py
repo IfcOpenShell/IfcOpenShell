@@ -564,7 +564,7 @@ class PurgeUnusedElementsByClass(bpy.types.Operator, tool.Ifc.Operator):
             "IfcRecurrencePattern",
             "IfcReference",
             "IfcRepresentation",
-            "IfcRepresentationContext",
+            # "IfcRepresentationContext",  # Can be present even in basic empty project.
             "IfcRepresentationItem",
             "IfcRepresentationMap",
             "IfcSchedulingTime",
