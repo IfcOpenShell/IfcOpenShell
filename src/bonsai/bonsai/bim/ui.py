@@ -1076,7 +1076,7 @@ def draw_custom_context_menu(self, context):
     prop = context.button_pointer
     prop_name = context.button_prop.identifier
     prop_value = getattr(prop, prop_name, None)
-    if prop_value is None:
+    if not isinstance(prop_value, str):
         return
     version = tool.Ifc.get_schema()
     layout = self.layout
