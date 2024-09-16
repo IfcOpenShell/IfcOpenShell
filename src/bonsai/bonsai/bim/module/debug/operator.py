@@ -492,22 +492,33 @@ class PurgeUnusedElementsByClass(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.purge_unused_elements_by_class"
     bl_label = "Purge Unused Elements By Class"
     bl_description = (
-        "Will find all elements of class that have no inverse refernces and will remove them, use very carefully"
+        "Will find all elements of class that have no inverse references and will remove them, use very carefully.\n"
+        "If IFC class is provided in neighbour field, will purge only elemnts of the provided class. Otherwise will purge all white-listed elements.\n"
+        "ALT+CLICK to provide a path where to save the IFC file with the removed elements (note changes will be applied to the current IFC too)"
     )
     bl_options = {"REGISTER", "UNDO"}
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH", options={"SKIP_SAVE"})
     filter_glob: bpy.props.StringProperty(default="*.ifc", options={"HIDDEN"})
 
     def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
+        if event.type == "LEFTMOUSE" and event.alt:
+            context.window_manager.fileselect_add(self)
+        return self.execute(context)
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Ifc.get():
+            cls.poll_message_set("No IFC file is loaded.")
+            return False
+        return True
 
     def _execute(self, context):
         props = context.scene.BIMDebugProperties
         if props.ifc_class_purge:
             purged_elements = core.purge_unused_elements(tool.Ifc, tool.Debug, props.ifc_class_purge)
             self.report({"INFO"}, f"{purged_elements} unused elements found and removed.")
-            tool.Ifc.get().write(self.filepath)
+            if self.filepath:
+                tool.Ifc.get().write(self.filepath)
             return
 
         # A whitelisted class is a class that only contains simple data that
@@ -607,7 +618,8 @@ class PurgeUnusedElementsByClass(bpy.types.Operator, tool.Ifc.Operator):
             elif total_batches > 20:
                 print("Finished 20 batches. Manually stopping in case of infinite loop.")
         self.report({"INFO"}, f"Auto purged {total_purged} orphaned elements")
-        tool.Ifc.get().write(self.filepath)
+        if self.filepath:
+            tool.Ifc.get().write(self.filepath)
 
 
 class PurgeUnusedObjects(bpy.types.Operator, tool.Ifc.Operator):
