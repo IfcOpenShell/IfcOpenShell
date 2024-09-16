@@ -495,7 +495,7 @@ class IFC_PARSE_API schema_definition {
         return *iter;
     }
 
-    const declaration* declaration_by_name(int name) const {
+    const declaration* declaration_by_name(size_t name) const {
         return declarations_[name];
     }
 
