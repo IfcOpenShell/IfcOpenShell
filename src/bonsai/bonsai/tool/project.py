@@ -194,6 +194,7 @@ class Project(bonsai.core.tool.Project):
 
         If `filepath` was opened before, bump it in the list.
         """
+        filepath = filepath.absolute()
         current_filepaths = cls.get_recent_ifc_projects()
         if filepath in current_filepaths:
             current_filepaths.remove(filepath)
