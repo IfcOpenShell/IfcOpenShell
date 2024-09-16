@@ -111,7 +111,7 @@ class MaterialCreator:
 
             material = self.styles[style_or_material_id]
             if coords := self.get_ifc_coordinate(material):
-                tool.Loader.load_indexed_texture_map(coords, self.mesh)
+                tool.Loader.load_indexed_map(coords, self.mesh)
 
     def assign_material_slots_to_faces(self) -> None:
         if not self.mesh["ios_materials"]:
@@ -1382,6 +1382,12 @@ class IfcImporter:
                 mesh.polygons.foreach_set("loop_total", loop_total)
                 mesh.polygons.foreach_set("use_smooth", [0] * total_faces)
                 mesh.update()
+
+                # TODO: geometry id is not always an int.
+                rep_id = geometry.id
+                if rep_id.isdigit():
+                    rep = self.file.by_id(int(rep_id))
+                    tool.Loader.load_indexed_colour_map(rep, mesh)
             else:
                 e = geometry.edges
                 v = verts
