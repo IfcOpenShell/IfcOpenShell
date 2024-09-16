@@ -648,6 +648,7 @@ class Geometry(bonsai.core.tool.Geometry):
             ifc_importer.material_creator.load_existing_materials()
             ifc_importer.material_creator.create(element, obj, mesh)
             mesh.BIMMeshProperties.has_openings_applied = apply_openings
+            tool.Loader.load_indexed_colour_map(representation, mesh)
 
         return mesh
 

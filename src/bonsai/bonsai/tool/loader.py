@@ -472,20 +472,47 @@ class Loader(bonsai.core.tool.Loader):
                 blender_material.node_tree.links.new(coord.outputs["UV"], node.inputs["Vector"])
 
     @classmethod
-    def load_indexed_texture_map(cls, coordinates: ifcopenshell.entity_instance, mesh: bpy.types.Mesh) -> None:
+    def load_indexed_colour_map(cls, representation: ifcopenshell.entity_instance, mesh: bpy.types.Mesh) -> None:
+        if representation.RepresentationType != "Tessellation":
+            return
+
+        colours = []
+        for item in representation.Items:
+            if not item.is_a("IfcTessellatedFaceSet"):
+                continue
+            colours.extend(item.HasColours)
+
+        if not colours:
+            return
+
+        for colour in colours:
+            cls.load_indexed_map(colour, mesh)
+
+    @classmethod
+    def load_indexed_map(cls, index_map: ifcopenshell.entity_instance, mesh: bpy.types.Mesh) -> None:
+        """Add data from index map as blender mesh attribute.
+
+        :param index_map: IfcIndexedTextureMap or IfcIndexedColourMap
+        """
+
+        map_type = "UV" if index_map.is_a("IfcIndexedTextureMap") else "Color"
+
         # Get a BMesh representation
         bm = bmesh.new()
         bm.from_mesh(mesh)
-        # constistent naming with how Blender does it
-        uv_layer = bm.loops.layers.uv.active or bm.loops.layers.uv.new("UVMap")
+        if map_type == "UV":
+            # constistent naming with how Blender does it
+            layer = bm.loops.layers.uv.active or bm.loops.layers.uv.new("UVMap")
+        else:
+            layer = bm.loops.layers.float_color.new("Color")
 
         # remap the faceset CoordList index to the vertices in blender mesh
         coordinates_remap = []
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        faceset = coordinates.MappedTo
+        faceset = index_map.MappedTo
         for co in faceset.Coordinates.CoordList:
             co = Vector(co) * si_conversion
-            index = next(v.index for v in bm.verts if (v.co - co).length_squared < 1e-5)
+            index = min(bm.verts, key=lambda v: (v.co - co).length_squared).index
             coordinates_remap.append(index)
 
         # ifc indices start with 1
@@ -493,36 +520,60 @@ class Loader(bonsai.core.tool.Loader):
 
         # faces_remap - ifc faces described using blender verts indices
         # IFC4.3+
-        if coordinates.is_a("IfcIndexedPolygonalTextureMap"):
+        if index_map.is_a("IfcIndexedPolygonalTextureMap"):
             faces_remap = [
                 remap_verts_to_blender(tex_coord_index.TexCoordsOf.CoordIndex)
-                for tex_coord_index in coordinates.TexCoordIndices
+                for tex_coord_index in index_map.TexCoordIndices
             ]
-            texture_map = [tex_coord_index.TexCoordIndex for tex_coord_index in coordinates.TexCoordIndices]
-        else:  # IfcIndexedTriangleTextureMap
+            texture_map = [tex_coord_index.TexCoordIndex for tex_coord_index in index_map.TexCoordIndices]
+        else:  # IfcIndexedTriangleTextureMap or IfcIndexedColourMap
             if faceset.is_a("IfcTriangulatedFaceSet"):
                 faces_remap = [remap_verts_to_blender(triangle_face) for triangle_face in faceset.CoordIndex]
             else:  # IfcPolygonalFaceSet
-                faces_remap = [remap_verts_to_blender(triangle_face.CoordIndex) for triangle_face in faceset.Faces]
-            texture_map = coordinates.TexCoordIndex
+                faces_remap = [remap_verts_to_blender(face.CoordIndex) for face in faceset.Faces]
+            if index_map.is_a("IfcIndexedTriangleTextureMap"):
+                texture_map = index_map.TexCoordIndex
+            else:
+                texture_map = index_map.ColourIndex
 
-        # apply uv to each face
+        if map_type == "UV":
+            data_list = index_map.TexCoords.TexCoordsList
+        else:
+            data_list = index_map.Colours.ColourList
+            opacity = index_map.Opacity
+            opacity = opacity if opacity is not None else 1.0
+            data_list = [d + (opacity,) for d in data_list]
+
+        # Apply attribute to each face
         for bface in bm.faces:
             face = [loop.vert.index for loop in bface.loops]
-            # find the corresponding TexCoordIndex by matching ifc faceset with blender face
-            # remap TexCoordIndex as the loop start may different from blender face
-            texCoordIndex = next(
-                [tex_coord_index[face_remap.index(i)] for i in face]
-                for tex_coord_index, face_remap in zip(texture_map, faces_remap, strict=True)
-                if all(i in face_remap for i in face)
-            )
+            # Find the corresponding index in data list by matching ifc faceset with blender face.
+            data_index = None
+            for tex_coord_index, face_remap in zip(texture_map, faces_remap, strict=True):
+                if not all(i in face_remap for i in face):
+                    continue
+                # Subtract 1 as tex_coord_index starts with 1.
+                if map_type == "UV":
+                    data_index = [tex_coord_index[face_remap.index(i)] - 1 for i in face]
+                else:
+                    data_index = [tex_coord_index - 1 for i in face]
+                break
+            assert data_index is not None
+
             # apply uv to each loop
-            for loop, i in zip(bface.loops, texCoordIndex):
-                loop[uv_layer].uv = coordinates.TexCoords.TexCoordsList[i - 1]
+            for loop, i in zip(bface.loops, data_index):
+                if map_type == "UV":
+                    loop[layer].uv = data_list[i]
+                else:
+                    loop[layer] = data_list[i]
 
         # Finish up, write the bmesh back to the mesh
         bm.to_mesh(mesh)
         bm.free()
+
+        if map_type == "Color":
+            # Couldn't find a way to do it from bmesh.
+            mesh.color_attributes.active_color_index = 0
 
     @classmethod
     def is_point_far_away(
