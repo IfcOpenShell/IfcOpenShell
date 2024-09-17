@@ -646,11 +646,19 @@ class Geometry(bonsai.core.tool.Geometry):
         elif shape:
             mesh = ifc_importer.create_mesh(element, shape)
             ifc_importer.material_creator.load_existing_materials()
-            ifc_importer.material_creator.create(element, obj, mesh)
+            shape_has_openings = cls.does_shape_has_openings(shape)
+            ifc_importer.material_creator.create(element, obj, mesh, shape_has_openings)
             mesh.BIMMeshProperties.has_openings_applied = apply_openings
-            tool.Loader.load_indexed_colour_map(representation, mesh)
+            if not shape_has_openings:
+                tool.Loader.load_indexed_colour_map(representation, mesh)
 
         return mesh
+
+    @classmethod
+    def does_shape_has_openings(
+        cls, shape: Union[ifcopenshell.geom.ShapeElementType, ifcopenshell.geom.ShapeType]
+    ) -> bool:
+        return "openings" in getattr(shape, "geometry", shape).id
 
     @classmethod
     def import_representation_parameters(cls, data: bpy.types.Mesh) -> None:

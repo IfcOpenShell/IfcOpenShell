@@ -50,7 +50,11 @@ class MaterialCreator:
         self.ifc_importer = ifc_importer
 
     def create(
-        self, element: ifcopenshell.entity_instance, obj: bpy.types.Object, mesh: Union[OBJECT_DATA_TYPE, None]
+        self,
+        element: ifcopenshell.entity_instance,
+        obj: bpy.types.Object,
+        mesh: Union[OBJECT_DATA_TYPE, None],
+        shape_has_openings: bool,
     ) -> None:
         if ((rep := getattr(element, "Representation", ...) is not ...) and not rep) or (
             (rep := getattr(element, "RepresentationMaps", ...) is not ...) and not rep
@@ -78,7 +82,7 @@ class MaterialCreator:
         # Though 0 value will not occur as we don't use default materials in IfcImporter.
 
         self.parsed_meshes.add(self.mesh.name)
-        self.load_texture_maps()
+        self.load_texture_maps(shape_has_openings)
         self.assign_material_slots_to_faces()
         tool.Geometry.record_object_materials(obj)
         del self.mesh["ios_materials"]
@@ -104,13 +108,15 @@ class MaterialCreator:
                     print(f"WARNING. IfcTextureMap texture coordinates is not supported.")
                     return
 
-    def load_texture_maps(self) -> None:
+    def load_texture_maps(self, shape_has_openings: bool) -> None:
         for style_or_material_id in self.mesh["ios_materials"]:
             if not (material := self.styles.get(style_or_material_id)):
                 continue
 
             material = self.styles[style_or_material_id]
             if coords := self.get_ifc_coordinate(material):
+                if shape_has_openings and coords.is_a("IfcIndexedTextureMap"):
+                    continue
                 tool.Loader.load_indexed_map(coords, self.mesh)
 
     def assign_material_slots_to_faces(self) -> None:
@@ -586,7 +592,7 @@ class IfcImporter:
                 break
         obj = bpy.data.objects.new(tool.Loader.get_name(element), mesh)
         self.link_element(element, obj)
-        self.material_creator.create(element, obj, mesh)
+        self.material_creator.create(element, obj, mesh, False)
         self.type_products[element.GlobalId] = obj
 
     def create_native_elements(self):
@@ -850,7 +856,7 @@ class IfcImporter:
     def create_product(
         self,
         element: ifcopenshell.entity_instance,
-        shape: Optional[Any] = None,
+        shape: Optional[Union[ifcopenshell.geom.ShapeElementType, ifcopenshell.geom.ShapeType]] = None,
         mesh: Optional[OBJECT_DATA_TYPE] = None,
     ) -> Union[bpy.types.Object, None]:
         if element is None:
@@ -886,12 +892,12 @@ class IfcImporter:
             mat = np.array(shape.transformation.matrix).reshape((4, 4), order="F")
             self.set_matrix_world(obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, mat))
             assert mesh  # Type checker.
-            self.material_creator.create(element, obj, mesh)
-        elif mesh:
+            self.material_creator.create(element, obj, mesh, tool.Geometry.does_shape_has_openings(shape))
+        elif mesh:  # When does this occur?
             self.set_matrix_world(
                 obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, self.get_element_matrix(element))
             )
-            self.material_creator.create(element, obj, mesh)
+            self.material_creator.create(element, obj, mesh, False)
         elif hasattr(element, "ObjectPlacement"):
             self.set_matrix_world(
                 obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, self.get_element_matrix(element))
@@ -1383,9 +1389,9 @@ class IfcImporter:
                 mesh.polygons.foreach_set("use_smooth", [0] * total_faces)
                 mesh.update()
 
-                # TODO: geometry id is not always an int.
-                rep_id = geometry.id
-                if rep_id.isdigit():
+                rep_str: str = geometry.id
+                if "openings" not in rep_str:
+                    rep_id = rep_str.split("-", 1)[0]
                     rep = self.file.by_id(int(rep_id))
                     tool.Loader.load_indexed_colour_map(rep, mesh)
             else:
