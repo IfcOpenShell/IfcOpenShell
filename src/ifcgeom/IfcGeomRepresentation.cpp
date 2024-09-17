@@ -142,8 +142,7 @@ namespace {
 #endif
 
 IfcGeom::Representation::Serialization::Serialization(const BRep& brep)
-	: Representation(brep.settings(), brep.entity())
-	, id_(brep.id())
+	: Representation(brep.settings(), brep.entity(), brep.id())
 {
 	for (auto it = brep.begin(); it != brep.end(); ++it) {
 		int sid = -1;
@@ -323,8 +322,7 @@ bool IfcGeom::Representation::BRep::calculate_projected_surface_area(const ifcop
 }
 
 IfcGeom::Representation::Triangulation::Triangulation(const BRep& shape_model)
-	: Representation(shape_model.settings(), shape_model.entity())
-	, id_(shape_model.id())
+	: Representation(shape_model.settings(), shape_model.entity(), shape_model.id())
 	, weld_offset_(0)
 {
 	for (IfcGeom::ConversionResults::const_iterator iit = shape_model.begin(); iit != shape_model.end(); ++iit) {
