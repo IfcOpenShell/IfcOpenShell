@@ -186,8 +186,6 @@ class IfcGit:
 
     @classmethod
     def clear_commits_list(cls) -> None:
-        area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
-        area.spaces[0].shading.color_type = "MATERIAL"
         props = bpy.context.scene.IfcGitProperties
 
         # ifcgit_commits is registered list widget
@@ -351,8 +349,7 @@ class IfcGit:
         current_revision = repo.commit()
 
         if selected_revision == current_revision:
-            area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
-            area.spaces[0].shading.color_type = "MATERIAL"
+            cls.decolourise()
             return
 
         if current_revision.committed_date > selected_revision.committed_date:
@@ -413,6 +410,11 @@ class IfcGit:
                 obj.select_set(True)
             else:
                 obj.color = (1.0, 1.0, 1.0, 0.5)
+
+    @classmethod
+    def decolourise(cls) -> None:
+        area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
+        area.spaces[0].shading.color_type = "MATERIAL"
 
     @classmethod
     def switch_to_revision_item(cls) -> None:
@@ -527,6 +529,7 @@ class IfcGit:
 
             cls.load_project(path_ifc)
             cls.refresh_revision_list(path_ifc)
+            cls.decolourise()
 
     @classmethod
     def entity_log(cls, path_ifc: str, step_id: int) -> str:

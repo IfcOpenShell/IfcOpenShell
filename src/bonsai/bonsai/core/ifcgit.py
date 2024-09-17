@@ -116,6 +116,7 @@ def switch_revision(ifcgit: tool.IfcGit, ifc: tool.Ifc) -> None:
     ifcgit.switch_to_revision_item()
     ifcgit.load_project(path_ifc)
     ifcgit.refresh_revision_list(path_ifc)
+    ifcgit.decolourise()
 
 
 def merge_branch(ifcgit: tool.IfcGit, ifc: tool.Ifc, operator: bpy.types.Operator) -> None:
