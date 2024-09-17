@@ -352,6 +352,13 @@ ptree* descend(ifcopenshell::geometry::abstract_mapping* mapping, IfcSchema::Ifc
 		}
     }
 
+#ifdef SCHEMA_HAS_IfcAlignmentSegment
+	if (auto* als = product->as<IfcSchema::IfcAlignmentSegment>()) {
+		ptree node;
+		format_entity_instance(mapping, als->DesignParameters(), node, child, false);
+	}
+#endif
+
 	return &child;
 }
 
@@ -546,12 +553,12 @@ void POSTFIX_SCHEMA(XmlSerializer)::finalize() {
 	BOOST_FOREACH(const std::string& s, file->header().file_description().description()) {
 		header.add_child("file_description.description", ptree(s));
 	}
-	BOOST_FOREACH(const std::string& s, file->header().file_name().author()) {
+	/*BOOST_FOREACH(const std::string& s, file->header().file_name().author()) {
 		header.add_child("file_name.author", ptree(s));
 	}
 	BOOST_FOREACH(const std::string& s, file->header().file_name().organization()) {
 		header.add_child("file_name.organization", ptree(s));
-	}
+	}*/
 	BOOST_FOREACH(const std::string& s, file->header().file_schema().schema_identifiers()) {
 		header.add_child("file_schema.schema_identifiers", ptree(s));
 	}
