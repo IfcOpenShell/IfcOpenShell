@@ -496,7 +496,7 @@ class IFC_PARSE_API schema_definition {
     }
 
     const declaration* declaration_by_name(size_t name) const {
-        return declarations_[name];
+        return declarations_.at(name);
     }
 
     const std::vector<const declaration*>& declarations() const { return declarations_; }
