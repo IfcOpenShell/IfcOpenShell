@@ -35,35 +35,39 @@ namespace IfcGeom {
 		protected:
 			const ifcopenshell::geometry::Settings settings_;
 			const std::string entity_;
+			std::string id_;
 		public:
-			explicit Representation(const ifcopenshell::geometry::Settings& settings, const std::string& entity)
+			explicit Representation(const ifcopenshell::geometry::Settings& settings, const std::string& entity, const std::string& id)
 				: settings_(settings)
 				, entity_(entity)
+				, id_(id)
 			{}
 			const ifcopenshell::geometry::Settings& settings() const { return settings_; }
 			const std::string& entity() const {
 				return entity_;
 			}
+			// id starts with representation id and then it may have the following dash separated elements:
+			// - layerset-layerset_id
+			// - material-material_id
+			// - openings-opening0_id-...-openingN_id
+			const std::string& id() const { return id_; }
 			virtual ~Representation() {}
 		};
 
 		class IFC_GEOM_API BRep : public Representation {
 		private:
-			std::string id_;
 			const IfcGeom::ConversionResults shapes_;
 			BRep(const BRep& other);
 			BRep& operator=(const BRep& other);
 		public:
 			BRep(const ifcopenshell::geometry::Settings& settings, const std::string& entity, const std::string& id, const IfcGeom::ConversionResults& shapes)
-				: Representation(settings, entity)
-				, id_(id)
+				: Representation(settings, entity, id)
 				, shapes_(shapes)
 			{}
 			virtual ~BRep() {}
 			IfcGeom::ConversionResults::const_iterator begin() const { return shapes_.begin(); }
 			IfcGeom::ConversionResults::const_iterator end() const { return shapes_.end(); }
 			const IfcGeom::ConversionResults& shapes() const { return shapes_; }
-			const std::string& id() const { return id_; }
 			IfcGeom::ConversionResultShape* as_compound(bool force_meters = false) const;
 
 			bool calculate_volume(double&) const;
@@ -77,7 +81,6 @@ namespace IfcGeom {
 
 		class IFC_GEOM_API Serialization : public Representation  {
 		private:
-			std::string id_;
 			std::string brep_data_;
 			std::vector<double> surface_styles_;
 			std::vector<int> surface_style_ids_;
@@ -87,7 +90,6 @@ namespace IfcGeom {
 			const std::vector<int>& surface_style_ids() const { return surface_style_ids_; }
 			Serialization(const BRep& brep);
 			virtual ~Serialization() {}
-			const std::string& id() const { return id_; }
 		private:
 			Serialization();
 			Serialization(const Serialization&);
@@ -101,7 +103,6 @@ namespace IfcGeom {
 			typedef std::map<VertexKey, int> VertexKeyMap;
 			typedef std::pair<int, int> Edge;
 
-			std::string id_;
 			std::vector<double> _verts;
 			std::vector<int> _faces;
 			std::vector<int> _edges;
@@ -113,13 +114,12 @@ namespace IfcGeom {
 			size_t weld_offset_;
 			VertexKeyMap welds;
 
-			Triangulation(const ifcopenshell::geometry::Settings& settings, const std::string& entity)
-				: Representation(settings, entity)
+			Triangulation(const ifcopenshell::geometry::Settings& settings, const std::string& entity,  const std::string& id)
+				: Representation(settings, entity, id)
 				, weld_offset_(0)
 				{}
 
 		public:
-			const std::string& id() const { return id_; }
 			const std::vector<double>& verts() const { return _verts; }
 			const std::vector<int>& faces() const { return _faces; }
 			const std::vector<int>& edges() const { return _edges; }
@@ -145,8 +145,7 @@ namespace IfcGeom {
 				const std::vector<ifcopenshell::geometry::taxonomy::style::ptr>& materials,
 				const std::vector<int>& item_ids
 			)
-				: Representation(settings, entity)
-				, id_(id)
+				: Representation(settings, entity, id)
 				, _verts(verts)
 				, _faces(faces)
 				, _edges(edges)
@@ -163,7 +162,7 @@ namespace IfcGeom {
             /// @todo Very simple impl. Assumes that input vertices and normals match 1:1.
 			static std::vector<double> box_project_uvs(const std::vector<double> &vertices, const std::vector<double> &normals);
 
-			static Triangulation* empty(const ifcopenshell::geometry::Settings& settings) { return new Triangulation(settings, ""); }
+			static Triangulation* empty(const ifcopenshell::geometry::Settings& settings) { return new Triangulation(settings, "", ""); }
 
 			/// Welds vertices that belong to different faces
 			int addVertex(int item_index, int material_index, double X, double Y, double Z);

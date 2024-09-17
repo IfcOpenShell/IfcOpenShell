@@ -681,7 +681,6 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 
     %pythoncode %{
         # Hide the getters with read-only property implementations
-        id = property(id)
         faces = property(faces)
         edges = property(edges)
         material_ids = property(material_ids)
@@ -700,10 +699,16 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
     %}
 };
 
-%extend IfcGeom::Representation::Serialization {
+%extend IfcGeom::Representation::Representation {
 	%pythoncode %{
         # Hide the getters with read-only property implementations
         id = property(id)
+	%}
+};
+
+%extend IfcGeom::Representation::Serialization {
+	%pythoncode %{
+        # Hide the getters with read-only property implementations
         brep_data = property(brep_data)
         surface_styles = property(surface_styles)
         surface_style_ids = property(surface_style_ids)
