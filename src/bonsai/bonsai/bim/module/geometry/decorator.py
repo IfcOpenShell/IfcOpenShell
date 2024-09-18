@@ -18,7 +18,6 @@
 
 import blf
 import gpu
-import json
 import bmesh
 import bonsai.tool as tool
 from bpy.types import SpaceView3D
@@ -125,9 +124,25 @@ class ItemDecorator:
                     edges = unselected_edges
                     verts = unselected_verts
                 i = len(verts)
-                edges.extend([[ei + i for ei in e] for e in json.loads(item.edges)])
+
                 matrix_world = obj.matrix_world
-                verts.extend([matrix_world @ Vector(v) for v in json.loads(item.verts)])
+                bbox_verts = [matrix_world @ Vector(co) for co in obj.bound_box]
+                bbox_edges = [
+                    (0 + i, 3 + i),
+                    (3 + i, 7 + i),
+                    (7 + i, 4 + i),
+                    (4 + i, 0 + i),
+                    (0 + i, 1 + i),
+                    (3 + i, 2 + i),
+                    (7 + i, 6 + i),
+                    (4 + i, 5 + i),
+                    (1 + i, 2 + i),
+                    (2 + i, 6 + i),
+                    (6 + i, 5 + i),
+                    (5 + i, 1 + i),
+                ]
+                edges.extend(bbox_edges)
+                verts.extend(bbox_verts)
 
         if unselected_verts:
             self.draw_batch("LINES", unselected_verts, transparent_color(unselected_elements_color), unselected_edges)

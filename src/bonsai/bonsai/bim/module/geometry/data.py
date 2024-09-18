@@ -47,18 +47,18 @@ class ViewportData:
     @classmethod
     def mode(cls):
         obj = bpy.context.active_object
-        obj_mode = [("OBJECT", "IFC Object Mode", "", "OBJECT_DATAMODE", 0)]
-        mesh_modes = [
+        modes = [
             ("OBJECT", "IFC Object Mode", "", "OBJECT_DATAMODE", 0),
-            ("EDIT", "IFC Edit Mode", "", "EDITMODE_HLT", 1),
+            ("ITEM", "IFC Item Mode", "", "MESH_DATA", 1),
         ]
         if (
             not obj
             or not tool.Blender.is_editable(obj)
             or ((element := tool.Ifc.get_entity(obj)) and tool.Geometry.is_locked(element))
         ):
-            return obj_mode
-        return mesh_modes
+            return modes
+        modes.append(("EDIT", "IFC Edit Mode", "", "EDITMODE_HLT", 2))
+        return modes
 
 
 class RepresentationsData:
