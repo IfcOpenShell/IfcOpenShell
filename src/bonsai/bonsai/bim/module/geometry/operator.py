@@ -295,35 +295,22 @@ class SwitchRepresentation(bpy.types.Operator, tool.Ifc.Operator):
         return False
 
     def _execute(self, context):
-        target_representation = tool.Ifc.get().by_id(self.ifc_definition_id)
-        target = target_representation.ContextOfItems
-        is_subcontext = target.is_a("IfcGeometricRepresentationSubContext")
-        for obj in set(context.selected_objects + [context.active_object]):
-            element = tool.Ifc.get_entity(obj)
-            if not element:
-                continue
-            if not obj.mode == "OBJECT":
-                continue
-            if obj == context.active_object:
-                representation = target_representation
-            else:
-                if is_subcontext:
-                    representation = ifcopenshell.util.representation.get_representation(
-                        element, target.ContextType, target.ContextIdentifier, target.TargetView
-                    )
-                else:
-                    representation = ifcopenshell.util.representation.get_representation(element, target.ContextType)
-            if not representation:
-                continue
-            core.switch_representation(
-                tool.Ifc,
-                tool.Geometry,
-                obj=obj,
-                representation=representation,
-                should_reload=self.should_reload,
-                is_global=self.should_switch_all_meshes,
-                should_sync_changes_first=True,
-            )
+        context = tool.Ifc.get().by_id(self.ifc_definition_id).ContextOfItems
+        for obj in tool.Blender.get_selected_objects():
+            if (
+                (element := tool.Ifc.get_entity(obj))
+                and obj.mode == "OBJECT"
+                and (representation := ifcopenshell.util.representation.get_representation(element, context))
+            ):
+                core.switch_representation(
+                    tool.Ifc,
+                    tool.Geometry,
+                    obj=obj,
+                    representation=representation,
+                    should_reload=self.should_reload,
+                    is_global=self.should_switch_all_meshes,
+                    should_sync_changes_first=True,
+                )
 
 
 class RemoveRepresentation(bpy.types.Operator, tool.Ifc.Operator):
