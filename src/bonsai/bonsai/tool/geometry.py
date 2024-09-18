@@ -1061,12 +1061,16 @@ class Geometry(bonsai.core.tool.Geometry):
                     representation = inverse
 
         if styled_item:
+            consider_inverses.remove(styled_item)
             ifc_file.remove(styled_item)
         if layer and len(layer.Items) == 1:
-            ifc_file.remove(styled_item)
+            consider_inverses.remove(layer)
+            ifc_file.remove(layer)
         if colour:
+            consider_inverses.remove(colour)
             ifcopenshell.util.element.remove_deep2(ifc_file, colour)
         if texture:
+            consider_inverses.remove(texture)
             ifcopenshell.util.element.remove_deep2(ifc_file, texture)
 
         for shape_aspect in shape_aspects:
