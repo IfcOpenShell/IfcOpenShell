@@ -1,0 +1,79 @@
+ISO-10303-21;
+HEADER;
+FILE_DESCRIPTION(('ViewDefinition [notYetAssigned]'),'2;1');
+FILE_NAME(
+/* name */ 'polygonal-face-tessellation.ifc',
+/* time_stamp */ '2016-05-26T17:38:29',
+/* author */ ('redacted'),
+/* organization */ ('redacted'),
+/* preprocessor_version */ 'redacted',
+/* originating_system */ 'redacted',
+/* authorization */ 'None');
+
+FILE_SCHEMA (('IFC4X3_ADD2'));
+ENDSEC;
+
+DATA;
+#1= IFCGEOMETRICREPRESENTATIONCONTEXT($,'Model',3,0.01,#3,$);
+#2= IFCCARTESIANPOINT((0.0,0.0,0.0));
+#3= IFCAXIS2PLACEMENT3D(#3058,#3059,#3060);
+#4= IFCGEOMETRICREPRESENTATIONSUBCONTEXT('Axis','Model',*,*,*,*,#1,$,.MODEL_VIEW.,$);
+#5= IFCGEOMETRICREPRESENTATIONSUBCONTEXT('Body','Model',*,*,*,*,#1,$,.MODEL_VIEW.,$);
+#6= IFCCARTESIANPOINT((0.0,0.0,0.0));
+#7= IFCDIRECTION((1.0,0.0,0.0));
+#8= IFCDIRECTION((0.0,1.0,0.0));
+#9= IFCDIRECTION((0.0,0.0,1.0));
+#10= IFCCARTESIANPOINT((0.0,0.0));
+#11= IFCAXIS2PLACEMENT2D(#10,$);
+#12= IFCSIUNIT(*,.LENGTHUNIT.,$,.METRE.);
+#13= IFCSIUNIT(*,.AREAUNIT.,$,.SQUARE_METRE.);
+#14= IFCSIUNIT(*,.VOLUMEUNIT.,$,.CUBIC_METRE.);
+/* ------------------------------------------------------------------------- */
+/* polygonal face set geometry representation                                */
+#15= IFCCARTESIANPOINTLIST3D(((-10000.0,-10000.0,-10000.0),(10000.0,-10000.0,-10000.0),(10000.0,10000.0,-10000.0),(-10000.0,10000.0,-10000.0),(-10000.0,-10000.0,10000.0),(10000.0,-10000.0,10000.0),(10000.0,10000.0,10000.0),(-10000.0,10000.0,10000.0),(-5000.0,-5000.0,-5000.0),(5000.0,-5000.0,-5000.0),(5000.0,5000.0,-5000.0),(-5000.0,5000.0,-5000.0),(5000.0,-5000.0,10000.0),(-5000.0,-5000.0,10000.0),(5000.0,5000.0,10000.0),(-5000.0,5000.0,10000.0)),$);
+#16= IFCINDEXEDPOLYGONALFACE((2,6,5,1));
+#17= IFCINDEXEDPOLYGONALFACE((3,7,6,2));
+#18= IFCINDEXEDPOLYGONALFACE((4,8,7,3));
+#19= IFCINDEXEDPOLYGONALFACE((1,5,8,4));
+#20= IFCINDEXEDPOLYGONALFACE((4,3,2,1));
+#21= IFCINDEXEDPOLYGONALFACEWITHVOIDS((6,7,8,5),((14,16,15,13)));
+#22= IFCINDEXEDPOLYGONALFACE((13,10,9,14));
+#23= IFCINDEXEDPOLYGONALFACE((15,11,10,13));
+#24= IFCINDEXEDPOLYGONALFACE((16,12,11,15));
+#25= IFCINDEXEDPOLYGONALFACE((14,9,12,16));
+#26= IFCINDEXEDPOLYGONALFACE((9,10,11,12));
+#27= IFCPOLYGONALFACESET(#15,.T.,(#16,#17,#18,#19,#20,#21,#22,#23,#24,#25,#26),$);
+#28= IFCSHAPEREPRESENTATION(#5,'Body','Tessellation',(#27));
+#29= IFCPRODUCTDEFINITIONSHAPE($,$,(#28));
+/* ------------------------------------------------------------------------- */
+/* assigned as shape representation to a proxy                               */
+#30= IFCBUILDINGELEMENTPROXY('1csV6umSb0px7vDxobGEN_',#3054,'NOTDEFINED',$,$,#32,#29,$,.NOTDEFINED.);
+#31= IFCAXIS2PLACEMENT3D(#2,$,$);
+#32= IFCLOCALPLACEMENT(#3047,#31);
+#3047= IFCLOCALPLACEMENT($,#3);
+/* ------------------------------------------------------------------------- */
+/* definition of the minimal building structure, units, owner history        */
+#3048= IFCBUILDING('2tMIBeIVfClPSrbOosOJDI',#3054,'Grasshopper Building','GH Building',$,#3047,$,'GH Building',$,0.0,0.0,$);
+#3049= IFCPERSONANDORGANIZATION(#3050,#3051,$);
+#3050= IFCPERSON('redacted','redacted',$,$,$,$,$,$);
+#3051= IFCORGANIZATION($,'redacted',$,$,$);
+#3052= IFCAPPLICATION(#3053,'redacted','redacted','redacted');
+#3053= IFCORGANIZATION($,'redacted',$,$,$);
+#3054= IFCOWNERHISTORY(#3049,#3052,$,.ADDED.,1464284014,$,$,1464284014);
+#3055= IFCRELCONTAINEDINSPATIALSTRUCTURE('3_FDRX0_zCNwiRAZP_mk8l',#3054,'Building','Building Container for Elements',(#30),#3048);
+#3056= IFCAXIS2PLACEMENT3D(#2,$,$);
+#3058= IFCCARTESIANPOINT((0.0,0.0,0.0));
+#3059= IFCDIRECTION((0.0,0.0,1.0));
+#3060= IFCDIRECTION((1.0,0.0,0.0));
+#3061= IFCPROJECT('37E0t9DhPDuPXM8sgxexaw',#3054,'Grasshopper Project',$,$,$,$,(#1),#3062);
+#3062= IFCUNITASSIGNMENT((#3063,#13,#14,#3064,#3065));
+#3063= IFCSIUNIT(*,.LENGTHUNIT.,.MILLI.,.METRE.);
+#3064= IFCSIUNIT(*,.PLANEANGLEUNIT.,$,.RADIAN.);
+#3065= IFCSIUNIT(*,.TIMEUNIT.,$,.SECOND.);
+#3066= IFCRELAGGREGATES('1jnXpsMarCZQ$Xxt61uMb4',#3054,'Project Container','Project Container for Buildings',#3061,(#3048));
+#3070= IFCAXIS2PLACEMENT3D(#2,$,$);
+ENDSEC;
+
+END-ISO-10303-21;
+
+
