@@ -38,9 +38,7 @@
 	try {
 		$result = $1.array_->apply_visitor([](auto& v){
 			using U = std::decay_t<decltype(v)>;
-            if constexpr (is_std_vector_vector_v<U>) {
-                return pythonize_vector2(v);
-            } else if constexpr (is_std_vector_v<U>) {
+            if constexpr (is_std_vector_v<U>) {
 				return pythonize_vector(v);
             } else if constexpr (std::is_same_v<U, EnumerationReference>) {
                 return pythonize(std::string(v.value()));
@@ -70,10 +68,22 @@
 
 %define CREATE_VECTOR_TYPEMAP_OUT(template_type)
 	%typemap(out) std::vector<template_type> {
-		$result = pythonize_vector<template_type>($1);
+		$result = pythonize_vector<std::vector<template_type>>($1);
 	}
 	%typemap(out) const std::vector<template_type>& {
-		$result = pythonize_vector<template_type>(*$1);
+		$result = pythonize_vector<std::vector<template_type>>(*$1);
+	}
+	%typemap(out) std::vector<std::vector<template_type>> {
+		$result = pythonize_vector<std::vector<std::vector<template_type>>>($1);
+	}
+	%typemap(out) const std::vector<std::vector<template_type>>& {
+		$result = pythonize_vector<std::vector<std::vector<template_type>>>(*$1);
+	}
+	%typemap(out) std::vector<std::vector<std::vector<template_type>>> {
+		$result = pythonize_vector<std::vector<std::vector<std::vector<template_type>>>>($1);
+	}
+	%typemap(out) const std::vector<std::vector<std::vector<template_type>>>& {
+		$result = pythonize_vector<std::vector<std::vector<std::vector<template_type>>>>(*$1);
 	}
 %enddef
 

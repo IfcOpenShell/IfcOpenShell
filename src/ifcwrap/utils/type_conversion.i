@@ -189,21 +189,15 @@
 	}
 
 	template <typename T>
-	PyObject* pythonize_vector(const std::vector<T>& v) {
+	PyObject* pythonize_vector(const T& v) {
 		const size_t size = v.size();
 		PyObject* pyobj = PyTuple_New(size);
 		for (size_t i = 0; i < size; ++i) {
-			PyTuple_SetItem(pyobj, i, pythonize(v[i]));
-		}
-		return pyobj;
-	}
-
-	template <typename T>
-	PyObject* pythonize_vector2(const std::vector< std::vector<T> >& v) {
-		const size_t size = v.size();
-		PyObject* pyobj = PyTuple_New(size);
-		for (size_t i = 0; i < size; ++i) {
-			PyTuple_SetItem(pyobj, i, pythonize_vector(v[i]));
+			if constexpr (is_std_vector_v<typename T::value_type>) {
+				PyTuple_SetItem(pyobj, i, pythonize_vector(v[i]));
+			} else {
+				PyTuple_SetItem(pyobj, i, pythonize(v[i]));
+			}
 		}
 		return pyobj;
 	}

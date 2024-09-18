@@ -24,6 +24,7 @@ if os.path.abspath(os.path.join(os.path.dirname(__file__), "..")) == sys.path[0]
     # does not contain the built binary
     sys.path[0:1] = []
 
+
 import pytest
 import ifcopenshell
 import ifcopenshell.api.project
@@ -75,3 +76,8 @@ class IFC2X3:
 
         ifcopenshell.api.pre_listeners = {}
         ifcopenshell.api.post_listeners = {}
+
+
+@pytest.fixture(autouse=True)
+def file(request):
+    return ifcopenshell.open(os.path.join("test/fixtures", request.param))

@@ -332,23 +332,23 @@ IfcGeom::Representation::Triangulation::Triangulation(const BRep& shape_model)
 
 		int surface_style_id = -1;
 		if (iit->hasStyle()) {
-			auto jt = std::find(_materials.begin(), _materials.end(), iit->StylePtr());
-			if (jt == _materials.end()) {
-				surface_style_id = (int)_materials.size();
-				_materials.push_back(iit->StylePtr());
+			auto jt = std::find(materials_.begin(), materials_.end(), iit->StylePtr());
+			if (jt == materials_.end()) {
+				surface_style_id = (int)materials_.size();
+				materials_.push_back(iit->StylePtr());
 			} else {
-				surface_style_id = (int)(jt - _materials.begin());
+				surface_style_id = (int)(jt - materials_.begin());
 			}
 		}
 
 		if (settings().get<ifcopenshell::geometry::settings::ApplyDefaultMaterials>().get() && surface_style_id == -1) {
 			const auto& material = IfcGeom::get_default_style(shape_model.entity());
-			auto mit = std::find(_materials.begin(), _materials.end(), material);
-			if (mit == _materials.end()) {
-				surface_style_id = (int)_materials.size();
-				_materials.push_back(material);
+			auto mit = std::find(materials_.begin(), materials_.end(), material);
+			if (mit == materials_.end()) {
+				surface_style_id = (int)materials_.size();
+				materials_.push_back(material);
 			} else {
-				surface_style_id = (int)(mit - _materials.begin());
+				surface_style_id = (int)(mit - materials_.begin());
 			}
 		}
 
@@ -393,7 +393,7 @@ int IfcGeom::Representation::Triangulation::addVertex(int item_id, int material_
 	const double X = convert ? (pX /unit_magnitude) : pX;
 	const double Y = convert ? (pY /unit_magnitude) : pY;
 	const double Z = convert ? (pZ /unit_magnitude) : pZ;
-	int i = (int)_verts.size() / 3;
+	int i = (int)verts_.size() / 3;
 	if (settings().get<ifcopenshell::geometry::settings::WeldVertices>().get()) {
 		const VertexKey key = std::make_tuple(item_id, material_index, X, Y, Z);
 		typename VertexKeyMap::const_iterator it = welds.find(key);
@@ -401,9 +401,9 @@ int IfcGeom::Representation::Triangulation::addVertex(int item_id, int material_
 		i = (int)(welds.size() + weld_offset_);
 		welds[key] = i;
 	}
-	_verts.push_back(X);
-	_verts.push_back(Y);
-	_verts.push_back(Z);
+	verts_.push_back(X);
+	verts_.push_back(Y);
+	verts_.push_back(Z);
 	return i;
 }
 
