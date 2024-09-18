@@ -190,6 +190,15 @@ class Geometry(bonsai.core.tool.Geometry):
 
     @classmethod
     def dissolve_triangulated_edges(cls, obj: bpy.types.Object) -> None:
+        # AdvancedBreps may contain non-faceted, curved faces (e.g. as part of
+        # a cylinder) so dissolving edges should not be allowed.
+        mesh_element = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+        if (
+            mesh_element.is_a("IfcShapeRepresentation")
+            and ifcopenshell.util.representation.resolve_representation(mesh_element).RepresentationType
+            == "AdvancedBrep"
+        ) or mesh_element.is_a("IfcAdvancedBrep"):
+            return
         if obj.data and "ios_edges" in obj.data:
             bm = bmesh.new()
             bm.from_mesh(obj.data)
