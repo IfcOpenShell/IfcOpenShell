@@ -603,65 +603,108 @@ class Geometry(bonsai.core.tool.Geometry):
         return False
 
     @classmethod
-    def import_representation(
+    def reimport_element_representations(
         cls, obj: bpy.types.Object, representation: ifcopenshell.entity_instance, apply_openings: bool = True
     ) -> Union[bpy.types.Mesh, bpy.types.Curve]:
+        element = tool.Ifc.get_entity(obj)
+        assert element
+
+        elements = set()
+        element_types = set()
+        representation = ifcopenshell.util.representation.resolve_representation(representation)
+        context = representation.ContextOfItems
+        for mapped_element in ifcopenshell.util.element.get_elements_by_representation(tool.Ifc.get(), representation):
+            if mapped_element.is_a("IfcTypeProduct"):
+                element_types.add(mapped_element)
+            else:
+                elements.add(mapped_element)
+                if element_type := ifcopenshell.util.element.get_type(mapped_element):
+                    element_types.add(element_type)
+
         logger = logging.getLogger("ImportIFC")
         ifc_import_settings = bonsai.bim.import_ifc.IfcImportSettings.factory(bpy.context, None, logger)
-        element = tool.Ifc.get_entity(obj)
-        assert element  # Type checker.
         settings = ifcopenshell.geom.settings()
         settings.set("weld-vertices", True)
         settings.set("apply-default-materials", False)
         settings.set("layerset-first", True)
         settings.set("keep-bounding-boxes", True)
-        context = representation.ContextOfItems
+        settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
 
         ifc_importer = bonsai.bim.import_ifc.IfcImporter(ifc_import_settings)
         ifc_importer.file = tool.Ifc.get()
 
-        # create_shape doesn't support point cloud representations.
-        if representation.RepresentationType in ("PointCloud", "Point"):
-            mesh = tool.Loader.create_point_cloud_mesh(representation)
-            if mesh is None:
-                raise Exception(f"Failed to process point cloud representation: {representation}.")
-            return mesh
+        # TODO support fallbacks like for point clouds
 
-        if element.is_a("IfcTypeProduct"):
-            # You may only specify a single representation when creating shapes for types
-            try:
-                shape = ifcopenshell.geom.create_shape(settings, representation)
-            except:
-                settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
-                shape = ifcopenshell.geom.create_shape(settings, representation)
-        else:
-            if not apply_openings:
-                settings.set("disable-opening-subtractions", True)
+        settings.set("context-ids", [context.id()])
+        if not apply_openings:
+            settings.set("disable-opening-subtractions", True)
 
-            if context.ContextIdentifier == "Body" and context.TargetView == "MODEL_VIEW":
-                try:
-                    shape = ifcopenshell.geom.create_shape(settings, element, representation)
-                except:
-                    settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
-                    shape = ifcopenshell.geom.create_shape(settings, element, representation)
-            else:
-                settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
-                shape = ifcopenshell.geom.create_shape(settings, element, representation)
+        shape = None
+        iterator = ifcopenshell.geom.iterator(settings, tool.Ifc.get(), multiprocessing.cpu_count(), include=elements)
+        meshes = {}
+        if iterator.initialize():
+            while True:
+                shape = iterator.get()
+                element = tool.Ifc.get().by_id(shape.id)
+                if obj := tool.Ifc.get_object(element):
+                    mesh_name = tool.Loader.get_mesh_name_from_shape(shape.geometry)
+                    mesh = meshes.get(mesh_name)
+                    if mesh is None:
+                        # Duplicate code
+                        representation = tool.Ifc.get().by_id(int(shape.geometry.id.split("-")[0]))
+                        if element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
+                            mesh = tool.Loader.create_camera(element, representation, shape)
+                        if element.is_a("IfcAnnotation") and ifc_importer.is_curve_annotation(element):
+                            mesh = ifc_importer.create_curve(element, shape)
+                        elif shape:
+                            mesh = ifc_importer.create_mesh(element, shape)
+                            ifc_importer.material_creator.load_existing_materials()
+                            shape_has_openings = cls.does_shape_has_openings(shape)
+                            ifc_importer.material_creator.create(element, obj, mesh, shape_has_openings)
+                            mesh.BIMMeshProperties.has_openings_applied = apply_openings
+                            if not shape_has_openings:
+                                tool.Loader.load_indexed_colour_map(representation, mesh)
+                        tool.Loader.link_mesh(shape, mesh)
+                        meshes[mesh_name] = mesh
 
-        if element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
-            mesh = tool.Loader.create_camera(element, representation, shape)
-        if element.is_a("IfcAnnotation") and ifc_importer.is_curve_annotation(element):
-            mesh = ifc_importer.create_curve(element, shape)
-        elif shape:
-            mesh = ifc_importer.create_mesh(element, shape)
-            ifc_importer.material_creator.load_existing_materials()
-            shape_has_openings = cls.does_shape_has_openings(shape)
-            ifc_importer.material_creator.create(element, obj, mesh, shape_has_openings)
-            mesh.BIMMeshProperties.has_openings_applied = apply_openings
-            if not shape_has_openings:
-                tool.Loader.load_indexed_colour_map(representation, mesh)
+                    old_mesh = obj.data
+                    cls.change_object_data(obj, mesh, is_global=False)
+                    cls.record_object_materials(obj)
+                    if not cls.has_data_users(old_mesh):
+                        cls.delete_data(old_mesh)
+                    cls.clear_modifiers(obj)
+                    cls.clear_cache(element)
 
-        return mesh
+                if not iterator.next():
+                    break
+
+        for element in element_types:
+            if obj := tool.Ifc.get_object(element):
+                if representation := ifcopenshell.util.representation.get_representation(element, context):
+                    geometry = ifcopenshell.geom.create_shape(settings, representation)
+                    mesh_name = tool.Loader.get_mesh_name_from_shape(geometry)
+                    mesh = meshes.get(mesh_name)
+                    if mesh is None:
+                        # Duplicate code
+                        representation = tool.Ifc.get().by_id(int(geometry.id.split("-")[0]))
+                        if geometry:
+                            mesh = ifc_importer.create_mesh(element, geometry)
+                            ifc_importer.material_creator.load_existing_materials()
+                            shape_has_openings = False
+                            ifc_importer.material_creator.create(element, obj, mesh, shape_has_openings)
+                            mesh.BIMMeshProperties.has_openings_applied = apply_openings
+                            if not shape_has_openings:
+                                tool.Loader.load_indexed_colour_map(representation, mesh)
+                        tool.Loader.link_mesh(geometry, mesh)
+                        meshes[mesh_name] = mesh
+
+                    old_mesh = obj.data
+                    cls.change_object_data(obj, mesh, is_global=False)
+                    cls.record_object_materials(obj)
+                    if not cls.has_data_users(old_mesh):
+                        cls.delete_data(old_mesh)
+                    cls.clear_modifiers(obj)
+                    cls.clear_cache(element)
 
     @classmethod
     def does_shape_has_openings(
