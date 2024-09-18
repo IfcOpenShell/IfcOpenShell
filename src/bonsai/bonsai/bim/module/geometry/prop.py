@@ -159,7 +159,9 @@ class BIMGeometryProperties(PropertyGroup):
     should_force_triangulation: BoolProperty(name="Force Triangulation", default=False)
     is_changing_mode: BoolProperty(name="Is Changing Mode", default=False)
     mode: EnumProperty(items=get_mode, name="IFC Interaction Mode", update=update_mode)
-    representation_obj: PointerProperty(name="Representation Object", type=bpy.types.Object, update=update_representation_obj)
+    representation_obj: PointerProperty(
+        name="Representation Object", type=bpy.types.Object, update=update_representation_obj
+    )
     item_objs: CollectionProperty(name="Item Objects", type=RepresentationItemObject)
 
     def is_object_valid_for_representation_copy(self, obj: bpy.types.Object) -> bool:
