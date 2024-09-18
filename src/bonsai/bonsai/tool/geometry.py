@@ -662,9 +662,14 @@ class Geometry(bonsai.core.tool.Geometry):
             settings.set("disable-opening-subtractions", True)
 
         shape = None
-        iterator = ifcopenshell.geom.iterator(settings, tool.Ifc.get(), multiprocessing.cpu_count(), include=elements)
+        if elements:
+            iterator = ifcopenshell.geom.iterator(
+                settings, tool.Ifc.get(), multiprocessing.cpu_count(), include=elements
+            )
+        else:
+            iterator = None  # For example, when switching representation of a type with no occurrences
         meshes = {}
-        if iterator.initialize():
+        if iterator and iterator.initialize():
             while True:
                 shape = iterator.get()
                 element = tool.Ifc.get().by_id(shape.id)
