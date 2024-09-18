@@ -60,7 +60,7 @@ class BIMBSDDProperties(PropertyGroup):
     active_domain_index: IntProperty(name="Active Domain Index")
     classifications: CollectionProperty(name="Classifications", type=BSDDClassification)
     active_classification_index: IntProperty(name="Active Classification Index")
-    keyword: StringProperty(name="Keyword")
+    keyword: StringProperty(name="Keyword", description="Query for bsdd classes search, case and accent insensitive")
     should_filter_ifc_class: BoolProperty(
         name="Filter Active IFC Class",
         description="Whether to search only for bSDD classes that match active object's IFC class",

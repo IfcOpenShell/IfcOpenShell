@@ -121,11 +121,9 @@ class Bsdd(bonsai.core.tool.Bsdd):
         return psets
 
     @classmethod
-    def get_related_ifc_entities(cls, keyword: str) -> list[str]:
+    def get_related_ifc_entities(cls) -> list[str]:
         active_object = bpy.context.active_object
         related_ifc_entities = []
-        if len(keyword) < 3:
-            return []
         if cls.should_filter_ifc_class() and active_object:
             element = tool.Ifc.get_entity(active_object)
             if element:
