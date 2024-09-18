@@ -34,7 +34,7 @@ class LoadBSDDDomains(bpy.types.Operator):
 
 class SetActiveBSDDDictionary(bpy.types.Operator):
     bl_idname = "bim.set_active_bsdd_domain"
-    bl_label = "Load bSDD Dictionary"
+    bl_label = "Set bSDD Dictionary as active"
     bl_options = {"REGISTER", "UNDO"}
     name: bpy.props.StringProperty()
     uri: bpy.props.StringProperty()
