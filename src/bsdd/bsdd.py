@@ -492,6 +492,10 @@ class Client:
     # deprecated
     def ClassificationSearchOpen(self, SearchText, version="v1", DomainNamespaceUris=None, RelatedIfcEntities=None):
         print(f"function 'Client.ClassificationSearchOpen' is deprecated, use 'Client.search_class' instead")
+
+        if len(SearchText) < 3:
+            raise ValueError("Search text must be at least 3 characters long.")
+
         if DomainNamespaceUris is None:
             DomainNamespaceUris = []
         if RelatedIfcEntities is None:
@@ -686,6 +690,10 @@ class Client:
         So if result consists of 10 classes and 5 properties, TotalCount will be 15.
         Classes will be listed first, so if you then use Offset=10 and Limit=5, you will get the 5 properties.
         """
+
+        if len(search_text) < 2:
+            raise ValueError("Search text must be at least 2 characters long.")
+
         if dictionary_uris is None:
             dictionary_uris = []
         endpoint = f"TextSearch/v{version}"
@@ -697,7 +705,6 @@ class Client:
             "limit": limit,
         }
         return self.get(endpoint, params)
-        pass
 
     def search_in_dictionary(
         self,
@@ -738,6 +745,9 @@ class Client:
         Search the bSDD database using free text, get list of Classes matching the text and optional additional filters.
         this API replaces ClassificationSearch
         """
+
+        if len(search_text) < 3:
+            raise ValueError("Search text must be at least 3 characters long.")
 
         if related_ifc_entities is None:
             related_ifc_entities = []

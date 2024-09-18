@@ -50,6 +50,14 @@ class SearchBSDDClass(bpy.types.Operator):
     bl_description = "Search for bSDD classes by the provided keyword"
     bl_options = {"REGISTER", "UNDO"}
 
+    @classmethod
+    def poll(cls, context):
+        # Requirement by buildingSMART bSDD api.
+        if len(context.scene.BIMBSDDProperties.keyword) < 3:
+            cls.poll_message_set("Search query has to be at least 3 characters long.")
+            return False
+        return True
+
     def execute(self, context):
         keyword = context.scene.BIMBSDDProperties.keyword
         classes_found = core.search_class(keyword, bsdd.Client(), tool.Bsdd)
