@@ -19,7 +19,7 @@
 import os
 import sys
 
-if os.path.abspath(os.path.join(os.path.dirname(__file__), '..')) == sys.path[0]:
+if os.path.abspath(os.path.join(os.path.dirname(__file__), "..")) == sys.path[0]:
     # Don't import ifcopenshell from local directory, because it most likely
     # does not contain the built binary
     sys.path[0:1] = []
