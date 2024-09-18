@@ -96,6 +96,7 @@ class Bsdd(bonsai.core.tool.Bsdd):
 
         psets = {}
         for prop in properties:
+            # prop is ClassPropertyContract.
             if prop.get("propertyDictionaryName") != "IFC":
                 continue
             pset = prop.get("propertySet", None)
@@ -111,8 +112,10 @@ class Bsdd(bonsai.core.tool.Bsdd):
                 possible_values = [v["value"] for v in possible_values]
 
             description = prop.get("description", "")
-
-            psets[pset][prop["name"]] = {
+            # Prefer propertyCode as it's later will be used to set properties,
+            # so name should be exact. Fallback to name as propertyCode is nullable.
+            prop_name = prop.get("propertyCode") or prop["name"]
+            psets[pset][prop_name] = {
                 "data_type": prop["dataType"],
                 "possible_values": possible_values,
                 "description": description,
