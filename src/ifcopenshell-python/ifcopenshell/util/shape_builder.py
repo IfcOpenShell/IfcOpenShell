@@ -321,8 +321,7 @@ class ShapeBuilder:
         Notion: trimmed ellipse also contains polyline between trim points, meaning IfcTrimmedCurve could be used
         for further extrusion.
         """
-        direction = self.file.createIfcDirection(ref_x_direction)
-        ifc_position = self.create_axis2_placement_2d(position, direction)
+        ifc_position = self.create_axis2_placement_2d(position, ref_x_direction)
         ifc_ellipse = self.file.createIfcEllipse(
             Position=ifc_position, SemiAxis1=x_axis_radius, SemiAxis2=y_axis_radius
         )
