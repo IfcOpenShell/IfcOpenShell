@@ -420,6 +420,17 @@ class Web(bonsai.core.tool.Web):
                 data_key="cost_value",
                 event="cost_value",
             )
+        if operator_data["type"] == "addSumCostValue":
+            cost_item = ifc_file.by_id(operator_data["costItemId"])
+            value = ifcopenshell.api.cost.add_cost_value(
+                ifc_file,
+                parent=cost_item,
+            )
+            ifcopenshell.api.cost.edit_cost_value(file=ifc_file, cost_value=value, attributes={"Category": "*"})
+            cost_schedule = tool.Cost.get_cost_schedule(cost_item=cost_item)
+            tool.Cost.load_cost_schedule_tree()
+            cls.load_cost_schedule_web_ui(cost_schedule)
+
         if operator_data["type"] == "deleteCostValue":
             bpy.ops.bim.remove_cost_value(parent=operator_data["costItemId"], cost_value=operator_data["costValueId"])
             cost_item = ifc_file.by_id(operator_data["costItemId"])

@@ -32,7 +32,6 @@ export class CostUI {
     for (let i = 0; i < columnHeaders.length; i++) {
       const th = document.createElement("th");
       th.textContent = columnHeaders[i];
-      th.style.position = "relative";
       tr.appendChild(th);
 
       if (i < columnHeaders.length - 1) {
@@ -417,12 +416,22 @@ export class CostUI {
     });
   }
 
+  static format_number(number) {
+    return new Intl.NumberFormat("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+      useGrouping: true,
+    })
+      .format(number)
+      .replace(/,/g, " ");
+  }
+
   static addCostItemRow(costItem, nestingLevel, parentID, callbacks = {}) {
     const totalQuantity = costItem.TotalCostQuantity
-      ? parseFloat(costItem.TotalCostQuantity).toFixed(2)
+      ? CostUI.format_number(costItem.TotalCostQuantity)
       : "-";
     const appliedValue = costItem.TotalAppliedValue
-      ? parseFloat(costItem.TotalAppliedValue).toFixed(2)
+      ? CostUI.format_number(costItem.TotalAppliedValue)
       : "-";
     const row = CostUI.createCostItemRow(costItem, nestingLevel, parentID);
     const expandButton = CostUI.createExpandButton(costItem);
@@ -435,9 +444,14 @@ export class CostUI {
     const totalCostQuantityCell = CostUI.createTableCell(totalQuantity);
     totalCostQuantityCell.classList.add("clickable-cell");
     const unitSymbolCell = CostUI.createTableCell(costItem.UnitSymbol);
-    const totalAppliedValueCell = CostUI.createTableCell(appliedValue);
+
+    const totalAppliedValueCell = CostUI.createCostCell(appliedValue);
     totalAppliedValueCell.classList.add("clickable-cell");
-    const totalCostCell = CostUI.createTotalCostCell(costItem);
+
+    const totalCostCell = CostUI.createTotalCostCell(
+      costItem,
+      callbacks.addSumCostValue
+    );
     const actionsCell = CostUI.costItemActions(costItem, callbacks);
 
     actionsCell.classList.add("actions-column");
@@ -630,13 +644,35 @@ export class CostUI {
     return cell;
   }
 
-  static createTotalCostCell(costItem) {
+  static createCostCell(appliedValue) {
+    return CostUI.createTableCell(appliedValue);
+  }
+
+  static createTotalCostCell(costItem, callback) {
     const totalCostCell = document.createElement("td");
-    const totalCost = parseFloat(costItem.TotalCost).toFixed(2);
-    totalCostCell.textContent = costItem.is_sum
-      ? totalCost + " (Σ)"
-      : totalCost;
+    const totalCost = CostUI.format_number(costItem.TotalCost);
+    totalCostCell.textContent = totalCost;
+    if (costItem.is_sum) {
+      totalCostCell.textContent = totalCost + " *";
+    } else if (!costItem.TotalCost) {
+      const button = CostUI.createButton("Sum", "fa-solid fa-calculator");
+      button.addEventListener("click", function () {
+        const costItemId = parseInt(this.closest("tr").getAttribute("id"));
+        callback(costItemId);
+      });
+      const onHoverElement = CostUI.onHoverElement();
+      onHoverElement.appendChild(button);
+      totalCostCell.appendChild(onHoverElement);
+    }
+
     return totalCostCell;
+  }
+
+  static onHoverElement() {
+    const div = document.createElement("div");
+    div.classList.add("actions-column");
+    div.classList.add("append-right");
+    return div;
   }
 
   static costItemActions(costItem, callbacks) {
@@ -779,9 +815,7 @@ export class CostUI {
     );
     cardTitle.classList.add("card-title");
 
-    const cardButton = document.createElement("button");
-    cardButton.classList.add("action-button");
-    cardButton.textContent = "Load";
+    const cardButton = CostUI.createButton("Load", "fa-solid fa-repeat");
     cardButton.addEventListener("click", callback);
 
     cardBody.appendChild(cardTitle);
@@ -912,8 +946,13 @@ export class CostUI {
       costType = "FIXED";
     }
     const options = ["FIXED", "CATEGORY", "SUM"];
-    const typeCell = CostUI.createTableDropdown("type", options, costType);
-    const dropdown = typeCell.querySelector("select");
+    const typeCell = document.createElement("td");
+    const dropdown = CostUI.createTableDropdown({
+      name: "type",
+      options: options,
+      defaultValue: costType,
+    });
+    typeCell.appendChild(dropdown);
     dropdown.addEventListener("change", function () {
       const selectedType = this.value;
       CostUI.updateRowBasedOnType(selectedType, categoryCell, valueCell1);
@@ -982,16 +1021,16 @@ export class CostUI {
         handleCostValueChange.call(this, costItemId);
       }
     });
+
     const deleteCell = document.createElement("td");
     tr.appendChild(deleteCell);
-    const deleteCostValue = document.createElement("button");
-    deleteCostValue.classList.add("action-button");
-    deleteCostValue.textContent = "Delete";
-    deleteCostValue.addEventListener("click", function () {
+    const dleteButton = CostUI.createButton("Delete", "fa-solid fa-trash");
+    dleteButton.addEventListener("click", function () {
       costValueCallbacks.deleteCostValue(costItemId, costValue.id);
       tr.remove();
     });
-    deleteCell.appendChild(deleteCostValue);
+
+    deleteCell.appendChild(dleteButton);
     CostUI.updateRowBasedOnType(costType, categoryCell, valueCell1);
     return tr;
   }
@@ -1015,23 +1054,19 @@ export class CostUI {
     }
   }
 
-  static createTableDropdown(name, options, value = "FIXED") {
-    const cell = document.createElement("td");
+  static createTableDropdown({ name, options, defaultValue = "FIXED" }) {
     const dropdown = document.createElement("select");
     dropdown.name = name;
-
     options.forEach((optionValue) => {
       const option = document.createElement("option");
       option.value = optionValue;
       option.textContent = optionValue;
-      if (optionValue === value) {
+      if (optionValue === defaultValue) {
         option.selected = true;
       }
       dropdown.appendChild(option);
     });
-
-    cell.appendChild(dropdown);
-    return cell;
+    return dropdown;
   }
 
   static createTableInput(type, name, value) {
@@ -1045,9 +1080,7 @@ export class CostUI {
   }
 
   static createAddCostValueButton(costItemId, callbacks) {
-    const addButton = document.createElement("button");
-    addButton.classList.add("action-button");
-    addButton.textContent = " + Add Cost Value";
+    const addButton = CostUI.createButton("Add Cost Value", "fa-solid fa-plus");
     addButton.addEventListener("click", function (e) {
       e.preventDefault();
       callbacks.addCostValue ? callbacks.addCostValue(costItemId) : null;
@@ -1992,7 +2025,6 @@ export class CostUI {
       );
       manualQuantitiesSection.appendChild(text);
     } else {
-      // add dropdown to chose quantity type , from "IfcQuantityArea", "IfcQuantityLength", "IfcQuantityVolume", "IfcQuantityCount", "IfcQuantityWeight  "
       const quantityTypes = [
         "IfcQuantityArea",
         "IfcQuantityLength",
@@ -2000,18 +2032,15 @@ export class CostUI {
         "IfcQuantityCount",
         "IfcQuantityWeight",
       ];
-      const dropdown = CostUI.createTableDropdown(
-        "type",
-        quantityTypes,
-        "IfcQuantityArea"
-      );
+      const dropdown = CostUI.createTableDropdown({
+        name: "type",
+        options: quantityTypes,
+        defaultValue: "IfcQuantityArea",
+      });
       dropdown.id = "quantity-type-dropdown-" + costItemId;
       manualQuantitiesSection.appendChild(dropdown);
     }
-
-    // if quantity is ty IfcQuantityCount, and the costQuantities
     if (quantityType === "IfcQuantityCount" && has_assigned_products) {
-      // write text that one of the quantities is assigned to the product selection
       const text = CostUI.Text(
         " One of the quantities is assigned to the product selection",
         "fa-solid fa-warning",
@@ -2060,7 +2089,6 @@ export class CostUI {
     );
 
     manualQuantitiesSection.appendChild(tableContainer);
-    // manualQuantitiesSection.appendChild(tableContainer2);
     manualQuantitiesSection.appendChild(addButton);
     return manualQuantitiesSection;
   }
@@ -2068,14 +2096,9 @@ export class CostUI {
   static createManualQuantityRow(costItemId, quantity, callbacks) {
     const tr = document.createElement("tr");
     tr.id = quantity.id;
-
-    // get quantity keys and values to create the table row cells
-    // Label cell
-
     Object.entries(quantity).forEach(([key, value]) => {
       if (key !== "id" && key !== "fromProduct") {
         if (key === "Name") {
-          // create input
           const cell = document.createElement("td");
           const input = document.createElement("input");
           input.type = "text";
@@ -2093,7 +2116,6 @@ export class CostUI {
           });
         }
 
-        // if key contains value
         else if (key.toLowerCase().includes("value")) {
           const cell = document.createElement("td");
           const input = document.createElement("input");
@@ -2105,7 +2127,7 @@ export class CostUI {
             if (e.key === "Enter") {
               e.preventDefault();
               callbacks.editQuantity(costItemId, quantity.id, {
-                [key]: parseFloat(input.value), // Dynamically set the key and parse the value as a double
+                [key]: parseFloat(input.value),
               });
             }
           });
@@ -2118,7 +2140,6 @@ export class CostUI {
       }
     });
 
-    // Add delete button
     const deleteButton = CostUI.createButton("Delete", "fa-solid fa-trash");
     const deleteCell = document.createElement("td");
     deleteButton.addEventListener("click", function (e) {
@@ -2142,7 +2163,6 @@ export class CostUI {
       e.preventDefault();
       let type = quantityType;
       if (!type) {
-        // get quantityType from dropdown
         const qtoSection = document.getElementById(
           "manual-quantities-section-" + costItemId
         );
