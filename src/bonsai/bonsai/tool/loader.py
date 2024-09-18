@@ -924,3 +924,21 @@ class Loader(bonsai.core.tool.Loader):
         mesh["ios_materials"] = [m.instance_id() for m in geometry.materials]
         mesh["ios_material_ids"] = geometry.material_ids
         return mesh
+
+    @classmethod
+    def setup_active_bsdd_classification(cls):
+        ifc_file = tool.Ifc.get()
+        attr_name = "Specification" if ifc_file.schema == "IFC4X3" else "Location"
+        bsdd_classification, uri, name = None, None, None
+        for c in ifc_file.by_type("IfcClassification"):
+            if (
+                (uri := getattr(c, attr_name))
+                and uri.startswith("https://identifier.buildingsmart.org/uri/")
+                and (name := c.Name)
+            ):
+                bsdd_classification = c
+                break
+        if not bsdd_classification:
+            return
+        assert name and uri
+        tool.Bsdd.set_active_bsdd(name, uri)

@@ -510,3 +510,18 @@ class TestLoadingIndexedMap(NewFile):
                 blender_color = Vector(layer.data[loop_i].color)
                 ifc_color = Vector(colors[color_index[face_i]] + (1.0,))
                 assert tool.Cad.are_vectors_equal(blender_color, ifc_color)
+
+
+class TestSetupActiveBsddClassification(NewFile):
+    def test_run(self):
+        bpy.ops.bim.create_project()
+        ifc_file = tool.Ifc.get()
+        name = "CCI Construction"
+        uri = "https://identifier.buildingsmart.org/uri/molio/cciconstruction/1.0"
+        ifc_file.create_entity("IfcClassification", Name=name, Location=uri)
+        filepath = "test/files/temp/test.ifc"
+        ifc_file.write(filepath)
+        bpy.ops.bim.load_project(filepath=filepath)
+        props = bpy.context.scene.BIMBSDDProperties
+        assert props.active_domain == name
+        assert props.active_uri == uri
