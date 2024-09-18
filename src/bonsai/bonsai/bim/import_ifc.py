@@ -869,6 +869,10 @@ class IfcImporter:
 
         self.ifc_import_settings.logger.info("Creating object %s", element)
 
+        # Skip material creation if mesh already exists (e.g., when during drawing activation
+        # importing annotations that reuse their type meshes).
+        materials_updated = False
+
         if mesh:
             pass
         elif element.is_a("IfcAnnotation") and self.is_curve_annotation(element) and shape:
@@ -877,6 +881,7 @@ class IfcImporter:
         elif shape:
             mesh_name = tool.Loader.get_mesh_name_from_shape(shape.geometry)
             mesh = self.meshes.get(mesh_name)
+            materials_updated = bool(mesh)
             if mesh is None:
                 mesh = self.create_mesh(element, shape)
                 tool.Loader.link_mesh(shape, mesh)
@@ -892,7 +897,8 @@ class IfcImporter:
             mat = np.array(shape.transformation.matrix).reshape((4, 4), order="F")
             self.set_matrix_world(obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, mat))
             assert mesh  # Type checker.
-            self.material_creator.create(element, obj, mesh, tool.Geometry.does_shape_has_openings(shape))
+            if not materials_updated:
+                self.material_creator.create(element, obj, mesh, tool.Geometry.does_shape_has_openings(shape))
         elif mesh:  # When does this occur?
             self.set_matrix_world(
                 obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, self.get_element_matrix(element))
