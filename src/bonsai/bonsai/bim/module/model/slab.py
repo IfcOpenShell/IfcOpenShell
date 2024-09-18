@@ -126,7 +126,6 @@ class DumbSlabGenerator:
             is_global=True,
             should_sync_changes_first=False,
         )
-        tool.Blender.remove_data_block(mesh)
 
         if self.footprint_context:
             extrusion = tool.Model.get_extrusion(representation)
@@ -520,7 +519,6 @@ def disable_editing_extrusion_profile(context):
         is_global=True,
         should_sync_changes_first=False,
     )
-    tool.Geometry.delete_data(profile_mesh)
     return {"FINISHED"}
 
 
@@ -621,7 +619,6 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
             is_global=True,
             should_sync_changes_first=False,
         )
-        bpy.data.meshes.remove(profile_mesh)
 
         # Only certain classes should have a footprint
         if element.is_a() not in ("IfcSlab", "IfcRamp"):

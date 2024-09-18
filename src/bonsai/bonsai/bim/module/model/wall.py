@@ -712,7 +712,6 @@ class DumbWallGenerator:
             is_global=True,
             should_sync_changes_first=False,
         )
-        tool.Blender.remove_data_block(mesh)
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Parametric")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "Bonsai.DumbLayer2"})
         obj.select_set(True)
