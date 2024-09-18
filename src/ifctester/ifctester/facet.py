@@ -149,8 +149,8 @@ class Facet:
         return "This facet cannot be interpreted"
 
     def to_ids_value(self, parameter: Union[str, Restriction, list]) -> dict[str, Any]:
-        if isinstance(parameter, str):
-            parameter_dict = {"simpleValue": parameter}
+        if isinstance(parameter, (int, float, str)):
+            parameter_dict = {"simpleValue": str(parameter)}
         elif isinstance(parameter, Restriction):
             parameter_dict = {"xs:restriction": [parameter.asdict()]}
         elif isinstance(parameter, list):
