@@ -404,6 +404,10 @@ class AddClassificationReference(bpy.types.Operator, tool.Ifc.Operator):
 class AddClassificationReferenceFromBSDD(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_classification_reference_from_bsdd"
     bl_label = "Add Classification Reference From bSDD"
+    bl_description = (
+        "Add classification reference from BSDD to the selected objects. "
+        "If class properties are loaded, they also will be assigned as psets/qsets"
+    )
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     obj_type: bpy.props.StringProperty()
