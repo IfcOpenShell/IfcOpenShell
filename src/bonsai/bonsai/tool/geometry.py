@@ -22,6 +22,7 @@ import struct
 import hashlib
 import logging
 import numpy as np
+import multiprocessing
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.grid
@@ -115,6 +116,20 @@ class Geometry(bonsai.core.tool.Geometry):
         obj.lock_rotation = (False, False, False)
 
     @classmethod
+    def delete_ifc_item(cls, obj: bpy.types.Object) -> None:
+        props = bpy.context.scene.BIMGeometryProperties
+        if len(props.item_objs) == 1:
+            return
+        for i, item_obj in enumerate(props.item_objs):
+            if item_obj.obj == obj:
+                props.item_objs.remove(i)
+                break
+        item = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+        cls.remove_representation_item(item)
+        cls.reload_representation(props.representation_obj)
+        bpy.data.objects.remove(obj)
+
+    @classmethod
     def delete_ifc_object(cls, obj: bpy.types.Object) -> None:
         element = tool.Ifc.get_entity(obj)
         if not element:
@@ -184,6 +199,8 @@ class Geometry(bonsai.core.tool.Geometry):
                 bonsai.core.spatial.import_spatial_decomposition(tool.Spatial)
         try:
             obj.name
+            if bpy.context.scene.BIMGeometryProperties.representation_obj == obj:
+                bpy.context.scene.BIMGeometryProperties.representation_obj = None
             bpy.data.objects.remove(obj)
         except:
             pass
@@ -400,6 +417,11 @@ class Geometry(bonsai.core.tool.Geometry):
         """< IfcShapeRepresentation or None"""
         if obj.data and hasattr(obj.data, "BIMMeshProperties") and obj.data.BIMMeshProperties.ifc_definition_id:
             return tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+
+    @classmethod
+    def get_data_representation(cls, data: bpy.types.Mesh) -> ifcopenshell.entity_instance | None:
+        if hasattr(data, "BIMMeshProperties") and data.BIMMeshProperties.ifc_definition_id:
+            return tool.Ifc.get().by_id(data.BIMMeshProperties.ifc_definition_id)
 
     @classmethod
     def get_active_representation_context(cls, obj: bpy.types.Object) -> ifcopenshell.entity_instance:
@@ -807,6 +829,10 @@ class Geometry(bonsai.core.tool.Geometry):
         return False
 
     @classmethod
+    def is_meshlike_item(cls, item: ifcopenshell.entity_instance) -> bool:
+        return item.is_a("IfcTessellatedItem") or item.is_a("IfcManifoldSolidBrep")
+
+    @classmethod
     def is_profile_based(cls, data: bpy.types.Mesh) -> bool:
         return data.BIMMeshProperties.subshape_type == "PROFILE"
 
@@ -814,6 +840,14 @@ class Geometry(bonsai.core.tool.Geometry):
     def is_swept_profile(cls, representation: ifcopenshell.entity_instance) -> bool:
         return ifcopenshell.util.representation.resolve_representation(representation).RepresentationType in (
             "SweptSolid",
+        )
+
+    @classmethod
+    def is_representation_item(cls, obj: bpy.types.Object) -> bool:
+        return (
+            obj.data
+            and (ifc_id := obj.data.BIMMeshProperties.ifc_definition_id)
+            and tool.Ifc.get().by_id(ifc_id).is_a("IfcRepresentationItem")
         )
 
     @classmethod
@@ -1365,3 +1399,7 @@ class Geometry(bonsai.core.tool.Geometry):
         use_immediate_repr = apply_openings and bool(getattr(element, "HasOpenings", None))
         use_immediate_repr = use_immediate_repr or cls.has_material_style_override(element)
         return use_immediate_repr
+
+    @classmethod
+    def get_elements_by_representation(cls, representation):
+        return ifcopenshell.util.element.get_elements_by_representation(tool.Ifc.get(), representation)

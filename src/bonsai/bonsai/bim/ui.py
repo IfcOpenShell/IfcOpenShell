@@ -456,7 +456,11 @@ class BIM_PT_tabs(Panel):
             op.uri = "https://docs.bonsaibim.org/guides/troubleshooting.html#saving-and-loading-blend-files"
             row.operator("bim.close_blend_warning", text="", icon="CANCEL")
 
-        if not context.mode.startswith(context.scene.BIMGeometryProperties.mode):
+        if context.mode == "OBJECT" and context.scene.BIMGeometryProperties.mode in ("OBJECT", "ITEM"):
+            pass
+        elif context.mode.startswith("EDIT") and context.scene.BIMGeometryProperties.mode == "EDIT":
+            pass
+        else:
             box = self.layout.box()
             box.alert = True
             row = box.row(align=True)

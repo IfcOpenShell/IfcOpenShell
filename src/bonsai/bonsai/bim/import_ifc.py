@@ -1370,46 +1370,7 @@ class IfcImporter:
                 verts = geometry.verts
                 mesh["has_cartesian_point_offset"] = False
 
-            if geometry.faces:
-                num_vertices = len(verts) // 3
-                total_faces = len(geometry.faces)
-                loop_start = range(0, total_faces, 3)
-                num_loops = total_faces // 3
-                loop_total = [3] * num_loops
-                num_vertex_indices = len(geometry.faces)
-
-                # See bug 3546
-                # ios_edges holds true edges that aren't triangulated.
-                #
-                # we do `.tolist()` because Blender can't assign `np.int32` to it's custom attributes
-                mesh["ios_edges"] = list(set(tuple(e) for e in ifcopenshell.util.shape.get_edges(geometry).tolist()))
-                mesh["ios_item_ids"] = ifcopenshell.util.shape.get_representation_item_ids(geometry).tolist()
-
-                mesh.vertices.add(num_vertices)
-                mesh.vertices.foreach_set("co", verts)
-                mesh.loops.add(num_vertex_indices)
-                mesh.loops.foreach_set("vertex_index", geometry.faces)
-                mesh.polygons.add(num_loops)
-                mesh.polygons.foreach_set("loop_start", loop_start)
-                mesh.polygons.foreach_set("loop_total", loop_total)
-                mesh.polygons.foreach_set("use_smooth", [0] * total_faces)
-                mesh.update()
-
-                rep_str: str = geometry.id
-                if "openings" not in rep_str:
-                    rep_id = rep_str.split("-", 1)[0]
-                    rep = self.file.by_id(int(rep_id))
-                    tool.Loader.load_indexed_colour_map(rep, mesh)
-            else:
-                e = geometry.edges
-                v = verts
-                vertices = [[v[i], v[i + 1], v[i + 2]] for i in range(0, len(v), 3)]
-                edges = [[e[i], e[i + 1]] for i in range(0, len(e), 2)]
-                mesh.from_pydata(vertices, edges, [])
-
-            mesh["ios_materials"] = [m.instance_id() for m in geometry.materials]
-            mesh["ios_material_ids"] = geometry.material_ids
-            return mesh
+            return tool.Loader.convert_geometry_to_mesh(geometry, mesh, verts=verts)
         except:
             self.ifc_import_settings.logger.error("Could not create mesh for %s", element)
             import traceback
