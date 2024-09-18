@@ -1087,24 +1087,42 @@ class ShapeBuilder:
         )
         return points, segments, transition_arc
 
+    def mesh(self, points: list[Vector], faces: list[list[int]]) -> ifcopenshell.entity_instance:
+        if self.file.schema == "IFC2X3":
+            return self.faceted_brep(points, faces)
+        return self.polygonal_face_set(points, faces)
+
+    def faceted_brep(self, points: list[Vector], faces: list[list[int]]) -> ifcopenshell.entity_instance:
+        """Generate an IfcFacetedBrep with a closed shell
+
+        Note that :func:`polygonal_face_set` is recommended in IFC4.
+
+        :param points: list of 3d coordinates
+        :param faces: list of faces consisted of point indices (points indices starting from 0)
+        :return: IfcFacetedBrep
+        """
+        verts = [self.file.createIfcCartesianPoint(p) for p in points]
+        faces = [
+            self.file.createIfcFace(
+                [self.file.createIfcFaceOuterBound(self.file.createIfcPolyLoop([verts[v] for v in f]), True)]
+            )
+            for f in faces
+        ]
+        return self.file.createIfcFacetedBrep(self.file.createIfcClosedShell(faces))
+
     def polygonal_face_set(self, points: list[Vector], faces: list[list[int]]) -> ifcopenshell.entity_instance:
         """
-        Generate an IfcPolygonalFaceSet.
+        Generate an IfcPolygonalFaceSet
 
-        :param points: rectangle size, could be either 2d or 3d, defaults to `(1,1)`
+        Note that this is not available in IFC2X3.
+
+        :param points: list of 3d coordinates
         :param faces: list of faces consisted of point indices (points indices starting from 0)
         :return: IfcPolygonalFaceSet
         """
-
         ifc_points = self.file.createIfcCartesianPointList3D(points)
-        ifc_faces = []
-        for face in faces:
-            face = [i + 1 for i in face]
-            ifc_faces.append(self.file.createIfcIndexedPolygonalFace(face))
-
-        face_set = self.file.createIfcPolygonalFaceSet(Coordinates=ifc_points, Faces=ifc_faces)
-
-        return face_set
+        ifc_faces = [self.file.createIfcIndexedPolygonalFace([i + 1 for i in face]) for face in faces]
+        return self.file.createIfcPolygonalFaceSet(Coordinates=ifc_points, Faces=ifc_faces)
 
     def extrude_face_set(
         self,
