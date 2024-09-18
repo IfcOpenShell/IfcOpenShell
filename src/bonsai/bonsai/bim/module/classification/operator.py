@@ -455,6 +455,18 @@ class AddClassificationReferenceFromBSDD(bpy.types.Operator, tool.Ifc.Operator):
             reference.Location = bsdd_classification.uri
 
             for classification_pset in bprops.classification_psets:
+                properties = {}
+                for prop in classification_pset.properties:
+                    properties[prop.name] = prop.get_value()
+
+                if classification_pset.name == "undefined_set":
+                    if "ObjectType" in properties:
+                        if hasattr(element, "ObjectType"):
+                            element.ObjectType = properties["ObjectType"]
+                        del properties["ObjectType"]
+                if not properties:
+                    continue
+
                 is_pset = not classification_pset.name.startswith("Qto_")
 
                 if is_pset:
@@ -472,10 +484,6 @@ class AddClassificationReferenceFromBSDD(bpy.types.Operator, tool.Ifc.Operator):
                     pset = ifcopenshell.api.run(
                         "pset.add_qto", tool.Ifc.get(), product=element, name=classification_pset.name
                     )
-
-                properties = {}
-                for prop in classification_pset.properties:
-                    properties[prop.name] = prop.get_value()
 
                 if is_pset:
                     ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties=properties)
