@@ -78,3 +78,19 @@ std::istream& ifcopenshell::geometry::settings::operator>>(std::istream& in, Out
 	}
 	return in;
 }
+
+std::istream& ifcopenshell::geometry::settings::operator>>(std::istream& in, TriangulationMethod& v) {
+	std::string token;
+	in >> token;
+	boost::to_upper(token);
+	if (token == "TRIANGLE_MESH") {
+		v = TRIANGLE_MESH;
+	} else if (token == "POLYHEDRON_WITHOUT_HOLES") {
+		v = POLYHEDRON_WITHOUT_HOLES;
+	} else if (token == "POLYHEDRON_WITH_HOLES") {
+		v = POLYHEDRON_WITH_HOLES;
+	} else {
+		in.setstate(std::ios_base::failbit);
+	}
+	return in;
+}

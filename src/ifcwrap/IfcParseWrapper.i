@@ -56,24 +56,6 @@ private:
 %rename("add") addEntity;
 %rename("remove") removeEntity;
 
-%{
-
-template<typename T>
-struct is_std_vector : std::false_type {};
-template<typename T, typename Alloc>
-struct is_std_vector<std::vector<T, Alloc>> : std::true_type {};
-template<typename T>
-constexpr bool is_std_vector_v = is_std_vector<T>::value;
-
-template<typename T>
-struct is_std_vector_vector : std::false_type {};
-template<typename T, typename Alloc, typename Alloc2>
-struct is_std_vector_vector<std::vector<std::vector<T, Alloc>, Alloc2>> : std::true_type {};
-template<typename T>
-constexpr bool is_std_vector_vector_v = is_std_vector_vector<T>::value;
-
-%}
-
 class attribute_value_derived {};
 %{
 class attribute_value_derived {};
@@ -780,9 +762,7 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 	PyObject* convert_cpp_attribute_to_python(AttributeValue arg) {
 		return arg.array_->apply_visitor([](auto& v){
 			using U = std::decay_t<decltype(v)>;
-            if constexpr (is_std_vector_vector_v<U>) {
-                return pythonize_vector2(v);
-            } else if constexpr (is_std_vector_v<U>) {
+            if constexpr (is_std_vector_v<U>) {
 				return pythonize_vector(v);
             } else if constexpr (std::is_same_v<U, EnumerationReference>) {
                 return pythonize(std::string(v.value()));

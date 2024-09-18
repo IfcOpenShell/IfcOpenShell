@@ -103,14 +103,20 @@ namespace IfcGeom {
 			typedef std::map<VertexKey, int> VertexKeyMap;
 			typedef std::pair<int, int> Edge;
 
-			std::vector<double> _verts;
-			std::vector<int> _faces;
-			std::vector<int> _edges;
-			std::vector<double> _normals;
+			std::vector<double> verts_;
+
+			// @nb only one of these is populated based on settings, we didn't want to go
+			// all in with templates or subtypes because of reduced ease of use.
+			std::vector<int> faces_;
+			std::vector<std::vector<int>> polyhedral_faces_without_holes_;
+			std::vector<std::vector<std::vector<int>>> polyhedral_faces_with_holes_;
+			
+			std::vector<int> edges_;
+			std::vector<double> normals_;
 			std::vector<double> uvs_;
-			std::vector<int> _material_ids;
-			std::vector<ifcopenshell::geometry::taxonomy::style::ptr> _materials;
-			std::vector<int> _item_ids;
+			std::vector<int> material_ids_;
+			std::vector<ifcopenshell::geometry::taxonomy::style::ptr> materials_;
+			std::vector<int> item_ids_;
 			size_t weld_offset_;
 			VertexKeyMap welds;
 
@@ -120,15 +126,17 @@ namespace IfcGeom {
 				{}
 
 		public:
-			const std::vector<double>& verts() const { return _verts; }
-			const std::vector<int>& faces() const { return _faces; }
-			const std::vector<int>& edges() const { return _edges; }
-			const std::vector<double>& normals() const { return _normals; }
+			const std::vector<double>& verts() const { return verts_; }
+			const std::vector<int>& faces() const { return faces_; }
+			const std::vector<std::vector<int>>& polyhedral_faces_without_holes() const { return polyhedral_faces_without_holes_; }
+			const std::vector<std::vector<std::vector<int>>>& polyhedral_faces_with_holes() const { return polyhedral_faces_with_holes_; }
+			const std::vector<int>& edges() const { return edges_; }
+			const std::vector<double>& normals() const { return normals_; }
 			std::vector<double>& uvs() { return uvs_; }
 			const std::vector<double>& uvs() const { return uvs_; }
-			const std::vector<int>& material_ids() const { return _material_ids; }
-			const std::vector<ifcopenshell::geometry::taxonomy::style::ptr>& materials() const { return _materials; }
-			const std::vector<int>& item_ids() const { return _item_ids; }
+			const std::vector<int>& material_ids() const { return material_ids_; }
+			const std::vector<ifcopenshell::geometry::taxonomy::style::ptr>& materials() const { return materials_; }
+			const std::vector<int>& item_ids() const { return item_ids_; }
 
 			Triangulation(const BRep& shape_model);
 
@@ -146,14 +154,14 @@ namespace IfcGeom {
 				const std::vector<int>& item_ids
 			)
 				: Representation(settings, entity, id)
-				, _verts(verts)
-				, _faces(faces)
-				, _edges(edges)
-				, _normals(normals)
+				, verts_(verts)
+				, faces_(faces)
+				, edges_(edges)
+				, normals_(normals)
 				, uvs_(uvs)
-				, _material_ids(material_ids)
-				, _materials(materials)
-				, _item_ids(item_ids)
+				, material_ids_(material_ids)
+				, materials_(materials)
+				, item_ids_(item_ids)
 			{}
 
 			virtual ~Triangulation() {}
@@ -168,30 +176,44 @@ namespace IfcGeom {
 			int addVertex(int item_index, int material_index, double X, double Y, double Z);
 
 			void addNormal(double X, double Y, double Z) {
-				_normals.push_back(X);
-				_normals.push_back(Y);
-				_normals.push_back(Z);
+				normals_.push_back(X);
+				normals_.push_back(Y);
+				normals_.push_back(Z);
 			}
 
 			void addFace(int item_id, int style, int i0, int i1, int i2) {
-				_faces.push_back(i0);
-				_faces.push_back(i1);
-				_faces.push_back(i2);
+				faces_.push_back(i0);
+				faces_.push_back(i1);
+				faces_.push_back(i2);
 
-				_item_ids.push_back(item_id);
-				_material_ids.push_back(style);
+				item_ids_.push_back(item_id);
+				material_ids_.push_back(style);
+			}
+
+			void addFace(int item_id, int style, const std::vector<int>& outer_bound) {
+				polyhedral_faces_without_holes_.push_back(outer_bound);
+
+				item_ids_.push_back(item_id);
+				material_ids_.push_back(style);
+			}
+
+			void addFace(int item_id, int style, const std::vector<std::vector<int>>& bounds) {
+				polyhedral_faces_with_holes_.push_back(bounds);
+
+				item_ids_.push_back(item_id);
+				material_ids_.push_back(style);
 			}
 
 			void addEdge(int style, int i0, int i1) {
-				_edges.push_back(i0);
-				_edges.push_back(i1);
+				edges_.push_back(i0);
+				edges_.push_back(i1);
 
-				_material_ids.push_back(style);
+				material_ids_.push_back(style);
 			}
 
 			void registerEdge(int i0, int i1) {
-				_edges.push_back(i0);
-				_edges.push_back(i1);
+				edges_.push_back(i0);
+				edges_.push_back(i1);
 			}
 
 			void addEdge(int n1, int n2, std::map<std::pair<int, int>, int>& edgecount);
