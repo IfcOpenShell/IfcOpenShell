@@ -91,11 +91,7 @@ class Loader(bonsai.core.tool.Loader):
         mesh: tool.Geometry.TYPES_WITH_MESH_PROPERTIES,
     ) -> None:
         geometry = shape.geometry if hasattr(shape, "geometry") else shape
-        if "-" in geometry.id:
-            mesh.BIMMeshProperties.ifc_definition_id = int(geometry.id.split("-")[0])
-        else:
-            # TODO: See #2002
-            mesh.BIMMeshProperties.ifc_definition_id = int(geometry.id.replace(",", ""))
+        mesh.BIMMeshProperties.ifc_definition_id = int(geometry.id.split("-")[0])
 
     @classmethod
     def create_surface_style_shading(cls, blender_material, surface_style):
