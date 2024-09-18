@@ -8,6 +8,7 @@
   --background-color: #363636;
   --button-background: #28a745;
   --button-hover-background: #218838;
+  --highlight-over: #ED5700;
   --scrollbar-track-color: #f1f1f1;
   --scrollbar-thumb-color: #888;
   --scrollbar-thumb-hover-color: #555;
@@ -95,8 +96,7 @@ body {
   display: inline-block;
   transition: background-color 0.3s ease;
   width: fit-content;
-  margin: 0.5em;
-  z-index: 11000;
+  margin: 0.25em;
 }
 
 .action-button::after {
@@ -116,11 +116,12 @@ body {
 
 .action-button:hover::after {
   opacity: 1;
+  border-color: var(--highlight-over);
+  border-width: 2px;
 }
 
 .active-btn {
   background-color: #887821;
-  /* make a nic shadow */
   box-shadow: 0 0 10px #887821;
 }
 
@@ -246,7 +247,7 @@ td {
   align-items: center;
 }
 
-td:first-child {
+#cost-items td:first-child {
   display: flex;
   align-items: center;
 }
@@ -281,29 +282,26 @@ input:focus {
   color: #ddd;
 }
 
-#cost-items input, #cost-items
-select {
+#cost-items input{
   border-radius: 6px;
   padding: 6px 8px;
   font-size: 14px;
   line-height: 20px;
-  margin-left: 0.5em;
-  margin-right: 0.5em;
   font-size: var(--fontSize);
   min-width: 50px;
 }
 
-form input {
+form input, form select {
   border-radius: 6px;
   padding: 3px 4px;
   font-size: 12px;
   line-height: 10px;
-  margin-left: 0.2em;
-  margin-right: 0.2em;
   font-size: inherit;
-  height: inherit;
-  width: inherit;
-  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  max-height: 30px;
+  max-width: 250px;
+  box-sizing: border-box;  
 }
 
 #cost-items tr:hover,
@@ -399,7 +397,17 @@ form table {
 }
 
 .clickable-cell:hover {
-  border: 1px solid #94a728;
-  border-radius: 6px;
+  border: 2px solid var(--highlight-over);
   cursor: pointer;
+}
+
+td {
+  position: relative;
+}
+
+.append-right {
+  right: 0;
+  top: 50%;
+  position: absolute;
+  transform: translateY(-50%);
 }

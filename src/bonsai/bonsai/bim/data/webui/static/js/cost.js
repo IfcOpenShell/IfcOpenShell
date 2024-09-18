@@ -54,14 +54,16 @@ function handleEditQuantities(data) {
   });
 }
 
+function addSumCostValue(costItemId) {
+  executeOperator({ type: "addSumCostValue", costItemId: costItemId });
+}
+
 function addQuantity(costItemId, ifcClass) {
   executeOperator({
     type: "AddCostItemQuantity",
     costItemId: costItemId,
     ifcClass: ifcClass,
   });
-
-  //CostUI.addQuantity(costItemId, quantityName);
 }
 
 function editQuantity(costItemId, quantityId, attributes) {
@@ -387,6 +389,7 @@ function handleCostItemsData(data) {
       enableEditingCostValues: enableEditingCostValues,
       addSummaryCostItem: addSummaryCostItem,
       enableEditingQuantities: enableEditingQuantities,
+      addSumCostValue: addSumCostValue,
     },
   });
 }
