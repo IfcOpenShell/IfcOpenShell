@@ -632,8 +632,11 @@ class ImportCSV(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
 
     @classmethod
     def poll(cls, context):
-        ifc_file = IfcStore.get_file()
-        return ifc_file is not None
+        ifc_file = tool.Ifc.get()
+        if ifc_file is None:
+            cls.poll_message_set("No IFC file is loaded.")
+            return False
+        return True
 
     def execute(self, context):
         from ifc4d.csv4d2ifc import Csv2Ifc
@@ -657,8 +660,11 @@ class ImportP6(bpy.types.Operator, ImportHelper):
 
     @classmethod
     def poll(cls, context):
-        ifc_file = IfcStore.get_file()
-        return ifc_file is not None
+        ifc_file = tool.Ifc.get()
+        if ifc_file is None:
+            cls.poll_message_set("No IFC file is loaded.")
+            return False
+        return True
 
     def execute(self, context):
         from ifc4d.p62ifc import P62Ifc
@@ -683,8 +689,11 @@ class ImportP6XER(bpy.types.Operator, ImportHelper):
 
     @classmethod
     def poll(cls, context):
-        ifc_file = IfcStore.get_file()
-        return ifc_file is not None
+        ifc_file = tool.Ifc.get()
+        if ifc_file is None:
+            cls.poll_message_set("No IFC file is loaded.")
+            return False
+        return True
 
     def execute(self, context):
         from ifc4d.p6xer2ifc import P6XER2Ifc
@@ -709,8 +718,11 @@ class ImportPP(bpy.types.Operator, ImportHelper):
 
     @classmethod
     def poll(cls, context):
-        ifc_file = IfcStore.get_file()
-        return ifc_file is not None
+        ifc_file = tool.Ifc.get()
+        if ifc_file is None:
+            cls.poll_message_set("No IFC file is loaded.")
+            return False
+        return True
 
     def execute(self, context):
         from ifc4d.pp2ifc import PP2Ifc
@@ -735,8 +747,11 @@ class ImportMSP(bpy.types.Operator, ImportHelper):
 
     @classmethod
     def poll(cls, context):
-        ifc_file = IfcStore.get_file()
-        return ifc_file is not None
+        ifc_file = tool.Ifc.get()
+        if ifc_file is None:
+            cls.poll_message_set("No IFC file is loaded.")
+            return False
+        return True
 
     def execute(self, context):
         from ifc4d.msp2ifc import MSP2Ifc
@@ -763,8 +778,11 @@ class ExportMSP(bpy.types.Operator, ImportHelper):
 
     @classmethod
     def poll(cls, context):
-        ifc_file = IfcStore.get_file()
-        return ifc_file is not None
+        ifc_file = tool.Ifc.get()
+        if ifc_file is None:
+            cls.poll_message_set("No IFC file is loaded.")
+            return False
+        return True
 
     def execute(self, context):
         from ifc4d.ifc2msp import Ifc2Msp
@@ -793,8 +811,11 @@ class ExportP6(bpy.types.Operator, ImportHelper):
 
     @classmethod
     def poll(cls, context):
-        ifc_file = IfcStore.get_file()
-        return ifc_file is not None
+        ifc_file = tool.Ifc.get()
+        if ifc_file is None:
+            cls.poll_message_set("No IFC file is loaded.")
+            return False
+        return True
 
     def execute(self, context):
         from ifc4d.ifc2p6 import Ifc2P6
