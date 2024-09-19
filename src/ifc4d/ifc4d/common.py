@@ -95,8 +95,9 @@ class ScheduleIfcGenerator:
         )
 
     def create_calendars(self) -> None:
-        for calendar in self.calendars.values():
+        for calendar_id, calendar in self.calendars.items():
             calendar["ifc"] = ifcopenshell.api.run("sequence.add_work_calendar", self.file, name=calendar["Name"])
+            calendar["ifc"].Identification = str(calendar_id)
             self.process_working_week(calendar["StandardWorkWeek"], calendar["ifc"])
             self.process_exceptions(calendar.get("HolidayOrExceptions"), calendar["ifc"])
 
