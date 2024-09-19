@@ -311,9 +311,8 @@ class FilledOpeningGenerator:
             return shape_builder.get_representation(context, [extrusion])
 
         if (
-            (filling_rep := tool.Geometry.get_active_representation(filling_obj))
-            and filling_rep.ContextOfItems == context
-        ):
+            filling_rep := tool.Geometry.get_active_representation(filling_obj)
+        ) and filling_rep.ContextOfItems == context:
             x, y, z = filling_obj.dimensions
         else:
             # The filling_obj's mesh data is not the body geometry.
