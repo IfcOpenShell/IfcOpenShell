@@ -520,20 +520,21 @@ class TestSetupActiveBsddClassification(NewFile):
         bpy.ops.bim.create_project()
         ifc_file = tool.Ifc.get()
         name = "CCI Construction"
-        uri = "https://identifier.buildingsmart.org/uri/molio/cciconstruction/1.0"
+        base_uri = "https://identifier.buildingsmart.org/uri/molio/cciconstruction/1.0"
         if schema == "IFC2X3":
+            uri = "https://identifier.buildingsmart.org/uri/molio/cciconstruction/1.0/class/A-BDC"
             classification = ifc_file.create_entity("IfcClassification", Name=name)
             ifc_file.create_entity("IfcClassificationReference", Location=uri, ReferencedSource=classification)
         else:
             attr_name = "Specification" if schema == "IFC4X3" else "Location"
             classification = ifc_file.create_entity("IfcClassification", Name=name)
-            setattr(classification, attr_name, uri)
+            setattr(classification, attr_name, base_uri)
         filepath = "test/files/temp/test.ifc"
         ifc_file.write(filepath)
         bpy.ops.bim.load_project(filepath=filepath)
         props = bpy.context.scene.BIMBSDDProperties
         assert props.active_domain == name
-        assert props.active_uri == uri
+        assert props.active_uri == base_uri
 
     def test_set_load_and_set_active_bsdd_ifc2x3(self):
         self.run_test("IFC2X3")
