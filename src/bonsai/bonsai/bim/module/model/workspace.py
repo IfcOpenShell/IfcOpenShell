@@ -541,10 +541,9 @@ class EditObjectUI:
     @classmethod
     def draw_operations(cls, context):
         ui_context = str(context.region.type)
-        row = cls.layout.row(align=True)
-        
-        row.label(text="Operations") if ui_context != "TOOL_HEADER" else row
 
+        row = cls.layout.row(align=True)
+        row.label(text="Operations") if ui_context != "TOOL_HEADER" else row
         cls.draw_regen_operations(row)
 
         if AuthoringData.data["active_material_usage"] == "LAYER2":
@@ -556,6 +555,15 @@ class EditObjectUI:
             add_layout_hotkey_operator(row, "Mitre", "S_Y", "Intersects two non-parallel elements to a mitred corner junction", ui_context)
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             add_layout_hotkey_operator(row, "Unjoin Walls", "S_U", "", ui_context)
+
+            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+            add_layout_hotkey_operator(row, "Merge", "S_M", "Merge selected Elements", ui_context)
+            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+            add_layout_hotkey_operator(row, "Split", "S_K", "Split selected Element into two Elements at the cursor location", ui_context)
+            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+            add_layout_hotkey_operator(row, "Rotate 90", "S_R", "Rotate the selected Element by 90 degrees", ui_context)
+            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+            add_layout_hotkey_operator(row, "Flip", "S_F", "Flip Element about its local axes, keep the position", ui_context)
 
         elif AuthoringData.data["active_material_usage"] == "LAYER3":
             if "LAYER2" in AuthoringData.data["selected_material_usages"]:
@@ -716,6 +724,7 @@ class EditObjectUI:
         add_layout_hotkey_operator(row, "Toggle Openings", "A_O", "Toggle openings", ui_context)
         row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
         add_layout_hotkey_operator(row, "Decomposition", "A_D", "Select decomposition", ui_context)
+
 
 class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.hotkey"
