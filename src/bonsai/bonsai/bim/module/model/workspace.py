@@ -304,12 +304,6 @@ def add_layout_hotkey_operator(layout, text, hotkey, description, ui_context="")
 
     return op
 
-## TO DOs:
-## - Check all Regens - might be missing from profiles
-## - Complete remaining icons
-## - Check if RL should be applicable to more types
-## - Apply void button is showing when any two objects are selected - should only appear when a voidable object and a void are selected
-## - Type Class and Relating Type fields seem to be crossed between selected and new
 
 class AddElementUI:
     @classmethod
@@ -452,6 +446,8 @@ class ModifySelectedUI:
         cls.props = context.scene.BIMModelProperties
 
         row = cls.layout.row(align=True)
+        row.separator()
+
         if not tool.Ifc.get():
             row.label(text="No IFC Project", icon="ERROR")
             return
@@ -466,11 +462,11 @@ class ModifySelectedUI:
         elif AuthoringData.data["ifc_element_type"] != ifc_element_type:
             AuthoringData.load(ifc_element_type)
 
-        layout.label(text="Modify Selected Tools:", icon="TOOL_SETTINGS")
+        layout.label(text="Modify Selected Tools:", icon="RESTRICT_SELECT_OFF")
+        layout.separator()
         cls.draw_parameter_adjustments(context)
-        cls.draw_operations(context)
-        cls.draw_void(context)
-        cls.draw_regen_operations(context)
+        row = cls.draw_operations(context)
+        cls.draw_void(context, row)
         cls.draw_align(context)
         cls.draw_aggregation(context)
         cls.draw_qto(context)
@@ -487,10 +483,9 @@ class ModifySelectedUI:
     @classmethod
     def draw_modes(cls, context):
         ui_context = str(context.region.type)
-        
-        # if AuthoringData.data["active_material_usage"]:
         row = cls.layout.row(align=True)
-        row.label(text="Mode")
+        row.label(text="Mode") if ui_context != "TOOL_HEADER" else row
+            
         if AuthoringData.data["active_material_usage"] == "LAYER3":
             if len(context.selected_objects) == 1:
                 row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
@@ -556,7 +551,11 @@ class ModifySelectedUI:
     def draw_operations(cls, context):
         ui_context = str(context.region.type)
         row = cls.layout.row(align=True)
+        
         row.label(text="Operations") if ui_context != "TOOL_HEADER" else row
+
+        cls.draw_regen_operations(row)
+
         if AuthoringData.data["active_material_usage"] == "LAYER2":
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             add_layout_hotkey_operator(row, "Extend", "S_E", "Extends/reduces element to 3D cursor", ui_context)
@@ -610,20 +609,23 @@ class ModifySelectedUI:
             row.operator("bim.mep_connect_elements", text="Connect MEP Elements" if ui_context != "TOOL_HEADER" else "", icon_value=custom_icon_previews["CONNECT_MEP_ELEMENTS"].icon_id)
             row.label(text="", icon="BLANK1") if ui_context != "TOOL_HEADER" else row
             row.label(text="", icon="BLANK1") if ui_context != "TOOL_HEADER" else row
-            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
-            add_layout_hotkey_operator(row, "Regen", "S_G", bpy.ops.bim.regenerate_distribution_element.__doc__, ui_context)
+
+        return row
 
     @classmethod
-    def draw_void(cls, context):
+    def draw_void(cls, context, row):
         ui_context = str(context.region.type)
-        row = cls.layout.row(align=True if ui_context != "TOOL_HEADER" else False)
+        
         if len(context.selected_objects) > 1:
-            
-            row.operator("bim.add_opening", text="Apply Void", icon_value=custom_icon_previews["APPLY_VOID"].icon_id)
-            row.label(text="", icon="BLANK1") if ui_context != "TOOL_HEADER" else row
-            row.label(text="", icon="BLANK1") if ui_context != "TOOL_HEADER" else row
+            op_text = "Apply Void" if ui_context != "TOOL_HEADER" else ""
+            op_icon = custom_icon_previews["APPLY_VOID"].icon_id
+            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+            row.operator("bim.add_opening", text=op_text, icon_value=op_icon)
         else:
-            row.operator("bim.add_potential_opening", text="Add Void" if ui_context != "TOOL_HEADER" else "", icon_value=custom_icon_previews["ADD_VOID"].icon_id)
+            op_text = "Add Void" if ui_context != "TOOL_HEADER" else ""
+            op_icon = custom_icon_previews["ADD_VOID"].icon_id
+            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+            row.operator("bim.add_potential_opening", text=op_text, icon_value=op_icon)
             if ui_context != "TOOL_HEADER":
                 row.label(text="", icon="EVENT_SHIFT")
                 row.label(text="", icon="EVENT_O")
@@ -633,31 +635,42 @@ class ModifySelectedUI:
                 row = cls.layout.row(align=True)
                 row.operator("bim.edit_openings", icon="CHECKMARK", text="")
                 row.operator("bim.hide_openings", icon="CANCEL", text="")
-                
+        
         if AuthoringData.data["active_class"] in ("IfcOpeningElement",):
+            row = cls.layout.row(align=True)
             row.operator("bim.edit_openings", icon="CHECKMARK", text="")
             row.operator("bim.hide_openings", icon="CANCEL", text="")
             if len(context.selected_objects) == 2:
                 row = cls.layout.row(align=True)
                 row.label(text="", icon="EVENT_SHIFT")
                 row.label(text="", icon="EVENT_L")
+                row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
                 row.operator("bim.clone_opening", text="Clone Opening")
 
     @classmethod
-    def draw_regen_operations(cls, context):
-        ui_context = str(context.region.type)
-        row = cls.layout.row(align=True)
-
-        if AuthoringData.data["active_material_usage"] == "LAYER2":
-            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
-            add_layout_hotkey_operator(row, "Regen", "S_G", bpy.ops.bim.recalculate_wall.__doc__, ui_context)
+    def draw_regen_operations(cls, row):
+        custom_icon = custom_icon_previews.get("REGEN", custom_icon_previews["IFC"]).icon_id
         
+        if AuthoringData.data["active_material_usage"] == "LAYER2":
+            op = row.operator("bim.hotkey", text="", icon_value=custom_icon)
+            description = f"{bpy.ops.bim.recalculate_wall.__doc__}\n\nHotkey: S G"
+            op.hotkey = "S_G"
+            op.description = description.strip()
+
         elif AuthoringData.data["active_material_usage"] == "PROFILE":
             if AuthoringData.data["active_class"] in ("IfcCableCarrierSegment","IfcCableSegment","IfcDuctSegment","IfcPipeSegment"):
                 pass
             else:
-                row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
-                add_layout_hotkey_operator(row, "Regen", "S_G", bpy.ops.bim.recalculate_profile.__doc__, ui_context)    
+                op = row.operator("bim.hotkey", text="", icon_value=custom_icon)
+                description = f"{bpy.ops.bim.recalculate_profile.__doc__}\n\nHotkey: S G"
+                op.hotkey = "S_G"
+                op.description = description.strip()
+
+        if PortData.data["total_ports"] > 0:
+            op = row.operator("bim.hotkey", text="", icon_value=custom_icon)
+            description = f"{bpy.ops.bim.regenerate_distribution_element.__doc__}\n\nHotkey: S G"
+            op.hotkey = "S_G"
+            op.description = description.strip()
 
     @classmethod
     def draw_align(cls, context):
@@ -678,15 +691,18 @@ class ModifySelectedUI:
         ui_context = str(context.region.type)
         row = cls.layout.row(align=True)
         row.label(text="Aggregation") if ui_context != "TOOL_HEADER" else row
-        add_layout_hotkey_operator(cls.layout, "Assign", "C_P", bpy.ops.bim.aggregate_assign_object.__doc__, ui_context)
-        add_layout_hotkey_operator(cls.layout, "Unassign", "A_P", bpy.ops.bim.aggregate_unassign_object.__doc__, ui_context)
+        row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+        add_layout_hotkey_operator(row, "Assign", "C_P", bpy.ops.bim.aggregate_assign_object.__doc__, ui_context)
+        row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+        add_layout_hotkey_operator(row, "Unassign", "A_P", bpy.ops.bim.aggregate_unassign_object.__doc__, ui_context)
 
     @classmethod
     def draw_qto(cls, context):
         ui_context = str(context.region.type)
         row = cls.layout.row(align=True)
         row.label(text="Quantity Take-off") if ui_context != "TOOL_HEADER" else row
-        add_layout_hotkey_operator(cls.layout, "Perform Quantity Take-off", "S_Q", bpy.ops.bim.perform_quantity_take_off.__doc__, ui_context)
+        row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+        add_layout_hotkey_operator(row, "Perform Quantity Take-off", "S_Q", bpy.ops.bim.perform_quantity_take_off.__doc__, ui_context)
 
 
 class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
