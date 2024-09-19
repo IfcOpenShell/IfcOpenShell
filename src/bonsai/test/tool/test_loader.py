@@ -19,6 +19,7 @@
 import bpy
 import bmesh
 import ifcopenshell
+import ifcopenshell.util.schema
 import bonsai.core.tool
 import bonsai.tool as tool
 from test.bim.bootstrap import NewFile
@@ -513,15 +514,32 @@ class TestLoadingIndexedMap(NewFile):
 
 
 class TestSetupActiveBsddClassification(NewFile):
-    def test_run(self):
+    def run_test(self, schema: ifcopenshell.util.schema.IFC_SCHEMA) -> None:
+        schema_ = "IFC4X3_ADD2" if schema == "IFC4X3" else schema
+        bpy.context.scene.BIMProjectProperties.export_schema = schema_
         bpy.ops.bim.create_project()
         ifc_file = tool.Ifc.get()
         name = "CCI Construction"
         uri = "https://identifier.buildingsmart.org/uri/molio/cciconstruction/1.0"
-        ifc_file.create_entity("IfcClassification", Name=name, Location=uri)
+        if schema == "IFC2X3":
+            classification = ifc_file.create_entity("IfcClassification", Name=name)
+            ifc_file.create_entity("IfcClassificationReference", Location=uri, ReferencedSource=classification)
+        else:
+            attr_name = "Specification" if schema == "IFC4X3" else "Location"
+            classification = ifc_file.create_entity("IfcClassification", Name=name)
+            setattr(classification, attr_name, uri)
         filepath = "test/files/temp/test.ifc"
         ifc_file.write(filepath)
         bpy.ops.bim.load_project(filepath=filepath)
         props = bpy.context.scene.BIMBSDDProperties
         assert props.active_domain == name
         assert props.active_uri == uri
+
+    def test_set_load_and_set_active_bsdd_ifc2x3(self):
+        self.run_test("IFC2X3")
+
+    def test_set_load_and_set_active_bsdd_ifc4(self):
+        self.run_test("IFC4")
+
+    def test_set_load_and_set_active_bsdd_ifc4x3(self):
+        self.run_test("IFC4X3")
