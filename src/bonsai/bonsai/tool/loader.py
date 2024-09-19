@@ -926,9 +926,32 @@ class Loader(bonsai.core.tool.Loader):
         return mesh
 
     @classmethod
-    def setup_active_bsdd_classification(cls):
+    def setup_active_bsdd_classification(cls) -> None:
         ifc_file = tool.Ifc.get()
-        attr_name = "Specification" if ifc_file.schema == "IFC4X3" else "Location"
+        schema = ifc_file.schema
+
+        # In IFC2X3 IfcClassification doesn't have an attribute for uri.
+        if schema == "IFC2X3":
+            classifications = [c for c in ifc_file.by_type("IfcClassification") if c.Name]
+            if not classifications:
+                return
+            pattern = r"^https://identifier\.buildingsmart\.org/uri/([a-zA-Z0-9]+)/([a-zA-Z0-9]+)/([0-9]+\.[0-9]+)"
+
+            # No inverse attribute in IFC2X3...
+            for ref in ifc_file.by_type("IfcClassificationReference"):
+                if (
+                    not (uri := ref.Location)
+                    or not uri.startswith("https://identifier.buildingsmart.org/uri/")
+                    or not (pattern_match := re.match(pattern, uri))
+                    or not (classification := ref.ReferencedSource)
+                    or classification not in classifications
+                    or not classification.is_a("IfcClassification")
+                ):
+                    continue
+                tool.Bsdd.set_active_bsdd(classification.Name, pattern_match.group(0))
+            return
+
+        attr_name = "Specification" if schema == "IFC4X3" else "Location"
         bsdd_classification, uri, name = None, None, None
         for c in ifc_file.by_type("IfcClassification"):
             if (
