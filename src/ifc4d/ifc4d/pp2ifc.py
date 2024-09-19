@@ -12,6 +12,7 @@ import ifcopenshell.util.date
 from .wpattern import AstaCalendarWorkPattern
 from .common import ScheduleIfcGenerator, Calendar, WBSEntry, Activity
 import time
+from collections import defaultdict
 from typing import Any
 
 
@@ -123,26 +124,24 @@ class PP2Ifc:
         expanded_tasks = {t["BAR"]: t for t in self.get_json("EXPANDED_TASK")}
         tasks = {t["BAR"]: t for t in self.get_json("TASK")}
         milestones = {m["BAR"]: m for m in self.get_json("MILESTONE")}
+        expanded_tasks_to_bars: dict[int, int] = {v["ID"]: k for k, v in expanded_tasks.items()}
 
-        schedule_task = None
-
-        bar_tasks = {}
-        wbs_activities: dict[int, list[int]] = {}
+        wbs_activities: defaultdict[int, list[int]] = defaultdict(list)
 
         for bar in bars:
             extra_type = None
             extra_data = None
-            bar_id = None
+            bar_id: int = bar["ID"]
 
-            if bar["ID"] in expanded_tasks:
+            if bar_id in expanded_tasks:
                 extra_type = "EXPANDED_TASK"
-                extra_data = expanded_tasks[bar["ID"]]
-            elif bar["ID"] in tasks:
+                extra_data = expanded_tasks[bar_id]
+            elif bar_id in tasks:
                 extra_type = "TASK"
-                extra_data = tasks[bar["ID"]]
-            elif bar["ID"] in milestones:
+                extra_data = tasks[bar_id]
+            elif bar_id in milestones:
                 extra_type = "MILESTONE"
-                extra_data = milestones[bar["ID"]]
+                extra_data = milestones[bar_id]
             else:
                 # Not sure where this might be the case
                 continue
@@ -150,13 +149,13 @@ class PP2Ifc:
             name = bar["NAME"]
             if extra_data["NAME"]:
                 name += f" - {extra_data['NAME']}"
-            bar_tasks[extra_data["ID"]] = {"bar": bar, "extra_type": extra_type, "extra_data": extra_data}
 
+            parent_task_id = expanded_tasks_to_bars[bar["EXPANDED_TASK"]] if bar["EXPANDED_TASK"] > 0 else None
             if extra_type == "EXPANDED_TASK":
-                self.wbs[extra_data["ID"]] = {
+                self.wbs[bar_id] = {
                     "Name": name,
-                    "Code": extra_data["ID"],
-                    "ParentObjectId": bar["EXPANDED_TASK"] if bar["EXPANDED_TASK"] > 0 else None,
+                    "Code": bar_id,
+                    "ParentObjectId": parent_task_id,
                     "ifc": None,
                     "rel": None,
                     "activities": [],
@@ -173,9 +172,9 @@ class PP2Ifc:
                 else:
                     activity_duration = 0.0
 
-                self.activities[extra_data["ID"]] = Activity(
+                self.activities[bar_id] = Activity(
                     Name=name,
-                    Identification=bar["ID"],
+                    Identification=bar_id,
                     StartDate=datetime.datetime.fromisoformat(extra_data["LINKABLE_START"]),
                     FinishDate=datetime.datetime.fromisoformat(extra_data["LINKABLE_FINISH"]),
                     PlannedDuration=activity_duration,
@@ -183,7 +182,8 @@ class PP2Ifc:
                     CalendarObjectId=extra_data["CALENDAR"],
                     ifc=None,
                 )
-                wbs_activities.setdefault(bar["EXPANDED_TASK"], []).append(extra_data["ID"])
+                # No idea if it's possible that activity won't have a parent task.
+                wbs_activities[parent_task_id].append(bar_id)
 
         for wbs, activities in wbs_activities.items():
             self.wbs[wbs]["activities"] = activities
