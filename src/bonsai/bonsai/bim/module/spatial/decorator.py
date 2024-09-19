@@ -91,6 +91,7 @@ class GridDecorator:
                 coords_2d -= Vector((w * 0.5, h * 0.5))
                 blf.position(font_id, coords_2d[0], coords_2d[1], 0)
                 blf.draw(font_id, tag)
+        blf.disable(font_id, blf.SHADOW)
 
     def draw(self, context):
         self.addon_prefs = tool.Blender.get_addon_preferences()

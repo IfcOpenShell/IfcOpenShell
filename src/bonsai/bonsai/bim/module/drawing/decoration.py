@@ -468,11 +468,12 @@ class BaseDecorator:
 
         blf.rotation(font_id, ang)
         blf.color(font_id, *color)
-        # blf.enable(font_id, blf.SHADOW)
-        # blf.shadow(font_id, 5, 0, 0, 0, 1)
-        # blf.shadow_offset(font_id, 1, -1)
+        blf.enable(font_id, blf.SHADOW)
+        blf.shadow(font_id, 5, 0, 0, 0, 1)
+        blf.shadow_offset(font_id, 1, -1)
         blf.draw(font_id, text)
         blf.disable(font_id, blf.ROTATION)
+        blf.disable(font_id, blf.SHADOW)
 
     def draw_dimension_text(self, context, get_text, description, dimension_data, **draw_label_kwargs):
         prefix = dimension_data["text_prefix"]
