@@ -543,6 +543,7 @@ class EditObjectUI:
         ui_context = str(context.region.type)
 
         row = cls.layout.row(align=True)
+        row.separator()
         row.label(text="Operations") if ui_context != "TOOL_HEADER" else row
         cls.draw_regen_operations(row)
 
@@ -555,7 +556,6 @@ class EditObjectUI:
             add_layout_hotkey_operator(row, "Mitre", "S_Y", "Intersects two non-parallel elements to a mitred corner junction", ui_context)
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             add_layout_hotkey_operator(row, "Unjoin Walls", "S_U", "", ui_context)
-
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             add_layout_hotkey_operator(row, "Merge", "S_M", "Merge selected Elements", ui_context)
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
@@ -675,6 +675,7 @@ class EditObjectUI:
     def draw_align(cls, context):
         ui_context = str(context.region.type)
         row = cls.layout.row(align=True)
+        row.separator()
         row.label(text="Align") if ui_context != "TOOL_HEADER" else row
         row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
         add_layout_hotkey_operator(row, "Exterior", "S_X", "", ui_context)
@@ -689,6 +690,7 @@ class EditObjectUI:
     def draw_aggregation(cls, context):
         ui_context = str(context.region.type)
         row = cls.layout.row(align=True)
+        row.separator()
         row.label(text="Aggregation") if ui_context != "TOOL_HEADER" else row
         row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
         add_layout_hotkey_operator(row, "Assign", "C_P", bpy.ops.bim.aggregate_assign_object.__doc__, ui_context)
@@ -699,6 +701,7 @@ class EditObjectUI:
     def draw_qto(cls, context):
         ui_context = str(context.region.type)
         row = cls.layout.row(align=True)
+        row.separator()
         row.label(text="Quantity Take-off") if ui_context != "TOOL_HEADER" else row
         row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
         add_layout_hotkey_operator(row, "Perform Quantity Take-off", "S_Q", bpy.ops.bim.perform_quantity_take_off.__doc__, ui_context)
@@ -707,6 +710,7 @@ class EditObjectUI:
     def draw_modes(cls, context):
         ui_context = str(context.region.type)
         row = cls.layout.row(align=True)
+        row.separator()
         row.label(text="Mode") if ui_context != "TOOL_HEADER" else row
             
         if AuthoringData.data["active_material_usage"] == "LAYER3":
