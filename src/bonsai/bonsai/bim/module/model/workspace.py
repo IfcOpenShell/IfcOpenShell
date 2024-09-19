@@ -300,7 +300,10 @@ def add_layout_hotkey_operator(layout, text, hotkey, description, ui_context="")
     description = "\n\n".join(filter(None, [description, hotkey_description]))
 
     op.hotkey = hotkey
-    op.description = description
+    if ui_context == "TOOL_HEADER":
+        op.description = text + "\n" + description
+    else:
+        op.description = description
 
     return op
 
