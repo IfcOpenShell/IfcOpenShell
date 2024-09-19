@@ -6,15 +6,13 @@ print("In module products sys.path[0], __package__ ==", sys.path[0], __package__
 sys.path.append(sys.path[0])
 
 import sqlite3
-import math
 import datetime
 from datetime import timedelta
-import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.util.date
 from .wpattern import AstaCalendarWorkPattern
-from .common import ScheduleIfcGenerator
+from .common import ScheduleIfcGenerator, Calendar, WBSEntry, Activity
 import time
+from typing import Any
 
 
 list_of_tables = [
@@ -29,6 +27,9 @@ list_of_tables = [
 
 
 class PP2Ifc:
+    wbs: dict[int, WBSEntry]
+    activities: dict[int, Activity]
+
     def __init__(self):
 
         self.pp = None
@@ -45,17 +46,17 @@ class PP2Ifc:
 
         self.relationship_map = {0: "FINISH_START", 1: "FINISH_FINISH", 2: "START_START", 3: "START_FINISH"}
 
-    def get_json(self, table_name):
+    def get_json(self, table_name: str) -> list[dict[str, Any]]:
         self.cur.execute("select * from " + table_name)
         r = [dict((self.cur.description[i][0], value) for i, value in enumerate(row)) for row in self.cur.fetchall()]
         return r
 
-    def get_json_with_filter(self, table_name, attr_name, attr_value):
+    def get_json_with_filter(self, table_name: str, attr_name: str, attr_value: Any) -> list[dict[str, Any]]:
         self.cur.execute("select * from " + table_name + " where " + attr_name + " = " + str(attr_value))
         r = [dict((self.cur.description[i][0], value) for i, value in enumerate(row)) for row in self.cur.fetchall()]
         return r
 
-    def execute(self):
+    def execute(self) -> None:
         self.con = sqlite3.connect(self.pp)
         self.cur = self.con.cursor()
         self.parse_pp()
@@ -78,17 +79,15 @@ class PP2Ifc:
         print("Parsing time is", end - start)
         print("IFC Creation took", end2 - end)
         print("Overall Time", end2 - start)
-        # self.create_ifc()
 
-    def parse_pp(self):
-
+    def parse_pp(self) -> None:
         project = self.get_json("PROJECT_SUMMARY")[0]
         self.project["Name"] = project["SHORT_NAME"]
         self.parse_calendar_pp()
         self.parse_bar()
-        self.parse_relationship_pp(project)
+        self.parse_relationship_pp()
 
-    def parse_calendar_pp(self):
+    def parse_calendar_pp(self) -> None:
         calendars = self.get_json("CALENDAR")
         wp_data = self.get_json("WORK_PATTERN")
         work_types = self.get_json("EXCEPTIONN")
@@ -111,16 +110,15 @@ class PP2Ifc:
                     )
                 timex.append(work_times.total_seconds() / (60 * 60))
 
-            self.calendars[calendar_id] = {
-                "Name": calendar["NAME"],
-                "Type": "NOTDEFINED",
-                "HoursPerDay": max(timex),
-                "StandardWorkWeek": wp.dict_wp,
-                "HolidayOrExceptions": exceptions,
-            }
-            # print(self.calendars[calendar_id])
+            self.calendars[calendar_id] = Calendar(
+                Name=calendar["NAME"],
+                Type="NOTDEFINED",
+                HoursPerDay=max(timex),
+                StandardWorkWeek=wp.dict_wp,
+                HolidayOrExceptions=exceptions,
+            )
 
-    def parse_bar(self):
+    def parse_bar(self) -> None:
         bars = self.get_json("BAR")
         expanded_tasks = {t["BAR"]: t for t in self.get_json("EXPANDED_TASK")}
         tasks = {t["BAR"]: t for t in self.get_json("TASK")}
@@ -129,7 +127,7 @@ class PP2Ifc:
         schedule_task = None
 
         bar_tasks = {}
-        wbs_activities = {}
+        wbs_activities: dict[int, list[int]] = {}
 
         for bar in bars:
             extra_type = None
@@ -175,24 +173,23 @@ class PP2Ifc:
                 else:
                     activity_duration = 0.0
 
-                self.activities[extra_data["ID"]] = {
-                    "Name": name,
-                    "Identification": extra_data["ID"],
-                    "StartDate": datetime.datetime.fromisoformat(extra_data["LINKABLE_START"]),
-                    "FinishDate": datetime.datetime.fromisoformat(extra_data["LINKABLE_FINISH"]),
-                    "PlannedDuration": activity_duration,
-                    "Status": "PLANNED",
-                    "CalendarObjectId": extra_data["CALENDAR"],
-                    "ifc": None,
-                }
+                self.activities[extra_data["ID"]] = Activity(
+                    Name=name,
+                    Identification=bar["ID"],
+                    StartDate=datetime.datetime.fromisoformat(extra_data["LINKABLE_START"]),
+                    FinishDate=datetime.datetime.fromisoformat(extra_data["LINKABLE_FINISH"]),
+                    PlannedDuration=activity_duration,
+                    Status="PLANNED",
+                    CalendarObjectId=extra_data["CALENDAR"],
+                    ifc=None,
+                )
                 wbs_activities.setdefault(bar["EXPANDED_TASK"], []).append(extra_data["ID"])
 
         for wbs, activities in wbs_activities.items():
             self.wbs[wbs]["activities"] = activities
 
-    def parse_relationship_pp(self, project):
+    def parse_relationship_pp(self) -> None:
         relations = self.get_json("LINK")
-        # print(relations)
         for relationship in relations:
             predecessor = relationship["START_TASK"]
             successor = relationship["END_TASK"]
