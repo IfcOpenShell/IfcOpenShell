@@ -49,22 +49,22 @@ This section provides an overview of key IFC concepts and how they're implemente
 
       .. container:: card
 
-         :doc:`ifc_concepts/spatial_objects`
+         :doc:`spatial_objects`
             Basic spatial objects.
 
       .. container:: card
 
-         :doc:`ifc_concepts/classification_and_types`
+         :doc:`classification_and_types`
             IFC classification hierarchy and the concept of types and occurrences.
 
       .. container:: card
 
-         :doc:`ifc_concepts/geometry_and_representations`
+         :doc:`geometry_and_representations`
             Understanding IFC geometry, representations, and parametric materials.
 
       .. container:: card
 
-         :doc:`ifc_concepts/working_with_representations`
+         :doc:`working_with_representations`
             Representations in Bonsai.
 
 .. container:: global-index-toc
@@ -74,7 +74,7 @@ This section provides an overview of key IFC concepts and how they're implemente
       :caption: Understanding IFC
       :maxdepth: 2
 
-      ifc_concepts/spatial_objects
-      ifc_concepts/classification_and_types
-      ifc_concepts/geometry_and_representations
-      ifc_concepts/working_with_representations
+      spatial_objects
+      classification_and_types
+      geometry_and_representations
+      working_with_representations
