@@ -306,11 +306,24 @@ class FilledOpeningGenerator:
                 get_curve_2d_from_3d(profile),
                 magnitude=thickness / unit_scale,
                 position=Vector([0.0, -thickness * 0.5 / unit_scale, 0.0]),
-                **shape_builder.extrude_kwargs("Y")
+                **shape_builder.extrude_kwargs("Y"),
             )
             return shape_builder.get_representation(context, [extrusion])
 
-        x, y, z = filling_obj.dimensions
+        if (
+            (filling_rep := tool.Geometry.get_active_representation(filling_obj))
+            and filling_rep.ContextOfItems == context
+        ):
+            x, y, z = filling_obj.dimensions
+        else:
+            # The filling_obj's mesh data is not the body geometry.
+            settings = ifcopenshell.geom.settings()
+            filling_element = tool.Ifc.get_entity(filling_obj)
+            filling_body = ifcopenshell.util.representation.get_representation(filling_element, context)
+            filling_geometry = ifcopenshell.geom.create_shape(settings, filling_body)
+            x = ifcopenshell.util.shape.get_x(filling_geometry)
+            y = ifcopenshell.util.shape.get_y(filling_geometry)
+            z = ifcopenshell.util.shape.get_z(filling_geometry)
         opening_position = Vector([0.0, -thickness * 0.5 / unit_scale, 0.0])
         opening_size = Vector([x, z]) / unit_scale
 
@@ -339,7 +352,7 @@ class FilledOpeningGenerator:
             shape_builder.rectangle(size=opening_size),
             magnitude=thickness / unit_scale,
             position=opening_position,
-            **shape_builder.extrude_kwargs("Y")
+            **shape_builder.extrude_kwargs("Y"),
         )
 
         return shape_builder.get_representation(context, [extrusion])
