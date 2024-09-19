@@ -423,6 +423,7 @@ class PolylineDecorator:
                 blf.color(self.font_id, *color)
             blf.position(self.font_id, mouse_pos[0] + offset, mouse_pos[1] - (new_line * i), 0)
             blf.draw(self.font_id, field_name + formatted_value)
+        blf.disable(self.font_id, blf.SHADOW)
 
     def draw_text_background(self, context, coords_dim, text_dim):
         padding = 5
@@ -475,6 +476,7 @@ class PolylineDecorator:
             text_dim = blf.dimensions(self.font_id, text)
             self.draw_text_background(context, coords_angle, text_dim)
             blf.draw(self.font_id, text)
+        blf.disable(self.font_id, blf.SHADOW)
 
     def draw_snap_point(self, context):
         self.line_shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
