@@ -73,7 +73,7 @@ class BimTool(WorkSpaceTool):
     bl_space_type = "VIEW_3D"
     bl_context_mode = "OBJECT"
     bl_idname = "bim.bim_tool"
-    bl_label = "Multi Tool"
+    bl_label = "Multi Object Tool"
     bl_description = "Create and edit elements by construction class"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.bim")
     bl_widget = None
@@ -108,7 +108,9 @@ class BimTool(WorkSpaceTool):
 
     def draw_settings(context, layout, ws_tool):
         # Unlike operators, Blender doesn't treat workspace tools as a class, so we'll create our own.
-        AddElementUI.draw(context, layout, ifc_element_type="all")
+        CreateObjectUI.draw(context, layout, ifc_element_type="all")
+        if context.active_object and context.selected_objects:
+            EditObjectUI.draw(context, layout)
 
 
 class WallTool(BimTool):
@@ -123,9 +125,9 @@ class WallTool(BimTool):
 
     @classmethod
     def draw_settings(cls, context, layout, ws_tool):
-        AddElementUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
+        CreateObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
         if context.active_object and context.selected_objects:
-            ModifySelectedUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
+            EditObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
 
 
 class SlabTool(BimTool):
@@ -140,9 +142,9 @@ class SlabTool(BimTool):
 
     @classmethod
     def draw_settings(cls, context, layout, ws_tool):
-        AddElementUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
+        CreateObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
         if context.active_object and context.selected_objects:
-            ModifySelectedUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
+            EditObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
 
 
 class DoorTool(BimTool):
@@ -157,9 +159,9 @@ class DoorTool(BimTool):
 
     @classmethod
     def draw_settings(cls, context, layout, ws_tool):
-        AddElementUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
+        CreateObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
         if context.active_object and context.selected_objects:
-            ModifySelectedUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
+            EditObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
 
 
 class WindowTool(BimTool):
@@ -174,9 +176,9 @@ class WindowTool(BimTool):
 
     @classmethod
     def draw_settings(cls, context, layout, ws_tool):
-        AddElementUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
+        CreateObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
         if context.active_object and context.selected_objects:
-            ModifySelectedUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
+            EditObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
 
 
 class ColumnTool(BimTool):
@@ -191,9 +193,9 @@ class ColumnTool(BimTool):
 
     @classmethod
     def draw_settings(cls, context, layout, ws_tool):
-        AddElementUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
+        CreateObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
         if context.active_object and context.selected_objects:
-            ModifySelectedUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
+            EditObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
 
 
 class BeamTool(BimTool):
@@ -208,9 +210,9 @@ class BeamTool(BimTool):
 
     @classmethod
     def draw_settings(cls, context, layout, ws_tool):
-        AddElementUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
+        CreateObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
         if context.active_object and context.selected_objects:
-            ModifySelectedUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
+            EditObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
 
 
 class DuctTool(BimTool):
@@ -225,9 +227,9 @@ class DuctTool(BimTool):
 
     @classmethod
     def draw_settings(cls, context, layout, ws_tool):
-        AddElementUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
+        CreateObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
         if context.active_object and context.selected_objects:
-            ModifySelectedUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
+            EditObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
 
 
 class CableCarrierTool(BimTool):
@@ -242,9 +244,9 @@ class CableCarrierTool(BimTool):
 
     @classmethod
     def draw_settings(cls, context, layout, ws_tool):
-        AddElementUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
+        CreateObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
         if context.active_object and context.selected_objects:
-            ModifySelectedUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
+            EditObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
 
 
 class PipeTool(BimTool):
@@ -259,9 +261,9 @@ class PipeTool(BimTool):
 
     @classmethod
     def draw_settings(cls, context, layout, ws_tool):
-        AddElementUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
+        CreateObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
         if context.active_object and context.selected_objects:
-            ModifySelectedUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
+            EditObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
 
 
 class CableTool(BimTool):
@@ -276,9 +278,9 @@ class CableTool(BimTool):
 
     @classmethod
     def draw_settings(cls, context, layout, ws_tool):
-        AddElementUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
+        CreateObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
         if context.active_object and context.selected_objects:
-            ModifySelectedUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
+            EditObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
 
 
 def add_layout_hotkey_operator(layout, text, hotkey, description, ui_context=""):
@@ -308,7 +310,12 @@ def add_layout_hotkey_operator(layout, text, hotkey, description, ui_context="")
     return op
 
 
-class AddElementUI:
+def format_ifc_camel_case(string):
+    string = string.replace("Ifc", "")
+    return ''.join(' ' + char if char.isupper() else char for char in string).strip()
+
+
+class CreateObjectUI:
     @classmethod
     def draw(cls, context, layout, ifc_element_type=None):
         cls.layout = layout
@@ -330,7 +337,7 @@ class AddElementUI:
             AuthoringData.load(ifc_element_type)
 
         if ifc_element_type and context.region.type == "TOOL_HEADER":
-            tool_name = "Multi Tool" if ifc_element_type == "all" else ''.join(' ' + char if char.isupper() else char for char in ifc_element_type.removeprefix('Ifc').removesuffix('Type')).strip() + ' Tool'
+            tool_name = "Multi Object Tool" if ifc_element_type == "all" else format_ifc_camel_case(ifc_element_type.removesuffix('Type')) + ' Tool'
             cls.layout.label(text=tool_name, icon="TOOL_SETTINGS")
 
         cls.draw_type_manager_launcher(context)
@@ -442,7 +449,7 @@ class AddElementUI:
                     op.ifc_class = cls.props.ifc_class
 
 
-class ModifySelectedUI:
+class EditObjectUI:
     @classmethod
     def draw(cls, context, layout, ifc_element_type=None):
         cls.layout = layout
@@ -450,7 +457,6 @@ class ModifySelectedUI:
 
         row = cls.layout.row(align=True)
         row.separator()
-
         if not tool.Ifc.get():
             row.label(text="No IFC Project", icon="ERROR")
             return
@@ -465,46 +471,28 @@ class ModifySelectedUI:
         elif AuthoringData.data["ifc_element_type"] != ifc_element_type:
             AuthoringData.load(ifc_element_type)
 
-        layout.label(text="Modify Selected Tools:", icon="RESTRICT_SELECT_OFF")
-        layout.separator()
-        cls.draw_parameter_adjustments(context)
-        row = cls.draw_operations(context)
-        cls.draw_void(context, row)
-        cls.draw_align(context)
-        cls.draw_aggregation(context)
-        cls.draw_qto(context)
-        cls.draw_modes(context)
+        if context.region.type == "TOOL_HEADER":   
+            text = format_ifc_camel_case(AuthoringData.data["active_class"])
+            layout.label(text=f"{text} Edit Tools:", icon="RESTRICT_SELECT_OFF")
+            cls.draw_parameter_adjustments(context)
+            row = cls.draw_operations(context)
+            cls.draw_void(context, row)
+            cls.draw_align(context)
+            cls.draw_aggregation(context)
+            cls.draw_qto(context)
+            cls.draw_modes(context)
+        
+        if context.region.type in ("UI", "WINDOW"):
+            text = format_ifc_camel_case(AuthoringData.data["active_class"])
+            layout.label(text=f"{text} Edit Tools:", icon="RESTRICT_SELECT_OFF")
+            cls.draw_parameter_adjustments(context)
+            row = cls.draw_operations(context)
+            cls.draw_void(context, row)
+            cls.draw_align(context)
+            cls.draw_aggregation(context)
+            cls.draw_qto(context)
+            cls.draw_modes(context)
                 
-    @classmethod
-    def draw_container_info(cls, context):
-        text = AuthoringData.data["default_container"]
-        if context.region.type == "UI":
-            text = f"Container: {text}"
-
-        cls.layout.row(align=True).label(text=text, icon="OUTLINER_COLLECTION")
-
-    @classmethod
-    def draw_modes(cls, context):
-        ui_context = str(context.region.type)
-        row = cls.layout.row(align=True)
-        row.label(text="Mode") if ui_context != "TOOL_HEADER" else row
-            
-        if AuthoringData.data["active_material_usage"] == "LAYER3":
-            if len(context.selected_objects) == 1:
-                row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
-                add_layout_hotkey_operator(row, "Edit Profile", "S_E", "", ui_context)
-        elif (tool.Model.is_parametric_railing_active() and not context.active_object.BIMRailingProperties.is_editing_path):
-            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
-            row.operator("bim.enable_editing_railing_path", text="Edit Path" if ui_context != "TOOL_HEADER" else "", icon_value=custom_icon_previews["EDIT_RAILING_PATH"].icon_id)
-        elif AuthoringData.data["active_material_usage"] == "PROFILE":
-            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
-            add_layout_hotkey_operator(row, "Edit Axis", "A_E", "", ui_context)
-
-        row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
-        add_layout_hotkey_operator(row, "Toggle Openings", "A_O", "Toggle openings", ui_context)
-        row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
-        add_layout_hotkey_operator(row, "Decomposition", "A_D", "Select decomposition", ui_context)
-
     @classmethod
     def draw_parameter_adjustments(cls, context):
         ui_context = str(context.region.type)
@@ -616,6 +604,31 @@ class ModifySelectedUI:
         return row
 
     @classmethod
+    def draw_regen_operations(cls, row):
+        custom_icon = custom_icon_previews.get("REGEN", custom_icon_previews["IFC"]).icon_id
+        
+        if AuthoringData.data["active_material_usage"] == "LAYER2":
+            op = row.operator("bim.hotkey", text="", icon_value=custom_icon)
+            description = f"{bpy.ops.bim.recalculate_wall.__doc__}\n\nHotkey: S G"
+            op.hotkey = "S_G"
+            op.description = description.strip()
+
+        elif AuthoringData.data["active_material_usage"] == "PROFILE":
+            if AuthoringData.data["active_class"] in ("IfcCableCarrierSegment","IfcCableSegment","IfcDuctSegment","IfcPipeSegment"):
+                pass
+            else:
+                op = row.operator("bim.hotkey", text="", icon_value=custom_icon)
+                description = f"{bpy.ops.bim.recalculate_profile.__doc__}\n\nHotkey: S G"
+                op.hotkey = "S_G"
+                op.description = description.strip()
+
+        if PortData.data["total_ports"] > 0:
+            op = row.operator("bim.hotkey", text="", icon_value=custom_icon)
+            description = f"{bpy.ops.bim.regenerate_distribution_element.__doc__}\n\nHotkey: S G"
+            op.hotkey = "S_G"
+            op.description = description.strip()
+
+    @classmethod
     def draw_void(cls, context, row):
         ui_context = str(context.region.type)
         
@@ -651,31 +664,6 @@ class ModifySelectedUI:
                 row.operator("bim.clone_opening", text="Clone Opening")
 
     @classmethod
-    def draw_regen_operations(cls, row):
-        custom_icon = custom_icon_previews.get("REGEN", custom_icon_previews["IFC"]).icon_id
-        
-        if AuthoringData.data["active_material_usage"] == "LAYER2":
-            op = row.operator("bim.hotkey", text="", icon_value=custom_icon)
-            description = f"{bpy.ops.bim.recalculate_wall.__doc__}\n\nHotkey: S G"
-            op.hotkey = "S_G"
-            op.description = description.strip()
-
-        elif AuthoringData.data["active_material_usage"] == "PROFILE":
-            if AuthoringData.data["active_class"] in ("IfcCableCarrierSegment","IfcCableSegment","IfcDuctSegment","IfcPipeSegment"):
-                pass
-            else:
-                op = row.operator("bim.hotkey", text="", icon_value=custom_icon)
-                description = f"{bpy.ops.bim.recalculate_profile.__doc__}\n\nHotkey: S G"
-                op.hotkey = "S_G"
-                op.description = description.strip()
-
-        if PortData.data["total_ports"] > 0:
-            op = row.operator("bim.hotkey", text="", icon_value=custom_icon)
-            description = f"{bpy.ops.bim.regenerate_distribution_element.__doc__}\n\nHotkey: S G"
-            op.hotkey = "S_G"
-            op.description = description.strip()
-
-    @classmethod
     def draw_align(cls, context):
         ui_context = str(context.region.type)
         row = cls.layout.row(align=True)
@@ -707,6 +695,27 @@ class ModifySelectedUI:
         row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
         add_layout_hotkey_operator(row, "Perform Quantity Take-off", "S_Q", bpy.ops.bim.perform_quantity_take_off.__doc__, ui_context)
 
+    @classmethod
+    def draw_modes(cls, context):
+        ui_context = str(context.region.type)
+        row = cls.layout.row(align=True)
+        row.label(text="Mode") if ui_context != "TOOL_HEADER" else row
+            
+        if AuthoringData.data["active_material_usage"] == "LAYER3":
+            if len(context.selected_objects) == 1:
+                row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+                add_layout_hotkey_operator(row, "Edit Profile", "S_E", "", ui_context)
+        elif (tool.Model.is_parametric_railing_active() and not context.active_object.BIMRailingProperties.is_editing_path):
+            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+            row.operator("bim.enable_editing_railing_path", text="Edit Path" if ui_context != "TOOL_HEADER" else "", icon_value=custom_icon_previews["EDIT_RAILING_PATH"].icon_id)
+        elif AuthoringData.data["active_material_usage"] == "PROFILE":
+            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+            add_layout_hotkey_operator(row, "Edit Axis", "A_E", "", ui_context)
+
+        row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+        add_layout_hotkey_operator(row, "Toggle Openings", "A_O", "Toggle openings", ui_context)
+        row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+        add_layout_hotkey_operator(row, "Decomposition", "A_D", "Select decomposition", ui_context)
 
 class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.hotkey"
