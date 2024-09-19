@@ -52,8 +52,8 @@ ifeq ($(PLATFORM), win64)
 PLATFORMTAG:=win_amd64
 endif
 
-IOS_URL:=https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v$(VERSION)-f5e02d1-$(PLATFORM).zip
-IFCCONVERT_URL:=https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v$(VERSION)-f5e02d1-$(PLATFORM).zip
+IOS_URL:=https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v$(VERSION)-03935a9-$(PLATFORM).zip
+IFCCONVERT_URL:=https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v$(VERSION)-03935a9-$(PLATFORM).zip
 
 .PHONY: test
 test:
