@@ -547,6 +547,8 @@ class EnableAddingPresentationStyle(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
+        if not tool.Ifc.get():
+            return False
         style_type = tool.Style.get_active_style_type()
         if style_type != "IfcSurfaceStyle":
             cls.poll_message_set(f"Adding {style_type} is not currently supported.")
