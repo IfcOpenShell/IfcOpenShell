@@ -35,13 +35,17 @@ ClassTypes = Literal["Class", "GroupOfProperties", "AlternativeUse", "Material"]
 # and should be typed with NotRequired.
 
 
+# Use yml_to_classes.py to update classes.
 class DictionaryContractV1(TypedDict):
+    code: str
     uri: str
     name: str
     version: str
     organizationCodeOwner: str
     organizationNameOwner: str
     defaultLanguageCode: str
+    isLatestVersion: bool
+    isVerified: bool
     license: str
     licenseUrl: str
     qualityAssuranceProcedure: str
@@ -50,6 +54,7 @@ class DictionaryContractV1(TypedDict):
     moreInfoUrl: str
     releaseDate: str
     lastUpdatedUtc: str
+    availableLanguages: list[CodeNameDto]
 
 
 class DictionaryResponseContractV1(TypedDict):
@@ -66,16 +71,20 @@ class ClassListItemContractV1(TypedDict):
     classType: str
     referenceCode: str
     parentClassCode: str
+    descriptionPart: str
     children: list[ClassListItemContractV1]
 
 
 class DictionaryClassesResponseContractV1(TypedDict):
+    code: str
     uri: str
     name: str
     version: str
     organizationCodeOwner: str
     organizationNameOwner: str
     defaultLanguageCode: str
+    isLatestVersion: bool
+    isVerified: bool
     license: str
     licenseUrl: str
     qualityAssuranceProcedure: str
@@ -94,15 +103,19 @@ class PropertyListItemContractV1(TypedDict):
     uri: str
     code: str
     name: str
+    descriptionPart: str
 
 
 class DictionaryPropertiesResponseContractV1(TypedDict):
+    code: str
     uri: str
     name: str
     version: str
     organizationCodeOwner: str
     organizationNameOwner: str
     defaultLanguageCode: str
+    isLatestVersion: bool
+    isVerified: bool
     license: str
     licenseUrl: str
     qualityAssuranceProcedure: str
@@ -135,6 +148,7 @@ class ClassPropertyContractV1(TypedDict):
     name: str
     uri: str
     description: str
+    definition: str
     dataType: str
     dimension: str
     dimensionLength: int
@@ -159,6 +173,7 @@ class ClassPropertyContractV1(TypedDict):
     predefinedValue: str
     propertyCode: str
     propertyDictionaryName: str
+    propertyDictionaryUri: str
     propertyUri: str
     propertySet: str
     propertyStatus: str
@@ -319,6 +334,23 @@ class ClassContractV1(TypedDict):
     classProperties: list[ClassPropertyContractV1]
     classRelations: list[ClassRelationContractV1]
     childClassReferences: list[ClassReferenceContractV1]
+    reverseClassRelations: list[ClassReverseRelationContractV1]
+    hierarchy: list[HierarchyItemContractV1]
+
+
+class ClassReverseRelationContractV1(TypedDict):
+    relationType: str
+    classUri: str
+    className: str
+    fraction: float
+    dictionaryUri: str
+
+
+class HierarchyItemContractV1(TypedDict):
+    level: int
+    name: str
+    code: str
+    uri: str
 
 
 class SearchInDictionaryResponseContractV1(TypedDict):
@@ -383,6 +415,11 @@ class UnitContractV1(TypedDict):
     name: str
     symbol: str
     qudtUri: str
+
+
+class CodeNameDto(TypedDict):
+    code: str
+    name: str
 
 
 class OAuthReceiver(http.server.BaseHTTPRequestHandler):
