@@ -290,6 +290,16 @@ def get_material_colors(geometry: ShapeType) -> npt.NDArray[np.float64]:
     return np.frombuffer(geometry.colors_buffer, dtype="d").reshape(-1, 4)
 
 
+def get_normals(geometry: ShapeType) -> npt.NDArray[np.float64]:
+    """Get vertex normals as a numpy array.
+
+    See geometry settings documentation for settings that affect normals.
+
+    :return: A numpy array listing normal for each shape vertex.
+    """
+    return np.frombuffer(geometry.normals_buffer, dtype="d").reshape(-1, 3)
+
+
 def get_representation_item_ids(geometry: ShapeType) -> npt.NDArray[np.int32]:
     """Get representation item ids for the geometry faces."""
     return np.frombuffer(geometry.item_ids_buffer, dtype="i")
