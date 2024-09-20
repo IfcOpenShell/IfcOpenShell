@@ -21,6 +21,7 @@ sio_port = 8080  # default port
 sio = socketio.AsyncServer(
     cors_allowed_origins="*",
     async_mode="aiohttp",
+    max_http_buffer_size=10000000
 )
 app = web.Application()
 sio.attach(app)
