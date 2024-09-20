@@ -37,9 +37,10 @@ class Bsdd(bonsai.core.tool.Bsdd):
                     new2.enum_items = json.dumps(data["possible_values"])
                     new2.data_type = "enum"
                 else:
-                    new2.data_type = data_type_map[data["data_type"]]
+                    new2.data_type = data_type_map.get(data["data_type"], "string")
                 new2.description = data["description"]
                 new2.ifc_class = data["ifc_class"]
+                new2.metadata = data["dictionary"]
 
     @classmethod
     def create_classes(cls, class_dict: list[bsdd.ClassSearchResponseClassContractV1]) -> None:
@@ -96,9 +97,7 @@ class Bsdd(bonsai.core.tool.Bsdd):
 
         psets = {}
         for prop in properties:
-            # prop is ClassPropertyContract.
-            if prop.get("propertyDictionaryName") != "IFC":
-                continue
+            prop_dictionary = prop.get("propertyDictionaryName") or ""
             pset = prop.get("propertySet", None)
             if not pset:
                 continue
@@ -116,10 +115,11 @@ class Bsdd(bonsai.core.tool.Bsdd):
             # so name should be exact. Fallback to name as propertyCode is nullable.
             prop_name = prop.get("propertyCode") or prop["name"]
             psets[pset][prop_name] = {
-                "data_type": prop["dataType"],
+                "data_type": prop.get("dataType"),
                 "possible_values": possible_values,
                 "description": description,
                 "ifc_class": ifc_class,
+                "dictionary": prop_dictionary,
             }
         return psets
 

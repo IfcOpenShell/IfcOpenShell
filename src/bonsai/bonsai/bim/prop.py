@@ -254,6 +254,7 @@ class Attribute(PropertyGroup):
     display_name: StringProperty(name="Display Name", get=get_display_name)
     description: StringProperty(name="Description")
     ifc_class: StringProperty(name="Ifc Class")
+    # TODO: make it enum
     data_type: StringProperty(name="Data Type")
     string_value: StringProperty(name="Value", update=update_attribute_value, description=tooltip)
     bool_value: BoolProperty(name="Value", update=update_attribute_value, description=tooltip)
@@ -288,6 +289,7 @@ class Attribute(PropertyGroup):
     value_max: FloatProperty(description="This is used to validate int_value and float_value")
     value_max_constraint: BoolProperty(default=False, description="True if the numerical value has an upper bound")
     special_type: StringProperty(name="Special Value Type", default="")
+    metadata: StringProperty(name="Metadata", description="For storing some additional information about the attribute")
 
     def get_value(self):
         if self.is_optional and self.is_null:

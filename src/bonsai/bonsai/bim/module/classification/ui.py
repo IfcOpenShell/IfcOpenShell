@@ -175,6 +175,7 @@ class ReferenceUI:
 
         row = self.layout.row()
         row.prop(self.bprops, "should_filter_ifc_class")
+        row.prop(self.bprops, "use_only_ifc_properties")
 
         if len(self.bprops.classifications):
             self.layout.template_list(
@@ -199,11 +200,18 @@ class ReferenceUI:
             row.operator("bim.get_bsdd_classification_properties", text="", icon="COPY_ID")
 
             if len(self.bprops.classification_psets):
+                use_only_ifc_properties = self.bprops.use_only_ifc_properties
                 for pset in self.bprops.classification_psets:
+                    properties = pset.properties
+                    if use_only_ifc_properties:
+                        properties = [p for p in properties if p.metadata == "IFC"]
+                    if not properties:
+                        continue
+
                     box = self.layout.box()
                     row = box.row()
                     row.label(text=pset.name, icon="COPY_ID")
-                    bonsai.bim.helper.draw_attributes(pset.properties, box)
+                    bonsai.bim.helper.draw_attributes(properties, box)
 
     def draw_add_file_ui(self, context):
         if not self.data.data["active_classification_library"]:
