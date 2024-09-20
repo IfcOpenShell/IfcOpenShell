@@ -1,0 +1,86 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 86905287dc..5a3a0a4eeb 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -440,6 +440,10 @@ else()
+   set (USE_D3D OFF)
+ endif()
+ 
++# IfcOpenShell begin
++add_definitions(-DHAVE_NO_DLL)
++# IfcOpenShell end
++
+ # Enable/Disable the floating point exceptions (FPE) during runtime.
+ if (NOT BUILD_ENABLE_FPE_SIGNAL_HANDLER)
+   set (BUILD_ENABLE_FPE_SIGNAL_HANDLER OFF CACHE BOOL "${BUILD_ENABLE_FPE_SIGNAL_HANDLER_DESCR}" FORCE)
+@@ -828,6 +832,8 @@ else()
+   OCCT_CHECK_AND_UNSET ("3RDPARTY_DOT_EXECUTABLE")
+ endif()
+ 
++list (REMOVE_ITEM BUILD_TOOLKITS ExpToCasExe)
++
+ # bison
+ if (BUILD_YACCLEX)
+   OCCT_INCLUDE_CMAKE_FILE ("adm/cmake/bison")
+diff --git a/adm/cmake/occt_defs_flags.cmake b/adm/cmake/occt_defs_flags.cmake
+index 3d989abcd4..9c063a5c0d 100644
+--- a/adm/cmake/occt_defs_flags.cmake
++++ b/adm/cmake/occt_defs_flags.cmake
+@@ -185,7 +185,23 @@ elseif (DEFINED CMAKE_COMPILER_IS_GNUCXX)
+   set (CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -s")
+ endif()
+ 
+-if (BUILD_RELEASE_DISABLE_EXCEPTIONS)
+-  set (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNo_Exception")
+-  set (CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DNo_Exception")
+-endif()
++# IfcOpenShell begin
++# https://salsa.debian.org/science-team/opencascade/blob/739e7e9c4fbe575165eb3ff0251774bfad27139e/debian/patches/enable-exception-handling.patch
++# if (BUILD_RELEASE_DISABLE_EXCEPTIONS)
++#   set (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNo_Exception")
++#   set (CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DNo_Exception")
++# endif()
++
++if (MSVC AND MSVC_STATIC_RUNTIME)
++    foreach(flag CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE CMAKE_CXX_FLAGS_MINSIZEREL
++            CMAKE_CXX_FLAGS_RELWITHDEBINFO CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
++            CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO)
++        if (${flag} MATCHES "/MD")
++            string(REGEX REPLACE "/MD" "/MT" ${flag} "${${flag}}")
++        endif()
++        if (${flag} MATCHES "/MDd")
++            string(REGEX REPLACE "/MDd" "/MTd" ${flag} "${${flag}}")
++        endif()
++    endforeach()
++endif()
++# IfcOpenShell end
+diff --git a/adm/cmake/occt_toolkit.cmake b/adm/cmake/occt_toolkit.cmake
+index c9399159f1..0aa55392f9 100644
+--- a/adm/cmake/occt_toolkit.cmake
++++ b/adm/cmake/occt_toolkit.cmake
+@@ -284,15 +284,22 @@ else()
+     else()
+       set (aReleasePdbConf)
+     endif()
++    # IfcOpenShell begin
+     if (BUILD_SHARED_LIBS)
+       install (FILES  ${CMAKE_BINARY_DIR}/${OS_WITH_BIT}/${COMPILER}/bin\${OCCT_INSTALL_BIN_LETTER}/${PROJECT_NAME}.pdb
+              CONFIGURATIONS Debug ${aReleasePdbConf} RelWithDebInfo
+              DESTINATION "${INSTALL_DIR_BIN}\${OCCT_INSTALL_BIN_LETTER}")
+     else()
+-      install (FILES  ${CMAKE_BINARY_DIR}/${OS_WITH_BIT}/${COMPILER}/lib\${OCCT_INSTALL_BIN_LETTER}/${PROJECT_NAME}.pdb
+-             CONFIGURATIONS Debug ${aReleasePdbConf} RelWithDebInfo
+-             DESTINATION "${INSTALL_DIR_LIB}\${OCCT_INSTALL_BIN_LETTER}")
++      set_target_properties (${PROJECT_NAME} PROPERTIES
++        COMPILE_PDB_NAME ${PROJECT_NAME}
++        COMPILE_PDB_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${OS_WITH_BIT}/${COMPILER}/pdb/
++      )
++
++      install (FILES  ${CMAKE_BINARY_DIR}/${OS_WITH_BIT}/${COMPILER}/pdb/\${CMAKE_INSTALL_CONFIG_NAME}/${PROJECT_NAME}.pdb
++               CONFIGURATIONS Debug ${aReleasePdbConf} RelWithDebInfo
++               DESTINATION "${INSTALL_DIR_LIB}\${OCCT_INSTALL_BIN_LETTER}")
+     endif()
++    # IfcOpenShell end
+   endif()
+ 
+   if (BUILD_SHARED_LIBS AND NOT "${BUILD_SHARED_LIBRARY_NAME_POSTFIX}" STREQUAL "")
