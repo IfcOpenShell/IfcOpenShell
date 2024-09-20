@@ -647,7 +647,7 @@ class ImportCSV(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
         csv2ifc.csv = self.filepath
         csv2ifc.file = self.file
         csv2ifc.execute()
-        print("Imported in %s seconds" % (time.time() - start))
+        self.report({"INFO"}, "Imported in %s seconds" % (time.time() - start))
         return {"FINISHED"}
 
 
@@ -676,7 +676,7 @@ class ImportP6(bpy.types.Operator, ImportHelper):
         p62ifc.file = self.file
         p62ifc.work_plan = self.file.by_type("IfcWorkPlan")[0] if self.file.by_type("IfcWorkPlan") else None
         p62ifc.execute()
-        print("Import finished in {:.2f} seconds".format(time.time() - start))
+        self.report({"INFO"}, "Import finished in {:.2f} seconds".format(time.time() - start))
         return {"FINISHED"}
 
 
@@ -705,7 +705,7 @@ class ImportP6XER(bpy.types.Operator, ImportHelper):
         p6xer2ifc.file = self.file
         p6xer2ifc.work_plan = self.file.by_type("IfcWorkPlan")[0] if self.file.by_type("IfcWorkPlan") else None
         p6xer2ifc.execute()
-        print("Import finished in {:.2f} seconds".format(time.time() - start))
+        self.report({"INFO"}, "Import finished in {:.2f} seconds".format(time.time() - start))
         return {"FINISHED"}
 
 
@@ -734,7 +734,7 @@ class ImportPP(bpy.types.Operator, ImportHelper):
         pp2ifc.file = self.file
         pp2ifc.work_plan = self.file.by_type("IfcWorkPlan")[0] if self.file.by_type("IfcWorkPlan") else None
         pp2ifc.execute()
-        print("Import finished in {:.2f} seconds".format(time.time() - start))
+        self.report({"INFO"}, "Import finished in {:.2f} seconds".format(time.time() - start))
         return {"FINISHED"}
 
 
@@ -763,7 +763,7 @@ class ImportMSP(bpy.types.Operator, ImportHelper):
         msp2ifc.file = self.file
         msp2ifc.work_plan = self.file.by_type("IfcWorkPlan")[0] if self.file.by_type("IfcWorkPlan") else None
         msp2ifc.execute()
-        print("Import finished in {:.2f} seconds".format(time.time() - start))
+        self.report({"INFO"}, "Import finished in {:.2f} seconds".format(time.time() - start))
         return {"FINISHED"}
 
 
@@ -796,7 +796,7 @@ class ExportMSP(bpy.types.Operator, ImportHelper):
         ifc2msp.holiday_start_date = parser.parse(self.holiday_start_date).date()
         ifc2msp.holiday_finish_date = parser.parse(self.holiday_finish_date).date()
         ifc2msp.execute()
-        print("Export finished in {:.2f} seconds".format(time.time() - start))
+        self.report({"INFO"}, "Export finished in {:.2f} seconds".format(time.time() - start))
         return {"FINISHED"}
 
 
@@ -828,7 +828,7 @@ class ExportP6(bpy.types.Operator, ImportHelper):
         ifc2p6.holiday_start_date = parser.parse(self.holiday_start_date).date()
         ifc2p6.holiday_finish_date = parser.parse(self.holiday_finish_date).date()
         ifc2p6.execute()
-        print("Export finished in {:.2f} seconds".format(time.time() - start))
+        self.report({"INFO"}, "Export finished in {:.2f} seconds".format(time.time() - start))
         return {"FINISHED"}
 
 
