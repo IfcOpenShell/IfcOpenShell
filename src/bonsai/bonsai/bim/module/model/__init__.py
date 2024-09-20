@@ -135,6 +135,7 @@ classes = (
     ui.BIM_PT_door,
     ui.BIM_PT_railing,
     ui.BIM_PT_roof,
+    ui.BIM_MT_type_manager_menu,
     ui.LaunchTypeManager,
     ui.BIM_MT_model,
     grid.BIM_OT_add_object,

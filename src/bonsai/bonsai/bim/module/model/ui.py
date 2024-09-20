@@ -40,6 +40,15 @@ from bonsai.bim.helper import prop_with_search
 from collections.abc import Iterable
 
 
+class BIM_MT_type_manager_menu(bpy.types.Menu):
+    bl_label = "Type Manager Menu"
+    bl_idname = "BIM_MT_type_manager_menu"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.operator("bim.purge_unused_objects", text="Purge Unused Types", icon="TRASH").object_type = "TYPE"
+
+
 class LaunchTypeManager(bpy.types.Operator):
     bl_idname = "bim.launch_type_manager"
     bl_label = "Launch Type Manager"
@@ -68,6 +77,8 @@ class LaunchTypeManager(bpy.types.Operator):
 
         row = self.layout.row(align=True)
         prop_with_search(row, props, "type_class", text="", should_click_ok_to_validate=True)
+
+        row.menu("BIM_MT_type_manager_menu", text="", icon="PREFERENCES")
 
         columns = self.layout.column_flow(columns=3)
         row = columns.row()
