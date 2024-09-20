@@ -2,7 +2,7 @@ import os
 import sys
 
 
-def find_whl_files(directory):
+def find_whl_files(directory: str) -> list[str]:
     whl_files = []
     for root, dirs, files in os.walk(directory):
         for file in files:
@@ -12,7 +12,7 @@ def find_whl_files(directory):
     return whl_files
 
 
-def update_pyproject_toml(pyproject_path, whl_files):
+def update_pyproject_toml(pyproject_path: str, whl_files: list[str]) -> None:
     with open(pyproject_path, "a") as f:
         f.write("\nwheels = [\n")
         for whl in whl_files:

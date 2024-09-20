@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import bpy
 import bonsai.bim.helper
 import bonsai.tool as tool
 import bonsai.bim.module.classification.prop as classification_prop
@@ -116,6 +117,8 @@ class BIM_PT_classifications(Panel):
 
 
 class ReferenceUI:
+    layout: bpy.types.UILayout
+
     def draw_ui(self, context):
         obj = context.active_object
         self.sprops = context.scene.BIMClassificationProperties

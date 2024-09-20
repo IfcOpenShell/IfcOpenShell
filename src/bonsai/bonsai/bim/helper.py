@@ -32,7 +32,12 @@ from bonsai.bim.ifc import IfcStore
 from typing import Optional, Callable, Any, Union
 
 
-def draw_attributes(props, layout, copy_operator=None, popup_active_attribute=None):
+def draw_attributes(
+    props: list[bpy.types.PropertyGroup],
+    layout: bpy.types.UILayout,
+    copy_operator: Optional[str] = None,
+    popup_active_attribute: Optional[bpy.types.PropertyGroup] = None,
+) -> None:
     """you can set attribute active in popup with `active_attribute`
     meaning you will be able to type into attribute's field without having to click
     on it first
@@ -44,7 +49,9 @@ def draw_attributes(props, layout, copy_operator=None, popup_active_attribute=No
         draw_attribute(attribute, row, copy_operator)
 
 
-def draw_attribute(attribute, layout, copy_operator=None):
+def draw_attribute(
+    attribute: bpy.types.PropertyGroup, layout: bpy.types.UILayout, copy_operator: Optional[str] = None
+) -> None:
     value_name = attribute.get_value_name()
     if not value_name:
         layout.label(text=attribute.name)
