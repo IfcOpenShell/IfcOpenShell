@@ -199,7 +199,7 @@ def export_attributes(props, callback: Optional[Callable] = None) -> dict[str, A
     return attributes
 
 
-def prop_with_search(layout, data, prop_name, **kwargs):
+def prop_with_search(layout, data, prop_name, should_click_ok_to_validate=False, **kwargs):
     # kwargs are layout.prop arguments (text, icon, etc.)
     row = layout.row(align=True)
     row.prop(data, prop_name, **kwargs)
@@ -209,6 +209,7 @@ def prop_with_search(layout, data, prop_name, **kwargs):
             row.context_pointer_set(name="data", data=data)
             op = row.operator("bim.enum_property_search", text="", icon="VIEWZOOM")
             op.prop_name = prop_name
+            op.should_click_ok_to_validate = should_click_ok_to_validate
     except TypeError:  # Prop is not iterable
         pass
 
