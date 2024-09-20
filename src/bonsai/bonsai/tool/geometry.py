@@ -1408,3 +1408,33 @@ class Geometry(bonsai.core.tool.Geometry):
     @classmethod
     def get_elements_by_representation(cls, representation):
         return ifcopenshell.util.element.get_elements_by_representation(tool.Ifc.get(), representation)
+
+    @classmethod
+    def sync_item_positions(cls):
+        props = bpy.context.scene.BIMGeometryProperties
+        if not props.representation_obj:
+            return
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        rep_obj = props.representation_obj
+        rep_matrix_i = rep_obj.matrix_world.inverted()
+        builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
+        has_changed = False
+        for item_obj in props.item_objs:
+            obj = item_obj.obj
+            if not tool.Ifc.is_moved(obj):
+                continue
+            has_changed = True
+            item = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+            old_position = item.Position
+            if np.allclose(np.array(obj.matrix_world), np.array(rep_obj.matrix_world), atol=1e-4):
+                if old_position:
+                    item.Position = None
+                    ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_position)
+                continue
+            rel_matrix = rep_matrix_i @ obj.matrix_world
+            rel_matrix.translation /= unit_scale
+            item.Position = builder.create_axis2_placement_3d_from_matrix(np.array(rel_matrix))
+            if old_position:
+                ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_position)
+        if has_changed:
+            cls.reload_representation(rep_obj)
