@@ -78,13 +78,13 @@ class Ifc(bonsai.core.tool.Ifc):
             return True  # Let's be conservative
         loc_check = np.frombuffer(eval(obj.BIMObjectProperties.location_checksum))
         loc_real = np.array(obj.matrix_world.translation).flatten()
-        if not np.allclose(loc_check, loc_real, atol=1e-4): # 0.1 mm
+        if not np.allclose(loc_check, loc_real, atol=1e-4):  # 0.1 mm
             return True
         rot_check = np.frombuffer(eval(obj.BIMObjectProperties.rotation_checksum)).reshape(3, 3)
         rot_real = np.array(obj.matrix_world.to_3x3())
         rot_dot = np.dot(rot_check, rot_real.T)
         angle_rad = np.arccos(np.clip((np.trace(rot_dot) - 1) / 2, -1, 1))
-        if angle_rad > 0.0017453292519943296: # 0.1 degrees
+        if angle_rad > 0.0017453292519943296:  # 0.1 degrees
             return True
         return False
 
