@@ -707,7 +707,7 @@ class Blender(bonsai.core.tool.Blender):
         if not tool.Ifc.get():
             return False
         element = tool.Ifc.get_entity(obj)
-        return element and element.is_a() in classes
+        return bool(element) and element.is_a() in classes
 
     @classmethod
     def get_object_from_guid(cls, guid: str) -> Union[IFC_CONNECTED_TYPE, None]:
