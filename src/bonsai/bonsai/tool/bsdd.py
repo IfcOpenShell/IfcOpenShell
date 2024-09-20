@@ -37,9 +37,10 @@ class Bsdd(bonsai.core.tool.Bsdd):
                     new2.enum_items = json.dumps(data["possible_values"])
                     new2.data_type = "enum"
                 else:
-                    new2.data_type = data_type_map[data["data_type"]]
+                    new2.data_type = data_type_map.get(data["data_type"], "string")
                 new2.description = data["description"]
                 new2.ifc_class = data["ifc_class"]
+                new2.metadata = data["dictionary"]
 
     @classmethod
     def create_classes(cls, class_dict: list[bsdd.ClassSearchResponseClassContractV1]) -> None:
@@ -96,8 +97,7 @@ class Bsdd(bonsai.core.tool.Bsdd):
 
         psets = {}
         for prop in properties:
-            if prop.get("propertyDictionaryName") != "IFC":
-                continue
+            prop_dictionary = prop.get("propertyDictionaryName") or ""
             pset = prop.get("propertySet", None)
             if not pset:
                 continue
@@ -111,21 +111,22 @@ class Bsdd(bonsai.core.tool.Bsdd):
                 possible_values = [v["value"] for v in possible_values]
 
             description = prop.get("description", "")
-
-            psets[pset][prop["name"]] = {
-                "data_type": prop["dataType"],
+            # Prefer propertyCode as it's later will be used to set properties,
+            # so name should be exact. Fallback to name as propertyCode is nullable.
+            prop_name = prop.get("propertyCode") or prop["name"]
+            psets[pset][prop_name] = {
+                "data_type": prop.get("dataType"),
                 "possible_values": possible_values,
                 "description": description,
                 "ifc_class": ifc_class,
+                "dictionary": prop_dictionary,
             }
         return psets
 
     @classmethod
-    def get_related_ifc_entities(cls, keyword: str) -> list[str]:
+    def get_related_ifc_entities(cls) -> list[str]:
         active_object = bpy.context.active_object
         related_ifc_entities = []
-        if len(keyword) < 3:
-            return []
         if cls.should_filter_ifc_class() and active_object:
             element = tool.Ifc.get_entity(active_object)
             if element:

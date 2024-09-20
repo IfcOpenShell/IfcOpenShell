@@ -229,7 +229,7 @@ class CreateDrawing(bpy.types.Operator):
         for drawing_i, drawing_id in enumerate(drawings_to_print):
             self.drawing_index = drawing_i
             if self.print_all:
-                bpy.ops.bim.activate_drawing(drawing=drawing_id, camera_view_point=False)
+                bpy.ops.bim.activate_drawing(drawing=drawing_id, should_view_from_camera=False)
 
             self.camera = context.scene.camera
             self.camera_element = tool.Ifc.get_entity(self.camera)
@@ -285,7 +285,7 @@ class CreateDrawing(bpy.types.Operator):
             tool.Drawing.open_with_user_command(tool.Blender.get_addon_preferences().svg_command, svg_path)
 
         if self.print_all:
-            bpy.ops.bim.activate_drawing(drawing=original_drawing_id, camera_view_point=False)
+            bpy.ops.bim.activate_drawing(drawing=original_drawing_id, should_view_from_camera=False)
         return {"FINISHED"}
 
     def get_camera_dimensions(self):
@@ -1568,6 +1568,10 @@ class CreateSheets(bpy.types.Operator, tool.Ifc.Operator):
         active_sheet = props.sheets[props.active_sheet_index]
         sheet = tool.Ifc.get().by_id(active_sheet.ifc_definition_id)
 
+        # Update any drawing boundary changes
+        sheet_builder = sheeter.SheetBuilder()
+        sheet_builder.update_sheet_drawing_sizes(sheet)
+
         if not sheet.is_a("IfcDocumentInformation"):
             return
 
@@ -1782,59 +1786,57 @@ class ActivateDrawing(bpy.types.Operator):
     bl_description = (
         "Activates the selected drawing view.\n\n"
         + "ALT+CLICK to keep the viewport position.\n\n"
-        + "SHIFT+CLICK activiate drawing without turning objects on/off."
+        + "SHIFT+CLICK to load a quick preview of the drawing view."
     )
 
     drawing: bpy.props.IntProperty()
-    camera_view_point: bpy.props.BoolProperty(name="Camera View Point", default=True, options={"SKIP_SAVE"})
-    switch_camera_only: bpy.props.BoolProperty(name="Only Changes Camera View", default=False, options={"SKIP_SAVE"})
+    should_view_from_camera: bpy.props.BoolProperty(name="Should View From Camera", default=True, options={"SKIP_SAVE"})
+    use_quick_preview: bpy.props.BoolProperty(name="Use Quick Preview", default=False, options={"SKIP_SAVE"})
 
     def invoke(self, context, event):
-        # keep the viewport position on alt+click
-        # make sure to use SKIP_SAVE on property, otherwise it might get stuck
         if event.type == "LEFTMOUSE" and event.alt:
-            self.camera_view_point = False
-        # Only activates the camera view on shift+click.  Does not turn on/off objects in scene
+            self.should_view_from_camera = False
         if event.type == "LEFTMOUSE" and event.shift:
-            self.switch_camera_only = True
+            self.use_quick_preview = True
         return self.execute(context)
 
     def execute(self, context):
         if bpy.context.scene.DocProperties.is_editing_drawings == False:
             bpy.ops.bim.load_drawings()
+
         drawing = tool.Ifc.get().by_id(self.drawing)
         dprops = bpy.context.scene.DocProperties
 
-        if self.switch_camera_only:
-            camera = tool.Drawing.import_drawing(drawing)
-            tool.Blender.activate_camera(camera)
-        else:
-            if not self.camera_view_point:
-                viewport_position = tool.Blender.get_viewport_position()
+        if self.use_quick_preview:
+            tool.Blender.activate_camera(tool.Drawing.import_temporary_drawing_camera(drawing))
+            return {"FINISHED"}
 
-            core.activate_drawing_view(tool.Ifc, tool.Blender, tool.Drawing, drawing=drawing)
+        if not self.should_view_from_camera:
+            viewport_position = tool.Blender.get_viewport_position()
 
-            if not self.camera_view_point:
-                tool.Blender.set_viewport_position(viewport_position)
+        core.activate_drawing_view(tool.Ifc, tool.Blender, tool.Drawing, drawing=drawing)
 
-            dprops.active_drawing_id = self.drawing
-            # reset DrawingsData to reload_drawing_styles work correctly
-            DrawingsData.is_loaded = False
-            dprops.drawing_styles.clear()
-            if ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing", "HasUnderlay"):
-                bpy.ops.bim.reload_drawing_styles()
-                bpy.ops.bim.activate_drawing_style()
+        if not self.should_view_from_camera:
+            tool.Blender.set_viewport_position(viewport_position)
 
-            if tool.Drawing.is_camera_orthographic():
-                core.sync_references(tool.Ifc, tool.Collector, tool.Drawing, drawing=tool.Ifc.get().by_id(self.drawing))
-            CutDecorator.install(context)
-            tool.Drawing.show_decorations()
+        dprops.active_drawing_id = self.drawing
+        # reset DrawingsData to reload_drawing_styles work correctly
+        DrawingsData.is_loaded = False
+        dprops.drawing_styles.clear()
+        if ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing", "HasUnderlay"):
+            bpy.ops.bim.reload_drawing_styles()
+            bpy.ops.bim.activate_drawing_style()
 
-            # Save drawing bounds to the .ifc file
-            camera = context.scene.camera
-            camera_props = camera.data.BIMCameraProperties
-            if camera_props.update_representation(camera):
-                bpy.ops.bim.update_representation(obj=camera.name, ifc_representation_class="")
+        if tool.Drawing.is_camera_orthographic():
+            core.sync_references(tool.Ifc, tool.Collector, tool.Drawing, drawing=tool.Ifc.get().by_id(self.drawing))
+        CutDecorator.install(context)
+        tool.Drawing.show_decorations()
+
+        # Save drawing bounds to the .ifc file
+        camera = context.scene.camera
+        camera_props = camera.data.BIMCameraProperties
+        if camera_props.update_representation(camera):
+            bpy.ops.bim.update_representation(obj=camera.name, ifc_representation_class="")
 
         return {"FINISHED"}
 
@@ -2963,7 +2965,7 @@ class EditElementFilter(bpy.types.Operator, tool.Ifc.Operator):
             query = tool.Search.export_filter_query(props.exclude_filter_groups) or None
             ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Exclude": query})
         obj.data.BIMCameraProperties.filter_mode = "NONE"
-        bpy.ops.bim.activate_drawing(drawing=element.id(), camera_view_point=False)
+        bpy.ops.bim.activate_drawing(drawing=element.id(), should_view_from_camera=False)
 
 
 class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator):

@@ -153,7 +153,7 @@ our Blender installation (you will need to restart Blender to see changes).
 
 For Linux or Mac:
 
-.. literalinclude:: ../../scripts/installation/dev_environment.sh
+.. literalinclude:: ../../../scripts/installation/dev_environment.sh
    :language: bash
    :caption: dev_environment.sh
 
@@ -161,7 +161,7 @@ Or, if you're on Windows, you can use the batch script below. You need to run
 it as an administrator. Before running it follow the instructions descibed
 in the `rem` tags.
 
-.. literalinclude:: ../../scripts/installation/dev_environment.bat
+.. literalinclude:: ../../../scripts/installation/dev_environment.bat
    :language: bat
    :caption: dev_environment.bat
 

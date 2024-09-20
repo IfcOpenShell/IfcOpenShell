@@ -42,13 +42,13 @@ from mathutils import Vector, Matrix
 from shapely import Polygon
 from typing import Generator, Optional, Union, Literal, List, Any, Iterable
 from collections import defaultdict
+from natsort import natsorted
 
 
 class Spatial(bonsai.core.tool.Spatial):
     @classmethod
     def can_contain(cls, container: ifcopenshell.entity_instance, element_obj: Union[bpy.types.Object, None]) -> bool:
-        element = tool.Ifc.get_entity(element_obj)
-        if not element:
+        if not (element := tool.Ifc.get_entity(element_obj)):
             return False
         if tool.Ifc.get_schema() == "IFC2X3":
             if not container.is_a("IfcSpatialStructureElement"):
@@ -448,11 +448,14 @@ class Spatial(bonsai.core.tool.Spatial):
         new.long_name = element.LongName or ""
         if not element.is_a("IfcProject"):
             ifc_file = tool.Ifc.get()
-            si_conversion = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
-            new.elevation = ifcopenshell.util.placement.get_storey_elevation(element) * si_conversion
+            new.elevation = str(ifcopenshell.util.placement.get_storey_elevation(element))
         new.is_expanded = element.id() not in cls.contracted_containers
         new.level_index = level_index
         children = ifcopenshell.util.element.get_parts(element)
+        if children:
+            children_elevations = [ifcopenshell.util.placement.get_storey_elevation(el) for el in children]
+            children_names = [el.Name or "" for el in children]
+            children = natsorted(children, key=dict(zip(children, tuple(zip(children_elevations, children_names)))).get)
         new.has_children = bool(children)
         new.ifc_definition_id = element.id()
         if new.is_expanded:

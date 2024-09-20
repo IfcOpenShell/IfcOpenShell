@@ -114,7 +114,7 @@ if "%CMAKE_VERSION%" LSS "cmake version 3.11.4" (
 )
 
 :: NOTE Boost < 1.64 doesn't work without tricks if the user has only VS 2017 installed and no earlier versions.
-set BOOST_VERSION=1.79.0
+set BOOST_VERSION=1.86.0
 :: Version string with underscores instead of dots.
 set BOOST_VER=%BOOST_VERSION:.=_%
 

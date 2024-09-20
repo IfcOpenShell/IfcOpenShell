@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import bpy
 import ifcopenshell
 import ifcopenshell.api.profile
 import ifcopenshell.geom
@@ -39,7 +40,11 @@ class Profile(bonsai.core.tool.Profile):
         settings = ifcopenshell.geom.settings()
         settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
         shape = ifcopenshell.geom.create_shape(settings, profile)
+
         verts = shape.verts
+        if not verts:
+            raise RuntimeError("Profile shape has no vertices, it probably is invalid.")
+
         edges = shape.edges
 
         grouped_verts = [[verts[i], verts[i + 1]] for i in range(0, len(verts), 3)]
@@ -100,7 +105,115 @@ class Profile(bonsai.core.tool.Profile):
 
     @classmethod
     def duplicate_profile(cls, profile: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
-        new_profile = ifcopenshell.util.element.copy_deep(tool.Ifc.get(), profile)
+        new_profile = ifcopenshell.api.profile.copy_profile(tool.Ifc.get(), profile)
         # In UI unnamed profiles are not available, so we don't handle them.
         new_profile.ProfileName = profile.ProfileName + "_copy"
         return new_profile
+
+    @classmethod
+    def get_active_profile_ui(cls) -> Union[bpy.types.PropertyGroup, None]:
+        props = bpy.context.scene.BIMProfileProperties
+        index = props.active_profile_index
+        if len(props.profiles) > index >= 0:
+            return props.profiles[index]
+
+    # Lengths are in meters.
+    DEFAULT_PROFILE_ATTRS = {
+        "IfcCircleProfileDef": {
+            "Radius": 0.05,
+        },
+        # TODO: test after debug
+        "IfcAsymmetricIShapeProfileDef": {
+            "BottomFlangeWidth": 0.1,
+            "BottomFlangeThickness": 0.01,
+            "BottomFlangeFilletRadius": 0.01,
+            "OverallDepth": 0.1,
+            "WebThickness": 0.005,
+            "TopFlangeWidth": 0.075,
+            "TopFlangeThickness": 0.01,
+            "TopFlangeFilletRadius": 0.01,
+        },
+        "IfcCShapeProfileDef": {
+            "Depth": 0.1,
+            "Width": 0.05,
+            "WallThickness": 0.01,
+            "Girth": 0.01,
+        },
+        # 101.6-10.0
+        "IfcCircleHollowProfileDef": {
+            "WallThickness": 0.01,
+        },
+        # TODO: check shape after fixing crash
+        # "IfcEllipseProfileDef": {
+        #     "SemiAxis1": 0.1,
+        #     "SemiAxis2": 0.1,
+        # },
+        # HEA100
+        "IfcIShapeProfileDef": {
+            "OverallWidth": 0.1,
+            "OverallDepth": 0.1,
+            "WebThickness": 0.005,
+            "FlangeThickness": 0.01,
+            "FilletRadius": 0.01,
+        },
+        # LNP100x10
+        "IfcLShapeProfileDef": {
+            "Depth": 0.1,
+            "Thickness": 0.01,
+            "FilletRadius": 0.012,
+            "EdgeRadius": 0.01,
+        },
+        "IfcRectangleProfileDef": {
+            "XDim": 0.1,
+            "YDim": 0.1,
+        },
+        "IfcRoundedRectangleProfileDef": {
+            "RoundingRadius": 0.01,
+        },
+        # 100-10.0
+        "IfcRectangleHollowProfileDef": {
+            "WallThickness": 0.01,
+            "InnerFilletRadius": 0.01,
+            "OuterFilletRadius": 0.01,
+        },
+        "IfcTShapeProfileDef": {
+            "Depth": 0.1,
+            "FlangeWidth": 0.05,
+            "WebThickness": 0.005,
+            "FlangeThickness": 0.009,
+        },
+        "IfcTrapeziumProfileDef": {
+            "BottomXDim": 0.1,
+            "TopXDim": 0.08,
+            "YDim": 0.05,
+            "TopXOffset": 0.01,
+        },
+        # UAP100
+        "IfcUShapeProfileDef": {
+            "Depth": 0.1,
+            "FlangeWidth": 0.05,
+            "WebThickness": 0.005,
+            "FlangeThickness": 0.009,
+        },
+        # ZNP100
+        "IfcZShapeProfileDef": {
+            "Depth": 0.1,
+            "FlangeWidth": 0.05,
+            "WebThickness": 0.007,
+            "FlangeThickness": 0.01,
+        },
+    }
+
+    @classmethod
+    def set_default_profile_attrs(cls, profile: ifcopenshell.entity_instance) -> None:
+        """Set default profile attributes to keep profile valid."""
+        class_match = False
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        for ifc_class, params in cls.DEFAULT_PROFILE_ATTRS.items():
+            if profile.is_a(ifc_class):
+                class_match = True
+                for key, value in params.items():
+                    setattr(profile, key, value / si_conversion)
+
+        if not class_match:
+            raise ValueError(f"Unable to set default profile parameters for {profile.is_a()}.")

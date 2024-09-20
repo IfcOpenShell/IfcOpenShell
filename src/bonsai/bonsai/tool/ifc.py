@@ -72,17 +72,23 @@ class Ifc(bonsai.core.tool.Ifc):
     @classmethod
     def is_moved(cls, obj: bpy.types.Object) -> bool:
         element = cls.get_entity(obj)
-        if not element or element.is_a("IfcTypeProduct") or element.is_a("IfcProject"):
+        if not element and not tool.Geometry.is_representation_item(obj):
+            return False
+        if element and (element.is_a("IfcTypeProduct") or element.is_a("IfcProject")):
             return False
         if not obj.BIMObjectProperties.location_checksum:
             return True  # Let's be conservative
         loc_check = np.frombuffer(eval(obj.BIMObjectProperties.location_checksum))
-        rot_check = np.frombuffer(eval(obj.BIMObjectProperties.rotation_checksum))
         loc_real = np.array(obj.matrix_world.translation).flatten()
-        rot_real = np.array(obj.matrix_world.to_3x3()).flatten()
-        if np.allclose(loc_check, loc_real, atol=1e-4) and np.allclose(rot_check, rot_real, atol=1e-2):
-            return False
-        return True
+        if not np.allclose(loc_check, loc_real, atol=1e-4):  # 0.1 mm
+            return True
+        rot_check = np.frombuffer(eval(obj.BIMObjectProperties.rotation_checksum)).reshape(3, 3)
+        rot_real = np.array(obj.matrix_world.to_3x3())
+        rot_dot = np.dot(rot_check, rot_real.T)
+        angle_rad = np.arccos(np.clip((np.trace(rot_dot) - 1) / 2, -1, 1))
+        if angle_rad > 0.0017453292519943296:  # 0.1 degrees
+            return True
+        return False
 
     @classmethod
     def schema(cls) -> ifcopenshell_wrapper.schema_definition:

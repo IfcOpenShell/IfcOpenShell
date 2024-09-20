@@ -441,15 +441,22 @@ def get_properties(
     return results
 
 
-def get_elements_using_pset(pset: ifcopenshell.entity_instance) -> set[ifcopenshell.entity_instance]:
+def get_elements_by_pset(pset: ifcopenshell.entity_instance) -> set[ifcopenshell.entity_instance]:
     """Retrieve the elements (or element types) that are using the provided property set."""
     is_ifc2x3 = pset.file.schema == "IFC2X3"
     elements = set()
-    rels = pset.PropertyDefinitionOf if is_ifc2x3 else pset.DefinesOccurrence
-    for rel in rels:
-        elements.update(rel.RelatedObjects)
-    for element_type in pset.DefinesType:
-        elements.add(element_type)
+    if pset.is_a("IfcPropertySet") or pset.is_a("IfcElementQuantity"):
+        rels = pset.PropertyDefinitionOf if is_ifc2x3 else pset.DefinesOccurrence
+        for rel in rels:
+            elements.update(rel.RelatedObjects)
+        for element_type in pset.DefinesType:
+            elements.add(element_type)
+    elif pset.is_a("IfcProfileProperties"):
+        elements.add(pset.ProfileDefinition)
+    elif pset.is_a("IfcMaterialProperties"):
+        elements.add(pset.Material)
+    else:
+        raise Exception(f"Unexpected pset type: '{pset.is_a()}' ({pset}).")
     return elements
 
 
@@ -699,18 +706,15 @@ def get_styles(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entit
 # since we have entity_instance.file, so we can deprecate it.
 def get_elements_by_material(
     ifc_file: ifcopenshell.file, material: ifcopenshell.entity_instance
-) -> list[ifcopenshell.entity_instance]:
+) -> set[ifcopenshell.entity_instance]:
     """Retrieves the elements related to a material.
 
     This includes elements using the material as part of a material set or set
     usage.
 
     :param ifc_file: The IFC file
-    :type ifc_file: ifcopenshell.file
     :param material: The IFC Material entity
-    :type material: ifcopenshell.entity_instance
-    :return: A list of elements using the to the material
-    :rtype: list[ifcopenshell.entity_instance]
+    :return: A set of elements using the to the material
 
     Example:
 

@@ -30,10 +30,11 @@ from bonsai.bim.module.model.opening import FilledOpeningGenerator
 
 class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_opening"
-    bl_label = "Add Opening"
+    bl_label = "Apply Opening"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = (
-        "Adds an opening to an element.\n" "Need to select two elements, order of selection is not important"
+        "Apply an Opening object on an Element. "
+        "The Element and the Opening to be applied should be selected. The order of selection is not important"
     )
 
     @classmethod
@@ -175,15 +176,12 @@ class RemoveOpening(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
-class AddFilling(bpy.types.Operator):
+class AddFilling(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_filling"
     bl_label = "Add Filling"
     bl_options = {"REGISTER", "UNDO"}
     opening: bpy.props.StringProperty()
     obj: bpy.props.StringProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         obj = context.scene.objects.get(self.obj, context.active_object)

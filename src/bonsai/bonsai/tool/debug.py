@@ -26,6 +26,7 @@ import bonsai.core.tool
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
 from mathutils import Vector
+from typing import Iterable
 
 
 class Debug(bonsai.core.tool.Debug):
@@ -66,7 +67,7 @@ class Debug(bonsai.core.tool.Debug):
             ifcopenshell.util.element.remove_deep2(ifc_file, element)
 
     @classmethod
-    def print_unused_elements_stats(cls, requested_ifc_class: str = "", ignore_classes: tuple[str] = tuple()) -> int:
+    def print_unused_elements_stats(cls, requested_ifc_class: str = "", ignore_classes: Iterable[str] = tuple()) -> int:
         ifc_file = tool.Ifc.get()
 
         # get list of ifc classes used in model
@@ -97,3 +98,15 @@ class Debug(bonsai.core.tool.Debug):
                 print(f"{class_string: <50} {unused[ifc_class]: >5}")
 
         return sum(unused.values())
+
+    @classmethod
+    def purge_unused_class(cls, ifc_class: str) -> int:
+        ifc_file = tool.Ifc.get()
+        elements = ifc_file.by_type(ifc_class)
+        i = 0
+        for element in elements:
+            if ifc_file.get_total_inverses(element) != 0:
+                continue
+            ifcopenshell.util.element.remove_deep(ifc_file, element)
+            i += 1
+        return i

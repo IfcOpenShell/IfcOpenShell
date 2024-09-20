@@ -691,8 +691,8 @@ class Drawing(bonsai.core.tool.Drawing):
         shape = ifcopenshell.geom.create_shape(settings, drawing)
         camera = tool.Loader.create_camera(drawing, representation, shape)
         tool.Loader.link_mesh(shape, camera)
-
         obj = bpy.data.objects.new(tool.Loader.get_name(drawing), camera)
+
         cls.import_camera_props(drawing, camera)
         tool.Ifc.link(drawing, obj)
 
@@ -705,6 +705,25 @@ class Drawing(bonsai.core.tool.Drawing):
         tool.Geometry.record_object_position(obj)
         tool.Collector.assign(obj)
 
+        return obj
+
+    @classmethod
+    def import_temporary_drawing_camera(cls, drawing: ifcopenshell.entity_instance) -> bpy.types.Object:
+        settings = ifcopenshell.geom.settings()
+
+        representation = ifcopenshell.util.representation.get_representation(drawing, "Model", "Body", "MODEL_VIEW")
+        assert representation
+
+        shape = ifcopenshell.geom.create_shape(settings, drawing)
+        camera = tool.Loader.create_camera(drawing, representation, shape)
+        if obj := bpy.data.objects.get("TemporaryDrawingCamera"):
+            obj.data = camera
+        else:
+            obj = bpy.data.objects.new(tool.Loader.get_name(drawing), camera)
+        mat = Matrix(ifcopenshell.util.shape.get_shape_matrix(shape))
+        obj.matrix_world = mat
+        if cls.get_drawing_target_view(drawing) == "REFLECTED_PLAN_VIEW":
+            obj.matrix_world[1][1] *= -1
         return obj
 
     @classmethod
@@ -1737,8 +1756,7 @@ class Drawing(bonsai.core.tool.Drawing):
         if product:
             product_obj = tool.Ifc.get_object(product)
             product_obj.select_set(True)
-            context.view_layer.objects.active = product_obj  
-
+            context.view_layer.objects.active = product_obj
 
     @classmethod
     def is_drawing_active(cls) -> bool:
@@ -1837,6 +1855,8 @@ class Drawing(bonsai.core.tool.Drawing):
         element_obj_names = set()
         for element in filtered_elements:
             obj = tool.Ifc.get_object(element)
+            if not obj:
+                continue
             current_representation = tool.Geometry.get_active_representation(obj)
             if current_representation:
                 subcontext = current_representation.ContextOfItems

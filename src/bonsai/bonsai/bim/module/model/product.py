@@ -74,7 +74,8 @@ class AddEmptyType(bpy.types.Operator, AddObjectHelper):
 
 class AddDefaultType(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_default_type"
-    bl_label = "Add Default Type"
+    bl_label = "Create"
+    bl_description = "Create Construction Type"
     bl_options = {"REGISTER", "UNDO"}
     ifc_element_type: bpy.props.StringProperty()
 
@@ -112,19 +113,16 @@ class AddDefaultType(bpy.types.Operator, tool.Ifc.Operator):
         bpy.ops.bim.add_type()
 
 
-class AddConstrTypeInstance(bpy.types.Operator):
+class AddConstrTypeInstance(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_constr_type_instance"
     bl_label = "Add"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Add Type Instance to the model"
-    relating_type_id: bpy.props.IntProperty()
-    from_invoke: bpy.props.BoolProperty(default=False)
+    bl_description = "Add Type Instance"
+    relating_type_id: bpy.props.IntProperty(default=0, options={"SKIP_SAVE"})
+    from_invoke: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
 
     def invoke(self, context, event):
         return self.execute(context)
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         props = context.scene.BIMModelProperties

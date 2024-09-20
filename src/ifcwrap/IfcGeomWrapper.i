@@ -246,6 +246,7 @@ namespace {
 %include "../ifcgeom/Iterator.h"
 %include "../ifcgeom/GeometrySerializer.h"
 %include "../ifcgeom/taxonomy.h"
+%include "../ifcgeom/piecewise_function_evaluator.h"
 
 %include "../serializers/SvgSerializer.h"
 %include "../serializers/HdfSerializer.h"
@@ -315,7 +316,7 @@ assign_children_access(loop, edge);
 assign_children_access(face, loop);
 assign_children_access(shell, face);
 assign_children_access(solid, shell);
-assign_children_access(loft, face);
+assign_children_access(loft, geom_item);
 assign_children_access(boolean_result, geom_item);
 
 %define assign_matrix_access(item_name)
@@ -372,6 +373,9 @@ assign_matrix_access(revolve);
 		return $self->set(name, val);
 	}
 	void set_(const std::string& name, const std::set<std::string>& val) {
+		return $self->set(name, val);
+	}
+	void set_(const std::string& name, const std::vector<double>& val) {
 		return $self->set(name, val);
 	}
 	ifcopenshell::geometry::Settings::value_variant_t get_(const std::string& name) {
@@ -677,8 +681,17 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 
     %pythoncode %{
         # Hide the getters with read-only property implementations
-        id = property(id)
-        faces = property(faces)
+        faces_tri = property(faces)
+        polyhedral_faces_without_holes = property(polyhedral_faces_without_holes)
+        polyhedral_faces_with_holes = property(polyhedral_faces_with_holes)
+        def get_faces(self):
+            if self.faces_tri: 
+                return self.faces_tri
+            elif self.polyhedral_faces_without_holes:
+                return self.polyhedral_faces_without_holes
+            else:
+                return self.polyhedral_faces_with_holes
+        faces = property(get_faces)
         edges = property(edges)
         material_ids = property(material_ids)
         materials = property(materials)
@@ -696,10 +709,16 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
     %}
 };
 
-%extend IfcGeom::Representation::Serialization {
+%extend IfcGeom::Representation::Representation {
 	%pythoncode %{
         # Hide the getters with read-only property implementations
         id = property(id)
+	%}
+};
+
+%extend IfcGeom::Representation::Serialization {
+	%pythoncode %{
+        # Hide the getters with read-only property implementations
         brep_data = property(brep_data)
         surface_styles = property(surface_styles)
         surface_style_ids = property(surface_style_ids)

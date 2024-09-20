@@ -465,6 +465,7 @@ class Georeference:
 class Ifc:
     def get(cls): pass
     def get_entity(cls, obj): pass
+    def get_entity_by_id(cls, element_id): pass
     def get_object(cls, entity): pass
     def get_path(cls): pass
     def get_schema(cls): pass
@@ -581,6 +582,16 @@ class Patch:
 
 
 @interface
+class Polyline:
+    def create_input_ui(cls, init_z=False, init_area=False):  pass
+    def create_tool_state(cls): pass
+    def calculate_distance_and_angle(cls, context, input_ui, tool_state): pass
+    def calculate_area(cls, context, input_ui): pass
+    def calculate_x_y_and_z(cls, context, input_ui, tool_state): pass
+    def validate_input(cls, input_number, input_type): pass
+
+
+@interface
 class Owner:
     def add_address_attribute(cls, name): pass
     def add_person_attribute(cls, name): pass
@@ -651,6 +662,7 @@ class Pset:
     def get_prop_template_primitive_type(cls, prop_template): pass
     def get_pset_name(cls, obj, obj_type, pset_type): pass
     def get_pset_template(cls, name): pass
+    def get_selected_pset_elements(cls, obj_name, obj_type, pset): pass
     def import_enumerated_value_from_template(cls, prop_template, data, props): pass
     def import_pset_from_existing(cls, pset, props): pass
     def import_pset_from_template(cls, pset_template, pset, props): pass
@@ -666,9 +678,11 @@ class Qto:
     def get_rounded_value(cls, new_quantity): pass
     def set_qto_result(cls, result): pass
 
+
 @interface
 class Raycast:
     pass
+
 
 @interface
 class Resource:
@@ -943,9 +957,11 @@ class Spatial:
 class Covering:
     def get_z_from_ceiling_height(cls): pass
 
+
 @interface
 class Snap:
     pass
+
 
 @interface
 class Structural:

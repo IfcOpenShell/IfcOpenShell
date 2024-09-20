@@ -21,6 +21,7 @@ sio_port = 8080  # default port
 sio = socketio.AsyncServer(
     cors_allowed_origins="*",
     async_mode="aiohttp",
+    max_http_buffer_size=10000000
 )
 app = web.Application()
 sio.attach(app)
@@ -70,6 +71,8 @@ class WebNamespace(socketio.AsyncNamespace):
                 await self.emit("gantt_data", {"blenderId": blenderId, "data": messages["gantt_data"]}, room=sid)
             if "demo_data" in messages:
                 await self.emit("demo_data", {"blenderId": blenderId, "data": messages["demo_data"]}, room=sid)
+            if 'cost_items' in messages:
+                await self.emit("cost_items", {"blenderId": blenderId, "data": messages["cost_items"]}, room=sid)
 
     async def process_svg(self, file_path):
         def encode_image(filepath):
@@ -175,6 +178,16 @@ class BlenderNamespace(socketio.AsyncNamespace):
         print(f"Cost values from Blender client {sid}")
         blender_messages[sid]["cost_value"] = data
         await sio.emit("cost_value", {"blenderId": sid, "data": data}, namespace="/web")
+
+    async def on_predefined_types(self, sid, data):
+        print(f"Predefined types from Blender client {sid}")
+        blender_messages[sid]["predefined_types"] = data
+        await sio.emit("predefined_types", {"blenderId": sid, "data": data}, namespace="/web")
+    
+    async def on_quantities(self, sid, data):
+        print(f"Selected products from Blender client {sid}")
+        blender_messages[sid]["quantities"] = data
+        await sio.emit("quantities", {"blenderId": sid, "data": data}, namespace="/web")
 
 async def schedules(request):
     with open("templates/index.html", "r") as f:

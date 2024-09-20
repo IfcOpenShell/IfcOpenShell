@@ -95,12 +95,21 @@ class BIM_PT_spatial_decomposition(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_tab_spatial_decomposition"
-    bl_options = {"HIDE_HEADER"}
+    bl_parent_id = "BIM_PT_tab_spatial"
+    bl_options = {"HEADER_LAYOUT_EXPAND"}
 
     @classmethod
     def poll(cls, context):
         return tool.Ifc.get()
+
+    def draw_header(self, context):
+        props = context.scene.BIMSpatialDecompositionProperties
+        row = self.layout.row(align=True)
+        row.label(text="")  # empty text occupies the left of the row
+        icon = "HIDE_OFF" if props.is_visible else "HIDE_ON"
+        row.prop(props, "is_visible", text="", icon=icon)
+        icon = "VIEW_LOCKED" if props.is_locked else "VIEW_UNLOCKED"
+        row.prop(props, "is_locked", text="", icon=icon)
 
     def draw(self, context):
         if not SpatialDecompositionData.is_loaded:
@@ -196,6 +205,29 @@ class BIM_PT_spatial_decomposition(Panel):
         )
 
 
+class BIM_PT_grids(Panel):
+    bl_label = "Grids"
+    bl_idname = "BIM_PT_grids"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_tab_spatial"
+    bl_options = {"HEADER_LAYOUT_EXPAND"}
+
+    def draw(self, context):
+        self.layout.row().operator("mesh.add_grid", icon="ADD", text="Add Grids")
+
+    def draw_header(self, context):
+        props = context.scene.BIMGridProperties
+        row = self.layout.row(align=True)
+        row.label(text="")  # empty text occupies the left of the row
+        icon = "HIDE_OFF" if props.is_visible else "HIDE_ON"
+        row.prop(props, "is_visible", text="", icon=icon)
+        icon = "VIEW_LOCKED" if props.is_locked else "VIEW_UNLOCKED"
+        row.prop(props, "is_locked", text="", icon=icon)
+
+
 class BIM_UL_containers_manager(UIList):
     def __init__(self):
         self.use_filter_show = True
@@ -203,7 +235,6 @@ class BIM_UL_containers_manager(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
             row = layout.row(align=True)
-            self.draw_hierarchy(row, item)
             icon = {
                 "IfcProject": "FILE",
                 "IfcSite": "WORLD",
@@ -217,12 +248,18 @@ class BIM_UL_containers_manager(UIList):
                 "IfcRailwayPart": "MOD_FLUID",
                 "IfcRoadPart": "MOD_FLUID",
             }.get(item.ifc_class, "META_PLANE")
-            row.prop(item, "name", emboss=False, text="", icon=icon)
+            split = row.split(factor=0.85)
             if item.long_name:
-                row.prop(item, "long_name", emboss=False, text="")
-            col = row.column()
-            col.alignment = "RIGHT"
-            col.prop(item, "elevation", emboss=False, text="")
+                split2 = split.split(factor=0.7)
+                row = split2.row(align=True)
+                self.draw_hierarchy(row, item)
+                row.prop(item, "name", emboss=False, text="", icon=icon)
+                split2.prop(item, "long_name", emboss=False, text="")
+            else:
+                row = split.row(align=True)
+                self.draw_hierarchy(row, item)
+                row.prop(item, "name", emboss=False, text="", icon=icon)
+            split.prop(item, "elevation", emboss=False, text="")
 
     def draw_hierarchy(self, row, item):
         if item.level_index:

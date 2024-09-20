@@ -92,7 +92,7 @@ class Patcher:
         ) -> None:
             geometry = getattr(shape, "geometry", shape)
             v = [[x.tolist() for x in ifcopenshell.util.shape.get_vertices(geometry)]]
-            f = [ifcopenshell.util.shape.get_faces(geometry)]
+            f = [ifcopenshell.util.shape.get_faces(geometry).tolist()]
             replacements[element] = (v, f)
 
         iterator = ifcopenshell.geom.iterator(settings, self.file, multiprocessing.cpu_count(), include=products)
@@ -112,6 +112,8 @@ class Patcher:
         # Do the replacements outside the iterator to prevent messing up iterator state.
         for element, geometry in replacements.items():
             v, f = geometry
+            if not v or not f:
+                continue
             mesh = ifcopenshell.api.run(
                 "geometry.add_mesh_representation",
                 self.file,

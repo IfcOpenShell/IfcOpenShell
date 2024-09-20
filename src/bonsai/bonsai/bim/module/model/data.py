@@ -25,6 +25,7 @@ import ifcopenshell.util.schema
 from ifcopenshell.util.doc import get_entity_doc, get_predefined_type_doc
 import bonsai.tool as tool
 from math import degrees
+from natsort import natsorted
 
 
 def refresh():
@@ -75,6 +76,7 @@ class AuthoringData:
         cls.data["active_representation_type"] = cls.active_representation_type()
         cls.data["boundary_class"] = cls.boundary_class()
         cls.data["selected_material_usages"] = cls.selected_material_usages()
+        cls.data["type_template"] = cls.type_template()
 
     @classmethod
     def default_container(cls) -> str | None:
@@ -139,6 +141,65 @@ class AuthoringData:
         return cls.type_thumbnails.get(element.id(), None) or 0
 
     @classmethod
+    def type_template(cls):
+        type_class = cls.props.type_class
+        templates = [
+            (
+                "MESH",
+                "Custom Mesh",
+                "Use as a representation currently active object mesh or default cube if no object selected",
+            ),
+            (
+                "LAYERSET_AXIS2",
+                "Vertical Layers",
+                "For objects similar to walls, will automatically add IfcMaterialLayerSet",
+            ),
+            (
+                "LAYERSET_AXIS3",
+                "Horizontal Layers",
+                "For objects similar to slabs, will automatically add IfcMaterialLayerSet",
+            ),
+            (
+                "PROFILESET",
+                "Extruded Profile",
+                "Create profile type object, automatically defines IfcMaterialProfileSet with the first profile from library",
+            ),
+            ("EMPTY", "Non-Geometric Type", "Start with an empty object"),
+        ]
+        if not type_class:
+            pass
+        elif type_class == "IfcWindowType":
+            templates.append(("WINDOW", "Window", "Parametric window"))
+        elif type_class == "IfcDoorType":
+            templates.append(("DOOR", "Door", "Parametric door"))
+        elif type_class == "IfcRailingType":
+            templates.append(("RAILING", "Railing", "Parametric railing"))
+        elif type_class == "IfcRoofType":
+            templates.append(("Roof", "Window", "Parametric window"))
+
+        templates.extend(
+            (
+                (
+                    "FLOW_SEGMENT_RECTANGULAR",
+                    "Rectangular Distribution Segment",
+                    "Works similarly to Profile, has distribution ports",
+                ),
+                (
+                    "FLOW_SEGMENT_CIRCULAR",
+                    "Circular Distribution Segment",
+                    "Works similarly to Profile, has distribution ports",
+                ),
+                (
+                    "FLOW_SEGMENT_CIRCULAR_HOLLOW",
+                    "Circular Hollow Distribution Segment",
+                    "Works similarly to Profile, has distribution ports",
+                ),
+            )
+        )
+
+        return templates
+
+    @classmethod
     def total_types(cls):
         type_class = cls.props.type_class
         return len(tool.Ifc.get().by_type(type_class)) if type_class else 0
@@ -165,7 +226,7 @@ class AuthoringData:
         if not type_class:
             return []
         results = []
-        elements = sorted(tool.Ifc.get().by_type(type_class), key=lambda e: e.Name or "Unnamed")
+        elements = natsorted(tool.Ifc.get().by_type(type_class), key=lambda e: e.Name or "Unnamed")
         elements = elements[(cls.props.type_page - 1) * cls.types_per_page : cls.props.type_page * cls.types_per_page]
         for element in elements:
             predefined_type = ifcopenshell.util.element.get_predefined_type(element)
@@ -256,7 +317,7 @@ class AuthoringData:
         if not ifc_class and ifc_classes:
             ifc_class = ifc_classes[0][0]
         if ifc_class:
-            elements = sorted(tool.Ifc.get().by_type(ifc_class), key=lambda s: (s.Name or "Unnamed").lower())
+            elements = natsorted(tool.Ifc.get().by_type(ifc_class), key=lambda s: (s.Name or "Unnamed").lower())
             results.extend(elements)
             return [(str(e.id()), e.Name or "Unnamed", e.Description or "") for e in results]
         return []

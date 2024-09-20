@@ -91,11 +91,7 @@ class Loader(bonsai.core.tool.Loader):
         mesh: tool.Geometry.TYPES_WITH_MESH_PROPERTIES,
     ) -> None:
         geometry = shape.geometry if hasattr(shape, "geometry") else shape
-        if "-" in geometry.id:
-            mesh.BIMMeshProperties.ifc_definition_id = int(geometry.id.split("-")[0])
-        else:
-            # TODO: See #2002
-            mesh.BIMMeshProperties.ifc_definition_id = int(geometry.id.replace(",", ""))
+        mesh.BIMMeshProperties.ifc_definition_id = int(geometry.id.split("-")[0])
 
     @classmethod
     def create_surface_style_shading(cls, blender_material, surface_style):
@@ -296,7 +292,6 @@ class Loader(bonsai.core.tool.Loader):
                     value = texture["RasterCode"]
                     image_bytes = int(value, 2).to_bytes(len(value) // 8, "big")
                     pil_image = Image.open(io.BytesIO(image_bytes))
-                    pil_image.save("test_image.png")
                     byte_to_normalized = 1.0 / 255.0
                     bpy_image = bpy.data.images.new("blob_texture", width=pil_image.width, height=pil_image.height)
                     # PIL returns rows ordered from top to bottom, blender from bottom to top
@@ -472,20 +467,57 @@ class Loader(bonsai.core.tool.Loader):
                 blender_material.node_tree.links.new(coord.outputs["UV"], node.inputs["Vector"])
 
     @classmethod
-    def load_indexed_texture_map(cls, coordinates: ifcopenshell.entity_instance, mesh: bpy.types.Mesh) -> None:
+    def load_indexed_colour_map(cls, representation: ifcopenshell.entity_instance, mesh: bpy.types.Mesh) -> None:
+        """Ensure indexed colour map is loaded for representation if it's available.
+
+        Method doesn't support elements with openings, see #5405.
+
+        :param representation: IfcShapeRepresentation of any type. Representation may not have an indexed colour map,
+            method will automatically check if it does and will skip it otherwise.
+
+        :raises AssertionError: If mesh doesn't match the representation exactly, which usually occurs
+            if element geometry is altered by openings.
+        """
+        if representation.RepresentationType != "Tessellation":
+            return
+
+        colours = []
+        for item in representation.Items:
+            if not item.is_a("IfcTessellatedFaceSet"):
+                continue
+            colours.extend(item.HasColours)
+
+        if not colours:
+            return
+
+        for colour in colours:
+            cls.load_indexed_map(colour, mesh)
+
+    @classmethod
+    def load_indexed_map(cls, index_map: ifcopenshell.entity_instance, mesh: bpy.types.Mesh) -> None:
+        """Add data from index map as blender mesh attribute.
+
+        :param index_map: IfcIndexedTextureMap or IfcIndexedColourMap
+        """
+
+        map_type = "UV" if index_map.is_a("IfcIndexedTextureMap") else "Color"
+
         # Get a BMesh representation
         bm = bmesh.new()
         bm.from_mesh(mesh)
-        # constistent naming with how Blender does it
-        uv_layer = bm.loops.layers.uv.active or bm.loops.layers.uv.new("UVMap")
+        if map_type == "UV":
+            # constistent naming with how Blender does it
+            layer = bm.loops.layers.uv.active or bm.loops.layers.uv.new("UVMap")
+        else:
+            layer = bm.loops.layers.float_color.new("Color")
 
         # remap the faceset CoordList index to the vertices in blender mesh
         coordinates_remap = []
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        faceset = coordinates.MappedTo
+        faceset = index_map.MappedTo
         for co in faceset.Coordinates.CoordList:
             co = Vector(co) * si_conversion
-            index = next(v.index for v in bm.verts if (v.co - co).length_squared < 1e-5)
+            index = min(bm.verts, key=lambda v: (v.co - co).length_squared).index
             coordinates_remap.append(index)
 
         # ifc indices start with 1
@@ -493,36 +525,60 @@ class Loader(bonsai.core.tool.Loader):
 
         # faces_remap - ifc faces described using blender verts indices
         # IFC4.3+
-        if coordinates.is_a("IfcIndexedPolygonalTextureMap"):
+        if index_map.is_a("IfcIndexedPolygonalTextureMap"):
             faces_remap = [
                 remap_verts_to_blender(tex_coord_index.TexCoordsOf.CoordIndex)
-                for tex_coord_index in coordinates.TexCoordIndices
+                for tex_coord_index in index_map.TexCoordIndices
             ]
-            texture_map = [tex_coord_index.TexCoordIndex for tex_coord_index in coordinates.TexCoordIndices]
-        else:  # IfcIndexedTriangleTextureMap
+            texture_map = [tex_coord_index.TexCoordIndex for tex_coord_index in index_map.TexCoordIndices]
+        else:  # IfcIndexedTriangleTextureMap or IfcIndexedColourMap
             if faceset.is_a("IfcTriangulatedFaceSet"):
                 faces_remap = [remap_verts_to_blender(triangle_face) for triangle_face in faceset.CoordIndex]
             else:  # IfcPolygonalFaceSet
-                faces_remap = [remap_verts_to_blender(triangle_face.CoordIndex) for triangle_face in faceset.Faces]
-            texture_map = coordinates.TexCoordIndex
+                faces_remap = [remap_verts_to_blender(face.CoordIndex) for face in faceset.Faces]
+            if index_map.is_a("IfcIndexedTriangleTextureMap"):
+                texture_map = index_map.TexCoordIndex
+            else:
+                texture_map = index_map.ColourIndex
 
-        # apply uv to each face
+        if map_type == "UV":
+            data_list = index_map.TexCoords.TexCoordsList
+        else:
+            data_list = index_map.Colours.ColourList
+            opacity = index_map.Opacity
+            opacity = opacity if opacity is not None else 1.0
+            data_list = [d + (opacity,) for d in data_list]
+
+        # Apply attribute to each face
         for bface in bm.faces:
             face = [loop.vert.index for loop in bface.loops]
-            # find the corresponding TexCoordIndex by matching ifc faceset with blender face
-            # remap TexCoordIndex as the loop start may different from blender face
-            texCoordIndex = next(
-                [tex_coord_index[face_remap.index(i)] for i in face]
-                for tex_coord_index, face_remap in zip(texture_map, faces_remap, strict=True)
-                if all(i in face_remap for i in face)
-            )
+            # Find the corresponding index in data list by matching ifc faceset with blender face.
+            data_index = None
+            for tex_coord_index, face_remap in zip(texture_map, faces_remap, strict=True):
+                if not all(i in face_remap for i in face):
+                    continue
+                # Subtract 1 as tex_coord_index starts with 1.
+                if map_type == "UV":
+                    data_index = [tex_coord_index[face_remap.index(i)] - 1 for i in face]
+                else:
+                    data_index = [tex_coord_index - 1 for i in face]
+                break
+            assert data_index is not None
+
             # apply uv to each loop
-            for loop, i in zip(bface.loops, texCoordIndex):
-                loop[uv_layer].uv = coordinates.TexCoords.TexCoordsList[i - 1]
+            for loop, i in zip(bface.loops, data_index):
+                if map_type == "UV":
+                    loop[layer].uv = data_list[i]
+                else:
+                    loop[layer] = data_list[i]
 
         # Finish up, write the bmesh back to the mesh
         bm.to_mesh(mesh)
         bm.free()
+
+        if map_type == "Color":
+            # Couldn't find a way to do it from bmesh.
+            mesh.color_attributes.active_color_index = 0
 
     @classmethod
     def is_point_far_away(
@@ -823,3 +879,89 @@ class Loader(bonsai.core.tool.Loader):
                 float(props.blender_x_axis_ordinate),
             )
         return Matrix(matrix.tolist())
+
+    @classmethod
+    def convert_geometry_to_mesh(cls, geometry, mesh: bpy.types.Mesh, verts=None) -> bpy.types.Mesh:
+        if verts is None:
+            verts = geometry.verts
+        if geometry.faces:
+            num_vertices = len(verts) // 3
+            total_faces = len(geometry.faces)
+            loop_start = range(0, total_faces, 3)
+            num_loops = total_faces // 3
+            loop_total = [3] * num_loops
+            num_vertex_indices = len(geometry.faces)
+
+            # See bug 3546
+            # ios_edges holds true edges that aren't triangulated.
+            #
+            # we do `.tolist()` because Blender can't assign `np.int32` to it's custom attributes
+            mesh["ios_edges"] = list(set(tuple(e) for e in ifcopenshell.util.shape.get_edges(geometry).tolist()))
+            mesh["ios_item_ids"] = ifcopenshell.util.shape.get_representation_item_ids(geometry).tolist()
+
+            mesh.vertices.add(num_vertices)
+            mesh.vertices.foreach_set("co", verts)
+            mesh.loops.add(num_vertex_indices)
+            mesh.loops.foreach_set("vertex_index", geometry.faces)
+            mesh.polygons.add(num_loops)
+            mesh.polygons.foreach_set("loop_start", loop_start)
+            mesh.polygons.foreach_set("loop_total", loop_total)
+            mesh.polygons.foreach_set("use_smooth", [0] * total_faces)
+            mesh.update()
+
+            # TODO: geometry id is not always an int.
+            rep_id = geometry.id
+            if rep_id.isdigit():
+                if (rep := tool.Ifc.get().by_id(int(rep_id))) and rep.is_a("IfcShapeRepresentation"):
+                    tool.Loader.load_indexed_colour_map(rep, mesh)
+        else:
+            e = geometry.edges
+            v = verts
+            vertices = [[v[i], v[i + 1], v[i + 2]] for i in range(0, len(v), 3)]
+            edges = [[e[i], e[i + 1]] for i in range(0, len(e), 2)]
+            mesh.from_pydata(vertices, edges, [])
+
+        mesh["ios_materials"] = [m.instance_id() for m in geometry.materials]
+        mesh["ios_material_ids"] = geometry.material_ids
+        return mesh
+
+    @classmethod
+    def setup_active_bsdd_classification(cls) -> None:
+        ifc_file = tool.Ifc.get()
+        schema = ifc_file.schema
+
+        # In IFC2X3 IfcClassification doesn't have an attribute for uri.
+        if schema == "IFC2X3":
+            classifications = [c for c in ifc_file.by_type("IfcClassification") if c.Name]
+            if not classifications:
+                return
+            pattern = r"^https://identifier\.buildingsmart\.org/uri/([a-zA-Z0-9]+)/([a-zA-Z0-9]+)/([0-9]+\.[0-9]+)"
+
+            # No inverse attribute in IFC2X3...
+            for ref in ifc_file.by_type("IfcClassificationReference"):
+                if (
+                    not (uri := ref.Location)
+                    or not uri.startswith("https://identifier.buildingsmart.org/uri/")
+                    or not (pattern_match := re.match(pattern, uri))
+                    or not (classification := ref.ReferencedSource)
+                    or classification not in classifications
+                    or not classification.is_a("IfcClassification")
+                ):
+                    continue
+                tool.Bsdd.set_active_bsdd(classification.Name, pattern_match.group(0))
+            return
+
+        attr_name = "Specification" if schema == "IFC4X3" else "Location"
+        bsdd_classification, uri, name = None, None, None
+        for c in ifc_file.by_type("IfcClassification"):
+            if (
+                (uri := getattr(c, attr_name))
+                and uri.startswith("https://identifier.buildingsmart.org/uri/")
+                and (name := c.Name)
+            ):
+                bsdd_classification = c
+                break
+        if not bsdd_classification:
+            return
+        assert name and uri
+        tool.Bsdd.set_active_bsdd(name, uri)

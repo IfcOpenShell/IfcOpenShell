@@ -101,6 +101,9 @@ SETTING = Literal[
     "piecewise-step-param",
     "use-python-opencascade",
     "no-parallel-mapping",
+    "triangulation-type",
+    "model-rotation",
+    "model-offset",
 ]
 SERIALIZER_SETTING = Literal[
     "use-element-names",

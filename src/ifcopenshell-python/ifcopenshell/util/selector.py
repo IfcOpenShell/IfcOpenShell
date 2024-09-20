@@ -507,6 +507,42 @@ def set_element_value(
             return
         elif key == "id":
             return
+        elif key == "predefined_type":
+            current_value = ifcopenshell.util.element.get_predefined_type(element)
+            if current_value == value:
+                return
+
+            def set_predefined_type(
+                element: ifcopenshell.entity_instance, value: Union[str, None], *, is_type: bool
+            ) -> None:
+                predefined_type = element.PredefinedType
+                declaration = element.wrapped_data.declaration()
+                entity = declaration.as_entity()
+                enum_attr = next(attr for attr in entity.attributes() if attr.name() == "PredefinedType")
+                enum_items = ifcopenshell.util.attribute.get_enum_items(enum_attr)
+
+                # USERDEFINED shouldn't occur here, if it does then it means
+                # then it was artificially added and PredefinedType is actually unset.
+                if value in (None, "NOTDEFINED", "USERDEFINED"):
+                    element.PredefinedType = "NOTDEFINED"
+                    setattr(element, "ElementType" if is_type else "ObjectType", None)
+                elif value in enum_items:
+                    if predefined_type == value:
+                        return
+                    element.PredefinedType = value
+                    return
+
+                # Value not in PredefinedType enum items.
+                if predefined_type != "USERDEFINED":
+                    element.PredefinedType = "USERDEFINED"
+                setattr(element, "ElementType" if is_type else "ObjectType", value)
+                return
+
+            if element_type := ifcopenshell.util.element.get_type(element):
+                set_predefined_type(element_type, value, is_type=True)
+                return
+            set_predefined_type(element, value, is_type=False)
+            return
         elif key == "classification":
             element = ifcopenshell.util.classification.get_references(element)
         elif key in ("x", "y", "z", "easting", "northing", "elevation") and hasattr(element, "ObjectPlacement"):

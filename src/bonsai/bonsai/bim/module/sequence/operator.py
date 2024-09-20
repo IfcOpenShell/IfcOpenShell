@@ -155,32 +155,34 @@ class RemoveWorkPlan(bpy.types.Operator, tool.Ifc.Operator):
         core.remove_work_plan(tool.Ifc, work_plan=tool.Ifc.get().by_id(self.work_plan))
 
 
-class EnableEditingWorkPlan(bpy.types.Operator, tool.Ifc.Operator):
+class EnableEditingWorkPlan(bpy.types.Operator):
     bl_idname = "bim.enable_editing_work_plan"
     bl_label = "Enable Editing Work Plan"
     bl_options = {"REGISTER", "UNDO"}
     work_plan: bpy.props.IntProperty()
 
-    def _execute(self, context):
+    def execute(self, context):
         core.enable_editing_work_plan(tool.Sequence, work_plan=tool.Ifc.get().by_id(self.work_plan))
+        return {"FINISHED"}
 
 
-class DisableEditingWorkPlan(bpy.types.Operator, tool.Ifc.Operator):
+class DisableEditingWorkPlan(bpy.types.Operator):
     bl_idname = "bim.disable_editing_work_plan"
     bl_options = {"REGISTER", "UNDO"}
     bl_label = "Disable Editing Work Plan"
 
-    def _execute(self, context):
+    def execute(self, context):
         core.disable_editing_work_plan(tool.Sequence)
+        return {"FINISHED"}
 
 
-class EnableEditingWorkPlanSchedules(bpy.types.Operator, tool.Ifc.Operator):
+class EnableEditingWorkPlanSchedules(bpy.types.Operator):
     bl_idname = "bim.enable_editing_work_plan_schedules"
     bl_label = "Enable Editing Work Plan Schedules"
     bl_options = {"REGISTER", "UNDO"}
     work_plan: bpy.props.IntProperty()
 
-    def _execute(self, context):
+    def execute(self, context):
         core.enable_editing_work_plan_schedules(tool.Sequence, work_plan=tool.Ifc.get().by_id(self.work_plan))
         return {"FINISHED"}
 
@@ -269,14 +271,15 @@ class EnableEditingWorkSchedule(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class EnableEditingWorkScheduleTasks(bpy.types.Operator, tool.Ifc.Operator):
+class EnableEditingWorkScheduleTasks(bpy.types.Operator):
     bl_idname = "bim.enable_editing_work_schedule_tasks"
     bl_label = "Enable Editing Work Schedule Tasks"
     bl_options = {"REGISTER", "UNDO"}
     work_schedule: bpy.props.IntProperty()
 
-    def _execute(self, context):
+    def execute(self, context):
         core.enable_editing_work_schedule_tasks(tool.Sequence, work_schedule=tool.Ifc.get().by_id(self.work_schedule))
+        return {"FINISHED"}
 
 
 class LoadTaskProperties(bpy.types.Operator):
@@ -352,6 +355,8 @@ class RemoveTask(bpy.types.Operator, tool.Ifc.Operator):
 
 
 class EnableEditingTaskTime(bpy.types.Operator, tool.Ifc.Operator):
+    # IFC operator is needed because operator is adding a new task time to IFC
+    # if it doesn't exist.
     bl_idname = "bim.enable_editing_task_time"
     bl_label = "Enable Editing Task Time"
     bl_options = {"REGISTER", "UNDO"}
@@ -520,10 +525,10 @@ class AssignProcess(bpy.types.Operator, tool.Ifc.Operator):
             else:
                 core.assign_input_products(tool.Ifc, tool.Sequence, tool.Spatial, task=tool.Ifc.get().by_id(self.task))
         elif self.related_object_type == "CONTROL":
-            pass  # TODO
+            self.report({"ERROR"}, "Assigning process control is not yet supported")  # TODO
 
 
-class UnassignProcess(bpy.types.Operator):
+class UnassignProcess(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unassign_process"
     bl_label = "Unassign Process"
     bl_options = {"REGISTER", "UNDO"}
@@ -531,9 +536,6 @@ class UnassignProcess(bpy.types.Operator):
     related_object_type: bpy.props.StringProperty()
     related_object: bpy.props.IntProperty()
     resource: bpy.props.IntProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         if self.related_object_type == "RESOURCE":
@@ -635,10 +637,13 @@ class ImportCSV(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
 
     @classmethod
     def poll(cls, context):
-        ifc_file = IfcStore.get_file()
-        return ifc_file is not None
+        ifc_file = tool.Ifc.get()
+        if ifc_file is None:
+            cls.poll_message_set("No IFC file is loaded.")
+            return False
+        return True
 
-    def execute(self, context):
+    def _execute(self, context):
         from ifc4d.csv4d2ifc import Csv2Ifc
 
         self.file = tool.Ifc.get()
@@ -647,11 +652,10 @@ class ImportCSV(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
         csv2ifc.csv = self.filepath
         csv2ifc.file = self.file
         csv2ifc.execute()
-        print("Imported in %s seconds" % (time.time() - start))
-        return {"FINISHED"}
+        self.report({"INFO"}, "Imported in %s seconds" % (time.time() - start))
 
 
-class ImportP6(bpy.types.Operator, ImportHelper):
+class ImportP6(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     bl_idname = "bim.import_p6"
     bl_label = "Import P6"
     bl_options = {"REGISTER", "UNDO"}
@@ -660,10 +664,13 @@ class ImportP6(bpy.types.Operator, ImportHelper):
 
     @classmethod
     def poll(cls, context):
-        ifc_file = IfcStore.get_file()
-        return ifc_file is not None
+        ifc_file = tool.Ifc.get()
+        if ifc_file is None:
+            cls.poll_message_set("No IFC file is loaded.")
+            return False
+        return True
 
-    def execute(self, context):
+    def _execute(self, context):
         from ifc4d.p62ifc import P62Ifc
 
         self.file = IfcStore.get_file()
@@ -673,11 +680,10 @@ class ImportP6(bpy.types.Operator, ImportHelper):
         p62ifc.file = self.file
         p62ifc.work_plan = self.file.by_type("IfcWorkPlan")[0] if self.file.by_type("IfcWorkPlan") else None
         p62ifc.execute()
-        print("Import finished in {:.2f} seconds".format(time.time() - start))
-        return {"FINISHED"}
+        self.report({"INFO"}, "Import finished in {:.2f} seconds".format(time.time() - start))
 
 
-class ImportP6XER(bpy.types.Operator, ImportHelper):
+class ImportP6XER(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     bl_idname = "bim.import_p6xer"
     bl_label = "Import P6 XER"
     bl_options = {"REGISTER", "UNDO"}
@@ -686,10 +692,13 @@ class ImportP6XER(bpy.types.Operator, ImportHelper):
 
     @classmethod
     def poll(cls, context):
-        ifc_file = IfcStore.get_file()
-        return ifc_file is not None
+        ifc_file = tool.Ifc.get()
+        if ifc_file is None:
+            cls.poll_message_set("No IFC file is loaded.")
+            return False
+        return True
 
-    def execute(self, context):
+    def _execute(self, context):
         from ifc4d.p6xer2ifc import P6XER2Ifc
 
         self.file = IfcStore.get_file()
@@ -699,11 +708,10 @@ class ImportP6XER(bpy.types.Operator, ImportHelper):
         p6xer2ifc.file = self.file
         p6xer2ifc.work_plan = self.file.by_type("IfcWorkPlan")[0] if self.file.by_type("IfcWorkPlan") else None
         p6xer2ifc.execute()
-        print("Import finished in {:.2f} seconds".format(time.time() - start))
-        return {"FINISHED"}
+        self.report({"INFO"}, "Import finished in {:.2f} seconds".format(time.time() - start))
 
 
-class ImportPP(bpy.types.Operator, ImportHelper):
+class ImportPP(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     bl_idname = "bim.import_pp"
     bl_label = "Import Powerproject .pp"
     bl_options = {"REGISTER", "UNDO"}
@@ -712,10 +720,13 @@ class ImportPP(bpy.types.Operator, ImportHelper):
 
     @classmethod
     def poll(cls, context):
-        ifc_file = IfcStore.get_file()
-        return ifc_file is not None
+        ifc_file = tool.Ifc.get()
+        if ifc_file is None:
+            cls.poll_message_set("No IFC file is loaded.")
+            return False
+        return True
 
-    def execute(self, context):
+    def _execute(self, context):
         from ifc4d.pp2ifc import PP2Ifc
 
         self.file = IfcStore.get_file()
@@ -725,11 +736,10 @@ class ImportPP(bpy.types.Operator, ImportHelper):
         pp2ifc.file = self.file
         pp2ifc.work_plan = self.file.by_type("IfcWorkPlan")[0] if self.file.by_type("IfcWorkPlan") else None
         pp2ifc.execute()
-        print("Import finished in {:.2f} seconds".format(time.time() - start))
-        return {"FINISHED"}
+        self.report({"INFO"}, "Import finished in {:.2f} seconds".format(time.time() - start))
 
 
-class ImportMSP(bpy.types.Operator, ImportHelper):
+class ImportMSP(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     bl_idname = "bim.import_msp"
     bl_label = "Import MSP"
     bl_options = {"REGISTER", "UNDO"}
@@ -738,10 +748,13 @@ class ImportMSP(bpy.types.Operator, ImportHelper):
 
     @classmethod
     def poll(cls, context):
-        ifc_file = IfcStore.get_file()
-        return ifc_file is not None
+        ifc_file = tool.Ifc.get()
+        if ifc_file is None:
+            cls.poll_message_set("No IFC file is loaded.")
+            return False
+        return True
 
-    def execute(self, context):
+    def _execute(self, context):
         from ifc4d.msp2ifc import MSP2Ifc
 
         self.file = IfcStore.get_file()
@@ -751,8 +764,7 @@ class ImportMSP(bpy.types.Operator, ImportHelper):
         msp2ifc.file = self.file
         msp2ifc.work_plan = self.file.by_type("IfcWorkPlan")[0] if self.file.by_type("IfcWorkPlan") else None
         msp2ifc.execute()
-        print("Import finished in {:.2f} seconds".format(time.time() - start))
-        return {"FINISHED"}
+        self.report({"INFO"}, "Import finished in {:.2f} seconds".format(time.time() - start))
 
 
 class ExportMSP(bpy.types.Operator, ImportHelper):
@@ -766,8 +778,11 @@ class ExportMSP(bpy.types.Operator, ImportHelper):
 
     @classmethod
     def poll(cls, context):
-        ifc_file = IfcStore.get_file()
-        return ifc_file is not None
+        ifc_file = tool.Ifc.get()
+        if ifc_file is None:
+            cls.poll_message_set("No IFC file is loaded.")
+            return False
+        return True
 
     def execute(self, context):
         from ifc4d.ifc2msp import Ifc2Msp
@@ -781,7 +796,7 @@ class ExportMSP(bpy.types.Operator, ImportHelper):
         ifc2msp.holiday_start_date = parser.parse(self.holiday_start_date).date()
         ifc2msp.holiday_finish_date = parser.parse(self.holiday_finish_date).date()
         ifc2msp.execute()
-        print("Export finished in {:.2f} seconds".format(time.time() - start))
+        self.report({"INFO"}, "Export finished in {:.2f} seconds".format(time.time() - start))
         return {"FINISHED"}
 
 
@@ -796,8 +811,11 @@ class ExportP6(bpy.types.Operator, ImportHelper):
 
     @classmethod
     def poll(cls, context):
-        ifc_file = IfcStore.get_file()
-        return ifc_file is not None
+        ifc_file = tool.Ifc.get()
+        if ifc_file is None:
+            cls.poll_message_set("No IFC file is loaded.")
+            return False
+        return True
 
     def execute(self, context):
         from ifc4d.ifc2p6 import Ifc2P6
@@ -810,7 +828,7 @@ class ExportP6(bpy.types.Operator, ImportHelper):
         ifc2p6.holiday_start_date = parser.parse(self.holiday_start_date).date()
         ifc2p6.holiday_finish_date = parser.parse(self.holiday_finish_date).date()
         ifc2p6.execute()
-        print("Export finished in {:.2f} seconds".format(time.time() - start))
+        self.report({"INFO"}, "Export finished in {:.2f} seconds".format(time.time() - start))
         return {"FINISHED"}
 
 
@@ -877,15 +895,12 @@ class RemoveWorkTime(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
-class AssignRecurrencePattern(bpy.types.Operator):
+class AssignRecurrencePattern(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_recurrence_pattern"
     bl_label = "Assign Recurrence Pattern"
     bl_options = {"REGISTER", "UNDO"}
     work_time: bpy.props.IntProperty()
     recurrence_type: bpy.props.StringProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         core.assign_recurrence_pattern(
@@ -894,14 +909,11 @@ class AssignRecurrencePattern(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class UnassignRecurrencePattern(bpy.types.Operator):
+class UnassignRecurrencePattern(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unassign_recurrence_pattern"
     bl_label = "Unassign Recurrence Pattern"
     bl_options = {"REGISTER", "UNDO"}
     recurrence_pattern: bpy.props.IntProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         core.unassign_recurrence_pattern(tool.Ifc, recurrence_pattern=tool.Ifc.get().by_id(self.recurrence_pattern))

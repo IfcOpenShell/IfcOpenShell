@@ -868,7 +868,8 @@ def update_enum_property_search_prop(self, context):
             if self.first_launch:
                 self.first_launch = False
             else:
-                context.window.screen = context.window.screen
+                if not self.should_click_ok_to_validate:
+                    context.window.screen = context.window.screen
             if predefined_type:
                 try:
                     setattr(context.data, "ifc_predefined_type", predefined_type)
@@ -879,7 +880,8 @@ def update_enum_property_search_prop(self, context):
 
 class BIM_OT_enum_property_search(bpy.types.Operator):
     bl_idname = "bim.enum_property_search"
-    bl_label = "Search For Property"
+    bl_label = "Search"
+    bl_description = "Search For Property"
     bl_options = {"REGISTER", "UNDO"}
     first_launch: bpy.props.BoolProperty(default=True, options={"SKIP_SAVE"})
     dummy_name: bpy.props.StringProperty(name="Property", update=update_enum_property_search_prop)
@@ -887,6 +889,7 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
     collection_identifiers: bpy.props.CollectionProperty(type=StrProperty)
     collection_predefined_types: bpy.props.CollectionProperty(type=StrProperty)
     prop_name: bpy.props.StringProperty()
+    should_click_ok_to_validate: bpy.props.BoolProperty(default=False)
 
     def invoke(self, context, event):
         self.clear_collections()

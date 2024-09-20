@@ -19,7 +19,9 @@
 import lark
 import ifcopenshell
 from typing import Optional, Union, Literal, Generator, Any
-
+import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
+from ifcopenshell.util.doc import get_predefined_type_doc
+from ifcopenshell.util.element import get_psets
 
 arithmetic_operator_symbols = {"ADD": "+", "DIVIDE": "/", "MULTIPLY": "*", "SUBTRACT": "-"}
 symbol_arithmetic_operators = {"+": "ADD", "/": "DIVIDE", "*": "MULTIPLY", "-": "SUBTRACT"}
@@ -239,11 +241,13 @@ def get_cost_item_assignments(
     if not is_deep:
         return get_cost_assignments_by_type(cost_item, filter_by_type)
     else:
-        return [
+        current_assignments = get_cost_assignments_by_type(cost_item, filter_by_type)
+        nested_assignments = [
             product
             for nested_cost_item in get_all_nested_cost_items(cost_item)
             for product in get_cost_assignments_by_type(nested_cost_item, filter_by_type)
         ]
+        return current_assignments + nested_assignments
 
 
 def get_cost_values(cost_item: ifcopenshell.entity_instance) -> list[dict[str, str]]:
@@ -264,6 +268,35 @@ def get_cost_values(cost_item: ifcopenshell.entity_instance) -> list[dict[str, s
         )
     print(results)
     return results
+
+
+def get_cost_schedule_types(file):
+    schema: ifcopenshell_wrapper.schema_definition = ifcopenshell_wrapper.schema_by_name(file.schema)
+    results = []
+    declaration = schema.declaration_by_name("IfcCostSchedule")
+    version = file.schema_identifier
+    for attribute in declaration.attributes():
+        if attribute.name() == "PredefinedType":
+            for enumeration in attribute.type_of_attribute().declared_type().enumeration_items():
+                results.append(
+                    {
+                        "name": enumeration,
+                        "description": get_predefined_type_doc(version, "IfcCostSchedule", enumeration),
+                    }
+                )
+            break
+    return results
+
+
+def get_product_quantity_names(elements: list[ifcopenshell.entity_instance]) -> list[str]:
+    names = set()
+    for element in elements or []:
+        potential_names = set()
+        qtos = get_psets(element, qtos_only=True)
+        for qset, quantities in qtos.items():
+            potential_names.update(quantities.keys())
+        names = names.intersection(potential_names) if names else potential_names
+    return [n for n in names if n != "id"]
 
 
 class CostValueUnserialiser:

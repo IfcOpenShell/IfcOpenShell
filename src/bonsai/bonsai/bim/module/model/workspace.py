@@ -306,7 +306,6 @@ def add_layout_hotkey_operator(layout, text, hotkey, description, ui_context="")
         op.description = text + "\n" + description
     else:
         op.description = description
-
     return op
 
 
@@ -417,7 +416,6 @@ class CreateObjectUI:
         elif cls.props.ifc_class in ("IfcSpaceType"):
             add_layout_hotkey_operator(cls.layout, "Generate", "S_G", bpy.ops.bim.generate_space.__doc__, ui_context)
         ###
-
         else:
             row = cls.layout.row(align=True)
             row.prop(data=cls.props, property="rl_mode", text="RL Mode" if ui_context != "TOOL_HEADER" else "RL")
@@ -620,7 +618,6 @@ class EditObjectUI:
             description = f"{bpy.ops.bim.recalculate_wall.__doc__}\n\nHotkey: S G"
             op.hotkey = "S_G"
             op.description = description.strip()
-
         elif AuthoringData.data["active_material_usage"] == "PROFILE":
             if AuthoringData.data["active_class"] in ("IfcCableCarrierSegment","IfcCableSegment","IfcDuctSegment","IfcPipeSegment"):
                 pass

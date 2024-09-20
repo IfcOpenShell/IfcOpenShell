@@ -288,12 +288,20 @@ class Cost(bonsai.core.tool.Cost):
         unit = ""
         for quantities in ifcopenshell.util.element.get_psets(product, qtos_only=True).values():
             for qto in tool.Ifc.get().by_id(quantities["id"]).Quantities or []:
-                for quantity in cost_item.CostQuantities:
+                for quantity in cost_item.CostQuantities or []:
                     if quantity == qto:
                         selected_quantitites.append(quantity)
                         if not unit:
                             unit = cls.get_quantity_unit_symbol(quantity)
         return selected_quantitites, unit
+
+    @classmethod
+    def get_assigned_product(cls, cost_item, quantity):
+        assigned_products = cls.get_cost_item_assignments(cost_item, filter_by_type="PRODUCT", is_deep=False)
+        for product in assigned_products:
+            assigned_quantities, _ = cls.get_assigned_quantities(cost_item, product)
+            if quantity in assigned_quantities:
+                return product
 
     @classmethod
     def get_products(cls, related_object_type: RELATED_OBJECT_TYPE) -> list[ifcopenshell.entity_instance]:
@@ -854,7 +862,37 @@ class Cost(bonsai.core.tool.Cost):
             return {"id": unit.id(), "name": unit.Currency}
 
     @classmethod
-    def generate_cost_schedule_browser(cls, cost_schedule_data: list[dict[str, Any]]) -> None:
+    def generate_cost_schedule_browser(cls, cost_chedule) -> None:
         if not bpy.context.scene.WebProperties.is_connected:
             bpy.ops.bim.connect_websocket_server(page="costing")
-        tool.Web.send_webui_data(data=cost_schedule_data, data_key="cost_items", event="cost_items")
+        cost_schedule_data = cls.create_cost_schedule_json(cost_chedule)
+        tool.Web.send_webui_data(
+            data={"cost_items": cost_schedule_data, "cost_schedule_id": cost_chedule.id(), "currency": cls.currency()},
+            data_key="cost_items",
+            event="cost_items",
+        )
+
+    @classmethod
+    def get_cost_quantities(cls, cost_item: ifcopenshell.entity_instance) -> dict:
+        results = {
+            "quantities": [],
+            "unit_symbol": None,
+        }
+        if not cost_item:
+            return results
+        results["quantity_type"] = cost_item.CostQuantities[0].is_a() if cost_item.CostQuantities else None
+        unit = (
+            ifcopenshell.util.unit.get_property_unit(cost_item.CostQuantities[0], tool.Ifc.get())
+            if cost_item.CostQuantities
+            else None
+        )
+        if unit:
+            results["unit_symbol"] = ifcopenshell.util.unit.get_unit_symbol(unit)
+        for quantity in cost_item.CostQuantities or []:
+            assigned_product = cls.get_assigned_product(cost_item, quantity)
+            info = quantity.get_info()
+            info["fromProduct"] = assigned_product.get_info(recursive=True) if assigned_product else None
+            results["quantities"].append(info)
+        if results["quantity_type"] == "IfcQuantityCount":
+            results["unit_symbol"] = "U"
+        return results

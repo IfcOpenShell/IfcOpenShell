@@ -1,0 +1,49 @@
+.ribbon-bar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  border: 1px solid #444;
+  width: 100%;
+  justify-content: center;
+}
+
+.ribbon-bar .action-button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  background-color: #444;
+  color: #fff;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  border-left: 1px solid #666;
+}
+
+.ribbon-bar .action-button:hover {
+  background-color: #666;
+}
+
+.ribbon-bar .action-button::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #333;
+  color: #fff;
+  padding: 5px 10px;
+  border-radius: 5px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+  font-size: 12px;
+}
+
+.ribbon-bar .action-button:hover::after {
+  opacity: 1;
+}

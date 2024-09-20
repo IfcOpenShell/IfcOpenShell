@@ -209,7 +209,6 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         description="If disabled, the toolbar will only load when an IFC model is active",
     )
     should_play_chaching_sound: BoolProperty(name="Play A Cha-Ching Sound When Project Costs Updates", default=False)
-    lock_grids_on_import: BoolProperty(name="Lock Grids By Default", default=True)
     spatial_elements_unselectable: BoolProperty(name="Make Spatial Elements Unselectable By Default", default=True)
     decorations_colour: bpy.props.FloatVectorProperty(
         name="Decorations Colour", subtype="COLOR", default=(1, 1, 1, 1), min=0.0, max=1.0, size=4
@@ -294,8 +293,6 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row.prop(self, "should_setup_toolbar")
         row = layout.row()
         row.prop(self, "should_play_chaching_sound")
-        row = layout.row()
-        row.prop(self, "lock_grids_on_import")
         row = layout.row()
         row.prop(self, "spatial_elements_unselectable")
 
@@ -459,7 +456,11 @@ class BIM_PT_tabs(Panel):
             op.uri = "https://docs.bonsaibim.org/guides/troubleshooting.html#saving-and-loading-blend-files"
             row.operator("bim.close_blend_warning", text="", icon="CANCEL")
 
-        if context.mode != context.scene.BIMGeometryProperties.mode:
+        if context.mode == "OBJECT" and context.scene.BIMGeometryProperties.mode in ("OBJECT", "ITEM"):
+            pass
+        elif context.mode.startswith("EDIT") and context.scene.BIMGeometryProperties.mode == "EDIT":
+            pass
+        else:
             box = self.layout.box()
             box.alert = True
             row = box.row(align=True)
@@ -525,8 +526,8 @@ class BIM_PT_tab_project_info(Panel):
         pass
 
 
-class BIM_PT_tab_spatial_decomposition(Panel):
-    bl_label = "Spatial Decomposition"
+class BIM_PT_tab_spatial(Panel):
+    bl_label = "Spatial"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -1079,7 +1080,7 @@ def draw_custom_context_menu(self, context):
     prop = context.button_pointer
     prop_name = context.button_prop.identifier
     prop_value = getattr(prop, prop_name, None)
-    if prop_value is None:
+    if not isinstance(prop_value, str):
         return
     version = tool.Ifc.get_schema()
     layout = self.layout

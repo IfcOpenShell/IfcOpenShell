@@ -27,6 +27,10 @@ You can split, merge, or create new panels by clicking :kbd:`RMB` in-between pan
 
 You can save panel layouts, or switch to another customised panel layout by clicking the tabs in the :doc:`/reference/topbar`. Bonsai's default layout is stored in the **BIM** tab.
 
+.. tip::
+
+   Depending on your screen size, you may need to use the mouse wheel to scroll through the workspaces or, if you press the mouse wheel, you can drag the workspaces to see them all.
+
 .. image:: images/interface-tabs.png
 
 The :doc:`Topbar </reference/topbar>` and :doc:`/reference/status_bar` cannot be customised.

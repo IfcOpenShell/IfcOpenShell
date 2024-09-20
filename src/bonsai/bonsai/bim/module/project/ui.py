@@ -27,6 +27,7 @@ from bonsai.bim.module.project.data import ProjectData, LinksData
 
 def file_import_menu(self, context):
     op = self.layout.operator("bim.load_project", text="IFC (Geometry Only) (.ifc/.ifczip/.ifcxml)")
+    op.import_without_ifc_data = True
     op.should_start_fresh_session = False
 
 
@@ -519,5 +520,7 @@ class BIM_PT_purge(Panel):
 
     def draw(self, context):
         layout = self.layout
-        layout.operator("bim.purge_unused_profiles")
-        layout.operator("bim.purge_unused_types")
+        layout.operator("bim.purge_unused_objects", text="Purge Unused Profiles").object_type = "PROFILE"
+        layout.operator("bim.purge_unused_objects", text="Purge Unused Types").object_type = "TYPE"
+        layout.operator("bim.purge_unused_objects", text="Purge Unused Materials").object_type = "MATERIAL"
+        layout.operator("bim.purge_unused_objects", text="Purge Unused Styles").object_type = "STYLE"
