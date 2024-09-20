@@ -59,8 +59,8 @@ if __name__ == "__main__":
         props_str = ""
         for prop_name, prop_data in props.items():
             python_type = get_python_type(prop_data)
-            # if prop_name not in required:
-            #     python_type = f"NotRequired[{python_type}]"
+            if prop_name not in required:
+                python_type = f"NotRequired[{python_type}]"
             props_str += f"    {prop_name}: {python_type}\n"
         class_strings[class_header] = props_str
 
