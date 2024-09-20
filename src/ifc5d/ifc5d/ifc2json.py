@@ -6,6 +6,7 @@ import ifcopenshell.util.date
 
 CostItem = dict[str, Any]
 
+
 class ifc5D2json:
     def __init__(self):
         self.json: str = None
@@ -15,7 +16,7 @@ class ifc5D2json:
         self.units: dict[str, ifcopenshell.entity_instance] = {}
         self._cost_values = {}
         self.data: list[dict[str, Any]] = []
-    
+
     def convert_ifc_to_json(self):
         self.data = []
         if not isinstance(self.file_path, str):
@@ -46,8 +47,8 @@ class ifc5D2json:
             for cost_item in rel.RelatedObjects:
                 self.extract_cost_item_data(cost_item, schedule_data)
         return schedule_data
-            
-    def extract_cost_item_data(self , cost_item: ifcopenshell.entity_instance, json_data):
+
+    def extract_cost_item_data(self, cost_item: ifcopenshell.entity_instance, json_data):
         data = {}
         self.extract_cost_item_quantities(cost_item, data)
         self.populate_cost_values(cost_item, data)

@@ -348,9 +348,9 @@ class Web(bonsai.core.tool.Web):
         ifc_file = tool.Ifc.get()
         if operator_data["type"] == "getPredefinedTypes":
             cls.send_webui_data(
-                data=ifcopenshell.util.cost.get_cost_schedule_types(ifc_file), 
-                data_key="predefined_types", 
-                event="predefined_types"
+                data=ifcopenshell.util.cost.get_cost_schedule_types(ifc_file),
+                data_key="predefined_types",
+                event="predefined_types",
             )
         if operator_data["type"] == "addCostSchedule":
             bonsai.core.cost.add_cost_schedule(
@@ -385,7 +385,7 @@ class Web(bonsai.core.tool.Web):
         if operator_data["type"] == "addCostItem":
             if not operator_data["costItemId"]:
                 return
-            cost_item=tool.Ifc.get().by_id(operator_data["costItemId"])
+            cost_item = tool.Ifc.get().by_id(operator_data["costItemId"])
             tool.Ifc.run("cost.add_cost_item", cost_item=cost_item)
             cost_schedule = tool.Cost.get_cost_schedule(cost_item=cost_item)
             cls.load_cost_schedule_web_ui(cost_schedule)
@@ -454,7 +454,13 @@ class Web(bonsai.core.tool.Web):
             prop_name = operator_data["propName"]
             if prop_name == "count":
                 prop_name = ""
-            bonsai.core.cost.assign_cost_item_quantity(tool.Ifc, tool.Cost, cost_item=ifc_file.by_id(operator_data["costItemId"]), related_object_type="PRODUCT", prop_name=prop_name)
+            bonsai.core.cost.assign_cost_item_quantity(
+                tool.Ifc,
+                tool.Cost,
+                cost_item=ifc_file.by_id(operator_data["costItemId"]),
+                related_object_type="PRODUCT",
+                prop_name=prop_name,
+            )
             cost_schedule = tool.Cost.get_cost_schedule(cost_item=tool.Ifc.get().by_id(operator_data["costItemId"]))
             cls.load_cost_schedule_web_ui(cost_schedule)
         if operator_data["type"] == "enableEditingQuantities":
@@ -473,7 +479,11 @@ class Web(bonsai.core.tool.Web):
             cost_item = ifc_file.by_id(cost_item_id)
             cost_schedule = tool.Cost.get_cost_schedule(cost_item)
             physical_quantity = tool.Ifc.get().by_id(operator_data["quantityId"])
-            tool.Ifc.run("cost.edit_cost_item_quantity", physical_quantity=physical_quantity, attributes=operator_data["attributes"])
+            tool.Ifc.run(
+                "cost.edit_cost_item_quantity",
+                physical_quantity=physical_quantity,
+                attributes=operator_data["attributes"],
+            )
             cls.load_cost_schedule_web_ui(cost_schedule)
             cls.load_cost_item_quantities_ui(cost_item)
         if operator_data["type"] == "deleteCostItemQuantity":
@@ -485,7 +495,7 @@ class Web(bonsai.core.tool.Web):
             cls.load_cost_item_quantities_ui(cost_item)
 
     @classmethod
-    def load_cost_item_quantities_ui(cls, cost_item : ifcopenshell.entity_instance) -> None:
+    def load_cost_item_quantities_ui(cls, cost_item: ifcopenshell.entity_instance) -> None:
         if not cost_item:
             return
         selected_products = list(tool.Spatial.get_selected_products())
@@ -508,7 +518,7 @@ class Web(bonsai.core.tool.Web):
         )
 
     @classmethod
-    def selection_data(cls, cost_item : ifcopenshell.entity_instance, elements : list) -> list:
+    def selection_data(cls, cost_item: ifcopenshell.entity_instance, elements: list) -> list:
         if not elements:
             return []
         if not cost_item:
@@ -554,7 +564,7 @@ class Web(bonsai.core.tool.Web):
         return data
 
     @classmethod
-    def load_cost_schedule_web_ui(cls, cost_schedule :ifcopenshell.entity_instance) -> None:
+    def load_cost_schedule_web_ui(cls, cost_schedule: ifcopenshell.entity_instance) -> None:
         ifc2json = ifc5D2json()
         ifc2json.file_path = tool.Ifc.get()
         ifc2json.cost_schedule = cost_schedule
