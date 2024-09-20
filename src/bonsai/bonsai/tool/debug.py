@@ -98,15 +98,3 @@ class Debug(bonsai.core.tool.Debug):
                 print(f"{class_string: <50} {unused[ifc_class]: >5}")
 
         return sum(unused.values())
-
-    @classmethod
-    def purge_unused_class(cls, ifc_class: str) -> int:
-        ifc_file = tool.Ifc.get()
-        elements = ifc_file.by_type(ifc_class)
-        i = 0
-        for element in elements:
-            if ifc_file.get_total_inverses(element) != 0:
-                continue
-            ifcopenshell.util.element.remove_deep(ifc_file, element)
-            i += 1
-        return i
