@@ -40,8 +40,12 @@ def register():
         bpy.utils.register_tool(workspace.CadTool, after={"builtin.transform"}, separator=True, group=False)
     bpy.types.Scene.BIMCadProperties = bpy.props.PointerProperty(type=prop.BIMCadProperties)
 
+    workspace.load_custom_icons()
+
 
 def unregister():
     if not bpy.app.background:
         bpy.utils.unregister_tool(workspace.CadTool)
     del bpy.types.Scene.BIMCadProperties
+
+    workspace.unload_custom_icons()

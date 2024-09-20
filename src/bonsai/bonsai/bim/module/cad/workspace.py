@@ -24,11 +24,48 @@ import ifcopenshell.util.unit
 from bpy.types import WorkSpaceTool
 from bonsai.bim.module.model.data import AuthoringData, RailingData, RoofData
 
+def check_display_mode():
+    global display_mode
+    try:
+        theme = bpy.context.preferences.themes['Default']
+        text_color = theme.user_interface.wcol_menu_item.text
+        background_color = theme.user_interface.wcol_menu_item.outline
+        print(f"text_color = {text_color}")
+        print(f"background_color = {background_color}")
+        if sum(text_color) < 2.6:
+            display_mode = "lm"
+        else:
+            display_mode = "dm"
+    except:
+        display_mode = "dm"
+
+
+def load_custom_icons():
+    global custom_icon_previews
+    if display_mode is None:
+        check_display_mode()
+    
+    icons_dir = os.path.join(os.path.dirname(__file__), "..", "..", "data", "icons")
+    custom_icon_previews = bpy.utils.previews.new()
+    
+    prefix = f"{display_mode}_"
+    
+    for entry in os.scandir(icons_dir):
+        if entry.name.endswith(".png") and entry.name.startswith(prefix):
+            name = os.path.splitext(entry.name)[0].replace(prefix, "", 1)
+            custom_icon_previews.load(name.upper(), entry.path, "IMAGE")
+
+
+def unload_custom_icons():
+    global custom_icon_previews
+    if custom_icon_previews:
+        bpy.utils.previews.remove(custom_icon_previews)
+        custom_icon_previews = None
+
 
 class CadTool(WorkSpaceTool):
     bl_space_type = "VIEW_3D"
     bl_context_mode = "EDIT_MESH"
-
     bl_idname = "bim.cad_tool"
     bl_label = "CAD Tool"
     bl_description = "Gives you CAD authoring related superpowers"
@@ -47,93 +84,47 @@ class CadTool(WorkSpaceTool):
     )
 
     def draw_settings(context, layout, workspace_tool):
+        ui_context = str(context.region.type)
         obj = context.active_object
         if not obj or not obj.data:
             return
         if hasattr(obj.data, "BIMMeshProperties") and obj.data.BIMMeshProperties.subshape_type == "PROFILE":
-            row = layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="", icon="EVENT_Q")
             element = tool.Ifc.get_entity(obj)
             if element:
                 if element.is_a("IfcProfileDef"):
-                    row.operator("bim.edit_arbitrary_profile", text="Save Profile")
-                    row.operator("bim.align_view_to_profile", text="", icon="AXIS_FRONT")
-                    row.operator("bim.disable_editing_arbitrary_profile", text="", icon="CANCEL")
+                    add_header_apply_button(layout, "Edit Profile", "bim.edit_arbitrary_profile", "bim.disable_editing_arbitrary_profile", ui_context)
                 elif element.is_a("IfcRelSpaceBoundary"):
-                    row.operator("bim.edit_boundary_geometry", text="Save Profile")
-                    row.operator("bim.disable_editing_boundary_geometry", text="", icon="CANCEL")
+                    add_header_apply_button(layout, "Edit Boundary Geometry", "bim.edit_boundary_geometry", "bim.disable_editing_boundary_geometry", ui_context)
                 else:
-                    row.operator("bim.edit_extrusion_profile", text="Save Profile")
-                    row.operator("bim.align_view_to_profile", text="", icon="AXIS_FRONT")
-                    row.operator("bim.disable_editing_extrusion_profile", text="", icon="CANCEL")
+                    add_header_apply_button(layout, "Edit Profile", "bim.edit_extrusion_profile", "bim.disable_editing_extrusion_profile", ui_context)
 
-            row = layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="", icon="EVENT_E")
-            row.operator("bim.cad_hotkey", text="Extend").hotkey = "S_E"
-
-            row = layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="", icon="EVENT_T")
-            row.operator("bim.cad_hotkey", text="Mitre").hotkey = "S_T"
-
-            row = layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="", icon="EVENT_F")
-            row.operator("bim.cad_hotkey", text="Fillet").hotkey = "S_F"
-
-            row = layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="", icon="EVENT_O")
-            row.operator("bim.cad_hotkey", text="Offset").hotkey = "S_O"
-
-            row = layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="", icon="EVENT_R")
-            row.operator("bim.add_rectangle", text="Rectangle")
-
-            row = layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="", icon="EVENT_C")
-            row.operator("bim.add_ifccircle", text="Circle")
-
-            row = layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="", icon="EVENT_V")
-            row.operator("bim.set_arc_index", text="3-Point Arc")
-
-            row = layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="", icon="EVENT_X")
-            row.operator("bim.reset_vertex", text="Reset Vertex")
+            row = layout.row(align=True) 
+            add_layout_hotkey_operator(row, "Extend", "S_E", "Extends/reduces element to 3D cursor", ui_context)
+            row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
+            add_layout_hotkey_operator(row, "Join", "S_T", "Joins two non-parallel paths at their intersection", ui_context)
+            row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
+            add_layout_hotkey_operator(row, "Fillet", "S_V", "Fillet", ui_context)
+            row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
+            add_layout_hotkey_operator(row, "Offset", "S_O", "Offset", ui_context)
+            row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
+            add_layout_hotkey_operator(row, "Rectangle", "S_R", "Rectangle", ui_context)
+            row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
+            add_layout_hotkey_operator(row, "Circle", "S_C", "Circle", ui_context)
+            row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
+            add_layout_hotkey_operator(row, "3-Point Arc", "S_V", "3-Point Arc", ui_context)
+            row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
+            add_layout_hotkey_operator(row, "Reset Vertex", "S_X", "Reset Vertex", ui_context)
 
         elif hasattr(obj.data, "BIMMeshProperties") and obj.data.BIMMeshProperties.subshape_type == "AXIS":
-            row = layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="", icon="EVENT_Q")
-            row.operator("bim.edit_extrusion_axis", text="Save Axis")
-            row.operator("bim.disable_editing_extrusion_axis", text="", icon="CANCEL")
-
-            row = layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="", icon="EVENT_E")
-            row.operator("bim.cad_hotkey", text="Extend").hotkey = "S_E"
-
-            row = layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="", icon="EVENT_T")
-            row.operator("bim.cad_hotkey", text="Mitre").hotkey = "S_T"
-
-            row = layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="", icon="EVENT_F")
-            row.operator("bim.cad_hotkey", text="Fillet").hotkey = "S_F"
-
-            row = layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="", icon="EVENT_O")
-            row.operator("bim.cad_hotkey", text="Offset").hotkey = "S_O"
+            add_header_apply_button(layout, "Edit Axis", "bim.set_arc_index", "bim.set_arc_index", ui_context)
+            row = layout.row(align=True) 
+            add_layout_hotkey_operator(row, "Extend", "S_E", "Extends/reduces element to 3D cursor", ui_context)
+            row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
+            add_layout_hotkey_operator(row, "Join", "S_T", "Joins two non-parallel paths at their intersection", ui_context)
+            row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
+            add_layout_hotkey_operator(row, "Fillet", "S_F", "Fillet", ui_context)
+            row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
+            add_layout_hotkey_operator(row, "Offset", "S_O", "Offset", ui_context)
 
         else:
             if (
@@ -141,54 +132,29 @@ class CadTool(WorkSpaceTool):
                 and RailingData.data["pset_data"]
                 and context.active_object.BIMRailingProperties.is_editing_path
             ):
-                row = layout.row(align=True)
-                row.label(text="", icon=f"EVENT_TAB")
-                row.operator("bim.finish_editing_railing_path")
-                row.operator("bim.cancel_editing_railing_path", icon="CANCEL", text="")
+                add_header_apply_button(layout, "Edit Railing Path", "bim.finish_editing_railing_path", "bim.cancel_editing_railing_path", ui_context)
 
             elif (
                 (RoofData.is_loaded or not RoofData.load())
                 and RoofData.data["pset_data"]
                 and context.active_object.BIMRoofProperties.is_editing_path
             ):
-                row = layout.row(align=True)
-                row.label(text="", icon=f"EVENT_TAB")
-                row.operator("bim.finish_editing_roof_path")
-                row.operator("bim.cancel_editing_roof_path", icon="CANCEL", text="")
-
-                row = layout.row(align=True)
-                row.label(text="", icon="EVENT_SHIFT")
-                row.label(text="", icon="EVENT_R")
-                row.operator("bim.cad_hotkey", text="Set Gable Roof Angle").hotkey = "S_R"
-
-            row = layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="", icon="EVENT_E")
-            row.operator("bim.cad_hotkey", text="Extend").hotkey = "S_E"
-
-            row = layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="", icon="EVENT_T")
-            row.operator("bim.cad_hotkey", text="Mitre").hotkey = "S_T"
-
-            row = layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="", icon="EVENT_F")
-            row.operator("bim.cad_hotkey", text="Fillet").hotkey = "S_F"
-
-            row = layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="", icon="EVENT_O")
-            row.operator("bim.cad_hotkey", text="Offset").hotkey = "S_O"
-
-            row = layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="2-Point Arc", icon="EVENT_C")
-
-            row = layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="", icon="EVENT_V")
-            row.operator("bim.cad_hotkey", text="3-Point Arc").hotkey = "S_V"
+                add_header_apply_button(layout, "Edit Roof Path", "bim.finish_editing_roof_path", "bim.cancel_editing_roof_path", ui_context)
+                row = layout.row(align=True) 
+                add_layout_hotkey_operator(row, "Set Gable Roof Angle", "S_R", "Set Gable Roof Angle", ui_context)
+            
+            row = layout.row(align=True) 
+            add_layout_hotkey_operator(row, "Extend", "S_E", "Extends/reduces element to 3D cursor", ui_context)
+            row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
+            add_layout_hotkey_operator(row, "Join", "S_T", "Joins two non-parallel paths at their intersection", ui_context)
+            row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
+            add_layout_hotkey_operator(row, "Fillet", "S_V", "Fillet", ui_context)
+            row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
+            add_layout_hotkey_operator(row, "Offset", "S_O", "Offset", ui_context)
+            row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
+            add_layout_hotkey_operator(row, "2-Point Arc", "S_C", "2-Point Arc", ui_context)
+            row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
+            add_layout_hotkey_operator(row, "3-Point Arc", "S_V", "3-Point Arc", ui_context)
 
 
 class CadHotkey(bpy.types.Operator):
@@ -196,6 +162,11 @@ class CadHotkey(bpy.types.Operator):
     bl_label = "CAD Hotkey"
     bl_options = {"REGISTER", "UNDO"}
     hotkey: bpy.props.StringProperty()
+    description: bpy.props.StringProperty()
+
+    @classmethod
+    def description(cls, context, operator):
+        return operator.description or ""
 
     def execute(self, context):
         self.props = context.scene.BIMCadProperties
@@ -306,3 +277,52 @@ class CadHotkey(bpy.types.Operator):
             and hasattr(obj.data, "BIMMeshProperties")
             and obj.data.BIMMeshProperties.subshape_type == "PROFILE"
         )
+
+
+def add_header_apply_button(layout, text, apply_operator, cancel_operator, ui_context=""):
+    custom_icon = custom_icon_previews.get(text.upper().replace(" ", "_"), custom_icon_previews["IFC"]).icon_id
+    row = layout.row(align=True)
+    row.label(text=f"{text} Mode", icon_value=custom_icon)
+    if apply_operator in ("bim.edit_arbitrary_profile", "bim.edit_extrusion_profile"):
+        row.operator("bim.align_view_to_profile", text="Align View" if ui_context!="TOOL_HEADER" else "", icon="AXIS_FRONT")
+
+    row = layout.row(align=True)
+    row.operator(apply_operator, text="Apply" if ui_context!="TOOL_HEADER" else "", icon_value=custom_icon_previews["APPLY"].icon_id)
+    row.label(text="", icon="EVENT_TAB") if ui_context!="TOOL_HEADER" else row
+
+    row = layout.row(align=True)
+    row.label(text="Tools")
+
+
+def add_layout_hotkey_operator(layout, text, hotkey, description, ui_context=""):
+    parts = hotkey.split("_")
+    modifier, key = parts
+    op_text = "" if ui_context == "TOOL_HEADER" else text
+    custom_icon = custom_icon_previews.get(text.upper().replace(" ", "_"), custom_icon_previews["IFC"]).icon_id
+    modifier_icon, modifier_str = MODIFIERS.get(modifier, ("NONE", ""))
+    
+    row = layout if ui_context == "TOOL_HEADER" else layout.row(align=True)
+    op = row.operator("bim.cad_hotkey", text=op_text, icon_value=custom_icon)
+
+    if ui_context != "TOOL_HEADER" and len(parts) == 2:
+        layout = layout.row(align=True)  # Create a new line for hotkey display
+        layout.label(text="", icon=modifier_icon)
+        layout.label(text="", icon=f"EVENT_{key}")
+
+    hotkey_description = f"Hotkey: {modifier_str} {key}"
+    description = "\n\n".join(filter(None, [hotkey_description if description else ""]))
+    op.hotkey = hotkey
+    op.description = description or hotkey_description
+
+    return op
+
+
+
+
+
+custom_icon_previews = None
+display_mode = None
+
+MODIFIERS = {
+    "S": ("EVENT_SHIFT", "⇧"),
+}
