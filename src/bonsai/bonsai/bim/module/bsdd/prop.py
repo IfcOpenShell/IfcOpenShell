@@ -66,6 +66,11 @@ class BIMBSDDProperties(PropertyGroup):
         description="Whether to search only for bSDD classes that match active object's IFC class",
         default=True,
     )
+    use_only_ifc_properties: BoolProperty(
+        name="Only IFC Properties",
+        description="Whether to display and assign only properties from IFC dictionary",
+        default=True,
+    )
     load_preview_domains: BoolProperty(
         name="Load Preview Domains", description="Whether it should load preview and inactive domains", default=False
     )

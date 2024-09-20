@@ -422,6 +422,7 @@ class AddClassificationReferenceFromBSDD(bpy.types.Operator, tool.Ifc.Operator):
             objects = [self.obj]
         props = context.scene.BIMClassificationProperties
         bprops = context.scene.BIMBSDDProperties
+        use_only_ifc_properties: bool = bprops.use_only_ifc_properties
 
         bsdd_classification = bprops.classifications[bprops.active_classification_index]
 
@@ -456,7 +457,12 @@ class AddClassificationReferenceFromBSDD(bpy.types.Operator, tool.Ifc.Operator):
 
             for classification_pset in bprops.classification_psets:
                 properties = {}
-                for prop in classification_pset.properties:
+
+                blender_properties = classification_pset.properties
+                if use_only_ifc_properties:
+                    blender_properties = [p for p in blender_properties if p.metadata == "IFC"]
+
+                for prop in blender_properties:
                     properties[prop.name] = prop.get_value()
 
                 if classification_pset.name == "undefined_set":
