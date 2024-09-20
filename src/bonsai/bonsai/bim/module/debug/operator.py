@@ -485,6 +485,7 @@ class PrintUnusedElementStats(bpy.types.Operator, tool.Ifc.Operator):
             ignore_classes += ["IfcStyledItem"]
         ignore_classes += [
             "IfcIndexedColourMap",  # Only referenced by inverse attributes.
+            "IfcIndexedTextureMap",  # Only referenced by inverse attributes.
         ]
 
         unused_elements = tool.Debug.print_unused_elements_stats(props.ifc_class_purge, ignore_classes)
