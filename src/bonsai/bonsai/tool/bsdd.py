@@ -140,11 +140,16 @@ class Bsdd(bonsai.core.tool.Bsdd):
         keyword: str,
         dictionary_uris: Union[list[str], None],
         related_ifc_entities: Union[list[str], None],
+        offset: int = 0,
     ) -> list[bsdd.ClassSearchResponseClassContractV1]:
         response = client.search_class(
-            keyword, dictionary_uris=dictionary_uris, related_ifc_entities=related_ifc_entities
+            keyword, dictionary_uris=dictionary_uris, related_ifc_entities=related_ifc_entities, offset=offset
         )
-        return response.get("classes", [])
+        classes = response.get("classes", [])
+        # If count is 100, it might be hitting the limit.
+        if response["count"] == 100:
+            classes += cls.search_class(client, keyword, dictionary_uris, related_ifc_entities, offset=offset + 100)
+        return classes
 
     @classmethod
     def set_active_bsdd(cls, name: str, uri: str) -> None:
