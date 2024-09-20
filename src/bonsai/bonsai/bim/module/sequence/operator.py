@@ -155,32 +155,34 @@ class RemoveWorkPlan(bpy.types.Operator, tool.Ifc.Operator):
         core.remove_work_plan(tool.Ifc, work_plan=tool.Ifc.get().by_id(self.work_plan))
 
 
-class EnableEditingWorkPlan(bpy.types.Operator, tool.Ifc.Operator):
+class EnableEditingWorkPlan(bpy.types.Operator):
     bl_idname = "bim.enable_editing_work_plan"
     bl_label = "Enable Editing Work Plan"
     bl_options = {"REGISTER", "UNDO"}
     work_plan: bpy.props.IntProperty()
 
-    def _execute(self, context):
+    def execute(self, context):
         core.enable_editing_work_plan(tool.Sequence, work_plan=tool.Ifc.get().by_id(self.work_plan))
+        return {"FINISHED"}
 
 
-class DisableEditingWorkPlan(bpy.types.Operator, tool.Ifc.Operator):
+class DisableEditingWorkPlan(bpy.types.Operator):
     bl_idname = "bim.disable_editing_work_plan"
     bl_options = {"REGISTER", "UNDO"}
     bl_label = "Disable Editing Work Plan"
 
-    def _execute(self, context):
+    def execute(self, context):
         core.disable_editing_work_plan(tool.Sequence)
+        return {"FINISHED"}
 
 
-class EnableEditingWorkPlanSchedules(bpy.types.Operator, tool.Ifc.Operator):
+class EnableEditingWorkPlanSchedules(bpy.types.Operator):
     bl_idname = "bim.enable_editing_work_plan_schedules"
     bl_label = "Enable Editing Work Plan Schedules"
     bl_options = {"REGISTER", "UNDO"}
     work_plan: bpy.props.IntProperty()
 
-    def _execute(self, context):
+    def execute(self, context):
         core.enable_editing_work_plan_schedules(tool.Sequence, work_plan=tool.Ifc.get().by_id(self.work_plan))
         return {"FINISHED"}
 
@@ -269,14 +271,15 @@ class EnableEditingWorkSchedule(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class EnableEditingWorkScheduleTasks(bpy.types.Operator, tool.Ifc.Operator):
+class EnableEditingWorkScheduleTasks(bpy.types.Operator):
     bl_idname = "bim.enable_editing_work_schedule_tasks"
     bl_label = "Enable Editing Work Schedule Tasks"
     bl_options = {"REGISTER", "UNDO"}
     work_schedule: bpy.props.IntProperty()
 
-    def _execute(self, context):
+    def execute(self, context):
         core.enable_editing_work_schedule_tasks(tool.Sequence, work_schedule=tool.Ifc.get().by_id(self.work_schedule))
+        return {"FINISHED"}
 
 
 class LoadTaskProperties(bpy.types.Operator):
@@ -352,6 +355,8 @@ class RemoveTask(bpy.types.Operator, tool.Ifc.Operator):
 
 
 class EnableEditingTaskTime(bpy.types.Operator, tool.Ifc.Operator):
+    # IFC operator is needed because operator is adding a new task time to IFC
+    # if it doesn't exist.
     bl_idname = "bim.enable_editing_task_time"
     bl_label = "Enable Editing Task Time"
     bl_options = {"REGISTER", "UNDO"}
