@@ -520,7 +520,7 @@ class AssignProcess(bpy.types.Operator, tool.Ifc.Operator):
             else:
                 core.assign_input_products(tool.Ifc, tool.Sequence, tool.Spatial, task=tool.Ifc.get().by_id(self.task))
         elif self.related_object_type == "CONTROL":
-            pass  # TODO
+            self.report({"ERROR"}, "Assigning process control is not yet supported")  # TODO
 
 
 class UnassignProcess(bpy.types.Operator, tool.Ifc.Operator):
