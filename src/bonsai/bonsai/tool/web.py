@@ -391,8 +391,8 @@ class Web(bonsai.core.tool.Web):
             cls.load_cost_schedule_web_ui(cost_schedule)
         if operator_data["type"] == "deleteCostItem":
             cost_item = tool.Ifc.get().by_id(operator_data["costItemId"])
-            tool.Ifc.run("cost.remove_cost_item", cost_item=cost_item)
             cost_schedule = tool.Cost.get_cost_schedule(cost_item=cost_item)
+            tool.Ifc.run("cost.remove_cost_item", cost_item=cost_item)
             cls.load_cost_schedule_web_ui(cost_schedule)
         if operator_data["type"] == "duplicateCostItem":
             cost_item = tool.Ifc.get().by_id(operator_data["costItemId"])
@@ -439,6 +439,7 @@ class Web(bonsai.core.tool.Web):
             cost_schedule = tool.Cost.get_cost_schedule(cost_item=cost_item)
             for value_data in operator_data["costValues"] or []:
                 value = ifc_file.by_id(value_data["id"])
+                attributes = {}
                 if value_data["costType"] == "FIXED":
                     attributes = {"AppliedValue": value_data["appliedValue"], "Category": None}
                 elif value_data["costType"] == "CATEGORY":
@@ -448,6 +449,11 @@ class Web(bonsai.core.tool.Web):
                     }
                 elif value_data["costType"] == "SUM":
                     attributes = {"Category": "*"}
+                if value_data["unitBasisValue"]:
+                    attributes["UnitBasis"] = {
+                        "ValueComponent": value_data["unitBasisValue"],
+                        "UnitComponent": ifc_file.by_id(value_data["unitComponent"]),
+                    }
                 ifcopenshell.api.cost.edit_cost_value(file=ifc_file, cost_value=value, attributes=attributes)
             cls.load_cost_schedule_web_ui(cost_schedule)
         if operator_data["type"] == "addProductAssignments":

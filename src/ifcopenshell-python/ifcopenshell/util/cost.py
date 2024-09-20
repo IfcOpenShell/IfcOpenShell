@@ -22,7 +22,7 @@ from typing import Optional, Union, Literal, Generator, Any
 import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
 from ifcopenshell.util.doc import get_predefined_type_doc
 from ifcopenshell.util.element import get_psets
-
+from ifcopenshell.util.unit import get_unit_symbol
 arithmetic_operator_symbols = {"ADD": "+", "DIVIDE": "/", "MULTIPLY": "*", "SUBTRACT": "-"}
 symbol_arithmetic_operators = {"+": "ADD", "/": "DIVIDE", "*": "MULTIPLY", "-": "SUBTRACT"}
 FILTER_BY_TYPE = Literal["PRODUCT", "RESOURCE", "PROCESS"]
@@ -255,6 +255,13 @@ def get_cost_values(cost_item: ifcopenshell.entity_instance) -> list[dict[str, s
     for cost_value in cost_item.CostValues or []:
         label = "{0:.2f}".format(calculate_applied_value(cost_item, cost_value))
         label += " = {}".format(serialise_cost_value(cost_value))
+        unit_data = {"value_component": None, "unit_component": None, "unit_symbol": ""}
+        if cost_value.UnitBasis:
+            data = cost_value.UnitBasis.get_info()
+            unit_data["value_component"] = data["ValueComponent"].wrappedValue
+            unit_data["unit_component"] = data["UnitComponent"].id()
+            unit_data["unit_symbol"] = get_unit_symbol(cost_value.UnitBasis.UnitComponent)
+
         results.append(
             {
                 "id": cost_value.id(),
@@ -264,9 +271,9 @@ def get_cost_values(cost_item: ifcopenshell.entity_instance) -> list[dict[str, s
                 "applied_value": (
                     get_primitive_applied_value(cost_value.AppliedValue) if cost_value.AppliedValue else None
                 ),
+                "unit_data": unit_data,
             }
         )
-    print(results)
     return results
 
 
