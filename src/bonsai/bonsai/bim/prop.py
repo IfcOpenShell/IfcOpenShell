@@ -48,6 +48,8 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+from typing import Any, Union, Literal, get_args, TYPE_CHECKING
+from typing_extensions import assert_never
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 
@@ -248,14 +250,19 @@ def get_display_name(self):
     return f"{name}, {unit_symbol}"
 
 
+AttributeDataType = Literal["string", "integer", "float", "boolean", "enum", "file"]
+
+
 class Attribute(PropertyGroup):
     tooltip = "`Right Click > IFC Description` to read the attribute description and online documentation"
     name: StringProperty(name="Name")
     display_name: StringProperty(name="Display Name", get=get_display_name)
     description: StringProperty(name="Description")
     ifc_class: StringProperty(name="Ifc Class")
-    # TODO: make it enum
-    data_type: StringProperty(name="Data Type")
+    data_type: EnumProperty(  # type: ignore [reportRedeclaration]
+        name="Data Type",
+        items=[(i, i, "") for i in get_args(AttributeDataType)],
+    )
     string_value: StringProperty(name="Value", update=update_attribute_value, description=tooltip)
     bool_value: BoolProperty(name="Value", update=update_attribute_value, description=tooltip)
     int_value: IntProperty(
@@ -291,7 +298,10 @@ class Attribute(PropertyGroup):
     special_type: StringProperty(name="Special Value Type", default="")
     metadata: StringProperty(name="Metadata", description="For storing some additional information about the attribute")
 
-    def get_value(self):
+    if TYPE_CHECKING:
+        data_type: AttributeDataType
+
+    def get_value(self) -> Union[str, float, int, bool, None]:
         if self.is_optional and self.is_null:
             return None
         if self.data_type == "string":
@@ -300,37 +310,43 @@ class Attribute(PropertyGroup):
             return [f.name for f in self.filepath_value.file_list]
         return getattr(self, str(self.get_value_name()), None)
 
-    def get_value_default(self):
-        if self.data_type == "string":
+    def get_value_default(self) -> Union[str, float, int, bool]:
+        data_type = self.data_type
+        if data_type == "string":
             return ""
-        elif self.data_type == "integer":
+        elif data_type == "integer":
             return 0
-        elif self.data_type == "float":
+        elif data_type == "float":
             return 0.0
-        elif self.data_type == "boolean":
+        elif data_type == "boolean":
             return False
-        elif self.data_type == "enum":
+        elif data_type == "enum":
             return "0"
-        elif self.data_type == "file":
+        elif data_type == "file":
             return ""
+        else:
+            assert_never(data_type)
 
-    def get_value_name(self, display_only=False):
-        if self.data_type == "string":
+    def get_value_name(self, display_only: bool = False) -> str:
+        data_type = self.data_type
+        if data_type == "string":
             return "string_value"
-        elif self.data_type == "boolean":
+        elif data_type == "boolean":
             return "bool_value"
-        elif self.data_type == "integer":
+        elif data_type == "integer":
             return "int_value"
-        elif self.data_type == "float":
+        elif data_type == "float":
             if display_only and self.special_type == "LENGTH":
                 return "length_value"
             return "float_value"
-        elif self.data_type == "enum":
+        elif data_type == "enum":
             return "enum_value"
-        elif self.data_type == "file":
+        elif data_type == "file":
             return "filepath_value"
+        else:
+            assert_never(data_type)
 
-    def set_value(self, value):
+    def set_value(self, value: Union[Any, str, float, bool, int]) -> None:
         if isinstance(value, str):
             self.data_type = "string"
         elif isinstance(value, float):
