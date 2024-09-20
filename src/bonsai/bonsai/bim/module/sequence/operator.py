@@ -643,7 +643,7 @@ class ImportCSV(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
             return False
         return True
 
-    def execute(self, context):
+    def _execute(self, context):
         from ifc4d.csv4d2ifc import Csv2Ifc
 
         self.file = tool.Ifc.get()
@@ -653,10 +653,9 @@ class ImportCSV(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
         csv2ifc.file = self.file
         csv2ifc.execute()
         self.report({"INFO"}, "Imported in %s seconds" % (time.time() - start))
-        return {"FINISHED"}
 
 
-class ImportP6(bpy.types.Operator, ImportHelper):
+class ImportP6(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     bl_idname = "bim.import_p6"
     bl_label = "Import P6"
     bl_options = {"REGISTER", "UNDO"}
@@ -671,7 +670,7 @@ class ImportP6(bpy.types.Operator, ImportHelper):
             return False
         return True
 
-    def execute(self, context):
+    def _execute(self, context):
         from ifc4d.p62ifc import P62Ifc
 
         self.file = IfcStore.get_file()
@@ -682,10 +681,9 @@ class ImportP6(bpy.types.Operator, ImportHelper):
         p62ifc.work_plan = self.file.by_type("IfcWorkPlan")[0] if self.file.by_type("IfcWorkPlan") else None
         p62ifc.execute()
         self.report({"INFO"}, "Import finished in {:.2f} seconds".format(time.time() - start))
-        return {"FINISHED"}
 
 
-class ImportP6XER(bpy.types.Operator, ImportHelper):
+class ImportP6XER(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     bl_idname = "bim.import_p6xer"
     bl_label = "Import P6 XER"
     bl_options = {"REGISTER", "UNDO"}
@@ -700,7 +698,7 @@ class ImportP6XER(bpy.types.Operator, ImportHelper):
             return False
         return True
 
-    def execute(self, context):
+    def _execute(self, context):
         from ifc4d.p6xer2ifc import P6XER2Ifc
 
         self.file = IfcStore.get_file()
@@ -711,10 +709,9 @@ class ImportP6XER(bpy.types.Operator, ImportHelper):
         p6xer2ifc.work_plan = self.file.by_type("IfcWorkPlan")[0] if self.file.by_type("IfcWorkPlan") else None
         p6xer2ifc.execute()
         self.report({"INFO"}, "Import finished in {:.2f} seconds".format(time.time() - start))
-        return {"FINISHED"}
 
 
-class ImportPP(bpy.types.Operator, ImportHelper):
+class ImportPP(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     bl_idname = "bim.import_pp"
     bl_label = "Import Powerproject .pp"
     bl_options = {"REGISTER", "UNDO"}
@@ -729,7 +726,7 @@ class ImportPP(bpy.types.Operator, ImportHelper):
             return False
         return True
 
-    def execute(self, context):
+    def _execute(self, context):
         from ifc4d.pp2ifc import PP2Ifc
 
         self.file = IfcStore.get_file()
@@ -740,10 +737,9 @@ class ImportPP(bpy.types.Operator, ImportHelper):
         pp2ifc.work_plan = self.file.by_type("IfcWorkPlan")[0] if self.file.by_type("IfcWorkPlan") else None
         pp2ifc.execute()
         self.report({"INFO"}, "Import finished in {:.2f} seconds".format(time.time() - start))
-        return {"FINISHED"}
 
 
-class ImportMSP(bpy.types.Operator, ImportHelper):
+class ImportMSP(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     bl_idname = "bim.import_msp"
     bl_label = "Import MSP"
     bl_options = {"REGISTER", "UNDO"}
@@ -758,7 +754,7 @@ class ImportMSP(bpy.types.Operator, ImportHelper):
             return False
         return True
 
-    def execute(self, context):
+    def _execute(self, context):
         from ifc4d.msp2ifc import MSP2Ifc
 
         self.file = IfcStore.get_file()
@@ -769,7 +765,6 @@ class ImportMSP(bpy.types.Operator, ImportHelper):
         msp2ifc.work_plan = self.file.by_type("IfcWorkPlan")[0] if self.file.by_type("IfcWorkPlan") else None
         msp2ifc.execute()
         self.report({"INFO"}, "Import finished in {:.2f} seconds".format(time.time() - start))
-        return {"FINISHED"}
 
 
 class ExportMSP(bpy.types.Operator, ImportHelper):
