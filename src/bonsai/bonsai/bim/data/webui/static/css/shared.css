@@ -222,7 +222,7 @@ button:hover {
   border-collapse: collapse;
   display: flex;
   justify-content: flex-start;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 .column-container {

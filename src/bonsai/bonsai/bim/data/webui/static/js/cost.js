@@ -160,36 +160,6 @@ function handleConnectedClients(data) {
   });
 }
 
-function handleCostValuesData(data) {
-  CostUI.createCostValuesForm({
-    costValues: data.data["cost_values"]["cost_values"],
-    costItemId: data.data["cost_values"]["cost_item_id"],
-    callbacks: {
-      editCostValues: editCostValues,
-      addCostValue: addCostValue,
-      deleteCostValue: deleteCostValue,
-    },
-  });
-
-  CostUI.highlightElement(data.data["cost_values"]["cost_item_id"]);
-}
-
-function addCostValue(costItemId) {
-  executeOperator({ type: "addCostValue", costItemId: costItemId });
-}
-
-function editCostValues(costItemId, costValues) {
-  executeOperator({
-    type: "editCostValues",
-    costItemId: costItemId,
-    costValues: costValues,
-  });
-}
-
-function deleteCostItem(costItemId) {
-  executeOperator({ type: "deleteCostItem", costItemId: costItemId });
-}
-
 function handleThemeData(themeData) {
   function arrayToRgbString(arr) {
     const [r, g, b, a] = arr.map((num) => Math.round(num * 255));
@@ -291,34 +261,6 @@ function toggleClientList() {
   clientList.addClass("show");
 }
 
-function addCostItem(costItemId) {
-  executeOperator({ type: "addCostItem", costItemId: costItemId });
-}
-
-function editCostItemName(costItemId, name) {
-  executeOperator({
-    type: "editCostItemName",
-    costItemId: costItemId,
-    name: name,
-  });
-}
-
-function selectAssignedElements(costItemId) {
-  executeOperator({ type: "selectAssignedElements", costItemId: costItemId });
-}
-
-function handleWebConnect() {
-  executeOperator({ type: "getPredefinedTypes" });
-  getCostSchedules();
-}
-
-function addSummaryCostItem(costScheduleId) {
-  executeOperator({
-    type: "addSummaryCostItem",
-    costScheduleId: costScheduleId,
-  });
-}
-
 function handleCostSchedulesData(data) {
   const blenderId = data.blenderId;
   const loadedSchedule = loadedSchedules[blenderId]
@@ -358,28 +300,20 @@ function handleCostSchedulesData(data) {
 }
 
 function handleCostItemsData(data) {
+  const costScheduleId = data.data["cost_items"]["schedule_data"][0]["id"];
   const cards = document.querySelectorAll("[id^='schedule-']");
   cards.forEach((card) => {
-    if (card.id === "schedule-" + data.data["cost_items"]["cost_schedule_id"]) {
-      card.classList.add("highlighted");
-    } else {
-      card.classList.remove("highlighted");
-    }
+    card.classList.remove("highlighted");
   });
-
-  const costScheduleId = data.data["cost_items"]["cost_schedule_id"];
-  loadedSchedules[data.blenderId] = costScheduleId;
   CostUI.highlightElement("schedule-" + costScheduleId);
-
+  loadedSchedules[data.blenderId] = costScheduleId;
   const currency = data.data["cost_items"]["currency"]
     ? data.data["cost_items"]["currency"]["name"]
     : "Undefined";
-
+  const costSchedule = data.data["cost_items"]["schedule_data"][0];
   CostUI.createCostSchedule({
-    costItems: data.data["cost_items"]["cost_items"],
+    costSchedule: costSchedule,
     currency: currency,
-    costScheduleId: costScheduleId,
-    blenderID: data.blenderId,
     callbacks: {
       addCostItem: addCostItem,
       deleteCostItem: deleteCostItem,
@@ -394,23 +328,32 @@ function handleCostItemsData(data) {
   });
 }
 
-function enableEditingQuantities(costItemId) {
-  executeOperator({ type: "enableEditingQuantities", costItemId: costItemId });
+function addCostItem(costItemId) {
+  executeOperator({ type: "addCostItem", costItemId: costItemId });
 }
 
-function duplicateCostItem(costItemId) {
-  executeOperator({ type: "duplicateCostItem", costItemId: costItemId });
+function editCostItemName(costItemId, name) {
+  executeOperator({
+    type: "editCostItemName",
+    costItemId: costItemId,
+    name: name,
+  });
 }
 
-function executeOperator(operator, blenderId) {
-  const msg = {
-    sourcePage: "cost",
-    operator: operator,
-  };
-  if (blenderId !== undefined) {
-    msg.BlenderId = blenderId;
-  }
-  socket.emit("web_operator", msg);
+function selectAssignedElements(costItemId) {
+  executeOperator({ type: "selectAssignedElements", costItemId: costItemId });
+}
+
+function handleWebConnect() {
+  executeOperator({ type: "getPredefinedTypes" });
+  getCostSchedules();
+}
+
+function addSummaryCostItem(costScheduleId) {
+  executeOperator({
+    type: "addSummaryCostItem",
+    costScheduleId: costScheduleId,
+  });
 }
 
 function loadCostSchedule(costScheduleId, blenderId) {
@@ -426,4 +369,54 @@ function getCostSchedules(blenderId) {
 
 function enableEditingCostValues(costItemId) {
   executeOperator({ type: "enableEditingCostValues", costItemId: costItemId });
+}
+
+function enableEditingQuantities(costItemId) {
+  executeOperator({ type: "enableEditingQuantities", costItemId: costItemId });
+}
+
+function duplicateCostItem(costItemId) {
+  executeOperator({ type: "duplicateCostItem", costItemId: costItemId });
+}
+
+function handleCostValuesData(data) {
+  CostUI.createCostValuesForm({
+    costValues: data.data["cost_values"]["cost_values"],
+    costItemId: data.data["cost_values"]["cost_item_id"],
+    callbacks: {
+      editCostValues: editCostValues,
+      addCostValue: addCostValue,
+      deleteCostValue: deleteCostValue,
+    },
+  });
+
+  CostUI.highlightElement(data.data["cost_values"]["cost_item_id"]);
+}
+
+function addCostValue(costItemId) {
+  executeOperator({ type: "addCostValue", costItemId: costItemId });
+}
+
+function editCostValues(costItemId, costValues) {
+  executeOperator({
+    type: "editCostValues",
+    costItemId: costItemId,
+    costValues: costValues,
+  });
+}
+
+function deleteCostItem(costItemId) {
+  CostUI.deleteCostItem(costItemId);
+  executeOperator({ type: "deleteCostItem", costItemId: costItemId });
+}
+
+function executeOperator(operator, blenderId) {
+  const msg = {
+    sourcePage: "cost",
+    operator: operator,
+  };
+  if (blenderId !== undefined) {
+    msg.BlenderId = blenderId;
+  }
+  socket.emit("web_operator", msg);
 }

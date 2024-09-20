@@ -19,6 +19,7 @@ body {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  height: 100vh;
 }
 
 .floating-form {
@@ -39,15 +40,15 @@ body {
 
 .form-header {
   display: flex;
-  justify-content: flex-start;
+  justify-content: center;
   align-items: center;
-  margin-bottom: 10px;
   background-color: #323936;
   padding: var(--padding-medium);
   font-size: large;
   border-bottom: 1px solid #ddd;
   border-radius: 6px 6px 0 0;
   height: 5%;
+  position: relative;
 }
 
 .form-container {
@@ -58,9 +59,7 @@ body {
 
 .form-section {
   margin-bottom: 1em;
-  height: 65%;
-  overflow-y: auto;
-  overflow-x: hidden;
+  height: 70%;
 }
 
 .form-section h3 {
@@ -185,14 +184,21 @@ body {
 
 .table-container {
   margin-top: 1em;
-  overflow-x: auto;
-  overflow-y: auto;
-  position: relative;
-  border: 1px solid #ddd;
+  display: flex;
+  flex-direction: row;
+}
+
+.table-wrapper {
+  flex: 1;
+  overflow: auto;
+  border: 2px solid #254e3c;
+  /* shadow to the top */
+  box-shadow: 0 -5px 5px -0 #254e3c;
 }
 
 .floating-form .table-container {
   max-height: 80%;
+  overflow: auto;
 }
 
 #cost-items {
@@ -208,9 +214,12 @@ body {
   height: 50vh;
 }
 
+tr, td, th {
+  height: 100%; 
+}
+
 table {
   width: 100%;
-  height: 100%;
   border-collapse: collapse;
   user-select: none;
   font-size: var(--fontSize);
@@ -247,8 +256,9 @@ td {
   align-items: center;
 }
 
-#cost-items td:first-child {
+.flex-container {
   display: flex;
+  justify-content: space-between;
   align-items: center;
 }
 
@@ -375,10 +385,6 @@ form table {
 [id^="cost-items"] td:nth-child(1) {
   width: auto;
 }
-[id^="cost-items"] th:not(:nth-child(1)),
-[id^="cost-items"] td:not(:nth-child(1)) {
-  width: 10%;
-}
 
 [id^="cost-items"] th:last-child,
 [id^="cost-items"] td:last-child {
@@ -410,4 +416,8 @@ td {
   top: 50%;
   position: absolute;
   transform: translateY(-50%);
+}
+
+i {
+  margin-right: 5px;
 }

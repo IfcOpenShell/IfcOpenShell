@@ -7,17 +7,42 @@ export class CostUI {
   }
 
   static removeCostSchedule(id) {
-    document.getElementById("cost-items-" + id).remove();
+    const table = document.getElementById("cost-items-" + id);
+    table ? table.parentElement.remove() : null;
   }
-  static createCostTable(id, currency, callbacks) {
-    CostUI.isCostScheduleLoaded(id) ? CostUI.removeCostSchedule(id) : null;
+  static createCostTable({ costSchedule, currency, callbacks }) {
+    let tableWrapper;
+    const id = costSchedule.id;
+    if (CostUI.isCostScheduleLoaded(id)) {
+      const table = document.getElementById("cost-items-" + id);
+      tableWrapper = table.parentElement;
+      table.remove();
+    } else {
+      tableWrapper = document.createElement("div");
+      tableWrapper.classList.add("table-wrapper");
+      document.getElementById("cost-items").appendChild(tableWrapper);
+      const tableHeader = document.createElement("div");
+      tableHeader.classList.add("form-header");
+      const text = CostUI.Text(
+        costSchedule.Name,
+        "fa-solid fa-money-bill-wave",
+        "x-large"
+      );
 
+      const callback = () => {
+        tableWrapper.remove();
+        CostUI.unhighlightElement("schedule-" + id);
+      };
+      let closeButton = CostUI.createCloseButton(callback);
+      tableHeader.appendChild(text);
+      tableHeader.appendChild(closeButton);
+      tableWrapper.appendChild(tableHeader);
+    }
     const table = document.createElement("table");
     table.id = "cost-items-" + id;
     const tbody = document.createElement("tbody");
-    tbody.setAttribute("id", "cost-items");
-
     const columnHeaders = [
+      "ID",
       "Name",
       "Quantity",
       "Unit",
@@ -44,7 +69,7 @@ export class CostUI {
 
     table.appendChild(thead);
     table.appendChild(tbody);
-    document.getElementById("cost-items").appendChild(table);
+    tableWrapper.appendChild(table);
 
     CostUI.createContextMenu(callbacks);
     table.get_blender_id = function () {
@@ -54,12 +79,11 @@ export class CostUI {
     return [table, tbody];
   }
 
-  static deleteCostItem(costItemId, callback) {
+  static deleteCostItem(costItemId) {
     const costItemRow = document.getElementById(costItemId);
     let expandedState = JSON.parse(localStorage.getItem("expandedState")) || {};
     expandedState = CostUI.deleteCostItemRow(costItemRow, expandedState);
     localStorage.setItem("expandedState", JSON.stringify(expandedState));
-    callback(costItemId);
   }
 
   static createContextMenu(callbacks) {
@@ -79,16 +103,20 @@ export class CostUI {
       event.preventDefault();
       const targetRow = event.target.closest("tr");
       const targetCell = event.target.closest("td");
-      if (targetRow && targetRow.parentElement.id === "cost-items") {
-        const contextMenu = document.getElementById("context-menu");
-        contextMenu.style.display = "block";
-        contextMenu.style.left = `${event.pageX}px`;
-        contextMenu.style.top = `${event.pageY}px`;
-
-        contextMenu.targetRow = targetRow;
-        contextMenu.targetCell = targetCell;
-      } else {
-        document.getElementById("context-menu").style.display = "none";
+      if (targetRow) {
+        const isCostTable = targetRow.parentElement.parentElement
+          ? targetRow.parentElement.parentElement.id.includes("cost-items")
+          : false;
+        if (isCostTable) {
+          const contextMenu = document.getElementById("context-menu");
+          contextMenu.style.display = "block";
+          contextMenu.style.left = `${event.pageX}px`;
+          contextMenu.style.top = `${event.pageY}px`;
+          contextMenu.targetRow = targetRow;
+          contextMenu.targetCell = targetCell;
+        } else {
+          document.getElementById("context-menu").style.display = "none";
+        }
       }
     });
 
@@ -102,104 +130,79 @@ export class CostUI {
     const editCostValuesButton = document.getElementById(
       "edit-cost-values-button"
     );
-    editCostValuesButton.addEventListener("click", function () {
-      const targetRow = document.getElementById("context-menu").targetRow;
-      const targetCell = document.getElementById("context-menu").targetCell;
-      if (targetRow) {
-        const costItemId = parseInt(targetRow.getAttribute("id"));
-        callbacks.enableEditingCostValues
-          ? callbacks.enableEditingCostValues(costItemId)
-          : null;
-      }
-      document.getElementById("context-menu").style.display = "none";
-    });
-
     const addButton = document.getElementById("add-cost-item-button");
-    if (!addButton.dataset.listenerAdded) {
-      function addCostItemHandler(e) {
-        e.stopPropagation();
-        const targetRow = document.getElementById("context-menu").targetRow;
-        if (targetRow) {
-          const costItemId = parseInt(targetRow.getAttribute("id"));
-          callbacks.addCostItem ? callbacks.addCostItem(costItemId) : null;
-        }
-        document.getElementById("context-menu").style.display = "none";
-      }
-      addButton.addEventListener("click", addCostItemHandler);
-      addButton.dataset.listenerAdded = "true";
-    }
-
     const deleteCostItemButton = document.getElementById("delete-cost-item");
-    if (deleteCostItemButton && !deleteCostItemButton.hasListener) {
-      deleteCostItemButton.addEventListener("click", function () {
-        const targetRow = document.getElementById("context-menu").targetRow;
-        if (targetRow) {
-          const costItemId = parseInt(targetRow.getAttribute("id"));
-          CostUI.deleteCostItem(costItemId, callbacks.deleteCostItem);
-        }
-        document.getElementById("context-menu").style.display = "none";
-      });
-      deleteCostItemButton.hasListener = true;
-    }
-
     const duplicateButton = document.getElementById("duplicate-button");
-    if (duplicateButton && !duplicateButton.hasListener) {
-      duplicateButton.addEventListener("click", function () {
-        const targetRow = document.getElementById("context-menu").targetRow;
-        if (targetRow) {
-          const costItemId = parseInt(targetRow.getAttribute("id"));
-          callbacks.duplicateCostItem(costItemId);
-        }
-        document.getElementById("context-menu").style.display = "none";
-      });
-      duplicateButton.hasListener = true;
-    }
-
     const getSelectedProducts = document.getElementById("assign-selection");
-    if (getSelectedProducts && !getSelectedProducts.hasListener) {
-      getSelectedProducts.addEventListener("click", function () {
-        const targetRow = document.getElementById("context-menu").targetRow;
-        if (targetRow) {
-          const costItemId = parseInt(targetRow.getAttribute("id"));
-          callbacks.enableEditingQuantities(costItemId);
-        }
-        document.getElementById("context-menu").style.display = "none";
-      });
-      getSelectedProducts.hasListener = true;
+
+    function handleButtonClick(button, callback) {
+      if (button && !button.hasListener) {
+        button.addEventListener("click", function () {
+          const targetRow = document.getElementById("context-menu").targetRow;
+          if (targetRow) {
+            const costItemId = parseInt(targetRow.getAttribute("id"));
+            callback(costItemId);
+          }
+          document.getElementById("context-menu").style.display = "none";
+        });
+        button.hasListener = true;
+      }
     }
 
-    function getColumnNames(tableId) {
-      const table = document.getElementById(tableId);
-      const headerRow = table.querySelector("thead tr");
-      return Array.from(headerRow.children).map((headerCell) =>
-        headerCell.textContent.trim()
-      );
+    // if (deleteCostItemButton && !deleteCostItemButton.hasListener) {
+    //   deleteCostItemButton.addEventListener("click", function () {
+    //     const targetRow = document.getElementById("context-menu").targetRow;
+    //     if (targetRow) {
+    //       const costItemId = parseInt(targetRow.getAttribute("id"));
+    //       CostUI.deleteCostItem(costItemId, callbacks.deleteCostItem);
+    //     }
+    //     document.getElementById("context-menu").style.display = "none";
+    //   });
+    //   deleteCostItemButton.hasListener = true;
+    // }
+
+    handleButtonClick(deleteCostItemButton, callbacks.deleteCostItem);
+    handleButtonClick(duplicateButton, callbacks.duplicateCostItem);
+    handleButtonClick(getSelectedProducts, callbacks.enableEditingQuantities);
+    handleButtonClick(editCostValuesButton, callbacks.enableEditingCostValues);
+    handleButtonClick(addButton, callbacks.addCostItem);
+    handleButtonClick(deleteCostItemButton, callbacks.deleteCostItem);
+
+    addTableListeners(callbacks);
+
+    function addTableListeners(callbacks) {
+      function getColumnNames(tableId) {
+        const table = document.getElementById(tableId);
+        const headerRow = table.querySelector("thead tr");
+        return Array.from(headerRow.children).map((headerCell) =>
+          headerCell.textContent.trim()
+        );
+      }
+      document
+        .getElementById("cost-items")
+        .addEventListener("click", function (event) {
+          const targetRow = event.target.closest("tr");
+          const targetCell = event.target.closest("td");
+          if (targetRow && targetCell) {
+            const columnIndex = Array.from(targetRow.children).indexOf(
+              targetCell
+            );
+            const costItemId = parseInt(targetRow.getAttribute("id"));
+            const columnName = getColumnNames("cost-items")[columnIndex];
+
+            if (columnName.includes("Cost") && !columnName.includes("Total")) {
+              callbacks.enableEditingCostValues
+                ? callbacks.enableEditingCostValues(costItemId)
+                : null;
+            }
+            if (columnName === "Quantity") {
+              callbacks.enableEditingQuantities
+                ? callbacks.enableEditingQuantities(costItemId)
+                : null;
+            }
+          }
+        });
     }
-
-    document
-      .getElementById("cost-items")
-      .addEventListener("click", function (event) {
-        const targetRow = event.target.closest("tr");
-        const targetCell = event.target.closest("td");
-        if (targetRow && targetCell) {
-          const columnIndex = Array.from(targetRow.children).indexOf(
-            targetCell
-          );
-          const costItemId = parseInt(targetRow.getAttribute("id"));
-          const columnName = getColumnNames("cost-items")[columnIndex];
-
-          if (columnName.includes("Cost") && !columnName.includes("Total")) {
-            callbacks.enableEditingCostValues
-              ? callbacks.enableEditingCostValues(costItemId)
-              : null;
-          }
-          if (columnName === "Quantity") {
-            callbacks.enableEditingQuantities
-              ? callbacks.enableEditingQuantities(costItemId)
-              : null;
-          }
-        }
-      });
   }
 
   static deleteCostItemRow(targetRow, expandedState) {
@@ -353,19 +356,13 @@ export class CostUI {
     return div;
   }
 
-  static createCostSchedule({
-    costItems,
-    currency,
-    costScheduleId,
-    blenderID,
-    callbacks = {},
-  }) {
-    const [table, tbody] = CostUI.createCostTable(
-      blenderID,
+  static createCostSchedule({ costSchedule, currency, callbacks = {} }) {
+    const [table, tbody] = CostUI.createCostTable({
+      costSchedule,
       currency,
-      callbacks
-    );
-    if (costItems.length === 0) {
+      callbacks,
+    });
+    if (costSchedule["cost_items"].length === 0) {
       const tr = document.createElement("tr");
       const td = document.createElement("td");
       td.colSpan = 6;
@@ -383,7 +380,13 @@ export class CostUI {
       td.appendChild(addSummaryCostItemButton);
       addSummaryCostItemButton.classList.add("action-button");
     } else {
-      CostUI.createCostTree(costItems, tbody, 0, null, callbacks);
+      CostUI.createCostTree(
+        costSchedule["cost_items"],
+        tbody,
+        0,
+        null,
+        callbacks
+      );
       CostUI.applyExpandedState();
     }
   }
@@ -404,9 +407,9 @@ export class CostUI {
       );
       container.appendChild(row);
 
-      if (costItem.is_nested_by && costItem.is_nested_by.length > 0) {
+      if (costItem.IsNestedBy && costItem.IsNestedBy.length > 0) {
         CostUI.createCostTree(
-          costItem.is_nested_by,
+          costItem.IsNestedBy,
           container,
           nestingLevel + 1,
           costItem.id,
@@ -434,6 +437,10 @@ export class CostUI {
       ? CostUI.format_number(costItem.TotalAppliedValue)
       : "-";
     const row = CostUI.createCostItemRow(costItem, nestingLevel, parentID);
+    const identification = costItem.Identification
+      ? costItem.Identification
+      : "XXX";
+    const idCell = CostUI.createTableCell(identification);
     const expandButton = CostUI.createExpandButton(costItem);
     const nameCell = CostUI.createNameCell(
       costItem,
@@ -456,6 +463,7 @@ export class CostUI {
 
     actionsCell.classList.add("actions-column");
 
+    row.appendChild(idCell);
     row.appendChild(nameCell);
     row.appendChild(totalCostQuantityCell);
     row.appendChild(unitSymbolCell);
@@ -491,7 +499,7 @@ export class CostUI {
     expandButton.classList.add("fa-solid");
     expandButton.classList.add("fa-angle-right");
 
-    if (row.is_nested_by && row.is_nested_by.length > 0) {
+    if (row.IsNestedBy && row.IsNestedBy.length > 0) {
       expandButton.classList.add("fa-angle-right");
     } else {
       expandButton.style.visibility = "hidden";
@@ -614,7 +622,7 @@ export class CostUI {
   static createNameCell(costItem, nestingLevel, expandButton, callbacks) {
     const nameCell = document.createElement("td");
     const nameInput = document.createElement("input");
-    nameInput.value = costItem.name ? costItem.name : "Unnamed";
+    nameInput.value = costItem.Name ? costItem.Name : "Unnamed";
 
     nameInput.addEventListener("change", function () {
       callbacks.editCostItemName
@@ -631,6 +639,7 @@ export class CostUI {
     });
 
     nameCell.style.paddingLeft = nestingLevel * 20 + "px";
+    nameCell.classList.add("row-container");
     nameCell.appendChild(expandButton);
     nameCell.appendChild(nameInput);
     const widthButton = 20;
@@ -652,7 +661,7 @@ export class CostUI {
     const totalCostCell = document.createElement("td");
     const totalCost = CostUI.format_number(costItem.TotalCost);
     totalCostCell.textContent = totalCost;
-    if (costItem.is_sum) {
+    if (costItem.IsSum) {
       totalCostCell.textContent = totalCost + " *";
     } else if (!costItem.TotalCost) {
       const button = CostUI.createButton("Sum", "fa-solid fa-calculator");
@@ -746,7 +755,7 @@ export class CostUI {
     const deleteButton = CostUI.createButton("Delete", "fa-solid fa-trash");
     deleteButton.addEventListener(
       "click",
-      CostUI.deleteCostItem.bind(null, costItemId, deleteCostItem)
+      deleteCostItem.bind(null, costItemId)
     );
     return deleteButton;
   }
@@ -1089,6 +1098,13 @@ export class CostUI {
   }
 
   static Form({ id, name, icon = "fa-solid fa-file", shouldHide = false }) {
+    function style(form) {
+      form.classList.add("floating-form");
+      form.style.position = "absolute";
+      form.style.top = "50%";
+      form.style.left = "50%";
+      form.style.transform = "translate(-50%, -50%)";
+    }
     if (document.getElementById(id)) {
       const formContainer = document
         .getElementById(id)
@@ -1098,17 +1114,19 @@ export class CostUI {
     }
     const form = document.createElement("form");
     form.id = id;
-    form.classList.add("floating-form");
-    form.style.position = "absolute";
-    form.style.top = "50%";
-    form.style.left = "50%";
-    form.style.transform = "translate(-50%, -50%)";
+    style(form);
     const header = CostUI.createHeader(name, icon);
     let closeButton;
+
     if (shouldHide) {
       closeButton = CostUI.createHideButton(form);
     } else {
-      closeButton = CostUI.createCloseButton(form);
+      const callback = () => {
+        form.remove();
+        const costItemId = form.id.split("-").pop();
+        CostUI.unhighlightElement(costItemId);
+      };
+      closeButton = CostUI.createCloseButton(callback); // Pass the function reference without invoking it
     }
     form.appendChild(header);
     form.appendChild(closeButton);
@@ -1200,16 +1218,11 @@ export class CostUI {
     return hideButton;
   }
 
-  static createCloseButton(form) {
+  static createCloseButton(callback) {
     const closeButton = document.createElement("span");
     closeButton.classList.add("close-button");
     closeButton.innerHTML = "&times;";
-    closeButton.addEventListener("click", function () {
-      form.remove();
-      const costItemId = form.id.split("-").pop();
-      CostUI.unhighlightElement(costItemId);
-    });
-
+    closeButton.addEventListener("click", callback);
     return closeButton;
   }
 
@@ -2114,9 +2127,7 @@ export class CostUI {
               });
             }
           });
-        }
-
-        else if (key.toLowerCase().includes("value")) {
+        } else if (key.toLowerCase().includes("value")) {
           const cell = document.createElement("td");
           const input = document.createElement("input");
           input.type = "number";
