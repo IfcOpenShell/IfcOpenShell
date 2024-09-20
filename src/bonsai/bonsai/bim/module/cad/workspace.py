@@ -76,7 +76,7 @@ class CadTool(WorkSpaceTool):
         ("bim.cad_hotkey", {"type": "E", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_E")]}),
         ("bim.cad_hotkey", {"type": "F", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_F")]}),
         ("bim.cad_hotkey", {"type": "O", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_O")]}),
-        # ("bim.cad_hotkey", {"type": "Q", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_Q")]}), # Apply
+        ("bim.cad_hotkey", {"type": "Q", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_Q")]}),
         ("bim.cad_hotkey", {"type": "R", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_R")]}),
         ("bim.cad_hotkey", {"type": "T", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_T")]}),
         ("bim.cad_hotkey", {"type": "V", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_V")]}),
@@ -231,17 +231,17 @@ class CadHotkey(bpy.types.Operator):
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         bpy.ops.bim.cad_offset(distance=self.props.distance / si_conversion)
 
-    # def hotkey_S_Q(self):
-    #     element = tool.Ifc.get_entity(bpy.context.active_object)
-    #     if bpy.context.active_object.data.BIMMeshProperties.subshape_type == "PROFILE":
-    #         if element.is_a("IfcProfileDef"):
-    #             bpy.ops.bim.edit_arbitrary_profile()
-    #         elif element.is_a("IfcRelSpaceBoundary"):
-    #             bpy.ops.bim.edit_boundary_geometry()
-    #         else:
-    #             bpy.ops.bim.edit_extrusion_profile()
-    #     elif bpy.context.active_object.data.BIMMeshProperties.subshape_type == "AXIS":
-    #         bpy.ops.bim.edit_extrusion_axis()
+    def hotkey_S_Q(self):
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        if bpy.context.active_object.data.BIMMeshProperties.subshape_type == "PROFILE":
+            if element.is_a("IfcProfileDef"):
+                bpy.ops.bim.edit_arbitrary_profile()
+            elif element.is_a("IfcRelSpaceBoundary"):
+                bpy.ops.bim.edit_boundary_geometry()
+            else:
+                bpy.ops.bim.edit_extrusion_profile()
+        elif bpy.context.active_object.data.BIMMeshProperties.subshape_type == "AXIS":
+            bpy.ops.bim.edit_extrusion_axis()
 
     def hotkey_S_R(self):
         if self.is_profile():
