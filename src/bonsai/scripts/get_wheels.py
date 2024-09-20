@@ -8,6 +8,7 @@ def find_whl_files(directory):
         for file in files:
             if file.endswith(".whl"):
                 whl_files.append(os.path.relpath(os.path.join(root, file), directory))
+    whl_files.sort()
     return whl_files
 
 
