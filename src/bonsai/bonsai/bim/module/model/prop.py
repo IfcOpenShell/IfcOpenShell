@@ -56,6 +56,12 @@ def get_type_predefined_type(self, context):
     return AuthoringData.data["type_predefined_type"]
 
 
+def get_type_template(self, context):
+    if not AuthoringData.is_loaded:
+        AuthoringData.load()
+    return AuthoringData.data["type_template"]
+
+
 def update_ifc_class(self, context):
     bpy.ops.bim.load_type_thumbnails(ifc_class=self.ifc_class)
     AuthoringData.data["relating_type_id"] = AuthoringData.relating_type_id()
@@ -71,6 +77,7 @@ def update_type_class(self, context):
     AuthoringData.data["next_page"] = AuthoringData.next_page()
     AuthoringData.data["paginated_relating_types"] = AuthoringData.paginated_relating_types()
     AuthoringData.data["type_predefined_type"] = AuthoringData.type_predefined_type()
+    AuthoringData.data["type_template"] = AuthoringData.type_template()
 
     type_class = self.type_class
     if (type_class, type_class, "") in get_ifc_class(self, context):
@@ -166,25 +173,7 @@ class BIMModelProperties(PropertyGroup):
     x_angle: bpy.props.FloatProperty(name="X Angle", default=0, subtype="ANGLE", min=-pi / 180 * 89, max=pi / 180 * 89)
     type_page: bpy.props.IntProperty(name="Type Page", default=1, update=update_type_page)
     # fmt: off
-    type_template: bpy.props.EnumProperty(
-        items=(
-            ("MESH", "Custom Mesh", "Use as a representation currently active object mesh or default cube if no object selected"),
-            ("LAYERSET_AXIS2", "Vertical Layers", "For objects similar to walls, will automatically add IfcMaterialLayerSet"),
-            ("LAYERSET_AXIS3", "Horizontal Layers", "For objects similar to slabs, will automatically add IfcMaterialLayerSet"),
-            ("PROFILESET", "Extruded Profile", "Create profile type object, automatically defines IfcMaterialProfileSet with the first profile from library"),
-            ("EMPTY", "Non-Geometric Type", "Start with an empty object"),
-            ("WINDOW", "Window", "Parametric window"),
-            ("DOOR", "Door", "Parametric door"),
-            ("STAIR", "Stair", "Parametric stair"),
-            ("RAILING", "Railing", "Parametric railing"),
-            ("ROOF", "Roof", "Parametric roof"),
-            ("FLOW_SEGMENT_RECTANGULAR", "Rectangular Distribution Segment", "Works similarly to Profile, has distribution ports"),
-            ("FLOW_SEGMENT_CIRCULAR", "Circular Distribution Segment", "Works similarly to Profile, has distribution ports"),
-            ("FLOW_SEGMENT_CIRCULAR_HOLLOW", "Circular Hollow Distribution Segment", "Works similarly to Profile, has distribution ports"),
-        ),
-        name="Type Template",
-        default="MESH",
-    )
+    type_template: bpy.props.EnumProperty(items=get_type_template, name="Type Template", default=0)
     # fmt: on
     type_class: bpy.props.EnumProperty(items=get_type_class, name="IFC Class", update=update_type_class)
     type_predefined_type: bpy.props.EnumProperty(items=get_type_predefined_type, name="Predefined Type", default=None)
