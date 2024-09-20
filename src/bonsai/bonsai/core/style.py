@@ -55,7 +55,15 @@ def update_external_style(
     ifc.run("style.edit_surface_style", style=external_style, attributes=attributes)
 
 
-def remove_style(ifc: tool.Ifc, style_tool: tool.Style, style: ifcopenshell.entity_instance) -> None:
+def remove_style(
+    ifc: tool.Ifc, style_tool: tool.Style, style: ifcopenshell.entity_instance, reload_styles_ui: bool = False
+) -> None:
+    """Remove IfcPresentationStyle and associated Blender material.
+
+    :param reload_styles_ui: Whether to reload Styles UI after removal.
+        Useful to disable if you plan to remove many styles and want to
+        avoid unnecessary reloads.
+    """
     obj = ifc.get_object(style)
     # Get style_type before removing object as later StylesData might fail to load
     # due object not yet removed completely.
@@ -63,7 +71,7 @@ def remove_style(ifc: tool.Ifc, style_tool: tool.Style, style: ifcopenshell.enti
     ifc.unlink(element=style)
     ifc.run("style.remove_style", style=style)
     style_tool.delete_object(obj)
-    if style_tool.is_editing_styles():
+    if reload_styles_ui and style_tool.is_editing_styles():
         style_tool.import_presentation_styles(style_type)
 
 
