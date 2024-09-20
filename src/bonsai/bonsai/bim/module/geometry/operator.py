@@ -41,6 +41,7 @@ from time import time
 from bonsai.bim.ifc import IfcStore
 from ifcopenshell.util.shape_builder import ShapeBuilder
 from typing import Any
+from bonsai.bim.module.model.decorator import ProfileDecorator
 
 
 class EditObjectPlacement(bpy.types.Operator, tool.Ifc.Operator):
@@ -1706,15 +1707,25 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
         if tool.Geometry.is_meshlike_item(item):
             tool.Blender.select_and_activate_single_object(context, obj)
             obj.data.BIMMeshProperties.mesh_checksum = tool.Geometry.get_mesh_checksum(obj.data)
-            if tool.Blender.toggle_edit_mode(context) == {"CANCELLED"}:
-                return {"CANCELLED"}
-            context.scene.BIMGeometryProperties.is_changing_mode = True
-            if context.scene.BIMGeometryProperties.mode != "EDIT":
-                context.scene.BIMGeometryProperties.mode = "EDIT"
-            context.scene.BIMGeometryProperties.is_changing_mode = False
-            return {"FINISHED"}
+            self.enable_edit_mode(context)
+        elif item.is_a("IfcSweptAreaSolid"):
+            tool.Geometry.sync_item_positions()
+            tool.Model.import_profile(item.SweptArea, obj=obj)
+            obj.data.BIMMeshProperties.ifc_definition_id = item.id()
+            self.enable_edit_mode(context)
+            ProfileDecorator.install(context)
+            if not bpy.app.background:
+                tool.Blender.set_viewport_tool("bim.cad_tool")
         else:
             self.report({"INFO"}, f"Editing {item.is_a()} geometry is not supported")
+
+    def enable_edit_mode(self, context):
+        if tool.Blender.toggle_edit_mode(context) == {"CANCELLED"}:
+            return {"CANCELLED"}
+        context.scene.BIMGeometryProperties.is_changing_mode = True
+        if context.scene.BIMGeometryProperties.mode != "EDIT":
+            context.scene.BIMGeometryProperties.mode = "EDIT"
+        context.scene.BIMGeometryProperties.is_changing_mode = False
 
     def invoke(self, context, event):
         return IfcStore.execute_ifc_operator(self, context, is_invoke=True)
@@ -1753,7 +1764,7 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
         if tool.Geometry.is_meshlike_item(item):
             if tool.Geometry.has_geometric_data(obj) and obj.data.polygons:
                 if obj.data.BIMMeshProperties.mesh_checksum == tool.Geometry.get_mesh_checksum(obj.data):
-                    return {"FINISHED"}
+                    return
                 builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
                 unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
                 verts = [v.co / unit_scale for v in obj.data.vertices]
@@ -1767,11 +1778,93 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
                 ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), item)
                 obj.data.BIMMeshProperties.ifc_definition_id = new_item.id()
                 tool.Geometry.reload_representation(bpy.context.scene.BIMGeometryProperties.representation_obj)
-                return {"FINISHED"}
+                return
             else:
                 self.reload_item(obj)
-                return {"FINISHED"}
-        return {"FINISHED"}
+                return
+        elif item.is_a("IfcSweptAreaSolid"):
+            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+            ProfileDecorator.uninstall()
+
+            profile = tool.Model.export_profile(obj)
+            print("got profile", profile)
+
+            if not profile:
+
+                def msg(self, context):
+                    self.layout.label(text="INVALID PROFILE")
+
+                bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
+                ProfileDecorator.install(bpy.context)
+                self.enable_edit_mode(bpy.context)
+                return
+
+            old_profile = item.SweptArea
+            for inverse in tool.Ifc.get().get_inverse(old_profile):
+                ifcopenshell.util.element.replace_attribute(inverse, old_profile, profile)
+            ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_profile)
+
+            tool.Geometry.reload_representation(bpy.context.scene.BIMGeometryProperties.representation_obj)
+
+            tool.Loader.settings.contexts = ifcopenshell.util.representation.get_prioritised_contexts(tool.Ifc.get())
+            tool.Loader.settings.context_settings = tool.Loader.create_settings()
+            tool.Loader.settings.gross_context_settings = tool.Loader.create_settings(is_gross=True)
+            geometry = tool.Loader.create_generic_shape(item)
+            obj.data.clear_geometry()
+            tool.Loader.convert_geometry_to_mesh(geometry, obj.data)
+            if item.Position:
+                position = Matrix(ifcopenshell.util.placement.get_axis2placement(item.Position).tolist())
+                position.translation *= unit_scale
+                position_i = position.inverted()
+                for vert in obj.data.vertices:
+                    vert.co = position_i @ vert.co
+
+            element = tool.Ifc.get_entity(bpy.context.scene.BIMGeometryProperties.representation_obj)
+            # Only certain classes should have a footprint
+            if element.is_a() in ("IfcSlab", "IfcRamp"):
+                footprint_context = ifcopenshell.util.representation.get_context(
+                    tool.Ifc.get(), "Plan", "FootPrint", "SKETCH_VIEW"
+                )
+                if footprint_context:
+                    if profile.is_a("IfcCompositeProfileDef"):
+                        profiles = profile.Profiles
+                    else:
+                        profiles = [profile]
+                    curves = []
+                    for profile in profiles:
+                        curves.append(profile.OuterCurve)
+                        if profile.is_a("IfcArbitraryProfileDefWithVoids"):
+                            curves.extend(profile.InnerCurves)
+                    new_footprint = ifcopenshell.api.run(
+                        "geometry.add_footprint_representation",
+                        tool.Ifc.get(),
+                        context=footprint_context,
+                        curves=curves,
+                    )
+                    old_footprint = ifcopenshell.util.representation.get_representation(
+                        element, "Plan", "FootPrint", "SKETCH_VIEW"
+                    )
+                    if old_footprint:
+                        for inverse in tool.Ifc.get().get_inverse(old_footprint):
+                            ifcopenshell.util.element.replace_attribute(inverse, old_footprint, new_footprint)
+                        bonsai.core.geometry.remove_representation(
+                            tool.Ifc, tool.Geometry, obj=obj, representation=old_footprint
+                        )
+                    else:
+                        ifcopenshell.api.run(
+                            "geometry.assign_representation",
+                            tool.Ifc.get(),
+                            product=element,
+                            representation=new_footprint,
+                        )
+
+    def enable_edit_mode(self, context):
+        if tool.Blender.toggle_edit_mode(context) == {"CANCELLED"}:
+            return {"CANCELLED"}
+        context.scene.BIMGeometryProperties.is_changing_mode = True
+        if context.scene.BIMGeometryProperties.mode != "EDIT":
+            context.scene.BIMGeometryProperties.mode = "EDIT"
+        context.scene.BIMGeometryProperties.is_changing_mode = False
 
     def reload_item(self, obj):
         tool.Loader.settings.contexts = ifcopenshell.util.representation.get_prioritised_contexts(tool.Ifc.get())
@@ -1809,7 +1902,8 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
             if element and element.is_a("IfcRelSpaceBoundary"):
                 return bpy.ops.bim.edit_boundary_geometry()
             elif tool.Geometry.is_representation_item(context.active_object):
-                return self.edit_representation_item(context.active_object)
+                self.edit_representation_item(context.active_object)
+                return {"FINISHED"}
 
         objs = context.selected_objects or [context.active_object]
 
@@ -2307,3 +2401,14 @@ class ImportRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
 
             new = props.item_objs.add()
             new.obj = item_obj
+
+            if item.is_a("IfcSweptAreaSolid"):
+                tool.Geometry.record_object_position(item_obj)
+                if item.Position:
+                    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+                    position = Matrix(ifcopenshell.util.placement.get_axis2placement(item.Position).tolist())
+                    position.translation *= unit_scale
+                    position_i = position.inverted()
+                    item_obj.matrix_world = item_obj.matrix_world @ position
+                    for vert in item_obj.data.vertices:
+                        vert.co = position_i @ vert.co

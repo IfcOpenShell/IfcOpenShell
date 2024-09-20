@@ -132,7 +132,7 @@ class Model(bonsai.core.tool.Model):
 
         helper = Helper(tool.Ifc.get())
         result = helper.auto_detect_profiles(obj, obj.data, position)
-        if result["profile_def"]:
+        if isinstance(result, dict) and result["profile_def"]:
             return tool.Ifc.get().add(result["profile_def"])
 
     @classmethod

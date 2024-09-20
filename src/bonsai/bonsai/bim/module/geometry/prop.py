@@ -45,6 +45,7 @@ def update_mode(self, context):
     if self.mode == "OBJECT":
         if self.representation_obj:
             tool.Geometry.unlock_object(self.representation_obj)
+            tool.Geometry.sync_item_positions()
         self.representation_obj = None
         bpy.ops.bim.override_mode_set_object("INVOKE_DEFAULT")
     elif self.mode == "ITEM":

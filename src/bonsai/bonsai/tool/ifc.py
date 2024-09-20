@@ -72,7 +72,9 @@ class Ifc(bonsai.core.tool.Ifc):
     @classmethod
     def is_moved(cls, obj: bpy.types.Object) -> bool:
         element = cls.get_entity(obj)
-        if not element or element.is_a("IfcTypeProduct") or element.is_a("IfcProject"):
+        if not element and not tool.Geometry.is_representation_item(obj):
+            return False
+        if element and (element.is_a("IfcTypeProduct") or element.is_a("IfcProject")):
             return False
         if not obj.BIMObjectProperties.location_checksum:
             return True  # Let's be conservative
