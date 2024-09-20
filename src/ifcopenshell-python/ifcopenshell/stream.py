@@ -1,14 +1,38 @@
+# IfcOpenShell - IFC toolkit and geometry engine
+# Copyright (C) 2021 Thomas Krijnen <thomas@aecgeeks.com>
+#
+# This file is part of IfcOpenShell.
+#
+# IfcOpenShell is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# IfcOpenShell is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
+from __future__ import annotations
+
 try:
     import re
 
+    import ifcopenshell.util.attribute
     import ifcopenshell.util.schema
     from .file import file
     from . import ifcopenshell_wrapper
     from .entity_instance import entity_instance
 
     from lark import Lark, Transformer
+    from typing import Any, NoReturn, Union, Optional
 
     class StreamTransformer(Transformer):
+        file: "file"
+
         def string(self, items):
             return str(items[0])[1:-1]
 
@@ -62,7 +86,7 @@ try:
             return (int(items[0]), str(items[1]), items[2])
 
     class stream(file):
-        def __init__(self, filepath):
+        def __init__(self, filepath: str):
             self.wrapped_data = None
             self.history_size = 64
             self.history = []
@@ -75,9 +99,8 @@ try:
             self.id_map = {}
             self.class_map = {}
             self.id_offset = {}
-            self.schema = "IFC4"
             self.reference_pattern = re.compile(r"#(\d+)")
-            self.entity_cache = {}
+            self.entity_cache: dict[int, stream_entity] = {}
             self.inverses = {}
 
             # common.INT doesn't support negative integers.
@@ -158,7 +181,7 @@ try:
 
             self.preprocess_schema()
 
-        def preprocess_schema(self):
+        def preprocess_schema(self) -> None:
             self.ifc_class_names = {}
             self.ifc_class_subtypes = {}
             self.ifc_class_attributes = {}
@@ -201,13 +224,14 @@ try:
 
                 self.ifc_class_references[declaration.name()] = {"entity": entity, "entity_list": entity_list}
 
-        def clear_cache(self):
+        def clear_cache(self) -> None:
             self.entity_cache = {}
 
-        def create_entity(self, type, *args, **kawrgs):
-            assert False
+        def create_entity(self, type, *args, **kawrgs) -> NoReturn:
+            """Not supported during streaming."""
+            assert False, "Not supported during streaming."
 
-        def by_id(self, id):
+        def by_id(self, id: int) -> Union[stream_entity, None]:
             entity = self.entity_cache.get(id, None)
             if entity:
                 return entity
@@ -217,14 +241,16 @@ try:
                 self.entity_cache[id] = entity
                 return entity
 
-        def by_type(self, type, include_subtypes=True):
+        def by_type(self, type: str, include_subtypes: bool = True) -> list[stream_entity]:
             results = []
             subtypes = self.ifc_class_subtypes[type] if include_subtypes else self.ifc_class_subtypes[type][0:1]
             for subtype in subtypes:
                 results.extend([self.by_id(i) for i in self.class_map.get(subtype.name().upper(), [])])
             return results
 
-        def traverse(self, inst, max_levels=None, breadth_first=False):
+        def traverse(
+            self, inst: stream_entity, max_levels: Optional[int, None] = None, breadth_first: bool = False
+        ) -> list[stream_entity]:
             results = [inst]
             queue = [inst]
             while queue:
@@ -242,10 +268,12 @@ try:
 
             return results
 
-        def get_inverse(self, inst, allow_duplicate=False, with_attribute_indices=False):
+        def get_inverse(
+            self, inst: stream_entity, allow_duplicate: bool = False, with_attribute_indices: bool = False
+        ) -> tuple[stream_entity, ...]:
             return {self.by_id(e) for e in self.inverses.get(inst.stream_wrapper.id, [])}
 
-        def is_entity_list(self, attribute):
+        def is_entity_list(self, attribute: ifcopenshell_wrapper.attribute) -> bool:
             attribute = str(attribute.type_of_attribute())
             if (attribute.startswith("<list") or attribute.startswith("<set")) and "<entity" in attribute:
                 for data_type in re.findall("<(.*?) .*?>", attribute):
@@ -255,7 +283,7 @@ try:
             return False
 
     class stream_entity(entity_instance):
-        def __init__(self, id, ifc_class, file=None):
+        def __init__(self, id: int, ifc_class: str, file: stream = None):
             if not ifc_class:
                 print(id, ifc_class, file)
                 assert False
@@ -264,27 +292,27 @@ try:
             super(entity_instance, self).__setattr__("wrapped_data", e)
             super(entity_instance, self).__setattr__("stream_wrapper", s)
 
-        def id(self):
+        def id(self) -> int:
             return self.stream_wrapper.id
 
-        def __repr__(self):
+        def __repr__(self) -> str:
             offset = self.stream_wrapper.file.id_offset[self.stream_wrapper.id]
             self.stream_wrapper.file.file.seek(offset)
             return self.stream_wrapper.file.file.readline().strip()
 
-        def __del__(self):
+        def __del__(self) -> None:
             pass
 
-        def __getitem__(self, key):
+        def __getitem__(self, key: int) -> Any:
             return self.__getattr__(list(self.stream_wrapper.attributes.keys())[key])
 
-        def __setattr__(self, key, value):
+        def __setattr__(self, key: str, value: int) -> None:
             query = f"UPDATE `{self.stream_wrapper.ifc_class}` SET `{key}` = ? WHERE ifc_id = {self.stream_wrapper.id}"
             self.stream_wrapper.file.cursor.execute(query, (value,))
             self.stream_wrapper.file.db.commit()
             self.stream_wrapper.attribute_cache = {}
 
-        def __getattr__(self, name):
+        def __getattr__(self, name: str) -> Any:
             INVALID, FORWARD, INVERSE = range(3)
             attr_cat = self.wrapped_data.get_attribute_category(name)
             if attr_cat == FORWARD:
@@ -338,7 +366,7 @@ try:
                 "entity instance of type '%s' has no attribute '%s'" % (self.wrapped_data.is_a(True), name)
             )
 
-        def __eq__(self, other):
+        def __eq__(self, other: stream_entity) -> bool:
             if not isinstance(self, type(other)):
                 return False
             elif None in (self.stream_wrapper.file, other.stream_wrapper.file):
@@ -347,11 +375,13 @@ try:
                 return self.stream_wrapper.id == other.stream_wrapper.id
             assert False  # not implemented
 
-        def __hash__(self):
+        def __hash__(self) -> int:
             if self.stream_wrapper.id:
                 return hash((self.stream_wrapper.id, self.stream_wrapper.file.filepath))
 
-        def get_info(self, include_identifier=True, recursive=False, return_type=dict, ignore=(), scalar_only=False):
+        def get_info(
+            self, include_identifier=True, recursive=False, return_type=dict, ignore=(), scalar_only=False
+        ) -> dict[str, Any]:
             info = {"id": self.stream_wrapper.id, "type": self.stream_wrapper.ifc_class}
             if not self.stream_wrapper.attribute_cache:
                 self.__getitem__(0)  # This will get all attributes
@@ -359,7 +389,7 @@ try:
             return info
 
     class stream_wrapper:
-        def __init__(self, id, ifc_class, file):
+        def __init__(self, id: int, ifc_class: str, file: stream):
             self.id = id
             self.ifc_class = ifc_class
             self.file = file
@@ -368,7 +398,7 @@ try:
             self.attribute_cache = {}
             self.inverse_attribute_cache = {}
 
-        def __repr__(self):
+        def __repr__(self) -> str:
             return "todo"
 
 except ImportError as e:
