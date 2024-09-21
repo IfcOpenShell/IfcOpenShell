@@ -272,7 +272,7 @@ class EditItemUI:
         row.label(text="Context: " + ItemData.data["representation_identifier"], icon="SCENE_DATA")
         row = cls.layout.row()
         row.label(text="Type: " + ItemData.data["representation_type"], icon="OUTLINER_OB_MESH")
-        cls.layout.menu("BIM_MT_add_meshlike_item", icon="ADD")
+        cls.layout.menu("BIM_MT_add_representation_item", icon="ADD")
         if not (obj := context.active_object) or not tool.Geometry.is_representation_item(obj):
             return
         for item_attribute in obj.data.BIMMeshProperties.item_attributes:
@@ -283,17 +283,33 @@ class EditItemUI:
             row.operator("bim.update_item_attributes", icon="FILE_REFRESH", text="")
 
 
-class BIM_MT_add_meshlike_item(Menu):
-    bl_idname = "BIM_MT_add_meshlike_item"
+class BIM_MT_add_representation_item(Menu):
+    bl_idname = "BIM_MT_add_representation_item"
     bl_label = "Add Item"
 
     def draw(self, context):
-        self.layout.operator("bim.add_meshlike_item", icon="MESH_PLANE", text="Mesh Plane").shape = "PLANE"
-        self.layout.operator("bim.add_meshlike_item", icon="MESH_CUBE", text="Mesh Cube").shape = "CUBE"
-        self.layout.operator("bim.add_meshlike_item", icon="MESH_CIRCLE", text="Mesh Circle").shape = "CIRCLE"
-        self.layout.operator("bim.add_meshlike_item", icon="MESH_UVSPHERE", text="Mesh UV Sphere").shape = "UVSPHERE"
-        self.layout.operator("bim.add_meshlike_item", icon="MESH_ICOSPHERE", text="Mesh Icosphere").shape = "ICOSPHERE"
-        self.layout.operator("bim.add_meshlike_item", icon="MESH_CYLINDER", text="Mesh Cylinder").shape = "CYLINDER"
+        if not ItemData.is_loaded:
+            ItemData.load()
+
+        if ItemData.data["representation_type"] in ("Tessellation", "Brep", "AdvancedBrep"):
+            self.layout.operator("bim.add_meshlike_item", icon="MESH_PLANE", text="Mesh Plane").shape = "PLANE"
+            self.layout.operator("bim.add_meshlike_item", icon="MESH_CUBE", text="Mesh Cube").shape = "CUBE"
+            self.layout.operator("bim.add_meshlike_item", icon="MESH_CIRCLE", text="Mesh Circle").shape = "CIRCLE"
+            self.layout.operator("bim.add_meshlike_item", icon="MESH_UVSPHERE", text="Mesh UV Sphere").shape = (
+                "UVSPHERE"
+            )
+            self.layout.operator("bim.add_meshlike_item", icon="MESH_ICOSPHERE", text="Mesh Icosphere").shape = (
+                "ICOSPHERE"
+            )
+            self.layout.operator("bim.add_meshlike_item", icon="MESH_CYLINDER", text="Mesh Cylinder").shape = "CYLINDER"
+
+        if ItemData.data["representation_type"] in ("SolidModel", "SweptSolid"):
+            self.layout.operator(
+                "bim.add_swept_area_solid_item", icon="MESH_CUBE", text="Extruded Area Solid Cube"
+            ).shape = "CUBE"
+            self.layout.operator(
+                "bim.add_swept_area_solid_item", icon="MESH_CYLINDER", text="Extruded Area Solid Cylinder"
+            ).shape = "CYLINDER"
 
 
 class CreateObjectUI:

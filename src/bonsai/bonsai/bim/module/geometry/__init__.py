@@ -22,6 +22,7 @@ from . import ui, prop, operator
 classes = (
     operator.AddMeshlikeItem,
     operator.AddRepresentation,
+    operator.AddSweptAreaSolidItem,
     operator.CopyRepresentation,
     operator.DisableEditingRepresentationItemShapeAspect,
     operator.DisableEditingRepresentationItemStyle,
