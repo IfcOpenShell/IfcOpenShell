@@ -1742,6 +1742,93 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
     should_save: bpy.props.BoolProperty(name="Should Save", default=True)
 
+    def invoke(self, context, event):
+        return IfcStore.execute_ifc_operator(self, context, is_invoke=True)
+
+    def _invoke(self, context, event):
+        if not context.active_object:
+            return {"FINISHED"}
+        self.is_valid = True
+
+        if context.mode != "OBJECT":
+            bpy.ops.object.mode_set(mode="OBJECT")
+
+        if not tool.Ifc.get():
+            return {"FINISHED"}
+
+        context.scene.BIMGeometryProperties.is_changing_mode = True
+        if context.scene.BIMGeometryProperties.representation_obj:
+            if context.scene.BIMGeometryProperties.mode != "ITEM":
+                context.scene.BIMGeometryProperties.mode = "ITEM"
+        else:
+            if context.scene.BIMGeometryProperties.mode != "OBJECT":
+                context.scene.BIMGeometryProperties.mode = "OBJECT"
+        context.scene.BIMGeometryProperties.is_changing_mode = False
+
+        if context.active_object:
+            element = tool.Ifc.get_entity(context.active_object)
+            if element and element.is_a("IfcRelSpaceBoundary"):
+                return bpy.ops.bim.edit_boundary_geometry()
+            elif tool.Geometry.is_representation_item(context.active_object):
+                self.edit_representation_item(context.active_object)
+                return {"FINISHED"}
+
+        objs = context.selected_objects or [context.active_object]
+        print("objs are", objs)
+
+        self.edited_objs = []
+        self.unchanged_objs_with_openings = []
+
+        for obj in objs:
+            if not obj:
+                continue
+
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+
+            if tool.Profile.is_editing_profile():
+                profile_id = context.scene.BIMProfileProperties.active_profile_id
+                if profile_id:
+                    profile = tool.Ifc.get().by_id(profile_id)
+                    if tool.Ifc.get_object(profile):  # We are editing an arbitrary profile
+                        bpy.ops.bim.edit_arbitrary_profile()
+                elif tool.Blender.Modifier.is_railing(element):
+                    bpy.ops.bim.finish_editing_railing_path()
+                elif tool.Blender.Modifier.is_roof(element):
+                    bpy.ops.bim.finish_editing_roof_path()
+                elif tool.Model.get_usage_type(element) == "PROFILE":
+                    bpy.ops.bim.edit_extrusion_axis()
+                # if in the process of editing arbitrary profile
+                elif context.scene.BIMProfileProperties.active_arbitrary_profile_id:
+                    bpy.ops.bim.edit_arbitrary_profile()
+                else:
+                    bpy.ops.bim.edit_extrusion_profile()
+                return self.execute(context)
+            elif obj.data.BIMMeshProperties.ifc_definition_id:
+                if not tool.Geometry.has_geometric_data(obj):
+                    self.is_valid = False
+                    self.should_save = False
+                representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+                if tool.Geometry.is_meshlike(
+                    representation
+                ) and obj.data.BIMMeshProperties.mesh_checksum != tool.Geometry.get_mesh_checksum(obj.data):
+                    self.edited_objs.append(obj)
+                elif getattr(element, "HasOpenings", None):
+                    self.unchanged_objs_with_openings.append(obj)
+                else:
+                    tool.Ifc.finish_edit(obj)
+            elif element.is_a("IfcGridAxis"):
+                if not tool.Geometry.has_geometric_data(obj):
+                    self.is_valid = False
+                    self.should_save = False
+                if obj.data.BIMMeshProperties.mesh_checksum != tool.Geometry.get_mesh_checksum(obj.data):
+                    self.edited_objs.append(obj)
+                else:
+                    tool.Ifc.finish_edit(obj)
+
+        return self.execute(context)
+
     def _execute(self, context):
         if not context.active_object:
             return {"FINISHED"}
@@ -1865,91 +1952,6 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
         if context.scene.BIMGeometryProperties.mode != "EDIT":
             context.scene.BIMGeometryProperties.mode = "EDIT"
         context.scene.BIMGeometryProperties.is_changing_mode = False
-
-    def invoke(self, context, event):
-        return IfcStore.execute_ifc_operator(self, context, is_invoke=True)
-
-    def _invoke(self, context, event):
-        if not context.active_object:
-            return {"FINISHED"}
-        self.is_valid = True
-
-        bpy.ops.object.mode_set(mode="EDIT", toggle=True)
-
-        context.scene.BIMGeometryProperties.is_changing_mode = True
-        if context.scene.BIMGeometryProperties.representation_obj:
-            if context.scene.BIMGeometryProperties.mode != "ITEM":
-                context.scene.BIMGeometryProperties.mode = "ITEM"
-        else:
-            if context.scene.BIMGeometryProperties.mode != "OBJECT":
-                context.scene.BIMGeometryProperties.mode = "OBJECT"
-        context.scene.BIMGeometryProperties.is_changing_mode = False
-
-        if not tool.Ifc.get():
-            return {"FINISHED"}
-
-        if context.active_object:
-            element = tool.Ifc.get_entity(context.active_object)
-            if element and element.is_a("IfcRelSpaceBoundary"):
-                return bpy.ops.bim.edit_boundary_geometry()
-            elif tool.Geometry.is_representation_item(context.active_object):
-                self.edit_representation_item(context.active_object)
-                return {"FINISHED"}
-
-        objs = context.selected_objects or [context.active_object]
-
-        self.edited_objs = []
-        self.unchanged_objs_with_openings = []
-
-        for obj in objs:
-            if not obj:
-                continue
-
-            element = tool.Ifc.get_entity(obj)
-            if not element:
-                continue
-
-            if tool.Profile.is_editing_profile():
-                profile_id = context.scene.BIMProfileProperties.active_profile_id
-                if profile_id:
-                    profile = tool.Ifc.get().by_id(profile_id)
-                    if tool.Ifc.get_object(profile):  # We are editing an arbitrary profile
-                        bpy.ops.bim.edit_arbitrary_profile()
-                elif tool.Blender.Modifier.is_railing(element):
-                    bpy.ops.bim.finish_editing_railing_path()
-                elif tool.Blender.Modifier.is_roof(element):
-                    bpy.ops.bim.finish_editing_roof_path()
-                elif tool.Model.get_usage_type(element) == "PROFILE":
-                    bpy.ops.bim.edit_extrusion_axis()
-                # if in the process of editing arbitrary profile
-                elif context.scene.BIMProfileProperties.active_arbitrary_profile_id:
-                    bpy.ops.bim.edit_arbitrary_profile()
-                else:
-                    bpy.ops.bim.edit_extrusion_profile()
-                return self.execute(context)
-            elif obj.data.BIMMeshProperties.ifc_definition_id:
-                if not tool.Geometry.has_geometric_data(obj):
-                    self.is_valid = False
-                    self.should_save = False
-                representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
-                if tool.Geometry.is_meshlike(
-                    representation
-                ) and obj.data.BIMMeshProperties.mesh_checksum != tool.Geometry.get_mesh_checksum(obj.data):
-                    self.edited_objs.append(obj)
-                elif getattr(element, "HasOpenings", None):
-                    self.unchanged_objs_with_openings.append(obj)
-                else:
-                    tool.Ifc.finish_edit(obj)
-            elif element.is_a("IfcGridAxis"):
-                if not tool.Geometry.has_geometric_data(obj):
-                    self.is_valid = False
-                    self.should_save = False
-                if obj.data.BIMMeshProperties.mesh_checksum != tool.Geometry.get_mesh_checksum(obj.data):
-                    self.edited_objs.append(obj)
-                else:
-                    tool.Ifc.finish_edit(obj)
-
-        return self.execute(context)
 
 
 class FlipObject(bpy.types.Operator):
@@ -2409,3 +2411,63 @@ class UpdateItemAttributes(bpy.types.Operator, tool.Ifc.Operator):
                 item.Depth = attribute.float_value
         tool.Geometry.reload_representation(bpy.context.scene.BIMGeometryProperties.representation_obj)
         tool.Geometry.import_item(obj)
+
+
+class AddMeshlikeItem(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.add_meshlike_item"
+    bl_label = "Add Meshlike Item"
+    bl_options = {"REGISTER", "UNDO"}
+    shape: bpy.props.StringProperty(name="Shape")
+
+    def _execute(self, context):
+        props = context.scene.BIMGeometryProperties
+        mesh = bpy.data.meshes.new("Tmp")
+        obj = bpy.data.objects.new("Tmp", mesh)
+        scene = bpy.context.scene
+        scene.collection.objects.link(obj)
+        bpy.context.view_layer.objects.active = obj
+        obj.select_set(True)
+        bm = bmesh.new()
+        matrix = props.representation_obj.matrix_world.copy()
+        matrix.translation = context.scene.cursor.location
+        matrix = props.representation_obj.matrix_world.inverted() @ matrix
+        if self.shape == "CUBE":
+            bmesh.ops.create_cube(bm, matrix=matrix, size=0.5)
+        elif self.shape == "PLANE":
+            bmesh.ops.create_grid(bm, matrix=matrix, size=0.5)
+        elif self.shape == "CIRCLE":
+            bmesh.ops.create_circle(bm, matrix=matrix, radius=0.25, segments=16, cap_ends=True)
+        elif self.shape == "UVSPHERE":
+            bmesh.ops.create_uvsphere(bm, matrix=matrix, radius=0.25, u_segments=16, v_segments=16)
+        elif self.shape == "ICOSPHERE":
+            bmesh.ops.create_icosphere(bm, matrix=matrix, radius=0.25, subdivisions=2)
+        elif self.shape == "CYLINDER":
+            # Cone is legitimate.
+            bmesh.ops.create_cone(bm, matrix=matrix, radius1=0.25, radius2=0.25, depth=0.5, segments=16, cap_ends=True)
+
+        bm.to_mesh(mesh)
+        bm.free()
+        mesh.update()
+        obj.matrix_world = props.representation_obj.matrix_world
+        new = props.item_objs.add()
+        new.obj = obj
+
+        tool.Geometry.lock_object(obj)
+
+        builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        verts = [v.co / unit_scale for v in obj.data.vertices]
+        faces = [p.vertices[:] for p in obj.data.polygons]
+
+        representation = tool.Geometry.get_active_representation(props.representation_obj)
+        representation = ifcopenshell.util.representation.resolve_representation(representation)
+
+        if representation.RepresentationType in ("Brep", "AdvancedBrep"):
+            item = builder.faceted_brep(verts, faces)
+        elif representation.RepresentationType in ("Tessellation"):
+            item = builder.mesh(verts, faces)
+
+        representation.Items = list(representation.Items) + [item]
+        tool.Geometry.reload_representation(bpy.context.scene.BIMGeometryProperties.representation_obj)
+        obj.name = obj.data.name = f"Item/{item.is_a()}/{item.id()}"
+        obj.data.BIMMeshProperties.ifc_definition_id = item.id()

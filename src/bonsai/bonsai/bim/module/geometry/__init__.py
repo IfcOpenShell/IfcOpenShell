@@ -20,6 +20,7 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
+    operator.AddMeshlikeItem,
     operator.AddRepresentation,
     operator.CopyRepresentation,
     operator.DisableEditingRepresentationItemShapeAspect,

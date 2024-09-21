@@ -30,6 +30,7 @@ from natsort import natsorted
 
 def refresh():
     AuthoringData.is_loaded = False
+    ItemData.is_loaded = False
     ArrayData.is_loaded = False
     StairData.is_loaded = False
     SverchokData.is_loaded = False
@@ -620,3 +621,27 @@ class RoofData:
 
             general_params[prop_readable_name] = prop_value
         return general_params
+
+
+class ItemData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.is_loaded = True
+        cls.data = {}
+        cls.data["representation_identifier"] = cls.representation_identifier()
+        cls.data["representation_type"] = cls.representation_type()
+
+    @classmethod
+    def representation_identifier(cls):
+        props = bpy.context.scene.BIMGeometryProperties
+        rep = tool.Geometry.get_active_representation(props.representation_obj)
+        return rep.RepresentationIdentifier
+
+    @classmethod
+    def representation_type(cls):
+        props = bpy.context.scene.BIMGeometryProperties
+        rep = tool.Geometry.get_active_representation(props.representation_obj)
+        return rep.RepresentationType
