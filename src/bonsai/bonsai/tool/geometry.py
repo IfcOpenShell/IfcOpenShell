@@ -1422,21 +1422,22 @@ class Geometry(bonsai.core.tool.Geometry):
         has_changed = False
         for item_obj in props.item_objs:
             obj = item_obj.obj
-            if not tool.Ifc.is_moved(obj):
-                continue
-            has_changed = True
             item = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
-            old_position = item.Position
-            if np.allclose(np.array(obj.matrix_world), np.array(rep_obj.matrix_world), atol=1e-4):
+            if item.is_a("IfcSweptAreaSolid"):
+                if not tool.Ifc.is_moved(obj):
+                    continue
+                has_changed = True
+                old_position = item.Position
+                if np.allclose(np.array(obj.matrix_world), np.array(rep_obj.matrix_world), atol=1e-4):
+                    if old_position:
+                        item.Position = None
+                        ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_position)
+                    continue
+                rel_matrix = rep_matrix_i @ obj.matrix_world
+                rel_matrix.translation /= unit_scale
+                item.Position = builder.create_axis2_placement_3d_from_matrix(np.array(rel_matrix))
                 if old_position:
-                    item.Position = None
                     ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_position)
-                continue
-            rel_matrix = rep_matrix_i @ obj.matrix_world
-            rel_matrix.translation /= unit_scale
-            item.Position = builder.create_axis2_placement_3d_from_matrix(np.array(rel_matrix))
-            if old_position:
-                ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_position)
         if has_changed:
             cls.reload_representation(rep_obj)
 

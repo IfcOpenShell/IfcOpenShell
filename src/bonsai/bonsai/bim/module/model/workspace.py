@@ -24,8 +24,8 @@ import bonsai.tool as tool
 import bonsai.core.model as core
 from bonsai.bim.module.model.wall import DumbWallJoiner
 from bonsai.bim.helper import prop_with_search
-from bpy.types import WorkSpaceTool
-from bonsai.bim.module.model.data import AuthoringData
+from bpy.types import WorkSpaceTool, Menu
+from bonsai.bim.module.model.data import AuthoringData, ItemData
 from bonsai.bim.module.system.data import PortData
 from bonsai.bim.module.model.prop import get_ifc_class
 
@@ -262,9 +262,17 @@ def format_ifc_camel_case(string):
 class EditItemUI:
     @classmethod
     def draw(cls, context, layout):
+        if not ItemData.is_loaded:
+            ItemData.load()
+
         cls.layout = layout
         row = cls.layout.row()
         row.label(text="Item Mode", icon="MESH_DATA")
+        row = cls.layout.row()
+        row.label(text="Context: " + ItemData.data["representation_identifier"], icon="SCENE_DATA")
+        row = cls.layout.row()
+        row.label(text="Type: " + ItemData.data["representation_type"], icon="OUTLINER_OB_MESH")
+        cls.layout.menu("BIM_MT_add_meshlike_item", icon="ADD")
         if not (obj := context.active_object) or not tool.Geometry.is_representation_item(obj):
             return
         for item_attribute in obj.data.BIMMeshProperties.item_attributes:
@@ -273,6 +281,19 @@ class EditItemUI:
         if len(obj.data.BIMMeshProperties.item_attributes):
             row = cls.layout.row()
             row.operator("bim.update_item_attributes", icon="FILE_REFRESH", text="")
+
+
+class BIM_MT_add_meshlike_item(Menu):
+    bl_idname = "BIM_MT_add_meshlike_item"
+    bl_label = "Add Item"
+
+    def draw(self, context):
+        self.layout.operator("bim.add_meshlike_item", icon="MESH_PLANE", text="Mesh Plane").shape = "PLANE"
+        self.layout.operator("bim.add_meshlike_item", icon="MESH_CUBE", text="Mesh Cube").shape = "CUBE"
+        self.layout.operator("bim.add_meshlike_item", icon="MESH_CIRCLE", text="Mesh Circle").shape = "CIRCLE"
+        self.layout.operator("bim.add_meshlike_item", icon="MESH_UVSPHERE", text="Mesh UV Sphere").shape = "UVSPHERE"
+        self.layout.operator("bim.add_meshlike_item", icon="MESH_ICOSPHERE", text="Mesh Icosphere").shape = "ICOSPHERE"
+        self.layout.operator("bim.add_meshlike_item", icon="MESH_CYLINDER", text="Mesh Cylinder").shape = "CYLINDER"
 
 
 class CreateObjectUI:

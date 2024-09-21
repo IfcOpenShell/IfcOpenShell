@@ -64,6 +64,7 @@ classes = (
     product.LoadTypeThumbnails,
     product.MirrorElements,
     workspace.Hotkey,
+    workspace.BIM_MT_add_meshlike_item,
     wall.AlignWall,
     wall.ChangeExtrusionDepth,
     wall.ChangeExtrusionXAngle,
