@@ -81,7 +81,7 @@ ADD_COMMIT_SHA = os.getenv("ADD_COMMIT_SHA")
 PYTHON_VERSIONS = ["3.9.11", "3.10.3", "3.11.8", "3.12.1"]
 JSON_VERSION = "v3.6.1"
 OCE_VERSION = "0.18.3"
-OCCT_VERSION = "7.7.2"
+OCCT_VERSION = "7.8.1"
 BOOST_VERSION = "1.80.0"
 PCRE_VERSION = "8.41"
 LIBXML2_VERSION = "2.9.11"
@@ -590,6 +590,9 @@ if USE_OCCT and "occ" in targets:
     
     if OCCT_VERSION == "7.7.2":
         patches.append("./patches/occt/no_ExpToCasExe_7_7_2.patch")
+
+    if OCCT_VERSION == "7.8.1":
+        patches.append("./patches/occt/no_ExpToCasExe_7_8_1.patch")
     
     if "wasm" in flags:
         patches.append("./patches/occt/no_em_js.patch")

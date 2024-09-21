@@ -172,6 +172,8 @@ class AuthoringData:
             templates.append(("WINDOW", "Window", "Parametric window"))
         elif type_class == "IfcDoorType":
             templates.append(("DOOR", "Door", "Parametric door"))
+        elif type_class in ("IfcStairType", "IfcStairFlightType"):
+            templates.append(("STAIR", "Stair", "Parametric stair"))
         elif type_class == "IfcRailingType":
             templates.append(("RAILING", "Railing", "Parametric railing"))
         elif type_class == "IfcRoofType":

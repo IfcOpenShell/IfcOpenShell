@@ -825,7 +825,7 @@ class Blender(bonsai.core.tool.Blender):
         @classmethod
         def is_eligible_for_stair_modifier(cls, obj):
             return tool.Blender.is_object_an_ifc_class(
-                obj, ("IfcStairFlight", "IfcStairFlightType", "IfcMember", "IfcMemberType")
+                obj, ("IfcStairFlight", "IfcStairFlightType", "IfcMember", "IfcMemberType", "IfcStair", "IfcStairType")
             )
 
         @classmethod

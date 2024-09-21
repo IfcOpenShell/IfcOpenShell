@@ -485,6 +485,7 @@ class PrintUnusedElementStats(bpy.types.Operator, tool.Ifc.Operator):
             ignore_classes += ["IfcStyledItem"]
         ignore_classes += [
             "IfcIndexedColourMap",  # Only referenced by inverse attributes.
+            "IfcIndexedTextureMap",  # Only referenced by inverse attributes.
         ]
 
         unused_elements = tool.Debug.print_unused_elements_stats(props.ifc_class_purge, ignore_classes)
@@ -648,9 +649,7 @@ class PurgeUnusedObjects(bpy.types.Operator, tool.Ifc.Operator):
         elif object_type == "PROFILE":
             purged = bonsai.core.profile.purge_unused_profiles(tool.Ifc, tool.Profile)
         elif object_type == "STYLE":
-            # It's okay to remove IfcPresentationStyle if just remove_deep
-            # as there are no white listed inverses.
-            purged = tool.Debug.purge_unused_class("IfcPresentationStyle")
+            purged = tool.Style.purge_unused_styles()
         elif object_type == "MATERIAL":
             purged = tool.Material.purge_unused_materials()
         else:

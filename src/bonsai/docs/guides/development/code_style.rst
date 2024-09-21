@@ -4,17 +4,18 @@ Code style
 
 Black code formatter
 -------------------------------
-For Python code formatting, we use `Black code formatter <https://pypi.org/project/black/>`__ with ``--line-length 120``.
+For Python code formatting, we use `Black code formatter <https://pypi.org/project/black/>`__, 
+black settings are stored in the repository's pyproject.toml.
+
+We have GitHub workflow `ci-black-formatting` to maintain black formatting across the repository.
 
 ``black`` can be installed using ``pip install black`` and files can be formatted with the following example command:
 
 .. code-block:: bash
 
-   black --line-length 120 src/bonsai/bonsai/bim/module/qto/operator.py
+   # Format the entire repository.
+   # Should be used in 99% cases as the entire repository is already formatted using black.
+   black .
+   # Format only some specific file.
+   black src/bonsai/bonsai/bim/module/qto/operator.py
 
-Using PowerShell, you can run the Black formatter on the last commit in the repository.
-You can change ``~1`` to ``~n`` to affect ``n`` commits.
-
-.. code-block:: powershell
-
-   git diff HEAD HEAD~1 --name-only | where {$_ -like "*.py"} | foreach-object { start $_ && black --line-length 120 $_ }
