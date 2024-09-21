@@ -1774,7 +1774,6 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
                 return {"FINISHED"}
 
         objs = context.selected_objects or [context.active_object]
-        print("objs are", objs)
 
         self.edited_objs = []
         self.unchanged_objs_with_openings = []
@@ -1874,7 +1873,6 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
             ProfileDecorator.uninstall()
 
             profile = tool.Model.export_profile(obj)
-            print("got profile", profile)
 
             if not profile:
 
@@ -1892,19 +1890,8 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
             ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_profile)
 
             tool.Geometry.reload_representation(bpy.context.scene.BIMGeometryProperties.representation_obj)
-
-            tool.Loader.settings.contexts = ifcopenshell.util.representation.get_prioritised_contexts(tool.Ifc.get())
-            tool.Loader.settings.context_settings = tool.Loader.create_settings()
-            tool.Loader.settings.gross_context_settings = tool.Loader.create_settings(is_gross=True)
-            geometry = tool.Loader.create_generic_shape(item)
-            obj.data.clear_geometry()
-            tool.Loader.convert_geometry_to_mesh(geometry, obj.data)
-            if item.Position:
-                position = Matrix(ifcopenshell.util.placement.get_axis2placement(item.Position).tolist())
-                position.translation *= unit_scale
-                position_i = position.inverted()
-                for vert in obj.data.vertices:
-                    vert.co = position_i @ vert.co
+            tool.Geometry.import_item(obj)
+            tool.Geometry.import_item_attributes(obj)
 
             element = tool.Ifc.get_entity(bpy.context.scene.BIMGeometryProperties.representation_obj)
             # Only certain classes should have a footprint
@@ -2471,3 +2458,53 @@ class AddMeshlikeItem(bpy.types.Operator, tool.Ifc.Operator):
         tool.Geometry.reload_representation(bpy.context.scene.BIMGeometryProperties.representation_obj)
         obj.name = obj.data.name = f"Item/{item.is_a()}/{item.id()}"
         obj.data.BIMMeshProperties.ifc_definition_id = item.id()
+
+
+class AddSweptAreaSolidItem(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.add_swept_area_solid_item"
+    bl_label = "Add Swept Area Solid Item"
+    bl_options = {"REGISTER", "UNDO"}
+    shape: bpy.props.StringProperty(name="Shape")
+
+    def _execute(self, context):
+        props = context.scene.BIMGeometryProperties
+        mesh = bpy.data.meshes.new("Tmp")
+        obj = bpy.data.objects.new("Tmp", mesh)
+        scene = bpy.context.scene
+        scene.collection.objects.link(obj)
+        bpy.context.view_layer.objects.active = obj
+        obj.select_set(True)
+        new = props.item_objs.add()
+        new.obj = obj
+
+        matrix = props.representation_obj.matrix_world.copy()
+        matrix.translation = context.scene.cursor.location
+        local_matrix = props.representation_obj.matrix_world.inverted() @ matrix
+
+        obj.matrix_world = matrix
+        tool.Geometry.record_object_position(obj)
+
+        builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        if self.shape == "CUBE":
+            curve = builder.rectangle(size=Vector((0.5, 0.5)) / unit_scale)
+        elif self.shape == "CYLINDER":
+            curve = builder.circle(radius=0.25)
+        item = builder.extrude(
+            curve,
+            magnitude=0.5 / unit_scale,
+            position=local_matrix.translation,
+            position_x_axis=local_matrix.col[0].to_3d(),
+            position_z_axis=local_matrix.col[2].to_3d(),
+        )
+
+        representation = tool.Geometry.get_active_representation(props.representation_obj)
+        representation = ifcopenshell.util.representation.resolve_representation(representation)
+
+        representation.Items = list(representation.Items) + [item]
+        tool.Geometry.reload_representation(bpy.context.scene.BIMGeometryProperties.representation_obj)
+
+        obj.name = obj.data.name = f"Item/{item.is_a()}/{item.id()}"
+        obj.data.BIMMeshProperties.ifc_definition_id = item.id()
+        tool.Geometry.import_item(obj)
+        tool.Geometry.import_item_attributes(obj)

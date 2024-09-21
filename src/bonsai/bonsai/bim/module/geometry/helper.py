@@ -20,6 +20,7 @@ import bpy
 import bmesh
 import shapely
 import mathutils
+import numpy as np
 import ifcopenshell
 import ifcopenshell.util.unit
 import ifcopenshell.util.shape
@@ -294,6 +295,7 @@ class Helper:
         for curve in curves:
             geometry = ifcopenshell.geom.create_shape(settings, curve)
             v = ifcopenshell.util.shape.get_vertices(geometry, is_2d=True)
+            v = np.round(v, 4)  # Round to nearest 0.1mm, otherwise things like circles don't polygonise reliably
             edges = ifcopenshell.util.shape.get_edges(geometry)
             boundary_lines = [shapely.LineString([v[e[0]], v[e[1]]]) for e in edges]
             unioned_boundaries = shapely.union_all(shapely.GeometryCollection(boundary_lines))
