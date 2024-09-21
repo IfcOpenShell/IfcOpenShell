@@ -287,8 +287,10 @@ def add_header_apply_button(layout, text, apply_operator, cancel_operator, ui_co
         row.operator("bim.align_view_to_profile", text="Align View" if ui_context!="TOOL_HEADER" else "", icon="AXIS_FRONT")
 
     row = layout.row(align=True)
-    row.operator(apply_operator, text="Apply" if ui_context!="TOOL_HEADER" else "", icon_value=custom_icon_previews["APPLY"].icon_id)
+    row.operator(apply_operator, text="Apply" if ui_context!="TOOL_HEADER" else "", icon="CHECKMARK")
     row.label(text="", icon="EVENT_TAB") if ui_context!="TOOL_HEADER" else row
+    row = layout.row(align=True) if ui_context!="TOOL_HEADER" else row
+    row.operator(cancel_operator, text="Cancel" if ui_context!="TOOL_HEADER" else "", icon="CANCEL")
 
     row = layout.row(align=True)
     row.label(text="Tools")
@@ -315,9 +317,6 @@ def add_layout_hotkey_operator(layout, text, hotkey, description, ui_context="")
     op.description = description or hotkey_description
 
     return op
-
-
-
 
 
 custom_icon_previews = None
