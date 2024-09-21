@@ -31,6 +31,7 @@ import ifcopenshell.guid
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.system
+import ifcopenshell.util.placement
 import bonsai.core.tool
 import bonsai.core.drawing
 import bonsai.core.geometry
@@ -1438,3 +1439,35 @@ class Geometry(bonsai.core.tool.Geometry):
                 ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_position)
         if has_changed:
             cls.reload_representation(rep_obj)
+
+    @classmethod
+    def import_item_attributes(cls, obj: bpy.types.Object) -> None:
+        props = obj.data.BIMMeshProperties
+        props.item_attributes.clear()
+        item = tool.Ifc.get().by_id(props.ifc_definition_id)
+        if item.is_a("IfcExtrudedAreaSolid"):
+            new = props.item_attributes.add()
+            new.name = "Depth"
+            new.float_value = item.Depth
+
+    @classmethod
+    def import_item(cls, obj: bpy.types.Object) -> None:
+        props = bpy.context.scene.BIMGeometryProperties
+        tool.Loader.settings.contexts = ifcopenshell.util.representation.get_prioritised_contexts(tool.Ifc.get())
+        tool.Loader.settings.context_settings = tool.Loader.create_settings()
+        tool.Loader.settings.gross_context_settings = tool.Loader.create_settings(is_gross=True)
+        item = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+        geometry = tool.Loader.create_generic_shape(item)
+        obj.data.clear_geometry()
+        tool.Loader.convert_geometry_to_mesh(geometry, obj.data)
+
+        if item.is_a("IfcSweptAreaSolid"):
+            cls.record_object_position(obj)
+            if item.Position:
+                unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+                position = Matrix(ifcopenshell.util.placement.get_axis2placement(item.Position).tolist())
+                position.translation *= unit_scale
+                position_i = position.inverted()
+                obj.matrix_world = props.representation_obj.matrix_world @ position
+                for vert in obj.data.vertices:
+                    vert.co = position_i @ vert.co

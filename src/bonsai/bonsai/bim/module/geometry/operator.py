@@ -1780,7 +1780,7 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
                 tool.Geometry.reload_representation(bpy.context.scene.BIMGeometryProperties.representation_obj)
                 return
             else:
-                self.reload_item(obj)
+                tool.Geometry.import_item(obj)
                 return
         elif item.is_a("IfcSweptAreaSolid"):
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
@@ -1865,15 +1865,6 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
         if context.scene.BIMGeometryProperties.mode != "EDIT":
             context.scene.BIMGeometryProperties.mode = "EDIT"
         context.scene.BIMGeometryProperties.is_changing_mode = False
-
-    def reload_item(self, obj):
-        tool.Loader.settings.contexts = ifcopenshell.util.representation.get_prioritised_contexts(tool.Ifc.get())
-        tool.Loader.settings.context_settings = tool.Loader.create_settings()
-        tool.Loader.settings.gross_context_settings = tool.Loader.create_settings(is_gross=True)
-        item = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
-        geometry = tool.Loader.create_generic_shape(item)
-        obj.data.clear_geometry()
-        tool.Loader.convert_geometry_to_mesh(geometry, obj.data)
 
     def invoke(self, context, event):
         return IfcStore.execute_ifc_operator(self, context, is_invoke=True)
@@ -2388,27 +2379,33 @@ class ImportRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
             item = tool.Ifc.get().by_id(item_id)
             item_mesh = bpy.data.meshes.new(f"Item/{item.is_a()}/{item_id}")
             item_mesh.BIMMeshProperties.ifc_definition_id = item_id
-            geometry = tool.Loader.create_generic_shape(item)
-            tool.Loader.convert_geometry_to_mesh(geometry, item_mesh)
 
             item_obj = bpy.data.objects.new(f"Item/{item.is_a()}/{item_id}", item_mesh)
             item_obj.matrix_world = obj.matrix_world
             item_obj.show_in_front = True
             bpy.context.collection.objects.link(item_obj)
 
-            if tool.Geometry.is_meshlike_item(item):
-                tool.Geometry.lock_object(item_obj)
-
             new = props.item_objs.add()
             new.obj = item_obj
 
-            if item.is_a("IfcSweptAreaSolid"):
-                tool.Geometry.record_object_position(item_obj)
-                if item.Position:
-                    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-                    position = Matrix(ifcopenshell.util.placement.get_axis2placement(item.Position).tolist())
-                    position.translation *= unit_scale
-                    position_i = position.inverted()
-                    item_obj.matrix_world = item_obj.matrix_world @ position
-                    for vert in item_obj.data.vertices:
-                        vert.co = position_i @ vert.co
+            tool.Geometry.import_item(item_obj)
+            tool.Geometry.import_item_attributes(item_obj)
+
+            if tool.Geometry.is_meshlike_item(item):
+                tool.Geometry.lock_object(item_obj)
+
+
+class UpdateItemAttributes(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.update_item_attributes"
+    bl_label = "Update Item Attributes"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        obj = context.active_object
+        props = obj.data.BIMMeshProperties
+        item = tool.Ifc.get().by_id(props.ifc_definition_id)
+        for attribute in props.item_attributes:
+            if attribute.name == "Depth":
+                item.Depth = attribute.float_value
+        tool.Geometry.reload_representation(bpy.context.scene.BIMGeometryProperties.representation_obj)
+        tool.Geometry.import_item(obj)

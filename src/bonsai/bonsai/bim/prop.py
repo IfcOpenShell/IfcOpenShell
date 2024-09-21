@@ -508,6 +508,7 @@ class BIMMeshProperties(PropertyGroup):
     subshape_type: StringProperty(name="Subshape Type")
     ifc_definition: StringProperty(name="IFC Definition")
     ifc_parameters: CollectionProperty(name="IFC Parameters", type=IfcParameter)
+    item_attributes: CollectionProperty(name="Item Attributes", type=Attribute)
     material_checksum: StringProperty(name="Material Checksum", default="[]")
     mesh_checksum: StringProperty(name="Mesh Checksum", default="")
     replaced_mesh: PointerProperty(type=bpy.types.Mesh, description="Original mesh to revert section cutaway")

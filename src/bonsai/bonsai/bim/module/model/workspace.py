@@ -105,12 +105,17 @@ class BimTool(WorkSpaceTool):
         ("bim.hotkey", {"type": "P", "value": "PRESS", "ctrl": True}, {"properties": [("hotkey", "C_P")]}),
         ("bim.hotkey", {"type": "P", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_P")]}),
     )
+    ifc_element_type = "all"
 
-    def draw_settings(context, layout, ws_tool):
+    @classmethod
+    def draw_settings(cls, context, layout, ws_tool):
         # Unlike operators, Blender doesn't treat workspace tools as a class, so we'll create our own.
-        CreateObjectUI.draw(context, layout, ifc_element_type="all")
-        if context.active_object and context.selected_objects:
-            EditObjectUI.draw(context, layout)
+        if context.scene.BIMGeometryProperties.mode == "ITEM":
+            EditItemUI.draw(context, layout)
+        else:
+            CreateObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
+            if context.active_object and context.selected_objects:
+                EditObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
 
 
 class WallTool(BimTool):
@@ -123,12 +128,6 @@ class WallTool(BimTool):
     bl_widget = None
     ifc_element_type = "IfcWallType"
 
-    @classmethod
-    def draw_settings(cls, context, layout, ws_tool):
-        CreateObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
-        if context.active_object and context.selected_objects:
-            EditObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
-
 
 class SlabTool(BimTool):
     bl_space_type = "VIEW_3D"
@@ -139,12 +138,6 @@ class SlabTool(BimTool):
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.slab")
     bl_widget = None
     ifc_element_type = "IfcSlabType"
-
-    @classmethod
-    def draw_settings(cls, context, layout, ws_tool):
-        CreateObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
-        if context.active_object and context.selected_objects:
-            EditObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
 
 
 class DoorTool(BimTool):
@@ -157,12 +150,6 @@ class DoorTool(BimTool):
     bl_widget = None
     ifc_element_type = "IfcDoorType"
 
-    @classmethod
-    def draw_settings(cls, context, layout, ws_tool):
-        CreateObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
-        if context.active_object and context.selected_objects:
-            EditObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
-
 
 class WindowTool(BimTool):
     bl_space_type = "VIEW_3D"
@@ -173,12 +160,6 @@ class WindowTool(BimTool):
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.window")
     bl_widget = None
     ifc_element_type = "IfcWindowType"
-
-    @classmethod
-    def draw_settings(cls, context, layout, ws_tool):
-        CreateObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
-        if context.active_object and context.selected_objects:
-            EditObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
 
 
 class ColumnTool(BimTool):
@@ -191,12 +172,6 @@ class ColumnTool(BimTool):
     bl_widget = None
     ifc_element_type = "IfcColumnType"
 
-    @classmethod
-    def draw_settings(cls, context, layout, ws_tool):
-        CreateObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
-        if context.active_object and context.selected_objects:
-            EditObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
-
 
 class BeamTool(BimTool):
     bl_space_type = "VIEW_3D"
@@ -207,12 +182,6 @@ class BeamTool(BimTool):
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.beam")
     bl_widget = None
     ifc_element_type = "IfcBeamType"
-
-    @classmethod
-    def draw_settings(cls, context, layout, ws_tool):
-        CreateObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
-        if context.active_object and context.selected_objects:
-            EditObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
 
 
 class DuctTool(BimTool):
@@ -225,12 +194,6 @@ class DuctTool(BimTool):
     bl_widget = None
     ifc_element_type = "IfcDuctSegmentType"
 
-    @classmethod
-    def draw_settings(cls, context, layout, ws_tool):
-        CreateObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
-        if context.active_object and context.selected_objects:
-            EditObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
-
 
 class CableCarrierTool(BimTool):
     bl_space_type = "VIEW_3D"
@@ -241,12 +204,6 @@ class CableCarrierTool(BimTool):
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.cablecarrier")
     bl_widget = None
     ifc_element_type = "IfcCableCarrierSegmentType"
-
-    @classmethod
-    def draw_settings(cls, context, layout, ws_tool):
-        CreateObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
-        if context.active_object and context.selected_objects:
-            EditObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
 
 
 class PipeTool(BimTool):
@@ -259,12 +216,6 @@ class PipeTool(BimTool):
     bl_widget = None
     ifc_element_type = "IfcPipeSegmentType"
 
-    @classmethod
-    def draw_settings(cls, context, layout, ws_tool):
-        CreateObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
-        if context.active_object and context.selected_objects:
-            EditObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
-
 
 class CableTool(BimTool):
     bl_space_type = "VIEW_3D"
@@ -275,12 +226,6 @@ class CableTool(BimTool):
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.cable")
     bl_widget = None
     ifc_element_type = "IfcCableSegmentType"
-
-    @classmethod
-    def draw_settings(cls, context, layout, ws_tool):
-        CreateObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
-        if context.active_object and context.selected_objects:
-            EditObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
 
 
 def add_layout_hotkey_operator(layout, text, hotkey, description, ui_context=""):
@@ -312,6 +257,22 @@ def add_layout_hotkey_operator(layout, text, hotkey, description, ui_context="")
 def format_ifc_camel_case(string):
     string = string.replace("Ifc", "")
     return "".join(" " + char if char.isupper() else char for char in string).strip()
+
+
+class EditItemUI:
+    @classmethod
+    def draw(cls, context, layout):
+        cls.layout = layout
+        row = cls.layout.row()
+        row.label(text="Item Mode", icon="MESH_DATA")
+        if not (obj := context.active_object) or not tool.Geometry.is_representation_item(obj):
+            return
+        for item_attribute in obj.data.BIMMeshProperties.item_attributes:
+            row = cls.layout.row()
+            row.prop(item_attribute, "float_value", text=item_attribute.name)
+        if len(obj.data.BIMMeshProperties.item_attributes):
+            row = cls.layout.row()
+            row.operator("bim.update_item_attributes", icon="FILE_REFRESH", text="")
 
 
 class CreateObjectUI:

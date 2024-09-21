@@ -58,6 +58,7 @@ classes = (
     operator.SelectConnection,
     operator.SwitchRepresentation,
     operator.UnassignRepresentationItemStyle,
+    operator.UpdateItemAttributes,
     operator.UpdateParametricRepresentation,
     operator.UpdateRepresentation,
     prop.RepresentationItem,

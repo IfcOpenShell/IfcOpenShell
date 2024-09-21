@@ -322,10 +322,10 @@ def add_header_apply_button(layout, text, apply_operator, cancel_operator, ui_co
         )
 
     row = layout.row(align=True)
-    row.operator(apply_operator, text="Apply" if ui_context!="TOOL_HEADER" else "", icon="CHECKMARK")
-    row.label(text="", icon="EVENT_TAB") if ui_context!="TOOL_HEADER" else row
-    row = layout.row(align=True) if ui_context!="TOOL_HEADER" else row
-    row.operator(cancel_operator, text="Cancel" if ui_context!="TOOL_HEADER" else "", icon="CANCEL")
+    row.operator(apply_operator, text="Apply" if ui_context != "TOOL_HEADER" else "", icon="CHECKMARK")
+    row.label(text="", icon="EVENT_TAB") if ui_context != "TOOL_HEADER" else row
+    row = layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+    row.operator(cancel_operator, text="Cancel" if ui_context != "TOOL_HEADER" else "", icon="CANCEL")
 
     row = layout.row(align=True)
     row.label(text="Tools")
