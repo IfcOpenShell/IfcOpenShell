@@ -138,7 +138,6 @@ class DumbProfileGenerator:
             is_global=True,
             should_sync_changes_first=False,
         )
-        tool.Blender.remove_data_block(mesh)
 
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Parametric")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "Bonsai.DumbProfile"})
@@ -844,7 +843,8 @@ class DumbProfileRecalculator:
 
 class ChangeProfileDepth(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.change_profile_depth"
-    bl_label = "Change Profile Length"
+    bl_label = "Update"
+    bl_description = "Update Profile Length"
     bl_options = {"REGISTER", "UNDO"}
     depth: bpy.props.FloatProperty(subtype="DISTANCE")
 
@@ -861,7 +861,8 @@ class ChangeProfileDepth(bpy.types.Operator, tool.Ifc.Operator):
 
 class ChangeCardinalPoint(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.change_cardinal_point"
-    bl_label = "Change Cardinal Point"
+    bl_label = "Update"
+    bl_description = "Update Cardinal Point"
     bl_options = {"REGISTER", "UNDO"}
     cardinal_point: bpy.props.IntProperty()
 

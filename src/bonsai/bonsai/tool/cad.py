@@ -85,34 +85,45 @@ class Cad:
         return math.degrees(a) if degrees else a
 
     @classmethod
-    def angle_3_vectors(cls, v1, v2, v3, degrees=False):
+    def angle_3_vectors(cls, v1, v2, v3, new_angle=None, degrees=False):
         """
         > takes 3 vectors. The order matters, v2 is the center point.
-        < returns the potentially signed angle as degrees or radians
+        < returns the signed angle as degrees or radians
+        < if a new angle is provided, return the rotation vector
         """
         d1 = v1 - v2
-        d2 = v2 - v3
+        d2 = v3 - v2
 
-        axis = d1.cross(d2)
-        axis.normalize()
-        axis = Vector((abs(axis.x), abs(axis.y), abs(axis.z)))
+        d1.normalize()
+        d2.normalize()
 
-        rotation_axis = d1.cross(d2)
+        axis = d1.cross(d2).normalized()
 
-        # Calculate the unsigned angle between the "from" and "to" vectors
-        a = d1.angle(d2)
+        # Calculate the unsigned angle between the "d1" and "d2" vectors
+        try:
+            a = d1.angle(d2)
+        except:
+            a = 0
 
         # Determine the sign of the angle based on the provided axis
-        if degrees:
-            a = math.degrees(a)
-
-            parameter = rotation_axis.dot(axis)
-
-            sign = 1 if parameter <= 0 else -1
-
-            return a * sign
+        # If new_angle, determine the direction of the rotation
+        parameter = (
+            round(axis.z, 2) < 0
+            or (round(axis.y, 2) == 0 and round(axis.x < 0))
+            or (round(axis.x, 2) == 0 and round(axis.y < 0))
+        )
+        if new_angle is not None:
+            rot_mat = Matrix.Rotation(new_angle, 3, axis)
+            rot_vector = (d1 @ rot_mat) if parameter else (rot_mat @ d1)
+            return rot_vector
         else:
-            return a
+            sign = -1 if parameter else 1
+
+            if degrees:
+                a = math.degrees(a)
+                return a * sign
+            else:
+                return a
 
     @classmethod
     def is_x(cls, value: float, x: float, tolerance: float | None = None) -> bool:
@@ -143,6 +154,14 @@ class Cad:
         return cls.is_x((v2 - v1).length, 0, tolerance)
 
     @classmethod
+    def intersect_edge_plane(cls, v1, v2, plane_co, plane_no):
+        """
+        > takes an edges as two vector, and a plane as origin point and normal
+        < return the intersection point or None
+        """
+        return geometry.intersect_line_plane(v1, v2, plane_co, plane_no)
+
+    @classmethod
     def intersect_edges(cls, edge1, edge2):
         """
         > takes 2 tuples, each tuple contains 2 vectors
@@ -162,6 +181,44 @@ class Cad:
             r1, r2 = results
             return r1.to_2d() if r1 else r1, r2.to_2d() if r2 else r2
         return results
+
+    @classmethod
+    def intersect_edges_v2(cls, edge1, edge2):
+        """
+        Calculate the closest points on two line segments.
+        Note: This function doesn't use intersect_line_line
+
+        > edge1: tuple of two vectors (v1, v2) representing the first segment
+        > edge2: tuple of two vectors (v3, v4) representing the second segment
+        < returns: tuple of two vectors (C1, C2) or (None, None) if lines are parallel
+        """
+        # This function seems to work better then intersect_line_line
+        # in orthogonal view
+        # https://en.wikipedia.org/wiki/Skew_lines#Nearest_points
+
+        # Starting and ending points
+        P1, P1_end = edge1
+        P2, P2_end = edge2
+
+        # Directions
+        d1 = (P1_end - P1).normalized()
+        d2 = (P2_end - P2).normalized()
+
+        n = d1.cross(d2)
+
+        # if n is zero, lines are parallel
+        if n.length == 0:
+            return None, None
+
+        n2 = d2.cross(n)
+
+        C1 = P1 + ((P2 - P1).dot(n2) / (d1.dot(n2))) * d1
+
+        n1 = d1.cross(n)
+
+        C2 = P2 + ((P1 - P2).dot(n1) / (d2.dot(n1))) * d2
+
+        return C1, C2
 
     @classmethod
     def get_intersection(cls, edge1, edge2):
@@ -569,3 +626,147 @@ class Cad:
     @classmethod
     def get_basis_vector(cls, object, axis_i):
         return object.matrix_world.col[axis_i].normalized().to_3d()
+
+    @classmethod
+    def offset_edges(cls, bm, distance, mw=Matrix.Identity(4), wp=Matrix.Identity(4)):
+
+        bm.verts.ensure_lookup_table()
+        bm.edges.ensure_lookup_table()
+
+        edges = [e for e in bm.edges]
+
+        if len(edges) < 1:
+            return
+
+        verts = set()
+        [verts.update(e.verts) for e in edges]
+
+        rotation = Matrix.Rotation(math.pi / 2, 2, "Z")
+        rotation_i = Matrix.Rotation(-math.pi / 2, 2, "Z")
+
+        # Create loops from edges
+        loop_edges = set(edges)
+        loops = []
+        while loop_edges:
+            edge = loop_edges.pop()
+            loop = [edge]
+            has_found_connected_edge = True
+            while has_found_connected_edge:
+                has_found_connected_edge = False
+                for edge in loop_edges.copy():
+                    edge_verts = set(edge.verts)
+                    if edge_verts & set(loop[0].verts):
+                        loop.insert(0, edge)
+                        loop_edges.remove(edge)
+                        has_found_connected_edge = True
+                    elif edge_verts & set(loop[-1].verts):
+                        loop.append(edge)
+                        loop_edges.remove(edge)
+                        has_found_connected_edge = True
+            loops.append(loop)
+
+        for loop in loops:
+            all_verts = {v.index for e in loop for v in e.verts}
+            possible_v1s = []
+            is_closed = True
+            for edge in loop:
+                # If we have an open loop, start at either end instead
+                v = edge.verts[0]
+                if len(v.link_edges) == 1:
+                    possible_v1s.append(v)
+                    is_closed = False
+                else:
+                    for link_edge in v.link_edges:
+                        if link_edge.other_vert(v).index not in all_verts:
+                            possible_v1s.append(v)
+                            is_closed = False
+                            break
+                v = edge.verts[1]
+                if len(v.link_edges) == 1:
+                    possible_v1s.append(v)
+                    is_closed = False
+                else:
+                    for link_edge in v.link_edges:
+                        if link_edge.other_vert(v).index not in all_verts:
+                            possible_v1s.append(v)
+                            is_closed = False
+                            break
+
+            # Always start at the same vertex, so that when the operator is
+            # refreshed with new parameters the axes don't randomly get flipped.
+            if is_closed:
+                bm.verts.ensure_lookup_table()
+                bm.edges.ensure_lookup_table()
+                start = bm.verts[min(all_verts)]
+            else:
+                start = possible_v1s[0] if possible_v1s[0].index < possible_v1s[1].index else possible_v1s[1]
+
+            v1 = start
+
+            new_verts = []
+            processed_verts = set()
+            # [v0] --> v1 --> v2
+            while v1:
+                if v1.index in processed_verts:
+                    break
+
+                link_verts = []
+                if len(v1.link_edges) == 1:
+                    v = v1.link_edges[0].other_vert(v1)
+                    link_verts.append(v) if v.index in all_verts else None
+                else:
+                    v = v1.link_edges[0].other_vert(v1)
+                    link_verts.append(v) if v.index in all_verts else None
+                    v = v1.link_edges[1].other_vert(v1)
+                    link_verts.append(v) if v.index in all_verts else None
+
+                if len(link_verts) == 1:
+                    v2 = link_verts[0]
+                    v0 = None if v2.index not in processed_verts else v2
+                    v2 = None if v2.index in processed_verts else v2
+                else:
+                    v2 = link_verts[0]
+                    v0 = link_verts[1]
+                    if v2.index in processed_verts:
+                        if is_closed and v0.index in processed_verts:
+                            v3 = start
+                            v0 = v0 if v2 == v3 else v2
+                            v2 = v3
+                        else:
+                            v0, v2 = v2, v0
+
+                normals = []
+                v1co = (wp.inverted() @ mw @ v1.co).to_2d()
+                if v2:
+                    v2co = (wp.inverted() @ mw @ v2.co).to_2d()
+                    direction = (v2co - v1co).normalized()
+                    local_direction = (rotation @ direction).normalized()
+                    normals.append(local_direction)
+
+                if v0:
+                    v0co = (wp.inverted() @ mw @ v0.co).to_2d()
+                    direction = (v0co - v1co).normalized()
+                    local_direction = (rotation_i @ direction).normalized()
+                    normals.append(local_direction)
+
+                if len(normals) == 2:
+                    # https://stackoverflow.com/a/54042831/9627415
+                    new_normal = (normals[0].lerp(normals[1], 0.5)).normalized()
+                    offset_length = distance / math.sqrt((1 + normals[0].dot(normals[1])) / 2)
+                    offset = mw.inverted().to_quaternion() @ (wp.to_quaternion() @ (new_normal * offset_length).to_3d())
+                    new_vert = v1.co + offset
+                    new_verts.append(bm.verts.new(new_vert))
+                else:
+                    normal = (normals[0] * distance).to_3d()
+                    offset = mw.inverted().to_quaternion() @ (wp.to_quaternion() @ normal)
+                    new_vert = v1.co + offset
+                    new_verts.append(bm.verts.new(new_vert))
+
+                processed_verts.add(v1.index)
+
+                if v2 in processed_verts:
+                    break
+
+                v1 = v2
+
+        return new_verts

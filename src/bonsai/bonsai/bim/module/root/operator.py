@@ -74,14 +74,12 @@ class DisableReassignClass(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class ReassignClass(bpy.types.Operator):
+class ReassignClass(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.reassign_class"
     bl_label = "Reassign IFC Class"
+    bl_description = "Reassign IFC class for selected objects"
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         if self.obj:
@@ -89,71 +87,71 @@ class ReassignClass(bpy.types.Operator):
         else:
             objects = set(context.selected_objects + [context.active_object])
         self.file = IfcStore.get_file()
-        predefined_type = context.scene.BIMRootProperties.ifc_predefined_type
+        root_props = context.scene.BIMRootProperties
+        ifc_product: str = root_props.ifc_product
+        ifc_class: str = root_props.ifc_class
+        type_ifc_class = next(iter(ifcopenshell.util.type.get_applicable_types(ifc_class)), None)
+
+        predefined_type = root_props.ifc_predefined_type
         if predefined_type == "USERDEFINED":
-            predefined_type = context.scene.BIMRootProperties.ifc_userdefined_type
+            predefined_type = root_props.ifc_userdefined_type
 
         # NOTE: root.reassign_class
         # automatically will reassign class for other occurrences of the type
         # so we need to run it only for the types or non-typed elements
-        elements_to_reassign = set()
+        elements_to_reassign: dict[ifcopenshell.entity_instance, str] = dict()
         # need to update blender object name
         # for all elements that were changed in the process
-        elements_to_update = set()
+        elements_to_update: set[ifcopenshell.entity_instance] = set()
         for obj in objects:
-            obj.BIMObjectProperties.is_reassigning_class = False
             element = tool.Ifc.get_entity(obj)
-            if element.is_a("IfcTypeObject"):
-                elements_to_reassign.add(element)
-                elements_to_update.update(ifcopenshell.util.element.get_types(element))
+            if not element:
                 continue
 
-            # check if element is typed
-            element_type = ifcopenshell.util.element.get_type(element)
-            if element_type:
-                elements_to_reassign.add(element_type)
+            same_ifc_product = element.is_a(ifc_product)
+
+            if not same_ifc_product:
+                if not (element.is_a("IfcElement") and ifc_product == "IfcElementType") and not (
+                    element.is_a("IfcElementType") and ifc_product == "IfcElement"
+                ):
+                    self.report(
+                        {"ERROR"}, f"Not supported class reassignment for object '{obj.name}' -> {ifc_product}."
+                    )
+                    return {"CANCELLED"}
+
+            obj.BIMObjectProperties.is_reassigning_class = False
+            if element.is_a("IfcTypeObject"):
+                elements_to_reassign[element] = ifc_class
+                elements_to_update.update(ifcopenshell.util.element.get_types(element))
+                continue
+            elif same_ifc_product and (element_type := ifcopenshell.util.element.get_type(element)):
+                assert type_ifc_class
+                elements_to_reassign[element_type] = type_ifc_class
                 elements_to_update.update(ifcopenshell.util.element.get_types(element_type))
                 continue
 
             # non-typed element
-            elements_to_reassign.add(element)
+            elements_to_reassign[element] = ifc_class
 
         # store elements to objects to update later as elements will get invalid
         # after class reassignment
-        elements_to_update = elements_to_update | elements_to_reassign
+        elements_to_update = elements_to_update | set(elements_to_reassign)
         objects_to_update = set(o for e in elements_to_update if (o := tool.Ifc.get_object(e)))
 
-        base_class = context.scene.BIMRootProperties.ifc_class
-        if context.scene.BIMRootProperties.ifc_product == "IfcElementType":
-            type_class = base_class
-            occurrence_classes = ifcopenshell.util.type.get_applicable_entities(type_class)
-            occurrence_class = None if len(occurrence_classes) == 0 else occurrence_classes[0]
-        else:
-            occurrence_class = base_class
-            type_classes = ifcopenshell.util.type.get_applicable_types(occurrence_class)
-            type_class = None if len(type_classes) == 0 else type_classes[0]
-
         reassigned_elements = set()
-        for element in elements_to_reassign:
-            ifc_class = type_class if element.is_a("IfcTypeObject") else occurrence_class
-            if ifc_class is None:
-                self.report(
-                    {"ERROR"},
-                    f"Couldn't find valid class for reassigning element of class {element.is_a()} based on class {base_class}",
-                )
-                return {"CANCELLED"}
-
+        for element, ifc_class_ in elements_to_reassign.items():
             element = ifcopenshell.api.run(
                 "root.reassign_class",
                 self.file,
                 product=element,
-                ifc_class=ifc_class,
+                ifc_class=ifc_class_,
                 predefined_type=predefined_type,
             )
             reassigned_elements.add(element)
 
         for obj in objects_to_update:
             obj.name = tool.Loader.get_name(tool.Ifc.get_entity(obj))
+            tool.Collector.assign(obj)
         return {"FINISHED"}
 
 
@@ -210,7 +208,7 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
         context.view_layer.objects.active = active_object
 
 
-class UnlinkObject(bpy.types.Operator):
+class UnlinkObject(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unlink_object"
     bl_label = "Unlink Object"
     bl_description = (
@@ -223,9 +221,6 @@ class UnlinkObject(bpy.types.Operator):
     obj: bpy.props.StringProperty(name="Object Name")
     should_delete: bpy.props.BoolProperty(name="Delete IFC Element", default=True)
     skip_invoke: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         if self.obj:

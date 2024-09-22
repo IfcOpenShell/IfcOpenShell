@@ -5,6 +5,7 @@
 #include <BRepGProp.hxx>
 #include <GProp_GProps.hxx>
 #include <Geom_SphericalSurface.hxx>
+#include <Geom_Plane.hxx>
 
 #include "OpenCascadeConversionResult.h"
 
@@ -15,6 +16,12 @@
 
 #include <Standard_Version.hxx>
 
+#include <iostream>
+#include <vector>
+#include <unordered_map>
+#include <tuple>
+#include <algorithm>
+
 #if OCC_VERSION_HEX >= 0x70600
 #include <TopTools_FormatVersion.hxx>
 #endif
@@ -23,6 +30,44 @@ using IfcGeom::OpaqueNumber;
 using IfcGeom::OpaqueCoordinate;
 using IfcGeom::NumberNativeDouble;
 using IfcGeom::ConversionResultShape;
+
+struct EdgeKey {
+	int v1, v2;
+
+	// These are not part of the hash or equality,
+	// but retained to easily created a directed
+	// graph of the original boundary edges. Since
+	// the boundary edges are exactly those with
+	// count=1 we don't need to worry about
+	// conflicting original vertex indices.
+	int ov1, ov2;
+
+	EdgeKey(int a, int b)
+		: ov1(a)
+		, ov2(b)
+	{
+		if (a < b) {
+			v1 = a;
+			v2 = b;
+		} else {
+			v1 = b;
+			v2 = a;
+		}
+	}
+
+	bool operator==(const EdgeKey& other) const {
+		return v1 == other.v1 && v2 == other.v2;
+	}
+};
+
+namespace std {
+	template <>
+	struct hash<EdgeKey> {
+		std::size_t operator()(const EdgeKey& ek) const {
+			return std::hash<int>()(ek.v1) ^ std::hash<int>()(ek.v2);
+		}
+	};
+}
 
 namespace {
 	// We bypass the conversion to gp_GTrsf, because it does not work
@@ -34,6 +79,78 @@ namespace {
 			xyz.ChangeData()[1] = v2(1);
 			xyz.ChangeData()[2] = v2(2);
 		}
+	}
+
+	// Function to find boundary loops from triangles
+	std::vector<std::vector<int>> find_boundary_loops(const std::vector<double>& positions, const std::vector<std::tuple<int, int, int>>& triangles) {
+		std::unordered_map<EdgeKey, int> edge_count;
+
+		// Count how many triangles each edge belongs to
+		for (const auto& triangle : triangles) {
+			int v1, v2, v3;
+			std::tie(v1, v2, v3) = triangle;
+
+			edge_count[{v1, v2}]++;
+			edge_count[{v2, v3}]++;
+			edge_count[{v3, v1}]++;
+		}
+
+		// Boundary edges have count 1
+		std::vector<EdgeKey> boundary_edges;
+		for (auto& p : edge_count) {
+			if (p.second == 1) {
+				boundary_edges.push_back(p.first);
+			}
+		}
+
+		// We retained original directed edges so we build
+		// a mapping out of these directed edges.
+		std::unordered_map<int, int> vertex_successors;
+		for (const auto& e : boundary_edges) {
+			vertex_successors[e.ov1] = e.ov2;
+		}
+
+		std::vector<std::vector<int>> loops;
+		while (!vertex_successors.empty()) {
+			loops.emplace_back();
+			auto it = vertex_successors.begin();
+			loops.back() = { it->first, it->second };
+			vertex_successors.erase(it);
+
+			int current = loops.back().back();
+			while (!vertex_successors.empty() && current != loops.back().front()) {
+				auto next = vertex_successors[current];
+				if (loops.back().front() != next) {
+					loops.back().push_back(next);
+				}
+				vertex_successors.erase(current);
+				current = next;
+			}
+		}
+
+		// Sort the loops by smallest x-coord of their constituent positions
+		// In order to put the outermost loop in front
+		if (loops.size() > 1) {
+			std::vector<std::pair<double, size_t>> min_xs;
+			for (auto& l : loops) {
+				double min_x = std::numeric_limits<double>::infinity();
+				for (auto& i : l) {
+					const auto& x = positions[i * 3];
+					if (x < min_x) {
+						min_x = x;
+					}
+				}
+				min_xs.push_back({ min_x, min_xs.size() });
+			}
+			std::sort(min_xs.begin(), min_xs.end());
+			decltype(loops) loops_copy;
+			for (auto& p : min_xs) {
+				loops_copy.emplace_back(std::move(loops[p.second]));
+			}
+			std::swap(loops, loops_copy);
+		}
+
+		return loops;
 	}
 }
 
@@ -71,6 +188,18 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
 	TopExp_Explorer exp;
 	for (exp.Init(shape_, TopAbs_FACE); exp.More(); exp.Next(), ++num_faces) {
 		TopoDS_Face face = TopoDS::Face(exp.Current());
+
+		size_t num_bounds = 0; 
+		for (TopoDS_Iterator it(face); it.More(); it.Next(), ++num_bounds) {}
+		
+		const bool is_planar = BRep_Tool::Surface(face) && BRep_Tool::Surface(face)->DynamicType() == STANDARD_TYPE(Geom_Plane);
+		const bool has_inner_bounds = num_bounds > 1;
+
+		const bool polyhedral_output_with_holes = settings.get<settings::TriangulationType>().get() == settings::POLYHEDRON_WITH_HOLES && is_planar;
+		const bool polyhedral_output_without_holes = settings.get<settings::TriangulationType>().get() == settings::POLYHEDRON_WITHOUT_HOLES && is_planar && !has_inner_bounds;
+
+		std::vector<std::tuple<int, int, int>> triangle_indices;
+
 		TopLoc_Location loc;
 		Handle_Poly_Triangulation tri = BRep_Tool::Triangulation(face, loc);
 
@@ -154,11 +283,21 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
 				_normals.push_back((float)normal.Z());
 				*/
 
-				t->addFace(item_id, surface_style_id, dict[n1], dict[n2], dict[n3]);
+				if (polyhedral_output_without_holes || polyhedral_output_with_holes) {
+					triangle_indices.push_back({ dict[n1], dict[n2], dict[n3] });
+				} else {
+					if (settings.get<settings::TriangulationType>().get() == settings::POLYHEDRON_WITHOUT_HOLES) {
+						t->addFace(item_id, surface_style_id, std::vector<int>{ dict[n1], dict[n2], dict[n3] });
+					} else if (settings.get<settings::TriangulationType>().get() == settings::POLYHEDRON_WITH_HOLES) {
+						t->addFace(item_id, surface_style_id, std::vector<std::vector<int>>{{ dict[n1], dict[n2], dict[n3] }});
+					} else {
+						t->addFace(item_id, surface_style_id, dict[n1], dict[n2], dict[n3]);
 
-				t->addEdge(dict[n1], dict[n2], edgecount);
-				t->addEdge(dict[n2], dict[n3], edgecount);
-				t->addEdge(dict[n3], dict[n1], edgecount);
+						t->addEdge(dict[n1], dict[n2], edgecount);
+						t->addEdge(dict[n2], dict[n3], edgecount);
+						t->addEdge(dict[n3], dict[n1], edgecount);
+					}
+				}
 			}
 			for (auto& p : edgecount) {
 				// @todo should be != 2?
@@ -169,6 +308,19 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
 						// only relevant while welding, because otherwise vertices are not shared among distinct faces
 						emitted_edges.insert(p.first);
 					}
+				}
+			}
+		}
+
+		if (polyhedral_output_without_holes || polyhedral_output_with_holes) {
+			auto loops = find_boundary_loops(t->verts(), triangle_indices);
+			if (polyhedral_output_without_holes) {
+				if (!loops.empty() && !loops[0].empty()) {
+					t->addFace(item_id, surface_style_id, loops[0]);
+				}
+			} else {
+				if (!loops.empty()) {
+					t->addFace(item_id, surface_style_id, loops);
 				}
 			}
 		}

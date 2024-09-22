@@ -4,6 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Bonsai Web UI</title>
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="https://bonsaibim.org/assets/images/favicon-blender.png"
+    />
     <link rel="stylesheet" type="text/css" href="/jsgantt/jsgantt.css" />
     <link rel="stylesheet" href="/static/css/gantt.css" id="gantt-stylesheet" />
     <link
@@ -22,7 +27,7 @@
     <script>
       var SOCKET_PORT = {{port}};
     </script>
-    <script defer src="./static/js/gantt.js"></script>
+    <script type="module" defer src="./static/js/gantt.js"></script>
   </head>
   <body>
     <nav class="no-print">
@@ -34,6 +39,11 @@
       <ul>
         <li>
           <a href="/"><i class="fa-solid fa-table"></i> Schedules</a>
+        </li>
+        <li>
+          <a href="/costing"
+            ><i class="fa-solid fa-exclamation-triangle"></i>Costing</a
+          >
         </li>
         <li>
           <a href="/sequencing" class="active"
@@ -71,7 +81,8 @@
       </button>
       <div id="client-list" class="no-print"></div>
     </div>
-    <div id="container"></div>
+    <div id="work_schedules" class="row-container"></div>
+    <div id="container" ></div>
     <footer>
       <p>Bonsai Version: {{version}}</p>
     </footer>

@@ -27,6 +27,8 @@ import bonsai.core.aggregate
 import bonsai.core.geometry
 import bonsai.tool as tool
 from typing import Union, Optional, Any
+from bonsai.bim.module.spatial.decorator import GridDecorator
+from bonsai.bim.module.geometry.decorator import ItemDecorator
 
 
 class Root(bonsai.core.tool.Root):
@@ -170,15 +172,24 @@ class Root(bonsai.core.tool.Root):
 
     @classmethod
     def is_containable(cls, element: ifcopenshell.entity_instance) -> bool:
-        if element.is_a("IfcElement") or element.is_a("IfcGrid"):
+        if (
+            (element.is_a("IfcElement") and not element.is_a("IfcFeatureElement"))
+            or element.is_a("IfcGrid")
+            or element.is_a("IfcAnnotation")
+        ):
             return True
-        if element.is_a("IfcAnnotation"):
-            if element.ObjectType == "DRAWING":
-                return False
-            drawing_group = tool.Drawing.get_drawing_group(element)
-            if not drawing_group:
-                return True
         return False
+
+    @classmethod
+    def is_drawing_annotation(cls, element: ifcopenshell.entity_instance) -> bool:
+        if not element.is_a("IfcAnnotation"):
+            return False
+        if element.ObjectType == "DRAWING":
+            return True
+        camera = bpy.context.scene.camera
+        if not camera or not tool.Ifc.get_entity(camera):
+            return False
+        return True
 
     @classmethod
     def is_element_a(cls, element: ifcopenshell.entity_instance, ifc_class: str) -> bool:
@@ -189,6 +200,26 @@ class Root(bonsai.core.tool.Root):
         if tool.Ifc.get().schema == "IFC2X3":
             return element.is_a("IfcSpatialStructureElement")
         return element.is_a("IfcSpatialElement")
+
+    @classmethod
+    def is_grid_axis(cls, element: ifcopenshell.entity_instance) -> bool:
+        return element.is_a("IfcGridAxis")
+
+    @classmethod
+    def reload_grid_decorator(cls) -> None:
+        axes = bpy.context.scene.BIMGridProperties.grid_axes
+        axes.clear()
+        for axis in tool.Ifc.get().by_type("IfcGridAxis"):
+            if obj := tool.Ifc.get_object(axis):
+                new = axes.add()
+                new.obj = obj
+        GridDecorator.install(bpy.context)
+
+    @classmethod
+    def reload_item_decorator(cls) -> None:
+        item_objs = bpy.context.scene.BIMGeometryProperties.item_objs
+        item_objs.clear()
+        ItemDecorator.install(bpy.context)
 
     @classmethod
     def link_object_data(cls, source_obj: bpy.types.Object, destination_obj: bpy.types.Object) -> None:

@@ -40,6 +40,15 @@ from bonsai.bim.helper import prop_with_search
 from collections.abc import Iterable
 
 
+class BIM_MT_type_manager_menu(bpy.types.Menu):
+    bl_label = "Type Manager Menu"
+    bl_idname = "BIM_MT_type_manager_menu"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.operator("bim.purge_unused_objects", text="Purge Unused Types", icon="TRASH").object_type = "TYPE"
+
+
 class LaunchTypeManager(bpy.types.Operator):
     bl_idname = "bim.launch_type_manager"
     bl_label = "Launch Type Manager"
@@ -67,8 +76,9 @@ class LaunchTypeManager(bpy.types.Operator):
         props = context.scene.BIMModelProperties
 
         row = self.layout.row(align=True)
-        prop_with_search(row, props, "type_class", text="")
-        row.operator("bim.purge_unused_types", icon="TRASH", text="")
+        prop_with_search(row, props, "type_class", text="", should_click_ok_to_validate=True)
+
+        row.menu("BIM_MT_type_manager_menu", text="", icon="PREFERENCES")
 
         columns = self.layout.column_flow(columns=3)
         row = columns.row()
@@ -158,19 +168,6 @@ class BIM_PT_authoring(Panel):
         row.operator("bim.generate_spaces_from_walls")
         row = self.layout.row(align=True)
         row.operator("bim.toggle_space_visibility")
-
-
-class BIM_PT_Grids(Panel):
-    bl_label = "Grids"
-    bl_idname = "BIM_PT_Grids"
-    bl_options = {"DEFAULT_CLOSED"}
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "scene"
-    bl_parent_id = "BIM_PT_tab_project_setup"
-
-    def draw(self, context):
-        self.layout.row().operator("mesh.add_grid", icon="ADD", text="Add Grids")
 
 
 class BIM_PT_array(bpy.types.Panel):
@@ -665,7 +662,6 @@ def add_menu(self, context):
 def add_mesh_object_menu(self, context):
     if context.mode == "OBJECT":
         self.layout.separator()
-        self.layout.operator("mesh.add_grid", icon_value=bonsai.bim.icons["IFC"].icon_id)
         self.layout.operator("mesh.add_stair", icon_value=bonsai.bim.icons["IFC"].icon_id, text="Stair (Untyped)")
         self.layout.operator("mesh.add_window", icon_value=bonsai.bim.icons["IFC"].icon_id, text="Window (Untyped)")
         self.layout.operator("mesh.add_door", icon_value=bonsai.bim.icons["IFC"].icon_id, text="Door (Untyped)")

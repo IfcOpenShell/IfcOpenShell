@@ -130,36 +130,10 @@ class Model(bonsai.core.tool.Model):
         if position is None:
             position = Matrix()
 
-        cls.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-
         helper = Helper(tool.Ifc.get())
-        indices = helper.auto_detect_arbitrary_profile_with_voids(obj, obj.data)
-
-        if isinstance(indices, tuple) and indices[0] is False:  # Ugly
-            return
-
-        cls.bm = bmesh.new()
-        cls.bm.from_mesh(obj.data)
-        cls.bm.verts.ensure_lookup_table()
-        cls.bm.edges.ensure_lookup_table()
-
-        if indices["inner_curves"]:
-            profile = tool.Ifc.get().createIfcArbitraryProfileDefWithVoids("AREA")
-        else:
-            profile = tool.Ifc.get().createIfcArbitraryClosedProfileDef("AREA")
-
-        if tool.Ifc.get().schema != "IFC2X3":
-            cls.points = cls.export_points(position, indices["points"])
-
-        profile.OuterCurve = cls.export_curve(position, indices["profile"])
-        if indices["inner_curves"]:
-            results = []
-            for inner_curve in indices["inner_curves"]:
-                results.append(cls.export_curve(position, inner_curve))
-            profile.InnerCurves = results
-
-        cls.bm.free()
-        return profile
+        result = helper.auto_detect_profiles(obj, obj.data, position)
+        if isinstance(result, dict) and result["profile_def"]:
+            return tool.Ifc.get().add(result["profile_def"])
 
     @classmethod
     def export_surface(cls, obj: bpy.types.Object) -> Union[ifcopenshell.entity_instance, None]:
@@ -290,13 +264,15 @@ class Model(bonsai.core.tool.Model):
         cls.arcs = []
         cls.circles = []
 
-        if profile.is_a("IfcArbitraryClosedProfileDef"):
-            cls.import_curve(obj, position, profile.OuterCurve)
-            if profile.is_a("IfcArbitraryProfileDefWithVoids"):
-                for inner_curve in profile.InnerCurves:
-                    cls.import_curve(obj, position, inner_curve)
-        elif profile.is_a() == "IfcRectangleProfileDef":
-            cls.import_rectangle(obj, position, profile)
+        profiles = profile.Profiles if profile.is_a("IfcCompositeProfileDef") else [profile]
+        for profile in profiles:
+            if profile.is_a("IfcArbitraryClosedProfileDef"):
+                cls.import_curve(obj, position, profile.OuterCurve)
+                if profile.is_a("IfcArbitraryProfileDefWithVoids"):
+                    for inner_curve in profile.InnerCurves:
+                        cls.import_curve(obj, position, inner_curve)
+            elif profile.is_a() == "IfcRectangleProfileDef":
+                cls.import_rectangle(obj, position, profile)
 
         mesh = bpy.data.meshes.new("Profile")
         mesh.from_pydata(cls.vertices, cls.edges, [])
@@ -456,7 +432,7 @@ class Model(bonsai.core.tool.Model):
         ifc_importer.material_creator.load_existing_materials()
         ifc_importer.create_generic_elements(set(openings))
         for opening_obj in ifc_importer.added_data.values():
-            bpy.context.scene.collection.objects.link(opening_obj)
+            tool.Collector.assign(opening_obj, should_clean_users_collection=False)
         return ifc_importer.added_data.values()
 
     @classmethod

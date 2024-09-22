@@ -184,6 +184,8 @@ def create_annotation():
         create_annotation_occurrence(bpy.context)
     else:
         object_type = props.object_type
+        if not bpy.ops.bim.add_annotation.poll():
+            return
         bpy.ops.bim.add_annotation(
             object_type=object_type, data_type=tool.Drawing.ANNOTATION_TYPES_DATA[object_type][-1]
         )
@@ -272,6 +274,10 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         return operator.description or ""
 
     def _execute(self, context):
+        if not (camera := context.scene.camera) or not tool.Ifc.get_entity(camera):
+            self.report({"ERROR"}, "No drawing active for annotation hotkeys.")
+            return {"CANCELLED"}
+
         self.props = context.scene.BIMAnnotationProperties
         getattr(self, f"hotkey_{self.hotkey}")()
 

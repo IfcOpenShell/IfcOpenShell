@@ -30,13 +30,13 @@ Updating
 
 We always recommend to use the latest version.
 
-Open up Blender, click on ``Edit > Preferences``, and select the **Get
-Extensions** tab. If an update is available, you will see a button next to the
+Open up Blender, click on :menuselection:`Topbar --> Edit --> Preferences -->
+Get Extensions`. If an update is available, you will see a button next to the
 **Bonsai** add-on.
 
 Updates are typically available every 2 months. If you need something more
-frequent, check out :ref:`devs/installation:unstable installation` which is
-updated every day.
+frequent, check out :ref:`guides/development/installation:Unstable
+installation` which is updated every day.
 
 .. image:: images/update.png
 
@@ -58,10 +58,10 @@ can `report a bug <https://github.com/ifcopenshell/ifcopenshell/issues>`_ or
    with factory settings.
 
    To quickly test in a clean environment, first :ref:`find your Blender
-   configuration folder<users/troubleshooting:Where is the add-on
+   configuration folder<guides/troubleshooting:Where is the add-on
    installed?>`.  Rename the folder from ``X.XX`` to something else like
    ``X.XX_backup``, then restart Blender and try follow the :doc:`installation
-   instructions</users/quickstart/installation>` again.
+   instructions</quickstart/installation>` again.
 
    If this fixes your issue, consider disabling other add-ons one by one until
    you find a conflict as a next step to isolating the issue.
@@ -94,10 +94,32 @@ Blender geometry that represents what the model might've looked at at some
 point. At worst, you might be looking at a completely wrong model.
 
 If you continue to open and save ``.blend`` files, you will run the risk of
-editing something that doesn't actually exist in your IFC model. This will
+editing something that doesn't actually exist in your IFC model (e.g you can
+meet an error similar to "RuntimeError: Instance #1234 not found"). This will
 create unpredictable, and sometimes unrecoverable errors.
 
 To avoid this issue, only open and save IFCs.
+
+Incompatible Blender features
+-----------------------------
+
+Blender offers features such as animation, sculpting, modifiers, and more that
+are not available in IFC. As :ref:`Bonsai uses IFC as its native data
+store<guides/troubleshooting:Saving and loading blend files>`, using these
+incompatible features may result in data loss.
+
+1. **Manual geometry editing**. Manually changing the mode to Edit or Object
+   mode in the :menuselection:`3D Viewport` top left dropdown menu. This
+   changes the Blender mesh editing mode, but any changes may be incompatible
+   with the IFC geometry. This is because IFC geometry may not be a mesh, or
+   have parametric constraints. Any changes made in this manner may have
+   unpredictable effects and changes may be discarded. Instead, always use the
+   :kbd:`Tab` key to toggle object editing, or use the IFC Object / Edit mode
+   toggle in the top right of the :menuselection:`3D Viewport`.
+2. **Object scaling**. Bonsai does not support scaled objects in IFC. Any
+   objects that have been scaled in object mode will have their scale reset to
+   1, and scaling an object may result in unpredictable operations. Instead,
+   scale objects within edit mode.
 
 Where is the add-on installed?
 ------------------------------

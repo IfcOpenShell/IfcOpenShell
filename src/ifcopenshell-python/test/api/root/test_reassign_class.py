@@ -16,9 +16,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell.api.aggregate
+import ifcopenshell.api.geometry
+import ifcopenshell.api.spatial
+import ifcopenshell.util.representation
 import test.bootstrap
-import ifcopenshell.api.type
+import ifcopenshell.api.pset
 import ifcopenshell.api.root
+import ifcopenshell.api.type
 import ifcopenshell.util.element
 
 
@@ -94,6 +99,102 @@ class TestReassignClass(test.bootstrap.IFC4):
         # original clases are gone
         assert len(self.file.by_type("IfcWall")) == 0
         assert len(self.file.by_type("IfcWallType")) == 0
+
+    # Switching between occurrence / type classes.
+    def test_unassign_type_from_occurrences_if_switching_from_type_class_to_occurrence_class(self):
+        element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        element1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element1], relating_type=element_type)
+        element2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element2], relating_type=element_type)
+
+        element_type = ifcopenshell.api.root.reassign_class(self.file, product=element_type, ifc_class="IfcSlab")
+
+        # Type is unassigned.
+        assert ifcopenshell.util.element.get_type(element1) is None
+        assert ifcopenshell.util.element.get_type(element2) is None
+        assert len(self.file.by_type("IfcRelDefinesByType")) == 0
+
+        assert len(self.file.by_type("IfcWall")) == 2
+        assert len(self.file.by_type("IfcSlab")) == 1
+
+    def test_unassign_type_from_element_if_switching_from_occurrence_class_to_type_class(self):
+        element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element], relating_type=element_type)
+
+        element = ifcopenshell.api.root.reassign_class(self.file, product=element, ifc_class="IfcSlabType")
+
+        # Type is unassigned.
+        assert ifcopenshell.util.element.get_types(element_type) == []
+        assert len(self.file.by_type("IfcRelDefinesByType")) == 0
+
+        assert len(self.file.by_type("IfcWallType")) == 1
+        assert len(self.file.by_type("IfcSlabType")) == 1
+
+    def test_unassigning_container_switching_from_occurrence_class_to_type_class(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        container = self.file.create_entity("IfcBuilding")
+        ifcopenshell.api.spatial.assign_container(self.file, products=[element], relating_structure=container)
+        element = ifcopenshell.api.root.reassign_class(self.file, product=element, ifc_class="IfcSlabType")
+
+        assert len(self.file.by_type("IfcRelContainedInSpatialStructure")) == 0
+        assert len(self.file.by_type("IfcWall")) == 0
+        assert len(self.file.by_type("IfcSlabType")) == 1
+
+    def test_unassigning_aggregate_switching_from_occurrence_class_to_type_class(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        aggregate = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcSlab")
+        ifcopenshell.api.aggregate.assign_object(self.file, products=[element], relating_object=aggregate)
+        element = ifcopenshell.api.root.reassign_class(self.file, product=element, ifc_class="IfcSlabType")
+
+        assert len(self.file.by_type("IfcRelAggregates")) == 0
+        assert len(self.file.by_type("IfcWall")) == 0
+        assert len(self.file.by_type("IfcSlabType")) == 1
+
+    def test_keeping_psets_switching_from_occurrence_class_to_type_class(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        pset = ifcopenshell.api.pset.add_pset(self.file, element, name="TestPset")
+        element = ifcopenshell.api.root.reassign_class(self.file, product=element, ifc_class="IfcSlabType")
+
+        assert ifcopenshell.util.element.get_pset(element, name="TestPset")["id"] == pset.id()
+        assert len(self.file.by_type("IfcRelDefinesByProperties")) == 0
+        assert len(self.file.by_type("IfcWall")) == 0
+        assert len(self.file.by_type("IfcSlabType")) == 1
+
+    def test_keeping_psets_switching_from_type_class_to_occurrence_class(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        pset = ifcopenshell.api.pset.add_pset(self.file, element, name="TestPset")
+        element = ifcopenshell.api.root.reassign_class(self.file, product=element, ifc_class="IfcSlab")
+
+        assert ifcopenshell.util.element.get_pset(element, name="TestPset")["id"] == pset.id()
+        assert len(self.file.by_type("IfcRelDefinesByProperties")) == 1
+        assert len(self.file.by_type("IfcWallType")) == 0
+        assert len(self.file.by_type("IfcSlab")) == 1
+
+    def test_keeping_representations_switching_from_occurrence_class_to_type_class(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        context = self.file.create_entity("IfcGeometricRepresentationContext")
+        representation = self.file.create_entity("IfcShapeRepresentation", ContextOfItems=context)
+        ifcopenshell.api.geometry.assign_representation(self.file, element, representation)
+        element = ifcopenshell.api.root.reassign_class(self.file, product=element, ifc_class="IfcSlabType")
+
+        assert ifcopenshell.util.representation.get_representation(element, context=context) == representation
+        assert len(self.file.by_type("IfcWall")) == 0
+        assert len(self.file.by_type("IfcSlabType")) == 1
+
+    def test_keeping_representations_switching_from_type_class_to_occurrence_class(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        context = self.file.create_entity("IfcGeometricRepresentationContext")
+        representation = self.file.create_entity("IfcShapeRepresentation", ContextOfItems=context)
+        representation.Items = [self.file.create_entity("IfcExtrudedAreaSolid")]
+        ifcopenshell.api.geometry.assign_representation(self.file, element, representation)
+        element = ifcopenshell.api.root.reassign_class(self.file, product=element, ifc_class="IfcSlab")
+
+        assert len(self.file.by_type("IfcRepresentationMap")) == 0
+        assert ifcopenshell.util.representation.get_representation(element, context=context) == representation
+        assert len(self.file.by_type("IfcWallType")) == 0
+        assert len(self.file.by_type("IfcSlab")) == 1
 
 
 class TestReassignClassIFC2X3(test.bootstrap.IFC2X3, TestReassignClass):

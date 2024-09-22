@@ -113,8 +113,9 @@ class BlenderImporter:
 
     def get_cache(self):
         cache_settings = ifcopenshell.geom.settings()
+        serializer_settings = ifcopenshell.geom.serializer_settings()
         try:
-            return ifcopenshell.geom.serializers.hdf5(self.cache_path, cache_settings)
+            return ifcopenshell.geom.serializers.hdf5(self.cache_path, cache_settings, serializer_settings)
         except:
             return
 

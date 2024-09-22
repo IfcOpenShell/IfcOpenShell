@@ -93,7 +93,7 @@ def update_ifc_stair_props(obj):
     props = obj.BIMStairProperties
     ifc_file = tool.Ifc.get()
 
-    if tool.Ifc.get_schema() != "IFC2X3":
+    if tool.Ifc.get_schema() != "IFC2X3" and element.is_a("IfcStairFlight"):
         element.PredefinedType = "STRAIGHT"
     number_of_risers = props.number_of_treads + 1
     # update IfcStairFlight properties (seems already deprecated but keep it for now)
@@ -198,6 +198,7 @@ class BIM_OT_add_stair(bpy.types.Operator, tool.Ifc.Operator):
 class AddStair(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_stair"
     bl_label = "Add Stair"
+    bl_description = "Add Bonsai parametric stair to the active IFC element"
     bl_options = {"REGISTER"}
 
     def _execute(self, context):

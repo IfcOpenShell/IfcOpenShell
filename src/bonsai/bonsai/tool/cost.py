@@ -288,12 +288,20 @@ class Cost(bonsai.core.tool.Cost):
         unit = ""
         for quantities in ifcopenshell.util.element.get_psets(product, qtos_only=True).values():
             for qto in tool.Ifc.get().by_id(quantities["id"]).Quantities or []:
-                for quantity in cost_item.CostQuantities:
+                for quantity in cost_item.CostQuantities or []:
                     if quantity == qto:
                         selected_quantitites.append(quantity)
                         if not unit:
                             unit = cls.get_quantity_unit_symbol(quantity)
         return selected_quantitites, unit
+
+    @classmethod
+    def get_assigned_product(cls, cost_item, quantity):
+        assigned_products = cls.get_cost_item_assignments(cost_item, filter_by_type="PRODUCT", is_deep=False)
+        for product in assigned_products:
+            assigned_quantities, _ = cls.get_assigned_quantities(cost_item, product)
+            if quantity in assigned_quantities:
+                return product
 
     @classmethod
     def get_products(cls, related_object_type: RELATED_OBJECT_TYPE) -> list[ifcopenshell.entity_instance]:
@@ -807,3 +815,79 @@ class Cost(bonsai.core.tool.Cost):
         return {
             "Currency": currency,
         }
+
+    @classmethod
+    def create_cost_schedule_json(cls, cost_schedule: ifcopenshell.entity_instance) -> dict:
+        from bonsai.bim.module.cost.data import CostSchedulesData
+
+        CostSchedulesData.load()
+        cost_items = CostSchedulesData.data["cost_items"]
+        data = []
+        for rel in cost_schedule.Controls or []:
+            for cost_item in rel.RelatedObjects or []:
+                cls.create_cost_item_json(cost_item, cost_items, data)
+        return data
+
+    @classmethod
+    def create_cost_item_json(cls, cost_item: ifcopenshell.entity_instance, cost_items: dict, data: list):
+        if cost_item.id() in cost_items.keys():
+            cost_item_data = cost_items[cost_item.id()]
+            cost_item_data["id"] = cost_item.id()
+            cost_item_data["name"] = cost_item.Name
+            cost_item_data["is_nested_by"] = []
+            cost_item_data["is_sum"] = cls.is_cost_item_sum(cost_item)
+            data.append(cost_item_data)
+        else:
+            return None
+        for rel in cost_item.IsNestedBy or []:
+            for sub_cost_item in rel.RelatedObjects or []:
+                cls.create_cost_item_json(sub_cost_item, cost_items, cost_item_data["is_nested_by"])
+
+    @classmethod
+    def is_cost_item_sum(cls, cost_item: ifcopenshell.entity_instance) -> bool:
+        cost_values = []
+        if cost_item.is_a("IfcCostItem"):
+            cost_values = cost_item.CostValues
+        elif cost_item.is_a("IfcCostValue"):
+            cost_values = cost_item.Components
+        for cost_value in cost_values or []:
+            if cost_value.Category == "*":
+                return True
+        return False
+
+    @classmethod
+    def currency(cls):
+        unit = tool.Unit.get_project_currency_unit()
+        if unit:
+            return {"id": unit.id(), "name": unit.Currency}
+
+    @classmethod
+    def generate_cost_schedule_browser(cls, cost_chedule) -> None:
+        if not bpy.context.scene.WebProperties.is_connected:
+            bpy.ops.bim.connect_websocket_server(page="costing")
+        tool.Web.load_cost_schedule_web_ui(cost_chedule)
+
+    @classmethod
+    def get_cost_quantities(cls, cost_item: ifcopenshell.entity_instance) -> dict:
+        results = {
+            "quantities": [],
+            "unit_symbol": None,
+        }
+        if not cost_item:
+            return results
+        results["quantity_type"] = cost_item.CostQuantities[0].is_a() if cost_item.CostQuantities else None
+        unit = (
+            ifcopenshell.util.unit.get_property_unit(cost_item.CostQuantities[0], tool.Ifc.get())
+            if cost_item.CostQuantities
+            else None
+        )
+        if unit:
+            results["unit_symbol"] = ifcopenshell.util.unit.get_unit_symbol(unit)
+        for quantity in cost_item.CostQuantities or []:
+            assigned_product = cls.get_assigned_product(cost_item, quantity)
+            info = quantity.get_info()
+            info["fromProduct"] = assigned_product.get_info(recursive=True) if assigned_product else None
+            results["quantities"].append(info)
+        if results["quantity_type"] == "IfcQuantityCount":
+            results["unit_symbol"] = "U"
+        return results

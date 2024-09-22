@@ -56,6 +56,12 @@ def get_type_predefined_type(self, context):
     return AuthoringData.data["type_predefined_type"]
 
 
+def get_type_template(self, context):
+    if not AuthoringData.is_loaded:
+        AuthoringData.load()
+    return AuthoringData.data["type_template"]
+
+
 def update_ifc_class(self, context):
     bpy.ops.bim.load_type_thumbnails(ifc_class=self.ifc_class)
     AuthoringData.data["relating_type_id"] = AuthoringData.relating_type_id()
@@ -71,6 +77,7 @@ def update_type_class(self, context):
     AuthoringData.data["next_page"] = AuthoringData.next_page()
     AuthoringData.data["paginated_relating_types"] = AuthoringData.paginated_relating_types()
     AuthoringData.data["type_predefined_type"] = AuthoringData.type_predefined_type()
+    AuthoringData.data["type_template"] = AuthoringData.type_template()
 
     type_class = self.type_class
     if (type_class, type_class, "") in get_ifc_class(self, context):
@@ -99,23 +106,6 @@ def is_object_array_applicable(self, obj):
     return ifcopenshell.util.element.get_pset(element, "BBIM_Array")
 
 
-class SnapMousePoint(PropertyGroup):
-    x: bpy.props.FloatProperty(name="X")
-    y: bpy.props.FloatProperty(name="Y")
-    z: bpy.props.FloatProperty(name="Z")
-    snap_type: bpy.props.StringProperty(name="Snap Type")
-
-
-class PolylinePoint(PropertyGroup):
-    x: bpy.props.FloatProperty(name="X")
-    y: bpy.props.FloatProperty(name="Y")
-    z: bpy.props.FloatProperty(name="Z")
-
-class PolylineMeasurement(PropertyGroup):
-    dim: bpy.props.StringProperty(name="Dimension")
-    angle: bpy.props.StringProperty(name="Angle")
-    position: bpy.props.FloatVectorProperty(name="Decorator Position", size=3)
-
 class BIMModelProperties(PropertyGroup):
     ifc_class: bpy.props.EnumProperty(items=get_ifc_class, name="Construction Class", update=update_ifc_class)
     relating_type_id: bpy.props.EnumProperty(
@@ -133,7 +123,7 @@ class BIMModelProperties(PropertyGroup):
         description="Code that will be evaluated to generate occurrence name for CUSTOM occurrence name style",
     )
     getter_enum = {"ifc_class": get_ifc_class, "relating_type": get_relating_type_id}
-    extrusion_depth: bpy.props.FloatProperty(min=0.001, default=42.0, subtype="DISTANCE")
+    extrusion_depth: bpy.props.FloatProperty(name="Extrusion Depth", min=0.001, default=42.0, subtype="DISTANCE")
     cardinal_point: bpy.props.EnumProperty(
         items=(
             # TODO: complain to buildingSMART
@@ -160,7 +150,7 @@ class BIMModelProperties(PropertyGroup):
         name="Cardinal Point",
         default="5",
     )
-    length: bpy.props.FloatProperty(default=42.0, subtype="DISTANCE")
+    length: bpy.props.FloatProperty(name="Length", default=42.0, subtype="DISTANCE")
     openings: bpy.props.CollectionProperty(type=ObjProperty)
     x: bpy.props.FloatProperty(name="X", default=0.5, subtype="DISTANCE", description="Size by X axis for the opening")
     y: bpy.props.FloatProperty(name="Y", default=0.5, subtype="DISTANCE", description="Size by Y axis for the opening")
@@ -183,34 +173,12 @@ class BIMModelProperties(PropertyGroup):
     x_angle: bpy.props.FloatProperty(name="X Angle", default=0, subtype="ANGLE", min=-pi / 180 * 89, max=pi / 180 * 89)
     type_page: bpy.props.IntProperty(name="Type Page", default=1, update=update_type_page)
     # fmt: off
-    type_template: bpy.props.EnumProperty(
-        items=(
-            ("MESH", "Custom Mesh", "Use as a representation currently active object mesh or default cube if no object selected"),
-            ("LAYERSET_AXIS2", "Vertical Layers", "For objects similar to walls, will automatically add IfcMaterialLayerSet"),
-            ("LAYERSET_AXIS3", "Horizontal Layers", "For objects similar to slabs, will automatically add IfcMaterialLayerSet"),
-            ("PROFILESET", "Extruded Profile", "Create profile type object, automatically defines IfcMaterialProfileSet with the first profile from library"),
-            ("EMPTY", "Non-Geometric Type", "Start with an empty object"),
-            ("WINDOW", "Window", "Parametric window"),
-            ("DOOR", "Door", "Parametric door"),
-            ("STAIR", "Stair", "Parametric stair"),
-            ("RAILING", "Railing", "Parametric railing"),
-            ("ROOF", "Roof", "Parametric roof"),
-            ("FLOW_SEGMENT_RECTANGULAR", "Rectangular Distribution Segment", "Works similarly to Profile, has distribution ports"),
-            ("FLOW_SEGMENT_CIRCULAR", "Circular Distribution Segment", "Works similarly to Profile, has distribution ports"),
-            ("FLOW_SEGMENT_CIRCULAR_HOLLOW", "Circular Hollow Distribution Segment", "Works similarly to Profile, has distribution ports"),
-        ),
-        name="Type Template",
-        default="MESH",
-    )
+    type_template: bpy.props.EnumProperty(items=get_type_template, name="Type Template", default=0)
     # fmt: on
     type_class: bpy.props.EnumProperty(items=get_type_class, name="IFC Class", update=update_type_class)
     type_predefined_type: bpy.props.EnumProperty(items=get_type_predefined_type, name="Predefined Type", default=None)
     type_name: bpy.props.StringProperty(name="Name", default="TYPEX")
     boundary_class: bpy.props.EnumProperty(items=get_boundary_class, name="Boundary Class")
-    snap_mouse_point: bpy.props.CollectionProperty(type=SnapMousePoint)
-    snap_mouse_ref: bpy.props.CollectionProperty(type=SnapMousePoint)
-    polyline_point: bpy.props.CollectionProperty(type=PolylinePoint)
-    polyline_measurement: bpy.props.CollectionProperty(type=PolylineMeasurement)
 
 
 class BIMArrayProperties(PropertyGroup):
@@ -794,3 +762,30 @@ class BIMRoofProperties(PropertyGroup):
 
     def update_percentage(self):
         self.percentage = math.tan(self.angle) * 100
+
+
+class SnapMousePoint(PropertyGroup):
+    x: bpy.props.FloatProperty(name="X")
+    y: bpy.props.FloatProperty(name="Y")
+    z: bpy.props.FloatProperty(name="Z")
+    snap_type: bpy.props.StringProperty(name="Snap Type")
+
+
+class PolylinePoint(PropertyGroup):
+    x: bpy.props.FloatProperty(name="X")
+    y: bpy.props.FloatProperty(name="Y")
+    z: bpy.props.FloatProperty(name="Z")
+
+
+class PolylineMeasurement(PropertyGroup):
+    dim: bpy.props.StringProperty(name="Dimension")
+    angle: bpy.props.StringProperty(name="Angle")
+    position: bpy.props.FloatVectorProperty(name="Decorator Position", size=3)
+
+
+class BIMPolylineProperties(PropertyGroup):
+    snap_mouse_point: bpy.props.CollectionProperty(type=SnapMousePoint)
+    snap_mouse_ref: bpy.props.CollectionProperty(type=SnapMousePoint)
+    polyline_point: bpy.props.CollectionProperty(type=PolylinePoint)
+    polyline_measurement: bpy.props.CollectionProperty(type=PolylineMeasurement)
+    product_preview: bpy.props.CollectionProperty(type=PolylinePoint)

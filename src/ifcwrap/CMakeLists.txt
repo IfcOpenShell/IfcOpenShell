@@ -57,7 +57,18 @@ if (WITH_CGAL)
 endif()
 
 SET_SOURCE_FILES_PROPERTIES(IfcPython.i PROPERTIES CPLUSPLUS ON)
+# Rebuild on changes in other .i files.
+SET_PROPERTY(
+	SOURCE IfcPython.i
+	PROPERTY DEPENDS
+		IfcGeomWrapper.i
+		IfcParseWrapper.i
+		utils/type_conversion.i
+		utils/typemaps_in.i
+		utils/typemaps_out.i
+)
 swig_add_library(ifcopenshell_wrapper LANGUAGE python SOURCES IfcPython.i)
+SET_PROPERTY(TARGET ${SWIG_MODULE_ifcopenshell_wrapper_REAL_NAME} PROPERTY SWIG_DEPENDS ${IFCOPENSHELL_LIBRARIES})
 if("$ENV{LDFLAGS}" MATCHES ".undefined.suppress")
 # On osx there is some state in the python dylib. With `-Wl,undefined,suppress` we can ignore the missing symbols at compile time.
 SWIG_LINK_LIBRARIES(ifcopenshell_wrapper ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${LIBSVGFILL})
@@ -111,10 +122,10 @@ IF((PYTHONINTERP_FOUND AND NOT "${PYTHON_EXECUTABLE}" STREQUAL "") OR PYTHON_MOD
         ENDFOREACH()
         INSTALL(FILES "${CMAKE_BINARY_DIR}/ifcwrap/ifcopenshell_wrapper.py"
                 DESTINATION "${python_package_dir}/ifcopenshell")
-        INSTALL(TARGETS _ifcopenshell_wrapper
+        INSTALL(TARGETS ${SWIG_MODULE_ifcopenshell_wrapper_REAL_NAME}
                 DESTINATION "${python_package_dir}/ifcopenshell")
 	if (MSVC)
-	    install(FILES $<TARGET_PDB_FILE:_ifcopenshell_wrapper> DESTINATION bin OPTIONAL)
+	    INSTALL(FILES $<TARGET_PDB_FILE:${SWIG_MODULE_ifcopenshell_wrapper_REAL_NAME}> DESTINATION bin OPTIONAL)
 	endif()
     ENDIF()
 ELSE()

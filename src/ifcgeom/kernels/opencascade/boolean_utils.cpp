@@ -978,7 +978,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 		return true;
 	}
 
-	if (Logger::LOG_NOTICE >= Logger::Verbosity()) {
+	if (!is_2d && Logger::LOG_NOTICE >= Logger::Verbosity()) {
 		PERF("preliminary manifoldness check");
 
 		if (!a.IsNull()) {

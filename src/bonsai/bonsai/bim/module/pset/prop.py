@@ -243,6 +243,7 @@ class PsetProperties(PropertyGroup):
     properties: CollectionProperty(name="Properties", type=IfcProperty)
     pset_name: EnumProperty(items=get_pset_name, name="Pset Name")
     qto_name: EnumProperty(items=get_qto_name, name="Qto Name")
+    # Proposed property.
     prop_name: StringProperty(name="Property Name", default="MyProperty")
     prop_value: StringProperty(name="Property Value", default="Some Value")
 

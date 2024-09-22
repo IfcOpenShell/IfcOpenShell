@@ -88,6 +88,7 @@ def name_callback(obj, data):
 def active_object_callback():
     refresh_ui_data()
     update_bim_tool_props()
+    tool.Geometry.sync_item_positions()
 
 
 def update_bim_tool_props():

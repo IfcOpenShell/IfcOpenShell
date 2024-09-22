@@ -117,6 +117,7 @@ std::pair<char const*, size_t> vector_to_buffer(const T& t) {
 	// @this is really annoying, but apparently inheritance
 	// is lost in swig in the shared_ptr type hiearchy
 	using namespace ifcopenshell::geometry::taxonomy;
+	if (!$1) $1 = try_upcast<boolean_result>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__boolean_result_t);
 	if (!$1) $1 = try_upcast<bspline_curve>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__bspline_curve_t);
 	if (!$1) $1 = try_upcast<bspline_surface>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__bspline_surface_t);
 	if (!$1) $1 = try_upcast<circle>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__circle_t);
@@ -150,10 +151,52 @@ std::pair<char const*, size_t> vector_to_buffer(const T& t) {
 std::string taxonomy_item_repr(ifcopenshell::geometry::taxonomy::item::ptr i) {
 	std::ostringstream oss;
 	i->print(oss);
-	return oss.str();
+	std::string result = oss.str();
+
+	// Strip new line at the end of the printed result.
+	// result is probably always ends with \n but just to be safe.
+	if (!result.empty() && result.back() == '\n') {
+		result.pop_back();
+	}
+	return result;  
 }
 %}
 
+%{
+
+
+namespace {
+    // Helper function to create a Python tuple from an Eigen matrix/vector
+    template <typename T>
+    PyObject* eigen_to_python_tuple(const Eigen::MatrixBase<T>& mat) {
+        constexpr auto rows = T::RowsAtCompileTime;
+        constexpr auto cols = T::ColsAtCompileTime;
+
+        if constexpr (rows == 1 || cols == 1) {
+            // Eigen::Vector (1D array)
+            PyObject* tuple = PyTuple_New(rows * cols);
+            for (int i = 0; i < mat.size(); ++i) {
+                PyTuple_SetItem(tuple, i, PyFloat_FromDouble(mat(i)));
+            }
+            return tuple;
+        } else {
+            // Eigen::Matrix (2D array)
+            PyObject* tuple = PyTuple_New(rows);
+            for (int i = 0; i < rows; ++i) {
+                PyObject* row = PyTuple_New(cols);
+                for (int j = 0; j < cols; ++j) {
+                    PyTuple_SetItem(row, j, PyFloat_FromDouble(mat(i, j)));
+                }
+                PyTuple_SetItem(tuple, i, row);
+            }
+            return tuple;
+        }
+    }
+}
+
+%}
+
+%shared_ptr(ifcopenshell::geometry::taxonomy::boolean_result);
 %shared_ptr(ifcopenshell::geometry::taxonomy::item);
 %shared_ptr(ifcopenshell::geometry::taxonomy::implicit_item);
 %shared_ptr(ifcopenshell::geometry::taxonomy::piecewise_function);
@@ -203,6 +246,7 @@ std::string taxonomy_item_repr(ifcopenshell::geometry::taxonomy::item::ptr i) {
 %include "../ifcgeom/Iterator.h"
 %include "../ifcgeom/GeometrySerializer.h"
 %include "../ifcgeom/taxonomy.h"
+%include "../ifcgeom/piecewise_function_evaluator.h"
 
 %include "../serializers/SvgSerializer.h"
 %include "../serializers/HdfSerializer.h"
@@ -223,46 +267,85 @@ std::string taxonomy_item_repr(ifcopenshell::geometry::taxonomy::item::ptr i) {
 	}
 }
 
-%extend ifcopenshell::geometry::taxonomy::point3 {
-	PyObject* coords_() const {
-		auto result = PyTuple_New(3);
-		for (int i = 0; i < 3; ++i) {
-			PyTuple_SET_ITEM(result, i, PyFloat_FromDouble($self->ccomponents().data()[i]));
-		}
-		return result;
+
+%define assign_component_acccess(item_name)
+
+%extend ifcopenshell::geometry::taxonomy::item_name {
+	PyObject* components_() const {
+		return eigen_to_python_tuple(self->ccomponents());
 	}
 
 	%pythoncode %{
-		coords = property(coords_)
+		components = property(components_)
 	%}
-}
+};
 
-%extend ifcopenshell::geometry::taxonomy::direction3 {
-	// @todo refactor in macro
-	PyObject* coords_() const {
-		auto result = PyTuple_New(3);
-		for (int i = 0; i < 3; ++i) {
-			PyTuple_SET_ITEM(result, i, PyFloat_FromDouble($self->ccomponents().data()[i]));
-		}
-		return result;
-	}
+%enddef
 
-	%pythoncode %{
-		coords = property(coords_)
-	%}
-}
+assign_component_acccess(point3);
+assign_component_acccess(direction3);
+assign_component_acccess(matrix4);
+assign_component_acccess(colour);
 
+%define assign_children_access(item_name, children_type)
 
-%extend ifcopenshell::geometry::taxonomy::loop {
-	const std::vector<ifcopenshell::geometry::taxonomy::edge::ptr>& children_() const {
+%extend ifcopenshell::geometry::taxonomy::item_name {
+	// swig does not accept auto here as the return type
+	const std::vector<ifcopenshell::geometry::taxonomy::children_type::ptr>& children_() const {
 		return $self->children;
+	}
+
+	const ifcopenshell::geometry::taxonomy::children_type::ptr& __getitem__(int index) const {
+		if (index < 0 || index >= $self->children.size()) {
+			throw std::runtime_error("Index " + std::to_string(index) + " is out of bounds for an array of length " + std::to_string($self->children.size()));
+		}
+		return $self->children[index];
 	}
 
 	%pythoncode %{
 		children = property(children_)
+		def __iter__(self):
+			return iter(self.children)
 	%}
-}
+};
 
+%enddef
+
+assign_children_access(collection, geom_item);
+assign_children_access(loop, edge);
+assign_children_access(face, loop);
+assign_children_access(shell, face);
+assign_children_access(solid, shell);
+assign_children_access(loft, geom_item);
+assign_children_access(boolean_result, geom_item);
+
+%define assign_matrix_access(item_name)
+
+%extend ifcopenshell::geometry::taxonomy::item_name {
+	// swig does not accept auto here as the return type
+	const ifcopenshell::geometry::taxonomy::matrix4::ptr& matrix_() const {
+		return $self->matrix;
+	}
+
+	%pythoncode %{
+		matrix = property(matrix_)
+	%}
+};
+
+%enddef
+
+assign_matrix_access(line);
+assign_matrix_access(circle);
+assign_matrix_access(ellipse);
+assign_matrix_access(collection);
+assign_matrix_access(solid);
+assign_matrix_access(face);
+assign_matrix_access(plane);
+assign_matrix_access(cylinder);
+assign_matrix_access(sphere);
+assign_matrix_access(torus);
+assign_matrix_access(extrusion);
+assign_matrix_access(revolve);
 
 %extend ifcopenshell::geometry::Settings {
 	void set_(const std::string& name, bool val) {
@@ -290,6 +373,9 @@ std::string taxonomy_item_repr(ifcopenshell::geometry::taxonomy::item::ptr i) {
 		return $self->set(name, val);
 	}
 	void set_(const std::string& name, const std::set<std::string>& val) {
+		return $self->set(name, val);
+	}
+	void set_(const std::string& name, const std::vector<double>& val) {
 		return $self->set(name, val);
 	}
 	ifcopenshell::geometry::Settings::value_variant_t get_(const std::string& name) {
@@ -595,8 +681,17 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 
     %pythoncode %{
         # Hide the getters with read-only property implementations
-        id = property(id)
-        faces = property(faces)
+        faces_tri = property(faces)
+        polyhedral_faces_without_holes = property(polyhedral_faces_without_holes)
+        polyhedral_faces_with_holes = property(polyhedral_faces_with_holes)
+        def get_faces(self):
+            if self.faces_tri: 
+                return self.faces_tri
+            elif self.polyhedral_faces_without_holes:
+                return self.polyhedral_faces_without_holes
+            else:
+                return self.polyhedral_faces_with_holes
+        faces = property(get_faces)
         edges = property(edges)
         material_ids = property(material_ids)
         materials = property(materials)
@@ -614,10 +709,16 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
     %}
 };
 
-%extend IfcGeom::Representation::Serialization {
+%extend IfcGeom::Representation::Representation {
 	%pythoncode %{
         # Hide the getters with read-only property implementations
         id = property(id)
+	%}
+};
+
+%extend IfcGeom::Representation::Serialization {
+	%pythoncode %{
+        # Hide the getters with read-only property implementations
         brep_data = property(brep_data)
         surface_styles = property(surface_styles)
         surface_style_ids = property(surface_style_ids)
@@ -1131,6 +1232,7 @@ ifcopenshell::geometry::taxonomy::item::ptr try_upcast(PyObject* obj0, swig_type
 
 %enddef
 
+assign_repr(ifcopenshell::geometry::taxonomy::boolean_result)
 assign_repr(ifcopenshell::geometry::taxonomy::bspline_curve)
 assign_repr(ifcopenshell::geometry::taxonomy::bspline_surface)
 assign_repr(ifcopenshell::geometry::taxonomy::circle)
@@ -1158,5 +1260,6 @@ assign_repr(ifcopenshell::geometry::taxonomy::sphere)
 assign_repr(ifcopenshell::geometry::taxonomy::torus)
 assign_repr(ifcopenshell::geometry::taxonomy::style)
 assign_repr(ifcopenshell::geometry::taxonomy::sweep_along_curve)
+
 
 #endif

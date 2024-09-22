@@ -807,6 +807,28 @@ void mapping::initialize_units_() {
     if (settings_.get<settings::SiteLocalPlacement>().get()) {
         placement_rel_to_type_ = file_->schema()->declaration_by_name("IfcSite");
     }
+
+    // Translation is applied first, then rotation.
+    if (settings_.get<ModelOffset>().has()) {
+        auto vs = settings_.get<ModelOffset>().get();
+        if (vs.size() == 3) {
+            offset_and_rotation_ *= Eigen::Affine3d(Eigen::Translation3d(vs[0], vs[1], vs[2])).matrix();
+        } else {
+            Logger::Error("Expected 3 values for model-offset setting");
+        }
+    }
+
+    if (settings_.get<ModelRotation>().has()) {
+        auto vs = settings_.get<ModelRotation>().get();
+        if (vs.size() == 4) {
+            auto m3 = Eigen::Quaterniond(vs[0], vs[1], vs[2], vs[3]).matrix();
+            Eigen::Matrix4d m4 = Eigen::Matrix4d::Identity();
+            m4 << m3;
+            offset_and_rotation_ *= m4;
+        } else {
+            Logger::Error("Expected 4 values for model-rotation setting");
+        }
+    }
 }
 
 void mapping::initialize_settings() {

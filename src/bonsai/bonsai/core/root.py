@@ -86,7 +86,7 @@ def assign_class(
             obj=obj, context=context, ifc_representation_class=ifc_representation_class, profile_set_usage=None
         )
 
-    if default_container := root.get_default_container():
+    if not root.is_drawing_annotation(element) and (default_container := root.get_default_container()):
         if root.is_spatial_element(element):
             ifc.run("aggregate.assign_object", products=[element], relating_object=default_container)
         elif root.is_containable(element):

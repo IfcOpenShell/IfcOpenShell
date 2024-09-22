@@ -17,15 +17,24 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 
-def parse_express(debug, filename):
+from __future__ import annotations
+from typing import TYPE_CHECKING, Optional
+
+if TYPE_CHECKING:
+    import bpy
+    import ifcopenshell
+    import bonsai.tool as tool
+
+
+def parse_express(debug: tool.Debug, filename: str) -> None:
     debug.add_schema_identifier(debug.load_express(filename))
 
 
-def purge_hdf5_cache(debug):
+def purge_hdf5_cache(debug: tool.Debug) -> None:
     debug.purge_hdf5_cache()
 
 
-def purge_unused_elements(ifc, debug, ifc_class):
+def purge_unused_elements(ifc, debug: tool.Debug, ifc_class: str) -> int:
     ifc_file = ifc.get()
     unused_elements = [i for i in ifc_file.by_type(ifc_class) if ifc_file.get_total_inverses(i) == 0]
     unused_elements_amount = len(unused_elements)

@@ -19,6 +19,7 @@
 import bpy
 import bmesh
 import ifcopenshell
+import ifcopenshell.util.schema
 import bonsai.core.tool
 import bonsai.tool as tool
 from test.bim.bootstrap import NewFile
@@ -391,12 +392,11 @@ class TestCreatingStyles(NewFile):
         ), f"Failed to match pixels for {n_components}.\nBlender pixel_data: {image_node.image.pixels[:]}.\nExpected data: {expected_pixel_data}"
 
 
-class TestLoadingIndexedTextureMap(NewFile):
-    def test_run(self):
+class TestLoadingIndexedMap(NewFile):
+    def test_load_texture_map(self):
         bpy.context.scene.unit_settings.length_unit = "MILLIMETERS"
         bpy.ops.bim.create_project()
 
-        # TODO: replace with loading geometry from IFC
         # create a cube without uv and triangulate it
         mesh = bpy.data.meshes.new("Cube")
         bm = tool.Blender.get_bmesh_for_mesh(mesh, clean=True)
@@ -408,31 +408,7 @@ class TestLoadingIndexedTextureMap(NewFile):
         builder = ShapeBuilder(ifc_file)
 
         # tesselated cube
-        points = (
-            V(-1000, -1000, -1000),
-            V(-1000, -1000, 1000),
-            V(-1000, 1000, -1000),
-            V(-1000, 1000, 1000),
-            V(1000, -1000, -1000),
-            V(1000, -1000, 1000),
-            V(1000, 1000, -1000),
-            V(1000, 1000, 1000),
-        )
-        faces = (
-            (1, 2, 0),
-            (3, 6, 2),
-            (7, 4, 6),
-            (5, 0, 4),
-            (6, 0, 2),
-            (3, 5, 7),
-            (1, 3, 2),
-            (3, 7, 6),
-            (7, 5, 4),
-            (5, 1, 0),
-            (6, 4, 0),
-            (3, 1, 5),
-        )
-        face_set = builder.polygonal_face_set(points, faces)
+        face_set = builder.polygonal_face_set([v.co for v in mesh.vertices], [p.vertices[:] for p in mesh.polygons])
 
         uv_indices = (
             (1, 2, 3),
@@ -493,9 +469,78 @@ class TestLoadingIndexedTextureMap(NewFile):
         texture_coord.TexCoordIndex = uv_indices
         texture_coord.TexCoords = uv_verts_list
 
-        subject.load_indexed_texture_map(texture_coord, mesh)
+        subject.load_indexed_map(texture_coord, mesh)
 
         uv_layer = mesh.uv_layers.active
         assert uv_layer is not None
         for ifc_uv, blender_uv in zip(uv_verts, uv_layer.uv, strict=True):
             assert tool.Cad.are_vectors_equal(Vector(ifc_uv), blender_uv.vector)
+
+    def test_load_color_map(self):
+        bpy.context.scene.unit_settings.length_unit = "MILLIMETERS"
+        bpy.ops.bim.create_project()
+
+        # create a cube without uv and triangulate it
+        mesh = bpy.data.meshes.new("Cube")
+        bm = tool.Blender.get_bmesh_for_mesh(mesh, clean=True)
+        bmesh.ops.create_cube(bm, size=2.0, calc_uvs=False)
+        bmesh.ops.triangulate(bm, faces=bm.faces[:])
+        tool.Blender.apply_bmesh(mesh, bm)
+
+        ifc_file = tool.Ifc.get()
+        builder = ShapeBuilder(ifc_file)
+
+        # tesselated cube
+        face_set = builder.polygonal_face_set([v.co for v in mesh.vertices], [p.vertices[:] for p in mesh.polygons])
+
+        colors = ((1.0, 0.0, 0.0), (0.0, 0.5, 0.0), (1.0, 1.0, 0.0))
+        color_index = (0, 0, 0, 0, 2, 1, 0, 0, 0, 0, 2, 1)
+
+        ifc_colors_list = ifc_file.create_entity("IfcColourRgbList", colors)
+        colour_map = ifc_file.create_entity("IfcIndexedColourMap")
+        colour_map.MappedTo = face_set
+        colour_map.Colours = ifc_colors_list
+        colour_map.ColourIndex = [i + 1 for i in color_index]
+
+        subject.load_indexed_map(colour_map, mesh)
+
+        layer = mesh.color_attributes.active_color
+        assert layer is not None
+        for face_i, face in enumerate(mesh.polygons):
+            for loop_i in face.loop_indices:
+                blender_color = Vector(layer.data[loop_i].color)
+                ifc_color = Vector(colors[color_index[face_i]] + (1.0,))
+                assert tool.Cad.are_vectors_equal(blender_color, ifc_color)
+
+
+class TestSetupActiveBsddClassification(NewFile):
+    def run_test(self, schema: ifcopenshell.util.schema.IFC_SCHEMA) -> None:
+        schema_ = "IFC4X3_ADD2" if schema == "IFC4X3" else schema
+        bpy.context.scene.BIMProjectProperties.export_schema = schema_
+        bpy.ops.bim.create_project()
+        ifc_file = tool.Ifc.get()
+        name = "CCI Construction"
+        base_uri = "https://identifier.buildingsmart.org/uri/molio/cciconstruction/1.0"
+        if schema == "IFC2X3":
+            uri = "https://identifier.buildingsmart.org/uri/molio/cciconstruction/1.0/class/A-BDC"
+            classification = ifc_file.create_entity("IfcClassification", Name=name)
+            ifc_file.create_entity("IfcClassificationReference", Location=uri, ReferencedSource=classification)
+        else:
+            attr_name = "Specification" if schema == "IFC4X3" else "Location"
+            classification = ifc_file.create_entity("IfcClassification", Name=name)
+            setattr(classification, attr_name, base_uri)
+        filepath = "test/files/temp/test.ifc"
+        ifc_file.write(filepath)
+        bpy.ops.bim.load_project(filepath=filepath)
+        props = bpy.context.scene.BIMBSDDProperties
+        assert props.active_domain == name
+        assert props.active_uri == base_uri
+
+    def test_set_load_and_set_active_bsdd_ifc2x3(self):
+        self.run_test("IFC2X3")
+
+    def test_set_load_and_set_active_bsdd_ifc4(self):
+        self.run_test("IFC4")
+
+    def test_set_load_and_set_active_bsdd_ifc4x3(self):
+        self.run_test("IFC4X3")

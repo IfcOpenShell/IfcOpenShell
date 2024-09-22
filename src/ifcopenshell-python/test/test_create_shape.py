@@ -19,6 +19,7 @@ class TestGeomSettings:
         assert settings.get("use-python-opencascade") is False
         assert "USE_PYTHON_OPENCASCADE = False" in repr(settings)
 
+        # Testing both new and old ways of setting geometry settings.
         if ifcopenshell.geom.has_occ:
             settings.set("use-python-opencascade", True)
             settings.set(settings.USE_PYTHON_OPENCASCADE, True)

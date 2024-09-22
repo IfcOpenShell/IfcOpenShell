@@ -26,6 +26,7 @@ from .. import wrap_usecases
 from .add_arbitrary_profile import add_arbitrary_profile
 from .add_arbitrary_profile_with_voids import add_arbitrary_profile_with_voids
 from .add_parameterized_profile import add_parameterized_profile
+from .copy_profile import copy_profile
 from .edit_profile import edit_profile
 from .remove_profile import remove_profile
 
@@ -35,6 +36,7 @@ __all__ = [
     "add_arbitrary_profile",
     "add_arbitrary_profile_with_voids",
     "add_parameterized_profile",
+    "copy_profile",
     "edit_profile",
     "remove_profile",
 ]

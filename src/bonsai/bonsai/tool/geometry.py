@@ -22,13 +22,16 @@ import struct
 import hashlib
 import logging
 import numpy as np
+import multiprocessing
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.grid
 import ifcopenshell.geom
 import ifcopenshell.guid
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.system
+import ifcopenshell.util.placement
 import bonsai.core.tool
 import bonsai.core.drawing
 import bonsai.core.geometry
@@ -92,16 +95,52 @@ class Geometry(bonsai.core.tool.Geometry):
         bpy.data.meshes.remove(data)
 
     @classmethod
+    def is_locked(cls, element: ifcopenshell.entity_instance) -> bool:
+        if element.is_a("IfcProject"):
+            return True
+        elif tool.Root.is_spatial_element(element) and bpy.context.scene.BIMSpatialDecompositionProperties.is_locked:
+            return True
+        elif (
+            element.is_a("IfcPositioningElement") or element.is_a("IfcGrid") or element.is_a("IfcGridAxis")
+        ) and bpy.context.scene.BIMGridProperties.is_locked:
+            return True
+        return False
+
+    @classmethod
+    def lock_object(cls, obj: bpy.types.Object) -> None:
+        obj.lock_location = (True, True, True)
+        obj.lock_rotation = (True, True, True)
+
+    @classmethod
+    def unlock_object(cls, obj: bpy.types.Object) -> None:
+        obj.lock_location = (False, False, False)
+        obj.lock_rotation = (False, False, False)
+
+    @classmethod
+    def delete_ifc_item(cls, obj: bpy.types.Object) -> None:
+        props = bpy.context.scene.BIMGeometryProperties
+        if len(props.item_objs) == 1:
+            return
+        for i, item_obj in enumerate(props.item_objs):
+            if item_obj.obj == obj:
+                props.item_objs.remove(i)
+                break
+        item = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+        cls.remove_representation_item(item)
+        cls.reload_representation(props.representation_obj)
+        bpy.data.objects.remove(obj)
+
+    @classmethod
     def delete_ifc_object(cls, obj: bpy.types.Object) -> None:
         element = tool.Ifc.get_entity(obj)
         if not element:
             return
-        if element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
+        elif element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
             return bonsai.core.drawing.remove_drawing(tool.Ifc, tool.Drawing, drawing=element)
-        if element.is_a("IfcRelSpaceBoundary"):
+        elif element.is_a("IfcRelSpaceBoundary"):
             ifcopenshell.api.run("boundary.remove_boundary", tool.Ifc.get(), boundary=element)
             return bpy.data.objects.remove(obj)
-        if element.is_a("IfcGridAxis"):
+        elif element.is_a("IfcGridAxis"):
             is_last_axis = False
             # Deleting the last W axis is OK
             if ((grid := element.PartOfU) and len(grid[0].UAxes) == 1) or (
@@ -112,6 +151,12 @@ class Geometry(bonsai.core.tool.Geometry):
                 return
             ifcopenshell.api.run("grid.remove_grid_axis", tool.Ifc.get(), axis=element)
             return bpy.data.objects.remove(obj)
+        elif element.is_a("IfcGrid"):
+            axes = list(element.UAxes or []) + list(element.VAxes or []) + list(element.WAxes or [])
+            for axis in axes:
+                if axis_obj := tool.Ifc.get_object(axis):
+                    bpy.data.objects.remove(axis_obj)
+                ifcopenshell.api.grid.remove_grid_axis(tool.Ifc.get(), axis=axis)
 
         collection = obj.BIMObjectProperties.collection
         if collection:
@@ -138,7 +183,7 @@ class Geometry(bonsai.core.tool.Geometry):
                 if element.VoidsElements:
                     bpy.ops.bim.remove_opening(opening_id=element.id())
         else:
-            is_spatial = element.is_a("IfcSpatialElement") or element.is_a("IfcSpatialStructureElement")
+            is_spatial = tool.Root.is_spatial_element(element)
             if getattr(element, "HasOpenings", None):
                 for rel in element.HasOpenings:
                     bpy.ops.bim.remove_opening(opening_id=rel.RelatedOpeningElement.id())
@@ -155,12 +200,23 @@ class Geometry(bonsai.core.tool.Geometry):
                 bonsai.core.spatial.import_spatial_decomposition(tool.Spatial)
         try:
             obj.name
+            if bpy.context.scene.BIMGeometryProperties.representation_obj == obj:
+                bpy.context.scene.BIMGeometryProperties.representation_obj = None
             bpy.data.objects.remove(obj)
         except:
             pass
 
     @classmethod
     def dissolve_triangulated_edges(cls, obj: bpy.types.Object) -> None:
+        # AdvancedBreps may contain non-faceted, curved faces (e.g. as part of
+        # a cylinder) so dissolving edges should not be allowed.
+        mesh_element = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+        if (
+            mesh_element.is_a("IfcShapeRepresentation")
+            and ifcopenshell.util.representation.resolve_representation(mesh_element).RepresentationType
+            == "AdvancedBrep"
+        ) or mesh_element.is_a("IfcAdvancedBrep"):
+            return
         if obj.data and "ios_edges" in obj.data:
             bm = bmesh.new()
             bm.from_mesh(obj.data)
@@ -364,6 +420,11 @@ class Geometry(bonsai.core.tool.Geometry):
             return tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
 
     @classmethod
+    def get_data_representation(cls, data: bpy.types.Mesh) -> ifcopenshell.entity_instance | None:
+        if hasattr(data, "BIMMeshProperties") and data.BIMMeshProperties.ifc_definition_id:
+            return tool.Ifc.get().by_id(data.BIMMeshProperties.ifc_definition_id)
+
+    @classmethod
     def get_active_representation_context(cls, obj: bpy.types.Object) -> ifcopenshell.entity_instance:
         active_representation = tool.Geometry.get_active_representation(obj)
         if active_representation:
@@ -382,20 +443,13 @@ class Geometry(bonsai.core.tool.Geometry):
 
     @classmethod
     def get_representations_iter(cls, element: ifcopenshell.entity_instance) -> Iterator[ifcopenshell.entity_instance]:
-        if element.is_a("IfcProduct") and (rep := element.Representation):
-            for r in rep.Representations:
-                yield r
-        elif element.is_a("IfcTypeProduct") and (maps := element.RepresentationMaps):
-            for r in maps:
-                yield r.MappedRepresentation
+        return ifcopenshell.util.representation.get_representations_iter(element)
 
     @classmethod
     def get_representation_by_context(
         cls, element: ifcopenshell.entity_instance, context: ifcopenshell.entity_instance
     ) -> Union[ifcopenshell.entity_instance, None]:
-        for r in cls.get_representations_iter(element):
-            if r.ContextOfItems == context:
-                return r
+        return ifcopenshell.util.representation.get_representation(element, context)
 
     @classmethod
     def get_cartesian_point_coordinate_offset(cls, obj: bpy.types.Object) -> Union[Vector, None]:
@@ -572,61 +626,119 @@ class Geometry(bonsai.core.tool.Geometry):
         return False
 
     @classmethod
-    def import_representation(
+    def reimport_element_representations(
         cls, obj: bpy.types.Object, representation: ifcopenshell.entity_instance, apply_openings: bool = True
     ) -> Union[bpy.types.Mesh, bpy.types.Curve]:
+        element = tool.Ifc.get_entity(obj)
+        assert element
+
+        elements = set()
+        element_types = set()
+        representation = ifcopenshell.util.representation.resolve_representation(representation)
+        context = representation.ContextOfItems
+        for mapped_element in ifcopenshell.util.element.get_elements_by_representation(tool.Ifc.get(), representation):
+            if mapped_element.is_a("IfcTypeProduct"):
+                element_types.add(mapped_element)
+            else:
+                elements.add(mapped_element)
+                if element_type := ifcopenshell.util.element.get_type(mapped_element):
+                    element_types.add(element_type)
+
         logger = logging.getLogger("ImportIFC")
         ifc_import_settings = bonsai.bim.import_ifc.IfcImportSettings.factory(bpy.context, None, logger)
-        element = tool.Ifc.get_entity(obj)
-        assert element  # Type checker.
         settings = ifcopenshell.geom.settings()
         settings.set("weld-vertices", True)
         settings.set("apply-default-materials", False)
+        settings.set("layerset-first", True)
         settings.set("keep-bounding-boxes", True)
-        context = representation.ContextOfItems
+        settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
 
         ifc_importer = bonsai.bim.import_ifc.IfcImporter(ifc_import_settings)
         ifc_importer.file = tool.Ifc.get()
 
-        # create_shape doesn't support point cloud representations.
-        if representation.RepresentationType in ("PointCloud", "Point"):
-            mesh = tool.Loader.create_point_cloud_mesh(representation)
-            if mesh is None:
-                raise Exception(f"Failed to process point cloud representation: {representation}.")
-            return mesh
+        # TODO support fallbacks like for point clouds
 
-        if element.is_a("IfcTypeProduct"):
-            # You may only specify a single representation when creating shapes for types
-            try:
-                shape = ifcopenshell.geom.create_shape(settings, representation)
-            except:
-                settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
-                shape = ifcopenshell.geom.create_shape(settings, representation)
+        settings.set("context-ids", [context.id()])
+        if not apply_openings:
+            settings.set("disable-opening-subtractions", True)
+
+        shape = None
+        if elements:
+            iterator = ifcopenshell.geom.iterator(
+                settings, tool.Ifc.get(), multiprocessing.cpu_count(), include=elements
+            )
         else:
-            if not apply_openings:
-                settings.set("disable-opening-subtractions", True)
+            iterator = None  # For example, when switching representation of a type with no occurrences
+        meshes = {}
+        if iterator and iterator.initialize():
+            while True:
+                shape = iterator.get()
+                element = tool.Ifc.get().by_id(shape.id)
+                if obj := tool.Ifc.get_object(element):
+                    mesh_name = tool.Loader.get_mesh_name_from_shape(shape.geometry)
+                    mesh = meshes.get(mesh_name)
+                    if mesh is None:
+                        # Duplicate code
+                        representation = tool.Ifc.get().by_id(int(shape.geometry.id.split("-")[0]))
+                        if element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
+                            mesh = tool.Loader.create_camera(element, representation, shape)
+                        if element.is_a("IfcAnnotation") and ifc_importer.is_curve_annotation(element):
+                            mesh = ifc_importer.create_curve(element, shape)
+                        elif shape:
+                            mesh = ifc_importer.create_mesh(element, shape)
+                            ifc_importer.material_creator.load_existing_materials()
+                            shape_has_openings = cls.does_shape_has_openings(shape)
+                            ifc_importer.material_creator.create(element, obj, mesh, shape_has_openings)
+                            mesh.BIMMeshProperties.has_openings_applied = apply_openings
+                            if not shape_has_openings:
+                                tool.Loader.load_indexed_colour_map(representation, mesh)
+                        tool.Loader.link_mesh(shape, mesh)
+                        meshes[mesh_name] = mesh
 
-            if context.ContextIdentifier == "Body" and context.TargetView == "MODEL_VIEW":
-                try:
-                    shape = ifcopenshell.geom.create_shape(settings, element, representation)
-                except:
-                    settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
-                    shape = ifcopenshell.geom.create_shape(settings, element, representation)
-            else:
-                settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
-                shape = ifcopenshell.geom.create_shape(settings, element, representation)
+                    old_mesh = obj.data
+                    cls.change_object_data(obj, mesh, is_global=False)
+                    cls.record_object_materials(obj)
+                    if not cls.has_data_users(old_mesh):
+                        cls.delete_data(old_mesh)
+                    cls.clear_modifiers(obj)
+                    cls.clear_cache(element)
 
-        if element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
-            mesh = tool.Loader.create_camera(element, representation, shape)
-        if element.is_a("IfcAnnotation") and ifc_importer.is_curve_annotation(element):
-            mesh = ifc_importer.create_curve(element, shape)
-        elif shape:
-            mesh = ifc_importer.create_mesh(element, shape)
-            ifc_importer.material_creator.load_existing_materials()
-            ifc_importer.material_creator.create(element, obj, mesh)
-            mesh.BIMMeshProperties.has_openings_applied = apply_openings
+                if not iterator.next():
+                    break
 
-        return mesh
+        for element in element_types:
+            if obj := tool.Ifc.get_object(element):
+                if representation := ifcopenshell.util.representation.get_representation(element, context):
+                    geometry = ifcopenshell.geom.create_shape(settings, representation)
+                    mesh_name = tool.Loader.get_mesh_name_from_shape(geometry)
+                    mesh = meshes.get(mesh_name)
+                    if mesh is None:
+                        # Duplicate code
+                        representation = tool.Ifc.get().by_id(int(geometry.id.split("-")[0]))
+                        if geometry:
+                            mesh = ifc_importer.create_mesh(element, geometry)
+                            ifc_importer.material_creator.load_existing_materials()
+                            shape_has_openings = False
+                            ifc_importer.material_creator.create(element, obj, mesh, shape_has_openings)
+                            mesh.BIMMeshProperties.has_openings_applied = apply_openings
+                            if not shape_has_openings:
+                                tool.Loader.load_indexed_colour_map(representation, mesh)
+                        tool.Loader.link_mesh(geometry, mesh)
+                        meshes[mesh_name] = mesh
+
+                    old_mesh = obj.data
+                    cls.change_object_data(obj, mesh, is_global=False)
+                    cls.record_object_materials(obj)
+                    if not cls.has_data_users(old_mesh):
+                        cls.delete_data(old_mesh)
+                    cls.clear_modifiers(obj)
+                    cls.clear_cache(element)
+
+    @classmethod
+    def does_shape_has_openings(
+        cls, shape: Union[ifcopenshell.geom.ShapeElementType, ifcopenshell.geom.ShapeType]
+    ) -> bool:
+        return "openings" in getattr(shape, "geometry", shape).id
 
     @classmethod
     def import_representation_parameters(cls, data: bpy.types.Mesh) -> None:
@@ -723,6 +835,10 @@ class Geometry(bonsai.core.tool.Geometry):
         return False
 
     @classmethod
+    def is_meshlike_item(cls, item: ifcopenshell.entity_instance) -> bool:
+        return item.is_a("IfcTessellatedItem") or item.is_a("IfcManifoldSolidBrep")
+
+    @classmethod
     def is_profile_based(cls, data: bpy.types.Mesh) -> bool:
         return data.BIMMeshProperties.subshape_type == "PROFILE"
 
@@ -730,6 +846,14 @@ class Geometry(bonsai.core.tool.Geometry):
     def is_swept_profile(cls, representation: ifcopenshell.entity_instance) -> bool:
         return ifcopenshell.util.representation.resolve_representation(representation).RepresentationType in (
             "SweptSolid",
+        )
+
+    @classmethod
+    def is_representation_item(cls, obj: bpy.types.Object) -> bool:
+        return (
+            obj.data
+            and (ifc_id := obj.data.BIMMeshProperties.ifc_definition_id)
+            and tool.Ifc.get().by_id(ifc_id).is_a("IfcRepresentationItem")
         )
 
     @classmethod
@@ -1020,12 +1144,16 @@ class Geometry(bonsai.core.tool.Geometry):
                     representation = inverse
 
         if styled_item:
+            consider_inverses.remove(styled_item)
             ifc_file.remove(styled_item)
         if layer and len(layer.Items) == 1:
-            ifc_file.remove(styled_item)
+            consider_inverses.remove(layer)
+            ifc_file.remove(layer)
         if colour:
+            consider_inverses.remove(colour)
             ifcopenshell.util.element.remove_deep2(ifc_file, colour)
         if texture:
+            consider_inverses.remove(texture)
             ifcopenshell.util.element.remove_deep2(ifc_file, texture)
 
         for shape_aspect in shape_aspects:
@@ -1277,3 +1405,70 @@ class Geometry(bonsai.core.tool.Geometry):
         use_immediate_repr = apply_openings and bool(getattr(element, "HasOpenings", None))
         use_immediate_repr = use_immediate_repr or cls.has_material_style_override(element)
         return use_immediate_repr
+
+    @classmethod
+    def get_elements_by_representation(cls, representation):
+        return ifcopenshell.util.element.get_elements_by_representation(tool.Ifc.get(), representation)
+
+    @classmethod
+    def sync_item_positions(cls):
+        props = bpy.context.scene.BIMGeometryProperties
+        if not props.representation_obj:
+            return
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        rep_obj = props.representation_obj
+        rep_matrix_i = rep_obj.matrix_world.inverted()
+        builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
+        has_changed = False
+        for item_obj in props.item_objs:
+            obj = item_obj.obj
+            item = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+            if item.is_a("IfcSweptAreaSolid"):
+                if not tool.Ifc.is_moved(obj):
+                    continue
+                has_changed = True
+                old_position = item.Position
+                if np.allclose(np.array(obj.matrix_world), np.array(rep_obj.matrix_world), atol=1e-4):
+                    if old_position:
+                        item.Position = None
+                        ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_position)
+                    continue
+                rel_matrix = rep_matrix_i @ obj.matrix_world
+                rel_matrix.translation /= unit_scale
+                item.Position = builder.create_axis2_placement_3d_from_matrix(np.array(rel_matrix))
+                if old_position:
+                    ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_position)
+        if has_changed:
+            cls.reload_representation(rep_obj)
+
+    @classmethod
+    def import_item_attributes(cls, obj: bpy.types.Object) -> None:
+        props = obj.data.BIMMeshProperties
+        props.item_attributes.clear()
+        item = tool.Ifc.get().by_id(props.ifc_definition_id)
+        if item.is_a("IfcExtrudedAreaSolid"):
+            new = props.item_attributes.add()
+            new.name = "Depth"
+            new.float_value = item.Depth
+
+    @classmethod
+    def import_item(cls, obj: bpy.types.Object) -> None:
+        props = bpy.context.scene.BIMGeometryProperties
+        tool.Loader.settings.contexts = ifcopenshell.util.representation.get_prioritised_contexts(tool.Ifc.get())
+        tool.Loader.settings.context_settings = tool.Loader.create_settings()
+        tool.Loader.settings.gross_context_settings = tool.Loader.create_settings(is_gross=True)
+        item = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+        geometry = tool.Loader.create_generic_shape(item)
+        obj.data.clear_geometry()
+        tool.Loader.convert_geometry_to_mesh(geometry, obj.data)
+
+        if item.is_a("IfcSweptAreaSolid"):
+            cls.record_object_position(obj)
+            if item.Position:
+                unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+                position = Matrix(ifcopenshell.util.placement.get_axis2placement(item.Position).tolist())
+                position.translation *= unit_scale
+                position_i = position.inverted()
+                obj.matrix_world = props.representation_obj.matrix_world @ position
+                for vert in obj.data.vertices:
+                    vert.co = position_i @ vert.co

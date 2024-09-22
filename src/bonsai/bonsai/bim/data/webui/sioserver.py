@@ -1,6 +1,6 @@
 import sys
 import os
-import webbrowser
+
 
 bonsai_lib_path = os.environ.get("BONSAI_LIB_PATH")
 bonsai_version = os.environ.get("BONSAI_VERSION")
@@ -13,12 +13,15 @@ from aiohttp import web
 import socketio
 import pystache
 import json
+import base64
+import xml.etree.ElementTree as ET
 
 sio_port = 8080  # default port
 
 sio = socketio.AsyncServer(
     cors_allowed_origins="*",
     async_mode="aiohttp",
+    max_http_buffer_size=10000000
 )
 app = web.Application()
 sio.attach(app)
@@ -38,9 +41,9 @@ class WebNamespace(socketio.AsyncNamespace):
 
     async def on_connect(self, sid, environ):
         print(f"Web client connected: {sid}")
+        await sio.emit("theme_data", blender_theme, namespace="/web", room=sid)
         if blender_messages:
             await sio.emit("connected_clients", list(blender_messages.keys()), namespace="/web", room=sid)
-            await sio.emit("theme_data", blender_theme, namespace="/web", room=sid)
             await self.send_cached_messages(sid)
 
     async def on_disconnect(self, sid):
@@ -55,11 +58,9 @@ class WebNamespace(socketio.AsyncNamespace):
         )
 
     async def on_get_svg(self, sid, data):
-        print("hello world!")
         file_path = data["path"]
-        with open(file_path, "r") as file:
-            svg_data = file.read()
-        await sio.emit("svg_data", svg_data, room=sid, namespace="/web")
+        svg = await self.process_svg(file_path)
+        await sio.emit("svg_data", svg, room=sid, namespace="/web")
 
     async def send_cached_messages(self, sid):
         # Send cached messages to the connected web client
@@ -70,6 +71,38 @@ class WebNamespace(socketio.AsyncNamespace):
                 await self.emit("gantt_data", {"blenderId": blenderId, "data": messages["gantt_data"]}, room=sid)
             if "demo_data" in messages:
                 await self.emit("demo_data", {"blenderId": blenderId, "data": messages["demo_data"]}, room=sid)
+            if 'cost_items' in messages:
+                await self.emit("cost_items", {"blenderId": blenderId, "data": messages["cost_items"]}, room=sid)
+
+    async def process_svg(self, file_path):
+        def encode_image(filepath):
+            # Encode file content to base64 string
+            with open(filepath, "rb") as file:
+                encoded_string = base64.b64encode(file.read()).decode("utf-8")
+            return f"data:image;base64,{encoded_string}"
+
+        file_dir = os.path.dirname(file_path)
+
+        ET.register_namespace("", "http://www.w3.org/2000/svg")
+        ET.register_namespace("xlink", "http://www.w3.org/1999/xlink")
+
+        tree = ET.parse(file_path)
+        root = tree.getroot()
+
+        namespaces = {
+            "svg": "http://www.w3.org/2000/svg",
+            "xlink": "http://www.w3.org/1999/xlink",
+        }
+
+        for element in root.findall(".//svg:image[@xlink:href]", namespaces):
+            href = element.get("{http://www.w3.org/1999/xlink}href")
+            if href and href.endswith((".png", ".svg", ".jpeg")):
+                img_path = os.path.join(file_dir, href)
+                if os.path.exists(img_path):
+                    base64_data = encode_image(img_path)
+                    element.set("{http://www.w3.org/1999/xlink}href", base64_data)
+        return ET.tostring(root, "unicode")
+
 
 # Blender namespace
 class BlenderNamespace(socketio.AsyncNamespace):
@@ -115,16 +148,55 @@ class BlenderNamespace(socketio.AsyncNamespace):
         blender_theme = data
         await sio.emit("theme_data", data, namespace="/web")
 
-
-    # this function will be called when the event demo_data is emitted 
+    # this function will be called when the event demo_data is emitted
     async def on_demo_data(self, sid, data):
         print(f"Demo data from Blender client {sid}")
         blender_messages[sid]["demo_data"] = data
         await sio.emit("demo_data", {"blenderId": sid, "data": data}, namespace="/web")
 
+    async def on_work_schedule_info(self, sid, data):
+        print(f"Work schedule info from Blender client {sid}")
+        blender_messages[sid]["work_schedule_info"] = data
+        await sio.emit("work_schedule_info", {"blenderId": sid, "data": data}, namespace="/web")
+
+    async def on_cost_items(self, sid, data):
+        print(f"Cost items data from Blender client {sid}")
+        blender_messages[sid]["cost_items"] = data
+        await sio.emit("cost_items", {"blenderId": sid, "data": data}, namespace="/web")
+
+    async def on_cost_schedules(self, sid, data):
+        print(f"Cost schedule info from Blender client {sid}")
+        blender_messages[sid]["cost_schedules"] = data
+        await sio.emit("cost_schedules", {"blenderId": sid, "data": data}, namespace="/web")
+
+    async def on_cost_values(self, sid, data):
+        print(f"Cost values from Blender client {sid}")
+        blender_messages[sid]["cost_values"] = data
+        await sio.emit("cost_values", {"blenderId": sid, "data": data}, namespace="/web")
+
+    async def on_cost_value(self, sid, data):
+        print(f"Cost values from Blender client {sid}")
+        blender_messages[sid]["cost_value"] = data
+        await sio.emit("cost_value", {"blenderId": sid, "data": data}, namespace="/web")
+
+    async def on_predefined_types(self, sid, data):
+        print(f"Predefined types from Blender client {sid}")
+        blender_messages[sid]["predefined_types"] = data
+        await sio.emit("predefined_types", {"blenderId": sid, "data": data}, namespace="/web")
+    
+    async def on_quantities(self, sid, data):
+        print(f"Selected products from Blender client {sid}")
+        blender_messages[sid]["quantities"] = data
+        await sio.emit("quantities", {"blenderId": sid, "data": data}, namespace="/web")
 
 async def schedules(request):
     with open("templates/index.html", "r") as f:
+        template = f.read()
+    html_content = pystache.render(template, {"port": sio_port, "version": bonsai_version})
+    return web.Response(text=html_content, content_type="text/html")
+
+async def costing(request):
+    with open("templates/costing.html", "r") as f:
         template = f.read()
     html_content = pystache.render(template, {"port": sio_port, "version": bonsai_version})
     return web.Response(text=html_content, content_type="text/html")
@@ -179,6 +251,7 @@ sio.register_namespace(BlenderNamespace("/blender"))
 app.router.add_get("/", schedules)
 app.router.add_get("/documentation", documentation)
 app.router.add_get("/sequencing", sequencing)
+app.router.add_get("/costing", costing)
 app.router.add_get("/demo", demo)
 
 # Add static files

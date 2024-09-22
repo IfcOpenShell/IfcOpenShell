@@ -229,7 +229,7 @@ def get_shape_bbox_centroid(shape: ShapeType, geometry: ShapeType) -> npt.NDArra
     return (get_shape_matrix(shape) @ np.array([*centroid, 1.0]))[0:3]
 
 
-def get_vertices(geometry: ShapeType) -> npt.NDArray[np.float64]:
+def get_vertices(geometry: ShapeType, is_2d: bool = False) -> npt.NDArray[np.float64]:
     """Get all the vertices as a numpy array
 
     Vertices are in local coordinates.
@@ -238,9 +238,12 @@ def get_vertices(geometry: ShapeType) -> npt.NDArray[np.float64]:
 
     :param geometry: Geometry output calculated by IfcOpenShell
     :type geometry: geometry
+    :param is_2d: Set to True to to get XY coordinates only.
     :return: A numpy array listing all the vertices. Each vertex is a numpy array with XYZ coordinates.
     :rtype: np.array[np.array[float]]
     """
+    if is_2d:
+        return np.frombuffer(geometry.verts_buffer, "d").reshape(-1, 3)[:, :2]
     return np.frombuffer(geometry.verts_buffer, "d").reshape(-1, 3)
 
 
@@ -275,6 +278,26 @@ def get_faces(geometry: ShapeType) -> npt.NDArray[np.int32]:
     :rtype: np.array[np.array[int]]
     """
     return np.frombuffer(geometry.faces_buffer, dtype="i").reshape(-1, 3)
+
+
+def get_material_colors(geometry: ShapeType) -> npt.NDArray[np.float64]:
+    """Get material colors as a numpy array.
+
+    :return: A numpy array listing RGBA color for each shape's material.
+    """
+    # colors_buffer comes from geometry.materials and doesn't account
+    # for colors that can be set by some other way (e.g. IfcIndexedColourMap).
+    return np.frombuffer(geometry.colors_buffer, dtype="d").reshape(-1, 4)
+
+
+def get_normals(geometry: ShapeType) -> npt.NDArray[np.float64]:
+    """Get vertex normals as a numpy array.
+
+    See geometry settings documentation for settings that affect normals.
+
+    :return: A numpy array listing normal for each shape vertex.
+    """
+    return np.frombuffer(geometry.normals_buffer, dtype="d").reshape(-1, 3)
 
 
 def get_representation_item_ids(geometry: ShapeType) -> npt.NDArray[np.int32]:
