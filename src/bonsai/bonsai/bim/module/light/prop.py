@@ -182,6 +182,9 @@ class RadianceExporterProperties(PropertyGroup):
         if self.ifc_file:
             self.ifc_file = bpy.path.abspath(self.ifc_file)
 
+    def get_categories(self, context):
+        return sorted([(k, k, "") for k in spectraldb.keys()])
+
     def add_material_mapping(self, style_id, style_name):
         item = self.materials.add()
         item.name = style_name
@@ -265,12 +268,12 @@ class RadianceExporterProperties(PropertyGroup):
             print(f"Material '{active_material.name}' mapped to {self.category} - {self.subcategory}")
 
     category: bpy.props.EnumProperty(
-        items=categories, name="Category", description="Material category", update=update_material_mapping
+        items=get_categories, name="Category", description="Material category", update=update_material_mapping
     )
 
     def get_subcategories(self, context):
         if self.category in spectraldb:
-            return [(k, k, "") for k in spectraldb[self.category].keys()]
+            return sorted([(k, k, "") for k in spectraldb[self.category].keys()])
         return []
 
     subcategory: bpy.props.EnumProperty(
@@ -339,9 +342,10 @@ class RadianceExporterProperties(PropertyGroup):
         name="Output File Format",
         description="Format of the output image file",
         items=[
-            ("HDR", "HDR + Tiff", "High Dynamic Range"),
+            ("HDR", "HDR", "High Dynamic Range (HDR) file only"),
+            ("HDR_TIFF", "HDR + Tiff", "High Dynamic Range (HDR) and Tiff files"),
         ],
-        default="HDR",
+        default="HDR_TIFF",
     )
 
     use_hdr: BoolProperty(
