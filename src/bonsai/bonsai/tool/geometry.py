@@ -1472,3 +1472,16 @@ class Geometry(bonsai.core.tool.Geometry):
                 obj.matrix_world = props.representation_obj.matrix_world @ position
                 for vert in obj.data.vertices:
                     vert.co = position_i @ vert.co
+
+    @classmethod
+    def disable_item_mode(cls):
+        props = bpy.context.scene.BIMGeometryProperties
+        if props.representation_obj:
+            props.representation_obj.hide_set(False)
+            cls.unlock_object(props.representation_obj)
+            cls.sync_item_positions()
+            props.is_changing_mode = True
+            if props.mode != "OBJECT":
+                props.mode = "OBJECT"
+            props.is_changing_mode = False
+        props.representation_obj = None

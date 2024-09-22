@@ -42,16 +42,22 @@ def get_contexts(self, context):
 def update_mode(self, context):
     if self.is_changing_mode:
         return
-    if self.mode == "OBJECT":
-        if self.representation_obj:
-            tool.Geometry.unlock_object(self.representation_obj)
-            tool.Geometry.sync_item_positions()
-        self.representation_obj = None
-        bpy.ops.bim.override_mode_set_object("INVOKE_DEFAULT")
-    elif self.mode == "ITEM":
-        bpy.ops.bim.import_representation_items()
-    elif self.mode == "EDIT":
-        bpy.ops.bim.override_mode_set_edit("INVOKE_DEFAULT")
+    if context.mode.startswith("EDIT"):
+        if self.mode == "OBJECT":
+            bpy.ops.bim.override_mode_set_object("INVOKE_DEFAULT")
+            tool.Geometry.disable_item_mode()
+        elif self.mode == "ITEM":
+            bpy.ops.bim.override_mode_set_object("INVOKE_DEFAULT")
+        elif self.mode == "EDIT":
+            pass
+    else:
+        if self.mode == "OBJECT":
+            tool.Geometry.disable_item_mode()
+        elif self.mode == "ITEM":
+            if not self.representation_obj:
+                bpy.ops.bim.import_representation_items()
+        elif self.mode == "EDIT":
+            bpy.ops.bim.override_mode_set_edit("INVOKE_DEFAULT")
 
 
 def update_representation_obj(self, context):
