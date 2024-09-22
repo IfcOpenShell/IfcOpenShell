@@ -20,6 +20,7 @@ import bpy
 from . import ui, prop, operator, workspace
 
 classes = (
+    operator.ShowLoads,
     operator.LoadStructuralAnalysisModels,
     operator.DisableStructuralAnalysisModelEditingUI,
     operator.AddStructuralAnalysisModel,
@@ -83,6 +84,7 @@ classes = (
     ui.BIM_PT_connected_structural_members,
     ui.BIM_UL_structural_analysis_models,
     ui.BIM_UL_structural_activities,
+    ui.BIM_PT_show_structural_activities,
     ui.BIM_PT_structural_load_cases,
     ui.BIM_UL_structural_loads,
     ui.BIM_PT_structural_loads,
