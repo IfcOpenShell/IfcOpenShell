@@ -231,6 +231,9 @@ class RadianceExporterProperties(PropertyGroup):
         if self.ifc_file:
             self.ifc_file = bpy.path.abspath(self.ifc_file)
 
+    def get_categories(self, context):
+        return sorted([(k, k, "") for k in spectraldb.keys()])
+
     def add_material_mapping(self, style_id: str, style_name: str) -> RadianceMaterial:
         item = self.materials.add()
         item.name = style_name
@@ -314,16 +317,13 @@ class RadianceExporterProperties(PropertyGroup):
             print(f"Material '{active_material.name}' mapped to {self.category} - {self.subcategory}")
 
     category: bpy.props.EnumProperty(
-        items=categories, name="Category", description="Material category", update=update_material_mapping
+        items=get_categories, name="Category", description="Material category", update=update_material_mapping
     )
 
     def get_subcategories(self, context: bpy.types.Context) -> tool.Blender.BLENDER_ENUM_ITEMS:
-        global SUBCATEGORIES_ENUM_ITEMS
         if self.category in spectraldb:
-            SUBCATEGORIES_ENUM_ITEMS = [(k, k, "") for k in spectraldb[self.category].keys()]
-        else:
-            SUBCATEGORIES_ENUM_ITEMS = []
-        return SUBCATEGORIES_ENUM_ITEMS
+            return sorted([(k, k, "") for k in spectraldb[self.category].keys()])
+        return []
 
     subcategory: bpy.props.EnumProperty(
         items=get_subcategories, name="Subcategory", description="Material subcategory", update=update_material_mapping
@@ -391,9 +391,10 @@ class RadianceExporterProperties(PropertyGroup):
         name="Output File Format",
         description="Format of the output image file",
         items=[
-            ("HDR", "HDR + Tiff", "High Dynamic Range"),
+            ("HDR", "HDR", "High Dynamic Range (HDR) file only"),
+            ("HDR_TIFF", "HDR + Tiff", "High Dynamic Range (HDR) and Tiff files"),
         ],
-        default="HDR",
+        default="HDR_TIFF",
     )
 
     use_hdr: BoolProperty(
