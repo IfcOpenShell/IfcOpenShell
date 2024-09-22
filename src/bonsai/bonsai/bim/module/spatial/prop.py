@@ -111,6 +111,8 @@ def update_grid_is_locked(self, context):
                 tool.Geometry.lock_object(obj)
             else:
                 tool.Geometry.unlock_object(obj)
+    # Need to update ViewportData.mode.
+    bonsai.bim.handler.refresh_ui_data()
 
 
 def update_spatial_is_locked(self, context):
