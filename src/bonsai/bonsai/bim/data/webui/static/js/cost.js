@@ -29,6 +29,7 @@ function connectSocket() {
   socket.on("cost_values", handleCostValuesData);
   socket.on("cost_value", handleCostValueData);
   socket.on("quantities", handleEditQuantities);
+  socket.on("classification", handleClassificationData);
 }
 
 function handleEditQuantities(data) {
@@ -324,6 +325,7 @@ function handleCostItemsData(data) {
       addSummaryCostItem: addSummaryCostItem,
       enableEditingQuantities: enableEditingQuantities,
       addSumCostValue: addSumCostValue,
+      enableEditingClassification: enableEditingClassification,
     },
   });
 }
@@ -369,6 +371,55 @@ function getCostSchedules(blenderId) {
 
 function enableEditingCostValues(costItemId) {
   executeOperator({ type: "enableEditingCostValues", costItemId: costItemId });
+}
+
+function enableEditingClassification(costItemId) {
+  executeOperator({
+    type: "enableEditingClassification",
+    costItemId: costItemId,
+  });
+}
+
+function removeClassificationReference(costItemId, classificationId) {
+  executeOperator({
+    type: "removeClassificationReference",
+    costItemId: costItemId,
+    classificationId: classificationId,
+  });
+}
+
+function addClassificationReference(
+  costItemId,
+  classificationName,
+  classificationId
+) {
+  executeOperator({
+    type: "addClassificationReference",
+    costItemId: costItemId,
+    classificationName: classificationName,
+    classificationId: classificationId,
+  });
+}
+
+function handleClassificationData(data) {
+  const costClassifications =
+    data.data["classification"]["cost_classifications"];
+  const classificationElements =
+    data.data["classification"]["classification_data"];
+  const classificationName = data.data["classification"]["classification_name"];
+  const costItemId = data.data["classification"]["cost_item_id"];
+
+  CostUI.createCostClassificationWindow({
+    classificationName,
+    classificationElements,
+    costClassifications,
+    costItemId,
+    callbacks: {
+      enableEditingClassification: enableEditingClassification,
+      removeClassificationReference: removeClassificationReference,
+      addClassificationReference: addClassificationReference,
+    },
+  });
 }
 
 function enableEditingQuantities(costItemId) {

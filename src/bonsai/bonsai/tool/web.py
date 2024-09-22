@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from  ifcopenshell.util.classification import get_classification_data, get_references
 import ifcopenshell.util.cost
 import bpy
 from bonsai.bim.module.web.data import WebData
@@ -42,6 +43,7 @@ from pathlib import Path
 import bonsai.core.sequence
 import bonsai.core.cost
 from ifc5d.ifc2json import ifc5D2json
+from bonsai.bim.ifc import IfcStore
 
 sio = None
 ws_process = None
@@ -499,6 +501,43 @@ class Web(bonsai.core.tool.Web):
             cost_schedule = tool.Cost.get_cost_schedule(cost_item)
             cls.load_cost_schedule_web_ui(cost_schedule)
             cls.load_cost_item_quantities_ui(cost_item)
+        if operator_data["type"] == "enableEditingClassification":
+            cost_item = ifc_file.by_id(operator_data["costItemId"])
+            cost_classifications = []
+            for reference in get_references(cost_item):
+                cost_classification_data = reference.get_info()
+                del cost_classification_data["ReferencedSource"]
+                cost_classifications.append(cost_classification_data)
+            classification_data, classification_name = get_classification_data(IfcStore.classification_file)
+            data = {
+                    "classification_data": classification_data,
+                    "classification_name": classification_name,
+                    "cost_item_id": cost_item.id(),
+                    "cost_classifications": cost_classifications,
+                }
+            cls.send_webui_data(
+                data=data,
+                data_key="classification",
+                event="classification",
+            )
+        if operator_data["type"] == "removeClassificationReference":
+            cost_item = ifc_file.by_id(operator_data["costItemId"])
+            cost_schedule = tool.Cost.get_cost_schedule(cost_item)
+            reference = ifc_file.by_id(operator_data["classificationId"])            
+            tool.Ifc.run("classification.remove_reference", products=[cost_item], reference=reference)
+            cls.load_cost_schedule_web_ui(cost_schedule)
+        if operator_data["type"] == "addClassificationReference":
+            cost_item = ifc_file.by_id(operator_data["costItemId"])
+            cost_schedule = tool.Cost.get_cost_schedule(cost_item)
+            classification = None
+            classification_name = operator_data["classificationName"]
+            for element in tool.Ifc.get().by_type("IfcClassification"):
+                if element.Name == classification_name:
+                    classification = element
+                    break
+            reference = IfcStore.classification_file.by_id(operator_data["classificationId"])
+            tool.Ifc.run("classification.add_reference", products=[cost_item], reference=reference, classification=classification)
+            cls.load_cost_schedule_web_ui(cost_schedule)
 
     @classmethod
     def load_cost_item_quantities_ui(cls, cost_item: ifcopenshell.entity_instance) -> None:

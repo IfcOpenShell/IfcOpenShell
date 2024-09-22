@@ -192,7 +192,6 @@ body {
   flex: 1;
   overflow: auto;
   border: 2px solid #254e3c;
-  /* shadow to the top */
   box-shadow: 0 -5px 5px -0 #254e3c;
 }
 
@@ -307,10 +306,9 @@ form input, form select {
   font-size: 12px;
   line-height: 10px;
   font-size: inherit;
-  width: 100%;
   height: 100%;
   max-height: 30px;
-  max-width: 250px;
+  max-width: 100%;
   box-sizing: border-box;  
 }
 
@@ -420,4 +418,81 @@ td {
 
 i {
   margin-right: 5px;
+}
+
+.classificationView {
+  border-left: 5px solid #28a745;
+  min-height: 200px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 5px;
+  max-height: 400px;
+}
+
+.selected {
+  border-color: #28a745;
+  outline: none;
+  box-shadow: 0 0 0 3px #28a745;
+  color: #ddd;
+}
+
+.selectedClassificationText {
+  color: #28a745;
+  
+}
+
+.back-button {
+  margin-bottom: 20px;
+}
+
+.back-button:disabled {
+  cursor: not-allowed;
+  background-color: #ccc;
+}
+
+
+.classification-cell{
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+}
+
+.classification{
+  height: 100%;
+}
+
+#column-selector {
+  display: flex;
+  flex-direction: column;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  max-width: 100%;
+  font-family: Arial, sans-serif;
+  height: 10vh;
+  overflow-y: auto;
+}
+
+#column-selector label {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+}
+
+#column-selector input[type="checkbox"] {
+  margin-right: 10px;
+}
+
+#column-selector label:hover {
+  background-color: var(--highlight-over);
+}
+
+#column-selector label:last-child {
+  margin-bottom: 0;
 }
