@@ -454,7 +454,7 @@ class RadianceRender(bpy.types.Operator):
         output_file_format = props.output_file_format
 
         global scene
-        
+
         start_time = time.time()
         cwd_saved = os.getcwd()
         os.chdir(output_dir)
