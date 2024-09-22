@@ -16,29 +16,27 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import datetime
-import json
-import os
-from math import pi, radians
-from typing import TYPE_CHECKING, Literal, Union
-
 import bpy
 import pytz
 import tzfpy
+import json
+import datetime
+import bonsai.tool as tool
+from typing import TYPE_CHECKING, Literal, Union
+from math import radians, pi
+from mathutils import Euler, Vector, Matrix, Quaternion
 from bpy.props import (
-    BoolProperty,
-    CollectionProperty,
+    IntProperty,
+    StringProperty,
     EnumProperty,
     FloatProperty,
     FloatVectorProperty,
-    IntProperty,
+    BoolProperty,
+    CollectionProperty,
     PointerProperty,
-    StringProperty,
 )
+import os
 from bpy.types import PropertyGroup
-from mathutils import Euler, Matrix, Quaternion, Vector
-
-import bonsai.tool as tool
 from bonsai.bim.module.light.data import SolarData
 from bonsai.bim.module.light.decorator import SolarDecorator
 
@@ -224,6 +222,7 @@ class RadianceMaterial(PropertyGroup):
 
 
 class RadianceExporterProperties(PropertyGroup):
+
     def update_output_dir(self, context) -> None:
         if self.output_dir:
             self.output_dir = bpy.path.abspath(self.output_dir)
@@ -231,6 +230,9 @@ class RadianceExporterProperties(PropertyGroup):
     def update_ifc_file(self, context) -> None:
         if self.ifc_file:
             self.ifc_file = bpy.path.abspath(self.ifc_file)
+
+    def get_categories(self, context):
+        return sorted([(k, k, "") for k in spectraldb.keys()])
 
     def add_material_mapping(self, style_id: str, style_name: str) -> RadianceMaterial:
         item = self.materials.add()
@@ -315,16 +317,13 @@ class RadianceExporterProperties(PropertyGroup):
             print(f"Material '{active_material.name}' mapped to {self.category} - {self.subcategory}")
 
     category: bpy.props.EnumProperty(
-        items=categories, name="Category", description="Material category", update=update_material_mapping
+        items=get_categories, name="Category", description="Material category", update=update_material_mapping
     )
 
     def get_subcategories(self, context: bpy.types.Context) -> tool.Blender.BLENDER_ENUM_ITEMS:
-        global SUBCATEGORIES_ENUM_ITEMS  # ty: ignore[unresolved-global]
         if self.category in spectraldb:
-            SUBCATEGORIES_ENUM_ITEMS = [(k, k, "") for k in spectraldb[self.category].keys()]
-        else:
-            SUBCATEGORIES_ENUM_ITEMS = []
-        return SUBCATEGORIES_ENUM_ITEMS
+            return sorted([(k, k, "") for k in spectraldb[self.category].keys()])
+        return []
 
     subcategory: bpy.props.EnumProperty(
         items=get_subcategories, name="Subcategory", description="Material subcategory", update=update_material_mapping
@@ -392,9 +391,10 @@ class RadianceExporterProperties(PropertyGroup):
         name="Output File Format",
         description="Format of the output image file",
         items=[
-            ("HDR", "HDR + Tiff", "High Dynamic Range"),
+            ("HDR", "HDR", "High Dynamic Range (HDR) file only"),
+            ("HDR_TIFF", "HDR + Tiff", "High Dynamic Range (HDR) and Tiff files"),
         ],
-        default="HDR",
+        default="HDR_TIFF",
     )
 
     use_hdr: BoolProperty(
