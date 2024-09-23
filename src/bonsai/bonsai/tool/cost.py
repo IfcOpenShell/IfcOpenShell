@@ -667,11 +667,7 @@ class Cost(bonsai.core.tool.Cost):
 
     @classmethod
     def get_cost_schedule(cls, cost_item: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
-        for rel in cost_item.HasAssignments or []:
-            if rel.is_a("IfcRelAssignsToControl") and rel.RelatingControl.is_a("IfcCostSchedule"):
-                return rel.RelatingControl
-        for rel in cost_item.Nests or []:
-            return cls.get_cost_schedule(rel.RelatingObject)
+        return ifcopenshell.util.cost.get_cost_schedule(cost_item)
 
     @classmethod
     def is_cost_schedule_active(cls, cost_schedule: ifcopenshell.entity_instance) -> bool:

@@ -594,6 +594,13 @@ class Web(bonsai.core.tool.Web):
                     data_key="message",
                     event="message",
                 )
+        if operator_data["type"] == "assignCostValues":
+            cost_rate = ifc_file.by_id(operator_data["costRateId"])
+            cost_schedule = tool.Cost.get_cost_schedule(ifc_file.by_id(operator_data["costItemIds"][0]))
+            for cost_item_id in operator_data["costItemIds"]:
+                cost_item = ifc_file.by_id(cost_item_id)
+                tool.Ifc.run("cost.assign_cost_value", cost_item=cost_item, cost_rate=cost_rate)
+            cls.load_cost_schedule_web_ui(cost_schedule)
 
     @classmethod
     def load_cost_item_quantities_ui(cls, cost_item: ifcopenshell.entity_instance) -> None:

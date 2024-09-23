@@ -3,8 +3,6 @@ import { CostUI } from "./utilities/costui.js";
 const connectedClients = {};
 let socket;
 
-let loadedSchedules = {};
-
 $(document).ready(function () {
   var defaultTheme = "blender";
   var theme = localStorage.getItem("theme") || defaultTheme;
@@ -57,6 +55,19 @@ function handleEditQuantities(data) {
     },
   });
 }
+
+function assignCostValues(costRateId, callback){
+  const selectedCostItems = CostUI.getSelectedCostItems();
+  if (selectedCostItems.length === 0) {
+    return;
+  }
+  executeOperator({
+    type: "assignCostValues",
+    costRateId: costRateId,
+    costItemIds: selectedCostItems,
+  });
+}
+
 
 function addSumCostValue(costItemId) {
   executeOperator({ type: "addSumCostValue", costItemId: costItemId });
@@ -276,9 +287,6 @@ function toggleClientList() {
 
 function handleCostSchedulesData(data) {
   const blenderId = data.blenderId;
-  const loadedSchedule = loadedSchedules[blenderId]
-    ? loadedSchedules[blenderId]
-    : null;
   const costSchedules = data.data["cost_schedules"]["cost_schedules"];
   if (costSchedules.length === 0) {
     return;
@@ -309,17 +317,10 @@ function handleCostSchedulesData(data) {
     );
     costScheduleDiv.append(card);
   });
-  loadedSchedule ? CostUI.highlightElement("schedule-" + loadedSchedule) : null;
 }
 
 function handleCostItemsData(data) {
   const costScheduleId = data.data["cost_items"]["schedule_data"][0]["id"];
-  const cards = document.querySelectorAll("[id^='schedule-']");
-  cards.forEach((card) => {
-    card.classList.remove("highlighted");
-  });
-  CostUI.highlightElement("schedule-" + costScheduleId);
-  loadedSchedules[data.blenderId] = costScheduleId;
   const currency = data.data["cost_items"]["currency"]
     ? data.data["cost_items"]["currency"]["name"]
     : "Undefined";
@@ -338,6 +339,7 @@ function handleCostItemsData(data) {
       enableEditingQuantities: enableEditingQuantities,
       addSumCostValue: addSumCostValue,
       enableEditingClassification: enableEditingClassification,
+      assignCostValues: assignCostValues,
     },
   });
 }
