@@ -194,17 +194,6 @@ export class CostUI {
     });
   }
 
-  static createRibbonBar() {
-    const ribbonBar = document.createElement("div");
-    ribbonBar.className = "switch-bar";
-    ribbonBar.innerHTML = `
-      <button class="action-button" id="selected-products-btn">Selected Products</button>
-      <button class="action-button" id="assigned-products-btn">Assigned Products</button>
-      <button class="action-button" id="manual-quantities-btn">Manual Quantities</button>
-    `;
-    return ribbonBar;
-  }
-
   static createRibbon() {
     CostUI.addSettingsMenu();
     CostUI.addRibbonButton({
@@ -998,6 +987,42 @@ export class CostUI {
     div.appendChild(text);
     div.style.fontSize = size;
     return div;
+  }
+
+  static Error(container, message) {
+    const existingError = container.querySelector(".error");
+    existingError ? existingError.remove() : null;
+
+    const error = this.Text(
+      message,
+      "fa-solid fa-exclamation-triangle",
+      "large"
+    );
+    error.classList.add("error", "message");
+
+    const closeButton = this.createCloseButton(() => {
+      error.remove();
+    });
+
+    error.appendChild(closeButton);
+    container.appendChild(error);
+    return error;
+  }
+
+  static Success(container, message) {
+    const existingSuccess = container.querySelector(".success");
+    existingSuccess ? existingSuccess.remove() : null;
+
+    const success = this.Text(message, "fa-solid fa-check-circle", "large");
+    success.classList.add("success", "message");
+
+    const closeButton = this.createCloseButton(() => {
+      success.remove();
+    });
+
+    success.appendChild(closeButton);
+    container.appendChild(success);
+    return success;
   }
 
   static createCard(id, title, mainContainer, callback) {
@@ -2077,6 +2102,35 @@ export class CostUI {
     }
   }
 
+  static createRibbonBar() {
+    const ribbonBar = document.createElement("div");
+    ribbonBar.className = "switch-bar";
+    const buttons = [
+      {
+        text: "Parametric Take Off",
+        id: "selected-products",
+      },
+      {
+        text: "Review Assignments",
+        id: "assigned-products",
+      },
+      {
+        text: "Manual Take Off",
+        id: "manual-quantities",
+      },
+      {
+        text: "Query Product qto",
+        id: "query-quantities",
+      },
+    ];
+    buttons.forEach((button) => {
+      const actionButton = CostUI.createButton(button.text);
+      actionButton.id = button.id + "-btn";
+      ribbonBar.appendChild(actionButton);
+    });
+    return ribbonBar;
+  }
+
   static enableEditingQuantities({
     costItemId,
     selectedProducts,
@@ -2116,9 +2170,15 @@ export class CostUI {
       callbacks,
     });
 
+    const QuantityQuerySection = CostUI.QuantityQuerySection({
+      costItemId,
+      callbacks,
+    });
+
     form.appendChild(selectedProductsSection);
     form.appendChild(assignedProductsSection);
     form.appendChild(manualQuantitiesSection);
+    form.appendChild(QuantityQuerySection);
 
     const summarySection = CostUI.createSummarySection({
       selectedProducts,
@@ -2133,6 +2193,7 @@ export class CostUI {
       selectedProductsSection,
       assignedProductsSection,
       manualQuantitiesSection,
+      QuantityQuerySection,
     });
 
     const lastActiveSection =
@@ -2207,6 +2268,7 @@ export class CostUI {
     selectedProductsSection,
     assignedProductsSection,
     manualQuantitiesSection,
+    QuantityQuerySection,
   }) {
     const buttons = switchBar.querySelectorAll(".action-button");
 
@@ -2222,6 +2284,7 @@ export class CostUI {
           assignedProductsSection.style.display = "none";
         if (manualQuantitiesSection)
           manualQuantitiesSection.style.display = "none";
+        if (QuantityQuerySection) QuantityQuerySection.style.display = "none";
 
         const section = document.getElementById(sectionId);
         if (section) {
@@ -2254,6 +2317,13 @@ export class CostUI {
       "medium"
     );
     selectedProductsSection.appendChild(numberOfProducts);
+
+    const refreshButton = CostUI.createButton("Refresh", "fa-solid fa-sync");
+    refreshButton.addEventListener("click", function (e) {
+      e.preventDefault();
+      callbacks.enableEditingQuantities(costItemId);
+    });
+    selectedProductsSection.appendChild(refreshButton);
 
     const selectedProductsTable = CostUI.createProductTable({
       container: selectedProductsSection,
@@ -2389,7 +2459,48 @@ export class CostUI {
 
     manualQuantitiesSection.appendChild(tableContainer);
     manualQuantitiesSection.appendChild(addButton);
+
     return manualQuantitiesSection;
+  }
+
+  static QuantityQuerySection({ callbacks, costItemId }) {
+    const manualQuantityQuerySection = document.createElement("div");
+    manualQuantityQuerySection.classList.add("form-section");
+    manualQuantityQuerySection.id = "query-quantities-section-" + costItemId;
+    manualQuantityQuerySection.style.display = "none";
+
+    const title = CostUI.Text(
+      "Manual Quantities",
+      "fa-solid fa-ruler",
+      "medium"
+    );
+    manualQuantityQuerySection.appendChild(title);
+
+    const queryInput = document.createElement("input");
+    queryInput.type = "text";
+    queryInput.placeholder = "Enter a query";
+    queryInput.id = "query-input-" + costItemId;
+    manualQuantityQuerySection.appendChild(queryInput);
+
+    const propNameInput = document.createElement("input");
+    propNameInput.type = "text";
+    propNameInput.placeholder = "Enter a property name";
+    propNameInput.id = "prop-name-input-" + costItemId;
+    manualQuantityQuerySection.appendChild(propNameInput);
+
+    const queryButton = CostUI.createButton(
+      "Assign from Query",
+      "fa-solid fa-plus"
+    );
+    queryButton.addEventListener("click", function (e) {
+      e.preventDefault();
+      const query = queryInput.value;
+      const propName = propNameInput.value;
+      callbacks.assignFromQuery(costItemId, query, propName);
+    });
+
+    manualQuantityQuerySection.appendChild(queryButton);
+    return manualQuantityQuerySection;
   }
 
   static createManualQuantityRow(costItemId, quantity, callbacks) {
@@ -2458,18 +2569,24 @@ export class CostUI {
 
     addButton.addEventListener("click", function (e) {
       e.preventDefault();
-      let type = quantityType;
-      if (!type) {
-        const qtoSection = document.getElementById(
-          "manual-quantities-section-" + costItemId
-        );
-        const dropdown = qtoSection.querySelector("select");
-        type = dropdown ? dropdown.value : null;
-      }
+      let type = CostUI.getQuantityTypeAttribute(quantityType);
       callbacks.addQuantity(costItemId, type);
     });
 
     return addButton;
+  }
+
+  static getQuantityTypeAttribute(quantityType) {
+    let type = quantityType;
+    if (!type) {
+      const qtoSection = document.getElementById(
+        "manual-quantities-section-" + costItemId
+      );
+      if (!qtoSection) return null;
+      const dropdown = qtoSection.querySelector("select");
+      type = dropdown ? dropdown.value : null;
+    }
+    return type;
   }
 
   static createCostClassificationWindow({
