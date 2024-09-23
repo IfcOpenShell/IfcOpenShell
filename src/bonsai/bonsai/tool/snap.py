@@ -331,6 +331,8 @@ class Snap(bonsai.core.tool.Snap):
             best_face_index = None
 
             for obj in objs_to_raycast:
+                if obj.type != "MESH":
+                    continue
                 hit, normal, face_index = tool.Raycast.obj_ray_cast(context, event, obj)
                 if hit is None:
                     # Tried original mouse position. Now it will try the offsets.
@@ -361,7 +363,7 @@ class Snap(bonsai.core.tool.Snap):
 
         objs_to_raycast = []
         for obj, bbox_2d in objs_2d_bbox:
-            if obj.type == "MESH" and bbox_2d:
+            if obj.type in {"MESH", "EMPTY"} and bbox_2d:
                 if tool.Raycast.intersect_mouse_2d_bounding_box(mouse_pos, bbox_2d, offset):
                     if space.local_view:
                         if obj.local_view_get(context.space_data):
@@ -375,12 +377,16 @@ class Snap(bonsai.core.tool.Snap):
 
         # Edge-Vertex
         for obj in objs_to_raycast:
-            if len(obj.data.polygons) == 0:
-                options = tool.Raycast.ray_cast_by_proximity(context, event, obj)
-                snap_obj = obj
-                if options:
-                    detected_snaps.append({"Edge-Vertex": (snap_obj, options)})
-                    break
+            if obj.type == "MESH":
+                if len(obj.data.polygons) == 0:
+                    options = tool.Raycast.ray_cast_by_proximity(context, event, obj)
+                    snap_obj = obj
+                    if options:
+                        detected_snaps.append({"Edge-Vertex": (snap_obj, options)})
+                        break
+            if obj.type == "EMPTY":
+                snap_point = [(obj.location, "Vertex")]
+                detected_snaps.append({"Edge-Vertex": (obj, snap_point)})
         # Polyline
         try:
             polyline_data = bpy.context.scene.BIMPolylineProperties.polyline_point
