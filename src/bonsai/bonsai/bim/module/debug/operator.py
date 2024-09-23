@@ -227,7 +227,7 @@ class CreateAllShapes(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class CreateShapeFromStepId(bpy.types.Operator, tool.Ifc.Operator):
+class CreateShapeFromStepId(bpy.types.Operator):
     bl_idname = "bim.create_shape_from_step_id"
     bl_label = "Create Shape From STEP ID"
     bl_description = "Recreate a mesh object from a STEP ID"
@@ -248,7 +248,7 @@ class CreateShapeFromStepId(bpy.types.Operator, tool.Ifc.Operator):
     def poll(cls, context):
         return IfcStore.get_file()
 
-    def _execute(self, context):
+    def execute(self, context):
         geometry_library = self.custom_geometry_library or self.geometry_library
         logger = logging.getLogger("ImportIFC")
         self.ifc_import_settings = import_ifc.IfcImportSettings.factory(context, IfcStore.path, logger)
@@ -469,7 +469,7 @@ class OverrideDisplayType(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class PrintUnusedElementStats(bpy.types.Operator, tool.Ifc.Operator):
+class PrintUnusedElementStats(bpy.types.Operator):
     bl_idname = "bim.print_unused_elements_stats"
     bl_label = "Print Unused Elements Stats"
     bl_options = {"REGISTER", "UNDO"}
@@ -482,7 +482,7 @@ class PrintUnusedElementStats(bpy.types.Operator, tool.Ifc.Operator):
     ignore_types: bpy.props.BoolProperty(name="Ignore Types", default=True)
     ignore_styled_items: bpy.props.BoolProperty(name="Ignore Styled Items", default=True)
 
-    def _execute(self, context):
+    def execute(self, context):
         props = context.scene.BIMDebugProperties
         # ignore some classes that could have zero 0 inverse references by their nature
         ignore_classes = []
@@ -501,6 +501,7 @@ class PrintUnusedElementStats(bpy.types.Operator, tool.Ifc.Operator):
 
         unused_elements = tool.Debug.print_unused_elements_stats(props.ifc_class_purge, ignore_classes)
         self.report({"INFO"}, f"{unused_elements} unused elements found, check the system console for the details.")
+        return {"FINISHED"}
 
 
 class PurgeUnusedElementsByClass(bpy.types.Operator, tool.Ifc.Operator):
