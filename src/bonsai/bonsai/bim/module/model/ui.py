@@ -70,7 +70,9 @@ class LaunchTypeManager(bpy.types.Operator):
         if ifc_class is not None:
             props.type_class = ifc_class
             bpy.ops.bim.load_type_thumbnails(ifc_class=ifc_class, offset=0, limit=9)
-        return context.window_manager.invoke_popup(self, width=550)
+        return context.window_manager.invoke_props_dialog(
+            self, width=550, title="Type Manager", confirm_text="Add Type"
+        )
 
     def draw(self, context):
         props = context.scene.BIMModelProperties
@@ -124,16 +126,26 @@ class LaunchTypeManager(bpy.types.Operator):
 
             row = box.row()
             row.alignment = "CENTER"
-            row.label(text=relating_type["name"], icon="FILE_3D")
+            op = row.operator("bim.set_active_type", text=relating_type["name"], icon="FILE_3D", emboss=False)
+            op.relating_type = relating_type["id"]
 
             row = box.row()
             row.alignment = "CENTER"
-            row.label(text=relating_type["description"])
+            op = row.operator("bim.set_active_type", text=relating_type["description"], emboss=False)
+            op.relating_type = relating_type["id"]
 
-            row = box.row()
             if relating_type["icon_id"]:
-                row.template_icon(icon_value=relating_type["icon_id"], scale=4)
+                # Yep, that's EXACTLY how it's done. And I'm proud of it.
+                row1 = box.row()
+                row1.ui_units_y = 0.01
+                row1.template_icon(icon_value=relating_type["icon_id"], scale=4)
+                row2 = box.column(align=True)
+                row2.operator("bim.set_active_type", text="", emboss=False).relating_type = relating_type["id"]
+                row2.operator("bim.set_active_type", text="", emboss=False).relating_type = relating_type["id"]
+                row2.operator("bim.set_active_type", text="", emboss=False).relating_type = relating_type["id"]
+                row2.operator("bim.set_active_type", text="", emboss=False).relating_type = relating_type["id"]
             else:
+                row = box.row()
                 op = box.operator("bim.load_type_thumbnails", text="Load Thumbnails", icon="FILE_REFRESH")
                 op.ifc_class = props.type_class
 
