@@ -351,6 +351,7 @@ def git_clone_or_pull_repository(clone_url, target_dir, revision=None):
         run([git, "pull", clone_url], cwd=target_dir)
 
     if revision != None:
+        run([git, "reset", "--hard"], cwd=target_dir)
         run([git, "fetch", "--all"], cwd=target_dir)
         run([git, "checkout", revision], cwd=target_dir)
 
