@@ -151,10 +151,17 @@ def draw_psetqto_ui(
         remove_pset_row.enabled = allow_removing
     if pset["is_expanded"]:
         if props.active_pset_id == pset_id:
+            is_parametric_pset = props.active_pset_name in tool.Model.BBIM_PARAMETRIC_PSETS
+            if is_parametric_pset:
+                box_ = box.box()
+                box_.alert = True
+                box_.label(text="Warning! This pset should not be edited directly", icon="ERROR")
+                box_.label(text="and should be edited from Parametric Geometry UI.")
+
             for prop in props.properties:
                 draw_psetqto_editable_ui(box, props, prop)
 
-            if not props.active_pset_has_template:
+            if not props.active_pset_has_template and not is_parametric_pset:
                 row = box.row(align=True)
                 row.prop(props, "prop_name", text="")
                 row.prop(props, "prop_value", text="")
