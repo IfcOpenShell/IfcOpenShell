@@ -2293,6 +2293,8 @@ class ImportRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         obj = context.active_object
         props = context.scene.BIMGeometryProperties
+        if previous_obj := props.representation_obj:
+            previous_obj.hide_set(False)
         props.representation_obj = obj
         obj.hide_set(True)
         tool.Geometry.lock_object(obj)
