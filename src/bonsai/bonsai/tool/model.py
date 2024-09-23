@@ -846,6 +846,14 @@ class Model(bonsai.core.tool.Model):
 
         AuthoringData.type_thumbnails[element.id()] = obj.preview.icon_id
 
+    BBIM_PARAMETRIC_PSETS = (
+        "BBIM_Window",
+        "BBIM_Door",
+        "BBIM_Roof",
+        "BBIM_Railing",
+        "BBIM_Stair",
+    )
+
     @classmethod
     def get_modeling_bbim_pset_data(cls, object, pset_name):
         """get modelling BBIM pset data (eg, BBIM_Roof) and loads it's `Data` as json to `data_dict`"""
