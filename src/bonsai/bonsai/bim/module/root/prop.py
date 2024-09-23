@@ -41,6 +41,12 @@ def get_ifc_predefined_types(self, context):
     return IfcClassData.data["ifc_predefined_types"]
 
 
+def get_representation_template(self, context):
+    if not IfcClassData.is_loaded:
+        IfcClassData.load()
+    return IfcClassData.data["representation_template"]
+
+
 def refresh_classes(self, context):
     enum = get_ifc_classes(self, context)
     context.scene.BIMRootProperties.ifc_class = enum[0][0]
@@ -110,11 +116,12 @@ def is_object_class_applicable(self, obj):
 
 
 class BIMRootProperties(PropertyGroup):
-    contexts: EnumProperty(items=get_contexts, name="Contexts")
+    contexts: EnumProperty(items=get_contexts, name="Contexts", options=set())
     ifc_product: EnumProperty(items=get_ifc_products, name="Products", update=refresh_classes)
     ifc_class: EnumProperty(items=get_ifc_classes, name="Class", update=refresh_predefined_types)
     ifc_predefined_type: EnumProperty(items=get_ifc_predefined_types, name="Predefined Type", default=None)
     ifc_userdefined_type: StringProperty(name="Userdefined Type")
+    representation_template: bpy.props.EnumProperty(items=get_representation_template, name="Representation Template", default=0)
     relating_class_object: PointerProperty(
         type=bpy.types.Object,
         name="Copy Class",

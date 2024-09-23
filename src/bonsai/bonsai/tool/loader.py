@@ -19,9 +19,10 @@
 from __future__ import annotations
 import os
 import re
-import math
 import bpy
+import math
 import bmesh
+import logging
 import ifcopenshell.geom
 import ifcopenshell.util.element
 import ifcopenshell.util.geolocation
@@ -55,6 +56,14 @@ class Loader(bonsai.core.tool.Loader):
     @classmethod
     def set_unit_scale(cls, unit_scale: float) -> None:
         cls.unit_scale = unit_scale
+
+    @classmethod
+    def load_settings(cls) -> None:
+        logger = logging.getLogger("ImportIFC")
+        cls.settings = bonsai.bim.import_ifc.IfcImportSettings.factory(bpy.context, None, logger)
+        cls.settings.contexts = ifcopenshell.util.representation.get_prioritised_contexts(tool.Ifc.get())
+        cls.settings.context_settings = cls.create_settings()
+        cls.settings.gross_context_settings = cls.create_settings(is_gross=True)
 
     @classmethod
     def set_settings(cls, settings: bonsai.bim.import_ifc.IfcImportSettings) -> None:

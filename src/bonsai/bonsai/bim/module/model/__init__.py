@@ -139,7 +139,7 @@ classes = (
     ui.BIM_PT_roof,
     ui.BIM_MT_type_manager_menu,
     ui.LaunchTypeManager,
-    ui.BIM_MT_model,
+    ui.BIM_MT_elements,
     grid.BIM_OT_add_object,
     stair.BIM_OT_add_stair,
     stair.AddStair,
@@ -216,8 +216,7 @@ def register():
     bpy.types.Object.BIMRailingProperties = bpy.props.PointerProperty(type=prop.BIMRailingProperties)
     bpy.types.Object.BIMRoofProperties = bpy.props.PointerProperty(type=prop.BIMRoofProperties)
 
-    bpy.types.VIEW3D_MT_mesh_add.append(ui.add_mesh_object_menu)
-    bpy.types.VIEW3D_MT_add.append(ui.add_menu)
+    bpy.types.VIEW3D_MT_add.prepend(ui.add_menu)
     bpy.app.handlers.load_post.append(handler.load_post)
 
     workspace.load_custom_icons()
@@ -248,7 +247,6 @@ def unregister():
     del bpy.types.Object.BIMRoofProperties
 
     bpy.app.handlers.load_post.remove(handler.load_post)
-    bpy.types.VIEW3D_MT_mesh_add.remove(ui.add_mesh_object_menu)
     bpy.types.VIEW3D_MT_add.remove(ui.add_menu)
 
     workspace.unload_custom_icons()

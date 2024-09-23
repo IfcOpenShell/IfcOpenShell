@@ -116,7 +116,8 @@ class LaunchTypeManager(bpy.types.Operator):
             row.operator("bim.disable_add_type", icon="CANCEL", text="")
         else:
             row = self.layout.row()
-            row.operator("bim.enable_add_type", icon="ADD", text="Create New Type")
+            # row.operator("bim.enable_add_type", icon="ADD", text="Create New Type")
+            row.operator("bim.launch_add_element", icon="ADD", text="Create New Type")
 
         flow = self.layout.grid_flow(row_major=True, columns=3, even_columns=True, even_rows=True, align=True)
 
@@ -656,26 +657,16 @@ class BIM_PT_roof(bpy.types.Panel):
             row.operator("bim.add_roof", icon="ADD", text="")
 
 
-class BIM_MT_model(Menu):
-    bl_idname = "BIM_MT_model"
-    bl_label = "Objects"
+class BIM_MT_elements(Menu):
+    bl_idname = "BIM_MT_elements"
+    bl_label = "IFC Elements"
 
     def draw(self, context):
-        layout = self.layout
-        layout.operator("bim.add_empty_type", text="Empty Type", icon="EMPTY_AXIS")
-        layout.operator("bim.add_potential_half_space_solid", text="Half Space Proxy", icon="ORIENTATION_NORMAL")
-        layout.operator("bim.add_potential_opening", text="Opening Proxy", icon="CUBE")
+        # TODO consolidate in Item mode UI then remove
+        self.layout.operator("bim.add_potential_half_space_solid", text="Half Space", icon="ORIENTATION_NORMAL")
+        self.layout.operator("bim.add_potential_opening", text="Opening", icon="CUBE")
 
 
 def add_menu(self, context):
-    self.layout.menu("BIM_MT_model", icon="FILE_3D")
-
-
-def add_mesh_object_menu(self, context):
-    if context.mode == "OBJECT":
-        self.layout.separator()
-        self.layout.operator("mesh.add_stair", icon_value=bonsai.bim.icons["IFC"].icon_id, text="Stair (Untyped)")
-        self.layout.operator("mesh.add_window", icon_value=bonsai.bim.icons["IFC"].icon_id, text="Window (Untyped)")
-        self.layout.operator("mesh.add_door", icon_value=bonsai.bim.icons["IFC"].icon_id, text="Door (Untyped)")
-        self.layout.operator("mesh.add_railing", icon_value=bonsai.bim.icons["IFC"].icon_id, text="Railing (Untyped)")
-        self.layout.operator("mesh.add_roof", icon_value=bonsai.bim.icons["IFC"].icon_id, text="Roof (Untyped)")
+    self.layout.operator("bim.launch_add_element", icon_value=bonsai.bim.icons["IFC"].icon_id, text="IFC Element")
+    self.layout.separator()
