@@ -179,7 +179,7 @@ class AuthoringData:
         elif type_class == "IfcRailingType":
             templates.append(("RAILING", "Railing", "Parametric railing"))
         elif type_class == "IfcRoofType":
-            templates.append(("Roof", "Window", "Parametric window"))
+            templates.append(("Roof", "Roof", "Parametric roof"))
 
         templates.extend(
             (
