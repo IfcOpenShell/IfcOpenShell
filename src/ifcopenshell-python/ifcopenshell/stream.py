@@ -86,6 +86,8 @@ try:
             return (int(items[0]), str(items[1]), items[2])
 
     class stream(file):
+        schema: ifcopenshell.util.schema.IFC_SCHEMA = "IFC4"
+
         def __init__(self, filepath: str):
             self.wrapped_data = None
             self.history_size = 64
