@@ -453,9 +453,10 @@ class Spatial(bonsai.core.tool.Spatial):
         new.level_index = level_index
         children = ifcopenshell.util.element.get_parts(element)
         if children:
-            children_elevations = [ifcopenshell.util.placement.get_storey_elevation(el) for el in children]
-            children_names = [el.Name or "" for el in children]
-            children = natsorted(children, key=dict(zip(children, tuple(zip(children_elevations, children_names)))).get)
+            children = natsorted(
+                children,
+                key=lambda element: (ifcopenshell.util.placement.get_storey_elevation(element), element.Name),
+            )
         new.has_children = bool(children)
         new.ifc_definition_id = element.id()
         if new.is_expanded:
