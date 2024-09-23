@@ -719,6 +719,7 @@ class IfcImporter:
         products: set[ifcopenshell.entity_instance],
         settings: Optional[ifcopenshell.geom.main.settings] = None,
     ) -> set[ifcopenshell.entity_instance]:
+        checkpoint = time.time()
         results = set()
         if not products:
             return results
@@ -741,7 +742,6 @@ class IfcImporter:
         valid_file = iterator.initialize()
         if not valid_file:
             return results
-        checkpoint = time.time()
         progress = 0
         total = len(products)
         start_progress = self.progress
