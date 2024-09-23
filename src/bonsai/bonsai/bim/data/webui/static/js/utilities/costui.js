@@ -194,8 +194,26 @@ export class CostUI {
     });
   }
 
+  static addShortcuts() {
+    document.addEventListener("keydown", (event) => {
+      if (event.ctrlKey && event.key === "c") {
+        event.preventDefault();
+        CostUI.copySelectedToClipboard();
+      }
+    });
+  }
+
   static createRibbon() {
     CostUI.addSettingsMenu();
+
+    CostUI.addRibbonButton({
+      text: "Copy Selected",
+      icon: "fa-solid fa-copy",
+      callback: () => {
+        CostUI.copySelectedToClipboard();
+      },
+    });
+
     CostUI.addRibbonButton({
       text: "Hide Schedules",
       icon: "fa-regular fa-eye-slash",
@@ -405,6 +423,70 @@ export class CostUI {
     });
   }
 
+  static copySelectedToClipboard() {
+    const selection = window.getSelection();
+    if (selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      const fragment = range.cloneContents();
+      const rows = fragment.querySelectorAll("tr");
+      let tsv = "";
+
+      rows.forEach((row) => {
+        if (row.classList.contains("nested")) {
+          return;
+        }
+
+        const cells = row.querySelectorAll("td, th");
+        let rowText = [];
+
+        console.log();
+
+        if (CostUI.getCostItemRow(row.id)) {
+          const costItem = CostUI.getCostItemRow(row.id);
+          console.log(costItem.nestingLevel);
+          rowText.push(costItem.nestingLevel);
+        } else {
+          rowText.push("Hierarchy Level");
+        }
+
+        if (row.id) {
+          rowText.push(row.id);
+        } else {
+          rowText.push("Step ID");
+        }
+
+        cells.forEach((cell) => {
+          let cellText = "";
+          if (cell.querySelector("input")) {
+            cellText = cell.querySelector("input").value;
+          } else {
+            cellText = cell.innerText;
+          }
+
+          cellText = cellText.replace(/[\s\*\-]/g, "");
+          rowText.push(cellText);
+        });
+        tsv += rowText.join("\t") + "\n";
+      });
+
+      const textarea = document.createElement("textarea");
+      textarea.value = tsv;
+      document.body.appendChild(textarea);
+      textarea.select();
+
+      try {
+        document.execCommand("copy");
+        alert("Selected text copied to clipboard!");
+      } catch (err) {
+        alert("Failed to copy selected text: " + err);
+      }
+
+      document.body.removeChild(textarea);
+    } else {
+      alert("No text selected!");
+    }
+  }
+
   static createCostTable({ costSchedule, currency, callbacks }) {
     const preferences = CostUI.getColumnPreferences();
     const isScheduleOfRates = costSchedule.PredefinedType === "SCHEDULEOFRATES";
@@ -600,11 +682,11 @@ export class CostUI {
     };
 
     row.isRate = isScheduleOfRates;
+    row.nestingLevel = nestingLevel;
     row.get_parent = function () {
       const parentId = this.getAttribute("parent-id");
       return parentId ? document.getElementById(parentId) : null;
     };
-
     return row;
   }
 

@@ -213,7 +213,6 @@ th {
 table {
   width: 100%;
   border-collapse: collapse;
-  user-select: none;
   font-size: var(--fontSize);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
