@@ -194,6 +194,11 @@ class BlenderNamespace(socketio.AsyncNamespace):
         blender_messages[sid]["classification"] = data
         await sio.emit("classification", {"blenderId": sid, "data": data}, namespace="/web")
 
+    async def on_message(self, sid, data):
+        print(f"Error from Blender client {sid}")
+        blender_messages[sid]["error"] = data
+        await sio.emit("message", {"blenderId": sid, "data": data}, namespace="/web")
+
 
 async def schedules(request):
     with open("templates/index.html", "r") as f:

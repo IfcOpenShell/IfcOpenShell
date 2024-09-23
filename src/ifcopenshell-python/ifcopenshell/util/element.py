@@ -1630,3 +1630,26 @@ def copy_deep(
         else:
             new[i] = attribute
     return new
+
+def has_property(product: ifcopenshell.entity_instance, property_name: str) -> bool:
+    """
+    Check if a product has a property with a given name.
+    
+    :param product: The IFC product
+    :type product: ifcopenshell.entity_instance
+    :param property_name: The property name
+    :type property_name: str
+    :return: True if the product has the property, False otherwise
+    :rtype: bool
+
+    Example:
+
+    .. code:: python
+    
+        product = file.by_type("IfcWall")[0]
+        has_property = ifcopenshell.util.element.has_property(product, "NetArea")
+    """
+    if not property_name:
+        return True
+    qtos = get_psets(product, qtos_only=True)
+    return any(property_name in quantities.keys() for quantities in qtos.values())

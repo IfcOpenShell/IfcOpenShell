@@ -30,6 +30,7 @@ function connectSocket() {
   socket.on("cost_value", handleCostValueData);
   socket.on("quantities", handleEditQuantities);
   socket.on("classification", handleClassificationData);
+  socket.on("message", handleMessage);
 }
 
 function handleEditQuantities(data) {
@@ -51,12 +52,22 @@ function handleEditQuantities(data) {
       addQuantity: addQuantity,
       editQuantity: editQuantity,
       deleteQuantity: deleteQuantity,
+      assignFromQuery: assignFromQuery,
     },
   });
 }
 
 function addSumCostValue(costItemId) {
   executeOperator({ type: "addSumCostValue", costItemId: costItemId });
+}
+
+function assignFromQuery(costItemId, query, propName) {
+  executeOperator({
+    type: "assignFromQuery",
+    costItemId: costItemId,
+    query: query,
+    propName: propName,
+  });
 }
 
 function addQuantity(costItemId, ifcClass) {
@@ -459,6 +470,28 @@ function editCostValues(costItemId, costValues) {
 function deleteCostItem(costItemId) {
   CostUI.deleteCostItem(costItemId);
   executeOperator({ type: "deleteCostItem", costItemId: costItemId });
+}
+
+function handleMessage(data) {
+  if (data.data["message"].hasOwnProperty("error")) {
+    handleError(data);
+  } else {
+    handleSuccess(data);
+  }
+}
+
+function handleError(data) {
+  const errorMessage = data.data["message"]["error"];
+  const containerId = data.data["message"]["container"];
+  const container = document.getElementById(containerId);
+  CostUI.Error(container, errorMessage);
+}
+
+function handleSuccess(data) {
+  const successMessage = data.data["message"]["success"];
+  const containerId = data.data["message"]["container"];
+  const container = document.getElementById(containerId);
+  CostUI.Success(container, successMessage);
 }
 
 function executeOperator(operator, blenderId) {

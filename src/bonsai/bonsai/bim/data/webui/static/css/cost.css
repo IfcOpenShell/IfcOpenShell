@@ -7,8 +7,8 @@
   --fontSize: 14px;
   --background-color: #363636;
   --button-background: #28a745;
-  --button-hover-background: #218838;
-  --highlight-over: #ED5700;
+  --button-hover-background: #ed5700;
+  --highlight-over: #ed5700;
   --scrollbar-track-color: #f1f1f1;
   --scrollbar-thumb-color: #888;
   --scrollbar-thumb-hover-color: #555;
@@ -77,13 +77,16 @@ body {
   text-align: left;
 }
 
-
-.floating-form table tr {
+.floating-form tr {
   margin-bottom: 10px;
 }
 
+.floating-form td {
+  padding: 3px;
+}
+
 .action-button {
-  position:relative;
+  position: relative;
   background-color: var(--button-background);
   border: none;
   color: #fff;
@@ -120,8 +123,7 @@ body {
 }
 
 .active-btn {
-  background-color: #887821;
-  box-shadow: 0 0 10px #887821;
+  background-color: var(--highlight-over);
 }
 
 .action-button:hover {
@@ -166,17 +168,6 @@ body {
   background: var(--scrollbar-thumb-hover-color);
 }
 
-/* Firefox */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: var(--scrollbar-thumb-color) var(--scrollbar-track-color);
-}
-
-/* Edge, IE */
-* {
-  -ms-overflow-style: -ms-autohiding-scrollbar;
-}
-
 body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -192,12 +183,12 @@ body {
   flex: 1;
   overflow: auto;
   border: 2px solid #254e3c;
-  box-shadow: 0 -5px 5px -0 #254e3c;
 }
 
 .floating-form .table-container {
   max-height: 80%;
   overflow: auto;
+  box-shadow: 0 5px 5px 0 #254e3c;
 }
 
 #cost-items {
@@ -213,8 +204,10 @@ body {
   height: 50vh;
 }
 
-tr, td, th {
-  height: 100%; 
+tr,
+td,
+th {
+  height: 100%;
 }
 
 table {
@@ -224,7 +217,6 @@ table {
   font-size: var(--fontSize);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  border: 1px solid #ddd;
 }
 
 thead {
@@ -291,7 +283,7 @@ input:focus {
   color: #ddd;
 }
 
-#cost-items input{
+#cost-items input {
   border-radius: 6px;
   padding: 6px 8px;
   font-size: 14px;
@@ -300,7 +292,8 @@ input:focus {
   min-width: 50px;
 }
 
-form input, form select {
+form input,
+form select {
   border-radius: 6px;
   padding: 3px 4px;
   font-size: 12px;
@@ -309,7 +302,7 @@ form input, form select {
   height: 100%;
   max-height: 30px;
   max-width: 100%;
-  box-sizing: border-box;  
+  box-sizing: border-box;
 }
 
 #cost-items tr:hover,
@@ -438,7 +431,6 @@ i {
 
 .selectedClassificationText {
   color: #28a745;
-  
 }
 
 .back-button {
@@ -450,8 +442,7 @@ i {
   background-color: #ccc;
 }
 
-
-.classification-cell{
+.classification-cell {
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -459,7 +450,7 @@ i {
   height: 100%;
 }
 
-.classification{
+.classification {
   height: 100%;
 }
 
@@ -495,4 +486,78 @@ i {
 
 #column-selector label:last-child {
   margin-bottom: 0;
+}
+
+.switch-bar {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  padding: 10px 0;
+}
+
+.switch-bar .action-button {
+  border: 1px solid #000000;
+  border-radius: 5px 5px 0 0;
+  margin: 0;
+  margin-left: -5px;
+}
+
+.message {
+  position: relative;
+  padding: 10px;
+  border-radius: 5px;
+  margin: 10px 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.message span {
+  width: 80%;
+}
+
+.message .icon {
+  margin-right: 10px;
+}
+
+.message .close-button {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  transition: background-color 0.3s, color 0.3s;
+  padding-left: 5px;
+}
+
+.message .close-button:hover {
+  background-color: #ffcccc;
+}
+
+.error {
+  color: red;
+  border: 1px solid red;
+  background-color: #ffe6e6;
+}
+
+.error .close-button {
+  color: red;
+}
+
+.error .close-button:hover {
+  color: darkred;
+}
+
+.success {
+  color: green;
+  border: 1px solid green;
+  background-color: #e6ffe6;
+}
+
+.success .close-button {
+  color: green;
+}
+
+.success .close-button:hover {
+  background-color: #ccffcc;
+  color: darkgreen;
 }
