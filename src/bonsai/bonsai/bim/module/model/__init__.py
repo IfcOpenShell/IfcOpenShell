@@ -63,6 +63,7 @@ classes = (
     product.EnableAddType,
     product.LoadTypeThumbnails,
     product.MirrorElements,
+    product.SetActiveType,
     workspace.Hotkey,
     workspace.BIM_MT_add_representation_item,
     wall.AlignWall,

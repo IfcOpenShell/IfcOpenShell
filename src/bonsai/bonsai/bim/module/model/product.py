@@ -312,6 +312,18 @@ class ChangeTypePage(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
+class SetActiveType(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.set_active_type"
+    bl_label = "Set Active Type"
+    bl_options = {"REGISTER"}
+    relating_type: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        props = context.scene.BIMModelProperties
+        props.relating_type_id = str(self.relating_type)
+        context.window.screen = context.window.screen  # Closes the type manager popup
+
+
 class AlignProduct(bpy.types.Operator):
     bl_idname = "bim.align_product"
     bl_label = "Align Product"

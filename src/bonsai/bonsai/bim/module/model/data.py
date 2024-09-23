@@ -57,6 +57,7 @@ class AuthoringData:
         cls.data["ifc_element_type"] = cls.ifc_element_type
         cls.data["ifc_classes"] = cls.ifc_classes()
         cls.data["relating_type_id"] = cls.relating_type_id()  # only after .ifc_classes()
+        cls.data["relating_type_name"] = cls.relating_type_name()  # only after .relating_type_id()
         cls.data["predefined_type"] = cls.predefined_type()  # only after .relating_type_id()
         cls.data["type_class"] = cls.type_class()
 
@@ -324,6 +325,11 @@ class AuthoringData:
             results.extend(elements)
             return [(str(e.id()), e.Name or "Unnamed", e.Description or "") for e in results]
         return []
+
+    @classmethod
+    def relating_type_name(cls):
+        if relating_type_id := cls.props.relating_type_id:
+            return tool.Ifc.get().by_id(int(relating_type_id)).Name or "Unnamed"
 
     @classmethod
     def predefined_type(cls):

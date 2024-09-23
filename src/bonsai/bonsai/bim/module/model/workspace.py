@@ -431,11 +431,12 @@ class CreateObjectUI:
                 row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
                 prop_with_search(row, cls.props, "ifc_class", text="Type Class" if ui_context != "TOOL_HEADER" else "")
             if AuthoringData.data["relating_type_id"]:
-                row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
-                prop_with_search(
-                    row, cls.props, "relating_type_id", text="Relating Type" if ui_context != "TOOL_HEADER" else ""
+                row = cls.layout.row(align=True)
+                row.operator(
+                    "bim.launch_type_manager",
+                    icon=tool.Blender.TYPE_MANAGER_ICON,
+                    text="Type: " + AuthoringData.data["relating_type_name"],
                 )
-                row.operator("bim.launch_type_manager", icon=tool.Blender.TYPE_MANAGER_ICON, text="")
                 row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
                 add_layout_hotkey_operator(row, "Add", "S_A", bpy.ops.bim.add_constr_type_instance.__doc__, ui_context)
                 row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row

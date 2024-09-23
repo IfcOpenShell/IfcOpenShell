@@ -86,6 +86,7 @@ def update_type_class(self, context):
 
 def update_relating_type_id(self, context):
     AuthoringData.data["relating_type_id"] = AuthoringData.relating_type_id()
+    AuthoringData.data["relating_type_name"] = AuthoringData.relating_type_name()
     AuthoringData.data["type_thumbnail"] = AuthoringData.type_thumbnail()
     AuthoringData.data["predefined_type"] = AuthoringData.predefined_type()
 
@@ -172,9 +173,7 @@ class BIMModelProperties(PropertyGroup):
     rl3: bpy.props.FloatProperty(name="RL", default=1, subtype="DISTANCE", description="Z offset for space calculation")
     x_angle: bpy.props.FloatProperty(name="X Angle", default=0, subtype="ANGLE", min=-pi / 180 * 89, max=pi / 180 * 89)
     type_page: bpy.props.IntProperty(name="Type Page", default=1, update=update_type_page)
-    # fmt: off
-    type_template: bpy.props.EnumProperty(items=get_type_template, name="Type Template", default=0)
-    # fmt: on
+    type_template: bpy.props.EnumProperty(items=get_type_template, name="Type Template", default=0, options=set())
     type_class: bpy.props.EnumProperty(items=get_type_class, name="IFC Class", update=update_type_class)
     type_predefined_type: bpy.props.EnumProperty(items=get_type_predefined_type, name="Predefined Type", default=None)
     type_name: bpy.props.StringProperty(name="Name", default="TYPEX")
