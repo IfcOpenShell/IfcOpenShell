@@ -284,6 +284,10 @@ try:
                 return True
             return False
 
+        def __del__(self) -> None:
+            # Override to avoid clean up unrelated to stream file.
+            pass
+
     class stream_entity(entity_instance):
         def __init__(self, id: int, ifc_class: str, file: stream = None):
             if not ifc_class:
