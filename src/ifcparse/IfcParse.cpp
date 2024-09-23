@@ -1378,6 +1378,7 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
         }
 
         if (next_token.type == Token_NONE) {
+            good_ = file_open_status::INVALID_SYNTAX;
             break;
         }
 
