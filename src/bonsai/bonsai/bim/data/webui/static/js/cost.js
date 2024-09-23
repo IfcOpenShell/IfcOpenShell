@@ -12,6 +12,7 @@ $(document).ready(function () {
 
   connectSocket();
   CostUI.createRibbon();
+  CostUI.addShortcuts();
 });
 
 function connectSocket() {
