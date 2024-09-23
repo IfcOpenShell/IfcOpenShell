@@ -17,6 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import bmesh
 import mathutils
 import numpy as np
 import ifcopenshell
@@ -30,10 +31,12 @@ import ifcopenshell.util.unit
 import bonsai.tool as tool
 import bonsai.core.aggregate
 import bonsai.core.type
+import bonsai.core.root
 import bonsai.core.geometry
 import bonsai.core.spatial
 from . import wall, slab, profile, mep
 from bonsai.bim.ifc import IfcStore
+from bonsai.bim.helper import get_enum_items
 from bonsai.bim.module.model.data import AuthoringData
 from mathutils import Vector, Matrix
 from bpy_extras.object_utils import AddObjectHelper
@@ -115,14 +118,43 @@ class AddDefaultType(bpy.types.Operator, tool.Ifc.Operator):
 
 class AddConstrTypeInstance(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_constr_type_instance"
-    bl_label = "Add"
+    bl_label = "Add Type Occurrence"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Add Type Instance"
     relating_type_id: bpy.props.IntProperty(default=0, options={"SKIP_SAVE"})
     from_invoke: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+    representation_template: bpy.props.EnumProperty(
+        name="Representation Template",
+        items=(
+            ("EMPTY", "No Geometry", "Start with an empty object"),
+            None,
+            (
+                "MESH",
+                "Custom Tessellation",
+                "Create a basic tessellated or faceted cube",
+            ),
+            (
+                "EXTRUSION",
+                "Custom Extruded Solid",
+                "An extrusion from an arbitrary profile",
+            ),
+        ),
+    )
 
     def invoke(self, context, event):
+        props = context.scene.BIMModelProperties
+        relating_type_id = self.relating_type_id or props.relating_type_id
+        if (
+            relating_type_id
+            and (relating_type := tool.Ifc.get().by_id(int(relating_type_id)))
+            and not relating_type.RepresentationMaps
+        ):
+            return context.window_manager.invoke_props_dialog(self)
         return self.execute(context)
+
+    def draw(self, context):
+        row = self.layout.row()
+        row.prop(self, "representation_template", text="")
 
     def _execute(self, context):
         props = context.scene.BIMModelProperties
@@ -159,6 +191,66 @@ class AddConstrTypeInstance(bpy.types.Operator, tool.Ifc.Operator):
             if self.generate_layered_element(ifc_class, relating_type):
                 tool.Blender.select_and_activate_single_object(context, context.selected_objects[-1])
                 return {"FINISHED"}
+        elif not relating_type.RepresentationMaps:
+            mesh = None if self.representation_template == "EMPTY" else bpy.data.meshes.new("Mesh")
+            obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(relating_type, instance_class), mesh)
+            obj.location = bpy.context.scene.cursor.location
+            element = bonsai.core.root.assign_class(
+                tool.Ifc,
+                tool.Collector,
+                tool.Root,
+                obj=obj,
+                ifc_class=instance_class,
+                should_add_representation=False,
+            )
+            bonsai.core.type.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
+
+            rprops = context.scene.BIMRootProperties
+            ifc_context = None
+            if get_enum_items(rprops, "contexts", context):
+                ifc_context = int(rprops.contexts or "0") or None
+                if ifc_context:
+                    ifc_context = tool.Ifc.get().by_id(ifc_context)
+
+            if self.representation_template == "EMPTY" or not ifc_context:
+                pass
+            elif self.representation_template == "MESH":
+                builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
+                unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+                bm = bmesh.new()
+                bmesh.ops.create_cube(bm, size=0.5)
+                verts = [v.co / unit_scale for v in bm.verts]
+                faces = [[v.index for v in p.verts] for p in bm.faces]
+                item = builder.mesh(verts, faces)
+                bm.free()
+                representation = builder.get_representation(ifc_context, [item])
+                ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), element, representation)
+                bonsai.core.geometry.switch_representation(
+                    tool.Ifc,
+                    tool.Geometry,
+                    obj=obj,
+                    representation=representation,
+                    should_reload=True,
+                    is_global=True,
+                    should_sync_changes_first=False,
+                )
+            elif self.representation_template == "EXTRUSION":
+                builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
+                unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+                curve = builder.rectangle(size=Vector((0.5, 0.5)) / unit_scale)
+                item = builder.extrude(curve, magnitude=0.5 / unit_scale)
+                representation = builder.get_representation(ifc_context, [item])
+                ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), element, representation)
+                bonsai.core.geometry.switch_representation(
+                    tool.Ifc,
+                    tool.Geometry,
+                    obj=obj,
+                    representation=representation,
+                    should_reload=True,
+                    is_global=True,
+                    should_sync_changes_first=False,
+                )
+            return
 
         building_obj = None
         if len(context.selected_objects) == 1 and context.active_object:

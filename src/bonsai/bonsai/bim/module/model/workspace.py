@@ -849,7 +849,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             row.prop(self, "z")
 
     def hotkey_S_A(self):
-        bpy.ops.bim.add_constr_type_instance()
+        bpy.ops.bim.add_constr_type_instance("INVOKE_DEFAULT")
 
     def hotkey_S_Q(self):
         if not bpy.context.selected_objects:
