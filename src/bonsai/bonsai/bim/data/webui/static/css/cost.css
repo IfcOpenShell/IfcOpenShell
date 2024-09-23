@@ -392,7 +392,7 @@ form table {
   opacity: 1;
 }
 
-.clickable-cell:hover {
+.selected-cell, .clickable-cell:hover {
   border: 2px solid var(--highlight-over);
   cursor: pointer;
 }
@@ -559,4 +559,11 @@ i {
 .success .close-button:hover {
   background-color: #ccffcc;
   color: darkgreen;
+}
+
+.card {
+  margin: 10px;
+}
+.card-body {
+  height: 10vh;
 }

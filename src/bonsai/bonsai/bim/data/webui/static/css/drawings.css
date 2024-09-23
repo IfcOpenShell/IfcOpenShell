@@ -1,3 +1,5 @@
+@import url("./components/card.css");
+
 :root {
     --font-family: Arial, sans-serif;
     --base-font-size: 16px;
@@ -250,33 +252,7 @@ button:hover {
     overflow: hidden;
 }
 
-.card-container {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-}
 
-.card {
-    background-color: var(--blender-even-row, var(--nav-bg-color));
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
-    flex: 1;
-}
-
-.card-header {
-    background-color: var(--blender-panel-header, var(--bg-color));
-    border: 1px solid var(--blender-tab-outline, var(--border-color));
-    flex-shrink: 0;
-}
-
-.card-body {
-    background-color: var(--blender-panel-background, var(--bg-color));
-    border: 1px solid var(--blender-tab-outline, var(--border-color));
-    overflow-y: auto;
-    flex: 1;
-}
 
 li.svg-name {
     list-style-type: none;
