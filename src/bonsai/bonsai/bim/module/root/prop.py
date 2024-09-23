@@ -121,7 +121,9 @@ class BIMRootProperties(PropertyGroup):
     ifc_class: EnumProperty(items=get_ifc_classes, name="Class", update=refresh_predefined_types)
     ifc_predefined_type: EnumProperty(items=get_ifc_predefined_types, name="Predefined Type", default=None)
     ifc_userdefined_type: StringProperty(name="Userdefined Type")
-    representation_template: bpy.props.EnumProperty(items=get_representation_template, name="Representation Template", default=0)
+    representation_template: bpy.props.EnumProperty(
+        items=get_representation_template, name="Representation Template", default=0
+    )
     relating_class_object: PointerProperty(
         type=bpy.types.Object,
         name="Copy Class",

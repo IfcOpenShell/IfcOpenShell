@@ -1631,10 +1631,11 @@ def copy_deep(
             new[i] = attribute
     return new
 
+
 def has_property(product: ifcopenshell.entity_instance, property_name: str) -> bool:
     """
     Check if a product has a property with a given name.
-    
+
     :param product: The IFC product
     :type product: ifcopenshell.entity_instance
     :param property_name: The property name
@@ -1645,7 +1646,7 @@ def has_property(product: ifcopenshell.entity_instance, property_name: str) -> b
     Example:
 
     .. code:: python
-    
+
         product = file.by_type("IfcWall")[0]
         has_property = ifcopenshell.util.element.has_property(product, "NetArea")
     """
