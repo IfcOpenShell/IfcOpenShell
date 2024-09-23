@@ -2880,7 +2880,7 @@ export class CostUI {
       currentPath.pop();
       const parent = currentPath.length
         ? currentPath[currentPath.length - 1].references
-        : data;
+        : classificationElements;
       loadLevel(parent);
 
       if (currentPath.length === 0) {
