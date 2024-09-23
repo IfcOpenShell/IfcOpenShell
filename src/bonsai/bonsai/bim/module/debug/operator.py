@@ -39,6 +39,7 @@ import bonsai.bim.import_ifc as import_ifc
 from pathlib import Path
 from bonsai import get_debug_info, format_debug_info
 from bonsai.bim.ifc import IfcStore
+from typing import get_args
 
 
 class CopyDebugInformation(bpy.types.Operator):
@@ -233,12 +234,22 @@ class CreateShapeFromStepId(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
     should_include_curves: bpy.props.BoolProperty()
     step_id: bpy.props.IntProperty(default=0)
+    geometry_library: bpy.props.EnumProperty(
+        name="Geometry Library",
+        items=[(i, i, "") for i in get_args(ifcopenshell.geom.GEOMETRY_LIBRARY)],
+        default="opencascade",
+    )
+    custom_geometry_library: bpy.props.StringProperty(
+        name="Custom Geometry Library",
+        description="Provide a custom geometry library name, will override the 'geometry library' property.",
+    )
 
     @classmethod
     def poll(cls, context):
         return IfcStore.get_file()
 
     def _execute(self, context):
+        geometry_library = self.custom_geometry_library or self.geometry_library
         logger = logging.getLogger("ImportIFC")
         self.ifc_import_settings = import_ifc.IfcImportSettings.factory(context, IfcStore.path, logger)
         self.file = IfcStore.get_file()
@@ -247,7 +258,7 @@ class CreateShapeFromStepId(bpy.types.Operator, tool.Ifc.Operator):
         settings.set("keep-bounding-boxes", True)
         if self.should_include_curves:
             settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
-        shape = ifcopenshell.geom.create_shape(settings, element)
+        shape = ifcopenshell.geom.create_shape(settings, element, geometry_library=geometry_library)
         if shape:
             ifc_importer = import_ifc.IfcImporter(self.ifc_import_settings)
             ifc_importer.file = self.file
