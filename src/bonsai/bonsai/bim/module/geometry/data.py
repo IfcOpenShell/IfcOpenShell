@@ -90,6 +90,8 @@ class ViewportData:
                 modes.append(item_mode)
         elif tool.Geometry.is_representation_item(obj):
             modes.append(edit_mode)
+        else:  # A regular Blender object
+            modes.append(edit_mode)
 
         return modes
 

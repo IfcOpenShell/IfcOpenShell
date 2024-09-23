@@ -131,6 +131,7 @@ class CreateProject(bpy.types.Operator):
         )
         bonsai.bim.schema.reload(tool.Ifc.get().schema_identifier)
         tool.Blender.register_toolbar()
+        tool.Root.reload_item_decorator()
 
     def rollback(self, data):
         IfcStore.file = None

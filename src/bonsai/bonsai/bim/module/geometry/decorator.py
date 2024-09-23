@@ -115,17 +115,13 @@ class ItemDecorator:
                         continue
                     edges = selected_edges
                     verts = selected_verts
-                    offset = len(selected_verts)
-                    selected_verts.extend([tuple(obj.matrix_world @ v.co) for v in obj.data.vertices])
-                    selected_tris.extend([tuple([i + offset for i in t.vertices]) for t in obj.data.loop_triangles])
+                    tris = selected_tris
                 else:
-                    offset = len(unselected_verts)
-                    unselected_verts.extend([tuple(obj.matrix_world @ v.co) for v in obj.data.vertices])
-                    unselected_tris.extend([tuple([i + offset for i in t.vertices]) for t in obj.data.loop_triangles])
                     edges = unselected_edges
                     verts = unselected_verts
-                i = len(verts)
+                    tris = unselected_tris
 
+                i = len(verts)
                 matrix_world = obj.matrix_world
                 bbox_verts = [matrix_world @ Vector(co) for co in obj.bound_box]
                 bbox_edges = [
@@ -144,6 +140,16 @@ class ItemDecorator:
                 ]
                 edges.extend(bbox_edges)
                 verts.extend(bbox_verts)
+
+                if (total_tris := len(obj.data.loop_triangles)) == 0:
+                    continue
+
+                if total_tris > 1000:  # For performance
+                    continue
+
+                offset = len(verts)
+                verts.extend([tuple(obj.matrix_world @ v.co) for v in obj.data.vertices])
+                tris.extend([tuple([i + offset for i in t.vertices]) for t in obj.data.loop_triangles])
 
         if unselected_verts:
             self.draw_batch("LINES", unselected_verts, transparent_color(unselected_elements_color), unselected_edges)

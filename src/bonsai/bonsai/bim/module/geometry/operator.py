@@ -1631,6 +1631,8 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
                 bpy.ops.bim.import_representation_items()
         elif tool.Geometry.is_representation_item(obj):
             self.enable_editing_representation_item(context, obj)
+        else:  # A regular Blender object
+            self.enable_edit_mode(context)
 
     def handle_multiple_selected_objects(self, context):
         obj = context.active_object
@@ -2300,9 +2302,7 @@ class ImportRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
             context.scene.BIMGeometryProperties.mode = "ITEM"
         context.scene.BIMGeometryProperties.is_changing_mode = False
 
-        tool.Loader.settings.contexts = ifcopenshell.util.representation.get_prioritised_contexts(tool.Ifc.get())
-        tool.Loader.settings.context_settings = tool.Loader.create_settings()
-        tool.Loader.settings.gross_context_settings = tool.Loader.create_settings(is_gross=True)
+        tool.Loader.load_settings()
 
         for item_id in set(obj.data["ios_item_ids"]):
             item = tool.Ifc.get().by_id(item_id)
