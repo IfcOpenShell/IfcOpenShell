@@ -506,15 +506,16 @@ class PolylineDecorator:
                 edges = [[0, 1], [1, 3], [3, 2], [2, 0]]
             else:
                 edges = [[0, 1], [1, 2], [2, 3], [3, 0]]
-        if snap_prop.snap_type == "Edge Center":
+        elif snap_prop.snap_type == "Edge Center":
             p1 = (coords[0], coords[1] + padding)
             p2 = (coords[0] + padding, coords[1] - padding)
             p3 = (coords[0] - padding, coords[1] - padding)
             verts = [p1, p2, p3]
             edges = [[0, 1], [1, 2], [2, 0]]
-
-        if snap_prop.snap_type == "Face":
+        elif snap_prop.snap_type == "Face":
             draw_circle_2d(coords, decorator_color_object_active, padding)
+            return
+        else:
             return
 
         self.draw_batch("LINES", verts, decorator_color_object_active, edges)
@@ -625,9 +626,7 @@ class PolylineDecorator:
                 self.draw_batch("LINES", [polyline_points[-1]] + mouse_point, decorator_color, edges)
 
         # Draw polyline with selected points
-        print("EDGES", polyline_edges)
         self.line_shader.uniform_float("lineWidth", 2.0)
-        print("VS", polyline_points)
         self.draw_batch("POINTS", polyline_points, decorator_color_special)
         if len(polyline_points) > 1:
             self.draw_batch("LINES", polyline_points, decorator_color_special, polyline_edges)
