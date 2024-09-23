@@ -442,7 +442,7 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 						kt.Value().Original().ToUTF8CString(c);
 						std::string message = c;
 						delete[] c;
-#if OCC_VERSION_MAJOR==7 && OCC_VERSION_MINOR == 7
+#if OCC_VERSION_MAJOR==7 && OCC_VERSION_MINOR >= 7
 						if (!reversed_surface && !fd.surface().IsNull() && fd.surface()->IsUPeriodic() && message == "Unknown message invoked with the keyword FixAdvFace.FixOrientation.MSG0") {
 							Logger::Notice("Detected reversed wire, reattempting with reversed basis surface");
 							TopoDS_Face reversed_result;
