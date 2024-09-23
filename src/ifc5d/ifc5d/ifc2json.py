@@ -8,6 +8,7 @@ from ifcopenshell.util.classification import get_references
 
 CostItem = dict[str, Any]
 
+
 class ifc5D2json:
     def __init__(self):
         self.json: str = None
@@ -72,7 +73,7 @@ class ifc5D2json:
                 del data["ReferencedSource"]
                 results.append(data)
         return results
-    
+
     def check_if_cost_item_is_sum(self, cost_item: ifcopenshell.entity_instance) -> bool:
         cost_values = []
         if cost_item.is_a("IfcCostItem"):
