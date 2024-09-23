@@ -159,6 +159,8 @@ class Polyline(bonsai.core.tool.Polyline):
             second_to_last_point = Vector((last_point.x + 1000, last_point.y, last_point.z))
 
         distance = (snap_vector - last_point).length
+        if distance < 0:
+            return
         if distance > 0:
             angle = tool.Cad.angle_3_vectors(
                 second_to_last_point, last_point, snap_vector, new_angle=None, degrees=True
@@ -167,15 +169,17 @@ class Polyline(bonsai.core.tool.Polyline):
             # Round angle to the nearest 0.05
             angle = round(angle / 0.05) * 0.05
 
-            if input_ui:
-                input_ui.set_value("X", snap_vector.x)
-                input_ui.set_value("Y", snap_vector.y)
-                if input_ui.get_number_value("Z") is not None:
-                    input_ui.set_value("Z", snap_vector.z)
+        if distance == 0:
+            angle = 0
+        if input_ui:
+            input_ui.set_value("X", snap_vector.x)
+            input_ui.set_value("Y", snap_vector.y)
+            if input_ui.get_number_value("Z") is not None:
+                input_ui.set_value("Z", snap_vector.z)
 
-                input_ui.set_value("D", distance)
-                input_ui.set_value("A", angle)
-                return
+            input_ui.set_value("D", distance)
+            input_ui.set_value("A", angle)
+            return
 
         return
 
