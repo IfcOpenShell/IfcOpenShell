@@ -723,6 +723,11 @@ class IfcImporter:
         results = set()
         if not products:
             return results
+
+        # For efficiency (iterator.initialize takes time), return early if there are no representations
+        if not any(product.Representation for product in products):
+            return results
+
         if tool.Loader.settings.should_use_cpu_multiprocessing:
             iterator = ifcopenshell.geom.iterator(
                 settings,
