@@ -420,13 +420,15 @@ export class CostUI {
   }
 
   static isCostScheduleLoaded(id) {
-    const existingTable = document.getElementById("cost-items-" + id);
+    const existingTable = document.getElementById(
+      "cost-schedule-container-" + id
+    );
     return existingTable !== null;
   }
 
   static removeCostSchedule(id) {
-    const table = document.getElementById("cost-items-" + id);
-    table ? table.parentElement.remove() : null;
+    const container = document.getElementById("cost-schedule-container-" + id);
+    container.remove();
   }
 
   static createCostTree({
@@ -531,25 +533,35 @@ export class CostUI {
       tableWrapper = table.parentElement;
       table.remove();
     } else {
-      tableWrapper = document.createElement("div");
-      tableWrapper.classList.add("table-wrapper");
-      document.getElementById("cost-items").appendChild(tableWrapper);
-      const tableHeader = document.createElement("div");
-      tableHeader.classList.add("form-header");
-      const text = CostUI.Text(
+      const scheduleDiv = document.createElement("div");
+      scheduleDiv.classList.add("schedule");
+      scheduleDiv.id = "cost-schedule-container-" + id;
+
+      const scheduleHeader = document.createElement("div");
+      scheduleHeader.classList.add("form-header");
+
+      const scheduleName = CostUI.Text(
         costSchedule.Name,
         "fa-solid fa-money-bill-wave",
         "x-large"
       );
 
+      tableWrapper = document.createElement("div");
+      tableWrapper.classList.add("table-wrapper");
+
       const callback = () => {
-        tableWrapper.remove();
+        scheduleDiv.remove();
       };
       let closeButton = CostUI.createCloseButton(callback);
-      tableHeader.appendChild(text);
-      tableHeader.appendChild(closeButton);
-      tableWrapper.appendChild(tableHeader);
+
+      scheduleHeader.appendChild(scheduleName);
+      scheduleHeader.appendChild(closeButton);
+
+      scheduleDiv.appendChild(scheduleHeader);
+      scheduleDiv.appendChild(tableWrapper);
+      document.getElementById("cost-items").appendChild(scheduleDiv);
     }
+
     const table = document.createElement("table");
     table.id = "cost-items-" + id;
     const tbody = document.createElement("tbody");
@@ -573,9 +585,9 @@ export class CostUI {
         (header) => header.name !== "Linked Rate"
       );
       columnHeaders = columnHeaders.map((header) => {
-        if (header.name === "Unit") {
+        if (header.name === "Cost") {
           return { name: "Rate (" + currency + ")", visible: preferences.Cost };
-        } else if (header.name === "Cost (" + currency + ")") {
+        } else if (header.name === "Total Cost (" + currency + ")") {
           return {
             name: "Total Rate (" + currency + ")",
             visible: preferences.TotalCost,
@@ -2735,14 +2747,14 @@ export class CostUI {
 
     addButton.addEventListener("click", function (e) {
       e.preventDefault();
-      let type = CostUI.getQuantityTypeAttribute(quantityType);
+      let type = CostUI.getQuantityTypeAttribute(costItemId, quantityType);
       callbacks.addQuantity(costItemId, type);
     });
 
     return addButton;
   }
 
-  static getQuantityTypeAttribute(quantityType) {
+  static getQuantityTypeAttribute(costItemId, quantityType) {
     let type = quantityType;
     if (!type) {
       const qtoSection = document.getElementById(
