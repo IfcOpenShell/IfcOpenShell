@@ -1,5 +1,4 @@
 #include "IfcViewerWidget.h"
-#include <OpenGL/OpenGL.h>
 #include <osg/ShapeDrawable>
 #include <osg/Material>
 #include <osg/MatrixTransform>
@@ -186,14 +185,18 @@ void IfcViewerWidget::orientScene(osg::ref_ptr<osg::Group> rootGroup)
     // In case a cameraManipulator is set, lookAt position setting does not work on the camera
     // as it is overridden.
     // So set it on the manipulator and reapply it to the viewer
-    m_mouseHandler->setHomePosition(eye, center, up);
+    if (m_mouseHandler.valid())
+    {
+      m_mouseHandler->setHomePosition(eye, center, up);
+    }
+
     m_viewer->setCameraManipulator(m_mouseHandler);
 
-    auto log = [center, radius, eye]() {
-        MessageLogger::log("center: " + std::to_string(center.length()));
-        MessageLogger::log("radius: " + std::to_string(radius));
-        MessageLogger::log("center: " + std::to_string(center.x()) + ", " + std::to_string(center.y()) + ", " + std::to_string(center.z()));
-        MessageLogger::log("eye: " + std::to_string(eye.x()) + ", " + std::to_string(eye.y()) + ", " + std::to_string(eye.z()));
-    };
-    //log();
+  auto log = [center, radius, eye]() {
+      MessageLogger::log("center: " + std::to_string(center.length()));
+      MessageLogger::log("radius: " + std::to_string(radius));
+      MessageLogger::log("center: " + std::to_string(center.x()) + ", " + std::to_string(center.y()) + ", " + std::to_string(center.z()));
+      MessageLogger::log("eye: " + std::to_string(eye.x()) + ", " + std::to_string(eye.y()) + ", " + std::to_string(eye.z()));
+  };
+  //log();
 }
