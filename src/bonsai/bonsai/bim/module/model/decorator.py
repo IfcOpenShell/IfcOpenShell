@@ -496,6 +496,7 @@ class PolylineDecorator:
         coords = view3d_utils.location_3d_to_region_2d(region, rv3d, mouse_point)
         padding = 6
         verts = []
+        edges = []
         if snap_prop.snap_type in ["Edge", "Vertex"]:
             p1 = (coords[0] - padding, coords[1] + padding)
             p2 = (coords[0] + padding, coords[1] + padding)
