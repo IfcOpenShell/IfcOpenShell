@@ -157,6 +157,7 @@ try:
             exclude = set()
 
             offset = 0
+            newline_character = len(os.linesep)
             for line in self.file:
                 line = line.strip()
                 if line.startswith("#"):
@@ -165,7 +166,7 @@ try:
                     ifc_class = ifc_class.strip()
 
                     if ifc_class in exclude:
-                        offset += len(line) + 1  # +1 for the newline character
+                        offset += len(line) + newline_character
                         continue
 
                     for reference_id in self.reference_pattern.findall(line[1:]):
@@ -180,7 +181,7 @@ try:
                     for ifc_class in exclude_classes:
                         declaration = self.ifc_schema.declaration_by_name(ifc_class)
                         exclude.update([st.name().upper() for st in ifcopenshell.util.schema.get_subtypes(declaration)])
-                offset += len(line) + 1  # +1 for the newline character
+                offset += len(line) + newline_character
 
             self.preprocess_schema()
 
