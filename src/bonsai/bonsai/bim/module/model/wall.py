@@ -569,16 +569,16 @@ class DumbWallGenerator:
         bpy.context.scene.grease_pencil.layers.remove(layer)
         return objs
 
-    def create_wall_from_2_points(self, coords, round=False):
+    def create_wall_from_2_points(self, coords, should_round=False):
         direction = coords[1] - coords[0]
         length = direction.length
-        if length < 0.1:
+        if round(length, 4) < 0.1:
             return
         data = {"coords": coords}
 
         self.length = length
         self.rotation = math.atan2(direction[1], direction[0])
-        if round:
+        if should_round:
             # Round to nearest 50mm (yes, metric for now)
             self.length = 0.05 * round(length / 0.05)
             # Round to nearest 5 degrees
