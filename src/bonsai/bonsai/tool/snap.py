@@ -134,12 +134,18 @@ class Snap(bonsai.core.tool.Snap):
             y = snap_vertex.y
             z = snap_vertex.z
 
-        # Avoids creating two points at the same location
         polyline_data = bpy.context.scene.BIMPolylineProperties.polyline_point
         if polyline_data:
-            last_point = polyline_data[len(polyline_data) - 1]
-            if (x, y, z) == (round(last_point.x, 4), round(last_point.y, 4), round(last_point.z, 4)):
-                return
+            # Avoids creating two points at the same location
+            for point in polyline_data[1:]: # The first can be repeated to form a wall loop
+                if (x, y, z) == (point.x, point.y, point.z):
+                    return "Cannot create two points at the same location"
+            print(type(snap_vertex))
+            print(type(polyline_data[-1]))
+            # Avoids creating segments smaller then 0.1. This is a limitation from create_wall_from_2_points
+            length = (Vector((x, y, z)) - Vector((polyline_data[-1].x, polyline_data[-1].y, polyline_data[-1].z))).length
+            if length < 0.1:
+                return "Cannot create a segment smaller then 10cm"
 
         polyline_point = bpy.context.scene.BIMPolylineProperties.polyline_point.add()
         polyline_point.x = x
