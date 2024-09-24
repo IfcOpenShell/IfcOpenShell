@@ -59,7 +59,7 @@ import sys
 import zipfile
 import tempfile
 from pathlib import Path
-from typing import Optional, Union, TYPE_CHECKING, Any
+from typing import Optional, Union, TYPE_CHECKING, Any, overload, Literal
 
 if TYPE_CHECKING:
     import ifcopenshell.express.schema_class
@@ -119,8 +119,23 @@ class SchemaError(Error):
     pass
 
 
-def open(path: Union[os.PathLike, str], format: Optional[str] = None, should_stream: bool = False) -> file:
+@overload
+def open(
+    path: Union[os.PathLike, str], format: Optional[str] = None, *, should_stream: Literal[False] = False
+) -> Union[file, sqlite]: ...
+@overload
+def open(path: Union[os.PathLike, str], format: Optional[str] = None, *, should_stream: Literal[True]) -> stream: ...
+@overload
+def open(
+    path: Union[os.PathLike, str], format: Optional[str] = None, *, should_stream: bool
+) -> Union[file, sqlite, stream]: ...
+def open(
+    path: Union[os.PathLike, str], format: Optional[str] = None, should_stream: bool = False
+) -> Union[file, sqlite, stream]:
     """Loads an IFC dataset from a filepath
+
+    :param should_stream: Whether to open the file in streaming mode. Could be useful
+        for reading large files.
 
     You can specify a file format. If no format is given, it is guessed from
     its extension. Currently supported specified format: .ifc | .ifcZIP |

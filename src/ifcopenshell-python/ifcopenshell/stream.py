@@ -19,6 +19,7 @@
 from __future__ import annotations
 
 try:
+    import os
     import re
 
     import ifcopenshell.util.attribute
@@ -31,7 +32,7 @@ try:
     from typing import Any, NoReturn, Union, Optional
 
     class StreamTransformer(Transformer):
-        file: "file"
+        file: file
 
         def string(self, items):
             return str(items[0])[1:-1]
@@ -98,12 +99,12 @@ try:
             self.filepath = filepath
 
             self.file = open(filepath, "r")
-            self.id_map = {}
-            self.class_map = {}
-            self.id_offset = {}
+            self.id_map: dict[int, str] = {}
+            self.class_map: dict[str, list[int]] = {}
+            self.id_offset: dict[int, int] = {}
             self.reference_pattern = re.compile(r"#(\d+)")
             self.entity_cache: dict[int, stream_entity] = {}
-            self.inverses = {}
+            self.inverses: dict[int, list[int]] = {}
 
             # common.INT doesn't support negative integers.
             grammar = r"""
@@ -175,7 +176,7 @@ try:
                     self.id_offset[step_id] = offset
                 elif line.startswith("FILE_SCHEMA"):
                     self.schema = line.split("'")[1]
-                    self.ifc_schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(self.schema)
+                    self.ifc_schema = ifcopenshell.schema_by_name(self.schema)
                     for ifc_class in exclude_classes:
                         declaration = self.ifc_schema.declaration_by_name(ifc_class)
                         exclude.update([st.name().upper() for st in ifcopenshell.util.schema.get_subtypes(declaration)])
@@ -186,7 +187,7 @@ try:
         def preprocess_schema(self) -> None:
             self.ifc_class_names = {}
             self.ifc_class_subtypes = {}
-            self.ifc_class_attributes = {}
+            self.ifc_class_attributes: dict[str, dict[str, ifcopenshell_wrapper.attribute]] = {}
             self.ifc_class_inverse_attributes = {}
             self.ifc_class_references = {}
             self.ifc_class_inverses = {}
@@ -289,6 +290,8 @@ try:
             pass
 
     class stream_entity(entity_instance):
+        stream_wrapper: stream_wrapper
+
         def __init__(self, id: int, ifc_class: str, file: stream = None):
             if not ifc_class:
                 print(id, ifc_class, file)
@@ -401,11 +404,11 @@ try:
             self.file = file
             self.attributes = self.file.ifc_class_attributes[self.ifc_class]
             self.inverse_attributes = self.file.ifc_class_inverse_attributes[self.ifc_class]
-            self.attribute_cache = {}
+            self.attribute_cache: dict[str, Any] = {}
             self.inverse_attribute_cache = {}
 
         def __repr__(self) -> str:
-            return "todo"
+            return f"stream_wrapper '#{self.id}={self.ifc_class}(...)'"
 
 except ImportError as e:
     import sys

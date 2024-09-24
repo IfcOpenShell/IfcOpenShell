@@ -28,11 +28,13 @@ import numpy as np
 import multiprocessing
 import ifcopenshell
 import ifcopenshell.geom
-import ifcopenshell.util.unit
-import ifcopenshell.util.shape
-import ifcopenshell.util.schema
 import ifcopenshell.util.attribute
+import ifcopenshell.util.element
 import ifcopenshell.util.placement
+import ifcopenshell.util.schema
+import ifcopenshell.util.shape
+import ifcopenshell.util.unit
+from typing import Any
 
 SQLTypes = typing.Literal["SQLite", "MySQL"]
 
@@ -103,7 +105,7 @@ class Patcher:
         self.password = password
         self.database = database
 
-    def patch(self):
+    def patch(self) -> None:
         self.full_schema = True  # Set true for ifcopenshell.sqlite
         self.is_strict = False
         self.should_expand = False  # Set false for ifcopenshell.sqlite
@@ -173,7 +175,7 @@ class Patcher:
         self.db.commit()
         self.db.close()
 
-    def create_geometry(self):
+    def create_geometry(self) -> None:
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
 
         self.shape_rows = {}
@@ -239,7 +241,7 @@ class Patcher:
                 break
         print("Done creating geometry")
 
-    def create_id_map(self):
+    def create_id_map(self) -> None:
         if self.sql_type == "sqlite":
             statement = (
                 "CREATE TABLE IF NOT EXISTS id_map (ifc_id integer PRIMARY KEY NOT NULL UNIQUE, ifc_class text);"
@@ -254,7 +256,7 @@ class Patcher:
             """
         self.c.execute(statement)
 
-    def create_metadata(self):
+    def create_metadata(self) -> None:
         # There is no "standard" SQL serialisation, so we propose a convention
         # of a "metadata" table to hold high level metadata. This includes the
         # preprocessor field to uniquely identify the "variant" of SQL schema
@@ -278,7 +280,7 @@ class Patcher:
             self.c.execute(statement)
             self.c.execute("INSERT INTO metadata VALUES (%s, %s, %s);", metadata)
 
-    def create_pset_table(self):
+    def create_pset_table(self) -> None:
         statement = """
         CREATE TABLE IF NOT EXISTS psets (
             ifc_id integer NOT NULL,
@@ -289,7 +291,7 @@ class Patcher:
         """
         self.c.execute(statement)
 
-    def create_geometry_table(self):
+    def create_geometry_table(self) -> None:
         statement = """
         CREATE TABLE IF NOT EXISTS shape (
             ifc_id integer NOT NULL,
@@ -319,7 +321,7 @@ class Patcher:
 
         self.c.execute(statement)
 
-    def create_sqlite_table(self, ifc_class, declaration):
+    def create_sqlite_table(self, ifc_class: str, declaration: ifcopenshell.ifcopenshell_wrapper.declaration) -> None:
         statement = f"CREATE TABLE IF NOT EXISTS {ifc_class} ("
 
         if self.should_expand:
@@ -360,7 +362,7 @@ class Patcher:
         print(statement)
         self.c.execute(statement)
 
-    def create_mysql_table(self, ifc_class, declaration):
+    def create_mysql_table(self, ifc_class: str, declaration: ifcopenshell.ifcopenshell_wrapper.declaration) -> None:
         declaration = self.schema.declaration_by_name(ifc_class)
         statement = f"CREATE TABLE IF NOT EXISTS {ifc_class} ("
         statement += "`ifc_id` int(10) unsigned NOT NULL,"
@@ -404,7 +406,7 @@ class Patcher:
         print(statement)
         self.c.execute(statement)
 
-    def insert_data(self, ifc_class):
+    def insert_data(self, ifc_class: str) -> None:
         print("Extracting data for", ifc_class)
         elements = self.file.by_type(ifc_class, include_subtypes=False)
 
@@ -478,14 +480,14 @@ class Patcher:
             if pset_rows:
                 self.c.executemany("INSERT INTO psets VALUES (%s, %s, %s, %s);", pset_rows)
 
-    def serialise_value(self, element, value):
+    def serialise_value(self, element: ifcopenshell.entity_instance, value: Any) -> Any:
         return element.walk(
             lambda v: isinstance(v, ifcopenshell.entity_instance),
             lambda v: v.id() if v.id() else {"type": v.is_a(), "value": v.wrappedValue},
             value,
         )
 
-    def get_permutations(self, lst, indexes):
+    def get_permutations(self, lst: list[Any], indexes: list[int]) -> list[Any]:
         nested_lists = [lst[i] for i in indexes]
 
         # Generate the Cartesian product of the nested lists
@@ -501,7 +503,7 @@ class Patcher:
 
         return final_lists
 
-    def is_entity_list(self, attribute):
+    def is_entity_list(self, attribute: ifcopenshell.ifcopenshell_wrapper.attribute) -> bool:
         attribute = str(attribute.type_of_attribute())
         if (attribute.startswith("<list") or attribute.startswith("<set")) and "<entity" in attribute:
             for data_type in re.findall("<(.*?) .*?>", attribute):
