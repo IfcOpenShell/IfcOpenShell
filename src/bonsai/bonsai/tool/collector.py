@@ -39,74 +39,88 @@ class Collector(bonsai.core.tool.Collector):
                     users_collection.objects.unlink(obj)
 
         element = tool.Ifc.get_entity(obj)
-        assert element
 
-        if tool.Geometry.is_locked(element):
-            tool.Geometry.lock_object(obj)
+        # Note that tool.Geometry.is_locked is only checked within the if
+        # statements for efficiency as it is a slow check.
 
         if element.is_a("IfcGridAxis"):
+            if tool.Geometry.is_locked(element):
+                tool.Geometry.lock_object(obj)
             element = (element.PartOfU or element.PartOfV or element.PartOfW)[0]
+        elif element.is_a("IfcGrid"):
+            if tool.Geometry.is_locked(element):
+                tool.Geometry.lock_object(obj)
 
         if element.is_a("IfcProject"):
+            if tool.Geometry.is_locked(element):
+                tool.Geometry.lock_object(obj)
             if collection := cls._create_own_collection(obj):
-                cls.link_to_collection_safe(obj, collection)
-                cls.link_to_collection_safe(collection, bpy.context.scene.collection)
+                cls.link_collection_object_safe(collection, obj)
+                cls.link_collection_child_safe(bpy.context.scene.collection, collection)
         elif element.is_a("IfcTypeProduct"):
             collection = cls._create_project_child_collection("IfcTypeProduct")
-            cls.link_to_collection_safe(obj, collection)
+            cls.link_collection_object_safe(collection, obj)
         elif element.is_a("IfcOpeningElement"):
             collection = cls._create_project_child_collection("IfcOpeningElement")
-            cls.link_to_collection_safe(obj, collection)
+            cls.link_collection_object_safe(collection, obj)
         elif element.is_a("IfcStructuralItem"):
             collection = cls._create_project_child_collection("IfcStructuralItem")
-            cls.link_to_collection_safe(obj, collection)
+            cls.link_collection_object_safe(collection, obj)
         elif element.is_a("IfcLinearPositioningElement"):
+            if tool.Geometry.is_locked(element):
+                tool.Geometry.lock_object(obj)
             collection = cls._create_project_child_collection("IfcLinearPositioningElement")
-            cls.link_to_collection_safe(obj, collection)
+            cls.link_collection_object_safe(collection, obj)
         elif element.is_a("IfcReferent"):
+            if tool.Geometry.is_locked(element):
+                tool.Geometry.lock_object(obj)
             collection = cls._create_project_child_collection("IfcReferent")
-            cls.link_to_collection_safe(obj, collection)
+            cls.link_collection_object_safe(collection, obj)
         elif tool.Ifc.get_schema() == "IFC2X3" and element.is_a("IfcSpatialStructureElement"):
+            if tool.Geometry.is_locked(element):
+                tool.Geometry.lock_object(obj)
             if collection := cls._create_own_collection(obj):
-                cls.link_to_collection_safe(obj, collection)
+                cls.link_collection_object_safe(collection, obj)
                 project_obj = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
-                cls.link_to_collection_safe(collection, project_obj.BIMObjectProperties.collection)
+                cls.link_collection_child_safe(project_obj.BIMObjectProperties.collection, collection)
         elif (
             tool.Ifc.get_schema() != "IFC2X3"
             and element.is_a("IfcSpatialElement")
             and not element.is_a("IfcSpatialZone")
         ):
+            if tool.Geometry.is_locked(element):
+                tool.Geometry.lock_object(obj)
             if collection := cls._create_own_collection(obj):
-                cls.link_to_collection_safe(obj, collection)
+                cls.link_collection_object_safe(collection, obj)
                 project_obj = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
-                cls.link_to_collection_safe(collection, project_obj.BIMObjectProperties.collection)
+                cls.link_collection_child_safe(project_obj.BIMObjectProperties.collection, collection)
         elif element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
             if collection := cls._create_own_collection(obj):
-                cls.link_to_collection_safe(obj, collection)
+                cls.link_collection_object_safe(collection, obj)
                 project_obj = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
-                cls.link_to_collection_safe(collection, project_obj.BIMObjectProperties.collection)
+                cls.link_collection_child_safe(project_obj.BIMObjectProperties.collection, collection)
         elif element.is_a("IfcAnnotation") and (drawing_obj := cls.get_annotation_drawing_obj(element)):
-            cls.link_to_collection_safe(obj, drawing_obj.BIMObjectProperties.collection)
+            cls.link_collection_object_safe(drawing_obj.BIMObjectProperties.collection, obj)
         elif container := ifcopenshell.util.element.get_container(element):
             container_obj = tool.Ifc.get_object(container)
             if not (collection := container_obj.BIMObjectProperties.collection):
                 cls.assign(container_obj)
                 collection = container_obj.BIMObjectProperties.collection
-            cls.link_to_collection_safe(obj, collection)
+            cls.link_collection_object_safe(collection, obj)
         else:
             collection = cls._create_project_child_collection("Unsorted")
-            cls.link_to_collection_safe(obj, collection)
+            cls.link_collection_object_safe(collection, obj)
 
     @classmethod
     def _create_project_child_collection(cls, name: str) -> bpy.types.Collection:
         """get or create new collection inside project"""
-        collection = bpy.data.collections.get(name)
-        if not collection:
-            collection = bpy.data.collections.new(name)
-            project_obj = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
-            project_obj.BIMObjectProperties.collection.children.link(collection)
-            if layer_collection := tool.Blender.get_layer_collection(collection):
-                cls.set_layer_collection_visibility(layer_collection)
+        if collection := bpy.data.collections.get(name):
+            return collection
+        collection = bpy.data.collections.new(name)
+        project_obj = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
+        project_obj.BIMObjectProperties.collection.children.link(collection)
+        if layer_collection := tool.Blender.get_layer_collection(collection):
+            cls.set_layer_collection_visibility(layer_collection)
         return collection
 
     @classmethod
@@ -129,26 +143,19 @@ class Collector(bonsai.core.tool.Collector):
                         return tool.Ifc.get_object(related_object)
 
     @classmethod
-    def link_to_collection_safe(
-        cls, obj_or_col: Union[bpy.types.Object, bpy.types.Collection], collection: bpy.types.Collection
-    ) -> None:
-        """Link `obj_or_col` (an object or a collection) to the `collection`
-        if `obj_or_col` is not part of that collection already.
+    def link_collection_object_safe(cls, collection: bpy.types.Collection, obj: bpy.types.Object) -> None:
+        # Catching an exception is 10x faster than doing collection.objects.find
+        try:
+            collection.objects.link(obj)
+        except:
+            pass
 
-        Method is needed to avoid RuntimeErrors like below that occur if you link object/collection
-        to the collection directly and they are already part of that collection.
-        RuntimeError: Error: Object 'xxx' already in collection 'xxx'.
-        """
-        # TODO: Maybe just catching RuntimeError is faster?
-        if isinstance(obj_or_col, bpy.types.Object):
-            if collection.objects.find(obj_or_col.name) != -1:
-                return
-            collection.objects.link(obj_or_col)
-            return
-
-        if collection.children.find(obj_or_col.name) != -1:
-            return
-        collection.children.link(obj_or_col)
+    @classmethod
+    def link_collection_child_safe(cls, collection: bpy.types.Collection, child: bpy.types.Collection) -> None:
+        try:
+            collection.children.link(child)
+        except:
+            pass
 
     @classmethod
     def set_layer_collection_visibility(cls, layer_collection):
