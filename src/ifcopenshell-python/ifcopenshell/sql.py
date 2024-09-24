@@ -153,10 +153,11 @@ class sqlite(file):
             entity = sqlite_entity(id, ifc_class, self)
             self.entity_cache[id] = entity
             return entity
-        self.cursor.execute("SELECT ifc_id, ifc_class FROM id_map LIMIT 1")
+        self.cursor.execute("SELECT ifc_id, ifc_class FROM id_map WHERE ifc_id = ? LIMIT 1", (id,))
         row = self.cursor.fetchone()
         if row:
-            self.id_map[row[0]] = row[1]
+            _, ifc_class = row
+            self.id_map[id] = ifc_class
             entity = sqlite_entity(id, ifc_class, self)
             self.entity_cache[id] = entity
             return entity
