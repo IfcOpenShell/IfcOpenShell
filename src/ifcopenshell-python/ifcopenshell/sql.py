@@ -402,6 +402,39 @@ class sqlite_entity(entity_instance):
             return self.sqlite_wrapper.id == other.sqlite_wrapper.id
         assert False  # not implemented
 
+    def __repr__(self):
+        sqlite_wrapper = self.sqlite_wrapper
+        attribute_cache = sqlite_wrapper.attribute_cache
+        attr_strs: list[str] = []
+
+        if not attribute_cache:
+            self.__getitem__(0)  # This will get all attributes
+
+        def serialize_attr_value(value: Any) -> str:
+            if value is None:
+                attr_str = "$"
+            # Enums are not represented correctly but that should do.
+            elif isinstance(value, str):
+                attr_str = f"'{value}'"
+            elif isinstance(value, (int, float)):
+                attr_str = str(value)
+            elif isinstance(value, sqlite_entity):
+                attr_str = f"#{value.sqlite_wrapper.id}"
+            elif isinstance(value, entity_instance):
+                attr_str = str(value)
+            elif isinstance(value, tuple):
+                attr_str = ",".join(serialize_attr_value(v) for v in value)
+                attr_str = f"({attr_str})"
+            else:
+                attr_str = f"-"
+            return attr_str
+
+        for attr_name in sqlite_wrapper.attributes:
+            value = attribute_cache[attr_name]
+            attr_strs.append(serialize_attr_value(value))
+        attr_str = ",".join(attr_strs)
+        return f"#{sqlite_wrapper.id}={sqlite_wrapper.ifc_class.upper()}({attr_str});"
+
     def __hash__(self) -> int:
         if self.sqlite_wrapper.id:
             return hash((self.sqlite_wrapper.id, self.sqlite_wrapper.file.filepath))
