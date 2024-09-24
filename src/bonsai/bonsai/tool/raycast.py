@@ -176,7 +176,7 @@ class Raycast(bonsai.core.tool.Raycast):
                 points.append([distance, (division_point, "Edge Center")])
 
             intersection = tool.Cad.intersect_edges_v2((ray_target, loc), (world_v1, world_v2))
-            if intersection:
+            if intersection[0]:
                 if tool.Cad.is_point_on_edge(intersection[1], (world_v1, world_v2)):
                     distance = (intersection[1] - intersection[0]).length
                     if distance < 0.8:
