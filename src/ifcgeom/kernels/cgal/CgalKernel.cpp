@@ -154,7 +154,7 @@ CGAL::Nef_polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_nef_polyhe
 
 bool CgalKernel::convert(const taxonomy::shell::ptr l, cgal_shape_t& shape) {
 	for (auto& f : l->children) {
-		if (f->basis) {
+		if (f->basis && f->basis->kind() != taxonomy::PLANE) {
 			Logger::Error("Non-planar faces not supported at the moment");
 			return false;
 		}
