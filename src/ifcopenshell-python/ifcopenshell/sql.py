@@ -19,6 +19,7 @@ from __future__ import annotations
 import re
 import json
 import ifcopenshell
+import ifcopenshell.util.schema
 from pathlib import Path
 from typing import Any, NoReturn, Union, Optional, TYPE_CHECKING
 from . import ifcopenshell_wrapper
@@ -35,6 +36,8 @@ except ImportError as e:
 
 
 class sqlite(file):
+    schema: ifcopenshell.util.schema.IFC_SCHEMA = "IFC4"
+
     def __init__(self, filepath: str):
         """
         Open existing sqlite IFC database.
