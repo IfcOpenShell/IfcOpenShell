@@ -18,11 +18,12 @@ class ShaderInfo:
         self.args = {}
         self.indices = []
         self.text_info = []
+        self.info = []
     
     def update(self):
-        self.get_shader()
-        self.get_args_and_indices()
-        if len(self.args["position"]):
+        self.info = []
+        self.get_linear_loads()
+        if len(self.info):
             self.is_empty = False
         
     def get_shader(self):
@@ -30,19 +31,18 @@ class ShaderInfo:
         return: shader"""
         if self.shader_type == "DistributedLoad":
             vert_out = gpu.types.GPUStageInterfaceInfo("my_interface")
-            vert_out.smooth('VEC3', "colour")
             vert_out.smooth('VEC3', "forces")
-            vert_out.smooth('VEC2', "co")
+            vert_out.smooth('VEC3', "co")
         
             shader_info = gpu.types.GPUShaderCreateInfo()
             shader_info.push_constant('MAT4', "viewProjectionMatrix")
+            shader_info.push_constant('VEC4', "color")
             shader_info.push_constant('FLOAT', "spacing")
             shader_info.push_constant('FLOAT', "maxload")
         
             shader_info.vertex_in(0, 'VEC3', "position")
-            shader_info.vertex_in(1, 'VEC3', "color")
-            shader_info.vertex_in(2, 'VEC3', "sin_quad_lin_forces")
-            shader_info.vertex_in(3, 'VEC2', "uv_coord")
+            shader_info.vertex_in(1, 'VEC3', "sin_quad_lin_forces")
+            shader_info.vertex_in(2, 'VEC3', "coord")
             
             shader_info.vertex_out(vert_out)
             shader_info.fragment_out(0, 'VEC4', "FragColor")
@@ -50,9 +50,8 @@ class ShaderInfo:
             shader_info.vertex_source(
                 "void main()"
                 "{"
-                "  colour = color;"
                 "  gl_Position = viewProjectionMatrix * vec4(position, 1.0f);"
-                "  co = uv_coord;"
+                "  co = coord;"
                 "  forces = sin_quad_lin_forces;"
                 "  gl_Position = viewProjectionMatrix * vec4(position, 1.0f);"
                 "}"
@@ -73,34 +72,39 @@ class ShaderInfo:
                 "float sinvalue = forces.x;"
                 "float quadraticvalue = forces.y;"
                 "float linearvalue = forces.z;"
+                "x = co.x/co.z;"
                 "float f = (sin(x*3.1416)*sinvalue"
                       "+(-4.*x*x+4.*x)*quadraticvalue"
                       "+linearvalue)/maxload;"
                 "float mask = step(0.,y)*step(y,f)+step(y,0.)*step(f,y);"
             
                 "float top = step(abs(y-f),0.2*1.2*spacing);"
-                "float d = clamp(0.2*(1-3*(abs_y*y))+top+b+c,0.0,0.5)*mask;"
+                "float d = clamp(0.1+top+b+c,0.0,0.5)*mask;"
         
-                "gl_FragColor = vec4(colour,d);"
+                "FragColor = vec4(color.xyz,d*color.w);"
             "}"
             )
         
-            self.shader = gpu.shader.create_from_info(shader_info)
+            shader = gpu.shader.create_from_info(shader_info)
             del vert_out
             del shader_info
+            return shader
 
-    def get_args_and_indices(self): #for now it only works for distributed loads
+
+    def get_linear_loads(self): #for now it only works for distributed loads
         coords = []
         indices = []
         load_info = []
-        coords_2d = []
+        coords_for_shader = []
         color = []
         text_info = []
+        uniforms = []
+        info = []
     
         list_of_curve_members = tool.Ifc.get().by_type("IfcStructuralCurveMember")
         for member in list_of_curve_members:
             activity_list = [getattr(a, 'RelatedStructuralActivity', None) for a in getattr(member, 'AssignedStructuralActivity', None)
-                             if getattr(a, 'RelatedStructuralActivity', None).is_a() == 'IfcStructuralCurveAction']
+                             if getattr(a, 'RelatedStructuralActivity', None).is_a() in ['IfcStructuralCurveAction','IfcStructuralLinearAction']]
             if len(activity_list) == 0:
                 continue
             # member is a structural curve member
@@ -117,9 +121,9 @@ class ShaderInfo:
                 start_co = blender_object.matrix_world @ blender_object.data.vertices[0].co
                 end_co = blender_object.matrix_world @ blender_object.data.vertices[1].co
             x_axis = Vector(end_co-start_co).normalized()
-            direction = getattr(member, 'Axis', None)
+            z_direction = getattr(member, 'Axis')
             #local coordinates
-            z_axis = Vector(getattr(direction, 'DirectionRatios', None)).normalized()
+            z_axis = Vector(getattr(z_direction, 'DirectionRatios', None)).normalized()
             y_axis = z_axis.cross(x_axis).normalized()
             z_axis = x_axis.cross(y_axis).normalized()
             global_to_local = Matrix(((x_axis.x,y_axis.x,z_axis.x,0),
@@ -128,57 +132,60 @@ class ShaderInfo:
                                       (0,0,0,1)))
     
             #get shader args for each direction
-            reference_frame = 'LOCAL_COORDS' #make it a scene property so it can be changed in a panel
-            is_global =  reference_frame == 'GLOBAL_COORDS'
-            x_match = x_axis == Vector((1,0,0))
-            y_match = y_axis == Vector((0,1,0))
-            z_match = z_axis == Vector((0,0,1))
+            reference_frame = 'GLOBAL_COORDS' #make it a scene property so it can be changed in a panel
+            is_local =  reference_frame == 'LOCAL_COORDS'
+            x_match = abs(Vector((1,0,0)).dot(x_axis)) > 0.99
+            y_match = abs(Vector((0,1,0)).dot(x_axis)) > 0.99
+            z_match = abs(Vector((0,0,1)).dot(x_axis)) > 0.99
             direction_dict = {
-                "fx": Vector((1,0,0)) if is_global and not x_match else Vector((0,1,1)) if is_global else y_axis+z_axis,
-                "fy": Vector((0,1,0)) if is_global and not y_match else Vector((1,0,1)) if is_global else y_axis,
-                "fz": Vector((0,0,1)) if is_global and not z_match else Vector((1,1,0)) if is_global else z_axis,
-                "mx": Vector((1,0,0)) if is_global and not x_match else Vector((0,1,1)) if is_global else y_axis+z_axis,
-                "my": Vector((0,1,0)) if is_global and not y_match else Vector((1,0,1)) if is_global else y_axis,
-                "mz": Vector((0,0,1)) if is_global and not z_match else Vector((1,1,0)) if is_global else z_axis,
+                "fx": y_axis+z_axis if is_local else Vector((1,0,0)) if not x_match else Vector((0,1,1)),
+                "fy": y_axis if is_local else Vector((0,1,0)) if not y_match else Vector((1,0,1)),
+                "fz": z_axis if is_local else Vector((0,0,1)) if not z_match else Vector((1,1,0)),
+                "mx": z_axis-y_axis if is_local or x_match else Vector((1,0,0)).cross(x_axis),
+                "my": z_axis if is_local else Vector((-1,0,1)) if y_match else Vector((0,1,0)).cross(x_axis).normalized(),
+                "mz": y_axis if is_local else Vector((-1,1,0)) if z_match else Vector((0,0,1)).cross(x_axis).normalized()
             }
-            xyzdict = get_loads_per_direction(activity_list,global_to_local)
+            shader = self.get_shader()
+            member_length =  Vector(end_co-start_co).length
+            loads_dict, maxforce = get_loads_per_direction(activity_list,global_to_local,member_length)
             keys = ["fx","fy","fz","mx","my","mz"]
-            maxforce = 200 #should be the maximum value expected for the loads
-            memberlength =  Vector(end_co-start_co).length
+
             for key in keys:
-                polyline = xyzdict[key]["polyline"]
-                sinus = xyzdict[key]["sinus"]
-                quadratic = xyzdict[key]["quadratic"]
-                constant = xyzdict[key]["constant"]
+                polyline = loads_dict[key]["polyline"]
+                sinus = loads_dict[key]["sinus"]
+                quadratic = loads_dict[key]["quadratic"]
+                constant = loads_dict[key]["constant"]
                 direction = direction_dict[key] #depends on the key and on the frame of reference
-                color_axis = (0,0,1)
+                color_axis = (0,0,1,1)
                 if 'x' in key:
-                    color_axis = (1,0,0)
+                    color_axis = (1,0,0,1)
                 if 'y' in key:
-                    color_axis = (0,1,0)
+                    color_axis = (0,1,0,1)
+
                 addindex = len(coords)
                 counter = 0
                 for i in range(len(polyline)-1):
                     current = Vector(polyline[i]+[0])
                     nextitem = Vector(polyline[i+1]+[0])
 
-                    if current[1] != 0 or nextitem[1] != 0: #if there is load in the z direction
+                    if any([current.y, nextitem.y,constant,quadratic,sinus]): #if there is load in the z direction
                         negative = -direction + start_co + x_axis*current.x
                         positive = direction + start_co + x_axis*current.x
                         coords.append(negative)
-                        coords_2d.append((current.x, 1.0))
+                        coords_for_shader.append((current.x, 1.0,member_length))
                         load_info.append((sinus, quadratic, current.y + constant))
                         color.append(color_axis)
                         #info to render load value
-                        x = current.length/memberlength
+                        x = current.x/member_length
                         func = sin(x*3.1416)*sinus + (-4.*x*x+4.*x)*quadratic+constant+current.y
                         if func:
                             text_info.append(
                                 {"position": -direction*func/maxforce + start_co + x_axis*current.x,
                                 "normal": direction.cross(x_axis).normalized(), "text": f'{func:.2f} '}
                                 )
+                        maxforce = max(maxforce,abs(func))
                         coords.append(positive)
-                        coords_2d.append((current[0],-1.0))
+                        coords_for_shader.append((current[0],-1.0,member_length))
                         load_info.append((sinus, quadratic, current.y + constant))
                         color.append(color_axis)
 
@@ -186,37 +193,50 @@ class ShaderInfo:
                                         1 + counter + addindex,
                                         2 + counter + addindex))
                         indices.append((3 + counter + addindex,
-                                        1 + counter + addindex,
-                                        2 + counter + addindex))
+                                        2 + counter + addindex,
+                                        1 + counter + addindex))
                         if i == len(polyline)-2:
                             negative = -direction + start_co + x_axis*nextitem.x
                             positive = direction + start_co + x_axis*nextitem.x
                             coords.append(negative)
-                            coords_2d.append((nextitem.x, 1.0))
+                            coords_for_shader.append((nextitem.x, 1.0,member_length))
                             load_info.append((sinus, quadratic, nextitem.y + constant))
                             color.append(color_axis)
                             #info to render load value
-                            x = nextitem.length/memberlength
+                            x = nextitem.x/member_length
                             func = sin(x*3.1416)*sinus + (-4.*x*x+4.*x)*quadratic+constant+nextitem.y
                             if func:
                                 text_info.append(
                                     {"position": -direction*func/maxforce + start_co + x_axis*nextitem.x,
                                     "normal": direction.cross(x_axis).normalized(), "text": f'{func:.2f} '}
                                     )
-
+                            maxforce = max(maxforce,abs(func))
                             coords.append(positive)
-                            coords_2d.append((nextitem.x,-1.0))
+                            coords_for_shader.append((nextitem.x,-1.0,member_length))
                             load_info.append((sinus, quadratic, nextitem.y + constant))
                             color.append(color_axis)
 
                         counter += 2
-        self.args = {"position": coords,"color": color,
-                     "sin_quad_lin_forces": load_info,"uv_coord": coords_2d}
-        self.indices = indices
+                if len(coords):
+                    self.info.append(
+                    {
+                        "shader": shader,
+                        "args": {"position": coords, "sin_quad_lin_forces": load_info,"coord": coords_for_shader},
+                        "indices": indices,
+                        "uniforms": [["color", color_axis],["spacing", 0.2],["maxload",maxforce]]
+                    }
+                )
+                coords = []
+                load_info = []
+                coords_for_shader = []
+                indices = []
+            for info in self.info:
+                info["uniforms"][2][1] = maxforce
+
         self.text_info = text_info
 
 
-def get_loads_per_direction(activity_list,global_to_local):
+def get_loads_per_direction(activity_list,global_to_local,member_length):
     """ returns a dict with values for applied loads in each direction
      return = {
                  "fx": values_in_this_direction
@@ -247,9 +267,21 @@ def get_loads_per_direction(activity_list,global_to_local):
         else:
             final_list.append([pos]+value["before"])
             final_list.append([pos]+value["after"])
-    if len(final_list)>2:
-        del final_list[0]
-        del final_list[-1]
+    
+    if not len(final_list) and any(const+quad+sinus):
+        final_list.append([0.0,0.0,0.0,0.0,0.0,0.0,0.0])
+        final_list.append([member_length,0.0,0.0,0.0,0.0,0.0,0.0])
+        
+    elif len(final_list) and any(const+quad+sinus):
+        if final_list[0][0]: #if first item location is not 0 append an item at the zero
+            final_list = [[0.0,0.0,0.0,0.0,0.0,0.0,0.0]]+final_list
+        else:
+            del final_list[0]
+        if abs(final_list[-1][0] - member_length) > 0.01:
+            final_list.append([member_length,0.0,0.0,0.0,0.0,0.0,0.0])
+        else:
+            del final_list[-1]
+        
     array = np.array(final_list) #7xn -> ["pos","fx","fy","fz","mx","my","mz"]
     keys = ["fx","fy","fz","mx","my","mz"]
     polyline = {
@@ -268,11 +300,16 @@ def get_loads_per_direction(activity_list,global_to_local):
                   "my": {"constant": 0, "quadratic": 0,"sinus": 0,"polyline": []},
                   "mz": {"constant": 0, "quadratic": 0,"sinus": 0,"polyline": []},
                  }
+    max_load = 0
     for component, key in enumerate(keys):
-        if( sinus[component] or quad[component] or const[component] or
-            any(item != 0 for item in array[:,component+1])):
+        if(any([sinus[component], quad[component], const[component]]) or
+            any(item for item in array[:,component+1])):
+
             for currentitem in final_list:
                 polyline[key].append([currentitem[0],currentitem[component+1]])
+                x = currentitem[0]/member_length
+                func = sin(x*3.1416)*sinus[component] + (-4.*x*x+4.*x)*quad[component]+const[component]+currentitem[component+1]
+                max_load = max(max_load,abs(func))
             inner_dict = return_value[key]
             inner_dict["constant"] = const[component]
             inner_dict["quadratic"] = quad[component]
@@ -280,7 +317,7 @@ def get_loads_per_direction(activity_list,global_to_local):
             inner_dict["polyline"] = polyline[key]
             return_value[key] = inner_dict
 
-    return return_value
+    return return_value, max_load+abs(sinus[component]+quad[component])
 
 
 def getuniquepositionlist(load_config_list):
@@ -425,7 +462,7 @@ def get_loads_dict(activity_list,global_to_local):
     for activity in activity_list:
         load = activity.AppliedLoad
         global_or_local = activity.GlobalOrLocal
-        reference_frame = 'LOCAL_COORDS' #make it a scene property so it can be changed in a panel
+        reference_frame = 'GLOBAL_COORDS' #make it a scene property so it can be changed in a panel
         transform_matrix = Matrix()
         if reference_frame == 'LOCAL_COORDS' and global_or_local != reference_frame:
             transform_matrix = global_to_local
@@ -457,7 +494,7 @@ def get_loads_dict(activity_list,global_to_local):
         else:
             forcevalues = get_force_vector(load,transform_matrix)
             momentvalues = get_moment_vector(load,transform_matrix)
-            if 'CONST' == getattr(activity, 'PredefinedType', None):
+            if 'CONST' == getattr(activity, 'PredefinedType', None) or activity.is_a('IfcStructuralLinearAction'):
                 constant_force += forcevalues
                 constant_moment += momentvalues
             elif 'PARABOLA' == getattr(activity, 'PredefinedType', None):
