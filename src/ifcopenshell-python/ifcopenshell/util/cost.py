@@ -308,8 +308,7 @@ def get_product_quantity_names(elements: list[ifcopenshell.entity_instance]) -> 
 
 
 def get_cost_schedule(cost_item: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
-    """Returns the cost schedule of a cost item.
-    """
+    """Returns the cost schedule of a cost item."""
     for rel in cost_item.HasAssignments or []:
         if rel.is_a("IfcRelAssignsToControl") and rel.RelatingControl.is_a("IfcCostSchedule"):
             return rel.RelatingControl
@@ -320,12 +319,10 @@ def get_cost_schedule(cost_item: ifcopenshell.entity_instance) -> ifcopenshell.e
 def get_cost_rate(
     file: ifcopenshell_wrapper.file, cost_item: ifcopenshell.entity_instance
 ) -> Optional[ifcopenshell.entity_instance]:
-    """Returns the cost rate of a cost item.
-
-    """
+    """Returns the cost rate of a cost item."""
     # There is no direct relationship between a cost item and a cost rate in IFC, so we need to infer it, based on the assumption that cost_rate.CostValues == cost_item.CostValues.
     if get_cost_schedule(cost_item).PredefinedType == "SCHEDULEOFRATES":
-        return None # Cost item is already a cost rate
+        return None  # Cost item is already a cost rate
     if cost_item.CostValues:
         potential_rates = file.get_inverse(cost_item.CostValues[0])
         for potential_rate in potential_rates:
