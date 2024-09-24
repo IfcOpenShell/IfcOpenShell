@@ -309,10 +309,10 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator):
         if walls:
             if is_polyline_closed:
                 for wall1, wall2 in zip(walls, walls[1:] + [walls[0]]):
-                    DumbWallJoiner().join_V(wall1["obj"], wall2["obj"])
+                    DumbWallJoiner().join_V(wall2["obj"], wall1["obj"])
             else:
                 for wall1, wall2 in zip(walls[:-1], walls[1:]):
-                    DumbWallJoiner().join_V(wall1["obj"], wall2["obj"])
+                    DumbWallJoiner().join_V(wall2["obj"], wall1["obj"])
 
     def modal(self, context, event):
         if not self.relating_type:
