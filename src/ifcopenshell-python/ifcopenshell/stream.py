@@ -316,11 +316,9 @@ try:
         def __getitem__(self, key: int) -> Any:
             return self.__getattr__(list(self.stream_wrapper.attributes.keys())[key])
 
-        def __setattr__(self, key: str, value: int) -> None:
-            query = f"UPDATE `{self.stream_wrapper.ifc_class}` SET `{key}` = ? WHERE ifc_id = {self.stream_wrapper.id}"
-            self.stream_wrapper.file.cursor.execute(query, (value,))
-            self.stream_wrapper.file.db.commit()
-            self.stream_wrapper.attribute_cache = {}
+        def __setattr__(self, key: str, value: int) -> NoReturn:
+            """Not supported during streaming."""
+            assert False, "Not supported during streaming."
 
         def __getattr__(self, name: str) -> Any:
             INVALID, FORWARD, INVERSE = range(3)
