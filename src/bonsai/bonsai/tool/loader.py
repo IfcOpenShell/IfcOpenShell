@@ -782,43 +782,33 @@ class Loader(bonsai.core.tool.Loader):
 
     @classmethod
     def get_offset_point(cls, ifc_file: ifcopenshell.file) -> Union[npt.NDArray[np.float64], None]:
-        elements_checked = 0
-        # If more than these elements aren't far away, the file probably isn't
-        # absolutely positioned. We check more than 1 because sometimes users
-        # try to be clever and put "origin marker" objects.
-        element_checking_threshold = 3
-        elements = ifc_file.by_type("IfcElement")
+        # Check walls first, as they're usually cheap
+        elements = ifc_file.by_type("IfcWall")
+        elements += ifc_file.by_type("IfcElement")
 
         if ifc_file.schema not in ("IFC2X3", "IFC4"):
-            if not elements:
-                elements = ifc_file.by_type("IfcLinearPositioningElement")
-            if not elements:
-                elements = ifc_file.by_type("IfcReferent")
-            if not elements:
-                elements = ifc_file.by_type("IfcGrid")
+            elements += ifc_file.by_type("IfcLinearPositioningElement")
+            elements += ifc_file.by_type("IfcReferent")
+            elements += ifc_file.by_type("IfcGrid")
 
         if ifc_file.schema == "IFC2X3":
-            if not elements:
-                elements = ifc_file.by_type("IfcSpatialStructureElement")
+            elements += ifc_file.by_type("IfcSpatialStructureElement")
         else:
-            if not elements:
-                elements = ifc_file.by_type("IfcSpatialElement")
+            elements += ifc_file.by_type("IfcSpatialElement")
 
         for element in elements:
-            if elements_checked > element_checking_threshold:
-                return
             if not element.Representation:
                 continue
             shape = cls.create_generic_shape(element, is_gross=True)
             if not shape:
                 continue
-            elements_checked += 1
             mat = ifcopenshell.util.shape.get_shape_matrix(shape)
             point = mat @ np.array((shape.geometry.verts[0], shape.geometry.verts[1], shape.geometry.verts[2], 1.0))
             if cls.is_point_far_away(point, is_meters=True):
                 # Arbitrary origins should be to the nearest millimeter.
                 # Anything more precise is just ridiculous from a practical surveying perspective.
                 return [round(float(p), 3) / cls.unit_scale for p in point[:3]]
+            break
 
     @classmethod
     def guess_false_origin_from_elements(cls, ifc_file: ifcopenshell.file) -> None:
