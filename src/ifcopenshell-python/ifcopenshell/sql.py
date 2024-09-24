@@ -46,6 +46,9 @@ class sqlite(file):
         :param filepath: Path to sqlite database.
         """
 
+        if not Path(filepath).exists():
+            raise FileNotFoundError(f"File doesn't exist: {filepath}")
+
         self.wrapped_data = None
         self.history_size = 64
         self.history = []
