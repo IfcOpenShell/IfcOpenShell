@@ -2,6 +2,10 @@
 @import url("./components/card.css");
 @import url("./components/contextMenu.css");
 @import url("./components/headerBar.css");
+@import url("./components/table.css");
+@import url("./components/floatingForm.css");
+@import url("./components/message.css");
+@import url("./components/layeredViewPanel.css");
 
 :root {
   --fontSize: 14px;
@@ -15,74 +19,32 @@
   --padding-small: 5px;
   --padding-medium: 10px;
 }
+
 body {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
   height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-.floating-form {
-  width: 50vw;
-  max-height: 80vh;
-  position: absolute;
-  background-color: var(--background-color);
-  border: 1px solid black;
-  z-index: 9999;
-  cursor: move;
-  user-select: none;
-  padding-bottom: var(--padding-medium);
+.floating-form .table-container {
+  max-height: 80%;
+  box-shadow: 0 5px 5px 0 #254e3c;
 }
 
-[id^="enable-editing-quantities"].floating-form {
-  height: 70vh;
+#cost-items {
+  max-height: calc(100vh - var(--margin-small));
 }
 
-.form-header {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background-color: #323936;
-  padding: var(--padding-medium);
-  font-size: large;
-  border-bottom: 1px solid #ddd;
-  border-radius: 6px 6px 0 0;
-  height: 5%;
-  position: relative;
+[id^="cost-values-form"] table {
+  max-height: 50%;
+  table-layout: fixed;
 }
 
-.form-container {
-  height: 95%;
-  padding-left: var(--padding-medium);
-  padding-right: var(--padding-medium);
-}
-
-.form-section {
-  margin-bottom: 1em;
-  height: 70%;
-}
-
-.form-section h3 {
-  margin-bottom: 0.5em;
-}
-
-.summary-section {
-  margin-top: 1em;
-}
-
-.summary-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 14px;
-  text-align: left;
-}
-
-.floating-form tr {
-  margin-bottom: 10px;
-}
-
-.floating-form td {
-  padding: 3px;
+[id^="selected-products"] .form-container {
+  height: 50vh;
 }
 
 .action-button {
@@ -168,84 +130,6 @@ body {
   background: var(--scrollbar-thumb-hover-color);
 }
 
-body {
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-.table-container {
-  margin-top: 1em;
-  display: flex;
-  flex-direction: row;
-}
-
-.table-wrapper {
-  flex: 1;
-  overflow: auto;
-  border: 2px solid #254e3c;
-}
-
-.floating-form .table-container {
-  max-height: 80%;
-  overflow: auto;
-  box-shadow: 0 5px 5px 0 #254e3c;
-}
-
-#cost-items {
-  max-height: calc(100vh - var(--margin-small));
-}
-
-[id^="cost-values-form"] table {
-  max-height: 50%;
-  table-layout: fixed;
-}
-
-[id^="selected-products"] .form-container {
-  height: 50vh;
-}
-
-tr,
-td,
-th {
-  height: 100%;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--fontSize);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-thead {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  background-color: #727272;
-}
-
-tbody {
-  width: 100%;
-  height: 100%;
-  overflow: auto;
-}
-
-td,
-th {
-  border-right: 1px solid #ddd;
-  text-align: center;
-  height: 100%;
-}
-
-th {
-  border-bottom: 1px solid #ddd;
-}
-
-td {
-  align-items: center;
-}
-
 .flex-container {
   display: flex;
   justify-content: space-between;
@@ -329,39 +213,6 @@ form select {
   text-align: center;
 }
 
-@media (max-width: 768px) {
-  table {
-    font-size: 12px;
-  }
-
-  td,
-  th {
-    padding: 2px;
-    font-size: 12px;
-  }
-
-  input {
-    padding: 2px;
-    font-size: 12px;
-  }
-}
-
-@media (max-width: 480px) {
-  table {
-    font-size: 10px;
-  }
-
-  td,
-  th {
-    padding: 2px;
-  }
-
-  input {
-    padding: 1px;
-    font-size: 10px;
-  }
-}
-
 form table {
   max-height: 50%;
 }
@@ -369,36 +220,6 @@ form table {
 .subtotal-row {
   background-color: var(--button-hover-background);
   font-weight: bold;
-}
-
-[id^="cost-items"] th:nth-child(1),
-[id^="cost-items"] td:nth-child(1) {
-  width: auto;
-}
-
-[id^="cost-items"] th:last-child,
-[id^="cost-items"] td:last-child {
-  width: fit-content;
-  min-width: fit-content;
-  max-width: 50%;
-}
-
-.actions-column {
-  transition: opacity 0.3s ease-in-out;
-  opacity: 0;
-}
-
-[id^="cost-items"] tr:hover .actions-column {
-  opacity: 1;
-}
-
-.selected-cell, .clickable-cell:hover {
-  border: 2px solid var(--highlight-over);
-  cursor: pointer;
-}
-
-td {
-  position: relative;
 }
 
 .append-right {
@@ -412,46 +233,6 @@ i {
   margin-right: 5px;
 }
 
-.classificationView {
-  border-left: 5px solid #28a745;
-  min-height: 200px;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 5px;
-  max-height: 400px;
-}
-
-.selected {
-  border-color: #28a745;
-  outline: none;
-  box-shadow: 0 0 0 3px #28a745;
-  color: #ddd;
-}
-
-.selectedClassificationText {
-  color: #28a745;
-}
-
-.back-button {
-  margin-bottom: 20px;
-}
-
-.back-button:disabled {
-  cursor: not-allowed;
-  background-color: #ccc;
-}
-
-.classification-cell {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  height: 100%;
-}
-
-.classification {
-  height: 100%;
-}
 
 #column-selector {
   display: flex;
@@ -501,69 +282,8 @@ i {
   margin-left: -5px;
 }
 
-.message {
-  position: relative;
-  padding: 10px;
-  border-radius: 5px;
-  margin: 10px 0;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-}
 
-.message span {
-  width: 80%;
-}
 
-.message .icon {
-  margin-right: 10px;
-}
 
-.message .close-button {
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  transition: background-color 0.3s, color 0.3s;
-  padding-left: 5px;
-}
 
-.message .close-button:hover {
-  background-color: #ffcccc;
-}
 
-.error {
-  color: red;
-  border: 1px solid red;
-  background-color: #ffe6e6;
-}
-
-.error .close-button {
-  color: red;
-}
-
-.error .close-button:hover {
-  color: darkred;
-}
-
-.success {
-  color: green;
-  border: 1px solid green;
-  background-color: #e6ffe6;
-}
-
-.success .close-button {
-  color: green;
-}
-
-.success .close-button:hover {
-  background-color: #ccffcc;
-  color: darkgreen;
-}
-
-.card {
-  margin: 10px;
-}
-.card-body {
-  height: 10vh;
-}
