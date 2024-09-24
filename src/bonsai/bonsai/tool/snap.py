@@ -500,6 +500,7 @@ class Snap(bonsai.core.tool.Snap):
                 if point[1] == "Axis":
                     if snapping_points[0][1] not in {"Axis", "Plane"}:
                         mixed_snap = cls.mix_snap_and_axis(snapping_points[0], axis_start, axis_end)
+                        snapping_points.insert(0, (mixed_snap[0], mixed_snap[1]))
                         cls.update_snapping_point(mixed_snap[0], mixed_snap[1])
                         return snapping_points
                     cls.update_snapping_point(point[0], point[1])
