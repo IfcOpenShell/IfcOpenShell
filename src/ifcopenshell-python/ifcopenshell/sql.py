@@ -266,6 +266,10 @@ class sqlite(file):
             }
         return {"shapes": shapes, "geometry": geometry}
 
+    def __del__(self) -> None:
+        # Override to avoid clean up data unrelated to sqlite file.
+        pass
+
 
 class sqlite_entity(entity_instance):
     sqlite_wrapper: sqlite_wrapper
