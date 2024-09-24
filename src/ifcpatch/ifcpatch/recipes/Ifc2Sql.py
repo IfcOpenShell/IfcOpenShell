@@ -93,8 +93,10 @@ class Patcher:
 
         .. code:: python
 
-            # Convert to SQLite
-            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "Ifc2Sql", "arguments": ["sqlite"]})
+            # Convert to SQLite, SQLite databse will be saved to a temporary file.
+            sqlite_temp_filepath = ifcpatch.execute(
+                {"input": "input.ifc", "file": model, "recipe": "Ifc2Sql", "arguments": ["sqlite"]}
+            )
         """
         self.src = src
         self.file = file
@@ -117,7 +119,7 @@ class Patcher:
         self.schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(self.file.schema)
 
         if self.sql_type == "sqlite":
-            tmp = tempfile.NamedTemporaryFile(delete=False)
+            tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".ifcsqlite")
             db_file = tmp.name
             self.db = sqlite3.connect(db_file)
             self.c = self.db.cursor()
