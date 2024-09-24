@@ -910,11 +910,11 @@ class Loader(bonsai.core.tool.Loader):
             mesh.polygons.foreach_set("use_smooth", [0] * total_faces)
             mesh.update()
 
-            # TODO: geometry id is not always an int.
-            rep_id = geometry.id
-            if rep_id.isdigit():
-                if (rep := tool.Ifc.get().by_id(int(rep_id))) and rep.is_a("IfcShapeRepresentation"):
-                    tool.Loader.load_indexed_colour_map(rep, mesh)
+            rep_str: str = geometry.id
+            if "openings" not in rep_str:
+                rep_id = rep_str.split("-", 1)[0]
+                rep = tool.Ifc.get().by_id(int(rep_id))
+                tool.Loader.load_indexed_colour_map(rep, mesh)
         else:
             e = geometry.edges
             v = verts
