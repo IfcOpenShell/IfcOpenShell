@@ -241,7 +241,6 @@ class Patcher:
                 self.shape_rows[shape.id] = [shape.id, float(x), float(y), float(z), m.tobytes(), shape.geometry.id]
             if not iterator.next():
                 break
-        print("Done creating geometry")
 
     def create_id_map(self) -> None:
         if self.sql_type == "sqlite":
@@ -340,6 +339,7 @@ class Patcher:
         for i in range(0, total_attributes):
             attribute = declaration.attribute_by_index(i)
             primitive = ifcopenshell.util.attribute.get_primitive_type(attribute)
+            data_type = "TEXT"
             if primitive in ("string", "enum"):
                 data_type = "TEXT"
             elif primitive in ("entity", "integer", "boolean"):
@@ -350,8 +350,10 @@ class Patcher:
                 data_type = "INTEGER"
             elif isinstance(primitive, tuple):
                 data_type = "JSON"
+            elif primitive == "binary":
+                data_type = "TEXT"
             else:
-                print(attribute, primitive)  # Not implemented?
+                print("Possibly not implemented attribute data type:", attribute, primitive)
             if not self.is_strict or derived[i]:
                 optional = ""
             else:
@@ -361,7 +363,6 @@ class Patcher:
         if self.should_get_inverses:
             statement += ", inverses JSON"
         statement += ");"
-        print(statement)
         self.c.execute(statement)
 
     def create_mysql_table(self, ifc_class: str, declaration: ifcopenshell.ifcopenshell_wrapper.declaration) -> None:
@@ -405,11 +406,9 @@ class Patcher:
             statement += " PRIMARY KEY (`ifc_id`)"
 
         statement += ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;"
-        print(statement)
         self.c.execute(statement)
 
     def insert_data(self, ifc_class: str) -> None:
-        print("Extracting data for", ifc_class)
         elements = self.file.by_type(ifc_class, include_subtypes=False)
 
         rows = []
