@@ -88,7 +88,7 @@ class Raycast(bonsai.core.tool.Raycast):
         rv3d = context.region_data
         original_perspective = rv3d.view_perspective
 
-        # TODO The raycast was working for orthographic view, but not when you are inside a camera view. This solution feels hacky, 
+        # TODO The raycast was working for orthographic view, but not when you are inside a camera view. This solution feels hacky,
         # but it temporarily switches the perspective_matrix from camera to the perspective_matrix from ortho view.
         if original_perspective == "CAMERA":
             rv3d.view_perspective = "ORTHO"

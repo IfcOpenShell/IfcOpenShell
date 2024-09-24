@@ -252,7 +252,7 @@ class PolylineOperator:
         if event.value == "RELEASE" and event.type == "LEFTMOUSE":
             result = tool.Snap.insert_polyline_point(self.input_ui)
             if result:
-                self.report({'WARNING'}, result)
+                self.report({"WARNING"}, result)
             tool.Blender.update_viewport()
 
         if event.value == "PRESS" and event.type == "C":
@@ -269,7 +269,7 @@ class PolylineOperator:
             if is_valid:
                 result = tool.Snap.insert_polyline_point(self.input_ui)
                 if result:
-                    self.report({'WARNING'}, result)
+                    self.report({"WARNING"}, result)
 
             self.tool_state.mode = "Mouse"
             self.tool_state.is_input_on = False
