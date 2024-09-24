@@ -85,6 +85,12 @@ class Raycast(bonsai.core.tool.Raycast):
     def get_viewport_ray_data(cls, context, event, mouse_pos=None):
         region = context.region
         rv3d = context.region_data
+        original_perspective = rv3d.view_perspective
+
+        # TODO The raycast was working for orthographic view, but not when you are inside a camera view. This solution feels hacky, 
+        # but it temporarily switches the perspective_matrix from camera to the perspective_matrix from ortho view.
+        if original_perspective == "CAMERA":
+            rv3d.view_perspective = "ORTHO"
         if not mouse_pos:
             mouse_pos = event.mouse_region_x, event.mouse_region_y
 
@@ -92,6 +98,9 @@ class Raycast(bonsai.core.tool.Raycast):
         ray_origin = view3d_utils.region_2d_to_origin_3d(region, rv3d, mouse_pos)
         ray_target = ray_origin + view_vector
         ray_direction = ray_target - ray_origin
+
+        if original_perspective == "CAMERA":
+            rv3d.view_perspective = "CAMERA"
 
         return ray_origin, ray_target, ray_direction
 
