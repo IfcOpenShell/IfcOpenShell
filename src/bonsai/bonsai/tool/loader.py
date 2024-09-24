@@ -880,7 +880,9 @@ class Loader(bonsai.core.tool.Loader):
         return Matrix(matrix.tolist())
 
     @classmethod
-    def convert_geometry_to_mesh(cls, geometry, mesh: bpy.types.Mesh, verts=None) -> bpy.types.Mesh:
+    def convert_geometry_to_mesh(
+        cls, geometry: ifcopenshell.geom.ShapeType, mesh: bpy.types.Mesh, verts=None
+    ) -> bpy.types.Mesh:
         if verts is None:
             verts = geometry.verts
         if geometry.faces:
