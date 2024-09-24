@@ -22,6 +22,40 @@ using ifcopenshell::geometry::NumberEpeck;
 ifcopenshell::geometry::CgalShape::CgalShape(const cgal_shape_t & shape, bool convex) {
 	shape_ = shape;
 	convex_tag_ = convex;
+
+	for (const auto& face : CGAL::faces(*shape_)) {
+		// @todo O^2 alert! Use aabb tree or box intersections
+		bool has_self_intersection = false;
+		for (auto& he1 : CGAL::halfedges_around_face(face->halfedge(), *shape_)) {
+			CGAL::Segment_3<Kernel_> s1;
+			{
+				const auto& source = he1->vertex()->point();
+				const auto& target = he1->next()->vertex()->point();
+				s1 = { source, target };
+			}
+			for (auto& he2 : CGAL::halfedges_around_face(face->halfedge(), *shape_)) {
+				if (he1 == he2 || he1->next() == he2 || he2->next() == he1) {
+					// skip topologically connected edges
+					continue;
+				}
+				CGAL::Segment_3<Kernel_> s2;
+				{
+					const auto& source = he2->vertex()->point();
+					const auto& target = he2->next()->vertex()->point();
+					s2 = { source, target };
+				}
+				if (CGAL::do_intersect(s1, s2)) {
+					has_self_intersection = true;
+					break;
+				}
+			}
+		}
+
+		if (has_self_intersection) {
+			throw std::runtime_error("Self-intersection in facet boundary, not attempting triangulation");
+		}
+	}
+
 	if (shape.size_of_facets() != 1) {
 		// this is for handling the specical case of storing a single point in a polyhedron,
 		// @todo come up with a proper variant for storing lower dimensional entities
