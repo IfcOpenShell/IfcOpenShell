@@ -1441,13 +1441,17 @@ class IfcImporter:
             bpy.ops.object.select_all(action="DESELECT")
 
     def setup_arrays(self):
-        for element in self.file.by_type("IfcElement"):
-            pset_data = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
-            if not pset_data or not pset_data.get("Data", None):  # skip array children
+        for pset in self.file.by_type("IfcPropertySet"):
+            if pset.Name != "BBIM_Array":
                 continue
-            for i in range(len(json.loads(pset_data["Data"]))):
-                tool.Blender.Modifier.Array.set_children_lock_state(element, i, True)
-                tool.Blender.Modifier.Array.constrain_children_to_parent(element)
+            if not (data := ifcopenshell.util.element.get_property_definition(pset, "Data")):
+                continue
+            data = json.loads(data)
+            for rel in pset.DefinesOccurrence:
+                for element in rel.RelatedObjects:
+                    for i in range(len(data)):
+                        tool.Blender.Modifier.Array.set_children_lock_state(element, i, True)
+                        tool.Blender.Modifier.Array.constrain_children_to_parent(element)
 
 
 class IfcImportSettings:
