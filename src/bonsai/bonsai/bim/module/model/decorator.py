@@ -365,6 +365,12 @@ class PolylineDecorator:
         batch.draw(shader)
 
     def draw_product_preview(self, context):
+        self.addon_prefs = tool.Blender.get_addon_preferences()
+        self.line_shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
+        self.line_shader.bind()  # required to be able to change uniforms of the shader
+        self.line_shader.uniform_float("viewportSize", (context.region.width, context.region.height))
+        self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
+        self.line_shader.uniform_float("lineWidth", 0.5)
         decorator_color = self.addon_prefs.decorations_colour
         polyline = context.scene.BIMPolylineProperties.polyline_point
         prop = context.scene.BIMPolylineProperties.product_preview
@@ -380,7 +386,6 @@ class PolylineDecorator:
         connections = [[i, j] for i, j in zip(range(n), range(n, n * 2))]
         edges.extend(connections)
 
-        self.line_shader.uniform_float("lineWidth", 0.5)
         if len(points) > 1:
             self.draw_batch("LINES", points, decorator_color, edges)
 
