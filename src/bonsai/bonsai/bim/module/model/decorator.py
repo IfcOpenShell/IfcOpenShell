@@ -371,13 +371,16 @@ class PolylineDecorator:
         self.line_shader.uniform_float("viewportSize", (context.region.width, context.region.height))
         self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
         self.line_shader.uniform_float("lineWidth", 0.5)
-        decorator_color = self.addon_prefs.decorations_colour
+        decorator_color = self.addon_prefs.decorator_color_special
         polyline = context.scene.BIMPolylineProperties.polyline_point
         prop = context.scene.BIMPolylineProperties.product_preview
+
         points = []
         edges = []
+
         for i in range(len(prop)):
             points.append(Vector((prop[i].x, prop[i].y, prop[i].z)))
+
         n = len(points) // 2
         bottom_loop = [[i, (i + 1) % (n)] for i in range(n)]
         edges.extend(bottom_loop)
@@ -498,6 +501,12 @@ class PolylineDecorator:
         snap_prop = context.scene.BIMPolylineProperties.snap_mouse_point[0]
         mouse_point = Vector((snap_prop.x, snap_prop.y, snap_prop.z))
 
+        try:
+            snap_prop = context.scene.BIMPolylineProperties.snap_mouse_ref[0]
+            mouse_point = Vector((snap_prop.x, snap_prop.y, snap_prop.z))
+        except:
+            pass
+
         coords = view3d_utils.location_3d_to_region_2d(region, rv3d, mouse_point)
         padding = 6
         verts = []
@@ -549,17 +558,11 @@ class PolylineDecorator:
 
         # general shader
         self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
-        gpu.state.point_size_set(10)
+        gpu.state.point_size_set(6)
 
         snap_prop = context.scene.BIMPolylineProperties.snap_mouse_point[0]
         # Point related to the mouse
         mouse_point = [Vector((snap_prop.x, snap_prop.y, snap_prop.z))]
-
-        try:
-            snap_ref = context.scene.BIMPolylineProperties.snap_mouse_ref[0]
-            ref_point = [Vector((snap_ref.x, snap_ref.y, snap_ref.z))]
-        except:
-            ref_point = None
 
         default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
         projection_point = []
@@ -571,7 +574,7 @@ class PolylineDecorator:
                 projection_point = [Vector((snap_prop.x, snap_prop.y, default_container_elevation))]
                 self.draw_batch("POINTS", projection_point, decorator_color_unselected)
                 edges = [[0, 1]]
-                self.draw_batch("LINES", mouse_point + projection_point, (1.0, 0.6, 0.0, 1.0), edges)
+                self.draw_batch("LINES", mouse_point + projection_point, decorator_color_unselected, edges)
 
         # Create polyline with selected points
         polyline_data = context.scene.BIMPolylineProperties.polyline_point
@@ -617,22 +620,21 @@ class PolylineDecorator:
         #         self.draw_batch("TRIS", polyline_points, (0, 1, 0, 0.1), edges)
 
         # Mouse points
-        if snap_prop.snap_type in ["Plane"]:
-            self.draw_batch("POINTS", mouse_point, decorator_color)
-
-        if ref_point:
-            self.draw_batch("POINTS", ref_point, decorator_color_object_active)
+        print("DECO", snap_prop.snap_type)
+        if snap_prop.snap_type in ["Plane", "Axis", "Mix"]:
+            self.draw_batch("POINTS", mouse_point, decorator_color_unselected)
 
         # Line between last polyline point and mouse
+        self.line_shader.uniform_float("lineWidth", 2.0)
         edges = [[0, 1]]
         if polyline_points:
             if snap_prop.snap_type != "Plane" and projection_point:
-                self.draw_batch("LINES", [polyline_points[-1]] + projection_point, decorator_color, edges)
+                self.draw_batch("LINES", [polyline_points[-1]] + projection_point, decorator_color_selected, edges)
             else:
-                self.draw_batch("LINES", [polyline_points[-1]] + mouse_point, decorator_color, edges)
+                self.draw_batch("LINES", [polyline_points[-1]] + mouse_point, decorator_color_selected, edges)
 
         # Draw polyline with selected points
         self.line_shader.uniform_float("lineWidth", 2.0)
-        self.draw_batch("POINTS", polyline_points, decorator_color_special)
+        self.draw_batch("POINTS", polyline_points, decorator_color_unselected)
         if len(polyline_points) > 1:
-            self.draw_batch("LINES", polyline_points, decorator_color_special, polyline_edges)
+            self.draw_batch("LINES", polyline_points, decorator_color_unselected, polyline_edges)
