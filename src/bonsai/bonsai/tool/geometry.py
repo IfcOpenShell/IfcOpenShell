@@ -686,7 +686,7 @@ class Geometry(bonsai.core.tool.Geometry):
                             mesh = ifc_importer.create_curve(element, shape)
                         elif shape:
                             mesh = ifc_importer.create_mesh(
-                                element, shape, cartesian_point_offset=cls.get_cartesian_point_offset(obj)
+                                element, shape, cartesian_point_offset=cls.get_cartesian_point_offset(obj) or False
                             )
                             ifc_importer.material_creator.load_existing_materials()
                             shape_has_openings = cls.does_shape_has_openings(shape)
@@ -1419,9 +1419,16 @@ class Geometry(bonsai.core.tool.Geometry):
             return
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         rep_obj = props.representation_obj
-        rep_matrix_i = rep_obj.matrix_world.inverted()
+
+        coordinate_offset = cls.get_cartesian_point_offset(rep_obj)
+        rep_matrix = rep_obj.matrix_world.copy()
+        if coordinate_offset:
+            rep_matrix.translation -= coordinate_offset
+        rep_matrix_i = rep_matrix.inverted()
+
         builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
         has_changed = False
+
         for item_obj in props.item_objs:
             obj = item_obj.obj
             item = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
@@ -1430,14 +1437,16 @@ class Geometry(bonsai.core.tool.Geometry):
                     continue
                 has_changed = True
                 old_position = item.Position
-                if np.allclose(np.array(obj.matrix_world), np.array(rep_obj.matrix_world), atol=1e-4):
+
+                if np.allclose(np.array(rep_matrix), np.array(obj.matrix_world), atol=1e-4):
                     if old_position:
                         item.Position = None
                         ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_position)
                     continue
-                rel_matrix = rep_matrix_i @ obj.matrix_world
-                rel_matrix.translation /= unit_scale
-                item.Position = builder.create_axis2_placement_3d_from_matrix(np.array(rel_matrix))
+
+                position = rep_matrix_i @ obj.matrix_world
+                position.translation /= unit_scale
+                item.Position = builder.create_axis2_placement_3d_from_matrix(np.array(position))
                 if old_position:
                     ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_position)
         if has_changed:
@@ -1464,20 +1473,30 @@ class Geometry(bonsai.core.tool.Geometry):
         obj.data.clear_geometry()
         tool.Loader.convert_geometry_to_mesh(geometry, obj.data)
 
-        if coordinate_offset := cls.get_cartesian_point_offset(props.representation_obj):
+        rep_obj = props.representation_obj
+        obj.matrix_world = rep_obj.matrix_world.copy()
+        if coordinate_offset := cls.get_cartesian_point_offset(rep_obj):
             for vert in obj.data.vertices:
                 vert.co -= coordinate_offset
 
         if item.is_a("IfcSweptAreaSolid"):
-            cls.record_object_position(obj)
             if item.Position:
                 unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
                 position = Matrix(ifcopenshell.util.placement.get_axis2placement(item.Position).tolist())
                 position.translation *= unit_scale
-                position_i = position.inverted()
-                obj.matrix_world = props.representation_obj.matrix_world @ position
+                item_matrix = rep_obj.matrix_world.copy()
+                if coordinate_offset:
+                    item_matrix.translation -= coordinate_offset
+                item_matrix = item_matrix @ position
+
+                transformation = obj.matrix_world.inverted() @ item_matrix
+                transformation_i = transformation.inverted()
+
+                obj.matrix_world = item_matrix
+
                 for vert in obj.data.vertices:
-                    vert.co = position_i @ vert.co
+                    vert.co = transformation_i @ vert.co
+            cls.record_object_position(obj)
 
     @classmethod
     def disable_item_mode(cls):
