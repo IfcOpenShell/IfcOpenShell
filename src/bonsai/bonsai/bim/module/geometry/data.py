@@ -51,7 +51,6 @@ class ViewportData:
         edit_mode = ("EDIT", "IFC Edit Mode", "Edit representation items", "EDITMODE_HLT", 2)
 
         obj = bpy.context.active_object
-        print("checking", obj)
         element = tool.Ifc.get_entity(obj)
 
         modes = [obj_mode]
