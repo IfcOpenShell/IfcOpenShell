@@ -29,9 +29,11 @@ import ifcopenshell.api.grid
 import ifcopenshell.geom
 import ifcopenshell.guid
 import ifcopenshell.util.element
-import ifcopenshell.util.representation
-import ifcopenshell.util.system
 import ifcopenshell.util.placement
+import ifcopenshell.util.representation
+import ifcopenshell.util.shape_builder
+import ifcopenshell.util.system
+import ifcopenshell.util.unit
 import bonsai.core.tool
 import bonsai.core.drawing
 import bonsai.core.geometry
@@ -1409,11 +1411,13 @@ class Geometry(bonsai.core.tool.Geometry):
         return use_immediate_repr
 
     @classmethod
-    def get_elements_by_representation(cls, representation):
+    def get_elements_by_representation(
+        cls, representation: ifcopenshell.entity_instance
+    ) -> set[ifcopenshell.entity_instance]:
         return ifcopenshell.util.element.get_elements_by_representation(tool.Ifc.get(), representation)
 
     @classmethod
-    def sync_item_positions(cls):
+    def sync_item_positions(cls) -> None:
         props = bpy.context.scene.BIMGeometryProperties
         if not props.representation_obj:
             return
@@ -1499,7 +1503,7 @@ class Geometry(bonsai.core.tool.Geometry):
             cls.record_object_position(obj)
 
     @classmethod
-    def disable_item_mode(cls):
+    def disable_item_mode(cls) -> None:
         props = bpy.context.scene.BIMGeometryProperties
         if props.representation_obj:
             props.representation_obj.hide_set(False)
