@@ -216,7 +216,7 @@ namespace IfcGeom {
 				edges_.push_back(i1);
 			}
 
-			void addEdge(int n1, int n2, std::map<std::pair<int, int>, int>& edgecount);
+			void registerEdgeCount(int n1, int n2, std::map<std::pair<int, int>, int>& edgecount);
 
 			void resetWelds() {
 				weld_offset_ += welds.size();
