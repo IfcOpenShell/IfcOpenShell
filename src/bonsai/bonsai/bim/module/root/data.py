@@ -135,21 +135,13 @@ class IfcClassData:
             ("EMPTY", "No Geometry", "Start with an empty object"),
             None,
         ]
-        if (
-            hasattr(bpy.context, "selected_objects")
-            and len(bpy.context.selected_objects) > 0
-            and (obj := bpy.context.active_object)
-            and obj.type == "MESH"
-        ):
-            templates.append(
-                (
-                    "OBJ",
-                    "Tessellation From Active Selection",
-                    "Use the actively selected object as a template to create a new tessellation",
-                )
-            )
         templates.extend(
             [
+                (
+                    "OBJ",
+                    "Tessellation From Object",
+                    "Use an object as a template to create a new tessellation",
+                ),
                 (
                     "MESH",
                     "Custom Tessellation",

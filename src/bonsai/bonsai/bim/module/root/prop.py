@@ -115,6 +115,10 @@ def is_object_class_applicable(self, obj):
     return element.is_a("IfcTypeObject") == active_element.is_a("IfcTypeObject")
 
 
+def poll_representation_obj(self, obj):
+    return obj.type == "MESH" and obj.data.polygons
+
+
 class BIMRootProperties(PropertyGroup):
     contexts: EnumProperty(items=get_contexts, name="Contexts", options=set())
     ifc_product: EnumProperty(items=get_ifc_products, name="Products", update=refresh_classes)
@@ -123,6 +127,12 @@ class BIMRootProperties(PropertyGroup):
     ifc_userdefined_type: StringProperty(name="Userdefined Type")
     representation_template: bpy.props.EnumProperty(
         items=get_representation_template, name="Representation Template", default=0
+    )
+    representation_obj: bpy.props.PointerProperty(
+        type=bpy.types.Object,
+        name="Representation Object",
+        poll=poll_representation_obj,
+        description="The representation will be a tessellation of the selected object",
     )
     relating_class_object: PointerProperty(
         type=bpy.types.Object,
