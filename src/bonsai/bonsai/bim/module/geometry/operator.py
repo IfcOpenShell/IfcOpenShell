@@ -21,6 +21,7 @@ import bpy
 import bmesh
 import logging
 import numpy as np
+import numpy.typing as npt
 import ifcopenshell
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
@@ -1493,8 +1494,20 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
             bpy.ops.object.join()
             bpy.ops.bim.update_representation(obj=self.target.name, ifc_representation_class="")
         else:
+            # Could support it but need to make sure all objects are on the same plane.
+            if representation_type == "Curve2D":
+                self.report({"ERROR"}, "Joining representation of type Curve2D is not supported.")
+                return
+
             target_placement = np.array(self.target.matrix_world)
             target_placement[:, 3][:3] /= si_conversion
+
+            def apply_placement(
+                local_pos: npt.NDArray[np.float64], obj_placement: ifcopenshell.util.placement.MatrixType
+            ) -> npt.NDArray[np.float64]:
+                position = obj_placement @ local_pos
+                position = np.linalg.inv(target_placement) @ position
+                return position
 
             items = list(representation.Items)
             for obj in bpy.context.selected_objects:
@@ -1516,7 +1529,7 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
                 placement = np.array(obj.matrix_world)
                 placement[:, 3][:3] /= si_conversion
 
-                supported_item_types = ("IfcSweptAreaSolid",)
+                supported_item_types = ("IfcSweptAreaSolid", "IfcIndexedPolyCurve")
                 rep_items = obj_rep.Items
                 for item in rep_items:
                     if not any(item.is_a(ifc_class) for ifc_class in supported_item_types):
@@ -1534,9 +1547,13 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
                             position = ifcopenshell.util.placement.get_axis2placement(copied_item.Position)
                         else:
                             position = np.eye(4, dtype=float)
-                        position = placement @ position
-                        position = np.linalg.inv(target_placement) @ position
+                        position = apply_placement(position, placement)
                         copied_item.Position = builder.create_axis2_placement_3d_from_matrix(position)
+                    elif item.is_a("IfcIndexedPolyCurve"):
+                        points = copied_item.Points
+                        coords = points.CoordList
+                        # We're assuming those are 3D coordinates, since we do not support Curve2D.
+                        points.CoordList = [apply_placement(np.append(c, 1.0), placement).tolist()[:3] for c in coords]
                     else:
                         assert False, f"Unexpected item type: {item.is_a()}. This is a bug."
 
