@@ -940,6 +940,12 @@ class Loader(bonsai.core.tool.Loader):
             vertices = [[v[i], v[i + 1], v[i + 2]] for i in range(0, len(v), 3)]
             edges = [[e[i], e[i + 1]] for i in range(0, len(e), 2)]
             mesh.from_pydata(vertices, edges, [])
+            # TODO: remove error handling after we update build in Bonsai.
+            try:
+                edges_item_ids = ifcopenshell.util.shape.get_edges_representation_item_ids(geometry).tolist()
+            except AttributeError:
+                edges_item_ids = []
+            mesh["ios_edges_item_ids"] = edges_item_ids
 
         mesh["ios_materials"] = [m.instance_id() for m in geometry.materials]
         mesh["ios_material_ids"] = geometry.material_ids
