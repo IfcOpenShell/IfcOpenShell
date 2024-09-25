@@ -303,7 +303,7 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
 				// @todo should be != 2?
 				if (p.second == 1 && emitted_edges.find(p.first) == emitted_edges.end()) {
 					// non manifold edge, face boundary
-					t->registerEdge(p.first.first, p.first.second);
+					t->registerEdge(item_id, p.first.first, p.first.second);
 					if (settings.get<settings::WeldVertices>().get()) {
 						// only relevant while welding, because otherwise vertices are not shared among distinct faces
 						emitted_edges.insert(p.first);
@@ -386,7 +386,7 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
 				}
 
 				for (auto& sgmt : segments) {
-					t->addEdge(surface_style_id, sgmt.first, sgmt.second);
+					t->addEdge(item_id, surface_style_id, sgmt.first, sgmt.second);
 				}
 
 				previous = current;

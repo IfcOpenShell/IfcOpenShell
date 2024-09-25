@@ -117,6 +117,7 @@ namespace IfcGeom {
 			std::vector<int> material_ids_;
 			std::vector<ifcopenshell::geometry::taxonomy::style::ptr> materials_;
 			std::vector<int> item_ids_;
+			std::vector<int> edges_item_ids_;
 			size_t weld_offset_;
 			VertexKeyMap welds;
 
@@ -137,6 +138,7 @@ namespace IfcGeom {
 			const std::vector<int>& material_ids() const { return material_ids_; }
 			const std::vector<ifcopenshell::geometry::taxonomy::style::ptr>& materials() const { return materials_; }
 			const std::vector<int>& item_ids() const { return item_ids_; }
+			const std::vector<int>& edges_item_ids() const { return edges_item_ids_; }
 
 			Triangulation(const BRep& shape_model);
 
@@ -152,6 +154,7 @@ namespace IfcGeom {
 				const std::vector<int>& material_ids,
 				const std::vector<ifcopenshell::geometry::taxonomy::style::ptr>& materials,
 				const std::vector<int>& item_ids
+				, const std::vector<int>& edges_item_ids
 			)
 				: Representation(settings, entity, id)
 				, verts_(verts)
@@ -162,6 +165,7 @@ namespace IfcGeom {
 				, material_ids_(material_ids)
 				, materials_(materials)
 				, item_ids_(item_ids)
+				, edges_item_ids_(edges_item_ids)
 			{}
 
 			virtual ~Triangulation() {}
@@ -204,16 +208,18 @@ namespace IfcGeom {
 				material_ids_.push_back(style);
 			}
 
-			void addEdge(int style, int i0, int i1) {
+			void addEdge(int item_id, int style, int i0, int i1) {
 				edges_.push_back(i0);
 				edges_.push_back(i1);
 
 				material_ids_.push_back(style);
+				edges_item_ids_.push_back(item_id);
 			}
 
-			void registerEdge(int i0, int i1) {
+			void registerEdge(int item_id, int i0, int i1) {
 				edges_.push_back(i0);
 				edges_.push_back(i1);
+				edges_item_ids_.push_back(item_id);
 			}
 
 			void registerEdgeCount(int n1, int n2, std::map<std::pair<int, int>, int>& edgecount);

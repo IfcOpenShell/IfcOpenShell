@@ -915,7 +915,7 @@ class Loader(bonsai.core.tool.Loader):
             #
             # we do `.tolist()` because Blender can't assign `np.int32` to it's custom attributes
             mesh["ios_edges"] = list(set(tuple(e) for e in ifcopenshell.util.shape.get_edges(geometry).tolist()))
-            mesh["ios_item_ids"] = ifcopenshell.util.shape.get_representation_item_ids(geometry).tolist()
+            mesh["ios_item_ids"] = ifcopenshell.util.shape.get_faces_representation_item_ids(geometry).tolist()
 
             mesh.vertices.add(num_vertices)
             mesh.vertices.foreach_set("co", verts)
