@@ -358,6 +358,8 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
             "PROFILESET",
         ) or representation_template.startswith("FLOW_SEGMENT_"):
             mesh = None
+        elif representation_template == "OBJ" and not props.representation_obj:
+            mesh = None
         else:
             mesh = bpy.data.meshes.new("Mesh")
 
@@ -375,12 +377,14 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
 
         if representation_template == "EMTPY" or not ifc_context:
             pass
-        elif representation_template == "OBJ" and (template_obj := props.representation_obj):
-            obj.matrix_world = template_obj.matrix_world
+        elif representation_template == "OBJ" and not props.representation_obj:
+            pass
+        elif representation_template == "OBJ":
+            obj.matrix_world = props.representation_obj.matrix_world
             builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-            verts = [v.co / unit_scale for v in template_obj.data.vertices]
-            faces = [p.vertices[:] for p in template_obj.data.polygons]
+            verts = [v.co / unit_scale for v in props.representation_obj.data.vertices]
+            faces = [p.vertices[:] for p in props.representation_obj.data.polygons]
             item = builder.mesh(verts, faces)
             representation = builder.get_representation(ifc_context, [item])
             ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), element, representation)
@@ -393,8 +397,8 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
                 is_global=True,
                 should_sync_changes_first=False,
             )
-            if not tool.Ifc.get_entity(template_obj):
-                bpy.data.objects.remove(template_obj)
+            if not tool.Ifc.get_entity(props.representation_obj):
+                bpy.data.objects.remove(props.representation_obj)
         elif representation_template == "MESH":
             builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
