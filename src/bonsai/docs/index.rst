@@ -71,6 +71,6 @@ and data-rich OpenBIM with Blender :)
 Need more help? Join the `live chat <https://osarch.org/chat/>`__ or `community
 forums <https://community.osarch.org>`__. Something strange happening? Please
 `report a bug <https://github.com/IfcOpenShell/IfcOpenShell/issues>`__. Want to
-improve the software? Help with :doc:`coding </devs/getting_started>`  or `chip
+improve the software? Help with :doc:`coding </guides/development/getting_started>`  or `chip
 in financially <https://opencollective.com/opensourcebim>`__. Every little bit
 adds up!

@@ -27,7 +27,8 @@ import bonsai.bim.helper
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
 from collections import defaultdict
-from typing import Union, Any, TYPE_CHECKING, Optional
+from typing import Union, Any, TYPE_CHECKING, Optional, Literal
+from typing_extensions import assert_never
 
 if TYPE_CHECKING:
     # Avoid circular imports.
@@ -352,3 +353,77 @@ class Material(bonsai.core.tool.Material):
                 elements.extend(tool.Model.get_occurrences_without_material_override(element))
 
         tool.Model.apply_ifc_material_changes(elements, assigned_material=assigned_material)
+
+    @classmethod
+    def ensure_new_material_set_is_valid(cls, material: ifcopenshell.entity_instance) -> None:
+        material_type = material.is_a()
+
+        ifc_file = tool.Ifc.get()
+        default_material = cls.get_default_material()
+
+        if material_type == "IfcMaterialConstituentSet":
+            material_constituent = ifcopenshell.api.material.add_constituent(
+                ifc_file,
+                constituent_set=material,
+                material=default_material,
+            )
+            material.MaterialConstituents = [material_constituent]
+        elif material_type == "IfcMaterialLayerSet":
+            material_layer = ifcopenshell.api.material.add_layer(
+                ifc_file,
+                layer_set=material,
+                material=default_material,
+            )
+            material.MaterialLayers = [material_layer]
+        elif material_type == "IfcMaterialProfileSet":
+            profile = tool.Profile.get_default_profile()
+            material_profile = ifcopenshell.api.material.add_profile(
+                ifc_file,
+                profile_set=material,
+                profile=profile,
+                material=None,
+            )
+            material.MaterialProfiles = [material_profile]
+        elif material_type == "IfcMaterialList":
+            material.Materials = [default_material]
+        else:
+            assert False, f"Invalid material type found: {material_type}."
+
+    @classmethod
+    def purge_unused_materials(cls) -> int:
+        ifc_file = tool.Ifc.get()
+        is_ifc2x3 = ifc_file.schema == "IFC2X3"
+        ifc_class = "IfcMaterial" if is_ifc2x3 else "IfcMaterialDefinition"
+
+        skip_inverses = {
+            "IfcMaterialDefinitionRepresentation",
+            "IfcMaterialProperties",
+        }
+
+        def is_safe_to_purge(material: ifcopenshell.entity_instance) -> bool:
+            for i in ifc_file.get_inverse(material):
+                if i.is_a() not in skip_inverses:
+                    return False
+            return True
+
+        materials = ifc_file.by_type(ifc_class)
+        # Not IfcMaterialDefinition...
+        materials += ifc_file.by_type("IfcMaterialList")
+        # In IFC2X3 materials don't have a common class.
+        if is_ifc2x3:
+            materials += ifc_file.by_type("IfcMaterialLayer")
+            materials += ifc_file.by_type("IfcMaterialLayerSet")
+            materials += ifc_file.by_type("IfcMaterialLayerSetUsage")
+
+        i = 0
+        for material in materials:
+            if ifc_file.get_total_inverses(material) != 0 and not is_safe_to_purge(material):
+                continue
+            ifcopenshell.api.material.remove_material(ifc_file, material)
+            i += 1
+
+        if i == 0:
+            return 0
+
+        i += cls.purge_unused_materials()
+        return i

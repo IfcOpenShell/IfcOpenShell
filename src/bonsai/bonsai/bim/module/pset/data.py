@@ -46,18 +46,22 @@ def refresh():
 
 class Data:
     @classmethod
-    def psetqtos(cls, element, psets_only=False, qtos_only=False):
+    def psetqtos(cls, element: ifcopenshell.entity_instance, psets_only: bool = False, qtos_only: bool = False):
+        ifc_file = tool.Ifc.get()
         results = []
         psetqtos = ifcopenshell.util.element.get_psets(
             element, psets_only=psets_only, qtos_only=qtos_only, should_inherit=False
         )
         for name, data in sorted(psetqtos.items()):
+            pset = ifc_file.by_id(data["id"])
+            pset_uses = ifcopenshell.util.element.get_elements_by_pset(pset)
             results.append(
                 {
                     "id": data["id"],
                     "Name": name,
                     "is_expanded": is_expanded.get(data["id"], True),
                     "Properties": [{"Name": k, "NominalValue": v} for k, v in sorted(data.items()) if k != "id"],
+                    "shared_pset_uses": len(pset_uses),
                 }
             )
         return sorted(results, key=lambda v: v["Name"])
@@ -286,9 +290,18 @@ class ProfilePsetsData(Data):
 
     @classmethod
     def load(cls):
-        pprops = bpy.context.scene.BIMProfileProperties
-        ifc_definition_id = pprops.profiles[pprops.active_profile_index].ifc_definition_id
-        cls.data = {"psets": cls.psetqtos(tool.Ifc.get().by_id(ifc_definition_id), psets_only=True)}
+        active_profile = tool.Profile.get_active_profile_ui()
+        if active_profile:
+            ifc_definition_id = active_profile.ifc_definition_id
+            psets_data = cls.psetqtos(tool.Ifc.get().by_id(ifc_definition_id), psets_only=True)
+        else:
+            ifc_definition_id = 0
+            psets_data = []
+
+        cls.data = {
+            "ifc_definition_id": ifc_definition_id,
+            "psets": psets_data,
+        }
         cls.is_loaded = True
 
 

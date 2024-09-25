@@ -76,7 +76,7 @@ def disable_editing_sheets(drawing: tool.Drawing) -> None:
     drawing.disable_editing_sheets()
 
 
-def add_sheet(ifc: tool.Ifc, drawing, titleblock: ifcopenshell.entity_instance) -> None:
+def add_sheet(ifc: tool.Ifc, drawing: tool.Drawing, titleblock: ifcopenshell.entity_instance) -> None:
     sheet = ifc.run("document.add_information")
     layout = ifc.run("document.add_reference", information=sheet)
     titleblock_reference = ifc.run("document.add_reference", information=sheet)
@@ -127,7 +127,9 @@ def remove_sheet(ifc: tool.Ifc, drawing: tool.Drawing, sheet: ifcopenshell.entit
     drawing.import_sheets()
 
 
-def rename_sheet(ifc: tool.Ifc, drawing, sheet: ifcopenshell.entity_instance, identification: str, name: str) -> None:
+def rename_sheet(
+    ifc: tool.Ifc, drawing: tool.Drawing, sheet: ifcopenshell.entity_instance, identification: str, name: str
+) -> None:
     if ifc.get_schema() == "IFC2X3":
         attributes = {"DocumentId": identification, "Name": name}
     else:

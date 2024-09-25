@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import os
 import bpy
 import json
@@ -28,6 +29,11 @@ import bonsai.tool as tool
 import bonsai.bim.module.drawing.scheduler as scheduler
 from bonsai.bim.ifc import IfcStore
 from bonsai.bim.handler import refresh_ui_data
+from typing import TYPE_CHECKING
+from collections import Counter
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 
 class AddCsvAttribute(bpy.types.Operator):
@@ -183,6 +189,14 @@ class ExportIfcCsv(bpy.types.Operator):
     filename_ext = ".csv"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.CsvProperties
+        if not props.should_load_from_memory and not props.csv_ifc_file:
+            cls.poll_message_set("Select an IFC file or use 'load from memory' if it's loaded in Bonsai.")
+            return False
+        return True
+
     def invoke(self, context, event):
         props = context.scene.CsvProperties
         if props.format == "web":
@@ -256,17 +270,38 @@ class ExportIfcCsv(bpy.types.Operator):
         if props.format == "web":
             if not context.scene.WebProperties.is_connected:
                 bpy.ops.bim.connect_websocket_server()
-            tool.Web.send_webui_data(data=ifc_csv.dataframe.to_csv(index=False), data_key="csv_data", event="csv_data")
+            df = ifc_csv.dataframe
+            assert df is not None
+            # Tabulator seems to be ignoring columns non-unique columns,
+            # so we ensure they are unique at input.
+            df.columns = self.get_unique_column_names(df)
+            tool.Web.send_webui_data(data=df.to_csv(index=False), data_key="csv_data", event="csv_data")
 
         self.report({"INFO"}, f"Data is exported to {props.format.upper()}.")
         return {"FINISHED"}
 
+    def get_unique_column_names(self, dataframe: pd.DataFrame) -> list[str]:
+        count = Counter()
+        return [
+            f"{col}.{i:03d}" if duped and not count.update([col]) and (i := count[col]) else col
+            for col, duped in zip(dataframe.columns, dataframe.columns.duplicated())
+        ]
 
-class ImportIfcCsv(bpy.types.Operator):
+
+class ImportIfcCsv(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.import_ifccsv"
     bl_label = "Import to IFC"
+    bl_options = {"REGISTER", "UNDO"}
     filter_glob: bpy.props.StringProperty(default="*.csv;*.ods;*.xlsx", options={"HIDDEN"})
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.CsvProperties
+        if not props.should_load_from_memory and not props.csv_ifc_file:
+            cls.poll_message_set("Select an IFC file or use 'load from memory' if it's loaded in Bonsai.")
+            return False
+        return True
 
     def invoke(self, context, event):
         self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".csv")
@@ -274,7 +309,7 @@ class ImportIfcCsv(bpy.types.Operator):
         WindowManager.fileselect_add(self)
         return {"RUNNING_MODAL"}
 
-    def execute(self, context):
+    def _execute(self, context):
         import ifccsv
 
         props = context.scene.CsvProperties

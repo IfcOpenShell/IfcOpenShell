@@ -279,3 +279,10 @@ class TestFile(test.bootstrap.IFC4):
         element = self.file.createIfcWall()
         g = ifcopenshell.file.from_string(self.file.wrapped_data.to_string())
         assert g.by_id(1).is_a("IfcWall")
+
+    def test_assigning_header(self):
+        f = ifcopenshell.file(schema="IFC4")
+        f.header.file_name.name = "test"
+        g = ifcopenshell.file(schema="IFC4")
+        g.assign_header_from(f)
+        assert g.header.file_name.name == "test"

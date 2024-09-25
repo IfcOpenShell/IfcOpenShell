@@ -3,6 +3,7 @@
 #include "../ifcgeom/IfcGeomElement.h"
 #include "../ifcgeom/ConversionSettings.h"
 #include "../ifcgeom/abstract_mapping.h"
+#include "../ifcgeom/piecewise_function_evaluator.h"
 
 #ifdef IFOPSH_WITH_OPENCASCADE
 #include "../ifcgeom/kernels/opencascade/OpenCascadeKernel.h"
@@ -29,8 +30,15 @@ bool ifcopenshell::geometry::kernels::AbstractKernel::convert(const taxonomy::pt
 	try {
 		return dispatch_conversion<0>::dispatch(this, item->kind(), item, results);
 	} catch (std::exception& e) {
-		Logger::Error(e, item->instance);
-		return false;
+		std::string prev_exception = std::string(e.what());
+		try {
+			return dispatch_with_upgrade<0>::dispatch(this, item, results);
+		} catch (std::exception& e) {
+			Logger::Error(prev_exception + " Conversion for upgraded element failed with: " + std::string(e.what()), item->instance);
+			return false;
+		} catch (...) {
+			return false;
+		}
 	} catch (...) {
 		// @todo we can't log OCCT exceptions here, can we do some reraising to solve this?
 		return false;
@@ -220,7 +228,8 @@ bool ifcopenshell::geometry::kernels::AbstractKernel::convert_impl(const taxonom
 }
 
 bool ifcopenshell::geometry::kernels::AbstractKernel::convert_impl(const taxonomy::piecewise_function::ptr item, IfcGeom::ConversionResults& cs) {
-	auto expl = item->evaluate();
+   piecewise_function_evaluator evaluator(item);
+   auto expl = evaluator.evaluate();
 	expl->instance = item->instance;
 	return convert(expl, cs);
 }

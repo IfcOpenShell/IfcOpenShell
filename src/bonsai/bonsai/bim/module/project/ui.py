@@ -27,6 +27,7 @@ from bonsai.bim.module.project.data import ProjectData, LinksData
 
 def file_import_menu(self, context):
     op = self.layout.operator("bim.load_project", text="IFC (Geometry Only) (.ifc/.ifczip/.ifcxml)")
+    op.import_without_ifc_data = True
     op.should_start_fresh_session = False
 
 
@@ -132,7 +133,7 @@ class BIM_PT_project(Panel):
                 row = box.row(align=True)
                 row.label(text="Your Model May Be Outdated", icon="ERROR")
                 op = row.operator("bim.open_uri", text="", icon="QUESTION")
-                op.uri = "https://docs.bonsaibim.org/users/troubleshooting.html#saving-and-loading-blend-files"
+                op.uri = "https://docs.bonsaibim.org/guides/troubleshooting.html#saving-and-loading-blend-files"
                 row.operator("bim.close_blend_warning", text="", icon="CANCEL")
 
             if props.ifc_file:
@@ -174,6 +175,8 @@ class BIM_PT_project(Panel):
         row.prop(pprops, "should_use_native_meshes")
         row = self.layout.row()
         row.prop(pprops, "should_merge_materials_by_colour")
+        row = self.layout.row()
+        row.prop(pprops, "geometry_library")
         row = self.layout.row()
         row.prop(pprops, "deflection_tolerance")
         row = self.layout.row()
@@ -517,5 +520,7 @@ class BIM_PT_purge(Panel):
 
     def draw(self, context):
         layout = self.layout
-        layout.operator("bim.purge_unused_profiles")
-        layout.operator("bim.purge_unused_types")
+        layout.operator("bim.purge_unused_objects", text="Purge Unused Profiles").object_type = "PROFILE"
+        layout.operator("bim.purge_unused_objects", text="Purge Unused Types").object_type = "TYPE"
+        layout.operator("bim.purge_unused_objects", text="Purge Unused Materials").object_type = "MATERIAL"
+        layout.operator("bim.purge_unused_objects", text="Purge Unused Styles").object_type = "STYLE"

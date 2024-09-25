@@ -391,13 +391,10 @@ class DisableEditingBoundary(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class EditBoundaryAttributes(bpy.types.Operator):
+class EditBoundaryAttributes(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_boundary_attributes"
     bl_label = "Disable Editing Boundary Relations"
     bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         bprops = context.active_object.bim_boundary_properties
@@ -412,7 +409,7 @@ class EditBoundaryAttributes(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class UpdateBoundaryGeometry(bpy.types.Operator):
+class UpdateBoundaryGeometry(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.update_boundary_geometry"
     bl_label = "Update Boundary Geometry"
     bl_description = """
@@ -420,9 +417,6 @@ class UpdateBoundaryGeometry(bpy.types.Operator):
     Mesh must lie on a single plane. It should look like a face or a face with holes.
     """
     bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         tool.Boundary.move_origin_to_space_origin(context.active_object)

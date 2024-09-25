@@ -42,7 +42,8 @@ class IFC_PARSE_API file_open_status {
         SUCCESS,
         READ_ERROR,
         NO_HEADER,
-        UNSUPPORTED_SCHEMA
+        UNSUPPORTED_SCHEMA,
+        INVALID_SYNTAX
     };
 
   private:

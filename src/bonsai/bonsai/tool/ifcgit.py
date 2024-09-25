@@ -79,7 +79,11 @@ class IfcGit:
         else:
             return None
 
-        if IfcGitRepo.repo is not None and IfcGitRepo.repo.working_dir == path_dir:
+        if (
+            IfcGitRepo.repo is not None
+            and os.path.exists(IfcGitRepo.repo.git_dir)
+            and IfcGitRepo.repo.working_dir == path_dir
+        ):
             return IfcGitRepo.repo
 
         try:
@@ -88,9 +92,11 @@ class IfcGit:
             parentdir_path = os.path.abspath(os.path.join(path_dir, os.pardir))
             if parentdir_path == path_dir:
                 # root folder
+                IfcGitRepo.repo = None
                 return None
             return cls.repo_from_path(parentdir_path)
         except git.exc.NoSuchPathError:
+            IfcGitRepo.repo = None
             return None
         if repo:
             IfcGitRepo.repo = repo
@@ -100,7 +106,7 @@ class IfcGit:
     def add_file_to_repo(cls, repo: git.Repo, path_file: str) -> None:
         if os.name == "nt":
             cls.dos2unix(path_file)
-        repo.index.add(path_file)
+        repo.index.add(os.path.normpath(path_file))
         repo.index.commit(message="Added " + os.path.relpath(path_file, repo.working_dir))
         bpy.ops.ifcgit.refresh()
 
@@ -124,7 +130,7 @@ class IfcGit:
         repo = IfcGitRepo.repo
         if os.name == "nt":
             cls.dos2unix(path_file)
-        repo.index.add(path_file)
+        repo.index.add(os.path.normpath(path_file))
         repo.index.commit(message=props.commit_message)
         props.commit_message = ""
 
@@ -180,8 +186,6 @@ class IfcGit:
 
     @classmethod
     def clear_commits_list(cls) -> None:
-        area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
-        area.spaces[0].shading.color_type = "MATERIAL"
         props = bpy.context.scene.IfcGitProperties
 
         # ifcgit_commits is registered list widget
@@ -345,8 +349,7 @@ class IfcGit:
         current_revision = repo.commit()
 
         if selected_revision == current_revision:
-            area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
-            area.spaces[0].shading.color_type = "MATERIAL"
+            cls.decolourise()
             return
 
         if current_revision.committed_date > selected_revision.committed_date:
@@ -407,6 +410,11 @@ class IfcGit:
                 obj.select_set(True)
             else:
                 obj.color = (1.0, 1.0, 1.0, 0.5)
+
+    @classmethod
+    def decolourise(cls) -> None:
+        area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
+        area.spaces[0].shading.color_type = "MATERIAL"
 
     @classmethod
     def switch_to_revision_item(cls) -> None:
@@ -511,7 +519,7 @@ class IfcGit:
                         else:
                             if os.name == "nt":
                                 cls.dos2unix(path_ifc)
-                            repo.index.add(path_ifc)
+                            repo.index.add(os.path.normpath(path_ifc))
                             repo.git.commit("--no-edit")
                     except git.exc.GitError:
                         operator.report({"ERROR"}, "Unknown IFC Merge failure")
@@ -521,6 +529,7 @@ class IfcGit:
 
             cls.load_project(path_ifc)
             cls.refresh_revision_list(path_ifc)
+            cls.decolourise()
 
     @classmethod
     def entity_log(cls, path_ifc: str, step_id: int) -> str:

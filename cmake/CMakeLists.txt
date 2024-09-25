@@ -29,7 +29,7 @@ endif()
 
 cmake_policy(SET CMP0048 NEW)
 cmake_policy(SET CMP0074 NEW)
-cmake_policy(SET CMP0078 OLD)
+cmake_policy(SET CMP0078 NEW)
 cmake_policy(SET CMP0086 NEW)
 if (POLICY CMP0144)
     cmake_policy(SET CMP0144 NEW) # find_package() uses upper-case <PACKAGENAME>_ROOT variables.
@@ -730,6 +730,10 @@ if(MSVC)
     # endif()
 
 	add_definitions(-D_ENABLE_EXTENDED_ALIGNED_STORAGE)
+	# See #5158.
+	if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 19.40)
+		add_definitions(-D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
+	endif()
 else()
     add_definitions(-Wall -Wextra)
 

@@ -21,6 +21,8 @@
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geometry;
 
+#include "../piecewise_function_evaluator.h"
+
 #ifdef SCHEMA_HAS_IfcSegmentedReferenceCurve
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSegmentedReferenceCurve* inst) {
@@ -53,7 +55,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSegmentedReferenceCurve* ins
     const Eigen::Matrix4d& m = p->ccomponents();
     double cant_start = m(0, 3); // start of cant curve
 
-   auto cant = taxonomy::make<taxonomy::piecewise_function>(cant_start,pwfs,&settings_);
+   auto cant = taxonomy::make<taxonomy::piecewise_function>(cant_start,pwfs);
 
     // Determine the valid domain of the PWF... the valid domain is where 
     // horizontal, gradient and cant curves are defined
@@ -68,24 +70,45 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSegmentedReferenceCurve* ins
     }
 
     // define the callback function for the segmented reference curve
-	auto composition = [gradient, cant](double u)->Eigen::Matrix4d {
+    piecewise_function_evaluator gradient_evaluator(gradient, &settings_), cant_evaluator(cant, &settings_);
+    auto composition = [gradient_evaluator, cant_evaluator, start = cant->start()](double u) -> Eigen::Matrix4d {
       // u is distance from start of cant curve
       // add cant->start() to u to get the distance from start of gradient curve
-		auto g = gradient->evaluate(u+cant->start());
-		auto c = cant->evaluate(u);
+      auto g = gradient_evaluator.evaluate(u + start);
+      auto c = cant_evaluator.evaluate(u);
 
-      c.col(3)(0) = 0.0;        // x is distance along. zero it out so it doesn't add to the x from gradient curve
-      c.col(1).swap(c.col(2));  // c is 2D in distance along - y plane, swap y and z so elevations become z
-      c.row(1).swap(c.row(2));
+      // Need to multiply g and c so the axis vectors
+      // from cant have the correct rotation applied so
+      // they are relative to the gradient curve coordinate system
+      //
+      // However, the coordinate points don't need to have the rotations
+      // of g applied. Save off the x,y,z and cant values
+      auto x = g(0, 3);
+      auto y = g(1, 3);
+      auto z = g(2, 3);
+      auto s = c(1, 3); // superelevation
 
-      Eigen::Matrix4d m;
-      m = g * c;
+      // change column 3 to (0,0,0,1)
+      Eigen::Vector4d p(0, 0, 0, 1);
+      g.col(3) = p;
+      c.col(3) = p;
+
+      // multiply g and c to get the axes in the correct orientation
+      Eigen::Matrix4d m = g * c;
+
+      // reinstate the values for x and y.
+      // z is the gradient curve z value plus the superelevation
+      // that comes from the cant.
+      m(0, 3) = x;
+      m(1, 3) = y;
+      m(2, 3) = z + s;
+
       return m;
 	};
 
 	taxonomy::piecewise_function::spans_t spans;
    spans.emplace_back(length, composition);
-   auto pwf = taxonomy::make<taxonomy::piecewise_function>(start, spans, &settings_, inst);
+   auto pwf = taxonomy::make<taxonomy::piecewise_function>(start, spans, inst);
    return pwf;
 }
 

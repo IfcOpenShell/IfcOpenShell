@@ -356,14 +356,14 @@ class BrowseExternalStyle(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class ActivateExternalStyle(bpy.types.Operator, tool.Ifc.Operator):
+class ActivateExternalStyle(bpy.types.Operator):
     bl_idname = "bim.activate_external_style"
     bl_label = "Activate External Style"
     bl_options = {"REGISTER", "UNDO", "INTERNAL"}
 
     material_name: bpy.props.StringProperty(name="Material Name", default="")
 
-    def _execute(self, context):
+    def execute(self, context):
         if not self.material_name:
             material = context.active_object.active_material
         else:
@@ -403,6 +403,7 @@ class ActivateExternalStyle(bpy.types.Operator, tool.Ifc.Operator):
         if material.use_nodes:
             tool.Blender.copy_node_graph(material, db["data_block"])
         bpy.data.materials.remove(db["data_block"])
+        return {"FINISHED"}
 
     def copy_material_attributes(self, source, target):
         ID_properties = bpy.types.ID.bl_rna.properties
@@ -444,33 +445,37 @@ class ActivateExternalStyle(bpy.types.Operator, tool.Ifc.Operator):
             set_prop(prop_name)
 
 
-class DisableEditingStyles(bpy.types.Operator, tool.Ifc.Operator):
+class DisableEditingStyles(bpy.types.Operator):
     bl_idname = "bim.disable_editing_styles"
     bl_options = {"REGISTER", "UNDO"}
     bl_label = "Disable Editing Styles"
 
-    def _execute(self, context):
+    def execute(self, context):
         core.disable_editing_styles(tool.Style)
+        return {"FINISHED"}
 
 
-class LoadStyles(bpy.types.Operator, tool.Ifc.Operator):
+class LoadStyles(bpy.types.Operator):
     bl_idname = "bim.load_styles"
     bl_label = "Load Styles"
     bl_options = {"REGISTER", "UNDO"}
     style_type: bpy.props.StringProperty()
 
-    def _execute(self, context):
-        core.load_styles(tool.Style, style_type=self.style_type)
+    def execute(self, context):
+        style_type = self.style_type if self.style_type else context.scene.BIMStylesProperties.style_type
+        core.load_styles(tool.Style, style_type=style_type)
+        return {"FINISHED"}
 
 
-class SelectByStyle(bpy.types.Operator, tool.Ifc.Operator):
+class SelectByStyle(bpy.types.Operator):
     bl_idname = "bim.select_by_style"
     bl_label = "Select By Style"
     bl_options = {"REGISTER", "UNDO"}
     style: bpy.props.IntProperty()
 
-    def _execute(self, context):
+    def execute(self, context):
         core.select_by_style(tool.Style, tool.Spatial, style=tool.Ifc.get().by_id(self.style))
+        return {"FINISHED"}
 
 
 class ChooseTextureMapPath(bpy.types.Operator):
@@ -542,6 +547,8 @@ class EnableAddingPresentationStyle(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
+        if not tool.Ifc.get():
+            return False
         style_type = tool.Style.get_active_style_type()
         if style_type != "IfcSurfaceStyle":
             cls.poll_message_set(f"Adding {style_type} is not currently supported.")
@@ -633,14 +640,14 @@ class AddPresentationStyle(bpy.types.Operator, tool.Ifc.Operator):
         core.load_styles(tool.Style, style_type=props.style_type)
 
 
-class EnableEditingSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
+class EnableEditingSurfaceStyle(bpy.types.Operator):
     bl_idname = "bim.enable_editing_surface_style"
     bl_label = "Enable Editing Surface Style"
     bl_options = {"REGISTER", "UNDO"}
     style: bpy.props.IntProperty(default=0)
     ifc_class: bpy.props.StringProperty(default="")
 
-    def _execute(self, context):
+    def execute(self, context):
         props = bpy.context.scene.BIMStylesProperties
         style = tool.Ifc.get().by_id(self.style)
         props.is_editing_style = self.style
@@ -678,6 +685,7 @@ class EnableEditingSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
             and active_style_type != "Shading"
         ):
             tool.Style.switch_shading(material, "Shading")
+        return {"FINISHED"}
 
 
 class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):

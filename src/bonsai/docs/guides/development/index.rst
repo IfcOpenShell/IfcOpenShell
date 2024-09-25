@@ -9,6 +9,7 @@ This chapter covers how you can help contribute to Bonsai.
       :hidden:
       :maxdepth: 2
 
+      installation
       hello_world
       running_tests
       translations

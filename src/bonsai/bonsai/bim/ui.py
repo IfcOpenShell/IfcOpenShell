@@ -191,14 +191,26 @@ class BIM_UL_topics(bpy.types.UIList):
 
 class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     bl_idname = tool.Blender.get_blender_addon_package_name()
-    svg2pdf_command: StringProperty(name="SVG to PDF Command", description='E.g. [["inkscape", "svg", "-o", pdf]]')
+    svg2pdf_command: StringProperty(
+        name="SVG to PDF Command",
+        description='print sheet to pdf together with svg. Leave blank svg is just created, E.g. [["path to application eg. /Applications/Inkscape.app/Contents/MacOS/inkscape", "svg", "-o", "pdf"]]',
+    )
     svg2dxf_command: StringProperty(
         name="SVG to DXF Command",
         description='E.g. [["inkscape", "svg", "-o", "eps"], ["pstoedit", "-dt", "-f", "dxf:-polyaslines -mm", "eps", "dxf", "-psarg", "-dNOSAFER"]]',
     )
-    svg_command: StringProperty(name="SVG Command", description='E.g. [["firefox", "path"]]')
-    layout_svg_command: StringProperty(name="Layout SVG Command", description='E.g. [["firefox", "path"]]')
-    pdf_command: StringProperty(name="PDF Command", description='E.g. [["firefox", "path"]]')
+    svg_command: StringProperty(
+        name="SVG Command",
+        description='Software to open generated drawing and sheets. Leave blank system default for .svg is used E.g. [["path to application eg. /Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge", "path"]]',
+    )
+    layout_svg_command: StringProperty(
+        name="Layout SVG Command",
+        description='Software to open layouts, before generated. Leave blank system default for .svg is used E.g.  [["path to application eg. /Applications/Inkscape.app/Contents/MacOS/inkscape", "path"]]',
+    )
+    pdf_command: StringProperty(
+        name="PDF Command",
+        description='Software to open .pdf, leave blank uses system default. E.g. [["path to application eg. /Applications/Inkscape.app/Contents/MacOS/inkscape", "path"]]',
+    )
     spreadsheet_command: StringProperty(name="Spreadsheet Command", description='E.g. [["libreoffice", "path"]]')
     should_hide_empty_props: BoolProperty(name="Hide Empty Properties", default=True)
     should_setup_workspace: BoolProperty(name="Setup Workspace Layout for BIM", default=True)
@@ -209,7 +221,6 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         description="If disabled, the toolbar will only load when an IFC model is active",
     )
     should_play_chaching_sound: BoolProperty(name="Play A Cha-Ching Sound When Project Costs Updates", default=False)
-    lock_grids_on_import: BoolProperty(name="Lock Grids By Default", default=True)
     spatial_elements_unselectable: BoolProperty(name="Make Spatial Elements Unselectable By Default", default=True)
     decorations_colour: bpy.props.FloatVectorProperty(
         name="Decorations Colour", subtype="COLOR", default=(1, 1, 1, 1), min=0.0, max=1.0, size=4
@@ -294,8 +305,6 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row.prop(self, "should_setup_toolbar")
         row = layout.row()
         row.prop(self, "should_play_chaching_sound")
-        row = layout.row()
-        row.prop(self, "lock_grids_on_import")
         row = layout.row()
         row.prop(self, "spatial_elements_unselectable")
 
@@ -421,33 +430,63 @@ class BIM_PT_tabs(Panel):
 
             row = self.layout.row(align=True)
             row.prop(aprops, "tab", text="")
-
-            if bonsai.REINSTALLED_BBIM_VERSION:
-                box = self.layout.box()
-                box.alert = True
-
-                box.label(text="Bonsai requires Blender to restart.", icon="ERROR")
-                box.label(text="Bonsai was reinstalled in the current session:")
-                box.label(text=f"{bonsai.FIRST_INSTALLED_BBIM_VERSION} -> {bonsai.REINSTALLED_BBIM_VERSION}")
-                box.label(text="Please restart Blender to avoid potential issues.")
-                box.operator("bim.restart_blender", text="Restart Blender", icon="BLENDER")
-
-            if bonsai.last_error:
-                box = self.layout.box()
-                box.alert = True
-                row = box.row(align=True)
-                row.label(text="Bonsai experienced an error :(", icon="ERROR")
-                row.operator("bim.close_error", text="", icon="CANCEL")
-                if platform.system() == "Windows":
-                    box.operator("wm.console_toggle", text="View the console for full logs.", icon="CONSOLE")
-                else:
-                    box.label(text="View the console for full logs.", icon="CONSOLE")
-                box.operator("bim.copy_debug_information", text="Copy Error Message To Clipboard")
-                op = box.operator("bim.open_uri", text="How Can I Fix This?")
-                op.uri = "https://docs.bonsaibim.org/users/troubleshooting.html"
-
         except:
             pass  # Prior to load_post, we may not have any area properties setup
+
+        if bonsai.REINSTALLED_BBIM_VERSION:
+            box = self.layout.box()
+            box.alert = True
+            box.label(text="Bonsai requires Blender to restart.", icon="ERROR")
+            box.label(text="Bonsai was reinstalled in the current session:")
+            box.label(text=f"{bonsai.FIRST_INSTALLED_BBIM_VERSION} -> {bonsai.REINSTALLED_BBIM_VERSION}")
+            box.operator("bim.restart_blender", text="Restart Blender", icon="BLENDER")
+
+        if bonsai.last_error:
+            box = self.layout.box()
+            box.alert = True
+            row = box.row(align=True)
+            row.label(text="Bonsai experienced an error :(", icon="ERROR")
+            row.operator("bim.close_error", text="", icon="CANCEL")
+            if platform.system() == "Windows":
+                box.operator("wm.console_toggle", text="View the console for full logs.", icon="CONSOLE")
+            else:
+                box.label(text="View the console for full logs.", icon="CONSOLE")
+            box.operator("bim.copy_debug_information", text="Copy Error Message To Clipboard")
+            op = box.operator("bim.open_uri", text="How Can I Fix This?")
+            op.uri = "https://docs.bonsaibim.org/guides/troubleshooting.html"
+
+        if not tool.Ifc.get():
+            return
+
+        props = context.scene.BIMProperties
+        if props.has_blend_warning:
+            box = self.layout.box()
+            box.alert = True
+            row = box.row(align=True)
+            row.label(text="Your model may be outdated", icon="ERROR")
+            op = row.operator("bim.open_uri", text="", icon="QUESTION")
+            op.uri = "https://docs.bonsaibim.org/guides/troubleshooting.html#saving-and-loading-blend-files"
+            row.operator("bim.close_blend_warning", text="", icon="CANCEL")
+
+        if context.mode == "OBJECT" and context.scene.BIMGeometryProperties.mode in ("OBJECT", "ITEM"):
+            pass
+        elif context.mode.startswith("EDIT") and context.scene.BIMGeometryProperties.mode == "EDIT":
+            pass
+        else:
+            box = self.layout.box()
+            box.alert = True
+            row = box.row(align=True)
+            row.label(text="Geometry changes will be lost", icon="ERROR")
+            op = row.operator("bim.open_uri", text="", icon="QUESTION")
+            op.uri = "https://docs.bonsaibim.org/guides/troubleshooting.html#incompatible-blender-features"
+
+        if (o := context.active_object) and [round(x, 4) for x in list(o.matrix_world.to_scale())] != [1, 1, 1]:
+            box = self.layout.box()
+            box.alert = True
+            row = box.row(align=True)
+            row.label(text="Object scaling will be lost", icon="ERROR")
+            op = row.operator("bim.open_uri", text="", icon="QUESTION")
+            op.uri = "https://docs.bonsaibim.org/guides/troubleshooting.html#incompatible-blender-features"
 
     def draw_tab_entry(self, row, icon, tab_name, enabled=True, highlight=False):
         tab_entry = row.row(align=True)
@@ -499,8 +538,8 @@ class BIM_PT_tab_project_info(Panel):
         pass
 
 
-class BIM_PT_tab_spatial_decomposition(Panel):
-    bl_label = "Spatial Decomposition"
+class BIM_PT_tab_spatial(Panel):
+    bl_label = "Spatial"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -1053,7 +1092,7 @@ def draw_custom_context_menu(self, context):
     prop = context.button_pointer
     prop_name = context.button_prop.identifier
     prop_value = getattr(prop, prop_name, None)
-    if prop_value is None:
+    if not isinstance(prop_value, str):
         return
     version = tool.Ifc.get_schema()
     layout = self.layout

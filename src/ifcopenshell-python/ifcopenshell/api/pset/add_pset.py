@@ -18,10 +18,17 @@
 
 import ifcopenshell
 import ifcopenshell.api.owner
+import ifcopenshell.api.pset
 import ifcopenshell.guid
+from typing import Optional
 
 
-def add_pset(file: ifcopenshell.file, product: ifcopenshell.entity_instance, name: str) -> ifcopenshell.entity_instance:
+def add_pset(
+    file: ifcopenshell.file,
+    product: ifcopenshell.entity_instance,
+    name: str,
+    ifc2x3_subclass: Optional[str] = None,
+) -> ifcopenshell.entity_instance:
     """Adds a new property set to a product
 
     Products, such as physical objects or types in IFC may have properties
@@ -54,18 +61,21 @@ def add_pset(file: ifcopenshell.file, product: ifcopenshell.entity_instance, nam
     data, rather than arbitrary metadata.
 
     :param product: The IfcObject that you want to assign a property set to.
-    :type product: ifcopenshell.entity_instance
     :param name: The name of the property set. Property sets that are
         standardised by buildingSMART typically have a prefix of "Pset_",
         like "Pset_WallCommon". If you create your own, you must not use
         that prefix. It is recommended to use your own prefix tailored to
         your project, company, or local government requirement.
-    :type name: str
+    :param ifc2x3_subclass: IFC2X3 subclass for material or profile properties.
+        In IFC2X3 IfcProfileProperties and IfcMaterialProperties are abstract
+        so you need one of their subclasses to instantiate them.
+        By default, for profile will be created IfcGeneralProfileProperties
+        and for material - IfcExtendedMaterialProperties.
+        Will have no effect in >=IFC4.
 
     :raises TypeError: If `product` class doesn't support adding a pset.
 
     :return: The newly created IfcPropertySet
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -83,6 +93,7 @@ def add_pset(file: ifcopenshell.file, product: ifcopenshell.entity_instance, nam
         ifcopenshell.api.pset.edit_pset(model, pset=pset, properties={"FireRating": "2HR"})
     """
     settings = {"product": product, "name": name}
+    is_ifc2x3 = file.schema == "IFC2X3"
 
     if settings["product"].is_a("IfcObject") or settings["product"].is_a("IfcContext"):
         for rel in settings["product"].IsDefinedBy or []:
@@ -97,16 +108,9 @@ def add_pset(file: ifcopenshell.file, product: ifcopenshell.entity_instance, nam
                 "Name": settings["name"],
             },
         )
-        file.create_entity(
-            "IfcRelDefinesByProperties",
-            **{
-                "GlobalId": ifcopenshell.guid.new(),
-                "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
-                "RelatedObjects": [settings["product"]],
-                "RelatingPropertyDefinition": pset,
-            },
-        )
+        ifcopenshell.api.pset.assign_pset(file, [settings["product"]], pset)
         return pset
+
     elif settings["product"].is_a("IfcTypeObject"):
         for definition in settings["product"].HasPropertySets or []:
             if definition.Name == settings["name"]:
@@ -120,30 +124,28 @@ def add_pset(file: ifcopenshell.file, product: ifcopenshell.entity_instance, nam
                 "Name": settings["name"],
             },
         )
-        has_property_sets = list(settings["product"].HasPropertySets or [])
-        has_property_sets.append(pset)
-        settings["product"].HasPropertySets = has_property_sets
+        ifcopenshell.api.pset.assign_pset(file, [settings["product"]], pset)
         return pset
+
     # in IFC2X3 IfcMaterialDefinition not yet existed
     elif settings["product"].is_a("IfcMaterialDefinition") or settings["product"].is_a("IfcMaterial"):
+        kwargs = {"Material": settings["product"]}
         if file.schema == "IFC2X3":
-            ifc_class = "IfcExtendedMaterialProperties"
+            ifc_class = ifc2x3_subclass or "IfcExtendedMaterialProperties"
             definitions = (d for d in file.by_type("IfcMaterialProperties") if d.Material == settings["product"])
+            if ifc_class == "IfcExtendedMaterialProperties":
+                kwargs["Name"] = settings["name"]
         else:
             ifc_class = "IfcMaterialProperties"
             definitions = settings["product"].HasProperties
+            kwargs["Name"] = settings["name"]
         for definition in definitions:
             # In IFC2X3 not all IfcMaterialProperties has Name
-            if getattr(definition, "Name") == settings["name"]:
+            if getattr(definition, "Name", None) == settings["name"]:
                 return definition
 
-        return file.create_entity(
-            ifc_class,
-            **{
-                "Name": settings["name"],
-                "Material": settings["product"],
-            },
-        )
+        return file.create_entity(ifc_class, **kwargs)
+
     elif settings["product"].is_a("IfcProfileDef"):
         # in IFC2X3 IfcProfileProperties doesn't have Name and we cannot identify them
         if file.schema != "IFC2X3":
@@ -156,6 +158,10 @@ def add_pset(file: ifcopenshell.file, product: ifcopenshell.entity_instance, nam
         if file.schema != "IFC2X3":
             kwargs["Name"] = settings["name"]
 
-        return file.create_entity("IfcProfileProperties", **kwargs)
+        if is_ifc2x3:
+            ifc_class = ifc2x3_subclass or "IfcGeneralProfileProperties"
+        else:
+            ifc_class = "IfcProfileProperties"
+        return file.create_entity(ifc_class, **kwargs)
 
     raise TypeError(f"Class '{settings['product'].is_a(True)}' doesn't support adding a property set.")

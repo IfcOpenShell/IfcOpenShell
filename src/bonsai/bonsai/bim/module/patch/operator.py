@@ -70,8 +70,11 @@ class ExecuteIfcPatch(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        input_file = context.scene.BIMPatchProperties.ifc_patch_input
-        return input_file or context.scene.BIMPatchProperties.should_load_from_memory
+        props = context.scene.BIMPatchProperties
+        if not props.should_load_from_memory and not props.ifc_patch_input:
+            cls.poll_message_set("Select an IFC file or use 'load from memory' if it's loaded in Bonsai.")
+            return False
+        return True
 
     def execute(self, context):
         props = context.scene.BIMPatchProperties

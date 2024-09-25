@@ -18,9 +18,12 @@
 
 import bpy
 import bmesh
+import shapely
 import mathutils
+import numpy as np
 import ifcopenshell
 import ifcopenshell.util.unit
+import ifcopenshell.util.shape
 import bonsai.tool as tool
 from math import pi, pow
 from mathutils import Vector, Matrix, geometry
@@ -116,6 +119,218 @@ class Helper:
         bm.free()
 
         return {"profile": profile, "extrusion": extrusion}
+
+    def auto_detect_profiles(
+        self, obj: bpy.types.Object, mesh: bpy.types.Mesh, position: Matrix | None = None
+    ) -> Union[tuple, dict]:
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+
+        if position is None:
+            position = Matrix()
+        position_i = position.inverted()
+
+        groups = {"IFCARCINDEX": [], "IFCCIRCLE": []}
+        for i, group in enumerate(obj.vertex_groups):
+            if "IFCARCINDEX" in group.name:
+                groups["IFCARCINDEX"].append(i)
+            elif "IFCCIRCLE" in group.name:
+                groups["IFCCIRCLE"].append(i)
+
+        bm = bmesh.new()
+        bm.from_mesh(mesh)
+        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-5)
+        bmesh.ops.delete(bm, geom=bm.faces, context="FACES_ONLY")
+
+        # https://docs.blender.org/api/blender_python_api_2_63_8/bmesh.html#CustomDataAccess
+        # This is how we access vertex groups via bmesh, apparently, it's not very intuitive
+        deform_layer = bm.verts.layers.deform.active
+
+        # Sanity check
+        group_verts = {"IFCARCINDEX": {}, "IFCCIRCLE": {}}
+        for vert in bm.verts:
+            total_groups = 0
+            is_circle = False
+            for group_type, group_indices in groups.items():
+                if not group_indices:
+                    continue
+                is_special, group_index = tool.Blender.bmesh_check_vertex_in_groups(vert, deform_layer, group_indices)
+                if not is_special:
+                    continue
+                if group_type == "IFCCIRCLE":
+                    is_circle = True
+                group_verts[group_type].setdefault(group_index, 0)
+                group_verts[group_type][group_index] += 1
+                total_groups += 0
+            if total_groups > 1:  # A vert can only belong to one group
+                return (False, "AMBIGUOUS_SPECIAL_VERTEX")
+            elif is_circle:
+                pass  # Circles are allowed to be unclosed
+            elif total_groups == 0 and len(vert.link_edges) != 2:  # Unclosed loop or forked loop
+                return (False, "UNCLOSED_LOOP")
+
+        for group_type, group_counts in group_verts.items():
+            if group_type == "IFCARCINDEX":
+                for group_count in group_counts.values():
+                    if group_count != 3:  # Each arc needs 3 verts
+                        return (False, "3POINT_ARC")
+            elif group_type == "IFCCIRCLE":
+                for group_count in group_counts.values():
+                    if group_count != 2:  # Each circle needs 2 verts
+                        return (False, "CIRCLE")
+
+        loop_edges = set(bm.edges)
+
+        # Create loops from edges
+        loops = []
+        while loop_edges:
+            edge = loop_edges.pop()
+            loop = [edge]
+            has_found_connected_edge = True
+            while has_found_connected_edge:
+                has_found_connected_edge = False
+                for edge in loop_edges.copy():
+                    edge_verts = set(edge.verts)
+                    if edge_verts & set(loop[0].verts):
+                        loop.insert(0, edge)
+                        loop_edges.remove(edge)
+                        has_found_connected_edge = True
+                    elif edge_verts & set(loop[-1].verts):
+                        loop.append(edge)
+                        loop_edges.remove(edge)
+                        has_found_connected_edge = True
+            loops.append(loop)
+
+        tmp = ifcopenshell.file(schema=tool.Ifc.get().schema)
+
+        def is_in_group(v, group_name):
+            for group_index in groups[group_name]:
+                if group_index in v[deform_layer]:
+                    return True
+            return False
+
+        def get_group_index(v, group_name):
+            for group_index in groups[group_name]:
+                if group_index in v[deform_layer]:
+                    return group_index
+
+        # Convert all loops into IFC curves
+        curves = []
+        for loop in loops:
+
+            if len(loop) == 1 and all([is_in_group(v, "IFCCIRCLE") for v in loop[0].verts]):
+                v1, v2 = loop[0].verts
+                mid = v1.co.lerp(v2.co, 0.5)
+                mid = (position_i @ (mid / unit_scale)).to_2d()
+                v1 = (position_i @ (v1.co / unit_scale)).to_2d()
+                radius = (mid - v1).length
+                curves.append(
+                    tmp.createIfcCircle(tmp.createIfcAxis2Placement2D(tmp.createIfcCartesianPoint(list(mid))), radius)
+                )
+            else:  # For now, assume closed loop
+                loop_verts = []
+                for i, edge in enumerate(loop):
+                    if i == 0:
+                        if edge.verts[0] in loop[i + 1].verts:
+                            loop_verts.append(edge.verts[1])
+                            loop_verts.append(edge.verts[0])
+                        elif edge.verts[1] in loop[i + 1].verts:
+                            loop_verts.append(edge.verts[0])
+                            loop_verts.append(edge.verts[1])
+                    else:
+                        loop_verts.append(edge.other_vert(loop_verts[-1]))
+                loop_verts.pop()
+
+                # Handle loop_verts possibly starting halfway through an arc
+                if (group_index := get_group_index(loop_verts[0], "IFCARCINDEX")) is not None:
+                    if get_group_index(loop_verts[1], "IFCARCINDEX") != group_index:
+                        loop_verts.insert(0, loop_verts.pop())
+                        loop_verts.insert(0, loop_verts.pop())
+                    elif get_group_index(loop_verts[2], "IFCARCINDEX") != group_index:
+                        loop_verts.insert(0, loop_verts.pop())
+
+                if tmp.schema != "IFC2X3" and any([is_in_group(v, "IFCARCINDEX") for v in loop_verts]):
+                    # We need to specify segments
+                    coord_list = [list((position_i @ (v.co / unit_scale)).to_2d()) for v in loop_verts]
+                    points = tmp.createIfcCartesianPointList2D(coord_list)
+                    i = 0
+                    segments = []
+                    total_verts = len(loop_verts)
+                    while i < total_verts:
+                        v = loop_verts[i]
+                        if (
+                            i + 1 != total_verts
+                            and is_in_group(v, "IFCARCINDEX")
+                            and is_in_group(loop_verts[i + 1], "IFCARCINDEX")
+                        ):
+                            segments.append(tmp.createIfcArcIndex([i + 1, i + 2, i + 3]))
+                            i += 2
+                        else:
+                            segments.append(tmp.createIfcLineIndex([i + 1, i + 2]))
+                            i += 1
+                    # Close the loop
+                    last_segment_indices = list(segments[-1][0])
+                    last_segment_indices[-1] = 1
+                    segments[-1][0] = last_segment_indices
+                    curves.append(tmp.createIfcIndexedPolyCurve(points, segments))
+                elif tmp.schema == "IFC2X3":
+                    points = [
+                        tmp.createIfcCartesianPoint(list((position_i @ (v.co / unit_scale)).to_2d()))
+                        for v in loop_verts
+                    ]
+                    points.append(points[0])
+                    curves.append(tmp.createIfcPolyline(points))
+                else:  # Pure straight polyline, no segments required
+                    coord_list = [list((position_i @ (v.co / unit_scale)).to_2d()) for v in loop_verts]
+                    coord_list.append(coord_list[0])
+                    points = tmp.createIfcCartesianPointList2D(coord_list)
+                    curves.append(tmp.createIfcIndexedPolyCurve(points))
+
+        # Sort IFC curves into either closed, or closed with void profile defs
+        profile_defs = []
+        settings = ifcopenshell.geom.settings()
+        settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
+
+        # First convert to Shapely
+        polygons = {}
+        for curve in curves:
+            geometry = ifcopenshell.geom.create_shape(settings, curve)
+            v = ifcopenshell.util.shape.get_vertices(geometry, is_2d=True)
+            v = np.round(v, 4)  # Round to nearest 0.1mm, otherwise things like circles don't polygonise reliably
+            edges = ifcopenshell.util.shape.get_edges(geometry)
+            boundary_lines = [shapely.LineString([v[e[0]], v[e[1]]]) for e in edges]
+            unioned_boundaries = shapely.union_all(shapely.GeometryCollection(boundary_lines))
+            closed_polygons = shapely.polygonize(unioned_boundaries.geoms)
+            for polygon in closed_polygons.geoms:
+                polygons[curve] = polygon
+                break
+
+        # Check for contains properly (IFC doesn't allow common boundary points)
+        outer_inner = {}
+        inner_outer = {}
+        for curve, polygon in polygons.items():
+            for curve2, polygon2 in polygons.items():
+                if curve == curve2:
+                    continue
+                if polygon.contains_properly(polygon2):
+                    outer_inner.setdefault(curve, []).append(curve2)
+                    inner_outer.setdefault(curve2, []).append(curve)
+
+        # Odd-even rule for nested curves
+        nested_level = {c: len(inner_outer[c]) if c in inner_outer else 0 for c in curves}
+        for curve in sorted(curves, key=lambda c: nested_level[c]):
+            level = nested_level[curve]
+            if level % 2 == 0:
+                if curve in outer_inner:
+                    inners = [c for c in outer_inner[curve] if nested_level[c] == level + 1]
+                    profile_defs.append(tmp.createIfcArbitraryProfileDefWithVoids("AREA", None, curve, inners))
+                else:
+                    profile_defs.append(tmp.createIfcArbitraryClosedProfileDef("AREA", None, curve))
+
+        if len(profile_defs) == 1:
+            profile_def = profile_defs[0]
+        else:
+            profile_def = tmp.createIfcCompositeProfileDef("AREA", None, profile_defs)
+        return {"ifc_file": tmp, "profile_def": profile_def}
 
     def auto_detect_arbitrary_profile_with_voids(
         self, obj: bpy.types.Object, mesh: bpy.types.Mesh

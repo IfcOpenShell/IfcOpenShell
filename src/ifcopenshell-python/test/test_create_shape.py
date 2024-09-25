@@ -1,11 +1,15 @@
 import pytest
+import test.bootstrap
 import ifcopenshell
-import ifcopenshell.api.unit
-import ifcopenshell.api.root
 import ifcopenshell.api.context
-import ifcopenshell.api.project
-import ifcopenshell.geom
 import ifcopenshell.api.owner.settings
+import ifcopenshell.api.project
+import ifcopenshell.api.root
+import ifcopenshell.api.unit
+import ifcopenshell.geom
+import ifcopenshell.ifcopenshell_wrapper as W
+import ifcopenshell.util.shape
+from ifcopenshell.util.shape_builder import ShapeBuilder, V
 from typing import get_args
 
 
@@ -19,6 +23,7 @@ class TestGeomSettings:
         assert settings.get("use-python-opencascade") is False
         assert "USE_PYTHON_OPENCASCADE = False" in repr(settings)
 
+        # Testing both new and old ways of setting geometry settings.
         if ifcopenshell.geom.has_occ:
             settings.set("use-python-opencascade", True)
             settings.set(settings.USE_PYTHON_OPENCASCADE, True)
@@ -44,6 +49,77 @@ class TestGeomSettings:
         with pytest.raises(RuntimeError):
             settings.set("use-python-opencascade", True)
         assert "USE_PYTHON_OPENCASCADE" not in repr(settings)
+
+
+class TestTriangulationAttributes(test.bootstrap.IFC4):
+    def test_faces_representation_item_ids(self):
+        ifc_file = ifcopenshell.file()
+        ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcProject", name="Test")
+        context = ifcopenshell.api.context.add_context(ifc_file, context_type="Model")
+
+        builder = ShapeBuilder(ifc_file)
+        extrusion = builder.extrude(builder.rectangle(), magnitude=1.0)
+        representation = builder.get_representation(context, extrusion)
+        settings = ifcopenshell.geom.settings()
+        shape = ifcopenshell.geom.create_shape(settings, representation)
+        faces_item_ids = ifcopenshell.util.shape.get_faces_representation_item_ids(shape)
+        faces = ifcopenshell.util.shape.get_faces(shape)
+        assert set(faces_item_ids) == {extrusion.id()}
+        assert len(faces) == 12  # Cube has 12 tris.
+        assert len(faces_item_ids) == len(faces)
+
+        edges_item_ids = ifcopenshell.util.shape.get_edges_representation_item_ids(shape)
+        edges = ifcopenshell.util.shape.get_edges(shape)
+        assert set(edges_item_ids) == {extrusion.id()}
+        assert len(edges) == 12  # Cube has 12 edges.
+        assert len(edges_item_ids) == len(edges)
+
+    def test_curve_representation_item_ids(self):
+        ifc_file = ifcopenshell.file()
+        ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcProject", name="Test")
+        context = ifcopenshell.api.context.add_context(ifc_file, context_type="Model")
+
+        builder = ShapeBuilder(ifc_file)
+        curve = builder.rectangle()
+        representation = builder.get_representation(context, curve)
+        settings = ifcopenshell.geom.settings()
+        settings.set("dimensionality", W.CURVES_SURFACES_AND_SOLIDS)
+        shape = ifcopenshell.geom.create_shape(settings, representation)
+
+        faces_item_ids = ifcopenshell.util.shape.get_faces_representation_item_ids(shape)
+        assert len(faces_item_ids) == 0
+
+        edges_item_ids = ifcopenshell.util.shape.get_edges_representation_item_ids(shape)
+        edges = ifcopenshell.util.shape.get_edges(shape)
+        assert set(edges_item_ids) == {curve.id()}
+        assert len(edges) == 4
+        assert len(edges_item_ids) == len(edges)
+
+    def test_mixed_representation_item_ids(self):
+        ifc_file = ifcopenshell.file()
+        ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcProject", name="Test")
+        context = ifcopenshell.api.context.add_context(ifc_file, context_type="Model")
+
+        builder = ShapeBuilder(ifc_file)
+        curve = builder.rectangle()
+
+        fill = ifc_file.create_entity("IfcAnnotationFillArea", builder.rectangle())
+        representation = builder.get_representation(context, (curve, fill))
+        settings = ifcopenshell.geom.settings()
+        settings.set("dimensionality", W.CURVES_SURFACES_AND_SOLIDS)
+        shape = ifcopenshell.geom.create_shape(settings, representation)
+
+        faces_item_ids = ifcopenshell.util.shape.get_faces_representation_item_ids(shape)
+        faces = ifcopenshell.util.shape.get_faces(shape)
+        assert len(faces) == 2  # Fill area will produce a triangulated face.
+        assert set(faces_item_ids) == {fill.id()}
+        assert len(faces_item_ids) == len(faces)
+
+        edges_item_ids = ifcopenshell.util.shape.get_edges_representation_item_ids(shape)
+        edges = ifcopenshell.util.shape.get_edges(shape)
+        assert set(edges_item_ids) == {fill.id(), curve.id()}
+        assert len(edges) == 8  # 4 edges rectangle curve + 4 edges fill area
+        assert len(edges_item_ids) == len(edges)
 
 
 class TestAssignObject:

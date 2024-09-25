@@ -297,10 +297,6 @@ int main(int argc, char** argv) {
             "Can take several minutes on large models.")
 		("center-model-geometry",
             "Centers the elements by applying the center point of all mesh vertices as an offset.")
-        ("model-offset", po::value<std::string>(&offset_str),
-            "Applies an arbitrary offset of form 'x;y;z' to all placements.")
-		("model-rotation", po::value<std::string>(&rotation_str),
-			"Applies an arbitrary quaternion rotation of form 'x;y;z;w' to all placements.")
 		("include", po::value<inclusion_filter>(&include_filter)->multitoken(),
 			"Specifies that the instances that match a specific filtering criteria are to be included in the geometrical output:\n"
 			"1) 'entities': the following list of types should be included. SVG output defaults "

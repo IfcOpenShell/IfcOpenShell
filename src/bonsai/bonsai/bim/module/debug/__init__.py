@@ -36,6 +36,7 @@ classes = (
     operator.ProfileImportIFC,
     operator.PurgeHdf5Cache,
     operator.PurgeUnusedElementsByClass,
+    operator.PurgeUnusedObjects,
     operator.RestartBlender,
     operator.RewindInspector,
     operator.SelectExpressFile,

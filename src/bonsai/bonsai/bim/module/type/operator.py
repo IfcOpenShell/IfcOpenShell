@@ -53,14 +53,11 @@ class AssignType(bpy.types.Operator, tool.Ifc.Operator):
                 obj.name = tool.Model.generate_occurrence_name(type, element.is_a())
 
 
-class UnassignType(bpy.types.Operator):
+class UnassignType(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unassign_type"
     bl_label = "Unassign Type"
     bl_options = {"REGISTER", "UNDO"}
     related_object: bpy.props.StringProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         def exclude_callback(attribute):
@@ -74,11 +71,10 @@ class UnassignType(bpy.types.Operator):
                 continue
             ifcopenshell.api.run("type.unassign_type", self.file, related_objects=[element])
 
-            active_representation = tool.Geometry.get_active_representation(obj)
-            active_context = active_representation.ContextOfItems
-            new_active_representation = None
-
             if element.Representation:
+                new_active_representation = None
+                active_representation = tool.Geometry.get_active_representation(obj)
+                active_context = active_representation.ContextOfItems
                 representations = []
                 for representation in element.Representation.Representations:
                     resolved_representation = ifcopenshell.util.representation.resolve_representation(representation)
@@ -97,16 +93,16 @@ class UnassignType(bpy.types.Operator):
                             new_active_representation = copied_representation
                 element.Representation.Representations = representations
 
-            if new_active_representation:
-                bonsai.core.geometry.switch_representation(
-                    tool.Ifc,
-                    tool.Geometry,
-                    obj=obj,
-                    representation=new_active_representation,
-                    should_reload=False,
-                    is_global=False,
-                    should_sync_changes_first=False,
-                )
+                if new_active_representation:
+                    bonsai.core.geometry.switch_representation(
+                        tool.Ifc,
+                        tool.Geometry,
+                        obj=obj,
+                        representation=new_active_representation,
+                        should_reload=False,
+                        is_global=False,
+                        should_sync_changes_first=False,
+                    )
         return {"FINISHED"}
 
 
@@ -414,8 +410,8 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                 ifc_class="IfcWindowType" if tool.Ifc.get_schema() != "IFC2X3" else "IfcWindowStyle",
                 should_add_representation=False,
             )
-            tool.Blender.select_and_activate_single_object(context, obj)
-            bpy.ops.bim.add_window(obj=obj.name)
+            with context.temp_override(active_object=obj):
+                bpy.ops.bim.add_window()
 
         elif template == "DOOR":
             mesh = bpy.data.meshes.new(name)
@@ -429,8 +425,8 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                 ifc_class="IfcDoorType" if tool.Ifc.get_schema() != "IFC2X3" else "IfcDoorStyle",
                 should_add_representation=False,
             )
-            tool.Blender.select_and_activate_single_object(context, obj)
-            bpy.ops.bim.add_door(obj=obj.name)
+            with context.temp_override(active_object=obj):
+                bpy.ops.bim.add_door()
 
         elif template == "STAIR":
             mesh = bpy.data.meshes.new(name)
@@ -444,8 +440,8 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                 ifc_class=ifc_class,
                 should_add_representation=False,
             )
-            tool.Blender.select_and_activate_single_object(context, obj)
-            bpy.ops.bim.add_stair()
+            with context.temp_override(active_object=obj):
+                bpy.ops.bim.add_stair()
 
         elif template == "RAILING":
             mesh = bpy.data.meshes.new(name)
@@ -460,8 +456,8 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                 should_add_representation=True,
                 context=body,
             )
-            tool.Blender.select_and_activate_single_object(context, obj)
-            bpy.ops.bim.add_railing()
+            with context.temp_override(active_object=obj):
+                bpy.ops.bim.add_railing()
 
         elif template == "ROOF":
             mesh = bpy.data.meshes.new(name)
@@ -476,8 +472,8 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                 should_add_representation=True,
                 context=body,
             )
-            tool.Blender.select_and_activate_single_object(context, obj)
-            bpy.ops.bim.add_roof()
+            with context.temp_override(active_object=obj):
+                bpy.ops.bim.add_roof()
 
         bpy.ops.bim.load_type_thumbnails(ifc_class=ifc_class)
         props.type_class = props.type_class
@@ -519,12 +515,12 @@ class RenameType(bpy.types.Operator, tool.Ifc.Operator):
         self.layout.prop(self, "name")
 
 
-class AutoRenameOccurrences(bpy.types.Operator, tool.Ifc.Operator):
+class AutoRenameOccurrences(bpy.types.Operator):
     bl_idname = "bim.auto_rename_occurrences"
     bl_label = "Auto Rename Occurrences"
     bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
+    def execute(self, context):
         obj = context.active_object
         element_type = tool.Ifc.get_entity(obj)
         if element_type and element_type.is_a("IfcTypeObject"):
@@ -533,6 +529,7 @@ class AutoRenameOccurrences(bpy.types.Operator, tool.Ifc.Operator):
                 occurrence.Name = tool.Model.generate_occurrence_name(element_type, occurrence.is_a())
                 if obj:
                     tool.Root.set_object_name(obj, occurrence)
+        return {"FINISHED"}
 
 
 class DuplicateType(bpy.types.Operator, tool.Ifc.Operator):
@@ -559,13 +556,3 @@ class DuplicateType(bpy.types.Operator, tool.Ifc.Operator):
         context.scene.BIMModelProperties.ifc_class = new.is_a()
         context.scene.BIMModelProperties.relating_type_id = str(new_obj.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}
-
-
-class PurgeUnusedTypes(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.purge_unused_types"
-    bl_label = "Purge Unused Types"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def _execute(self, context):
-        purged_types = core.purge_unused_types(tool.Ifc, tool.Type, tool.Geometry)
-        self.report({"INFO"}, f"{purged_types} types were purged.")

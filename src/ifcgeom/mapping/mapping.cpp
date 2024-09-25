@@ -165,10 +165,8 @@ aggregate_of_instance::ptr mapping::find_openings(const IfcUtil::IfcBaseEntity* 
         return openings;
     }
 
-    auto product = inst->as<IfcSchema::IfcProduct>();
-
-    if (product->as<IfcSchema::IfcElement>() && !product->as<IfcSchema::IfcFeatureElementSubtraction>()) {
-        const IfcSchema::IfcElement* element = product->as<IfcSchema::IfcElement>();
+    if (inst->as<IfcSchema::IfcElement>() && !inst->as<IfcSchema::IfcFeatureElementSubtraction>()) {
+        const IfcSchema::IfcElement* element = inst->as<IfcSchema::IfcElement>();
         auto rels = element->HasOpenings();
         for (auto& rel : *rels) {
             openings->push(rel->RelatedOpeningElement());
@@ -176,20 +174,22 @@ aggregate_of_instance::ptr mapping::find_openings(const IfcUtil::IfcBaseEntity* 
     }
 
     // Is the IfcElement a decomposition of an IfcElement with any IfcOpeningElements?
-    const IfcSchema::IfcObjectDefinition* obdef = product->as<IfcSchema::IfcObjectDefinition>();
-    for (;;) {
-        auto decomposes = obdef->Decomposes()->generalize();
-        if (decomposes->size() != 1) break;
-        IfcSchema::IfcObjectDefinition* rel_obdef = (*decomposes->begin())->as<IfcSchema::IfcRelAggregates>()->RelatingObject();
-        if (rel_obdef->as<IfcSchema::IfcElement>() && !rel_obdef->as<IfcSchema::IfcFeatureElementSubtraction>()) {
-            IfcSchema::IfcElement* element = rel_obdef->as<IfcSchema::IfcElement>();
-            auto rels = element->HasOpenings();
-            for (auto& rel : *rels) {
-                openings->push(rel->RelatedOpeningElement());
+    const IfcSchema::IfcObjectDefinition* obdef = inst->as<IfcSchema::IfcObjectDefinition>();
+    if (obdef != nullptr) {
+        for (;;) {
+            auto decomposes = obdef->Decomposes()->generalize();
+            if (decomposes->size() != 1) break;
+            IfcSchema::IfcObjectDefinition* rel_obdef = (*decomposes->begin())->as<IfcSchema::IfcRelAggregates>()->RelatingObject();
+            if (rel_obdef->as<IfcSchema::IfcElement>() && !rel_obdef->as<IfcSchema::IfcFeatureElementSubtraction>()) {
+                IfcSchema::IfcElement* element = rel_obdef->as<IfcSchema::IfcElement>();
+                auto rels = element->HasOpenings();
+                for (auto& rel : *rels) {
+                    openings->push(rel->RelatedOpeningElement());
+                }
             }
-        }
 
-        obdef = rel_obdef;
+            obdef = rel_obdef;
+        }
     }
 
     return openings;
@@ -809,6 +809,28 @@ void mapping::initialize_units_() {
     }
     if (settings_.get<settings::SiteLocalPlacement>().get()) {
         placement_rel_to_type_ = file_->schema()->declaration_by_name("IfcSite");
+    }
+
+    // Translation is applied first, then rotation.
+    if (settings_.get<ModelOffset>().has()) {
+        auto vs = settings_.get<ModelOffset>().get();
+        if (vs.size() == 3) {
+            offset_and_rotation_ *= Eigen::Affine3d(Eigen::Translation3d(vs[0], vs[1], vs[2])).matrix();
+        } else {
+            Logger::Error("Expected 3 values for model-offset setting");
+        }
+    }
+
+    if (settings_.get<ModelRotation>().has()) {
+        auto vs = settings_.get<ModelRotation>().get();
+        if (vs.size() == 4) {
+            auto m3 = Eigen::Quaterniond(vs[0], vs[1], vs[2], vs[3]).matrix();
+            Eigen::Matrix4d m4 = Eigen::Matrix4d::Identity();
+            m4 << m3;
+            offset_and_rotation_ *= m4;
+        } else {
+            Logger::Error("Expected 4 values for model-rotation setting");
+        }
     }
 }
 

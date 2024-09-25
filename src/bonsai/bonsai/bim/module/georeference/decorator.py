@@ -154,6 +154,7 @@ class GeoreferenceDecorator:
                 location = location.normalized() * 3
                 text += "\n(Warning: Actual XYZ Not Shown)"
             self.draw_text_at_position(context, text, location)
+        blf.disable(self.font_id, blf.SHADOW)
 
     def draw_text_at_position(self, context, text, position):
         coords_2d = location_3d_to_region_2d(context.region, context.region_data, position)

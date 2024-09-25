@@ -398,6 +398,7 @@ IfcGeom::Element* HdfSerializer::read(IfcParse::IfcFile& f, const std::string& g
 		auto uvcoords = read_dataset<double>(meshGroup, DATASET_NAME_UVCOORDS);
 		auto material_ids = read_dataset<int>(meshGroup, DATASET_NAME_MATERIAL_IDS);
 		auto item_ids = read_dataset<int>(meshGroup, DATASET_NAME_ITEM_IDS);
+		auto edges_item_ids = read_dataset<int>(meshGroup, DATASET_NAME_EDGES_ITEM_IDS);
 
 		std::vector<surface_style_serialization> surface_styles;
 
@@ -435,6 +436,7 @@ IfcGeom::Element* HdfSerializer::read(IfcParse::IfcFile& f, const std::string& g
 			material_ids,
 			surface_style_ptrs,
 			item_ids
+			, edges_item_ids
 		));
 
 		triangulation_cache_.insert({ representation_id_str, triangulation_geometry });
@@ -696,6 +698,7 @@ const H5std_string HdfSerializer::DATASET_NAME_INDICES = "indices";
 const H5std_string HdfSerializer::DATASET_NAME_EDGES = "edges";
 const H5std_string HdfSerializer::DATASET_NAME_MATERIAL_IDS = "material_ids";
 const H5std_string HdfSerializer::DATASET_NAME_ITEM_IDS = "item_ids";
+const H5std_string HdfSerializer::DATASET_NAME_EDGES_ITEM_IDS = "edges_item_ids";
 const H5std_string HdfSerializer::DATASET_NAME_MATERIALS = "materials";
 const H5std_string HdfSerializer::DATASET_NAME_OCCT = "brep";
 const H5std_string HdfSerializer::DATASET_NAME_PLACEMENT = "placement";

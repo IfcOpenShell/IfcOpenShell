@@ -32,11 +32,14 @@ import ifcopenshell.util.representation
 import ifcopenshell.util.unit
 import bonsai.tool as tool
 import bonsai.core.debug as core
+import bonsai.core.profile
+import bonsai.core.type
 import bonsai.bim.handler
 import bonsai.bim.import_ifc as import_ifc
 from pathlib import Path
 from bonsai import get_debug_info, format_debug_info
 from bonsai.bim.ifc import IfcStore
+from typing import get_args
 
 
 class CopyDebugInformation(bpy.types.Operator):
@@ -231,15 +234,22 @@ class CreateShapeFromStepId(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     should_include_curves: bpy.props.BoolProperty()
     step_id: bpy.props.IntProperty(default=0)
+    geometry_library: bpy.props.EnumProperty(
+        name="Geometry Library",
+        items=[(i, i, "") for i in get_args(ifcopenshell.geom.GEOMETRY_LIBRARY)],
+        default="opencascade",
+    )
+    custom_geometry_library: bpy.props.StringProperty(
+        name="Custom Geometry Library",
+        description="Provide a custom geometry library name, will override the 'geometry library' property.",
+    )
 
     @classmethod
     def poll(cls, context):
         return IfcStore.get_file()
 
     def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
-    def _execute(self, context):
+        geometry_library = self.custom_geometry_library or self.geometry_library
         logger = logging.getLogger("ImportIFC")
         self.ifc_import_settings = import_ifc.IfcImportSettings.factory(context, IfcStore.path, logger)
         self.file = IfcStore.get_file()
@@ -248,7 +258,7 @@ class CreateShapeFromStepId(bpy.types.Operator):
         settings.set("keep-bounding-boxes", True)
         if self.should_include_curves:
             settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
-        shape = ifcopenshell.geom.create_shape(settings, element)
+        shape = ifcopenshell.geom.create_shape(settings, element, geometry_library=geometry_library)
         if shape:
             ifc_importer = import_ifc.IfcImporter(self.ifc_import_settings)
             ifc_importer.file = self.file
@@ -440,9 +450,11 @@ class SelectExpressFile(bpy.types.Operator):
 class PurgeHdf5Cache(bpy.types.Operator):
     bl_idname = "bim.purge_hdf5_cache"
     bl_label = "Purge HDF5 Cache"
+    bl_description = "Clean up HDF5 cache files except the ones that currently loaded"
 
     def execute(self, context):
         core.purge_hdf5_cache(tool.Debug)
+        self.report({"INFO"}, "HDF5 cache purged.")
         return {"FINISHED"}
 
 
@@ -457,7 +469,7 @@ class OverrideDisplayType(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class PrintUnusedElementStats(bpy.types.Operator, tool.Ifc.Operator):
+class PrintUnusedElementStats(bpy.types.Operator):
     bl_idname = "bim.print_unused_elements_stats"
     bl_label = "Print Unused Elements Stats"
     bl_options = {"REGISTER", "UNDO"}
@@ -468,9 +480,9 @@ class PrintUnusedElementStats(bpy.types.Operator, tool.Ifc.Operator):
     ignore_contexts: bpy.props.BoolProperty(name="Ignore Contexts", default=True)
     ignore_relationships: bpy.props.BoolProperty(name="Ignore Relationships", default=True)
     ignore_types: bpy.props.BoolProperty(name="Ignore Types", default=True)
-    ignore_styled_items: bpy.props.BoolProperty(name="Ignoer Styled Items", default=True)
+    ignore_styled_items: bpy.props.BoolProperty(name="Ignore Styled Items", default=True)
 
-    def _execute(self, context):
+    def execute(self, context):
         props = context.scene.BIMDebugProperties
         # ignore some classes that could have zero 0 inverse references by their nature
         ignore_classes = []
@@ -482,31 +494,47 @@ class PrintUnusedElementStats(bpy.types.Operator, tool.Ifc.Operator):
             ignore_classes += ["IfcTypeProduct"]
         if self.ignore_styled_items:
             ignore_classes += ["IfcStyledItem"]
+        ignore_classes += [
+            "IfcIndexedColourMap",  # Only referenced by inverse attributes.
+            "IfcIndexedTextureMap",  # Only referenced by inverse attributes.
+        ]
 
         unused_elements = tool.Debug.print_unused_elements_stats(props.ifc_class_purge, ignore_classes)
         self.report({"INFO"}, f"{unused_elements} unused elements found, check the system console for the details.")
+        return {"FINISHED"}
 
 
 class PurgeUnusedElementsByClass(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.purge_unused_elements_by_class"
     bl_label = "Purge Unused Elements By Class"
     bl_description = (
-        "Will find all elements of class that have no inverse refernces and will remove them, use very carefully"
+        "Will find all elements of class that have no inverse references and will remove them, use very carefully.\n"
+        "If IFC class is provided in neighbour field, will purge only elemnts of the provided class. Otherwise will purge all white-listed elements.\n"
+        "ALT+CLICK to provide a path where to save the IFC file with the removed elements (note changes will be applied to the current IFC too)"
     )
     bl_options = {"REGISTER", "UNDO"}
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH", options={"SKIP_SAVE"})
     filter_glob: bpy.props.StringProperty(default="*.ifc", options={"HIDDEN"})
 
     def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
+        if event.type == "LEFTMOUSE" and event.alt:
+            context.window_manager.fileselect_add(self)
+        return self.execute(context)
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Ifc.get():
+            cls.poll_message_set("No IFC file is loaded.")
+            return False
+        return True
 
     def _execute(self, context):
         props = context.scene.BIMDebugProperties
         if props.ifc_class_purge:
             purged_elements = core.purge_unused_elements(tool.Ifc, tool.Debug, props.ifc_class_purge)
             self.report({"INFO"}, f"{purged_elements} unused elements found and removed.")
-            tool.Ifc.get().write(self.filepath)
+            if self.filepath:
+                tool.Ifc.get().write(self.filepath)
             return
 
         # A whitelisted class is a class that only contains simple data that
@@ -520,6 +548,7 @@ class PurgeUnusedElementsByClass(bpy.types.Operator, tool.Ifc.Operator):
         # IfcStructuralConnectionCondition
         # IfcStructuralLoad
 
+        # Keep list sorted alphabetically.
         whitelisted_classes = [
             "IfcActorRole",
             "IfcAddress",
@@ -547,13 +576,13 @@ class PurgeUnusedElementsByClass(bpy.types.Operator, tool.Ifc.Operator):
             "IfcPresentationItem",
             "IfcProductDefinitionShape",
             "IfcPropertyAbstraction",
+            "IfcPropertyDefinition",  # A bit of a questionable one, and the odd one out from IfcRoot.
             "IfcRecurrencePattern",
             "IfcReference",
             "IfcRepresentation",
-            "IfcRepresentationContext",
+            # "IfcRepresentationContext",  # Can be present even in basic empty project.
             "IfcRepresentationItem",
             "IfcRepresentationMap",
-            "IfcPropertyDefinition",  # A bit of a questionable one, and the odd one out from IfcRoot.
             "IfcSchedulingTime",
             "IfcShapeAspect",
             "IfcTable",
@@ -606,7 +635,54 @@ class PurgeUnusedElementsByClass(bpy.types.Operator, tool.Ifc.Operator):
             elif total_batches > 20:
                 print("Finished 20 batches. Manually stopping in case of infinite loop.")
         self.report({"INFO"}, f"Auto purged {total_purged} orphaned elements")
-        tool.Ifc.get().write(self.filepath)
+        if self.filepath:
+            tool.Ifc.get().write(self.filepath)
+
+
+class PurgeUnusedObjects(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.purge_unused_objects"
+    bl_label = "Purge Unused Objects"
+    bl_options = {"REGISTER", "UNDO"}
+
+    object_type: bpy.props.EnumProperty(
+        name="Object Type",
+        items=(
+            ("TYPE", "Type", ""),
+            ("PROFILE", "Profile", ""),
+            ("STYLE", "Style", ""),
+            ("MATERIAL", "Material", ""),
+        ),
+    )
+
+    def _execute(self, context):
+        object_type = self.object_type
+        if object_type == "TYPE":
+            purged = bonsai.core.type.purge_unused_types(tool.Ifc, tool.Type, tool.Geometry)
+        elif object_type == "PROFILE":
+            purged = bonsai.core.profile.purge_unused_profiles(tool.Ifc, tool.Profile)
+        elif object_type == "STYLE":
+            purged = tool.Style.purge_unused_styles()
+        elif object_type == "MATERIAL":
+            purged = tool.Material.purge_unused_materials()
+        else:
+            self.report({"ERROR"}, f"Invalid object type {object_type}.")
+            return {"CANCELLED"}
+
+        self.report({"INFO"}, f"{purged} unused {object_type.lower()}s were purged.")
+
+        if purged == 0:
+            return
+
+        scene = context.scene
+        if object_type == "PROFILE":
+            if scene.BIMProfileProperties.is_editing:
+                bpy.ops.bim.load_profiles()
+        elif object_type == "STYLE":
+            if scene.BIMStylesProperties.is_editing:
+                bpy.ops.bim.load_styles()
+        elif object_type == "MATERIAL":
+            if scene.BIMMaterialProperties.is_editing:
+                bpy.ops.bim.load_materials()
 
 
 class PipInstall(bpy.types.Operator):

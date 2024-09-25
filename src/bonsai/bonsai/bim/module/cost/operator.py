@@ -518,6 +518,14 @@ class ImportCostScheduleCsv(bpy.types.Operator, ImportHelper, tool.Ifc.Operator)
     filter_glob: bpy.props.StringProperty(default="*.csv", options={"HIDDEN"})
     is_schedule_of_rates: bpy.props.BoolProperty(name="Is Schedule Of Rates", default=False)
 
+    @classmethod
+    def poll(cls, context):
+        ifc_file = tool.Ifc.get()
+        if ifc_file is None:
+            cls.poll_message_set("No IFC file is loaded.")
+            return False
+        return True
+
     def _execute(self, context):
         core.import_cost_schedule_csv(tool.Cost, self.filepath, self.is_schedule_of_rates)
         return {"FINISHED"}
@@ -790,3 +798,14 @@ class AddCurrency(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         core.add_currency(tool.Ifc, tool.Cost)
+
+
+class GenerateCostScheduleBrowser(bpy.types.Operator):
+    bl_idname = "bim.generate_cost_schedule_browser"
+    bl_label = "Generate Cost Schedule Browser"
+    bl_options = {"REGISTER", "UNDO"}
+    cost_schedule: bpy.props.IntProperty()
+
+    def execute(self, context):
+        core.generate_cost_schedule_browser(tool.Cost, cost_schedule=tool.Ifc.get().by_id(self.cost_schedule))
+        return {"FINISHED"}

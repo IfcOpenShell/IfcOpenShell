@@ -50,43 +50,52 @@ class BIM_PT_radiance_exporter(bpy.types.Panel):
         row.prop(props, "output_dir")
 
         row = layout.row()
-        layout.prop(props, "use_json_file")
+        layout.label(text="Info: Unmapped materials default to white")
+        row = layout.row()
+        row.template_list("MATERIAL_UL_radiance_materials", "", props, "materials", props, "active_material_index")
+        row.operator("radiance.open_spectraldb", text="", icon="WORLD")  # Globe icon
+        if len(props.materials) > 0:
+            col = layout.column(align=True)
+            col.prop(props, "category")
+            if props.category:
+                col.prop(props, "subcategory")
 
-        if props.use_json_file:
-            row = layout.row()
-            row.prop(props, "json_file")
+            if props.active_material_index >= 0 and props.active_material_index < len(props.materials):
+                active_material = props.materials[props.active_material_index]
+                if active_material.category and active_material.subcategory:
+                    layout.label(
+                        text=f"Mapped: {active_material.name} to {active_material.category} - {active_material.subcategory}"
+                    )
+                else:
+                    layout.label(text=f"Select category and subcategory for: {active_material.name}")
 
-        if not props.use_json_file:
-            row = layout.row()
-            layout.label(text="Info: Unmapped materials default to white")
-            row = layout.row()
-            row.template_list("MATERIAL_UL_radiance_materials", "", props, "materials", props, "active_material_index")
-
-            if len(props.materials) > 0:
-                col = layout.column(align=True)
-                col.prop(props, "category")
-                if props.category:
-                    col.prop(props, "subcategory")
-
-                if props.active_material_index >= 0 and props.active_material_index < len(props.materials):
-                    active_material = props.materials[props.active_material_index]
-                    if active_material.category and active_material.subcategory:
-                        layout.label(
-                            text=f"Mapped: {active_material.name} to {active_material.category} - {active_material.subcategory}"
-                        )
-                    else:
-                        layout.label(text=f"Select category and subcategory for: {active_material.name}")
-
-            row = layout.row()
-            row.operator("bim.refresh_ifc_materials", text="Refresh IFC Materials")
+        row = layout.row()
+        row.operator("radiance.import_material_mappings", text="Import Mappings", icon="IMPORT")
+        row.operator("radiance.export_material_mappings", text="Export Mappings", icon="EXPORT")
+        row = layout.row()
+        row.operator("bim.refresh_ifc_materials", text="Refresh IFC Materials")
 
         layout.separator()
-        row = layout.row()
-        row.label(text="Resolution")
-        row.prop(props, "radiance_resolution_x", text="X")
 
         row = layout.row()
-        row.label(text="")
+        layout.label(text="Step 1: Export geometry for simulation")
+        row = layout.row()
+        row.operator("export_scene.radiance", text="Export Geometry for Simulation")
+
+        layout.separator()
+
+        box = layout.box()
+        box.label(text="Camera Settings")
+        row = box.row()
+        row.prop(props, "use_active_camera")
+        if not props.use_active_camera:
+            row = box.row()
+            row.prop(props, "selected_camera")
+            row.operator("radiance.select_camera", text="", icon="EYEDROPPER")
+
+        row = box.row(align=True)
+        row.label(text="Resolution")
+        row.prop(props, "radiance_resolution_x", text="X")
         row.prop(props, "radiance_resolution_y", text="Y")
 
         row = layout.row()
@@ -115,8 +124,7 @@ class BIM_PT_radiance_exporter(bpy.types.Panel):
             row.prop(props, "choose_hdr_image")
 
         row = layout.row()
-        row.operator("export_scene.radiance", text="Export Geometry for Simulation")
-
+        layout.label(text="Step 2: Run the simulation")
         row = layout.row()
         row.operator("render_scene.radiance", text="Radiance Render")
         row.enabled = not props.is_exporting

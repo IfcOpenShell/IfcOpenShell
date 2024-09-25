@@ -53,6 +53,7 @@ from ifcopenshell.geom import ShapeElementType
 from bonsai.bim.module.project.data import LinksData
 from bonsai.bim.module.project.decorator import ProjectDecorator, ClippingPlaneDecorator
 from bonsai.bim.module.model.decorator import PolylineDecorator
+from bonsai.bim.module.model.polyline import PolylineOperator
 from typing import Union
 
 
@@ -130,6 +131,7 @@ class CreateProject(bpy.types.Operator):
         )
         bonsai.bim.schema.reload(tool.Ifc.get().schema_identifier)
         tool.Blender.register_toolbar()
+        tool.Root.reload_item_decorator()
 
     def rollback(self, data):
         IfcStore.file = None
@@ -200,10 +202,8 @@ class RefreshLibrary(bpy.types.Operator):
 
         self.props.active_library_element = ""
 
-        types = IfcStore.library_file.wrapped_data.types_with_super()
-
         for importable_type in sorted(tool.Project.get_appendable_asset_types()):
-            if importable_type in types:
+            if IfcStore.library_file.by_type(importable_type):
                 new = self.props.library_elements.add()
                 new.name = importable_type
         return {"FINISHED"}
@@ -369,16 +369,13 @@ class SaveLibraryFile(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class AppendEntireLibrary(bpy.types.Operator):
+class AppendEntireLibrary(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.append_entire_library"
     bl_label = "Append Entire Library"
 
     @classmethod
     def poll(cls, context):
         return IfcStore.get_file()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         self.file = IfcStore.get_file()
@@ -391,7 +388,7 @@ class AppendEntireLibrary(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class AppendLibraryElementByQuery(bpy.types.Operator):
+class AppendLibraryElementByQuery(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.append_library_element_by_query"
     bl_label = "Append Library Element By Query"
     query: bpy.props.StringProperty(name="Query")
@@ -399,9 +396,6 @@ class AppendLibraryElementByQuery(bpy.types.Operator):
     @classmethod
     def poll(cls, context):
         return IfcStore.get_file()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         self.file = IfcStore.get_file()
@@ -418,7 +412,7 @@ class AppendLibraryElementByQuery(bpy.types.Operator):
         self.layout.prop(self, "query")
 
 
-class AppendLibraryElement(bpy.types.Operator):
+class AppendLibraryElement(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.append_library_element"
     bl_label = "Append Library Element"
     bl_options = {"REGISTER", "UNDO"}
@@ -432,9 +426,6 @@ class AppendLibraryElement(bpy.types.Operator):
         if bpy.app.version > (3, 0, 0) and not poll:
             cls.poll_message_set("Please create or load a project first.")
         return poll
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         self.file = IfcStore.get_file()
@@ -504,19 +495,8 @@ class AppendLibraryElement(bpy.types.Operator):
         logger = logging.getLogger("ImportIFC")
         ifc_import_settings = import_ifc.IfcImportSettings.factory(context, IfcStore.path, logger)
 
-        type_collection = bpy.data.collections.get("Types")
-        if not type_collection:
-            type_collection = bpy.data.collections.new("Types")
-            for collection in bpy.context.view_layer.layer_collection.children:
-                collection_obj = collection.collection.BIMCollectionProperties.obj
-                if collection_obj and tool.Ifc.get_entity(collection_obj).is_a("IfcProject"):
-                    collection.collection.children.link(type_collection)
-                    collection.children["Types"].hide_viewport = True
-                    break
-
         ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
         ifc_importer.file = self.file
-        ifc_importer.type_collection = type_collection
         ifc_importer.process_context_filter()
         ifc_importer.material_creator.load_existing_materials()
         self.import_materials(element, ifc_importer)
@@ -666,9 +646,25 @@ class LoadProject(bpy.types.Operator, IFCFileSelector):
     bl_description = "Load an existing IFC project"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH", options={"SKIP_SAVE"})
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml;*.ifcsqlite", options={"HIDDEN"})
-    is_advanced: bpy.props.BoolProperty(name="Enable Advanced Mode", default=False)
+    is_advanced: bpy.props.BoolProperty(
+        name="Enable Advanced Mode",
+        description="Load IFC file with advanced settings. Checking this option will skip loading IFC file and will open advanced load settings",
+        default=False,
+    )
     use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
-    should_start_fresh_session: bpy.props.BoolProperty(name="Should Start Fresh Session", default=True)
+    should_start_fresh_session: bpy.props.BoolProperty(
+        name="Should Start Fresh Session",
+        description="Clear current Blender session before loading IFC",
+        default=True,
+    )
+    import_without_ifc_data: bpy.props.BoolProperty(
+        name="Import Without IFC Data",
+        description=(
+            "Import IFC objects as Blender objects without any IFC metadata and authoring capabilities."
+            "Can be useful for work with purely IFC geometry"
+        ),
+        default=False,
+    )
     use_detailed_tooltip: bpy.props.BoolProperty(default=False, options={"HIDDEN"})
 
     @classmethod
@@ -742,6 +738,10 @@ class LoadProject(bpy.types.Operator, IFCFileSelector):
                 for obj in bpy.data.objects:
                     bpy.data.objects.remove(obj)
 
+            # To be safe from any accidental IFC data in the previous session.
+            if not self.is_advanced and not self.should_start_fresh_session:
+                bpy.ops.bim.convert_to_blender()
+
             filepath = Path(self.get_filepath())
             context.scene.BIMProperties.ifc_file = filepath.as_posix()
             context.scene.BIMProjectProperties.is_loading = True
@@ -751,7 +751,7 @@ class LoadProject(bpy.types.Operator, IFCFileSelector):
 
             if not self.is_advanced:
                 bpy.ops.bim.load_project_elements()
-                if not self.should_start_fresh_session:
+                if self.import_without_ifc_data:
                     bpy.ops.bim.convert_to_blender()
         except:
             bonsai.last_error = traceback.format_exc()
@@ -766,6 +766,8 @@ class LoadProject(bpy.types.Operator, IFCFileSelector):
 
     def draw(self, context):
         self.layout.prop(self, "is_advanced")
+        self.layout.prop(self, "should_start_fresh_session")
+        self.layout.prop(self, "import_without_ifc_data")
         IFCFileSelector.draw(self, context)
 
 
@@ -840,6 +842,8 @@ class LoadProjectElements(bpy.types.Operator):
         tool.Project.load_default_thumbnails()
         tool.Project.set_default_context()
         tool.Project.set_default_modeling_dimensions()
+        tool.Root.reload_grid_decorator()
+        tool.Root.reload_item_decorator()
         return {"FINISHED"}
 
     def get_decomposition_elements(self):
@@ -1317,6 +1321,8 @@ class ExportIFCBase:
         ifc_exporter.export()
         settings.logger.info("Export finished in {:.2f} seconds".format(time.time() - start))
         print("Export finished in {:.2f} seconds".format(time.time() - start))
+        # New project created in Bonsai should be in recent projects too.
+        tool.Project.add_recent_ifc_project(Path(output_file))
         scene = context.scene
         if not scene.DocProperties.ifc_files:
             new = scene.DocProperties.ifc_files.add()
@@ -1714,7 +1720,7 @@ class LoadLinkedProject(bpy.types.Operator):
         mesh.polygons.foreach_set("loop_total", loop_total)
         mesh.polygons.foreach_set("use_smooth", [0] * total_faces)
 
-        if material_ids.size > 0:
+        if material_ids.size > 0 and len(mesh.polygons) == len(material_ids):
             mesh.polygons.foreach_set("material_index", material_ids)
 
         mesh.update()
@@ -2289,229 +2295,64 @@ if bpy.app.version >= (4, 1, 0):
             return True
 
 
-class MeasureTool(bpy.types.Operator):
+class MeasureTool(bpy.types.Operator, PolylineOperator):
     bl_idname = "bim.measure_tool"
-    bl_options = {"REGISTER", "UNDO"}
     bl_label = "Measure Tool"
+    bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
     def poll(cls, context):
         return context.space_data.type == "VIEW_3D"
 
     def __init__(self):
-        self.mousemove_count = 0
-        self.action_count = 0
-        self.visible_objs = []
-        self.objs_2d_bbox = []
-        self.number_options = {
-            "0",
-            "1",
-            "2",
-            "3",
-            "4",
-            "5",
-            "6",
-            "7",
-            "8",
-            "9",
-            " ",
-            ".",
-            "+",
-            "-",
-            "*",
-            "/",
-            "'",
-            '"',
-            "=",
-        }
-        self.number_input = []
-        self.number_output = ""
-        self.number_is_negative = False
-        self.is_input_on = False
+        super().__init__()
+        self.input_ui = tool.Polyline.create_input_ui(init_z=True)
         self.input_options = ["D", "A", "X", "Y", "Z"]
-        self.input_type = "OFF"
-        self.input_value_xy = [None, None]
-        self.input_panel = {"D": "", "A": "", "X": "", "Y": "", "Z": ""}
-        self.snap_angle = None
-        self.snapping_points = []
-
-    def recalculate_inputs(self, context):
-        if self.number_input:
-            is_valid, self.number_output = tool.Snap.validate_input(self.number_output, self.input_type)
-            self.input_panel[self.input_type] = self.number_output
-            if not is_valid:
-                self.report({"WARNING"}, "The number typed is not valid.")
-                return is_valid
-            else:
-                if self.input_type in {"X", "Y", "Z"}:
-                    self.input_panel = PolylineDecorator.calculate_distance_and_angle(context, self.is_input_on)
-                elif self.input_type in {"D", "A"}:
-                    self.input_panel = PolylineDecorator.calculate_x_y_and_z(context)
-
-                self.input_panel[self.input_type] = self.number_output
-
-            PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
-            tool.Blender.update_viewport()
-            return is_valid
+        self.instructions = """TAB: Cycle Input
+        D: Distance Input
+        A: Angle Input
+        M: Modify Snap Point
+        C: Close Polyline
+        BACKSPACE: Remove Point
+        X, Y, Z: Choose Axis
+        S-X, S-Y, S-Z: Choose Plane
+        SHIFT: Lock axis
+        """
 
     def modal(self, context, event):
+        super().modal(context, event)
 
-        if not self.is_input_on:
-            if event.type == "MOUSEMOVE" or event.type == "INBETWEEN_MOUSEMOVE":
-                self.mousemove_count += 1
-                self.is_input_on = False
-                self.input_type = "OFF"
-                PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
-                tool.Snap.clear_snapping_ref()
-                tool.Blender.update_viewport()
-            else:
-                self.mousemove_count = 0
+        self.handle_instructions(context)
 
-            if self.mousemove_count == 2:
-                self.objs_2d_bbox = []
-                for obj in self.visible_objs:
-                    self.objs_2d_bbox.append(tool.Raycast.get_objects_2d_bounding_boxes(context, obj))
+        self.handle_mouse_move(context, event)
 
-            if self.mousemove_count > 3:
-                detected_snaps = tool.Snap.detect_snapping_points(context, event, self.objs_2d_bbox)
-                self.snapping_points = tool.Snap.select_snapping_points(context, event, detected_snaps)
-                PolylineDecorator.set_mouse_position(event)
-                self.input_panel = PolylineDecorator.calculate_distance_and_angle(context, self.is_input_on)
-                PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
-                tool.Blender.update_viewport()
-                return {"RUNNING_MODAL"}
+        self.choose_axis(event, z=True)
 
-            if event.value == "RELEASE" and event.type == "BACK_SPACE":
-                tool.Snap.remove_last_polyline_point()
-                tool.Blender.update_viewport()
+        self.choose_plane(event)
 
-        if event.value == "RELEASE" and event.type == "LEFTMOUSE":
-            tool.Snap.insert_polyline_point(self.input_panel)
+        self.handle_snap_selection(context, event)
+
+        if (
+            not self.tool_state.is_input_on
+            and event.value == "RELEASE"
+            and event.type in {"RET", "NUMPAD_ENTER", "RIGHTMOUSE"}
+        ):
+            context.workspace.status_text_set(text=None)
+            PolylineDecorator.uninstall()
+            tool.Snap.clear_polyline()
             tool.Blender.update_viewport()
+            return {"FINISHED"}
 
-        if event.value == "PRESS" and event.type == "C":
-            tool.Snap.close_polyline()
-            PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
-            tool.Blender.update_viewport()
+        self.handle_keyboard_input(context, event)
 
-        if self.is_input_on and event.value == "PRESS" and event.type == "TAB":
-            self.recalculate_inputs(context)
-            index = self.input_options.index(self.input_type)
-            size = len(self.input_options)
-            self.input_type = self.input_options[((index + 1) % size)]
-            self.number_input = []
-            PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
-            tool.Blender.update_viewport()
+        self.handle_inserting_polyline(context, event)
 
-        if not self.is_input_on and event.value == "RELEASE" and event.type == "TAB":
-            self.recalculate_inputs(context)
-            self.is_input_on = True
-            self.input_type = "D"
-            self.number_input = []
-            PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
-            tool.Blender.update_viewport()
-
-        if not self.is_input_on and event.ascii in self.number_options:
-            self.recalculate_inputs(context)
-            self.is_input_on = True
-            self.input_type = "D"
-            self.number_input = []
-            PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
-            tool.Blender.update_viewport()
-
-        if event.value == "PRESS" and event.type in self.input_options and not event.shift:
-            self.recalculate_inputs(context)
-            self.is_input_on = True
-            self.input_type = event.type
-            self.number_input = []
-            PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
-            tool.Blender.update_viewport()
-
-        if self.input_type in self.input_options:
-            if (event.ascii in self.number_options) or (event.value == "RELEASE" and event.type == "BACK_SPACE"):
-                if event.type == "BACK_SPACE":
-                    if len(self.number_input) <= 1:
-                        self.number_input = []
-                    else:
-                        self.number_input = self.number_input[:-1]
-                    self.number_output = "".join(self.number_input)
-                    self.input_panel[self.input_type] = self.number_output
-                    PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
-                    tool.Blender.update_viewport()
-                else:
-                    self.number_input.append(event.ascii)
-                    self.number_output = "".join(self.number_input)
-
-                if self.number_input:
-                    self.input_panel[self.input_type] = self.number_output
-                    PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
-                    tool.Blender.update_viewport()
-
-        if self.is_input_on and event.value == "RELEASE" and event.type in {"RET", "NUMPAD_ENTER", "RIGHTMOUSE"}:
-            is_valid = self.recalculate_inputs(context)
-            if is_valid:
-                tool.Snap.insert_polyline_point(self.input_panel)
-            self.is_input_on = False
-            self.input_type = "OFF"
-            self.number_input = []
-            self.number_output = ""
-            PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
-            tool.Blender.update_viewport()
-
-        if event.value == "PRESS" and event.type == "M":
-            self.snapping_points = tool.Snap.modify_snapping_point_selection(self.snapping_points)
-            tool.Blender.update_viewport()
-            
-        if event.shift and event.value == "PRESS" and event.type == "X":
-            tool.Snap.set_use_default_container(False)
-            PolylineDecorator.set_use_default_container(False)
-            tool.Snap.set_snap_plane_method("YZ")
-
-        if event.shift and event.value == "PRESS" and event.type == "Y":
-            tool.Snap.set_use_default_container(False)
-            PolylineDecorator.set_use_default_container(False)
-            tool.Snap.set_snap_plane_method("XZ")
-
-        if event.shift and event.value == "PRESS" and event.type == "Z":
-            tool.Snap.set_use_default_container(False)
-            PolylineDecorator.set_use_default_container(False)
-            tool.Snap.set_snap_plane_method("XY")
-
-        if event.type in {"MIDDLEMOUSE", "WHEELUPMOUSE", "WHEELDOWNMOUSE"}:
-            return {"PASS_THROUGH"}
-
-        if self.is_input_on:
-            if event.value == "RELEASE" and event.type in {"ESC"}:
-                self.is_input_on = False
-                self.input_type = "OFF"
-                PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
-                tool.Blender.update_viewport()
-        else:
-            if event.value == "RELEASE" and event.type in {"ESC"}:
-                PolylineDecorator.uninstall()
-                tool.Snap.clear_polyline()
-                tool.Blender.update_viewport()
-                return {"CANCELLED"}
+        result = self.handle_cancelation(context, event)
+        if result is not None:
+            return result
 
         return {"RUNNING_MODAL"}
 
     def invoke(self, context, event):
-        if context.space_data.type == "VIEW_3D":
-            PolylineDecorator.install(context)
-            tool.Snap.set_use_default_container(False)
-            PolylineDecorator.set_use_default_container(False)
-            tool.Snap.set_snap_plane_method("No Plane")
-            PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
-            self.visible_objs = tool.Raycast.get_visible_objects(context)
-            for obj in self.visible_objs:
-                self.objs_2d_bbox.append(tool.Raycast.get_objects_2d_bounding_boxes(context, obj))
-            detected_snaps = tool.Snap.detect_snapping_points(context, event, self.objs_2d_bbox)
-            self.snapping_points = tool.Snap.select_snapping_points(context, event, detected_snaps)
-            PolylineDecorator.set_mouse_position(event)
-            self.input_panel = PolylineDecorator.calculate_distance_and_angle(context, self.is_input_on)
-            tool.Blender.update_viewport()
-            context.window_manager.modal_handler_add(self)
-            return {"RUNNING_MODAL"}
-        else:
-            self.report({"WARNING"}, "Active space must be a View3d")
-            return {"CANCELLED"}
+        super().invoke(context, event)
+        return {"RUNNING_MODAL"}

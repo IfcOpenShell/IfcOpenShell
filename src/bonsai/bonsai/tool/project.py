@@ -194,6 +194,7 @@ class Project(bonsai.core.tool.Project):
 
         If `filepath` was opened before, bump it in the list.
         """
+        filepath = filepath.absolute()
         current_filepaths = cls.get_recent_ifc_projects()
         if filepath in current_filepaths:
             current_filepaths.remove(filepath)
@@ -209,3 +210,7 @@ class Project(bonsai.core.tool.Project):
     @classmethod
     def get_appendable_asset_types(cls) -> tuple[str, ...]:
         return tuple(e for e in APPENDABLE_ASSET_TYPES if e != "IfcProduct")
+
+    @classmethod
+    def run_root_reload_grid_decorator(cls) -> None:
+        tool.Root.reload_grid_decorator()

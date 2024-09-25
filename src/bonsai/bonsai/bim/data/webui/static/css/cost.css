@@ -1,0 +1,289 @@
+@import url("./shared.css");
+@import url("./components/card.css");
+@import url("./components/contextMenu.css");
+@import url("./components/headerBar.css");
+@import url("./components/table.css");
+@import url("./components/floatingForm.css");
+@import url("./components/message.css");
+@import url("./components/layeredViewPanel.css");
+
+:root {
+  --fontSize: 14px;
+  --background-color: #363636;
+  --button-background: #28a745;
+  --button-hover-background: #ed5700;
+  --highlight-over: #ed5700;
+  --scrollbar-track-color: #f1f1f1;
+  --scrollbar-thumb-color: #888;
+  --scrollbar-thumb-hover-color: #555;
+  --padding-small: 5px;
+  --padding-medium: 10px;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.floating-form .table-container {
+  max-height: 80%;
+  box-shadow: 0 5px 5px 0 #254e3c;
+}
+
+#cost-items {
+  max-height: calc(100vh - var(--margin-small));
+}
+
+[id^="cost-values-form"] table {
+  max-height: 50%;
+  table-layout: fixed;
+}
+
+[id^="selected-products"] .form-container {
+  height: 50vh;
+}
+
+.action-button {
+  position: relative;
+  background-color: var(--button-background);
+  border: none;
+  color: #fff;
+  padding: 0.5em 1em;
+  cursor: pointer;
+  border-radius: 6px;
+  font-weight: bold;
+  text-decoration: none;
+  display: inline-block;
+  transition: background-color 0.3s ease;
+  width: fit-content;
+  margin: 0.25em;
+}
+
+.action-button::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: -30px;
+  background-color: #333;
+  color: #fff;
+  padding: 5px 10px;
+  border-radius: 5px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+  font-size: 12px;
+}
+
+.action-button:hover::after {
+  opacity: 1;
+  border-color: var(--highlight-over);
+  border-width: 2px;
+}
+
+.active-btn {
+  background-color: var(--highlight-over);
+}
+
+.action-button:hover {
+  background-color: var(--button-hover-background);
+}
+
+.close-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.settings-menu {
+  display: none;
+  position: absolute;
+  background-color: var(--background-color);
+  border: 1px solid black;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  z-index: 9999;
+  cursor: move;
+  padding: 20px;
+  user-select: none;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track-color);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb-color);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover-color);
+}
+
+.flex-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.nested {
+  display: none;
+}
+
+.expand-collapse {
+  cursor: pointer;
+}
+
+.caret-cell {
+  border: none;
+  background: none;
+  padding: 0;
+}
+
+input,
+select {
+  background-color: var(--blender-button-background, var(--bg-color));
+  color: var(--blender-button-text, var(--text-color));
+  border-color: var(--blender-button-border, var(--border-color));
+  transition: filter 0.2s ease;
+  transition: border-color 0.2s cubic-bezier(0.3, 0, 0.5, 1);
+}
+
+input:focus {
+  border-color: #28a745;
+  outline: none;
+  box-shadow: 0 0 0 3px #28a745;
+  color: #ddd;
+}
+
+#cost-items input {
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 14px;
+  line-height: 20px;
+  font-size: var(--fontSize);
+  min-width: 50px;
+}
+
+form input,
+form select {
+  border-radius: 6px;
+  padding: 3px 4px;
+  font-size: 12px;
+  line-height: 10px;
+  font-size: inherit;
+  height: 100%;
+  max-height: 30px;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+#cost-items tr:hover,
+.highlighted {
+  background-color: #28a74657;
+}
+
+.highlighted {
+  background-color: #28a74657;
+}
+
+.cost-values-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.cost-values-table th,
+.cost-values-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+
+.cost-values-table th {
+  background-color: #444444;
+  text-align: center;
+}
+
+form table {
+  max-height: 50%;
+}
+
+.subtotal-row {
+  background-color: var(--button-hover-background);
+  font-weight: bold;
+}
+
+.append-right {
+  right: 0;
+  top: 50%;
+  position: absolute;
+  transform: translateY(-50%);
+}
+
+i {
+  margin-right: 5px;
+}
+
+
+#column-selector {
+  display: flex;
+  flex-direction: column;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  max-width: 100%;
+  font-family: Arial, sans-serif;
+  height: 10vh;
+  overflow-y: auto;
+}
+
+#column-selector label {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+}
+
+#column-selector input[type="checkbox"] {
+  margin-right: 10px;
+}
+
+#column-selector label:hover {
+  background-color: var(--highlight-over);
+}
+
+#column-selector label:last-child {
+  margin-bottom: 0;
+}
+
+.switch-bar {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  padding: 10px 0;
+}
+
+.switch-bar .action-button {
+  border: 1px solid #000000;
+  border-radius: 5px 5px 0 0;
+  margin: 0;
+  margin-left: -5px;
+}
+
+
+
+
+
+

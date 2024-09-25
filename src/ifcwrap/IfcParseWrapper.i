@@ -56,24 +56,6 @@ private:
 %rename("add") addEntity;
 %rename("remove") removeEntity;
 
-%{
-
-template<typename T>
-struct is_std_vector : std::false_type {};
-template<typename T, typename Alloc>
-struct is_std_vector<std::vector<T, Alloc>> : std::true_type {};
-template<typename T>
-constexpr bool is_std_vector_v = is_std_vector<T>::value;
-
-template<typename T>
-struct is_std_vector_vector : std::false_type {};
-template<typename T, typename Alloc, typename Alloc2>
-struct is_std_vector_vector<std::vector<std::vector<T, Alloc>, Alloc2>> : std::true_type {};
-template<typename T>
-constexpr bool is_std_vector_vector_v = is_std_vector_vector<T>::value;
-
-%}
-
 class attribute_value_derived {};
 %{
 class attribute_value_derived {};
@@ -520,6 +502,26 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 	}
 }
 
+// Expose FileDescription and FileName header entities
+// to make them readable even if they were not filled properly before.
+// Though it is invalid IFC, technically.
+// FileSchema is not exposed as IFC file won't load if it's invalid.
+
+%extend IfcParse::FileDescription {
+    AttributeValue description() const { return $self->getArgument(0); }
+    AttributeValue implementation_level() const { return $self->getArgument(1); }
+};
+
+%extend IfcParse::FileName {
+    AttributeValue name() const { return $self->getArgument(0); }
+    AttributeValue time_stamp() const { return $self->getArgument(1); }
+    AttributeValue author() const { return $self->getArgument(2); }
+    AttributeValue organization() const { return $self->getArgument(3); }
+    AttributeValue preprocessor_version() const { return $self->getArgument(4); }
+    AttributeValue originating_system() const { return $self->getArgument(5); }
+    AttributeValue authorization() const { return $self->getArgument(6); }
+};
+
 %extend IfcParse::IfcSpfHeader {
 	%pythoncode %{
         # Hide the getters with read-only property implementations
@@ -760,9 +762,7 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 	PyObject* convert_cpp_attribute_to_python(AttributeValue arg) {
 		return arg.array_->apply_visitor([](auto& v){
 			using U = std::decay_t<decltype(v)>;
-            if constexpr (is_std_vector_vector_v<U>) {
-                return pythonize_vector2(v);
-            } else if constexpr (is_std_vector_v<U>) {
+            if constexpr (is_std_vector_v<U>) {
 				return pythonize_vector(v);
             } else if constexpr (std::is_same_v<U, EnumerationReference>) {
                 return pythonize(std::string(v.value()));
@@ -773,6 +773,25 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 					Py_INCREF(Py_None);
 					return static_cast<PyObject*>(Py_None); 
 				}
+			} else if constexpr (std::is_same_v<U, IfcUtil::IfcBaseClass*>) {
+				return get_info_cpp(v);
+			} else if constexpr (std::is_same_v<U, aggregate_of_instance::ptr>) {
+				auto r = PyTuple_New(v->size());
+				for (unsigned i = 0; i < v->size(); ++i) {
+					PyTuple_SetItem(r, i, get_info_cpp((*v)[i]));
+				}
+				return r;
+			} else if constexpr (std::is_same_v<U, aggregate_of_aggregate_of_instance::ptr>) {
+				auto rs = PyTuple_New(v->size());
+				for (auto it = v->begin(); it != v->end(); ++it) {
+					auto v_i = it;
+					auto r = PyTuple_New(v_i->size());
+					for (unsigned i = 0; i < v_i->size(); ++i) {
+						PyTuple_SetItem(r, i, get_info_cpp((*v_i)[i]));
+					}
+					PyTuple_SetItem(rs, std::distance(v->begin(), it), r);
+				}
+				return rs;
             } else if constexpr (std::is_same_v<U, empty_aggregate_t> || std::is_same_v<U, empty_aggregate_of_aggregate_t> || std::is_same_v<U, Blank>) {
                 Py_INCREF(Py_None);
 				return static_cast<PyObject*>(Py_None); 

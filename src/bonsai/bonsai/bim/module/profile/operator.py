@@ -18,6 +18,7 @@
 
 import bpy
 import ifcopenshell.api
+import ifcopenshell.util.element
 import bonsai.bim.helper
 import bonsai.tool as tool
 import bonsai.bim.module.model.profile as model_profile
@@ -68,7 +69,28 @@ class RemoveProfileDef(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         props = context.scene.BIMProfileProperties
         current_index = props.active_profile_index
-        ifcopenshell.api.run("profile.remove_profile", tool.Ifc.get(), profile=tool.Ifc.get().by_id(self.profile))
+
+        ifc_file = tool.Ifc.get()
+        profile = ifc_file.by_id(self.profile)
+
+        # Save user from creating invalid IFC.
+        inverse_classes = {i.is_a() for i in ifc_file.get_inverse(profile)}
+        schema = ifcopenshell.schema_by_name(ifc_file.schema)
+
+        # Allow removing profile with IfcProfileProperties.
+        for inverse_class in inverse_classes.copy():
+            declaration = schema.declaration_by_name(inverse_class)
+            if declaration._is("IfcProfileProperties"):
+                inverse_classes.remove(inverse_class)
+
+        if inverse_classes:
+            error_msg = "Cannot remove profile as it's still part of other IFC entities:"
+            for inverse_class in inverse_classes:
+                error_msg += "\n- " + inverse_class
+            self.report({"ERROR"}, error_msg)
+            return {"CANCELLED"}
+
+        ifcopenshell.api.run("profile.remove_profile", ifc_file, profile=profile)
         bpy.ops.bim.load_profiles()
 
         # preserve selected index if possible
@@ -76,17 +98,18 @@ class RemoveProfileDef(bpy.types.Operator, tool.Ifc.Operator):
             props.active_profile_index = min(current_index, len(props.profiles) - 1)
 
 
-class EnableEditingProfile(bpy.types.Operator, tool.Ifc.Operator):
+class EnableEditingProfile(bpy.types.Operator):
     bl_idname = "bim.enable_editing_profile"
     bl_label = "Enable Editing Profile"
     bl_options = {"REGISTER", "UNDO"}
     profile: bpy.props.IntProperty()
 
-    def _execute(self, context):
+    def execute(self, context):
         props = context.scene.BIMProfileProperties
         props.profile_attributes.clear()
         bonsai.bim.helper.import_attributes2(tool.Ifc.get().by_id(self.profile), props.profile_attributes)
         props.active_profile_id = self.profile
+        return {"FINISHED"}
 
 
 class DisableEditingProfile(bpy.types.Operator):
@@ -128,6 +151,7 @@ class AddProfileDef(bpy.types.Operator, tool.Ifc.Operator):
             profile = ifcopenshell.api.run("profile.add_arbitrary_profile", tool.Ifc.get(), profile=points)
         else:
             profile = ifcopenshell.api.run("profile.add_parameterized_profile", tool.Ifc.get(), ifc_class=profile_class)
+            tool.Profile.set_default_profile_attrs(profile)
         profile.ProfileName = "New Profile"
         bpy.ops.bim.load_profiles()
 
@@ -153,12 +177,12 @@ class DuplicateProfileDef(bpy.types.Operator, tool.Ifc.Operator):
         bpy.ops.bim.load_profiles()
 
 
-class EnableEditingArbitraryProfile(bpy.types.Operator, tool.Ifc.Operator):
+class EnableEditingArbitraryProfile(bpy.types.Operator):
     bl_idname = "bim.enable_editing_arbitrary_profile"
     bl_label = "Enable Editing Arbitrary Profile"
     bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
+    def execute(self, context):
         props = context.scene.BIMProfileProperties
         active_profile = props.profiles[props.active_profile_index]
         profile_id = active_profile.ifc_definition_id
@@ -171,6 +195,7 @@ class EnableEditingArbitraryProfile(bpy.types.Operator, tool.Ifc.Operator):
         bpy.ops.object.mode_set(mode="EDIT")
         ProfileDecorator.install(context, exit_edit_mode_callback=lambda: disable_editing_arbitrary_profile(context))
         tool.Blender.set_viewport_tool("bim.cad_tool")
+        return {"FINISHED"}
 
 
 def disable_editing_arbitrary_profile(context):
@@ -189,13 +214,14 @@ def disable_editing_arbitrary_profile(context):
     refresh()
 
 
-class DisableEditingArbitraryProfile(bpy.types.Operator, tool.Ifc.Operator):
+class DisableEditingArbitraryProfile(bpy.types.Operator):
     bl_idname = "bim.disable_editing_arbitrary_profile"
     bl_label = "Disable Editing Arbitrary Profile"
     bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
-        return disable_editing_arbitrary_profile(context)
+    def execute(self, context):
+        disable_editing_arbitrary_profile(context)
+        return {"FINISHED"}
 
 
 class EditArbitraryProfile(bpy.types.Operator, tool.Ifc.Operator):
@@ -241,18 +267,3 @@ class EditArbitraryProfile(bpy.types.Operator, tool.Ifc.Operator):
         props.active_arbitrary_profile_id = 0
 
         model_profile.DumbProfileRegenerator().regenerate_from_profile_def(profile)
-
-
-class PurgeUnusedProfiles(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.purge_unused_profiles"
-    bl_label = "Purge Unused Profiles"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def _execute(self, context):
-        props = context.scene.BIMProfileProperties
-        purged_profiles = core.purge_unused_profiles(tool.Ifc, tool.Profile)
-        self.report({"INFO"}, f"{purged_profiles} profiles were purged.")
-
-        if props.is_editing:
-            refresh()
-            bpy.ops.bim.load_profiles()

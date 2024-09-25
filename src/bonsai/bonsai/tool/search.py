@@ -23,14 +23,15 @@ class Search(bonsai.core.tool.Search):
         elif module == "diff":
             return bpy.context.scene.DiffProperties.filter_groups
         elif module == "drawing_include":
-            return bpy.context.active_object.data.BIMCameraProperties.include_filter_groups
+            return bpy.context.scene.camera.data.BIMCameraProperties.include_filter_groups
         elif module == "drawing_exclude":
-            return bpy.context.active_object.data.BIMCameraProperties.exclude_filter_groups
+            return bpy.context.scene.camera.data.BIMCameraProperties.exclude_filter_groups
         elif module.startswith("clash"):
             _, clash_set_index, ab, clash_source_index = module.split("_")
             return getattr(bpy.context.scene.BIMClashProperties.clash_sets[int(clash_set_index)], ab)[
                 int(clash_source_index)
             ].filter_groups
+        assert False, f"Unsupported module: {module}"
 
     @classmethod
     def import_filter_query(cls, query: str, filter_groups: bpy.types.bpy_prop_collection) -> None:

@@ -20,7 +20,7 @@ import numpy as np
 import numpy.typing as npt
 import ifcopenshell
 import ifcopenshell.util.placement
-from typing import Optional, Union, TypedDict, Literal
+from typing import Optional, Union, TypedDict, Literal, Iterator
 
 
 CONTEXT_TYPE = Literal["Model", "Plan", "NotDefined"]
@@ -112,6 +112,19 @@ def is_representation_of_context(
     return representation.ContextOfItems.ContextType == context
 
 
+def get_representations_iter(element: ifcopenshell.entity_instance) -> Iterator[ifcopenshell.entity_instance]:
+    """Get an iterator with element's IfcShapeRepresentations.
+
+    :param element: An IfcProduct or IfcTypeProduct
+    """
+    if element.is_a("IfcProduct") and (rep := element.Representation):
+        for r in rep.Representations:
+            yield r
+    elif element.is_a("IfcTypeProduct") and (maps := element.RepresentationMaps):
+        for r in maps:
+            yield r.MappedRepresentation
+
+
 def get_representation(
     element: ifcopenshell.entity_instance,
     context: Union[ifcopenshell.entity_instance, CONTEXT_TYPE],
@@ -126,14 +139,9 @@ def get_representation(
     :param target_view: A TargetView string, or any if left blank.
     :return: The first IfcShapeRepresentation matching the criteria.
     """
-    if element.is_a("IfcProduct") and element.Representation:
-        for r in element.Representation.Representations:
-            if is_representation_of_context(r, context, subcontext, target_view):
-                return r
-    elif element.is_a("IfcTypeProduct") and element.RepresentationMaps:
-        for r in element.RepresentationMaps:
-            if is_representation_of_context(r.MappedRepresentation, context, subcontext, target_view):
-                return r.MappedRepresentation
+    for r in get_representations_iter(element):  # type: ignore
+        if is_representation_of_context(r, context, subcontext, target_view):
+            return r
 
 
 def resolve_representation(representation: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:

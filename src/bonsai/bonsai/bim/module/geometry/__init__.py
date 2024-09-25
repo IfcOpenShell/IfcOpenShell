@@ -20,7 +20,9 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
+    operator.AddMeshlikeItem,
     operator.AddRepresentation,
+    operator.AddSweptAreaSolidItem,
     operator.CopyRepresentation,
     operator.DisableEditingRepresentationItemShapeAspect,
     operator.DisableEditingRepresentationItemStyle,
@@ -36,6 +38,7 @@ classes = (
     operator.EnableEditingRepresentationItems,
     operator.FlipObject,
     operator.GetRepresentationIfcParameters,
+    operator.ImportRepresentationItems,
     operator.OverrideDelete,
     operator.OverrideDuplicateMove,
     operator.OverrideDuplicateMoveLinked,
@@ -57,9 +60,11 @@ classes = (
     operator.SelectConnection,
     operator.SwitchRepresentation,
     operator.UnassignRepresentationItemStyle,
+    operator.UpdateItemAttributes,
     operator.UpdateParametricRepresentation,
     operator.UpdateRepresentation,
     prop.RepresentationItem,
+    prop.RepresentationItemObject,
     prop.ShapeAspect,
     prop.BIMObjectGeometryProperties,
     prop.BIMGeometryProperties,

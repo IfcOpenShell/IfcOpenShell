@@ -42,6 +42,7 @@ class IfcClassData:
         cls.data["ifc_products"] = cls.ifc_products()
         cls.data["ifc_classes"] = cls.ifc_classes()
         cls.data["ifc_classes_suggestions"] = cls.ifc_classes_suggestions()  # Call AFTER cls.ifc_classes()
+        cls.data["representation_template"] = cls.representation_template()
         cls.data["contexts"] = cls.contexts()
 
         cls.data["has_entity"] = cls.has_entity()
@@ -58,9 +59,7 @@ class IfcClassData:
             "IfcElement",
             "IfcSpatialElement",
             "IfcSpatialElementType",
-            "IfcGroup",
             "IfcStructuralItem",
-            "IfcContext",
             "IfcAnnotation",
             "IfcRelSpaceBoundary",
         ]
@@ -70,7 +69,6 @@ class IfcClassData:
                 "IfcElementType",
                 "IfcElement",
                 "IfcSpatialStructureElement",
-                "IfcGroup",
                 "IfcStructuralItem",
                 "IfcAnnotation",
                 "IfcRelSpaceBoundary",
@@ -129,6 +127,87 @@ class IfcClassData:
             for suggestion_dict in class_suggestions:
                 suggestions[ifc_class].append(suggestion_dict)
         return suggestions
+
+    @classmethod
+    def representation_template(cls):
+        ifc_class = bpy.context.scene.BIMRootProperties.ifc_class
+        templates = [
+            ("EMPTY", "No Geometry", "Start with an empty object"),
+            None,
+        ]
+        templates.extend(
+            [
+                (
+                    "OBJ",
+                    "Tessellation From Object",
+                    "Use an object as a template to create a new tessellation",
+                ),
+                (
+                    "MESH",
+                    "Custom Tessellation",
+                    "Create a basic tessellated or faceted cube",
+                ),
+                (
+                    "EXTRUSION",
+                    "Custom Extruded Solid",
+                    "An extrusion from an arbitrary profile",
+                ),
+            ]
+        )
+        if ifc_class.endswith("Type") or ifc_class.endswith("Style"):
+            templates.extend(
+                [
+                    None,
+                    (
+                        "LAYERSET_AXIS2",
+                        "Vertical Layers",
+                        "For objects similar to walls, will automatically add IfcMaterialLayerSet",
+                    ),
+                    (
+                        "LAYERSET_AXIS3",
+                        "Horizontal Layers",
+                        "For objects similar to slabs, will automatically add IfcMaterialLayerSet",
+                    ),
+                    (
+                        "PROFILESET",
+                        "Extruded Profile",
+                        "Create profile type object, automatically defines IfcMaterialProfileSet with the first profile from library",
+                    ),
+                ]
+            )
+        if ifc_class in ("IfcWindowType", "IfcWindowStyle", "IfcWindow"):
+            templates.extend([None, ("WINDOW", "Window", "Parametric window")])
+        elif ifc_class in ("IfcDoorType", "IfcDoorStyle", "IfcDoor"):
+            templates.extend([None, ("DOOR", "Door", "Parametric door")])
+        elif ifc_class in ("IfcStairType", "IfcStairFlightType", "IfcStair", "IfcStairFlight"):
+            templates.extend([None, ("STAIR", "Stair", "Parametric stair")])
+        elif ifc_class in ("IfcRailingType", "IfcRailing"):
+            templates.extend([None, ("RAILING", "Railing", "Parametric railing")])
+        elif ifc_class in ("IfcRoofType", "IfcRoof"):
+            templates.extend([None, ("ROOF", "Roof", "Parametric roof with a constant pitch")])
+        elif ifc_class and "Segment" in ifc_class:
+            templates.extend(
+                (
+                    None,
+                    (
+                        "FLOW_SEGMENT_RECTANGULAR",
+                        "Rectangular Distribution Segment",
+                        "Works similarly to Profile, has distribution ports",
+                    ),
+                    (
+                        "FLOW_SEGMENT_CIRCULAR",
+                        "Circular Distribution Segment",
+                        "Works similarly to Profile, has distribution ports",
+                    ),
+                    (
+                        "FLOW_SEGMENT_CIRCULAR_HOLLOW",
+                        "Circular Hollow Distribution Segment",
+                        "Works similarly to Profile, has distribution ports",
+                    ),
+                )
+            )
+
+        return templates
 
     @classmethod
     def contexts(cls):

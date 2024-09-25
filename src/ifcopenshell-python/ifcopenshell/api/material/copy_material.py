@@ -33,9 +33,7 @@ def copy_material(file: ifcopenshell.file, material: ifcopenshell.entity_instanc
     style is reused.
 
     :param material: The IfcMaterialDefinition to copy
-    :type material: ifcopenshell.entity_instance
     :return: The new copy of the material
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -68,9 +66,13 @@ def copy_material(file: ifcopenshell.file, material: ifcopenshell.entity_instanc
         return _copy_material_with_inverses(file, material)
     elif material.is_a("IfcMaterialList"):
         return _copy_material_with_inverses(file, material)
+    else:
+        raise Exception(f"Unexpected material type: '{material.is_a()}' ({material}).")
 
 
-def _copy_material_with_inverses(file, material):
+def _copy_material_with_inverses(
+    file: ifcopenshell.file, material: ifcopenshell.entity_instance
+) -> ifcopenshell.entity_instance:
     new = ifcopenshell.util.element.copy(file, material)
     for inverse in file.get_inverse(material):
         if inverse.is_a("IfcMaterialProperties"):

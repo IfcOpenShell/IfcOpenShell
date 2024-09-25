@@ -29,6 +29,7 @@ classes = (
     operator.EnablePsetEditing,
     operator.RemovePset,
     operator.TogglePsetExpansion,
+    operator.UnsharePset,
     operator.BIM_OT_add_property_to_edit,
     operator.BIM_OT_remove_property_to_edit,
     operator.BIM_OT_clear_list,

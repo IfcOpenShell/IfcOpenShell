@@ -37,6 +37,9 @@ def add_profile(
     profile set, whereas the "profile curve" represents a 2D curve used by a
     "profile item".
 
+    Profile is not optional for IfcMaterialProfile but it is optional for this API
+    call and can be assigned later with material.assign_profile.
+
     In some cases, a profiled element (i.e. beam, column) may be a composite
     beam or column and include multiple extrusions. This is rare. The order
     of the profiles does not matter.

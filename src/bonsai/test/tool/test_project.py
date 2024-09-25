@@ -196,3 +196,45 @@ class TestRecentIFCProjects(NewFile):
             subject.add_recent_ifc_project(ifc_file)
             assert filepath.stat().st_size != 0
             assert subject.get_recent_ifc_projects() == [ifc_file]
+
+
+class TestLoadProject(NewFile):
+    def test_load_project_and_start_fresh_sesion(self):
+        filepath = Path("test/files/basic.ifc")
+        bpy.ops.mesh.primitive_monkey_add()
+        monkey = bpy.context.object
+        assert monkey
+        bpy.ops.bim.load_project(filepath=filepath.as_posix())
+        assert tool.Ifc.get()
+        assert not tool.Blender.is_valid_data_block(monkey)
+
+    def test_load_project_without_starting_fresh_sesion(self):
+        filepath = Path("test/files/basic.ifc")
+        bpy.ops.mesh.primitive_monkey_add()
+        monkey = bpy.context.object
+        assert monkey
+        bpy.ops.bim.load_project(filepath=filepath.as_posix(), should_start_fresh_session=False)
+        assert tool.Ifc.get()
+        assert tool.Blender.is_valid_data_block(monkey)
+
+    def test_load_project_without_ifc_data(self):
+        filepath = Path("test/files/basic.ifc")
+        bpy.ops.mesh.primitive_monkey_add()
+        monkey = bpy.context.object
+        assert monkey
+        bpy.ops.bim.load_project(filepath=filepath.as_posix(), import_without_ifc_data=True)
+        assert not tool.Ifc.get()
+        assert bpy.data.objects["IfcWall/Wall"]
+        assert not tool.Blender.is_valid_data_block(monkey)
+
+    def test_load_project_without_ifc_data_and_restarting_session(self):
+        filepath = Path("test/files/basic.ifc")
+        bpy.ops.mesh.primitive_monkey_add()
+        monkey = bpy.context.object
+        assert monkey
+        bpy.ops.bim.load_project(
+            filepath=filepath.as_posix(), import_without_ifc_data=True, should_start_fresh_session=False
+        )
+        assert not tool.Ifc.get()
+        assert bpy.data.objects["IfcWall/Wall"]
+        assert tool.Blender.is_valid_data_block(monkey)

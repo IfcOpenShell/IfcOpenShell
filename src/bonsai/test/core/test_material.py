@@ -49,6 +49,7 @@ class TestAddMaterialSet:
         ifc.run("material.add_material_set", name="Unnamed", set_type="set_type").should_be_called().will_return(
             "material"
         )
+        material.ensure_new_material_set_is_valid("material").should_be_called()
         material.is_editing_materials().should_be_called().will_return(False)
         assert subject.add_material_set(ifc, material, set_type="set_type") == "material"
 
@@ -56,6 +57,7 @@ class TestAddMaterialSet:
         ifc.run("material.add_material_set", name="Unnamed", set_type="set_type").should_be_called().will_return(
             "material"
         )
+        material.ensure_new_material_set_is_valid("material").should_be_called()
         material.is_editing_materials().should_be_called().will_return(True)
         material.get_active_material_type().should_be_called().will_return("material_type")
         material.import_material_definitions("material_type").should_be_called()

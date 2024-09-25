@@ -1,17 +1,57 @@
-try:
-    import re
-    import json
+# IfcOpenShell - IFC toolkit and geometry engine
+# Copyright (C) 2021 Thomas Krijnen <thomas@aecgeeks.com>
+#
+# This file is part of IfcOpenShell.
+#
+# IfcOpenShell is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# IfcOpenShell is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+from __future__ import annotations
+import re
+import json
+import ifcopenshell
+import ifcopenshell.util.attribute
+import ifcopenshell.util.schema
+from pathlib import Path
+from typing import Any, NoReturn, Union, Optional, TYPE_CHECKING
+from . import ifcopenshell_wrapper
+from .file import file
+from .entity_instance import entity_instance
 
-    from .file import file
-    from . import ifcopenshell_wrapper
-    from .entity_instance import entity_instance
+if TYPE_CHECKING:
+    import sqlite3
+
+try:
+    import sqlite3
 except ImportError as e:
     print(f"No SQL support: {e}")
 
 
 class sqlite(file):
-    def __init__(self, filepath):
-        import sqlite3
+    schema: ifcopenshell.util.schema.IFC_SCHEMA = "IFC4"
+
+    def __init__(self, filepath: str):
+        """
+        Open existing sqlite IFC database.
+
+        To create a new database from IFC file consider using Ifc2Sql IfcPatch:
+
+        https://docs.ifcopenshell.org/autoapi/ifcpatch/recipes/Ifc2Sql/index.html
+
+        :param filepath: Path to sqlite database.
+        """
+
+        if not Path(filepath).exists():
+            raise FileNotFoundError(f"File doesn't exist: {filepath}")
 
         self.wrapped_data = None
         self.history_size = 64
@@ -42,23 +82,22 @@ class sqlite(file):
             assert False, "SQLite schema not supported."
 
         self.schema = row[1]
-        self.ifc_schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(self.schema)
+        self.ifc_schema = ifcopenshell.schema_by_name(self.schema)
 
         self.cursor.execute("SELECT ifc_id, ifc_class FROM id_map")
-        self.id_map = {}
-        self.class_map = {}
-        self.entity_cache = {}
+        self.id_map: dict[int, str] = {}
+        self.class_map: dict[str, list[int]] = {}
+        self.entity_cache: dict[int, sqlite_entity] = {}
         for row in self.cursor.fetchall():
-            self.id_map[row[0]] = row[1]
-            self.class_map.setdefault(row[1], []).append(row[0])
+            ifc_id, ifc_class = row
+            self.id_map[ifc_id] = ifc_class
+            self.class_map.setdefault(ifc_class, []).append(ifc_id)
 
         self.preprocess_schema()
 
-    def preprocess_schema(self):
-        import ifcopenshell.util.schema
-
+    def preprocess_schema(self) -> None:
         self.ifc_class_subtypes = {}
-        self.ifc_class_attributes = {}
+        self.ifc_class_attributes: dict[str, dict[str, ifcopenshell_wrapper.attribute]] = {}
         self.ifc_class_inverse_attributes = {}
         self.ifc_class_references = {}
         self.ifc_class_inverses = {}
@@ -99,13 +138,14 @@ class sqlite(file):
 
             self.ifc_class_references[declaration.name()] = {"entity": entity, "entity_list": entity_list}
 
-    def clear_cache(self):
+    def clear_cache(self) -> None:
         self.entity_cache = {}
 
-    def create_entity(self, type, *args, **kawrgs):
-        assert False
+    def create_entity(self, type, *args, **kawrgs) -> NoReturn:
+        """Not supported for sqlite database."""
+        assert False, "Not supported for sqlite database."
 
-    def by_id(self, id):
+    def by_id(self, id: int) -> Union[sqlite_entity, None]:
         entity = self.entity_cache.get(id, None)
         if entity:
             return entity
@@ -114,15 +154,16 @@ class sqlite(file):
             entity = sqlite_entity(id, ifc_class, self)
             self.entity_cache[id] = entity
             return entity
-        self.cursor.execute("SELECT ifc_id, ifc_class FROM id_map LIMIT 1")
+        self.cursor.execute("SELECT ifc_id, ifc_class FROM id_map WHERE ifc_id = ? LIMIT 1", (id,))
         row = self.cursor.fetchone()
         if row:
-            self.id_map[row[0]] = row[1]
+            _, ifc_class = row
+            self.id_map[id] = ifc_class
             entity = sqlite_entity(id, ifc_class, self)
             self.entity_cache[id] = entity
             return entity
 
-    def by_type(self, type, include_subtypes=True):
+    def by_type(self, type: str, include_subtypes: bool = True) -> list[sqlite_entity]:
         # TODO use cached subtypes
         import ifcopenshell.util.schema
 
@@ -142,7 +183,9 @@ class sqlite(file):
         rows = self.cursor.fetchall()
         return [self.by_id(r[0]) for r in rows]
 
-    def traverse(self, inst, max_levels=None, breadth_first=False):
+    def traverse(
+        self, inst: sqlite_entity, max_levels: Optional[int] = None, breadth_first: bool = False
+    ) -> list[sqlite_entity]:
         results = [inst]
         queue = [inst]
         while queue:
@@ -170,7 +213,9 @@ class sqlite(file):
         # print('traverse results', results)
         return results
 
-    def get_inverse(self, inst, allow_duplicate=False, with_attribute_indices=False):
+    def get_inverse(
+        self, inst: sqlite_entity, allow_duplicate: bool = False, with_attribute_indices: bool = False
+    ) -> set[sqlite_entity]:
         query = (
             f"SELECT inverses FROM {inst.sqlite_wrapper.ifc_class} WHERE `ifc_id` = {inst.sqlite_wrapper.id} LIMIT 1"
         )
@@ -180,7 +225,7 @@ class sqlite(file):
             return set()
         return {self.by_id(e) for e in json.loads(row[0])}
 
-    def is_entity_list(self, attribute):
+    def is_entity_list(self, attribute: ifcopenshell_wrapper.attribute) -> bool:
         attribute = str(attribute.type_of_attribute())
         if (attribute.startswith("<list") or attribute.startswith("<set")) and "<entity" in attribute:
             for data_type in re.findall("<(.*?) .*?>", attribute):
@@ -223,9 +268,15 @@ class sqlite(file):
             }
         return {"shapes": shapes, "geometry": geometry}
 
+    def __del__(self) -> None:
+        # Override to avoid clean up data unrelated to sqlite file.
+        pass
+
 
 class sqlite_entity(entity_instance):
-    def __init__(self, id, ifc_class, file=None):
+    sqlite_wrapper: sqlite_wrapper
+
+    def __init__(self, id: int, ifc_class: str, file: sqlite = None):
         if not ifc_class:
             print(id, ifc_class, file)
             assert False
@@ -234,23 +285,23 @@ class sqlite_entity(entity_instance):
         super(entity_instance, self).__setattr__("wrapped_data", e)
         super(entity_instance, self).__setattr__("sqlite_wrapper", s)
 
-    def id(self):
+    def id(self) -> int:
         return self.sqlite_wrapper.id
 
-    def __del__(self):
+    def __del__(self) -> None:
         pass
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: int) -> Any:
         return self.__getattr__(list(self.sqlite_wrapper.attributes.keys())[key])
 
-    def __setattr__(self, key, value):
+    def __setattr__(self, key: str, value: Any) -> None:
         # query = f"UPDATE `{self.sqlite_wrapper.ifc_class}` SET `{key}`='' WHERE `ifc_id` = {self.sqlite_wrapper.id}"
         query = f"UPDATE `{self.sqlite_wrapper.ifc_class}` SET `{key}` = ? WHERE ifc_id = {self.sqlite_wrapper.id}"
         self.sqlite_wrapper.file.cursor.execute(query, (value,))
         self.sqlite_wrapper.file.db.commit()
         self.sqlite_wrapper.attribute_cache = {}
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> Any:
         # print("*" * 100)
         # print("GETATTR", self.sqlite_wrapper.id, self.sqlite_wrapper.ifc_class, name)
 
@@ -343,7 +394,7 @@ class sqlite_entity(entity_instance):
             return value2
         return value
 
-    def __eq__(self, other):
+    def __eq__(self, other: sqlite_entity) -> bool:
         if not isinstance(self, type(other)):
             return False
         elif None in (self.sqlite_wrapper.file, other.sqlite_wrapper.file):
@@ -352,11 +403,46 @@ class sqlite_entity(entity_instance):
             return self.sqlite_wrapper.id == other.sqlite_wrapper.id
         assert False  # not implemented
 
-    def __hash__(self):
+    def __repr__(self):
+        sqlite_wrapper = self.sqlite_wrapper
+        attribute_cache = sqlite_wrapper.attribute_cache
+        attr_strs: list[str] = []
+
+        if not attribute_cache:
+            self.__getitem__(0)  # This will get all attributes
+
+        def serialize_attr_value(value: Any) -> str:
+            if value is None:
+                attr_str = "$"
+            # Enums are not represented correctly but that should do.
+            elif isinstance(value, str):
+                attr_str = f"'{value}'"
+            elif isinstance(value, (int, float)):
+                attr_str = str(value)
+            elif isinstance(value, sqlite_entity):
+                attr_str = f"#{value.sqlite_wrapper.id}"
+            elif isinstance(value, entity_instance):
+                attr_str = str(value)
+            elif isinstance(value, tuple):
+                attr_str = ",".join(serialize_attr_value(v) for v in value)
+                attr_str = f"({attr_str})"
+            else:
+                attr_str = f"-"
+            return attr_str
+
+        for attr_name in sqlite_wrapper.attributes:
+            value = attribute_cache[attr_name]
+            attr_strs.append(serialize_attr_value(value))
+        attr_str = ",".join(attr_strs)
+        return f"#{sqlite_wrapper.id}={sqlite_wrapper.ifc_class.upper()}({attr_str});"
+
+    def __hash__(self) -> int:
         if self.sqlite_wrapper.id:
             return hash((self.sqlite_wrapper.id, self.sqlite_wrapper.file.filepath))
 
-    def get_info(self, include_identifier=True, recursive=False, return_type=dict, ignore=(), scalar_only=False):
+    def get_info(
+        self, include_identifier=True, recursive=False, return_type=dict, ignore=(), scalar_only=False
+    ) -> dict[str, Any]:
         info = {"id": self.sqlite_wrapper.id, "type": self.sqlite_wrapper.ifc_class}
         if not self.sqlite_wrapper.attribute_cache:
             self.__getitem__(0)  # This will get all attributes
@@ -365,14 +451,14 @@ class sqlite_entity(entity_instance):
 
 
 class sqlite_wrapper:
-    def __init__(self, id, ifc_class, file):
+    def __init__(self, id: int, ifc_class: str, file: sqlite):
         self.id = id
         self.ifc_class = ifc_class
         self.file = file
         self.attributes = self.file.ifc_class_attributes[self.ifc_class]
         self.inverse_attributes = self.file.ifc_class_inverse_attributes[self.ifc_class]
-        self.attribute_cache = {}
+        self.attribute_cache: dict[str, Any] = {}
         self.inverse_attribute_cache = {}
 
-    def __repr__(self):
-        return "todo"
+    def __repr__(self) -> str:
+        return f"sqlite_wrapper '#{self.id}={self.ifc_class}(...)'"

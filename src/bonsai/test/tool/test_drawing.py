@@ -69,11 +69,13 @@ class TestCreateSvgSheet(NewFile):
         ifc = ifcopenshell.file()
         ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
         tool.Ifc.set(ifc)
+        ifc_path = Path("test/files/temp/test.ifc").absolute()
+        bpy.ops.bim.save_project(filepath=str(ifc_path), should_save_as=True)
         document = ifc.createIfcDocumentInformation(
             Identification="X",
             Name="FOOBAR",
-            Scope="DOCUMENTATION",
-            Location=os.path.join(bpy.context.scene.BIMProperties.data_dir, "cache", "X - FOOBAR.svg"),
+            Scope="SHEET",
+            Location=(ifc_path.parent / "layouts" / "X - FOOBAR.svg").as_posix(),
         )
         uri = subject.create_svg_sheet(document, "A1")
         assert uri.endswith(".svg")
@@ -218,18 +220,18 @@ class TestEnsureUniqueIdentification(NewFile):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
         assert subject.ensure_unique_identification("FOOBAR") == "FOOBAR"
-        ifc.createIfcDocumentInformation(Identification="FOOBAR", Scope="DOCUMENTATION")
+        ifc.createIfcDocumentInformation(Identification="FOOBAR", Scope="SHEET")
         assert subject.ensure_unique_identification("FOOBAR") == "FOOBAR-X"
-        ifc.createIfcDocumentInformation(Identification="FOOBAR-X", Scope="DOCUMENTATION")
+        ifc.createIfcDocumentInformation(Identification="FOOBAR-X", Scope="SHEET")
         assert subject.ensure_unique_identification("FOOBAR") == "FOOBAR-X-X"
 
     def test_unique_document_id_ifc2x3(self):
         ifc = ifcopenshell.file(schema="IFC2X3")
         tool.Ifc.set(ifc)
         assert subject.ensure_unique_identification("FOOBAR") == "FOOBAR"
-        ifc.createIfcDocumentInformation(DocumentId="FOOBAR", Scope="DOCUMENTATION")
+        ifc.createIfcDocumentInformation(DocumentId="FOOBAR", Scope="SHEET")
         assert subject.ensure_unique_identification("FOOBAR") == "FOOBAR-X"
-        ifc.createIfcDocumentInformation(DocumentId="FOOBAR-X", Scope="DOCUMENTATION")
+        ifc.createIfcDocumentInformation(DocumentId="FOOBAR-X", Scope="SHEET")
         assert subject.ensure_unique_identification("FOOBAR") == "FOOBAR-X-X"
 
 

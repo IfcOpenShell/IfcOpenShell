@@ -56,7 +56,7 @@ bbim_semver: dict[str, Any] = {}
 
 # Accessed from bonsai dependency:
 last_error = None
-last_actions: deque = deque(maxlen=10)
+last_actions: deque = deque(maxlen=20)
 FIRST_INSTALLED_BBIM_VERSION: Union[str, None] = None
 REINSTALLED_BBIM_VERSION: Union[str, None] = None
 REGISTERED_BBIM_PACKAGE: str
@@ -329,7 +329,7 @@ if IN_BLENDER:
 
                 layout.operator("bim.copy_debug_information", text="Copy Error Message To Clipboard")
                 op = layout.operator("bim.open_uri", text="How Can I Fix This?")
-                op.uri = "https://docs.bonsaibim.org/users/troubleshooting.html#installation-issues"
+                op.uri = "https://docs.bonsaibim.org/guides/troubleshooting.html#installation-issues"
 
                 layout.label(text="Try Reinstalling:", icon="IMPORT")
                 op = layout.operator("bim.open_uri", text="Re-download Add-on")

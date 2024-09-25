@@ -495,6 +495,7 @@ class CadOffset(bpy.types.Operator):
 
                 normals = []
                 v1co = (wp.inverted() @ mw @ v1.co).to_2d()
+
                 if v2:
                     v2co = (wp.inverted() @ mw @ v2.co).to_2d()
                     direction = (v2co - v1co).normalized()

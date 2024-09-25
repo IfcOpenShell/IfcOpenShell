@@ -34,7 +34,7 @@ import ifcopenshell.util.placement
 import ifcopenshell.util.classification
 import ifcopenshell.util.representation
 from deepdiff import DeepDiff
-from ordered_set import OrderedSet
+from orderly_set import OrderedSet
 from typing import Optional, Union, Literal, Any
 
 
@@ -231,9 +231,9 @@ class IfcDiff:
     def get_settings(self, ifc: ifcopenshell.file) -> ifcopenshell.geom.settings:
         settings = ifcopenshell.geom.settings()
         # Are you feeling lucky?
-        settings.set(settings.DISABLE_BOOLEAN_RESULT, True)
+        settings.set("disable-boolean-result", True)
         # Are you feeling very lucky?
-        settings.set(settings.DISABLE_OPENING_SUBTRACTIONS, True)
+        settings.set("disable-opening-subtractions", True)
         # Facetation is to accommodate broken Revit files
         # See https://forums.buildingsmart.org/t/suggestions-on-how-to-improve-clarity-of-representation-context-usage-in-documentation/3663/6?u=moult
         body_contexts = [

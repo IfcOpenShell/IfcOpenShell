@@ -115,6 +115,7 @@ IfcGeom::OpenCascadeKernel::faceset_helper::faceset_helper(
 			eps_ = Precision::Confusion();
 		}
 
+		std::vector<bool> retained(pnts.size());
 		for (int pnt_i = 0; pnt_i < (int)pnts.size(); ++pnt_i) {
 			if (pnts[pnt_i]) {
 				std::set<int> vs;
@@ -125,7 +126,9 @@ IfcGeom::OpenCascadeKernel::faceset_helper::faceset_helper(
 					// NB: insert() ignores duplicate keys
 					// v-1?
 					// @todo this reliable also in case of tesselations?
-					vertex_mapping_.insert({ pt.identity(), pnt_i });
+					if (vertex_mapping_.insert({ pt.identity(), pnt_i }).second) {
+						retained[pnt_i] = true;
+					}
 				}
 			}
 		}
@@ -141,8 +144,10 @@ IfcGeom::OpenCascadeKernel::faceset_helper::faceset_helper(
 			}
 		}
 
-		if (unique.size() != vertex_mapping_.size()) {
-			Logger::Notice("Collapsed vertices from " + std::to_string(pnts.size()) + " (" + std::to_string(unique.size()) + " unique) to " + std::to_string(vertex_mapping_.size()));
+		auto num_retained = std::count(retained.begin(), retained.end(), true);
+
+		if (unique.size() != num_retained) {
+			Logger::Notice("Collapsed vertices from " + std::to_string(pnts.size()) + " (" + std::to_string(unique.size()) + " unique) to " + std::to_string(num_retained));
 		}
 
 		typedef std::array<int, 2> edge_t;

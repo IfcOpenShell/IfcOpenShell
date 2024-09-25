@@ -65,3 +65,23 @@ def get_inherited_references(reference: Optional[ifcopenshell.entity_instance]) 
         results.append(reference)
         reference = reference.ReferencedSource
     return results
+
+
+def get_classification_data(file: ifcopenshell.file) -> Optional[tuple[list[dict], str]]:
+    if not file or not file.by_type("IfcClassification"):
+        return [], ""
+    classification = file.by_type("IfcClassification")[0]
+    classification_name = classification.Name
+
+    def process_references(reference):
+        data = reference.get_info()
+        del data["ReferencedSource"]
+        data["referenced_source"] = reference.ReferencedSource.id() if reference.ReferencedSource else None
+        data["has_references"] = bool(reference.HasReferences)
+        data["references"] = (
+            [process_references(ref) for ref in reference.HasReferences] if reference.HasReferences else []
+        )
+        return data
+
+    classification_data = [process_references(reference) for reference in classification.HasReferences]
+    return classification_data, classification_name

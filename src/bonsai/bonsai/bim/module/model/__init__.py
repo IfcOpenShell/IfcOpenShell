@@ -63,7 +63,9 @@ classes = (
     product.EnableAddType,
     product.LoadTypeThumbnails,
     product.MirrorElements,
+    product.SetActiveType,
     workspace.Hotkey,
+    workspace.BIM_MT_add_representation_item,
     wall.AlignWall,
     wall.ChangeExtrusionDepth,
     wall.ChangeExtrusionXAngle,
@@ -127,6 +129,7 @@ classes = (
     prop.BIMDoorProperties,
     prop.BIMRailingProperties,
     prop.BIMRoofProperties,
+    prop.BIMPolylineProperties,
     ui.BIM_PT_array,
     ui.BIM_PT_stair,
     ui.BIM_PT_sverchok,
@@ -134,9 +137,9 @@ classes = (
     ui.BIM_PT_door,
     ui.BIM_PT_railing,
     ui.BIM_PT_roof,
+    ui.BIM_MT_type_manager_menu,
     ui.LaunchTypeManager,
-    ui.BIM_MT_model,
-    ui.BIM_PT_Grids,
+    ui.BIM_MT_elements,
     grid.BIM_OT_add_object,
     stair.BIM_OT_add_stair,
     stair.AddStair,
@@ -204,6 +207,7 @@ def register():
         bpy.utils.register_tool(workspace.CableTool, after={"bim.cable_carrier_tool"}, separator=False, group=False)
 
     bpy.types.Scene.BIMModelProperties = bpy.props.PointerProperty(type=prop.BIMModelProperties)
+    bpy.types.Scene.BIMPolylineProperties = bpy.props.PointerProperty(type=prop.BIMPolylineProperties)
     bpy.types.Object.BIMArrayProperties = bpy.props.PointerProperty(type=prop.BIMArrayProperties)
     bpy.types.Object.BIMStairProperties = bpy.props.PointerProperty(type=prop.BIMStairProperties)
     bpy.types.Object.BIMSverchokProperties = bpy.props.PointerProperty(type=prop.BIMSverchokProperties)
@@ -212,11 +216,11 @@ def register():
     bpy.types.Object.BIMRailingProperties = bpy.props.PointerProperty(type=prop.BIMRailingProperties)
     bpy.types.Object.BIMRoofProperties = bpy.props.PointerProperty(type=prop.BIMRoofProperties)
 
-    bpy.types.VIEW3D_MT_mesh_add.append(ui.add_mesh_object_menu)
-    bpy.types.VIEW3D_MT_add.append(ui.add_menu)
+    bpy.types.VIEW3D_MT_add.prepend(ui.add_menu)
     bpy.app.handlers.load_post.append(handler.load_post)
 
     workspace.load_custom_icons()
+
 
 def unregister():
     if not bpy.app.background:
@@ -231,7 +235,9 @@ def unregister():
         bpy.utils.unregister_tool(workspace.CableCarrierTool)
         bpy.utils.unregister_tool(workspace.CableTool)
         bpy.utils.unregister_tool(workspace.BimTool)
+
     del bpy.types.Scene.BIMModelProperties
+    del bpy.types.Scene.BIMPolylineProperties
     del bpy.types.Object.BIMArrayProperties
     del bpy.types.Object.BIMStairProperties
     del bpy.types.Object.BIMSverchokProperties
@@ -239,7 +245,8 @@ def unregister():
     del bpy.types.Object.BIMDoorProperties
     del bpy.types.Object.BIMRailingProperties
     del bpy.types.Object.BIMRoofProperties
+
     bpy.app.handlers.load_post.remove(handler.load_post)
-    bpy.types.VIEW3D_MT_mesh_add.remove(ui.add_mesh_object_menu)
     bpy.types.VIEW3D_MT_add.remove(ui.add_menu)
+
     workspace.unload_custom_icons()

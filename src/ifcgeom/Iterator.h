@@ -701,6 +701,10 @@ namespace IfcGeom {
 		/// Gets the representation of the current geometrical entity.
 		Element* get()
 		{
+			if (!initialization_outcome_) {
+				throw std::runtime_error("Iterator not initialized");
+			}
+
 			auto ret = *task_result_iterator_;
 			
 			// If we want to organize the element considering their hierarchy

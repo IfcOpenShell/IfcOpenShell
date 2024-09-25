@@ -33,7 +33,7 @@ from pytest_bdd import scenarios, given, when, then, parsers
 from mathutils import Vector
 from math import radians
 from pathlib import Path
-from typing import Union
+from typing import Union, Any
 
 scenarios("feature")
 
@@ -49,18 +49,18 @@ webbrowser.open = lambda x: True
 
 
 class PanelSpy:
-    def __init__(self, panel):
+    def __init__(self, panel: type[bpy.types.Panel]):
         self.is_spy_dirty = True
         self.panel = panel
 
     def refresh_spy(self):
         if self.is_spy_dirty:
             self.is_spy_dirty = False
-            self.spied_attr = None
-            self.spied_labels = []
-            self.spied_props = []
-            self.spied_operators = []
-            self.spied_lists = []
+            self.spied_attr: Union[str, None] = None
+            self.spied_labels: list[str] = []
+            self.spied_props: list[dict[str, Any]] = []
+            self.spied_operators: list[dict[str, Any]] = []
+            self.spied_lists: list[dict[str, Any]] = []
             self.panel.draw(self, bpy.context)
 
     def __getattr__(self, attr):
@@ -91,6 +91,7 @@ class PanelSpy:
             return self
         elif self.spied_attr == "prop":
             props, name = args
+            props: bpy.types.bpy_struct
             text = kwargs.get("text", props.bl_rna.properties[name].name)
             icon = kwargs.get("icon", None)
             prop_type = props.bl_rna.properties[name].type
@@ -152,7 +153,7 @@ class TemplateListSpy:
 
 
 panel_name_cache = {}
-panel_spy = None
+panel_spy: PanelSpy = None
 
 
 def replace_variables(value):
@@ -307,7 +308,7 @@ def i_set_the_prop_property_to_value(prop, value):
                     setattr(spied_prop["props"], spied_prop["name"], False)
             elif spied_prop["prop_type"] == "FLOAT":
                 setattr(spied_prop["props"], spied_prop["name"], float(value))
-            elif spied_prop["prop_type"] == "INTEGER":
+            elif spied_prop["prop_type"] == "INT":
                 setattr(spied_prop["props"], spied_prop["name"], int(value))
             elif spied_prop["prop_type"] == "ENUM":
                 enum_identifier = [i for i in spied_prop["enum_items"] if i is not None and i[1] == value]
@@ -535,7 +536,6 @@ def i_deselect_all_objects():
 
 @given(parsers.parse('the object "{name}" is selected'))
 @when(parsers.parse('the object "{name}" is selected'))
-@then(parsers.parse('the object "{name}" is selected'))
 def the_object_name_is_selected(name):
     i_deselect_all_objects()
     additionally_the_object_name_is_selected(name)
@@ -837,6 +837,30 @@ def the_object_name_is_not_a_void(name):
     except AssertionError:
         return
     assert False, "A void was found"
+
+
+@given(parsers.parse('the object "{name}" is visible'))
+def given_the_object_name_is_visible(name):
+    obj = the_object_name_exists(name)
+    obj.hide_set(False)
+
+
+@given(parsers.parse('the object "{name}" is not visible'))
+def given_the_object_name_is_not_visible(name):
+    obj = the_object_name_exists(name)
+    obj.hide_set(True)
+
+
+@then(parsers.parse('the object "{name}" is visible'))
+def the_object_name_is_visible(name):
+    obj = the_object_name_exists(name)
+    assert obj.hide_get() == False
+
+
+@then(parsers.parse('the object "{name}" is not visible'))
+def the_object_name_is_not_visible(name):
+    obj = the_object_name_exists(name)
+    assert obj.hide_get() == True
 
 
 @then(parsers.parse('the object "{name}" is an "{ifc_class}"'))

@@ -18,6 +18,7 @@
 
 import ifcopenshell.api.style
 import ifcopenshell.util.element
+from typing import Any
 
 
 def remove_style(file: ifcopenshell.file, style: ifcopenshell.entity_instance) -> None:
@@ -26,9 +27,7 @@ def remove_style(file: ifcopenshell.file, style: ifcopenshell.entity_instance) -
     All of the presentation items of the style will also be removed.
 
     :param style: The IfcPresentationStyle to remove.
-    :type style: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 
@@ -47,25 +46,28 @@ def remove_style(file: ifcopenshell.file, style: ifcopenshell.entity_instance) -
 
 
 class Usecase:
-    def execute(self):
+    file: ifcopenshell.file
+    settings: dict[str, Any]
+
+    def execute(self) -> None:
         self.purge_styled_items(self.settings["style"])
         for style in self.settings["style"].Styles or []:
             ifcopenshell.api.style.remove_surface_style(self.file, style=style)
         self.file.remove(self.settings["style"])
 
-    def purge_styled_items(self, style):
+    def purge_styled_items(self, style: ifcopenshell.entity_instance) -> None:
         for inverse in self.file.get_inverse(style):
             if inverse.is_a("IfcStyledItem") and len(inverse.Styles) == 1:
                 self.purge_styled_representations(inverse)
                 self.file.remove(inverse)
 
-    def purge_styled_representations(self, styled_item):
+    def purge_styled_representations(self, styled_item: ifcopenshell.entity_instance) -> None:
         for inverse in self.file.get_inverse(styled_item):
             if inverse.is_a("IfcStyledRepresentation") and len(inverse.Items) == 1:
                 self.purge_material_definition_representations(inverse)
                 self.file.remove(inverse)
 
-    def purge_material_definition_representations(self, styled_representation):
+    def purge_material_definition_representations(self, styled_representation: ifcopenshell.entity_instance) -> None:
         for inverse in self.file.get_inverse(styled_representation):
             if inverse.is_a("IfcMaterialDefinitionRepresentation") and len(inverse.Representations) == 1:
                 self.file.remove(inverse)

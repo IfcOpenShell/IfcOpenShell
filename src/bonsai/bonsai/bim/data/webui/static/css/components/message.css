@@ -1,0 +1,67 @@
+
+.message {
+    position: relative;
+    padding: 10px;
+    border-radius: 5px;
+    margin: 10px 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+  }
+  
+  .message span {
+    width: 80%;
+  }
+  
+  .message .icon {
+    margin-right: 10px;
+  }
+  
+  .message .close-button {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    transition: background-color 0.3s, color 0.3s;
+    padding-left: 5px;
+  }
+  
+  .message .close-button:hover {
+    background-color: #ffcccc;
+  }
+  
+  .error {
+    color: red;
+    border: 1px solid red;
+    background-color: #ffe6e6;
+  }
+  
+  .error .close-button {
+    color: red;
+  }
+  
+  .error .close-button:hover {
+    color: darkred;
+  }
+  
+  .success {
+    color: green;
+    border: 1px solid green;
+    background-color: #e6ffe6;
+  }
+  
+  .success .close-button {
+    color: green;
+  }
+  
+  .success .close-button:hover {
+    background-color: #ccffcc;
+    color: darkgreen;
+  }
+  
+  .card {
+    margin: 10px;
+  }
+  .card-body {
+    height: 10vh;
+  }

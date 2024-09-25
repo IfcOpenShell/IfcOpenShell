@@ -41,8 +41,8 @@ def disable_editing_cost_schedule(cost: tool.Cost) -> None:
 
 
 def remove_cost_schedule(ifc: tool.Ifc, cost: tool.Cost, cost_schedule: ifcopenshell.entity_instance) -> None:
-    ifc.run("cost.remove_cost_schedule", cost_schedule=cost_schedule)
     cost.remove_stored_schedule_columns(cost_schedule)
+    ifc.run("cost.remove_cost_schedule", cost_schedule=cost_schedule)
 
 
 def enable_editing_cost_schedule_attributes(cost: tool.Cost, cost_schedule: ifcopenshell.entity_instance) -> None:
@@ -398,3 +398,7 @@ def add_currency(ifc: tool.Ifc, cost: tool.Cost) -> ifcopenshell.entity_instance
     ifc.run("unit.edit_monetary_unit", unit=unit, attributes=attributes)
     ifc.run("unit.assign_unit", units=[unit])
     return unit
+
+
+def generate_cost_schedule_browser(cost: tool.Cost, cost_schedule: ifcopenshell.entity_instance) -> bpy.types.Panel:
+    return cost.generate_cost_schedule_browser(cost_schedule)

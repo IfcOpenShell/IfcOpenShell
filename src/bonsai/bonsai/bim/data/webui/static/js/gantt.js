@@ -1,3 +1,5 @@
+import { CostUI } from './utilities/costui.js';
+
 // keeps track of blenders connected in form of
 // shown:bool, workSchedule: {}, ganttTasks: {}, warning: bool
 const connectedClients = {};
@@ -30,20 +32,25 @@ $(document).ready(function () {
 function connectSocket() {
   const url = "ws://localhost:" + SOCKET_PORT + "/web";
   socket = io(url);
-  console.log("socket: ", socket);
 
   // Register socket event handlers
   socket.on("blender_connect", handleBlenderConnect);
   socket.on("blender_disconnect", handleBlenderDisconnect);
   socket.on("connected_clients", handleConnectedClients);
+  socket.on("connect", handleWebConnect);
   socket.on("theme_data", handleThemeData);
   socket.on("gantt_data", handleGanttData);
   socket.on("default_data", handleDefaultData);
+  socket.on("work_schedule_info", handleWorkScheduleData);
+}
+
+// function used to get drawings data from Bonsai
+function handleWebConnect() {
+  getWorkScheduleData();
 }
 
 // Function to handle 'blender_connect' event
 function handleBlenderConnect(blenderId) {
-  console.log("blender connected: ", blenderId);
   if (!connectedClients.hasOwnProperty(blenderId)) {
     connectedClients[blenderId] = {
       shown: false,
@@ -59,9 +66,9 @@ function handleBlenderConnect(blenderId) {
 
 // Function to handle 'blender_disconnect' event
 function handleBlenderDisconnect(blenderId) {
-  console.log("blender disconnected: ", blenderId);
   if (connectedClients.hasOwnProperty(blenderId)) {
     delete connectedClients[blenderId];
+    removeWorkScheduleInfo(blenderId);
     removeGanttElement(blenderId);
   }
 
@@ -72,7 +79,6 @@ function handleBlenderDisconnect(blenderId) {
 
 function handleConnectedClients(data) {
   $("#blender-count").text(data.length);
-  // console.log(data);
   data.forEach(function (id) {
     connectedClients[id] = {
       shown: false,
@@ -83,8 +89,6 @@ function handleConnectedClients(data) {
 }
 
 function handleThemeData(themeData) {
-  // console.log(themeData);
-
   function arrayToRgbString(arr) {
     const [r, g, b, a] = arr.map((num) => Math.round(num * 255));
     if (a !== undefined) {
@@ -105,7 +109,6 @@ function handleThemeData(themeData) {
   }
 
   const cssRule = generateCssVariableRule(themeData.theme);
-  console.log(cssRule);
 
   var styleElement = $("#gantt-stylesheet")[0];
   if (styleElement) {
@@ -114,11 +117,27 @@ function handleThemeData(themeData) {
   }
 }
 
-// Function to handle 'gantt_data' event
+function handleWorkScheduleData(data) {
+  const blenderId = data["blenderId"];
+  const workSchedulesMainDiv = $("#work_schedules");
+  const workSchedulesDiv = $("<div>").attr("id", "work_schedules-" + blenderId);
+  workSchedulesMainDiv.append(workSchedulesDiv);
+
+  const workSchedules = data["data"]["work_schedule_info"];
+
+  workSchedules.forEach((workSchedule) => {
+    const mainContainer = CostUI.Text(
+      "Created On: " + new Date(workSchedule.CreationDate).toLocaleDateString(),
+      "fa-solid fa-pen-nib"
+    );
+    const callback = () => loadWorkSchedule(workSchedule.id);
+    const card = CostUI.createCard(workSchedule.id, workSchedule.Name,mainContainer, callback);
+    workSchedulesDiv.append(card);
+  });
+}
+
 function handleGanttData(data) {
   const blenderId = data["blenderId"];
-
-  console.log(data);
 
   const filename = data["data"]["ifc_file"];
   const ganttTasks = data["data"]["gantt_data"]["tasks"];
@@ -156,7 +175,6 @@ function handleDefaultData(data) {
   const blenderId = data["blenderId"];
   const isDirty = data["data"]["is_dirty"];
   showWarning(blenderId, isDirty);
-  console.log(data);
 }
 
 // Function to add a new gantt with data and filename
@@ -428,7 +446,6 @@ function editValue(list, task, event, cell, column) {
       value: event.target.value,
     },
   };
-  console.log("web operator: " + msg);
   socket.emit("web_operator", msg);
 }
 
@@ -550,4 +567,34 @@ function toggleClientList() {
   });
 
   clientList.addClass("show");
+}
+
+function loadWorkSchedule(workScheduleId) {
+  const msg = {
+    sourcePage: "gantt",
+    operator: {
+      type: "loadWorkSchedule",
+      workScheduleId: workScheduleId,
+    },
+  };
+  socket.emit("web_operator", msg);
+}
+
+function removeWorkScheduleInfo(blenderId) {
+  $("#work_schedules-"+ blenderId).empty();
+}
+
+function getWorkScheduleData(blenderId) {
+  const msg = {
+    sourcePage: "gantt",
+    operator: {
+      type: "getWorkSchedules",
+    },
+  };
+
+  if (blenderId !== undefined) {
+    msg.BlenderId = blenderId;
+  }
+
+  socket.emit("web_operator", msg);
 }

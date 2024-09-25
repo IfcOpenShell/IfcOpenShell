@@ -60,7 +60,7 @@ IFC4x3_SPEC_URL_TEMPLATE = "https://ifc43-docs.standards.buildingsmart.org/IFC/R
 # child -> description
 # note: in IFC4x3 there is no children[] for properties
 
-SUPPORTED_SCHEMA = Literal["IFC2X3", "IFC4", "IFC4X3"]
+SUPPORTED_SCHEMA = ifcopenshell.util.schema.IFC_SCHEMA
 SCHEMA_FILES: dict[SUPPORTED_SCHEMA, dict] = {
     "IFC2X3": {
         "entities": BASE_MODULE_PATH / "schema/ifc2x3_entities.json",

@@ -41,8 +41,8 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcEllipse* inst) {
 		// @todo is a copy necesary here or can this be done in place?
 		auto m4_copy = *el->matrix;
 		el->matrix->components() <<
-			-m4_copy.components().col(1),
-			m4_copy.components().col(0),
+			m4_copy.components().col(1),
+			-m4_copy.components().col(0),
 			m4_copy.components().col(2),
 			m4_copy.components().col(3);
 		std::swap(x, y);
