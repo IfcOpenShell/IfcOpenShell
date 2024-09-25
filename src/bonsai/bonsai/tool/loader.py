@@ -506,6 +506,8 @@ class Loader(bonsai.core.tool.Loader):
                 continue
             # It's unclear what has priority, styled by item or indexed maps
             # Given that indexed maps currently are super expensive, I'll prioritise styled by item
+            # May lead to issues if external style is using vertex colors
+            # but probably don't need to worry about until we add a way save vertex colors to indexed map in BBIM.
             if item.StyledByItem:
                 continue
             colours.extend(item.HasColours)
@@ -589,6 +591,7 @@ class Loader(bonsai.core.tool.Loader):
 
             if data_index is None:
                 # This face may be part of another representation item
+                # Or we couldn't match it due to georeferencing.
                 continue
 
             # apply uv to each loop
