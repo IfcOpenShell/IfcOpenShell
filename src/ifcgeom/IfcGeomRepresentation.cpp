@@ -407,7 +407,7 @@ int IfcGeom::Representation::Triangulation::addVertex(int item_id, int material_
 	return i;
 }
 
-void IfcGeom::Representation::Triangulation::addEdge(int n1, int n2, std::map<std::pair<int, int>, int>& edgecount) {
+void IfcGeom::Representation::Triangulation::registerEdgeCount(int n1, int n2, std::map<std::pair<int, int>, int>& edgecount) {
 	const Edge e = Edge((std::min)(n1, n2), (std::max)(n1, n2));
 	edgecount[e] ++;
 }

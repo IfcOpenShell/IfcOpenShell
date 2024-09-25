@@ -293,9 +293,9 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
 					} else {
 						t->addFace(item_id, surface_style_id, dict[n1], dict[n2], dict[n3]);
 
-						t->addEdge(dict[n1], dict[n2], edgecount);
-						t->addEdge(dict[n2], dict[n3], edgecount);
-						t->addEdge(dict[n3], dict[n1], edgecount);
+						t->registerEdgeCount(dict[n1], dict[n2], edgecount);
+						t->registerEdgeCount(dict[n2], dict[n3], edgecount);
+						t->registerEdgeCount(dict[n3], dict[n1], edgecount);
 					}
 				}
 			}
