@@ -198,17 +198,35 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
             if obj.mode != "OBJECT":
                 self.report({"ERROR"}, "Object must be in OBJECT mode to assign class")
                 continue
-            core.assign_class(
+            element = core.assign_class(
                 tool.Ifc,
                 tool.Collector,
                 tool.Root,
                 obj=obj,
                 ifc_class=ifc_class,
                 predefined_type=predefined_type,
-                should_add_representation=self.should_add_representation,
+                should_add_representation=False,
                 context=ifc_context,
                 ifc_representation_class=self.ifc_representation_class,
             )
+            if self.should_add_representation and obj.data and len(obj.data.vertices):
+                builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
+                unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+                verts = [v.co / unit_scale for v in obj.data.vertices]
+                faces = [p.vertices[:] for p in obj.data.polygons]
+                item = builder.mesh(verts, faces)
+                representation = builder.get_representation(ifc_context, [item])
+                ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), element, representation)
+                bonsai.core.geometry.switch_representation(
+                    tool.Ifc,
+                    tool.Geometry,
+                    obj=obj,
+                    representation=representation,
+                    should_reload=True,
+                    is_global=True,
+                    should_sync_changes_first=False,
+                )
+
         context.view_layer.objects.active = active_object
 
 
@@ -357,21 +375,13 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
 
         if representation_template == "EMTPY" or not ifc_context:
             pass
-        elif (
-            representation_template == "OBJ"
-            and (template_obj := context.active_object)
-            and template_obj.type == "MESH"
-            and len(template_obj.data.vertices)
-        ):
+        elif representation_template == "OBJ" and (template_obj := props.representation_obj):
             obj.matrix_world = template_obj.matrix_world
             builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-            bm = bmesh.new()
-            bmesh.ops.create_cube(bm, size=0.5)
             verts = [v.co / unit_scale for v in template_obj.data.vertices]
             faces = [p.vertices[:] for p in template_obj.data.polygons]
             item = builder.mesh(verts, faces)
-            bm.free()
             representation = builder.get_representation(ifc_context, [item])
             ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), element, representation)
             bonsai.core.geometry.switch_representation(
@@ -531,6 +541,9 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
                 row = self.layout.row()
                 row.prop(props, "ifc_userdefined_type")
         prop_with_search(self.layout, props, "representation_template", text="Representation")
+        if props.representation_template == "OBJ":
+            row = self.layout.row()
+            row.prop(props, "representation_obj", text="Object")
         if props.representation_template != "EMPTY":
             prop_with_search(self.layout, props, "contexts")
 
