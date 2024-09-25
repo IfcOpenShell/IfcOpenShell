@@ -476,22 +476,32 @@ class Loader(bonsai.core.tool.Loader):
                 blender_material.node_tree.links.new(coord.outputs["UV"], node.inputs["Vector"])
 
     @classmethod
-    def load_indexed_colour_map(cls, representation: ifcopenshell.entity_instance, mesh: bpy.types.Mesh) -> None:
+    def load_indexed_colour_map(
+        cls, representation_or_item: ifcopenshell.entity_instance, mesh: bpy.types.Mesh
+    ) -> None:
         """Ensure indexed colour map is loaded for representation if it's available.
 
         Method doesn't support elements with openings, see #5405.
 
-        :param representation: IfcShapeRepresentation of any type. Representation may not have an indexed colour map,
+        :param representation: IfcShapeRepresentation or IfcRepresentationItem of any type.
+            Representation may not have an indexed colour map,
             method will automatically check if it does and will skip it otherwise.
 
         :raises AssertionError: If mesh doesn't match the representation exactly, which usually occurs
             if element geometry is altered by openings.
         """
-        if representation.RepresentationType != "Tessellation":
-            return
+
+        is_representation = representation_or_item.is_a("IfcShapeRepresentation")
+
+        if is_representation:
+            if representation_or_item.RepresentationType != "Tessellation":
+                return
+            items = representation_or_item.Items
+        else:
+            items = [representation_or_item]
 
         colours = []
-        for item in representation.Items:
+        for item in items:
             if not item.is_a("IfcTessellatedFaceSet"):
                 continue
             # It's unclear what has priority, styled by item or indexed maps
