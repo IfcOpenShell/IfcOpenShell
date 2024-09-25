@@ -2307,7 +2307,10 @@ class ImportRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
 
         tool.Loader.load_settings()
 
-        for item_id in set(obj.data["ios_item_ids"]):
+        data = obj.data
+        assert data
+        item_ids = data["ios_item_ids"] if "ios_item_ids" in data else data["ios_edges_item_ids"]
+        for item_id in set(item_ids):
             item = tool.Ifc.get().by_id(item_id)
             item_mesh = bpy.data.meshes.new(f"Item/{item.is_a()}/{item_id}")
             item_mesh.BIMMeshProperties.ifc_definition_id = item_id
