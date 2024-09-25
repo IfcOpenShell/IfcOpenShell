@@ -120,7 +120,17 @@ def draw_psetqto_ui(
         op.obj = obj_name
         op.obj_type = obj_type
     elif not props.active_pset_id:
-        row.label(text=pset["Name"], icon="COPY_ID")
+        row.label(text=f'{pset["Name"]}', icon="COPY_ID")
+
+        if (shared := pset["shared_pset_uses"]) > 1:
+            unshare_pset_row = row.row(align=True)
+            unshare_pset_row.alignment = "RIGHT"
+            op = unshare_pset_row.operator("bim.unshare_pset", text=str(shared))
+            op.description_ = f"Pset is reused by {shared} elements.\n\n"
+            op.pset_id = pset_id
+            op.obj = obj_name
+            op.obj_type = obj_type
+
         op = row.operator("bim.enable_pset_editing", icon="GREASEPENCIL", text="")
         op.pset_id = pset_id
         op.obj = obj_name
@@ -141,10 +151,17 @@ def draw_psetqto_ui(
         remove_pset_row.enabled = allow_removing
     if pset["is_expanded"]:
         if props.active_pset_id == pset_id:
+            is_parametric_pset = props.active_pset_name in tool.Model.BBIM_PARAMETRIC_PSETS
+            if is_parametric_pset:
+                box_ = box.box()
+                box_.alert = True
+                box_.label(text="Warning! This pset should not be edited directly", icon="ERROR")
+                box_.label(text="and should be edited from Parametric Geometry UI.")
+
             for prop in props.properties:
                 draw_psetqto_editable_ui(box, props, prop)
 
-            if not props.active_pset_has_template:
+            if not props.active_pset_has_template and not is_parametric_pset:
                 row = box.row(align=True)
                 row.prop(props, "prop_name", text="")
                 row.prop(props, "prop_value", text="")
@@ -654,7 +671,15 @@ class BIM_PT_profile_psets(Panel):
         return False
 
     def draw(self, context):
-        if not ProfilePsetsData.is_loaded:
+        active_profile = tool.Profile.get_active_profile_ui()
+
+        if not active_profile:
+            return
+
+        if (
+            not ProfilePsetsData.is_loaded
+            or active_profile.ifc_definition_id != ProfilePsetsData.data["ifc_definition_id"]
+        ):
             ProfilePsetsData.load()
 
         props = context.scene.ProfilePsetProperties

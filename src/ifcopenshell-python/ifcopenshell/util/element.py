@@ -76,17 +76,29 @@ def get_pset(
     """
     pset = None
     type_pset = None
+    ifc_file = element.file
+    is_ifc2x3 = ifc_file.schema == "IFC2X3"
 
     if element.is_a("IfcTypeObject"):
         for definition in element.HasPropertySets or []:
             if definition.Name == name:
                 pset = definition
                 break
-    elif element.is_a("IfcMaterialDefinition") or element.is_a("IfcProfileDef"):
-        for definition in element.HasProperties or []:
-            if definition.Name == name:
-                pset = definition
-                break
+    elif (
+        (is_ifc2x3_material := (is_ifc2x3 and element.is_a("IfcMaterial")))
+        or element.is_a("IfcMaterialDefinition")
+        or element.is_a("IfcProfileDef")
+    ):
+        if is_ifc2x3_material:
+            for definition in ifc_file.by_type("IfcExtendedMaterialProperties"):
+                if definition.Material == element and definition.Name == name:
+                    pset = definition
+                    break
+        else:
+            for definition in element.HasProperties or []:
+                if definition.Name == name:
+                    pset = definition
+                    break
     elif (is_defined_by := getattr(element, "IsDefinedBy", None)) is not None:
         # other IfcObjectDefinition
         if should_inherit:
@@ -101,7 +113,11 @@ def get_pset(
                     break
 
     if pset:
-        if psets_only and not pset.is_a("IfcPropertySet"):
+        if (
+            psets_only
+            and not pset.is_a("IfcPropertySet")
+            and not (is_ifc2x3 and pset.is_a("IfcExtendedMaterialProperties"))
+        ):
             pset = None
         elif qtos_only and not pset.is_a("IfcElementQuantity"):
             pset = None
@@ -221,6 +237,9 @@ def get_property_definition(
         elif ifc_class == "IfcMaterialProperties" or ifc_class == "IfcProfileProperties":
             # IfcExtendedProperties
             return get_property(definition.Properties, prop, verbose=verbose)
+        elif ifc_class == "IfcExtendedMaterialProperties":
+            # IFC2X3.
+            return get_property(definition.ExtendedProperties, prop, verbose=verbose)
         else:
             # Entity introduced in IFC4
             # definition.is_a('IfcPreDefinedPropertySet'):
@@ -420,6 +439,25 @@ def get_properties(
             if verbose:
                 results[prop_name] = {"id": data["id"], "class": data["class"], "value": results[prop_name]}
     return results
+
+
+def get_elements_by_pset(pset: ifcopenshell.entity_instance) -> set[ifcopenshell.entity_instance]:
+    """Retrieve the elements (or element types) that are using the provided property set."""
+    is_ifc2x3 = pset.file.schema == "IFC2X3"
+    elements = set()
+    if pset.is_a("IfcPropertySet") or pset.is_a("IfcElementQuantity"):
+        rels = pset.PropertyDefinitionOf if is_ifc2x3 else pset.DefinesOccurrence
+        for rel in rels:
+            elements.update(rel.RelatedObjects)
+        for element_type in pset.DefinesType:
+            elements.add(element_type)
+    elif pset.is_a("IfcProfileProperties"):
+        elements.add(pset.ProfileDefinition)
+    elif pset.is_a("IfcMaterialProperties"):
+        elements.add(pset.Material)
+    else:
+        raise Exception(f"Unexpected pset type: '{pset.is_a()}' ({pset}).")
+    return elements
 
 
 def get_predefined_type(element: ifcopenshell.entity_instance) -> str:
@@ -668,18 +706,15 @@ def get_styles(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entit
 # since we have entity_instance.file, so we can deprecate it.
 def get_elements_by_material(
     ifc_file: ifcopenshell.file, material: ifcopenshell.entity_instance
-) -> list[ifcopenshell.entity_instance]:
+) -> set[ifcopenshell.entity_instance]:
     """Retrieves the elements related to a material.
 
     This includes elements using the material as part of a material set or set
     usage.
 
     :param ifc_file: The IFC file
-    :type ifc_file: ifcopenshell.file
     :param material: The IFC Material entity
-    :type material: ifcopenshell.entity_instance
-    :return: A list of elements using the to the material
-    :rtype: list[ifcopenshell.entity_instance]
+    :return: A set of elements using the to the material
 
     Example:
 
@@ -947,7 +982,7 @@ def get_structure_referenced_elements(structure: ifcopenshell.entity_instance) -
     return referenced
 
 
-def get_decomposition(element: ifcopenshell.entity_instance, is_recursive=True) -> list[ifcopenshell.entity_instance]:
+def get_decomposition(element: ifcopenshell.entity_instance, is_recursive=True) -> set[ifcopenshell.entity_instance]:
     """
     Retrieves all subelements of an element based on the spatial decomposition
     hierarchy. This includes all subspaces and elements contained in subspaces,
@@ -966,29 +1001,29 @@ def get_decomposition(element: ifcopenshell.entity_instance, is_recursive=True) 
         decomposition = ifcopenshell.util.element.get_decomposition(element)
     """
     queue = [element]
-    results = []
+    results = set()
     while queue:
         element = queue.pop()
         for rel in getattr(element, "ContainsElements", []):
             related = rel.RelatedElements
             queue.extend(related)
-            results.extend(related)
+            results.update(related)
         for rel in getattr(element, "IsDecomposedBy", []):
             related = rel.RelatedObjects
             queue.extend(related)
-            results.extend(related)
+            results.update(related)
         for rel in getattr(element, "HasOpenings", []):
             related = rel.RelatedOpeningElement
             queue.append(related)
-            results.append(related)
+            results.add(related)
         for rel in getattr(element, "HasFillings", []):
             related = rel.RelatedBuildingElement
             queue.append(related)
-            results.append(related)
+            results.add(related)
         for rel in getattr(element, "IsNestedBy", []):
             related = rel.RelatedObjects
             queue.extend(related)
-            results.extend(related)
+            results.update(related)
         if not is_recursive:
             break
     return results
@@ -1595,3 +1630,27 @@ def copy_deep(
         else:
             new[i] = attribute
     return new
+
+
+def has_property(product: ifcopenshell.entity_instance, property_name: str) -> bool:
+    """
+    Check if a product has a property with a given name.
+
+    :param product: The IFC product
+    :type product: ifcopenshell.entity_instance
+    :param property_name: The property name
+    :type property_name: str
+    :return: True if the product has the property, False otherwise
+    :rtype: bool
+
+    Example:
+
+    .. code:: python
+
+        product = file.by_type("IfcWall")[0]
+        has_property = ifcopenshell.util.element.has_property(product, "NetArea")
+    """
+    if not property_name:
+        return True
+    qtos = get_psets(product, qtos_only=True)
+    return any(property_name in quantities.keys() for quantities in qtos.values())

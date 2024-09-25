@@ -36,7 +36,10 @@ class ExecuteIfcFM(bpy.types.Operator):
     @classmethod
     def poll(cls, context):
         props = context.scene.BIMFMProperties
-        return props.should_load_from_memory or props.ifc_files.single_file
+        if not props.should_load_from_memory and not props.ifc_files.single_file:
+            cls.poll_message_set("Select an IFC file or use 'load from memory' if it's loaded in Bonsai.")
+            return False
+        return True
 
     def invoke(self, context, event):
         props = context.scene.BIMFMProperties

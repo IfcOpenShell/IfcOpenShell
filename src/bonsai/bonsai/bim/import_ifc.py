@@ -40,28 +40,36 @@ from typing import Dict, Union, Optional, Any
 
 
 class MaterialCreator:
+    mesh: bpy.types.Mesh
+    obj: bpy.types.Object
+
     def __init__(self, ifc_import_settings: IfcImportSettings, ifc_importer: IfcImporter):
-        self.mesh: bpy.types.Mesh = None
-        self.obj: bpy.types.Object = None
         self.styles: Dict[int, bpy.types.Material] = {}
         self.parsed_meshes: set[str] = set()
         self.ifc_import_settings = ifc_import_settings
         self.ifc_importer = ifc_importer
 
-    def create(self, element: ifcopenshell.entity_instance, obj: bpy.types.Object, mesh: OBJECT_DATA_TYPE) -> None:
-        self.mesh = mesh
-        # as ifcopenshell triangulates the mesh, we need to merge it to quads again
-        self.obj = obj
-        if (hasattr(element, "Representation") and not element.Representation) or (
-            hasattr(element, "RepresentationMaps") and not element.RepresentationMaps
+    def create(
+        self,
+        element: ifcopenshell.entity_instance,
+        obj: bpy.types.Object,
+        mesh: Union[OBJECT_DATA_TYPE, None],
+        shape_has_openings: bool,
+    ) -> None:
+        if ((rep := getattr(element, "Representation", ...) is not ...) and not rep) or (
+            (rep := getattr(element, "RepresentationMaps", ...) is not ...) and not rep
         ):
             return
-        if not self.mesh or self.mesh.name in self.parsed_meshes:
+
+        if not mesh or mesh.name in self.parsed_meshes:
             return
 
         # We don't support curve styles yet.
         if isinstance(mesh, bpy.types.Curve):
             return
+
+        self.mesh = mesh
+        self.obj = obj
 
         # mesh["ios_materials"] can contain:
         # - ifc style id if style assigned to the representation items directly
@@ -74,7 +82,7 @@ class MaterialCreator:
         # Though 0 value will not occur as we don't use default materials in IfcImporter.
 
         self.parsed_meshes.add(self.mesh.name)
-        self.load_texture_maps()
+        self.load_texture_maps(shape_has_openings)
         self.assign_material_slots_to_faces()
         tool.Geometry.record_object_materials(obj)
         del self.mesh["ios_materials"]
@@ -100,14 +108,16 @@ class MaterialCreator:
                     print(f"WARNING. IfcTextureMap texture coordinates is not supported.")
                     return
 
-    def load_texture_maps(self) -> None:
+    def load_texture_maps(self, shape_has_openings: bool) -> None:
         for style_or_material_id in self.mesh["ios_materials"]:
             if not (material := self.styles.get(style_or_material_id)):
                 continue
 
             material = self.styles[style_or_material_id]
             if coords := self.get_ifc_coordinate(material):
-                tool.Loader.load_indexed_texture_map(coords, self.mesh)
+                if shape_has_openings and coords.is_a("IfcIndexedTextureMap"):
+                    continue
+                tool.Loader.load_indexed_map(coords, self.mesh)
 
     def assign_material_slots_to_faces(self) -> None:
         if not self.mesh["ios_materials"]:
@@ -272,6 +282,7 @@ class IfcImporter:
         tool.Spatial.run_spatial_import_spatial_decomposition()
         if default_container := tool.Spatial.guess_default_container():
             tool.Spatial.set_default_container(default_container)
+        tool.Loader.setup_active_bsdd_classification()
         self.update_progress(100)
         bpy.context.window_manager.progress_end()
 
@@ -539,9 +550,6 @@ class IfcImporter:
                 shape = tool.Loader.create_generic_shape(grid)
             grid_obj = self.create_product(grid, shape)
             grid_placement = self.get_element_matrix(grid)
-            if tool.Blender.get_addon_preferences().lock_grids_on_import:
-                grid_obj.lock_location = (True, True, True)
-                grid_obj.lock_rotation = (True, True, True)
             self.create_grid_axes(grid.UAxes, grid_obj, grid_placement)
             self.create_grid_axes(grid.VAxes, grid_obj, grid_placement)
             if grid.WAxes:
@@ -552,9 +560,6 @@ class IfcImporter:
             shape = tool.Loader.create_generic_shape(axis.AxisCurve)
             mesh = self.create_mesh(axis, shape)
             obj = bpy.data.objects.new(tool.Loader.get_name(axis), mesh)
-            if tool.Blender.get_addon_preferences().lock_grids_on_import:
-                obj.lock_location = (True, True, True)
-                obj.lock_rotation = (True, True, True)
             self.link_element(axis, obj)
             self.set_matrix_world(obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, grid_placement.copy()))
 
@@ -576,7 +581,10 @@ class IfcImporter:
                 mesh = self.meshes.get(mesh_name)
                 if mesh is None:
                     shape = tool.Loader.create_generic_shape(representation)
-                    if shape:
+                    # Skip elements without geometry - e.g. annotations with IfcTextLiterals.
+                    if shape and not shape.verts_buffer:
+                        pass
+                    elif shape:
                         mesh = self.create_mesh(element, shape)
                         tool.Loader.link_mesh(shape, mesh)
                         self.meshes[mesh_name] = mesh
@@ -585,7 +593,7 @@ class IfcImporter:
                 break
         obj = bpy.data.objects.new(tool.Loader.get_name(element), mesh)
         self.link_element(element, obj)
-        self.material_creator.create(element, obj, mesh)
+        self.material_creator.create(element, obj, mesh, False)
         self.type_products[element.GlobalId] = obj
 
     def create_native_elements(self):
@@ -711,13 +719,27 @@ class IfcImporter:
         products: set[ifcopenshell.entity_instance],
         settings: Optional[ifcopenshell.geom.main.settings] = None,
     ) -> set[ifcopenshell.entity_instance]:
+        checkpoint = time.time()
         results = set()
         if not products:
             return results
+
+        # For efficiency (iterator.initialize takes time), return early if there are no representations
+        if not any(product.Representation for product in products):
+            return results
+
         if tool.Loader.settings.should_use_cpu_multiprocessing:
-            iterator = ifcopenshell.geom.iterator(settings, self.file, multiprocessing.cpu_count(), include=products)
+            iterator = ifcopenshell.geom.iterator(
+                settings,
+                self.file,
+                multiprocessing.cpu_count(),
+                include=products,
+                geometry_library=self.ifc_import_settings.geometry_library,
+            )
         else:
-            iterator = ifcopenshell.geom.iterator(settings, self.file, include=products)
+            iterator = ifcopenshell.geom.iterator(
+                settings, self.file, include=products, geometry_library=self.ifc_import_settings.geometry_library
+            )
         if self.ifc_import_settings.should_cache:
             cache = IfcStore.get_cache()
             if cache:
@@ -725,7 +747,6 @@ class IfcImporter:
         valid_file = iterator.initialize()
         if not valid_file:
             return results
-        checkpoint = time.time()
         progress = 0
         total = len(products)
         start_progress = self.progress
@@ -841,7 +862,7 @@ class IfcImporter:
     def create_product(
         self,
         element: ifcopenshell.entity_instance,
-        shape: Optional[Any] = None,
+        shape: Optional[Union[ifcopenshell.geom.ShapeElementType, ifcopenshell.geom.ShapeType]] = None,
         mesh: Optional[OBJECT_DATA_TYPE] = None,
     ) -> Union[bpy.types.Object, None]:
         if element is None:
@@ -854,6 +875,10 @@ class IfcImporter:
 
         self.ifc_import_settings.logger.info("Creating object %s", element)
 
+        # Skip material creation if mesh already exists (e.g., when during drawing activation
+        # importing annotations that reuse their type meshes).
+        materials_updated = False
+
         if mesh:
             pass
         elif element.is_a("IfcAnnotation") and self.is_curve_annotation(element) and shape:
@@ -862,6 +887,7 @@ class IfcImporter:
         elif shape:
             mesh_name = tool.Loader.get_mesh_name_from_shape(shape.geometry)
             mesh = self.meshes.get(mesh_name)
+            materials_updated = bool(mesh)
             if mesh is None:
                 mesh = self.create_mesh(element, shape)
                 tool.Loader.link_mesh(shape, mesh)
@@ -877,12 +903,13 @@ class IfcImporter:
             mat = np.array(shape.transformation.matrix).reshape((4, 4), order="F")
             self.set_matrix_world(obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, mat))
             assert mesh  # Type checker.
-            self.material_creator.create(element, obj, mesh)
-        elif mesh:
+            if not materials_updated:
+                self.material_creator.create(element, obj, mesh, tool.Geometry.does_shape_has_openings(shape))
+        elif mesh:  # When does this occur?
             self.set_matrix_world(
                 obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, self.get_element_matrix(element))
             )
-            self.material_creator.create(element, obj, mesh)
+            self.material_creator.create(element, obj, mesh, False)
         elif hasattr(element, "ObjectPlacement"):
             self.set_matrix_world(
                 obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, self.get_element_matrix(element))
@@ -1129,11 +1156,7 @@ class IfcImporter:
         except:
             # Occurs when reloading a project
             pass
-        project_collection = bpy.context.view_layer.layer_collection.children[self.project["blender"].name]
-        if types_collection := project_collection.children.get("IfcTypeProduct"):
-            types_collection.hide_viewport = False
-            for obj in types_collection.collection.objects:  # turn off all objects inside Types collection.
-                obj.hide_set(True)
+        tool.Collector.reset_default_visibility()
 
     def clean_mesh(self):
         obj = None
@@ -1147,19 +1170,11 @@ class IfcImporter:
         if not last_obj:
             return
 
-        # Temporarily unhide types collection to make sure all objects will be cleaned
-        project_collection = bpy.context.view_layer.layer_collection.children[self.project["blender"].name]
-        if types_collection := project_collection.children.get("IfcTypeProduct"):
-            types_collection.hide_viewport = False
-            bpy.context.view_layer.objects.active = last_obj
-
         bpy.ops.object.editmode_toggle()
         bpy.ops.mesh.tris_convert_to_quads()
         bpy.ops.mesh.normals_make_consistent()
         bpy.ops.object.editmode_toggle()
 
-        if types_collection:
-            types_collection.hide_viewport = True
         bpy.context.view_layer.objects.active = last_obj
         IfcStore.edited_objs.clear()
 
@@ -1174,8 +1189,9 @@ class IfcImporter:
         tool.Loader.set_unit_scale(self.unit_scale)
 
     def set_units(self):
-        units = self.file.by_type("IfcUnitAssignment")[0]
-        for unit in units.Units:
+        if not (units := self.file.by_type("IfcUnitAssignment")):
+            return  # Geometry is optional in IFC
+        for unit in units[0].Units:
             if unit.is_a("IfcNamedUnit") and unit.UnitType == "LENGTHUNIT":
                 if unit.is_a("IfcSIUnit"):
                     bpy.context.scene.unit_settings.system = "METRIC"
@@ -1336,6 +1352,7 @@ class IfcImporter:
         self,
         element: ifcopenshell.entity_instance,
         shape: Union[ifcopenshell.geom.ShapeElementType, ifcopenshell.geom.ShapeType],
+        cartesian_point_offset=None,
     ) -> bpy.types.Mesh:
         try:
             if hasattr(shape, "geometry"):
@@ -1346,7 +1363,20 @@ class IfcImporter:
 
             mesh = bpy.data.meshes.new(tool.Loader.get_mesh_name_from_shape(geometry))
 
-            if geometry.verts and tool.Loader.is_point_far_away(
+            if cartesian_point_offset:
+                verts_array = np.array(geometry.verts)
+                offset = np.array([-cartesian_point_offset[0], -cartesian_point_offset[1], -cartesian_point_offset[2]])
+                offset_verts = verts_array + np.tile(offset, len(verts_array) // 3)
+                verts = offset_verts.tolist()
+
+                mesh["has_cartesian_point_offset"] = True
+                mesh["cartesian_point_offset"] = (
+                    f"{cartesian_point_offset[0]},{cartesian_point_offset[1]},{cartesian_point_offset[2]}"
+                )
+            elif cartesian_point_offset is False:
+                verts = geometry.verts
+                mesh["has_cartesian_point_offset"] = False
+            elif geometry.verts and tool.Loader.is_point_far_away(
                 (geometry.verts[0], geometry.verts[1], geometry.verts[2]), is_meters=True
             ):
                 # Shift geometry close to the origin based off that first vert it found
@@ -1361,40 +1391,7 @@ class IfcImporter:
                 verts = geometry.verts
                 mesh["has_cartesian_point_offset"] = False
 
-            if geometry.faces:
-                num_vertices = len(verts) // 3
-                total_faces = len(geometry.faces)
-                loop_start = range(0, total_faces, 3)
-                num_loops = total_faces // 3
-                loop_total = [3] * num_loops
-                num_vertex_indices = len(geometry.faces)
-
-                # See bug 3546
-                # ios_edges holds true edges that aren't triangulated.
-                #
-                # we do `.tolist()` because Blender can't assign `np.int32` to it's custom attributes
-                mesh["ios_edges"] = list(set(tuple(e) for e in ifcopenshell.util.shape.get_edges(geometry).tolist()))
-                mesh["ios_item_ids"] = ifcopenshell.util.shape.get_representation_item_ids(geometry).tolist()
-
-                mesh.vertices.add(num_vertices)
-                mesh.vertices.foreach_set("co", verts)
-                mesh.loops.add(num_vertex_indices)
-                mesh.loops.foreach_set("vertex_index", geometry.faces)
-                mesh.polygons.add(num_loops)
-                mesh.polygons.foreach_set("loop_start", loop_start)
-                mesh.polygons.foreach_set("loop_total", loop_total)
-                mesh.polygons.foreach_set("use_smooth", [0] * total_faces)
-                mesh.update()
-            else:
-                e = geometry.edges
-                v = verts
-                vertices = [[v[i], v[i + 1], v[i + 2]] for i in range(0, len(v), 3)]
-                edges = [[e[i], e[i + 1]] for i in range(0, len(e), 2)]
-                mesh.from_pydata(vertices, edges, [])
-
-            mesh["ios_materials"] = [m.instance_id() for m in geometry.materials]
-            mesh["ios_material_ids"] = geometry.material_ids
-            return mesh
+            return tool.Loader.convert_geometry_to_mesh(geometry, mesh, verts=verts)
         except:
             self.ifc_import_settings.logger.error("Could not create mesh for %s", element)
             import traceback
@@ -1459,13 +1456,17 @@ class IfcImporter:
             bpy.ops.object.select_all(action="DESELECT")
 
     def setup_arrays(self):
-        for element in self.file.by_type("IfcElement"):
-            pset_data = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
-            if not pset_data or not pset_data.get("Data", None):  # skip array children
+        for pset in self.file.by_type("IfcPropertySet"):
+            if pset.Name != "BBIM_Array":
                 continue
-            for i in range(len(json.loads(pset_data["Data"]))):
-                tool.Blender.Modifier.Array.set_children_lock_state(element, i, True)
-                tool.Blender.Modifier.Array.constrain_children_to_parent(element)
+            if not (data := ifcopenshell.util.element.get_property_definition(pset, "Data")):
+                continue
+            data = json.loads(data)
+            for rel in pset.DefinesOccurrence:
+                for element in rel.RelatedObjects:
+                    for i in range(len(data)):
+                        tool.Blender.Modifier.Array.set_children_lock_state(element, i, True)
+                        tool.Blender.Modifier.Array.constrain_children_to_parent(element)
 
 
 class IfcImportSettings:
@@ -1473,6 +1474,7 @@ class IfcImportSettings:
         self.logger: logging.Logger = None
         self.input_file = None
         self.diff_file = None
+        self.geometry_library = "opencascade"
         self.should_use_cpu_multiprocessing = True
         self.should_merge_materials_by_colour = False
         self.should_load_geometry = True
@@ -1508,6 +1510,7 @@ class IfcImportSettings:
             logger = logging.getLogger("ImportIFC")
         settings.logger = logger
         settings.diff_file = scene_diff.diff_json_file
+        settings.geometry_library = props.geometry_library
         settings.should_use_cpu_multiprocessing = props.should_use_cpu_multiprocessing
         settings.should_merge_materials_by_colour = props.should_merge_materials_by_colour
         settings.should_load_geometry = props.should_load_geometry

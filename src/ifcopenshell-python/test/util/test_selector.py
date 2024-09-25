@@ -28,6 +28,7 @@ import ifcopenshell.api.material
 import ifcopenshell.api.geometry
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.group
+import ifcopenshell.api.sequence
 import ifcopenshell.util.selector as subject
 import ifcopenshell.util.placement
 import ifcopenshell.util.pset
@@ -352,3 +353,53 @@ class TestSetElementValue(test.bootstrap.IFC4):
         layer.Material = material
         subject.set_element_value(self.file, layer, "Material.Name", "Foo")
         assert material.Name == "Foo"
+
+
+class TestSetElementValuePredefinedType(test.bootstrap.IFC4):
+    def test_setting_an_element_predefined_type(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWindow")
+        subject.set_element_value(self.file, element, "predefined_type", "LIGHTDOME")
+        assert element.PredefinedType == "LIGHTDOME"
+        assert element.ObjectType == None
+
+    def test_setting_an_element_predefined_type_to_none(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWindow")
+        subject.set_element_value(self.file, element, "predefined_type", None)
+        assert element.PredefinedType == None
+        assert element.ObjectType == None
+
+    def test_setting_an_element_userdefined_type(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWindow")
+        subject.set_element_value(self.file, element, "predefined_type", "FOOBAR")
+        assert element.PredefinedType == "USERDEFINED"
+        assert element.ObjectType == "FOOBAR"
+
+    def test_setting_an_element_inherited_predefined_type(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWindow")
+        element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWindowType")
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element], relating_type=element_type)
+        subject.set_element_value(self.file, element, "predefined_type", "LIGHTDOME")
+        assert element_type.PredefinedType == "LIGHTDOME"
+        assert element_type.ElementType == None
+        assert element.PredefinedType == None
+        assert element.ObjectType == None
+
+    def test_setting_an_element_inherited_predefined_type_to_none(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWindow")
+        element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWindowType")
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element], relating_type=element_type)
+        subject.set_element_value(self.file, element, "predefined_type", None)
+        assert element_type.PredefinedType == "NOTDEFINED"
+        assert element_type.ElementType == None
+        assert element.PredefinedType == None
+        assert element.ObjectType == None
+
+    def test_setting_an_element_inherited_userdefined_type(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWindow")
+        element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWindowType")
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element], relating_type=element_type)
+        subject.set_element_value(self.file, element, "predefined_type", "FOOBAR")
+        assert element_type.PredefinedType == "USERDEFINED"
+        assert element_type.ElementType == "FOOBAR"
+        assert element.PredefinedType == None
+        assert element.ObjectType == None

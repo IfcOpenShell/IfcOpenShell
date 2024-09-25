@@ -390,7 +390,7 @@ class Geometry:
     def delete_ifc_object(cls, obj): pass
     def does_representation_id_exist(cls, representation_id): pass
     def duplicate_object_data(cls, obj): pass
-    def get_cartesian_point_coordinate_offset(cls, obj): pass
+    def get_cartesian_point_offset(cls, obj): pass
     def get_element_type(cls, element): pass
     def get_elements_of_type(cls, type): pass
     def get_ifc_representation_class(cls, element, representation): pass
@@ -465,6 +465,7 @@ class Georeference:
 class Ifc:
     def get(cls): pass
     def get_entity(cls, obj): pass
+    def get_entity_by_id(cls, element_id): pass
     def get_object(cls, entity): pass
     def get_path(cls): pass
     def get_schema(cls): pass
@@ -510,6 +511,7 @@ class Material:
     def enable_editing_materials(cls): pass
     def ensure_material_assigned(cls, elements, material_type, material): pass
     def ensure_material_unassigned(cls, elements): pass
+    def ensure_new_material_set_is_valid(cls, material): pass
     def get_active_material_item(cls): pass
     def get_active_material_type(cls): pass
     def get_default_material(cls): pass
@@ -577,6 +579,16 @@ class Nest:
 @interface
 class Patch:
     def run_migrate_patch(cls, infile, outfile, schema): pass
+
+
+@interface
+class Polyline:
+    def create_input_ui(cls, init_z=False, init_area=False):  pass
+    def create_tool_state(cls): pass
+    def calculate_distance_and_angle(cls, context, input_ui, tool_state): pass
+    def calculate_area(cls, context, input_ui): pass
+    def calculate_x_y_and_z(cls, context, input_ui, tool_state): pass
+    def validate_input(cls, input_number, input_type): pass
 
 
 @interface
@@ -650,6 +662,7 @@ class Pset:
     def get_prop_template_primitive_type(cls, prop_template): pass
     def get_pset_name(cls, obj, obj_type, pset_type): pass
     def get_pset_template(cls, name): pass
+    def get_selected_pset_elements(cls, obj_name, obj_type, pset): pass
     def import_enumerated_value_from_template(cls, prop_template, data, props): pass
     def import_pset_from_existing(cls, pset, props): pass
     def import_pset_from_template(cls, pset_template, pset, props): pass
@@ -665,9 +678,11 @@ class Qto:
     def get_rounded_value(cls, new_quantity): pass
     def set_qto_result(cls, result): pass
 
+
 @interface
 class Raycast:
     pass
+
 
 @interface
 class Resource:
@@ -942,9 +957,11 @@ class Spatial:
 class Covering:
     def get_z_from_ceiling_height(cls): pass
 
+
 @interface
 class Snap:
     pass
+
 
 @interface
 class Structural:

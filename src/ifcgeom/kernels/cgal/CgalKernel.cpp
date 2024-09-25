@@ -153,6 +153,12 @@ CGAL::Nef_polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_nef_polyhe
 #endif
 
 bool CgalKernel::convert(const taxonomy::shell::ptr l, cgal_shape_t& shape) {
+	for (auto& f : l->children) {
+		if (f->basis && f->basis->kind() != taxonomy::PLANE) {
+			Logger::Error("Non-planar faces not supported at the moment");
+			return false;
+		}
+	}
 	if (false && l->children.size() > 100) {
 		static double inf = 1.e9; //  std::numeric_limits<double>::infinity();
 		std::pair<Eigen::Vector3d, Eigen::Vector3d> minmax(
@@ -784,12 +790,16 @@ bool CgalKernel::convert_impl(const taxonomy::shell::ptr shell, ConversionResult
 }
 
 bool CgalKernel::convert_impl(const taxonomy::solid::ptr solid, ConversionResults& results) {
+	if (solid->children.size() > 1) {
+		Logger::Error("Multiple shells in solid not supported at the moment");
+		return false;
+	}
 	cgal_shape_t shape;
 	if (solid->children.empty()) {
 		return false;
 	}
 	// @todo
-	if (!convert((taxonomy::shell::ptr)solid->children[0], shape)) {
+	if (!convert(solid->children[0], shape)) {
 		return false;
 	}
 	if (shape.size_of_facets() == 0) {

@@ -52,6 +52,10 @@ class IFC_PARSE_API HeaderEntity {
         return data_.size();
     }
 
+    AttributeValue getArgument(size_t index) const {
+        return data_.get_attribute_value(index);
+    }
+
     std::string toString(bool upper = false) const {
         std::stringstream stream;
         stream << datatype_;

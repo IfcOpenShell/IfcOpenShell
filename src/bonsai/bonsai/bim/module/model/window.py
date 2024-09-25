@@ -36,7 +36,8 @@ from bmesh.types import BMVert
 from mathutils import Vector
 
 
-def update_window_modifier_representation(context, obj):
+def update_window_modifier_representation(context):
+    obj = context.active_object
     element = tool.Ifc.get_entity(obj)
     props = obj.BIMWindowProperties
     ifc_file = tool.Ifc.get()
@@ -426,11 +427,11 @@ class BIM_OT_add_window(bpy.types.Operator, tool.Ifc.Operator):
 class AddWindow(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_window"
     bl_label = "Add Window"
+    bl_description = "Add Bonsai parametric window to the active IFC element"
     bl_options = {"REGISTER"}
-    obj: bpy.props.StringProperty()
 
     def _execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
+        obj = context.active_object
         element = tool.Ifc.get_entity(obj)
         props = obj.BIMWindowProperties
 
@@ -450,7 +451,7 @@ class AddWindow(bpy.types.Operator, tool.Ifc.Operator):
             pset=pset,
             properties={"Data": tool.Ifc.get().createIfcText(json.dumps(window_data, default=list))},
         )
-        update_window_modifier_representation(context, obj)
+        update_window_modifier_representation(context)
         return {"FINISHED"}
 
 
@@ -502,7 +503,7 @@ class FinishEditingWindow(bpy.types.Operator, tool.Ifc.Operator):
 
         props.is_editing = False
 
-        update_window_modifier_representation(context, obj)
+        update_window_modifier_representation(context)
 
         pset = tool.Pset.get_element_pset(element, "BBIM_Window")
         window_data = tool.Ifc.get().createIfcText(json.dumps(window_data, default=list))

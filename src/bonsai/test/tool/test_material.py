@@ -19,6 +19,9 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.material
+import ifcopenshell.api.pset
+import ifcopenshell.api.style
 import bonsai.core.tool
 import bonsai.tool as tool
 from test.bim.bootstrap import NewFile
@@ -150,3 +153,52 @@ class TestIsMaterialUsedInSets(NewFile):
         material_set.MaterialLayers = [material_set_item]
         material_set_item.Material = material
         assert subject.is_material_used_in_sets(material) is True
+
+
+class TestEnsureNewMaterialSetIsValid(NewFile):
+    def test_material_constituent_set(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        material_set = ifc.create_entity("IfcMaterialConstituentSet")
+        subject.ensure_new_material_set_is_valid(material_set)
+        assert len(constituents := material_set.MaterialConstituents) == 1
+        assert constituents[0].Material
+
+    def test_material_layer_set(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        material_set = ifc.create_entity("IfcMaterialLayerSet")
+        subject.ensure_new_material_set_is_valid(material_set)
+        assert len(layers := material_set.MaterialLayers) == 1
+        assert layers[0].Material
+
+    def test_material_profile_set(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        material_set = ifc.create_entity("IfcMaterialProfileSet")
+        subject.ensure_new_material_set_is_valid(material_set)
+        assert len(profiles := material_set.MaterialProfiles) == 1
+        assert profiles[0].Profile
+
+    def test_material_list(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        material_set = ifc.create_entity("IfcMaterialList")
+        subject.ensure_new_material_set_is_valid(material_set)
+        assert len(material_set.Materials) == 1
+
+
+class TestPurgeUnusedMaterials(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        material = ifcopenshell.api.material.add_material(ifc)
+        # Add pset.
+        ifcopenshell.api.pset.add_pset(ifc, material, "Foo")
+        # Add style.
+        style = ifcopenshell.api.style.add_style(ifc)
+        context = ifc.create_entity("IfcRepresentationContext")
+        ifcopenshell.api.style.assign_material_style(ifc, material, style, context)
+
+        assert subject.purge_unused_materials() == 1
+        assert not ifc.by_type("IfcMaterial")

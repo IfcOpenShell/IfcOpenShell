@@ -23,7 +23,10 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: PyPy",
     "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
 ]
-dependencies = ["requests"]
+dependencies = [
+    "requests",
+    "typing-extensions",
+]
 
 [project.optional-dependencies]
 dev = [

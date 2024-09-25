@@ -40,6 +40,7 @@ def add_material(
 
 def add_material_set(ifc: tool.Ifc, material: tool.Material, set_type: str) -> ifcopenshell.entity_instance:
     ifc_material = ifc.run("material.add_material_set", name="Unnamed", set_type=set_type)
+    material.ensure_new_material_set_is_valid(ifc_material)
     if material.is_editing_materials():
         material.import_material_definitions(material.get_active_material_type())
     return ifc_material

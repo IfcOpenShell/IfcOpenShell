@@ -107,6 +107,9 @@ class EditAttributes(bpy.types.Operator, tool.Ifc.Operator):
 
         attributes = bonsai.bim.helper.export_attributes(props.attributes, callback=callback)
         ifcopenshell.api.run("attribute.edit_attributes", self.file, product=product, attributes=attributes)
+
+        if (name := tool.Loader.get_name(product)) and obj.name != name:
+            obj.name = name
         bpy.ops.bim.disable_editing_attributes(obj=obj.name)
         return {"FINISHED"}
 

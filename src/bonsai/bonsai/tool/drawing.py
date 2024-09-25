@@ -387,12 +387,8 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def ensure_unique_identification(cls, identification: str) -> str:
-        if tool.Ifc.get_schema() == "IFC2X3":
-            ids = [d.DocumentId for d in tool.Ifc.get().by_type("IfcDocumentInformation") if d.Scope == "DOCUMENTATION"]
-        else:
-            ids = [
-                d.Identification for d in tool.Ifc.get().by_type("IfcDocumentInformation") if d.Scope == "DOCUMENTATION"
-            ]
+        attr = "DocumentId" if tool.Ifc.get_schema() == "IFC2X3" else "Identification"
+        ids = [getattr(d, attr) for d in tool.Ifc.get().by_type("IfcDocumentInformation") if d.Scope == "SHEET"]
         while identification in ids:
             identification += "-X"
         return identification
@@ -568,7 +564,7 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def generate_sheet_identification(cls) -> str:
-        number = len([d for d in tool.Ifc.get().by_type("IfcDocumentInformation") if d.Scope == "DOCUMENTATION"])
+        number = len([d for d in tool.Ifc.get().by_type("IfcDocumentInformation") if d.Scope == "SHEET"])
         return "A" + str(number).zfill(2)
 
     @classmethod
@@ -695,8 +691,8 @@ class Drawing(bonsai.core.tool.Drawing):
         shape = ifcopenshell.geom.create_shape(settings, drawing)
         camera = tool.Loader.create_camera(drawing, representation, shape)
         tool.Loader.link_mesh(shape, camera)
-
         obj = bpy.data.objects.new(tool.Loader.get_name(drawing), camera)
+
         cls.import_camera_props(drawing, camera)
         tool.Ifc.link(drawing, obj)
 
@@ -709,6 +705,25 @@ class Drawing(bonsai.core.tool.Drawing):
         tool.Geometry.record_object_position(obj)
         tool.Collector.assign(obj)
 
+        return obj
+
+    @classmethod
+    def import_temporary_drawing_camera(cls, drawing: ifcopenshell.entity_instance) -> bpy.types.Object:
+        settings = ifcopenshell.geom.settings()
+
+        representation = ifcopenshell.util.representation.get_representation(drawing, "Model", "Body", "MODEL_VIEW")
+        assert representation
+
+        shape = ifcopenshell.geom.create_shape(settings, drawing)
+        camera = tool.Loader.create_camera(drawing, representation, shape)
+        if obj := bpy.data.objects.get("TemporaryDrawingCamera"):
+            obj.data = camera
+        else:
+            obj = bpy.data.objects.new(tool.Loader.get_name(drawing), camera)
+        mat = Matrix(ifcopenshell.util.shape.get_shape_matrix(shape))
+        obj.matrix_world = mat
+        if cls.get_drawing_target_view(drawing) == "REFLECTED_PLAN_VIEW":
+            obj.matrix_world[1][1] *= -1
         return obj
 
     @classmethod
@@ -850,6 +865,15 @@ class Drawing(bonsai.core.tool.Drawing):
     def get_active_sheet(cls, context: bpy.types.Context) -> bpy.types.PropertyGroup:
         props = context.scene.DocProperties
         return next(s for s in props.sheets[: props.active_sheet_index + 1][::-1] if s.is_sheet)
+
+    @classmethod
+    def get_active_drawing_item(cls) -> Union[bpy.types.PropertyGroup, None]:
+        props = bpy.context.scene.DocProperties
+        drawing_index = props.active_drawing_index
+        if len(props.drawings) > drawing_index >= 0:
+            item = props.drawings[drawing_index]
+            if item.is_drawing:
+                return item
 
     @classmethod
     def import_text_attributes(cls, obj: bpy.types.Object) -> None:
@@ -1669,20 +1693,17 @@ class Drawing(bonsai.core.tool.Drawing):
             elements = {e for e in (elements & base_elements) if e.is_a() != "IfcSpace"}
 
         updated_set = set()
-
         for i in elements:
             # exclude annotations to avoid including annotations from other drawings
             if not i.is_a("IfcAnnotation"):
                 updated_set.add(i)
                 # add aggregate too, if element is host by one
-                if i.Decomposes:
-                    aggregate = i.Decomposes[0].RelatingObject
+                if decomposes := i.Decomposes:
+                    aggregate = decomposes[0].RelatingObject
                     # remove IfcProject for class iterator. See https://github.com/IfcOpenShell/IfcOpenShell/issues/4361#issuecomment-2081223615
-                    if not aggregate.is_a("IfcProject"):
+                    if aggregate.is_a("IfcProduct"):
                         updated_set.add(aggregate)
-
-        # After the iteration is complete, update elements with updated set
-        elements.update(updated_set)
+        elements = updated_set
 
         # add annotations from the current drawing
         annotations = tool.Drawing.get_group_elements(tool.Drawing.get_drawing_group(drawing))
@@ -1733,13 +1754,20 @@ class Drawing(bonsai.core.tool.Drawing):
         element = tool.Ifc.get_entity(obj)
         product = cls.get_assigned_product(element)
         if product:
-            tool.Ifc.get_object(product).select_set(True)
+            product_obj = tool.Ifc.get_object(product)
+            product_obj.select_set(True)
+            context.view_layer.objects.active = product_obj
 
     @classmethod
     def is_drawing_active(cls) -> bool:
         camera = bpy.context.scene.camera
         area = tool.Blender.get_view3d_area()
-        return camera and camera.type == "CAMERA" and camera.BIMObjectProperties.ifc_definition_id and area
+        return bool(
+            camera is not None
+            and camera.type == "CAMERA"
+            and camera.BIMObjectProperties.ifc_definition_id
+            and area is not None
+        )
 
     @classmethod
     def is_camera_orthographic(cls) -> bool:
@@ -1782,6 +1810,7 @@ class Drawing(bonsai.core.tool.Drawing):
     @classmethod
     def activate_drawing(cls, camera: bpy.types.Object) -> None:
         selected_objects_before = bpy.context.selected_objects
+        non_ifc_objects_hide = {o: o.hide_get() for o in bpy.context.view_layer.objects if not tool.Ifc.get_entity(o)}
 
         # Sync viewport objects visibility with selectors from EPset_Drawing/Include and /Exclude
         drawing = tool.Ifc.get_entity(camera)
@@ -1831,6 +1860,8 @@ class Drawing(bonsai.core.tool.Drawing):
         element_obj_names = set()
         for element in filtered_elements:
             obj = tool.Ifc.get_object(element)
+            if not obj:
+                continue
             current_representation = tool.Geometry.get_active_representation(obj)
             if current_representation:
                 subcontext = current_representation.ContextOfItems
@@ -1862,11 +1893,12 @@ class Drawing(bonsai.core.tool.Drawing):
                 element_obj_names.add(obj.name)
 
         # Note that render visibility is only set on drawing generation time for speed.
-        [
-            obj.hide_set(False)  # Show the object
-            for obj in bpy.context.view_layer.objects
-            if obj.name in element_obj_names or not tool.Ifc.get_entity(obj)
-        ]
+        for obj in bpy.context.view_layer.objects:
+            if obj.name in element_obj_names:
+                obj.hide_set(False)  # Show the object
+                continue
+            if (hide := non_ifc_objects_hide.get(obj)) is not None:
+                obj.hide_set(hide)
 
         cls.import_camera_props(drawing, camera.data)
 
@@ -1876,7 +1908,7 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def get_elements_in_camera_view(
-        cls, camera: bpy.types.Object, objs: list[ifcopenshell.entity_instance]
+        cls, camera: bpy.types.Object, objs: list[bpy.types.Object]
     ) -> set[ifcopenshell.entity_instance]:
         props = camera.data.BIMCameraProperties
         x = props.width
@@ -1887,7 +1919,8 @@ class Drawing(bonsai.core.tool.Drawing):
             [
                 tool.Ifc.get_entity(o)
                 for o in objs
-                if cls.is_in_camera_view(o, camera_inverse_matrix, x, y, camera.data.clip_start, camera.data.clip_end)
+                if o
+                and cls.is_in_camera_view(o, camera_inverse_matrix, x, y, camera.data.clip_start, camera.data.clip_end)
                 and tool.Ifc.get_entity(o)
             ]
         )

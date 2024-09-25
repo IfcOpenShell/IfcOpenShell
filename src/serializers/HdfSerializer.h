@@ -47,6 +47,7 @@ private:
 	static const H5std_string DATASET_NAME_EDGES;
 	static const H5std_string DATASET_NAME_MATERIAL_IDS;
 	static const H5std_string DATASET_NAME_ITEM_IDS;
+	static const H5std_string DATASET_NAME_EDGES_ITEM_IDS;
 	static const H5std_string DATASET_NAME_MATERIALS;
 	static const H5std_string DATASET_NAME_OCCT;
 	static const H5std_string DATASET_NAME_PLACEMENT;	

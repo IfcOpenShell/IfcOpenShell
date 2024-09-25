@@ -66,7 +66,6 @@ class FilledOpeningGenerator:
         target: Optional[Vector] = None,
     ) -> None:
         props = bpy.context.scene.BIMModelProperties
-        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         opening_thickness_si = 0.0
 
         filling = tool.Ifc.get_entity(filling_obj)
@@ -307,11 +306,23 @@ class FilledOpeningGenerator:
                 get_curve_2d_from_3d(profile),
                 magnitude=thickness / unit_scale,
                 position=Vector([0.0, -thickness * 0.5 / unit_scale, 0.0]),
-                **shape_builder.extrude_kwargs("Y")
+                **shape_builder.extrude_kwargs("Y"),
             )
             return shape_builder.get_representation(context, [extrusion])
 
-        x, y, z = filling_obj.dimensions
+        if (
+            filling_rep := tool.Geometry.get_active_representation(filling_obj)
+        ) and filling_rep.ContextOfItems == context:
+            x, y, z = filling_obj.dimensions
+        else:
+            # The filling_obj's mesh data is not the body geometry.
+            settings = ifcopenshell.geom.settings()
+            filling_element = tool.Ifc.get_entity(filling_obj)
+            filling_body = ifcopenshell.util.representation.get_representation(filling_element, context)
+            filling_geometry = ifcopenshell.geom.create_shape(settings, filling_body)
+            x = ifcopenshell.util.shape.get_x(filling_geometry)
+            y = ifcopenshell.util.shape.get_y(filling_geometry)
+            z = ifcopenshell.util.shape.get_z(filling_geometry)
         opening_position = Vector([0.0, -thickness * 0.5 / unit_scale, 0.0])
         opening_size = Vector([x, z]) / unit_scale
 
@@ -340,7 +351,7 @@ class FilledOpeningGenerator:
             shape_builder.rectangle(size=opening_size),
             magnitude=thickness / unit_scale,
             position=opening_position,
-            **shape_builder.extrude_kwargs("Y")
+            **shape_builder.extrude_kwargs("Y"),
         )
 
         return shape_builder.get_representation(context, [extrusion])
@@ -432,7 +443,8 @@ class FlipFill(bpy.types.Operator, tool.Ifc.Operator):
 
 class AddPotentialOpening(Operator, AddObjectHelper):
     bl_idname = "bim.add_potential_opening"
-    bl_label = "Add Potential Opening"
+    bl_label = "Add Opening"
+    bl_description = "Add an Opening object which can be applied on an Element"
     bl_options = {"REGISTER", "UNDO"}
     x: FloatProperty(name="X", default=0.5)
     y: FloatProperty(name="Y", default=0.5)
@@ -727,7 +739,8 @@ class RemoveBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
 
 class ShowOpenings(Operator, tool.Ifc.Operator):
     bl_idname = "bim.show_openings"
-    bl_label = "Show Openings"
+    bl_label = "Show"
+    bl_description = "Show Openings"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
@@ -754,7 +767,8 @@ class ShowOpenings(Operator, tool.Ifc.Operator):
 
 class HideOpenings(Operator, tool.Ifc.Operator):
     bl_idname = "bim.hide_openings"
-    bl_label = "Hide Openings"
+    bl_label = "Hide"
+    bl_description = "Hide Openings"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
@@ -780,7 +794,8 @@ class HideOpenings(Operator, tool.Ifc.Operator):
 
 class EditOpenings(Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_openings"
-    bl_label = "Edit Openings"
+    bl_label = "Edit"
+    bl_description = "Edit Openings"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
@@ -844,8 +859,8 @@ class EditOpenings(Operator, tool.Ifc.Operator):
 class CloneOpening(Operator, tool.Ifc.Operator):
     bl_idname = "bim.clone_opening"
     bl_label = "Clone Opening"
+    bl_description = "Clone the selected Opening and assign to the selected Element"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Create and assign to the selected element the selected opening and assign to it the same representation and object placement"
 
     def _execute(self, context):
         objects = bpy.context.selected_objects

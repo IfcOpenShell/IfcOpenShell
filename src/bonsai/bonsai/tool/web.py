@@ -16,11 +16,16 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from ifcopenshell.util.classification import get_classification_data, get_references
+from ifcopenshell.util.selector import filter_elements
+import ifcopenshell.util.cost
 import bpy
 from bonsai.bim.module.web.data import WebData
+from ifcopenshell.util.element import get_psets, get_type, has_property
 import bonsai.core.tool
 import bonsai.tool as tool
 import ifcopenshell.api.sequence
+import ifcopenshell.api.cost
 from typing import Any, Dict, Optional
 import time
 import socket
@@ -36,6 +41,10 @@ import queue
 import json
 from time import sleep
 from pathlib import Path
+import bonsai.core.sequence
+import bonsai.core.cost
+from ifc5d.ifc2json import ifc5D2json
+from bonsai.bim.ifc import IfcStore
 
 sio = None
 ws_process = None
@@ -310,6 +319,8 @@ class Web(bonsai.core.tool.Web):
             elif operator["sourcePage"] == "demo":
                 message = operator["operator"]["message"]
                 print(f"Message from demo page: {message}")
+            elif operator["sourcePage"] == "cost":
+                cls.handle_cost_operator(operator["operator"])
         return 1.0
 
     @classmethod
@@ -329,6 +340,353 @@ class Web(bonsai.core.tool.Web):
             obj.select_set(True)
 
     @classmethod
+    def handle_cost_operator(cls, operator_data: dict) -> None:
+        """
+        this method handles the Cost page operators.
+
+        Args:
+            operator_data (dict): A dictionary containing the operator data.
+        """
+
+        ifc_file = tool.Ifc.get()
+        if operator_data["type"] == "getPredefinedTypes":
+            cls.send_webui_data(
+                data=ifcopenshell.util.cost.get_cost_schedule_types(ifc_file),
+                data_key="predefined_types",
+                event="predefined_types",
+            )
+        if operator_data["type"] == "addCostSchedule":
+            bonsai.core.cost.add_cost_schedule(
+                tool.Ifc, name=operator_data["name"], predefined_type=operator_data["predefinedType"]
+            )
+            cost_schedules_json = [cs.get_info(recursive=True) for cs in ifc_file.by_type("IfcCostSchedule")]
+            currency = tool.Cost.currency()
+            cls.send_webui_data(
+                data={"cost_schedules": cost_schedules_json, "currency": currency},
+                data_key="cost_schedules",
+                event="cost_schedules",
+            )
+        if operator_data["type"] == "getCostSchedules":
+            cost_schedules_json = [cs.get_info(recursive=True) for cs in ifc_file.by_type("IfcCostSchedule")]
+            currency = tool.Cost.currency()
+            cls.send_webui_data(
+                data={"cost_schedules": cost_schedules_json, "currency": currency},
+                data_key="cost_schedules",
+                event="cost_schedules",
+            )
+        if operator_data["type"] == "loadCostSchedule":
+            cost_schedule = ifc_file.by_id(operator_data["costScheduleId"])
+            cls.load_cost_schedule_web_ui(cost_schedule)
+        if operator_data["type"] == "selectAssignedElements":
+            cost_item = tool.Ifc.get().by_id(operator_data["costItemId"])
+            products = tool.Cost.get_cost_item_products(cost_item, is_deep=True)
+            tool.Spatial.select_products(products, unhide=True)
+        if operator_data["type"] == "addSummaryCostItem":
+            cost_schedule = ifc_file.by_id(operator_data["costScheduleId"])
+            tool.Ifc.run("cost.add_cost_item", cost_schedule=cost_schedule)
+            cls.load_cost_schedule_web_ui(cost_schedule)
+        if operator_data["type"] == "addCostItem":
+            if not operator_data["costItemId"]:
+                return
+            cost_item = tool.Ifc.get().by_id(operator_data["costItemId"])
+            tool.Ifc.run("cost.add_cost_item", cost_item=cost_item)
+            cost_schedule = tool.Cost.get_cost_schedule(cost_item=cost_item)
+            cls.load_cost_schedule_web_ui(cost_schedule)
+        if operator_data["type"] == "deleteCostItem":
+            cost_item = tool.Ifc.get().by_id(operator_data["costItemId"])
+            cost_schedule = tool.Cost.get_cost_schedule(cost_item=cost_item)
+            tool.Ifc.run("cost.remove_cost_item", cost_item=cost_item)
+            cls.load_cost_schedule_web_ui(cost_schedule)
+        if operator_data["type"] == "duplicateCostItem":
+            cost_item = tool.Ifc.get().by_id(operator_data["costItemId"])
+            cost_schedule = tool.Cost.get_cost_schedule(cost_item=cost_item)
+            tool.Ifc.run("cost.copy_cost_item", cost_item=cost_item)
+            cls.load_cost_schedule_web_ui(cost_schedule)
+        if operator_data["type"] == "editCostItemName":
+            cost_item = tool.Ifc.get().by_id(operator_data["costItemId"])
+            tool.Ifc.run("cost.edit_cost_item", cost_item=cost_item, attributes={"Name": operator_data["name"]})
+        if operator_data["type"] == "enableEditingCostValues":
+            cost_item = tool.Ifc.get().by_id(operator_data["costItemId"])
+            cost_values = ifcopenshell.util.cost.get_cost_values(cost_item)
+            cls.send_webui_data(
+                data={"cost_values": cost_values, "cost_item_id": operator_data["costItemId"]},
+                data_key="cost_values",
+                event="cost_values",
+            )
+        if operator_data["type"] == "addCostValue":
+            value = ifcopenshell.api.cost.add_cost_value(
+                ifc_file,
+                parent=ifc_file.by_id(operator_data["costItemId"]),
+            )
+            cls.send_webui_data(
+                data={"cost_value_id": value.id(), "cost_item_id": operator_data["costItemId"]},
+                data_key="cost_value",
+                event="cost_value",
+            )
+        if operator_data["type"] == "addSumCostValue":
+            cost_item = ifc_file.by_id(operator_data["costItemId"])
+            value = tool.Ifc.run("cost.add_cost_value", parent=cost_item)
+            tool.Ifc.run("cost.edit_cost_value", cost_value=value, attributes={"Category": "*"})
+            cost_schedule = tool.Cost.get_cost_schedule(cost_item=cost_item)
+            cls.load_cost_schedule_web_ui(cost_schedule)
+
+        if operator_data["type"] == "deleteCostValue":
+            cost_item = ifc_file.by_id(operator_data["costItemId"])
+            cost_value = ifc_file.by_id(operator_data["costValueId"])
+            tool.Ifc.run("cost.remove_cost_value", parent=cost_item, cost_value=cost_value)
+            cost_schedule = tool.Cost.get_cost_schedule(cost_item=cost_item)
+            cls.load_cost_schedule_web_ui(cost_schedule)
+        if operator_data["type"] == "editCostValues":
+            cost_item_id = operator_data["costItemId"]
+            cost_item = ifc_file.by_id(cost_item_id)
+            cost_schedule = tool.Cost.get_cost_schedule(cost_item=cost_item)
+            for value_data in operator_data["costValues"] or []:
+                value = ifc_file.by_id(value_data["id"])
+                attributes = {}
+                if value_data["costType"] == "FIXED":
+                    attributes = {"AppliedValue": value_data["appliedValue"], "Category": None}
+                elif value_data["costType"] == "CATEGORY":
+                    attributes = {
+                        "AppliedValue": value_data["appliedValue"],
+                        "Category": value_data["costCategory"],
+                    }
+                elif value_data["costType"] == "SUM":
+                    attributes = {"Category": "*"}
+                if value_data["unitBasisValue"]:
+                    attributes["UnitBasis"] = {
+                        "ValueComponent": value_data["unitBasisValue"],
+                        "UnitComponent": ifc_file.by_id(value_data["unitComponent"]),
+                    }
+                ifcopenshell.api.cost.edit_cost_value(file=ifc_file, cost_value=value, attributes=attributes)
+            cls.load_cost_schedule_web_ui(cost_schedule)
+        if operator_data["type"] == "addProductAssignments":
+            prop_name = operator_data["propName"]
+            if prop_name == "count":
+                prop_name = ""
+            bonsai.core.cost.assign_cost_item_quantity(
+                tool.Ifc,
+                tool.Cost,
+                cost_item=ifc_file.by_id(operator_data["costItemId"]),
+                related_object_type="PRODUCT",
+                prop_name=prop_name,
+            )
+            cost_schedule = tool.Cost.get_cost_schedule(cost_item=tool.Ifc.get().by_id(operator_data["costItemId"]))
+            cls.load_cost_schedule_web_ui(cost_schedule)
+        if operator_data["type"] == "enableEditingQuantities":
+            cost_item_id = operator_data["costItemId"]
+            cost_item = ifc_file.by_id(cost_item_id)
+            cls.load_cost_item_quantities_ui(cost_item)
+        if operator_data["type"] == "AddCostItemQuantity":
+            cost_item_id = operator_data["costItemId"]
+            cost_item = ifc_file.by_id(cost_item_id)
+            cost_schedule = tool.Cost.get_cost_schedule(cost_item)
+            tool.Ifc.run("cost.add_cost_item_quantity", cost_item=cost_item, ifc_class=operator_data["ifcClass"])
+            cls.load_cost_schedule_web_ui(cost_schedule)
+            cls.load_cost_item_quantities_ui(cost_item)
+        if operator_data["type"] == "editCostItemQuantity":
+            cost_item_id = operator_data["costItemId"]
+            cost_item = ifc_file.by_id(cost_item_id)
+            cost_schedule = tool.Cost.get_cost_schedule(cost_item)
+            physical_quantity = tool.Ifc.get().by_id(operator_data["quantityId"])
+            tool.Ifc.run(
+                "cost.edit_cost_item_quantity",
+                physical_quantity=physical_quantity,
+                attributes=operator_data["attributes"],
+            )
+            cls.load_cost_schedule_web_ui(cost_schedule)
+            cls.load_cost_item_quantities_ui(cost_item)
+        if operator_data["type"] == "deleteCostItemQuantity":
+            cost_item = ifc_file.by_id(operator_data["costItemId"])
+            physical_quantity = ifc_file.by_id(operator_data["quantityId"])
+            tool.Ifc.run("cost.remove_cost_item_quantity", cost_item=cost_item, physical_quantity=physical_quantity)
+            cost_schedule = tool.Cost.get_cost_schedule(cost_item)
+            cls.load_cost_schedule_web_ui(cost_schedule)
+            cls.load_cost_item_quantities_ui(cost_item)
+        if operator_data["type"] == "enableEditingClassification":
+            cost_item = ifc_file.by_id(operator_data["costItemId"])
+            cost_classifications = []
+            for reference in get_references(cost_item):
+                cost_classification_data = reference.get_info()
+                del cost_classification_data["ReferencedSource"]
+                cost_classifications.append(cost_classification_data)
+            classification_data, classification_name = get_classification_data(IfcStore.classification_file)
+            data = {
+                "classification_data": classification_data,
+                "classification_name": classification_name,
+                "cost_item_id": cost_item.id(),
+                "cost_classifications": cost_classifications,
+            }
+            cls.send_webui_data(
+                data=data,
+                data_key="classification",
+                event="classification",
+            )
+        if operator_data["type"] == "removeClassificationReference":
+            cost_item = ifc_file.by_id(operator_data["costItemId"])
+            cost_schedule = tool.Cost.get_cost_schedule(cost_item)
+            reference = ifc_file.by_id(operator_data["classificationId"])
+            tool.Ifc.run("classification.remove_reference", products=[cost_item], reference=reference)
+            cls.load_cost_schedule_web_ui(cost_schedule)
+        if operator_data["type"] == "addClassificationReference":
+            cost_item = ifc_file.by_id(operator_data["costItemId"])
+            cost_schedule = tool.Cost.get_cost_schedule(cost_item)
+            classification = None
+            classification_name = operator_data["classificationName"]
+            for element in tool.Ifc.get().by_type("IfcClassification"):
+                if element.Name == classification_name:
+                    classification = element
+                    break
+            reference = IfcStore.classification_file.by_id(operator_data["classificationId"])
+            tool.Ifc.run(
+                "classification.add_reference", products=[cost_item], reference=reference, classification=classification
+            )
+            cls.load_cost_schedule_web_ui(cost_schedule)
+        if operator_data["type"] == "assignFromQuery":
+            prop_name = operator_data["propName"]
+            cost_item = ifc_file.by_id(operator_data["costItemId"])
+            results = []
+            try:
+                results = filter_elements(ifc_file, operator_data["query"])
+            except Exception as e:
+                cls.send_webui_data(
+                    data={
+                        "error": "Your query is invalid. Please check the syntax and try again.",
+                        "container": "query-quantities-section-" + str(operator_data["costItemId"]),
+                    },
+                    data_key="message",
+                    event="message",
+                )
+                return
+            if not results:
+                cls.send_webui_data(
+                    data={
+                        "error": "No elements found with the specified query. Are you sure the query is correct?",
+                        "container": "query-quantities-section-" + str(operator_data["costItemId"]),
+                    },
+                    data_key="message",
+                    event="message",
+                )
+                return
+            products_with_quantity = [r for r in results if has_property(r, prop_name)]
+            if products_with_quantity:
+                tool.Ifc.run(
+                    "cost.assign_cost_item_quantity",
+                    cost_item=cost_item,
+                    products=results,
+                    prop_name=prop_name,
+                )
+                cost_schedule = tool.Cost.get_cost_schedule(cost_item)
+                cls.load_cost_schedule_web_ui(cost_schedule)
+                cls.send_webui_data(
+                    data={
+                        "success": f"Successfully assigned quantity from {len(products_with_quantity)} products.",
+                        "container": "query-quantities-section-" + str(operator_data["costItemId"]),
+                    },
+                    data_key="message",
+                    event="message",
+                )
+            else:
+                cls.send_webui_data(
+                    data={
+                        "error": f"Found {len(results)} products, but none with the specified property '{prop_name}'.",
+                        "container": "query-quantities-section-" + str(operator_data["costItemId"]),
+                    },
+                    data_key="message",
+                    event="message",
+                )
+        if operator_data["type"] == "assignCostValues":
+            cost_rate = ifc_file.by_id(operator_data["costRateId"])
+            cost_schedule = tool.Cost.get_cost_schedule(ifc_file.by_id(operator_data["costItemIds"][0]))
+            for cost_item_id in operator_data["costItemIds"]:
+                cost_item = ifc_file.by_id(cost_item_id)
+                tool.Ifc.run("cost.assign_cost_value", cost_item=cost_item, cost_rate=cost_rate)
+            cls.load_cost_schedule_web_ui(cost_schedule)
+
+    @classmethod
+    def load_cost_item_quantities_ui(cls, cost_item: ifcopenshell.entity_instance) -> None:
+        if not cost_item:
+            return
+        selected_products = list(tool.Spatial.get_selected_products())
+        selected_products_data = cls.selection_data(cost_item, selected_products)
+
+        assigned_products = tool.Cost.get_cost_item_products(cost_item, is_deep=False)
+        assigned_products_data = cls.selection_data(cost_item, assigned_products)
+
+        names = ifcopenshell.util.cost.get_product_quantity_names(selected_products)
+        cls.send_webui_data(
+            data={
+                "selected_products": selected_products_data,
+                "assigned_products": assigned_products_data,
+                "product_quantity_names": names,
+                "cost_item_id": cost_item.id(),
+                "cost_quantities": tool.Cost.get_cost_quantities(cost_item),
+            },
+            data_key="quantities",
+            event="quantities",
+        )
+
+    @classmethod
+    def selection_data(cls, cost_item: ifcopenshell.entity_instance, elements: list) -> list:
+        if not elements:
+            return []
+        if not cost_item:
+            return [
+                {
+                    "info": {
+                        "id": element.id(),
+                        "name": element.Name,
+                        "class": element.is_a(),
+                        "type": get_type(element).Name if get_type(element) else None,
+                    },
+                    "qtos": get_psets(element, qtos_only=True),
+                }
+                for element in elements or []
+            ]
+        data = []
+        for element in elements or []:
+            psets = get_psets(element, qtos_only=True)
+            element_type = get_type(element)
+            quantities, unit = tool.Cost.get_assigned_quantities(cost_item, element)
+            data.append(
+                {
+                    "info": {
+                        "id": element.id(),
+                        "name": element.Name,
+                        "class": element.is_a(),
+                        "type": element_type.Name if element_type else None,
+                    },
+                    "qtos": psets,
+                    "assigned_quantities": [
+                        {
+                            "cost_item_id": cost_item.id(),
+                            "product_id": element.id(),
+                            "name": q.Name,
+                            "value": q[3],
+                            "type": q.Unit,
+                        }
+                        for q in quantities or []
+                    ],
+                    "unit": unit,
+                }
+            )
+        return data
+
+    @classmethod
+    def load_cost_schedule_web_ui(cls, cost_schedule: ifcopenshell.entity_instance) -> None:
+        ifc2json = ifc5D2json()
+        ifc2json.file_path = tool.Ifc.get()
+        ifc2json.cost_schedule = cost_schedule
+        schedule_data = ifc2json.convert_ifc_to_json()
+        cls.send_webui_data(
+            data={
+                "currency": tool.Cost.currency(),
+                "schedule_data": schedule_data,
+            },
+            data_key="cost_items",
+            event="cost_items",
+        )
+
+    @classmethod
     def handle_gantt_operator(cls, operator_data: dict) -> None:
         """
         this method handles the Sequencing page operators.
@@ -337,34 +695,36 @@ class Web(bonsai.core.tool.Web):
             operator_data (dict): A dictionary containing the operator data.
         """
         ifc_file = tool.Ifc.get()
+        if operator_data["type"] == "getWorkSchedules":
+            work_schedules = ifc_file.by_type("IfcWorkSchedule")
+            work_schedules_json = [ws.get_info(recursive=True) for ws in work_schedules]
+            cls.send_webui_data(data=work_schedules_json, data_key="work_schedule_info", event="work_schedule_info")
+        if operator_data["type"] == "loadWorkSchedule":
+            work_schedule = ifc_file.by_id(operator_data["workScheduleId"])
+            print("Generating Gantt chart")
+            bonsai.core.sequence.enable_editing_work_schedule_tasks(tool.Sequence, work_schedule=work_schedule)
+            bonsai.core.sequence.generate_gantt_chart(tool.Sequence, work_schedule=work_schedule)
         if operator_data["type"] == "editTask":
             task_id = int(operator_data["taskId"])
             task = ifc_file.by_id(task_id)
             task_time = task.TaskTime
             column = operator_data["column"]
             new_value = operator_data["value"]
+            if task_time is None:
+                ifcopenshell.api.sequence.add_task_time(ifc_file, task)
+                task_time = task.TaskTime
+            ifcopenshell.api.sequence.edit_task_time(
+                ifc_file, task_time=task_time, attributes={IFC_TASK_ATTRIBUTE_MAP[column]: str(new_value)}
+            )
 
-            try:
-                ifcopenshell.api.sequence.edit_task(
-                    ifc_file, task, attributes={IFC_TASK_ATTRIBUTE_MAP[column]: str(new_value)}
-                )
-            except AttributeError:
-                if task_time is None:
-                    ifcopenshell.api.sequence.add_task_time(ifc_file, task)
-                    task_time = task.TaskTime
-                ifcopenshell.api.sequence.edit_task_time(
-                    ifc_file, task_time=task_time, attributes={IFC_TASK_ATTRIBUTE_MAP[column]: str(new_value)}
-                )
-
-        bpy.ops.bim.load_task_properties()
-
-        # after updating, send new gantt data to handle the case where
-        # changing a task cascades and changes other tasks. as this wouldn't
-        # be reflected in the web ui
-        work_schedule = ifc_file.by_id(operator_data["workScheduleId"])
-        task_json = tool.Sequence.create_tasks_json(work_schedule)
-        gantt_data = {"tasks": task_json, "work_schedule": work_schedule.get_info(recursive=True)}
-        cls.send_webui_data(data=gantt_data, data_key="gantt_data", event="gantt_data")
+            bpy.ops.bim.load_task_properties()
+            # after updating, send new gantt data to handle the case where
+            # changing a task cascades and changes other tasks. as this wouldn't
+            # be reflected in the web ui
+            work_schedule = ifc_file.by_id(operator_data["workScheduleId"])
+            task_json = tool.Sequence.create_tasks_json(work_schedule)
+            gantt_data = {"tasks": task_json, "work_schedule": work_schedule.get_info(recursive=True)}
+            cls.send_webui_data(data=gantt_data, data_key="gantt_data", event="gantt_data")
 
     @classmethod
     def handle_drawings_operator(cls, operator_data: dict) -> None:
@@ -387,6 +747,7 @@ class Web(bonsai.core.tool.Web):
                         continue
                     reference_name = os.path.basename(reference.Location)
                     reference_path = os.path.join(ifc_file_dir, reference.Location)
+                    reference_path = os.path.normpath(reference_path)
                     sheets_data.append({"name": reference_name, "path": reference_path})
 
             drawings = [e for e in tool.Ifc.get().by_type("IfcAnnotation") if e.ObjectType == "DRAWING"]
@@ -394,6 +755,7 @@ class Web(bonsai.core.tool.Web):
                 document = tool.Drawing.get_drawing_document(drawing)
                 reference_name = os.path.basename(document.Location)
                 reference_path = os.path.join(ifc_file_dir, document.Location)
+                reference_path = os.path.normpath(reference_path)
                 drawings_data.append({"name": reference_name, "path": reference_path})
 
             cls.send_webui_data(

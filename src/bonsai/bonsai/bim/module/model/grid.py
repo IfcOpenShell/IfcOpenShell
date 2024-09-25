@@ -19,6 +19,7 @@
 import bpy
 import ifcopenshell.api
 import bonsai.tool as tool
+import bonsai.core.root
 from bpy.types import Operator
 from bpy.props import FloatProperty, IntProperty
 from mathutils import Vector
@@ -28,7 +29,9 @@ def add_object(self, context):
     obj = bpy.data.objects.new("Grid", None)
     obj.name = "Grid"
 
-    bpy.ops.bim.assign_class(obj=obj.name, ifc_class="IfcGrid")
+    bonsai.core.root.assign_class(
+        tool.Ifc, tool.Collector, tool.Root, obj=obj, ifc_class="IfcGrid", should_add_representation=False
+    )
     grid = tool.Ifc.get_entity(obj)
 
     for i in range(0, self.total_u):
@@ -68,6 +71,8 @@ def add_object(self, context):
         tool.Ifc.link(result, obj)
         ifcopenshell.api.run("grid.create_axis_curve", tool.Ifc.get(), axis_curve=obj, grid_axis=result)
         tool.Collector.assign(obj)
+
+    tool.Root.reload_grid_decorator()
 
 
 class BIM_OT_add_object(Operator, tool.Ifc.Operator):

@@ -64,9 +64,15 @@ class BIM_PT_camera(Panel):
         row.prop(dprops, "should_use_annotation_cache", text="", icon="FILE_REFRESH")
 
         row = self.layout.row()
-        row.prop(props, "calculate_shapely_surfaces")
-        row = self.layout.row()
-        row.prop(props, "calculate_svgfill_surfaces")
+        row.prop(props, "linework_mode")
+        if props.linework_mode == "OPENCASCADE":
+            row = self.layout.row()
+            row.prop(props, "fill_mode")
+            row = self.layout.row()
+            row.prop(props, "cut_mode")
+        elif not hasattr(context.scene, "svg_export"):
+            row = self.layout.row()
+            row.label(text="Freestyle SVG Exporter Not Installed", icon="ERROR")
 
         row = self.layout.row()
         row.prop(props, "width")
@@ -106,11 +112,7 @@ class BIM_PT_element_filters(Panel):
 
     @classmethod
     def poll(cls, context):
-        return (
-            context.scene.camera
-            and context.active_object
-            and hasattr(context.active_object.data, "BIMCameraProperties")
-        )
+        return bool((camera := context.scene.camera) and tool.Ifc.get_entity(camera))
 
     def draw(self, context):
         if not ElementFiltersData.is_loaded:
@@ -160,17 +162,15 @@ class BIM_PT_drawing_underlay(Panel):
 
     @classmethod
     def poll(cls, context):
-        return (
-            context.scene.camera
-            and context.active_object
-            and hasattr(context.active_object.data, "BIMCameraProperties")
-        )
+        return bool((camera := context.scene.camera) and tool.Ifc.get_entity(camera))
 
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True
+        camera = context.scene.camera
+        assert camera
         dprops = context.scene.DocProperties
-        props = context.active_object.data.BIMCameraProperties
+        props = camera.data.BIMCameraProperties
         drawing_index_is_valid = props.active_drawing_style_index < len(dprops.drawing_styles)
 
         if not DrawingsData.is_loaded:
@@ -289,6 +289,9 @@ class BIM_PT_drawings(Panel):
                 create_drawing_button = row.row(align=True)
                 create_drawing_button.operator("bim.create_drawing", text="", icon="OUTPUT")
                 create_drawing_button.enabled = active_drawing.ifc_definition_id > 0
+
+                # might need a different icon since the URL icon is already used by the open_drawing
+                row.operator("bim.open_documentation_web_ui", icon="URL", text="")
             self.layout.template_list(
                 "BIM_UL_drawinglist", "", self.props, "drawings", self.props, "active_drawing_index"
             )

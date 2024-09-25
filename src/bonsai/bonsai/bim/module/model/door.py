@@ -40,7 +40,8 @@ import json
 import collections
 
 
-def update_door_modifier_representation(context: bpy.types.Context, obj: bpy.types.Object) -> None:
+def update_door_modifier_representation(context: bpy.types.Context) -> None:
+    obj = context.active_object
     props = obj.BIMDoorProperties
     element = tool.Ifc.get_entity(obj)
     ifc_file = tool.Ifc.get()
@@ -533,11 +534,11 @@ class BIM_OT_add_door(bpy.types.Operator, tool.Ifc.Operator):
 class AddDoor(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_door"
     bl_label = "Add Door"
+    bl_description = "Add Bonsai parametric door to the active IFC element"
     bl_options = {"REGISTER"}
-    obj: bpy.props.StringProperty()
 
     def _execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
+        obj = context.active_object
         element = tool.Ifc.get_entity(obj)
         props = obj.BIMDoorProperties
 
@@ -558,7 +559,7 @@ class AddDoor(bpy.types.Operator, tool.Ifc.Operator):
             pset=pset,
             properties={"Data": tool.Ifc.get().createIfcText(json.dumps(door_data, default=list))},
         )
-        update_door_modifier_representation(context, obj)
+        update_door_modifier_representation(context)
         return {"FINISHED"}
 
 
@@ -612,7 +613,7 @@ class FinishEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
 
         props.is_editing = False
 
-        update_door_modifier_representation(context, obj)
+        update_door_modifier_representation(context)
 
         pset = tool.Pset.get_element_pset(element, "BBIM_Door")
         door_data = tool.Ifc.get().createIfcText(json.dumps(door_data, default=list))

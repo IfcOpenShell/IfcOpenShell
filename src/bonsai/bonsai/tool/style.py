@@ -21,6 +21,7 @@ import numpy as np
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
+import bonsai.core.style
 import bonsai.core.tool
 import bonsai.tool as tool
 import bonsai.bim.helper
@@ -695,3 +696,20 @@ class Style(bonsai.core.tool.Style):
         blender_material = tool.Ifc.get_object(style)
         # Will implicitly update the style name using handler.
         blender_material.name = name
+
+    @classmethod
+    def purge_unused_styles(cls) -> int:
+        """Purge unused styles (and related Blender materials).
+
+        Note that Styles UI should be updated manually after using this method.
+        """
+
+        ifc_file = tool.Ifc.get()
+        elements = ifc_file.by_type("IfcPresentationStyle")
+        i = 0
+        for element in elements:
+            if ifc_file.get_total_inverses(element) != 0:
+                continue
+            bonsai.core.style.remove_style(tool.Ifc, tool.Style, element, reload_styles_ui=False)
+            i += 1
+        return i

@@ -707,7 +707,7 @@ class Blender(bonsai.core.tool.Blender):
         if not tool.Ifc.get():
             return False
         element = tool.Ifc.get_entity(obj)
-        return element and element.is_a() in classes
+        return bool(element) and element.is_a() in classes
 
     @classmethod
     def get_object_from_guid(cls, guid: str) -> Union[IFC_CONNECTED_TYPE, None]:
@@ -803,7 +803,7 @@ class Blender(bonsai.core.tool.Blender):
         return collections_mapping
 
     @classmethod
-    def is_editable(cls, obj):
+    def is_editable(cls, obj: bpy.types.Object) -> bool:
         if obj.type not in cls.OBJECT_TYPES_THAT_SUPPORT_EDIT_MODE:
             return False
         if not (element := tool.Ifc.get_entity(obj)):
@@ -825,7 +825,7 @@ class Blender(bonsai.core.tool.Blender):
         @classmethod
         def is_eligible_for_stair_modifier(cls, obj):
             return tool.Blender.is_object_an_ifc_class(
-                obj, ("IfcStairFlight", "IfcStairFlightType", "IfcMember", "IfcMemberType")
+                obj, ("IfcStairFlight", "IfcStairFlightType", "IfcMember", "IfcMemberType", "IfcStair", "IfcStairType")
             )
 
         @classmethod
@@ -1155,3 +1155,12 @@ class Blender(bonsai.core.tool.Blender):
                     pass
 
         return sun_position
+
+    @classmethod
+    def scale_font_size(cls, size):
+        default_dpi = 72
+        default_pixel_size = 1.0
+        default_scale = default_dpi * default_pixel_size
+        system = bpy.context.preferences.system
+        system_scale = system.dpi * system.pixel_size
+        return (system_scale / default_scale) * size

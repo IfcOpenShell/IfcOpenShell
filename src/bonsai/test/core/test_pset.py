@@ -60,3 +60,11 @@ class TestCopyPropertyToSelection:
         subject.copy_property_to_selection(
             ifc, pset, is_pset=False, obj="obj", pset_name="qto_name", prop_name="prop_name", prop_value="prop_value"
         )
+
+
+class TestUnsharePset:
+    def test_run(self, ifc, pset):
+        ifc.get_entity_by_id("pset_id").should_be_called().will_return("pset")
+        pset.get_selected_pset_elements("obj_name", "obj_type", "pset").should_be_called().will_return("elements")
+        ifc.run("pset.unshare_pset", products="elements", pset="pset").should_be_called()
+        subject.unshare_pset(ifc, pset, "obj_type", "obj_name", "pset_id")

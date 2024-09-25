@@ -259,8 +259,12 @@ def update_should_draw_decorations(self, context):
                 continue
             tool.Drawing.update_text_value(obj)
         refresh_drawing_data()
+        if bpy.app.background:
+            return
         decoration.DecorationsHandler.install(context)
     else:
+        if bpy.app.background:
+            return
         decoration.DecorationsHandler.uninstall()
 
 
@@ -386,8 +390,31 @@ class DocProperties(PropertyGroup):
 
 
 class BIMCameraProperties(PropertyGroup):
-    calculate_shapely_surfaces: BoolProperty(name="Calculate Shapely Surfaces", default=False)
-    calculate_svgfill_surfaces: BoolProperty(name="Calculate SVGFill Surfaces", default=False)
+    linework_mode: EnumProperty(
+        items=[
+            ("OPENCASCADE", "OpenCASCADE", "Slower, more accurate, with more features"),
+            ("FREESTYLE", "Freestyle", "Faster, less accurate, no fill support"),
+        ],
+        default="OPENCASCADE",
+        name="Linework Mode",
+    )
+    fill_mode: EnumProperty(
+        items=[
+            ("NONE", "None", "Disable filling areas seen in projection"),
+            ("SHAPELY", "Shapely", "Recommended"),
+            ("SVGFILL", "SVGFill", "Experimental"),
+        ],
+        default="NONE",
+        name="Fill Mode",
+    )
+    cut_mode: EnumProperty(
+        items=[
+            ("BISECT", "Bisect", "Faster, more forgiving to bad geometry"),
+            ("OPENCASCADE", "OpenCASCADE", "More technically correct"),
+        ],
+        default="BISECT",
+        name="Cut Mode",
+    )
     has_underlay: BoolProperty(name="Underlay", default=False, update=update_has_underlay)
     has_linework: BoolProperty(name="Linework", default=True, update=update_has_linework)
     has_annotation: BoolProperty(name="Annotation", default=True, update=update_has_annotation)
@@ -531,9 +558,10 @@ def get_relating_type_id(self, context):
 
 
 def update_annotation_object_type(self, context):
-    self.relating_type_id = "0"
-    # changing enum doesn't trigger refresh by itself
+    # Refresh enum items before changing property,
+    # otherwise it might map to the wrong item.
     AnnotationData.is_loaded = False
+    self.relating_type_id = "0"
 
 
 def update_sheet_data(self, context):

@@ -78,13 +78,10 @@ class DisableEditingLayer(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class AddPresentationLayer(bpy.types.Operator):
+class AddPresentationLayer(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_presentation_layer"
     bl_label = "Add Layer"
     bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         result = ifcopenshell.api.run("layer.add_layer", IfcStore.get_file())
@@ -93,13 +90,10 @@ class AddPresentationLayer(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class EditPresentationLayer(bpy.types.Operator):
+class EditPresentationLayer(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_presentation_layer"
     bl_label = "Edit Layer"
     bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         props = context.scene.BIMLayerProperties
@@ -117,14 +111,11 @@ class EditPresentationLayer(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class RemovePresentationLayer(bpy.types.Operator):
+class RemovePresentationLayer(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_presentation_layer"
     bl_label = "Remove Presentation Layer"
     bl_options = {"REGISTER", "UNDO"}
     layer: bpy.props.IntProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         props = context.scene.BIMLayerProperties
@@ -134,16 +125,13 @@ class RemovePresentationLayer(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class AssignPresentationLayer(bpy.types.Operator):
+class AssignPresentationLayer(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_presentation_layer"
     bl_label = "Assign Presentation Layer"
     bl_description = "Assign presentation layer to the active representation of the active object"
     bl_options = {"REGISTER", "UNDO"}
     item: bpy.props.StringProperty()
     layer: bpy.props.IntProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         item = bpy.data.meshes.get(self.item) if self.item else context.active_object.data
@@ -159,16 +147,13 @@ class AssignPresentationLayer(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class UnassignPresentationLayer(bpy.types.Operator):
+class UnassignPresentationLayer(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unassign_presentation_layer"
     bl_label = "Unassign Presentation Layer"
     bl_description = "Unassign presentation layer from the active representation of the active object"
     bl_options = {"REGISTER", "UNDO"}
     item: bpy.props.StringProperty()
     layer: bpy.props.IntProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         item = bpy.data.meshes.get(self.item) if self.item else context.active_object.data

@@ -66,7 +66,11 @@ BLENDER_PLATFORM:=linux-x64
 endif
 
 ifeq ($(PLATFORM), macos)
+ifeq ($(PYVERSION), py311)
 PYPI_PLATFORM:=--platform macosx_10_10_x86_64
+else
+PYPI_PLATFORM:=--platform macosx_10_13_x86_64
+endif
 BLENDER_PLATFORM:=macos-x64
 endif
 
@@ -81,9 +85,12 @@ BLENDER_PLATFORM:=windows-x64
 endif
 
 # Current build commit hash.
-OLD:=d51fa2c
+OLD:=a51ed6e
 .PHONY: bump
 bump:
+ifndef NEW
+	$(error ERROR: 'NEW' variable is not set (should be set with new commmit hash). Example use for 'bump' command: 'make bump NEW=0123456'.)
+endif
 	cd . && $(SED) -b "s/$(OLD)/$(NEW)/" Makefile
 	cd ../ifcopenshell-python/ && $(SED) -b "s/$(OLD)/$(NEW)/" Makefile
 
@@ -278,7 +285,7 @@ ifeq ($(PLATFORM), macosm1)
 	mv "$$prev_whl_name" "$$whl_name";
 
 	prev_whl_name=$$(find build/bonsai/wheels/tzfpy-*.whl); \
-	whl_name=$$(echo $$prev_whl_name | sed "s/macosx_10_12_x86_64.macosx_11_0_arm64.macosx_10_12_universal2/macosx_10_12_arm64/"); \
+	whl_name=$$(echo $$prev_whl_name | sed -E "s/macosx_10_([0-9]+)_x86_64\.macosx_11_0_arm64\.macosx_10_\1_universal2/macosx_10_\1_arm64/"); \
 	mv "$$prev_whl_name" "$$whl_name";
 
 	# Has only universal build.
@@ -288,7 +295,7 @@ ifeq ($(PLATFORM), macosm1)
 endif
 ifeq ($(PLATFORM), macos)
 	prev_whl_name=$$(find build/bonsai/wheels/tzfpy-*.whl); \
-	whl_name=$$(echo $$prev_whl_name | sed "s/macosx_10_9_x86_64.macosx_11_0_arm64.macosx_10_9_universal2/macosx_10_9_x86_64/"); \
+	whl_name=$$(echo $$prev_whl_name | sed -E "s/macosx_10_([0-9]+)_x86_64\.macosx_11_0_arm64\.macosx_10_\1_universal2/macosx_10_\1_x86_64/"); \
 	mv "$$prev_whl_name" "$$whl_name";
 
 	prev_whl_name=$$(find build/bonsai/wheels/greenlet-*.whl); \

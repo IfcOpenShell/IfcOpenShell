@@ -189,21 +189,15 @@
 	}
 
 	template <typename T>
-	PyObject* pythonize_vector(const std::vector<T>& v) {
+	PyObject* pythonize_vector(const T& v) {
 		const size_t size = v.size();
 		PyObject* pyobj = PyTuple_New(size);
 		for (size_t i = 0; i < size; ++i) {
-			PyTuple_SetItem(pyobj, i, pythonize(v[i]));
-		}
-		return pyobj;
-	}
-
-	template <typename T>
-	PyObject* pythonize_vector2(const std::vector< std::vector<T> >& v) {
-		const size_t size = v.size();
-		PyObject* pyobj = PyTuple_New(size);
-		for (size_t i = 0; i < size; ++i) {
-			PyTuple_SetItem(pyobj, i, pythonize_vector(v[i]));
+			if constexpr (is_std_vector_v<typename T::value_type>) {
+				PyTuple_SetItem(pyobj, i, pythonize_vector(v[i]));
+			} else {
+				PyTuple_SetItem(pyobj, i, pythonize(v[i]));
+			}
 		}
 		return pyobj;
 	}
@@ -228,6 +222,8 @@
 			} else if constexpr (std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, std::set<std::string>>) {
                 std::vector<std::string> vs(t.begin(), t.end());
                 return pythonize_vector(vs);
+            } else if constexpr (std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, std::vector<double>>) {
+                return pythonize_vector(t);
             } else {
 				return pythonize(t);
 			}
@@ -247,7 +243,8 @@ PyObject* item_to_pyobject(const ifcopenshell::geometry::taxonomy::item::ptr& i)
 	auto kind = i->kind();
 	// @todo this is not automatically generated :(
 	// we can probably use the dispatch mechanism for this we already have in the kernel
-	if (kind == BSPLINE_CURVE) { return SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<bspline_curve>(std::static_pointer_cast<bspline_curve>(i))), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__bspline_curve_t, 0 | SWIG_POINTER_OWN); }
+	if (kind == BOOLEAN_RESULT) { return SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<boolean_result>(std::static_pointer_cast<boolean_result>(i))), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__boolean_result_t, 0 | SWIG_POINTER_OWN); }
+	else if (kind == BSPLINE_CURVE) { return SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<bspline_curve>(std::static_pointer_cast<bspline_curve>(i))), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__bspline_curve_t, 0 | SWIG_POINTER_OWN); }
 	else if (kind == BSPLINE_SURFACE) { return SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<bspline_surface>(std::static_pointer_cast<bspline_surface>(i))), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__bspline_surface_t, 0 | SWIG_POINTER_OWN); }
 	else if (kind == CIRCLE) { return SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<circle>(std::static_pointer_cast<circle>(i))), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__circle_t, 0 | SWIG_POINTER_OWN); }
 	else if (kind == COLLECTION) { return SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<collection>(std::static_pointer_cast<collection>(i))), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__collection_t, 0 | SWIG_POINTER_OWN); }

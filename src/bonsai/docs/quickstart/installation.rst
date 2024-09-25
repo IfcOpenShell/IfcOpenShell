@@ -39,4 +39,4 @@ You can enable add-ons permanently by using ``Save User Settings`` from the Addo
 
 .. seealso::
 
-    If you are a poweruser, you may be interested in the **Unstable installation** to help with testing. :doc:`Read more </devs/installation>`
+    If you are a poweruser, you may be interested in the :ref:`guides/development/installation:Unstable installation` to help with testing.

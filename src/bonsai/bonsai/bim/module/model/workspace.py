@@ -17,27 +17,48 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import sys
 import bpy
 import bpy.utils.previews
 import bonsai.tool as tool
 import bonsai.core.model as core
 from bonsai.bim.module.model.wall import DumbWallJoiner
 from bonsai.bim.helper import prop_with_search
-from bpy.types import WorkSpaceTool
-from bonsai.bim.module.model.data import AuthoringData
+from bpy.types import WorkSpaceTool, Menu
+from bonsai.bim.module.model.data import AuthoringData, ItemData
 from bonsai.bim.module.system.data import PortData
 from bonsai.bim.module.model.prop import get_ifc_class
 
-custom_icon_previews = None
+
+def check_display_mode():
+    global display_mode
+    try:
+        theme = bpy.context.preferences.themes["Default"]
+        text_color = theme.user_interface.wcol_menu_item.text
+        background_color = theme.user_interface.wcol_menu_item.outline
+        print(f"text_color = {text_color}")
+        print(f"background_color = {background_color}")
+        if sum(text_color) < 2.6:
+            display_mode = "lm"
+        else:
+            display_mode = "dm"
+    except:
+        display_mode = "dm"
 
 
 def load_custom_icons():
     global custom_icon_previews
+    if display_mode is None:
+        check_display_mode()
+
     icons_dir = os.path.join(os.path.dirname(__file__), "..", "..", "data", "icons")
     custom_icon_previews = bpy.utils.previews.new()
+
+    prefix = f"{display_mode}_"
+
     for entry in os.scandir(icons_dir):
-        if entry.name.endswith(".png"):
-            name = os.path.splitext(entry.name)[0]
+        if entry.name.endswith(".png") and entry.name.startswith(prefix):
+            name = os.path.splitext(entry.name)[0].replace(prefix, "", 1)
             custom_icon_previews.load(name.upper(), entry.path, "IMAGE")
 
 
@@ -52,7 +73,7 @@ class BimTool(WorkSpaceTool):
     bl_space_type = "VIEW_3D"
     bl_context_mode = "OBJECT"
     bl_idname = "bim.bim_tool"
-    bl_label = "BIM Tool"
+    bl_label = "Multi Object Tool"
     bl_description = "Create and edit elements by construction class"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.bim")
     bl_widget = None
@@ -74,6 +95,7 @@ class BimTool(WorkSpaceTool):
         ("bim.hotkey", {"type": "Q", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_Q")]}),
         ("bim.hotkey", {"type": "R", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_R")]}),
         ("bim.hotkey", {"type": "T", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_T")]}),
+        ("bim.hotkey", {"type": "U", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_U")]}),
         ("bim.hotkey", {"type": "V", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_V")]}),
         ("bim.hotkey", {"type": "X", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_X")]}),
         ("bim.hotkey", {"type": "Y", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_Y")]}),
@@ -83,10 +105,17 @@ class BimTool(WorkSpaceTool):
         ("bim.hotkey", {"type": "P", "value": "PRESS", "ctrl": True}, {"properties": [("hotkey", "C_P")]}),
         ("bim.hotkey", {"type": "P", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_P")]}),
     )
+    ifc_element_type = "all"
 
-    def draw_settings(context, layout, ws_tool):
+    @classmethod
+    def draw_settings(cls, context, layout, ws_tool):
         # Unlike operators, Blender doesn't treat workspace tools as a class, so we'll create our own.
-        BimToolUI.draw(context, layout, ifc_element_type="all")
+        if context.scene.BIMGeometryProperties.mode == "ITEM":
+            EditItemUI.draw(context, layout)
+        else:
+            CreateObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
+            if context.active_object and context.selected_objects:
+                EditObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
 
 
 class WallTool(BimTool):
@@ -99,10 +128,6 @@ class WallTool(BimTool):
     bl_widget = None
     ifc_element_type = "IfcWallType"
 
-    @classmethod
-    def draw_settings(cls, context, layout, ws_tool):
-        BimToolUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
-
 
 class SlabTool(BimTool):
     bl_space_type = "VIEW_3D"
@@ -113,10 +138,6 @@ class SlabTool(BimTool):
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.slab")
     bl_widget = None
     ifc_element_type = "IfcSlabType"
-
-    @classmethod
-    def draw_settings(cls, context, layout, ws_tool):
-        BimToolUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
 
 
 class DoorTool(BimTool):
@@ -129,10 +150,6 @@ class DoorTool(BimTool):
     bl_widget = None
     ifc_element_type = "IfcDoorType"
 
-    @classmethod
-    def draw_settings(cls, context, layout, ws_tool):
-        BimToolUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
-
 
 class WindowTool(BimTool):
     bl_space_type = "VIEW_3D"
@@ -143,10 +160,6 @@ class WindowTool(BimTool):
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.window")
     bl_widget = None
     ifc_element_type = "IfcWindowType"
-
-    @classmethod
-    def draw_settings(cls, context, layout, ws_tool):
-        BimToolUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
 
 
 class ColumnTool(BimTool):
@@ -159,10 +172,6 @@ class ColumnTool(BimTool):
     bl_widget = None
     ifc_element_type = "IfcColumnType"
 
-    @classmethod
-    def draw_settings(cls, context, layout, ws_tool):
-        BimToolUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
-
 
 class BeamTool(BimTool):
     bl_space_type = "VIEW_3D"
@@ -173,10 +182,6 @@ class BeamTool(BimTool):
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.beam")
     bl_widget = None
     ifc_element_type = "IfcBeamType"
-
-    @classmethod
-    def draw_settings(cls, context, layout, ws_tool):
-        BimToolUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
 
 
 class DuctTool(BimTool):
@@ -189,10 +194,6 @@ class DuctTool(BimTool):
     bl_widget = None
     ifc_element_type = "IfcDuctSegmentType"
 
-    @classmethod
-    def draw_settings(cls, context, layout, ws_tool):
-        BimToolUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
-
 
 class CableCarrierTool(BimTool):
     bl_space_type = "VIEW_3D"
@@ -203,10 +204,6 @@ class CableCarrierTool(BimTool):
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.cablecarrier")
     bl_widget = None
     ifc_element_type = "IfcCableCarrierSegmentType"
-
-    @classmethod
-    def draw_settings(cls, context, layout, ws_tool):
-        BimToolUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
 
 
 class PipeTool(BimTool):
@@ -219,10 +216,6 @@ class PipeTool(BimTool):
     bl_widget = None
     ifc_element_type = "IfcPipeSegmentType"
 
-    @classmethod
-    def draw_settings(cls, context, layout, ws_tool):
-        BimToolUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
-
 
 class CableTool(BimTool):
     bl_space_type = "VIEW_3D"
@@ -234,38 +227,92 @@ class CableTool(BimTool):
     bl_widget = None
     ifc_element_type = "IfcCableSegmentType"
 
-    @classmethod
-    def draw_settings(cls, context, layout, ws_tool):
-        BimToolUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
-
 
 def add_layout_hotkey_operator(layout, text, hotkey, description, ui_context=""):
-    modifiers = {
-        "A": "EVENT_ALT",
-        "C": "EVENT_CTRL",
-        "S": "EVENT_SHIFT",
-    }
-    modifier, key = hotkey.split("_")
+    parts = hotkey.split("_") if hotkey else []
+    modifier, key = (parts + ["", ""])[:2]
 
-    try:
-        custom_icon = custom_icon_previews[text.upper().replace(" ", "_")].icon_id
-    except KeyError:
-        custom_icon = custom_icon_previews["IFC"].icon_id
+    op_text = "" if ui_context == "TOOL_HEADER" else text
+    custom_icon = custom_icon_previews.get(text.upper().replace(" ", "_"), custom_icon_previews["IFC"]).icon_id
+    modifier_icon, modifier_str = MODIFIERS.get(modifier, ("NONE", ""))
 
-    if ui_context == "TOOL_HEADER":
-        op = layout.operator("bim.hotkey", text="", icon_value=custom_icon)
-    else:
-        row = layout.row(align=True)
-        op = row.operator("bim.hotkey", text=text, icon_value=custom_icon)
-        row.label(text="", icon=modifiers[modifier])
-        row.label(text="", icon=f"EVENT_{key}")
+    row = layout.row(align=True)
+    op = row.operator("bim.hotkey", text=op_text, icon_value=custom_icon)
+
+    if ui_context != "TOOL_HEADER":
+        row.label(text="", icon=modifier_icon)
+        row.label(text="", icon=f"EVENT_{key}" if key else "BLANK1")
+
+    hotkey_description = f"Hotkey: {modifier_str} {key}".strip()
+    description = "\n\n".join(filter(None, [description, hotkey_description]))
 
     op.hotkey = hotkey
-    op.description = description
+    if ui_context == "TOOL_HEADER":
+        op.description = text + "\n" + description
+    else:
+        op.description = description
     return op
 
 
-class BimToolUI:
+def format_ifc_camel_case(string):
+    string = string.replace("Ifc", "")
+    return "".join(" " + char if char.isupper() else char for char in string).strip()
+
+
+class EditItemUI:
+    @classmethod
+    def draw(cls, context, layout):
+        if not ItemData.is_loaded:
+            ItemData.load()
+
+        cls.layout = layout
+        row = cls.layout.row()
+        row.label(text="Item Mode", icon="MESH_DATA")
+        row = cls.layout.row()
+        row.label(text="Context: " + ItemData.data["representation_identifier"], icon="SCENE_DATA")
+        row = cls.layout.row()
+        row.label(text="Type: " + ItemData.data["representation_type"], icon="OUTLINER_OB_MESH")
+        cls.layout.menu("BIM_MT_add_representation_item", icon="ADD")
+        if not (obj := context.active_object) or not tool.Geometry.is_representation_item(obj):
+            return
+        for item_attribute in obj.data.BIMMeshProperties.item_attributes:
+            row = cls.layout.row()
+            row.prop(item_attribute, "float_value", text=item_attribute.name)
+        if len(obj.data.BIMMeshProperties.item_attributes):
+            row = cls.layout.row()
+            row.operator("bim.update_item_attributes", icon="FILE_REFRESH", text="")
+
+
+class BIM_MT_add_representation_item(Menu):
+    bl_idname = "BIM_MT_add_representation_item"
+    bl_label = "Add Item"
+
+    def draw(self, context):
+        if not ItemData.is_loaded:
+            ItemData.load()
+
+        if ItemData.data["representation_type"] in ("Tessellation", "Brep", "AdvancedBrep"):
+            self.layout.operator("bim.add_meshlike_item", icon="MESH_PLANE", text="Mesh Plane").shape = "PLANE"
+            self.layout.operator("bim.add_meshlike_item", icon="MESH_CUBE", text="Mesh Cube").shape = "CUBE"
+            self.layout.operator("bim.add_meshlike_item", icon="MESH_CIRCLE", text="Mesh Circle").shape = "CIRCLE"
+            self.layout.operator("bim.add_meshlike_item", icon="MESH_UVSPHERE", text="Mesh UV Sphere").shape = (
+                "UVSPHERE"
+            )
+            self.layout.operator("bim.add_meshlike_item", icon="MESH_ICOSPHERE", text="Mesh Icosphere").shape = (
+                "ICOSPHERE"
+            )
+            self.layout.operator("bim.add_meshlike_item", icon="MESH_CYLINDER", text="Mesh Cylinder").shape = "CYLINDER"
+
+        if ItemData.data["representation_type"] in ("SolidModel", "SweptSolid"):
+            self.layout.operator(
+                "bim.add_swept_area_solid_item", icon="MESH_CUBE", text="Extruded Area Solid Cube"
+            ).shape = "CUBE"
+            self.layout.operator(
+                "bim.add_swept_area_solid_item", icon="MESH_CYLINDER", text="Extruded Area Solid Cylinder"
+            ).shape = "CYLINDER"
+
+
+class CreateObjectUI:
     @classmethod
     def draw(cls, context, layout, ifc_element_type=None):
         cls.layout = layout
@@ -286,51 +333,77 @@ class BimToolUI:
         elif AuthoringData.data["ifc_element_type"] != ifc_element_type:
             AuthoringData.load(ifc_element_type)
 
-        if context.region.type == "TOOL_HEADER":
-            cls.draw_container(context)
-            cls.draw_type_selection_interface(context)
-            if context.active_object and context.selected_objects:
-                cls.draw_edit_object_header_interface(context)
+        if ifc_element_type and context.region.type == "TOOL_HEADER":
+            tool_name = (
+                "Multi Object Tool"
+                if ifc_element_type == "all"
+                else format_ifc_camel_case(ifc_element_type.removesuffix("Type")) + " Tool"
+            )
+            cls.layout.label(text=tool_name, icon="TOOL_SETTINGS")
 
-        elif context.region.type in ("UI", "WINDOW"):
-            cls.draw_container(context)
-            cls.draw_thumbnail()
-            cls.draw_type_selection_interface(context)
-            if context.active_object and context.selected_objects:
-                cls.draw_edit_object_panel_interface(context)
-
-        if not context.selected_objects:
-            cls.draw_create_object_interface()
+        cls.draw_type_manager_launcher(context)
+        cls.draw_thumbnail() if context.region.type != "TOOL_HEADER" else cls
+        cls.draw_add_object(context)
 
     @classmethod
-    def draw_create_object_interface(cls):
+    def draw_container_info(cls, context):
+        text = AuthoringData.data["default_container"]
+        if context.region.type == "UI":
+            text = f"Container: {text}"
+
+        cls.layout.row(align=True).label(text=text, icon="OUTLINER_COLLECTION")
+
+    @classmethod
+    def draw_type_manager_launcher(cls, context):
+        ui_context = str(context.region.type)
+        row = cls.layout.row(align=True)
+        if not AuthoringData.data["ifc_classes"]:
+            if AuthoringData.data["ifc_element_type"]:
+                row.label(text=f"No {AuthoringData.data['ifc_element_type']} Found", icon="ERROR")
+                row = cls.layout.row(align=True)
+                op = row.operator(
+                    "bim.add_default_type",
+                    icon_value=custom_icon_previews["ADD_TYPE"].icon_id,
+                    text=f"Create default {AuthoringData.data['ifc_element_type']}",
+                )
+                op.ifc_element_type = AuthoringData.data["ifc_element_type"]
+            else:
+                row.label(text="No Element Types Found", icon="ERROR")
+            row = cls.layout.row(align=True)
+            row.operator("bim.launch_type_manager", icon=tool.Blender.TYPE_MANAGER_ICON, text="Launch Type Manager")
+
+    @classmethod
+    def draw_add_object(cls, context):
+        ui_context = str(context.region.type)
+        row = cls.layout.row(align=True)
         if not AuthoringData.data["relating_type_id"]:
             return
+
         if cls.props.ifc_class == "IfcWallType":
-            row = cls.layout.row(align=True)
-            row.prop(data=cls.props, property="rl1", text="RL")
+            row.prop(data=cls.props, property="rl1", text="Relative Level" if ui_context != "TOOL_HEADER" else "RL")
+            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+            row.prop(data=cls.props, property="extrusion_depth", text="Height" if ui_context != "TOOL_HEADER" else "H")
+            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+            row.prop(data=cls.props, property="length", text="Length" if ui_context != "TOOL_HEADER" else "L")
+            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+            row.prop(data=cls.props, property="x_angle", text="Slope") if ui_context != "TOOL_HEADER" else "A"
 
-            row = cls.layout.row(align=True)
-            row.prop(data=cls.props, property="extrusion_depth", text="Height")
-
-            row = cls.layout.row(align=True)
-            row.prop(data=cls.props, property="length", text="Length")
-
-            row = cls.layout.row(align=True)
-            row.prop(data=cls.props, property="x_angle", text="Angle")
         elif cls.props.ifc_class in ("IfcSlabType", "IfcRampType", "IfcRoofType"):
-            row = cls.layout.row(align=True)
-            row.prop(data=cls.props, property="x_angle", text="Angle")
-        elif cls.props.ifc_class in ("IfcColumnType", "IfcBeamType", "IfcMemberType"):
-            row = cls.layout.row(align=True)
-            row.prop(data=cls.props, property="cardinal_point", text="Axis")
+            row.prop(
+                data=cls.props, property="x_angle", text="Slope" if ui_context != "TOOL_HEADER" else "A", icon="FILE_3D"
+            )
 
-            row = cls.layout.row(align=True)
-            label = "Height" if cls.props.ifc_class == "IfcColumn" else "Length"
-            row.prop(data=cls.props, property="extrusion_depth", text=label)
+        elif cls.props.ifc_class in ("IfcColumnType", "IfcMemberType"):
+            row.prop(data=cls.props, property="cardinal_point", text="Axis")
+            row.prop(data=cls.props, property="extrusion_depth", text="Height" if ui_context != "TOOL_HEADER" else "H")
+
+        elif cls.props.ifc_class in ("IfcBeamType"):
+            row.prop(data=cls.props, property="cardinal_point", text="Axis")
+            row.prop(data=cls.props, property="extrusion_depth", text="Length" if ui_context != "TOOL_HEADER" else "L")
+
         elif cls.props.ifc_class in ("IfcDoorType", "IfcDoorStyle"):
-            row = cls.layout.row(align=True)
-            row.prop(data=cls.props, property="rl1", text="RL")
+            row.prop(data=cls.props, property="rl1", text="Relative Level" if ui_context != "TOOL_HEADER" else "RL")
+
         elif cls.props.ifc_class in (
             "IfcWindowType",
             "IfcWindowStyle",
@@ -341,498 +414,39 @@ class BimToolUI:
             "IfcCableCarrierSegmentType",
             "IfcCableSegmentType",
         ):
-            row = cls.layout.row(align=True)
-            row.prop(data=cls.props, property="rl2", text="RL")
+            row.prop(
+                data=cls.props, property="rl2", text="Relative Level (rl2)" if ui_context != "TOOL_HEADER" else "RL"
+            )
+
+        ### this neeeds to move
         elif cls.props.ifc_class in ("IfcSpaceType"):
-            add_layout_hotkey_operator(cls.layout, "Generate", "S_G", bpy.ops.bim.generate_space.__doc__)
+            add_layout_hotkey_operator(cls.layout, "Generate", "S_G", bpy.ops.bim.generate_space.__doc__, ui_context)
+        ###
         else:
             row = cls.layout.row(align=True)
-            row.prop(data=cls.props, property="rl_mode", text="RL")
+            row.prop(data=cls.props, property="rl_mode", text="RL Mode" if ui_context != "TOOL_HEADER" else "RL")
 
-    @classmethod
-    def draw_edit_object_panel_interface(cls, context):
-        ui_context = str(context.region.type)
-        if AuthoringData.data["active_material_usage"] == "LAYER2":
-            row = cls.layout.row(align=True)
-            row.prop(data=cls.props, property="extrusion_depth", text="Height:")
-            op = row.operator("bim.change_extrusion_depth", icon="FILE_REFRESH", text="")
-            op.depth = cls.props.extrusion_depth
-
-            row = cls.layout.row(align=True)
-            row.prop(data=cls.props, property="length", text="Length:")
-            op = row.operator("bim.change_layer_length", icon="FILE_REFRESH", text="")
-            op.length = cls.props.length
-
-            row = cls.layout.row(align=True)
-            row.prop(data=cls.props, property="x_angle", text="Angle:")
-            op = row.operator("bim.change_extrusion_x_angle", icon="FILE_REFRESH", text="")
-            op.x_angle = cls.props.x_angle
-
-            cls.layout.separator()
-
-            add_layout_hotkey_operator(
-                cls.layout, "Regen", "S_G", bpy.ops.bim.recalculate_wall.__doc__ + "\n⇧ G", ui_context
-            )
-
-            cls.layout.separator()
-
-            add_layout_hotkey_operator(
-                cls.layout,
-                "Extend",
-                "S_E",
-                "Extends/reduces element to 3D cursor\n⇧ E",
-                ui_context,
-            )
-            add_layout_hotkey_operator(
-                cls.layout,
-                "Butt",
-                "S_T",
-                "Intersects two non-parallel elements to a butt corner junction\n⇧ T",
-                ui_context,
-            )
-            add_layout_hotkey_operator(
-                cls.layout,
-                "Mitre",
-                "S_Y",
-                "Intersects two non-parallel elements to a mitred corner junction\n⇧ Y",
-                ui_context,
-            )
-
-            row = cls.layout.row(align=True)
-            row.operator(
-                "bim.unjoin_walls", text="Unjoin Walls", icon_value=custom_icon_previews["UNJOIN_WALLS"].icon_id
-            )
-            cls.layout.separator()
-
-            add_layout_hotkey_operator(cls.layout, "Merge", "S_M", bpy.ops.bim.merge_wall.__doc__ + "\n⇧ M", ui_context)
-            add_layout_hotkey_operator(cls.layout, "Split", "S_K", bpy.ops.bim.split_wall.__doc__ + "\n⇧ K", ui_context)
-            add_layout_hotkey_operator(
-                cls.layout, "Rotate 90", "S_R", bpy.ops.bim.rotate_90.__doc__ + "\n⇧ R", ui_context
-            )
-            add_layout_hotkey_operator(cls.layout, "Flip", "S_F", bpy.ops.bim.flip_wall.__doc__ + "\n⇧ F", ui_context)
-
-            # row.operator("bim.unjoin_walls", icon="X", text="")
-
-        elif AuthoringData.data["active_material_usage"] == "LAYER3":
-            if len(context.selected_objects) == 1:
-                add_layout_hotkey_operator(cls.layout, "Edit Profile", "S_E", "", ui_context)
-            elif "LAYER2" in AuthoringData.data["selected_material_usages"]:
-                add_layout_hotkey_operator(cls.layout, "Extend Wall To Slab", "S_E", "", ui_context)
-
-            row = cls.layout.row(align=True)
-            row.prop(data=cls.props, property="x_angle", text="Angle")
-            op = row.operator("bim.change_extrusion_x_angle", icon="FILE_REFRESH", text="")
-            op.x_angle = cls.props.x_angle
-
-        elif AuthoringData.data["active_material_usage"] == "PROFILE":
-            row = cls.layout.row(align=True)
-            row.prop(data=cls.props, property="cardinal_point", text="Axis")
-            op = row.operator("bim.change_cardinal_point", icon="FILE_REFRESH", text="")
-            op.cardinal_point = int(cls.props.cardinal_point)
-
-            row = cls.layout.row(align=True)
-            label = (
-                "Height" if AuthoringData.data["active_class"] in ("IfcColumn", "IfcColumnStandardCase") else "Length"
-            )
-            row.prop(data=cls.props, property="extrusion_depth", text=label)
-            op = row.operator("bim.change_profile_depth", icon="FILE_REFRESH", text="")
-            op.depth = cls.props.extrusion_depth
-
-            add_layout_hotkey_operator(
-                cls.layout,
-                "Extend",
-                "S_E",
-                "",
-                ui_context,
-            )
-            add_layout_hotkey_operator(cls.layout, "Flip", "S_F", bpy.ops.bim.flip_object.__doc__, ui_context)
-
-            if AuthoringData.data["active_class"] in (
-                "IfcCableCarrierSegment",
-                "IfcCableSegment",
-                "IfcDuctSegment",
-                "IfcPipeSegment",
-            ):
-
-                add_layout_hotkey_operator(cls.layout, "Add Fitting", "S_Y", "", ui_context)
-                cls.layout.operator("bim.mep_add_bend")
-                cls.layout.operator("bim.mep_add_transition")
-                cls.layout.operator("bim.mep_add_obstruction")
-
-            else:
-                add_layout_hotkey_operator(
-                    cls.layout,
-                    "Edit Axis",
-                    "A_E",
-                    "",
-                    ui_context,
-                )
-                add_layout_hotkey_operator(
-                    cls.layout,
-                    "Butt",
-                    "S_T",
-                    "",
-                    ui_context,
-                )
-                add_layout_hotkey_operator(
-                    cls.layout,
-                    "Mitre",
-                    "S_Y",
-                    "",
-                    ui_context,
-                )
-                add_layout_hotkey_operator(cls.layout, "Rotate 90", "S_R", bpy.ops.bim.rotate_90.__doc__, ui_context)
-                add_layout_hotkey_operator(
-                    cls.layout, "Regen", "S_G", bpy.ops.bim.recalculate_profile.__doc__, ui_context
-                )
-            row.operator("bim.extend_profile", icon="X", text="").join_type = ""
-
-        elif (
-            tool.Model.is_parametric_railing_active() and not context.active_object.BIMRailingProperties.is_editing_path
-        ):
-            # NOTE: should be above "active_representation_type" = "SweptSolid" check
-            # because it could be a SweptSolid too
-            row = cls.layout.row(align=True)
-            row.label(text="", icon="EVENT_TAB")
-            row.operator("bim.enable_editing_railing_path", text="Edit Railing Path")
-
-        elif AuthoringData.data["active_class"] in (
-            "IfcWindow",
-            "IfcWindowStandardCase",
-            "IfcDoor",
-            "IfcDoorStandardCase",
-        ):
-            if AuthoringData.data["active_class"] in ("IfcWindow", "IfcWindowStandardCase"):
-                row = cls.layout.row(align=True)
-                row.prop(data=cls.props, property="rl2", text="RL")
-            elif AuthoringData.data["active_class"] in ("IfcDoor", "IfcDoorStandardCase"):
-                row = cls.layout.row(align=True)
-                row.prop(data=cls.props, property="rl1", text="RL")
-
-            add_layout_hotkey_operator(cls.layout, "Regen", "S_G", bpy.ops.bim.recalculate_fill.__doc__, ui_context)
-            add_layout_hotkey_operator(cls.layout, "Flip", "S_F", "", ui_context)
-
-        elif AuthoringData.data["active_representation_type"] == "SweptSolid":
-            if not tool.Model.is_parametric_window_active() and not tool.Model.is_parametric_door_active():
-                add_layout_hotkey_operator(cls.layout, "Edit Profile", "S_E", "", ui_context)
-
-        elif AuthoringData.data["active_class"] in ("IfcSpace",):
-            add_layout_hotkey_operator(cls.layout, "Regen", "S_G", bpy.ops.bim.generate_space.__doc__, ui_context)
-
-        elif tool.Model.is_parametric_roof_active() and not context.active_object.BIMRoofProperties.is_editing_path:
-            row = cls.layout.row(align=True)
-            row.label(text="", icon="EVENT_TAB")
-            row.operator("bim.enable_editing_roof_path", text="Edit Roof Path")
-
-        if context.region.type != "TOOL_HEADER" and PortData.data["total_ports"] > 0:
-            add_layout_hotkey_operator(
-                cls.layout, "Regen MEP", "S_G", bpy.ops.bim.regenerate_distribution_element.__doc__, ui_context
-            )
-            cls.layout.operator("bim.mep_connect_elements")
-
-        row = cls.layout.row(align=True)
-        if len(context.selected_objects) > 1:
-            row.operator("bim.add_opening", text="Apply Void", icon_value=custom_icon_previews["VOID"].icon_id)
-        else:
-            row.operator(
-                "bim.add_potential_opening", text="Add Void", icon_value=custom_icon_previews["ADD_VOID"].icon_id
-            )
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="", icon="EVENT_O")
-
-        if AuthoringData.data["is_voidable_element"]:
-            if AuthoringData.data["has_visible_openings"]:
-                row = cls.layout.row(align=True)
-                row.operator("bim.edit_openings", icon="CHECKMARK", text="")
-                row.operator("bim.hide_openings", icon="CANCEL", text="")
-
-        if AuthoringData.data["active_class"] in ("IfcOpeningElement",):
-            row.operator("bim.edit_openings", icon="CHECKMARK", text="")
-            row.operator("bim.hide_openings", icon="CANCEL", text="")
-            if len(context.selected_objects) == 2:
-                row = cls.layout.row(align=True)
-                row.label(text="", icon="EVENT_SHIFT")
-                row.label(text="", icon="EVENT_L")
-                row.operator("bim.clone_opening", text="Clone Opening")
-
-        cls.layout.row(align=True).label(text="Align")
-        add_layout_hotkey_operator(cls.layout, "Exterior", "S_X", "", ui_context)
-        add_layout_hotkey_operator(cls.layout, "Centerline", "S_C", "", ui_context)
-        add_layout_hotkey_operator(cls.layout, "Interior", "S_V", "", ui_context)
-        add_layout_hotkey_operator(cls.layout, "Mirror", "S_M", bpy.ops.bim.mirror_elements.__doc__, ui_context)
-
-        cls.layout.row(align=True).label(text="Mode")
-        add_layout_hotkey_operator(cls.layout, "Void", "A_O", "Toggle openings", ui_context)
-        add_layout_hotkey_operator(cls.layout, "Decomposition", "A_D", "Select decomposition", ui_context)
-
-        cls.layout.row(align=True).label(text="Aggregation")
-        add_layout_hotkey_operator(cls.layout, "Assign", "C_P", bpy.ops.bim.aggregate_assign_object.__doc__, ui_context)
-        add_layout_hotkey_operator(
-            cls.layout, "Unassign", "A_P", bpy.ops.bim.aggregate_unassign_object.__doc__, ui_context
-        )
-
-        cls.layout.row(align=True).label(text="Qto")
-        add_layout_hotkey_operator(
-            cls.layout, "Perform Quantity Take-off", "S_Q", bpy.ops.bim.perform_quantity_take_off.__doc__, ui_context
-        )
-
-    @classmethod
-    def draw_edit_object_header_interface(cls, context):
-        ui_context = str(context.region.type)
-        if AuthoringData.data["active_material_usage"] == "LAYER2":
-            row = cls.layout.row(align=True)
-            row.prop(data=cls.props, property="extrusion_depth", text="Height:")
-            op = row.operator("bim.change_extrusion_depth", icon="FILE_REFRESH", text="")
-            op.depth = cls.props.extrusion_depth
-
-            row = cls.layout.row(align=True)
-            row.prop(data=cls.props, property="length", text="Length:")
-            op = row.operator("bim.change_layer_length", icon="FILE_REFRESH", text="")
-            op.length = cls.props.length
-
-            row = cls.layout.row(align=True)
-            row.prop(data=cls.props, property="x_angle", text="Angle:")
-            op = row.operator("bim.change_extrusion_x_angle", icon="FILE_REFRESH", text="")
-            op.x_angle = cls.props.x_angle
-
-            row = cls.layout.row()
-            add_layout_hotkey_operator(row, "Regen", "S_G", bpy.ops.bim.recalculate_wall.__doc__ + "\n⇧ G", ui_context)
-
-            row = cls.layout.row(align=True)
-            add_layout_hotkey_operator(
-                row,
-                "Extend",
-                "S_E",
-                "Extends/reduces element to 3D cursor\n⇧ E",
-                ui_context,
-            )
-            add_layout_hotkey_operator(
-                row,
-                "Butt",
-                "S_T",
-                "Intersects two non-parallel elements to a butt corner junction\n⇧ T",
-                ui_context,
-            )
-            add_layout_hotkey_operator(
-                row,
-                "Mitre",
-                "S_Y",
-                "Intersects two non-parallel elements to a mitred corner junction\n⇧ Y",
-                ui_context,
-            )
-            row.operator("bim.unjoin_walls", text="", icon_value=custom_icon_previews["UNJOIN_WALLS"].icon_id)
-
-            row = cls.layout.row(align=True)
-            add_layout_hotkey_operator(row, "Merge", "S_M", bpy.ops.bim.merge_wall.__doc__ + "\n⇧ M", ui_context)
-            add_layout_hotkey_operator(row, "Split", "S_K", bpy.ops.bim.split_wall.__doc__ + "\n⇧ K", ui_context)
-            add_layout_hotkey_operator(row, "Rotate 90", "S_R", bpy.ops.bim.rotate_90.__doc__ + "\n⇧ R", ui_context)
-            add_layout_hotkey_operator(row, "Flip", "S_F", bpy.ops.bim.flip_wall.__doc__ + "\n⇧ F", ui_context)
-
-        elif AuthoringData.data["active_material_usage"] == "LAYER3":
-            if len(context.selected_objects) == 1:
-                add_layout_hotkey_operator(cls.layout, "Edit Profile", "S_E", "", ui_context)
-            elif "LAYER2" in AuthoringData.data["selected_material_usages"]:
-                add_layout_hotkey_operator(cls.layout, "Extend Wall To Slab", "S_E", "", ui_context)
-
-            row = cls.layout.row(align=True)
-            row.prop(data=cls.props, property="x_angle", text="Angle")
-            op = row.operator("bim.change_extrusion_x_angle", icon="FILE_REFRESH", text="")
-            op.x_angle = cls.props.x_angle
-
-        elif AuthoringData.data["active_material_usage"] == "PROFILE":
-            row = cls.layout.row(align=True)
-            row.prop(data=cls.props, property="cardinal_point", text="Axis")
-            op = row.operator("bim.change_cardinal_point", icon="FILE_REFRESH", text="")
-            op.cardinal_point = int(cls.props.cardinal_point)
-
-            row = cls.layout.row(align=True)
-            label = (
-                "Height" if AuthoringData.data["active_class"] in ("IfcColumn", "IfcColumnStandardCase") else "Length"
-            )
-            row.prop(data=cls.props, property="extrusion_depth", text=label)
-            op = row.operator("bim.change_profile_depth", icon="FILE_REFRESH", text="")
-            op.depth = cls.props.extrusion_depth
-
-            add_layout_hotkey_operator(
-                cls.layout,
-                "Extend",
-                "S_E",
-                "",
-                ui_context,
-            )
-            add_layout_hotkey_operator(cls.layout, "Flip", "S_F", bpy.ops.bim.flip_object.__doc__, ui_context)
-
-            if AuthoringData.data["active_class"] in (
-                "IfcCableCarrierSegment",
-                "IfcCableSegment",
-                "IfcDuctSegment",
-                "IfcPipeSegment",
-            ):
-
-                add_layout_hotkey_operator(cls.layout, "Add Fitting", "S_Y", "", ui_context)
-                if context.region.type != "TOOL_HEADER":
-                    cls.layout.operator("bim.mep_add_bend")
-                    cls.layout.operator("bim.mep_add_transition")
-                    cls.layout.operator("bim.mep_add_obstruction")
-
-            else:
-                add_layout_hotkey_operator(
-                    cls.layout,
-                    "Edit Axis",
-                    "A_E",
-                    "",
-                    ui_context,
-                )
-                add_layout_hotkey_operator(
-                    cls.layout,
-                    "Butt",
-                    "S_T",
-                    "",
-                    ui_context,
-                )
-                add_layout_hotkey_operator(
-                    cls.layout,
-                    "Mitre",
-                    "S_Y",
-                    "",
-                    ui_context,
-                )
-                add_layout_hotkey_operator(cls.layout, "Rotate 90", "S_R", bpy.ops.bim.rotate_90.__doc__, ui_context)
-                add_layout_hotkey_operator(
-                    cls.layout, "Regen", "S_G", bpy.ops.bim.recalculate_profile.__doc__, ui_context
-                )
-            row.operator("bim.extend_profile", icon="X", text="").join_type = ""
-
-        elif (
-            tool.Model.is_parametric_railing_active() and not context.active_object.BIMRailingProperties.is_editing_path
-        ):
-            # NOTE: should be above "active_representation_type" = "SweptSolid" check
-            # because it could be a SweptSolid too
-            row = cls.layout.row(align=True)
-            row.label(text="", icon="EVENT_TAB")
-            row.operator("bim.enable_editing_railing_path", text="Edit Railing Path")
-
-        elif AuthoringData.data["active_class"] in (
-            "IfcWindow",
-            "IfcWindowStandardCase",
-            "IfcDoor",
-            "IfcDoorStandardCase",
-        ):
-            if AuthoringData.data["active_class"] in ("IfcWindow", "IfcWindowStandardCase"):
-                row = cls.layout.row(align=True)
-                row.prop(data=cls.props, property="rl2", text="RL")
-            elif AuthoringData.data["active_class"] in ("IfcDoor", "IfcDoorStandardCase"):
-                row = cls.layout.row(align=True)
-                row.prop(data=cls.props, property="rl1", text="RL")
-
-            add_layout_hotkey_operator(cls.layout, "Regen", "S_G", bpy.ops.bim.recalculate_fill.__doc__, ui_context)
-            add_layout_hotkey_operator(cls.layout, "Flip", "S_F", "", ui_context)
-
-        elif AuthoringData.data["active_representation_type"] == "SweptSolid":
-            if not tool.Model.is_parametric_window_active() and not tool.Model.is_parametric_door_active():
-                add_layout_hotkey_operator(cls.layout, "Edit Profile", "S_E", "", ui_context)
-
-        elif AuthoringData.data["active_class"] in ("IfcSpace",):
-            add_layout_hotkey_operator(cls.layout, "Regen", "S_G", bpy.ops.bim.generate_space.__doc__, ui_context)
-
-        elif tool.Model.is_parametric_roof_active() and not context.active_object.BIMRoofProperties.is_editing_path:
-            row = cls.layout.row(align=True)
-            row.label(text="", icon="EVENT_TAB")
-            row.operator("bim.enable_editing_roof_path", text="Edit Roof Path")
-
-        if context.region.type != "TOOL_HEADER" and PortData.data["total_ports"] > 0:
-            add_layout_hotkey_operator(
-                cls.layout, "Regen MEP", "S_G", bpy.ops.bim.regenerate_distribution_element.__doc__, ui_context
-            )
-            cls.layout.operator("bim.mep_connect_elements")
-
-        row = cls.layout.row(align=True)
-        if len(context.selected_objects) > 1:
-            row.operator("bim.add_opening", text="", icon_value=custom_icon_previews["VOID"].icon_id)
-        else:
-            row.operator("bim.add_potential_opening", text="", icon_value=custom_icon_previews["ADD_VOID"].icon_id)
-
-        if AuthoringData.data["is_voidable_element"]:
-            if AuthoringData.data["has_visible_openings"]:
-                row = cls.layout.row(align=True)
-                row.operator("bim.edit_openings", icon="CHECKMARK", text="")
-                row.operator("bim.hide_openings", icon="CANCEL", text="")
-
-        if AuthoringData.data["active_class"] in ("IfcOpeningElement",):
-            row.operator("bim.edit_openings", icon="CHECKMARK", text="")
-            row.operator("bim.hide_openings", icon="CANCEL", text="")
-            if len(context.selected_objects) == 2:
-                row = cls.layout.row(align=True)
-                row.label(text="", icon="EVENT_SHIFT")
-                row.label(text="", icon="EVENT_L")
-                row.operator("bim.clone_opening", text="Clone Opening")
-
-        row = cls.layout.row(align=True)
-        add_layout_hotkey_operator(row, "Exterior", "S_X", "", ui_context)
-        add_layout_hotkey_operator(row, "Centerline", "S_C", "", ui_context)
-        add_layout_hotkey_operator(row, "Interior", "S_V", "", ui_context)
-        add_layout_hotkey_operator(row, "Mirror", "S_M", bpy.ops.bim.mirror_elements.__doc__, ui_context)
-
-        row = cls.layout.row(align=True)
-        add_layout_hotkey_operator(row, "Void", "A_O", "Toggle openings", ui_context)
-        add_layout_hotkey_operator(row, "Decomposition", "A_D", "Select decomposition", ui_context)
-
-        row = cls.layout.row(align=True)
-        add_layout_hotkey_operator(row, "Assign", "C_P", bpy.ops.bim.aggregate_assign_object.__doc__, ui_context)
-        add_layout_hotkey_operator(row, "Unassign", "A_P", bpy.ops.bim.aggregate_unassign_object.__doc__, ui_context)
-
-        row = cls.layout.row()
-        add_layout_hotkey_operator(
-            row, "Perform Quantity Take-off", "S_Q", bpy.ops.bim.perform_quantity_take_off.__doc__, ui_context
-        )
-
-    @classmethod
-    def draw_container(cls, context):
-        text = AuthoringData.data["default_container"]
-        if context.region.type == "UI":
-            text = f"Container: {text}"
-
-        cls.layout.row(align=True).label(text=text, icon="OUTLINER_COLLECTION")
-
-    @classmethod
-    def draw_type_selection_interface(cls, context):
-        # shared by both sidebar and header
-        ui_context = str(context.region.type)
-        row = cls.layout.row(align=True)
         if AuthoringData.data["ifc_classes"]:
-            if ui_context == "UI":
-                text = "Add"
-            else:
-                text = ""
             if not AuthoringData.data["ifc_element_type"]:
-
-                prop_with_search(row, cls.props, "ifc_class", text="")
-                row.operator("bim.add_constr_type_instance", text=text, icon_value=custom_icon_previews["ADD"].icon_id)
-
-            row = cls.layout.row(align=True)
+                row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+                prop_with_search(row, cls.props, "ifc_class", text="Type Class" if ui_context != "TOOL_HEADER" else "")
             if AuthoringData.data["relating_type_id"]:
-                prop_with_search(row, cls.props, "relating_type_id", text="")
-                row.operator("bim.add_constr_type_instance", text=text, icon_value=custom_icon_previews["ADD"].icon_id)
-
+                row = cls.layout.row(align=True)
+                row.operator(
+                    "bim.launch_type_manager",
+                    icon=tool.Blender.TYPE_MANAGER_ICON,
+                    text="Type: " + AuthoringData.data["relating_type_name"],
+                )
+                row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+                add_layout_hotkey_operator(row, "Add", "S_A", bpy.ops.bim.add_constr_type_instance.__doc__, ui_context)
+                row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+                (
+                    add_layout_hotkey_operator(row, "Draw", "S_P", bpy.ops.bim.draw_polyline_wall.__doc__, ui_context)
+                    if cls.props.ifc_class == "IfcWallType"
+                    else row
+                )
             else:
                 row.label(text="No Construction Type", icon="FILE_3D")
-            row.operator("bim.launch_type_manager", icon=tool.Blender.TYPE_MANAGER_ICON, text="")
-        else:
-            if AuthoringData.data["ifc_element_type"]:
-                row.label(text=f"No {AuthoringData.data['ifc_element_type']} Found", icon="ERROR")
-                row = cls.layout.row()
-                row.prop(cls.props, "type_name")
-                row = cls.layout.row(align=True)
-                op = row.operator(
-                    "bim.add_default_type",
-                    icon_value=custom_icon_previews["ADD_TYPE"].icon_id,
-                    text=f"Create {AuthoringData.data['ifc_element_type']}",
-                )
-                op.ifc_element_type = AuthoringData.data["ifc_element_type"]
-                row.operator("bim.launch_type_manager", icon=tool.Blender.TYPE_MANAGER_ICON, text="")
-            else:
-                row.label(text="No Element Types Found", icon="ERROR")
-                row.operator("bim.launch_type_manager", icon=tool.Blender.TYPE_MANAGER_ICON, text="Launch Type Manager")
 
     @classmethod
     def draw_thumbnail(cls):
@@ -846,9 +460,344 @@ class BimToolUI:
                     op.ifc_class = cls.props.ifc_class
 
 
+class EditObjectUI:
+    @classmethod
+    def draw(cls, context, layout, ifc_element_type=None):
+        cls.layout = layout
+        cls.props = context.scene.BIMModelProperties
+
+        row = cls.layout.row(align=True)
+        row.separator()
+        if not tool.Ifc.get():
+            row.label(text="No IFC Project", icon="ERROR")
+            return
+
+        if not PortData.is_loaded:
+            PortData.load()
+
+        if not AuthoringData.is_loaded:
+            AuthoringData.load(ifc_element_type)
+        elif ifc_element_type == "all" and AuthoringData.data["ifc_element_type"] is not None:
+            AuthoringData.load("all")
+        elif AuthoringData.data["ifc_element_type"] != ifc_element_type:
+            AuthoringData.load(ifc_element_type)
+
+        if context.region.type == "TOOL_HEADER":
+            text = format_ifc_camel_case(AuthoringData.data["active_class"])
+            layout.label(text=f"{text} Edit Tools:", icon="RESTRICT_SELECT_OFF")
+            cls.draw_parameter_adjustments(context)
+            row = cls.draw_operations(context)
+            cls.draw_void(context, row)
+            cls.draw_align(context)
+            cls.draw_aggregation(context)
+            cls.draw_qto(context)
+            cls.draw_modes(context)
+
+        if context.region.type in ("UI", "WINDOW"):
+            text = format_ifc_camel_case(AuthoringData.data["active_class"])
+            layout.label(text=f"{text} Edit Tools:", icon="RESTRICT_SELECT_OFF")
+            cls.draw_parameter_adjustments(context)
+            row = cls.draw_operations(context)
+            cls.draw_void(context, row)
+            cls.draw_align(context)
+            cls.draw_aggregation(context)
+            cls.draw_qto(context)
+            cls.draw_modes(context)
+
+    @classmethod
+    def draw_parameter_adjustments(cls, context):
+        ui_context = str(context.region.type)
+        row = cls.layout.row(align=True)
+        row.label(text="Parameter Adjustments") if ui_context != "TOOL_HEADER" else row
+        row = cls.layout.row(align=True)
+
+        if AuthoringData.data["active_material_usage"] == "LAYER2":
+            row.prop(data=cls.props, property="extrusion_depth", text="Height" if ui_context != "TOOL_HEADER" else "H")
+            op = row.operator("bim.change_extrusion_depth", icon="FILE_REFRESH", text="")
+            op.depth = cls.props.extrusion_depth
+
+            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+            row.prop(data=cls.props, property="length", text="Length" if ui_context != "TOOL_HEADER" else "L")
+            op = row.operator("bim.change_layer_length", icon="FILE_REFRESH", text="")
+            op.length = cls.props.length
+
+            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+            row.prop(data=cls.props, property="x_angle", text="Slope" if ui_context != "TOOL_HEADER" else "A")
+            op = row.operator("bim.change_extrusion_x_angle", icon="FILE_REFRESH", text="")
+            op.x_angle = cls.props.x_angle
+
+        elif AuthoringData.data["active_material_usage"] == "LAYER3":
+            row.prop(data=cls.props, property="x_angle", text="Angle" if ui_context != "TOOL_HEADER" else "A")
+            op = row.operator("bim.change_extrusion_x_angle", icon="FILE_REFRESH", text="")
+            op.x_angle = cls.props.x_angle
+
+        elif AuthoringData.data["active_material_usage"] == "PROFILE":
+            row.prop(data=cls.props, property="cardinal_point", text="Axis" if ui_context != "TOOL_HEADER" else "")
+            op = row.operator("bim.change_cardinal_point", icon="FILE_REFRESH", text="")
+            op.cardinal_point = int(cls.props.cardinal_point)
+            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+            label = (
+                "Height" if AuthoringData.data["active_class"] in ("IfcColumn", "IfcColumnStandardCase") else "Length"
+            )
+            row.prop(
+                data=cls.props, property="extrusion_depth", text=label if ui_context != "TOOL_HEADER" else label[0]
+            )
+            op = row.operator("bim.change_profile_depth", icon="FILE_REFRESH", text="")
+            op.depth = cls.props.extrusion_depth
+
+        elif AuthoringData.data["active_class"] in (
+            "IfcWindow",
+            "IfcWindowStandardCase",
+            "IfcDoor",
+            "IfcDoorStandardCase",
+        ):
+            if AuthoringData.data["active_class"] in ("IfcWindow", "IfcWindowStandardCase"):
+                row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+                row.prop(
+                    data=cls.props, property="rl2", text="Relative Level (rl2)" if ui_context != "TOOL_HEADER" else "RL"
+                )
+            elif AuthoringData.data["active_class"] in ("IfcDoor", "IfcDoorStandardCase"):
+                row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+                row.prop(
+                    data=cls.props, property="rl1", text="Relative Level (rl1)" if ui_context != "TOOL_HEADER" else "RL"
+                )
+
+    @classmethod
+    def draw_operations(cls, context):
+        ui_context = str(context.region.type)
+
+        row = cls.layout.row(align=True)
+        row.separator()
+        row.label(text="Operations") if ui_context != "TOOL_HEADER" else row
+        cls.draw_regen_operations(row)
+
+        if AuthoringData.data["active_material_usage"] == "LAYER2":
+            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+            add_layout_hotkey_operator(row, "Extend", "S_E", "Extends/reduces element to 3D cursor", ui_context)
+            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+            add_layout_hotkey_operator(
+                row, "Butt", "S_T", "Intersects two non-parallel elements to a butt corner junction", ui_context
+            )
+            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+            add_layout_hotkey_operator(
+                row, "Mitre", "S_Y", "Intersects two non-parallel elements to a mitred corner junction", ui_context
+            )
+            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+            add_layout_hotkey_operator(row, "Unjoin Walls", "S_U", "", ui_context)
+            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+            add_layout_hotkey_operator(row, "Merge", "S_M", "Merge selected Elements", ui_context)
+            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+            add_layout_hotkey_operator(
+                row, "Split", "S_K", "Split selected Element into two Elements at the cursor location", ui_context
+            )
+            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+            add_layout_hotkey_operator(row, "Rotate 90", "S_R", "Rotate the selected Element by 90 degrees", ui_context)
+            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+            add_layout_hotkey_operator(
+                row, "Flip", "S_F", "Flip Element about its local axes, keep the position", ui_context
+            )
+
+        elif AuthoringData.data["active_material_usage"] == "LAYER3":
+            if "LAYER2" in AuthoringData.data["selected_material_usages"]:
+                row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+                add_layout_hotkey_operator(cls.layout, "Extend Wall To Slab", "S_E", "", ui_context)
+
+        elif AuthoringData.data["active_material_usage"] == "PROFILE":
+            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+            add_layout_hotkey_operator(row, "Extend", "S_E", "", ui_context)
+            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+            add_layout_hotkey_operator(row, "Flip", "S_F", bpy.ops.bim.flip_object.__doc__, ui_context)
+
+            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+            if AuthoringData.data["active_class"] in (
+                "IfcCableCarrierSegment",
+                "IfcCableSegment",
+                "IfcDuctSegment",
+                "IfcPipeSegment",
+            ):
+                add_layout_hotkey_operator(row, "Add Fitting", "S_Y", "", ui_context)
+                row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+                row.operator(
+                    "bim.mep_add_bend",
+                    text="Add Bend" if ui_context != "TOOL_HEADER" else "",
+                    icon_value=custom_icon_previews["ADD_BEND"].icon_id,
+                )
+                row.label(text="", icon="BLANK1") if ui_context != "TOOL_HEADER" else row
+                row.label(text="", icon="BLANK1") if ui_context != "TOOL_HEADER" else row
+
+                row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+                row.operator(
+                    "bim.mep_add_transition",
+                    text="Add Transition" if ui_context != "TOOL_HEADER" else "",
+                    icon_value=custom_icon_previews["ADD_TRANSITION"].icon_id,
+                )
+                row.label(text="", icon="BLANK1") if ui_context != "TOOL_HEADER" else row
+                row.label(text="", icon="BLANK1") if ui_context != "TOOL_HEADER" else row
+
+                row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+                row.operator(
+                    "bim.mep_add_obstruction",
+                    text="Add Obstruction" if ui_context != "TOOL_HEADER" else "",
+                    icon_value=custom_icon_previews["IFC"].icon_id,
+                )
+                row.label(text="", icon="BLANK1") if ui_context != "TOOL_HEADER" else row
+                row.label(text="", icon="BLANK1") if ui_context != "TOOL_HEADER" else row
+
+            else:
+                add_layout_hotkey_operator(row, "Edit Axis", "A_E", "", ui_context)
+                row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+                add_layout_hotkey_operator(row, "Butt", "S_T", "", ui_context)
+                row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+                add_layout_hotkey_operator(row, "Mitre", "S_Y", "", ui_context)
+                row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+                add_layout_hotkey_operator(row, "Rotate 90", "S_R", bpy.ops.bim.rotate_90.__doc__, ui_context)
+
+        if PortData.data["total_ports"] > 0:
+            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+            row.operator(
+                "bim.mep_connect_elements",
+                text="Connect MEP Elements" if ui_context != "TOOL_HEADER" else "",
+                icon_value=custom_icon_previews["CONNECT_MEP_ELEMENTS"].icon_id,
+            )
+            row.label(text="", icon="BLANK1") if ui_context != "TOOL_HEADER" else row
+            row.label(text="", icon="BLANK1") if ui_context != "TOOL_HEADER" else row
+
+        return row
+
+    @classmethod
+    def draw_regen_operations(cls, row):
+        custom_icon = custom_icon_previews.get("REGEN", custom_icon_previews["IFC"]).icon_id
+
+        if AuthoringData.data["active_material_usage"] == "LAYER2":
+            op = row.operator("bim.hotkey", text="", icon_value=custom_icon)
+            description = f"{bpy.ops.bim.recalculate_wall.__doc__}\n\nHotkey: S G"
+            op.hotkey = "S_G"
+            op.description = description.strip()
+        elif AuthoringData.data["active_material_usage"] == "PROFILE":
+            if AuthoringData.data["active_class"] in (
+                "IfcCableCarrierSegment",
+                "IfcCableSegment",
+                "IfcDuctSegment",
+                "IfcPipeSegment",
+            ):
+                pass
+            else:
+                op = row.operator("bim.hotkey", text="", icon_value=custom_icon)
+                description = f"{bpy.ops.bim.recalculate_profile.__doc__}\n\nHotkey: S G"
+                op.hotkey = "S_G"
+                op.description = description.strip()
+
+        if PortData.data["total_ports"] > 0:
+            op = row.operator("bim.hotkey", text="", icon_value=custom_icon)
+            description = f"{bpy.ops.bim.regenerate_distribution_element.__doc__}\n\nHotkey: S G"
+            op.hotkey = "S_G"
+            op.description = description.strip()
+
+    @classmethod
+    def draw_void(cls, context, row):
+        ui_context = str(context.region.type)
+
+        if len(context.selected_objects) > 1:
+            op_text = "Apply Void" if ui_context != "TOOL_HEADER" else ""
+            op_icon = custom_icon_previews["APPLY_VOID"].icon_id
+            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+            row.operator("bim.add_opening", text=op_text, icon_value=op_icon)
+        else:
+            op_text = "Add Void" if ui_context != "TOOL_HEADER" else ""
+            op_icon = custom_icon_previews["ADD_VOID"].icon_id
+            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+            row.operator("bim.add_potential_opening", text=op_text, icon_value=op_icon)
+            if ui_context != "TOOL_HEADER":
+                row.label(text="", icon="EVENT_SHIFT")
+                row.label(text="", icon="EVENT_O")
+
+        if AuthoringData.data["is_voidable_element"]:
+            if AuthoringData.data["has_visible_openings"]:
+                row = cls.layout.row(align=True)
+                row.operator("bim.edit_openings", icon="CHECKMARK", text="")
+                row.operator("bim.hide_openings", icon="CANCEL", text="")
+
+        if AuthoringData.data["active_class"] in ("IfcOpeningElement",):
+            row = cls.layout.row(align=True)
+            row.operator("bim.edit_openings", icon="CHECKMARK", text="")
+            row.operator("bim.hide_openings", icon="CANCEL", text="")
+            if len(context.selected_objects) == 2:
+                row = cls.layout.row(align=True)
+                row.label(text="", icon="EVENT_SHIFT")
+                row.label(text="", icon="EVENT_L")
+                row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+                row.operator("bim.clone_opening", text="Clone Opening")
+
+    @classmethod
+    def draw_align(cls, context):
+        ui_context = str(context.region.type)
+        row = cls.layout.row(align=True)
+        row.separator()
+        row.label(text="Align") if ui_context != "TOOL_HEADER" else row
+        row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+        add_layout_hotkey_operator(row, "Exterior", "S_X", "", ui_context)
+        row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+        add_layout_hotkey_operator(row, "Centreline", "S_C", "", ui_context)
+        row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+        add_layout_hotkey_operator(row, "Interior", "S_V", "", ui_context)
+        row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+        add_layout_hotkey_operator(row, "Mirror", "S_M", bpy.ops.bim.mirror_elements.__doc__, ui_context)
+
+    @classmethod
+    def draw_aggregation(cls, context):
+        ui_context = str(context.region.type)
+        row = cls.layout.row(align=True)
+        row.separator()
+        row.label(text="Aggregation") if ui_context != "TOOL_HEADER" else row
+        row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+        add_layout_hotkey_operator(row, "Assign", "C_P", bpy.ops.bim.aggregate_assign_object.__doc__, ui_context)
+        row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+        add_layout_hotkey_operator(row, "Unassign", "A_P", bpy.ops.bim.aggregate_unassign_object.__doc__, ui_context)
+
+    @classmethod
+    def draw_qto(cls, context):
+        ui_context = str(context.region.type)
+        row = cls.layout.row(align=True)
+        row.separator()
+        row.label(text="Quantity Take-off") if ui_context != "TOOL_HEADER" else row
+        row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+        add_layout_hotkey_operator(
+            row, "Perform Quantity Take-off", "S_Q", bpy.ops.bim.perform_quantity_take_off.__doc__, ui_context
+        )
+
+    @classmethod
+    def draw_modes(cls, context):
+        ui_context = str(context.region.type)
+        row = cls.layout.row(align=True)
+        row.separator()
+        row.label(text="Mode") if ui_context != "TOOL_HEADER" else row
+
+        if AuthoringData.data["active_material_usage"] == "LAYER3":
+            if len(context.selected_objects) == 1:
+                row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+                add_layout_hotkey_operator(row, "Edit Profile", "S_E", "", ui_context)
+        elif (
+            tool.Model.is_parametric_railing_active() and not context.active_object.BIMRailingProperties.is_editing_path
+        ):
+            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+            row.operator(
+                "bim.enable_editing_railing_path",
+                text="Edit Path" if ui_context != "TOOL_HEADER" else "",
+                icon_value=custom_icon_previews["EDIT_RAILING_PATH"].icon_id,
+            )
+        elif AuthoringData.data["active_material_usage"] == "PROFILE":
+            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+            add_layout_hotkey_operator(row, "Edit Axis", "A_E", "", ui_context)
+
+        row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+        add_layout_hotkey_operator(row, "Toggle Openings", "A_O", "Toggle openings", ui_context)
+        row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+        add_layout_hotkey_operator(row, "Decomposition", "A_D", "Select decomposition", ui_context)
+
+
 class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.hotkey"
-    bl_label = "Hotkey"
+    bl_label = "BIM Hotkey"
     bl_options = {"REGISTER", "UNDO"}
     hotkey: bpy.props.StringProperty()
     description: bpy.props.StringProperty()
@@ -900,7 +849,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             row.prop(self, "z")
 
     def hotkey_S_A(self):
-        bpy.ops.bim.add_constr_type_instance()
+        bpy.ops.bim.add_constr_type_instance("INVOKE_DEFAULT")
 
     def hotkey_S_Q(self):
         if not bpy.context.selected_objects:
@@ -923,9 +872,9 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             return
         if self.active_material_usage == "LAYER2":
             if bpy.ops.bim.align_wall.poll():
-                bpy.ops.bim.align_wall(align_type="CENTERLINE")
+                bpy.ops.bim.align_wall(align_type="Centreline")
         else:
-            bpy.ops.bim.align_product(align_type="CENTERLINE")
+            bpy.ops.bim.align_product(align_type="Centreline")
 
     def hotkey_S_E(self):
         if not bpy.context.selected_objects:
@@ -1095,7 +1044,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
     def hotkey_S_V(self):
         if not bpy.context.selected_objects:
             return
-        if self.active_material_usage == "LAYER2":
+        elif self.active_material_usage == "LAYER2":
             bpy.ops.bim.align_wall(align_type="INTERIOR")
         else:
             bpy.ops.bim.align_product(align_type="POSITIVE")
@@ -1135,12 +1084,20 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             self.props.z = self.z
 
     def hotkey_S_P(self):
-        bpy.ops.bim.draw_polyline_wall("INVOKE_DEFAULT")
+        mode = bpy.context.mode
+        current_tool = bpy.context.workspace.tools.from_space_view3d_mode(mode)
+        if current_tool.idname == "bim.wall_tool":
+            bpy.ops.bim.draw_polyline_wall("INVOKE_DEFAULT")
 
     def hotkey_S_L(self):
         if AuthoringData.data["active_class"] in ("IfcOpeningElement",):
             if len(bpy.context.selected_objects) == 2:
                 bpy.ops.bim.clone_opening()
+
+    def hotkey_S_U(self):
+        if not bpy.context.selected_objects:
+            return
+        bpy.ops.bim.unjoin_walls()
 
     def hotkey_A_D(self):
         if not bpy.context.selected_objects:
@@ -1162,5 +1119,14 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             bpy.ops.bim.show_openings()
 
 
+custom_icon_previews = None
+display_mode = None
+
 LIST_OF_TOOLS = [cls.bl_idname for cls in (BimTool.__subclasses__() + [BimTool])]
 TOOLS_TO_CLASSES_MAP = {cls.bl_idname: cls.ifc_element_type for cls in BimTool.__subclasses__()}
+MODIFIERS = {
+    "A": ("EVENT_ALT", "OPTION" if sys.platform == "Darwin" else "ALT"),
+    "C": ("EVENT_CTRL", "CTRL"),
+    "S": ("EVENT_SHIFT", "⇧"),
+    "E": ("EVENT_PADENTER", "ENTER" if sys.platform == "Darwin" else "RETURN"),
+}

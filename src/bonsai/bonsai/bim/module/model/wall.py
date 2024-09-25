@@ -38,6 +38,7 @@ from math import pi, sin, cos, degrees
 from mathutils import Vector, Matrix
 from bonsai.bim.module.model.opening import FilledOpeningGenerator
 from bonsai.bim.module.model.decorator import PolylineDecorator
+from bonsai.bim.module.model.polyline import PolylineOperator
 from typing import Optional
 from lark import Lark, Transformer
 
@@ -45,6 +46,7 @@ from lark import Lark, Transformer
 class UnjoinWalls(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unjoin_walls"
     bl_label = "Unjoin Walls"
+    bl_description = "Unjoin the selected walls"
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -156,7 +158,8 @@ class RecalculateWall(bpy.types.Operator, tool.Ifc.Operator):
 
 class ChangeExtrusionDepth(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.change_extrusion_depth"
-    bl_label = "Change Extrusion Depth"
+    bl_label = "Update"
+    bl_description = "Update Height"
     bl_options = {"REGISTER", "UNDO"}
     depth: bpy.props.FloatProperty()
 
@@ -197,7 +200,8 @@ class ChangeExtrusionDepth(bpy.types.Operator, tool.Ifc.Operator):
 
 class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.change_extrusion_x_angle"
-    bl_label = "Change Extrusion X Angle"
+    bl_label = "Update"
+    bl_description = "Update Angle"
     bl_options = {"REGISTER", "UNDO"}
     x_angle: bpy.props.FloatProperty(name="X Angle", default=0, subtype="ANGLE")
 
@@ -250,7 +254,8 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
 
 class ChangeLayerLength(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.change_layer_length"
-    bl_label = "Change Layer Length"
+    bl_label = "Update"
+    bl_description = "Update Length"
     bl_options = {"REGISTER", "UNDO"}
     length: bpy.props.FloatProperty()
 
@@ -280,7 +285,7 @@ def recalculate_dumb_wall_origin(wall, new_origin=None):
         child.matrix_parent_inverse = wall.matrix_world.inverted()
 
 
-class DrawPolylineWall(bpy.types.Operator):
+class DrawPolylineWall(bpy.types.Operator, PolylineOperator):
     bl_idname = "bim.draw_polyline_wall"
     bl_label = "Draw Polyline Wall"
     bl_options = {"REGISTER", "UNDO"}
@@ -290,240 +295,79 @@ class DrawPolylineWall(bpy.types.Operator):
         return context.space_data.type == "VIEW_3D"
 
     def __init__(self):
-        self.mousemove_count = 0
-        self.action_count = 0
-        self.visible_objs = []
-        self.objs_2d_bbox = []
-        self.number_options = {
-            "0",
-            "1",
-            "2",
-            "3",
-            "4",
-            "5",
-            "6",
-            "7",
-            "8",
-            "9",
-            " ",
-            ".",
-            "+",
-            "-",
-            "*",
-            "/",
-            "'",
-            '"',
-            "=",
-        }
-        self.number_input = []
-        self.number_output = ""
-        self.number_is_negative = False
-        self.is_input_on = False
-        self.input_options = ["D", "A", "X", "Y"]
-        self.input_type = "OFF"
-        self.input_value_xy = [None, None]
-        self.input_panel = {"D": "", "A": "", "X": "", "Y": ""}
-        self.snap_angle = None
-        self.snapping_points = []
+        super().__init__()
+        self.relating_type = None
+        relating_type_id = bpy.context.scene.BIMModelProperties.relating_type_id
+        if relating_type_id:
+            self.relating_type = tool.Ifc.get().by_id(int(relating_type_id))
 
-    def recalculate_inputs(self, context):
-        if self.number_input:
-            is_valid, self.number_output = tool.Snap.validate_input(self.number_output, self.input_type)
-            self.input_panel[self.input_type] = self.number_output
-            if not is_valid:
-                self.report({"WARNING"}, "The number typed is not valid.")
-                return is_valid
-            else:
-                if self.input_type in {"X", "Y"}:
-                    self.input_panel = PolylineDecorator.calculate_distance_and_angle(context, self.is_input_on)
-                elif self.input_type in {"D", "A"}:
-                    self.input_panel = PolylineDecorator.calculate_x_y_and_z(context)
-
-                self.input_panel[self.input_type] = self.number_output
-
-            PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
-            tool.Blender.update_viewport()
-            return is_valid
-
-    # TODO This is creating a hack in generate function from DumbWallGenerator
-    # Come up with a better solution
     def create_walls_from_polyline(self, context):
-        props = context.scene.BIMModelProperties
-        relating_type_id = props.relating_type_id
-
-        if not relating_type_id:
+        if not self.relating_type:
             return {"FINISHED"}
 
-        self.container = None
-        self.container_obj = None
-        if container := tool.Root.get_default_container():
-            self.container = container
-            self.container_obj = tool.Ifc.get_object(container)
-
-        relating_type = tool.Ifc.get().by_id(int(relating_type_id))
-
-        walls, is_polyline_closed = DumbWallGenerator(relating_type).generate(True)
+        walls, is_polyline_closed = DumbWallGenerator(self.relating_type).generate(True)
         if walls:
             if is_polyline_closed:
                 for wall1, wall2 in zip(walls, walls[1:] + [walls[0]]):
-                    DumbWallJoiner().join_V(wall1["obj"], wall2["obj"])
+                    DumbWallJoiner().join_V(wall2["obj"], wall1["obj"])
             else:
                 for wall1, wall2 in zip(walls[:-1], walls[1:]):
-                    DumbWallJoiner().join_V(wall1["obj"], wall2["obj"])
+                    DumbWallJoiner().join_V(wall2["obj"], wall1["obj"])
 
     def modal(self, context, event):
-
-        if not self.is_input_on:
-            if event.type == "MOUSEMOVE" or event.type == "INBETWEEN_MOUSEMOVE":
-                self.mousemove_count += 1
-                self.is_input_on = False
-                self.input_type = "OFF"
-                PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
-                tool.Snap.clear_snapping_ref()
-                tool.Blender.update_viewport()
-            else:
-                self.mousemove_count = 0
-
-            if self.mousemove_count == 2:
-                self.objs_2d_bbox = []
-                for obj in self.visible_objs:
-                    self.objs_2d_bbox.append(tool.Raycast.get_objects_2d_bounding_boxes(context, obj))
-
-            if self.mousemove_count > 3:
-                detected_snaps = tool.Snap.detect_snapping_points(context, event, self.objs_2d_bbox)
-                self.snapping_points = tool.Snap.select_snapping_points(context, event, detected_snaps)
-                PolylineDecorator.set_mouse_position(event)
-                self.input_panel = PolylineDecorator.calculate_distance_and_angle(context, self.is_input_on)
-                tool.Blender.update_viewport()
-                return {"RUNNING_MODAL"}
-
-            if event.value == "RELEASE" and event.type == "BACK_SPACE":
-                tool.Snap.remove_last_polyline_point()
-                tool.Blender.update_viewport()
-
-        if event.value == "RELEASE" and event.type == "LEFTMOUSE":
-            tool.Snap.insert_polyline_point(self.input_panel)
-            tool.Blender.update_viewport()
-
-        if event.value == "PRESS" and event.type == "C":
-            tool.Snap.close_polyline()
-            PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
-            tool.Blender.update_viewport()
-
-        if self.is_input_on and event.value == "PRESS" and event.type == "TAB":
-            self.recalculate_inputs(context)
-            index = self.input_options.index(self.input_type)
-            size = len(self.input_options)
-            self.input_type = self.input_options[((index + 1) % size)]
-            self.number_input = []
-            PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
-            tool.Blender.update_viewport()
-
-        if not self.is_input_on and event.value == "RELEASE" and event.type == "TAB":
-            self.recalculate_inputs(context)
-            self.is_input_on = True
-            self.input_type = "D"
-            self.number_input = []
-            PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
-            tool.Blender.update_viewport()
-
-        if not self.is_input_on and event.ascii in self.number_options:
-            self.recalculate_inputs(context)
-            self.is_input_on = True
-            self.input_type = "D"
-            self.number_input = []
-            PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
-            tool.Blender.update_viewport()
-
-        if event.value == "RELEASE" and event.type in self.input_options:
-            self.recalculate_inputs(context)
-            self.is_input_on = True
-            self.input_type = event.type
-            self.number_input = []
-            self.input_panel[self.input_type] = ""
-            PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
-            tool.Blender.update_viewport()
-
-        if self.input_type in self.input_options:
-            if (event.ascii in self.number_options) or (event.value == "RELEASE" and event.type == "BACK_SPACE"):
-                if event.type == "BACK_SPACE":
-                    if len(self.number_input) <= 1:
-                        self.number_input = []
-                    else:
-                        self.number_input = self.number_input[:-1]
-                    self.number_output = "".join(self.number_input)
-                    self.input_panel[self.input_type] = self.number_output
-                    PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
-                    tool.Blender.update_viewport()
-                else:
-                    self.number_input.append(event.ascii)
-                    self.number_output = "".join(self.number_input)
-
-                if self.number_input:
-                    self.input_panel[self.input_type] = self.number_output
-                    PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
-                    tool.Blender.update_viewport()
-
-        if not self.is_input_on and event.value == "RELEASE" and event.type in {"RET", "NUMPAD_ENTER", "RIGHTMOUSE"}:
-            self.create_walls_from_polyline(context)
+        if not self.relating_type:
+            self.report({"WARNING"}, "You need to select a wall type.")
             PolylineDecorator.uninstall()
+            tool.Blender.update_viewport()
+            return {"FINISHED"}
+
+        PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
+        tool.Blender.update_viewport()
+
+        if event.type in {"MIDDLEMOUSE", "WHEELUPMOUSE", "WHEELDOWNMOUSE"}:
+            self.handle_mouse_move(context, event)
+            return {"PASS_THROUGH"}
+
+        self.handle_instructions(context)
+
+        self.handle_mouse_move(context, event)
+
+        self.choose_axis(event)
+
+        self.handle_snap_selection(context, event)
+
+        if (
+            not self.tool_state.is_input_on
+            and event.value == "RELEASE"
+            and event.type in {"RET", "NUMPAD_ENTER", "RIGHTMOUSE"}
+        ):
+            self.create_walls_from_polyline(context)
+            context.workspace.status_text_set(text=None)
+            PolylineDecorator.uninstall()
+            context.scene.BIMPolylineProperties.product_preview.clear()
             tool.Snap.clear_polyline()
             tool.Blender.update_viewport()
             return {"FINISHED"}
 
-        if self.is_input_on and event.value == "RELEASE" and event.type in {"RET", "NUMPAD_ENTER", "RIGHTMOUSE"}:
-            is_valid = self.recalculate_inputs(context)
-            if is_valid:
-                tool.Snap.insert_polyline_point(self.input_panel)
-            self.is_input_on = False
-            self.input_type = "OFF"
-            self.number_input = []
-            self.number_output = ""
-            PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
-            tool.Blender.update_viewport()
+        self.handle_keyboard_input(context, event)
 
-        if event.value == "PRESS" and event.type == "M":
-            self.snapping_points = tool.Snap.modify_snapping_point_selection(self.snapping_points)
-            tool.Blender.update_viewport()
+        self.handle_inserting_polyline(context, event)
 
-        if event.type in {"MIDDLEMOUSE", "WHEELUPMOUSE", "WHEELDOWNMOUSE"}:
-            return {"PASS_THROUGH"}
+        if event.type in {"C", "LEFTMOUSE", "RIGHTMOUSE", "RET", "NUMPAD_ENTER", "BACK_SPACE"}:
+            tool.Polyline.create_wall_preview_vertices(context, self.relating_type)
 
-        if self.is_input_on:
-            if event.value == "RELEASE" and event.type in {"ESC"}:
-                self.is_input_on = False
-                self.input_type = "OFF"
-                PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
-                tool.Blender.update_viewport()
-        else:
-            if event.value == "RELEASE" and event.type in {"ESC"}:
-                PolylineDecorator.uninstall()
-                tool.Snap.clear_polyline()
-                tool.Blender.update_viewport()
-                return {"CANCELLED"}
+        cancel = self.handle_cancelation(context, event)
+        if cancel is not None:
+            context.scene.BIMPolylineProperties.product_preview.clear()
+            return cancel
 
         return {"RUNNING_MODAL"}
 
     def invoke(self, context, event):
-        if context.space_data.type == "VIEW_3D":
-            PolylineDecorator.install(context)
-            tool.Snap.set_use_default_container(True)
-            PolylineDecorator.set_use_default_container(True)
-            tool.Snap.set_snap_plane_method("XY")
-            PolylineDecorator.set_input_panel(self.input_panel, self.input_type)
-            self.visible_objs = tool.Raycast.get_visible_objects(context)
-            for obj in self.visible_objs:
-                self.objs_2d_bbox.append(tool.Raycast.get_objects_2d_bounding_boxes(context, obj))
-            detected_snaps = tool.Snap.detect_snapping_points(context, event, self.objs_2d_bbox)
-            self.snapping_points = tool.Snap.select_snapping_points(context, event, detected_snaps)
-            PolylineDecorator.set_mouse_position(event)
-            self.input_panel = PolylineDecorator.calculate_distance_and_angle(context, self.is_input_on)
-            tool.Blender.update_viewport()
-            context.window_manager.modal_handler_add(self)
-            return {"RUNNING_MODAL"}
-        else:
-            self.report({"WARNING"}, "Active space must be a View3d")
-            return {"CANCELLED"}
+        super().invoke(context, event)
+        self.tool_state.use_default_container = True
+        self.tool_state.plane_method = "XY"
+        return {"RUNNING_MODAL"}
 
 
 class DumbWallAligner:
@@ -676,7 +520,7 @@ class DumbWallGenerator:
         )
 
     def derive_from_polyline(self):
-        polyline_data = bpy.context.scene.BIMModelProperties.polyline_point
+        polyline_data = bpy.context.scene.BIMPolylineProperties.polyline_point
         is_polyline_closed = False
         if len(polyline_data) > 3:
             first_vec = Vector((polyline_data[0].x, polyline_data[0].y, polyline_data[0].z))
@@ -725,16 +569,16 @@ class DumbWallGenerator:
         bpy.context.scene.grease_pencil.layers.remove(layer)
         return objs
 
-    def create_wall_from_2_points(self, coords, round=False):
+    def create_wall_from_2_points(self, coords, should_round=False):
         direction = coords[1] - coords[0]
         length = direction.length
-        if length < 0.1:
+        if round(length, 4) < 0.1:
             return
         data = {"coords": coords}
 
         self.length = length
         self.rotation = math.atan2(direction[1], direction[0])
-        if round:
+        if should_round:
             # Round to nearest 50mm (yes, metric for now)
             self.length = 0.05 * round(length / 0.05)
             # Round to nearest 5 degrees
@@ -868,7 +712,6 @@ class DumbWallGenerator:
             is_global=True,
             should_sync_changes_first=False,
         )
-        tool.Blender.remove_data_block(mesh)
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Parametric")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "Bonsai.DumbLayer2"})
         obj.select_set(True)
@@ -877,58 +720,6 @@ class DumbWallGenerator:
     def get_relating_type_class(self, relating_type):
         classes = ifcopenshell.util.type.get_applicable_entities(relating_type.is_a(), tool.Ifc.get().schema)
         return [c for c in classes if "StandardCase" not in c][0]
-
-
-def calculate_quantities(usecase_path, ifc_file, settings):
-    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
-    obj = settings["blender_object"]
-    product = ifc_file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-    parametric = ifcopenshell.util.element.get_psets(product).get("EPset_Parametric")
-    if not parametric or "Engine" not in parametric or parametric["Engine"] != "Bonsai.DumbLayer2":
-        return
-    qto = ifcopenshell.api.run(
-        "pset.add_qto", ifc_file, should_run_listeners=False, product=product, name="Qto_WallBaseQuantities"
-    )
-    length = obj.dimensions[0] / unit_scale
-    width = obj.dimensions[1] / unit_scale
-    height = obj.dimensions[2] / unit_scale
-
-    bm_gross = bmesh.new()
-    bm_gross.from_mesh(obj.data)
-    bm_gross.faces.ensure_lookup_table()
-
-    bm_net = bmesh.new()
-    depsgraph = bpy.context.evaluated_depsgraph_get()
-    evaluated_mesh = obj.evaluated_get(depsgraph).data
-    bm_net.from_mesh(evaluated_mesh)
-    bm_net.faces.ensure_lookup_table()
-
-    gross_footprint_area = sum([f.calc_area() for f in bm_gross.faces if f.normal.z < -0.9])
-    net_footprint_area = sum([f.calc_area() for f in bm_net.faces if f.normal.z < -0.9])
-    gross_side_area = sum([f.calc_area() for f in bm_gross.faces if f.normal.y > 0.9])
-    net_side_area = sum([f.calc_area() for f in bm_net.faces if f.normal.y > 0.9])
-    gross_volume = bm_gross.calc_volume()
-    net_volume = bm_net.calc_volume()
-    bm_gross.free()
-    bm_net.free()
-
-    ifcopenshell.api.run(
-        "pset.edit_qto",
-        ifc_file,
-        should_run_listeners=False,
-        qto=qto,
-        properties={
-            "Length": round(length, 2),
-            "Width": round(width, 2),
-            "Height": round(height, 2),
-            "GrossFootprintArea": round(gross_footprint_area, 2),
-            "NetFootprintArea": round(net_footprint_area, 2),
-            "GrossSideArea": round(gross_side_area, 2),
-            "NetSideArea": round(net_side_area, 2),
-            "GrossVolume": round(gross_volume, 2),
-            "NetVolume": round(net_volume, 2),
-        },
-    )
 
 
 class DumbWallPlaner:
@@ -1006,6 +797,8 @@ class DumbWallJoiner:
         self.recreate_wall(element1, wall1, axis, body)
 
     def split(self, wall1, target):
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+
         element1 = tool.Ifc.get_entity(wall1)
         if not element1:
             return
@@ -1029,6 +822,7 @@ class DumbWallJoiner:
             r.RelatedOpeningElement for r in element1.HasOpenings if not r.RelatedOpeningElement.HasFillings
         ]:
             opening_matrix = Matrix(ifcopenshell.util.placement.get_local_placement(opening.ObjectPlacement).tolist())
+            opening_matrix.translation *= unit_scale
             opening_location = opening_matrix.translation
             _, opening_position = mathutils.geometry.intersect_point_line(opening_location.to_2d(), *axis1["reference"])
             if opening_position > cut_percentage:
@@ -1040,6 +834,7 @@ class DumbWallJoiner:
             r.RelatedOpeningElement for r in element2.HasOpenings if not r.RelatedOpeningElement.HasFillings
         ]:
             opening_matrix = Matrix(ifcopenshell.util.placement.get_local_placement(opening.ObjectPlacement).tolist())
+            opening_matrix.translation *= unit_scale
             opening_location = opening_matrix.translation
             _, opening_position = mathutils.geometry.intersect_point_line(opening_location.to_2d(), *axis1["reference"])
             if opening_position < cut_percentage:
@@ -1062,6 +857,8 @@ class DumbWallJoiner:
         self.recreate_wall(element2, wall2, axis2["reference"], axis2["reference"])
 
     def flip(self, wall1):
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+
         if tool.Ifc.is_moved(wall1):
             bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=wall1)
 
@@ -1090,6 +887,7 @@ class DumbWallJoiner:
         filling_matrixes = {}
         for opening in [r.RelatedOpeningElement for r in element1.HasOpenings]:
             opening_matrix = Matrix(ifcopenshell.util.placement.get_local_placement(opening.ObjectPlacement).tolist())
+            opening_matrix.translation *= unit_scale
             location = opening_matrix.translation
             location_on_base = tool.Cad.point_on_edge(location, axis1["base"])
             location_on_side = tool.Cad.point_on_edge(location, axis1["side"])
