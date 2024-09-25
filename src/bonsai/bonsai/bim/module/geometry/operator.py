@@ -1482,7 +1482,8 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
         builder = ShapeBuilder(ifc_file)
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
         representation = ifc_file.by_id(self.target.data.BIMMeshProperties.ifc_definition_id)
-        if representation.RepresentationType in ("Tessellation", "Brep"):
+        representation_type = representation.RepresentationType
+        if representation_type in ("Tessellation", "Brep"):
             for obj in bpy.context.selected_objects:
                 if obj == self.target:
                     continue
@@ -1491,7 +1492,7 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
                     ifcopenshell.api.run("root.remove_product", ifc_file, product=element)
             bpy.ops.object.join()
             bpy.ops.bim.update_representation(obj=self.target.name, ifc_representation_class="")
-        elif representation.RepresentationType == "SweptSolid":
+        else:
             target_placement = np.array(self.target.matrix_world)
             target_placement[:, 3][:3] /= si_conversion
 
@@ -1508,25 +1509,37 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
 
                 # Only objects of the same representation type can be joined
                 obj_rep = ifc_file.by_id(obj.data.BIMMeshProperties.ifc_definition_id)
-                if obj_rep.RepresentationType != "SweptSolid":
+                if obj_rep.RepresentationType != representation_type:
                     obj.select_set(False)
                     continue
 
                 placement = np.array(obj.matrix_world)
                 placement[:, 3][:3] /= si_conversion
 
-                for item in obj_rep.Items:
+                supported_item_types = ("IfcSweptAreaSolid",)
+                rep_items = obj_rep.Items
+                for item in rep_items:
+                    if not any(item.is_a(ifc_class) for ifc_class in supported_item_types):
+                        self.report({"ERROR"}, f"Unsupported representation item type for joining: {item.is_a()}.")
+                        return
+
+                for item in rep_items:
                     copied_item = ifcopenshell.util.element.copy_deep(ifc_file, item)
                     for style in item.StyledByItem:
                         copied_style = ifcopenshell.util.element.copy(ifc_file, style)
                         copied_style.Item = copied_item
-                    if copied_item.Position:
-                        position = ifcopenshell.util.placement.get_axis2placement(copied_item.Position)
+
+                    if item.is_a("IfcSweptAreaSolid"):
+                        if copied_item.Position:
+                            position = ifcopenshell.util.placement.get_axis2placement(copied_item.Position)
+                        else:
+                            position = np.eye(4, dtype=float)
+                        position = placement @ position
+                        position = np.linalg.inv(target_placement) @ position
+                        copied_item.Position = builder.create_axis2_placement_3d_from_matrix(position)
                     else:
-                        position = np.eye(4, dtype=float)
-                    position = placement @ position
-                    position = np.linalg.inv(target_placement) @ position
-                    copied_item.Position = builder.create_axis2_placement_3d_from_matrix(position)
+                        assert False, f"Unexpected item type: {item.is_a()}. This is a bug."
+
                     items.append(copied_item)
                 ifcopenshell.api.run("root.remove_product", ifc_file, product=element)
             representation.Items = items
