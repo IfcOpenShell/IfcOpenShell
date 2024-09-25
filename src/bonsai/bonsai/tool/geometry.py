@@ -1485,6 +1485,7 @@ class Geometry(bonsai.core.tool.Geometry):
         if props.representation_obj:
             props.representation_obj.hide_set(False)
             cls.unlock_object(props.representation_obj)
+            tool.Blender.set_active_object(props.representation_obj)
             cls.sync_item_positions()
             props.is_changing_mode = True
             if props.mode != "OBJECT":
