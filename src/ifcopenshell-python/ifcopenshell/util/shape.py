@@ -300,9 +300,18 @@ def get_normals(geometry: ShapeType) -> npt.NDArray[np.float64]:
     return np.frombuffer(geometry.normals_buffer, dtype="d").reshape(-1, 3)
 
 
-def get_representation_item_ids(geometry: ShapeType) -> npt.NDArray[np.int32]:
+def get_faces_representation_item_ids(geometry: ShapeType) -> npt.NDArray[np.int32]:
     """Get representation item ids for the geometry faces."""
     return np.frombuffer(geometry.item_ids_buffer, dtype="i")
+
+
+def get_edges_representation_item_ids(geometry: ShapeType) -> npt.NDArray[np.int32]:
+    """Get representation item ids for the geometry edges.
+
+    Can be useful for geometry without faces and in general is more universal
+    since it's possible that geometry will have elements with and without faces.
+    """
+    return np.frombuffer(geometry.edges_item_ids_buffer, dtype="i")
 
 
 def get_shape_vertices(shape: ShapeType, geometry: ShapeType) -> npt.NDArray[np.float64]:

@@ -647,6 +647,10 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 		return vector_to_buffer(self->item_ids());
 	}
 
+	std::pair<const char*, size_t> edges_item_ids_buffer() const {
+		return vector_to_buffer(self->edges_item_ids());
+	}
+
 	std::pair<const char*, size_t> verts_buffer() const {
 		return vector_to_buffer(self->verts());
 	}
@@ -703,6 +707,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
         edges_buffer = property(edges_buffer)
         material_ids_buffer = property(material_ids_buffer)
         item_ids_buffer = property(item_ids_buffer)
+        edges_item_ids_buffer = property(edges_item_ids_buffer)
         verts_buffer = property(verts_buffer)
         normals_buffer = property(normals_buffer)
         colors_buffer = property(colors_buffer)
