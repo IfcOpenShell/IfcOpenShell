@@ -330,11 +330,10 @@ class Polyline(bonsai.core.tool.Polyline):
             base_vertices.pop(-1)  # Remove the last point. The edges are going to inform that the shape is closed.
 
         bm_base = create_bmesh_from_vertices(base_vertices)
-        bm_top = create_bmesh_from_vertices(base_vertices)
 
         offset_base_verts = tool.Cad.offset_edges(bm_base, thickness)
-        top_vertices = tool.Cad.offset_edges(bm_top, angle_distortion)
-        offset_top_verts = tool.Cad.offset_edges(bm_top, angle_distortion + thickness)
+        top_vertices = tool.Cad.offset_edges(bm_base, angle_distortion)
+        offset_top_verts = tool.Cad.offset_edges(bm_base, angle_distortion + thickness)
 
         if is_closed:
             base_vertices.append(base_vertices[0])
@@ -373,7 +372,6 @@ class Polyline(bonsai.core.tool.Polyline):
                 prop.z = new_v.z + rl + height
 
         bm_base.free()
-        bm_top.free()
 
     @classmethod
     def validate_input(cls, input_number, input_type):

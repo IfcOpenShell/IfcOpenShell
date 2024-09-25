@@ -382,12 +382,17 @@ class PolylineDecorator:
             points.append(Vector((prop[i].x, prop[i].y, prop[i].z)))
 
         n = len(points) // 2
-        bottom_loop = [[i, (i + 1) % (n)] for i in range(n)]
+        bottom_side_1 = [[i, (i + 1) % (n)] for i in range((n-1)//2)]
+        bottom_side_2 = [[i, (i + 1) % (n)] for i in range(n//2, n-1)]
+        bottom_connections = [[i, n-i-1] for i in range(n//2)]
+        bottom_loop = bottom_connections + bottom_side_1 + bottom_side_2
         edges.extend(bottom_loop)
+
         upper_loop = [[i + n for i in edges] for edges in bottom_loop]
         edges.extend(upper_loop)
-        connections = [[i, j] for i, j in zip(range(n), range(n, n * 2))]
-        edges.extend(connections)
+
+        vertical_connections = [[i, j] for i, j in zip(range(n), range(n, n * 2))]
+        edges.extend(vertical_connections)
 
         if len(points) > 1:
             self.draw_batch("LINES", points, decorator_color, edges)
@@ -620,7 +625,6 @@ class PolylineDecorator:
         #         self.draw_batch("TRIS", polyline_points, (0, 1, 0, 0.1), edges)
 
         # Mouse points
-        print("DECO", snap_prop.snap_type)
         if snap_prop.snap_type in ["Plane", "Axis", "Mix"]:
             self.draw_batch("POINTS", mouse_point, decorator_color_unselected)
 
