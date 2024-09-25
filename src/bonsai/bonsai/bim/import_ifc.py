@@ -1189,8 +1189,9 @@ class IfcImporter:
         tool.Loader.set_unit_scale(self.unit_scale)
 
     def set_units(self):
-        units = self.file.by_type("IfcUnitAssignment")[0]
-        for unit in units.Units:
+        if not (units := self.file.by_type("IfcUnitAssignment")):
+            return  # Geometry is optional in IFC
+        for unit in units[0].Units:
             if unit.is_a("IfcNamedUnit") and unit.UnitType == "LENGTHUNIT":
                 if unit.is_a("IfcSIUnit"):
                     bpy.context.scene.unit_settings.system = "METRIC"
