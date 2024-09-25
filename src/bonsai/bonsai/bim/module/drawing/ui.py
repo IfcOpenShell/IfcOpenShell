@@ -436,15 +436,23 @@ class BIM_PT_sheets(Panel):
 
             if active_sheet.reference_type == "DRAWING":
                 drawingnamesvg = active_sheet.name
-                drawingname = drawingnamesvg.split(".")[0]
+                drawingname = drawingnamesvg.split(".svg")[0]
                 ifc_file = tool.Ifc.get()
                 ifc_annotations = ifc_file.by_type("IfcAnnotation")
+                drawingid = None
+                
                 for annotation in ifc_annotations:
-                    if annotation.Name == drawingname:
+                    Annotation_Name = annotation.Name.replace(",", "")  # Remove commas
+                    if Annotation_Name == drawingname:  
                         drawingid = annotation.id()
-                drawing_button = row.row(align=True)
-                op = drawing_button.operator("bim.activate_drawing", icon="OUTLINER_OB_CAMERA", text="")
-                op.drawing = drawingid
+                        break  
+
+                if drawingid is not None:
+                    drawing_button = row.row(align=True)
+                    op = drawing_button.operator("bim.activate_drawing", icon="OUTLINER_OB_CAMERA", text="")
+                    op.drawing = drawingid
+                else:
+                    print(f"No matching drawing ID found for {drawingname}")
 
             row.operator("bim.edit_sheet", icon="GREASEPENCIL", text="")
             row.operator("bim.open_sheet", icon="URL", text="")
