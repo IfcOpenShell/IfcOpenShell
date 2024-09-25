@@ -73,7 +73,7 @@ def update_stair_representation(obj):
         context=body,
         blender_object=obj,
         geometry=obj.data,
-        coordinate_offset=tool.Geometry.get_cartesian_point_coordinate_offset(obj),
+        coordinate_offset=tool.Geometry.get_cartesian_point_offset(obj),
         total_items=tool.Geometry.get_total_representation_items(obj),
         should_force_faceted_brep=tool.Geometry.should_force_faceted_brep(),
         should_force_triangulation=tool.Geometry.should_force_triangulation(),

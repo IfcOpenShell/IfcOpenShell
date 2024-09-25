@@ -452,7 +452,7 @@ class Geometry(bonsai.core.tool.Geometry):
         return ifcopenshell.util.representation.get_representation(element, context)
 
     @classmethod
-    def get_cartesian_point_coordinate_offset(cls, obj: bpy.types.Object) -> Union[Vector, None]:
+    def get_cartesian_point_offset(cls, obj: bpy.types.Object) -> Vector | None:
         if (
             obj.BIMObjectProperties.blender_offset_type == "CARTESIAN_POINT"
             and obj.BIMObjectProperties.cartesian_point_offset
@@ -685,7 +685,9 @@ class Geometry(bonsai.core.tool.Geometry):
                         if element.is_a("IfcAnnotation") and ifc_importer.is_curve_annotation(element):
                             mesh = ifc_importer.create_curve(element, shape)
                         elif shape:
-                            mesh = ifc_importer.create_mesh(element, shape)
+                            mesh = ifc_importer.create_mesh(
+                                element, shape, cartesian_point_offset=cls.get_cartesian_point_offset(obj)
+                            )
                             ifc_importer.material_creator.load_existing_materials()
                             shape_has_openings = cls.does_shape_has_openings(shape)
                             ifc_importer.material_creator.create(element, obj, mesh, shape_has_openings)

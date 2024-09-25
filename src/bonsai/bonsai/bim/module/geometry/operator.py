@@ -416,20 +416,11 @@ class UpdateRepresentation(bpy.types.Operator, tool.Ifc.Operator):
         if tool.Drawing.is_annotation_object_type(element, ("FALL", "SECTION_LEVEL", "PLAN_LEVEL")):
             context_of_items = tool.Drawing.get_annotation_context("MODEL_VIEW")
 
-        gprop = context.scene.BIMGeoreferenceProperties
-        coordinate_offset = None
-        if (
-            gprop.has_blender_offset
-            and obj.BIMObjectProperties.blender_offset_type == "CARTESIAN_POINT"
-            and obj.BIMObjectProperties.cartesian_point_offset
-        ):
-            coordinate_offset = Vector(map(float, obj.BIMObjectProperties.cartesian_point_offset.split(",")))
-
         representation_data = {
             "context": context_of_items,
             "blender_object": obj,
             "geometry": obj.data,
-            "coordinate_offset": coordinate_offset,
+            "coordinate_offset": tool.Geometry.get_cartesian_point_offset(obj),
             "total_items": max(1, len(obj.material_slots)),
             "should_force_faceted_brep": tool.Geometry.should_force_faceted_brep(),
             "should_force_triangulation": tool.Geometry.should_force_triangulation(),

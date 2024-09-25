@@ -1352,6 +1352,7 @@ class IfcImporter:
         self,
         element: ifcopenshell.entity_instance,
         shape: Union[ifcopenshell.geom.ShapeElementType, ifcopenshell.geom.ShapeType],
+        cartesian_point_offset=None,
     ) -> bpy.types.Mesh:
         try:
             if hasattr(shape, "geometry"):
@@ -1362,7 +1363,17 @@ class IfcImporter:
 
             mesh = bpy.data.meshes.new(tool.Loader.get_mesh_name_from_shape(geometry))
 
-            if geometry.verts and tool.Loader.is_point_far_away(
+            if cartesian_point_offset:
+                verts_array = np.array(geometry.verts)
+                offset = np.array([-cartesian_point_offset[0], -cartesian_point_offset[1], -cartesian_point_offset[2]])
+                offset_verts = verts_array + np.tile(offset, len(verts_array) // 3)
+                verts = offset_verts.tolist()
+
+                mesh["has_cartesian_point_offset"] = True
+                mesh["cartesian_point_offset"] = (
+                    f"{cartesian_point_offset[0]},{cartesian_point_offset[1]},{cartesian_point_offset[2]}"
+                )
+            elif geometry.verts and tool.Loader.is_point_far_away(
                 (geometry.verts[0], geometry.verts[1], geometry.verts[2]), is_meters=True
             ):
                 # Shift geometry close to the origin based off that first vert it found

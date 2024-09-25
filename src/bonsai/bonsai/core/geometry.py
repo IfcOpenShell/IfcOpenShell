@@ -64,7 +64,7 @@ def add_representation(
         context=context,
         blender_object=obj,
         geometry=data,
-        coordinate_offset=geometry.get_cartesian_point_coordinate_offset(obj),
+        coordinate_offset=geometry.get_cartesian_point_offset(obj),
         total_items=geometry.get_total_representation_items(obj),
         should_force_faceted_brep=geometry.should_force_faceted_brep(),
         should_force_triangulation=geometry.should_force_triangulation(),
