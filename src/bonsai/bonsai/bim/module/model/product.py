@@ -149,6 +149,10 @@ class AddConstrTypeInstance(bpy.types.Operator, tool.Ifc.Operator):
             and (relating_type := tool.Ifc.get().by_id(int(relating_type_id)))
             and not relating_type.RepresentationMaps
         ):
+            if (material := ifcopenshell.util.element.get_material(relating_type)) and (
+                material.is_a("IfcMaterialProfileSet") or material.is_a("IfcMaterialLayerSet")
+            ):
+                return self.execute(context)
             return context.window_manager.invoke_props_dialog(self)
         return self.execute(context)
 
@@ -257,43 +261,34 @@ class AddConstrTypeInstance(bpy.types.Operator, tool.Ifc.Operator):
             building_obj = context.active_object
             building_element = tool.Ifc.get_entity(building_obj)
 
-        # A cube
-        verts = [
-            Vector((-1, -1, -1)),
-            Vector((-1, -1, 1)),
-            Vector((-1, 1, -1)),
-            Vector((-1, 1, 1)),
-            Vector((1, -1, -1)),
-            Vector((1, -1, 1)),
-            Vector((1, 1, -1)),
-            Vector((1, 1, 1)),
-        ]
-        edges = []
-        faces = [
-            [0, 1, 3, 2],
-            [2, 3, 7, 6],
-            [6, 7, 5, 4],
-            [4, 5, 1, 0],
-            [2, 6, 4, 0],
-            [7, 3, 1, 5],
-        ]
         mesh = bpy.data.meshes.new(name="Instance")
-        mesh.from_pydata(verts, edges, faces)
         obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(relating_type, instance_class), mesh)
 
         obj.location = context.scene.cursor.location
 
-        bpy.ops.bim.assign_class(obj=obj.name, ifc_class=instance_class)
-        tool.Blender.remove_data_block(mesh)  # Remove "Instance" mesh
+        element = bonsai.core.root.assign_class(
+            tool.Ifc, tool.Collector, tool.Root, obj=obj, ifc_class=instance_class, should_add_representation=False
+        )
 
-        mesh_data = obj.data
         element = tool.Ifc.get_entity(obj)
         bonsai.core.type.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
-        if obj.data != mesh_data:  # remove orphaned mesh from "bim.assign_class"
-            tool.Blender.remove_data_block(mesh_data)
+
+        representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+        if not representation and element.Representation:
+            representation = element.Representation.Representations[0]
+
+        if representation:
+            bonsai.core.geometry.switch_representation(
+                tool.Ifc,
+                tool.Geometry,
+                obj=obj,
+                representation=representation,
+                should_reload=True,
+                is_global=True,
+                should_sync_changes_first=False,
+            )
 
         # Update required as core.type.assign_type may change obj.data
-        # TODO: This is inefficient. It literally creates a mesh, then potentially removes it.
         context.view_layer.update()
 
         if (
