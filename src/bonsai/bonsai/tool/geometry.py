@@ -1464,6 +1464,10 @@ class Geometry(bonsai.core.tool.Geometry):
         obj.data.clear_geometry()
         tool.Loader.convert_geometry_to_mesh(geometry, obj.data)
 
+        if coordinate_offset := cls.get_cartesian_point_offset(props.representation_obj):
+            for vert in obj.data.vertices:
+                vert.co -= coordinate_offset
+
         if item.is_a("IfcSweptAreaSolid"):
             cls.record_object_position(obj)
             if item.Position:

@@ -921,7 +921,9 @@ class Loader(bonsai.core.tool.Loader):
             if "openings" not in rep_str:
                 rep_id = rep_str.split("-", 1)[0]
                 rep = tool.Ifc.get().by_id(int(rep_id))
-                tool.Loader.load_indexed_colour_map(rep, mesh)
+                # For now, not necessary to load maps in Item mode
+                if rep.is_a("IfcShapeRepresentation"):
+                    tool.Loader.load_indexed_colour_map(rep, mesh)
         else:
             e = geometry.edges
             v = verts
