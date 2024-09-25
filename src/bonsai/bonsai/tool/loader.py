@@ -494,6 +494,10 @@ class Loader(bonsai.core.tool.Loader):
         for item in representation.Items:
             if not item.is_a("IfcTessellatedFaceSet"):
                 continue
+            # It's unclear what has priority, styled by item or indexed maps
+            # Given that indexed maps currently are super expensive, I'll prioritise styled by item
+            if item.StyledByItem:
+                continue
             colours.extend(item.HasColours)
 
         if not colours:
@@ -572,7 +576,10 @@ class Loader(bonsai.core.tool.Loader):
                 else:
                     data_index = [tex_coord_index - 1 for i in face]
                 break
-            assert data_index is not None
+
+            if data_index is None:
+                # This face may be part of another representation item
+                continue
 
             # apply uv to each loop
             for loop, i in zip(bface.loops, data_index):
