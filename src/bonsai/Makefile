@@ -285,7 +285,7 @@ ifeq ($(PLATFORM), macosm1)
 	mv "$$prev_whl_name" "$$whl_name";
 
 	prev_whl_name=$$(find build/bonsai/wheels/tzfpy-*.whl); \
-	whl_name=$$(echo $$prev_whl_name | sed "s/macosx_10_12_x86_64.macosx_11_0_arm64.macosx_10_12_universal2/macosx_10_12_arm64/"); \
+	whl_name=$$(echo $$prev_whl_name | sed -E "s/macosx_10_([0-9]+)_x86_64\.macosx_11_0_arm64\.macosx_10_\1_universal2/macosx_10_\1_arm64/"); \
 	mv "$$prev_whl_name" "$$whl_name";
 
 	# Has only universal build.
