@@ -1794,7 +1794,13 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
                     return
                 builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
                 unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-                verts = [v.co / unit_scale for v in obj.data.vertices]
+
+                rep_obj = bpy.context.scene.BIMGeometryProperties.representation_obj
+                if coordinate_offset := tool.Geometry.get_cartesian_point_offset(rep_obj):
+                    verts = [(v.co + coordinate_offset) / unit_scale for v in obj.data.vertices]
+                else:
+                    verts = [v.co / unit_scale for v in obj.data.vertices]
+
                 faces = [p.vertices[:] for p in obj.data.polygons]
                 if item.is_a("IfcAdvancedBrep"):
                     new_item = builder.faceted_brep(verts, faces)
