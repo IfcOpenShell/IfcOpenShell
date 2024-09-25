@@ -19,6 +19,7 @@ from __future__ import annotations
 import re
 import json
 import ifcopenshell
+import ifcopenshell.util.attribute
 import ifcopenshell.util.schema
 from pathlib import Path
 from typing import Any, NoReturn, Union, Optional, TYPE_CHECKING

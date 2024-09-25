@@ -1456,6 +1456,9 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "IFC Join"
     bl_options = {"REGISTER", "UNDO"}
 
+    target: bpy.types.Object
+    target_element: ifcopenshell.entity_instance
+
     def invoke(self, context, event):
         if not tool.Ifc.get():
             return bpy.ops.object.join()
@@ -1469,12 +1472,12 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
             return
 
         self.target = context.active_object
-        self.target_element = tool.Ifc.get_entity(self.target)
-        if self.target_element:
+        if target_element := tool.Ifc.get_entity(self.target):
+            self.target_element = target_element
             return self.join_ifc_obj()
         return self.join_blender_obj()
 
-    def join_ifc_obj(self):
+    def join_ifc_obj(self) -> None:
         ifc_file = tool.Ifc.get()
         builder = ShapeBuilder(ifc_file)
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
@@ -1539,7 +1542,7 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
                 apply_openings=True,
             )
 
-    def join_blender_obj(self):
+    def join_blender_obj(self) -> None:
         for obj in bpy.context.selected_objects:
             if obj == self.target:
                 continue
@@ -2289,6 +2292,7 @@ class ImportRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         obj = context.active_object
+        assert obj
         props = context.scene.BIMGeometryProperties
         if previous_obj := props.representation_obj:
             previous_obj.hide_set(False)
