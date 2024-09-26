@@ -2357,7 +2357,7 @@ class ImportRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
             tool.Geometry.import_item(item_obj)
             tool.Geometry.import_item_attributes(item_obj)
 
-            if tool.Geometry.is_meshlike_item(item):
+            if not tool.Geometry.is_movable(item):
                 tool.Geometry.lock_object(item_obj)
 
         tool.Root.reload_item_decorator()

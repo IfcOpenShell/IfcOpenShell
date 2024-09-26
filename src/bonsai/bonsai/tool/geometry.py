@@ -843,6 +843,10 @@ class Geometry(bonsai.core.tool.Geometry):
         return item.is_a("IfcTessellatedItem") or item.is_a("IfcManifoldSolidBrep")
 
     @classmethod
+    def is_movable(cls, item: ifcopenshell.entity_instance) -> bool:
+        return item.is_a("IfcSweptAreaSolid")
+
+    @classmethod
     def is_profile_based(cls, data: bpy.types.Mesh) -> bool:
         return data.BIMMeshProperties.subshape_type == "PROFILE"
 
