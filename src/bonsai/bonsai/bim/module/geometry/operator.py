@@ -1699,10 +1699,6 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
             ProfileDecorator.install(context)
             if not bpy.app.background:
                 tool.Blender.set_viewport_tool("bim.cad_tool")
-        elif item.is_a("IfcIndexedPolyCurve"):
-            tool.Blender.select_and_activate_single_object(context, obj)
-            obj.data.BIMMeshProperties.mesh_checksum = tool.Geometry.get_mesh_checksum(obj.data)
-            self.enable_edit_mode(context)
         else:
             self.report({"INFO"}, f"Editing {item.is_a()} geometry is not supported")
 
@@ -1826,14 +1822,13 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
     def edit_representation_item(self, obj: bpy.types.Object) -> None:
-        ifc_file = tool.Ifc.get()
-        builder = ifcopenshell.util.shape_builder.ShapeBuilder(ifc_file)
-        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
         item = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
         if tool.Geometry.is_meshlike_item(item):
             if tool.Geometry.has_geometric_data(obj) and obj.data.polygons:
                 if obj.data.BIMMeshProperties.mesh_checksum == tool.Geometry.get_mesh_checksum(obj.data):
                     return
+                builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
+                unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
                 rep_obj = bpy.context.scene.BIMGeometryProperties.representation_obj
                 if coordinate_offset := tool.Geometry.get_cartesian_point_offset(rep_obj):
@@ -1854,6 +1849,7 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
             else:
                 tool.Geometry.import_item(obj)
         elif item.is_a("IfcSweptAreaSolid"):
+            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
             ProfileDecorator.uninstall()
 
             profile = tool.Model.export_profile(obj)
@@ -1915,18 +1911,6 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
                             product=element,
                             representation=new_footprint,
                         )
-            elif item.is_a("IfcIndexedPolyCurve"):
-                mesh = obj.data
-                if mesh.polygons:
-                    self.report({"ERROR"}, "IfcIndexedPolyCurve doesn't support polygons.")
-                    return
-                if mesh.edges:
-                    self.report({"ERROR"}, "IfcIndexedPolyCurve doesn't support polygons.")
-                    return
-                edges = mesh.edges
-                if edges[-1]:
-                    pass
-                curve = builder.polyline()
 
     def enable_edit_mode(self, context):
         if tool.Blender.toggle_edit_mode(context) == {"CANCELLED"}:
