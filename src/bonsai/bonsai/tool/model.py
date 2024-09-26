@@ -554,6 +554,15 @@ class Model(bonsai.core.tool.Model):
             if material.is_a("IfcMaterialLayerSetUsage"):
                 return f"LAYER{material.LayerSetDirection[-1]}"
             elif material.is_a("IfcMaterialProfileSetUsage"):
+                # TODO: remove after we support editing profile usages with IfcRevolvedAreaSolid.
+                # Revolved area check should happen inside bim.enable_editing_extrusion_axis
+                # but keep it here to trigger import_representation_items,
+                # so users will be able to at least move IfcRevolvedAreaSolid, until there will be a full support.
+                body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+                if body and any(
+                    i["item"].is_a("IfcRevolvedAreaSolid") for i in ifcopenshell.util.representation.resolve_items(body)
+                ):
+                    return
                 return "PROFILE"
 
     @classmethod
