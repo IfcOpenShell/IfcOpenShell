@@ -440,12 +440,12 @@ class BIM_PT_sheets(Panel):
                 ifc_file = tool.Ifc.get()
                 ifc_annotations = ifc_file.by_type("IfcAnnotation")
                 drawingid = None
-                
+
                 for annotation in ifc_annotations:
                     Annotation_Name = annotation.Name.replace(",", "")  # Remove commas
-                    if Annotation_Name == drawingname:  
+                    if Annotation_Name == drawingname:
                         drawingid = annotation.id()
-                        break  
+                        break
 
                 if drawingid is not None:
                     drawing_button = row.row(align=True)
