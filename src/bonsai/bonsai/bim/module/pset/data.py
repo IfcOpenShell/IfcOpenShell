@@ -18,6 +18,7 @@
 
 import bpy
 import ifcopenshell
+import ifcopenshell.util.attribute
 import ifcopenshell.util.doc
 import ifcopenshell.util.element
 import bonsai.tool as tool
@@ -327,9 +328,15 @@ class AddEditCustomPropertiesData:
 
     @classmethod
     def primary_measure_type(cls):
+        SIMPLE_TYPES = {"string", "integer", "float", "boolean"}
         schema = tool.Ifc.schema()
         version = tool.Ifc.get_schema()
+        # Skip non-simple types as they're currently not supported (e.g. IfcBinary and lists/arrays/sets of types).
+        declarations = [
+            d.name()
+            for d in schema.declarations()
+            if hasattr(d, "declared_type") and ifcopenshell.util.attribute.get_primitive_type(d) in SIMPLE_TYPES
+        ]
         return [
-            (t, t, ifcopenshell.util.doc.get_type_doc(version, t).get("description", ""))
-            for t in sorted([d.name() for d in schema.declarations() if hasattr(d, "declared_type")])
+            (t, t, ifcopenshell.util.doc.get_type_doc(version, t).get("description", "")) for t in sorted(declarations)
         ]
