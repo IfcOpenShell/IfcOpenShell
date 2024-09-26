@@ -382,9 +382,9 @@ class PolylineDecorator:
             points.append(Vector((prop[i].x, prop[i].y, prop[i].z)))
 
         n = len(points) // 2
-        bottom_side_1 = [[i, (i + 1) % (n)] for i in range((n-1)//2)]
-        bottom_side_2 = [[i, (i + 1) % (n)] for i in range(n//2, n-1)]
-        bottom_connections = [[i, n-i-1] for i in range(n//2)]
+        bottom_side_1 = [[i, (i + 1) % (n)] for i in range((n - 1) // 2)]
+        bottom_side_2 = [[i, (i + 1) % (n)] for i in range(n // 2, n - 1)]
+        bottom_connections = [[i, n - i - 1] for i in range(n // 2)]
         bottom_loop = bottom_connections + bottom_side_1 + bottom_side_2
         edges.extend(bottom_loop)
 
