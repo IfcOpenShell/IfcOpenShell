@@ -131,7 +131,6 @@ class CreateProject(bpy.types.Operator):
         )
         bonsai.bim.schema.reload(tool.Ifc.get().schema_identifier)
         tool.Blender.register_toolbar()
-        tool.Root.reload_item_decorator()
 
     def rollback(self, data):
         IfcStore.file = None
@@ -843,7 +842,6 @@ class LoadProjectElements(bpy.types.Operator):
         tool.Project.set_default_context()
         tool.Project.set_default_modeling_dimensions()
         tool.Root.reload_grid_decorator()
-        tool.Root.reload_item_decorator()
         return {"FINISHED"}
 
     def get_decomposition_elements(self):

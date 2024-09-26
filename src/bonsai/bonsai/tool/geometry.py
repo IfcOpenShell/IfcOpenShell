@@ -1434,7 +1434,8 @@ class Geometry(bonsai.core.tool.Geometry):
         has_changed = False
 
         for item_obj in props.item_objs:
-            obj = item_obj.obj
+            if not (obj := item_obj.obj):
+                continue
             item = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
             if item.is_a("IfcSweptAreaSolid"):
                 if not tool.Ifc.is_moved(obj):
@@ -1455,6 +1456,7 @@ class Geometry(bonsai.core.tool.Geometry):
                     ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_position)
         if has_changed:
             cls.reload_representation(rep_obj)
+            tool.Root.reload_item_decorator()
 
     @classmethod
     def import_item_attributes(cls, obj: bpy.types.Object) -> None:

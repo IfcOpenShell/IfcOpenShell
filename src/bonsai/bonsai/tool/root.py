@@ -217,8 +217,7 @@ class Root(bonsai.core.tool.Root):
 
     @classmethod
     def reload_item_decorator(cls) -> None:
-        item_objs = bpy.context.scene.BIMGeometryProperties.item_objs
-        item_objs.clear()
+        bpy.context.view_layer.update()
         ItemDecorator.install(bpy.context)
 
     @classmethod

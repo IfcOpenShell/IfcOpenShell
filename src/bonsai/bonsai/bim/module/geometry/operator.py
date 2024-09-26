@@ -1745,6 +1745,7 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
                 return bpy.ops.bim.edit_boundary_geometry()
             elif tool.Geometry.is_representation_item(context.active_object):
                 self.edit_representation_item(context.active_object)
+                tool.Root.reload_item_decorator()
                 return {"FINISHED"}
 
         objs = context.selected_objects or [context.active_object]
@@ -2357,6 +2358,8 @@ class ImportRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
 
             if tool.Geometry.is_meshlike_item(item):
                 tool.Geometry.lock_object(item_obj)
+
+        tool.Root.reload_item_decorator()
 
 
 class UpdateItemAttributes(bpy.types.Operator, tool.Ifc.Operator):
