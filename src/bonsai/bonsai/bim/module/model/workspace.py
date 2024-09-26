@@ -723,11 +723,12 @@ class EditObjectUI:
     def draw_void(cls, context, row):
         ui_context = str(context.region.type)
 
-        if len(context.selected_objects) > 1:
-            op_text = "Apply Void" if ui_context != "TOOL_HEADER" else ""
-            op_icon = custom_icon_previews["APPLY_VOID"].icon_id
-            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
-            row.operator("bim.add_opening", text=op_text, icon_value=op_icon)
+        if len(context.selected_objects) == 2:
+            if any(obj.name.startswith(('Opening', 'IfcOpeningElement')) for obj in bpy.data.objects):
+                op_text = "Apply Void" if ui_context != "TOOL_HEADER" else ""
+                op_icon = custom_icon_previews["APPLY_VOID"].icon_id
+                row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+                row.operator("bim.add_opening", text=op_text, icon_value=op_icon)
         else:
             op_text = "Add Void" if ui_context != "TOOL_HEADER" else ""
             op_icon = custom_icon_previews["ADD_VOID"].icon_id
