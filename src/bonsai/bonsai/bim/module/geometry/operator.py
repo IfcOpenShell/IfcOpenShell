@@ -2347,7 +2347,6 @@ class ImportRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
 
             item_obj = bpy.data.objects.new(f"Item/{item.is_a()}/{item_id}", item_mesh)
             item_obj.matrix_world = obj.matrix_world
-            item_obj.show_in_front = True
             bpy.context.collection.objects.link(item_obj)
 
             new = props.item_objs.add()
