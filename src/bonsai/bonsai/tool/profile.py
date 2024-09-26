@@ -143,11 +143,10 @@ class Profile(bonsai.core.tool.Profile):
         "IfcCircleHollowProfileDef": {
             "WallThickness": 0.01,
         },
-        # TODO: check shape after fixing crash
-        # "IfcEllipseProfileDef": {
-        #     "SemiAxis1": 0.1,
-        #     "SemiAxis2": 0.1,
-        # },
+        "IfcEllipseProfileDef": {
+            "SemiAxis1": 0.15,
+            "SemiAxis2": 0.1,
+        },
         # HEA100
         "IfcIShapeProfileDef": {
             "OverallWidth": 0.1,
