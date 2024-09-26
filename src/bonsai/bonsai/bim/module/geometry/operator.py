@@ -23,10 +23,11 @@ import logging
 import numpy as np
 import numpy.typing as npt
 import ifcopenshell
-import ifcopenshell.util.unit
 import ifcopenshell.util.element
-import ifcopenshell.util.representation
 import ifcopenshell.util.placement
+import ifcopenshell.util.representation
+import ifcopenshell.util.shape_builder
+import ifcopenshell.util.unit
 import ifcopenshell.api
 import ifcopenshell.api.grid
 import bonsai.core.geometry
@@ -41,7 +42,7 @@ from mathutils import Vector, Matrix
 from time import time
 from bonsai.bim.ifc import IfcStore
 from ifcopenshell.util.shape_builder import ShapeBuilder
-from typing import Any
+from typing import Any, Union
 from bonsai.bim.module.model.decorator import ProfileDecorator
 
 
@@ -1623,7 +1624,7 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
         elif len(selected_objs) > 1:
             self.handle_multiple_selected_objects(context)
 
-    def handle_single_object(self, context, obj):
+    def handle_single_object(self, context: bpy.types.Context, obj: bpy.types.Object) -> None:
         element = tool.Ifc.get_entity(obj)
         if obj == context.scene.BIMGeometryProperties.representation_obj:
             self.report({"ERROR"}, f"Element '{obj.name}' is in item mode and cannot be edited directly")
@@ -1658,7 +1659,7 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
         else:  # A regular Blender object
             self.enable_edit_mode(context)
 
-    def handle_multiple_selected_objects(self, context):
+    def handle_multiple_selected_objects(self, context: bpy.types.Context) -> Union[None, set[str]]:
         obj = context.active_object
         if obj and (tool.Ifc.get_entity(obj) or tool.Geometry.is_representation_item(obj)):
             tool.Blender.select_and_activate_single_object(context, obj)
@@ -1683,7 +1684,7 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
                     tool.Blender.select_and_activate_single_object(context, obj)
                     self.handle_single_object(obj)
 
-    def enable_editing_representation_item(self, context, obj):
+    def enable_editing_representation_item(self, context: bpy.types.Context, obj: bpy.types.Object) -> None:
         item = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
         if tool.Geometry.is_meshlike_item(item):
             tool.Geometry.dissolve_triangulated_edges(obj)
@@ -1701,7 +1702,7 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
         else:
             self.report({"INFO"}, f"Editing {item.is_a()} geometry is not supported")
 
-    def enable_edit_mode(self, context):
+    def enable_edit_mode(self, context: bpy.types.Context) -> Union[None, set[str]]:
         if tool.Blender.toggle_edit_mode(context) == {"CANCELLED"}:
             return {"CANCELLED"}
         context.scene.BIMGeometryProperties.is_changing_mode = True
@@ -1720,7 +1721,7 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
     def invoke(self, context, event):
         return IfcStore.execute_ifc_operator(self, context, is_invoke=True)
 
-    def _invoke(self, context, event):
+    def _invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> set[str]:
         if not tool.Ifc.get():
             return tool.Blender.toggle_edit_mode(context)
 
@@ -1820,7 +1821,7 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
             tool.Ifc.finish_edit(obj)
         return {"FINISHED"}
 
-    def edit_representation_item(self, obj):
+    def edit_representation_item(self, obj: bpy.types.Object) -> None:
         item = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
         if tool.Geometry.is_meshlike_item(item):
             if tool.Geometry.has_geometric_data(obj) and obj.data.polygons:

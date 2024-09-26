@@ -37,6 +37,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+from typing import Union, Literal
 
 
 psetnames = {}
@@ -265,7 +266,7 @@ class AddEditProperties(PropertyGroup):
     template_type: EnumProperty(items=get_template_type, name="Template Type")
     enum_values: CollectionProperty(name="Enum Values", type=Attribute)
 
-    def get_value_name(self):
+    def get_value_name(self) -> Union[Literal["string_value", "bool_value", "int_value", "float_value"], None]:
         ifc_data_type = IfcStore.get_schema().declaration_by_name(self.primary_measure_type)
         data_type = ifcopenshell.util.attribute.get_primitive_type(ifc_data_type)
         if data_type == "string":

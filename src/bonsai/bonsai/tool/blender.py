@@ -717,7 +717,7 @@ class Blender(bonsai.core.tool.Blender):
             return obj
 
     @classmethod
-    def lock_transform(cls, obj: bpy.types.ObjectBase, lock_state=True) -> None:
+    def lock_transform(cls, obj: bpy.types.Object, lock_state=True) -> None:
         for prop in ("lock_location", "lock_rotation", "lock_scale"):
             attr = getattr(obj, prop)
             for axis_idx in range(3):
