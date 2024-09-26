@@ -1682,7 +1682,7 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
                 elif ifc_objs:
                     obj = ifc_objs[0]
                     tool.Blender.select_and_activate_single_object(context, obj)
-                    self.handle_single_object(obj)
+                    self.handle_single_object(context, obj)
 
     def enable_editing_representation_item(self, context: bpy.types.Context, obj: bpy.types.Object) -> None:
         item = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
