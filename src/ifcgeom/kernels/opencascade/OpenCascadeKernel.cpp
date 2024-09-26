@@ -405,7 +405,12 @@ bool IfcGeom::OpenCascadeKernel::convert_impl(const taxonomy::revolve::ptr r, If
 		return false;
 	}
 
-	TopoDS_Shape shape = BRepPrimAPI_MakeRevol(face, ax);
+	TopoDS_Shape shape;
+	if (r->angle) {
+		shape = BRepPrimAPI_MakeRevol(face, ax, *r->angle);
+	} else {
+		shape = BRepPrimAPI_MakeRevol(face, ax);
+	}
 
 	results.emplace_back(ConversionResult(
 		r->instance->as<IfcUtil::IfcBaseEntity>()->id(),
