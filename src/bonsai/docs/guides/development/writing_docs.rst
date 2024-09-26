@@ -186,4 +186,20 @@ Now you can generate the documentation:
     cd _build/html
     python -m http.server
 
-You will now have a local webserver running hosting the documentation.
+
+You will now have a local webserver running hosting the documentation. Your terminal 
+will return something like seen underneath, replace [::] with localhost. 
+
+.. code:: 
+      
+      Serving HTTP on :: port 8000 (http://[::]:8000/) ...
+      
+When you want to see changes you have made in your IDE:
+
+- Kill the terminal, eg. the server.
+- Run the make and build sequence above again.
+
+.. tip::
+
+   If you make small incremental changes, you can avoid the cd navigation in many IDE's 
+   by right clicking on the docs folder and open a fresh terminal from there.
