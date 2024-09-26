@@ -844,7 +844,7 @@ class Geometry(bonsai.core.tool.Geometry):
 
     @classmethod
     def is_movable(cls, item: ifcopenshell.entity_instance) -> bool:
-        return item.is_a("IfcSweptAreaSolid")
+        return item.is_a("IfcSweptAreaSolid") or item.is_a("IfcConic")
 
     @classmethod
     def is_profile_based(cls, data: bpy.types.Mesh) -> bool:
@@ -1441,13 +1441,13 @@ class Geometry(bonsai.core.tool.Geometry):
             if not (obj := item_obj.obj):
                 continue
             item = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
-            if item.is_a("IfcSweptAreaSolid"):
+            if (is_swept_area := item.is_a("IfcSweptAreaSolid")) or item.is_a("IfcConic"):
                 if not tool.Ifc.is_moved(obj):
                     continue
                 has_changed = True
                 old_position = item.Position
 
-                if np.allclose(np.array(rep_matrix), np.array(obj.matrix_world), atol=1e-4):
+                if is_swept_area and np.allclose(np.array(rep_matrix), np.array(obj.matrix_world), atol=1e-4):
                     if old_position:
                         item.Position = None
                         ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_position)
@@ -1458,6 +1458,7 @@ class Geometry(bonsai.core.tool.Geometry):
                 item.Position = builder.create_axis2_placement_3d_from_matrix(np.array(position))
                 if old_position:
                     ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_position)
+
         if has_changed:
             cls.reload_representation(rep_obj)
             tool.Root.reload_item_decorator()
@@ -1489,10 +1490,12 @@ class Geometry(bonsai.core.tool.Geometry):
             for vert in obj.data.vertices:
                 vert.co -= coordinate_offset
 
-        if item.is_a("IfcSweptAreaSolid"):
-            if item.Position:
+        if (is_swept_area := item.is_a("IfcSweptAreaSolid")) or item.is_a("IfcConic"):
+            position = item.Position
+            # Positional is optionaly only for SweptAreaSolid.
+            if position or not is_swept_area:
                 unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-                position = Matrix(ifcopenshell.util.placement.get_axis2placement(item.Position).tolist())
+                position = Matrix(ifcopenshell.util.placement.get_axis2placement(position).tolist())
                 position.translation *= unit_scale
                 item_matrix = rep_obj.matrix_world.copy()
                 if coordinate_offset:
@@ -1503,9 +1506,7 @@ class Geometry(bonsai.core.tool.Geometry):
                 transformation_i = transformation.inverted()
 
                 obj.matrix_world = item_matrix
-
-                for vert in obj.data.vertices:
-                    vert.co = transformation_i @ vert.co
+                obj.data.transform(transformation_i)
             cls.record_object_position(obj)
 
     @classmethod
