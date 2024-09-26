@@ -27,4 +27,4 @@ include = ["bonsai*"]
 exclude = ["test*"]
 
 [tool.setuptools.package-data]
-"*" = ["*.*"]
+"*" = ["*.*", "libs/desktop/bonsai"]
