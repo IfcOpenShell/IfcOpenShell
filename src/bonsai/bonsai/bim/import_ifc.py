@@ -560,6 +560,7 @@ class IfcImporter:
             shape = tool.Loader.create_generic_shape(axis.AxisCurve)
             mesh = self.create_mesh(axis, shape)
             obj = bpy.data.objects.new(tool.Loader.get_name(axis), mesh)
+            obj.show_in_front = True
             self.link_element(axis, obj)
             self.set_matrix_world(obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, grid_placement.copy()))
 

@@ -70,7 +70,7 @@ class GridDecorator:
             if obj.select_get() and context.mode != "OBJECT":
                 continue
 
-            tag = obj.name.split("/")[-1]
+            tag = obj.name.split("/")[-1].split(".")[0]
             matrix_world = obj.matrix_world
             v1 = matrix_world @ obj.data.vertices[0].co
             v2 = matrix_world @ obj.data.vertices[1].co
@@ -98,6 +98,7 @@ class GridDecorator:
         selected_elements_color = self.addon_prefs.decorator_color_selected
         unselected_elements_color = self.addon_prefs.decorator_color_unselected
         special_elements_color = self.addon_prefs.decorator_color_special
+        decorator_color_background = self.addon_prefs.decorator_color_background
 
         gpu.state.point_size_set(6)
         gpu.state.blend_set("ALPHA")
@@ -106,7 +107,7 @@ class GridDecorator:
         self.line_shader.bind()  # required to be able to change uniforms of the shader
         # POLYLINE_UNIFORM_COLOR specific uniforms
         self.line_shader.uniform_float("viewportSize", (context.region.width, context.region.height))
-        self.line_shader.uniform_float("lineWidth", 2.0)
+        self.line_shader.uniform_float("lineWidth", 1.0)
 
         # general shader
         self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
@@ -133,7 +134,7 @@ class GridDecorator:
                 verts.extend([v1, v2])
 
         if unselected_verts:
-            self.draw_batch("LINES", unselected_verts, unselected_elements_color, unselected_edges)
+            self.draw_batch("LINES", unselected_verts, decorator_color_background, unselected_edges)
 
         if selected_verts:
             self.draw_batch("LINES", selected_verts, selected_elements_color, selected_edges)
