@@ -43,6 +43,10 @@ class Context(bonsai.core.tool.Context):
                 elif name == "CoordinateSpaceDimension":
                     props.context_attributes.remove(props.context_attributes.find("CoordinateSpaceDimension"))
                     return True
+            else:  # IfcGeometricRepresentationContext
+                # Import precision as a string because Blender has problem displaying 1e-7 and smaller numbers in UI.
+                if name == "Precision":
+                    prop.data_type = "string"
 
         bonsai.bim.helper.import_attributes(context.is_a(), props.context_attributes, context.get_info(), callback)
 
@@ -56,4 +60,12 @@ class Context(bonsai.core.tool.Context):
 
     @classmethod
     def export_attributes(cls) -> dict[str, Any]:
-        return bonsai.bim.helper.export_attributes(bpy.context.scene.BIMContextProperties.context_attributes)
+        def callback(attributes, blender_attribute) -> bool:
+            if blender_attribute.name == "Precision":
+                attributes["Precision"] = float(blender_attribute.get_value())
+                return True
+            return False
+
+        return bonsai.bim.helper.export_attributes(
+            bpy.context.scene.BIMContextProperties.context_attributes, callback=callback
+        )
