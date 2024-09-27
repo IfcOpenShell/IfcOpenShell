@@ -774,17 +774,16 @@ class PolylinePoint(PropertyGroup):
     x: bpy.props.FloatProperty(name="X")
     y: bpy.props.FloatProperty(name="Y")
     z: bpy.props.FloatProperty(name="Z")
-
-
-class PolylineMeasurement(PropertyGroup):
     dim: bpy.props.StringProperty(name="Dimension")
     angle: bpy.props.StringProperty(name="Angle")
     position: bpy.props.FloatVectorProperty(name="Decorator Position", size=3)
 
+class MeasurePolyline(PropertyGroup):
+    polyline_point: bpy.props.CollectionProperty(type=PolylinePoint)
 
 class BIMPolylineProperties(PropertyGroup):
     snap_mouse_point: bpy.props.CollectionProperty(type=SnapMousePoint)
     snap_mouse_ref: bpy.props.CollectionProperty(type=SnapMousePoint)
     polyline_point: bpy.props.CollectionProperty(type=PolylinePoint)
-    polyline_measurement: bpy.props.CollectionProperty(type=PolylineMeasurement)
     product_preview: bpy.props.CollectionProperty(type=PolylinePoint)
+    measure_polyline: bpy.props.CollectionProperty(type=MeasurePolyline)

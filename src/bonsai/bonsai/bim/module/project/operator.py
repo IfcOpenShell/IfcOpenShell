@@ -51,7 +51,7 @@ from mathutils import Vector, Matrix
 from bpy.app.handlers import persistent
 from ifcopenshell.geom import ShapeElementType
 from bonsai.bim.module.project.data import LinksData
-from bonsai.bim.module.project.decorator import ProjectDecorator, ClippingPlaneDecorator
+from bonsai.bim.module.project.decorator import ProjectDecorator, ClippingPlaneDecorator, MeasureDecorator
 from bonsai.bim.module.model.decorator import PolylineDecorator
 from bonsai.bim.module.model.polyline import PolylineOperator
 from typing import Union
@@ -2340,6 +2340,7 @@ class MeasureTool(bpy.types.Operator, PolylineOperator):
         A: Angle Input
         M: Modify Snap Point
         C: Close Polyline
+        E: Erase previous polylines
         BACKSPACE: Remove Point
         X, Y, Z: Choose Axis
         S-X, S-Y, S-Z: Choose Plane
@@ -2366,13 +2367,20 @@ class MeasureTool(bpy.types.Operator, PolylineOperator):
         ):
             context.workspace.status_text_set(text=None)
             PolylineDecorator.uninstall()
+            tool.Snap.move_polyline_to_measure()
             tool.Snap.clear_polyline()
+            MeasureDecorator.install(context)
             tool.Blender.update_viewport()
             return {"FINISHED"}
 
         self.handle_keyboard_input(context, event)
 
         self.handle_inserting_polyline(context, event)
+
+        if event.type == "E":
+            context.scene.BIMPolylineProperties.measure_polyline.clear()
+            MeasureDecorator.uninstall()
+            tool.Blender.update_viewport()
 
         result = self.handle_cancelation(context, event)
         if result is not None:
@@ -2383,3 +2391,4 @@ class MeasureTool(bpy.types.Operator, PolylineOperator):
     def invoke(self, context, event):
         super().invoke(context, event)
         return {"RUNNING_MODAL"}
+

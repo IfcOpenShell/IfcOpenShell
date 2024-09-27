@@ -454,7 +454,7 @@ class PolylineDecorator:
     def draw_measurements(self, context):
         region = context.region
         rv3d = region.data
-        measurement_prop = context.scene.BIMPolylineProperties.polyline_measurement
+        measurement_prop = context.scene.BIMPolylineProperties.polyline_point
 
         self.addon_prefs = tool.Blender.get_addon_preferences()
         self.font_id = 1
