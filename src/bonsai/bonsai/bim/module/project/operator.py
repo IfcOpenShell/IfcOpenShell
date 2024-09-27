@@ -1021,7 +1021,11 @@ class UnloadLink(bpy.types.Operator):
                 bpy.data.scenes.remove(scene)
 
         links = context.scene.BIMProjectProperties.links
-        links.get(self.filepath).is_loaded = False
+        link = links.get(self.filepath)
+        # Let's assume that user might delete it.
+        if empty_handle := link.empty_handle:
+            bpy.data.objects.remove(empty_handle)
+        link.is_loaded = False
 
         if not any([l.is_loaded for l in links]):
             ProjectDecorator.uninstall()
@@ -1058,14 +1062,20 @@ class LoadLink(bpy.types.Operator):
     def link_blend(self, filepath: str) -> None:
         with bpy.data.libraries.load(filepath, link=True) as (data_from, data_to):
             data_to.scenes = data_from.scenes
+        link = bpy.context.scene.BIMProjectProperties.links.get(self.filepath)
         for scene in bpy.data.scenes:
             if not scene.library or scene.library.filepath.replace("\\", "/") != filepath:
                 continue
             for child in scene.collection.children:
                 if "IfcProject" not in child.name:
                     continue
-                bpy.data.scenes[0].collection.children.link(child)
-        link = bpy.context.scene.BIMProjectProperties.links.get(self.filepath)
+                empty = bpy.data.objects.new(child.name, None)
+                empty.instance_type = "COLLECTION"
+                empty.instance_collection = child
+                link.empty_handle = empty
+                bpy.context.scene.collection.objects.link(empty)
+                break
+            break
         link.is_loaded = True
 
     def link_ifc(self) -> Union[set[str], None]:
