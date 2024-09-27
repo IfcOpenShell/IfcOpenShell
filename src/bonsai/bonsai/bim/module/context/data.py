@@ -18,6 +18,8 @@
 
 import bpy
 import bonsai.tool as tool
+import ifcopenshell
+from typing import Any
 
 
 def refresh():
@@ -34,7 +36,7 @@ class ContextData:
         cls.is_loaded = True
 
     @classmethod
-    def get_contexts(cls):
+    def get_contexts(cls) -> list[dict[str, Any]]:
         results = []
         for context in tool.Ifc.get().by_type("IfcGeometricRepresentationContext", include_subtypes=False):
             results.append(
@@ -42,14 +44,12 @@ class ContextData:
                     "id": context.id(),
                     "context_type": context.ContextType,
                     "subcontexts": cls.get_subcontexts(context),
-                    "is_editing": bpy.context.scene.BIMContextProperties.active_context_id == context.id(),
-                    "props": bpy.context.scene.BIMContextProperties.context_attributes,
                 }
             )
         return results
 
     @classmethod
-    def get_subcontexts(cls, context):
+    def get_subcontexts(cls, context: ifcopenshell.entity_instance) -> list[dict[str, Any]]:
         results = []
         for subcontext in context.HasSubContexts:
             results.append(
@@ -58,8 +58,6 @@ class ContextData:
                     "context_type": subcontext.ContextType,
                     "context_identifier": subcontext.ContextIdentifier,
                     "target_view": subcontext.TargetView,
-                    "is_editing": bpy.context.scene.BIMContextProperties.active_context_id == subcontext.id(),
-                    "props": bpy.context.scene.BIMContextProperties.context_attributes,
                 }
             )
         return results
