@@ -1368,7 +1368,10 @@ class IfcImporter:
 
             mesh = bpy.data.meshes.new(tool.Loader.get_mesh_name_from_shape(geometry))
 
-            if cartesian_point_offset:
+            if cartesian_point_offset is False:
+                verts = geometry.verts
+                mesh["has_cartesian_point_offset"] = False
+            elif cartesian_point_offset is not None:
                 verts_array = np.array(geometry.verts)
                 offset = np.array([-cartesian_point_offset[0], -cartesian_point_offset[1], -cartesian_point_offset[2]])
                 offset_verts = verts_array + np.tile(offset, len(verts_array) // 3)
@@ -1378,9 +1381,6 @@ class IfcImporter:
                 mesh["cartesian_point_offset"] = (
                     f"{cartesian_point_offset[0]},{cartesian_point_offset[1]},{cartesian_point_offset[2]}"
                 )
-            elif cartesian_point_offset is False:
-                verts = geometry.verts
-                mesh["has_cartesian_point_offset"] = False
             elif geometry.verts and tool.Loader.is_point_far_away(
                 (geometry.verts[0], geometry.verts[1], geometry.verts[2]), is_meters=True
             ):

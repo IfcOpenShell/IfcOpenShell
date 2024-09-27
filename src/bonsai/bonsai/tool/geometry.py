@@ -22,6 +22,7 @@ import struct
 import hashlib
 import logging
 import numpy as np
+import numpy.typing as npt
 import multiprocessing
 import ifcopenshell
 import ifcopenshell.api
@@ -460,12 +461,12 @@ class Geometry(bonsai.core.tool.Geometry):
         return ifcopenshell.util.representation.get_representation(element, context)
 
     @classmethod
-    def get_cartesian_point_offset(cls, obj: bpy.types.Object) -> Vector | None:
+    def get_cartesian_point_offset(cls, obj: bpy.types.Object) -> npt.NDArray[np.float64] | None:
         if (
             obj.BIMObjectProperties.blender_offset_type == "CARTESIAN_POINT"
             and obj.BIMObjectProperties.cartesian_point_offset
         ):
-            return Vector(tuple(map(float, obj.BIMObjectProperties.cartesian_point_offset.split(","))))
+            return np.array(tuple(map(float, obj.BIMObjectProperties.cartesian_point_offset.split(","))))
 
     @classmethod
     def get_element_type(cls, element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
@@ -693,8 +694,11 @@ class Geometry(bonsai.core.tool.Geometry):
                         if element.is_a("IfcAnnotation") and ifc_importer.is_curve_annotation(element):
                             mesh = ifc_importer.create_curve(element, shape)
                         elif shape:
+                            cartesian_point_offset = cls.get_cartesian_point_offset(obj)
+                            if cartesian_point_offset is None:
+                                cartesian_point_offset = False
                             mesh = ifc_importer.create_mesh(
-                                element, shape, cartesian_point_offset=cls.get_cartesian_point_offset(obj) or False
+                                element, shape, cartesian_point_offset=cartesian_point_offset
                             )
                             ifc_importer.material_creator.load_existing_materials()
                             shape_has_openings = cls.does_shape_has_openings(shape)
@@ -1435,10 +1439,10 @@ class Geometry(bonsai.core.tool.Geometry):
         rep_obj = props.representation_obj
 
         coordinate_offset = cls.get_cartesian_point_offset(rep_obj)
-        rep_matrix = rep_obj.matrix_world.copy()
-        if coordinate_offset:
-            rep_matrix.translation -= coordinate_offset
-        rep_matrix_i = rep_matrix.inverted()
+        rep_matrix = np.array(rep_obj.matrix_world.copy())
+        if coordinate_offset is not None:
+            rep_matrix[:, 3][0:3] -= coordinate_offset
+        rep_matrix_i = np.linalg.inv(rep_matrix)
 
         builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
         has_changed = False
@@ -1459,9 +1463,9 @@ class Geometry(bonsai.core.tool.Geometry):
                         ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_position)
                     continue
 
-                position = rep_matrix_i @ obj.matrix_world
-                position.translation /= unit_scale
-                item.Position = builder.create_axis2_placement_3d_from_matrix(np.array(position))
+                position = rep_matrix_i @ np.array(obj.matrix_world)
+                position[:, 3][0:3] /= unit_scale
+                item.Position = builder.create_axis2_placement_3d_from_matrix(position)
                 if old_position:
                     ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_position)
 
@@ -1482,31 +1486,36 @@ class Geometry(bonsai.core.tool.Geometry):
     @classmethod
     def import_item(cls, obj: bpy.types.Object) -> None:
         props = bpy.context.scene.BIMGeometryProperties
+        rep_obj = props.representation_obj
         tool.Loader.settings.contexts = ifcopenshell.util.representation.get_prioritised_contexts(tool.Ifc.get())
         tool.Loader.settings.context_settings = tool.Loader.create_settings()
         tool.Loader.settings.gross_context_settings = tool.Loader.create_settings(is_gross=True)
         item = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
-        geometry = tool.Loader.create_generic_shape(item)
         obj.data.clear_geometry()
-        tool.Loader.convert_geometry_to_mesh(geometry, obj.data)
 
-        rep_obj = props.representation_obj
+        geometry = tool.Loader.create_generic_shape(item)
+        if (cartesian_point_offset := cls.get_cartesian_point_offset(rep_obj)) is not None:
+            verts_array = np.array(geometry.verts)
+            offset = np.array([-cartesian_point_offset[0], -cartesian_point_offset[1], -cartesian_point_offset[2]])
+            offset_verts = verts_array + np.tile(offset, len(verts_array) // 3)
+            verts = offset_verts.tolist()
+        else:
+            verts = geometry.verts
+        tool.Loader.convert_geometry_to_mesh(geometry, obj.data, verts=verts)
+
         obj.matrix_world = rep_obj.matrix_world.copy()
-        if coordinate_offset := cls.get_cartesian_point_offset(rep_obj):
-            for vert in obj.data.vertices:
-                vert.co -= coordinate_offset
 
         if (is_swept_area := item.is_a("IfcSweptAreaSolid")) or item.is_a("IfcConic"):
             position = item.Position
             # Positional is optionaly only for SweptAreaSolid.
             if position or not is_swept_area:
                 unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-                position = Matrix(ifcopenshell.util.placement.get_axis2placement(position).tolist())
-                position.translation *= unit_scale
-                item_matrix = rep_obj.matrix_world.copy()
-                if coordinate_offset:
-                    item_matrix.translation -= coordinate_offset
-                item_matrix = item_matrix @ position
+                position = ifcopenshell.util.placement.get_axis2placement(position)
+                position[:, 3][0:3] *= unit_scale
+                item_matrix = np.array(rep_obj.matrix_world.copy())
+                if cartesian_point_offset is not None:
+                    item_matrix[:, 3][0:3] -= cartesian_point_offset
+                item_matrix = Matrix(item_matrix @ position)
 
                 transformation = obj.matrix_world.inverted() @ item_matrix
                 transformation_i = transformation.inverted()
