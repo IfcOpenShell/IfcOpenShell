@@ -1831,8 +1831,8 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
                 unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
                 rep_obj = bpy.context.scene.BIMGeometryProperties.representation_obj
-                if coordinate_offset := tool.Geometry.get_cartesian_point_offset(rep_obj):
-                    verts = [(v.co + coordinate_offset) / unit_scale for v in obj.data.vertices]
+                if (coordinate_offset := tool.Geometry.get_cartesian_point_offset(rep_obj)) is not None:
+                    verts = [((np.array(v.co) + coordinate_offset) / unit_scale).tolist() for v in obj.data.vertices]
                 else:
                     verts = [v.co / unit_scale for v in obj.data.vertices]
 
