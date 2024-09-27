@@ -1888,12 +1888,21 @@ class AppendInspectedLinkedElement(AppendLibraryElement):
             return {"CANCELLED"}
 
         queried_obj = context.scene.BIMProjectProperties.queried_obj
-        ifc_file = ifcopenshell.open(queried_obj["ifc_filepath"])
-        element_to_append = ifc_file.by_guid(guid)
+
+        ifc_file = tool.Ifc.get()
+        linked_ifc_file = ifcopenshell.open(queried_obj["ifc_filepath"])
+        if ifc_file.schema_identifier != linked_ifc_file.schema_identifier:
+            self.report(
+                {"ERROR"},
+                f"Schema of linked file ({linked_ifc_file.schema_identifier}) is not compatible with the current IFC file ({ifc_file.schema_identifier}).",
+            )
+            return {"CANCELLED"}
+
+        element_to_append = linked_ifc_file.by_guid(guid)
         element = ifcopenshell.api.run(
             "project.append_asset",
             tool.Ifc.get(),
-            library=ifc_file,
+            library=linked_ifc_file,
             element=element_to_append,
         )
         self.import_product_from_ifc(element, context)
