@@ -1095,7 +1095,9 @@ class IfcImporter:
         self.mesh_data["loop_start"].extend(loop_start)
         # list(di1.keys())
 
-    def create_native_swept_disk_solid(self, element, mesh_name, native_data):
+    def create_native_swept_disk_solid(
+        self, element: ifcopenshell.entity_instance, mesh_name: str, native_data: dict[str, Any]
+    ) -> bpy.types.Curve:
         # TODO: georeferencing?
         curve = bpy.data.curves.new(mesh_name, type="CURVE")
         curve.dimensions = "3D"

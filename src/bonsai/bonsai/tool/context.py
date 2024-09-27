@@ -20,20 +20,22 @@ import bpy
 import bonsai.bim.helper
 import bonsai.tool as tool
 import bonsai.core.tool
+import ifcopenshell
+from typing import Any, Union
 
 
 class Context(bonsai.core.tool.Context):
     @classmethod
-    def set_context(cls, context):
+    def set_context(cls, context: ifcopenshell.entity_instance) -> None:
         bpy.context.scene.BIMContextProperties.active_context_id = context.id()
 
     @classmethod
-    def import_attributes(cls):
+    def import_attributes(cls) -> None:
         props = bpy.context.scene.BIMContextProperties
         props.context_attributes.clear()
         context = cls.get_context()
 
-        def callback(name, prop, data):
+        def callback(name: str, prop, data) -> Union[bool, None]:
             if context.is_a("IfcGeometricRepresentationSubContext"):
                 if name == "Precision":
                     props.context_attributes.remove(props.context_attributes.find("Precision"))
@@ -45,13 +47,13 @@ class Context(bonsai.core.tool.Context):
         bonsai.bim.helper.import_attributes(context.is_a(), props.context_attributes, context.get_info(), callback)
 
     @classmethod
-    def clear_context(cls):
+    def clear_context(cls) -> None:
         bpy.context.scene.BIMContextProperties.active_context_id = 0
 
     @classmethod
-    def get_context(cls):
+    def get_context(cls) -> ifcopenshell.entity_instance:
         return tool.Ifc.get().by_id(bpy.context.scene.BIMContextProperties.active_context_id)
 
     @classmethod
-    def export_attributes(cls):
+    def export_attributes(cls) -> dict[str, Any]:
         return bonsai.bim.helper.export_attributes(bpy.context.scene.BIMContextProperties.context_attributes)
