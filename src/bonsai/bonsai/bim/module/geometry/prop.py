@@ -63,7 +63,10 @@ def update_mode(self, context):
 def update_representation_obj(self, context):
     for item_obj in self.item_objs:
         if item_obj.obj:
+            data = item_obj.obj.data
             bpy.data.objects.remove(item_obj.obj)
+            if data and not data.users:
+                bpy.data.meshes.remove(data)
     self.item_objs.clear()
 
 
