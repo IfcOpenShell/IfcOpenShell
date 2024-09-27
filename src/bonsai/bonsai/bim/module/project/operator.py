@@ -160,8 +160,17 @@ class SelectLibraryFile(bpy.types.Operator, IFCFileSelector):
 
     def _execute(self, context):
         filepath = self.get_filepath()
+        ifc_file = tool.Ifc.get()
+        library_file = ifcopenshell.open(filepath)
+        if library_file.schema_identifier != ifc_file.schema_identifier:
+            self.report(
+                {"ERROR"},
+                f"Schema of library file ({library_file.schema_identifier}) is not compatible with the current IFC file ({ifc_file.schema_identifier}).",
+            )
+            return {"CANCELLED"}
+
         IfcStore.library_path = filepath
-        IfcStore.library_file = ifcopenshell.open(filepath)
+        IfcStore.library_file = library_file
         bpy.ops.bim.refresh_library()
         if context.area:
             context.area.tag_redraw()
