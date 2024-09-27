@@ -39,6 +39,7 @@
 #include "../serializers/XmlSerializer.h"
 #include "../serializers/SvgSerializer.h"
 #include "../serializers/USDSerializer.h"
+#include "../serializers/TtlWktSerializer.h"
 
 #include "../ifcgeom/IfcGeomFilter.h"
 #include "../ifcgeom/Iterator.h"
@@ -132,6 +133,7 @@ void print_usage(bool suggest_help = true)
 #ifdef IFOPSH_WITH_CGAL
 		<< "  .cityjson             City JSON format for geospatial data\n"
 #endif
+		<< "  .ttl   TTL/WKT        RDF Turtle with Well-Known-Text geometry\n"
 		<< "  .ifc   IFC-SPF        Industry Foundation Classes\n"
 		<< "\n"
         << "If no output filename given, <input>" << IfcUtil::path::from_utf8(DEFAULT_EXTENSION) << " will be used as the output file.\n";
@@ -647,7 +649,8 @@ int main(int argc, char** argv) {
 		IFC = IfcUtil::path::from_utf8(".ifc"),
 		USD = IfcUtil::path::from_utf8(".usd"),
 		USDA = IfcUtil::path::from_utf8(".usda"),
-		USDC = IfcUtil::path::from_utf8(".usdc");
+		USDC = IfcUtil::path::from_utf8(".usdc"),
+		TTL = IfcUtil::path::from_utf8(".ttl");
 
 	// @todo clean up serializer selection
 	// @todo detect program options that conflict with the chosen serializer
@@ -826,6 +829,10 @@ int main(int argc, char** argv) {
 		geometry_settings.get<ifcopenshell::geometry::settings::UseWorldCoords>().value = true;
 	}
 
+	if (output_extension == TTL) {
+		geometry_settings.get<ifcopenshell::geometry::settings::TriangulationType>().value = ifcopenshell::geometry::settings::TriangulationMethod::POLYHEDRON_WITH_HOLES;
+	}
+
 	boost::shared_ptr<GeometrySerializer> serializer; /**< @todo use std::unique_ptr when possible */
 	if (output_extension == OBJ) {
         // Do not use temp file for MTL as it's such a small file.
@@ -861,6 +868,8 @@ int main(int argc, char** argv) {
 		serializer = boost::make_shared<HdfSerializer>(IfcUtil::path::to_utf8(output_temp_filename), geometry_settings, serializer_settings);
 #endif
 #endif	
+	} else if (output_extension == TTL) {
+		serializer = boost::make_shared<TtlWktSerializer>(IfcUtil::path::to_utf8(output_temp_filename), geometry_settings, serializer_settings);
 	} else {
         cerr_ << "[Error] Unknown output filename extension '" << output_extension << "'\n";
 		write_log(!quiet);
