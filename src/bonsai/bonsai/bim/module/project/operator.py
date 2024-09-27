@@ -187,6 +187,7 @@ class SelectLibraryFile(bpy.types.Operator, IFCFileSelector):
 
     def draw(self, context):
         self.layout.prop(self, "append_all", text="Append Entire Library")
+        IFCFileSelector.draw(self, context)
 
 
 class RefreshLibrary(bpy.types.Operator):
