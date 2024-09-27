@@ -153,6 +153,7 @@ def import_attribute(
     new.data_type = data_type if isinstance(data_type, str) else ""
     new.ifc_class = data["type"]
     is_handled_by_callback = callback(attribute.name(), new, data) if callback else None
+    data_type = new.data_type  # Allow callback to override data type.
 
     if is_handled_by_callback:
         pass  # Our job is done
