@@ -246,13 +246,16 @@ class CreateShapeFromStepId(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
+        if not tool.Ifc.get():
+            cls.poll_message_set("No IFC file is loaded.")
+            return False
+        return True
 
     def execute(self, context):
         geometry_library = self.custom_geometry_library or self.geometry_library
         logger = logging.getLogger("ImportIFC")
         self.ifc_import_settings = import_ifc.IfcImportSettings.factory(context, IfcStore.path, logger)
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         element = self.file.by_id(self.step_id or int(context.scene.BIMDebugProperties.step_id))
         settings = ifcopenshell.geom.settings()
         settings.set("keep-bounding-boxes", True)
@@ -265,7 +268,7 @@ class CreateShapeFromStepId(bpy.types.Operator):
             mesh = ifc_importer.create_mesh(element, shape)
         else:
             mesh = None
-        obj = bpy.data.objects.new("Debug", mesh)
+        obj = bpy.data.objects.new(f"Debug/{element.is_a()}/{element.id()}", mesh)
         context.scene.collection.objects.link(obj)
         return {"FINISHED"}
 
