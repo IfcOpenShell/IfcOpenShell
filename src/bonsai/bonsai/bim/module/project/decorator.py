@@ -17,10 +17,12 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import gpu
+import blf
 import bpy
 import bmesh
 import bonsai.tool as tool
 from bpy.types import SpaceView3D
+from bpy_extras import view3d_utils
 from mathutils import Vector
 from gpu_extras.batch import batch_for_shader
 from bpy.app.handlers import persistent
@@ -201,3 +203,133 @@ class ClippingPlaneDecorator:
             if selected_edges:
                 self.draw_batch("LINES", selected_vertices, selected_elements_color, selected_edges)
                 self.draw_batch("TRIS", selected_vertices, transparent_color(selected_elements_color), selected_tris)
+
+
+class MeasureDecorator:
+    is_installed = False
+    handlers = []
+
+    @classmethod
+    def install(cls, context):
+        if cls.is_installed:
+            cls.uninstall()
+        handler = cls()
+        cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_measurements, (context,), "WINDOW", "POST_PIXEL"))
+        cls.handlers.append(SpaceView3D.draw_handler_add(handler, (context,), "WINDOW", "POST_VIEW"))
+        cls.is_installed = True
+
+    @classmethod
+    def uninstall(cls):
+        for handler in cls.handlers:
+            try:
+                SpaceView3D.draw_handler_remove(handler, "WINDOW")
+            except ValueError:
+                pass
+        cls.is_installed = False
+
+    def draw_batch(self, shader_type, content_pos, color, indices=None):
+        shader = self.line_shader if shader_type == "LINES" else self.shader
+        batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
+        shader.uniform_float("color", color)
+        batch.draw(shader)
+
+    def draw_text_background(self, context, coords_dim, text_dim):
+        padding = 5
+        theme = context.preferences.themes.items()[0][1]
+        color = (*theme.user_interface.wcol_menu_back.inner[:3], 0.5)  # unwrap color values and adds alpha
+        top_left = (coords_dim[0] - padding, coords_dim[1] + text_dim[1] + padding)
+        bottom_left = (coords_dim[0] - padding, coords_dim[1] - padding)
+        top_right = (coords_dim[0] + text_dim[0] + padding, coords_dim[1] + text_dim[1] + padding)
+        bottom_right = (coords_dim[0] + text_dim[0] + padding, coords_dim[1] - padding)
+
+        verts = [top_left, bottom_left, top_right, bottom_right]
+        gpu.state.blend_set("ALPHA")
+        self.draw_batch("TRIS", verts, color, [(0, 1, 2), (1, 2, 3)])
+
+    def draw_measurements(self, context):
+        region = context.region
+        rv3d = region.data
+        self.addon_prefs = tool.Blender.get_addon_preferences()
+        self.font_id = 1
+        self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
+        font_size = tool.Blender.scale_font_size(12)
+        blf.size(self.font_id, font_size)
+        blf.enable(self.font_id, blf.SHADOW)
+        blf.shadow(self.font_id, 6, 0, 0, 0, 1)
+        color = self.addon_prefs.decorations_colour
+        blf.color(self.font_id, *color)
+
+        measure_data = context.scene.BIMPolylineProperties.measure_polyline
+        for data in measure_data:
+            measurement_prop = data.polyline_point
+
+            for i in range(len(measurement_prop)):
+                if i == 0:
+                    continue
+                pos_dim = (Vector(measurement_prop[i].position) + Vector(measurement_prop[i - 1].position)) / 2
+                coords_dim = view3d_utils.location_3d_to_region_2d(region, rv3d, pos_dim)
+
+                formatted_value = measurement_prop[i].dim
+
+                blf.position(self.font_id, coords_dim[0], coords_dim[1], 0)
+                text = "d: " + formatted_value
+                text_dim = blf.dimensions(self.font_id, text)
+                self.draw_text_background(context, coords_dim, text_dim)
+                blf.draw(self.font_id, text)
+
+                if i == 1:
+                    continue
+                pos_angle = measurement_prop[i - 1].position
+                coords_angle = view3d_utils.location_3d_to_region_2d(region, rv3d, pos_angle)
+                blf.position(self.font_id, coords_angle[0], coords_angle[1], 0)
+                text = "a: " + measurement_prop[i].angle
+                text_dim = blf.dimensions(self.font_id, text)
+                self.draw_text_background(context, coords_angle, text_dim)
+                blf.draw(self.font_id, text)
+            blf.disable(self.font_id, blf.SHADOW)
+
+    def __call__(self, context):
+
+        self.addon_prefs = tool.Blender.get_addon_preferences()
+        decorator_color = self.addon_prefs.decorations_colour
+        decorator_color_special = self.addon_prefs.decorator_color_special
+        decorator_color_selected = self.addon_prefs.decorator_color_selected
+        decorator_color_error = self.addon_prefs.decorator_color_error
+        decorator_color_unselected = self.addon_prefs.decorator_color_unselected
+        decorator_color_background = self.addon_prefs.decorator_color_background
+        theme = context.preferences.themes.items()[0][1]
+        decorator_color_object_active = (*theme.view_3d.object_active, 1)  # unwrap color values and adds alpha=1
+        decorator_color_x_axis = (*theme.user_interface.axis_x, 1)
+        decorator_color_y_axis = (*theme.user_interface.axis_y, 1)
+        decorator_color_z_axis = (*theme.user_interface.axis_z, 1)
+
+        gpu.state.blend_set("ALPHA")
+        self.line_shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
+        self.line_shader.bind()  # required to be able to change uniforms of the shader
+        # POLYLINE_UNIFORM_COLOR specific uniforms
+        self.line_shader.uniform_float("viewportSize", (context.region.width, context.region.height))
+
+        # general shader
+        self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
+        gpu.state.point_size_set(6)
+
+
+        measure_data = context.scene.BIMPolylineProperties.measure_polyline
+        for data in measure_data:
+            polyline_data = data.polyline_point
+
+            polyline_points = []
+            polyline_edges = []
+            for point_prop in polyline_data:
+                point = Vector((point_prop.x, point_prop.y, point_prop.z))
+                polyline_points.append(point)
+
+            for i in range(len(polyline_points) - 1):
+                polyline_edges.append([i, i + 1])
+
+
+            # Draw polyline with selected points
+            self.line_shader.uniform_float("lineWidth", 2.0)
+            self.draw_batch("POINTS", polyline_points, decorator_color_unselected)
+            if len(polyline_points) > 1:
+                self.draw_batch("LINES", polyline_points, decorator_color_unselected, polyline_edges)
