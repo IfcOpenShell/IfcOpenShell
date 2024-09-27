@@ -193,7 +193,8 @@ constexpr bool is_std_vector_vector_v = is_std_vector_vector<T>::value;
 	#include "../serializers/HdfSerializer.h"
 	#include "../serializers/XmlSerializer.h"
 	#include "../serializers/GltfSerializer.h"
-	
+	#include "../serializers/TtlWktSerializer.h"
+
 #ifdef HAS_SCHEMA_2x3
 	#include "../ifcparse/Ifc2x3.h"
 #endif
