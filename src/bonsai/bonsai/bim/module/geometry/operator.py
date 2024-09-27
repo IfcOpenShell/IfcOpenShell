@@ -1631,7 +1631,9 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
         elif obj in bpy.context.scene.BIMProjectProperties.clipping_planes_objs:
             self.report({"ERROR"}, "Clipping planes cannot be edited")
         elif element:
-            if (usage := tool.Model.get_usage_type(element)) and usage in ("LAYER1", "LAYER2"):
+            if not obj.data:
+                self.report({"INFO"}, "No geometry to edit")
+            elif (usage := tool.Model.get_usage_type(element)) and usage in ("LAYER1", "LAYER2"):
                 self.report({"INFO"}, f"Parametric {usage} elements cannot be edited directly")
             elif tool.Geometry.is_locked(element):
                 self.report({"ERROR"}, f"Element '{obj.name}' is locked and cannot be edited")
