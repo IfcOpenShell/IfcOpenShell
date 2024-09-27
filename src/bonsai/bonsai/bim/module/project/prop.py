@@ -111,6 +111,11 @@ class Link(PropertyGroup):
     is_selectable: BoolProperty(name="Is Selectable", default=True)
     is_wireframe: BoolProperty(name="Is Wireframe", default=False)
     is_hidden: BoolProperty(name="Is Hidden", default=False)
+    empty_handle: PointerProperty(
+        name="Empty Object Handle",
+        description="We use empty object handle to allow simple manipulations with a linked model (moving, scaling, rotating)",
+        type=bpy.types.Object,
+    )
 
 
 class BIMProjectProperties(PropertyGroup):
