@@ -16,11 +16,12 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-# from datetime import date
+from __future__ import annotations
 import bpy
 import json
 import math
 import ifcopenshell
+import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.attribute
 import ifcopenshell.util.element
 import ifcopenshell.util.unit
@@ -29,14 +30,27 @@ from mathutils import geometry
 from mathutils import Vector
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
-from typing import Optional, Callable, Any, Union
+from typing import Optional, Callable, Any, Union, Iterable, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import bonsai.bim.prop
+
+    # ImportCallback return values:
+    # - None  - property should be imported by default workflow
+    # - True  - setting value for imported attribute should be skipped
+    # - False - property should be skipped entirely from import
+    ImportCallback = Callable[[str, Optional[bonsai.bim.prop.Attribute], dict[str, Any], Union[bool, None]]]
+    # ExportCallback return values:
+    # - True  - property should be skipped entirely from export
+    # - False - property should be exproted by default workflow
+    ExportCallback = Callable[[dict[str, Any], bonsai.bim.prop.Attribute], bool]
 
 
 def draw_attributes(
-    props: list[bpy.types.PropertyGroup],
+    props: list[bonsai.bim.prop.Attribute],
     layout: bpy.types.UILayout,
     copy_operator: Optional[str] = None,
-    popup_active_attribute: Optional[bpy.types.PropertyGroup] = None,
+    popup_active_attribute: Optional[bonsai.bim.prop.Attribute] = None,
 ) -> None:
     """you can set attribute active in popup with `active_attribute`
     meaning you will be able to type into attribute's field without having to click
@@ -50,7 +64,7 @@ def draw_attributes(
 
 
 def draw_attribute(
-    attribute: bpy.types.PropertyGroup, layout: bpy.types.UILayout, copy_operator: Optional[str] = None
+    attribute: bonsai.bim.prop.Attribute, layout: bpy.types.UILayout, copy_operator: Optional[str] = None
 ) -> None:
     value_name = attribute.get_value_name()
     if not value_name:
@@ -94,7 +108,12 @@ def draw_attribute(
         op.name = attribute.name
 
 
-def import_attributes(ifc_class, props, data, callback=None):
+def import_attributes(
+    ifc_class: str,
+    props: bpy.types.bpy_prop_collection,
+    data: dict[str, Any],
+    callback: Optional[ImportCallback] = None,
+) -> None:
     for attribute in IfcStore.get_schema().declaration_by_name(ifc_class).all_attributes():
         import_attribute(attribute, props, data, callback=callback)
 
@@ -102,8 +121,8 @@ def import_attributes(ifc_class, props, data, callback=None):
 # A more elegant attribute importer signature, intended to supersede import_attributes
 def import_attributes2(
     element: Union[str, ifcopenshell.entity_instance],
-    props: bpy.types.PropertyGroup,
-    callback: Optional[Callable] = None,
+    props: bpy.types.bpy_prop_collection,
+    callback: Optional[ImportCallback] = None,
 ) -> None:
     if isinstance(element, str):
         attributes = tool.Ifc.schema().declaration_by_name(element).as_entity().all_attributes()
@@ -116,8 +135,14 @@ def import_attributes2(
         import_attribute(attribute, props, info, callback=callback)
 
 
-def import_attribute(attribute, props, data, callback=None):
+def import_attribute(
+    attribute: W.attribute,
+    props: bpy.types.bpy_prop_collection,
+    data: dict[str, Any],
+    callback: Optional[ImportCallback] = None,
+) -> None:
     data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
+    # Complex data types (aggregates and entities) are handled only by callback.
     if isinstance(data_type, tuple) or data_type == "entity":
         callback(attribute.name(), None, data) if callback else None
         return
@@ -156,7 +181,7 @@ def import_attribute(attribute, props, data, callback=None):
 ATTRIBUTE_MIN_MAX_CONSTRAINTS = {"IfcMaterialLayer": {"Priority": {"value_min": 0, "value_max": 100}}}
 
 
-def add_attribute_min_max(attribute_blender):
+def add_attribute_min_max(attribute_blender: bonsai.bim.prop.Attribute) -> None:
     if attribute_blender.ifc_class in ATTRIBUTE_MIN_MAX_CONSTRAINTS:
         constraints = ATTRIBUTE_MIN_MAX_CONSTRAINTS[attribute_blender.ifc_class].get(attribute_blender.name, {})
         for constraint, value in constraints.items():
@@ -164,7 +189,9 @@ def add_attribute_min_max(attribute_blender):
             setattr(attribute_blender, constraint + "_constraint", True)
 
 
-def add_attribute_enum_items_descriptions(attribute_blender, enum_items):
+def add_attribute_enum_items_descriptions(
+    attribute_blender: bonsai.bim.prop.Attribute, enum_items: Iterable[str]
+) -> None:
     attribute_blender.enum_descriptions.clear()
     if isinstance(enum_items, dict):
         enum_items = enum_items.keys()
@@ -178,7 +205,7 @@ def add_attribute_enum_items_descriptions(attribute_blender, enum_items):
         new_enum_description.name = description
 
 
-def add_attribute_description(attribute_blender, attribute_ifc=None):
+def add_attribute_description(attribute_blender: bonsai.bim.prop.Attribute, attribute_ifc=None):
     if not attribute_blender.name:
         return
     version = tool.Ifc.get_schema()
@@ -196,8 +223,11 @@ def add_attribute_description(attribute_blender, attribute_ifc=None):
         attribute_blender.description = description
 
 
-def export_attributes(props, callback: Optional[Callable] = None) -> dict[str, Any]:
-    attributes = {}
+def export_attributes(
+    props: bpy.types.bpy_prop_collection,
+    callback: Optional[ExportCallback] = None,
+) -> dict[str, Any]:
+    attributes: dict[str, Any] = {}
     for prop in props:
         is_handled_by_callback = callback(attributes, prop) if callback else False
         if is_handled_by_callback:
@@ -206,7 +236,13 @@ def export_attributes(props, callback: Optional[Callable] = None) -> dict[str, A
     return attributes
 
 
-def prop_with_search(layout, data, prop_name, should_click_ok_to_validate=False, **kwargs):
+def prop_with_search(
+    layout: bpy.types.UILayout,
+    data: Union[bpy.types.PropertyGroup, bpy.types.ID],
+    prop_name: str,
+    should_click_ok_to_validate: bool = False,
+    **kwargs: Any,
+):
     # kwargs are layout.prop arguments (text, icon, etc.)
     row = layout.row(align=True)
     row.prop(data, prop_name, **kwargs)
@@ -221,7 +257,11 @@ def prop_with_search(layout, data, prop_name, should_click_ok_to_validate=False,
         pass
 
 
-def get_enum_items(data, prop_name, context=None):
+def get_enum_items(
+    data: Union[bpy.types.PropertyGroup, bpy.types.ID], prop_name: str, context: Optional[bpy.types.Context] = None
+) -> Union[
+    Iterable[Union[tuple[str, str, str], tuple[str, str, str, int], tuple[str, str, str, str, int], None]], None
+]:
     # Retrieve items from a dynamic EnumProperty, which is otherwise not supported
     # Or throws an error in the console when the items callback returns an empty list
     # See https://blender.stackexchange.com/q/215781/86891
@@ -235,7 +275,7 @@ def get_enum_items(data, prop_name, context=None):
     return items
 
 
-def convert_property_group_from_si(property_group, skip_props=()):
+def convert_property_group_from_si(property_group: bpy.types.PropertyGroup, skip_props: tuple[str, ...] = ()) -> None:
     """Method converts property group values from si to current ifc project units
 
     based on default values of the properties.
@@ -254,7 +294,7 @@ def convert_property_group_from_si(property_group, skip_props=()):
         setattr(property_group, prop_name, prop_value)
 
 
-def draw_filter(layout, filter_groups, data, module):
+def draw_filter(layout: bpy.types.UILayout, filter_groups, data, module: str) -> None:
     if not data.is_loaded:
         data.load()
 
