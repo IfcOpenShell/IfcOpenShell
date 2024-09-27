@@ -281,7 +281,10 @@ class Model(bonsai.core.tool.Model):
         if obj is None:
             obj = bpy.data.objects.new("Profile", mesh)
         else:
+            old_data = obj.data
             obj.data = mesh
+            if old_data and not old_data.users:
+                bpy.data.meshes.remove(old_data)
 
         for arc in cls.arcs:
             group = obj.vertex_groups.new(name="IFCARCINDEX")
