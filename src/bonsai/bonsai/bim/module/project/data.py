@@ -19,7 +19,10 @@
 import os
 import bpy
 import bonsai.tool as tool
+import ifcopenshell.util.file
 from bonsai.bim.ifc import IfcStore
+from pathlib import Path
+from typing import Union
 
 
 def refresh():
@@ -30,6 +33,7 @@ def refresh():
 class ProjectData:
     data = {}
     is_loaded = False
+    filepath_schema_cache: dict[Path, Union[str, None]] = {}
 
     @classmethod
     def load(cls):
@@ -42,14 +46,34 @@ class ProjectData:
         cls.is_loaded = True
 
     @classmethod
+    def get_file_schema(cls, filepath: Path) -> Union[str, None]:
+        # Let's assume that filepath won't be changing schema during current Blender session
+        # to avoid reading header from the library files on every UI update.
+        # If it will be an issue, we can also consider last modified time.
+        if filepath not in cls.filepath_schema_cache:
+            extractor = ifcopenshell.util.file.IfcHeaderExtractor(str(filepath))
+            schema_name = extractor.extract().get("schema_name")
+            cls.filepath_schema_cache[filepath] = schema_name
+        return cls.filepath_schema_cache[filepath]
+
+    @classmethod
     def get_export_schema(cls):
         return [(s, "IFC4X3" if s == "IFC4X3_ADD2" else s, "") for s in IfcStore.schema_identifiers]
 
     @classmethod
     def library_file(cls):
-        files = os.listdir(os.path.join(bpy.context.scene.BIMProperties.data_dir, "libraries"))
+        ifc_file = tool.Ifc.get()
+        if not ifc_file:
+            return []
+        current_schema = tool.Ifc.get().schema_identifier
+        files = (Path(bpy.context.scene.BIMProperties.data_dir) / "libraries").iterdir()
         results = [("0", "Custom Library", "")]
-        results.extend([(f, os.path.splitext(f)[0], "") for f in files if ".ifc" in f])
+        for f in files:
+            if not f.suffix.lower().startswith(".ifc"):
+                continue
+            if cls.get_file_schema(f) != current_schema:
+                continue
+            results.append((f.name, f.stem, "Library"))
         return results
 
     @classmethod
