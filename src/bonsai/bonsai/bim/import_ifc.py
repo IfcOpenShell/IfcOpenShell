@@ -1112,6 +1112,8 @@ class IfcImporter:
             matrix[2][3] *= self.unit_scale
             # TODO: support inner radius, start param, and end param
             geometry = tool.Loader.create_generic_shape(item.Directrix)
+            if not geometry:
+                continue
             e = geometry.edges
             v = geometry.verts
             vertices = [list(matrix @ [v[i], v[i + 1], v[i + 2], 1]) for i in range(0, len(v), 3)]
