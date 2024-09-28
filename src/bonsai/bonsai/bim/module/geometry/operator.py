@@ -918,6 +918,9 @@ class OverrideDuplicateMove(bpy.types.Operator):
                     obj.select_set(False)
                     self.report({"ERROR"}, f"Element '{obj.name}' is locked and cannot be duplicated.")
                     continue
+            elif tool.Geometry.is_representation_item(obj):
+                OverrideDuplicateMove.duplicate_item(self, obj)
+                continue
 
             linked_non_ifc_object = linked and not element
 
@@ -986,6 +989,31 @@ class OverrideDuplicateMove(bpy.types.Operator):
         bonsai.bim.handler.refresh_ui_data()
         tool.Root.reload_grid_decorator()
         return old_to_new
+
+    @staticmethod
+    def duplicate_item(self, obj):
+        props = bpy.context.scene.BIMGeometryProperties
+        item = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+        new_item = ifcopenshell.util.element.copy_deep(tool.Ifc.get(), item)
+        new_obj = obj.copy()
+        temp_data = obj.data.copy()
+        new_obj.data = temp_data
+        new_obj.data.BIMMeshProperties.ifc_definition_id = new_item.id()
+        new_obj.name = obj.data.name = f"Item/{new_item.is_a()}/{new_item.id()}"
+        new = props.item_objs.add()
+        new.obj = new_obj
+
+        for collection in obj.users_collection:
+            collection.objects.link(new_obj)
+
+        representation = tool.Geometry.get_active_representation(props.representation_obj)
+        representation = ifcopenshell.util.representation.resolve_representation(representation)
+        representation.Items = list(representation.Items) + [new_item]
+
+        tool.Geometry.reload_representation(props.representation_obj)
+
+        obj.select_set(False)
+        tool.Root.reload_item_decorator()
 
     @staticmethod
     def process_arrays(self, context):
@@ -1691,7 +1719,7 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         selected_objs = context.selected_objects  # Purposely exclude active object
 
-        if len(selected_objs) == 1 and context.active_object:
+        if len(selected_objs) == 1 and context.active_object == selected_objs[0]:
             self.handle_single_object(context, context.active_object)
         elif len(selected_objs) == 0:
             tool.Geometry.disable_item_mode()
