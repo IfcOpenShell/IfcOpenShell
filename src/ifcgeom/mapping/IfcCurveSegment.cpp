@@ -692,7 +692,7 @@ class curve_segment_evaluator {
        // normalize the direction ratios
        double m_squared = std::inner_product(dr.begin(), dr.end(), dr.begin(), 0.0);
        double m = sqrt(m_squared);
-       std::for_each(dr.begin(), dr.end(), [m](auto& d) { return d / m; });
+       std::transform(dr.begin(), dr.end(), dr.begin(), [m](auto& d) { return d / m; });
        auto pcDx = dr[0];
        auto pcDy = dr[1];
 
