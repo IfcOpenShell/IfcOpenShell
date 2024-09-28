@@ -2105,7 +2105,6 @@ class RefreshClippingPlanes(bpy.types.Operator):
                     obj = clipping_plane.obj
                     if not obj:
                         continue
-                    print("doing", obj)
 
                     bm = bmesh.new()
                     bm.from_mesh(obj.data)
@@ -2115,11 +2114,8 @@ class RefreshClippingPlanes(bpy.types.Operator):
                     bm.faces.ensure_lookup_table()
                     face = bm.faces[0]
                     center = world_matrix @ face.calc_center_median()
-                    print("center", center)
                     normal = world_matrix.to_3x3() @ face.normal * -1
                     center += normal * -0.01
-                    print("normal", normal)
-                    print("new center", center)
 
                     normal.normalize()
                     distance = -center.dot(normal)
