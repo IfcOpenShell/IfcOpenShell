@@ -1537,3 +1537,28 @@ class Geometry(bonsai.core.tool.Geometry):
                 props.mode = "OBJECT"
             props.is_changing_mode = False
         props.representation_obj = None
+
+    @classmethod
+    def edit_meshlike_item(cls, obj: bpy.types.Object) -> None:
+        item = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+        if obj.data.BIMMeshProperties.mesh_checksum == cls.get_mesh_checksum(obj.data):
+            return
+        builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+
+        rep_obj = bpy.context.scene.BIMGeometryProperties.representation_obj
+        if (coordinate_offset := cls.get_cartesian_point_offset(rep_obj)) is not None:
+            verts = [((np.array(v.co) + coordinate_offset) / unit_scale).tolist() for v in obj.data.vertices]
+        else:
+            verts = [v.co / unit_scale for v in obj.data.vertices]
+
+        faces = [p.vertices[:] for p in obj.data.polygons]
+        if item.is_a("IfcAdvancedBrep"):
+            new_item = builder.faceted_brep(verts, faces)
+        else:
+            new_item = builder.mesh(verts, faces)
+        for inverse in tool.Ifc.get().get_inverse(item):
+            ifcopenshell.util.element.replace_attribute(inverse, item, new_item)
+        ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), item)
+        obj.data.BIMMeshProperties.ifc_definition_id = new_item.id()
+        cls.reload_representation(bpy.context.scene.BIMGeometryProperties.representation_obj)
