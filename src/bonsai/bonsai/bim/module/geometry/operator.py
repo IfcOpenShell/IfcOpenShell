@@ -66,15 +66,59 @@ class OverrideMeshSeparate(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.override_mesh_separate"
     bl_label = "IFC Mesh Separate"
     bl_options = {"REGISTER", "UNDO"}
-    obj: bpy.props.StringProperty()
     type: bpy.props.StringProperty()
 
     def _execute(self, context):
         obj = context.active_object
-        element = tool.Ifc.get_entity(obj)
-        if not element:
-            return
+        if tool.Geometry.is_representation_item(obj):
+            self.separate_item(context, obj)
+        elif element := tool.Ifc.get_entity(obj):
+            self.separate_element(element)
 
+    def separate_item(self, context, obj):
+        item = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+        if tool.Geometry.is_meshlike_item(item):
+            previous_selected_objects = context.selected_objects
+            bpy.ops.mesh.separate(type=self.type)
+            for obj in context.selected_objects:
+                if obj in previous_selected_objects:
+                    continue
+                self.add_meshlike_item(obj)
+            tool.Geometry.reload_representation(bpy.context.scene.BIMGeometryProperties.representation_obj)
+        else:
+            self.report({"INFO"}, f"Separating an {item.is_a()} is not supported")
+
+    def add_meshlike_item(self, obj):
+        props = bpy.context.scene.BIMGeometryProperties
+        obj.show_in_front = True
+        new = props.item_objs.add()
+        new.obj = obj
+        tool.Root.reload_item_decorator()
+        tool.Geometry.lock_object(obj)
+
+        builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        rep_obj = bpy.context.scene.BIMGeometryProperties.representation_obj
+        if (coordinate_offset := tool.Geometry.get_cartesian_point_offset(rep_obj)) is not None:
+            verts = [((np.array(v.co) + coordinate_offset) / unit_scale).tolist() for v in obj.data.vertices]
+        else:
+            verts = [v.co / unit_scale for v in obj.data.vertices]
+        faces = [p.vertices[:] for p in obj.data.polygons]
+
+        representation = tool.Geometry.get_active_representation(props.representation_obj)
+        representation = ifcopenshell.util.representation.resolve_representation(representation)
+
+        if representation.RepresentationType in ("Brep", "AdvancedBrep"):
+            item = builder.faceted_brep(verts, faces)
+        elif representation.RepresentationType in ("Tessellation"):
+            item = builder.mesh(verts, faces)
+
+        representation.Items = list(representation.Items) + [item]
+        obj.name = obj.data.name = f"Item/{item.is_a()}/{item.id()}"
+        obj.data.BIMMeshProperties.ifc_definition_id = item.id()
+
+
+    def separate_element(self, element):
         # You cannot separate meshes if the representation is mapped.
         relating_type = tool.Root.get_element_type(element)
         if relating_type and tool.Root.does_type_have_representations(relating_type):
@@ -84,7 +128,6 @@ class OverrideMeshSeparate(bpy.types.Operator, tool.Ifc.Operator):
             bpy.ops.bim.unassign_type(related_object=obj.name)
             tool.Blender.toggle_edit_mode(context)
 
-        selected_objects = context.selected_objects
         bpy.ops.mesh.separate(type=self.type)
         bpy.ops.object.mode_set(mode="OBJECT", toggle=False)
         new_objs = [obj]
@@ -1577,6 +1620,7 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
         for obj in bpy.context.selected_objects:
             if obj == self.target:
                 continue
+            # TODO Properly handle element types, grid axes, and representation items
             element = tool.Ifc.get_entity(obj)
             if element:
                 ifcopenshell.api.run("root.remove_product", tool.Ifc.get(), product=element)
@@ -2420,12 +2464,17 @@ class AddMeshlikeItem(bpy.types.Operator, tool.Ifc.Operator):
         obj.show_in_front = True
         new = props.item_objs.add()
         new.obj = obj
+        tool.Root.reload_item_decorator()
 
         tool.Geometry.lock_object(obj)
 
         builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        verts = [v.co / unit_scale for v in obj.data.vertices]
+        rep_obj = bpy.context.scene.BIMGeometryProperties.representation_obj
+        if (coordinate_offset := tool.Geometry.get_cartesian_point_offset(rep_obj)) is not None:
+            verts = [((np.array(v.co) + coordinate_offset) / unit_scale).tolist() for v in obj.data.vertices]
+        else:
+            verts = [v.co / unit_scale for v in obj.data.vertices]
         faces = [p.vertices[:] for p in obj.data.polygons]
 
         representation = tool.Geometry.get_active_representation(props.representation_obj)
