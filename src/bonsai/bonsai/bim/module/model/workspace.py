@@ -30,14 +30,12 @@ from bonsai.bim.module.system.data import PortData
 from bonsai.bim.module.model.prop import get_ifc_class
 
 
+# TODO duplicate code in cad/workspace and model/workspace
 def check_display_mode():
     global display_mode
     try:
         theme = bpy.context.preferences.themes["Default"]
         text_color = theme.user_interface.wcol_menu_item.text
-        background_color = theme.user_interface.wcol_menu_item.outline
-        print(f"text_color = {text_color}")
-        print(f"background_color = {background_color}")
         if sum(text_color) < 2.6:
             display_mode = "lm"
         else:
