@@ -186,20 +186,86 @@ Now you can generate the documentation:
     cd _build/html
     python -m http.server
 
+.. warning::
+
+.. warning::
+
+   Depending on your machine and environment, you might need to use ``.\make`` instead of ``make``.
 
 You will now have a local webserver running hosting the documentation. Your terminal 
 will return something like seen underneath, replace [::] with localhost. 
 
-.. code:: 
+.. code:: console
       
       Serving HTTP on :: port 8000 (http://[::]:8000/) ...
       
-When you want to see changes you have made in your IDE:
+Streamlining your workflow
+^^^^^^
+Now that you have added or changed some content in the documentation, you may want to see it on the webserver.
+Initially you can:
 
 - Kill the terminal, eg. the server.
-- Run the make and build sequence above again.
+- Run the make and build sequence as above again.
 
 .. tip::
 
    If you make small incremental changes, you can avoid the cd navigation in many IDE's 
    by right clicking on the docs folder and open a fresh terminal from there.
+
+This will work, but it is not very efficient. You can streamline your workflow by setting
+up a run and debug configuration in your IDE. Below is an example for VScode placed in your 
+.vscode folder in the root.
+
+*task.json*
+
+.. code:: json
+      
+    {
+        "version": "2.0.0",
+        "tasks": [
+            {
+                "label": "Build and Serve Docs",
+                "type": "shell",
+                "command": "powershell",
+                "args": [
+                    "-NoProfile",
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-Command",
+                    "cd D:/ifcopenshell/src/bonsai/docs/; .\\make html; cd _build/html; python -m http.server"
+                ],
+                "group": {
+                    "kind": "build",
+                    "isDefault": true
+                },
+                "problemMatcher": []
+            }
+        ]
+    }
+
+*launch.json*
+
+.. code:: json
+      
+    {
+        "version": "0.2.0",
+        "configurations": [
+            {
+                "name": "BonsaiDocsServer",
+                "type": "python",
+                "request": "launch",
+                "program": "D:/ifcopenshell/src/bonsai/docs/_build/html",
+                "args": ["-m", "http.server"],
+                "preLaunchTask": "Build and Serve Docs",
+                "console": "integratedTerminal"
+            }
+        ]
+    }
+
+Now you can run the debugger, it will build the documentation and start the server.
+Simply stop debugging to stop the server and rerun the debugger to see your changes.
+
+ 
+
+
+
