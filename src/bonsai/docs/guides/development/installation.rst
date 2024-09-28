@@ -102,10 +102,16 @@ that they are typically updated every day. To install the **Unstable** version:
    .. image:: images/unstable-restart.png
 
 If you wish to install an **Unstable** version offline, you can download a
-daily build from the `GitHub releases page
+daily or previous build from the `GitHub releases page
 <https://github.com/IfcOpenShell/IfcOpenShell/releases?q=bonsai&expanded=true>`__,
 then go to :menuselection:`Topbar --> Edit --> Preferences --> Get Extensions
 --> "V" Icon (top right) --> Install from Disk`.
+
+.. tip::
+
+   Installing a previous build is a great way to roll back to previous versions. Uninstall the current version, 
+   then install the previous version from your disk. Make the install directory into the repo folder, and you can still 
+   update by the click of a button, when you are ready for the latest build.
 
 Bundling for Blender
 --------------------
