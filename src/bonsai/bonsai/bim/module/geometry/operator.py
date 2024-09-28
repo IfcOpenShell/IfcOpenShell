@@ -93,7 +93,6 @@ class OverrideMeshSeparate(bpy.types.Operator, tool.Ifc.Operator):
         obj.show_in_front = True
         new = props.item_objs.add()
         new.obj = obj
-        tool.Root.reload_item_decorator()
         tool.Geometry.lock_object(obj)
 
         builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
@@ -116,7 +115,6 @@ class OverrideMeshSeparate(bpy.types.Operator, tool.Ifc.Operator):
         representation.Items = list(representation.Items) + [item]
         obj.name = obj.data.name = f"Item/{item.is_a()}/{item.id()}"
         obj.data.BIMMeshProperties.ifc_definition_id = item.id()
-
 
     def separate_element(self, element):
         # You cannot separate meshes if the representation is mapped.
@@ -1517,10 +1515,42 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
             return
 
         self.target = context.active_object
-        if target_element := tool.Ifc.get_entity(self.target):
+        if tool.Geometry.is_representation_item(self.target):
+            return self.join_item()
+        elif target_element := tool.Ifc.get_entity(self.target):
             self.target_element = target_element
             return self.join_ifc_obj()
         return self.join_blender_obj()
+
+    def join_item(self) -> None:
+        props = bpy.context.scene.BIMGeometryProperties
+        item = tool.Ifc.get().by_id(self.target.data.BIMMeshProperties.ifc_definition_id)
+        if tool.Geometry.is_meshlike_item(item):
+            tool.Geometry.dissolve_triangulated_edges(self.target)
+            item_objs = [i.obj for i in props.item_objs if i.obj]
+            joined_objs = []
+            for selected_obj in bpy.context.selected_objects:
+                if selected_obj in item_objs:
+                    if selected_obj != self.target:
+                        tool.Geometry.dissolve_triangulated_edges(selected_obj)
+                        joined_objs.append(selected_obj)
+                else:
+                    selected_obj.select_set(False)
+            bpy.ops.object.join()
+            tool.Geometry.edit_meshlike_item(self.target)
+
+            for joined_obj in joined_objs:
+                tool.Geometry.delete_ifc_item(joined_obj)
+
+            item_objs = [i.obj for i in props.item_objs if i.obj]
+            props.item_objs.clear()
+            for item_obj in item_objs:
+                new = props.item_objs.add()
+                new.obj = item_obj
+
+            tool.Geometry.reload_representation(bpy.context.scene.BIMGeometryProperties.representation_obj)
+            bpy.context.view_layer.update()
+            tool.Root.reload_item_decorator()
 
     def join_ifc_obj(self) -> None:
         ifc_file = tool.Ifc.get()
@@ -1871,31 +1901,10 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
         item = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
         if tool.Geometry.is_meshlike_item(item):
             if tool.Geometry.has_geometric_data(obj) and obj.data.polygons:
-                if obj.data.BIMMeshProperties.mesh_checksum == tool.Geometry.get_mesh_checksum(obj.data):
-                    return
-                builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
-                unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-
-                rep_obj = bpy.context.scene.BIMGeometryProperties.representation_obj
-                if (coordinate_offset := tool.Geometry.get_cartesian_point_offset(rep_obj)) is not None:
-                    verts = [((np.array(v.co) + coordinate_offset) / unit_scale).tolist() for v in obj.data.vertices]
-                else:
-                    verts = [v.co / unit_scale for v in obj.data.vertices]
-
-                faces = [p.vertices[:] for p in obj.data.polygons]
-                if item.is_a("IfcAdvancedBrep"):
-                    new_item = builder.faceted_brep(verts, faces)
-                else:
-                    new_item = builder.mesh(verts, faces)
-                for inverse in tool.Ifc.get().get_inverse(item):
-                    ifcopenshell.util.element.replace_attribute(inverse, item, new_item)
-                ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), item)
-                obj.data.BIMMeshProperties.ifc_definition_id = new_item.id()
-                tool.Geometry.reload_representation(bpy.context.scene.BIMGeometryProperties.representation_obj)
+                tool.Geometry.edit_meshlike_item(obj)
             else:
                 tool.Geometry.import_item(obj)
         elif item.is_a("IfcSweptAreaSolid"):
-            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
             ProfileDecorator.uninstall()
 
             profile = tool.Model.export_profile(obj)
