@@ -715,10 +715,10 @@ void IfcParse::IfcFile::load(unsigned entity_instance_name, const IfcParse::enti
 
             if (TokenFunc::isKeyword(next)) {
                 try {
+                    const auto* decl = schema_->declaration_by_name(TokenFunc::asStringRef(next));
                     parse_context ps;
                     tokens->Next();
                     load(0, nullptr, ps, -1);
-                    const auto *decl = schema_->declaration_by_name(TokenFunc::asStringRef(next));
                     auto* simple_type_instance = schema_->instantiate(decl, ps.construct(-1, references_to_resolve, decl, boost::none));
                     //@todo decide addEntity(((IfcUtil::IfcBaseClass*)*entity));
                     context.push(simple_type_instance);
