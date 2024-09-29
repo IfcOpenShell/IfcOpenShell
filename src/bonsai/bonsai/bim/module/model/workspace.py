@@ -847,8 +847,14 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             row.prop(self, "z")
 
     def hotkey_S_A(self):
+        props = bpy.context.scene.BIMModelProperties
         if bpy.context.scene.BIMGeometryProperties.mode == "ITEM":
             bpy.ops.wm.call_menu(name="BIM_MT_add_representation_item")
+        elif (
+            props.relating_type_id
+            and tool.Model.get_usage_type(tool.Ifc.get().by_id(int(props.relating_type_id))) == "LAYER2"
+        ):
+            bpy.ops.bim.draw_polyline_wall("INVOKE_DEFAULT")
         else:
             bpy.ops.bim.add_occurrence("INVOKE_DEFAULT")
 

@@ -210,7 +210,7 @@ class PolylineOperator:
             PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
             tool.Blender.update_viewport()
 
-        if event.value == "RELEASE" and event.type in {"D", "A"}:
+        if event.value == "RELEASE" and event.type == "D":
             self.recalculate_inputs(context)
             self.tool_state.mode = "Edit"
             self.tool_state.is_input_on = True
