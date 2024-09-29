@@ -456,26 +456,20 @@ class AddConstrTypeInstance(bpy.types.Operator, tool.Ifc.Operator):
     def generate_layered_element(ifc_class: str, relating_type: ifcopenshell.entity_instance) -> bool:
         layer_set_direction = None
 
-        parametric = ifcopenshell.util.element.get_psets(relating_type).get("EPset_Parametric")
-        if parametric:
-            layer_set_direction = parametric.get("LayerSetDirection", layer_set_direction)
-        if layer_set_direction is None:
-            if ifc_class in ["IfcSlabType", "IfcRoofType", "IfcRampType", "IfcPlateType"]:
-                layer_set_direction = "AXIS3"
-            else:
-                layer_set_direction = "AXIS2"
+        usage = tool.Model.get_usage_type(relating_type)
+        print('usage', usage)
 
         obj = None
-        if layer_set_direction == "AXIS3":
+        if usage == "LAYER3":
             obj = slab.DumbSlabGenerator(relating_type).generate()
-        elif layer_set_direction == "AXIS2":
+        elif usage == "LAYER2":
             obj = wall.DumbWallGenerator(relating_type).generate()
         else:
             pass  # Dumb block generator? Eh? :)
 
         if obj:
             material = ifcopenshell.util.element.get_material(tool.Ifc.get_entity(obj))
-            material.LayerSetDirection = layer_set_direction
+            material.LayerSetDirection = f"AXIS{usage[-1]}"
             return True
         return False
 
