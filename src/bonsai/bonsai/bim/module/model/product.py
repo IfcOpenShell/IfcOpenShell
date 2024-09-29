@@ -142,8 +142,10 @@ class AddOccurrence(bpy.types.Operator, PolylineOperator):
         if result:
             self.report({"WARNING"}, result)
 
+        # TODO: when this workflow matures a bit, recode it so it doesn't rely on selection and cursor
         # Select snapped object so we can insert doors and windows
         detected_snaps = tool.Snap.detect_snapping_points(context, event, self.objs_2d_bbox, self.tool_state)
+        snap_obj = None
         for snap in detected_snaps:
             if snap_obj := snap.get("Object", None):
                 try:
@@ -153,6 +155,7 @@ class AddOccurrence(bpy.types.Operator, PolylineOperator):
                     snap_obj = bpy.data.objects.get(snap_obj[0].name)
                     snap_obj.name
                     tool.Blender.select_and_activate_single_object(context, snap_obj)
+                    break
                 except:
                     pass
 
@@ -161,6 +164,9 @@ class AddOccurrence(bpy.types.Operator, PolylineOperator):
         tool.Snap.clear_polyline()
 
         bpy.ops.bim.add_constr_type_instance("INVOKE_DEFAULT")
+
+        if snap_obj:
+            snap_obj.select_set(False)
 
     def modal(self, context, event):
         if not self.relating_type:
@@ -181,11 +187,7 @@ class AddOccurrence(bpy.types.Operator, PolylineOperator):
         self.choose_axis(event)
         self.handle_snap_selection(context, event)
 
-        if (
-            not self.tool_state.is_input_on
-            and event.value == "RELEASE"
-            and event.type in {"RIGHTMOUSE"}
-        ):
+        if not self.tool_state.is_input_on and event.value == "RELEASE" and event.type in {"RIGHTMOUSE"}:
             context.workspace.status_text_set(text=None)
             PolylineDecorator.uninstall()
             context.scene.BIMPolylineProperties.product_preview.clear()
@@ -454,10 +456,7 @@ class AddConstrTypeInstance(bpy.types.Operator, tool.Ifc.Operator):
 
     @staticmethod
     def generate_layered_element(ifc_class: str, relating_type: ifcopenshell.entity_instance) -> bool:
-        layer_set_direction = None
-
         usage = tool.Model.get_usage_type(relating_type)
-        print('usage', usage)
 
         obj = None
         if usage == "LAYER3":
