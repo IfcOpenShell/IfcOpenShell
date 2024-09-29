@@ -57,6 +57,7 @@ classes = (
     product.AddConstrTypeInstance,
     product.AddDefaultType,
     product.AddEmptyType,
+    product.AddOccurrence,
     product.AlignProduct,
     product.ChangeTypePage,
     product.DisableAddType,

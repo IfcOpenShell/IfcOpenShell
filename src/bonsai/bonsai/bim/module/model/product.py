@@ -38,6 +38,8 @@ from . import wall, slab, profile, mep
 from bonsai.bim.ifc import IfcStore
 from bonsai.bim.helper import get_enum_items
 from bonsai.bim.module.model.data import AuthoringData
+from bonsai.bim.module.model.polyline import PolylineOperator
+from bonsai.bim.module.model.decorator import PolylineDecorator
 from mathutils import Vector, Matrix
 from bpy_extras.object_utils import AddObjectHelper
 import json
@@ -114,6 +116,98 @@ class AddDefaultType(bpy.types.Operator, tool.Ifc.Operator):
             props.type_predefined_type = "RIGIDSEGMENT"
             props.type_template = "FLOW_SEGMENT_CIRCULAR"
         bpy.ops.bim.add_type()
+
+
+class AddOccurrence(bpy.types.Operator, PolylineOperator):
+    bl_idname = "bim.add_occurrence"
+    bl_label = "Add Occurrence"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.space_data.type == "VIEW_3D"
+
+    def __init__(self):
+        super().__init__()
+        self.relating_type = None
+        relating_type_id = bpy.context.scene.BIMModelProperties.relating_type_id
+        if relating_type_id:
+            self.relating_type = tool.Ifc.get().by_id(int(relating_type_id))
+
+    def create_occurrence(self, context, event):
+        if not self.relating_type:
+            return {"FINISHED"}
+
+        result = tool.Snap.insert_polyline_point(self.input_ui)
+        if result:
+            self.report({"WARNING"}, result)
+
+        # Select snapped object so we can insert doors and windows
+        detected_snaps = tool.Snap.detect_snapping_points(context, event, self.objs_2d_bbox, self.tool_state)
+        for snap in detected_snaps:
+            if snap_obj := snap.get("Object", None):
+                try:
+                    # During undo, sometimes objects get invalidated.
+                    # This is a safe way to check for invalid objects.
+                    snap_obj[0].name
+                    snap_obj = bpy.data.objects.get(snap_obj[0].name)
+                    snap_obj.name
+                    tool.Blender.select_and_activate_single_object(context, snap_obj)
+                except:
+                    pass
+
+        point = context.scene.BIMPolylineProperties.polyline_point[0]
+        context.scene.cursor.location = Vector((point.x, point.y, point.z))
+        tool.Snap.clear_polyline()
+
+        bpy.ops.bim.add_constr_type_instance("INVOKE_DEFAULT")
+
+    def modal(self, context, event):
+        if not self.relating_type:
+            self.report({"WARNING"}, "You need to select a wall type.")
+            PolylineDecorator.uninstall()
+            tool.Blender.update_viewport()
+            return {"FINISHED"}
+
+        PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
+        tool.Blender.update_viewport()
+
+        if event.type in {"MIDDLEMOUSE", "WHEELUPMOUSE", "WHEELDOWNMOUSE"}:
+            self.handle_mouse_move(context, event)
+            return {"PASS_THROUGH"}
+
+        self.handle_instructions(context)
+        self.handle_mouse_move(context, event)
+        self.choose_axis(event)
+        self.handle_snap_selection(context, event)
+
+        if (
+            not self.tool_state.is_input_on
+            and event.value == "RELEASE"
+            and event.type in {"RIGHTMOUSE"}
+        ):
+            context.workspace.status_text_set(text=None)
+            PolylineDecorator.uninstall()
+            context.scene.BIMPolylineProperties.product_preview.clear()
+            tool.Snap.clear_polyline()
+            tool.Blender.update_viewport()
+            return {"FINISHED"}
+
+        if event.value == "RELEASE" and event.type == "LEFTMOUSE":
+            self.create_occurrence(context, event)
+
+        cancel = self.handle_cancelation(context, event)
+        if cancel is not None:
+            context.scene.BIMPolylineProperties.product_preview.clear()
+            return cancel
+
+        return {"RUNNING_MODAL"}
+
+    def invoke(self, context, event):
+        super().invoke(context, event)
+        self.tool_state.use_default_container = True
+        self.tool_state.plane_method = "XY"
+        return {"RUNNING_MODAL"}
 
 
 class AddConstrTypeInstance(bpy.types.Operator, tool.Ifc.Operator):
