@@ -144,11 +144,11 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     def get_selected_objects(cls) -> set[bpy.types.Object]:
-        if bpy.context.selected_objects:
-            if active_obj := bpy.context.active_object:
-                return set(bpy.context.selected_objects + [active_obj])
-            return set(bpy.context.selected_objects)
-        if active_obj := bpy.context.active_object:
+        if selected_objects := getattr(bpy.context, "selected_objects", None):
+            if active_obj := cls.get_active_object():
+                return set(selected_objects + [active_obj])
+            return set(selected_objects)
+        if active_obj := cls.get_active_object():
             return {active_obj}
         return set()
 

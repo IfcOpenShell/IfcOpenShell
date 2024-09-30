@@ -67,37 +67,37 @@ class AddDefaultType(bpy.types.Operator, tool.Ifc.Operator):
     ifc_element_type: bpy.props.StringProperty()
 
     def _execute(self, context):
-        props = context.scene.BIMModelProperties
-        ifc_file = tool.Ifc.get()
-        props.type_class = self.ifc_element_type
+        props = context.scene.BIMRootProperties
+        props.ifc_product = "IfcElementType"
+        props.ifc_class = self.ifc_element_type
         if self.ifc_element_type == "IfcWallType":
-            if ifc_file.schema == "IFC2X3":
-                props.type_predefined_type = "STANDARD"
+            if tool.Ifc.get().schema == "IFC2X3":
+                props.ifc_predefined_type = "STANDARD"
             else:
-                props.type_predefined_type = "SOLIDWALL"
-            props.type_template = "LAYERSET_AXIS2"
+                props.ifc_predefined_type = "SOLIDWALL"
+            props.representation_template = "LAYERSET_AXIS2"
         elif self.ifc_element_type == "IfcSlabType":
-            props.type_predefined_type = "FLOOR"
-            props.type_template = "LAYERSET_AXIS3"
+            props.ifc_predefined_type = "FLOOR"
+            props.representation_template = "LAYERSET_AXIS3"
         elif self.ifc_element_type == "IfcDoorType":
-            props.type_predefined_type = "DOOR"
-            props.type_template = "DOOR"
+            props.ifc_predefined_type = "DOOR"
+            props.representation_template = "DOOR"
         elif self.ifc_element_type == "IfcWindowType":
-            props.type_predefined_type = "WINDOW"
-            props.type_template = "WINDOW"
+            props.ifc_predefined_type = "WINDOW"
+            props.representation_template = "WINDOW"
         elif self.ifc_element_type == "IfcColumnType":
-            props.type_predefined_type = "COLUMN"
-            props.type_template = "PROFILESET"
+            props.ifc_predefined_type = "COLUMN"
+            props.representation_template = "PROFILESET"
         elif self.ifc_element_type == "IfcBeamType":
-            props.type_predefined_type = "BEAM"
-            props.type_template = "PROFILESET"
+            props.ifc_predefined_type = "BEAM"
+            props.representation_template = "PROFILESET"
         elif self.ifc_element_type == "IfcDuctSegmentType":
-            props.type_predefined_type = "RIGIDSEGMENT"
-            props.type_template = "FLOW_SEGMENT_RECTANGULAR"
+            props.ifc_predefined_type = "RIGIDSEGMENT"
+            props.representation_template = "FLOW_SEGMENT_RECTANGULAR"
         elif self.ifc_element_type == "IfcPipeSegmentType":
-            props.type_predefined_type = "RIGIDSEGMENT"
-            props.type_template = "FLOW_SEGMENT_CIRCULAR"
-        bpy.ops.bim.add_type()
+            props.ifc_predefined_type = "RIGIDSEGMENT"
+            props.representation_template = "FLOW_SEGMENT_CIRCULAR"
+        bpy.ops.bim.add_element()
 
 
 class AddOccurrence(bpy.types.Operator, PolylineOperator):
@@ -111,10 +111,6 @@ class AddOccurrence(bpy.types.Operator, PolylineOperator):
 
     def __init__(self):
         super().__init__()
-        self.relating_type = None
-        relating_type_id = bpy.context.scene.BIMModelProperties.relating_type_id
-        if relating_type_id:
-            self.relating_type = tool.Ifc.get().by_id(int(relating_type_id))
 
     def create_occurrence(self, context, event):
         if not self.relating_type:
@@ -151,8 +147,20 @@ class AddOccurrence(bpy.types.Operator, PolylineOperator):
             snap_obj.select_set(False)
 
     def modal(self, context, event):
+        # Ensure state of BIM tool props is valid
+        props = bpy.context.scene.BIMModelProperties
+        relating_type_id = tool.Blender.get_enum_safe(props, "relating_type_id")
+        relating_type_id_data = AuthoringData.data["relating_type_id"]
+        if not relating_type_id and relating_type_id_data:
+            props.relating_type_id = relating_type_id_data[0][0]
+
+        self.relating_type = None
+        relating_type_id = props.relating_type_id
+        if relating_type_id:
+            self.relating_type = tool.Ifc.get().by_id(int(relating_type_id))
+
         if not self.relating_type:
-            self.report({"WARNING"}, "You need to select a wall type.")
+            self.report({"WARNING"}, "You need to select a type.")
             PolylineDecorator.uninstall()
             tool.Blender.update_viewport()
             return {"FINISHED"}
@@ -463,7 +471,7 @@ class ChangeTypePage(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         props = context.scene.BIMModelProperties
-        bpy.ops.bim.load_type_thumbnails(ifc_class=props.type_class, offset=9 * (self.page - 1), limit=9)
+        bpy.ops.bim.load_type_thumbnails(ifc_class=props.ifc_class, offset=9 * (self.page - 1), limit=9)
         props.type_page = self.page
         return {"FINISHED"}
 
