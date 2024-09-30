@@ -284,6 +284,7 @@ class ExecuteIfcClash(bpy.types.Operator):
         if extension == ".json":
             tool.Clash.load_clash_sets(self.filepath)
             tool.Clash.import_active_clashes()
+        self.report({"INFO"}, "Finished IFC clash.")
         return {"FINISHED"}
 
 
