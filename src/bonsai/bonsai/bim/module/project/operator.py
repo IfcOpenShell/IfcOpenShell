@@ -1245,6 +1245,24 @@ class ToggleLinkVisibility(bpy.types.Operator):
         ]
 
 
+class SelectLinkHandle(bpy.types.Operator):
+    bl_idname = "bim.select_link_handle"
+    bl_label = "Select Link Handle"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Select link empty object handle"
+    index: bpy.props.IntProperty(name="Link Index")
+
+    def execute(self, context):
+        props = context.scene.BIMProjectProperties
+        link = props.links[self.index]
+        handle = link.empty_handle
+        if not handle:
+            self.report({"ERROR"}, "Link has no empty handle (probably it was deleted).")
+            return {"CANCELLED"}
+        tool.Blender.select_and_activate_single_object(context, handle)
+        return {"FINISHED"}
+
+
 class ExportIFCBase:
     bl_idname = "bim.save_project"
     bl_label = "Save IFC"
