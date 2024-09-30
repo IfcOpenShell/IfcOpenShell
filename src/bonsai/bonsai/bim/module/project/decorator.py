@@ -330,6 +330,6 @@ class MeasureDecorator:
 
             # Draw polyline with selected points
             self.line_shader.uniform_float("lineWidth", 2.0)
-            self.draw_batch("POINTS", polyline_points, decorator_color_unselected)
+            self.draw_batch("POINTS", polyline_points, decorator_color_special)
             if len(polyline_points) > 1:
-                self.draw_batch("LINES", polyline_points, decorator_color_unselected, polyline_edges)
+                self.draw_batch("LINES", polyline_points, decorator_color_special, polyline_edges)

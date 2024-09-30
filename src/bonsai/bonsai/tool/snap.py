@@ -171,7 +171,6 @@ class Snap(bonsai.core.tool.Snap):
 
     @classmethod
     def snap_on_axis(cls, intersection, tool_state, lock_angle=False):
-
         def create_axis_line_data(rot_mat, origin):
             length = 1000
             direction = Vector((1, 0, 0))
@@ -396,7 +395,6 @@ class Snap(bonsai.core.tool.Snap):
         measure_data = context.scene.BIMPolylineProperties.measure_polyline
         for measure in measure_data:
             measure_points = measure.polyline_point
-            print("points", measure_points)
             snap_points = tool.Raycast.ray_cast_to_measure(context, event, measure_points)
             if snap_points:
                 detected_snaps.append({"Polyline": snap_points})
