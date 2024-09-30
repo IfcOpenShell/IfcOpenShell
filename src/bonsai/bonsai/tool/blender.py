@@ -415,6 +415,12 @@ class Blender(bonsai.core.tool.Blender):
         return path.as_posix()
 
     @classmethod
+    def ensure_blender_path_is_abs(cls, blender_path: Path) -> Path:
+        if blender_path.is_absolute():
+            return blender_path
+        return bpy.path.abspath("//") / blender_path
+
+    @classmethod
     def get_default_selection_keypmap(cls) -> tuple:
         """keymap to replicate default blender selection behaviour with click and box selection"""
         # code below comes from blender_default.py which is part of default blender scripts licensed under GPL v2

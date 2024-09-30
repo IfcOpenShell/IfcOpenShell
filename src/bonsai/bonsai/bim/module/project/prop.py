@@ -106,7 +106,10 @@ class FilterCategory(PropertyGroup):
 
 
 class Link(PropertyGroup):
-    name: StringProperty(name="Name")
+    name: StringProperty(
+        name="Name",
+        description="Filepath to linked .ifc file, stored in posix format (could be relative to .blend file, not to .ifc)",
+    )
     is_loaded: BoolProperty(name="Is Loaded", default=False)
     is_selectable: BoolProperty(name="Is Selectable", default=True)
     is_wireframe: BoolProperty(name="Is Wireframe", default=False)
