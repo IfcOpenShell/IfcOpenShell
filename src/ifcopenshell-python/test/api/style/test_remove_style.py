@@ -35,6 +35,17 @@ class TestRemoveStyle(test.bootstrap.IFC4):
         ifcopenshell.api.style.remove_style(self.file, style=style)
         assert len(list(self.file)) == 0
 
+    def test_remove_non_surface_styles(self):
+        STYLE_TYPES = [
+            "IfcCurveStyle",
+            "IfcFillAreaStyle",
+            "IfcTextStyle",
+        ]
+        for style_type in STYLE_TYPES:
+            style = self.file.create_entity(style_type)
+            ifcopenshell.api.style.remove_style(self.file, style=style)
+            assert len(self.file.by_type("IfcPresentationStyle")) == 0
+
 
 class TestRemoveStyleIFC2X3(test.bootstrap.IFC2X3, TestRemoveStyle):
     pass

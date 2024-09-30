@@ -42,18 +42,19 @@ def remove_style(file: ifcopenshell.file, style: ifcopenshell.entity_instance) -
     usecase = Usecase()
     usecase.file = file
     usecase.settings = {"style": style}
-    return usecase.execute()
+    return usecase.execute(style)
 
 
 class Usecase:
     file: ifcopenshell.file
     settings: dict[str, Any]
 
-    def execute(self) -> None:
-        self.purge_styled_items(self.settings["style"])
-        for style in self.settings["style"].Styles or []:
-            ifcopenshell.api.style.remove_surface_style(self.file, style=style)
-        self.file.remove(self.settings["style"])
+    def execute(self, style: ifcopenshell.entity_instance) -> None:
+        self.purge_styled_items(style)
+        if style.is_a("IfcSurfaceStyle"):
+            for style_ in style.Styles:
+                ifcopenshell.api.style.remove_surface_style(self.file, style=style_)
+        self.file.remove(style)
 
     def purge_styled_items(self, style: ifcopenshell.entity_instance) -> None:
         for inverse in self.file.get_inverse(style):
