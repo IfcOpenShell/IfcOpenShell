@@ -1077,6 +1077,7 @@ class LoadLink(bpy.types.Operator):
                 break
             break
         link.is_loaded = True
+        tool.Blender.select_and_activate_single_object(bpy.context, empty)
 
     def link_ifc(self) -> Union[set[str], None]:
         blend_filepath = self.filepath + ".cache.blend"
