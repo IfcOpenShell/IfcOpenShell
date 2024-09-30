@@ -100,7 +100,6 @@ class LaunchTypeManager(bpy.types.Operator):
 
         # will be None if project has no types
         if ifc_class is not None:
-            props.type_class = ifc_class
             bpy.ops.bim.load_type_thumbnails(ifc_class=ifc_class, offset=0, limit=9)
         return context.window_manager.invoke_props_dialog(
             self, width=550, title="Type Manager", confirm_text="Add Type"
@@ -165,7 +164,7 @@ class LaunchTypeManager(bpy.types.Operator):
             else:
                 row = box.row()
                 op = box.operator("bim.load_type_thumbnails", text="Load Thumbnails", icon="FILE_REFRESH")
-                op.ifc_class = props.type_class
+                op.ifc_class = props.ifc_class
 
 
 class BIM_PT_authoring(Panel):

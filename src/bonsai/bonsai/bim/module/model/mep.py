@@ -516,7 +516,7 @@ class MEPGenerator:
                     break
 
     def create_obstruction_type(self, segment):
-        # code is very similar to "bim.add_type"
+        # code is very similar to "bim.add_element"
         profile_set = ifcopenshell.util.element.get_material(segment, should_skip_usage=True)
         material_profile = profile_set.MaterialProfiles[0]
         profile = material_profile.Profile
