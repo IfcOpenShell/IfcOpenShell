@@ -230,8 +230,8 @@ class Raycast(bonsai.core.tool.Raycast):
         bm.verts.index_update()
         bm.edges.index_update()
 
-        indices = list(range(len(points)-1))
-        edges = [(i, i+1) for i in range(len(points)-1)]
+        indices = list(range(len(points) - 1))
+        edges = [(i, i + 1) for i in range(len(points) - 1)]
         new_verts = [bm.verts.new(Vector((point.x, point.y, point.z))) for point in points]
         new_edges = [bm.edges.new((new_verts[e[0]], new_verts[e[1]])) for e in edges]
         bm.verts.index_update()
@@ -239,8 +239,7 @@ class Raycast(bonsai.core.tool.Raycast):
 
         snapping_points = cls.ray_cast_by_proximity(context, event, None, custom_bmesh=bm)
         bm.free()
-        return snapping_points            
-
+        return snapping_points
 
     @classmethod
     def ray_cast_to_plane(cls, context, event, plane_origin, plane_normal):

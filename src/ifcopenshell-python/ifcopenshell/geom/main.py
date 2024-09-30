@@ -573,7 +573,8 @@ class serializers:
 
     # ttl is always available since it doesn't depend on any C++ libraries,
     # just people might be using an outdated binary
-    if hasattr(ifcopenshell_wrapper, 'TtlWktSerializer'):
+    if hasattr(ifcopenshell_wrapper, "TtlWktSerializer"):
+
         @staticmethod
         def ttl(
             out_filename: Union[str, serializers.buffer], geometry_settings: settings, settings: serializer_settings
