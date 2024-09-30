@@ -470,7 +470,7 @@ class BIM_UL_filter_categories(UIList):
 
 
 class BIM_UL_links(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         if item:
             row = layout.row(align=True)
             if item.is_loaded:
@@ -498,6 +498,8 @@ class BIM_UL_links(UIList):
                 )
                 op.link = item.name
                 op.mode = "VISIBLE"
+                op = row.operator("bim.select_link_handle", text="", icon="OBJECT_DATA")
+                op.index = index
                 op = row.operator("bim.unload_link", text="", icon="UNLINKED")
                 op.filepath = item.name
                 op = row.operator("bim.reload_link", text="", icon="FILE_REFRESH")
