@@ -464,6 +464,7 @@ class LoadStyles(bpy.types.Operator):
     def execute(self, context):
         style_type = self.style_type if self.style_type else context.scene.BIMStylesProperties.style_type
         core.load_styles(tool.Style, style_type=style_type)
+        bonsai.bim.handler.refresh_ui_data()
         return {"FINISHED"}
 
 
