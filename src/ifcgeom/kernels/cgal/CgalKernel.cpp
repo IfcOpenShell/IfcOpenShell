@@ -155,8 +155,16 @@ CGAL::Nef_polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_nef_polyhe
 bool CgalKernel::convert(const taxonomy::shell::ptr l, cgal_shape_t& shape) {
 	for (auto& f : l->children) {
 		if (f->basis && f->basis->kind() != taxonomy::PLANE) {
-			Logger::Error("Non-planar faces not supported at the moment");
+			Logger::Error("CGAL Kernel: Non-planar faces not supported at the moment");
 			return false;
+		}
+		for (auto& w : f->children) {
+			for (auto& e : w->children) {
+				if (e->basis && e->basis->kind() == taxonomy::BSPLINE_CURVE) {
+					Logger::Error("CGAL Kernel: B-spline edge curves not supported at the moment");
+					return false;
+				}
+			}
 		}
 	}
 	if (false && l->children.size() > 100) {
