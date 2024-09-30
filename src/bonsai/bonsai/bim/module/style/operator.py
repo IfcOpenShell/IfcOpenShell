@@ -79,7 +79,7 @@ class RemoveStyle(bpy.types.Operator, tool.Ifc.Operator):
     style: bpy.props.IntProperty()
 
     def _execute(self, context):
-        core.remove_style(tool.Ifc, tool.Style, style=tool.Ifc.get().by_id(self.style))
+        core.remove_style(tool.Ifc, tool.Style, style=tool.Ifc.get().by_id(self.style), reload_styles_ui=True)
 
 
 class AddStyle(bpy.types.Operator, tool.Ifc.Operator):
