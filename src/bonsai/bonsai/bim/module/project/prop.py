@@ -203,6 +203,7 @@ class BIMProjectProperties(PropertyGroup):
     library_file: EnumProperty(items=get_library_file, name="Library File", update=update_library_file)
     use_relative_project_path: BoolProperty(name="Use Relative Project Path", default=False)
     queried_obj: bpy.props.PointerProperty(type=bpy.types.Object)
+    queried_obj_root: bpy.props.PointerProperty(type=bpy.types.Object)
     clipping_planes: bpy.props.CollectionProperty(type=ObjProperty)
     clipping_planes_active: bpy.props.IntProperty(min=0, default=0, max=5)
 
