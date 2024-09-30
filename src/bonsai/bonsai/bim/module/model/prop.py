@@ -749,8 +749,10 @@ class PolylinePoint(PropertyGroup):
     angle: bpy.props.StringProperty(name="Angle")
     position: bpy.props.FloatVectorProperty(name="Decorator Position", size=3)
 
+
 class MeasurePolyline(PropertyGroup):
     polyline_point: bpy.props.CollectionProperty(type=PolylinePoint)
+
 
 class BIMPolylineProperties(PropertyGroup):
     snap_mouse_point: bpy.props.CollectionProperty(type=SnapMousePoint)
