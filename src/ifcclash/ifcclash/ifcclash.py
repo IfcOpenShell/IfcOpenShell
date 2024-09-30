@@ -217,7 +217,7 @@ class Clasher:
                 title = f'{clash["a_ifc_class"]}/{clash["a_name"]} and {clash["b_ifc_class"]}/{clash["b_name"]}'
                 topic = bcfxml.add_topic(title, title, "IfcClash")
                 viewpoint = topic.add_viewpoint_from_point_and_guids(
-                    np.array(clash["position"]),
+                    np.array(clash["p1"]),
                     clash["a_global_id"],
                     clash["b_global_id"],
                 )
@@ -226,7 +226,7 @@ class Clasher:
                     topic.markup.viewpoints[0].snapshot = snapshot[0]
                     viewpoint.snapshot = snapshot[1]
             suffix = f".{i}" if i else ""
-            bcfxml.save_project(f"{self.settings.output}{suffix}")
+            bcfxml.save(f"{self.settings.output}{suffix}")
 
     def get_viewpoint_snapshot(self, viewpoint) -> None:
         # Possible to overload this function in a GUI application if used as a library.
