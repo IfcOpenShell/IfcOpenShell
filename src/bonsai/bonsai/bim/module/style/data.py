@@ -68,8 +68,17 @@ class StylesData:
         ]
 
     @classmethod
-    def total_styles(cls):
-        return len(tool.Ifc.get().by_type("IfcPresentationStyle"))
+    def total_styles(cls) -> dict[str, int]:
+        total: dict[str, int] = {}
+        ifc_file = tool.Ifc.get()
+        for decl in cls.get_presentation_style_declarations():
+            total[decl.name()] = len(ifc_file.by_type(decl.name()))
+        return total
+
+    @classmethod
+    def get_presentation_style_declarations(cls):
+        declaration = tool.Ifc.schema().declaration_by_name("IfcPresentationStyle")
+        return ifcopenshell.util.schema.get_subtypes(declaration)
 
 
 class BlenderMaterialStyleData:
