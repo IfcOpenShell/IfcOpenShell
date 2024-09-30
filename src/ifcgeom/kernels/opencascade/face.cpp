@@ -183,16 +183,41 @@ namespace {
 
 		Handle(Geom_Surface) operator()(const taxonomy::extrusion::ptr& e) {
 			auto crv = get_curve(e->basis);
-			return result = Handle(Geom_Surface)(new Geom_SurfaceOfLinearExtrusion(
+
+			gp_Trsf tr;
+			if (e->matrix && !e->matrix->is_identity()) {
+				const auto& m = e->matrix->ccomponents();
+				tr.SetValues(
+					m(0, 0), m(0, 1), m(0, 2), m(0, 3),
+					m(1, 0), m(1, 1), m(1, 2), m(1, 3),
+					m(2, 0), m(2, 1), m(2, 2), m(2, 3)
+				);
+			}
+
+			result = Handle(Geom_Surface)(new Geom_SurfaceOfLinearExtrusion(
 				crv,
 				OpenCascadeKernel::convert_xyz<gp_Dir>(*e->direction)
 			));
+
+			result->Transform(tr);
+
+			return result;
 		}
 
 		Handle(Geom_Surface) operator()(const taxonomy::revolve::ptr& e) {
 			gp_Ax1 ax(
 				OpenCascadeKernel::convert_xyz<gp_Pnt>(*e->axis_origin),
 				OpenCascadeKernel::convert_xyz<gp_Dir>(*e->direction));
+
+			gp_Trsf tr;
+			if (e->matrix && !e->matrix->is_identity()) {
+				const auto& m = e->matrix->ccomponents();
+				tr.SetValues(
+					m(0, 0), m(0, 1), m(0, 2), m(0, 3),
+					m(1, 0), m(1, 1), m(1, 2), m(1, 3),
+					m(2, 0), m(2, 1), m(2, 2), m(2, 3)
+				);
+			}
 
 			if (e->basis && (e->basis->kind() == taxonomy::EDGE || (e->basis->kind() == taxonomy::LOOP && taxonomy::cast<taxonomy::loop>(e->basis)->children.size() == 1))) {
 				auto e_basis = e->basis;
@@ -213,9 +238,13 @@ namespace {
 			}
 
 			auto crv = get_curve(e->basis);
-			return result = Handle(Geom_Surface)(new Geom_SurfaceOfRevolution(
+			result = Handle(Geom_Surface)(new Geom_SurfaceOfRevolution(
 				crv, ax	
 			));
+
+			result->Transform(tr);
+
+			return result;
 		}
 	};
 }
