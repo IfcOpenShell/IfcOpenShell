@@ -26,6 +26,7 @@ from bpy_extras import view3d_utils
 from mathutils import Vector
 from gpu_extras.batch import batch_for_shader
 from bpy.app.handlers import persistent
+from typing import Union
 
 
 @persistent
@@ -92,13 +93,18 @@ class ProjectDecorator:
         selected_edges = []
         selected_tris = []
 
+        props = context.scene.BIMProjectProperties
         try:
-            obj = context.scene.BIMProjectProperties.queried_obj
+            obj = props.queried_obj
             selected_vertices = obj["selected_vertices"]
             selected_edges = obj["selected_edges"]
             selected_tris = obj["selected_tris"]
         except:
             return
+
+        root_obj: Union[bpy.types.Object, None] = props.queried_obj_root
+        if root_obj and not (m := root_obj.matrix_world).is_identity:
+            selected_vertices = [m @ Vector(v) for v in selected_vertices]
 
         if selected_edges:
             self.draw_batch("LINES", selected_vertices, selected_elements_color, selected_edges)
@@ -313,7 +319,6 @@ class MeasureDecorator:
         self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
         gpu.state.point_size_set(6)
 
-
         measure_data = context.scene.BIMPolylineProperties.measure_polyline
         for data in measure_data:
             polyline_data = data.polyline_point
@@ -326,7 +331,6 @@ class MeasureDecorator:
 
             for i in range(len(polyline_points) - 1):
                 polyline_edges.append([i, i + 1])
-
 
             # Draw polyline with selected points
             self.line_shader.uniform_float("lineWidth", 2.0)

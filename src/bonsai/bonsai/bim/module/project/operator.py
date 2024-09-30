@@ -1766,7 +1766,9 @@ class QueryLinkedElement(bpy.types.Operator):
         from bpy_extras.view3d_utils import region_2d_to_vector_3d, region_2d_to_origin_3d
 
         LinksData.linked_data = {}
-        bpy.context.scene.BIMProjectProperties.queried_obj = None
+        props = context.scene.BIMProjectProperties
+        props.queried_obj = None
+        props.quried_obj_root = None
 
         for area in bpy.context.screen.areas:
             if area.type == "PROPERTIES":
@@ -1781,7 +1783,7 @@ class QueryLinkedElement(bpy.types.Operator):
         coord = (self.mouse_x, self.mouse_y)
         origin = region_2d_to_origin_3d(region, rv3d, coord)
         direction = region_2d_to_vector_3d(region, rv3d, coord)
-        hit, location, normal, face_index, obj, matrix = self.ray_cast(context, origin, direction)
+        hit, location, normal, face_index, obj, instance_matrix = self.ray_cast(context, origin, direction)
         if not hit:
             self.report({"INFO"}, "No object found.")
             return {"FINISHED"}
@@ -1795,7 +1797,8 @@ class QueryLinkedElement(bpy.types.Operator):
         for i, guid_end_index in enumerate(obj["guid_ids"]):
             if face_index < guid_end_index:
                 guid = obj["guids"][i]
-                bpy.context.scene.BIMProjectProperties.queried_obj = obj
+                props.queried_obj = obj
+                props.queried_obj_root = self.find_obj_root(obj, instance_matrix)
 
                 selected_tris = []
                 selected_edges = []
@@ -1868,10 +1871,22 @@ class QueryLinkedElement(bpy.types.Operator):
         ProjectDecorator.install(bpy.context)
         return {"FINISHED"}
 
-    def ray_cast(self, context, origin, direction):
+    def ray_cast(self, context: bpy.types.Context, origin: Vector, direction: Vector):
         depsgraph = context.evaluated_depsgraph_get()
         result = context.scene.ray_cast(depsgraph, origin, direction)
         return result
+
+    def find_obj_root(self, obj: bpy.types.Object, matrix: Matrix) -> Union[bpy.types.Object, None]:
+        collections = set(obj.users_collection)
+        for o in bpy.data.objects:
+            if (
+                o.type != "EMPTY"
+                or o.instance_type != "COLLECTION"
+                or o.instance_collection not in collections
+                or not np.allclose(matrix, o.matrix_world, atol=1e-4)
+            ):
+                continue
+            return o
 
     def invoke(self, context, event):
         self.mouse_x = event.mouse_region_x
@@ -2388,4 +2403,3 @@ class MeasureTool(bpy.types.Operator, PolylineOperator):
     def invoke(self, context, event):
         super().invoke(context, event)
         return {"RUNNING_MODAL"}
-
