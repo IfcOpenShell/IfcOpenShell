@@ -764,26 +764,30 @@ def get_elements_by_style(
         style = file.by_type("IfcSurfaceStyle")[0]
         elements = ifcopenshell.util.element.get_elements_by_style(file, style)
     """
-    is_curve_style = style.is_a("IfcCurveStyle")
     results = set()
     inverses = list(ifc_file.get_inverse(style))
     while inverses:
         inverse = inverses.pop()
         inverse_class = inverse.is_a()
-        if is_curve_style and inverse_class in ("IfcFillAreaStyleHatching", "IfcFillAreaStyle"):
-            inverses.extend(ifc_file.get_inverse(inverse))
-            continue
-        if inverse.is_a("IfcPresentationStyleAssignment"):
+        # IfcPresentationStyleAssignment for < IFC4X3.
+        # IfcFillAreaStyleHatching->IfcFillAreaStyle only for IfcCurveStyle.
+        # IfcFillAreaStyleTiles->IfcFillAreaStyle is not restricted to IfcCurveStyle.
+        if inverse_class in (
+            "IfcPresentationStyleAssignment",
+            "IfcFillAreaStyleHatching",
+            "IfcFillAreaStyle",
+            "IfcFillAreaStyleTiles",
+        ):
             inverses.extend(ifc_file.get_inverse(inverse))
             continue
         if not inverse.is_a("IfcStyledItem"):
             continue
-        if inverse.Item:
-            [
-                results.update(get_elements_by_representation(ifc_file, i))
-                for i in ifc_file.get_inverse(inverse.Item)
-                if i.is_a("IfcShapeRepresentation")
-            ]
+        if geometry_item := inverse.Item:
+            for inverse_ in ifc_file.get_inverse(geometry_item):
+                if inverse_.is_a("IfcShapeRepresentation"):
+                    results.update(get_elements_by_representation(ifc_file, inverse_))
+            # IfcFillAreaStyleTiles requires .Item to be set.
+            inverses.extend(ifc_file.get_inverse(inverse))
         else:
             styled_reps = [i for i in ifc_file.get_inverse(inverse) if i.is_a("IfcStyledRepresentation")]
             for styled_rep in styled_reps:
