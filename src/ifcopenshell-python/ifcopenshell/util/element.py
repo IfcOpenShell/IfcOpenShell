@@ -764,10 +764,15 @@ def get_elements_by_style(
         style = file.by_type("IfcSurfaceStyle")[0]
         elements = ifcopenshell.util.element.get_elements_by_style(file, style)
     """
+    is_curve_style = style.is_a("IfcCurveStyle")
     results = set()
     inverses = list(ifc_file.get_inverse(style))
     while inverses:
         inverse = inverses.pop()
+        inverse_class = inverse.is_a()
+        if is_curve_style and inverse_class in ("IfcFillAreaStyleHatching", "IfcFillAreaStyle"):
+            inverses.extend(ifc_file.get_inverse(inverse))
+            continue
         if inverse.is_a("IfcPresentationStyleAssignment"):
             inverses.extend(ifc_file.get_inverse(inverse))
             continue
