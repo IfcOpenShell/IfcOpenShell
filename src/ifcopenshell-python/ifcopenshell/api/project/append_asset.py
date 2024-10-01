@@ -172,14 +172,18 @@ class Usecase:
     def get_existing_element(self, element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
         if element.id() in self.added_elements:
             return self.added_elements[element.id()]
-        try:
-            if element.is_a("IfcRoot"):
+        if element.is_a("IfcRoot"):
+            try:
                 return self.file.by_guid(element.GlobalId)
-            elif element.is_a("IfcMaterial"):
-                return [e for e in self.file.by_type("IfcMaterial") if e.Name == element.Name][0]
-            elif element.is_a("IfcProfileDef"):
-                return [e for e in self.file.by_type("IfcProfileDef") if e.ProfileName == element.ProfileName][0]
-        except:
+            except RuntimeError:
+                return None
+        elif element.is_a("IfcMaterial"):
+            material_name = element.Name
+            return next((e for e in self.file.by_type("IfcMaterial") if e.Name == material_name), None)
+        elif element.is_a("IfcProfileDef"):
+            profile_name = element.ProfileName
+            return next((e for e in self.file.by_type("IfcProfileDef") if e.ProfileName == profile_name), None)
+        else:
             return None
 
     def append_material(self):
