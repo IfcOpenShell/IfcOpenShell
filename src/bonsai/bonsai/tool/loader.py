@@ -639,6 +639,7 @@ class Loader(bonsai.core.tool.Loader):
             settings.set("apply-default-materials", False)
             settings.set("keep-bounding-boxes", True)
             settings.set("layerset-first", True)
+            # settings.set("triangulation-type", ifcopenshell.ifcopenshell_wrapper.POLYHEDRON_WITHOUT_HOLES)
             if is_gross:
                 settings.set("disable-opening-subtractions", True)
             results.append(settings)
@@ -907,11 +908,6 @@ class Loader(bonsai.core.tool.Loader):
             verts = geometry.verts
         if geometry.faces:
             num_vertices = len(verts) // 3
-            total_faces = len(geometry.faces)
-            loop_start = range(0, total_faces, 3)
-            num_loops = total_faces // 3
-            loop_total = [3] * num_loops
-            num_vertex_indices = len(geometry.faces)
 
             # See bug 3546
             # ios_edges holds true edges that aren't triangulated.
@@ -922,12 +918,34 @@ class Loader(bonsai.core.tool.Loader):
 
             mesh.vertices.add(num_vertices)
             mesh.vertices.foreach_set("co", verts)
-            mesh.loops.add(num_vertex_indices)
-            mesh.loops.foreach_set("vertex_index", geometry.faces)
-            mesh.polygons.add(num_loops)
-            mesh.polygons.foreach_set("loop_start", loop_start)
-            mesh.polygons.foreach_set("loop_total", loop_total)
-            mesh.polygons.foreach_set("use_smooth", [0] * total_faces)
+
+            is_triangulated = True
+            if is_triangulated:
+                total_faces = len(geometry.faces)
+                num_vertex_indices = len(geometry.faces)
+                loop_start = range(0, total_faces, 3)
+                num_loops = total_faces // 3
+                loop_total = [3] * num_loops
+
+                mesh.loops.add(num_vertex_indices)
+                mesh.loops.foreach_set("vertex_index", geometry.faces)
+                mesh.polygons.add(num_loops)
+                mesh.polygons.foreach_set("loop_start", loop_start)
+                mesh.polygons.foreach_set("loop_total", loop_total)
+                mesh.polygons.foreach_set("use_smooth", [0] * total_faces)
+            else:
+                faces_array = np.array(geometry.faces, dtype=object)
+                loop_total = tuple(len(face) for face in faces_array)
+                loop_start = np.cumsum((0,) + loop_total)[:-1]
+                vertex_index = np.concatenate(faces_array)
+
+                mesh.loops.add(len(vertex_index))
+                mesh.loops.foreach_set("vertex_index", vertex_index)
+                mesh.polygons.add(len(loop_start))
+                mesh.polygons.foreach_set("loop_start", loop_start)
+                mesh.polygons.foreach_set("loop_total", loop_total)
+                mesh.polygons.foreach_set("use_smooth", [0] * len(geometry.faces))
+
             mesh.update()
 
             rep_str: str = geometry.id
