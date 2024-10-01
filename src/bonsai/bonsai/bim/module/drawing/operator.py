@@ -207,6 +207,13 @@ class CreateDrawing(bpy.types.Operator):
         if not tool.Drawing.is_drawing_active():
             cls.poll_message_set("No active drawing.")
             return False
+        if context.scene.camera.data.BIMCameraProperties.linework_mode == "FREESTYLE" and not hasattr(
+            context.scene, "svg_export"
+        ):
+            cls.poll_message_set(
+                "Freestyle SVG Exporter extension is not installed (required for 'Freestyle' linework mode)."
+            )
+            return False
         return True
 
     def invoke(self, context, event):
