@@ -51,9 +51,13 @@ class Usecase:
 
     def execute(self, style: ifcopenshell.entity_instance) -> None:
         self.purge_inverses(style)
-        if style.is_a("IfcSurfaceStyle"):
+        ifc_class = style.is_a()
+        if ifc_class == "IfcSurfaceStyle":
             for style_ in style.Styles:
                 ifcopenshell.api.style.remove_surface_style(self.file, style=style_)
+        elif ifc_class == "IfcFillAreaStyle":
+            for style_ in style.FillStyles:
+                ifcopenshell.util.element.remove_deep2(self.file, style_, also_consider=[style])
         self.file.remove(style)
 
     def purge_inverses(self, style: ifcopenshell.entity_instance) -> None:
