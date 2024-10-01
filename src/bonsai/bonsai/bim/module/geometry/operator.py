@@ -605,6 +605,10 @@ class CopyRepresentation(bpy.types.Operator, tool.Ifc.Operator):
                 )
 
 
+def lock_error_message(name):
+    return f"'{name}' is locked. Unlock it via the Spatial panel in the Project Overview tab."
+
+
 class OverrideDelete(bpy.types.Operator):
     bl_idname = "bim.override_object_delete"
     bl_label = "IFC Delete"
@@ -657,6 +661,7 @@ class OverrideDelete(bpy.types.Operator):
             ifcopenshell.util.element.batch_remove_deep2(tool.Ifc.get())
 
         self.process_arrays(context)
+        clear_active_object = True
         for obj in context.selected_objects:
             try:
                 obj.name
@@ -665,7 +670,9 @@ class OverrideDelete(bpy.types.Operator):
             element = tool.Ifc.get_entity(obj)
             if element:
                 if tool.Geometry.is_locked(element):
-                    self.report({"ERROR"}, f"Element '{obj.name}' is locked and cannot be deleted.")
+                    if obj == context.view_layer.objects.active:
+                        clear_active_object = False
+                    self.report({"ERROR"}, lock_error_message(obj.name))
                     continue
                 if ifcopenshell.util.element.get_pset(element, "BBIM_Array"):
                     self.report({"INFO"}, "Elements that are part of an array cannot be deleted.")
@@ -684,8 +691,10 @@ class OverrideDelete(bpy.types.Operator):
             tool.Ifc.set(new_file)
             self.transaction_data = {"old_file": old_file, "new_file": new_file}
             IfcStore.add_transaction_operation(self)
-        # Required otherwise gizmos are still visible
-        context.view_layer.objects.active = None
+
+        if clear_active_object:
+            # Required otherwise gizmos are still visible
+            context.view_layer.objects.active = None
 
         operator_time = time() - start_time
         if operator_time > 10:
@@ -799,7 +808,7 @@ class OverrideOutlinerDelete(bpy.types.Operator):
         for obj in objects_to_delete:
             if element := tool.Ifc.get_entity(obj):
                 if tool.Geometry.is_locked(element):
-                    self.report({"ERROR"}, f"Element '{obj.name}' is locked and cannot be deleted.")
+                    self.report({"ERROR"}, lock_error_message(obj.name))
                     if collection := obj.BIMObjectProperties.collection:
                         collections_to_delete.discard(collection)
                     continue
@@ -915,8 +924,8 @@ class OverrideDuplicateMove(bpy.types.Operator):
                     obj.select_set(False)
                     continue  # For now, don't copy drawings until we stabilise a bit more. It's tricky.
                 elif tool.Geometry.is_locked(element):
-                    obj.select_set(False)
-                    self.report({"ERROR"}, f"Element '{obj.name}' is locked and cannot be duplicated.")
+                    tool.Blender.deselect_object(obj, ensure_active_object=True)
+                    self.report({"ERROR"}, lock_error_message(obj.name))
                     continue
             elif tool.Geometry.is_representation_item(obj):
                 OverrideDuplicateMove.duplicate_item(self, obj)
@@ -1738,7 +1747,7 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
             elif (usage := tool.Model.get_usage_type(element)) and usage in ("LAYER1", "LAYER2"):
                 self.report({"INFO"}, f"Parametric {usage} elements cannot be edited directly")
             elif tool.Geometry.is_locked(element):
-                self.report({"ERROR"}, f"Element '{obj.name}' is locked and cannot be edited")
+                self.report({"ERROR"}, lock_error_message(obj.name))
             elif usage == "PROFILE":
                 bpy.ops.bim.hotkey(hotkey="A_E")
             elif usage == "LAYER3":
