@@ -70,9 +70,6 @@ class BIM_PT_camera(Panel):
             row.prop(props, "fill_mode")
             row = self.layout.row()
             row.prop(props, "cut_mode")
-        elif not hasattr(context.scene, "svg_export"):
-            row = self.layout.row()
-            row.label(text="Freestyle SVG Exporter Not Installed", icon="ERROR")
 
         row = self.layout.row()
         row.prop(props, "width")
