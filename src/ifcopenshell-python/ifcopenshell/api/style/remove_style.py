@@ -50,17 +50,21 @@ class Usecase:
     settings: dict[str, Any]
 
     def execute(self, style: ifcopenshell.entity_instance) -> None:
-        self.purge_styled_items(style)
+        self.purge_inverses(style)
         if style.is_a("IfcSurfaceStyle"):
             for style_ in style.Styles:
                 ifcopenshell.api.style.remove_surface_style(self.file, style=style_)
         self.file.remove(style)
 
-    def purge_styled_items(self, style: ifcopenshell.entity_instance) -> None:
+    def purge_inverses(self, style: ifcopenshell.entity_instance) -> None:
         for inverse in self.file.get_inverse(style):
-            if inverse.is_a("IfcStyledItem") and len(inverse.Styles) == 1:
-                self.purge_styled_representations(inverse)
-                self.file.remove(inverse)
+            if inverse.is_a("IfcStyledItem"):
+                if len(inverse.Styles) == 1:
+                    self.purge_styled_representations(inverse)
+                    self.file.remove(inverse)
+            # IfcCurveStyle -> IfcFillAreaStyleHatching.
+            elif inverse.is_a("IfcFillAreaStyleHatching"):
+                self.purge_fill_area_style_hatching(inverse, style)
 
     def purge_styled_representations(self, styled_item: ifcopenshell.entity_instance) -> None:
         for inverse in self.file.get_inverse(styled_item):
@@ -72,3 +76,11 @@ class Usecase:
         for inverse in self.file.get_inverse(styled_representation):
             if inverse.is_a("IfcMaterialDefinitionRepresentation") and len(inverse.Representations) == 1:
                 self.file.remove(inverse)
+
+    def purge_fill_area_style_hatching(
+        self, fill_area_style_hatching: ifcopenshell.entity_instance, style: ifcopenshell.entity_instance
+    ) -> None:
+        for inverse in self.file.get_inverse(fill_area_style_hatching):
+            if inverse.is_a("IfcFillAreaStyle"):
+                self.execute(inverse)
+        ifcopenshell.util.element.remove_deep2(self.file, fill_area_style_hatching, do_not_delete=[style])
