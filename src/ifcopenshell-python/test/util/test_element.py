@@ -634,6 +634,24 @@ class TestGetElementsByStyle(test.bootstrap.IFC4):
         )
         assert subject.get_elements_by_style(self.file, style) == {element}
 
+    def test_getting_elements_of_a_styled_material_with_curve_style_hatching(self):
+        element = self.file.create_entity("IfcWall")
+        material = ifcopenshell.api.material.add_material(self.file)
+        ifcopenshell.api.material.assign_material(self.file, products=[element], material=material)
+        curve_style = self.file.create_entity("IfcCurveStyle")
+        fill_style = self.file.create_entity("IfcFillAreaStyleHatching", HatchLineAppearance=curve_style)
+        style = self.file.create_entity("IfcFillAreaStyle", FillStyles=[fill_style])
+        self.file.create_entity(
+            "IfcMaterialDefinitionRepresentation",
+            RepresentedMaterial=material,
+            Representations=[
+                self.file.create_entity(
+                    "IfcStyledRepresentation", Items=[self.file.create_entity("IfcStyledItem", Styles=[style])]
+                )
+            ],
+        )
+        assert subject.get_elements_by_style(self.file, curve_style) == {element}
+
 
 class TestGetElementsByRepresentation(test.bootstrap.IFC4):
     def test_getting_elements_of_a_styled_representation_item(self):
