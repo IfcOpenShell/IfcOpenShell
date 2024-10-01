@@ -169,7 +169,7 @@ class Usecase:
             self.target_class = "IfcPresentationStyle"
             return self.append_presentation_style()
 
-    def get_existing_element(self, element):
+    def get_existing_element(self, element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
         if element.id() in self.added_elements:
             return self.added_elements[element.id()]
         try:
@@ -180,7 +180,7 @@ class Usecase:
             elif element.is_a("IfcProfileDef"):
                 return [e for e in self.file.by_type("IfcProfileDef") if e.ProfileName == element.ProfileName][0]
         except:
-            return False
+            return None
 
     def append_material(self):
         self.whitelisted_inverse_attributes = {
