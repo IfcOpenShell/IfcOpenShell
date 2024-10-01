@@ -42,7 +42,7 @@ class LoadProfiles(bpy.types.Operator):
                 continue
             new = props.profiles.add()
             new.ifc_definition_id = profile.id()
-            new.name = profile.ProfileName or "Unnamed"
+            new["name"] = profile.ProfileName or "Unnamed"
             new.ifc_class = profile.is_a()
 
         props.is_editing = True

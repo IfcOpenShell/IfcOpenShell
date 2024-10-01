@@ -448,12 +448,11 @@ class Spatial(bonsai.core.tool.Spatial):
         props = bpy.context.scene.BIMSpatialDecompositionProperties
         new = props.containers.add()
         new.ifc_class = element.is_a()
-        new.name = element.Name or "Unnamed"
+        new["name"] = element.Name or "Unnamed"
         new.description = element.Description or ""
         new.long_name = element.LongName or ""
         if not element.is_a("IfcProject"):
-            ifc_file = tool.Ifc.get()
-            new.elevation = str(ifcopenshell.util.placement.get_storey_elevation(element))
+            new["elevation"] = str(ifcopenshell.util.placement.get_storey_elevation(element))
         new.is_expanded = element.id() not in cls.contracted_containers
         new.level_index = level_index
         children = ifcopenshell.util.element.get_parts(element)
