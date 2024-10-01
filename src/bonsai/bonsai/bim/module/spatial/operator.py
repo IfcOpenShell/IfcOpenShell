@@ -159,7 +159,18 @@ class SelectContainer(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.select_container"
     bl_label = "Select Container"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "SHIFT + Click to add container to selection\nALT + Click to remove container from selection"
     container: bpy.props.IntProperty()
+    selection_mode: bpy.props.EnumProperty(items=[["ADD"] * 3, ["REMOVE"] * 3, ["SINGLE" * 3]])
+
+    def invoke(self, context, event):
+        if event.shift:
+            self.selection_mode = "ADD"
+        elif event.alt:
+            self.selection_mode = "REMOVE"
+        else:
+            self.selection_mode = "SINGLE"
+        return self.execute(context)
 
     def _execute(self, context):
         if self.container:
@@ -169,7 +180,12 @@ class SelectContainer(bpy.types.Operator, tool.Ifc.Operator):
         else:
             return
         if container:
-            core.select_container(tool.Ifc, tool.Spatial, container=container)
+            core.select_container(
+                tool.Ifc,
+                tool.Spatial,
+                container=container,
+                selection_mode=self.selection_mode,
+            )
 
 
 class SelectSimilarContainer(bpy.types.Operator, tool.Ifc.Operator):

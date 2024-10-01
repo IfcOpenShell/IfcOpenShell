@@ -515,11 +515,21 @@ class Blender(bonsai.core.tool.Blender):
         active_object.select_set(True)
 
     @classmethod
-    def select_object(cls, obj: bpy.types.Object):
+    def set_object_selection(cls, obj: bpy.types.Object, state: bool = True):
         try:
-            obj.select_set(True)
+            obj.select_set(state)
         except RuntimeError:  # Trying to select a hidden object throws an error
             pass
+
+    @classmethod
+    def select_object(cls, obj: bpy.types.Object):
+        cls.set_object_selection(obj, True)
+
+    @classmethod
+    def deselect_object(cls, obj: bpy.types.Object, ensure_active_object: bool = True):
+        cls.set_object_selection(obj, False)
+        if ensure_active_object and bpy.context.view_layer.objects.active == obj and bpy.context.selected_objects:
+            cls.set_active_object(bpy.context.selected_objects[-1])
 
     @classmethod
     def set_objects_selection(

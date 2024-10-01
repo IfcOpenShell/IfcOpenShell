@@ -131,8 +131,13 @@ class Spatial(bonsai.core.tool.Spatial):
         tool.Blender.select_object(obj)
 
     @classmethod
-    def set_active_object(cls, obj: bpy.types.Object) -> None:
-        tool.Blender.set_active_object(obj)
+    def set_active_object(cls, obj: bpy.types.Object, selection_mode: str = "ADD") -> None:
+        if selection_mode == "ADD":
+            tool.Blender.set_active_object(obj)
+        elif selection_mode == "REMOVE":
+            tool.Blender.deselect_object(obj)
+        else:
+            tool.Blender.select_and_activate_single_object(bpy.context, obj)
 
     @classmethod
     def set_relative_object_matrix(
