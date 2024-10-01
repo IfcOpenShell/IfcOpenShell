@@ -103,6 +103,10 @@ class Blender(bonsai.core.tool.Blender):
         obj.select_set(True)
 
     @classmethod
+    def clear_active_object(cls) -> None:
+        bpy.context.view_layer.objects.active = None
+
+    @classmethod
     def setup_tabs(cls) -> None:
         # https://blender.stackexchange.com/questions/140644/how-can-make-the-state-of-a-boolean-property-relative-to-the-3d-view-area
         for screen in bpy.data.screens:
@@ -528,8 +532,11 @@ class Blender(bonsai.core.tool.Blender):
     @classmethod
     def deselect_object(cls, obj: bpy.types.Object, ensure_active_object: bool = True):
         cls.set_object_selection(obj, False)
-        if ensure_active_object and bpy.context.view_layer.objects.active == obj and bpy.context.selected_objects:
-            cls.set_active_object(bpy.context.selected_objects[-1])
+        if ensure_active_object and bpy.context.view_layer.objects.active == obj:
+            if bpy.context.selected_objects:
+                cls.set_active_object(bpy.context.selected_objects[-1])
+            else:
+                cls.clear_active_object()
 
     @classmethod
     def set_objects_selection(
