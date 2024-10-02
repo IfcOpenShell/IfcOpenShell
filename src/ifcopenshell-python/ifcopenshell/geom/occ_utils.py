@@ -225,7 +225,10 @@ def serialize_shape(shape):
     shapes.SetFormatNb(2)
 
     shapes.Add(shape)
-    return shapes.WriteToString()
+    if hasattr(shapes, "WriteToString"):
+        return shapes.WriteToString()
+    else:
+        return shapes.Write()
 
 
 def create_shape_from_serialization(
