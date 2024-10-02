@@ -265,14 +265,25 @@ void TtlWktSerializer::write(const IfcGeom::TriangulationElement* o)
         double lowest_z = std::numeric_limits<double>::infinity();
 
         for (const auto& f : o->geometry().polyhedral_faces_with_holes()) {
-            auto v0 = vertex_map.transpose().row(f[0][0]);
-            auto v1 = vertex_map.transpose().row(f[0][1]);
-            auto v2 = vertex_map.transpose().row(f[0][2]);
-            auto v1_v0 = v1 - v0;
-            auto v2_v0 = v2 - v0;
+            Eigen::Vector3d v0, v1, v2, v1_v0, v2_v0;
+            for (size_t i = 0; i < f[0].size(); ++i) {
+                v0 = vertex_map.transpose().row(f[0][0 + i]);
+                v1 = vertex_map.transpose().row(f[0][1 + i]);
+                v2 = vertex_map.transpose().row(f[0][2 + i]);
+                v1_v0 = v1 - v0;
+                v2_v0 = v2 - v0;
+                v1_v0.normalize();
+                v2_v0.normalize();
+                if ((std::abs(v1_v0.dot(v2_v0)) + 1.e-9) >= 1.0) {
+                    // Don't derive normal from collinear edges
+                    continue;
+                }
+                break;
+            }
 
             Eigen::Vector3d cross_product = v1_v0.cross(v2_v0);
             cross_product.normalize();
+
             // @nb we take abs because so that we can ignore face orientation and potential convatities rquire
             if ((std::abs(cross_product.z()) + 1.e-9) >= 1.0 && v0.z() < lowest_z) {
                 lowest_face = f.begin();
