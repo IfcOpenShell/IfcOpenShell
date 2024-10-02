@@ -97,9 +97,9 @@ int GltfSerializer::writeMaterial(const ifcopenshell::geometry::taxonomy::style:
 
 	std::array<double, 4> base;
 	base.fill(1.0);
-	if (style->diffuse) {
+	if (style->get_color()) {
 		for (int i = 0; i < 3; ++i) {
-			base[i] = style->diffuse.ccomponents()(i);
+			base[i] = style->get_color().ccomponents()(i);
 		}
 	}
 	if (style->transparency == style->transparency) {
