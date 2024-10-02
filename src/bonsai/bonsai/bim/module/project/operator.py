@@ -28,6 +28,7 @@ import datetime
 import numpy as np
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.project
 import ifcopenshell.util.file
 import ifcopenshell.util.selector
 import ifcopenshell.util.geolocation
@@ -425,9 +426,15 @@ class AppendLibraryElement(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.append_library_element"
     bl_label = "Append Library Element"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Append element to the current project"
+    bl_description = (
+        "Append element to the current project.\n\n"
+        "ALT+CLICK to skip reusing materials, profiles, styles based on their name (may result in duplicates)"
+    )
     definition: bpy.props.IntProperty()
     prop_index: bpy.props.IntProperty()
+    assume_unique_by_name: bpy.props.BoolProperty(name="Assume Unique By Name", default=True, options={"SKIP_SAVE"})
+
+    file: ifcopenshell.file
 
     @classmethod
     def poll(cls, context):
@@ -436,13 +443,20 @@ class AppendLibraryElement(bpy.types.Operator, tool.Ifc.Operator):
             cls.poll_message_set("Please create or load a project first.")
         return poll
 
+    def invoke(self, context, event):
+        if event.type == "LEFTMOUSE" and event.alt:
+            self.assume_unique_by_name = False
+        return self.execute(context)
+
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-        element = ifcopenshell.api.run(
-            "project.append_asset",
+        self.file = tool.Ifc.get()
+        library_file = IfcStore.library_file
+        assert library_file
+        element = ifcopenshell.api.project.append_asset(
             self.file,
-            library=IfcStore.library_file,
-            element=IfcStore.library_file.by_id(self.definition),
+            library=library_file,
+            element=library_file.by_id(self.definition),
+            assume_asset_uniqueness_by_name=self.assume_unique_by_name,
         )
         if not element:
             return {"FINISHED"}
