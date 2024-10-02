@@ -238,7 +238,7 @@ void TtlWktSerializer::writeHeader()
 void TtlWktSerializer::write(const IfcGeom::TriangulationElement* o)
 {
     auto ttl_object_id = [&]() {
-        return boost::replace_all_copy(boost::replace_all_copy(object_id(o), "-", "_"), "$", "%24");
+        return boost::replace_all_copy(object_id(o), "-", "_");
     };
 
     filename_.stream << "base:" << ttl_object_id() << " a geo:Feature ;\n";
