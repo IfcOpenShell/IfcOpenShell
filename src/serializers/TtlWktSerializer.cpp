@@ -237,20 +237,32 @@ void TtlWktSerializer::writeHeader()
 
 void TtlWktSerializer::write(const IfcGeom::TriangulationElement* o)
 {
-    auto ttl_object_id = [&]() {
-        return boost::replace_all_copy(object_id(o), "-", "_");
+    auto ttl_object_id = [&](const char* const postfix = nullptr) {
+        using namespace ifcopenshell::geometry::settings;
+        auto oid = boost::replace_all_copy(object_id(o), "-", "_");
+        if (oid.find('$') == std::string::npos) {
+            return "base:" + oid + (postfix ? postfix : (const char* const)"");
+        } else {
+            std::string base;
+            if (settings_.get<BaseUri>().has()) {
+                base = settings_.get<BaseUri>().get();
+            } else {
+                base = "http://example.org/";
+            }
+            return "<" + base + oid + (postfix ? postfix : (const char* const) "") + ">";
+        }
     };
 
-    filename_.stream << "base:" << ttl_object_id() << " a geo:Feature ;\n";
+    filename_.stream << ttl_object_id() << " a geo:Feature ;\n";
     filename_.stream << "    dcterms:identifier " << escape_for_turtle(
         IfcUtil::convert_utf8_to_utf32(o->guid())) << " ;\n";
     filename_.stream << "    rdfs:label " << escape_for_turtle(
         IfcUtil::convert_utf8_to_utf32(o->name())
     ) << " ;\n";
-    filename_.stream << "    geo:hasGeometry base:" << ttl_object_id() << "_geometry .\n\n";
+    filename_.stream << "    geo:hasGeometry " << ttl_object_id("_geometry") << " .\n\n";
 
     if (!o->geometry().polyhedral_faces_with_holes().empty()) {
-        filename_.stream << "base:" << ttl_object_id() << "_geometry a geo:Geometry ;\n";
+        filename_.stream << ttl_object_id("_geometry") << " a geo:Geometry ;\n";
         filename_.stream << "    geo:asWKT " << escape_for_turtle(
             IfcUtil::convert_utf8_to_utf32(
                 capture_output(
@@ -291,8 +303,8 @@ void TtlWktSerializer::write(const IfcGeom::TriangulationElement* o)
         }
 
         if (lowest_face) {
-            filename_.stream << "base:" << ttl_object_id() << " geo:hasGeometry base:" << ttl_object_id() << "_footprint_geometry .\n\n";
-            filename_.stream << "base:" << ttl_object_id() << "_footprint_geometry a geo:Geometry ;\n";
+            filename_.stream << ttl_object_id() << " geo:hasGeometry " << ttl_object_id("_footprint_geometry") << " .\n\n";
+            filename_.stream << ttl_object_id("_footprint_geometry") << " a geo:Geometry ;\n";
             filename_.stream << "    geo:asWKT " << escape_for_turtle(
                 IfcUtil::convert_utf8_to_utf32(
                     capture_output(
@@ -306,7 +318,7 @@ void TtlWktSerializer::write(const IfcGeom::TriangulationElement* o)
             ) << "^^geo:wktLiteral .\n\n";
         }
     } else {
-        filename_.stream << "base:" << ttl_object_id() << "_geometry a geo:Geometry ;\n";
+        filename_.stream << ttl_object_id("_geometry") << " a geo:Geometry ;\n";
         bool force_2d = true;
         double z_value;
         for (size_t i = 2; i < o->geometry().verts().size(); i += 3) {
