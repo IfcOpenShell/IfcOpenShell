@@ -27,6 +27,7 @@ classes = (
     operator.DebugActiveDrawing,
     operator.InspectFromObject,
     operator.InspectFromStepId,
+    operator.MergeIdenticalObjects,
     operator.OverrideDisplayType,
     operator.ParseExpress,
     operator.PipInstall,

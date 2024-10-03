@@ -688,6 +688,52 @@ class PurgeUnusedObjects(bpy.types.Operator, tool.Ifc.Operator):
                 bpy.ops.bim.load_materials()
 
 
+class MergeIdenticalObjects(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.merge_identical_objects"
+    bl_label = "Merge Identical Objects"
+    bl_options = {"REGISTER", "UNDO"}
+
+    object_type: bpy.props.EnumProperty(
+        name="Object Type",
+        items=(
+            ("TYPE", "Type", ""),
+            ("PROFILE", "Profile", ""),
+            ("STYLE", "Style", ""),
+            ("MATERIAL", "Material", ""),
+        ),
+    )
+
+    def _execute(self, context):
+        object_type = self.object_type
+        if object_type == "STYLE":
+            merged_data = tool.Debug.merge_identical_objects("style")
+            if merged_data:
+                print("Merged styles:")
+                for style_type, style_names in merged_data.items():
+                    print(f"- {style_type}: {', '.join(style_names)}")
+            merged = sum(len(v) for v in merged_data.values())
+        else:
+            self.report({"ERROR"}, f"Invalid object type {object_type}.")
+            return {"CANCELLED"}
+
+        msg = " See system console for details." if merged else ""
+        self.report({"INFO"}, f"{merged} identical {object_type.lower()}s were merged.{msg}")
+
+        if merged == 0:
+            return
+
+        scene = context.scene
+        if object_type == "PROFILE":
+            if scene.BIMProfileProperties.is_editing:
+                bpy.ops.bim.load_profiles()
+        elif object_type == "STYLE":
+            if scene.BIMStylesProperties.is_editing:
+                bpy.ops.bim.load_styles()
+        elif object_type == "MATERIAL":
+            if scene.BIMMaterialProperties.is_editing:
+                bpy.ops.bim.load_materials()
+
+
 class PipInstall(bpy.types.Operator):
     bl_idname = "bim.pip_install"
     bl_label = "Pip Install"
