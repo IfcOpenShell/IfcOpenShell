@@ -19,6 +19,7 @@
 
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
+import math
 
 if TYPE_CHECKING:
     import bpy
@@ -113,3 +114,13 @@ def edit_unit(ifc: tool.Ifc, unit_tool: tool.Unit, unit: ifcopenshell.entity_ins
         ifc.run("unit.edit_named_unit", unit=unit, attributes=attributes)
     unit_tool.import_units()
     unit_tool.clear_active_unit()
+
+
+def format_value(ifc: tool.Ifc, value: float) -> str:
+    precision = ifc.by_type("IfcGeometricRepresentationContext")[0].Precision
+    if precision:
+        decimal_places = math.ceil(math.log10(1/precision))
+    else:
+        precision = 1e-5
+        decimal_places = 5
+    return str(round(precision * round(value / precision), decimal_places))
