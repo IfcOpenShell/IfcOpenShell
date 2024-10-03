@@ -117,8 +117,10 @@ IF((PYTHONINTERP_FOUND AND NOT "${PYTHON_EXECUTABLE}" STREQUAL "") OR PYTHON_MOD
         FOREACH(file ${sourcefiles})
             FILE(RELATIVE_PATH relative "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/" "${file}")
             GET_FILENAME_COMPONENT(dir "${relative}" DIRECTORY)
-			INSTALL(FILES "${file}"
-                    DESTINATION "${python_package_dir}/ifcopenshell/${dir}")
+            if(NOT IS_DIRECTORY "${file}")
+			    INSTALL(FILES "${file}"
+                        DESTINATION "${python_package_dir}/ifcopenshell/${dir}")
+            endif()
         ENDFOREACH()
         INSTALL(FILES "${CMAKE_BINARY_DIR}/ifcwrap/ifcopenshell_wrapper.py"
                 DESTINATION "${python_package_dir}/ifcopenshell")
