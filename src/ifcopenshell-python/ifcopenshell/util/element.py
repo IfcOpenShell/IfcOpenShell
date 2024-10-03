@@ -1349,6 +1349,11 @@ def get_referenced_elements(reference: ifcopenshell.entity_instance) -> set[ifco
     return related_objects
 
 
+def replace_element(element: ifcopenshell.entity_instance, replacement: ifcopenshell.entity_instance) -> None:
+    for inverse in element.file:
+        replace_attribute(inverse, element, replacement)
+
+
 def replace_attribute(element: ifcopenshell.entity_instance, old: Any, new: Any) -> None:
     for i, attribute_value in enumerate(element):
         if has_element_reference(attribute_value, old):
