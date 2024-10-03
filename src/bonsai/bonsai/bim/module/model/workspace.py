@@ -363,9 +363,6 @@ class CreateObjectUI:
                 else format_ifc_camel_case(ifc_element_type.removesuffix("Type")) + " Tool"
             )
             cls.layout.label(text=tool_name, icon="TOOL_SETTINGS")
-
-        cls.draw_type_manager_launcher(context)
-        cls.draw_thumbnail() if context.region.type != "TOOL_HEADER" else cls
         cls.draw_add_object(context)
 
     @classmethod
@@ -377,9 +374,10 @@ class CreateObjectUI:
         cls.layout.row(align=True).label(text=text, icon="OUTLINER_COLLECTION")
 
     @classmethod
-    def draw_type_manager_launcher(cls, context):
+    def draw_add_object(cls, context):
         ui_context = str(context.region.type)
         row = cls.layout.row(align=True)
+
         if not AuthoringData.data["ifc_classes"]:
             if AuthoringData.data["ifc_element_type"]:
                 row.label(text=f"No {AuthoringData.data['ifc_element_type']} Found", icon="ERROR")
@@ -395,71 +393,107 @@ class CreateObjectUI:
             row = cls.layout.row(align=True)
             row.operator("bim.launch_type_manager", icon=tool.Blender.TYPE_MANAGER_ICON, text="Launch Type Manager")
 
-    @classmethod
-    def draw_add_object(cls, context):
-        ui_context = str(context.region.type)
-        row = cls.layout.row(align=True)
-        if not AuthoringData.data["relating_type_id"]:
-            return
-
-        if cls.props.ifc_class == "IfcWallType":
-            row.prop(data=cls.props, property="rl1", text="Relative Level" if ui_context != "TOOL_HEADER" else "RL")
-            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
-            row.prop(data=cls.props, property="extrusion_depth", text="Height" if ui_context != "TOOL_HEADER" else "H")
-            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
-            row.prop(data=cls.props, property="length", text="Length" if ui_context != "TOOL_HEADER" else "L")
-            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
-            row.prop(data=cls.props, property="x_angle", text="Slope") if ui_context != "TOOL_HEADER" else "A"
-
-        elif cls.props.ifc_class in ("IfcSlabType", "IfcRampType", "IfcRoofType"):
-            row.prop(
-                data=cls.props, property="x_angle", text="Slope" if ui_context != "TOOL_HEADER" else "A", icon="FILE_3D"
-            )
-
-        elif cls.props.ifc_class in ("IfcColumnType", "IfcMemberType"):
-            row.prop(data=cls.props, property="cardinal_point", text="Axis")
-            row.prop(data=cls.props, property="extrusion_depth", text="Height" if ui_context != "TOOL_HEADER" else "H")
-
-        elif cls.props.ifc_class in ("IfcBeamType"):
-            row.prop(data=cls.props, property="cardinal_point", text="Axis")
-            row.prop(data=cls.props, property="extrusion_depth", text="Length" if ui_context != "TOOL_HEADER" else "L")
-
-        elif cls.props.ifc_class in ("IfcDoorType", "IfcDoorStyle"):
-            row.prop(data=cls.props, property="rl1", text="Relative Level" if ui_context != "TOOL_HEADER" else "RL")
-
-        elif cls.props.ifc_class in (
-            "IfcWindowType",
-            "IfcWindowStyle",
-            "IfcDoorType",
-            "IfcDoorStyle",
-            "IfcDuctSegmentType",
-            "IfcPipeSegmentType",
-            "IfcCableCarrierSegmentType",
-            "IfcCableSegmentType",
-        ):
-            row.prop(
-                data=cls.props, property="rl2", text="Relative Level (rl2)" if ui_context != "TOOL_HEADER" else "RL"
-            )
-
-        ### this neeeds to move
-        elif cls.props.ifc_class in ("IfcSpaceType"):
-            add_layout_hotkey_operator(cls.layout, "Generate", "S_G", bpy.ops.bim.generate_space.__doc__, ui_context)
-        ###
-        else:
-            row = cls.layout.row(align=True)
-            row.prop(data=cls.props, property="rl_mode", text="RL Mode" if ui_context != "TOOL_HEADER" else "RL")
-
+        ### Type Manager Preview
         if AuthoringData.data["ifc_classes"]:
             if not AuthoringData.data["ifc_element_type"]:
                 row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
                 prop_with_search(row, cls.props, "ifc_class", text="Type Class" if ui_context != "TOOL_HEADER" else "")
+            if cls.props.ifc_class:
+                box = cls.layout.box()
+                if AuthoringData.data["type_thumbnail"]:
+                    if ui_context == "TOOL_HEADER":
+                        row1 = box.row()
+                        row1.ui_units_y = 0.01
+                        row1.template_icon(icon_value=AuthoringData.data["type_thumbnail"], scale=1)
+                        row2 = box.column(align=True)
+                        row2.operator("bim.launch_type_manager", text="", emboss=False)
+                        row1.operator("bim.launch_type_manager", text=AuthoringData.data["relating_type_name"], emboss=False)
+                    else:
+                        row = box.row()
+                        row.alignment = "CENTER"
+                        row.operator("bim.launch_type_manager", text=AuthoringData.data["relating_type_name"], emboss=False)
+                        row = box.row()
+
+                        if AuthoringData.data["relating_type_description"] != "No description":
+                            row.alignment = "CENTER"
+                            row.operator("bim.launch_type_manager", text=AuthoringData.data["relating_type_description"], emboss=False)
+                            row = box.row()
+
+                        row.alignment = "CENTER"
+                        row.operator(
+                            "bim.launch_type_manager",
+                            text=f"{cls.props.ifc_class.replace('Type', '')}[{AuthoringData.data['predefined_type']}]",
+                            emboss=False,
+                            )
+
+                        row1 = box.row()
+                        row1.ui_units_y = 0.01
+                        row1.template_icon(icon_value=AuthoringData.data["type_thumbnail"], scale=3)
+                        row2 = box.column(align=True)
+                        row2.ui_units_y = 2
+                        row2.operator("bim.launch_type_manager", text="", emboss=False)
+
+                        row = box.row(align=True)
+                        row.alignment = "RIGHT"
+                        # row.operator("bim.select_type", icon="OBJECT_DATA", text="", emboss=False)
+                        row.operator("bim.launch_type_manager", text="",icon=tool.Blender.TYPE_MANAGER_ICON, emboss=False)
+
+                else:
+                    op = box.operator("bim.load_type_thumbnails", text="Load Thumbnails", icon="FILE_REFRESH", emboss=False)
+                    op.ifc_class = cls.props.ifc_class
+        row = cls.layout.row(align=True)
+        if not AuthoringData.data["relating_type_id"]:
+            return
+
+        #Add Tools
+        if AuthoringData.data["ifc_classes"]:
             if AuthoringData.data["relating_type_id"]:
-                row = cls.layout.row(align=True)
-                row.operator(
-                    "bim.launch_type_manager",
-                    icon=tool.Blender.TYPE_MANAGER_ICON,
-                    text="Type: " + AuthoringData.data["relating_type_name"],
-                )
+                row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+                if cls.props.ifc_class == "IfcWallType":
+                    row.prop(data=cls.props, property="rl1", text="Relative Level" if ui_context != "TOOL_HEADER" else "RL")
+                    row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+                    row.prop(data=cls.props, property="extrusion_depth", text="Height" if ui_context != "TOOL_HEADER" else "H")
+                    row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+                    row.prop(data=cls.props, property="length", text="Length" if ui_context != "TOOL_HEADER" else "L")
+                    row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+                    row.prop(data=cls.props, property="x_angle", text="Slope") if ui_context != "TOOL_HEADER" else "A"
+
+                elif cls.props.ifc_class in ("IfcSlabType", "IfcRampType", "IfcRoofType"):
+                    row.prop(
+                        data=cls.props, property="x_angle", text="Slope" if ui_context != "TOOL_HEADER" else "A", icon="FILE_3D"
+                    )
+
+                elif cls.props.ifc_class in ("IfcColumnType", "IfcMemberType"):
+                    row.prop(data=cls.props, property="cardinal_point", text="Axis")
+                    row.prop(data=cls.props, property="extrusion_depth", text="Height" if ui_context != "TOOL_HEADER" else "H")
+
+                elif cls.props.ifc_class in ("IfcBeamType"):
+                    row.prop(data=cls.props, property="cardinal_point", text="Axis")
+                    row.prop(data=cls.props, property="extrusion_depth", text="Length" if ui_context != "TOOL_HEADER" else "L")
+
+                elif cls.props.ifc_class in ("IfcDoorType", "IfcDoorStyle"):
+                    row.prop(data=cls.props, property="rl1", text="Relative Level" if ui_context != "TOOL_HEADER" else "RL")
+
+                elif cls.props.ifc_class in (
+                    "IfcWindowType",
+                    "IfcWindowStyle",
+                    "IfcDoorType",
+                    "IfcDoorStyle",
+                    "IfcDuctSegmentType",
+                    "IfcPipeSegmentType",
+                    "IfcCableCarrierSegmentType",
+                    "IfcCableSegmentType",
+                ):
+                    row.prop(
+                        data=cls.props, property="rl2", text="Relative Level (rl2)" if ui_context != "TOOL_HEADER" else "RL"
+                    )
+                ### this neeeds to move
+                elif cls.props.ifc_class in ("IfcSpaceType"):
+                    add_layout_hotkey_operator(cls.layout, "Generate", "S_G", bpy.ops.bim.generate_space.__doc__, ui_context)
+                ###
+                else:
+                    row = cls.layout.row(align=True)
+                    row.prop(data=cls.props, property="rl_mode", text="RL Mode" if ui_context != "TOOL_HEADER" else "RL")
                 row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
                 add_layout_hotkey_operator(row, "Add", "S_A", bpy.ops.bim.add_constr_type_instance.__doc__, ui_context)
                 row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
@@ -470,17 +504,6 @@ class CreateObjectUI:
                 )
             else:
                 row.label(text="No Construction Type", icon="FILE_3D")
-
-    @classmethod
-    def draw_thumbnail(cls):
-        if AuthoringData.data["ifc_classes"]:
-            if cls.props.ifc_class:
-                box = cls.layout.box()
-                if AuthoringData.data["type_thumbnail"]:
-                    box.template_icon(icon_value=AuthoringData.data["type_thumbnail"], scale=5)
-                else:
-                    op = box.operator("bim.load_type_thumbnails", text="Load Thumbnails", icon="FILE_REFRESH")
-                    op.ifc_class = cls.props.ifc_class
 
 
 class EditObjectUI:

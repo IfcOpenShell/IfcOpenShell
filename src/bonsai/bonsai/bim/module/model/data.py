@@ -58,6 +58,7 @@ class AuthoringData:
         cls.data["ifc_classes"] = cls.ifc_classes()
         cls.data["relating_type_id"] = cls.relating_type_id()  # only after .ifc_classes()
         cls.data["relating_type_name"] = cls.relating_type_name()  # only after .relating_type_id()
+        cls.data["relating_type_description"] = cls.relating_type_description()  # only after .relating_type_id()
         cls.data["predefined_type"] = cls.predefined_type()  # only after .relating_type_id()
         cls.data["type_class"] = cls.type_class()
 
@@ -330,6 +331,11 @@ class AuthoringData:
     def relating_type_name(cls):
         if relating_type_id := cls.props.relating_type_id:
             return tool.Ifc.get().by_id(int(relating_type_id)).Name or "Unnamed"
+        
+    @classmethod
+    def relating_type_description(cls):
+        if relating_type_id := cls.props.relating_type_id:
+            return tool.Ifc.get().by_id(int(relating_type_id)).Description or "No description"
 
     @classmethod
     def predefined_type(cls):
