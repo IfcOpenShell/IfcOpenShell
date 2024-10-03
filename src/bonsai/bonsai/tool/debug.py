@@ -111,7 +111,8 @@ class Debug(bonsai.core.tool.Debug):
         """
 
         def get_hash(element: ifcopenshell.entity_instance) -> int:
-            return hash(json.dumps(element.get_info_2(include_identifier=False, recursive=True), sort_keys=True))
+            # TODO: replace with get_info_2 after bonsai build update.
+            return hash(json.dumps(element.get_info(include_identifier=False, recursive=True), sort_keys=True))
 
         ifc_file = tool.Ifc.get()
 
