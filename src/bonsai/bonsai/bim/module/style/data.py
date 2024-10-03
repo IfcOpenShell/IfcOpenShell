@@ -50,7 +50,7 @@ class StylesData:
         materials: dict[bpy.types.PropertyGroup, Union[str, None]] = {}
         for style in props.styles:
             material = tool.Ifc.get_object(ifc_file.by_id(style.ifc_definition_id))
-            # Material will be None if it's either unlinked or if it's not IfcSurfaceStyle.
+            # Material will be None if it's not IfcSurfaceStyle.
             materials[style] = material.name if material is not None else None
         return materials
 
