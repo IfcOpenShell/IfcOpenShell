@@ -19,6 +19,7 @@
 import os
 import bpy
 import ifcopenshell
+import ifcopenshell.util.schema
 import bonsai.core.tool
 import bonsai.tool as tool
 from test.bim.bootstrap import NewFile
@@ -66,3 +67,23 @@ class TestPurgeHdf5Cache(NewFile):
         # On Unix loaded files are not locked.
         paths = [loaded_file_path] if os.name == "nt" else []
         assert [f for f in cache_dir.iterdir() if f.suffix == ".h5"] == paths
+
+
+class TestMergeIdenticalObject(NewFile):
+    def test_merge_identical_styles(self):
+        tool.Ifc.set(ifc := ifcopenshell.file())
+        declaration = tool.Ifc.schema().declaration_by_name("IfcPresentationStyle")
+        style_types = [d.name() for d in ifcopenshell.util.schema.get_subtypes(declaration)]
+        for style_type in style_types:
+            ifc.create_entity(style_type, Name=style_type)
+            ifc.create_entity(style_type, Name=style_type)
+            ifc.create_entity(style_type, Name="NotToMerge")
+            if style_type == "IfcSurfaceStyle":
+                for style in ifc.by_type(style_type):
+                    style.Styles = (ifc.create_entity("IfcSurfaceStyleShading"),)
+            elif style_type == "IfcFillAreaStyle":
+                for style in ifc.by_type(style_type):
+                    style.FillStyles = (ifc.create_entity("IfcFillAreaStyleHatching"),)
+
+        merge_data = subject.merge_identical_objects("style")
+        assert merge_data == {style_type: [style_type] for style_type in style_types}
