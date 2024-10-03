@@ -460,9 +460,9 @@ class TestImportPresentationStyles(NewFile):
 class TestIsEditingStyles(NewFile):
     def test_run(self):
         bpy.context.scene.BIMStylesProperties.is_editing = False
-        subject.is_editing_styles() is False
+        assert subject.is_editing_styles() is False
         bpy.context.scene.BIMStylesProperties.is_editing = True
-        subject.is_editing_styles() is True
+        assert subject.is_editing_styles() is True
 
 
 class TestGetRepresentationStyleItem(NewFile):
