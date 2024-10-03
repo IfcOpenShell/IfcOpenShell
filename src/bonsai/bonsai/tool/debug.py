@@ -19,6 +19,7 @@
 import os
 import json
 import bpy
+import ifcopenshell.api.material
 import ifcopenshell.express
 import ifcopenshell.express.schema
 import ifcopenshell.express.schema_class
@@ -104,7 +105,7 @@ class Debug(bonsai.core.tool.Debug):
         return sum(unused.values())
 
     @classmethod
-    def merge_identical_objects(cls, object_type: Literal["style"]) -> dict[str, list[str]]:
+    def merge_identical_objects(cls, object_type: Literal["STYLE", "MATERIAL"]) -> dict[str, list[str]]:
         """Merge identical objects.
 
         Note that Styles UI (or other UI) should be updated manually after using this method.
@@ -115,31 +116,35 @@ class Debug(bonsai.core.tool.Debug):
             return hash(json.dumps(element.get_info(include_identifier=False, recursive=True), sort_keys=True))
 
         ifc_file = tool.Ifc.get()
+        merged_element_types: dict[str, list[str]] = {}
 
-        if object_type == "style":
+        if object_type == "STYLE":
             declaration = tool.Ifc.schema().declaration_by_name("IfcPresentationStyle")
-            merged_element_types: dict[str, list[str]] = {}
             element_types = [e.name() for e in ifcopenshell.util.schema.get_subtypes(declaration)]
+        elif object_type == "MATERIAL":
+            # TODO: support other material types.
+            element_types = ["IfcMaterial"]
+
         for element_type in element_types:
-            elements = ifc_file.by_type(element_type)
+            elements = ifc_file.by_type(element_type, include_subtypes=False)
 
             # Calculate hashes.
             hash_to_elements: defaultdict[int, list[ifcopenshell.entity_instance]] = defaultdict(list)
             for element in elements:
-                # Ignore unnamed styles as they may be not safe to merge.
+                # Ignore unnamed elements as they may be not safe to merge.
                 if not element.Name:
                     continue
                 element_hash = get_hash(element)
                 hash_to_elements[element_hash].append(element)
 
             merged_elements_names: list[str] = []
-            # Merge styles.
+            # Merge elements.
             for elements in hash_to_elements.values():
                 if len(elements) == 1:
                     continue
 
                 main_element = elements[0]
-                if object_type == "style":
+                if object_type == "STYLE":
                     main_style_obj = tool.Ifc.get_object(main_element)
                     for style in elements[1:]:
                         ifcopenshell.util.element.replace_element(style, main_element)
@@ -150,6 +155,12 @@ class Debug(bonsai.core.tool.Debug):
                             style_obj.user_remap(main_style_obj)
                         merged_elements_names.append(style.Name)
                         bonsai.core.style.remove_style(tool.Ifc, tool.Style, style, reload_styles_ui=False)
+
+                elif object_type == "MATERIAL":
+                    for material in elements[1:]:
+                        ifcopenshell.util.element.replace_element(material, main_element)
+                        merged_elements_names.append(material.Name)
+                        ifcopenshell.api.material.remove_material(ifc_file, material)
 
             if merged_elements_names:
                 merged_element_types[element_type] = merged_elements_names

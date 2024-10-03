@@ -524,7 +524,10 @@ class BIM_PT_purge(Panel):
         layout = self.layout
         layout.operator("bim.purge_unused_objects", text="Purge Unused Profiles").object_type = "PROFILE"
         layout.operator("bim.purge_unused_objects", text="Purge Unused Types").object_type = "TYPE"
-        layout.operator("bim.purge_unused_objects", text="Purge Unused Materials").object_type = "MATERIAL"
+        row = layout.row(align=True)
+        row.label(text="Materials: ")
+        row.operator("bim.purge_unused_objects", text="Purge Unused").object_type = "MATERIAL"
+        row.operator("bim.merge_identical_objects", text="Merge Identical").object_type = "MATERIAL"
         row = layout.row(align=True)
         row.label(text="Styles: ")
         row.operator("bim.purge_unused_objects", text="Purge Unused").object_type = "STYLE"

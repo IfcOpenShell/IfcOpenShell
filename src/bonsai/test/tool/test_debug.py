@@ -19,6 +19,7 @@
 import os
 import bpy
 import ifcopenshell
+import ifcopenshell.api.style
 import ifcopenshell.util.schema
 import bonsai.core.tool
 import bonsai.tool as tool
@@ -85,5 +86,21 @@ class TestMergeIdenticalObject(NewFile):
                 for style in ifc.by_type(style_type):
                     style.FillStyles = (ifc.create_entity("IfcFillAreaStyleHatching"),)
 
-        merge_data = subject.merge_identical_objects("style")
+        merge_data = subject.merge_identical_objects("STYLE")
         assert merge_data == {style_type: [style_type] for style_type in style_types}
+
+    def test_merge_identical_materials(self):
+        tool.Ifc.set(ifc := ifcopenshell.file())
+        context = ifc.create_entity("IfcGeometricRepresentationContext")
+        style = ifc.create_entity("IfcSurfaceStyle")
+        element_types = ["IfcMaterial"]
+        for element_type in element_types:
+            ifc.create_entity(element_type, Name=element_type, Category="Category")
+            ifc.create_entity(element_type, Name=element_type, Category="Category")
+            ifc.create_entity(element_type, Name="NotToMerge", Category="Category")
+
+            for material in ifc.by_type(element_type):
+                ifcopenshell.api.style.assign_material_style(ifc, material, style, context)
+
+        merge_data = subject.merge_identical_objects("MATERIAL")
+        assert merge_data == {element_type: [element_type] for element_type in element_types}
