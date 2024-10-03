@@ -435,7 +435,7 @@ class entity_instance:
         elif None in (self.wrapped_data.file, other.wrapped_data.file):
             # when not added to a file, we can only compare attribute values
             # and we need this for where rule evaluation
-            return self.get_info(recursive=True, include_identifier=False) == other.get_info(
+            return self.get_info_2(recursive=True, include_identifier=False) == other.get_info_2(
                 recursive=True, include_identifier=False
             )
         else:
@@ -632,14 +632,12 @@ class entity_instance:
         Method has exactly the same signature as `.get_info()` but it doesn't support getting information non-recursively.
 
         Currently supported arguments values:
-            * include_identifier: `True`
             * recursive: `True` (will fail with default `False` value from `.get_info()`)
             * return_type: `dict`
             * ignore: `()` (empty tuple)
         """
 
-        assert include_identifier
         assert recursive
         assert return_type is dict
         assert len(ignore) == 0
-        return ifcopenshell_wrapper.get_info_cpp(self.wrapped_data)
+        return ifcopenshell_wrapper.get_info_cpp(self.wrapped_data, include_identifier)

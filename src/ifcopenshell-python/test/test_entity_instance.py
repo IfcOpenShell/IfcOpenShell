@@ -58,3 +58,12 @@ class TestGetInfo2(test.bootstrap.IFC4):
                 {"Coordinates": (3.0,), "id": 5, "type": "IfcCartesianPoint"},
             ),
         )
+
+    def test_exclude_identifier(self):
+        brep = self.file.create_entity("IfcFacetedBrep")
+        shell = self.file.create_entity("IfcClosedShell")
+        brep.Outer = shell
+        assert brep.get_info_2(recursive=True, include_identifier=False) == {
+            "Outer": {"CfsFaces": None, "type": "IfcClosedShell"},
+            "type": "IfcFacetedBrep",
+        }
