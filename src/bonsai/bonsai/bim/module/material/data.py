@@ -131,7 +131,12 @@ class MaterialsData:
                 for item in representation.Items:
                     if not item.is_a("IfcStyledItem"):
                         continue
-                    for style in item.Styles:
+                    current_styles: list[ifcopenshell.entity_instance] = list(item.Styles)
+                    while current_styles:
+                        style = current_styles.pop()
+                        if style.is_a("IfcPresentationStyleAssignment"):
+                            current_styles.extend(style.Styles)
+                            continue
                         results.append(
                             {
                                 "context_type": context.ContextType,
