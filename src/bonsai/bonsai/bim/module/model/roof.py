@@ -37,13 +37,14 @@ import mathutils.geometry
 from bpypolyskel import bpypolyskel
 import shapely
 from pprint import pprint
+from typing import Literal, Union, Any
 
 # reference:
 # https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcRoof.htm
 # https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcRoofType.htm
 
 
-def bm_mesh_clean_up(bm):
+def bm_mesh_clean_up(bm: bmesh.types.BMesh) -> None:
     # remove internal edges and faces
     # adding missing faces so we could rely on `e.is_boundary` later
     bmesh.ops.contextual_create(bm, geom=bm.edges[:])
@@ -94,7 +95,7 @@ class GenerateHippedRoof(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
-def is_valid_roof_footprint(bm):
+def is_valid_roof_footprint(bm: bmesh.types.BMesh) -> tuple[set[str], str]:
     # should be bmesh to support edit mode
     bm.verts.ensure_lookup_table()
     base_z = bm.verts[0].co.z
@@ -108,8 +109,14 @@ def is_valid_roof_footprint(bm):
 
 
 def generate_hiped_roof_bmesh(
-    bm, mode="ANGLE", height=1.0, roof_thickness=0.1, angle=pi / 18, rafter_edge_angle=pi / 2, mutate_current_bmesh=True
-):
+    bm: bmesh.types.BMesh,
+    mode: Literal["ANGLE", "HEIGHT"] = "ANGLE",
+    height: float = 1.0,
+    roof_thickness: float = 0.1,
+    angle: float = pi / 18,
+    rafter_edge_angle: float = pi / 2,
+    mutate_current_bmesh: float = True,
+) -> bmesh.types.BMesh:
     """return bmesh with gable roof geometry
 
     `mutate_current_bmesh` is a flag to indicate whether the input bmesh
@@ -199,16 +206,16 @@ def generate_hiped_roof_bmesh(
     new_edges = [bm.edges.new([new_verts[vi] for vi in edge]) for edge in edges]
     new_faces = [bm.faces.new([new_verts[vi] for vi in face]) for face in faces]
 
-    def find_identical_new_vert(co):
+    def find_identical_new_vert(co: Vector) -> Union[bmesh.types.BMVert, None]:
         for v in bm.verts:
             if tool.Cad.is_x((co - v.co).length, 0):
                 return v
 
-    def find_other_polygon_verts(edge):
+    def find_other_polygon_verts(edge: bmesh.types.BMEdge) -> list[bmesh.types.BMVert]:
         polygon = edge.link_faces[0]
         return [v for v in polygon.verts if v not in edge.verts]
 
-    def change_angle(projected_vert_co, edge_verts, new_angle):
+    def change_angle(projected_vert_co: Vector, edge_verts: list[bmesh.types.BMVert], new_angle: float) -> Vector:
         A, B = [v.co for v in edge_verts]
         P = projected_vert_co
 
@@ -232,10 +239,10 @@ def generate_hiped_roof_bmesh(
     verts_to_rip = []
     bottom_chords_to_remove = []
 
-    def is_footprint_vert(v):
+    def is_footprint_vert(v: bmesh.types.BMVert) -> bool:
         return tool.Cad.is_x(v.co.z - footprint_z, 0)
 
-    def is_footprint_edge(edge):
+    def is_footprint_edge(edge: bmesh.types.BMEdge) -> bool:
         return all(is_footprint_vert(v) for v in edge.verts)
 
     # find footprint edges
@@ -279,7 +286,9 @@ def generate_hiped_roof_bmesh(
         if defined_angle >= pi / 2:
             bottom_chords_to_remove.append(identical_edge)
 
-    def separate_vert(bm, vert, edge, new_co):
+    def separate_vert(
+        bm: bmesh.types.BMesh, vert: bmesh.types.BMVert, edge: bmesh.types.BMEdge, new_co: Vector
+    ) -> bmesh.types.BMVert:
         face = next(f for f in vert.link_faces if edge in f.edges)
         new_v = bmesh.utils.face_vert_separate(face, vert)
         new_v.co = new_co
@@ -378,11 +387,11 @@ def generate_hiped_roof_bmesh(
     return bm
 
 
-def bm_get_indices(sequence):
+def bm_get_indices(sequence) -> list[int]:
     return [i.index for i in sequence]
 
 
-def update_roof_modifier_ifc_data(context):
+def update_roof_modifier_ifc_data(context: bpy.types.Context) -> None:
     """should be called after new geometry settled
     since it's going to update ifc representation
     """
@@ -390,7 +399,7 @@ def update_roof_modifier_ifc_data(context):
     props = obj.BIMRoofProperties
     element = tool.Ifc.get_entity(obj)
 
-    def roof_is_gabled():
+    def roof_is_gabled() -> bool:
         pset_data = tool.Model.get_modeling_bbim_pset_data(obj, "BBIM_Roof")
         path_data = pset_data["data_dict"]["path_data"]
         angle_layer = path_data.get("gable_roof_angles", None)
@@ -411,7 +420,7 @@ def update_roof_modifier_ifc_data(context):
     tool.Ifc.edit(obj)
 
 
-def update_bbim_roof_pset(element, roof_data):
+def update_bbim_roof_pset(element: ifcopenshell.entity_instance, roof_data: dict[str, Any]) -> None:
     pset = tool.Pset.get_element_pset(element, "BBIM_Roof")
     if not pset:
         pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=element, name="BBIM_Roof")
@@ -419,7 +428,7 @@ def update_bbim_roof_pset(element, roof_data):
     ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": roof_data})
 
 
-def update_roof_modifier_bmesh(context):
+def update_roof_modifier_bmesh(context: bpy.types.Context) -> None:
     """before using should make sure that Data contains up-to-date information.
     If BBIM Pset just changed should call refresh() before updating bmesh
     """
@@ -466,7 +475,7 @@ def update_roof_modifier_bmesh(context):
     tool.Blender.apply_bmesh(obj.data, bm)
 
 
-def get_path_data(obj):
+def get_path_data(obj: bpy.types.Object) -> Union[dict[str, Any], None]:
     """get path data for current mesh, path data is cleaned up"""
     si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
@@ -699,7 +708,7 @@ class EnableEditingRoofPath(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
-def cancel_editing_roof_path(context):
+def cancel_editing_roof_path(context: bpy.types.Context) -> set[str]:
     obj = context.active_object
     props = obj.BIMRoofProperties
 
