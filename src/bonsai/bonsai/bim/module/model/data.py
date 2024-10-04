@@ -241,7 +241,7 @@ class AuthoringData:
             relating_type_id = relating_type_id_data[0][0]
         if relating_type_id:
             return tool.Ifc.get().by_id(int(relating_type_id)).Name or "Unnamed"
-        
+
     @classmethod
     def relating_type_description(cls):
         if relating_type_id := cls.props.relating_type_id:
