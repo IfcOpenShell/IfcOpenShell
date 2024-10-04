@@ -355,7 +355,7 @@ class PolylineDecorator:
         cls.tool_state = tool_state
 
     def calculate_measurement_x_y_and_z(self, context):
-        measurement_prop = context.scene.BIMPolylineProperties.polyline_point
+        measurement_prop = context.scene.BIMPolylineProperties.polyline_points
 
         if len(measurement_prop) == 0 or len(measurement_prop) > 2:
             return None, None
@@ -413,7 +413,7 @@ class PolylineDecorator:
         self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
         self.line_shader.uniform_float("lineWidth", 2.0)
         decorator_color = self.addon_prefs.decorator_color_special
-        polyline = context.scene.BIMPolylineProperties.polyline_point
+        polyline = context.scene.BIMPolylineProperties.polyline_points
         prop = context.scene.BIMPolylineProperties.product_preview
 
         points = []
@@ -527,7 +527,7 @@ class PolylineDecorator:
         region = context.region
         rv3d = region.data
         measure_type = context.scene.MeasureToolSettings.measure_type
-        measurement_prop = context.scene.BIMPolylineProperties.polyline_point
+        measurement_prop = context.scene.BIMPolylineProperties.polyline_points
 
         self.addon_prefs = tool.Blender.get_addon_preferences()
         self.font_id = 1
@@ -673,7 +673,7 @@ class PolylineDecorator:
                 self.draw_batch("LINES", mouse_point + projection_point, decorator_color_unselected, edges)
 
         # Create polyline with selected points
-        polyline_data = context.scene.BIMPolylineProperties.polyline_point
+        polyline_data = context.scene.BIMPolylineProperties.polyline_points
         polyline_points = []
         polyline_edges = []
         for point_prop in polyline_data:

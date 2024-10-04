@@ -118,7 +118,7 @@ class Polyline(bonsai.core.tool.Polyline):
     def calculate_distance_and_angle(cls, context, input_ui, tool_state):
 
         try:
-            polyline_data = context.scene.BIMPolylineProperties.polyline_point
+            polyline_data = context.scene.BIMPolylineProperties.polyline_points
             default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
             last_point_data = polyline_data[len(polyline_data) - 1]
         except:
@@ -186,7 +186,7 @@ class Polyline(bonsai.core.tool.Polyline):
     @classmethod
     def calculate_area(cls, context, input_ui):
         try:
-            polyline_data = context.scene.BIMPolylineProperties.polyline_point
+            polyline_data = context.scene.BIMPolylineProperties.polyline_points
         except:
             return input_ui
 
@@ -229,7 +229,7 @@ class Polyline(bonsai.core.tool.Polyline):
     @classmethod
     def calculate_x_y_and_z(cls, context, input_ui, tool_state):
         try:
-            polyline_data = context.scene.BIMPolylineProperties.polyline_point
+            polyline_data = context.scene.BIMPolylineProperties.polyline_points
             default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
             last_point_data = polyline_data[len(polyline_data) - 1]
             last_point = Vector((last_point_data.x, last_point_data.y, last_point_data.z))
@@ -313,7 +313,7 @@ class Polyline(bonsai.core.tool.Polyline):
 
         base_vertices = []
         top_vertices = []
-        polyline_data = context.scene.BIMPolylineProperties.polyline_point
+        polyline_data = context.scene.BIMPolylineProperties.polyline_points
         if len(polyline_data) < 2:
             context.scene.BIMPolylineProperties.product_preview.clear()
             return

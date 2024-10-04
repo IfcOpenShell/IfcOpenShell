@@ -209,7 +209,7 @@ class Raycast(bonsai.core.tool.Raycast):
         except:
             loc = Vector((0, 0, 0))
 
-        polyline_data = bpy.context.scene.BIMPolylineProperties.polyline_point
+        polyline_data = bpy.context.scene.BIMPolylineProperties.polyline_points
         polyline_data = polyline_data[
             : len(polyline_data) - 1
         ]  # It doesn't make sense to snap to the last point created

@@ -520,7 +520,7 @@ class DumbWallGenerator:
         )
 
     def derive_from_polyline(self):
-        polyline_data = bpy.context.scene.BIMPolylineProperties.polyline_point
+        polyline_data = bpy.context.scene.BIMPolylineProperties.polyline_points
         is_polyline_closed = False
         if len(polyline_data) > 3:
             first_vec = Vector((polyline_data[0].x, polyline_data[0].y, polyline_data[0].z))
