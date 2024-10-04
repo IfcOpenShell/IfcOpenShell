@@ -749,6 +749,8 @@ class ExpandMaterialCategory(bpy.types.Operator):
             if category.name == self.category:
                 props.active_material_index = index
         core.load_materials(tool.Material, props.material_type)
+        # Update UI data as material_styles_data depends on props.materials.
+        bonsai.bim.handler.refresh_ui_data()
         return {"FINISHED"}
 
 
