@@ -410,8 +410,6 @@ class CreateObjectUI:
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             row.prop(data=cls.props, property="extrusion_depth", text="Height" if ui_context != "TOOL_HEADER" else "H")
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
-            row.prop(data=cls.props, property="length", text="Length" if ui_context != "TOOL_HEADER" else "L")
-            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             row.prop(data=cls.props, property="x_angle", text="Slope") if ui_context != "TOOL_HEADER" else "A"
 
         elif cls.props.ifc_class in ("IfcSlabType", "IfcRampType", "IfcRoofType"):
