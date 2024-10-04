@@ -23,11 +23,12 @@ class ShaderInfo:
     def update(self):
         self.info = []
         self.get_linear_loads()
+        self.get_point_loads()
         if len(self.info):
             self.is_empty = False
         
-    def get_shader(self):
-        """ param: shader_type: type of shader in ["DistributedLoad", "PointLoad"]
+    def get_shader(self, pattern):
+        """ param: pattern: type of pattern in ["force", "force match", "moment"]
         return: shader"""
         if self.shader_type == "DistributedLoad":
             vert_out = gpu.types.GPUStageInterfaceInfo("my_interface")
@@ -57,8 +58,8 @@ class ShaderInfo:
                 "}"
             )
         
-        
-            shader_info.fragment_source(
+            if pattern == "force":
+                shader_info.fragment_source(
             "void main()"
             "{"
                 "float x = co.x;"
@@ -80,7 +81,74 @@ class ShaderInfo:
             
                 "float top = step(abs(y-f),0.2*1.2*spacing);"
                 "float d = clamp(0.1+top+b+c,0.0,0.5)*mask;"
+                "if (d == 0.0) discard;"
+                "FragColor = vec4(color.xyz,d*color.w);"
+            "}"
+            )
+
+            if pattern == "force match":
+                shader_info.fragment_source(
+            "void main()"
+            "{"
+                "float y = co.y;"
+                "float x = step(0.,y)*(co.z-co.x)+step(y,0.)*(co.x);"
+                "float abs_y = abs(y);"
         
+                "float a = abs(mod(abs_y,spacing)-0.5*spacing)*5.0;"
+                "float a2 = mod(x,3.0*spacing);"
+                "float b = step(a,a2)*step(a2,1.2*spacing);"
+                "float c = step(0.8*spacing,mod(abs_y+0.4*spacing,spacing))"
+                "*(step(1.2*spacing,a2))*step(a2,2.5*spacing);"
+                "float sinvalue = forces.x;"
+                "float quadraticvalue = forces.y;"
+                "float linearvalue = forces.z;"
+                "x = co.x/co.z;"
+                "float f = (sin(x*3.1416)*sinvalue"
+                      "+(-4.*x*x+4.*x)*quadraticvalue"
+                      "+linearvalue)/maxload;"
+                "float mask = step(0.,y)*step(y,f)+step(y,0.)*step(f,y);"
+            
+                "float top = step(abs(y-f),0.2*1.2*spacing);"
+                "float d = clamp(0.1+top+b+c,0.0,0.5)*mask;"
+                "if (d == 0.0) discard;"
+                "FragColor = vec4(color.xyz,d*color.w);"
+            "}"
+            )
+
+            if pattern == "moment":
+                shader_info.fragment_source(
+            "void main()"
+            "{"
+                "float x = step(co.y,0.)*(co.x)+step(0.,co.y)*(co.z-co.x);"
+                "float y = step(co.y,-0.00001)*(co.y)+step(0.,co.y)*(0.-co.y);"
+                "x = mod((0.5/spacing)*x,1.4)-0.7;"
+                "y = mod((0.5/spacing)*y,1.4)-0.7;"
+                "float abs_y = abs(y);"
+                "vec2 st = vec2(1.9*x,y);"
+                "vec2 orig = vec2(0.,0.);"
+        
+                "float circ = step(distance(st,orig),0.33)*step(0.27,distance(st,orig));"
+                "float tri_mask = step(st.y,st.x)+step(-st.x,st.y);"
+                "float circ_arrow = step(st.x,4.0*st.y-0.75)*step(0.25*st.y-0.34,st.x)*(1.-tri_mask);"
+
+                "float circmask = step(distance(st,orig),0.1)+step(0.5,distance(st,orig))+step(st.x,0.);"
+                "float body = step(-0.03,st.y)*step(st.y,0.03)*step(-0.3,x)*step(x,0.576);"
+                "float body_arrow = step(-0.5+3.*st.y,x)*step(-0.5-3.*st.y,x)*step(x,-0.3);"
+                "float d = clamp(circmask*(body+body_arrow)+circ_arrow+circ*tri_mask,0.,1.);"
+
+                "float sinvalue = forces.x;"
+                "float quadraticvalue = forces.y;"
+                "float linearvalue = forces.z;"
+                "x = co.x/co.z;"
+                "float f = (sin(x*3.1416)*sinvalue"
+                      "+(-4.*x*x+4.*x)*quadraticvalue"
+                      "+linearvalue)/maxload;"
+                "float mask = step(0.,co.y)*step(co.y,f)+step(co.y,0.)*step(f,co.y);"
+            
+                "float top = step(abs(co.y-f),0.2*1.2*spacing);"
+
+                "d = clamp(0.1+top+d,0.0,0.5)*mask;"
+                "if (d == 0.0) discard;"
                 "FragColor = vec4(color.xyz,d*color.w);"
             "}"
             )
@@ -89,12 +157,158 @@ class ShaderInfo:
             del vert_out
             del shader_info
             return shader
+    
+    def get_point_shader(self, pattern):
+        """ param: pattern: type of pattern in ["arrow", "circ arrow"]
+        return: shader"""
+        vert_out = gpu.types.GPUStageInterfaceInfo("my_interface")
+        vert_out.smooth('VEC3', "co")
+    
+        shader_info = gpu.types.GPUShaderCreateInfo()
+        shader_info.push_constant('MAT4', "viewProjectionMatrix")
+        shader_info.push_constant('VEC4', "color")
+        shader_info.push_constant('FLOAT', "spacing")
+    
+        shader_info.vertex_in(0, 'VEC3', "position")
+        shader_info.vertex_in(1, 'VEC3', "coord")
+        
+        shader_info.vertex_out(vert_out)
+        shader_info.fragment_out(0, 'VEC4', "FragColor")
+    
+        shader_info.vertex_source(
+            "void main()"
+            "{"
+            "  gl_Position = viewProjectionMatrix * vec4(position, 1.0f);"
+            "  co = coord;"
+            "}"
+        )
+    
+        if pattern == "arrow":
+            shader_info.fragment_source(
+        "void main()"
+        "{"
+            "float body = step(abs(co.x),0.2*spacing)*step(2.*spacing,co.y);"
+            "float arrow = step(3.5*abs(co.x)+0.02,abs(co.y))*step(co.y,2.*spacing)*step(0.,co.y);"
+            "float d = clamp(body+arrow,0.0,0.5);"
+            "if (d == 0.0) discard;"
+            "FragColor = vec4(color.xyz,d*color.w);"
+        "}"
+        )
+        
+        if pattern == "circ arrow":
+            shader_info.fragment_source(
+        "void main()"
+        "{"
+            "float circ = step(distance(co.xy,vec2(0.,0.)),0.33)*step(0.27,distance(co.xy,vec2(0.,0.)));"
+            "float mask = step(co.y,co.x)+step(-co.x,co.y);"
+            "float circ_arrow = step(co.x,4.0*co.y-0.75)*step(0.25*co.y-0.34,co.x)*(1.-mask);"
+            "float d = clamp(circ_arrow+circ*mask,0.0,0.5);"
+            "if (d == 0.0) discard;"
+            "FragColor = vec4(color.xyz,d*color.w);"
+        "}"
+        )
+    
+        shader = gpu.shader.create_from_info(shader_info)
+        del vert_out
+        del shader_info
+        return shader
+
+    def get_point_loads(self):
+        list_of_point_connections = tool.Ifc.get().by_type("IfcStructuralPointConnection")
+        for conn in list_of_point_connections:
+            activity_list = [getattr(a, 'RelatedStructuralActivity', None) for a in getattr(conn, 'AssignedStructuralActivity', None)
+                             if getattr(a, 'RelatedStructuralActivity', None).is_a() in ['IfcStructuralPointAction']]
+            if len(activity_list) == 0:
+                continue
+            blender_object = IfcStore.get_element(getattr(conn, 'GlobalId', None))
+            if blender_object.type == 'MESH':
+                conn_location = blender_object.matrix_world @ blender_object.data.vertices[0].co
+            #get local coordinates of the connection
+            loads = self.get_point_loads_list(activity_list)
+            self.get_point_shader_args(loads, conn_location)
+
+    def get_point_shader_args(self,loads, location):
+        indices = []
+        text_info = []
+        direction_dict = {
+                "fx": (Vector((1,0,0)),Vector((0,1,0)),Vector((0,0,1))),
+                "fy": (Vector((0,1,0)),Vector((1,0,0)),Vector((0,0,1))),
+                "fz": (Vector((0,0,1)),Vector((0,1,0)),Vector((1,0,0))),
+                "mx": (Vector((0,1,0)),Vector((0,0,1))),
+                "my": (Vector((1,0,0)),Vector((0,0,1))),
+                "mz": (Vector((1,0,0)),Vector((0,1,0))),
+            }
+        keys = ["fx","fy","fz","mx","my","mz"]
+        for i, key in enumerate(keys):
+            if loads[i] == 0:
+                continue
+            color = (1,0,0,1)
+            if i in [1,4]:
+                color = (0,1,0,1)
+            elif i in [2,5]:
+                color = (0,0,1,1)
+            d1 = -(direction_dict[key][0]*loads[i]).normalized()
+            if i < 3:
+                d2 = direction_dict[key][1]
+                d3 = direction_dict[key][2]
+                p1 = location
+                p2 = location + d1 + d2
+                p3 = location + d1 - d2
+                p4 = location + d1 + d3
+                p5 = location + d1 - d3
+                position = [p1,p2,p3,p4,p5]
+                indices = [(0,1,2),(0,3,4)]
+                c1 = (0,0,0)
+                c2 = (1,1,0)
+                c3 = (-1,1,0)
+                coords_for_shader = [c1,c2,c3,c2,c3]
+                shader = self.get_point_shader("arrow")
+                self.info.append(
+                    {
+                        "shader": shader,
+                        "args": {"position": position,"coord": coords_for_shader},
+                        "indices": indices,
+                        "uniforms": [["color", color],["spacing", 0.2]]
+                    }
+                )
+            else:
+                d2 = d2 = direction_dict[key][1]
+                p1 = location - d2
+                p2 = location + d1 + d2
+                p3 = location - d1 + d2
+                position = [p1,p2,p3]
+                indices = [(0,1,2)]
+                c1 = (-1,0,0)
+                c2 = (1,1,0)
+                c3 = (1,-1,0)
+                coords_for_shader = [c1,c2,c3]
+                shader = self.get_point_shader("circ arrow")
+                self.info.append(
+                    {
+                        "shader": shader,
+                        "args": {"position": position,"coord": coords_for_shader},
+                        "indices": indices,
+                        "uniforms": [["color", color]]#,["spacing", 0.2]]
+                    }
+                )
+
+
+    
+    def get_point_loads_list(self,activity_list):
+        result_list = [0,0,0,0,0,0]
+        attr_list = ['ForceX','ForceY','ForceZ','MomentX','MomentY','MomentZ']
+        for activity in activity_list:
+            load = activity.AppliedLoad
+            for i, attr in enumerate(attr_list):
+                value = 0 if getattr(load, attr, 0) is None else getattr(load, attr, 0)
+                result_list[i] += value
+        return result_list
 
 
     def get_linear_loads(self): #for now it only works for distributed loads
-        coords = []
+        position = []
         indices = []
-        load_info = []
+        sin_quad_lin = []
         coords_for_shader = []
         color = []
         text_info = []
@@ -145,7 +359,7 @@ class ShaderInfo:
                 "my": z_axis if is_local else Vector((-1,0,1)) if y_match else Vector((0,1,0)).cross(x_axis).normalized(),
                 "mz": y_axis if is_local else Vector((-1,1,0)) if z_match else Vector((0,0,1)).cross(x_axis).normalized()
             }
-            shader = self.get_shader()
+            match_dict = {'fx': x_match, 'fy': y_match, 'fz': z_match}
             member_length =  Vector(end_co-start_co).length
             loads_dict, maxforce = get_loads_per_direction(activity_list,global_to_local,member_length)
             keys = ["fx","fy","fz","mx","my","mz"]
@@ -161,32 +375,40 @@ class ShaderInfo:
                     color_axis = (1,0,0,1)
                 if 'y' in key:
                     color_axis = (0,1,0,1)
+                
+                if 'f' in key:
+                    if match_dict[key]:
+                        shader = self.get_shader("force match")
+                    else:
+                        shader = self.get_shader("force")
+                else:
+                    shader = self.get_shader("moment")
 
-                addindex = len(coords)
+                addindex = len(position)
                 counter = 0
                 for i in range(len(polyline)-1):
                     current = Vector(polyline[i]+[0])
                     nextitem = Vector(polyline[i+1]+[0])
 
                     if any([current.y, nextitem.y,constant,quadratic,sinus]): #if there is load in the z direction
-                        negative = -direction + start_co + x_axis*current.x
+                        negative = -1*direction + start_co + x_axis*current.x
                         positive = direction + start_co + x_axis*current.x
-                        coords.append(negative)
+                        position.append(negative)
                         coords_for_shader.append((current.x, 1.0,member_length))
-                        load_info.append((sinus, quadratic, current.y + constant))
+                        sin_quad_lin.append((sinus, quadratic, current.y + constant))
                         color.append(color_axis)
                         #info to render load value
                         x = current.x/member_length
                         func = sin(x*3.1416)*sinus + (-4.*x*x+4.*x)*quadratic+constant+current.y
                         if func:
                             text_info.append(
-                                {"position": -direction*func/maxforce + start_co + x_axis*current.x,
+                                {"position": -1*direction*func/maxforce + start_co + x_axis*current.x,
                                 "normal": direction.cross(x_axis).normalized(), "text": f'{func:.2f} '}
                                 )
                         maxforce = max(maxforce,abs(func))
-                        coords.append(positive)
+                        position.append(positive)
                         coords_for_shader.append((current[0],-1.0,member_length))
-                        load_info.append((sinus, quadratic, current.y + constant))
+                        sin_quad_lin.append((sinus, quadratic, current.y + constant))
                         color.append(color_axis)
 
                         indices.append((0 + counter + addindex,
@@ -196,38 +418,38 @@ class ShaderInfo:
                                         2 + counter + addindex,
                                         1 + counter + addindex))
                         if i == len(polyline)-2:
-                            negative = -direction + start_co + x_axis*nextitem.x
+                            negative = -1*direction + start_co + x_axis*nextitem.x
                             positive = direction + start_co + x_axis*nextitem.x
-                            coords.append(negative)
+                            position.append(negative)
                             coords_for_shader.append((nextitem.x, 1.0,member_length))
-                            load_info.append((sinus, quadratic, nextitem.y + constant))
+                            sin_quad_lin.append((sinus, quadratic, nextitem.y + constant))
                             color.append(color_axis)
                             #info to render load value
                             x = nextitem.x/member_length
                             func = sin(x*3.1416)*sinus + (-4.*x*x+4.*x)*quadratic+constant+nextitem.y
                             if func:
                                 text_info.append(
-                                    {"position": -direction*func/maxforce + start_co + x_axis*nextitem.x,
+                                    {"position": -1*direction*func/maxforce + start_co + x_axis*nextitem.x,
                                     "normal": direction.cross(x_axis).normalized(), "text": f'{func:.2f} '}
                                     )
                             maxforce = max(maxforce,abs(func))
-                            coords.append(positive)
+                            position.append(positive)
                             coords_for_shader.append((nextitem.x,-1.0,member_length))
-                            load_info.append((sinus, quadratic, nextitem.y + constant))
+                            sin_quad_lin.append((sinus, quadratic, nextitem.y + constant))
                             color.append(color_axis)
 
                         counter += 2
-                if len(coords):
+                if len(position):
                     self.info.append(
                     {
                         "shader": shader,
-                        "args": {"position": coords, "sin_quad_lin_forces": load_info,"coord": coords_for_shader},
+                        "args": {"position": position, "sin_quad_lin_forces": sin_quad_lin,"coord": coords_for_shader},
                         "indices": indices,
                         "uniforms": [["color", color_axis],["spacing", 0.2],["maxload",maxforce]]
                     }
                 )
-                coords = []
-                load_info = []
+                position = []
+                sin_quad_lin = []
                 coords_for_shader = []
                 indices = []
             for info in self.info:
@@ -272,12 +494,12 @@ def get_loads_per_direction(activity_list,global_to_local,member_length):
         final_list.append([0.0,0.0,0.0,0.0,0.0,0.0,0.0])
         final_list.append([member_length,0.0,0.0,0.0,0.0,0.0,0.0])
         
-    elif len(final_list) and any(const+quad+sinus):
-        if final_list[0][0]: #if first item location is not 0 append an item at the zero
+    elif len(final_list):
+        if final_list[0][0] and any(const+quad+sinus): #if first item location is not 0 append an item at the zero
             final_list = [[0.0,0.0,0.0,0.0,0.0,0.0,0.0]]+final_list
         else:
             del final_list[0]
-        if abs(final_list[-1][0] - member_length) > 0.01:
+        if abs(final_list[-1][0] - member_length) > 0.01  and any(const+quad+sinus):
             final_list.append([member_length,0.0,0.0,0.0,0.0,0.0,0.0])
         else:
             del final_list[-1]
@@ -430,7 +652,7 @@ def get_loads_dict(activity_list,global_to_local):
                                         Locations attribute of IfcLoadConfiguration
                dict{
                   "pos": float,		-> local position along curve length
-                  "descr": string,	-> describe if the item is at the star, middle or end of the list
+                  "descr": string,	-> describe if the item is at the start, middle or end of the list
                   "forces": Vector,	-> linear force applied at that point
                   "moments": Vector	-> linear moment applied at that point
                   }

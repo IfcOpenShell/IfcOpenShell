@@ -49,6 +49,8 @@ class ShowLoads(bpy.types.Operator):
         return {'PASS_THROUGH'}
 
     def invoke(self, context, event):
+        collection = bpy.data.collections["IfcStructuralItem"]
+        collection.hide_viewport = False
         LoadsDecorator.install(context)
         LoadsDecorator.update(context)
         context.window_manager.modal_handler_add(self)
