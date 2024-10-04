@@ -109,18 +109,22 @@ class LaunchTypeManager(bpy.types.Operator):
         props = context.scene.BIMModelProperties
 
         row = self.layout.row(align=True)
-        prop_with_search(row, props, "ifc_class", text="", should_click_ok_to_validate=True)
-        row.operator("bim.launch_add_element", icon="ADD", text="")
+
+        if AuthoringData.data['total_types'] > 1:
+            text = f"{AuthoringData.data['total_types']} {AuthoringData.data['ifc_element_type']}s"
+        else:
+            text = f"{AuthoringData.data['total_types']} {AuthoringData.data['ifc_element_type']}"
+        row.label(text=text, icon="FILE_VOLUME")
+        # prop_with_search(row, props, "ifc_class", text="", should_click_ok_to_validate=True)
+        # row.operator("bim.launch_add_element", icon="ADD", text="")
         row.menu("BIM_MT_type_manager_menu", text="", icon="PREFERENCES")
 
         columns = self.layout.column_flow(columns=3)
-        row = columns.row()
-        row.alignment = "LEFT"
-        row.label(text=f"{AuthoringData.data['total_types']} Types", icon="FILE_VOLUME")
-
         row = columns.row(align=True)
         row.alignment = "CENTER"
-        # In case you want something here in the future
+        ### In case you want something here in the future
+
+        ###
 
         row = columns.row(align=True)
         row.alignment = "RIGHT"
@@ -140,10 +144,10 @@ class LaunchTypeManager(bpy.types.Operator):
             box = outer_col.box()
 
             row = box.row(align=True)
-            op = row.operator("bim.set_active_type", text=relating_type["name"], icon="FILE_3D")
+            op = row.operator("bim.set_active_type", text=relating_type["name"], icon="BLANK1", emboss=False)
             op.relating_type = relating_type["id"]
 
-            op = row.operator("bim.launch_type_menu", icon="DOWNARROW_HLT", text="")
+            op = row.operator("bim.launch_type_menu", icon="DOWNARROW_HLT", text="", emboss=False)
             op.relating_type_id = relating_type["id"]
 
             row = box.row()
@@ -163,8 +167,30 @@ class LaunchTypeManager(bpy.types.Operator):
                 row2.operator("bim.set_active_type", text="", emboss=False).relating_type = relating_type["id"]
             else:
                 row = box.row()
-                op = box.operator("bim.load_type_thumbnails", text="Load Thumbnails", icon="FILE_REFRESH")
+                op = box.operator("bim.load_type_thumbnails", text="", icon="FILE_REFRESH", emboss=False)
                 op.ifc_class = props.ifc_class
+            
+            row = box.row()
+            row.alignment = "CENTER"
+            op = row.operator("bim.set_active_type", text=relating_type["predefined_type"], emboss=False)
+            op.relating_type = relating_type["id"]
+        
+        outer_col = flow.column()
+        box = outer_col.box()
+
+        # Empty space using a blank template_icon with a scale
+        row = box.row(align=True)
+        row.alignment = "CENTER"
+        row.template_icon(icon_value=0, scale=3.3)  # Adds vertical space
+
+        row = box.row(align=True)
+        row.alignment = "CENTER"
+        row.operator("bim.launch_add_element", text=f"Create New {AuthoringData.data['ifc_element_type']}")
+
+        # Empty space using a blank template_icon with a scale
+        row = box.row(align=True)
+        row.alignment = "CENTER"
+        row.template_icon(icon_value=0, scale=3.5)  # Adds vertical space
 
 
 class BIM_PT_authoring(Panel):

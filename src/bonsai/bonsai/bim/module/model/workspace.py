@@ -488,7 +488,7 @@ class CreateObjectUI:
                     row.alignment = "CENTER"
                     row.operator(
                         "bim.launch_type_manager",
-                        text=f"{cls.props.ifc_class.replace('Type', '')}[{AuthoringData.data['predefined_type']}]",
+                        text=AuthoringData.data["predefined_type"],
                         emboss=False,
                         )
 
