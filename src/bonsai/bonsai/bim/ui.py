@@ -191,14 +191,26 @@ class BIM_UL_topics(bpy.types.UIList):
 
 class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     bl_idname = tool.Blender.get_blender_addon_package_name()
-    svg2pdf_command: StringProperty(name="SVG to PDF Command", description='E.g. [["inkscape", "svg", "-o", pdf]]')
+    svg2pdf_command: StringProperty(
+        name="SVG to PDF Command",
+        description='print sheet to pdf together with svg. Leave blank svg is just created, E.g. [["path to application eg. /Applications/Inkscape.app/Contents/MacOS/inkscape", "svg", "-o", "pdf"]]',
+    )
     svg2dxf_command: StringProperty(
         name="SVG to DXF Command",
         description='E.g. [["inkscape", "svg", "-o", "eps"], ["pstoedit", "-dt", "-f", "dxf:-polyaslines -mm", "eps", "dxf", "-psarg", "-dNOSAFER"]]',
     )
-    svg_command: StringProperty(name="SVG Command", description='E.g. [["firefox", "path"]]')
-    layout_svg_command: StringProperty(name="Layout SVG Command", description='E.g. [["firefox", "path"]]')
-    pdf_command: StringProperty(name="PDF Command", description='E.g. [["firefox", "path"]]')
+    svg_command: StringProperty(
+        name="SVG Command",
+        description='Software to open generated drawing and sheets. Leave blank system default for .svg is used E.g. [["path to application eg. /Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge", "path"]]',
+    )
+    layout_svg_command: StringProperty(
+        name="Layout SVG Command",
+        description='Software to open layouts, before generated. Leave blank system default for .svg is used E.g.  [["path to application eg. /Applications/Inkscape.app/Contents/MacOS/inkscape", "path"]]',
+    )
+    pdf_command: StringProperty(
+        name="PDF Command",
+        description='Software to open .pdf, leave blank uses system default. E.g. [["path to application eg. /Applications/Inkscape.app/Contents/MacOS/inkscape", "path"]]',
+    )
     spreadsheet_command: StringProperty(name="Spreadsheet Command", description='E.g. [["libreoffice", "path"]]')
     should_hide_empty_props: BoolProperty(name="Hide Empty Properties", default=True)
     should_setup_workspace: BoolProperty(name="Setup Workspace Layout for BIM", default=True)

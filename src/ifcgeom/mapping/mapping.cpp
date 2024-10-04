@@ -165,10 +165,8 @@ aggregate_of_instance::ptr mapping::find_openings(const IfcUtil::IfcBaseEntity* 
         return openings;
     }
 
-    auto product = inst->as<IfcSchema::IfcProduct>();
-
-    if (product->as<IfcSchema::IfcElement>() && !product->as<IfcSchema::IfcFeatureElementSubtraction>()) {
-        const IfcSchema::IfcElement* element = product->as<IfcSchema::IfcElement>();
+    if (inst->as<IfcSchema::IfcElement>() && !inst->as<IfcSchema::IfcFeatureElementSubtraction>()) {
+        const IfcSchema::IfcElement* element = inst->as<IfcSchema::IfcElement>();
         auto rels = element->HasOpenings();
         for (auto& rel : *rels) {
             openings->push(rel->RelatedOpeningElement());
@@ -176,20 +174,22 @@ aggregate_of_instance::ptr mapping::find_openings(const IfcUtil::IfcBaseEntity* 
     }
 
     // Is the IfcElement a decomposition of an IfcElement with any IfcOpeningElements?
-    const IfcSchema::IfcObjectDefinition* obdef = product->as<IfcSchema::IfcObjectDefinition>();
-    for (;;) {
-        auto decomposes = obdef->Decomposes()->generalize();
-        if (decomposes->size() != 1) break;
-        IfcSchema::IfcObjectDefinition* rel_obdef = (*decomposes->begin())->as<IfcSchema::IfcRelAggregates>()->RelatingObject();
-        if (rel_obdef->as<IfcSchema::IfcElement>() && !rel_obdef->as<IfcSchema::IfcFeatureElementSubtraction>()) {
-            IfcSchema::IfcElement* element = rel_obdef->as<IfcSchema::IfcElement>();
-            auto rels = element->HasOpenings();
-            for (auto& rel : *rels) {
-                openings->push(rel->RelatedOpeningElement());
+    const IfcSchema::IfcObjectDefinition* obdef = inst->as<IfcSchema::IfcObjectDefinition>();
+    if (obdef != nullptr) {
+        for (;;) {
+            auto decomposes = obdef->Decomposes()->generalize();
+            if (decomposes->size() != 1) break;
+            IfcSchema::IfcObjectDefinition* rel_obdef = (*decomposes->begin())->as<IfcSchema::IfcRelAggregates>()->RelatingObject();
+            if (rel_obdef->as<IfcSchema::IfcElement>() && !rel_obdef->as<IfcSchema::IfcFeatureElementSubtraction>()) {
+                IfcSchema::IfcElement* element = rel_obdef->as<IfcSchema::IfcElement>();
+                auto rels = element->HasOpenings();
+                for (auto& rel : *rels) {
+                    openings->push(rel->RelatedOpeningElement());
+                }
             }
-        }
 
-        obdef = rel_obdef;
+            obdef = rel_obdef;
+        }
     }
 
     return openings;
@@ -565,11 +565,14 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcStyledItem* inst) {
         return surface_style;
     }
 
-    static taxonomy::colour white = taxonomy::colour(1., 1., 1.);
-    double rgb[3];
-    if (process_colour(shading->SurfaceColour(), rgb)) {
-        surface_style->diffuse.components() << rgb[0], rgb[1], rgb[2];
-    }
+	surface_style->use_surface_color = settings_.get<settings::SurfaceColour>().get();
+
+	static taxonomy::colour white = taxonomy::colour(1., 1., 1.);
+	double rgb[3];
+	if (process_colour(shading->SurfaceColour(), rgb)) {
+		surface_style->surface.components() << rgb[0], rgb[1], rgb[2];
+        surface_style->diffuse = surface_style->surface;
+	}
 
     if (auto rendering_style = shading->as<IfcSchema::IfcSurfaceStyleRendering>()) {
         if (rendering_style->DiffuseColour() && process_colour(rendering_style->DiffuseColour(), rgb)) {

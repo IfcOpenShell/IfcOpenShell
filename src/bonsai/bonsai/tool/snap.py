@@ -60,28 +60,6 @@ class Snap(bonsai.core.tool.Snap):
 
         return snap_point
 
-    # TODO Remove this function
-    @classmethod
-    def select_snap_point(cls, snap_points, hit, threshold):
-        shortest_distance = None
-        snap_point = None
-        for point, snap_type in snap_points.items():
-            point = Vector(point)
-            distance = (point - hit).length
-            if distance > threshold:
-                continue
-            if shortest_distance and distance < shortest_distance:
-                shortest_distance = distance
-                snap_point = (point, snap_type)
-
-            elif not shortest_distance:
-                shortest_distance = distance
-                snap_point = (point, snap_type)
-            else:
-                pass
-
-        return snap_point
-
     @classmethod
     def update_snapping_point(cls, snap_point, snap_type):
         try:
@@ -134,22 +112,28 @@ class Snap(bonsai.core.tool.Snap):
             y = snap_vertex.y
             z = snap_vertex.z
 
-        # Avoids creating two points at the same location
         polyline_data = bpy.context.scene.BIMPolylineProperties.polyline_point
         if polyline_data:
-            last_point = polyline_data[len(polyline_data) - 1]
-            if (x, y, z) == (round(last_point.x, 4), round(last_point.y, 4), round(last_point.z, 4)):
-                return
+            # Avoids creating two points at the same location
+            for point in polyline_data[1:]:  # The first can be repeated to form a wall loop
+                if (x, y, z) == (point.x, point.y, point.z):
+                    return "Cannot create two points at the same location"
+            # TODO move this limitation to be Wall tool specific. Right now it also affects Measure tool
+            # Avoids creating segments smaller then 0.1. This is a limitation from create_wall_from_2_points
+            length = (
+                Vector((x, y, z)) - Vector((polyline_data[-1].x, polyline_data[-1].y, polyline_data[-1].z))
+            ).length
+            if round(length, 4) < 0.1:
+                return "Cannot create a segment smaller then 10cm"
 
         polyline_point = bpy.context.scene.BIMPolylineProperties.polyline_point.add()
         polyline_point.x = x
         polyline_point.y = y
         polyline_point.z = z
 
-        polyline_measurement = bpy.context.scene.BIMPolylineProperties.polyline_measurement.add()
-        polyline_measurement.dim = d
-        polyline_measurement.angle = a
-        polyline_measurement.position = Vector((x, y, z))
+        polyline_point.dim = d
+        polyline_point.angle = a
+        polyline_point.position = Vector((x, y, z))
 
     @classmethod
     def close_polyline(cls):
@@ -166,18 +150,27 @@ class Snap(bonsai.core.tool.Snap):
     @classmethod
     def clear_polyline(cls):
         bpy.context.scene.BIMPolylineProperties.polyline_point.clear()
-        bpy.context.scene.BIMPolylineProperties.polyline_measurement.clear()
 
     @classmethod
     def remove_last_polyline_point(cls):
         polyline_data = bpy.context.scene.BIMPolylineProperties.polyline_point
         polyline_data.remove(len(polyline_data) - 1)
-        polyline_measurement = bpy.context.scene.BIMPolylineProperties.polyline_measurement
-        polyline_measurement.remove(len(polyline_measurement) - 1)
+
+    @classmethod
+    def move_polyline_to_measure(cls):
+        polyline_data = bpy.context.scene.BIMPolylineProperties.polyline_point
+        measure_data = bpy.context.scene.BIMPolylineProperties.measure_polyline.add()
+        for point in polyline_data:
+            measure_point = measure_data.polyline_point.add()
+            measure_point.x = point.x
+            measure_point.y = point.y
+            measure_point.z = point.z
+            measure_point.dim = point.dim
+            measure_point.angle = point.angle
+            measure_point.position = point.position
 
     @classmethod
     def snap_on_axis(cls, intersection, tool_state, lock_angle=False):
-
         def create_axis_line_data(rot_mat, origin):
             length = 1000
             direction = Vector((1, 0, 0))
@@ -331,6 +324,8 @@ class Snap(bonsai.core.tool.Snap):
             best_face_index = None
 
             for obj in objs_to_raycast:
+                if obj.type != "MESH":
+                    continue
                 hit, normal, face_index = tool.Raycast.obj_ray_cast(context, event, obj)
                 if hit is None:
                     # Tried original mouse position. Now it will try the offsets.
@@ -361,7 +356,7 @@ class Snap(bonsai.core.tool.Snap):
 
         objs_to_raycast = []
         for obj, bbox_2d in objs_2d_bbox:
-            if obj.type == "MESH" and bbox_2d:
+            if obj.type in {"MESH", "EMPTY"} and bbox_2d:
                 if tool.Raycast.intersect_mouse_2d_bounding_box(mouse_pos, bbox_2d, offset):
                     if space.local_view:
                         if obj.local_view_get(context.space_data):
@@ -375,22 +370,34 @@ class Snap(bonsai.core.tool.Snap):
 
         # Edge-Vertex
         for obj in objs_to_raycast:
-            if len(obj.data.polygons) == 0:
-                options = tool.Raycast.ray_cast_by_proximity(context, event, obj)
-                snap_obj = obj
-                if options:
-                    detected_snaps.append({"Edge-Vertex": (snap_obj, options)})
-                    break
+            if obj.type == "MESH":
+                if len(obj.data.polygons) == 0:
+                    options = tool.Raycast.ray_cast_by_proximity(context, event, obj)
+                    snap_obj = obj
+                    if options:
+                        detected_snaps.append({"Edge-Vertex": (snap_obj, options)})
+                        break
+            if obj.type == "EMPTY":
+                snap_point = [(obj.location, "Vertex")]
+                detected_snaps.append({"Edge-Vertex": (obj, snap_point)})
         # Polyline
         try:
             polyline_data = bpy.context.scene.BIMPolylineProperties.polyline_point
             last_polyline_point = polyline_data[len(polyline_data) - 1]
         except:
             last_polyline_point = None
-        snap_points = tool.Raycast.ray_cast_to_polyline(context, event)
-        # snap_point = cls.select_snap_point(snap_points, intersection, snap_threshold)
-        if snap_points:
-            detected_snaps.append({"Polyline": snap_points})
+        if polyline_data:
+            snap_points = tool.Raycast.ray_cast_to_polyline(context, event)
+            if snap_points:
+                detected_snaps.append({"Polyline": snap_points})
+
+        # Measure
+        measure_data = context.scene.BIMPolylineProperties.measure_polyline
+        for measure in measure_data:
+            measure_points = measure.polyline_point
+            snap_points = tool.Raycast.ray_cast_to_measure(context, event, measure_points)
+            if snap_points:
+                detected_snaps.append({"Polyline": snap_points})
 
         # Axis and Plane
         elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
@@ -488,6 +495,7 @@ class Snap(bonsai.core.tool.Snap):
                 if point[1] == "Axis":
                     if snapping_points[0][1] not in {"Axis", "Plane"}:
                         mixed_snap = cls.mix_snap_and_axis(snapping_points[0], axis_start, axis_end)
+                        snapping_points.insert(0, (mixed_snap[0], mixed_snap[1]))
                         cls.update_snapping_point(mixed_snap[0], mixed_snap[1])
                         return snapping_points
                     cls.update_snapping_point(point[0], point[1])

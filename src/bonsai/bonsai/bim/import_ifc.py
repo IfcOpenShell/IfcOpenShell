@@ -560,6 +560,7 @@ class IfcImporter:
             shape = tool.Loader.create_generic_shape(axis.AxisCurve)
             mesh = self.create_mesh(axis, shape)
             obj = bpy.data.objects.new(tool.Loader.get_name(axis), mesh)
+            obj.show_in_front = True
             self.link_element(axis, obj)
             self.set_matrix_world(obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, grid_placement.copy()))
 
@@ -719,9 +720,15 @@ class IfcImporter:
         products: set[ifcopenshell.entity_instance],
         settings: Optional[ifcopenshell.geom.main.settings] = None,
     ) -> set[ifcopenshell.entity_instance]:
+        checkpoint = time.time()
         results = set()
         if not products:
             return results
+
+        # For efficiency (iterator.initialize takes time), return early if there are no representations
+        if not any(product.Representation for product in products):
+            return results
+
         if tool.Loader.settings.should_use_cpu_multiprocessing:
             iterator = ifcopenshell.geom.iterator(
                 settings,
@@ -741,7 +748,6 @@ class IfcImporter:
         valid_file = iterator.initialize()
         if not valid_file:
             return results
-        checkpoint = time.time()
         progress = 0
         total = len(products)
         start_progress = self.progress
@@ -1089,7 +1095,9 @@ class IfcImporter:
         self.mesh_data["loop_start"].extend(loop_start)
         # list(di1.keys())
 
-    def create_native_swept_disk_solid(self, element, mesh_name, native_data):
+    def create_native_swept_disk_solid(
+        self, element: ifcopenshell.entity_instance, mesh_name: str, native_data: dict[str, Any]
+    ) -> bpy.types.Curve:
         # TODO: georeferencing?
         curve = bpy.data.curves.new(mesh_name, type="CURVE")
         curve.dimensions = "3D"
@@ -1104,6 +1112,8 @@ class IfcImporter:
             matrix[2][3] *= self.unit_scale
             # TODO: support inner radius, start param, and end param
             geometry = tool.Loader.create_generic_shape(item.Directrix)
+            if not geometry:
+                continue
             e = geometry.edges
             v = geometry.verts
             vertices = [list(matrix @ [v[i], v[i + 1], v[i + 2], 1]) for i in range(0, len(v), 3)]
@@ -1184,8 +1194,9 @@ class IfcImporter:
         tool.Loader.set_unit_scale(self.unit_scale)
 
     def set_units(self):
-        units = self.file.by_type("IfcUnitAssignment")[0]
-        for unit in units.Units:
+        if not (units := self.file.by_type("IfcUnitAssignment")):
+            return  # Geometry is optional in IFC
+        for unit in units[0].Units:
             if unit.is_a("IfcNamedUnit") and unit.UnitType == "LENGTHUNIT":
                 if unit.is_a("IfcSIUnit"):
                     bpy.context.scene.unit_settings.system = "METRIC"
@@ -1346,6 +1357,7 @@ class IfcImporter:
         self,
         element: ifcopenshell.entity_instance,
         shape: Union[ifcopenshell.geom.ShapeElementType, ifcopenshell.geom.ShapeType],
+        cartesian_point_offset=None,
     ) -> bpy.types.Mesh:
         try:
             if hasattr(shape, "geometry"):
@@ -1356,7 +1368,20 @@ class IfcImporter:
 
             mesh = bpy.data.meshes.new(tool.Loader.get_mesh_name_from_shape(geometry))
 
-            if geometry.verts and tool.Loader.is_point_far_away(
+            if cartesian_point_offset is False:
+                verts = geometry.verts
+                mesh["has_cartesian_point_offset"] = False
+            elif cartesian_point_offset is not None:
+                verts_array = np.array(geometry.verts)
+                offset = np.array([-cartesian_point_offset[0], -cartesian_point_offset[1], -cartesian_point_offset[2]])
+                offset_verts = verts_array + np.tile(offset, len(verts_array) // 3)
+                verts = offset_verts.tolist()
+
+                mesh["has_cartesian_point_offset"] = True
+                mesh["cartesian_point_offset"] = (
+                    f"{cartesian_point_offset[0]},{cartesian_point_offset[1]},{cartesian_point_offset[2]}"
+                )
+            elif geometry.verts and tool.Loader.is_point_far_away(
                 (geometry.verts[0], geometry.verts[1], geometry.verts[2]), is_meters=True
             ):
                 # Shift geometry close to the origin based off that first vert it found
@@ -1436,13 +1461,17 @@ class IfcImporter:
             bpy.ops.object.select_all(action="DESELECT")
 
     def setup_arrays(self):
-        for element in self.file.by_type("IfcElement"):
-            pset_data = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
-            if not pset_data or not pset_data.get("Data", None):  # skip array children
+        for pset in self.file.by_type("IfcPropertySet"):
+            if pset.Name != "BBIM_Array":
                 continue
-            for i in range(len(json.loads(pset_data["Data"]))):
-                tool.Blender.Modifier.Array.set_children_lock_state(element, i, True)
-                tool.Blender.Modifier.Array.constrain_children_to_parent(element)
+            if not (data := ifcopenshell.util.element.get_property_definition(pset, "Data")):
+                continue
+            data = json.loads(data)
+            for rel in pset.DefinesOccurrence:
+                for element in rel.RelatedObjects:
+                    for i in range(len(data)):
+                        tool.Blender.Modifier.Array.set_children_lock_state(element, i, True)
+                        tool.Blender.Modifier.Array.constrain_children_to_parent(element)
 
 
 class IfcImportSettings:

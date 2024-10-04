@@ -44,6 +44,7 @@ def append_asset(
     library: ifcopenshell.file,
     element: ifcopenshell.entity_instance,
     reuse_identities: Optional[dict[int, ifcopenshell.entity_instance]] = None,
+    assume_asset_uniqueness_by_name: bool = True,
 ) -> ifcopenshell.entity_instance:
     """Appends an asset from a library into the active project
 
@@ -61,18 +62,16 @@ def append_asset(
     Do not mix units.
 
     :param library: The file object containing the asset.
-    :type library: ifcopenshell.file
     :param element: An element in the library file of the asset. It may be
         an IfcTypeProduct, IfcProduct, IfcMaterial, IfcCostSchedule, or
         IfcProfileDef.
-    :type element: ifcopenshell.entity_instance
     :param reuse_identities: Optional dictionary of mapped entities' identities to the
         already created elements. It will be used to avoid creating
         duplicated inverse elements during multiple `project.append_asset` calls. If you want
         to add just 1 asset or if added assets won't have any shared elements, then it can be left empty.
-    :type reuse_identities: dict[int, ifcopenshell.entity_instance]
+    :param assume_asset_uniqueness_by_name: If True, checks if elements (profiles, materials, styles)
+        with the same name already exist in the project and reuses them instead of appending new ones.
     :return: The appended element
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -135,6 +134,7 @@ def append_asset(
         "library": library,
         "element": element,
         "reuse_identities": {} if reuse_identities is None else reuse_identities,
+        "assume_asset_uniqueness_by_name": assume_asset_uniqueness_by_name,
     }
     return usecase.execute()
 
@@ -142,6 +142,7 @@ def append_asset(
 class Usecase:
     file: ifcopenshell.file
     settings: dict[str, Any]
+    assume_asset_uniqueness_by_name: bool
 
     def execute(self):
         # mapping of old element ids to new elements
@@ -149,6 +150,7 @@ class Usecase:
         self.reuse_identities: dict[int, ifcopenshell.entity_instance] = self.settings["reuse_identities"]
         self.whitelisted_inverse_attributes = {}
         self.base_material_class = "IfcMaterial" if self.file.schema == "IFC2X3" else "IfcMaterialDefinition"
+        self.assume_asset_uniqueness_by_name = self.settings["assume_asset_uniqueness_by_name"]
 
         if self.settings["element"].is_a("IfcTypeProduct"):
             self.target_class = "IfcTypeProduct"
@@ -169,18 +171,24 @@ class Usecase:
             self.target_class = "IfcPresentationStyle"
             return self.append_presentation_style()
 
-    def get_existing_element(self, element):
+    def get_existing_element(self, element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
         if element.id() in self.added_elements:
             return self.added_elements[element.id()]
-        try:
-            if element.is_a("IfcRoot"):
+        if element.is_a("IfcRoot"):
+            try:
                 return self.file.by_guid(element.GlobalId)
-            elif element.is_a("IfcMaterial"):
-                return [e for e in self.file.by_type("IfcMaterial") if e.Name == element.Name][0]
-            elif element.is_a("IfcProfileDef"):
-                return [e for e in self.file.by_type("IfcProfileDef") if e.ProfileName == element.ProfileName][0]
-        except:
-            return False
+            except RuntimeError:
+                return None
+        elif not self.assume_asset_uniqueness_by_name:
+            return None
+        elif element.is_a("IfcMaterial"):
+            material_name = element.Name
+            return next((e for e in self.file.by_type("IfcMaterial") if e.Name == material_name), None)
+        elif element.is_a("IfcProfileDef"):
+            profile_name = element.ProfileName
+            return next((e for e in self.file.by_type("IfcProfileDef") if e.ProfileName == profile_name), None)
+        else:
+            return None
 
     def append_material(self):
         self.whitelisted_inverse_attributes = {

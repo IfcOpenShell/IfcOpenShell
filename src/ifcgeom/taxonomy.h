@@ -305,8 +305,10 @@ typedef item const* ptr;
 
 				std::string name;
 				colour diffuse;
+				colour surface;
 				colour specular;
 				double specularity, transparency;
+				bool use_surface_color;
 
 				void print(std::ostream& o, int indent = 0) const;
 
@@ -314,15 +316,22 @@ typedef item const* ptr;
 				virtual kinds kind() const { return STYLE; }
 
 				virtual size_t calc_hash() const {
-					auto v = std::make_tuple(static_cast<size_t>(STYLE), name, diffuse.hash(), specular.hash(), specularity, transparency);
+					auto v = std::make_tuple(static_cast<size_t>(STYLE), name, diffuse.hash(), surface.hash(), specular.hash(), specularity, transparency);
 					return boost::hash<decltype(v)>{}(v);
 				}
 
 				// @todo equality implementation based on values?
 				bool operator==(const style& other) const { return instance == other.instance; }
 
-				style() : specularity(std::numeric_limits<double>::quiet_NaN()), transparency(std::numeric_limits<double>::quiet_NaN()) {}
-				style(const std::string& name) : name(name), specularity(std::numeric_limits<double>::quiet_NaN()), transparency(std::numeric_limits<double>::quiet_NaN()) {}
+				style() : specularity(std::numeric_limits<double>::quiet_NaN()), transparency(std::numeric_limits<double>::quiet_NaN()), use_surface_color(false) {}
+				style(const std::string& name) : name(name), specularity(std::numeric_limits<double>::quiet_NaN()), transparency(std::numeric_limits<double>::quiet_NaN()), use_surface_color(false) {}
+
+				const colour& get_color() const {
+                    if (use_surface_color && surface) {
+                        return surface;
+                    }
+                    return diffuse;
+				}
 
 				bool has_specularity() const {
 					return !std::isnan(specularity);

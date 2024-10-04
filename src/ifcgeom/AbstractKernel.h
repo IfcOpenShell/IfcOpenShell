@@ -141,7 +141,7 @@ namespace {
 		static bool dispatch(const ifcopenshell::geometry::taxonomy::ptr item, T& visitor) {
 			constexpr auto KindIndex = TupleTypeIndex<std::tuple_element_t<N, ifcopenshell::geometry::taxonomy::impl::CurvesTuple>, ifcopenshell::geometry::taxonomy::impl::KindsTuple>::value;
 			if (item->kind() == KindIndex) {
-				auto concrete_item = ifcopenshell::geometry::taxonomy::template cast<ifcopenshell::geometry::taxonomy::curves::type<N>>(item);
+				auto concrete_item = std::static_pointer_cast<ifcopenshell::geometry::taxonomy::curves::type<N>>(item);
 				visitor(concrete_item);
 				return true;
 			} else {

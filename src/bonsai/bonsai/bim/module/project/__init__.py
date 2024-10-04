@@ -53,6 +53,7 @@ classes = (
     operator.RewindLibrary,
     operator.SaveLibraryFile,
     operator.SelectLibraryFile,
+    operator.SelectLinkHandle,
     operator.ToggleFilterCategories,
     operator.ToggleLinkSelectability,
     operator.ToggleLinkVisibility,

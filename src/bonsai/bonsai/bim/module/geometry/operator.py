@@ -21,11 +21,13 @@ import bpy
 import bmesh
 import logging
 import numpy as np
+import numpy.typing as npt
 import ifcopenshell
-import ifcopenshell.util.unit
 import ifcopenshell.util.element
-import ifcopenshell.util.representation
 import ifcopenshell.util.placement
+import ifcopenshell.util.representation
+import ifcopenshell.util.shape_builder
+import ifcopenshell.util.unit
 import ifcopenshell.api
 import ifcopenshell.api.grid
 import bonsai.core.geometry
@@ -40,7 +42,7 @@ from mathutils import Vector, Matrix
 from time import time
 from bonsai.bim.ifc import IfcStore
 from ifcopenshell.util.shape_builder import ShapeBuilder
-from typing import Any
+from typing import Any, Union
 from bonsai.bim.module.model.decorator import ProfileDecorator
 
 
@@ -64,15 +66,57 @@ class OverrideMeshSeparate(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.override_mesh_separate"
     bl_label = "IFC Mesh Separate"
     bl_options = {"REGISTER", "UNDO"}
-    obj: bpy.props.StringProperty()
     type: bpy.props.StringProperty()
 
     def _execute(self, context):
         obj = context.active_object
-        element = tool.Ifc.get_entity(obj)
-        if not element:
-            return
+        if tool.Geometry.is_representation_item(obj):
+            self.separate_item(context, obj)
+        elif element := tool.Ifc.get_entity(obj):
+            self.separate_element(element)
 
+    def separate_item(self, context, obj):
+        item = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+        if tool.Geometry.is_meshlike_item(item):
+            previous_selected_objects = context.selected_objects
+            bpy.ops.mesh.separate(type=self.type)
+            for obj in context.selected_objects:
+                if obj in previous_selected_objects:
+                    continue
+                self.add_meshlike_item(obj)
+            tool.Geometry.reload_representation(bpy.context.scene.BIMGeometryProperties.representation_obj)
+        else:
+            self.report({"INFO"}, f"Separating an {item.is_a()} is not supported")
+
+    def add_meshlike_item(self, obj):
+        props = bpy.context.scene.BIMGeometryProperties
+        obj.show_in_front = True
+        new = props.item_objs.add()
+        new.obj = obj
+        tool.Geometry.lock_object(obj)
+
+        builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        rep_obj = bpy.context.scene.BIMGeometryProperties.representation_obj
+        if (coordinate_offset := tool.Geometry.get_cartesian_point_offset(rep_obj)) is not None:
+            verts = [((np.array(v.co) + coordinate_offset) / unit_scale).tolist() for v in obj.data.vertices]
+        else:
+            verts = [v.co / unit_scale for v in obj.data.vertices]
+        faces = [p.vertices[:] for p in obj.data.polygons]
+
+        representation = tool.Geometry.get_active_representation(props.representation_obj)
+        representation = ifcopenshell.util.representation.resolve_representation(representation)
+
+        if representation.RepresentationType in ("Brep", "AdvancedBrep"):
+            item = builder.faceted_brep(verts, faces)
+        elif representation.RepresentationType in ("Tessellation"):
+            item = builder.mesh(verts, faces)
+
+        representation.Items = list(representation.Items) + [item]
+        obj.name = obj.data.name = f"Item/{item.is_a()}/{item.id()}"
+        obj.data.BIMMeshProperties.ifc_definition_id = item.id()
+
+    def separate_element(self, element):
         # You cannot separate meshes if the representation is mapped.
         relating_type = tool.Root.get_element_type(element)
         if relating_type and tool.Root.does_type_have_representations(relating_type):
@@ -82,7 +126,6 @@ class OverrideMeshSeparate(bpy.types.Operator, tool.Ifc.Operator):
             bpy.ops.bim.unassign_type(related_object=obj.name)
             tool.Blender.toggle_edit_mode(context)
 
-        selected_objects = context.selected_objects
         bpy.ops.mesh.separate(type=self.type)
         bpy.ops.object.mode_set(mode="OBJECT", toggle=False)
         new_objs = [obj]
@@ -416,20 +459,11 @@ class UpdateRepresentation(bpy.types.Operator, tool.Ifc.Operator):
         if tool.Drawing.is_annotation_object_type(element, ("FALL", "SECTION_LEVEL", "PLAN_LEVEL")):
             context_of_items = tool.Drawing.get_annotation_context("MODEL_VIEW")
 
-        gprop = context.scene.BIMGeoreferenceProperties
-        coordinate_offset = None
-        if (
-            gprop.has_blender_offset
-            and obj.BIMObjectProperties.blender_offset_type == "CARTESIAN_POINT"
-            and obj.BIMObjectProperties.cartesian_point_offset
-        ):
-            coordinate_offset = Vector(map(float, obj.BIMObjectProperties.cartesian_point_offset.split(",")))
-
         representation_data = {
             "context": context_of_items,
             "blender_object": obj,
             "geometry": obj.data,
-            "coordinate_offset": coordinate_offset,
+            "coordinate_offset": tool.Geometry.get_cartesian_point_offset(obj),
             "total_items": max(1, len(obj.material_slots)),
             "should_force_faceted_brep": tool.Geometry.should_force_faceted_brep(),
             "should_force_triangulation": tool.Geometry.should_force_triangulation(),
@@ -571,6 +605,10 @@ class CopyRepresentation(bpy.types.Operator, tool.Ifc.Operator):
                 )
 
 
+def lock_error_message(name):
+    return f"'{name}' is locked. Unlock it via the Spatial panel in the Project Overview tab."
+
+
 class OverrideDelete(bpy.types.Operator):
     bl_idname = "bim.override_object_delete"
     bl_label = "IFC Delete"
@@ -623,6 +661,7 @@ class OverrideDelete(bpy.types.Operator):
             ifcopenshell.util.element.batch_remove_deep2(tool.Ifc.get())
 
         self.process_arrays(context)
+        clear_active_object = True
         for obj in context.selected_objects:
             try:
                 obj.name
@@ -631,7 +670,9 @@ class OverrideDelete(bpy.types.Operator):
             element = tool.Ifc.get_entity(obj)
             if element:
                 if tool.Geometry.is_locked(element):
-                    self.report({"ERROR"}, f"Element '{obj.name}' is locked and cannot be deleted.")
+                    if obj == context.view_layer.objects.active:
+                        clear_active_object = False
+                    self.report({"ERROR"}, lock_error_message(obj.name))
                     continue
                 if ifcopenshell.util.element.get_pset(element, "BBIM_Array"):
                     self.report({"INFO"}, "Elements that are part of an array cannot be deleted.")
@@ -650,8 +691,10 @@ class OverrideDelete(bpy.types.Operator):
             tool.Ifc.set(new_file)
             self.transaction_data = {"old_file": old_file, "new_file": new_file}
             IfcStore.add_transaction_operation(self)
-        # Required otherwise gizmos are still visible
-        context.view_layer.objects.active = None
+
+        if clear_active_object:
+            # Required otherwise gizmos are still visible
+            context.view_layer.objects.active = None
 
         operator_time = time() - start_time
         if operator_time > 10:
@@ -765,7 +808,7 @@ class OverrideOutlinerDelete(bpy.types.Operator):
         for obj in objects_to_delete:
             if element := tool.Ifc.get_entity(obj):
                 if tool.Geometry.is_locked(element):
-                    self.report({"ERROR"}, f"Element '{obj.name}' is locked and cannot be deleted.")
+                    self.report({"ERROR"}, lock_error_message(obj.name))
                     if collection := obj.BIMObjectProperties.collection:
                         collections_to_delete.discard(collection)
                     continue
@@ -881,9 +924,12 @@ class OverrideDuplicateMove(bpy.types.Operator):
                     obj.select_set(False)
                     continue  # For now, don't copy drawings until we stabilise a bit more. It's tricky.
                 elif tool.Geometry.is_locked(element):
-                    obj.select_set(False)
-                    self.report({"ERROR"}, f"Element '{obj.name}' is locked and cannot be duplicated.")
+                    tool.Blender.deselect_object(obj, ensure_active_object=True)
+                    self.report({"ERROR"}, lock_error_message(obj.name))
                     continue
+            elif tool.Geometry.is_representation_item(obj):
+                OverrideDuplicateMove.duplicate_item(self, obj)
+                continue
 
             linked_non_ifc_object = linked and not element
 
@@ -952,6 +998,31 @@ class OverrideDuplicateMove(bpy.types.Operator):
         bonsai.bim.handler.refresh_ui_data()
         tool.Root.reload_grid_decorator()
         return old_to_new
+
+    @staticmethod
+    def duplicate_item(self, obj):
+        props = bpy.context.scene.BIMGeometryProperties
+        item = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+        new_item = ifcopenshell.util.element.copy_deep(tool.Ifc.get(), item)
+        new_obj = obj.copy()
+        temp_data = obj.data.copy()
+        new_obj.data = temp_data
+        new_obj.data.BIMMeshProperties.ifc_definition_id = new_item.id()
+        new_obj.name = obj.data.name = f"Item/{new_item.is_a()}/{new_item.id()}"
+        new = props.item_objs.add()
+        new.obj = new_obj
+
+        for collection in obj.users_collection:
+            collection.objects.link(new_obj)
+
+        representation = tool.Geometry.get_active_representation(props.representation_obj)
+        representation = ifcopenshell.util.representation.resolve_representation(representation)
+        representation.Items = list(representation.Items) + [new_item]
+
+        tool.Geometry.reload_representation(props.representation_obj)
+
+        obj.select_set(False)
+        tool.Root.reload_item_decorator()
 
     @staticmethod
     def process_arrays(self, context):
@@ -1465,6 +1536,9 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "IFC Join"
     bl_options = {"REGISTER", "UNDO"}
 
+    target: bpy.types.Object
+    target_element: ifcopenshell.entity_instance
+
     def invoke(self, context, event):
         if not tool.Ifc.get():
             return bpy.ops.object.join()
@@ -1478,17 +1552,50 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
             return
 
         self.target = context.active_object
-        self.target_element = tool.Ifc.get_entity(self.target)
-        if self.target_element:
+        if tool.Geometry.is_representation_item(self.target):
+            return self.join_item()
+        elif target_element := tool.Ifc.get_entity(self.target):
+            self.target_element = target_element
             return self.join_ifc_obj()
         return self.join_blender_obj()
 
-    def join_ifc_obj(self):
+    def join_item(self) -> None:
+        props = bpy.context.scene.BIMGeometryProperties
+        item = tool.Ifc.get().by_id(self.target.data.BIMMeshProperties.ifc_definition_id)
+        if tool.Geometry.is_meshlike_item(item):
+            tool.Geometry.dissolve_triangulated_edges(self.target)
+            item_objs = [i.obj for i in props.item_objs if i.obj]
+            joined_objs = []
+            for selected_obj in bpy.context.selected_objects:
+                if selected_obj in item_objs:
+                    if selected_obj != self.target:
+                        tool.Geometry.dissolve_triangulated_edges(selected_obj)
+                        joined_objs.append(selected_obj)
+                else:
+                    selected_obj.select_set(False)
+            bpy.ops.object.join()
+            tool.Geometry.edit_meshlike_item(self.target)
+
+            for joined_obj in joined_objs:
+                tool.Geometry.delete_ifc_item(joined_obj)
+
+            item_objs = [i.obj for i in props.item_objs if i.obj]
+            props.item_objs.clear()
+            for item_obj in item_objs:
+                new = props.item_objs.add()
+                new.obj = item_obj
+
+            tool.Geometry.reload_representation(bpy.context.scene.BIMGeometryProperties.representation_obj)
+            bpy.context.view_layer.update()
+            tool.Root.reload_item_decorator()
+
+    def join_ifc_obj(self) -> None:
         ifc_file = tool.Ifc.get()
         builder = ShapeBuilder(ifc_file)
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
         representation = ifc_file.by_id(self.target.data.BIMMeshProperties.ifc_definition_id)
-        if representation.RepresentationType in ("Tessellation", "Brep"):
+        representation_type = representation.RepresentationType
+        if representation_type in ("Tessellation", "Brep"):
             for obj in bpy.context.selected_objects:
                 if obj == self.target:
                     continue
@@ -1497,9 +1604,21 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
                     ifcopenshell.api.run("root.remove_product", ifc_file, product=element)
             bpy.ops.object.join()
             bpy.ops.bim.update_representation(obj=self.target.name, ifc_representation_class="")
-        elif representation.RepresentationType == "SweptSolid":
+        else:
+            # Could support it but need to make sure all objects are on the same plane.
+            if representation_type == "Curve2D":
+                self.report({"ERROR"}, "Joining representation of type Curve2D is not supported.")
+                return
+
             target_placement = np.array(self.target.matrix_world)
             target_placement[:, 3][:3] /= si_conversion
+
+            def apply_placement(
+                local_pos: npt.NDArray[np.float64], obj_placement: ifcopenshell.util.placement.MatrixType
+            ) -> npt.NDArray[np.float64]:
+                position = obj_placement @ local_pos
+                position = np.linalg.inv(target_placement) @ position
+                return position
 
             items = list(representation.Items)
             for obj in bpy.context.selected_objects:
@@ -1514,25 +1633,41 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
 
                 # Only objects of the same representation type can be joined
                 obj_rep = ifc_file.by_id(obj.data.BIMMeshProperties.ifc_definition_id)
-                if obj_rep.RepresentationType != "SweptSolid":
+                if obj_rep.RepresentationType != representation_type:
                     obj.select_set(False)
                     continue
 
                 placement = np.array(obj.matrix_world)
                 placement[:, 3][:3] /= si_conversion
 
-                for item in obj_rep.Items:
+                supported_item_types = ("IfcSweptAreaSolid", "IfcIndexedPolyCurve")
+                rep_items = obj_rep.Items
+                for item in rep_items:
+                    if not any(item.is_a(ifc_class) for ifc_class in supported_item_types):
+                        self.report({"ERROR"}, f"Unsupported representation item type for joining: {item.is_a()}.")
+                        return
+
+                for item in rep_items:
                     copied_item = ifcopenshell.util.element.copy_deep(ifc_file, item)
                     for style in item.StyledByItem:
                         copied_style = ifcopenshell.util.element.copy(ifc_file, style)
                         copied_style.Item = copied_item
-                    if copied_item.Position:
-                        position = ifcopenshell.util.placement.get_axis2placement(copied_item.Position)
+
+                    if item.is_a("IfcSweptAreaSolid"):
+                        if copied_item.Position:
+                            position = ifcopenshell.util.placement.get_axis2placement(copied_item.Position)
+                        else:
+                            position = np.eye(4, dtype=float)
+                        position = apply_placement(position, placement)
+                        copied_item.Position = builder.create_axis2_placement_3d_from_matrix(position)
+                    elif item.is_a("IfcIndexedPolyCurve"):
+                        points = copied_item.Points
+                        coords = points.CoordList
+                        # We're assuming those are 3D coordinates, since we do not support Curve2D.
+                        points.CoordList = [apply_placement(np.append(c, 1.0), placement).tolist()[:3] for c in coords]
                     else:
-                        position = np.eye(4, dtype=float)
-                    position = placement @ position
-                    position = np.linalg.inv(target_placement) @ position
-                    copied_item.Position = builder.create_axis2_placement_3d_from_matrix(position)
+                        assert False, f"Unexpected item type: {item.is_a()}. This is a bug."
+
                     items.append(copied_item)
                 ifcopenshell.api.run("root.remove_product", ifc_file, product=element)
             representation.Items = items
@@ -1548,10 +1683,11 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
                 apply_openings=True,
             )
 
-    def join_blender_obj(self):
+    def join_blender_obj(self) -> None:
         for obj in bpy.context.selected_objects:
             if obj == self.target:
                 continue
+            # TODO Properly handle element types, grid axes, and representation items
             element = tool.Ifc.get_entity(obj)
             if element:
                 ifcopenshell.api.run("root.remove_product", tool.Ifc.get(), product=element)
@@ -1576,135 +1712,95 @@ class OverridePasteBuffer(bpy.types.Operator):
 
 
 class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
-    bl_description = "Switch from Object mode to Edit mode"
+    bl_description = "Switch from Object to Item to Edit mode"
     bl_idname = "bim.override_mode_set_edit"
     bl_label = "IFC Mode Set Edit"
     bl_options = {"REGISTER", "UNDO"}
 
+    def invoke(self, context, event):
+        return IfcStore.execute_ifc_operator(self, context, is_invoke=True)
+
+    def _invoke(self, context, event):
+        if not tool.Ifc.get():
+            return tool.Blender.toggle_edit_mode(context)
+        return self.execute(context)
+
     def _execute(self, context):
-        selected_objs = tool.Blender.get_selected_objects()
-        active_obj = context.active_object
+        selected_objs = context.selected_objects  # Purposely exclude active object
 
-        if context.active_object:
-            context.active_object.select_set(True)
+        if len(selected_objs) == 1 and context.active_object == selected_objs[0]:
+            self.handle_single_object(context, context.active_object)
+        elif len(selected_objs) == 0:
+            tool.Geometry.disable_item_mode()
+        elif len(selected_objs) > 1:
+            self.handle_multiple_selected_objects(context)
 
-            element = tool.Ifc.get_entity(context.active_object)
-            if element and element.is_a("IfcRelSpaceBoundary"):
-                return bpy.ops.bim.enable_editing_boundary_geometry()
-
-        for obj in selected_objs:
-            if obj == context.scene.BIMGeometryProperties.representation_obj:
-                self.report({"ERROR"}, f"Element '{obj.name}' is in item mode and cannot be edited directly.")
-                obj.select_set(False)
-                continue
-            if tool.Geometry.is_representation_item(obj):
-                return self.enable_editing_representation_item(context, obj)
-            if not tool.Blender.is_editable(obj):
-                self.report({"INFO"}, f"Object cannot be edited: {obj.name}")
-                obj.select_set(False)
-                continue
-            element = tool.Ifc.get_entity(obj)
-            if not element:
-                continue
-            if tool.Geometry.is_locked(element):
-                self.report({"ERROR"}, f"Element '{obj.name}' is locked and cannot be edited.")
-                obj.select_set(False)
-                continue
-            representation = tool.Geometry.get_active_representation(obj)
-            if not representation:
-                continue
-            if tool.Blender.Modifier.is_modifier_with_non_editable_path(element):
-                obj.select_set(False)
-                continue
-
-            usage_type = tool.Model.get_usage_type(element)
-            is_profile = True
-            representation_class = tool.Geometry.get_ifc_representation_class(element, representation)
-            if usage_type == "PROFILE":
-                operator = lambda: bpy.ops.bim.hotkey(hotkey="A_E")
-            elif representation_class and "IfcCircleProfileDef" in representation_class:
-                self.report({"INFO"}, "Can't edit Circle Profile Extrusion")
-                obj.select_set(False)
-                continue
-            elif (
-                tool.Geometry.is_profile_based(obj.data)
-                or usage_type == "LAYER3"
-                or tool.Geometry.is_swept_profile(representation)
-            ):
-                operator = lambda: bpy.ops.bim.hotkey(hotkey="S_E")
+    def handle_single_object(self, context: bpy.types.Context, obj: bpy.types.Object) -> None:
+        element = tool.Ifc.get_entity(obj)
+        if obj == context.scene.BIMGeometryProperties.representation_obj:
+            self.report({"ERROR"}, f"Element '{obj.name}' is in item mode and cannot be edited directly")
+        elif obj in bpy.context.scene.BIMProjectProperties.clipping_planes_objs:
+            self.report({"ERROR"}, "Clipping planes cannot be edited")
+        elif element:
+            if not obj.data:
+                self.report({"INFO"}, "No geometry to edit")
+            elif (usage := tool.Model.get_usage_type(element)) and usage in ("LAYER1", "LAYER2"):
+                self.report({"INFO"}, f"Parametric {usage} elements cannot be edited directly")
+            elif tool.Geometry.is_locked(element):
+                self.report({"ERROR"}, lock_error_message(obj.name))
+            elif usage == "PROFILE":
+                bpy.ops.bim.hotkey(hotkey="A_E")
+            elif usage == "LAYER3":
+                bpy.ops.bim.hotkey(hotkey="S_E")
+            elif obj.data and tool.Geometry.is_profile_based(obj.data):
+                bpy.ops.bim.hotkey(hotkey="S_E")
+            elif element.is_a("IfcRelSpaceBoundary"):
+                bpy.ops.bim.enable_editing_boundary_geometry()
+            elif element.is_a("IfcGridAxis"):
+                self.enable_edit_mode(context)
             elif tool.Blender.Modifier.is_editing_parameters(obj):
                 # This should go BEFORE the modifiers
-                self.report({"INFO"}, "Can't edit path while the modifier parameters are being modified")
-                obj.select_set(False)
-                continue
+                self.report({"INFO"}, "Can't edit while modifier parameters are being modified")
             elif tool.Blender.Modifier.is_roof(element):
-                operator = lambda: bpy.ops.bim.enable_editing_roof_path()
+                bpy.ops.bim.enable_editing_roof_path()
             elif tool.Blender.Modifier.is_railing(element):
-                operator = lambda: bpy.ops.bim.enable_editing_railing_path()
+                bpy.ops.bim.enable_editing_railing_path()
             else:
-                is_profile = False
-            if is_profile:
-                if len(context.selected_objects) == 1 and context.active_object == context.selected_objects[0]:
+                bpy.ops.bim.import_representation_items()
+        elif tool.Geometry.is_representation_item(obj):
+            self.enable_editing_representation_item(context, obj)
+        else:  # A regular Blender object
+            self.enable_edit_mode(context)
+
+    def handle_multiple_selected_objects(self, context: bpy.types.Context) -> Union[None, set[str]]:
+        obj = context.active_object
+        if obj and (tool.Ifc.get_entity(obj) or tool.Geometry.is_representation_item(obj)):
+            tool.Blender.select_and_activate_single_object(context, obj)
+            self.handle_single_object(context, obj)
+        else:
+            blender_objs = []
+            ifc_objs = []
+            for selected_obj in tool.Blender.get_selected_objects():
+                if tool.Ifc.get_entity(selected_obj) or tool.Geometry.is_representation_item(selected_obj):
+                    ifc_objs.append(selected_obj)
+                else:
+                    blender_objs.append(selected_obj)
+
+                if blender_objs:
+                    for obj in ifc_objs:
+                        obj.select_set(False)
+                    context.view_layer.objects.active = blender_objs[0]
+                    blender_objs[0].select_set(True)
+                    return tool.Blender.toggle_edit_mode(context)
+                elif ifc_objs:
+                    obj = ifc_objs[0]
                     tool.Blender.select_and_activate_single_object(context, obj)
-                    operator()
-                    context.scene.BIMGeometryProperties.is_changing_mode = True
-                    if context.scene.BIMGeometryProperties.mode != "EDIT":
-                        context.scene.BIMGeometryProperties.mode = "EDIT"
-                    context.scene.BIMGeometryProperties.is_changing_mode = False
-                    return {"FINISHED"}
-                self.report({"INFO"}, "Only a single profile-based representation can be edited at a time.")
-                obj.select_set(False)
-                continue
+                    self.handle_single_object(context, obj)
 
-            if tool.Geometry.is_meshlike(representation):
-                tool.Ifc.edit(obj)
-                if getattr(element, "HasOpenings", None):
-                    # Mesh elements with openings must disable openings
-                    # so that you can edit the original topology.
-                    core.switch_representation(
-                        tool.Ifc,
-                        tool.Geometry,
-                        obj=obj,
-                        representation=representation,
-                        should_reload=True,
-                        is_global=True,
-                        should_sync_changes_first=False,
-                        apply_openings=False,
-                    )
-                if isinstance(obj.data, bpy.types.Mesh):
-                    tool.Geometry.apply_item_ids_as_vertex_groups(obj)
-                    tool.Geometry.dissolve_triangulated_edges(obj)
-                obj.data.BIMMeshProperties.mesh_checksum = tool.Geometry.get_mesh_checksum(obj.data)
-            else:
-                obj.select_set(False)
-                continue
-        if len(selected_objs) > 1 and (
-            not context.selected_objects or len(context.selected_objects) != len(selected_objs)
-        ):
-            # We are trying to edit at least one non-mesh-like object : Display a hint to the user
-            self.report({"INFO"}, "Only mesh-compatible representations may be edited concurrently in edit mode.")
-
-        if context.active_object not in context.selected_objects:
-            # The active object is non-mesh-like. Set a valid object (or None) as active
-            context.view_layer.objects.active = context.selected_objects[0] if context.selected_objects else None
-        if context.active_object:
-            if tool.Blender.toggle_edit_mode(context) == {"CANCELLED"}:
-                return {"CANCELLED"}
-            context.scene.BIMGeometryProperties.is_changing_mode = True
-            if context.scene.BIMGeometryProperties.mode != "EDIT":
-                context.scene.BIMGeometryProperties.mode = "EDIT"
-            context.scene.BIMGeometryProperties.is_changing_mode = False
-            return {"FINISHED"}
-
-        # Restore the selection if nothing worked
-        for obj in selected_objs:
-            obj.select_set(True)
-        context.view_layer.objects.active = active_obj
-        return {"FINISHED"}
-
-    def enable_editing_representation_item(self, context, obj):
+    def enable_editing_representation_item(self, context: bpy.types.Context, obj: bpy.types.Object) -> None:
         item = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
         if tool.Geometry.is_meshlike_item(item):
+            tool.Geometry.dissolve_triangulated_edges(obj)
             tool.Blender.select_and_activate_single_object(context, obj)
             obj.data.BIMMeshProperties.mesh_checksum = tool.Geometry.get_mesh_checksum(obj.data)
             self.enable_edit_mode(context)
@@ -1719,7 +1815,7 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
         else:
             self.report({"INFO"}, f"Editing {item.is_a()} geometry is not supported")
 
-    def enable_edit_mode(self, context):
+    def enable_edit_mode(self, context: bpy.types.Context) -> Union[None, set[str]]:
         if tool.Blender.toggle_edit_mode(context) == {"CANCELLED"}:
             return {"CANCELLED"}
         context.scene.BIMGeometryProperties.is_changing_mode = True
@@ -1727,16 +1823,9 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
             context.scene.BIMGeometryProperties.mode = "EDIT"
         context.scene.BIMGeometryProperties.is_changing_mode = False
 
-    def invoke(self, context, event):
-        return IfcStore.execute_ifc_operator(self, context, is_invoke=True)
-
-    def _invoke(self, context, event):
-        if not tool.Ifc.get():
-            return tool.Blender.toggle_edit_mode(context)
-        return self.execute(context)
-
 
 class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
+    bl_description = "Switch from Edit to Item or Object mode"
     bl_idname = "bim.override_mode_set_object"
     bl_label = "IFC Mode Set Object"
     bl_options = {"REGISTER", "UNDO"}
@@ -1745,16 +1834,15 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
     def invoke(self, context, event):
         return IfcStore.execute_ifc_operator(self, context, is_invoke=True)
 
-    def _invoke(self, context, event):
+    def _invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> set[str]:
+        if not tool.Ifc.get():
+            return tool.Blender.toggle_edit_mode(context)
+
         if not context.active_object:
             return {"FINISHED"}
         self.is_valid = True
 
-        if context.mode != "OBJECT":
-            bpy.ops.object.mode_set(mode="OBJECT")
-
-        if not tool.Ifc.get():
-            return {"FINISHED"}
+        tool.Blender.toggle_edit_mode(context)
 
         context.scene.BIMGeometryProperties.is_changing_mode = True
         if context.scene.BIMGeometryProperties.representation_obj:
@@ -1771,6 +1859,7 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
                 return bpy.ops.bim.edit_boundary_geometry()
             elif tool.Geometry.is_representation_item(context.active_object):
                 self.edit_representation_item(context.active_object)
+                tool.Root.reload_item_decorator()
                 return {"FINISHED"}
 
         objs = context.selected_objects or [context.active_object]
@@ -1845,31 +1934,14 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
             tool.Ifc.finish_edit(obj)
         return {"FINISHED"}
 
-    def edit_representation_item(self, obj):
+    def edit_representation_item(self, obj: bpy.types.Object) -> None:
         item = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
         if tool.Geometry.is_meshlike_item(item):
             if tool.Geometry.has_geometric_data(obj) and obj.data.polygons:
-                if obj.data.BIMMeshProperties.mesh_checksum == tool.Geometry.get_mesh_checksum(obj.data):
-                    return
-                builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
-                unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-                verts = [v.co / unit_scale for v in obj.data.vertices]
-                faces = [p.vertices[:] for p in obj.data.polygons]
-                if item.is_a("IfcAdvancedBrep"):
-                    new_item = builder.faceted_brep(verts, faces)
-                else:
-                    new_item = builder.mesh(verts, faces)
-                for inverse in tool.Ifc.get().get_inverse(item):
-                    ifcopenshell.util.element.replace_attribute(inverse, item, new_item)
-                ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), item)
-                obj.data.BIMMeshProperties.ifc_definition_id = new_item.id()
-                tool.Geometry.reload_representation(bpy.context.scene.BIMGeometryProperties.representation_obj)
-                return
+                tool.Geometry.edit_meshlike_item(obj)
             else:
                 tool.Geometry.import_item(obj)
-                return
         elif item.is_a("IfcSweptAreaSolid"):
-            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
             ProfileDecorator.uninstall()
 
             profile = tool.Model.export_profile(obj)
@@ -2344,10 +2416,12 @@ class ImportRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         obj = context.active_object
-        tool.Geometry.apply_item_ids_as_vertex_groups(obj)
-        tool.Geometry.dissolve_triangulated_edges(obj)
+        assert obj
         props = context.scene.BIMGeometryProperties
+        if previous_obj := props.representation_obj:
+            previous_obj.hide_set(False)
         props.representation_obj = obj
+        obj.hide_set(True)
         tool.Geometry.lock_object(obj)
 
         context.scene.BIMGeometryProperties.is_changing_mode = True
@@ -2355,23 +2429,18 @@ class ImportRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
             context.scene.BIMGeometryProperties.mode = "ITEM"
         context.scene.BIMGeometryProperties.is_changing_mode = False
 
-        item_ids = set()
-        for vgroup in obj.vertex_groups:
-            if vgroup.name.startswith("ios_item_id_"):
-                item_ids.add(int(vgroup.name.split("_")[-1]))
+        tool.Loader.load_settings()
 
-        tool.Loader.settings.contexts = ifcopenshell.util.representation.get_prioritised_contexts(tool.Ifc.get())
-        tool.Loader.settings.context_settings = tool.Loader.create_settings()
-        tool.Loader.settings.gross_context_settings = tool.Loader.create_settings(is_gross=True)
-
-        for item_id in item_ids:
+        data = obj.data
+        assert data
+        item_ids = data["ios_item_ids"] if "ios_item_ids" in data else data["ios_edges_item_ids"]
+        for item_id in set(item_ids):
             item = tool.Ifc.get().by_id(item_id)
             item_mesh = bpy.data.meshes.new(f"Item/{item.is_a()}/{item_id}")
             item_mesh.BIMMeshProperties.ifc_definition_id = item_id
 
             item_obj = bpy.data.objects.new(f"Item/{item.is_a()}/{item_id}", item_mesh)
             item_obj.matrix_world = obj.matrix_world
-            item_obj.show_in_front = True
             bpy.context.collection.objects.link(item_obj)
 
             new = props.item_objs.add()
@@ -2380,8 +2449,10 @@ class ImportRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
             tool.Geometry.import_item(item_obj)
             tool.Geometry.import_item_attributes(item_obj)
 
-            if tool.Geometry.is_meshlike_item(item):
+            if not tool.Geometry.is_movable(item):
                 tool.Geometry.lock_object(item_obj)
+
+        tool.Root.reload_item_decorator()
 
 
 class UpdateItemAttributes(bpy.types.Operator, tool.Ifc.Operator):
@@ -2436,14 +2507,20 @@ class AddMeshlikeItem(bpy.types.Operator, tool.Ifc.Operator):
         bm.free()
         mesh.update()
         obj.matrix_world = props.representation_obj.matrix_world
+        obj.show_in_front = True
         new = props.item_objs.add()
         new.obj = obj
+        tool.Root.reload_item_decorator()
 
         tool.Geometry.lock_object(obj)
 
         builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        verts = [v.co / unit_scale for v in obj.data.vertices]
+        rep_obj = bpy.context.scene.BIMGeometryProperties.representation_obj
+        if (coordinate_offset := tool.Geometry.get_cartesian_point_offset(rep_obj)) is not None:
+            verts = [((np.array(v.co) + coordinate_offset) / unit_scale).tolist() for v in obj.data.vertices]
+        else:
+            verts = [v.co / unit_scale for v in obj.data.vertices]
         faces = [p.vertices[:] for p in obj.data.polygons]
 
         representation = tool.Geometry.get_active_representation(props.representation_obj)
@@ -2481,6 +2558,7 @@ class AddSweptAreaSolidItem(bpy.types.Operator, tool.Ifc.Operator):
         matrix.translation = context.scene.cursor.location
         local_matrix = props.representation_obj.matrix_world.inverted() @ matrix
 
+        obj.show_in_front = True
         obj.matrix_world = matrix
         tool.Geometry.record_object_position(obj)
 

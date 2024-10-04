@@ -20,6 +20,7 @@ import os
 import sys
 import bpy
 import bpy.utils.previews
+import bonsai.bim
 import bonsai.tool as tool
 import bonsai.core.model as core
 from bonsai.bim.module.model.wall import DumbWallJoiner
@@ -30,14 +31,12 @@ from bonsai.bim.module.system.data import PortData
 from bonsai.bim.module.model.prop import get_ifc_class
 
 
+# TODO duplicate code in cad/workspace and model/workspace
 def check_display_mode():
     global display_mode
     try:
         theme = bpy.context.preferences.themes["Default"]
         text_color = theme.user_interface.wcol_menu_item.text
-        background_color = theme.user_interface.wcol_menu_item.outline
-        print(f"text_color = {text_color}")
-        print(f"background_color = {background_color}")
         if sum(text_color) < 2.6:
             display_mode = "lm"
         else:
@@ -90,7 +89,6 @@ class BimTool(WorkSpaceTool):
         ("bim.hotkey", {"type": "K", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_K")]}),
         ("bim.hotkey", {"type": "M", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_M")]}),
         ("bim.hotkey", {"type": "O", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_O")]}),
-        ("bim.hotkey", {"type": "P", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_P")]}),
         ("bim.hotkey", {"type": "L", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_L")]}),
         ("bim.hotkey", {"type": "Q", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_Q")]}),
         ("bim.hotkey", {"type": "R", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_R")]}),
@@ -109,13 +107,12 @@ class BimTool(WorkSpaceTool):
 
     @classmethod
     def draw_settings(cls, context, layout, ws_tool):
-        # Unlike operators, Blender doesn't treat workspace tools as a class, so we'll create our own.
         if context.scene.BIMGeometryProperties.mode == "ITEM":
             EditItemUI.draw(context, layout)
+        elif context.active_object and context.selected_objects:
+            EditObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
         else:
             CreateObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
-            if context.active_object and context.selected_objects:
-                EditObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
 
 
 class WallTool(BimTool):
@@ -341,9 +338,12 @@ class CreateObjectUI:
             )
             cls.layout.label(text=tool_name, icon="TOOL_SETTINGS")
 
-        cls.draw_type_manager_launcher(context)
-        cls.draw_thumbnail() if context.region.type != "TOOL_HEADER" else cls
-        cls.draw_add_object(context)
+        if AuthoringData.data["ifc_classes"] and AuthoringData.data["relating_type_id"]:
+            cls.draw_add_object(context)
+            cls.draw_thumbnail() if context.region.type != "TOOL_HEADER" else cls
+            cls.draw_add_object_parameters(context)
+        else:
+            cls.draw_type_manager_launcher(context)
 
     @classmethod
     def draw_container_info(cls, context):
@@ -355,25 +355,50 @@ class CreateObjectUI:
 
     @classmethod
     def draw_type_manager_launcher(cls, context):
-        ui_context = str(context.region.type)
         row = cls.layout.row(align=True)
-        if not AuthoringData.data["ifc_classes"]:
-            if AuthoringData.data["ifc_element_type"]:
-                row.label(text=f"No {AuthoringData.data['ifc_element_type']} Found", icon="ERROR")
-                row = cls.layout.row(align=True)
-                op = row.operator(
-                    "bim.add_default_type",
-                    icon_value=custom_icon_previews["ADD_TYPE"].icon_id,
-                    text=f"Create default {AuthoringData.data['ifc_element_type']}",
-                )
-                op.ifc_element_type = AuthoringData.data["ifc_element_type"]
-            else:
-                row.label(text="No Element Types Found", icon="ERROR")
+        row.label(text="No Element Types Found", icon="ERROR")
+        row = cls.layout.row(align=True)
+        row.operator("bim.add_element", icon_value=bonsai.bim.icons["IFC"].icon_id, text="Add New Type")
+        if AuthoringData.data["ifc_element_type"]:
             row = cls.layout.row(align=True)
-            row.operator("bim.launch_type_manager", icon=tool.Blender.TYPE_MANAGER_ICON, text="Launch Type Manager")
+            op = row.operator(
+                "bim.add_default_type",
+                icon_value=custom_icon_previews["ADD_TYPE"].icon_id,
+                text=f"Quick Create Default {AuthoringData.data['ifc_element_type']}",
+            )
+            op.ifc_element_type = AuthoringData.data["ifc_element_type"]
 
     @classmethod
     def draw_add_object(cls, context):
+        ui_context = str(context.region.type)
+        if not AuthoringData.data["ifc_element_type"]:
+            row = cls.layout.row(align=True)
+            prop_with_search(row, cls.props, "ifc_class", text="Type Class" if ui_context != "TOOL_HEADER" else "")
+        if AuthoringData.data["relating_type_id"]:
+            row = cls.layout.row(align=True)
+            box = row.box()
+            # This trick creates a fake dropdown
+            row2 = box.row(align=True)
+            row2.operator(
+                "bim.launch_type_manager",
+                icon="FILE_3D",
+                text=AuthoringData.data["relating_type_name"],
+                emboss=False,
+            )
+            row2.operator(
+                "bim.launch_type_manager",
+                icon="DOWNARROW_HLT",
+                text="",
+                emboss=False,
+            )
+            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+            op = row.operator("bim.hotkey", text="Add", icon_value=custom_icon_previews["ADD"].icon_id)
+            op.hotkey = "S_A"
+        else:
+            row.label(text="No Construction Type", icon="FILE_3D")
+
+    @classmethod
+    def draw_add_object_parameters(cls, context):
         ui_context = str(context.region.type)
         row = cls.layout.row(align=True)
         if not AuthoringData.data["relating_type_id"]:
@@ -425,27 +450,6 @@ class CreateObjectUI:
         else:
             row = cls.layout.row(align=True)
             row.prop(data=cls.props, property="rl_mode", text="RL Mode" if ui_context != "TOOL_HEADER" else "RL")
-
-        if AuthoringData.data["ifc_classes"]:
-            if not AuthoringData.data["ifc_element_type"]:
-                row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
-                prop_with_search(row, cls.props, "ifc_class", text="Type Class" if ui_context != "TOOL_HEADER" else "")
-            if AuthoringData.data["relating_type_id"]:
-                row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
-                prop_with_search(
-                    row, cls.props, "relating_type_id", text="Relating Type" if ui_context != "TOOL_HEADER" else ""
-                )
-                row.operator("bim.launch_type_manager", icon=tool.Blender.TYPE_MANAGER_ICON, text="")
-                row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
-                add_layout_hotkey_operator(row, "Add", "S_A", bpy.ops.bim.add_constr_type_instance.__doc__, ui_context)
-                row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
-                (
-                    add_layout_hotkey_operator(row, "Draw", "S_P", bpy.ops.bim.draw_polyline_wall.__doc__, ui_context)
-                    if cls.props.ifc_class == "IfcWallType"
-                    else row
-                )
-            else:
-                row.label(text="No Construction Type", icon="FILE_3D")
 
     @classmethod
     def draw_thumbnail(cls):
@@ -848,7 +852,18 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             row.prop(self, "z")
 
     def hotkey_S_A(self):
-        bpy.ops.bim.add_constr_type_instance()
+        props = bpy.context.scene.BIMModelProperties
+        if bpy.context.scene.BIMGeometryProperties.mode == "ITEM":
+            bpy.ops.wm.call_menu(name="BIM_MT_add_representation_item")
+        else:
+            for obj in tool.Blender.get_selected_objects():
+                obj.select_set(False)
+            if (
+                relating_type_id := tool.Blender.get_enum_safe(props, "relating_type_id")
+            ) and tool.Model.get_usage_type(tool.Ifc.get().by_id(int(relating_type_id))) == "LAYER2":
+                bpy.ops.bim.draw_polyline_wall("INVOKE_DEFAULT")
+            else:
+                bpy.ops.bim.add_occurrence("INVOKE_DEFAULT")
 
     def hotkey_S_Q(self):
         if not bpy.context.selected_objects:
@@ -1081,12 +1096,6 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             self.props.x = self.x
             self.props.y = self.y
             self.props.z = self.z
-
-    def hotkey_S_P(self):
-        mode = bpy.context.mode
-        current_tool = bpy.context.workspace.tools.from_space_view3d_mode(mode)
-        if current_tool.idname == "bim.wall_tool":
-            bpy.ops.bim.draw_polyline_wall("INVOKE_DEFAULT")
 
     def hotkey_S_L(self):
         if AuthoringData.data["active_class"] in ("IfcOpeningElement",):

@@ -131,8 +131,13 @@ class Spatial(bonsai.core.tool.Spatial):
         tool.Blender.select_object(obj)
 
     @classmethod
-    def set_active_object(cls, obj: bpy.types.Object) -> None:
-        tool.Blender.set_active_object(obj)
+    def set_active_object(cls, obj: bpy.types.Object, selection_mode: str = "ADD") -> None:
+        if selection_mode == "ADD":
+            tool.Blender.set_active_object(obj)
+        elif selection_mode == "REMOVE":
+            tool.Blender.deselect_object(obj)
+        else:
+            tool.Blender.select_and_activate_single_object(bpy.context, obj)
 
     @classmethod
     def set_relative_object_matrix(
@@ -443,19 +448,19 @@ class Spatial(bonsai.core.tool.Spatial):
         props = bpy.context.scene.BIMSpatialDecompositionProperties
         new = props.containers.add()
         new.ifc_class = element.is_a()
-        new.name = element.Name or "Unnamed"
+        new["name"] = element.Name or "Unnamed"
         new.description = element.Description or ""
         new.long_name = element.LongName or ""
         if not element.is_a("IfcProject"):
-            ifc_file = tool.Ifc.get()
-            new.elevation = str(ifcopenshell.util.placement.get_storey_elevation(element))
+            new["elevation"] = str(ifcopenshell.util.placement.get_storey_elevation(element))
         new.is_expanded = element.id() not in cls.contracted_containers
         new.level_index = level_index
         children = ifcopenshell.util.element.get_parts(element)
         if children:
-            children_elevations = [ifcopenshell.util.placement.get_storey_elevation(el) for el in children]
-            children_names = [el.Name or "" for el in children]
-            children = natsorted(children, key=dict(zip(children, tuple(zip(children_elevations, children_names)))).get)
+            children = natsorted(
+                children,
+                key=lambda element: (ifcopenshell.util.placement.get_storey_elevation(element), element.Name),
+            )
         new.has_children = bool(children)
         new.ifc_definition_id = element.id()
         if new.is_expanded:

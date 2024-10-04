@@ -79,7 +79,7 @@ class RemoveStyle(bpy.types.Operator, tool.Ifc.Operator):
     style: bpy.props.IntProperty()
 
     def _execute(self, context):
-        core.remove_style(tool.Ifc, tool.Style, style=tool.Ifc.get().by_id(self.style))
+        core.remove_style(tool.Ifc, tool.Style, style=tool.Ifc.get().by_id(self.style), reload_styles_ui=True)
 
 
 class AddStyle(bpy.types.Operator, tool.Ifc.Operator):
@@ -98,7 +98,7 @@ class UnlinkStyle(bpy.types.Operator, tool.Ifc.Operator):
     bl_description = (
         "Unlink Blender material from it's linked IFC style.\n\n"
         "You can either remove style the material is linked to from IFC or keep it. "
-        "Note that keeping the unlinked style in IFC might lead to unpredictable issues "
+        "Note that keeping the style in IFC might lead to unpredictable issues "
         "and should be used only by advanced users"
     )
     bl_options = {"REGISTER", "UNDO"}
@@ -125,17 +125,22 @@ class UnlinkStyle(bpy.types.Operator, tool.Ifc.Operator):
             tool.Ifc.unlink(obj=material)
             return {"FINISHED"}
 
+        # Create a copy that will be removed / left unassigned
+        # and leave user with unlinked original material.
+        #
+        # Note should_delete=False creates a weird session state
+        # when style is assigned to geometry in IFC
+        # but mesh material is using some non-IFC Blender material instead.
+        # In this case we still create a material copy and relink style to it,
+        # so it will be still safe to assume that get_object(surface_style) is not None
+        # saving us from possible errors.
+        material_copy = material.copy()
+        tool.Ifc.unlink(element=style)
+        tool.Ifc.link(style, material_copy)
         if self.should_delete:
-            # Create a copy that will be removed
-            # and leave user with unlinked original material.
-            # It's needed so we don't need to search everywhere original
-            # material was used and replace it with the unlinked version.
-            material_copy = material.copy()
-            tool.Ifc.unlink(element=style)
-            tool.Ifc.link(style, material_copy)
             core.remove_style(tool.Ifc, tool.Style, style)
         else:
-            tool.Ifc.unlink(element=style)
+            material_copy.use_fake_user = True
 
         # Ensure there won't be any style sync on project save:
         # bim.update_representation would create new IfcSurfaceStyle
@@ -464,6 +469,7 @@ class LoadStyles(bpy.types.Operator):
     def execute(self, context):
         style_type = self.style_type if self.style_type else context.scene.BIMStylesProperties.style_type
         core.load_styles(tool.Style, style_type=style_type)
+        bonsai.bim.handler.refresh_ui_data()
         return {"FINISHED"}
 
 

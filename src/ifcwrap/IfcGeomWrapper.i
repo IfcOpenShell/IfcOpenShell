@@ -253,6 +253,7 @@ namespace {
 %include "../serializers/WavefrontObjSerializer.h"
 %include "../serializers/XmlSerializer.h"
 %include "../serializers/GltfSerializer.h"
+%include "../serializers/TtlWktSerializer.h"
 
 %extend ifcopenshell::geometry::taxonomy::style {
 	size_t instance_id() const {
@@ -647,6 +648,10 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 		return vector_to_buffer(self->item_ids());
 	}
 
+	std::pair<const char*, size_t> edges_item_ids_buffer() const {
+		return vector_to_buffer(self->edges_item_ids());
+	}
+
 	std::pair<const char*, size_t> verts_buffer() const {
 		return vector_to_buffer(self->verts());
 	}
@@ -703,6 +708,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
         edges_buffer = property(edges_buffer)
         material_ids_buffer = property(material_ids_buffer)
         item_ids_buffer = property(item_ids_buffer)
+        edges_item_ids_buffer = property(edges_item_ids_buffer)
         verts_buffer = property(verts_buffer)
         normals_buffer = property(normals_buffer)
         colors_buffer = property(colors_buffer)
@@ -922,7 +928,10 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 
 			IfcGeom::BRepElement* brep = kernel.create_brep_for_representation_and_product(ifc_representation, product);
 			if (!brep) {
-				throw IfcParse::IfcException("Failed to process shape");
+				std::ostringstream oss_repr, oss_product;
+				ifc_representation->toString(oss_repr);
+				product->toString(oss_product);
+				throw IfcParse::IfcException("Failed to process shape. Product: " + oss_product.str() + ", representation: " + oss_repr.str());
 			}
 			if (settings.get<ifcopenshell::geometry::settings::IteratorOutput>().get() == ifcopenshell::geometry::settings::SERIALIZED) {
 				IfcGeom::SerializedElement* serialization = new IfcGeom::SerializedElement(*brep);
@@ -952,7 +961,9 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 					try {
 						shapes = kernel.convert(instance);
 					} catch (...) {
-						throw IfcParse::IfcException("Failed to process shape");
+						std::ostringstream oss;
+						instance->toString(oss);
+						throw IfcParse::IfcException("Failed to process shape. Instance: " + oss.str());
 					}
 
 					IfcGeom::Representation::BRep brep(settings, instance->declaration().name(), to_locale_invariant_string(instance->as<IfcUtil::IfcBaseEntity>()->id()), shapes);

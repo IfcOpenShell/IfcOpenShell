@@ -768,17 +768,26 @@ def get_elements_by_style(
     inverses = list(ifc_file.get_inverse(style))
     while inverses:
         inverse = inverses.pop()
-        if inverse.is_a("IfcPresentationStyleAssignment"):
+        inverse_class = inverse.is_a()
+        # IfcPresentationStyleAssignment for < IFC4X3.
+        # IfcFillAreaStyleHatching->IfcFillAreaStyle only for IfcCurveStyle.
+        # IfcFillAreaStyleTiles->IfcFillAreaStyle is not restricted to IfcCurveStyle.
+        if inverse_class in (
+            "IfcPresentationStyleAssignment",
+            "IfcFillAreaStyleHatching",
+            "IfcFillAreaStyle",
+            "IfcFillAreaStyleTiles",
+        ):
             inverses.extend(ifc_file.get_inverse(inverse))
             continue
         if not inverse.is_a("IfcStyledItem"):
             continue
-        if inverse.Item:
-            [
-                results.update(get_elements_by_representation(ifc_file, i))
-                for i in ifc_file.get_inverse(inverse.Item)
-                if i.is_a("IfcShapeRepresentation")
-            ]
+        if geometry_item := inverse.Item:
+            for inverse_ in ifc_file.get_inverse(geometry_item):
+                if inverse_.is_a("IfcShapeRepresentation"):
+                    results.update(get_elements_by_representation(ifc_file, inverse_))
+            # IfcFillAreaStyleTiles requires .Item to be set.
+            inverses.extend(ifc_file.get_inverse(inverse))
         else:
             styled_reps = [i for i in ifc_file.get_inverse(inverse) if i.is_a("IfcStyledRepresentation")]
             for styled_rep in styled_reps:
@@ -1340,6 +1349,11 @@ def get_referenced_elements(reference: ifcopenshell.entity_instance) -> set[ifco
     return related_objects
 
 
+def replace_element(element: ifcopenshell.entity_instance, replacement: ifcopenshell.entity_instance) -> None:
+    for inverse in element.file:
+        replace_attribute(inverse, element, replacement)
+
+
 def replace_attribute(element: ifcopenshell.entity_instance, old: Any, new: Any) -> None:
     for i, attribute_value in enumerate(element):
         if has_element_reference(attribute_value, old):
@@ -1630,3 +1644,27 @@ def copy_deep(
         else:
             new[i] = attribute
     return new
+
+
+def has_property(product: ifcopenshell.entity_instance, property_name: str) -> bool:
+    """
+    Check if a product has a property with a given name.
+
+    :param product: The IFC product
+    :type product: ifcopenshell.entity_instance
+    :param property_name: The property name
+    :type property_name: str
+    :return: True if the product has the property, False otherwise
+    :rtype: bool
+
+    Example:
+
+    .. code:: python
+
+        product = file.by_type("IfcWall")[0]
+        has_property = ifcopenshell.util.element.has_property(product, "NetArea")
+    """
+    if not property_name:
+        return True
+    qtos = get_psets(product, qtos_only=True)
+    return any(property_name in quantities.keys() for quantities in qtos.values())

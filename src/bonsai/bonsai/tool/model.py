@@ -281,7 +281,10 @@ class Model(bonsai.core.tool.Model):
         if obj is None:
             obj = bpy.data.objects.new("Profile", mesh)
         else:
+            old_data = obj.data
             obj.data = mesh
+            if old_data and not old_data.users:
+                bpy.data.meshes.remove(old_data)
 
         for arc in cls.arcs:
             group = obj.vertex_groups.new(name="IFCARCINDEX")
@@ -553,7 +556,26 @@ class Model(bonsai.core.tool.Model):
         if material:
             if material.is_a("IfcMaterialLayerSetUsage"):
                 return f"LAYER{material.LayerSetDirection[-1]}"
+            elif material.is_a("IfcMaterialLayerSet"):
+                axis = ifcopenshell.util.element.get_pset(element, "EPset_Parametric", "LayerSetDirection")
+                if axis is None:
+                    if element.is_a() in ["IfcSlabType", "IfcRoofType", "IfcRampType", "IfcPlateType"]:
+                        axis = "AXIS3"
+                    else:
+                        axis = "AXIS2"
+                return f"LAYER{axis[-1]}"
             elif material.is_a("IfcMaterialProfileSetUsage"):
+                # TODO: remove after we support editing profile usages with IfcRevolvedAreaSolid.
+                # Revolved area check should happen inside bim.enable_editing_extrusion_axis
+                # but keep it here to trigger import_representation_items,
+                # so users will be able to at least move IfcRevolvedAreaSolid, until there will be a full support.
+                body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+                if body and any(
+                    i["item"].is_a("IfcRevolvedAreaSolid") for i in ifcopenshell.util.representation.resolve_items(body)
+                ):
+                    return
+                return "PROFILE"
+            elif material.is_a("IfcMaterialProfileSet"):
                 return "PROFILE"
 
     @classmethod
@@ -845,6 +867,14 @@ class Model(bonsai.core.tool.Model):
             obj.preview.image_pixels_float = pixels
 
         AuthoringData.type_thumbnails[element.id()] = obj.preview.icon_id
+
+    BBIM_PARAMETRIC_PSETS = (
+        "BBIM_Window",
+        "BBIM_Door",
+        "BBIM_Roof",
+        "BBIM_Railing",
+        "BBIM_Stair",
+    )
 
     @classmethod
     def get_modeling_bbim_pset_data(cls, object, pset_name):

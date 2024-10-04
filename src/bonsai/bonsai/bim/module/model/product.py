@@ -17,6 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import bmesh
 import mathutils
 import numpy as np
 import ifcopenshell
@@ -30,33 +31,19 @@ import ifcopenshell.util.unit
 import bonsai.tool as tool
 import bonsai.core.aggregate
 import bonsai.core.type
+import bonsai.core.root
 import bonsai.core.geometry
 import bonsai.core.spatial
 from . import wall, slab, profile, mep
 from bonsai.bim.ifc import IfcStore
+from bonsai.bim.helper import get_enum_items
 from bonsai.bim.module.model.data import AuthoringData
+from bonsai.bim.module.model.polyline import PolylineOperator
+from bonsai.bim.module.model.decorator import PolylineDecorator
 from mathutils import Vector, Matrix
 from bpy_extras.object_utils import AddObjectHelper
 import json
 from typing import Any, Union, Optional
-
-
-class EnableAddType(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.enable_add_type"
-    bl_label = "Enable Add Type"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def _execute(self, context):
-        bpy.context.scene.BIMModelProperties.is_adding_type = True
-
-
-class DisableAddType(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.disable_add_type"
-    bl_label = "Disable Add Type"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def _execute(self, context):
-        bpy.context.scene.BIMModelProperties.is_adding_type = False
 
 
 class AddEmptyType(bpy.types.Operator, AddObjectHelper):
@@ -80,49 +67,184 @@ class AddDefaultType(bpy.types.Operator, tool.Ifc.Operator):
     ifc_element_type: bpy.props.StringProperty()
 
     def _execute(self, context):
-        props = context.scene.BIMModelProperties
-        ifc_file = tool.Ifc.get()
-        props.type_class = self.ifc_element_type
+        props = context.scene.BIMRootProperties
+        props.ifc_product = "IfcElementType"
+        props.ifc_class = self.ifc_element_type
         if self.ifc_element_type == "IfcWallType":
-            if ifc_file.schema == "IFC2X3":
-                props.type_predefined_type = "STANDARD"
+            if tool.Ifc.get().schema == "IFC2X3":
+                props.ifc_predefined_type = "STANDARD"
             else:
-                props.type_predefined_type = "SOLIDWALL"
-            props.type_template = "LAYERSET_AXIS2"
+                props.ifc_predefined_type = "SOLIDWALL"
+            props.representation_template = "LAYERSET_AXIS2"
         elif self.ifc_element_type == "IfcSlabType":
-            props.type_predefined_type = "FLOOR"
-            props.type_template = "LAYERSET_AXIS3"
+            props.ifc_predefined_type = "FLOOR"
+            props.representation_template = "LAYERSET_AXIS3"
         elif self.ifc_element_type == "IfcDoorType":
-            props.type_predefined_type = "DOOR"
-            props.type_template = "DOOR"
+            props.ifc_predefined_type = "DOOR"
+            props.representation_template = "DOOR"
         elif self.ifc_element_type == "IfcWindowType":
-            props.type_predefined_type = "WINDOW"
-            props.type_template = "WINDOW"
+            props.ifc_predefined_type = "WINDOW"
+            props.representation_template = "WINDOW"
         elif self.ifc_element_type == "IfcColumnType":
-            props.type_predefined_type = "COLUMN"
-            props.type_template = "PROFILESET"
+            props.ifc_predefined_type = "COLUMN"
+            props.representation_template = "PROFILESET"
         elif self.ifc_element_type == "IfcBeamType":
-            props.type_predefined_type = "BEAM"
-            props.type_template = "PROFILESET"
+            props.ifc_predefined_type = "BEAM"
+            props.representation_template = "PROFILESET"
         elif self.ifc_element_type == "IfcDuctSegmentType":
-            props.type_predefined_type = "RIGIDSEGMENT"
-            props.type_template = "FLOW_SEGMENT_RECTANGULAR"
+            props.ifc_predefined_type = "RIGIDSEGMENT"
+            props.representation_template = "FLOW_SEGMENT_RECTANGULAR"
         elif self.ifc_element_type == "IfcPipeSegmentType":
-            props.type_predefined_type = "RIGIDSEGMENT"
-            props.type_template = "FLOW_SEGMENT_CIRCULAR"
-        bpy.ops.bim.add_type()
+            props.ifc_predefined_type = "RIGIDSEGMENT"
+            props.representation_template = "FLOW_SEGMENT_CIRCULAR"
+        bpy.ops.bim.add_element()
+
+
+class AddOccurrence(bpy.types.Operator, PolylineOperator):
+    bl_idname = "bim.add_occurrence"
+    bl_label = "Add Occurrence"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.space_data.type == "VIEW_3D"
+
+    def __init__(self):
+        super().__init__()
+
+    def create_occurrence(self, context, event):
+        if not self.relating_type:
+            return {"FINISHED"}
+
+        result = tool.Snap.insert_polyline_point(self.input_ui)
+        if result:
+            self.report({"WARNING"}, result)
+
+        # TODO: when this workflow matures a bit, recode it so it doesn't rely on selection and cursor
+        # Select snapped object so we can insert doors and windows
+        detected_snaps = tool.Snap.detect_snapping_points(context, event, self.objs_2d_bbox, self.tool_state)
+        snap_obj = None
+        for snap in detected_snaps:
+            if snap_obj := snap.get("Object", None):
+                try:
+                    # During undo, sometimes objects get invalidated.
+                    # This is a safe way to check for invalid objects.
+                    snap_obj[0].name
+                    snap_obj = bpy.data.objects.get(snap_obj[0].name)
+                    snap_obj.name
+                    tool.Blender.select_and_activate_single_object(context, snap_obj)
+                    break
+                except:
+                    pass
+
+        point = context.scene.BIMPolylineProperties.polyline_point[0]
+        context.scene.cursor.location = Vector((point.x, point.y, point.z))
+        tool.Snap.clear_polyline()
+
+        bpy.ops.bim.add_constr_type_instance("INVOKE_DEFAULT")
+
+        if snap_obj:
+            snap_obj.select_set(False)
+
+    def modal(self, context, event):
+        # Ensure state of BIM tool props is valid
+        props = bpy.context.scene.BIMModelProperties
+        relating_type_id = tool.Blender.get_enum_safe(props, "relating_type_id")
+        relating_type_id_data = AuthoringData.data["relating_type_id"]
+        if not relating_type_id and relating_type_id_data:
+            props.relating_type_id = relating_type_id_data[0][0]
+
+        self.relating_type = None
+        relating_type_id = props.relating_type_id
+        if relating_type_id:
+            self.relating_type = tool.Ifc.get().by_id(int(relating_type_id))
+
+        if not self.relating_type:
+            self.report({"WARNING"}, "You need to select a type.")
+            PolylineDecorator.uninstall()
+            tool.Blender.update_viewport()
+            return {"FINISHED"}
+
+        PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
+        tool.Blender.update_viewport()
+
+        if event.type in {"MIDDLEMOUSE", "WHEELUPMOUSE", "WHEELDOWNMOUSE"}:
+            self.handle_mouse_move(context, event)
+            return {"PASS_THROUGH"}
+
+        self.handle_instructions(context)
+        self.handle_mouse_move(context, event)
+        self.choose_axis(event)
+        self.handle_snap_selection(context, event)
+
+        if not self.tool_state.is_input_on and event.value == "RELEASE" and event.type in {"RIGHTMOUSE"}:
+            context.workspace.status_text_set(text=None)
+            PolylineDecorator.uninstall()
+            context.scene.BIMPolylineProperties.product_preview.clear()
+            tool.Snap.clear_polyline()
+            tool.Blender.update_viewport()
+            return {"FINISHED"}
+
+        if event.value == "RELEASE" and event.type == "LEFTMOUSE":
+            self.create_occurrence(context, event)
+
+        cancel = self.handle_cancelation(context, event)
+        if cancel is not None:
+            context.scene.BIMPolylineProperties.product_preview.clear()
+            return cancel
+
+        return {"RUNNING_MODAL"}
+
+    def invoke(self, context, event):
+        super().invoke(context, event)
+        self.tool_state.use_default_container = True
+        self.tool_state.plane_method = "XY"
+        return {"RUNNING_MODAL"}
 
 
 class AddConstrTypeInstance(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_constr_type_instance"
-    bl_label = "Add"
+    bl_label = "Add Type Occurrence"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Add Type Instance"
     relating_type_id: bpy.props.IntProperty(default=0, options={"SKIP_SAVE"})
     from_invoke: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+    representation_template: bpy.props.EnumProperty(
+        name="Representation Template",
+        items=(
+            ("EMPTY", "No Geometry", "Start with an empty object"),
+            None,
+            (
+                "MESH",
+                "Custom Tessellation",
+                "Create a basic tessellated or faceted cube",
+            ),
+            (
+                "EXTRUSION",
+                "Custom Extruded Solid",
+                "An extrusion from an arbitrary profile",
+            ),
+        ),
+    )
 
     def invoke(self, context, event):
+        props = context.scene.BIMModelProperties
+        relating_type_id = self.relating_type_id or props.relating_type_id
+        if (
+            relating_type_id
+            and (relating_type := tool.Ifc.get().by_id(int(relating_type_id)))
+            and not relating_type.RepresentationMaps
+        ):
+            if (material := ifcopenshell.util.element.get_material(relating_type)) and (
+                material.is_a("IfcMaterialProfileSet") or material.is_a("IfcMaterialLayerSet")
+            ):
+                return self.execute(context)
+            return context.window_manager.invoke_props_dialog(self)
         return self.execute(context)
+
+    def draw(self, context):
+        row = self.layout.row()
+        row.prop(self, "representation_template", text="")
 
     def _execute(self, context):
         props = context.scene.BIMModelProperties
@@ -159,49 +281,100 @@ class AddConstrTypeInstance(bpy.types.Operator, tool.Ifc.Operator):
             if self.generate_layered_element(ifc_class, relating_type):
                 tool.Blender.select_and_activate_single_object(context, context.selected_objects[-1])
                 return {"FINISHED"}
+        elif not relating_type.RepresentationMaps:
+            mesh = None if self.representation_template == "EMPTY" else bpy.data.meshes.new("Mesh")
+            obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(relating_type, instance_class), mesh)
+            obj.location = bpy.context.scene.cursor.location
+            element = bonsai.core.root.assign_class(
+                tool.Ifc,
+                tool.Collector,
+                tool.Root,
+                obj=obj,
+                ifc_class=instance_class,
+                should_add_representation=False,
+            )
+            bonsai.core.type.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
+
+            rprops = context.scene.BIMRootProperties
+            ifc_context = None
+            if get_enum_items(rprops, "contexts", context):
+                ifc_context = int(rprops.contexts or "0") or None
+                if ifc_context:
+                    ifc_context = tool.Ifc.get().by_id(ifc_context)
+
+            if self.representation_template == "EMPTY" or not ifc_context:
+                pass
+            elif self.representation_template == "MESH":
+                builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
+                unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+                bm = bmesh.new()
+                bmesh.ops.create_cube(bm, size=0.5)
+                verts = [v.co / unit_scale for v in bm.verts]
+                faces = [[v.index for v in p.verts] for p in bm.faces]
+                item = builder.mesh(verts, faces)
+                bm.free()
+                representation = builder.get_representation(ifc_context, [item])
+                ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), element, representation)
+                bonsai.core.geometry.switch_representation(
+                    tool.Ifc,
+                    tool.Geometry,
+                    obj=obj,
+                    representation=representation,
+                    should_reload=True,
+                    is_global=True,
+                    should_sync_changes_first=False,
+                )
+            elif self.representation_template == "EXTRUSION":
+                builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
+                unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+                curve = builder.rectangle(size=Vector((0.5, 0.5)) / unit_scale)
+                item = builder.extrude(curve, magnitude=0.5 / unit_scale)
+                representation = builder.get_representation(ifc_context, [item])
+                ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), element, representation)
+                bonsai.core.geometry.switch_representation(
+                    tool.Ifc,
+                    tool.Geometry,
+                    obj=obj,
+                    representation=representation,
+                    should_reload=True,
+                    is_global=True,
+                    should_sync_changes_first=False,
+                )
+            return
 
         building_obj = None
         if len(context.selected_objects) == 1 and context.active_object:
             building_obj = context.active_object
             building_element = tool.Ifc.get_entity(building_obj)
 
-        # A cube
-        verts = [
-            Vector((-1, -1, -1)),
-            Vector((-1, -1, 1)),
-            Vector((-1, 1, -1)),
-            Vector((-1, 1, 1)),
-            Vector((1, -1, -1)),
-            Vector((1, -1, 1)),
-            Vector((1, 1, -1)),
-            Vector((1, 1, 1)),
-        ]
-        edges = []
-        faces = [
-            [0, 1, 3, 2],
-            [2, 3, 7, 6],
-            [6, 7, 5, 4],
-            [4, 5, 1, 0],
-            [2, 6, 4, 0],
-            [7, 3, 1, 5],
-        ]
         mesh = bpy.data.meshes.new(name="Instance")
-        mesh.from_pydata(verts, edges, faces)
         obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(relating_type, instance_class), mesh)
 
         obj.location = context.scene.cursor.location
 
-        bpy.ops.bim.assign_class(obj=obj.name, ifc_class=instance_class)
-        tool.Blender.remove_data_block(mesh)  # Remove "Instance" mesh
+        element = bonsai.core.root.assign_class(
+            tool.Ifc, tool.Collector, tool.Root, obj=obj, ifc_class=instance_class, should_add_representation=False
+        )
 
-        mesh_data = obj.data
         element = tool.Ifc.get_entity(obj)
         bonsai.core.type.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
-        if obj.data != mesh_data:  # remove orphaned mesh from "bim.assign_class"
-            tool.Blender.remove_data_block(mesh_data)
+
+        representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+        if not representation and element.Representation:
+            representation = element.Representation.Representations[0]
+
+        if representation:
+            bonsai.core.geometry.switch_representation(
+                tool.Ifc,
+                tool.Geometry,
+                obj=obj,
+                representation=representation,
+                should_reload=True,
+                is_global=True,
+                should_sync_changes_first=False,
+            )
 
         # Update required as core.type.assign_type may change obj.data
-        # TODO: This is inefficient. It literally creates a mesh, then potentially removes it.
         context.view_layer.update()
 
         if (
@@ -273,28 +446,19 @@ class AddConstrTypeInstance(bpy.types.Operator, tool.Ifc.Operator):
 
     @staticmethod
     def generate_layered_element(ifc_class: str, relating_type: ifcopenshell.entity_instance) -> bool:
-        layer_set_direction = None
-
-        parametric = ifcopenshell.util.element.get_psets(relating_type).get("EPset_Parametric")
-        if parametric:
-            layer_set_direction = parametric.get("LayerSetDirection", layer_set_direction)
-        if layer_set_direction is None:
-            if ifc_class in ["IfcSlabType", "IfcRoofType", "IfcRampType", "IfcPlateType"]:
-                layer_set_direction = "AXIS3"
-            else:
-                layer_set_direction = "AXIS2"
+        usage = tool.Model.get_usage_type(relating_type)
 
         obj = None
-        if layer_set_direction == "AXIS3":
+        if usage == "LAYER3":
             obj = slab.DumbSlabGenerator(relating_type).generate()
-        elif layer_set_direction == "AXIS2":
+        elif usage == "LAYER2":
             obj = wall.DumbWallGenerator(relating_type).generate()
         else:
             pass  # Dumb block generator? Eh? :)
 
         if obj:
             material = ifcopenshell.util.element.get_material(tool.Ifc.get_entity(obj))
-            material.LayerSetDirection = layer_set_direction
+            material.LayerSetDirection = f"AXIS{usage[-1]}"
             return True
         return False
 
@@ -307,9 +471,21 @@ class ChangeTypePage(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         props = context.scene.BIMModelProperties
-        bpy.ops.bim.load_type_thumbnails(ifc_class=props.type_class, offset=9 * (self.page - 1), limit=9)
+        bpy.ops.bim.load_type_thumbnails(ifc_class=props.ifc_class, offset=9 * (self.page - 1), limit=9)
         props.type_page = self.page
         return {"FINISHED"}
+
+
+class SetActiveType(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.set_active_type"
+    bl_label = "Set Active Type"
+    bl_options = {"REGISTER"}
+    relating_type: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        props = context.scene.BIMModelProperties
+        props.relating_type_id = str(self.relating_type)
+        context.window.screen = context.window.screen  # Closes the type manager popup
 
 
 class AlignProduct(bpy.types.Operator):

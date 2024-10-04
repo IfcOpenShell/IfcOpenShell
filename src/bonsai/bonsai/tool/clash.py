@@ -24,12 +24,13 @@ import bonsai.core.tool
 import bonsai.tool as tool
 from contextlib import contextmanager
 from mathutils import Vector
+from ifcclash import ifcclash
 
 
 class Clash(bonsai.core.tool.Clash):
 
     @classmethod
-    def export_clash_sets(cls):
+    def export_clash_sets(cls) -> list[ifcclash.ClashSet]:
         clash_sets = []
         for clash_set in bpy.context.scene.BIMClashProperties.clash_sets:
             a = []

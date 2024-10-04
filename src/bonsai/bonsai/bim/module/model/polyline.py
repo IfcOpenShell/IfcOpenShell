@@ -210,7 +210,7 @@ class PolylineOperator:
             PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
             tool.Blender.update_viewport()
 
-        if event.value == "RELEASE" and event.type in {"D", "A"}:
+        if event.value == "RELEASE" and event.type == "D":
             self.recalculate_inputs(context)
             self.tool_state.mode = "Edit"
             self.tool_state.is_input_on = True
@@ -250,7 +250,9 @@ class PolylineOperator:
 
     def handle_inserting_polyline(self, context, event):
         if event.value == "RELEASE" and event.type == "LEFTMOUSE":
-            tool.Snap.insert_polyline_point(self.input_ui)
+            result = tool.Snap.insert_polyline_point(self.input_ui)
+            if result:
+                self.report({"WARNING"}, result)
             tool.Blender.update_viewport()
 
         if event.value == "PRESS" and event.type == "C":
@@ -265,7 +267,9 @@ class PolylineOperator:
         ):
             is_valid = self.recalculate_inputs(context)
             if is_valid:
-                tool.Snap.insert_polyline_point(self.input_ui)
+                result = tool.Snap.insert_polyline_point(self.input_ui)
+                if result:
+                    self.report({"WARNING"}, result)
 
             self.tool_state.mode = "Mouse"
             self.tool_state.is_input_on = False

@@ -32,12 +32,6 @@ def get_ifc_class(self, context):
     return AuthoringData.data["ifc_classes"]
 
 
-def get_type_class(self, context):
-    if not AuthoringData.is_loaded:
-        AuthoringData.load()
-    return AuthoringData.data["type_class"]
-
-
 def get_boundary_class(self, context):
     if not AuthoringData.is_loaded:
         AuthoringData.load()
@@ -50,18 +44,6 @@ def get_relating_type_id(self, context):
     return AuthoringData.data["relating_type_id"]
 
 
-def get_type_predefined_type(self, context):
-    if not AuthoringData.is_loaded:
-        AuthoringData.load()
-    return AuthoringData.data["type_predefined_type"]
-
-
-def get_type_template(self, context):
-    if not AuthoringData.is_loaded:
-        AuthoringData.load()
-    return AuthoringData.data["type_template"]
-
-
 def update_ifc_class(self, context):
     bpy.ops.bim.load_type_thumbnails(ifc_class=self.ifc_class)
     AuthoringData.data["relating_type_id"] = AuthoringData.relating_type_id()
@@ -69,23 +51,16 @@ def update_ifc_class(self, context):
     if tool.Blender.get_enum_safe(self, "relating_type_id") is None:
         self["relating_type_id"] = 0
 
-
-def update_type_class(self, context):
     AuthoringData.data["total_types"] = AuthoringData.total_types()
     AuthoringData.data["total_pages"] = AuthoringData.total_pages()
     AuthoringData.data["prev_page"] = AuthoringData.prev_page()
     AuthoringData.data["next_page"] = AuthoringData.next_page()
     AuthoringData.data["paginated_relating_types"] = AuthoringData.paginated_relating_types()
-    AuthoringData.data["type_predefined_type"] = AuthoringData.type_predefined_type()
-    AuthoringData.data["type_template"] = AuthoringData.type_template()
-
-    type_class = self.type_class
-    if (type_class, type_class, "") in get_ifc_class(self, context):
-        self.ifc_class = type_class
 
 
 def update_relating_type_id(self, context):
     AuthoringData.data["relating_type_id"] = AuthoringData.relating_type_id()
+    AuthoringData.data["relating_type_name"] = AuthoringData.relating_type_name()
     AuthoringData.data["type_thumbnail"] = AuthoringData.type_thumbnail()
     AuthoringData.data["predefined_type"] = AuthoringData.predefined_type()
 
@@ -111,9 +86,9 @@ class BIMModelProperties(PropertyGroup):
     relating_type_id: bpy.props.EnumProperty(
         items=get_relating_type_id, name="Relating Type", update=update_relating_type_id
     )
+    menu_relating_type_id: bpy.props.IntProperty()
     icon_id: bpy.props.IntProperty()
     updating: bpy.props.BoolProperty(default=False)
-    is_adding_type: bpy.props.BoolProperty(default=False)
     occurrence_name_style: bpy.props.EnumProperty(
         items=[("CLASS", "By Class", ""), ("TYPE", "By Type", ""), ("CUSTOM", "Custom", "")],
         name="Occurrence Name Style",
@@ -172,11 +147,6 @@ class BIMModelProperties(PropertyGroup):
     rl3: bpy.props.FloatProperty(name="RL", default=1, subtype="DISTANCE", description="Z offset for space calculation")
     x_angle: bpy.props.FloatProperty(name="X Angle", default=0, subtype="ANGLE", min=-pi / 180 * 89, max=pi / 180 * 89)
     type_page: bpy.props.IntProperty(name="Type Page", default=1, update=update_type_page)
-    # fmt: off
-    type_template: bpy.props.EnumProperty(items=get_type_template, name="Type Template", default=0)
-    # fmt: on
-    type_class: bpy.props.EnumProperty(items=get_type_class, name="IFC Class", update=update_type_class)
-    type_predefined_type: bpy.props.EnumProperty(items=get_type_predefined_type, name="Predefined Type", default=None)
     type_name: bpy.props.StringProperty(name="Name", default="TYPEX")
     boundary_class: bpy.props.EnumProperty(items=get_boundary_class, name="Boundary Class")
 
@@ -775,17 +745,18 @@ class PolylinePoint(PropertyGroup):
     x: bpy.props.FloatProperty(name="X")
     y: bpy.props.FloatProperty(name="Y")
     z: bpy.props.FloatProperty(name="Z")
-
-
-class PolylineMeasurement(PropertyGroup):
     dim: bpy.props.StringProperty(name="Dimension")
     angle: bpy.props.StringProperty(name="Angle")
     position: bpy.props.FloatVectorProperty(name="Decorator Position", size=3)
+
+
+class MeasurePolyline(PropertyGroup):
+    polyline_point: bpy.props.CollectionProperty(type=PolylinePoint)
 
 
 class BIMPolylineProperties(PropertyGroup):
     snap_mouse_point: bpy.props.CollectionProperty(type=SnapMousePoint)
     snap_mouse_ref: bpy.props.CollectionProperty(type=SnapMousePoint)
     polyline_point: bpy.props.CollectionProperty(type=PolylinePoint)
-    polyline_measurement: bpy.props.CollectionProperty(type=PolylineMeasurement)
     product_preview: bpy.props.CollectionProperty(type=PolylinePoint)
+    measure_polyline: bpy.props.CollectionProperty(type=MeasurePolyline)

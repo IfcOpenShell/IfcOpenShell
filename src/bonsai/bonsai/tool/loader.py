@@ -19,9 +19,10 @@
 from __future__ import annotations
 import os
 import re
-import math
 import bpy
+import math
 import bmesh
+import logging
 import ifcopenshell.geom
 import ifcopenshell.util.element
 import ifcopenshell.util.geolocation
@@ -55,6 +56,14 @@ class Loader(bonsai.core.tool.Loader):
     @classmethod
     def set_unit_scale(cls, unit_scale: float) -> None:
         cls.unit_scale = unit_scale
+
+    @classmethod
+    def load_settings(cls) -> None:
+        logger = logging.getLogger("ImportIFC")
+        cls.settings = bonsai.bim.import_ifc.IfcImportSettings.factory(bpy.context, None, logger)
+        cls.settings.contexts = ifcopenshell.util.representation.get_prioritised_contexts(tool.Ifc.get())
+        cls.settings.context_settings = cls.create_settings()
+        cls.settings.gross_context_settings = cls.create_settings(is_gross=True)
 
     @classmethod
     def set_settings(cls, settings: bonsai.bim.import_ifc.IfcImportSettings) -> None:
@@ -467,23 +476,39 @@ class Loader(bonsai.core.tool.Loader):
                 blender_material.node_tree.links.new(coord.outputs["UV"], node.inputs["Vector"])
 
     @classmethod
-    def load_indexed_colour_map(cls, representation: ifcopenshell.entity_instance, mesh: bpy.types.Mesh) -> None:
+    def load_indexed_colour_map(
+        cls, representation_or_item: ifcopenshell.entity_instance, mesh: bpy.types.Mesh
+    ) -> None:
         """Ensure indexed colour map is loaded for representation if it's available.
 
         Method doesn't support elements with openings, see #5405.
 
-        :param representation: IfcShapeRepresentation of any type. Representation may not have an indexed colour map,
+        :param representation: IfcShapeRepresentation or IfcRepresentationItem of any type.
+            Representation may not have an indexed colour map,
             method will automatically check if it does and will skip it otherwise.
 
         :raises AssertionError: If mesh doesn't match the representation exactly, which usually occurs
             if element geometry is altered by openings.
         """
-        if representation.RepresentationType != "Tessellation":
-            return
+
+        is_representation = representation_or_item.is_a("IfcShapeRepresentation")
+
+        if is_representation:
+            if representation_or_item.RepresentationType != "Tessellation":
+                return
+            items = representation_or_item.Items
+        else:
+            items = [representation_or_item]
 
         colours = []
-        for item in representation.Items:
+        for item in items:
             if not item.is_a("IfcTessellatedFaceSet"):
+                continue
+            # It's unclear what has priority, styled by item or indexed maps
+            # Given that indexed maps currently are super expensive, I'll prioritise styled by item
+            # May lead to issues if external style is using vertex colors
+            # but probably don't need to worry about until we add a way save vertex colors to indexed map in BBIM.
+            if item.StyledByItem:
                 continue
             colours.extend(item.HasColours)
 
@@ -563,7 +588,11 @@ class Loader(bonsai.core.tool.Loader):
                 else:
                     data_index = [tex_coord_index - 1 for i in face]
                 break
-            assert data_index is not None
+
+            if data_index is None:
+                # This face may be part of another representation item
+                # Or we couldn't match it due to georeferencing.
+                continue
 
             # apply uv to each loop
             for loop, i in zip(bface.loops, data_index):
@@ -610,6 +639,7 @@ class Loader(bonsai.core.tool.Loader):
             settings.set("apply-default-materials", False)
             settings.set("keep-bounding-boxes", True)
             settings.set("layerset-first", True)
+            # settings.set("triangulation-type", ifcopenshell.ifcopenshell_wrapper.POLYHEDRON_WITHOUT_HOLES)
             if is_gross:
                 settings.set("disable-opening-subtractions", True)
             results.append(settings)
@@ -773,43 +803,33 @@ class Loader(bonsai.core.tool.Loader):
 
     @classmethod
     def get_offset_point(cls, ifc_file: ifcopenshell.file) -> Union[npt.NDArray[np.float64], None]:
-        elements_checked = 0
-        # If more than these elements aren't far away, the file probably isn't
-        # absolutely positioned. We check more than 1 because sometimes users
-        # try to be clever and put "origin marker" objects.
-        element_checking_threshold = 3
-        elements = ifc_file.by_type("IfcElement")
+        # Check walls first, as they're usually cheap
+        elements = ifc_file.by_type("IfcWall")
+        elements += ifc_file.by_type("IfcElement")
 
         if ifc_file.schema not in ("IFC2X3", "IFC4"):
-            if not elements:
-                elements = ifc_file.by_type("IfcLinearPositioningElement")
-            if not elements:
-                elements = ifc_file.by_type("IfcReferent")
-            if not elements:
-                elements = ifc_file.by_type("IfcGrid")
+            elements += ifc_file.by_type("IfcLinearPositioningElement")
+            elements += ifc_file.by_type("IfcReferent")
+            elements += ifc_file.by_type("IfcGrid")
 
         if ifc_file.schema == "IFC2X3":
-            if not elements:
-                elements = ifc_file.by_type("IfcSpatialStructureElement")
+            elements += ifc_file.by_type("IfcSpatialStructureElement")
         else:
-            if not elements:
-                elements = ifc_file.by_type("IfcSpatialElement")
+            elements += ifc_file.by_type("IfcSpatialElement")
 
         for element in elements:
-            if elements_checked > element_checking_threshold:
-                return
             if not element.Representation:
                 continue
             shape = cls.create_generic_shape(element, is_gross=True)
             if not shape:
                 continue
-            elements_checked += 1
             mat = ifcopenshell.util.shape.get_shape_matrix(shape)
             point = mat @ np.array((shape.geometry.verts[0], shape.geometry.verts[1], shape.geometry.verts[2], 1.0))
             if cls.is_point_far_away(point, is_meters=True):
                 # Arbitrary origins should be to the nearest millimeter.
                 # Anything more precise is just ridiculous from a practical surveying perspective.
                 return [round(float(p), 3) / cls.unit_scale for p in point[:3]]
+            break
 
     @classmethod
     def guess_false_origin_from_elements(cls, ifc_file: ifcopenshell.file) -> None:
@@ -881,38 +901,59 @@ class Loader(bonsai.core.tool.Loader):
         return Matrix(matrix.tolist())
 
     @classmethod
-    def convert_geometry_to_mesh(cls, geometry, mesh: bpy.types.Mesh, verts=None) -> bpy.types.Mesh:
+    def convert_geometry_to_mesh(
+        cls, geometry: ifcopenshell.geom.ShapeType, mesh: bpy.types.Mesh, verts=None
+    ) -> bpy.types.Mesh:
         if verts is None:
             verts = geometry.verts
         if geometry.faces:
             num_vertices = len(verts) // 3
-            total_faces = len(geometry.faces)
-            loop_start = range(0, total_faces, 3)
-            num_loops = total_faces // 3
-            loop_total = [3] * num_loops
-            num_vertex_indices = len(geometry.faces)
 
             # See bug 3546
             # ios_edges holds true edges that aren't triangulated.
             #
             # we do `.tolist()` because Blender can't assign `np.int32` to it's custom attributes
             mesh["ios_edges"] = list(set(tuple(e) for e in ifcopenshell.util.shape.get_edges(geometry).tolist()))
-            mesh["ios_item_ids"] = ifcopenshell.util.shape.get_representation_item_ids(geometry).tolist()
+            mesh["ios_item_ids"] = ifcopenshell.util.shape.get_faces_representation_item_ids(geometry).tolist()
 
             mesh.vertices.add(num_vertices)
             mesh.vertices.foreach_set("co", verts)
-            mesh.loops.add(num_vertex_indices)
-            mesh.loops.foreach_set("vertex_index", geometry.faces)
-            mesh.polygons.add(num_loops)
-            mesh.polygons.foreach_set("loop_start", loop_start)
-            mesh.polygons.foreach_set("loop_total", loop_total)
-            mesh.polygons.foreach_set("use_smooth", [0] * total_faces)
+
+            is_triangulated = True
+            if is_triangulated:
+                total_faces = len(geometry.faces)
+                num_vertex_indices = len(geometry.faces)
+                loop_start = range(0, total_faces, 3)
+                num_loops = total_faces // 3
+                loop_total = [3] * num_loops
+
+                mesh.loops.add(num_vertex_indices)
+                mesh.loops.foreach_set("vertex_index", geometry.faces)
+                mesh.polygons.add(num_loops)
+                mesh.polygons.foreach_set("loop_start", loop_start)
+                mesh.polygons.foreach_set("loop_total", loop_total)
+                mesh.polygons.foreach_set("use_smooth", [0] * total_faces)
+            else:
+                faces_array = np.array(geometry.faces, dtype=object)
+                loop_total = tuple(len(face) for face in faces_array)
+                loop_start = np.cumsum((0,) + loop_total)[:-1]
+                vertex_index = np.concatenate(faces_array)
+
+                mesh.loops.add(len(vertex_index))
+                mesh.loops.foreach_set("vertex_index", vertex_index)
+                mesh.polygons.add(len(loop_start))
+                mesh.polygons.foreach_set("loop_start", loop_start)
+                mesh.polygons.foreach_set("loop_total", loop_total)
+                mesh.polygons.foreach_set("use_smooth", [0] * len(geometry.faces))
+
             mesh.update()
 
-            # TODO: geometry id is not always an int.
-            rep_id = geometry.id
-            if rep_id.isdigit():
-                if (rep := tool.Ifc.get().by_id(int(rep_id))) and rep.is_a("IfcShapeRepresentation"):
+            rep_str: str = geometry.id
+            if "openings" not in rep_str:
+                rep_id = rep_str.split("-", 1)[0]
+                rep = tool.Ifc.get().by_id(int(rep_id))
+                # For now, not necessary to load maps in Item mode
+                if rep.is_a("IfcShapeRepresentation"):
                     tool.Loader.load_indexed_colour_map(rep, mesh)
         else:
             e = geometry.edges
@@ -920,6 +961,12 @@ class Loader(bonsai.core.tool.Loader):
             vertices = [[v[i], v[i + 1], v[i + 2]] for i in range(0, len(v), 3)]
             edges = [[e[i], e[i + 1]] for i in range(0, len(e), 2)]
             mesh.from_pydata(vertices, edges, [])
+            # TODO: remove error handling after we update build in Bonsai.
+            try:
+                edges_item_ids = ifcopenshell.util.shape.get_edges_representation_item_ids(geometry).tolist()
+            except AttributeError:
+                edges_item_ids = []
+            mesh["ios_edges_item_ids"] = edges_item_ids
 
         mesh["ios_materials"] = [m.instance_id() for m in geometry.materials]
         mesh["ios_material_ids"] = geometry.material_ids

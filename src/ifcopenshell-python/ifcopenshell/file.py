@@ -534,18 +534,14 @@ class file:
         return [entity_instance(e, self) for e in self.wrapped_data.by_type_excl_subtypes(type)]
 
     def traverse(
-        self, inst: ifcopenshell.entity_instance, max_levels=None, breadth_first=False
+        self, inst: ifcopenshell.entity_instance, max_levels: Optional[int] = None, breadth_first: bool = False
     ) -> list[ifcopenshell.entity_instance]:
         """Get a list of all referenced instances for a particular instance including itself
 
         :param inst: The entity instance to get all sub instances
-        :type inst: ifcopenshell.entity_instance
         :param max_levels: How far deep to recursively fetch sub instances. None or -1 means infinite.
-        :type max_levels: None|int
         :param breadth_first: Whether to use breadth-first search, the default is depth-first.
-        :type max_levels: bool
         :returns: A list of ifcopenshell.entity_instance objects
-        :rtype: list[ifcopenshell.entity_instance]
         """
         if max_levels is None:
             max_levels = -1
@@ -694,3 +690,6 @@ class file:
     @staticmethod
     def from_pointer(v) -> "file":
         return file_dict.get(v)()
+
+    def to_string(self) -> str:
+        return self.wrapped_data.to_string()

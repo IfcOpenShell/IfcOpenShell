@@ -390,7 +390,7 @@ class Geometry:
     def delete_ifc_object(cls, obj): pass
     def does_representation_id_exist(cls, representation_id): pass
     def duplicate_object_data(cls, obj): pass
-    def get_cartesian_point_coordinate_offset(cls, obj): pass
+    def get_cartesian_point_offset(cls, obj): pass
     def get_element_type(cls, element): pass
     def get_elements_of_type(cls, type): pass
     def get_ifc_representation_class(cls, element, representation): pass

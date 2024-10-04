@@ -41,6 +41,12 @@ def get_ifc_predefined_types(self, context):
     return IfcClassData.data["ifc_predefined_types"]
 
 
+def get_representation_template(self, context):
+    if not IfcClassData.is_loaded:
+        IfcClassData.load()
+    return IfcClassData.data["representation_template"]
+
+
 def refresh_classes(self, context):
     enum = get_ifc_classes(self, context)
     context.scene.BIMRootProperties.ifc_class = enum[0][0]
@@ -109,12 +115,25 @@ def is_object_class_applicable(self, obj):
     return element.is_a("IfcTypeObject") == active_element.is_a("IfcTypeObject")
 
 
+def poll_representation_obj(self, obj):
+    return obj.type == "MESH" and obj.data.polygons
+
+
 class BIMRootProperties(PropertyGroup):
-    contexts: EnumProperty(items=get_contexts, name="Contexts")
+    contexts: EnumProperty(items=get_contexts, name="Contexts", options=set())
     ifc_product: EnumProperty(items=get_ifc_products, name="Products", update=refresh_classes)
     ifc_class: EnumProperty(items=get_ifc_classes, name="Class", update=refresh_predefined_types)
     ifc_predefined_type: EnumProperty(items=get_ifc_predefined_types, name="Predefined Type", default=None)
     ifc_userdefined_type: StringProperty(name="Userdefined Type")
+    representation_template: bpy.props.EnumProperty(
+        items=get_representation_template, name="Representation Template", default=0
+    )
+    representation_obj: bpy.props.PointerProperty(
+        type=bpy.types.Object,
+        name="Representation Object",
+        poll=poll_representation_obj,
+        description="The representation will be a tessellation of the selected object",
+    )
     relating_class_object: PointerProperty(
         type=bpy.types.Object,
         name="Copy Class",

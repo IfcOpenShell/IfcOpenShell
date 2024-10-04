@@ -20,12 +20,12 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
-    operator.AddType,
     operator.AssignType,
     operator.AutoRenameOccurrences,
     operator.DisableEditingType,
     operator.DuplicateType,
     operator.EnableEditingType,
+    operator.LaunchRenameType,
     operator.RemoveType,
     operator.RenameType,
     operator.SelectSimilarType,

@@ -46,18 +46,52 @@ class ViewportData:
 
     @classmethod
     def mode(cls):
+        obj_mode = ("OBJECT", "IFC Object Mode", "View and move the placements of objects", "OBJECT_DATAMODE", 0)
+        item_mode = ("ITEM", "IFC Item Mode", "View individual representation items", "MESH_DATA", 1)
+        edit_mode = ("EDIT", "IFC Edit Mode", "Edit representation items", "EDITMODE_HLT", 2)
+
         obj = bpy.context.active_object
-        modes = [
-            ("OBJECT", "IFC Object Mode", "", "OBJECT_DATAMODE", 0),
-            ("ITEM", "IFC Item Mode", "", "MESH_DATA", 1),
-        ]
-        if (
-            not obj
-            or not tool.Blender.is_editable(obj)
-            or ((element := tool.Ifc.get_entity(obj)) and tool.Geometry.is_locked(element))
-        ):
+        element = tool.Ifc.get_entity(obj)
+
+        modes = [obj_mode]
+
+        if bpy.context.scene.BIMGeometryProperties.representation_obj:
+            modes.append(item_mode)
+
+        if not obj:
             return modes
-        modes.append(("EDIT", "IFC Edit Mode", "", "EDITMODE_HLT", 2))
+
+        if obj in bpy.context.scene.BIMProjectProperties.clipping_planes_objs:
+            pass
+        elif element:
+            if (usage := tool.Model.get_usage_type(element)) and usage in ("LAYER1", "LAYER2"):
+                pass
+            elif tool.Geometry.is_locked(element):
+                pass
+            elif usage == "PROFILE":
+                modes.append(edit_mode)
+            elif usage == "LAYER3":
+                modes.append(edit_mode)
+            elif obj.data and tool.Geometry.is_profile_based(obj.data):
+                modes.append(edit_mode)
+            elif element.is_a("IfcRelSpaceBoundary"):
+                modes.append(edit_mode)
+            elif element.is_a("IfcGridAxis"):
+                modes.append(edit_mode)
+            elif tool.Blender.Modifier.is_editing_parameters(obj):
+                # This should go BEFORE the modifiers
+                pass
+            elif tool.Blender.Modifier.is_roof(element):
+                modes.append(edit_mode)
+            elif tool.Blender.Modifier.is_railing(element):
+                modes.append(edit_mode)
+            elif item_mode not in modes:
+                modes.append(item_mode)
+        elif tool.Geometry.is_representation_item(obj):
+            modes.append(edit_mode)
+        else:  # A regular Blender object
+            modes.append(edit_mode)
+
         return modes
 
 

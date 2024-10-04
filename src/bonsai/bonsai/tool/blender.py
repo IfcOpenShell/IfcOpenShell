@@ -103,6 +103,10 @@ class Blender(bonsai.core.tool.Blender):
         obj.select_set(True)
 
     @classmethod
+    def clear_active_object(cls) -> None:
+        bpy.context.view_layer.objects.active = None
+
+    @classmethod
     def setup_tabs(cls) -> None:
         # https://blender.stackexchange.com/questions/140644/how-can-make-the-state-of-a-boolean-property-relative-to-the-3d-view-area
         for screen in bpy.data.screens:
@@ -144,11 +148,11 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     def get_selected_objects(cls) -> set[bpy.types.Object]:
-        if bpy.context.selected_objects:
-            if active_obj := bpy.context.active_object:
-                return set(bpy.context.selected_objects + [active_obj])
-            return set(bpy.context.selected_objects)
-        if active_obj := bpy.context.active_object:
+        if selected_objects := getattr(bpy.context, "selected_objects", None):
+            if active_obj := cls.get_active_object():
+                return set(selected_objects + [active_obj])
+            return set(selected_objects)
+        if active_obj := cls.get_active_object():
             return {active_obj}
         return set()
 
@@ -415,6 +419,12 @@ class Blender(bonsai.core.tool.Blender):
         return path.as_posix()
 
     @classmethod
+    def ensure_blender_path_is_abs(cls, blender_path: Path) -> Path:
+        if blender_path.is_absolute():
+            return blender_path
+        return bpy.path.abspath("//") / blender_path
+
+    @classmethod
     def get_default_selection_keypmap(cls) -> tuple:
         """keymap to replicate default blender selection behaviour with click and box selection"""
         # code below comes from blender_default.py which is part of default blender scripts licensed under GPL v2
@@ -509,11 +519,24 @@ class Blender(bonsai.core.tool.Blender):
         active_object.select_set(True)
 
     @classmethod
-    def select_object(cls, obj: bpy.types.Object):
+    def set_object_selection(cls, obj: bpy.types.Object, state: bool = True):
         try:
-            obj.select_set(True)
+            obj.select_set(state)
         except RuntimeError:  # Trying to select a hidden object throws an error
             pass
+
+    @classmethod
+    def select_object(cls, obj: bpy.types.Object):
+        cls.set_object_selection(obj, True)
+
+    @classmethod
+    def deselect_object(cls, obj: bpy.types.Object, ensure_active_object: bool = True):
+        cls.set_object_selection(obj, False)
+        if ensure_active_object and bpy.context.view_layer.objects.active == obj:
+            if bpy.context.selected_objects:
+                cls.set_active_object(bpy.context.selected_objects[-1])
+            else:
+                cls.clear_active_object()
 
     @classmethod
     def set_objects_selection(
@@ -707,7 +730,7 @@ class Blender(bonsai.core.tool.Blender):
         if not tool.Ifc.get():
             return False
         element = tool.Ifc.get_entity(obj)
-        return element and element.is_a() in classes
+        return bool(element) and element.is_a() in classes
 
     @classmethod
     def get_object_from_guid(cls, guid: str) -> Union[IFC_CONNECTED_TYPE, None]:
@@ -717,7 +740,7 @@ class Blender(bonsai.core.tool.Blender):
             return obj
 
     @classmethod
-    def lock_transform(cls, obj: bpy.types.ObjectBase, lock_state=True) -> None:
+    def lock_transform(cls, obj: bpy.types.Object, lock_state=True) -> None:
         for prop in ("lock_location", "lock_rotation", "lock_scale"):
             attr = getattr(obj, prop)
             for axis_idx in range(3):

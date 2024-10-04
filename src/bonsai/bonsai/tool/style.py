@@ -525,7 +525,7 @@ class Style(bonsai.core.tool.Style):
         for style in styles:
             new = props.styles.add()
             new.ifc_definition_id = style.id()
-            new.name = style.Name or "Unnamed"
+            new["name"] = style.Name or "Unnamed"  # Avoid writing to IFC through callback.
             new.ifc_class = style.is_a()
             for surface_style in getattr(style, "Styles", []) or []:
                 new2 = new.style_classes.add()

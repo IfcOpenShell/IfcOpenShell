@@ -3,8 +3,6 @@ import { CostUI } from "./utilities/costui.js";
 const connectedClients = {};
 let socket;
 
-let loadedSchedules = {};
-
 $(document).ready(function () {
   var defaultTheme = "blender";
   var theme = localStorage.getItem("theme") || defaultTheme;
@@ -12,6 +10,7 @@ $(document).ready(function () {
 
   connectSocket();
   CostUI.createRibbon();
+  CostUI.addShortcuts();
 });
 
 function connectSocket() {
@@ -29,6 +28,8 @@ function connectSocket() {
   socket.on("cost_values", handleCostValuesData);
   socket.on("cost_value", handleCostValueData);
   socket.on("quantities", handleEditQuantities);
+  socket.on("classification", handleClassificationData);
+  socket.on("message", handleMessage);
 }
 
 function handleEditQuantities(data) {
@@ -50,12 +51,35 @@ function handleEditQuantities(data) {
       addQuantity: addQuantity,
       editQuantity: editQuantity,
       deleteQuantity: deleteQuantity,
+      assignFromQuery: assignFromQuery,
     },
   });
 }
 
+function assignCostValues(costRateId, callback){
+  const selectedCostItems = CostUI.getSelectedCostItems();
+  if (selectedCostItems.length === 0) {
+    return;
+  }
+  executeOperator({
+    type: "assignCostValues",
+    costRateId: costRateId,
+    costItemIds: selectedCostItems,
+  });
+}
+
+
 function addSumCostValue(costItemId) {
   executeOperator({ type: "addSumCostValue", costItemId: costItemId });
+}
+
+function assignFromQuery(costItemId, query, propName) {
+  executeOperator({
+    type: "assignFromQuery",
+    costItemId: costItemId,
+    query: query,
+    propName: propName,
+  });
 }
 
 function addQuantity(costItemId, ifcClass) {
@@ -263,9 +287,6 @@ function toggleClientList() {
 
 function handleCostSchedulesData(data) {
   const blenderId = data.blenderId;
-  const loadedSchedule = loadedSchedules[blenderId]
-    ? loadedSchedules[blenderId]
-    : null;
   const costSchedules = data.data["cost_schedules"]["cost_schedules"];
   if (costSchedules.length === 0) {
     return;
@@ -296,17 +317,10 @@ function handleCostSchedulesData(data) {
     );
     costScheduleDiv.append(card);
   });
-  loadedSchedule ? CostUI.highlightElement("schedule-" + loadedSchedule) : null;
 }
 
 function handleCostItemsData(data) {
   const costScheduleId = data.data["cost_items"]["schedule_data"][0]["id"];
-  const cards = document.querySelectorAll("[id^='schedule-']");
-  cards.forEach((card) => {
-    card.classList.remove("highlighted");
-  });
-  CostUI.highlightElement("schedule-" + costScheduleId);
-  loadedSchedules[data.blenderId] = costScheduleId;
   const currency = data.data["cost_items"]["currency"]
     ? data.data["cost_items"]["currency"]["name"]
     : "Undefined";
@@ -324,6 +338,8 @@ function handleCostItemsData(data) {
       addSummaryCostItem: addSummaryCostItem,
       enableEditingQuantities: enableEditingQuantities,
       addSumCostValue: addSumCostValue,
+      enableEditingClassification: enableEditingClassification,
+      assignCostValues: assignCostValues,
     },
   });
 }
@@ -371,6 +387,55 @@ function enableEditingCostValues(costItemId) {
   executeOperator({ type: "enableEditingCostValues", costItemId: costItemId });
 }
 
+function enableEditingClassification(costItemId) {
+  executeOperator({
+    type: "enableEditingClassification",
+    costItemId: costItemId,
+  });
+}
+
+function removeClassificationReference(costItemId, classificationId) {
+  executeOperator({
+    type: "removeClassificationReference",
+    costItemId: costItemId,
+    classificationId: classificationId,
+  });
+}
+
+function addClassificationReference(
+  costItemId,
+  classificationName,
+  classificationId
+) {
+  executeOperator({
+    type: "addClassificationReference",
+    costItemId: costItemId,
+    classificationName: classificationName,
+    classificationId: classificationId,
+  });
+}
+
+function handleClassificationData(data) {
+  const costClassifications =
+    data.data["classification"]["cost_classifications"];
+  const classificationElements =
+    data.data["classification"]["classification_data"];
+  const classificationName = data.data["classification"]["classification_name"];
+  const costItemId = data.data["classification"]["cost_item_id"];
+
+  CostUI.createCostClassificationWindow({
+    classificationName,
+    classificationElements,
+    costClassifications,
+    costItemId,
+    callbacks: {
+      enableEditingClassification: enableEditingClassification,
+      removeClassificationReference: removeClassificationReference,
+      addClassificationReference: addClassificationReference,
+    },
+  });
+}
+
 function enableEditingQuantities(costItemId) {
   executeOperator({ type: "enableEditingQuantities", costItemId: costItemId });
 }
@@ -408,6 +473,28 @@ function editCostValues(costItemId, costValues) {
 function deleteCostItem(costItemId) {
   CostUI.deleteCostItem(costItemId);
   executeOperator({ type: "deleteCostItem", costItemId: costItemId });
+}
+
+function handleMessage(data) {
+  if (data.data["message"].hasOwnProperty("error")) {
+    handleError(data);
+  } else {
+    handleSuccess(data);
+  }
+}
+
+function handleError(data) {
+  const errorMessage = data.data["message"]["error"];
+  const containerId = data.data["message"]["container"];
+  const container = document.getElementById(containerId);
+  CostUI.Error(container, errorMessage);
+}
+
+function handleSuccess(data) {
+  const successMessage = data.data["message"]["success"];
+  const containerId = data.data["message"]["container"];
+  const container = document.getElementById(containerId);
+  CostUI.Success(container, successMessage);
 }
 
 function executeOperator(operator, blenderId) {

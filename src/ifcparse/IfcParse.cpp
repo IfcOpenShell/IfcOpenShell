@@ -715,10 +715,10 @@ void IfcParse::IfcFile::load(unsigned entity_instance_name, const IfcParse::enti
 
             if (TokenFunc::isKeyword(next)) {
                 try {
+                    const auto* decl = schema_->declaration_by_name(TokenFunc::asStringRef(next));
                     parse_context ps;
                     tokens->Next();
                     load(0, nullptr, ps, -1);
-                    const auto *decl = schema_->declaration_by_name(TokenFunc::asStringRef(next));
                     auto* simple_type_instance = schema_->instantiate(decl, ps.construct(-1, references_to_resolve, decl, boost::none));
                     //@todo decide addEntity(((IfcUtil::IfcBaseClass*)*entity));
                     context.push(simple_type_instance);
@@ -1378,6 +1378,7 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
         }
 
         if (next_token.type == Token_NONE) {
+            good_ = file_open_status::INVALID_SYNTAX;
             break;
         }
 
@@ -1388,57 +1389,59 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
 
     delete tokens;
 
-    auto resolve_instance = [this](auto inst, int ref, int refattr) {
-        IfcUtil::IfcBaseClass* ptr;
-        if constexpr (std::is_same_v<decltype(inst), int>) {
-            entity_by_id_t::const_iterator it = byid_.find(inst);
-            if (it == byid_.end()) {
-                Logger::Error("Instance reference #" + std::to_string(inst) + " used by instance #" + std::to_string(ref) + " at attribute index " + std::to_string(refattr) + " not found");
-                ptr = nullptr;
-            } else {
-                ptr = it->second;
+    for (const auto& p : references_to_resolve) {
+        const auto& ref = p.first.name_;
+        const auto& refattr = p.first.index_;
+        if (auto* v = boost::get<reference_or_simple_type>(&p.second)) {
+            if (auto* name = boost::get<int>(v)) {
+                entity_by_id_t::const_iterator it = byid_.find(*name);
+                if (it == byid_.end()) {
+                    Logger::Error("Instance reference #" + std::to_string(*name) + " used by instance #" + std::to_string(ref) + " at attribute index " + std::to_string(refattr) + " not found");
+                } else {
+                    byid_[p.first.name_]->data().storage_.set(p.first.index_, it->second);
+                }
+            } else if (auto* inst = boost::get<IfcUtil::IfcBaseClass*>(v)) {
+                byid_[p.first.name_]->data().storage_.set(p.first.index_, *inst);
             }
-        } else {
-            ptr = inst;
-        }
-        return ptr;
-    };
-
-    for (auto& p : references_to_resolve) {
-        boost::apply_visitor([this, &resolve_instance, &p](auto& v) {
-            if constexpr (std::is_same_v<std::decay_t<decltype(v)>, reference_or_simple_type>) {
-                auto inst = boost::apply_visitor([p, &resolve_instance](auto x) { return resolve_instance(x, p.first.name_, p.first.index_); }, v);
-                if (inst) {
-                    byid_[p.first.name_]->data().storage_.set(p.first.index_, inst);
-                }
-            } else if constexpr (std::is_same_v<std::decay_t<decltype(v)>, std::vector<reference_or_simple_type>>) {
-                aggregate_of_instance::ptr instances(new aggregate_of_instance);
-                instances->reserve(v.size());
-                for (auto& vi : v) {
-                    auto inst = boost::apply_visitor([p, &resolve_instance](auto x) { return resolve_instance(x, p.first.name_, p.first.index_); }, vi);
-                    if (inst) {
-                        instances->push(inst);
+        } else if (auto* v = boost::get<std::vector<reference_or_simple_type>>(&p.second)) {
+            aggregate_of_instance::ptr instances(new aggregate_of_instance);
+            instances->reserve(v->size());
+            for (const auto& vi : *v) {
+                if (auto* name = boost::get<int>(&vi)) {
+                    entity_by_id_t::const_iterator it = byid_.find(*name);
+                    if (it == byid_.end()) {
+                        Logger::Error("Instance reference #" + std::to_string(*name) + " used by instance #" + std::to_string(ref) + " at attribute index " + std::to_string(refattr) + " not found");
+                    } else {
+                        instances->push(it->second);
                     }
+                } else if (auto* inst = boost::get<IfcUtil::IfcBaseClass*>(&vi)) {
+                    instances->push(*inst);
                 }
-                byid_[p.first.name_]->data().storage_.set(p.first.index_, instances);
-            } else if constexpr (std::is_same_v<std::decay_t<decltype(v)>, std::vector<std::vector<reference_or_simple_type>>>) {
-                aggregate_of_aggregate_of_instance::ptr instances(new aggregate_of_aggregate_of_instance);
-                for (auto& vi : v) {
-                    std::vector<IfcUtil::IfcBaseClass*> inner;
-                    for (auto& vii : vi) {
-                        auto inst = boost::apply_visitor([p, &resolve_instance](auto x) { return resolve_instance(x, p.first.name_, p.first.index_); }, vii);
-                        if (inst) {
-                            inner.push_back(inst);
+            }
+            byid_[p.first.name_]->data().storage_.set(p.first.index_, instances);
+        } else if (auto* v = boost::get<std::vector<std::vector<reference_or_simple_type>>>(&p.second)) {
+            aggregate_of_aggregate_of_instance::ptr instances(new aggregate_of_aggregate_of_instance);
+            for (const auto& vi : *v) {
+                std::vector<IfcUtil::IfcBaseClass*> inner;
+                for (const auto& vii : vi) {
+                    if (auto* name = boost::get<int>(&vii)) {
+                        entity_by_id_t::const_iterator it = byid_.find(*name);
+                        if (it == byid_.end()) {
+                            Logger::Error("Instance reference #" + std::to_string(*name) + " used by instance #" + std::to_string(ref) + " at attribute index " + std::to_string(refattr) + " not found");
+                        } else {
+                            inner.push_back(it->second);
                         }
+                    } else if (auto* inst = boost::get<IfcUtil::IfcBaseClass*>(&vii)) {
+                        inner.push_back(*inst);
                     }
-                    instances->push(inner);
                 }
-                byid_[p.first.name_]->data().storage_.set(p.first.index_, instances);
-            } else {
-                // static_assert(false, "Inconsistent type");
+                instances->push(inner);
             }
-        }, p.second);
+            byid_[p.first.name_]->data().storage_.set(p.first.index_, instances);
+        }
     }
+
+    Logger::Status("Done resolving references");
 
     references_to_resolve.clear();
 }

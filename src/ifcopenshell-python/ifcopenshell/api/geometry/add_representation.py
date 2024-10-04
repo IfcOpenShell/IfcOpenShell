@@ -83,7 +83,7 @@ def add_representation(
         "context": context,
         "blender_object": blender_object,
         "geometry": geometry,
-        "coordinate_offset": coordinate_offset,
+        "coordinate_offset": Vector(coordinate_offset) if coordinate_offset is not None else None,
         "total_items": total_items,
         "unit_scale": unit_scale,
         "should_force_faceted_brep": should_force_faceted_brep,

@@ -34,6 +34,10 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcIndexedPolyCurve* inst) {
 	}
 
 	std::vector<taxonomy::point3::ptr> points;
+	if (coordinates.size() < 2) {
+		throw IfcParse::IfcException("IfcIndexedPolyCurve has less than 2 points.");
+	}
+
 	points.reserve(coordinates.size());
 	for (auto& coords : coordinates) {
 		points.push_back(taxonomy::make<taxonomy::point3>(
