@@ -41,10 +41,15 @@ def get_export_schema(self: "BIMProjectProperties", context: bpy.types.Context) 
     return ProjectData.data["export_schema"]
 
 
+def update_export_schema(self: "BIMProjectProperties", context: bpy.types.Context) -> None:
+    # Avoid breaking empty enum.
+    self["template_file"] = 0
+
+
 def get_template_file(self: "BIMProjectProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
     if not ProjectData.is_loaded:
         ProjectData.load()
-    return ProjectData.data["template_file"]
+    return ProjectData.data["template_file"][self.export_schema]
 
 
 def get_library_file(self: "BIMProjectProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
@@ -201,7 +206,7 @@ class BIMProjectProperties(PropertyGroup):
     )
     links: CollectionProperty(name="Links", type=Link)
     active_link_index: IntProperty(name="Active Link Index")
-    export_schema: EnumProperty(items=get_export_schema, name="IFC Schema")
+    export_schema: EnumProperty(items=get_export_schema, name="IFC Schema", update=update_export_schema)
     template_file: EnumProperty(items=get_template_file, name="Template File")
     library_file: EnumProperty(items=get_library_file, name="Library File", update=update_library_file)
     use_relative_project_path: BoolProperty(name="Use Relative Project Path", default=False)
