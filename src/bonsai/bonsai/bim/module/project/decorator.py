@@ -42,6 +42,11 @@ def toggle_decorations_on_load(*args):
     # as queried object is linked from separate .blend file.
 
 
+def transparent_color(color, alpha=0.1):
+    color = [i for i in color]
+    color[3] = alpha
+    return color
+
 class ProjectDecorator:
     installed = None
 
@@ -239,6 +244,45 @@ class MeasureDecorator:
         shader.uniform_float("color", color)
         batch.draw(shader)
 
+    def calculate_measurement_x_y_and_z(self, context, measurement_prop):
+
+        if len(measurement_prop) == 0 or len(measurement_prop) > 2:
+            return None, None
+
+        start = measurement_prop[0]
+        if len(measurement_prop) == 1:
+            end = context.scene.BIMPolylineProperties.snap_mouse_point[0]
+        else:
+            end = measurement_prop[1]
+
+        x_axis = (Vector((start.x, start.y, start.z)), Vector((end.x, start.y, start.z)))
+        y_axis = (Vector((end.x, start.y, start.z)), Vector((end.x, end.y, start.z)))
+        z_axis = (Vector((end.x, end.y, start.z)), Vector((end.x, end.y, end.z)))
+        x_middle = (x_axis[1] + x_axis[0]) / 2
+        y_middle = (y_axis[1] + y_axis[0]) / 2
+        z_middle = (z_axis[1] + z_axis[0]) / 2
+
+        return (x_axis, y_axis, z_axis), (x_middle, y_middle, z_middle)
+
+    def calculate_polygon(self, points):
+        bm = bmesh.new()
+
+        new_verts = [bm.verts.new(v) for v in points]
+        new_edges = [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(points) - 1)]
+
+        bm.verts.index_update()
+        bm.edges.index_update()
+
+        new_faces = bmesh.ops.contextual_create(bm, geom=bm.edges)
+
+        bm.verts.index_update()
+        bm.edges.index_update()
+        tris = [[loop.vert.index for loop in triangles] for triangles in bm.calc_loop_triangles()]
+
+        bm.free()
+
+        return tris
+
     def draw_text_background(self, context, coords_dim, text_dim):
         padding = 5
         theme = context.preferences.themes.items()[0][1]
@@ -255,6 +299,7 @@ class MeasureDecorator:
     def draw_measurements(self, context):
         region = context.region
         rv3d = region.data
+
         self.addon_prefs = tool.Blender.get_addon_preferences()
         self.font_id = 1
         self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
@@ -263,36 +308,56 @@ class MeasureDecorator:
         blf.enable(self.font_id, blf.SHADOW)
         blf.shadow(self.font_id, 6, 0, 0, 0, 1)
         color = self.addon_prefs.decorations_colour
-        blf.color(self.font_id, *color)
 
+
+        blf.color(self.font_id, *color)
         measure_data = context.scene.BIMPolylineProperties.measurement_polyline
         for data in measure_data:
-            measurement_prop = data.polyline_point
+            measurement_prop = data.polyline_points
+            measure_type = data.measurement_type
 
             for i in range(len(measurement_prop)):
                 if i == 0:
                     continue
-                pos_dim = (Vector(measurement_prop[i].position) + Vector(measurement_prop[i - 1].position)) / 2
-                coords_dim = view3d_utils.location_3d_to_region_2d(region, rv3d, pos_dim)
+                dim_text_pos = (Vector(measurement_prop[i].position) + Vector(measurement_prop[i - 1].position)) / 2
+                dim_text_coords = view3d_utils.location_3d_to_region_2d(region, rv3d, dim_text_pos)
 
                 formatted_value = measurement_prop[i].dim
 
-                blf.position(self.font_id, coords_dim[0], coords_dim[1], 0)
+                blf.position(self.font_id, dim_text_coords[0], dim_text_coords[1], 0)
                 text = "d: " + formatted_value
-                text_dim = blf.dimensions(self.font_id, text)
-                self.draw_text_background(context, coords_dim, text_dim)
+                text_length = blf.dimensions(self.font_id, text)
+                self.draw_text_background(context, dim_text_coords, text_length)
                 blf.draw(self.font_id, text)
 
                 if i == 1:
                     continue
-                pos_angle = measurement_prop[i - 1].position
-                coords_angle = view3d_utils.location_3d_to_region_2d(region, rv3d, pos_angle)
-                blf.position(self.font_id, coords_angle[0], coords_angle[1], 0)
+                angle_text_pos = measurement_prop[i - 1].position
+                angle_text_coords = view3d_utils.location_3d_to_region_2d(region, rv3d, angle_text_pos)
+                blf.position(self.font_id, angle_text_coords[0], angle_text_coords[1], 0)
                 text = "a: " + measurement_prop[i].angle
-                text_dim = blf.dimensions(self.font_id, text)
-                self.draw_text_background(context, coords_angle, text_dim)
+                text_length = blf.dimensions(self.font_id, text)
+                self.draw_text_background(context, angle_text_coords, text_length)
                 blf.draw(self.font_id, text)
-            blf.disable(self.font_id, blf.SHADOW)
+
+            if measure_type == "SINGLE":
+                axis_line, axis_line_center = self.calculate_measurement_x_y_and_z(context, measurement_prop)
+                for i, dim_text_pos in enumerate(axis_line_center):
+                    dim_text_coords = view3d_utils.location_3d_to_region_2d(region, rv3d, dim_text_pos)
+                    blf.position(self.font_id, dim_text_coords[0], dim_text_coords[1], 0)
+                    value = round((axis_line[i][1] - axis_line[i][0]).length, 4)
+                    direction = axis_line[i][1] - axis_line[i][0]
+                    if (i == 0 and direction.x < 0) or (i == 1 and direction.y < 0) or (i == 2 and direction.z < 0):
+                        value = -value
+                    prefix = "xyz"[i]
+                    formatted_value = tool.Polyline.format_input_ui_units(context, value)
+                    text = f"{prefix}: {formatted_value}"
+                    text_length = blf.dimensions(self.font_id, text)
+                    self.draw_text_background(context, dim_text_coords, text_length)
+                    blf.draw(self.font_id, text)
+
+        blf.disable(self.font_id, blf.SHADOW)
+
 
     def __call__(self, context):
 
@@ -321,7 +386,7 @@ class MeasureDecorator:
 
         measure_data = context.scene.BIMPolylineProperties.measurement_polyline
         for data in measure_data:
-            polyline_data = data.polyline_point
+            polyline_data = data.polyline_points
 
             polyline_points = []
             polyline_edges = []
@@ -331,6 +396,22 @@ class MeasureDecorator:
 
             for i in range(len(polyline_points) - 1):
                 polyline_edges.append([i, i + 1])
+
+            # Lines for X, Y, Z of single measure
+            measure_type = data.measurement_type
+            if measure_type == "SINGLE":
+                axis, _ = self.calculate_measurement_x_y_and_z(context, polyline_data)
+                x_axis, y_axis, z_axis = axis
+                self.draw_batch("LINES", [*x_axis], decorator_color_x_axis, [(0, 1)])
+                self.draw_batch("LINES", [*y_axis], decorator_color_y_axis, [(0, 1)])
+                self.draw_batch("LINES", [*z_axis], decorator_color_z_axis, [(0, 1)])
+
+            # Area highlight
+            area = data.area
+            if area:
+                if float(area) > 0:
+                    tris = self.calculate_polygon(polyline_points)
+                    self.draw_batch("TRIS", polyline_points, transparent_color(decorator_color_special), tris)
 
             # Draw polyline with selected points
             self.line_shader.uniform_float("lineWidth", 2.0)

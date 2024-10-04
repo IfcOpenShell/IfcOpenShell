@@ -573,7 +573,7 @@ class PolylineDecorator:
                 if (i == 0 and direction.x < 0) or (i == 1 and direction.y < 0) or (i == 2 and direction.z < 0):
                     value = -value
                 prefix = "xyz"[i]
-                formatted_value = self.input_ui.format_input_ui_units(context, value)
+                formatted_value = tool.Polyline.format_input_ui_units(context, value)
                 text = f"{prefix}: {formatted_value}"
                 text_length = blf.dimensions(self.font_id, text)
                 self.draw_text_background(context, dim_text_coords, text_length)
