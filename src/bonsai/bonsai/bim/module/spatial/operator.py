@@ -161,7 +161,7 @@ class SelectContainer(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "SHIFT + Click to add container to selection\nALT + Click to remove container from selection"
     container: bpy.props.IntProperty()
-    selection_mode: bpy.props.EnumProperty(items=[["ADD"] * 3, ["REMOVE"] * 3, ["SINGLE" * 3]])
+    selection_mode: bpy.props.EnumProperty(items=[("ADD",) * 3, ("REMOVE",) * 3, ("SINGLE",) * 3])
 
     def invoke(self, context, event):
         if event.shift:
