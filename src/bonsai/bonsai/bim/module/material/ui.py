@@ -45,6 +45,8 @@ class BIM_PT_materials(Panel):
             MaterialsData.load()
 
         self.props = context.scene.BIMMaterialProperties
+        material = tool.Material.get_active_material_item()
+        material_id = material.ifc_definition_id if material else None
 
         row = self.layout.row(align=True)
         if self.props.is_editing:
@@ -61,32 +63,28 @@ class BIM_PT_materials(Panel):
 
         if self.props.material_type == "IfcMaterial":
             row.operator("bim.add_material", text="", icon="ADD")
-            if self.props.materials and self.props.active_material_index < len(self.props.materials):
-                material = self.props.materials[self.props.active_material_index]
-                if material.ifc_definition_id:
-                    op = row.operator("bim.duplicate_material", text="", icon="DUPLICATE")
-                    op.material = material.ifc_definition_id
-                    op = row.operator("bim.select_by_material", text="", icon="RESTRICT_SELECT_OFF")
-                    op.material = material.ifc_definition_id
-                    op = row.operator("bim.assign_material_to_selected", text="", icon="BRUSH_DATA")
-                    op.material = material.ifc_definition_id
-                    op = row.operator("bim.enable_editing_material", text="", icon="GREASEPENCIL")
-                    op.material = material.ifc_definition_id
-                    op = row.operator("bim.enable_editing_material_style", text="", icon="SHADING_RENDERED")
-                    op.material = material.ifc_definition_id
-                    row.operator("bim.remove_material", text="", icon="X").material = material.ifc_definition_id
+            if material_id:
+                op = row.operator("bim.duplicate_material", text="", icon="DUPLICATE")
+                op.material = material_id
+                op = row.operator("bim.select_by_material", text="", icon="RESTRICT_SELECT_OFF")
+                op.material = material_id
+                op = row.operator("bim.assign_material_to_selected", text="", icon="BRUSH_DATA")
+                op.material = material_id
+                op = row.operator("bim.enable_editing_material", text="", icon="GREASEPENCIL")
+                op.material = material_id
+                op = row.operator("bim.enable_editing_material_style", text="", icon="SHADING_RENDERED")
+                op.material = material_id
+                row.operator("bim.remove_material", text="", icon="X").material = material_id
 
             self.draw_editing_ui()
         else:
             row.operator("bim.add_material_set", text="", icon="ADD").set_type = self.props.material_type
-            if self.props.materials and self.props.active_material_index < len(self.props.materials):
-                material = self.props.materials[self.props.active_material_index]
-                if material.ifc_definition_id:
-                    op = row.operator("bim.select_by_material", text="", icon="RESTRICT_SELECT_OFF")
-                    op.material = material.ifc_definition_id
-                    op = row.operator("bim.assign_material_to_selected", text="", icon="BRUSH_DATA")
-                    op.material = material.ifc_definition_id
-                    row.operator("bim.remove_material_set", text="", icon="X").material = material.ifc_definition_id
+            if material_id:
+                op = row.operator("bim.select_by_material", text="", icon="RESTRICT_SELECT_OFF")
+                op.material = material_id
+                op = row.operator("bim.assign_material_to_selected", text="", icon="BRUSH_DATA")
+                op.material = material_id
+                row.operator("bim.remove_material_set", text="", icon="X").material = material_id
 
         self.layout.template_list("BIM_UL_materials", "", self.props, "materials", self.props, "active_material_index")
 
