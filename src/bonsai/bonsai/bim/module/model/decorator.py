@@ -319,6 +319,9 @@ class PolylineDecorator:
         handler = cls()
         cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_snap_point, (context,), "WINDOW", "POST_PIXEL"))
         cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_measurements, (context,), "WINDOW", "POST_PIXEL"))
+        cls.handlers.append(
+            SpaceView3D.draw_handler_add(handler.draw_measurement_axis, (context,), "WINDOW", "POST_VIEW")
+        )
         cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_input_ui, (context,), "WINDOW", "POST_PIXEL"))
         cls.handlers.append(
             SpaceView3D.draw_handler_add(handler.draw_product_preview, (context,), "WINDOW", "POST_VIEW")
@@ -350,13 +353,49 @@ class PolylineDecorator:
         cls.axis_start = start
         cls.axis_end = end
 
-    # @classmethod
-    # def set_axis_rectangle(cls, corners):
-    #     cls.axis_rectangle = [*corners]
-
     @classmethod
     def set_tool_state(cls, tool_state):
         cls.tool_state = tool_state
+
+    def calculate_measurement_x_y_and_z(self, context):
+        measurement_prop = context.scene.BIMPolylineProperties.polyline_point
+
+        if len(measurement_prop) == 0 or len(measurement_prop) > 2:
+            return None, None
+
+        start = measurement_prop[0]
+        if len(measurement_prop) == 1:
+            end = context.scene.BIMPolylineProperties.snap_mouse_point[0]
+        else:
+            end = measurement_prop[1]
+
+        x_axis = (Vector((start.x, start.y, start.z)), Vector((end.x, start.y, start.z)))
+        y_axis = (Vector((end.x, start.y, start.z)), Vector((end.x, end.y, start.z)))
+        z_axis = (Vector((end.x, end.y, start.z)), Vector((end.x, end.y, end.z)))
+        x_middle = (x_axis[1] + x_axis[0]) / 2
+        y_middle = (y_axis[1] + y_axis[0]) / 2
+        z_middle = (z_axis[1] + z_axis[0]) / 2
+
+        return (x_axis, y_axis, z_axis), (x_middle, y_middle, z_middle)
+
+    def calculate_polygon(self, points):
+        bm = bmesh.new()
+
+        new_verts = [bm.verts.new(v) for v in points]
+        new_edges = [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(points) - 1)]
+
+        bm.verts.index_update()
+        bm.edges.index_update()
+
+        new_faces = bmesh.ops.contextual_create(bm, geom=bm.edges)
+
+        bm.verts.index_update()
+        bm.edges.index_update()
+        tris = [[loop.vert.index for loop in triangles] for triangles in bm.calc_loop_triangles()]
+
+        bm.free()
+
+        return tris
 
     def draw_batch(self, shader_type, content_pos, color, indices=None):
         shader = self.line_shader if shader_type == "LINES" else self.shader
@@ -424,7 +463,6 @@ class PolylineDecorator:
             bm.verts.index_update()
             bm.edges.index_update()
             edges = [[v.index for v in e.verts] for e in bm.edges]
-            print(edges)
             tris = [[l.vert.index for l in loop] for loop in bm.calc_loop_triangles()]
             all_edges.extend(edges)
             all_tris.extend(tris)
@@ -491,6 +529,7 @@ class PolylineDecorator:
     def draw_measurements(self, context):
         region = context.region
         rv3d = region.data
+        measure_type = context.scene.MeasureToolSettings.measure_type
         measurement_prop = context.scene.BIMPolylineProperties.polyline_point
 
         self.addon_prefs = tool.Blender.get_addon_preferences()
@@ -526,7 +565,64 @@ class PolylineDecorator:
             text_dim = blf.dimensions(self.font_id, text)
             self.draw_text_background(context, coords_angle, text_dim)
             blf.draw(self.font_id, text)
+
+        if measure_type == "SINGLE":
+            axis, axis_middle = self.calculate_measurement_x_y_and_z(context)
+            for i, measurement in enumerate(axis_middle):
+                coords_measurement = view3d_utils.location_3d_to_region_2d(region, rv3d, measurement)
+                blf.position(self.font_id, coords_measurement[0], coords_measurement[1], 0)
+                value = round((axis[i][1] - axis[i][0]).length, 4)
+                direction = axis[i][1] - axis[i][0]
+                if (i == 0 and direction.x < 0) or (i == 1 and direction.y < 0) or (i == 2 and direction.z < 0):
+                    value = -value
+                prefix = "xyz"[i]
+                text = f"{prefix}: {str(value)}"
+                text_dim = blf.dimensions(self.font_id, text)
+                self.draw_text_background(context, coords_measurement, text_dim)
+                blf.draw(self.font_id, text)
+
         blf.disable(self.font_id, blf.SHADOW)
+
+    def draw_measurement_axis(self, context):
+        self.addon_prefs = tool.Blender.get_addon_preferences()
+        decorator_color = self.addon_prefs.decorations_colour
+        decorator_color_special = self.addon_prefs.decorator_color_special
+        decorator_color_selected = self.addon_prefs.decorator_color_selected
+        decorator_color_error = self.addon_prefs.decorator_color_error
+        decorator_color_unselected = self.addon_prefs.decorator_color_unselected
+        decorator_color_background = self.addon_prefs.decorator_color_background
+        theme = context.preferences.themes.items()[0][1]
+        decorator_color_object_active = (*theme.view_3d.object_active, 1)  # unwrap color values and adds alpha=1
+        decorator_color_x_axis = (*theme.user_interface.axis_x, 1)
+        decorator_color_y_axis = (*theme.user_interface.axis_y, 1)
+        decorator_color_z_axis = (*theme.user_interface.axis_z, 1)
+
+        gpu.state.blend_set("ALPHA")
+        self.line_shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
+        self.line_shader.bind()  # required to be able to change uniforms of the shader
+        # POLYLINE_UNIFORM_COLOR specific uniforms
+        self.line_shader.uniform_float("viewportSize", (context.region.width, context.region.height))
+
+        # general shader
+        self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
+        gpu.state.point_size_set(6)
+
+        self.font_id = 1
+        font_size = tool.Blender.scale_font_size(12)
+        blf.size(self.font_id, font_size)
+        blf.enable(self.font_id, blf.SHADOW)
+        blf.shadow(self.font_id, 6, 0, 0, 0, 1)
+        color = self.addon_prefs.decorations_colour
+
+        blf.color(self.font_id, *color)
+
+        measure_type = context.scene.MeasureToolSettings.measure_type
+        if measure_type == "SINGLE":
+            axis, _ = self.calculate_measurement_x_y_and_z(context)
+            x_axis, y_axis, z_axis = axis
+            self.draw_batch("LINES", [*x_axis], decorator_color_x_axis, [(0, 1)])
+            self.draw_batch("LINES", [*y_axis], decorator_color_y_axis, [(0, 1)])
+            self.draw_batch("LINES", [*z_axis], decorator_color_z_axis, [(0, 1)])
 
     def draw_snap_point(self, context):
         self.line_shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
@@ -648,18 +744,15 @@ class PolylineDecorator:
             self.line_shader.uniform_float("lineWidth", 0.75)
             self.draw_batch("LINES", [self.axis_start, self.axis_end], axis_color, [(0, 1)])
 
-        # try:
-        #     self.draw_batch("TRIS", self.axis_rectangle, (1, 1, 1, 0.1), [(0, 1, 3), (0, 2, 3)])
-        # except:
-        #     pass
-
         # Area highlight
-        # if "AREA" in list(self.input_panel.keys()): # TODO Change to input_ui
-        #     if self.input_panel["AREA"] and float(self.input_panel["AREA"]) > 0: # TODO Change to input_ui
-        #         edges = []
-        #         for i in range(1, len(polyline_points) - 1):
-        #             edges.append((0, i, i + 1))
-        #         self.draw_batch("TRIS", polyline_points, (0, 1, 0, 0.1), edges)
+        try:
+            has_area = self.input_ui.init_area
+        except:
+            has_area = False
+        if has_area:
+            if self.input_ui.get_number_value("AREA") > 0:
+                tris = self.calculate_polygon(polyline_points)
+                self.draw_batch("TRIS", polyline_points, transparent_color(decorator_color_special), tris)
 
         # Mouse points
         if snap_prop.snap_type in ["Plane", "Axis", "Mix"]:
