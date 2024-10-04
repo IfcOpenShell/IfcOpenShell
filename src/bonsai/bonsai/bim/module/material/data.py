@@ -91,8 +91,12 @@ class MaterialsData:
         return results
 
     @classmethod
-    def styles(cls):
-        return [(str(s.id()), s.Name or "Unnamed", "") for s in tool.Ifc.get().by_type("IfcSurfaceStyle") if s.Name]
+    def styles(cls) -> list[tuple[str, str, str]]:
+        return [
+            (str(s.id()), style_name or "Unnamed", "")
+            for s in tool.Ifc.get().by_type("IfcPresentationStyle")
+            if (style_name := s.Name)
+        ]
 
     @classmethod
     def active_styles(cls):
