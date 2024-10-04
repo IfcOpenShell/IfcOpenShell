@@ -580,7 +580,7 @@ class AddRoof(bpy.types.Operator, tool.Ifc.Operator):
         refresh()
         update_roof_modifier_bmesh(context)
         update_roof_modifier_ifc_data(context)
-        return {"FINISHED"}
+        tool.Model.add_body_representation(obj)
 
 
 class EnableEditingRoof(bpy.types.Operator, tool.Ifc.Operator):

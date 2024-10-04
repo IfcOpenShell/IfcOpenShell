@@ -1405,3 +1405,24 @@ class Model(bonsai.core.tool.Model):
             mesh.materials.pop(index=i1)
         else:
             mesh.materials[i1] = mbstyle2
+
+    @classmethod
+    def add_body_representation(cls, obj: bpy.types.Object) -> None:
+        ifc_file = tool.Ifc.get()
+        body = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
+        representation = ifcopenshell.api.run(
+            "geometry.add_representation",
+            ifc_file,
+            context=body,
+            blender_object=obj,
+            geometry=obj.data,
+            coordinate_offset=tool.Geometry.get_cartesian_point_offset(obj),
+            total_items=tool.Geometry.get_total_representation_items(obj),
+            should_force_faceted_brep=tool.Geometry.should_force_faceted_brep(),
+            should_force_triangulation=tool.Geometry.should_force_triangulation(),
+            should_generate_uvs=tool.Geometry.should_generate_uvs(obj),
+            ifc_representation_class=None,
+            profile_set_usage=None,
+        )
+        tool.Model.replace_object_ifc_representation(body, obj, representation)
+        tool.Ifc.finish_edit(obj)
