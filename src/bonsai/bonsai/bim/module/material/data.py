@@ -132,17 +132,16 @@ class MaterialsData:
                     if not item.is_a("IfcStyledItem"):
                         continue
                     for style in item.Styles:
-                        if style.is_a("IfcSurfaceStyle"):
-                            results.append(
-                                {
-                                    "context_type": context.ContextType,
-                                    "context_identifier": getattr(context, "ContextIdentifier", ""),
-                                    "target_view": getattr(context, "TargetView", ""),
-                                    "name": style.Name or "Unnamed",
-                                    "id": style.id(),
-                                    "context_id": context.id(),
-                                }
-                            )
+                        results.append(
+                            {
+                                "context_type": context.ContextType,
+                                "context_identifier": getattr(context, "ContextIdentifier", ""),
+                                "target_view": getattr(context, "TargetView", ""),
+                                "name": style.Name or "Unnamed",
+                                "id": style.id(),
+                                "context_id": context.id(),
+                            }
+                        )
         return results
 
 
