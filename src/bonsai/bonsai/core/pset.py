@@ -94,6 +94,7 @@ def add_proposed_prop(
 ) -> Union[None, str]:
     props = pset.get_pset_props(obj_name, obj_type)
     res = pset.add_proposed_property(name, pset.cast_string_to_primitive(value), props)
+    pset.reset_proposed_property_fields(props)
     return res
 
 
