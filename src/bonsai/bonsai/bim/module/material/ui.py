@@ -88,18 +88,17 @@ class BIM_PT_materials(Panel):
 
         self.layout.template_list("BIM_UL_materials", "", self.props, "materials", self.props, "active_material_index")
 
-        # TODO: data.py is not updated on changing active_material_index
-        # so the active material styles go out of sync with the active material
-        for style in MaterialsData.data["active_styles"]:
-            row = self.layout.row(align=True)
-            row.label(text="", icon="SHADING_RENDERED")
-            row.label(text=style["context_type"])
-            row.label(text=style["context_identifier"])
-            row.label(text=style["target_view"])
-            row.label(text=style["name"])
-            op = row.operator("bim.unassign_material_style", text="", icon="X")
-            op.style = style["id"]
-            op.context = style["context_id"]
+        if material_id:
+            for style in MaterialsData.data["material_styles_data"][material_id]:
+                row = self.layout.row(align=True)
+                row.label(text="", icon="SHADING_RENDERED")
+                row.label(text=style["context_type"])
+                row.label(text=style["context_identifier"])
+                row.label(text=style["target_view"])
+                row.label(text=style["name"])
+                op = row.operator("bim.unassign_material_style", text="", icon="X")
+                op.style = style["id"]
+                op.context = style["context_id"]
 
     def draw_editing_ui(self):
         if not self.props.active_material_id:
