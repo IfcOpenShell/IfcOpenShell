@@ -265,7 +265,7 @@ class MeasureDecorator:
         color = self.addon_prefs.decorations_colour
         blf.color(self.font_id, *color)
 
-        measure_data = context.scene.BIMPolylineProperties.measure_polyline
+        measure_data = context.scene.BIMPolylineProperties.measurement_polyline
         for data in measure_data:
             measurement_prop = data.polyline_point
 
@@ -319,7 +319,7 @@ class MeasureDecorator:
         self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
         gpu.state.point_size_set(6)
 
-        measure_data = context.scene.BIMPolylineProperties.measure_polyline
+        measure_data = context.scene.BIMPolylineProperties.measurement_polyline
         for data in measure_data:
             polyline_data = data.polyline_point
 
