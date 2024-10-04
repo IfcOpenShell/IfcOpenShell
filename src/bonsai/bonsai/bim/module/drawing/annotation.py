@@ -23,11 +23,12 @@ import bmesh
 import bonsai.tool as tool
 import ifcopenshell.util.element
 from mathutils import Vector, Matrix
+from typing import Optional
 
 
 class Annotator:
     @staticmethod
-    def add_text(related_element=None):
+    def add_text(related_element: Optional[ifcopenshell.entity_instance] = None) -> bpy.types.Object:
         curve = bpy.data.curves.new(type="FONT", name="Text")
         curve.body = "TEXT"
         obj = bpy.data.objects.new("Text", curve)
@@ -53,7 +54,7 @@ class Annotator:
         return obj
 
     @staticmethod
-    def resize_text(text_obj):
+    def resize_text(text_obj: bpy.types.Object) -> None:
         camera = None
         group = tool.Drawing.get_drawing_group(tool.Ifc.get_entity(text_obj))
         for element in tool.Drawing.get_drawing_elements(group):
@@ -71,7 +72,9 @@ class Annotator:
         text_obj.data.size = font_size
 
     @staticmethod
-    def add_line_to_annotation(obj, co1=None, co2=None):
+    def add_line_to_annotation(
+        obj: bpy.types.Object, co1: Optional[Vector] = None, co2: Optional[Vector] = None
+    ) -> bpy.types.Object:
         if co1 is None:
             co1, co2, _, _ = Annotator.get_placeholder_coords()
         co1 = obj.matrix_world.inverted() @ co1
@@ -93,7 +96,7 @@ class Annotator:
         return obj
 
     @staticmethod
-    def add_vertex_to_annotation(obj):
+    def add_vertex_to_annotation(obj: bpy.types.Object) -> bpy.types.Object:
         verts_world_space = Annotator.get_placeholder_coords()
         vert_local = obj.matrix_world.inverted() @ verts_world_space[0]
         bm = tool.Blender.get_bmesh_for_mesh(obj.data, clean=True)
@@ -102,7 +105,7 @@ class Annotator:
         return obj
 
     @staticmethod
-    def add_plane_to_annotation(obj, remove_face=False):
+    def add_plane_to_annotation(obj: bpy.types.Object, remove_face: bool = False) -> bpy.types.Object:
         # default order = bot left, top left, bot right, top right
         # therefore we redefine the order
         face_verts = [0, 2, 3, 1]
@@ -119,7 +122,7 @@ class Annotator:
         return obj
 
     @staticmethod
-    def get_annotation_obj(drawing, object_type, data_type):
+    def get_annotation_obj(drawing: ifcopenshell.entity_instance, object_type: str, data_type: str) -> bpy.types.Object:
         camera = tool.Ifc.get_object(drawing)
         co1, _, _, _ = Annotator.get_placeholder_coords(camera)
         matrix_world = tool.Drawing.get_camera_matrix(camera)
@@ -162,7 +165,7 @@ class Annotator:
         return obj
 
     @staticmethod
-    def get_placeholder_coords(camera=None):
+    def get_placeholder_coords(camera: Optional[bpy.types.Object] = None) -> tuple[Vector, Vector, Vector, Vector]:
         if not camera:
             camera = bpy.context.scene.camera
 

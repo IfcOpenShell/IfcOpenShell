@@ -33,7 +33,7 @@ from bpy.props import FloatProperty, IntProperty
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
 
 
-def regenerate_stair_mesh(context):
+def regenerate_stair_mesh(context: bpy.types.Context) -> None:
     obj = context.active_object
     props_kwargs = obj.BIMStairProperties.get_props_kwargs()
     vertices, edges, faces = tool.Model.generate_stair_2d_profile(**props_kwargs)
@@ -65,7 +65,7 @@ def regenerate_stair_mesh(context):
     obj.data.update()
 
 
-def update_ifc_stair_props(obj):
+def update_ifc_stair_props(obj: bpy.types.Object) -> None:
     """should be called after new geometry settled
     since it's going to update ifc representation
     """
@@ -114,7 +114,7 @@ def update_ifc_stair_props(obj):
     tool.Ifc.edit(obj)
 
     # update related annotation objects
-    def get_elements_from_product(product):
+    def get_elements_from_product(product: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
         elements = []
         for rel in product.ReferencedBy:
             if not rel.is_a("IfcRelAssignsToProduct"):

@@ -248,7 +248,12 @@ class Model(bonsai.core.tool.Model):
         return obj
 
     @classmethod
-    def import_profile(cls, profile, obj=None, position=None):
+    def import_profile(
+        cls,
+        profile: ifcopenshell.entity_instance,
+        obj: Optional[bpy.types.Object] = None,
+        position: Optional[Matrix] = None,
+    ) -> bpy.types.Object:
         """Creates new profile mesh and assigns it to `obj`,
         if `obj` is `None` then new "Profile" object will be created.
 
@@ -297,7 +302,9 @@ class Model(bonsai.core.tool.Model):
         return obj
 
     @classmethod
-    def import_surface(cls, surface, obj=None):
+    def import_surface(
+        cls, surface: ifcopenshell.entity_instance, obj: Optional[bpy.types.Object] = None
+    ) -> bpy.types.Object:
         cls.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
         cls.vertices = []
@@ -333,7 +340,7 @@ class Model(bonsai.core.tool.Model):
         return obj
 
     @classmethod
-    def import_curve(cls, obj, position, curve):
+    def import_curve(cls, obj: bpy.types.Object, position: Matrix, curve: ifcopenshell.entity_instance) -> None:
         offset = len(cls.vertices)
 
         if curve.is_a("IfcPolyline"):
@@ -402,7 +409,7 @@ class Model(bonsai.core.tool.Model):
             cls.edges.append((offset, offset + 1))
 
     @classmethod
-    def import_rectangle(cls, obj, position, profile):
+    def import_rectangle(cls, obj: bpy.types.Object, position: Matrix, profile: ifcopenshell.entity_instance) -> None:
         if profile.Position:
             p_position = Matrix(ifcopenshell.util.placement.get_axis2placement(profile.Position).tolist())
             p_position.translation *= cls.unit_scale
@@ -424,7 +431,7 @@ class Model(bonsai.core.tool.Model):
         cls.edges[-1] = (len(cls.vertices) - 1, 0)  # Close the loop
 
     @classmethod
-    def load_openings(cls, openings):
+    def load_openings(cls, openings: list[ifcopenshell.entity_instance]) -> Iterable[bpy.types.Object]:
         if not openings:
             return []
         ifc_import_settings = import_ifc.IfcImportSettings.factory()
@@ -476,7 +483,11 @@ class Model(bonsai.core.tool.Model):
         }
 
     @classmethod
-    def get_booleans(cls, element=None, representation=None) -> list[ifcopenshell.entity_instance]:
+    def get_booleans(
+        cls,
+        element: Optional[ifcopenshell.entity_instance] = None,
+        representation: Optional[ifcopenshell.entity_instance] = None,
+    ) -> list[ifcopenshell.entity_instance]:
         if representation is None:
             representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
             if not representation:
@@ -491,7 +502,9 @@ class Model(bonsai.core.tool.Model):
         return booleans
 
     @classmethod
-    def get_manual_booleans(cls, element, representation=None) -> list[ifcopenshell.entity_instance]:
+    def get_manual_booleans(
+        cls, element: ifcopenshell.entity_instance, representation: Optional[ifcopenshell.entity_instance] = None
+    ) -> list[ifcopenshell.entity_instance]:
         pset = ifcopenshell.util.element.get_pset(element, "BBIM_Boolean")
         if not pset:
             return []
@@ -521,7 +534,7 @@ class Model(bonsai.core.tool.Model):
         ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": data})
 
     @classmethod
-    def unmark_manual_booleans(cls, element, boolean_ids):
+    def unmark_manual_booleans(cls, element: ifcopenshell.entity_instance, boolean_ids: list[int]) -> None:
         # NOTE: we use use boolean_ids instead of boolean entities
         # so it will be possible to unmark manual booleans after they already was deleted
         pset = ifcopenshell.util.element.get_pset(element, "BBIM_Boolean")
@@ -538,12 +551,14 @@ class Model(bonsai.core.tool.Model):
             ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=element, pset=pset)
 
     @classmethod
-    def get_flow_segment_axis(cls, obj):
+    def get_flow_segment_axis(cls, obj: bpy.types.Object) -> tuple[Vector, Vector]:
         z_values = [v[2] for v in obj.bound_box]
         return (obj.matrix_world @ Vector((0, 0, min(z_values))), obj.matrix_world @ Vector((0, 0, max(z_values))))
 
     @classmethod
-    def get_flow_segment_profile(cls, element):
+    def get_flow_segment_profile(
+        cls, element: ifcopenshell.entity_instance
+    ) -> Union[ifcopenshell.entity_instance, None]:
         material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
         if material and material.is_a("IfcMaterialProfileSet") and len(material.MaterialProfiles) == 1:
             return material.MaterialProfiles[0].Profile
@@ -579,7 +594,7 @@ class Model(bonsai.core.tool.Model):
                 return "PROFILE"
 
     @classmethod
-    def get_wall_axis(cls, obj, layers=None):
+    def get_wall_axis(cls, obj: bpy.types.Object, layers: Optional[dict[str, Any]] = None) -> dict[str, Any]:
         x_values = [v[0] for v in obj.bound_box]
         min_x = min(x_values)
         max_x = max(x_values)
@@ -602,7 +617,9 @@ class Model(bonsai.core.tool.Model):
         return axes
 
     @classmethod
-    def handle_array_on_copied_element(cls, element, array_data=None):
+    def handle_array_on_copied_element(
+        cls, element: ifcopenshell.entity_instance, array_data: Optional[dict[str, Any]] = None
+    ) -> None:
         """if no `array_data` is provided then an array will be removed from the element"""
 
         if array_data is None:
@@ -647,7 +664,9 @@ class Model(bonsai.core.tool.Model):
             tool.Blender.Modifier.Array.constrain_children_to_parent(element)
 
     @classmethod
-    def regenerate_array(cls, parent_obj, data, array_layers_to_apply=tuple()):
+    def regenerate_array(
+        cls, parent_obj: bpy.types.Object, data: list[dict[str, Any]], array_layers_to_apply: Iterable[int] = tuple()
+    ) -> None:
         """`array_layers_to_apply` - list of array layer indices to apply"""
         tool.Blender.Modifier.Array.remove_constraints(tool.Ifc.get_entity(parent_obj))
 
@@ -744,7 +763,12 @@ class Model(bonsai.core.tool.Model):
             bpy.context.view_layer.update()
 
     @classmethod
-    def replace_object_ifc_representation(cls, ifc_context, obj, new_representation):
+    def replace_object_ifc_representation(
+        cls,
+        ifc_context: ifcopenshell.entity_instance,
+        obj: bpy.types.Object,
+        new_representation: ifcopenshell.entity_instance,
+    ) -> None:
         ifc_file = tool.Ifc.get()
         ifc_element = tool.Ifc.get_entity(obj)
         old_representation = ifcopenshell.util.representation.get_representation(
@@ -771,7 +795,7 @@ class Model(bonsai.core.tool.Model):
         )
 
     @classmethod
-    def update_thumbnail_for_element(cls, element, refresh=False):
+    def update_thumbnail_for_element(cls, element: ifcopenshell.entity_instance, refresh: bool = False) -> None:
         if bpy.app.background:
             return
 
@@ -877,7 +901,7 @@ class Model(bonsai.core.tool.Model):
     )
 
     @classmethod
-    def get_modeling_bbim_pset_data(cls, object, pset_name):
+    def get_modeling_bbim_pset_data(cls, object: bpy.types.Object, pset_name: str) -> Union[dict[str, Any], None]:
         """get modelling BBIM pset data (eg, BBIM_Roof) and loads it's `Data` as json to `data_dict`"""
         element = tool.Ifc.get_entity(object)
         if not element:
@@ -890,7 +914,7 @@ class Model(bonsai.core.tool.Model):
         return pset_data
 
     @classmethod
-    def edit_element_placement(cls, element, matrix):
+    def edit_element_placement(cls, element: ifcopenshell.entity_instance, matrix: Matrix) -> None:
         """Useful for moving objects like ports or openings -
         the method will ensure it will be moved in blender scene too if it exists"""
         obj = tool.Ifc.get_object(element)
@@ -900,13 +924,13 @@ class Model(bonsai.core.tool.Model):
         tool.Ifc.run("geometry.edit_object_placement", product=element, matrix=matrix, is_si=True)
 
     @classmethod
-    def sync_object_ifc_position(cls, obj):
+    def sync_object_ifc_position(cls, obj: bpy.types.Object) -> None:
         """make sure IFC position will be in sync with the Blender object position, if object was moved in Blender"""
         if tool.Ifc.is_moved(obj):
             bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
 
     @classmethod
-    def get_element_matrix(cls, element, keep_local=False):
+    def get_element_matrix(cls, element: ifcopenshell.entity_instance, keep_local: bool = False) -> Matrix:
         placement = element.ObjectPlacement
         if keep_local:
             placement = ifcopenshell.util.placement.get_axis2placement(placement.RelativePlacement)
@@ -947,23 +971,23 @@ class Model(bonsai.core.tool.Model):
             )
 
     @classmethod
-    def is_parametric_roof_active(cls):
-        return (RoofData.is_loaded or not RoofData.load()) and RoofData.data["pset_data"]
+    def is_parametric_roof_active(cls) -> bool:
+        return bool((RoofData.is_loaded or not RoofData.load()) and RoofData.data["pset_data"])
 
     @classmethod
-    def is_parametric_railing_active(cls):
-        return (RailingData.is_loaded or not RailingData.load()) and RailingData.data["pset_data"]
+    def is_parametric_railing_active(cls) -> bool:
+        return bool((RailingData.is_loaded or not RailingData.load()) and RailingData.data["pset_data"])
 
     @classmethod
-    def is_parametric_window_active(cls):
-        return (WindowData.is_loaded or not WindowData.load()) and WindowData.data["pset_data"]
+    def is_parametric_window_active(cls) -> bool:
+        return bool((WindowData.is_loaded or not WindowData.load()) and WindowData.data["pset_data"])
 
     @classmethod
-    def is_parametric_door_active(cls):
-        return (DoorData.is_loaded or not DoorData.load()) and DoorData.data["pset_data"]
+    def is_parametric_door_active(cls) -> bool:
+        return bool((DoorData.is_loaded or not DoorData.load()) and DoorData.data["pset_data"])
 
     @classmethod
-    def get_active_stair_calculated_params(cls, pset_data=None):
+    def get_active_stair_calculated_params(cls, pset_data: Optional[dict[str, Any]] = None) -> dict[str, Any]:
         props = bpy.context.active_object.BIMStairProperties
 
         if props.is_editing:
