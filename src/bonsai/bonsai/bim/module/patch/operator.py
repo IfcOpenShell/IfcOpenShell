@@ -20,15 +20,11 @@ import os
 import bpy
 import json
 import ifcopenshell
+import ifcpatch
 import bonsai.tool as tool
 import bonsai.core.patch as core
 import bonsai.bim.handler
 from pathlib import Path
-
-try:
-    import ifcpatch
-except:
-    print("IfcPatch not available")
 
 
 class SelectIfcPatchInput(bpy.types.Operator):
