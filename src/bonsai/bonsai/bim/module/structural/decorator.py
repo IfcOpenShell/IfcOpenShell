@@ -50,11 +50,11 @@ class LoadsDecorator:
     def __call__(self):
         # set open gl configurations
         original_blend = gpu.state.blend_get()
-        gpu.state.blend_set('ADDITIVE')
+        gpu.state.blend_set('ALPHA')
         original_depth_mask = gpu.state.depth_mask_get()
-        #gpu.state.depth_mask_set(True)
+        gpu.state.depth_mask_set(True)
         original_depth_test = gpu.state.depth_test_get()
-        gpu.state.depth_test_set('ALWAYS')
+        gpu.state.depth_test_set('LESS_EQUAL')
 
         self.draw_batch("DistributedLoad")
 
@@ -98,8 +98,9 @@ def location_3d_to_region_2d(coord, normal, context):
     perspective = rv3d.view_perspective
     view_matrix = rv3d.view_matrix
     point_view_space = view_matrix @ coord
+    
 
-    if perspective == 'ORTHO' or -20 < point_view_space.z < 0:
+    if perspective == 'ORTHO' or -10 < point_view_space.z < 0:
         prj = rv3d.perspective_matrix @ Vector((coord[0], coord[1], coord[2], 1.0))
         width_half = context.region.width / 2.0
         height_half = context.region.height / 2.0
