@@ -19,7 +19,64 @@ using ifcopenshell::geometry::NumberEpeck;
 #define NumberType NumberEpeck
 #endif
 
-ifcopenshell::geometry::CgalShape::CgalShape(const cgal_shape_t & shape, bool convex) {
+typedef CGAL::Polyhedron_3<Kernel_> Polyhedron;
+typedef Polyhedron::Facet_const_handle Facet_const_handle;
+typedef Polyhedron::Halfedge_around_facet_const_circulator Halfedge_around_facet_circulator;
+
+namespace {
+	bool are_facets_coplanar(const Facet_const_handle& f1, const Facet_const_handle& f2) {
+		// Function to determine if two facets are coplanar
+		// You can use the normal vectors and the equation of the planes to determine coplanarity
+		auto normal_1 = CGAL::normal(f1->halfedge()->vertex()->point(),
+			f1->halfedge()->next()->vertex()->point(),
+			f1->halfedge()->next()->next()->vertex()->point());
+
+		auto normal_2 = CGAL::normal(f2->halfedge()->vertex()->point(),
+			f2->halfedge()->next()->vertex()->point(),
+			f2->halfedge()->next()->next()->vertex()->point());
+
+		return CGAL::collinear(CGAL::ORIGIN + decltype(normal_1)(0., 0., 0.), CGAL::ORIGIN + normal_1, CGAL::ORIGIN + normal_2);
+	}
+
+	void partition_coplanar_components(const Polyhedron& shape,
+		std::vector<std::set<Facet_const_handle>>& components) {
+		std::set<Facet_const_handle> visited;
+
+		for (auto& face : shape.facet_handles()) {
+			if (visited.find(face) != visited.end()) {
+				continue;
+			}
+
+			// Create a new component for coplanar facets
+			std::set<Facet_const_handle> component;
+			std::queue<Facet_const_handle> queue;
+
+			queue.push(face);
+			visited.insert(face);
+
+			while (!queue.empty()) {
+				Facet_const_handle current = queue.front();
+				queue.pop();
+
+				component.insert(current);
+
+				// Iterate over neighboring facets
+				Halfedge_around_facet_circulator he = current->facet_begin();
+				do {
+					Facet_const_handle neighbour = he->opposite()->face();
+					if (neighbour != nullptr && visited.find(neighbour) == visited.end() && are_facets_coplanar(current, neighbour)) {
+						queue.push(neighbour);
+						visited.insert(neighbour);
+					}
+				} while (++he != current->facet_begin());
+			}
+
+			components.push_back(component);
+		}
+	}
+}
+
+ifcopenshell::geometry::CgalShape::CgalShape(const cgal_shape_t& shape, bool convex) {
 	shape_ = shape;
 	convex_tag_ = convex;
 
@@ -141,6 +198,17 @@ void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Sett
 
 	}
 
+	// Facet -> planar component map for determining which
+	// edges are to be registered.
+	std::vector<std::set<Facet_const_handle>> components;
+	partition_coplanar_components(s, components);
+	std::map<Facet_const_handle, typename decltype(components)::const_iterator> facet_to_component;
+	for (auto it = components.begin(); it != components.end(); ++it) {
+		for (auto& f : *it) {
+			facet_to_component[f] = it;
+		}
+	}
+
 	// std::map<cgal_vertex_descriptor_t, Kernel_::Vector_3> vertex_normals;
 	// boost::associative_property_map<std::map<cgal_vertex_descriptor_t, Kernel_::Vector_3>> vertex_normals_map(vertex_normals);
 	
@@ -161,6 +229,8 @@ void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Sett
 	typedef std::tuple<Kernel_::FT, Kernel_::FT, Kernel_::FT, Kernel_::FT, Kernel_::FT, Kernel_::FT> postion_normal;
 	std::map<postion_normal, size_t> welds;
 
+	std::set<std::pair<int, int>> registered_edges;
+
 	int num_faces = 0, num_vertices = 0;
 	for (auto &face : faces(s)) {
 		if (!face->is_triangle()) {
@@ -169,6 +239,7 @@ void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Sett
 		}
 		CGAL::Polyhedron_3<Kernel_>::Halfedge_around_facet_const_circulator current_halfedge = face->facet_begin();
 		int vertexidx[3];
+		bool is_face_boundary[3];
 		int i = 0;
 		do {
 			postion_normal pn = {
@@ -203,13 +274,32 @@ void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Sett
 				vidx = it->second;
 			}
 
-			vertexidx[i++] = (int) vidx;
+			vertexidx[i] = (int)vidx;
+			is_face_boundary[i] = facet_to_component[face] != facet_to_component[current_halfedge->opposite()->face()];
 
+			++i;
 			++num_vertices;
 			++current_halfedge;
 		} while (current_halfedge != face->facet_begin());
 
 		t->addFace(item_id, surface_style_id, vertexidx[0], vertexidx[1], vertexidx[2]);
+		for (size_t i = 0; i < 3; ++i) {
+			if (is_face_boundary[i]) {
+				// In CGAL, the vertex of a halfedge is the incident vertex, i.e
+				// the second vertex of the edge, so in order to get corresponding
+				// vertex and edge indices we need to find vertexids (i-1, i) for
+				// the boundary registered in i.
+				auto a = vertexidx[(i + 2) % 3];
+				auto b = vertexidx[(i + 3) % 3];
+				if (a > b) {
+					std::swap(a, b);
+				}
+				if (registered_edges.find({ a, b }) == registered_edges.end()) {
+					registered_edges.insert({ a,b });
+					t->registerEdge(item_id, a, b);
+				}
+			}
+		}
 
 		++num_faces;
 	}
