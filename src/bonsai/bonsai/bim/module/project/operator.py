@@ -2372,13 +2372,18 @@ class MeasureTool(bpy.types.Operator, PolylineOperator):
     bl_label = "Measure Tool"
     bl_options = {"REGISTER", "UNDO"}
 
+    measure_type: bpy.props.StringProperty()
+
     @classmethod
     def poll(cls, context):
         return context.space_data.type == "VIEW_3D"
 
     def __init__(self):
         super().__init__()
-        self.input_ui = tool.Polyline.create_input_ui(init_z=True)
+        if self.measure_type == 'AREA':
+            self.input_ui = tool.Polyline.create_input_ui(init_z=True, init_area=True)
+        else:
+            self.input_ui = tool.Polyline.create_input_ui(init_z=True)
         self.input_options = ["D", "A", "X", "Y", "Z"]
         self.instructions = """TAB: Cycle Input
         D: Distance Input
@@ -2405,11 +2410,15 @@ class MeasureTool(bpy.types.Operator, PolylineOperator):
 
         self.handle_snap_selection(context, event)
 
+        single_mode = False
+        if self.measure_type == "SINGLE" and len(context.scene.BIMPolylineProperties.polyline_point) >= 2:
+            single_mode = True
+            
         if (
             not self.tool_state.is_input_on
             and event.value == "RELEASE"
             and event.type in {"RET", "NUMPAD_ENTER", "RIGHTMOUSE"}
-        ):
+        ) or single_mode:
             context.workspace.status_text_set(text=None)
             PolylineDecorator.uninstall()
             tool.Snap.move_polyline_to_measure()
@@ -2421,6 +2430,7 @@ class MeasureTool(bpy.types.Operator, PolylineOperator):
         self.handle_keyboard_input(context, event)
 
         self.handle_inserting_polyline(context, event)
+        tool.Polyline.calculate_area(context, self.input_ui)
 
         if event.type == "E":
             context.scene.BIMPolylineProperties.measure_polyline.clear()

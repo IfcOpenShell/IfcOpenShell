@@ -229,3 +229,13 @@ class BIMProjectProperties(PropertyGroup):
 
     def get_library_element_index(self, lib_element):
         return next((i for i in range(len(self.library_elements)) if self.library_elements[i] == lib_element))
+
+
+class MeasureToolSettings(PropertyGroup):
+    measure_type_items = [
+        ("SINGLE", "SINGLE", "Single", "FIXED_SIZE",1),
+        ("POLYLINE", "POLYLINE", "Polyline", "DRIVER_ROTATIONAL_DIFFERENCE", 2),
+        ("AREA", "AREA", "Area", "OUTLINER_DATA_LIGHTPROBE", 3),
+    ]
+
+    measure_type: bpy.props.EnumProperty(items=measure_type_items, default="POLYLINE")

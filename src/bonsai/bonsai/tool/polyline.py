@@ -45,7 +45,7 @@ class Polyline(bonsai.core.tool.Polyline):
             if self.init_z:
                 self._Z = ""
             if self.init_area:
-                self._AREA = ""
+                self._AREA = "0"
 
         def set_value(self, attribute_name, value):
             value = str(value)
@@ -222,8 +222,8 @@ class Polyline(bonsai.core.tool.Polyline):
         else:
             area = 0
 
-        if input_ui.get_text_value("A") is not None:
-            input_ui.set_value("A", area)
+        if input_ui.get_text_value("AREA") is not None:
+            input_ui.set_value("AREA", area)
         return
 
     @classmethod
