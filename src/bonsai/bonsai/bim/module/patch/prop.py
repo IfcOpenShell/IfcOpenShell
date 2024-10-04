@@ -47,6 +47,10 @@ def get_ifcpatch_recipes(self, context):
     global ifcpatchrecipes_enum
     if len(ifcpatchrecipes_enum) < 1:
         ifcpatchrecipes_enum.clear()
+        # Have to add a blank entry because otherwise default recipe might be not loaded
+        # properly (need to ensure bim.update_ifc_patch_arguments will be called). See #5540.
+        ifcpatchrecipes_enum.append(("-", "-", ""))
+
         ifcpatch_path = Path(importlib.util.find_spec("ifcpatch").submodule_search_locations[0])
         for filename in ifcpatch_path.joinpath("recipes").glob("*.py"):
             f = str(filename.stem)

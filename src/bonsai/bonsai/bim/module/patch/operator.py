@@ -67,6 +67,9 @@ class ExecuteIfcPatch(bpy.types.Operator):
     @classmethod
     def poll(cls, context):
         props = context.scene.BIMPatchProperties
+        if props.ifc_patch_recipes == "-":
+            cls.poll_message_set("No recipe selected.")
+            return False
         if not props.should_load_from_memory and not props.ifc_patch_input:
             cls.poll_message_set("Select an IFC file or use 'load from memory' if it's loaded in Bonsai.")
             return False
