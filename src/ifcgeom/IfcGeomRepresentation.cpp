@@ -148,7 +148,7 @@ IfcGeom::Representation::Serialization::Serialization(const BRep& brep)
 		int sid = -1;
 
 		if (it->hasStyle()) {
-			const auto& clr = it->Style().diffuse.ccomponents();
+            const auto& clr = it->Style().get_color().ccomponents();
 			surface_styles_.push_back(clr(0));
 			surface_styles_.push_back(clr(1));
 			surface_styles_.push_back(clr(2));

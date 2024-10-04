@@ -755,12 +755,12 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 %}
 
 %{
-	PyObject* get_info_cpp(IfcUtil::IfcBaseClass* v);
+	PyObject* get_info_cpp(IfcUtil::IfcBaseClass* v, bool include_identifier);
 
 	// @todo refactor this to remove duplication with the typemap. 
 	// except this is calls the above function in case of instances.
-	PyObject* convert_cpp_attribute_to_python(AttributeValue arg) {
-		return arg.array_->apply_visitor([](auto& v){
+	PyObject* convert_cpp_attribute_to_python(AttributeValue arg, bool include_identifier = true) {
+		return arg.array_->apply_visitor([include_identifier](auto& v){
 			using U = std::decay_t<decltype(v)>;
             if constexpr (is_std_vector_v<U>) {
 				return pythonize_vector(v);
@@ -774,11 +774,11 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 					return static_cast<PyObject*>(Py_None); 
 				}
 			} else if constexpr (std::is_same_v<U, IfcUtil::IfcBaseClass*>) {
-				return get_info_cpp(v);
+				return get_info_cpp(v, include_identifier);
 			} else if constexpr (std::is_same_v<U, aggregate_of_instance::ptr>) {
 				auto r = PyTuple_New(v->size());
 				for (unsigned i = 0; i < v->size(); ++i) {
-					PyTuple_SetItem(r, i, get_info_cpp((*v)[i]));
+					PyTuple_SetItem(r, i, get_info_cpp((*v)[i], include_identifier));
 				}
 				return r;
 			} else if constexpr (std::is_same_v<U, aggregate_of_aggregate_of_instance::ptr>) {
@@ -787,7 +787,7 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 					auto v_i = it;
 					auto r = PyTuple_New(v_i->size());
 					for (unsigned i = 0; i < v_i->size(); ++i) {
-						PyTuple_SetItem(r, i, get_info_cpp((*v_i)[i]));
+						PyTuple_SetItem(r, i, get_info_cpp((*v_i)[i], include_identifier));
 					}
 					PyTuple_SetItem(rs, std::distance(v->begin(), it), r);
 				}
@@ -802,7 +802,7 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 	}
 %}
 %inline %{
-	PyObject* get_info_cpp(IfcUtil::IfcBaseClass* v) {
+	PyObject* get_info_cpp(IfcUtil::IfcBaseClass* v, bool include_identifier = true) {
 		PyObject *d = PyDict_New();
 
 		if (v->declaration().as_entity()) {
@@ -816,23 +816,24 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 					? IfcUtil::Argument_DERIVED
 					: IfcUtil::from_parameter_type((*it)->type_of_attribute());
 				auto value_cpp = v->data().get_attribute_value(std::distance(attrs.begin(), it));
-				auto value_py = convert_cpp_attribute_to_python(value_cpp);
+				auto value_py = convert_cpp_attribute_to_python(value_cpp, include_identifier);
 				PyDict_SetItem(d, name_py, value_py);
 				Py_DECREF(name_py);
 				Py_DECREF(value_py);
 			}
-
-			const std::string& id_cpp = "id";
-			auto id_py = pythonize(id_cpp);
-			auto id_v_py = pythonize(v->as<IfcUtil::IfcBaseEntity>()->id());
-			PyDict_SetItem(d, id_py, id_v_py);
-			Py_DECREF(id_py);
-			Py_DECREF(id_v_py);
+			if (include_identifier) {
+				const std::string& id_cpp = "id";
+				auto id_py = pythonize(id_cpp);
+				auto id_v_py = pythonize(v->as<IfcUtil::IfcBaseEntity>()->id());
+				PyDict_SetItem(d, id_py, id_v_py);
+				Py_DECREF(id_py);
+				Py_DECREF(id_v_py);
+			}
 		} else {
 			const std::string& name_cpp = "wrappedValue";
 			auto name_py = pythonize(name_cpp);
 			auto value_cpp = v->data().get_attribute_value(0);
-			auto value_py = convert_cpp_attribute_to_python(value_cpp);
+			auto value_py = convert_cpp_attribute_to_python(value_cpp, include_identifier);
 			PyDict_SetItem(d, name_py, value_py);
 			Py_DECREF(name_py);
 			Py_DECREF(value_py);

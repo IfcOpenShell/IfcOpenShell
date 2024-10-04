@@ -365,37 +365,74 @@ class PolylineDecorator:
         batch.draw(shader)
 
     def draw_product_preview(self, context):
+        def transparent_color(color, alpha=0.1):
+            color = [i for i in color]
+            color[3] = alpha
+            return color
+
         self.addon_prefs = tool.Blender.get_addon_preferences()
         self.line_shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
         self.line_shader.bind()  # required to be able to change uniforms of the shader
         self.line_shader.uniform_float("viewportSize", (context.region.width, context.region.height))
         self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
-        self.line_shader.uniform_float("lineWidth", 0.5)
+        self.line_shader.uniform_float("lineWidth", 2.0)
         decorator_color = self.addon_prefs.decorator_color_special
         polyline = context.scene.BIMPolylineProperties.polyline_point
         prop = context.scene.BIMPolylineProperties.product_preview
 
         points = []
-        edges = []
+        side_edges_1 = []
+        side_edges_2 = []
+        base_edges = []
 
         for i in range(len(prop)):
             points.append(Vector((prop[i].x, prop[i].y, prop[i].z)))
 
         n = len(points) // 2
-        bottom_side_1 = [[i, (i + 1) % (n)] for i in range((n-1)//2)]
-        bottom_side_2 = [[i, (i + 1) % (n)] for i in range(n//2, n-1)]
-        bottom_connections = [[i, n-i-1] for i in range(n//2)]
+        bottom_side_1 = [[i, (i + 1) % (n)] for i in range((n - 1) // 2)]
+        bottom_side_2 = [[i, (i + 1) % (n)] for i in range(n // 2, n - 1)]
+        bottom_connections = [[i, n - i - 1] for i in range(n // 2)]
         bottom_loop = bottom_connections + bottom_side_1 + bottom_side_2
-        edges.extend(bottom_loop)
+        side_edges_1.extend(bottom_side_1)
+        side_edges_2.extend(bottom_side_2)
+        base_edges.extend(bottom_loop)
 
+        upper_side_1 = [[i + n for i in edges] for edges in bottom_side_1]
+        upper_side_2 = [[i + n for i in edges] for edges in bottom_side_2]
         upper_loop = [[i + n for i in edges] for edges in bottom_loop]
-        edges.extend(upper_loop)
+        side_edges_1.extend(upper_side_1)
+        side_edges_2.extend(upper_side_2)
+        base_edges.extend(upper_loop)
 
-        vertical_connections = [[i, j] for i, j in zip(range(n), range(n, n * 2))]
-        edges.extend(vertical_connections)
+        loops = [side_edges_1, side_edges_2, base_edges]
 
-        if len(points) > 1:
-            self.draw_batch("LINES", points, decorator_color, edges)
+        all_edges = []
+        all_tris = []
+        for i, group in enumerate(loops):
+            bm = bmesh.new()
+
+            new_verts = [bm.verts.new(v) for v in points]
+            new_edges = [bm.edges.new((new_verts[e[0]], new_verts[e[1]])) for e in group]
+
+            bm.verts.index_update()
+            bm.edges.index_update()
+
+            if i == 2:
+                new_faces = bmesh.ops.contextual_create(bm, geom=bm.edges)
+            new_faces = bmesh.ops.bridge_loops(bm, edges=bm.edges, use_pairs=True, use_cyclic=True)
+
+            bm.verts.index_update()
+            bm.edges.index_update()
+            edges = [[v.index for v in e.verts] for e in bm.edges]
+            print(edges)
+            tris = [[l.vert.index for l in loop] for loop in bm.calc_loop_triangles()]
+            all_edges.extend(edges)
+            all_tris.extend(tris)
+
+        all_edges = list(set(tuple(e) for e in all_edges))
+        all_tris = list(set(tuple(t) for t in all_tris))
+        self.draw_batch("LINES", points, decorator_color, all_edges)
+        self.draw_batch("TRIS", points, transparent_color(decorator_color), all_tris)
 
     def draw_input_ui(self, context):
         texts = {
@@ -454,7 +491,7 @@ class PolylineDecorator:
     def draw_measurements(self, context):
         region = context.region
         rv3d = region.data
-        measurement_prop = context.scene.BIMPolylineProperties.polyline_measurement
+        measurement_prop = context.scene.BIMPolylineProperties.polyline_point
 
         self.addon_prefs = tool.Blender.get_addon_preferences()
         self.font_id = 1

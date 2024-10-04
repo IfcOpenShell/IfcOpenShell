@@ -49,6 +49,37 @@ class BIM_MT_type_manager_menu(bpy.types.Menu):
         layout.operator("bim.purge_unused_objects", text="Purge Unused Types", icon="TRASH").object_type = "TYPE"
 
 
+class BIM_MT_type_menu(bpy.types.Menu):
+    bl_label = "Type Menu"
+    bl_idname = "BIM_MT_type_menu"
+    relating_type_id: bpy.props.IntProperty(name="Relating Type Id")
+
+    def draw(self, context):
+        props = context.scene.BIMModelProperties
+        layout = self.layout
+        op = layout.operator("bim.launch_rename_type", icon="GREASEPENCIL", text="Rename Type")
+        op.element = props.menu_relating_type_id
+        op = layout.operator("bim.select_type", icon="OBJECT_DATA")
+        op.relating_type = props.menu_relating_type_id
+        op = layout.operator("bim.duplicate_type", icon="DUPLICATE")
+        op.element = props.menu_relating_type_id
+        layout.separator()
+        op = layout.operator("bim.remove_type", icon="X")
+        op.element = props.menu_relating_type_id
+
+
+class LaunchTypeMenu(bpy.types.Operator):
+    bl_idname = "bim.launch_type_menu"
+    bl_label = "Launch Type Menu"
+    relating_type_id: bpy.props.IntProperty(name="Relating Type Id")
+
+    def execute(self, context):
+        props = context.scene.BIMModelProperties
+        props.menu_relating_type_id = self.relating_type_id
+        bpy.ops.wm.call_menu(name="BIM_MT_type_menu")
+        return {"FINISHED"}
+
+
 class LaunchTypeManager(bpy.types.Operator):
     bl_idname = "bim.launch_type_manager"
     bl_label = "Launch Type Manager"
@@ -56,6 +87,7 @@ class LaunchTypeManager(bpy.types.Operator):
     bl_description = "Display all available Construction Types to add new instances"
 
     def execute(self, context):
+        bpy.ops.bim.hotkey("INVOKE_DEFAULT", hotkey="S_A")
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -68,7 +100,6 @@ class LaunchTypeManager(bpy.types.Operator):
 
         # will be None if project has no types
         if ifc_class is not None:
-            props.type_class = ifc_class
             bpy.ops.bim.load_type_thumbnails(ifc_class=ifc_class, offset=0, limit=9)
         return context.window_manager.invoke_props_dialog(
             self, width=550, title="Type Manager", confirm_text="Add Type"
@@ -78,8 +109,8 @@ class LaunchTypeManager(bpy.types.Operator):
         props = context.scene.BIMModelProperties
 
         row = self.layout.row(align=True)
-        prop_with_search(row, props, "type_class", text="", should_click_ok_to_validate=True)
-
+        prop_with_search(row, props, "ifc_class", text="", should_click_ok_to_validate=True)
+        row.operator("bim.launch_add_element", icon="ADD", text="")
         row.menu("BIM_MT_type_manager_menu", text="", icon="PREFERENCES")
 
         columns = self.layout.column_flow(columns=3)
@@ -102,33 +133,18 @@ class LaunchTypeManager(bpy.types.Operator):
             op = row.operator("bim.change_type_page", icon="TRIA_RIGHT", text="")
             op.page = AuthoringData.data["next_page"]
 
-        if props.is_adding_type:
-            row = self.layout.row()
-            box = row.box()
-            row = box.row()
-            row.prop(props, "type_predefined_type")
-            row = box.row()
-            row.prop(props, "type_template")
-            row = box.row()
-            row.prop(props, "type_name")
-            row = box.row(align=True)
-            row.operator("bim.add_type", icon="CHECKMARK", text="Save New Type")
-            row.operator("bim.disable_add_type", icon="CANCEL", text="")
-        else:
-            row = self.layout.row()
-            # row.operator("bim.enable_add_type", icon="ADD", text="Create New Type")
-            row.operator("bim.launch_add_element", icon="ADD", text="Create New Type")
-
         flow = self.layout.grid_flow(row_major=True, columns=3, even_columns=True, even_rows=True, align=True)
 
         for relating_type in AuthoringData.data["paginated_relating_types"]:
             outer_col = flow.column()
             box = outer_col.box()
 
-            row = box.row()
-            row.alignment = "CENTER"
-            op = row.operator("bim.set_active_type", text=relating_type["name"], icon="FILE_3D", emboss=False)
+            row = box.row(align=True)
+            op = row.operator("bim.set_active_type", text=relating_type["name"], icon="FILE_3D")
             op.relating_type = relating_type["id"]
+
+            op = row.operator("bim.launch_type_menu", icon="DOWNARROW_HLT", text="")
+            op.relating_type_id = relating_type["id"]
 
             row = box.row()
             row.alignment = "CENTER"
@@ -148,23 +164,7 @@ class LaunchTypeManager(bpy.types.Operator):
             else:
                 row = box.row()
                 op = box.operator("bim.load_type_thumbnails", text="Load Thumbnails", icon="FILE_REFRESH")
-                op.ifc_class = props.type_class
-
-            row = box.row(align=True)
-
-            text = f"Add {relating_type['predefined_type']}" if relating_type["predefined_type"] else "Add"
-            op = row.operator("bim.add_constr_type_instance", icon="ADD", text=text)
-            op.from_invoke = True
-            op.relating_type_id = relating_type["id"]
-
-            op = row.operator("bim.rename_type", icon="GREASEPENCIL", text="")
-            op.element = relating_type["id"]
-            op = row.operator("bim.select_type", icon="OBJECT_DATA", text="")
-            op.relating_type = relating_type["id"]
-            op = row.operator("bim.duplicate_type", icon="DUPLICATE", text="")
-            op.element = relating_type["id"]
-            op = row.operator("bim.remove_type", icon="X", text="")
-            op.element = relating_type["id"]
+                op.ifc_class = props.ifc_class
 
 
 class BIM_PT_authoring(Panel):

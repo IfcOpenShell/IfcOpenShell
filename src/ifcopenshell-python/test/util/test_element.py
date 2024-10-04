@@ -634,6 +634,47 @@ class TestGetElementsByStyle(test.bootstrap.IFC4):
         )
         assert subject.get_elements_by_style(self.file, style) == {element}
 
+    def test_getting_elements_of_a_styled_material_with_curve_style_hatching(self):
+        element = self.file.create_entity("IfcWall")
+        material = ifcopenshell.api.material.add_material(self.file)
+        ifcopenshell.api.material.assign_material(self.file, products=[element], material=material)
+        curve_style = self.file.create_entity("IfcCurveStyle")
+        fill_style = self.file.create_entity("IfcFillAreaStyleHatching", HatchLineAppearance=curve_style)
+        style = self.file.create_entity("IfcFillAreaStyle", FillStyles=[fill_style])
+        self.file.create_entity(
+            "IfcMaterialDefinitionRepresentation",
+            RepresentedMaterial=material,
+            Representations=[
+                self.file.create_entity(
+                    "IfcStyledRepresentation", Items=[self.file.create_entity("IfcStyledItem", Styles=[style])]
+                )
+            ],
+        )
+        assert subject.get_elements_by_style(self.file, curve_style) == {element}
+
+    def test_getting_elements_of_a_styled_material_with_fill_area_style_tiles(self):
+        # NOTE: Not sure if this the exactly correct way to implement IfcFillAreaStyleTiles
+        # couldn't find any .ifc files implementing it, so taking my best guess.
+        # Ref: https://web.archive.org/web/20220711062839/https://ifcdoctor.com/2022/07/11/graphics-in-ifc/
+        element = self.file.create_entity("IfcWall")
+        material = ifcopenshell.api.material.add_material(self.file)
+        ifcopenshell.api.material.assign_material(self.file, products=[element], material=material)
+        tile_style = self.file.create_entity("IfcCurveStyle")
+        tile_curve = self.file.create_entity("IfcGeometricSet")
+        styled_item = self.file.create_entity("IfcStyledItem", Styles=[tile_style], Item=tile_curve)
+        fill_style = self.file.create_entity("IfcFillAreaStyleTiles", Tiles=[styled_item])
+        style = self.file.create_entity("IfcFillAreaStyle", FillStyles=[fill_style])
+        self.file.create_entity(
+            "IfcMaterialDefinitionRepresentation",
+            RepresentedMaterial=material,
+            Representations=[
+                self.file.create_entity(
+                    "IfcStyledRepresentation", Items=[self.file.create_entity("IfcStyledItem", Styles=[style])]
+                )
+            ],
+        )
+        assert subject.get_elements_by_style(self.file, tile_style) == {element}
+
 
 class TestGetElementsByRepresentation(test.bootstrap.IFC4):
     def test_getting_elements_of_a_styled_representation_item(self):

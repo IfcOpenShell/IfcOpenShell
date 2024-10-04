@@ -46,9 +46,10 @@ class BIM_PT_styles(Panel):
 
         if not self.props.is_editing:
             row = self.layout.row(align=True)
-            row.label(text="{} Styles".format(StylesData.data["total_styles"]), icon="SHADING_RENDERED")
+            style_type = self.props.style_type
+            row.label(text="{} Styles".format(StylesData.data["total_styles"][style_type]), icon="SHADING_RENDERED")
             bonsai.bim.helper.prop_with_search(row, self.props, "style_type", text="")
-            row.operator("bim.load_styles", text="", icon="IMPORT").style_type = self.props.style_type
+            row.operator("bim.load_styles", text="", icon="IMPORT").style_type = style_type
             return
 
         active_style = self.props.styles and self.props.active_style_index < len(self.props.styles)

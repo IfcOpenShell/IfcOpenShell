@@ -60,27 +60,27 @@ def update_elevation(self, context):
             bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj)
 
 
-def update_name(self, context):
+def update_name(self: "BIMContainer", context: bpy.types.Context) -> None:
     if ifc_definition_id := self.ifc_definition_id:
-        tool.Spatial.edit_container_name(tool.Ifc.get().by_id(ifc_definition_id), self.name)
+        tool.Ifc.get_object(tool.Ifc.get().by_id(ifc_definition_id)).name = self.name
 
 
-def update_active_container_index(self, context):
+def update_active_container_index(self: "BIMSpatialDecompositionProperties", context: bpy.types.Context) -> None:
     SpatialDecompositionData.data["subelement_class"] = SpatialDecompositionData.subelement_class()
     if tool.Blender.get_enum_safe(self, "subelement_class") is None:
         self.subelement_class = SpatialDecompositionData.data["subelement_class"][0][0]
     tool.Spatial.load_contained_elements()
 
 
-def update_should_include_children(self, context):
+def update_should_include_children(self: "BIMSpatialDecompositionProperties", context: bpy.types.Context) -> None:
     tool.Spatial.load_contained_elements()
 
 
-def update_element_mode(self, context):
+def update_element_mode(self: "BIMSpatialDecompositionProperties", context: bpy.types.Context) -> None:
     tool.Spatial.load_contained_elements()
 
 
-def update_container_obj(self, context):
+def update_container_obj(self: "BIMObjectSpatialProperties", context: bpy.types.Context) -> None:
     if self.container_obj is None or not (obj := context.active_object):
         return
     if not (element := tool.Ifc.get_entity(self.container_obj)):

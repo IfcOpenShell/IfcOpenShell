@@ -559,5 +559,6 @@ class LaunchAddElement(bpy.types.Operator, tool.Ifc.Operator):
     bl_description = "Add an IFC physical product, construction type, and more"
 
     def execute(self, context):
+        # This stub operator is needed because operators from menu skip the invoke call
         bpy.ops.bim.add_element("INVOKE_DEFAULT")
         return {"FINISHED"}

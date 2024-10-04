@@ -95,8 +95,10 @@ namespace {
 
 		OpenCascadeKernel::curve_creation_visitor_result_type operator()(const taxonomy::loop::ptr& l) {
 			TopoDS_Wire wire;
-			kernel->convert(l, wire);
-			return result = wire;
+			if (!kernel->convert(l, wire)) {
+				throw std::runtime_error("Failed to convert loop to wire");
+			}
+			return result;
 		}
 
 		OpenCascadeKernel::curve_creation_visitor_result_type operator()(const taxonomy::edge::ptr& e) {

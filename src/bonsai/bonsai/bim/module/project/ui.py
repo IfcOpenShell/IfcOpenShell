@@ -470,7 +470,7 @@ class BIM_UL_filter_categories(UIList):
 
 
 class BIM_UL_links(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         if item:
             row = layout.row(align=True)
             if item.is_loaded:
@@ -498,6 +498,8 @@ class BIM_UL_links(UIList):
                 )
                 op.link = item.name
                 op.mode = "VISIBLE"
+                op = row.operator("bim.select_link_handle", text="", icon="OBJECT_DATA")
+                op.index = index
                 op = row.operator("bim.unload_link", text="", icon="UNLINKED")
                 op.filepath = item.name
                 op = row.operator("bim.reload_link", text="", icon="FILE_REFRESH")
@@ -523,4 +525,7 @@ class BIM_PT_purge(Panel):
         layout.operator("bim.purge_unused_objects", text="Purge Unused Profiles").object_type = "PROFILE"
         layout.operator("bim.purge_unused_objects", text="Purge Unused Types").object_type = "TYPE"
         layout.operator("bim.purge_unused_objects", text="Purge Unused Materials").object_type = "MATERIAL"
-        layout.operator("bim.purge_unused_objects", text="Purge Unused Styles").object_type = "STYLE"
+        row = layout.row(align=True)
+        row.label(text="Styles: ")
+        row.operator("bim.purge_unused_objects", text="Purge Unused").object_type = "STYLE"
+        row.operator("bim.merge_identical_objects", text="Merge Identical").object_type = "STYLE"

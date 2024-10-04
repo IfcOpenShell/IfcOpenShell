@@ -211,9 +211,8 @@ class ExecuteIfcClash(bpy.types.Operator):
         _, extension = os.path.splitext(self.filepath)
         if extension != ".bcf":
             self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".json")
-        # TODO Temporarily until BCF support comes back
-        # if extension != ".json":
-        #     self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".bcf")
+        if extension != ".json":
+            self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".bcf")
         WindowManager = context.window_manager
         WindowManager.fileselect_add(self)
         return {"RUNNING_MODAL"}
@@ -284,6 +283,7 @@ class ExecuteIfcClash(bpy.types.Operator):
         if extension == ".json":
             tool.Clash.load_clash_sets(self.filepath)
             tool.Clash.import_active_clashes()
+        self.report({"INFO"}, "Finished IFC clash.")
         return {"FINISHED"}
 
 

@@ -52,11 +52,11 @@ class BIM_PT_context(bpy.types.Panel):
         for ifc_context in ContextData.data["contexts"]:
             box = self.layout.box()
 
-            if ifc_context["is_editing"]:
+            if props.active_context_id == ifc_context["id"]:
                 row = box.row(align=True)
                 row.operator("bim.edit_context", icon="CHECKMARK")
                 row.operator("bim.disable_editing_context", icon="CANCEL", text="")
-                bonsai.bim.helper.draw_attributes(ifc_context["props"], box)
+                bonsai.bim.helper.draw_attributes(props.context_attributes, box)
             else:
                 row = box.row(align=True)
                 row.label(text=ifc_context["context_type"])
@@ -73,11 +73,11 @@ class BIM_PT_context(bpy.types.Panel):
             op.parent = ifc_context["id"]
 
             for subcontext in ifc_context["subcontexts"]:
-                if subcontext["is_editing"]:
+                if props.active_context_id == subcontext["id"]:
                     row = box.row(align=True)
                     row.operator("bim.edit_context", icon="CHECKMARK")
                     row.operator("bim.disable_editing_context", icon="CANCEL", text="")
-                    bonsai.bim.helper.draw_attributes(subcontext["props"], box)
+                    bonsai.bim.helper.draw_attributes(props.context_attributes, box)
                 else:
                     row = box.row(align=True)
                     row.label(text=subcontext["context_type"])

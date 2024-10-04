@@ -133,7 +133,7 @@ class Raycast(bonsai.core.tool.Raycast):
             return None, None, None
 
     @classmethod
-    def ray_cast_by_proximity(cls, context, event, obj, face=None):
+    def ray_cast_by_proximity(cls, context, event, obj, face=None, custom_bmesh=None):
         region = context.region
         rv3d = context.region_data
         mouse_pos = event.mouse_region_x, event.mouse_region_y
@@ -149,35 +149,42 @@ class Raycast(bonsai.core.tool.Raycast):
         except:
             loc = Vector((0, 0, 0))
 
-        bm = bmesh.new()
-        if face is None:  # Object with faces
-            bm.from_mesh(obj.data)
-        else:  # Object without faces
-            verts = [bm.verts.new(obj.data.vertices[i].co) for i in face.vertices]
-            bm.faces.new(verts)
+        if not custom_bmesh:
+            bm = bmesh.new()
+            if face is None:  # Object without faces
+                bm.from_mesh(obj.data)
+            else:  # Object with faces
+                verts = [bm.verts.new(obj.data.vertices[i].co) for i in face.vertices]
+                bm.faces.new(verts)
+        else:
+            # Measure polylines
+            bm = custom_bmesh
 
         for vertex in bm.verts:
-            world_vertex = obj.matrix_world.copy() @ vertex.co
-            intersection = tool.Cad.point_on_edge(world_vertex, (ray_target, loc))
-            distance = (world_vertex - intersection).length
+            v = vertex.co
+            if obj:
+                v = obj.matrix_world.copy() @ v
+            intersection = tool.Cad.point_on_edge(v, (ray_target, loc))
+            distance = (v - intersection).length
             if distance < 0.2:
-                points.append([distance - stick_factor, (world_vertex, "Vertex")])
+                points.append([distance - stick_factor, (v, "Vertex")])
 
         for edge in bm.edges:
             v1 = edge.verts[0].co
             v2 = edge.verts[1].co
-            world_v1 = obj.matrix_world.copy() @ v1
-            world_v2 = obj.matrix_world.copy() @ v2
-            division_point = (world_v1 + world_v2) / 2  # TODO Make it work for different divisions
+            if obj:
+                v1 = obj.matrix_world.copy() @ v1
+                v2 = obj.matrix_world.copy() @ v2
+            division_point = (v1 + v2) / 2  # TODO Make it work for different divisions
 
             intersection = tool.Cad.point_on_edge(division_point, (ray_target, loc))
             distance = (division_point - intersection).length
             if distance < 0.2:
                 points.append([distance, (division_point, "Edge Center")])
 
-            intersection = tool.Cad.intersect_edges_v2((ray_target, loc), (world_v1, world_v2))
+            intersection = tool.Cad.intersect_edges_v2((ray_target, loc), (v1, v2))
             if intersection[0]:
-                if tool.Cad.is_point_on_edge(intersection[1], (world_v1, world_v2)):
+                if tool.Cad.is_point_on_edge(intersection[1], (v1, v2)):
                     distance = (intersection[1] - intersection[0]).length
                     if distance < 0.8:
                         points.append([distance + 4 * stick_factor, (intersection[1], "Edge")])
@@ -216,6 +223,23 @@ class Raycast(bonsai.core.tool.Raycast):
                 polyline_points.append((point, "Vertex"))
 
         return polyline_points
+
+    @classmethod
+    def ray_cast_to_measure(cls, context, event, points):
+        bm = bmesh.new()
+        bm.verts.index_update()
+        bm.edges.index_update()
+
+        indices = list(range(len(points) - 1))
+        edges = [(i, i + 1) for i in range(len(points) - 1)]
+        new_verts = [bm.verts.new(Vector((point.x, point.y, point.z))) for point in points]
+        new_edges = [bm.edges.new((new_verts[e[0]], new_verts[e[1]])) for e in edges]
+        bm.verts.index_update()
+        bm.edges.index_update()
+
+        snapping_points = cls.ray_cast_by_proximity(context, event, None, custom_bmesh=bm)
+        bm.free()
+        return snapping_points
 
     @classmethod
     def ray_cast_to_plane(cls, context, event, plane_origin, plane_normal):

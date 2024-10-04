@@ -70,7 +70,8 @@ def remove_style(
     style_type = style_tool.get_active_style_type()
     ifc.unlink(element=style)
     ifc.run("style.remove_style", style=style)
-    style_tool.delete_object(obj)
+    if obj:
+        style_tool.delete_object(obj)
     if reload_styles_ui and style_tool.is_editing_styles():
         style_tool.import_presentation_styles(style_type)
 

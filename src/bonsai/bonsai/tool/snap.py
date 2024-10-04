@@ -60,28 +60,6 @@ class Snap(bonsai.core.tool.Snap):
 
         return snap_point
 
-    # TODO Remove this function
-    @classmethod
-    def select_snap_point(cls, snap_points, hit, threshold):
-        shortest_distance = None
-        snap_point = None
-        for point, snap_type in snap_points.items():
-            point = Vector(point)
-            distance = (point - hit).length
-            if distance > threshold:
-                continue
-            if shortest_distance and distance < shortest_distance:
-                shortest_distance = distance
-                snap_point = (point, snap_type)
-
-            elif not shortest_distance:
-                shortest_distance = distance
-                snap_point = (point, snap_type)
-            else:
-                pass
-
-        return snap_point
-
     @classmethod
     def update_snapping_point(cls, snap_point, snap_type):
         try:
@@ -140,6 +118,7 @@ class Snap(bonsai.core.tool.Snap):
             for point in polyline_data[1:]:  # The first can be repeated to form a wall loop
                 if (x, y, z) == (point.x, point.y, point.z):
                     return "Cannot create two points at the same location"
+            # TODO move this limitation to be Wall tool specific. Right now it also affects Measure tool
             # Avoids creating segments smaller then 0.1. This is a limitation from create_wall_from_2_points
             length = (
                 Vector((x, y, z)) - Vector((polyline_data[-1].x, polyline_data[-1].y, polyline_data[-1].z))
@@ -152,10 +131,9 @@ class Snap(bonsai.core.tool.Snap):
         polyline_point.y = y
         polyline_point.z = z
 
-        polyline_measurement = bpy.context.scene.BIMPolylineProperties.polyline_measurement.add()
-        polyline_measurement.dim = d
-        polyline_measurement.angle = a
-        polyline_measurement.position = Vector((x, y, z))
+        polyline_point.dim = d
+        polyline_point.angle = a
+        polyline_point.position = Vector((x, y, z))
 
     @classmethod
     def close_polyline(cls):
@@ -172,18 +150,27 @@ class Snap(bonsai.core.tool.Snap):
     @classmethod
     def clear_polyline(cls):
         bpy.context.scene.BIMPolylineProperties.polyline_point.clear()
-        bpy.context.scene.BIMPolylineProperties.polyline_measurement.clear()
 
     @classmethod
     def remove_last_polyline_point(cls):
         polyline_data = bpy.context.scene.BIMPolylineProperties.polyline_point
         polyline_data.remove(len(polyline_data) - 1)
-        polyline_measurement = bpy.context.scene.BIMPolylineProperties.polyline_measurement
-        polyline_measurement.remove(len(polyline_measurement) - 1)
+
+    @classmethod
+    def move_polyline_to_measure(cls):
+        polyline_data = bpy.context.scene.BIMPolylineProperties.polyline_point
+        measure_data = bpy.context.scene.BIMPolylineProperties.measure_polyline.add()
+        for point in polyline_data:
+            measure_point = measure_data.polyline_point.add()
+            measure_point.x = point.x
+            measure_point.y = point.y
+            measure_point.z = point.z
+            measure_point.dim = point.dim
+            measure_point.angle = point.angle
+            measure_point.position = point.position
 
     @classmethod
     def snap_on_axis(cls, intersection, tool_state, lock_angle=False):
-
         def create_axis_line_data(rot_mat, origin):
             length = 1000
             direction = Vector((1, 0, 0))
@@ -399,10 +386,18 @@ class Snap(bonsai.core.tool.Snap):
             last_polyline_point = polyline_data[len(polyline_data) - 1]
         except:
             last_polyline_point = None
-        snap_points = tool.Raycast.ray_cast_to_polyline(context, event)
-        # snap_point = cls.select_snap_point(snap_points, intersection, snap_threshold)
-        if snap_points:
-            detected_snaps.append({"Polyline": snap_points})
+        if polyline_data:
+            snap_points = tool.Raycast.ray_cast_to_polyline(context, event)
+            if snap_points:
+                detected_snaps.append({"Polyline": snap_points})
+
+        # Measure
+        measure_data = context.scene.BIMPolylineProperties.measure_polyline
+        for measure in measure_data:
+            measure_points = measure.polyline_point
+            snap_points = tool.Raycast.ray_cast_to_measure(context, event, measure_points)
+            if snap_points:
+                detected_snaps.append({"Polyline": snap_points})
 
         # Axis and Plane
         elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z

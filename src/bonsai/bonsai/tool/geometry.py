@@ -22,6 +22,7 @@ import struct
 import hashlib
 import logging
 import numpy as np
+import numpy.typing as npt
 import multiprocessing
 import ifcopenshell
 import ifcopenshell.api
@@ -112,11 +113,17 @@ class Geometry(bonsai.core.tool.Geometry):
     def lock_object(cls, obj: bpy.types.Object) -> None:
         obj.lock_location = (True, True, True)
         obj.lock_rotation = (True, True, True)
+        obj.lock_rotation_w = True
+        obj.lock_rotations_4d = True
+        obj.lock_scale = (True, True, True)
 
     @classmethod
     def unlock_object(cls, obj: bpy.types.Object) -> None:
         obj.lock_location = (False, False, False)
         obj.lock_rotation = (False, False, False)
+        obj.lock_rotation_w = False
+        obj.lock_rotations_4d = False
+        obj.lock_scale = (False, False, False)
 
     @classmethod
     def delete_ifc_item(cls, obj: bpy.types.Object) -> None:
@@ -454,12 +461,12 @@ class Geometry(bonsai.core.tool.Geometry):
         return ifcopenshell.util.representation.get_representation(element, context)
 
     @classmethod
-    def get_cartesian_point_offset(cls, obj: bpy.types.Object) -> Vector | None:
+    def get_cartesian_point_offset(cls, obj: bpy.types.Object) -> npt.NDArray[np.float64] | None:
         if (
             obj.BIMObjectProperties.blender_offset_type == "CARTESIAN_POINT"
             and obj.BIMObjectProperties.cartesian_point_offset
         ):
-            return Vector(tuple(map(float, obj.BIMObjectProperties.cartesian_point_offset.split(","))))
+            return np.array(tuple(map(float, obj.BIMObjectProperties.cartesian_point_offset.split(","))))
 
     @classmethod
     def get_element_type(cls, element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
@@ -687,8 +694,11 @@ class Geometry(bonsai.core.tool.Geometry):
                         if element.is_a("IfcAnnotation") and ifc_importer.is_curve_annotation(element):
                             mesh = ifc_importer.create_curve(element, shape)
                         elif shape:
+                            cartesian_point_offset = cls.get_cartesian_point_offset(obj)
+                            if cartesian_point_offset is None:
+                                cartesian_point_offset = False
                             mesh = ifc_importer.create_mesh(
-                                element, shape, cartesian_point_offset=cls.get_cartesian_point_offset(obj) or False
+                                element, shape, cartesian_point_offset=cartesian_point_offset
                             )
                             ifc_importer.material_creator.load_existing_materials()
                             shape_has_openings = cls.does_shape_has_openings(shape)
@@ -841,6 +851,10 @@ class Geometry(bonsai.core.tool.Geometry):
     @classmethod
     def is_meshlike_item(cls, item: ifcopenshell.entity_instance) -> bool:
         return item.is_a("IfcTessellatedItem") or item.is_a("IfcManifoldSolidBrep")
+
+    @classmethod
+    def is_movable(cls, item: ifcopenshell.entity_instance) -> bool:
+        return item.is_a("IfcSweptAreaSolid") or item.is_a("IfcConic")
 
     @classmethod
     def is_profile_based(cls, data: bpy.types.Mesh) -> bool:
@@ -1425,36 +1439,39 @@ class Geometry(bonsai.core.tool.Geometry):
         rep_obj = props.representation_obj
 
         coordinate_offset = cls.get_cartesian_point_offset(rep_obj)
-        rep_matrix = rep_obj.matrix_world.copy()
-        if coordinate_offset:
-            rep_matrix.translation -= coordinate_offset
-        rep_matrix_i = rep_matrix.inverted()
+        rep_matrix = np.array(rep_obj.matrix_world.copy())
+        if coordinate_offset is not None:
+            rep_matrix[:, 3][0:3] -= coordinate_offset
+        rep_matrix_i = np.linalg.inv(rep_matrix)
 
         builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
         has_changed = False
 
         for item_obj in props.item_objs:
-            obj = item_obj.obj
+            if not (obj := item_obj.obj):
+                continue
             item = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
-            if item.is_a("IfcSweptAreaSolid"):
+            if (is_swept_area := item.is_a("IfcSweptAreaSolid")) or item.is_a("IfcConic"):
                 if not tool.Ifc.is_moved(obj):
                     continue
                 has_changed = True
                 old_position = item.Position
 
-                if np.allclose(np.array(rep_matrix), np.array(obj.matrix_world), atol=1e-4):
+                if is_swept_area and np.allclose(np.array(rep_matrix), np.array(obj.matrix_world), atol=1e-4):
                     if old_position:
                         item.Position = None
                         ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_position)
                     continue
 
-                position = rep_matrix_i @ obj.matrix_world
-                position.translation /= unit_scale
-                item.Position = builder.create_axis2_placement_3d_from_matrix(np.array(position))
+                position = rep_matrix_i @ np.array(obj.matrix_world)
+                position[:, 3][0:3] /= unit_scale
+                item.Position = builder.create_axis2_placement_3d_from_matrix(position)
                 if old_position:
                     ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_position)
+
         if has_changed:
             cls.reload_representation(rep_obj)
+            tool.Root.reload_item_decorator()
 
     @classmethod
     def import_item_attributes(cls, obj: bpy.types.Object) -> None:
@@ -1469,37 +1486,42 @@ class Geometry(bonsai.core.tool.Geometry):
     @classmethod
     def import_item(cls, obj: bpy.types.Object) -> None:
         props = bpy.context.scene.BIMGeometryProperties
+        rep_obj = props.representation_obj
         tool.Loader.settings.contexts = ifcopenshell.util.representation.get_prioritised_contexts(tool.Ifc.get())
         tool.Loader.settings.context_settings = tool.Loader.create_settings()
         tool.Loader.settings.gross_context_settings = tool.Loader.create_settings(is_gross=True)
         item = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
-        geometry = tool.Loader.create_generic_shape(item)
         obj.data.clear_geometry()
-        tool.Loader.convert_geometry_to_mesh(geometry, obj.data)
 
-        rep_obj = props.representation_obj
+        geometry = tool.Loader.create_generic_shape(item)
+        if (cartesian_point_offset := cls.get_cartesian_point_offset(rep_obj)) is not None:
+            verts_array = np.array(geometry.verts)
+            offset = np.array([-cartesian_point_offset[0], -cartesian_point_offset[1], -cartesian_point_offset[2]])
+            offset_verts = verts_array + np.tile(offset, len(verts_array) // 3)
+            verts = offset_verts.tolist()
+        else:
+            verts = geometry.verts
+        tool.Loader.convert_geometry_to_mesh(geometry, obj.data, verts=verts)
+
         obj.matrix_world = rep_obj.matrix_world.copy()
-        if coordinate_offset := cls.get_cartesian_point_offset(rep_obj):
-            for vert in obj.data.vertices:
-                vert.co -= coordinate_offset
 
-        if item.is_a("IfcSweptAreaSolid"):
-            if item.Position:
+        if (is_swept_area := item.is_a("IfcSweptAreaSolid")) or item.is_a("IfcConic"):
+            position = item.Position
+            # Positional is optionaly only for SweptAreaSolid.
+            if position or not is_swept_area:
                 unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-                position = Matrix(ifcopenshell.util.placement.get_axis2placement(item.Position).tolist())
-                position.translation *= unit_scale
-                item_matrix = rep_obj.matrix_world.copy()
-                if coordinate_offset:
-                    item_matrix.translation -= coordinate_offset
-                item_matrix = item_matrix @ position
+                position = ifcopenshell.util.placement.get_axis2placement(position)
+                position[:, 3][0:3] *= unit_scale
+                item_matrix = np.array(rep_obj.matrix_world.copy())
+                if cartesian_point_offset is not None:
+                    item_matrix[:, 3][0:3] -= cartesian_point_offset
+                item_matrix = Matrix(item_matrix @ position)
 
                 transformation = obj.matrix_world.inverted() @ item_matrix
                 transformation_i = transformation.inverted()
 
                 obj.matrix_world = item_matrix
-
-                for vert in obj.data.vertices:
-                    vert.co = transformation_i @ vert.co
+                obj.data.transform(transformation_i)
             cls.record_object_position(obj)
 
     @classmethod
@@ -1515,3 +1537,28 @@ class Geometry(bonsai.core.tool.Geometry):
                 props.mode = "OBJECT"
             props.is_changing_mode = False
         props.representation_obj = None
+
+    @classmethod
+    def edit_meshlike_item(cls, obj: bpy.types.Object) -> None:
+        item = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+        if obj.data.BIMMeshProperties.mesh_checksum == cls.get_mesh_checksum(obj.data):
+            return
+        builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+
+        rep_obj = bpy.context.scene.BIMGeometryProperties.representation_obj
+        if (coordinate_offset := cls.get_cartesian_point_offset(rep_obj)) is not None:
+            verts = [((np.array(v.co) + coordinate_offset) / unit_scale).tolist() for v in obj.data.vertices]
+        else:
+            verts = [v.co / unit_scale for v in obj.data.vertices]
+
+        faces = [p.vertices[:] for p in obj.data.polygons]
+        if item.is_a("IfcAdvancedBrep"):
+            new_item = builder.faceted_brep(verts, faces)
+        else:
+            new_item = builder.mesh(verts, faces)
+        for inverse in tool.Ifc.get().get_inverse(item):
+            ifcopenshell.util.element.replace_attribute(inverse, item, new_item)
+        ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), item)
+        obj.data.BIMMeshProperties.ifc_definition_id = new_item.id()
+        cls.reload_representation(bpy.context.scene.BIMGeometryProperties.representation_obj)

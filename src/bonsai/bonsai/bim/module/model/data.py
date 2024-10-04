@@ -60,10 +60,8 @@ class AuthoringData:
         cls.data["relating_type_name"] = cls.relating_type_name()  # only after .relating_type_id()
         cls.data["relating_type_description"] = cls.relating_type_description()  # only after .relating_type_id()
         cls.data["predefined_type"] = cls.predefined_type()  # only after .relating_type_id()
-        cls.data["type_class"] = cls.type_class()
 
-        # only after .type_class()
-        cls.data["type_predefined_type"] = cls.type_predefined_type()
+        # only after .ifc_classes()
         cls.data["total_types"] = cls.total_types()
         cls.data["total_pages"] = cls.total_pages()
         cls.data["next_page"] = cls.next_page()
@@ -79,7 +77,6 @@ class AuthoringData:
         cls.data["active_representation_type"] = cls.active_representation_type()
         cls.data["boundary_class"] = cls.boundary_class()
         cls.data["selected_material_usages"] = cls.selected_material_usages()
-        cls.data["type_template"] = cls.type_template()
 
     @classmethod
     def default_container(cls) -> str | None:
@@ -99,41 +96,6 @@ class AuthoringData:
         return [(c, c, get_entity_doc(version, c).get("description", "")) for c in sorted(names)]
 
     @classmethod
-    def type_class(cls):
-        declaration = tool.Ifc.schema().declaration_by_name("IfcElementType")
-        declarations = ifcopenshell.util.schema.get_subtypes(declaration)
-        names = [d.name() for d in declarations]
-
-        if tool.Ifc.get_schema() == "IFC2X3":
-            declaration = tool.Ifc.schema().declaration_by_name("IfcSpatialStructureElementType")
-        else:
-            declaration = tool.Ifc.schema().declaration_by_name("IfcSpatialElementType")
-        declarations = ifcopenshell.util.schema.get_subtypes(declaration)
-        names.extend([d.name() for d in declarations])
-
-        if tool.Ifc.get_schema() in ("IFC2X3", "IFC4"):
-            names.extend(("IfcDoorStyle", "IfcWindowStyle"))
-
-        version = tool.Ifc.get_schema()
-        return [(c, c, get_entity_doc(version, c).get("description", "")) for c in sorted(names)]
-
-    @classmethod
-    def type_predefined_type(cls):
-        results = []
-        declaration = tool.Ifc().schema().declaration_by_name(cls.props.type_class)
-        version = tool.Ifc.get_schema()
-        for attribute in declaration.attributes():
-            if attribute.name() == "PredefinedType":
-                results.extend(
-                    [
-                        (e, e, get_predefined_type_doc(version, cls.props.type_class, e))
-                        for e in attribute.type_of_attribute().declared_type().enumeration_items()
-                    ]
-                )
-                break
-        return results
-
-    @classmethod
     def type_thumbnail(cls):
         if not cls.data["relating_type_id"]:
             return 0
@@ -144,75 +106,14 @@ class AuthoringData:
         return cls.type_thumbnails.get(element.id(), None) or 0
 
     @classmethod
-    def type_template(cls):
-        type_class = cls.props.type_class
-        templates = [
-            (
-                "MESH",
-                "Custom Mesh",
-                "Use as a representation currently active object mesh or default cube if no object selected",
-            ),
-            (
-                "LAYERSET_AXIS2",
-                "Vertical Layers",
-                "For objects similar to walls, will automatically add IfcMaterialLayerSet",
-            ),
-            (
-                "LAYERSET_AXIS3",
-                "Horizontal Layers",
-                "For objects similar to slabs, will automatically add IfcMaterialLayerSet",
-            ),
-            (
-                "PROFILESET",
-                "Extruded Profile",
-                "Create profile type object, automatically defines IfcMaterialProfileSet with the first profile from library",
-            ),
-            ("EMPTY", "Non-Geometric Type", "Start with an empty object"),
-        ]
-        if not type_class:
-            pass
-        elif type_class in ("IfcWindowType", "IfcWindowStyle"):
-            templates.append(("WINDOW", "Window", "Parametric window"))
-        elif type_class in ("IfcDoorType", "IfcDoorStyle"):
-            templates.append(("DOOR", "Door", "Parametric door"))
-        elif type_class in ("IfcStairType", "IfcStairFlightType"):
-            templates.append(("STAIR", "Stair", "Parametric stair"))
-        elif type_class == "IfcRailingType":
-            templates.append(("RAILING", "Railing", "Parametric railing"))
-        elif type_class == "IfcRoofType":
-            templates.append(("Roof", "Roof", "Parametric roof"))
-
-        templates.extend(
-            (
-                (
-                    "FLOW_SEGMENT_RECTANGULAR",
-                    "Rectangular Distribution Segment",
-                    "Works similarly to Profile, has distribution ports",
-                ),
-                (
-                    "FLOW_SEGMENT_CIRCULAR",
-                    "Circular Distribution Segment",
-                    "Works similarly to Profile, has distribution ports",
-                ),
-                (
-                    "FLOW_SEGMENT_CIRCULAR_HOLLOW",
-                    "Circular Hollow Distribution Segment",
-                    "Works similarly to Profile, has distribution ports",
-                ),
-            )
-        )
-
-        return templates
-
-    @classmethod
     def total_types(cls):
-        type_class = cls.props.type_class
-        return len(tool.Ifc.get().by_type(type_class)) if type_class else 0
+        ifc_class = cls.props.ifc_class
+        return len(tool.Ifc.get().by_type(ifc_class)) if ifc_class else 0
 
     @classmethod
     def total_pages(cls):
-        type_class = cls.props.type_class
-        total_types = len(tool.Ifc.get().by_type(type_class)) if type_class else 0
+        ifc_class = cls.props.ifc_class
+        total_types = len(tool.Ifc.get().by_type(ifc_class)) if ifc_class else 0
         return math.ceil(total_types / cls.types_per_page)
 
     @classmethod
@@ -227,11 +128,11 @@ class AuthoringData:
 
     @classmethod
     def paginated_relating_types(cls):
-        type_class = cls.props.type_class
-        if not type_class:
+        ifc_class = cls.props.ifc_class
+        if not ifc_class:
             return []
         results = []
-        elements = natsorted(tool.Ifc.get().by_type(type_class), key=lambda e: e.Name or "Unnamed")
+        elements = natsorted(tool.Ifc.get().by_type(ifc_class), key=lambda e: e.Name or "Unnamed")
         elements = elements[(cls.props.type_page - 1) * cls.types_per_page : cls.props.type_page * cls.types_per_page]
         for element in elements:
             predefined_type = ifcopenshell.util.element.get_predefined_type(element)
@@ -251,45 +152,50 @@ class AuthoringData:
 
     @classmethod
     def is_voidable_element(cls):
-        element = tool.Ifc.get_entity(bpy.context.active_object)
-        return element and element.is_a("IfcElement") and not element.is_a("IfcOpeningElement")
+        if active_object := tool.Blender.get_active_object():
+            element = tool.Ifc.get_entity(active_object)
+            return element and element.is_a("IfcElement") and not element.is_a("IfcOpeningElement")
 
     @classmethod
     def has_visible_openings(cls):
-        element = tool.Ifc.get_entity(bpy.context.active_object)
-        if element and element.is_a("IfcElement") and not element.is_a("IfcOpeningElement"):
-            for opening in [r.RelatedOpeningElement for r in element.HasOpenings]:
-                if tool.Ifc.get_object(opening):
-                    return True
+        if active_object := tool.Blender.get_active_object():
+            element = tool.Ifc.get_entity(active_object)
+            if element and element.is_a("IfcElement") and not element.is_a("IfcOpeningElement"):
+                for opening in [r.RelatedOpeningElement for r in element.HasOpenings]:
+                    if tool.Ifc.get_object(opening):
+                        return True
         return False
 
     @classmethod
     def has_visible_boundaries(cls):
-        element = tool.Ifc.get_entity(bpy.context.active_object)
-        if element:
-            if element.is_a("IfcRelSpaceBoundary"):
-                return True
-            for boundary in getattr(element, "BoundedBy", []):
-                if tool.Ifc.get_object(boundary):
+        if active_object := tool.Blender.get_active_object():
+            element = tool.Ifc.get_entity(active_object)
+            if element:
+                if element.is_a("IfcRelSpaceBoundary"):
                     return True
+                for boundary in getattr(element, "BoundedBy", []):
+                    if tool.Ifc.get_object(boundary):
+                        return True
         return False
 
     @classmethod
     def active_class(cls):
-        element = tool.Ifc.get_entity(bpy.context.active_object)
-        if element:
-            return element.is_a()
+        if active_object := tool.Blender.get_active_object():
+            element = tool.Ifc.get_entity(active_object)
+            if element:
+                return element.is_a()
 
     @classmethod
     def active_material_usage(cls):
-        element = tool.Ifc.get_entity(bpy.context.active_object)
-        if element:
-            return tool.Model.get_usage_type(element)
+        if active_object := tool.Blender.get_active_object():
+            element = tool.Ifc.get_entity(active_object)
+            if element:
+                return tool.Model.get_usage_type(element)
 
     @classmethod
     def active_representation_type(cls):
-        if bpy.context.active_object:
-            representation = tool.Geometry.get_active_representation(bpy.context.active_object)
+        if active_object := tool.Blender.get_active_object():
+            representation = tool.Geometry.get_active_representation(active_object)
             if representation and representation.is_a("IfcShapeRepresentation"):
                 representation = tool.Geometry.resolve_mapped_representation(representation)
                 return representation.RepresentationType
@@ -318,7 +224,7 @@ class AuthoringData:
         if not ifc_classes:
             return []
         results = []
-        ifc_class = cls.props.ifc_class
+        ifc_class = tool.Blender.get_enum_safe(cls.props, "ifc_class")
         if not ifc_class and ifc_classes:
             ifc_class = ifc_classes[0][0]
         if ifc_class:
@@ -329,7 +235,11 @@ class AuthoringData:
 
     @classmethod
     def relating_type_name(cls):
-        if relating_type_id := cls.props.relating_type_id:
+        relating_type_id = tool.Blender.get_enum_safe(cls.props, "relating_type_id")
+        relating_type_id_data = cls.data["relating_type_id"]
+        if not relating_type_id and relating_type_id_data:
+            relating_type_id = relating_type_id_data[0][0]
+        if relating_type_id:
             return tool.Ifc.get().by_id(int(relating_type_id)).Name or "Unnamed"
         
     @classmethod
@@ -351,7 +261,7 @@ class AuthoringData:
     @classmethod
     def selected_material_usages(cls):
         selected_usages = {}
-        for obj in bpy.context.selected_objects:
+        for obj in tool.Blender.get_selected_objects():
             element = tool.Ifc.get_entity(obj)
             if not element:
                 continue

@@ -560,6 +560,7 @@ class IfcImporter:
             shape = tool.Loader.create_generic_shape(axis.AxisCurve)
             mesh = self.create_mesh(axis, shape)
             obj = bpy.data.objects.new(tool.Loader.get_name(axis), mesh)
+            obj.show_in_front = True
             self.link_element(axis, obj)
             self.set_matrix_world(obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, grid_placement.copy()))
 
@@ -1094,7 +1095,9 @@ class IfcImporter:
         self.mesh_data["loop_start"].extend(loop_start)
         # list(di1.keys())
 
-    def create_native_swept_disk_solid(self, element, mesh_name, native_data):
+    def create_native_swept_disk_solid(
+        self, element: ifcopenshell.entity_instance, mesh_name: str, native_data: dict[str, Any]
+    ) -> bpy.types.Curve:
         # TODO: georeferencing?
         curve = bpy.data.curves.new(mesh_name, type="CURVE")
         curve.dimensions = "3D"
@@ -1109,6 +1112,8 @@ class IfcImporter:
             matrix[2][3] *= self.unit_scale
             # TODO: support inner radius, start param, and end param
             geometry = tool.Loader.create_generic_shape(item.Directrix)
+            if not geometry:
+                continue
             e = geometry.edges
             v = geometry.verts
             vertices = [list(matrix @ [v[i], v[i + 1], v[i + 2], 1]) for i in range(0, len(v), 3)]
@@ -1363,7 +1368,10 @@ class IfcImporter:
 
             mesh = bpy.data.meshes.new(tool.Loader.get_mesh_name_from_shape(geometry))
 
-            if cartesian_point_offset:
+            if cartesian_point_offset is False:
+                verts = geometry.verts
+                mesh["has_cartesian_point_offset"] = False
+            elif cartesian_point_offset is not None:
                 verts_array = np.array(geometry.verts)
                 offset = np.array([-cartesian_point_offset[0], -cartesian_point_offset[1], -cartesian_point_offset[2]])
                 offset_verts = verts_array + np.tile(offset, len(verts_array) // 3)
@@ -1373,9 +1381,6 @@ class IfcImporter:
                 mesh["cartesian_point_offset"] = (
                     f"{cartesian_point_offset[0]},{cartesian_point_offset[1]},{cartesian_point_offset[2]}"
                 )
-            elif cartesian_point_offset is False:
-                verts = geometry.verts
-                mesh["has_cartesian_point_offset"] = False
             elif geometry.verts and tool.Loader.is_point_far_away(
                 (geometry.verts[0], geometry.verts[1], geometry.verts[2]), is_meters=True
             ):

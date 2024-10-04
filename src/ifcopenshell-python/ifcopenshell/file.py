@@ -690,3 +690,6 @@ class file:
     @staticmethod
     def from_pointer(v) -> "file":
         return file_dict.get(v)()
+
+    def to_string(self) -> str:
+        return self.wrapped_data.to_string()

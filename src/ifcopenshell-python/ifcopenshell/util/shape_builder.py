@@ -1086,12 +1086,12 @@ class ShapeBuilder:
         )
         return points, segments, transition_arc
 
-    def mesh(self, points: list[Vector], faces: list[list[int]]) -> ifcopenshell.entity_instance:
+    def mesh(self, points: list[list[float]], faces: list[list[int]]) -> ifcopenshell.entity_instance:
         if self.file.schema == "IFC2X3":
             return self.faceted_brep(points, faces)
         return self.polygonal_face_set(points, faces)
 
-    def faceted_brep(self, points: list[Vector], faces: list[list[int]]) -> ifcopenshell.entity_instance:
+    def faceted_brep(self, points: list[list[float]], faces: list[list[int]]) -> ifcopenshell.entity_instance:
         """Generate an IfcFacetedBrep with a closed shell
 
         Note that :func:`polygonal_face_set` is recommended in IFC4.
@@ -1109,7 +1109,7 @@ class ShapeBuilder:
         ]
         return self.file.createIfcFacetedBrep(self.file.createIfcClosedShell(faces))
 
-    def polygonal_face_set(self, points: list[Vector], faces: list[list[int]]) -> ifcopenshell.entity_instance:
+    def polygonal_face_set(self, points: list[list[float]], faces: list[list[int]]) -> ifcopenshell.entity_instance:
         """
         Generate an IfcPolygonalFaceSet
 

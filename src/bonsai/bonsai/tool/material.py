@@ -105,7 +105,7 @@ class Material(bonsai.core.tool.Material):
 
             for category, mats in categories.items():
                 cat = props.materials.add()
-                cat.name = category
+                cat["name"] = category
                 cat.is_category = True
                 cat.is_expanded = cat.name in expanded_categories
 
@@ -114,8 +114,7 @@ class Material(bonsai.core.tool.Material):
 
                 for material in mats if cat.is_expanded else []:
                     new = props.materials.add()
-                    # Assign name before assigning ifc_definition_id to avoid triggering IFC update.
-                    new.name = get_name(material)
+                    new["name"] = get_name(material)
                     new.ifc_definition_id = material.id()
                     new.total_elements = len(
                         ifcopenshell.util.element.get_elements_by_material(tool.Ifc.get(), material)
@@ -127,8 +126,7 @@ class Material(bonsai.core.tool.Material):
             return
         for material in materials:
             new = props.materials.add()
-            # Assign name before assigning ifc_definition_id to avoid triggering IFC update.
-            new.name = get_name(material)
+            new["name"] = get_name(material)
             new.ifc_definition_id = material.id()
             new.total_elements = len(ifcopenshell.util.element.get_elements_by_material(tool.Ifc.get(), material))
 

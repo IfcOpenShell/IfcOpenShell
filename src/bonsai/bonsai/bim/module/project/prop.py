@@ -106,11 +106,19 @@ class FilterCategory(PropertyGroup):
 
 
 class Link(PropertyGroup):
-    name: StringProperty(name="Name")
+    name: StringProperty(
+        name="Name",
+        description="Filepath to linked .ifc file, stored in posix format (could be relative to .blend file, not to .ifc)",
+    )
     is_loaded: BoolProperty(name="Is Loaded", default=False)
     is_selectable: BoolProperty(name="Is Selectable", default=True)
     is_wireframe: BoolProperty(name="Is Wireframe", default=False)
     is_hidden: BoolProperty(name="Is Hidden", default=False)
+    empty_handle: PointerProperty(
+        name="Empty Object Handle",
+        description="We use empty object handle to allow simple manipulations with a linked model (moving, scaling, rotating)",
+        type=bpy.types.Object,
+    )
 
 
 class BIMProjectProperties(PropertyGroup):
@@ -198,6 +206,7 @@ class BIMProjectProperties(PropertyGroup):
     library_file: EnumProperty(items=get_library_file, name="Library File", update=update_library_file)
     use_relative_project_path: BoolProperty(name="Use Relative Project Path", default=False)
     queried_obj: bpy.props.PointerProperty(type=bpy.types.Object)
+    queried_obj_root: bpy.props.PointerProperty(type=bpy.types.Object)
     clipping_planes: bpy.props.CollectionProperty(type=ObjProperty)
     clipping_planes_active: bpy.props.IntProperty(min=0, default=0, max=5)
 
