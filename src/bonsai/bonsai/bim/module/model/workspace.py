@@ -107,7 +107,6 @@ class BimTool(WorkSpaceTool):
 
     @classmethod
     def draw_settings(cls, context, layout, ws_tool):
-        # Unlike operators, Blender doesn't treat workspace tools as a class, so we'll create our own.
         if context.scene.BIMGeometryProperties.mode == "ITEM":
             EditItemUI.draw(context, layout)
         elif context.active_object and context.selected_objects:
