@@ -752,6 +752,7 @@ class PolylinePoint(PropertyGroup):
 
 class MeasurePolyline(PropertyGroup):
     polyline_point: bpy.props.CollectionProperty(type=PolylinePoint)
+    measurement_type: bpy.props.StringProperty(name="Measurement Type")
 
 
 class BIMPolylineProperties(PropertyGroup):
@@ -759,4 +760,4 @@ class BIMPolylineProperties(PropertyGroup):
     snap_mouse_ref: bpy.props.CollectionProperty(type=SnapMousePoint)
     polyline_points: bpy.props.CollectionProperty(type=PolylinePoint)
     product_preview: bpy.props.CollectionProperty(type=PolylinePoint)
-    measure_polyline: bpy.props.CollectionProperty(type=MeasurePolyline)
+    measurement_polyline: bpy.props.CollectionProperty(type=MeasurePolyline)

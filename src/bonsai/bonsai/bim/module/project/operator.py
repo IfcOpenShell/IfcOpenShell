@@ -2433,7 +2433,7 @@ class MeasureTool(bpy.types.Operator, PolylineOperator):
         tool.Polyline.calculate_area(context, self.input_ui)
 
         if event.type == "E":
-            context.scene.BIMPolylineProperties.measure_polyline.clear()
+            context.scene.BIMPolylineProperties.measurement_polyline.clear()
             MeasureDecorator.uninstall()
             tool.Blender.update_viewport()
 
