@@ -2411,7 +2411,7 @@ class MeasureTool(bpy.types.Operator, PolylineOperator):
         self.handle_snap_selection(context, event)
 
         single_mode = False
-        if self.measure_type == "SINGLE" and len(context.scene.BIMPolylineProperties.polyline_point) >= 2:
+        if self.measure_type == "SINGLE" and len(context.scene.BIMPolylineProperties.polyline_points) >= 2:
             single_mode = True
             
         if (

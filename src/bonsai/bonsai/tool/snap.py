@@ -112,7 +112,7 @@ class Snap(bonsai.core.tool.Snap):
             y = snap_vertex.y
             z = snap_vertex.z
 
-        polyline_data = bpy.context.scene.BIMPolylineProperties.polyline_point
+        polyline_data = bpy.context.scene.BIMPolylineProperties.polyline_points
         if polyline_data:
             # Avoids creating two points at the same location
             for point in polyline_data[1:]:  # The first can be repeated to form a wall loop
@@ -126,7 +126,7 @@ class Snap(bonsai.core.tool.Snap):
             if round(length, 4) < 0.1:
                 return "Cannot create a segment smaller then 10cm"
 
-        polyline_point = bpy.context.scene.BIMPolylineProperties.polyline_point.add()
+        polyline_point = bpy.context.scene.BIMPolylineProperties.polyline_points.add()
         polyline_point.x = x
         polyline_point.y = y
         polyline_point.z = z
@@ -137,28 +137,28 @@ class Snap(bonsai.core.tool.Snap):
 
     @classmethod
     def close_polyline(cls):
-        polyline_data = bpy.context.scene.BIMPolylineProperties.polyline_point
+        polyline_data = bpy.context.scene.BIMPolylineProperties.polyline_points
         if len(polyline_data) > 2:
             first_point = polyline_data[0]
             last_point = polyline_data[-1]
             if not (first_point.x == last_point.x and first_point.y == last_point.y and first_point.z == last_point.z):
-                polyline_point = bpy.context.scene.BIMPolylineProperties.polyline_point.add()
+                polyline_point = bpy.context.scene.BIMPolylineProperties.polyline_points.add()
                 polyline_point.x = first_point.x
                 polyline_point.y = first_point.y
                 polyline_point.z = first_point.z
 
     @classmethod
     def clear_polyline(cls):
-        bpy.context.scene.BIMPolylineProperties.polyline_point.clear()
+        bpy.context.scene.BIMPolylineProperties.polyline_points.clear()
 
     @classmethod
     def remove_last_polyline_point(cls):
-        polyline_data = bpy.context.scene.BIMPolylineProperties.polyline_point
+        polyline_data = bpy.context.scene.BIMPolylineProperties.polyline_points
         polyline_data.remove(len(polyline_data) - 1)
 
     @classmethod
     def move_polyline_to_measure(cls):
-        polyline_data = bpy.context.scene.BIMPolylineProperties.polyline_point
+        polyline_data = bpy.context.scene.BIMPolylineProperties.polyline_points
         measure_data = bpy.context.scene.BIMPolylineProperties.measure_polyline.add()
         for point in polyline_data:
             measure_point = measure_data.polyline_point.add()
@@ -203,7 +203,7 @@ class Snap(bonsai.core.tool.Snap):
             return (v1, v2, v3, v4)
 
         default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
-        polyline_data = bpy.context.scene.BIMPolylineProperties.polyline_point
+        polyline_data = bpy.context.scene.BIMPolylineProperties.polyline_points
         if polyline_data:
             last_point_data = polyline_data[-1]
             last_point = Vector((last_point_data.x, last_point_data.y, last_point_data.z))
@@ -382,7 +382,7 @@ class Snap(bonsai.core.tool.Snap):
                 detected_snaps.append({"Edge-Vertex": (obj, snap_point)})
         # Polyline
         try:
-            polyline_data = bpy.context.scene.BIMPolylineProperties.polyline_point
+            polyline_data = bpy.context.scene.BIMPolylineProperties.polyline_points
             last_polyline_point = polyline_data[len(polyline_data) - 1]
         except:
             last_polyline_point = None

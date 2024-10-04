@@ -137,7 +137,7 @@ class AddOccurrence(bpy.types.Operator, PolylineOperator):
                 except:
                     pass
 
-        point = context.scene.BIMPolylineProperties.polyline_point[0]
+        point = context.scene.BIMPolylineProperties.polyline_points[0]
         context.scene.cursor.location = Vector((point.x, point.y, point.z))
         tool.Snap.clear_polyline()
 
