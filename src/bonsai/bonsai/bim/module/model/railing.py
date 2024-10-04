@@ -353,7 +353,7 @@ class AddRailing(bpy.types.Operator, tool.Ifc.Operator):
         refresh()
         update_railing_modifier_bmesh(context)
         update_railing_modifier_ifc_data(context)
-        return {"FINISHED"}
+        tool.Model.add_body_representation(obj)
 
 
 class EnableEditingRailing(bpy.types.Operator, tool.Ifc.Operator):
