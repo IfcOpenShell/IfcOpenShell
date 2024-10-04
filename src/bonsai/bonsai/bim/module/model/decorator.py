@@ -319,9 +319,6 @@ class PolylineDecorator:
         handler = cls()
         cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_snap_point, (context,), "WINDOW", "POST_PIXEL"))
         cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_measurements, (context,), "WINDOW", "POST_PIXEL"))
-        cls.handlers.append(
-            SpaceView3D.draw_handler_add(handler.draw_measurement_axis, (context,), "WINDOW", "POST_VIEW")
-        )
         cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_input_ui, (context,), "WINDOW", "POST_PIXEL"))
         cls.handlers.append(
             SpaceView3D.draw_handler_add(handler.draw_product_preview, (context,), "WINDOW", "POST_VIEW")
@@ -545,84 +542,44 @@ class PolylineDecorator:
         for i in range(len(measurement_prop)):
             if i == 0:
                 continue
-            pos_dim = (Vector(measurement_prop[i].position) + Vector(measurement_prop[i - 1].position)) / 2
-            coords_dim = view3d_utils.location_3d_to_region_2d(region, rv3d, pos_dim)
+            dim_text_pos = (Vector(measurement_prop[i].position) + Vector(measurement_prop[i - 1].position)) / 2
+            dim_text_coords = view3d_utils.location_3d_to_region_2d(region, rv3d, dim_text_pos)
 
             formatted_value = measurement_prop[i].dim
 
-            blf.position(self.font_id, coords_dim[0], coords_dim[1], 0)
+            blf.position(self.font_id, dim_text_coords[0], dim_text_coords[1], 0)
             text = "d: " + formatted_value
-            text_dim = blf.dimensions(self.font_id, text)
-            self.draw_text_background(context, coords_dim, text_dim)
+            text_length = blf.dimensions(self.font_id, text)
+            self.draw_text_background(context, dim_text_coords, text_length)
             blf.draw(self.font_id, text)
 
             if i == 1:
                 continue
-            pos_angle = measurement_prop[i - 1].position
-            coords_angle = view3d_utils.location_3d_to_region_2d(region, rv3d, pos_angle)
-            blf.position(self.font_id, coords_angle[0], coords_angle[1], 0)
+            angle_text_pos = measurement_prop[i - 1].position
+            angle_text_coords = view3d_utils.location_3d_to_region_2d(region, rv3d, angle_text_pos)
+            blf.position(self.font_id, angle_text_coords[0], angle_text_coords[1], 0)
             text = "a: " + measurement_prop[i].angle
-            text_dim = blf.dimensions(self.font_id, text)
-            self.draw_text_background(context, coords_angle, text_dim)
+            text_length = blf.dimensions(self.font_id, text)
+            self.draw_text_background(context, angle_text_coords, text_length)
             blf.draw(self.font_id, text)
 
         if measure_type == "SINGLE":
-            axis, axis_middle = self.calculate_measurement_x_y_and_z(context)
-            for i, measurement in enumerate(axis_middle):
-                coords_measurement = view3d_utils.location_3d_to_region_2d(region, rv3d, measurement)
-                blf.position(self.font_id, coords_measurement[0], coords_measurement[1], 0)
-                value = round((axis[i][1] - axis[i][0]).length, 4)
-                direction = axis[i][1] - axis[i][0]
+            axis_line, axis_line_center = self.calculate_measurement_x_y_and_z(context)
+            for i, dim_text_pos in enumerate(axis_line_center):
+                dim_text_coords = view3d_utils.location_3d_to_region_2d(region, rv3d, dim_text_pos)
+                blf.position(self.font_id, dim_text_coords[0], dim_text_coords[1], 0)
+                value = round((axis_line[i][1] - axis_line[i][0]).length, 4)
+                direction = axis_line[i][1] - axis_line[i][0]
                 if (i == 0 and direction.x < 0) or (i == 1 and direction.y < 0) or (i == 2 and direction.z < 0):
                     value = -value
                 prefix = "xyz"[i]
                 text = f"{prefix}: {str(value)}"
-                text_dim = blf.dimensions(self.font_id, text)
-                self.draw_text_background(context, coords_measurement, text_dim)
+                text_length = blf.dimensions(self.font_id, text)
+                self.draw_text_background(context, dim_text_coords, text_length)
                 blf.draw(self.font_id, text)
 
         blf.disable(self.font_id, blf.SHADOW)
 
-    def draw_measurement_axis(self, context):
-        self.addon_prefs = tool.Blender.get_addon_preferences()
-        decorator_color = self.addon_prefs.decorations_colour
-        decorator_color_special = self.addon_prefs.decorator_color_special
-        decorator_color_selected = self.addon_prefs.decorator_color_selected
-        decorator_color_error = self.addon_prefs.decorator_color_error
-        decorator_color_unselected = self.addon_prefs.decorator_color_unselected
-        decorator_color_background = self.addon_prefs.decorator_color_background
-        theme = context.preferences.themes.items()[0][1]
-        decorator_color_object_active = (*theme.view_3d.object_active, 1)  # unwrap color values and adds alpha=1
-        decorator_color_x_axis = (*theme.user_interface.axis_x, 1)
-        decorator_color_y_axis = (*theme.user_interface.axis_y, 1)
-        decorator_color_z_axis = (*theme.user_interface.axis_z, 1)
-
-        gpu.state.blend_set("ALPHA")
-        self.line_shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
-        self.line_shader.bind()  # required to be able to change uniforms of the shader
-        # POLYLINE_UNIFORM_COLOR specific uniforms
-        self.line_shader.uniform_float("viewportSize", (context.region.width, context.region.height))
-
-        # general shader
-        self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
-        gpu.state.point_size_set(6)
-
-        self.font_id = 1
-        font_size = tool.Blender.scale_font_size(12)
-        blf.size(self.font_id, font_size)
-        blf.enable(self.font_id, blf.SHADOW)
-        blf.shadow(self.font_id, 6, 0, 0, 0, 1)
-        color = self.addon_prefs.decorations_colour
-
-        blf.color(self.font_id, *color)
-
-        measure_type = context.scene.MeasureToolSettings.measure_type
-        if measure_type == "SINGLE":
-            axis, _ = self.calculate_measurement_x_y_and_z(context)
-            x_axis, y_axis, z_axis = axis
-            self.draw_batch("LINES", [*x_axis], decorator_color_x_axis, [(0, 1)])
-            self.draw_batch("LINES", [*y_axis], decorator_color_y_axis, [(0, 1)])
-            self.draw_batch("LINES", [*z_axis], decorator_color_z_axis, [(0, 1)])
 
     def draw_snap_point(self, context):
         self.line_shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
@@ -743,6 +700,15 @@ class PolylineDecorator:
 
             self.line_shader.uniform_float("lineWidth", 0.75)
             self.draw_batch("LINES", [self.axis_start, self.axis_end], axis_color, [(0, 1)])
+
+        # Lines for X, Y, Z of single measure
+        measure_type = context.scene.MeasureToolSettings.measure_type
+        if measure_type == "SINGLE":
+            axis, _ = self.calculate_measurement_x_y_and_z(context)
+            x_axis, y_axis, z_axis = axis
+            self.draw_batch("LINES", [*x_axis], decorator_color_x_axis, [(0, 1)])
+            self.draw_batch("LINES", [*y_axis], decorator_color_y_axis, [(0, 1)])
+            self.draw_batch("LINES", [*z_axis], decorator_color_z_axis, [(0, 1)])
 
         # Area highlight
         try:
