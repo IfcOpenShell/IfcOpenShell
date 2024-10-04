@@ -71,20 +71,8 @@ class Polyline(bonsai.core.tool.Polyline):
                 value = float(self.get_text_value(attribute_name))
                 return f"{value:.2f}"
             else:
-                return self.format_input_ui_units(context, value)
+                return Polyline.format_input_ui_units(context, value)
 
-        def format_input_ui_units(cls, context, value):
-            unit_system = tool.Drawing.get_unit_system()
-            if unit_system == "IMPERIAL":
-                precision = context.scene.DocProperties.imperial_precision
-                factor = 3.28084
-            else:
-                precision = None
-                factor = 1
-                if context.scene.unit_settings.length_unit == "MILLIMETERS":
-                    factor = 1000
-
-            return format_distance(value * factor, precision=precision, suppress_zero_inches=True, in_unit_length=True)
 
     @dataclass
     class ToolState:
@@ -500,3 +488,17 @@ class Polyline(bonsai.core.tool.Polyline):
             return True, str(result)
         except:
             return False, "0"
+
+    @classmethod
+    def format_input_ui_units(cls, context, value):
+        unit_system = tool.Drawing.get_unit_system()
+        if unit_system == "IMPERIAL":
+            precision = context.scene.DocProperties.imperial_precision
+            factor = 3.28084
+        else:
+            precision = None
+            factor = 1
+            if context.scene.unit_settings.length_unit == "MILLIMETERS":
+                factor = 1000
+
+        return format_distance(value * factor, precision=precision, suppress_zero_inches=True, in_unit_length=True)

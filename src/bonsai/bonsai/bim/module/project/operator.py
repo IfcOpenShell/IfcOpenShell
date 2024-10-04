@@ -2421,7 +2421,7 @@ class MeasureTool(bpy.types.Operator, PolylineOperator):
         ) or single_mode:
             context.workspace.status_text_set(text=None)
             PolylineDecorator.uninstall()
-            tool.Snap.move_polyline_to_measure()
+            tool.Snap.move_polyline_to_measure(context, self.input_ui)
             tool.Snap.clear_polyline()
             MeasureDecorator.install(context)
             tool.Blender.update_viewport()

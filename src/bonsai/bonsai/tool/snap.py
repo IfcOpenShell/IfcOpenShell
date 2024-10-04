@@ -157,19 +157,35 @@ class Snap(bonsai.core.tool.Snap):
         polyline_data.remove(len(polyline_data) - 1)
 
     @classmethod
-    def move_polyline_to_measure(cls):
+    def move_polyline_to_measure(cls, context, input_ui):
         polyline_data = bpy.context.scene.BIMPolylineProperties.polyline_points
         measurement_data = bpy.context.scene.BIMPolylineProperties.measurement_polyline.add()
         measurement_type = bpy.context.scene.MeasureToolSettings.measure_type
         measurement_data.measurement_type = measurement_type
         for point in polyline_data:
-            measurement_point = measurement_data.polyline_point.add()
+            measurement_point = measurement_data.polyline_points.add()
             measurement_point.x = point.x
             measurement_point.y = point.y
             measurement_point.z = point.z
             measurement_point.dim = point.dim
             measurement_point.angle = point.angle
             measurement_point.position = point.position
+
+        # Add total length
+        total_length = 0
+        for i, point in enumerate(measurement_data.polyline_points):
+            if i == 0:
+                continue
+            dim = float(tool.Polyline.validate_input(point.dim, "D")[1])
+            total_length += dim
+        total_length = tool.Polyline.format_input_ui_units(context, total_length)
+        measurement_data.total_length = total_length
+
+        # Add area
+        area = input_ui.get_number_value("AREA")
+        if area:
+            area = tool.Polyline.format_input_ui_units(context, area)
+            measurement_data.area = area
 
     @classmethod
     def snap_on_axis(cls, intersection, tool_state, lock_angle=False):
@@ -396,7 +412,7 @@ class Snap(bonsai.core.tool.Snap):
         # Measure
         measure_data = context.scene.BIMPolylineProperties.measurement_polyline
         for measure in measure_data:
-            measure_points = measure.polyline_point
+            measure_points = measure.polyline_points
             snap_points = tool.Raycast.ray_cast_to_measure(context, event, measure_points)
             if snap_points:
                 detected_snaps.append({"Polyline": snap_points})
