@@ -2435,6 +2435,18 @@ class MeasureTool(bpy.types.Operator, PolylineOperator):
         self.handle_keyboard_input(context, event)
 
         self.handle_inserting_polyline(context, event)
+
+        # Add measurement type to the insertion polyline
+        polyline_data = context.scene.BIMPolylineProperties.insertion_polyline
+        if not polyline_data:
+            pass
+        else:
+            polyline_data = context.scene.BIMPolylineProperties.insertion_polyline[0]
+            measurement_type = bpy.context.scene.MeasureToolSettings.measurement_type
+            if not polyline_data.measurement_type:
+                polyline_data.measurement_type = measurement_type
+
+        
         tool.Polyline.calculate_area(context, self.input_ui)
 
         if event.type == "E":

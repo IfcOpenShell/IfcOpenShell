@@ -67,7 +67,7 @@ class ExploreTool(bpy.types.WorkSpaceTool):
         op = row.operator("bim.explore_hotkey", text="Measure Tool", icon="CON_DISTLIMIT")
         op.hotkey = "S_M"
         row = layout.row(align=True)
-        row.prop(prop, "measure_type", text="Measure Type", expand=True, icon_only=True, emboss=True)
+        row.prop(prop, "measurement_type", text="Measure Type", expand=True, icon_only=True, emboss=True)
 
 
 class ExploreHotkey(bpy.types.Operator):
@@ -103,5 +103,5 @@ class ExploreHotkey(bpy.types.Operator):
     def hotkey_S_M(self):
         for obj in tool.Blender.get_selected_objects():
             obj.select_set(False)
-        measure_type = bpy.context.scene.MeasureToolSettings.measure_type
+        measure_type = bpy.context.scene.MeasureToolSettings.measurement_type
         bpy.ops.bim.measure_tool("INVOKE_DEFAULT", measure_type=measure_type)

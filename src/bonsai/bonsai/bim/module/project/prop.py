@@ -232,10 +232,10 @@ class BIMProjectProperties(PropertyGroup):
 
 
 class MeasureToolSettings(PropertyGroup):
-    measure_type_items = [
+    measurement_type_items = [
         ("SINGLE", "SINGLE", "Single", "FIXED_SIZE",1),
         ("POLYLINE", "POLYLINE", "Polyline", "DRIVER_ROTATIONAL_DIFFERENCE", 2),
         ("AREA", "AREA", "Area", "OUTLINER_DATA_LIGHTPROBE", 3),
     ]
 
-    measure_type: bpy.props.EnumProperty(items=measure_type_items, default="POLYLINE")
+    measurement_type: bpy.props.EnumProperty(items=measurement_type_items, default="POLYLINE")
