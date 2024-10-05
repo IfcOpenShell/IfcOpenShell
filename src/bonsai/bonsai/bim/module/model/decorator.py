@@ -746,7 +746,7 @@ class PolylineDecorator:
             self.draw_batch("LINES", [*z_axis], decorator_color_z_axis, [(0, 1)])
 
         # Area highlight
-        area = polyline_data.area
+        _, area = tool.Polyline.validate_input(polyline_data.area, "AREA")
         if area:
             if float(area) > 0:
                 tris = self.calculate_polygon(polyline_verts)
