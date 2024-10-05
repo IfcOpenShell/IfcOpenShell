@@ -71,8 +71,7 @@ class Polyline(bonsai.core.tool.Polyline):
                 value = float(self.get_text_value(attribute_name))
                 return f"{value:.2f}"
             else:
-                return Polyline.format_input_ui_units(context, value)
-
+                return Polyline.format_input_ui_units(value)
 
     @dataclass
     class ToolState:
@@ -215,6 +214,11 @@ class Polyline(bonsai.core.tool.Polyline):
 
         if input_ui.get_text_value("AREA") is not None:
             input_ui.set_value("AREA", area)
+
+        area = input_ui.get_number_value("AREA")
+        if area:
+            area = tool.Polyline.format_input_ui_units(area)
+            polyline_data.area = area
         return
 
     @classmethod
@@ -226,6 +230,7 @@ class Polyline(bonsai.core.tool.Polyline):
             last_point_data = polyline_points[len(polyline_points) - 1]
             last_point = Vector((last_point_data.x, last_point_data.y, last_point_data.z))
         except:
+            polyline_points = []
             default_container_elevation = 0
             last_point = Vector((0, 0, 0))
 
@@ -495,19 +500,18 @@ class Polyline(bonsai.core.tool.Polyline):
             return False, "0"
 
     @classmethod
-    def format_input_ui_units(cls, context, value):
+    def format_input_ui_units(cls, value):
         unit_system = tool.Drawing.get_unit_system()
         if unit_system == "IMPERIAL":
-            precision = context.scene.DocProperties.imperial_precision
+            precision = bpy.context.scene.DocProperties.imperial_precision
             factor = 3.28084
         else:
             precision = None
             factor = 1
-            if context.scene.unit_settings.length_unit == "MILLIMETERS":
+            if bpy.context.scene.unit_settings.length_unit == "MILLIMETERS":
                 factor = 1000
 
         return format_distance(value * factor, precision=precision, suppress_zero_inches=True, in_unit_length=True)
-
 
     @classmethod
     def insert_polyline_point(cls, input_ui, tool_state):
@@ -528,7 +532,6 @@ class Polyline(bonsai.core.tool.Polyline):
             x = snap_vertex.x
             y = snap_vertex.y
             z = snap_vertex.z
-
 
         polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline
         if not polyline_data:
@@ -558,6 +561,17 @@ class Polyline(bonsai.core.tool.Polyline):
         polyline_point.angle = a
         polyline_point.position = Vector((x, y, z))
 
+        # Add total length
+        total_length = 0
+        for i, point in enumerate(polyline_points):
+            if i == 0:
+                continue
+            dim = float(tool.Polyline.validate_input(point.dim, "D")[1])
+            total_length += dim
+        total_length = tool.Polyline.format_input_ui_units(total_length)
+        polyline_data.total_length = total_length
+
+
     @classmethod
     def close_polyline(cls):
         polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline
@@ -586,7 +600,7 @@ class Polyline(bonsai.core.tool.Polyline):
         polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline
         polyline_points = polyline_data[0].polyline_points if polyline_data else []
         measurement_data = bpy.context.scene.BIMPolylineProperties.measurement_polyline.add()
-        measurement_type = bpy.context.scene.MeasureToolSettings.measure_type
+        measurement_type = bpy.context.scene.MeasureToolSettings.measurement_type
         measurement_data.measurement_type = measurement_type
         for point in polyline_points:
             measurement_point = measurement_data.polyline_points.add()
@@ -597,18 +611,5 @@ class Polyline(bonsai.core.tool.Polyline):
             measurement_point.angle = point.angle
             measurement_point.position = point.position
 
-        # Add total length
-        total_length = 0
-        for i, point in enumerate(measurement_data.polyline_points):
-            if i == 0:
-                continue
-            dim = float(tool.Polyline.validate_input(point.dim, "D")[1])
-            total_length += dim
-        total_length = tool.Polyline.format_input_ui_units(context, total_length)
-        measurement_data.total_length = total_length
-
-        # Add area
-        area = input_ui.get_number_value("AREA")
-        if area:
-            area = tool.Polyline.format_input_ui_units(context, area)
-            measurement_data.area = area
+        measurement_data.total_length = polyline_data[0].total_length
+        measurement_data.area = polyline_data[0].area
