@@ -33,7 +33,7 @@ from bpy.props import FloatProperty, IntProperty
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
 
 
-def regenerate_stair_mesh(context):
+def regenerate_stair_mesh(context: bpy.types.Context) -> None:
     obj = context.active_object
     props_kwargs = obj.BIMStairProperties.get_props_kwargs()
     vertices, edges, faces = tool.Model.generate_stair_2d_profile(**props_kwargs)
@@ -65,27 +65,7 @@ def regenerate_stair_mesh(context):
     obj.data.update()
 
 
-def update_stair_representation(obj):
-    body = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
-    representation = ifcopenshell.api.run(
-        "geometry.add_representation",
-        tool.Ifc.get(),
-        context=body,
-        blender_object=obj,
-        geometry=obj.data,
-        coordinate_offset=tool.Geometry.get_cartesian_point_offset(obj),
-        total_items=tool.Geometry.get_total_representation_items(obj),
-        should_force_faceted_brep=tool.Geometry.should_force_faceted_brep(),
-        should_force_triangulation=tool.Geometry.should_force_triangulation(),
-        should_generate_uvs=tool.Geometry.should_generate_uvs(obj),
-        ifc_representation_class=None,
-        profile_set_usage=None,
-    )
-    tool.Model.replace_object_ifc_representation(body, obj, representation)
-    tool.Ifc.finish_edit(obj)
-
-
-def update_ifc_stair_props(obj):
+def update_ifc_stair_props(obj: bpy.types.Object) -> None:
     """should be called after new geometry settled
     since it's going to update ifc representation
     """
@@ -134,7 +114,7 @@ def update_ifc_stair_props(obj):
     tool.Ifc.edit(obj)
 
     # update related annotation objects
-    def get_elements_from_product(product):
+    def get_elements_from_product(product: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
         elements = []
         for rel in product.ReferencedBy:
             if not rel.is_a("IfcRelAssignsToProduct"):
@@ -220,7 +200,7 @@ class AddStair(bpy.types.Operator, tool.Ifc.Operator):
         )
         regenerate_stair_mesh(context)
         update_ifc_stair_props(obj)
-        update_stair_representation(obj)
+        tool.Model.add_body_representation(obj)
 
 
 class CancelEditingStair(bpy.types.Operator, tool.Ifc.Operator):
@@ -255,7 +235,7 @@ class FinishEditingStair(bpy.types.Operator, tool.Ifc.Operator):
         data = props.get_props_kwargs(convert_to_project_units=True)
         props.is_editing = False
         regenerate_stair_mesh(context)
-        update_stair_representation(obj)
+        tool.Model.add_body_representation(obj)
 
         pset = tool.Pset.get_element_pset(element, "BBIM_Stair")
         data = tool.Ifc.get().createIfcText(json.dumps(data))

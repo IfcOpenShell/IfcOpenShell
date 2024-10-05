@@ -774,6 +774,12 @@ class LoadProject(bpy.types.Operator, IFCFileSelector):
 
             if not self.is_advanced:
                 bpy.ops.bim.load_project_elements()
+                if warnings := import_ifc.IMPORTER_WARNINGS:
+                    print("\n\nLoading project finished with warnings:")
+                    for warning in warnings:
+                        print(f"- {warning}")
+                    self.report({"WARNING"}, "Project was loaded with warnings. See system console for details.")
+                    warnings.clear()
                 if self.import_without_ifc_data:
                     bpy.ops.bim.convert_to_blender()
         except:

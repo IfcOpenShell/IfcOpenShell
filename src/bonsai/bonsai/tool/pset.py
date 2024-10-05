@@ -327,3 +327,10 @@ class Pset(bonsai.core.tool.Pset):
                 return value
             except:
                 return value
+
+    @classmethod
+    def reset_proposed_property_fields(cls, props: bpy.types.PropertyGroup) -> None:
+        reset_props = ("prop_name", "prop_value")
+        bl_rna_props = props.bl_rna.properties
+        for prop_name in reset_props:
+            setattr(props, prop_name, bl_rna_props[prop_name].default)
