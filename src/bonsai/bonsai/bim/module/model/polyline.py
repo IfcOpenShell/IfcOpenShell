@@ -250,13 +250,13 @@ class PolylineOperator:
 
     def handle_inserting_polyline(self, context, event):
         if event.value == "RELEASE" and event.type == "LEFTMOUSE":
-            result = tool.Snap.insert_polyline_point(self.input_ui)
+            result = tool.Polyline.insert_polyline_point(self.input_ui, self.tool_state)
             if result:
                 self.report({"WARNING"}, result)
             tool.Blender.update_viewport()
 
         if event.value == "PRESS" and event.type == "C":
-            tool.Snap.close_polyline()
+            tool.Polyline.close_polyline()
             PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
             tool.Blender.update_viewport()
 
@@ -267,7 +267,7 @@ class PolylineOperator:
         ):
             is_valid = self.recalculate_inputs(context)
             if is_valid:
-                result = tool.Snap.insert_polyline_point(self.input_ui)
+                result = tool.Polyline.insert_polyline_point(self.input_ui, self.tool_state)
                 if result:
                     self.report({"WARNING"}, result)
 
@@ -302,7 +302,7 @@ class PolylineOperator:
                 self.tool_state.axis_method = None
                 context.workspace.status_text_set(text=None)
                 PolylineDecorator.uninstall()
-                tool.Snap.clear_polyline()
+                tool.Polyline.clear_polyline()
                 tool.Blender.update_viewport()
                 return {"CANCELLED"}
 
@@ -333,7 +333,7 @@ class PolylineOperator:
                 return {"RUNNING_MODAL"}
 
             if event.value == "RELEASE" and event.type == "BACK_SPACE":
-                tool.Snap.remove_last_polyline_point()
+                tool.Polyline.remove_last_polyline_point()
                 tool.Blender.update_viewport()
 
     def modal(self, context, event):
@@ -350,7 +350,6 @@ class PolylineOperator:
         self.tool_state.axis_method = None
         self.tool_state.plane_method = None
         self.tool_state.mode = "Mouse"
-        tool.Snap.set_tool_state(self.tool_state)
         self.visible_objs = tool.Raycast.get_visible_objects(context)
         for obj in self.visible_objs:
             self.objs_2d_bbox.append(tool.Raycast.get_on_screen_2d_bounding_boxes(context, obj))

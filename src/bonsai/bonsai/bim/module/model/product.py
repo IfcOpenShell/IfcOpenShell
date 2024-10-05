@@ -116,7 +116,7 @@ class AddOccurrence(bpy.types.Operator, PolylineOperator):
         if not self.relating_type:
             return {"FINISHED"}
 
-        result = tool.Snap.insert_polyline_point(self.input_ui)
+        result = tool.Polyline.insert_polyline_point(self.input_ui, tool_state)
         if result:
             self.report({"WARNING"}, result)
 
