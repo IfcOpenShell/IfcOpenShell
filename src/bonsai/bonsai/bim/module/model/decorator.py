@@ -583,7 +583,7 @@ class PolylineDecorator:
 
         # Area and Length text
         polyline_verts = [Vector((p.x, p.y, p.z)) for p in polyline_points]
-        center = sum(polyline_verts, Vector()) / len(polyline_verts) # center between all polyline points        
+        center = sum(polyline_verts, Vector()) / len(polyline_verts) # Center between all polyline points        
         area_text_coords = view3d_utils.location_3d_to_region_2d(region, rv3d, center)
         total_length_text_coords = view3d_utils.location_3d_to_region_2d(region, rv3d, polyline_verts[-1])
 
@@ -591,10 +591,11 @@ class PolylineDecorator:
         if measure_type == "AREA":
             if len(polyline_verts) < 3:
                 return
-            blf.position(self.font_id, area_text_coords[0], area_text_coords[1], 0)
             value = polyline_data.area
             text = f"area: {value}"
             text_length = blf.dimensions(self.font_id, text)
+            area_text_coords[0] -= (text_length[0]/2) # Center text horizontally
+            blf.position(self.font_id, area_text_coords[0], area_text_coords[1], 0)
             self.draw_text_background(context, area_text_coords, text_length)
             blf.draw(self.font_id, text)
 
