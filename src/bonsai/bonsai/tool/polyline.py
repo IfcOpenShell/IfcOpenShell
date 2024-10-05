@@ -305,8 +305,8 @@ class Polyline(bonsai.core.tool.Polyline):
 
         base_vertices = []
         top_vertices = []
-        polyline_data = context.scene.BIMPolylineProperties.insertion_polyline[0]
-        polyline_points = polyline_data.polyline_points
+        polyline_data = context.scene.BIMPolylineProperties.insertion_polyline
+        polyline_points = polyline_data[0].polyline_points if polyline_data else []
         if len(polyline_points) < 2:
             context.scene.BIMPolylineProperties.product_preview.clear()
             return
@@ -561,7 +561,7 @@ class Polyline(bonsai.core.tool.Polyline):
     @classmethod
     def close_polyline(cls):
         polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline
-        polyline_points = polyline_data[0].polyline_points if len(polyline_data) > 0 else []
+        polyline_points = polyline_data[0].polyline_points if polyline_data else []
         if len(polyline_points) > 2:
             first_point = polyline_points[0]
             last_point = polyline_points[-1]
@@ -578,13 +578,13 @@ class Polyline(bonsai.core.tool.Polyline):
     @classmethod
     def remove_last_polyline_point(cls):
         polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline
-        polyline_points = polyline_data[0].polyline_points if len(polyline_data) > 0 else []
+        polyline_points = polyline_data[0].polyline_points if polyline_data else []
         polyline_points.remove(len(polyline_points) - 1)
 
     @classmethod
     def move_polyline_to_measure(cls, context, input_ui):
         polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline
-        polyline_points = polyline_data[0].polyline_points if len(polyline_data) > 0 else []
+        polyline_points = polyline_data[0].polyline_points if polyline_data else []
         measurement_data = bpy.context.scene.BIMPolylineProperties.measurement_polyline.add()
         measurement_type = bpy.context.scene.MeasureToolSettings.measure_type
         measurement_data.measurement_type = measurement_type

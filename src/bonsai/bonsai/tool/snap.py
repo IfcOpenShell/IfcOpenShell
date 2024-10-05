@@ -124,7 +124,7 @@ class Snap(bonsai.core.tool.Snap):
 
         default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
         polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline
-        polyline_points = polyline_data[0].polyline_points if len(polyline_data) > 0 else []
+        polyline_points = polyline_data[0].polyline_points if polyline_data else []
         if polyline_points:
             last_point_data = polyline_points[-1]
             last_point = Vector((last_point_data.x, last_point_data.y, last_point_data.z))
