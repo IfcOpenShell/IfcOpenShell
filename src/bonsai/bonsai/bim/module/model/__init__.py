@@ -119,7 +119,7 @@ classes = (
     mep.RegenerateDistributionElement,
     prop.SnapMousePoint,
     prop.PolylinePoint,
-    prop.MeasurePolyline,
+    prop.Polyline,
     prop.BIMModelProperties,
     prop.BIMArrayProperties,
     prop.BIMStairProperties,
