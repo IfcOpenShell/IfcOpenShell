@@ -2380,7 +2380,7 @@ class MeasureTool(bpy.types.Operator, PolylineOperator):
 
     def __init__(self):
         super().__init__()
-        if self.measure_type == 'AREA':
+        if self.measure_type == "AREA":
             self.input_ui = tool.Polyline.create_input_ui(init_z=True, init_area=True)
         else:
             self.input_ui = tool.Polyline.create_input_ui(init_z=True)
@@ -2411,9 +2411,14 @@ class MeasureTool(bpy.types.Operator, PolylineOperator):
         self.handle_snap_selection(context, event)
 
         single_mode = False
-        if self.measure_type == "SINGLE" and len(context.scene.BIMPolylineProperties.polyline_points) >= 2:
+
+        if (
+            self.measure_type == "SINGLE"
+            and context.scene.BIMPolylineProperties.insertion_polyline
+            and len(context.scene.BIMPolylineProperties.insertion_polyline[0].polyline_points) >= 2
+        ):
             single_mode = True
-            
+
         if (
             not self.tool_state.is_input_on
             and event.value == "RELEASE"

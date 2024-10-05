@@ -209,20 +209,21 @@ class Raycast(bonsai.core.tool.Raycast):
         except:
             loc = Vector((0, 0, 0))
 
-        polyline_data = bpy.context.scene.BIMPolylineProperties.polyline_points
-        polyline_data = polyline_data[
-            : len(polyline_data) - 1
+        polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline[0]
+        polyline_points = polyline_data.polyline_points
+        polyline_points = polyline_points[
+            : len(polyline_points) - 1
         ]  # It doesn't make sense to snap to the last point created
-        polyline_points = []
-        for point_data in polyline_data:
-            point = Vector((point_data.x, point_data.y, point_data.z))
+        polyline_verts = []
+        for point_data in polyline_points:
+            vertex = Vector((point_data.x, point_data.y, point_data.z))
 
-            intersection, _ = mathutils.geometry.intersect_point_line(point, ray_target, loc)
-            distance = (point - intersection).length
+            intersection, _ = mathutils.geometry.intersect_point_line(vertex, ray_target, loc)
+            distance = (vertex - intersection).length
             if distance < 0.2:
-                polyline_points.append((point, "Vertex"))
+                polyline_verts.append((vertex, "Vertex"))
 
-        return polyline_points
+        return polyline_verts
 
     @classmethod
     def ray_cast_to_measure(cls, context, event, points):

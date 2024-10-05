@@ -520,18 +520,19 @@ class DumbWallGenerator:
         )
 
     def derive_from_polyline(self):
-        polyline_data = bpy.context.scene.BIMPolylineProperties.polyline_points
+        polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline
+        polyline_points = polyline_data.polyline_points
         is_polyline_closed = False
-        if len(polyline_data) > 3:
-            first_vec = Vector((polyline_data[0].x, polyline_data[0].y, polyline_data[0].z))
-            last_vec = Vector((polyline_data[-1].x, polyline_data[-1].y, polyline_data[-1].z))
+        if len(polyline_points) > 3:
+            first_vec = Vector((polyline_points[0].x, polyline_points[0].y, polyline_points[0].z))
+            last_vec = Vector((polyline_points[-1].x, polyline_points[-1].y, polyline_points[-1].z))
             if first_vec == last_vec:
                 is_polyline_closed = True
 
         walls = []
-        for i in range(len(polyline_data) - 1):
-            vec1 = Vector((polyline_data[i].x, polyline_data[i].y, polyline_data[i].z))
-            vec2 = Vector((polyline_data[i + 1].x, polyline_data[i + 1].y, polyline_data[i + 1].z))
+        for i in range(len(polyline_points) - 1):
+            vec1 = Vector((polyline_points[i].x, polyline_points[i].y, polyline_points[i].z))
+            vec2 = Vector((polyline_points[i + 1].x, polyline_points[i + 1].y, polyline_points[i + 1].z))
             coords = (vec1, vec2)
             walls.append(self.create_wall_from_2_points(coords))
         return walls, is_polyline_closed

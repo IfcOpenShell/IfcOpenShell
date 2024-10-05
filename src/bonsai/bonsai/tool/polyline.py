@@ -106,10 +106,12 @@ class Polyline(bonsai.core.tool.Polyline):
     def calculate_distance_and_angle(cls, context, input_ui, tool_state):
 
         try:
-            polyline_data = context.scene.BIMPolylineProperties.polyline_points
+            polyline_data = context.scene.BIMPolylineProperties.insertion_polyline[0]
+            polyline_points = polyline_data.polyline_points
             default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
-            last_point_data = polyline_data[len(polyline_data) - 1]
+            last_point_data = polyline_points[len(polyline_points) - 1]
         except:
+            polyline_points = []
             default_container_elevation = 0
             last_point_data = None
 
@@ -136,8 +138,8 @@ class Polyline(bonsai.core.tool.Polyline):
                 snap_vector = Vector((snap_prop.x, snap_prop.y, snap_prop.z))
 
         second_to_last_point = None
-        if len(polyline_data) > 1:
-            second_to_last_point_data = polyline_data[len(polyline_data) - 2]
+        if len(polyline_points) > 1:
+            second_to_last_point_data = polyline_points[len(polyline_points) - 2]
             second_to_last_point = Vector(
                 (second_to_last_point_data.x, second_to_last_point_data.y, second_to_last_point_data.z)
             )
@@ -174,15 +176,16 @@ class Polyline(bonsai.core.tool.Polyline):
     @classmethod
     def calculate_area(cls, context, input_ui):
         try:
-            polyline_data = context.scene.BIMPolylineProperties.polyline_points
+            polyline_data = context.scene.BIMPolylineProperties.insertion_polyline[0]
+            polyline_points = polyline_data.polyline_points
         except:
             return input_ui
 
-        if len(polyline_data) < 3:
+        if len(polyline_points) < 3:
             return input_ui
 
         points = []
-        for data in polyline_data:
+        for data in polyline_points:
             points.append(Vector((data.x, data.y, data.z)))
 
         if points[0] == points[-1]:
@@ -217,9 +220,10 @@ class Polyline(bonsai.core.tool.Polyline):
     @classmethod
     def calculate_x_y_and_z(cls, context, input_ui, tool_state):
         try:
-            polyline_data = context.scene.BIMPolylineProperties.polyline_points
+            polyline_data = context.scene.BIMPolylineProperties.insertion_polyline[0]
+            polyline_points = polyline_data.polyline_points
             default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
-            last_point_data = polyline_data[len(polyline_data) - 1]
+            last_point_data = polyline_points[len(polyline_points) - 1]
             last_point = Vector((last_point_data.x, last_point_data.y, last_point_data.z))
         except:
             default_container_elevation = 0
@@ -233,8 +237,8 @@ class Polyline(bonsai.core.tool.Polyline):
         else:
             snap_vector = Vector((snap_prop.x, snap_prop.y, snap_prop.z))
 
-        if len(polyline_data) > 1:
-            second_to_last_point_data = polyline_data[len(polyline_data) - 2]
+        if len(polyline_points) > 1:
+            second_to_last_point_data = polyline_points[len(polyline_points) - 2]
             second_to_last_point = Vector(
                 (second_to_last_point_data.x, second_to_last_point_data.y, second_to_last_point_data.z)
             )
@@ -301,11 +305,12 @@ class Polyline(bonsai.core.tool.Polyline):
 
         base_vertices = []
         top_vertices = []
-        polyline_data = context.scene.BIMPolylineProperties.polyline_points
-        if len(polyline_data) < 2:
+        polyline_data = context.scene.BIMPolylineProperties.insertion_polyline[0]
+        polyline_points = polyline_data.polyline_points
+        if len(polyline_points) < 2:
             context.scene.BIMPolylineProperties.product_preview.clear()
             return
-        for point in polyline_data:
+        for point in polyline_points:
             base_vertices.append(Vector((point.x, point.y, point.z)))
 
         is_closed = False
