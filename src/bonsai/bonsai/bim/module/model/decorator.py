@@ -474,7 +474,6 @@ class PolylineDecorator:
             "X": "X coord: ",
             "Y": "Y coord: ",
             "Z": "Z coord:",
-            "AREA": "Area: ",
         }
         try:
             mouse_pos = self.event.mouse_region_x, self.event.mouse_region_y
