@@ -350,10 +350,6 @@ class PolylineDecorator:
         cls.axis_start = start
         cls.axis_end = end
 
-    @classmethod
-    def set_tool_state(cls, tool_state):
-        cls.tool_state = tool_state
-
     def calculate_measurement_x_y_and_z(self, context):
         polyline_data = context.scene.BIMPolylineProperties.insertion_polyline
         polyline_points = polyline_data[0].polyline_points if len(polyline_data) > 0 else []
