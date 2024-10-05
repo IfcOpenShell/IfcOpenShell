@@ -705,11 +705,11 @@ class PolylineDecorator:
 
         # Create polyline with selected points
         polyline_data = context.scene.BIMPolylineProperties.insertion_polyline
-        if not polyline_data:
-            return
-        else:
+        if polyline_data:
             polyline_data = context.scene.BIMPolylineProperties.insertion_polyline[0]
-        polyline_points = polyline_data.polyline_points
+            polyline_points = polyline_data.polyline_points
+        else:
+            polyline_points = []
         polyline_verts = []
         polyline_edges = []
         for point_prop in polyline_points:
@@ -739,7 +739,7 @@ class PolylineDecorator:
             self.draw_batch("LINES", [self.axis_start, self.axis_end], axis_color, [(0, 1)])
 
         # Lines for X, Y, Z of single measure
-        if polyline_data.measurement_type == "SINGLE":
+        if polyline_data and polyline_data.measurement_type == "SINGLE":
             axis, _ = self.calculate_measurement_x_y_and_z(context)
             x_axis, y_axis, z_axis = axis
             self.draw_batch("LINES", [*x_axis], decorator_color_x_axis, [(0, 1)])
@@ -747,11 +747,12 @@ class PolylineDecorator:
             self.draw_batch("LINES", [*z_axis], decorator_color_z_axis, [(0, 1)])
 
         # Area highlight
-        _, area = tool.Polyline.validate_input(polyline_data.area, "AREA")
-        if area:
-            if float(area) > 0:
-                tris = self.calculate_polygon(polyline_verts)
-                self.draw_batch("TRIS", polyline_verts, transparent_color(decorator_color_special), tris)
+        if polyline_data:
+            _, area = tool.Polyline.validate_input(polyline_data.area, "AREA")
+            if area:
+                if float(area) > 0:
+                    tris = self.calculate_polygon(polyline_verts)
+                    self.draw_batch("TRIS", polyline_verts, transparent_color(decorator_color_special), tris)
 
         # Mouse points
         if snap_prop.snap_type in ["Plane", "Axis", "Mix"]:
