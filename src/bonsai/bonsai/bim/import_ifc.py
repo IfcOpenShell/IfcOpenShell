@@ -186,6 +186,9 @@ class MaterialCreator:
         return items
 
 
+IMPORTER_WARNINGS: list[str] = []
+
+
 class IfcImporter:
     def __init__(self, ifc_import_settings: IfcImportSettings):
         self.ifc_import_settings = ifc_import_settings
@@ -315,7 +318,13 @@ class IfcImporter:
         self.annotations -= drawing_annotations
 
         self.elements = [e for e in self.elements if not e.is_a("IfcFeatureElement") or e.is_a("IfcSurfaceFeature")]
+        n = len(self.elements)
         self.elements = set(self.elements[offset:offset_limit])
+        if n > len(self.elements):
+            IMPORTER_WARNINGS.append(
+                f"Not all elements were loaded. Only loaded {(len(self.elements))} of {n} elements (element range: {offset}-{offset_limit}). "
+                "You can change element range by loading project in advanced mode."
+            )
 
         if self.ifc_import_settings.has_filter or offset or offset_limit < len(self.elements):
             self.element_types = set([ifcopenshell.util.element.get_type(e) for e in self.elements])
@@ -1351,6 +1360,12 @@ class IfcImporter:
             v2 = vertices[edge[1]]
             polyline.points.add(1)
             polyline.points[-1].co = mathutils.Vector(v2)
+        # TODO: remove error handling after we update build in Bonsai.
+        try:
+            edges_item_ids = ifcopenshell.util.shape.get_edges_representation_item_ids(geometry).tolist()
+        except AttributeError:
+            edges_item_ids = []
+        curve["ios_edges_item_ids"] = edges_item_ids
         return curve
 
     def create_mesh(

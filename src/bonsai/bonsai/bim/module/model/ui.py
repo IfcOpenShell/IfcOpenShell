@@ -677,4 +677,5 @@ class BIM_MT_elements(Menu):
 
 def add_menu(self, context):
     self.layout.operator("bim.launch_add_element", icon_value=bonsai.bim.icons["IFC"].icon_id, text="IFC Element")
+    self.layout.menu("BIM_MT_elements", icon_value=bonsai.bim.icons["IFC"].icon_id)
     self.layout.separator()
