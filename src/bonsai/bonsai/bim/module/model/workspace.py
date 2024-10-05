@@ -502,7 +502,7 @@ class CreateObjectUI:
                 if ui_context != "TOOL_HEADER":
                     row = box.row(align=True)
                     row.alignment = "CENTER"
-                    row.operator("bim.launch_type_manager", text="relating_type_description", emboss=False,)
+                    row.operator("bim.launch_type_manager", text=AuthoringData.data["relating_type_description"], emboss=False,)
 
                     if AuthoringData.data["type_thumbnail"]:
                         row1 = box.row()
