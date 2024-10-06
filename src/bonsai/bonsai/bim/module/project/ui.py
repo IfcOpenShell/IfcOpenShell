@@ -193,11 +193,25 @@ class BIM_PT_project(Panel):
             row = self.layout.row()
             row.prop(pprops, "project_north")
 
+        if ProjectData.data["total_elements"] > 30000:
+            box = self.layout.box()
+            box.alert = True
+            row = box.row()
+            row.alignment = "CENTER"
+            row.label(text=f"Large Model ({ProjectData.data['total_elements']} Elements)", icon="ERROR")
+            row = box.row()
+            row.alignment = "CENTER"
+            row.label(text="Large models may slow down Bonsai")
+
         row = self.layout.row()
-        row.label(text="Element Range")
-        row = self.layout.row(align=True)
-        row.prop(pprops, "element_offset", text="")
-        row.prop(pprops, "element_limit", text="")
+        row.prop(pprops, "element_limit_mode")
+
+        if pprops.element_limit_mode == "RANGE":
+            row = self.layout.row()
+            row.label(text="Element Range")
+            row = self.layout.row(align=True)
+            row.prop(pprops, "element_offset", text="")
+            row.prop(pprops, "element_limit", text="")
 
         row = self.layout.row(align=True)
         row.operator("bim.load_project_elements")

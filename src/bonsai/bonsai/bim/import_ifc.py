@@ -186,9 +186,6 @@ class MaterialCreator:
         return items
 
 
-IMPORTER_WARNINGS: list[str] = []
-
-
 class IfcImporter:
     def __init__(self, ifc_import_settings: IfcImportSettings):
         self.ifc_import_settings = ifc_import_settings
@@ -295,9 +292,6 @@ class IfcImporter:
         tool.Loader.settings.gross_context_settings = tool.Loader.create_settings(is_gross=True)
 
     def process_element_filter(self) -> None:
-        offset = self.ifc_import_settings.element_offset
-        offset_limit = offset + self.ifc_import_settings.element_limit
-
         if self.ifc_import_settings.has_filter:
             self.elements = self.ifc_import_settings.elements
             if isinstance(self.elements, set):
@@ -318,15 +312,14 @@ class IfcImporter:
         self.annotations -= drawing_annotations
 
         self.elements = [e for e in self.elements if not e.is_a("IfcFeatureElement") or e.is_a("IfcSurfaceFeature")]
-        n = len(self.elements)
-        self.elements = set(self.elements[offset:offset_limit])
-        if n > len(self.elements):
-            IMPORTER_WARNINGS.append(
-                f"Not all elements were loaded. Only loaded {(len(self.elements))} of {n} elements (element range: {offset}-{offset_limit}). "
-                "You can change element range by loading project in advanced mode."
-            )
+        if self.ifc_import_settings.element_limit_mode == "UNLIMITED":
+            self.elements = set(self.elements)
+        else:
+            offset = self.ifc_import_settings.element_offset
+            offset_limit = offset + self.ifc_import_settings.element_limit
+            self.elements = set(self.elements[offset:offset_limit])
 
-        if self.ifc_import_settings.has_filter or offset or offset_limit < len(self.elements):
+        if self.ifc_import_settings.has_filter or self.ifc_import_settings.element_limit_mode != "UNLIMITED":
             self.element_types = set([ifcopenshell.util.element.get_type(e) for e in self.elements])
         else:
             self.element_types = set(self.file.by_type("IfcTypeProduct"))
@@ -1510,6 +1503,7 @@ class IfcImportSettings:
         self.false_origin_mode = "AUTOMATIC"
         self.false_origin = None
         self.project_north = None
+        self.element_limit_mode = "UNLIMITED"
         self.element_offset = 0
         self.element_limit = 30000
         self.has_filter = None
@@ -1550,6 +1544,7 @@ class IfcImportSettings:
             settings.project_north = float(props.project_north)
         except:
             settings.project_north = 0
+        settings.element_limit_mode = props.element_limit_mode
         settings.element_offset = props.element_offset
         settings.element_limit = props.element_limit
         return settings

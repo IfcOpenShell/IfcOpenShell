@@ -199,6 +199,14 @@ class BIMProjectProperties(PropertyGroup):
         description="The angle (postive is anticlockwise) pointing to grid north relative to project north",
         default="0",
     )
+    element_limit_mode: bpy.props.EnumProperty(
+        items=[
+            ("UNLIMITED", "Load Everything", "Load all elements"),
+            ("RANGE", "Load Subset of Elements", "Only load the first N elements"),
+        ],
+        name="Element limit",
+        default="UNLIMITED",
+    )
     element_offset: IntProperty(name="Element Offset", default=0)
     element_limit: IntProperty(name="Element Offset", default=30000)
     should_disable_undo_on_save: BoolProperty(

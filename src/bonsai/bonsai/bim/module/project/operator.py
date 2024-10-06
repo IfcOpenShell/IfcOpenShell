@@ -772,14 +772,12 @@ class LoadProject(bpy.types.Operator, IFCFileSelector):
             tool.Blender.register_toolbar()
             tool.Project.add_recent_ifc_project(filepath.absolute())
 
-            if not self.is_advanced:
+            if self.is_advanced:
+                pass
+            elif len(tool.Ifc.get().by_type("IfcElement")) > 30000:
+                self.report({"WARNING"}, "Warning: large model. Please review advanced settings to continue.")
+            else:
                 bpy.ops.bim.load_project_elements()
-                if warnings := import_ifc.IMPORTER_WARNINGS:
-                    print("\n\nLoading project finished with warnings:")
-                    for warning in warnings:
-                        print(f"- {warning}")
-                    self.report({"WARNING"}, "Project was loaded with warnings. See system console for details.")
-                    warnings.clear()
                 if self.import_without_ifc_data:
                     bpy.ops.bim.convert_to_blender()
         except:

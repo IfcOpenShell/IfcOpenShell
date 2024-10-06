@@ -42,6 +42,7 @@ class ProjectData:
             "export_schema": cls.get_export_schema(),
             "library_file": cls.library_file(),
             "last_saved": cls.last_saved(),
+            "total_elements": cls.total_elements(),
         }
         # After export_schema.
         cls.data["template_file"] = cls.template_file()
@@ -105,6 +106,12 @@ class ProjectData:
             return f"{save_date} {':'.join(save_time.split(':')[0:2])}"
         except:
             return ""
+
+    @classmethod
+    def total_elements(cls):
+        if ifc := tool.Ifc.get():
+            return len(ifc.by_type("IfcElement"))
+        return 0
 
 
 class LinksData:
