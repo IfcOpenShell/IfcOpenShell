@@ -296,6 +296,8 @@ def load_post(scene):
         else:
             bpy.ops.workspace.append_activate(idname="BIM", filepath=os.path.join(cwd, "data", "workspace.blend"))
 
+    bpy.ops.bim.override_escape("INVOKE_DEFAULT")
+
     # To improve usability for new users, we hijack the scene properties
     # tab. We override default scene properties panels with our own poll
     # to hide them unless the user has chosen to view Blender properties.
