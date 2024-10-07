@@ -596,7 +596,11 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 		const IfcParse::schema_definition* schema = IfcParse::schema_by_name(schema_identifier);
 		const IfcParse::declaration* decl = schema->declaration_by_name(name);
         IfcEntityInstanceData data(storage_t(decl->as_entity() ? decl->as_entity()->attribute_count() : 1));
-		return schema->instantiate(decl, std::move(data));
+		auto inst = schema->instantiate(decl, std::move(data));
+		if (auto entinst = inst->as<IfcUtil::IfcBaseEntity>()) {
+            entinst->populate_derived();
+        }
+		return inst;
 	}
 %}
 
