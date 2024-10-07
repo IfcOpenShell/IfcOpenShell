@@ -584,6 +584,9 @@ class Polyline(bonsai.core.tool.Polyline):
                 polyline_point.x = first_point.x
                 polyline_point.y = first_point.y
                 polyline_point.z = first_point.z
+                polyline_point.dim = first_point.dim
+                polyline_point.angle = first_point.angle
+                polyline_point.position = first_point.position
 
     @classmethod
     def clear_polyline(cls):
