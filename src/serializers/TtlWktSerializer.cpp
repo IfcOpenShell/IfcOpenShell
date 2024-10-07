@@ -299,6 +299,7 @@ void TtlWktSerializer::write(const IfcGeom::TriangulationElement* o)
             // @nb we take abs because so that we can ignore face orientation and potential convatities rquire
             if ((std::abs(cross_product.z()) + 1.e-9) >= 1.0 && v0.z() < lowest_z) {
                 lowest_face = f.begin();
+                lowest_z = v0.z();
             }
         }
 
