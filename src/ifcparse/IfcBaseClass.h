@@ -139,7 +139,7 @@ class IFC_PARSE_API IfcLateBoundEntity : public IfcBaseClass {
 
 class IFC_PARSE_API IfcBaseEntity : public IfcBaseClass {
   public:
-    IfcBaseEntity(IfcEntityInstanceData&& data) : IfcBaseClass(std::move(data)) {}
+    IfcBaseEntity(IfcEntityInstanceData&& data);
 
     IfcBaseEntity(size_t n)
         : IfcBaseClass(IfcEntityInstanceData(storage_t(n)))
@@ -158,6 +158,8 @@ class IFC_PARSE_API IfcBaseEntity : public IfcBaseClass {
     boost::shared_ptr<aggregate_of_instance> get_inverse(const std::string& name) const;
 
     unsigned set_id(const boost::optional<unsigned>& i);
+
+    void populate_derived();
 };
 
 // TODO: Investigate whether these should be template classes instead
