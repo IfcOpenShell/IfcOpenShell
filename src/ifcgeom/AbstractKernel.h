@@ -70,7 +70,7 @@ namespace ifcopenshell { namespace geometry { namespace kernels {
 		virtual bool apply_folded_layerset(IfcGeom::ConversionResults&, const ifcopenshell::geometry::layerset_information&, const std::map<IfcUtil::IfcBaseEntity*, ifcopenshell::geometry::layerset_information>&) { throw std::runtime_error("Not implemented"); }
 		virtual bool convert_openings(const IfcUtil::IfcBaseEntity* entity, const std::vector<std::pair<taxonomy::ptr, ifcopenshell::geometry::taxonomy::matrix4>>& openings,
 			const IfcGeom::ConversionResults& entity_shapes, const ifcopenshell::geometry::taxonomy::matrix4& entity_trsf, IfcGeom::ConversionResults& cut_shapes) = 0;
-
+		virtual bool unify_shapes(const IfcGeom::ConversionResults&, IfcGeom::ConversionResults&) { throw std::runtime_error("Unification of shapes not implemented in this kernel"); }
 	};
 
 	AbstractKernel* construct(IfcParse::IfcFile* file, const std::string& geometry_library, Settings& conv_settings);
