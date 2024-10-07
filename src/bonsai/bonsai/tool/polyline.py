@@ -514,7 +514,7 @@ class Polyline(bonsai.core.tool.Polyline):
         return format_distance(value * factor, precision=precision, suppress_zero_inches=True, in_unit_length=True)
 
     @classmethod
-    def insert_polyline_point(cls, input_ui, tool_state):
+    def insert_polyline_point(cls, input_ui, tool_state=None):
         x = input_ui.get_number_value("X")
         y = input_ui.get_number_value("Y")
         if input_ui.get_number_value("Z") is not None:
@@ -525,7 +525,7 @@ class Polyline(bonsai.core.tool.Polyline):
         a = input_ui.get_formatted_value("A")
 
         snap_vertex = bpy.context.scene.BIMPolylineProperties.snap_mouse_point[0]
-        if tool_state.use_default_container:
+        if tool_state and tool_state.use_default_container:
             z = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
 
         if x is None and y is None:
