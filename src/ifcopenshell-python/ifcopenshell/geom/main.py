@@ -78,6 +78,7 @@ SETTING = Literal[
     "boolean-attempt-2d",
     "weld-vertices",
     "use-world-coords",
+    "unify-shapes",
     "use-material-names",
     "convert-back-units",
     "context-ids",
