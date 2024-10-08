@@ -313,19 +313,6 @@ class UnlinkObject(bpy.types.Operator, tool.Ifc.Operator):
         return context.window_manager.invoke_props_dialog(self)
 
 
-class CopyClass(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.copy_class"
-    bl_label = "Copy Class"
-    bl_options = {"REGISTER", "UNDO"}
-    obj: bpy.props.StringProperty()
-
-    def _execute(self, context):
-        objects = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
-        for obj in objects:
-            core.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=obj)
-        bonsai.bim.handler.refresh_ui_data()
-
-
 class AddElement(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_element"
     bl_label = "Add Element"
