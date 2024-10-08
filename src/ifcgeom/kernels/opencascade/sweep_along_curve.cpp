@@ -26,11 +26,60 @@
 #include <BRepBuilderAPI_Transform.hxx>
 #include <ShapeFix_Edge.hxx>
 #include <BRepBuilderAPI_MakeFace.hxx>
+#include <TopExp.hxx>
+#include <Geom_Circle.hxx>
 
 using namespace ifcopenshell::geometry;
 using namespace ifcopenshell::geometry::kernels;
 using namespace IfcGeom;
 using namespace IfcGeom::util;
+
+namespace {
+	bool wire_is_c1_continuous(const TopoDS_Wire& w, double tol) {
+		// NB Note that c0 continuity is NOT checked!
+
+		TopTools_IndexedDataMapOfShapeListOfShape map;
+		TopExp::MapShapesAndAncestors(w, TopAbs_VERTEX, TopAbs_EDGE, map);
+		for (int i = 1; i <= map.Extent(); ++i) {
+			const auto& li = map.FindFromIndex(i);
+			if (li.Extent() == 2) {
+				const TopoDS_Vertex& v = TopoDS::Vertex(map.FindKey(i));
+
+				const TopoDS_Edge& e0 = TopoDS::Edge(li.First());
+				const TopoDS_Edge& e1 = TopoDS::Edge(li.Last());
+
+				double u0 = BRep_Tool::Parameter(v, e0);
+				double u1 = BRep_Tool::Parameter(v, e1);
+
+				double _, __;
+				Handle(Geom_Curve) c0 = BRep_Tool::Curve(e0, _, __);
+				Handle(Geom_Curve) c1 = BRep_Tool::Curve(e1, _, __);
+
+				gp_Pnt p;
+				gp_Vec v0, v1;
+				c0->D1(u0, p, v0);
+				c1->D1(u1, p, v1);
+
+				if (1. - std::abs(v0.Normalized().Dot(v1.Normalized())) > tol) {
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+
+	bool contains_circular_segments(const TopoDS_Wire& w) {
+		for (TopoDS_Iterator it(w); it.More(); it.Next()) {
+			const auto& e = TopoDS::Edge(it.Value());
+			double _, __;
+			auto crv = BRep_Tool::Curve(e, _, __);
+			if (crv && crv->DynamicType() == STANDARD_TYPE(Geom_Circle)) {
+				return true;
+			}
+		}
+		return false;
+	}
+}
 
 bool OpenCascadeKernel::convert(const taxonomy::sweep_along_curve::ptr scs, TopoDS_Shape& result) {
 	auto w = convert_curve(scs->curve);
@@ -76,8 +125,11 @@ bool OpenCascadeKernel::convert(const taxonomy::sweep_along_curve::ptr scs, Topo
 	}
 
 	{
-		TopExp_Explorer exp(wire, TopAbs_EDGE);
-		TopoDS_Edge edge = TopoDS::Edge(exp.Current());
+		TopoDS_Vertex v0, v1;
+		TopExp::Vertices(wire, v0, v1);
+		TopTools_IndexedDataMapOfShapeListOfShape m;
+		TopExp::MapShapesAndAncestors(wire, TopAbs_VERTEX, TopAbs_EDGE, m);
+		const TopoDS_Edge& edge = TopoDS::Edge(m.FindFromKey(v0).First());
 		double u0, u1;
 		Handle(Geom_Curve) crv = BRep_Tool::Curve(edge, u0, u1);
 		crv->D1(u0, directrix_origin, directrix_tangent);
@@ -130,7 +182,7 @@ bool OpenCascadeKernel::convert(const taxonomy::sweep_along_curve::ptr scs, Topo
 	}
 
 	builder.Add(section);
-	builder.SetTransitionMode(BRepBuilderAPI_RightCorner);
+	builder.SetTransitionMode(contains_circular_segments(wire) && wire_is_c1_continuous(wire, 1.e-2) ? BRepBuilderAPI_Transformed : BRepBuilderAPI_RightCorner);
 	if (directrix_on_plane) {
 		builder.SetMode(pln.Axis().Direction());
 	} else if (!is_plane) {
