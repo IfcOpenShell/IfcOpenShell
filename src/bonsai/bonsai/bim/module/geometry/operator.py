@@ -410,6 +410,7 @@ class UpdateRepresentation(bpy.types.Operator, tool.Ifc.Operator):
                 continue
             self.update_obj_mesh_representation(context, obj)
             tool.Ifc.finish_edit(obj)
+        tool.Geometry.reload_representation(objs)
         return {"FINISHED"}
 
     def update_obj_mesh_representation(self, context: bpy.types.Context, obj: bpy.types.Object) -> None:
