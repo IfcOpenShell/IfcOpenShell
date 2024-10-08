@@ -121,6 +121,10 @@ class Snap(bonsai.core.tool.Snap):
 
             return (v1, v2, v3, v4)
 
+        # Makes the snapping point more or less sticky then others
+        # It changes the distance and affects how the snapping point is sorted
+        stick_factor = 0.02
+
         default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
         polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline
         polyline_points = polyline_data[0].polyline_points if polyline_data else []
@@ -157,7 +161,7 @@ class Snap(bonsai.core.tool.Snap):
             if lock_angle:
                 is_on_rot_axis = True
             else:
-                is_on_rot_axis = abs(proximity) <= 0.15
+                is_on_rot_axis = abs(proximity) <= stick_factor
 
             if is_on_rot_axis:
                 # Snap to axis
