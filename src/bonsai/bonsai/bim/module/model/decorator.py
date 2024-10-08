@@ -492,6 +492,7 @@ class PolylineDecorator:
         new_line = 20
         for i, (key, field_name) in enumerate(texts.items()):
 
+            formatted_value = None
             if self.input_ui:
                 if self.tool_state and key != self.tool_state.input_type:
                     formatted_value = self.input_ui.get_formatted_value(key)
