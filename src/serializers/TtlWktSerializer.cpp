@@ -29,6 +29,8 @@
 #include <ShapeAnalysis_FreeBounds.hxx>
 #include <BRepTools_WireExplorer.hxx>
 #include <TopoDS.hxx>
+#include <Bnd_Box.hxx>
+#include <gp_Pln.hxx>
 
 #endif
 
