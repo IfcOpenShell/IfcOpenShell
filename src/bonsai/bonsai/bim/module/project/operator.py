@@ -2401,7 +2401,7 @@ class MeasureTool(bpy.types.Operator, PolylineOperator):
         PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
         tool.Blender.update_viewport()
 
-        if event.type in {"MIDDLEMOUSE", "WHEELUPMOUSE", "WHEELDOWNMOUSE"}:
+        if not event.shift and event.type in {"MIDDLEMOUSE", "WHEELUPMOUSE", "WHEELDOWNMOUSE"}:
             self.handle_mouse_move(context, event)
             return {"PASS_THROUGH"}
 
@@ -2410,6 +2410,8 @@ class MeasureTool(bpy.types.Operator, PolylineOperator):
         self.handle_mouse_move(context, event)
 
         self.choose_axis(event, z=True)
+
+        self.handle_lock_axis(context, event)
 
         self.choose_plane(event)
 
