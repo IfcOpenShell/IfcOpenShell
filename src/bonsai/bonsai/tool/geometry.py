@@ -1067,8 +1067,11 @@ class Geometry(bonsai.core.tool.Geometry):
 
         # Filter out unique meshes to avoid
         # reloading the same representation multiple times.
-        meshes_to_objects: dict[bpy.types.Mesh, bpy.types.Object]
-        meshes_to_objects = {(obj := tool.Ifc.get_object(element)).data: obj for element in elements}
+        meshes_to_objects: dict[bpy.types.Mesh, bpy.types.Object] = {}
+        for element in elements:
+            # Some objects may not exist if they are filtered out, or are unloaded (e.g. openings)
+            if (obj := tool.Ifc.get_object(element)) and obj.data:
+                meshes_to_objects[obj.data] = obj
 
         for obj in meshes_to_objects.values():
             cls._reload_representation(obj)
