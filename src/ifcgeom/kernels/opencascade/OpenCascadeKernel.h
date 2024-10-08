@@ -128,7 +128,7 @@ public:
 		const IfcGeom::ConversionResults& entity_shapes, const ifcopenshell::geometry::taxonomy::matrix4& entity_trsf, IfcGeom::ConversionResults& cut_shapes);
 	virtual bool unify_shapes(const IfcGeom::ConversionResults& input, IfcGeom::ConversionResults& output);
 
-	typedef boost::variant<Handle(Geom_Curve), TopoDS_Wire> curve_creation_visitor_result_type;
+	typedef boost::variant<boost::blank, Handle(Geom_Curve), TopoDS_Wire> curve_creation_visitor_result_type;
 	curve_creation_visitor_result_type convert_curve(const ifcopenshell::geometry::taxonomy::ptr);
 	Handle(Geom_Surface) convert_surface(const ifcopenshell::geometry::taxonomy::ptr);
 

@@ -18,6 +18,7 @@
 #include <BRep_Tool.hxx>
 #include <TopTools_ListOfShape.hxx>
 #include <BRepTools_WireExplorer.hxx>
+#include <BRepBuilderAPI_Transform.hxx>
 
 #include <Standard_Version.hxx>
 #if OCC_VERSION_HEX < 0x70600
@@ -98,7 +99,7 @@ namespace {
 			if (!kernel->convert(l, wire)) {
 				throw std::runtime_error("Failed to convert loop to wire");
 			}
-			return result;
+			return result = wire;
 		}
 
 		OpenCascadeKernel::curve_creation_visitor_result_type operator()(const taxonomy::edge::ptr& e) {
@@ -119,6 +120,9 @@ namespace {
 				auto crv_or_wire = kernel->convert_curve(e_basis);
 				Handle(Geom_Curve) curve;
 				if (crv_or_wire.which() == 0) {
+					// raise exception
+					return result;
+				} else if (crv_or_wire.which() == 1) {
 					curve = boost::get<Handle(Geom_Curve)>(crv_or_wire);
 				} else {
 					// @todo
@@ -353,6 +357,17 @@ bool OpenCascadeKernel::convert(const taxonomy::loop::ptr loop, TopoDS_Wire& wir
 		}
 
 		wire = mw.Wire();
+	}
+
+	if (loop->matrix && !loop->matrix->is_identity()) {
+		const auto& m = loop->matrix->ccomponents();
+		gp_Trsf tr;
+		tr.SetValues(
+			m(0, 0), m(0, 1), m(0, 2), m(0, 3),
+			m(1, 0), m(1, 1), m(1, 2), m(1, 3),
+			m(2, 0), m(2, 1), m(2, 2), m(2, 3)
+		);
+		wire = TopoDS::Wire(BRepBuilderAPI_Transform(wire, tr).Shape());
 	}
 
 	return true;

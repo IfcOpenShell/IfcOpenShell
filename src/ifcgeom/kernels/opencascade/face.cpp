@@ -151,7 +151,7 @@ namespace {
 			// It's a bit more convenient to use high level BRepPrimAPI calls that operate on
 			// topology. On a single edge that will create a Geom_TrimmedCurve for us.
 			auto crv_or_wire = kernel->convert_curve(i);
-			if (crv_or_wire.which() == 1) {
+			if (crv_or_wire.which() == 2) {
 				const auto& w = boost::get<TopoDS_Wire>(crv_or_wire);
 				return w;
 			} else {
@@ -163,8 +163,10 @@ namespace {
 			// @todo unify with trimmed curve handling
 			auto crv_or_wire = kernel->convert_curve(i);
 			if (crv_or_wire.which() == 0) {
+				throw std::runtime_error("Failed to obtain curve");
+			} else if (crv_or_wire.which() == 1) {
 				return boost::get<Handle(Geom_Curve)>(crv_or_wire);
-			} else {
+			} else if (crv_or_wire.which() == 2) {
 				// @todo
 				const double precision_ = 1.e-5;
 				Logger::Warning("Approximating BasisCurve due to possible discontinuities", i->instance);
