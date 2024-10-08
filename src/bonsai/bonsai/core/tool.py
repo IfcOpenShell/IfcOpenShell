@@ -391,6 +391,8 @@ class Geometry:
     def does_representation_id_exist(cls, representation_id): pass
     def duplicate_object_data(cls, obj): pass
     def get_cartesian_point_offset(cls, obj): pass
+    def delete_opening_object_placement(cls, opening): pass
+    def get_blender_offset_type(cls, obj): pass
     def get_element_type(cls, element): pass
     def get_elements_of_type(cls, type): pass
     def get_ifc_representation_class(cls, element, representation): pass
@@ -403,6 +405,7 @@ class Geometry:
     def get_styles(cls, obj): pass
     def get_total_representation_items(cls, obj): pass
     def has_data_users(cls, data): pass
+    def has_material_style_override(cls, obj): pass
     def import_representation(cls, obj, representation, apply_openings=True): pass
     def import_representation_parameters(cls, data): pass
     def is_body_representation(cls, representation): pass
@@ -414,9 +417,10 @@ class Geometry:
     def link(cls, element, obj): pass
     def record_object_materials(cls, obj): pass
     def record_object_position(cls, obj): pass
+    def recreate_object_with_data(cls, obj, data): pass
+    def reload_representation_item_ids(cls, representation, data) -> None: pass
     def remove_connection(cls, connection): pass
     def rename_object(cls, obj, name): pass
-    def recreate_object_with_data(cls, obj, data): pass
     def replace_object_data_globally(cls, old_data, new_data): pass
     def resolve_mapped_representation(cls, representation): pass
     def run_geometry_update_representation(cls, obj=None): pass
@@ -425,13 +429,10 @@ class Geometry:
     def should_force_faceted_brep(cls): pass
     def should_force_triangulation(cls): pass
     def should_generate_uvs(cls, obj): pass
-    def should_use_presentation_style_assignment(cls): pass
-    def unresolve_type_representation(cls, representation, element): pass
-    def delete_opening_object_placement(cls, opening): pass
-    def switch_from_representation(cls, obj, representation): pass
-    def get_blender_offset_type(cls, obj): pass
-    def has_material_style_override(cls, obj): pass
     def should_use_immediate_representation(cls, entity, apply_openings): pass
+    def should_use_presentation_style_assignment(cls): pass
+    def switch_from_representation(cls, obj, representation): pass
+    def unresolve_type_representation(cls, representation, element): pass
 
 
 @interface
