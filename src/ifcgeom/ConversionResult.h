@@ -26,6 +26,7 @@
 
 #include <memory>
 #include <vector>
+#include <unordered_map>
 
 struct EdgeKey {
 	int v1, v2;
