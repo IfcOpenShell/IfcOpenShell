@@ -181,7 +181,7 @@ class AddOccurrence(bpy.types.Operator, PolylineOperator):
             context.workspace.status_text_set(text=None)
             PolylineDecorator.uninstall()
             context.scene.BIMPolylineProperties.product_preview.clear()
-            tool.Snap.clear_polyline()
+            tool.Polyline.clear_polyline()
             tool.Blender.update_viewport()
             return {"FINISHED"}
 
