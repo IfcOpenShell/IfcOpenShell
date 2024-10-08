@@ -34,8 +34,9 @@ using namespace IfcGeom::util;
 
 bool OpenCascadeKernel::convert(const taxonomy::sweep_along_curve::ptr scs, TopoDS_Shape& result) {
 	auto w = convert_curve(scs->curve);
-	if (w.which() == 0) {
+	if (w.which() != 2) {
 		Logger::Error("Unsupported directrix");
+		return false;
 	}
 	TopoDS_Shape face;
 	convert(taxonomy::cast<taxonomy::face>(scs->basis), face);
@@ -136,6 +137,9 @@ bool OpenCascadeKernel::convert(const taxonomy::sweep_along_curve::ptr scs, Topo
 		builder.SetMode(surface_face);
 	}
 	builder.Build();
+	if (!builder.IsDone()) {
+		return false;
+	}
 	builder.MakeSolid();
 	result = builder.Shape();
 
@@ -144,12 +148,45 @@ bool OpenCascadeKernel::convert(const taxonomy::sweep_along_curve::ptr scs, Topo
 
 bool OpenCascadeKernel::convert_impl(const taxonomy::sweep_along_curve::ptr scs, IfcGeom::ConversionResults& results) {
 	TopoDS_Shape shape;
+	// For tiny radii occt will fail building the sweep, in which case we enlarge the inputs to occt, and add a scale matrix to the output
+	bool enlarged = false;
+	static double enlarge_factor = 1000.;
+	if (scs->basis->kind() == taxonomy::FACE) {
+		auto w = std::static_pointer_cast<taxonomy::face>(scs->basis)->children[0];
+		if (w->children.size() == 1 && w->children[0]->basis && w->children[0]->basis->kind() == taxonomy::CIRCLE) {
+			auto circ = std::static_pointer_cast<taxonomy::circle>(w->children[0]->basis);
+			enlarged = circ->radius < 1.e-4;
+			if (enlarged) {
+				// @todo immutability
+				circ->radius *= enlarge_factor;
+				auto crv = std::static_pointer_cast<taxonomy::geom_item>(scs->curve);
+				if (crv->matrix) {
+					crv->matrix = taxonomy::make<taxonomy::matrix4>(
+						Eigen::Scaling(enlarge_factor) *
+						crv->matrix->ccomponents()
+					);
+				} else {
+					crv->matrix = taxonomy::make<taxonomy::matrix4>();
+					crv->matrix->components().topLeftCorner<3, 3>() = Eigen::Scaling(enlarge_factor, enlarge_factor, enlarge_factor).toDenseMatrix();
+				}
+			}
+		}
+	}
 	if (!convert(scs, shape)) {
 		return false;
 	}
+	taxonomy::matrix4::ptr m;
+	if (enlarged) {
+		m = taxonomy::make<taxonomy::matrix4>(
+			Eigen::Scaling(1. / enlarge_factor) *
+			scs->matrix->ccomponents()
+		);
+	} else {
+		m = scs->matrix;
+	}
 	results.emplace_back(ConversionResult(
 		scs->instance->as<IfcUtil::IfcBaseEntity>()->id(),
-		scs->matrix,
+		m,
 		new OpenCascadeShape(shape),
 		scs->surface_style
 	));
