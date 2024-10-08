@@ -717,9 +717,10 @@ class Loader(bonsai.core.tool.Loader):
         cls, element: ifcopenshell.entity_instance, is_gross: bool = False
     ) -> Union[ifcopenshell.geom.ShapeElementType, None]:
         context_settings = cls.settings.gross_context_settings if is_gross else cls.settings.context_settings
+        geometry_library = bpy.context.scene.BIMProjectProperties.geometry_library
         for settings in context_settings:
             try:
-                result = ifcopenshell.geom.create_shape(settings, element)
+                result = ifcopenshell.geom.create_shape(settings, element, geometry_library=geometry_library)
                 if result:
                     return result
             except:
