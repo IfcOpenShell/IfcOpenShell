@@ -47,7 +47,7 @@ from collections import defaultdict
 from math import radians, pi
 from mathutils import Vector, Matrix
 from bonsai.bim.ifc import IfcStore
-from typing import Union, Iterable, Optional, Literal, Iterator
+from typing import Union, Iterable, Optional, Literal, Iterator, List
 from typing_extensions import TypeIs
 
 
@@ -1562,3 +1562,23 @@ class Geometry(bonsai.core.tool.Geometry):
         ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), item)
         obj.data.BIMMeshProperties.ifc_definition_id = new_item.id()
         cls.reload_representation(bpy.context.scene.BIMGeometryProperties.representation_obj)
+
+    @classmethod
+    def split_by_loose_parts(cls, obj: bpy.types.Object) -> List[bpy.types.Mesh]:
+        dup_obj = obj.copy()
+        dup_obj.data = obj.data.copy()
+        bpy.context.scene.collection.objects.link(dup_obj)
+
+        tool.Blender.select_and_activate_single_object(bpy.context, dup_obj)
+
+        bpy.ops.object.mode_set(mode="EDIT")
+        bpy.ops.mesh.select_all(action="SELECT")
+        bpy.ops.mesh.separate(type="LOOSE")
+        bpy.ops.object.mode_set(mode="OBJECT")
+
+        results = []
+        for obj in bpy.context.selected_objects:
+            results.append(obj.data)
+            bpy.data.objects.remove(obj)
+
+        return results
