@@ -63,6 +63,9 @@ class Collector(bonsai.core.tool.Collector):
         elif element.is_a("IfcOpeningElement"):
             collection = cls._create_project_child_collection("IfcOpeningElement")
             cls.link_collection_object_safe(collection, obj)
+        elif element.is_a("IfcSpace"):
+            collection = cls._create_project_child_collection("IfcSpace")
+            cls.link_collection_object_safe(collection, obj)
         elif element.is_a("IfcStructuralItem"):
             collection = cls._create_project_child_collection("IfcStructuralItem")
             cls.link_collection_object_safe(collection, obj)
@@ -102,6 +105,8 @@ class Collector(bonsai.core.tool.Collector):
         elif element.is_a("IfcAnnotation") and (drawing_obj := cls.get_annotation_drawing_obj(element)):
             cls.link_collection_object_safe(drawing_obj.BIMObjectProperties.collection, obj)
         elif container := ifcopenshell.util.element.get_container(element):
+            while container.is_a("IfcSpace"):
+                container = ifcopenshell.util.element.get_aggregate(container)
             container_obj = tool.Ifc.get_object(container)
             if not (collection := container_obj.BIMObjectProperties.collection):
                 cls.assign(container_obj)
