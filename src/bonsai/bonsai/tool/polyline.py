@@ -33,7 +33,8 @@ class Polyline(bonsai.core.tool.Polyline):
     @dataclass
     class PolylineUI:
         _D: str = ""
-        _A: str = ""
+        _A: str = ""  # Relative to previous polyline points
+        _WORLD_ANGLE: str = ""  # Relative to World Origin. Only used for specific operation. Not used on the UI.
         _X: str = ""
         _Y: str = ""
         _Z: Optional[str] = None
@@ -78,6 +79,7 @@ class Polyline(bonsai.core.tool.Polyline):
         use_default_container: bool = None
         snap_angle: float = None
         is_input_on: bool = None
+        lock_axis: bool = False
         # angle_axis_start: Vector
         # angle_axis_end: Vector
         axis_method: str = None
@@ -147,6 +149,8 @@ class Polyline(bonsai.core.tool.Polyline):
             # this allows to calculate the angle relative to x axis when there is only one point
             second_to_last_point = Vector((last_point.x + 1000, last_point.y, last_point.z))
 
+        world_second_to_last_point = Vector((last_point.x + 1000, last_point.y, last_point.z))
+
         distance = (snap_vector - last_point).length
         if distance < 0:
             return
@@ -158,8 +162,16 @@ class Polyline(bonsai.core.tool.Polyline):
             # Round angle to the nearest 0.05
             angle = round(angle / 0.05) * 0.05
 
+            orientation_angle = tool.Cad.angle_3_vectors(
+                world_second_to_last_point, last_point, snap_vector, new_angle=None, degrees=True
+            )
+
+            # Round angle to the nearest 0.05
+            orientation_angle = round(orientation_angle / 0.05) * 0.05
+
         if distance == 0:
             angle = 0
+            orientation_angle = 0
         if input_ui:
             input_ui.set_value("X", snap_vector.x)
             input_ui.set_value("Y", snap_vector.y)
@@ -168,6 +180,7 @@ class Polyline(bonsai.core.tool.Polyline):
 
             input_ui.set_value("D", distance)
             input_ui.set_value("A", angle)
+            input_ui.set_value("WORLD_ANGLE", orientation_angle)
             return
 
         return
@@ -570,7 +583,6 @@ class Polyline(bonsai.core.tool.Polyline):
             total_length += dim
         total_length = tool.Polyline.format_input_ui_units(total_length)
         polyline_data.total_length = total_length
-
 
     @classmethod
     def close_polyline(cls):

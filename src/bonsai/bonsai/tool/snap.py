@@ -396,7 +396,7 @@ class Snap(bonsai.core.tool.Snap):
                 tool_state.snap_angle = 180
             if tool_state.plane_method in {"XZ"} and tool_state.axis_method == "Z":
                 tool_state.snap_angle = 90
-            if event.shift or tool_state.axis_method:
+            if tool_state.lock_axis or tool_state.axis_method:
                 # Doesn't update snap_angle so that it keeps in the same axis
                 rot_intersection, _, axis_start, axis_end = cls.snap_on_axis(intersection, tool_state, True)
             else:
@@ -468,7 +468,7 @@ class Snap(bonsai.core.tool.Snap):
                 snapping_points.append((intersection, "Plane"))
 
         # Make Axis first priority
-        if event.shift or tool_state.axis_method in {"X", "Y", "Z"}:
+        if tool_state.lock_axis or tool_state.axis_method in {"X", "Y", "Z"}:
             cls.update_snapping_ref(snapping_points[0][0], snapping_points[0][1])
             for point in snapping_points:
                 if point[1] == "Axis":
