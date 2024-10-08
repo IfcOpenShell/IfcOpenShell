@@ -321,11 +321,9 @@ class Snap(bonsai.core.tool.Snap):
         for obj, bbox_2d in objs_2d_bbox:
             if obj.type in {"MESH", "EMPTY"} and bbox_2d:
                 if tool.Raycast.intersect_mouse_2d_bounding_box(mouse_pos, bbox_2d, offset):
-                    if space.local_view:
-                        if obj.local_view_get(context.space_data):
+                    if obj.visible_in_viewport_get(context.space_data): # Check for local view and local collections for this viewport and object
                             objs_to_raycast.append(obj)
-                    else:
-                        objs_to_raycast.append(obj)
+
         # Obj
         snap_obj, hit, face_index = cast_rays_and_get_best_object(objs_to_raycast, mouse_pos)
         if hit is not None:
