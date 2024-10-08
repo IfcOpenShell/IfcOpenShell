@@ -176,15 +176,14 @@ class Snap(bonsai.core.tool.Snap):
 
     @classmethod
     def mix_snap_and_axis(cls, snap_point, axis_start, axis_end):
-        # Creates a mixed snap point between the locked axis and
-        # the object snap
+        # Creates a mixed snap point between the locked axis and the object snap
+        # Then it sorts them to get the shortest first
         intersections = []
         intersections.append(tool.Cad.intersect_edge_plane(axis_start, axis_end, snap_point[0], Vector((1, 0, 0))))
         intersections.append(tool.Cad.intersect_edge_plane(axis_start, axis_end, snap_point[0], Vector((0, 1, 0))))
         intersections.append(tool.Cad.intersect_edge_plane(axis_start, axis_end, snap_point[0], Vector((0, 0, 1))))
         sorted_intersections = sorted(i for i in intersections if i is not None)
-        if sorted_intersections[0]:
-            return sorted_intersections[0], "Mix"
+        return (sorted_intersections[0], "Mix"), (sorted_intersections[1], "Mix")
 
     @classmethod
     def detect_snapping_points(cls, context, event, objs_2d_bbox, tool_state):
@@ -474,8 +473,9 @@ class Snap(bonsai.core.tool.Snap):
                 if point[1] == "Axis":
                     if snapping_points[0][1] not in {"Axis", "Plane"}:
                         mixed_snap = cls.mix_snap_and_axis(snapping_points[0], axis_start, axis_end)
-                        snapping_points.insert(0, (mixed_snap[0], mixed_snap[1]))
-                        cls.update_snapping_point(mixed_snap[0], mixed_snap[1])
+                        snapping_points.insert(0, (mixed_snap[1][0], mixed_snap[1][1]))
+                        snapping_points.insert(0, (mixed_snap[0][0], mixed_snap[0][1]))
+                        cls.update_snapping_point(mixed_snap[0][0], mixed_snap[0][1])
                         return snapping_points
                     cls.update_snapping_point(point[0], point[1])
                     return snapping_points
