@@ -291,6 +291,8 @@ class UnlinkObject(bpy.types.Operator, tool.Ifc.Operator):
                 obj = obj_copy
                 obj.name = object_name
             elif element:
+                if obj.data.users > 1:
+                    obj.data = obj.data.copy()
                 tool.Ifc.unlink(element)
 
             tool.Root.unlink_object(obj)
