@@ -203,6 +203,33 @@ class Snap(bonsai.core.tool.Snap):
             (offset, -offset),
         )
 
+        def handle_increment_snap_value():
+            factor = 1
+            fraction = 10
+            reference_value = -0.1
+        
+            unit_system = tool.Drawing.get_unit_system()
+            if unit_system == "IMPERIAL":
+                factor = 3.28084
+                fraction = 12
+                reference_value = -0.4
+
+            increment = None
+            if rv3d.view_perspective == "PERSP":
+                if rv3d.view_distance < 10:
+                    increment = (1 / fraction) / factor
+                else:
+                    increment = 1 / factor
+            if rv3d.view_perspective == "ORTHO" or (
+                rv3d.view_perspective == "CAMERA" and context.scene.camera.data.type == "ORTHO"
+            ):
+                window_scale = rv3d.window_matrix.to_scale()
+                if window_scale[0] < reference_value and window_scale[1] < reference_value:
+                    increment = (1 / fraction) / factor
+                else:
+                    increment = 1 / factor
+
+            return increment
         def select_plane_method():
             if not last_polyline_point:
                 plane_origin = Vector((0, 0, 0))
@@ -360,24 +387,10 @@ class Snap(bonsai.core.tool.Snap):
                     intersection, tool_state, False
                 )
 
-        increment = None
-        if rv3d.view_perspective == "PERSP":
-            if rv3d.view_distance < 10:
-                increment = 0.1
-            else:
-                increment = 1
-        if rv3d.view_perspective == "ORTHO" or (
-            rv3d.view_perspective == "CAMERA" and context.scene.camera.data.type == "ORTHO"
-        ):
-            window_scale = rv3d.window_matrix.to_scale()
-            if window_scale[0] < -0.1 and window_scale[1] < -0.1:
-                increment = 0.1
-            else:
-                increment = 1
-
         if rot_intersection and polyline_points:
             detected_snaps.append({"Axis": (rot_intersection, axis_start, axis_end)})
 
+        increment = handle_increment_snap_value()
         if increment:
             for i in range(len(intersection)):
                 intersection[i] = increment * round(intersection[i] / increment)
