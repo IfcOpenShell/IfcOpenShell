@@ -1315,7 +1315,11 @@ bool CgalKernel::preprocess_boolean_operand(const IfcUtil::IfcBaseClass* log_ref
 	if (proc == PP_SNAP_POINTS_TO_FIRST_OPERAND) {
 		static int NN = 0;
 		typedef CGAL::AABB_face_graph_triangle_primitive<cgal_shape_t>                AABB_face_graph_primitive;
-		typedef CGAL::AABB_traits<Kernel_, AABB_face_graph_primitive>               AABB_face_graph_traits;
+#if CGAL_VERSION_NR >= 1060000000
+	    typedef CGAL::AABB_traits_3<Kernel_, AABB_face_graph_primitive>               AABB_face_graph_traits;
+#else
+	    typedef CGAL::AABB_traits<Kernel_, AABB_face_graph_primitive>               AABB_face_graph_traits;
+#endif
 
 		CGAL::AABB_tree<AABB_face_graph_traits> tree;
 
