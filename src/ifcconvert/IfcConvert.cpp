@@ -1030,6 +1030,7 @@ int main(int argc, char** argv) {
 
 #ifdef IFOPSH_WITH_OPENCASCADE
 	if (output_extension == SVG) {
+		// @todo turn these all into proper settings
 		if (vmap.count("section-height-from-storeys") != 0) {
 			if (vmap.count("section-height")) {
 				static_cast<SvgSerializer*>(serializer.get())->setSectionHeightsFromStoreys(section_height);
