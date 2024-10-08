@@ -336,6 +336,11 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
         return IfcStore.execute_ifc_operator(self, context, is_invoke=True)
 
     def _invoke(self, context, event):
+        # For convenience, preselect OBJ representation template if applicable
+        if (obj := context.active_object) and obj.type == "MESH":
+            props = context.scene.BIMRootProperties
+            props.representation_template = "OBJ"
+            props.representation_obj = obj
         return context.window_manager.invoke_props_dialog(self)
 
     def _execute(self, context):
