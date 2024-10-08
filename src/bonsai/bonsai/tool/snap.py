@@ -207,16 +207,18 @@ class Snap(bonsai.core.tool.Snap):
             factor = 1
             fraction = 10
             reference_value = -0.1
-        
+            distance = 10
+
             unit_system = tool.Drawing.get_unit_system()
             if unit_system == "IMPERIAL":
                 factor = 3.28084
                 fraction = 12
                 reference_value = -0.4
+                distance = 5
 
             increment = None
             if rv3d.view_perspective == "PERSP":
-                if rv3d.view_distance < 10:
+                if rv3d.view_distance < distance:
                     increment = (1 / fraction) / factor
                 else:
                     increment = 1 / factor
@@ -230,6 +232,17 @@ class Snap(bonsai.core.tool.Snap):
                     increment = 1 / factor
 
             return increment
+
+        def round_vector_with_increment(intersection):
+            for i in range(len(intersection)):
+                interval = round(abs(relative_point[i] % increment), 4)
+                dist = round(abs(intersection[i] % increment), 4)
+                reference = interval - dist
+                if reference <= 0.5:
+                    intersection[i] = intersection[i] + reference
+                else:
+                    intersection[i] = intersection[i] - (1 - reference)
+
         def select_plane_method():
             if not last_polyline_point:
                 plane_origin = Vector((0, 0, 0))
@@ -387,13 +400,21 @@ class Snap(bonsai.core.tool.Snap):
                     intersection, tool_state, False
                 )
 
+        # Increment Snap for Axis and Plane
+        increment = handle_increment_snap_value()
+        relative_point = (
+            Vector((polyline_points[-1].x, polyline_points[-1].y, polyline_points[-1].z))
+            if polyline_points
+            else Vector((0, 0, 0))
+        )
+        if increment:
+            round_vector_with_increment(intersection)
+
         if rot_intersection and polyline_points:
+            if tool_state.snap_angle == 90 or tool_state.snap_angle == 180 or tool_state.snap_angle == 0:
+                round_vector_with_increment(rot_intersection)
             detected_snaps.append({"Axis": (rot_intersection, axis_start, axis_end)})
 
-        increment = handle_increment_snap_value()
-        if increment:
-            for i in range(len(intersection)):
-                intersection[i] = increment * round(intersection[i] / increment)
         detected_snaps.append({"Plane": intersection})
 
         return detected_snaps
