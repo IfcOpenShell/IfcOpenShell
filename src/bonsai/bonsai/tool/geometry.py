@@ -1585,3 +1585,7 @@ class Geometry(bonsai.core.tool.Geometry):
             bpy.data.objects.remove(obj)
 
         return results
+
+    @classmethod
+    def reload_representation_item_ids(cls, representation: ifcopenshell.entity_instance, data: bpy.types.Mesh) -> None:
+        data["ios_item_ids"] = [i["item"].id() for i in ifcopenshell.util.representation.resolve_items(representation)]
