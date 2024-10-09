@@ -27,6 +27,7 @@ import multiprocessing
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.grid
+import ifcopenshell.api.style
 import ifcopenshell.geom
 import ifcopenshell.guid
 import ifcopenshell.util.element
@@ -1600,3 +1601,34 @@ class Geometry(bonsai.core.tool.Geometry):
     @classmethod
     def reload_representation_item_ids(cls, representation: ifcopenshell.entity_instance, data: bpy.types.Mesh) -> None:
         data["ios_item_ids"] = [i["item"].id() for i in ifcopenshell.util.representation.resolve_items(representation)]
+
+    @classmethod
+    def export_mesh_to_tessellation(cls, obj: bpy.types.Object, ifc_context) -> ifcopenshell.entity_instance:
+        builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        items = []
+        meshes = cls.split_by_loose_parts(obj)
+        for mesh in meshes:
+            verts = [v.co / unit_scale for v in mesh.vertices]
+            faces = [p.vertices[:] for p in mesh.polygons]
+            item = builder.mesh(verts, faces)
+            items.append(item)
+            material_index = mesh.polygons[0].material_index
+            if materials := list(mesh.materials):
+                material = materials[material_index]
+                if not (style := tool.Style.get_style(material)):
+                    style = ifcopenshell.api.run("style.add_style", tool.Ifc.get(), name=material.name)
+                    if material.use_nodes:
+                        ifc_class = "IfcSurfaceStyleRendering"
+                        attributes = tool.Style.get_surface_rendering_attributes(material)
+                    else:
+                        ifc_class = "IfcSurfaceStyleShading"
+                        attributes = tool.Style.get_surface_shading_attributes(material)
+                    ifcopenshell.api.style.add_surface_style(
+                        tool.Ifc.get(), style=style, ifc_class=ifc_class, attributes=attributes
+                    )
+                    tool.Ifc.link(style, material)
+                    material.use_fake_user = True
+                ifcopenshell.api.style.assign_item_style(tool.Ifc.get(), item=item, style=style)
+            bpy.data.meshes.remove(mesh)
+        return builder.get_representation(ifc_context, items)
