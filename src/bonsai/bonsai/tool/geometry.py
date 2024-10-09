@@ -95,7 +95,14 @@ class Geometry(bonsai.core.tool.Geometry):
 
     @classmethod
     def delete_data(cls, data: bpy.types.Mesh) -> None:
-        bpy.data.meshes.remove(data)
+        # Try except is faster than isinstance
+        try:
+            bpy.data.meshes.remove(data)
+        except TypeError:
+            try:
+                bpy.data.curves.remove(data)
+            except TypeError:
+                bpy.data.cameras.remove(data)
 
     @classmethod
     def is_locked(cls, element: ifcopenshell.entity_instance) -> bool:
@@ -691,7 +698,7 @@ class Geometry(bonsai.core.tool.Geometry):
                         representation = tool.Ifc.get().by_id(int(shape.geometry.id.split("-")[0]))
                         if element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
                             mesh = tool.Loader.create_camera(element, representation, shape)
-                        if element.is_a("IfcAnnotation") and ifc_importer.is_curve_annotation(element):
+                        elif element.is_a("IfcAnnotation") and ifc_importer.is_curve_annotation(element):
                             mesh = ifc_importer.create_curve(element, shape)
                         elif shape:
                             cartesian_point_offset = cls.get_cartesian_point_offset(obj)
