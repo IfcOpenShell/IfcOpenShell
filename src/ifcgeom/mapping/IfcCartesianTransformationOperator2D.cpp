@@ -47,7 +47,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCartesianTransformationOpera
 	}
 
 	double scale1, scale2;
-	scale1 = scale2 = 1.0;
+	scale1 = 1.0;
 
 	if (inst->Scale()) {
 		scale1 = *inst->Scale();
@@ -55,6 +55,8 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCartesianTransformationOpera
 	if (inst->as<IfcSchema::IfcCartesianTransformationOperator2DnonUniform>()) {
 		auto nu = inst->as<IfcSchema::IfcCartesianTransformationOperator2DnonUniform>();
 		scale2 = nu->Scale2() ? *nu->Scale2() : scale1;
+	} else {
+		scale2 = scale1;
 	}
 
 	m->components() <<
