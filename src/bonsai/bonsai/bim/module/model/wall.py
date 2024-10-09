@@ -324,7 +324,9 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator):
         PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
         tool.Blender.update_viewport()
 
-        if not event.shift and event.type in {"MIDDLEMOUSE", "WHEELUPMOUSE", "WHEELDOWNMOUSE"}:
+        self.handle_lock_axis(context, event)
+
+        if event.type in {"MIDDLEMOUSE", "WHEELUPMOUSE", "WHEELDOWNMOUSE"}:
             self.handle_mouse_move(context, event)
             return {"PASS_THROUGH"}
 
@@ -334,7 +336,6 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator):
 
         self.choose_axis(event)
 
-        self.handle_lock_axis(context, event)
 
         self.handle_snap_selection(context, event)
 
