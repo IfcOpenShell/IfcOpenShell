@@ -2453,7 +2453,6 @@ class MeasureTool(bpy.types.Operator, PolylineOperator):
             if not polyline_data.measurement_type:
                 polyline_data.measurement_type = measurement_type
 
-        
         tool.Polyline.calculate_area(context, self.input_ui)
 
         if event.type == "E":

@@ -47,6 +47,7 @@ def transparent_color(color, alpha=0.1):
     color[3] = alpha
     return color
 
+
 class ProjectDecorator:
     installed = None
 
@@ -310,7 +311,6 @@ class MeasureDecorator:
         blf.shadow(self.font_id, 6, 0, 0, 0, 1)
         color = self.addon_prefs.decorations_colour
 
-
         blf.color(self.font_id, *color)
         measure_data = context.scene.BIMPolylineProperties.measurement_polyline
         for polyline_data in measure_data:
@@ -360,7 +360,7 @@ class MeasureDecorator:
 
             # Area and Length text
             polyline_verts = [Vector((p.x, p.y, p.z)) for p in polyline_points]
-            center = sum(polyline_verts, Vector()) / len(polyline_verts) # Center between all polyline points        
+            center = sum(polyline_verts, Vector()) / len(polyline_verts)  # Center between all polyline points
             area_text_coords = view3d_utils.location_3d_to_region_2d(region, rv3d, center)
             total_length_text_coords = view3d_utils.location_3d_to_region_2d(region, rv3d, polyline_verts[-1])
 
@@ -371,13 +371,13 @@ class MeasureDecorator:
                 value = polyline_data.area
                 text = f"area: {value}"
                 text_length = blf.dimensions(self.font_id, text)
-                area_text_coords[0] -= (text_length[0]/2) # Center text horizontally
+                area_text_coords[0] -= text_length[0] / 2  # Center text horizontally
                 blf.position(self.font_id, area_text_coords[0], area_text_coords[1], 0)
                 self.draw_text_background(context, area_text_coords, text_length)
                 blf.draw(self.font_id, text)
 
             # Length
-            if measure_type in {"POLYLINE","AREA"}:
+            if measure_type in {"POLYLINE", "AREA"}:
                 if len(polyline_verts) < 2:
                     return
                 blf.position(self.font_id, total_length_text_coords[0], total_length_text_coords[1], 0)
@@ -388,7 +388,6 @@ class MeasureDecorator:
                 blf.draw(self.font_id, text)
 
         blf.disable(self.font_id, blf.SHADOW)
-
 
     def __call__(self, context):
 
