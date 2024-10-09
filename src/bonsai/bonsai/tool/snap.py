@@ -156,7 +156,7 @@ class Snap(bonsai.core.tool.Snap):
 
         # Makes the snapping point more or less sticky then others
         # It changes the distance and affects how the snapping point is sorted
-        stick_factor = 0.02
+        stick_factor = 0.15
 
         default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
         polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline
