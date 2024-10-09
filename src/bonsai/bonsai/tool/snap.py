@@ -42,6 +42,39 @@ class Snap(bonsai.core.tool.Snap):
         cls.snap_plane_method = value
 
     @classmethod
+    def get_increment_snap_value(cls, context):
+        rv3d = context.region_data
+
+        factor = 1
+        fraction = 10
+        reference_value = -0.1
+        distance = 10
+
+        unit_system = tool.Drawing.get_unit_system()
+        if unit_system == "IMPERIAL":
+            factor = 3.28084
+            fraction = 12
+            reference_value = -0.4
+            distance = 5
+
+        increment = None
+        if rv3d.view_perspective == "PERSP":
+            if rv3d.view_distance < distance:
+                increment = (1 / fraction) / factor
+            else:
+                increment = 1 / factor
+        if rv3d.view_perspective == "ORTHO" or (
+            rv3d.view_perspective == "CAMERA" and context.scene.camera.data.type == "ORTHO"
+        ):
+            window_scale = rv3d.window_matrix.to_scale()
+            if window_scale[0] < reference_value and window_scale[1] < reference_value:
+                increment = (1 / fraction) / factor
+            else:
+                increment = 1 / factor
+
+        return increment
+
+    @classmethod
     def get_snap_points_on_raycasted_face(cls, context, event, obj, face_index):
         matrix = obj.matrix_world.copy()
         face = obj.data.polygons[face_index]
@@ -206,37 +239,9 @@ class Snap(bonsai.core.tool.Snap):
             (offset, -offset),
         )
 
-        def handle_increment_snap_value():
-            factor = 1
-            fraction = 10
-            reference_value = -0.1
-            distance = 10
-
-            unit_system = tool.Drawing.get_unit_system()
-            if unit_system == "IMPERIAL":
-                factor = 3.28084
-                fraction = 12
-                reference_value = -0.4
-                distance = 5
-
-            increment = None
-            if rv3d.view_perspective == "PERSP":
-                if rv3d.view_distance < distance:
-                    increment = (1 / fraction) / factor
-                else:
-                    increment = 1 / factor
-            if rv3d.view_perspective == "ORTHO" or (
-                rv3d.view_perspective == "CAMERA" and context.scene.camera.data.type == "ORTHO"
-            ):
-                window_scale = rv3d.window_matrix.to_scale()
-                if window_scale[0] < reference_value and window_scale[1] < reference_value:
-                    increment = (1 / fraction) / factor
-                else:
-                    increment = 1 / factor
-
-            return increment
-
-        def round_vector_with_increment(intersection):
+        # TODO Snap like Blender snap increment. Enable this when we have a proper snap settings. 
+        # Still need adjustments to improve the feel
+        def round_vector_with_increment(intersection, relative_point):
             for i in range(len(intersection)):
                 interval = round(abs(relative_point[i] % increment), 4)
                 dist = round(abs(intersection[i] % increment), 4)
@@ -403,19 +408,7 @@ class Snap(bonsai.core.tool.Snap):
                     intersection, tool_state, False
                 )
 
-        # Increment Snap for Axis and Plane
-        increment = handle_increment_snap_value()
-        relative_point = (
-            Vector((polyline_points[-1].x, polyline_points[-1].y, polyline_points[-1].z))
-            if polyline_points
-            else Vector((0, 0, 0))
-        )
-        if increment:
-            round_vector_with_increment(intersection)
-
         if rot_intersection and polyline_points:
-            if tool_state.snap_angle == 90 or tool_state.snap_angle == 180 or tool_state.snap_angle == 0:
-                round_vector_with_increment(rot_intersection)
             detected_snaps.append({"Axis": (rot_intersection, axis_start, axis_end)})
 
         detected_snaps.append({"Plane": intersection})

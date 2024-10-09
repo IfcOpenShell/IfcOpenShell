@@ -104,7 +104,7 @@ class Polyline(bonsai.core.tool.Polyline):
         return cls.ToolState()
 
     @classmethod
-    def calculate_distance_and_angle(cls, context, input_ui, tool_state):
+    def calculate_distance_and_angle(cls, context, input_ui, tool_state, should_round=False):
 
         try:
             polyline_data = context.scene.BIMPolylineProperties.insertion_polyline[0]
@@ -173,6 +173,11 @@ class Polyline(bonsai.core.tool.Polyline):
             angle = 0
             orientation_angle = 0
         if input_ui:
+            if should_round:
+                angle = round(angle)
+                factor = tool.Snap.get_increment_snap_value(context)
+                print(factor)
+                distance = factor * round(distance / factor)
             input_ui.set_value("X", snap_vector.x)
             input_ui.set_value("Y", snap_vector.y)
             if input_ui.get_number_value("Z") is not None:
