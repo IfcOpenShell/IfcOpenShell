@@ -141,7 +141,8 @@ class Raycast(bonsai.core.tool.Raycast):
         points = []
 
         # Makes the snapping point more or less sticky then others
-        # It changes the distance and affects how the snapping point is sorted
+        # It changes the distance and affects how the snapping point are sorted
+        reference = 0.2
         stick_factor = 0.02
 
         try:
@@ -186,8 +187,8 @@ class Raycast(bonsai.core.tool.Raycast):
             if intersection[0]:
                 if tool.Cad.is_point_on_edge(intersection[1], (v1, v2)):
                     distance = (intersection[1] - intersection[0]).length
-                    if distance < 0.8:
-                        points.append([distance + 4 * stick_factor, (intersection[1], "Edge")])
+                    if distance < 0.2:
+                        points.append([distance + 2 * stick_factor, (intersection[1], "Edge")])
 
         bm.free()
         snapping_points = []
