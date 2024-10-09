@@ -347,7 +347,8 @@ class PolylineOperator:
             if self.mousemove_count > 3:
                 detected_snaps = tool.Snap.detect_snapping_points(context, event, self.objs_2d_bbox, self.tool_state)
                 self.snapping_points = tool.Snap.select_snapping_points(context, event, self.tool_state, detected_snaps)
-                tool.Polyline.calculate_distance_and_angle(context, self.input_ui, self.tool_state)
+                tool.Polyline.calculate_distance_and_angle(context, self.input_ui, self.tool_state, should_round=True)
+                tool.Polyline.calculate_x_y_and_z(context, self.input_ui, self.tool_state)
                 tool.Blender.update_viewport()
                 return {"RUNNING_MODAL"}
 
