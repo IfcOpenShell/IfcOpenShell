@@ -231,7 +231,11 @@ bool IfcGeom::OpenCascadeKernel::convert_openings(const IfcUtil::IfcBaseEntity* 
 bool IfcGeom::OpenCascadeKernel::unify_shapes(const IfcGeom::ConversionResults& input, IfcGeom::ConversionResults& output) {
 	std::transform(input.begin(), input.end(), std::back_inserter(output), [this](auto v) {
 		auto& s = std::static_pointer_cast<OpenCascadeShape>(v.Shape())->shape();
-		return IfcGeom::ConversionResult(v.ItemId(), new OpenCascadeShape(util::unify(s, settings_.get<ifcopenshell::geometry::settings::Precision>().get())), v.StylePtr());
+		return IfcGeom::ConversionResult(
+			v.ItemId(),
+			v.Placement(),
+			new OpenCascadeShape(util::unify(s, settings_.get<ifcopenshell::geometry::settings::Precision>().get())),
+			v.StylePtr());
 	});
 	return true;
 }
