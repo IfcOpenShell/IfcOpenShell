@@ -339,7 +339,7 @@ class CreateObjectUI:
             cls.layout.label(text=tool_name, icon="TOOL_SETTINGS")
 
         if AuthoringData.data["ifc_classes"] and AuthoringData.data["relating_type_id"]:
-            cls.draw_thumbnail(context) 
+            cls.draw_thumbnail(context)
             cls.draw_add_object_parameters(context)
             cls.draw_add_object(context)
         else:
@@ -366,11 +366,11 @@ class CreateObjectUI:
             emboss=False,
         )
         row1.operator(
-                "bim.launch_type_manager",
-                icon=tool.Blender.TYPE_MANAGER_ICON, #"DOWNARROW_HLT", 
-                text="",
-                emboss=False,
-            )
+            "bim.launch_type_manager",
+            icon=tool.Blender.TYPE_MANAGER_ICON,  # "DOWNARROW_HLT",
+            text="",
+            emboss=False,
+        )
 
         if ui_context != "TOOL_HEADER":
 
@@ -383,7 +383,7 @@ class CreateObjectUI:
             row.operator(
                 "bim.launch_add_element",
                 text=f"Create New {AuthoringData.data['ifc_element_type']}",
-                )
+            )
 
             row = box.row(align=True)
 
@@ -396,13 +396,13 @@ class CreateObjectUI:
             row.alignment = "CENTER"
             row.template_icon(icon_value=0, scale=3.5)
         elif AuthoringData.data["ifc_element_type"]:
-                row = cls.layout.row(align=True)
-                op = row.operator(
-                    "bim.add_default_type",
-                    icon_value=custom_icon_previews["QUICK_DEFAULT"].icon_id,
-                    text=f"Quick Create {AuthoringData.data['ifc_element_type']}",
-                    )
-                op.ifc_element_type = AuthoringData.data["ifc_element_type"]
+            row = cls.layout.row(align=True)
+            op = row.operator(
+                "bim.add_default_type",
+                icon_value=custom_icon_previews["QUICK_DEFAULT"].icon_id,
+                text=f"Quick Create {AuthoringData.data['ifc_element_type']}",
+            )
+            op.ifc_element_type = AuthoringData.data["ifc_element_type"]
 
     @classmethod
     def draw_add_object(cls, context):
@@ -483,7 +483,9 @@ class CreateObjectUI:
                     row1.template_icon(icon_value=AuthoringData.data["type_thumbnail"], scale=1)
                     row2 = box.column(align=True)
                     row2.operator("bim.launch_type_manager", text="", emboss=False)
-                    row1.operator("bim.launch_type_manager", text=AuthoringData.data["relating_type_name"], emboss=False)
+                    row1.operator(
+                        "bim.launch_type_manager", text=AuthoringData.data["relating_type_name"], emboss=False
+                    )
                 else:
                     row1.operator(
                         "bim.launch_type_manager",
@@ -494,7 +496,7 @@ class CreateObjectUI:
 
                 row1.operator(
                     "bim.launch_type_manager",
-                    icon=tool.Blender.TYPE_MANAGER_ICON, #"DOWNARROW_HLT", 
+                    icon=tool.Blender.TYPE_MANAGER_ICON,  # "DOWNARROW_HLT",
                     text="",
                     emboss=False,
                 )
@@ -502,7 +504,11 @@ class CreateObjectUI:
                 if ui_context != "TOOL_HEADER":
                     row = box.row(align=True)
                     row.alignment = "CENTER"
-                    row.operator("bim.launch_type_manager", text=AuthoringData.data["relating_type_description"], emboss=False,)
+                    row.operator(
+                        "bim.launch_type_manager",
+                        text=AuthoringData.data["relating_type_description"],
+                        emboss=False,
+                    )
 
                     if AuthoringData.data["type_thumbnail"]:
                         row1 = box.row()
@@ -514,18 +520,19 @@ class CreateObjectUI:
                     else:
                         op = box.operator(
                             "bim.load_type_thumbnails",
-                            text="", icon="FILE_REFRESH",
+                            text="",
+                            icon="FILE_REFRESH",
                             emboss=False,
-                            )
+                        )
                         op.ifc_class = cls.props.ifc_class
-                    
+
                     row = box.row(align=True)
                     row.alignment = "CENTER"
                     row.operator(
                         "bim.launch_type_manager",
                         text=AuthoringData.data["predefined_type"],
                         emboss=False,
-                        )
+                    )
 
 
 class EditObjectUI:

@@ -233,7 +233,7 @@ class BIMProjectProperties(PropertyGroup):
 
 class MeasureToolSettings(PropertyGroup):
     measurement_type_items = [
-        ("SINGLE", "SINGLE", "Single", "FIXED_SIZE",1),
+        ("SINGLE", "SINGLE", "Single", "FIXED_SIZE", 1),
         ("POLYLINE", "POLYLINE", "Polyline", "DRIVER_ROTATIONAL_DIFFERENCE", 2),
         ("AREA", "AREA", "Area", "OUTLINER_DATA_LIGHTPROBE", 3),
     ]

@@ -179,16 +179,16 @@ class PolylineOperator:
 
         if event.shift and event.type in {"WHEELUPMOUSE", "WHEELDOWNMOUSE"}:
             if event.type in {"WHEELUPMOUSE"}:
-                self.tool_state.snap_angle += 5 
+                self.tool_state.snap_angle += 5
             else:
-                self.tool_state.snap_angle -= 5 
+                self.tool_state.snap_angle -= 5
             self.handle_mouse_move(context, event)
             detected_snaps = tool.Snap.detect_snapping_points(context, event, self.objs_2d_bbox, self.tool_state)
             self.snapping_points = tool.Snap.select_snapping_points(context, event, self.tool_state, detected_snaps)
             tool.Polyline.calculate_distance_and_angle(context, self.input_ui, self.tool_state)
             PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
             tool.Blender.update_viewport()
-        
+
     def handle_keyboard_input(self, context, event):
 
         if self.tool_state.is_input_on and event.value == "PRESS" and event.type == "TAB":

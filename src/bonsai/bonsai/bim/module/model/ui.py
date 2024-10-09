@@ -108,7 +108,7 @@ class LaunchTypeManager(bpy.types.Operator):
     def draw(self, context):
         props = context.scene.BIMModelProperties
         row = self.layout.row(align=True)
-        if AuthoringData.data['total_types'] > 1:
+        if AuthoringData.data["total_types"] > 1:
             text = f"{AuthoringData.data['total_types']} {AuthoringData.data['ifc_element_type']}s"
         else:
             text = f"{AuthoringData.data['total_types']} {AuthoringData.data['ifc_element_type']}"
@@ -168,7 +168,7 @@ class LaunchTypeManager(bpy.types.Operator):
                 row = box.row()
                 op = box.operator("bim.load_type_thumbnails", text="", icon="FILE_REFRESH", emboss=False)
                 op.ifc_class = props.ifc_class
-            
+
             row = box.row()
             row.alignment = "CENTER"
             op = row.operator("bim.set_active_type", text=relating_type["predefined_type"], emboss=False)
