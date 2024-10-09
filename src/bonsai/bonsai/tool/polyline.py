@@ -70,7 +70,7 @@ class Polyline(bonsai.core.tool.Polyline):
                 return None
             if attribute_name == "A":
                 value = float(self.get_text_value(attribute_name))
-                return f"{value:.2f}"
+                return f"{value:.2f}°"
             else:
                 return Polyline.format_input_ui_units(value)
 
@@ -176,7 +176,6 @@ class Polyline(bonsai.core.tool.Polyline):
             if should_round:
                 angle = round(angle)
                 factor = tool.Snap.get_increment_snap_value(context)
-                print(factor)
                 distance = factor * round(distance / factor)
             input_ui.set_value("X", snap_vector.x)
             input_ui.set_value("Y", snap_vector.y)
@@ -235,7 +234,7 @@ class Polyline(bonsai.core.tool.Polyline):
 
         area = input_ui.get_number_value("AREA")
         if area:
-            area = tool.Polyline.format_input_ui_units(area)
+            area = tool.Polyline.format_input_ui_units(area, is_area = True)
             polyline_data.area = area
         return
 
@@ -420,7 +419,7 @@ class Polyline(bonsai.core.tool.Polyline):
 
         FORMULA: "="
 
-        metric: NUMBER
+        metric: NUMBER "mm"? "m"? "°"?
 
         expr: (ADD | SUB | MUL | DIV) dim
 
@@ -518,7 +517,7 @@ class Polyline(bonsai.core.tool.Polyline):
             return False, "0"
 
     @classmethod
-    def format_input_ui_units(cls, value):
+    def format_input_ui_units(cls, value, is_area=False):
         unit_system = tool.Drawing.get_unit_system()
         if unit_system == "IMPERIAL":
             precision = bpy.context.scene.DocProperties.imperial_precision
@@ -529,7 +528,7 @@ class Polyline(bonsai.core.tool.Polyline):
             if bpy.context.scene.unit_settings.length_unit == "MILLIMETERS":
                 factor = 1000
 
-        return format_distance(value * factor, precision=precision, suppress_zero_inches=True, in_unit_length=True)
+        return format_distance(value * factor, precision=precision, hide_units=False, isArea=is_area, suppress_zero_inches=True, in_unit_length=True)
 
     @classmethod
     def insert_polyline_point(cls, input_ui, tool_state=None):
