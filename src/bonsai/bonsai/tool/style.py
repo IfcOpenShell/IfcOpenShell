@@ -594,55 +594,9 @@ class Style(bonsai.core.tool.Style):
 
     @classmethod
     def assign_style_to_representation_item(
-        cls, representation_item: ifcopenshell.entity_instance, style: Optional[ifcopenshell.entity_instance] = None
+        cls, item: ifcopenshell.entity_instance, style: Optional[ifcopenshell.entity_instance] = None
     ) -> None:
-        """Assign specified style to a representation item and unassign all previously assigned styles."""
-        ifc_file = representation_item.file
-        if not (styled_item := next(iter(representation_item.StyledByItem), None)):
-            if style is None:
-                return
-            if ifc_file.schema == "IFC2X3":
-                style = ifc_file.create_entity("IfcPresentationStyleAssignment", (style,))
-            ifc_file.create_entity("IfcStyledItem", representation_item, (style,))
-            return
-
-        styled_item_styles = styled_item.Styles
-        if style and styled_item_styles == (style,):
-            return
-
-        if ifc_file.schema == "IFC4X3":
-            if style is None:
-                ifc_file.remove(styled_item)
-                return
-            styled_item.Styles = (style,)
-            return
-
-        # < IFC4X3
-        # Can't just remove a styled item or assign a style
-        # since we need to remove/change the possible style assignments.
-        assignment = None
-        for style_ in styled_item_styles:
-            if not style_.is_a("IfcPresentationStyleAssignment"):
-                continue
-            # Remove second assignment.
-            if style is None or assignment:
-                ifc_file.remove(style_)
-            else:
-                assignment = style_
-                if assignment.Styles != (style,):
-                    assignment.Styles = (style,)
-
-        if style is None:
-            ifc_file.remove(styled_item)
-            return
-
-        if assignment:
-            if styled_item_styles == (assignment,):
-                return
-            styled_item.Styles = (assignment,)
-            return
-
-        styled_item.Styles = (style,)
+        return ifcopenshell.api.style.assign_item_style(tool.Ifc.get(), item=item, style=style)
 
     @classmethod
     def get_representation_item_style(

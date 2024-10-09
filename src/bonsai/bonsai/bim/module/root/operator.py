@@ -210,12 +210,7 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
                 ifc_representation_class=self.ifc_representation_class,
             )
             if self.should_add_representation and obj.data and len(obj.data.vertices):
-                builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
-                unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-                verts = [v.co / unit_scale for v in obj.data.vertices]
-                faces = [p.vertices[:] for p in obj.data.polygons]
-                item = builder.mesh(verts, faces)
-                representation = builder.get_representation(ifc_context, [item])
+                representation = tool.Geometry.export_mesh_to_tessellation(obj, ifc_context)
                 ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), element, representation)
                 bonsai.core.geometry.switch_representation(
                     tool.Ifc,
@@ -373,16 +368,7 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
             pass
         elif representation_template == "OBJ" and props.representation_obj:
             obj.matrix_world = props.representation_obj.matrix_world
-            builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
-            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-            items = []
-            meshes = tool.Geometry.split_by_loose_parts(props.representation_obj)
-            for mesh in meshes:
-                verts = [v.co / unit_scale for v in mesh.vertices]
-                faces = [p.vertices[:] for p in mesh.polygons]
-                items.append(builder.mesh(verts, faces))
-                bpy.data.meshes.remove(mesh)
-            representation = builder.get_representation(ifc_context, items)
+            representation = tool.Geometry.export_mesh_to_tessellation(props.representation_obj, ifc_context)
             ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), element, representation)
             bonsai.core.geometry.switch_representation(
                 tool.Ifc,
