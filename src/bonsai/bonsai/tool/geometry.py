@@ -1513,6 +1513,10 @@ class Geometry(bonsai.core.tool.Geometry):
             verts = geometry.verts
         tool.Loader.convert_geometry_to_mesh(geometry, obj.data, verts=verts)
 
+        if ios_materials := list(obj.data["ios_materials"]):
+            material = tool.Ifc.get_object(tool.Ifc.get().by_id(ios_materials[0]))
+            obj.data.materials.append(material)
+
         obj.matrix_world = rep_obj.matrix_world.copy()
 
         if (is_swept_area := item.is_a("IfcSweptAreaSolid")) or item.is_a("IfcConic"):
