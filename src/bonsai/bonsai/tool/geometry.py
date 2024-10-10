@@ -861,6 +861,15 @@ class Geometry(bonsai.core.tool.Geometry):
         return item.is_a("IfcTessellatedItem") or item.is_a("IfcManifoldSolidBrep")
 
     @classmethod
+    def is_curvelike_item(cls, item: ifcopenshell.entity_instance) -> bool:
+        return (
+            item.is_a("IfcPolyline")
+            or item.is_a("IfcCompositeCurve")
+            or item.is_a("IfcIndexedPolyCurve")
+            or item.is_a("IfcCircle")
+        )
+
+    @classmethod
     def is_movable(cls, item: ifcopenshell.entity_instance) -> bool:
         return item.is_a("IfcSweptAreaSolid") or item.is_a("IfcConic")
 
@@ -1522,7 +1531,7 @@ class Geometry(bonsai.core.tool.Geometry):
 
         if (is_swept_area := item.is_a("IfcSweptAreaSolid")) or item.is_a("IfcConic"):
             position = item.Position
-            # Positional is optionaly only for SweptAreaSolid.
+            # Positional is optional only for SweptAreaSolid.
             if position or not is_swept_area:
                 unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
                 position = ifcopenshell.util.placement.get_axis2placement(position)

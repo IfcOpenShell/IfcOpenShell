@@ -1831,6 +1831,13 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
             ProfileDecorator.install(context)
             if not bpy.app.background:
                 tool.Blender.set_viewport_tool("bim.cad_tool")
+        elif tool.Geometry.is_curvelike_item(item):
+            tool.Model.import_curve(item, obj=obj)
+            obj.data.BIMMeshProperties.ifc_definition_id = item.id()
+            self.enable_edit_mode(context)
+            ProfileDecorator.install(context)
+            if not bpy.app.background:
+                tool.Blender.set_viewport_tool("bim.cad_tool")
         else:
             self.report({"INFO"}, f"Editing {item.is_a()} geometry is not supported")
 
@@ -2022,6 +2029,50 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
                             product=element,
                             representation=new_footprint,
                         )
+        elif tool.Geometry.is_curvelike_item(item):
+            ProfileDecorator.uninstall()
+            new = tool.Model.export_curves(obj)
+
+            if not new:
+
+                def msg(self, context):
+                    self.layout.label(text="INVALID PROFILE")
+
+                bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
+                ProfileDecorator.install(bpy.context)
+                self.enable_edit_mode(bpy.context)
+                return
+
+            additional_curves = []
+            if len(new) > 1:
+                additional_curves = new[1:]
+            new = new[0]
+
+            for inverse in tool.Ifc.get().get_inverse(item):
+                ifcopenshell.util.element.replace_attribute(inverse, item, new)
+            ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), item)
+
+            obj.data.BIMMeshProperties.ifc_definition_id = new.id()
+            tool.Geometry.import_item(obj)
+
+            props = bpy.context.scene.BIMGeometryProperties
+            for item in additional_curves:
+                representation = tool.Geometry.get_active_representation(props.representation_obj)
+                representation = ifcopenshell.util.representation.resolve_representation(representation)
+                representation.Items = list(representation.Items) + [item]
+
+                name = f"Item/{item.is_a()}/{item.id()}"
+                mesh = bpy.data.meshes.new(name)
+                new_obj = bpy.data.objects.new(name, mesh)
+                new_obj.data.BIMMeshProperties.ifc_definition_id = item.id()
+                scene = bpy.context.scene
+                scene.collection.objects.link(new_obj)
+                new = props.item_objs.add()
+                new.obj = new_obj
+                new_obj.matrix_world = obj.matrix_world
+                tool.Geometry.import_item(new_obj)
+
+            tool.Geometry.reload_representation(props.representation_obj)
 
     def enable_edit_mode(self, context):
         if tool.Blender.toggle_edit_mode(context) == {"CANCELLED"}:
