@@ -577,6 +577,7 @@ class Polyline(bonsai.core.tool.Polyline):
         polyline_point.dim = d
         polyline_point.angle = a
         polyline_point.position = Vector((x, y, z))
+        print(polyline_point.x, polyline_point.y, polyline_point.z)
 
         # Add total length
         total_length = 0
@@ -587,6 +588,7 @@ class Polyline(bonsai.core.tool.Polyline):
             total_length += dim
         total_length = tool.Polyline.format_input_ui_units(total_length)
         polyline_data.total_length = total_length
+
 
     @classmethod
     def close_polyline(cls):

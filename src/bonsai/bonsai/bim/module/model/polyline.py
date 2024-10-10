@@ -353,7 +353,8 @@ class PolylineOperator:
                     should_round = True
 
                 tool.Polyline.calculate_distance_and_angle(context, self.input_ui, self.tool_state, should_round=should_round)
-                tool.Polyline.calculate_x_y_and_z(context, self.input_ui, self.tool_state)
+                if should_round:
+                    tool.Polyline.calculate_x_y_and_z(context, self.input_ui, self.tool_state)
                 tool.Blender.update_viewport()
                 return {"RUNNING_MODAL"}
 
