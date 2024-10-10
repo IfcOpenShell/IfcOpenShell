@@ -164,6 +164,7 @@ class BIMProjectProperties(PropertyGroup):
             ("hybrid-cgal-simple-opencascade", "Hybrid CGAL-OCC", "First CGAL then fallback to OCC"),
         ],
         name="Geometry Library",
+        default="hybrid-cgal-simple-opencascade",
     )
     should_use_cpu_multiprocessing: BoolProperty(name="CPU Multiprocessing", default=True)
     should_merge_materials_by_colour: BoolProperty(name="Merge Materials by Colour", default=False)
