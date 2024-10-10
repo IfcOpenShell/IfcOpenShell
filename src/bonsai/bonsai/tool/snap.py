@@ -154,7 +154,7 @@ class Snap(bonsai.core.tool.Snap):
 
             return (v1, v2, v3, v4)
 
-        # Makes the snapping point more or less sticky then others
+        # Makes the snapping point more or less sticky than others
         # It changes the distance and affects how the snapping point is sorted
         stick_factor = 0.15
 
@@ -170,7 +170,7 @@ class Snap(bonsai.core.tool.Snap):
         # Translates intersection point based on last_point
         translated_intersection = intersection - last_point
         snap_axis = []
-        if not tool_state.snap_angle:
+        if not tool_state.lock_axis:
             for i in range(1, 25):
                 angle = 15 * i
                 snap_axis.append(angle)
@@ -183,27 +183,39 @@ class Snap(bonsai.core.tool.Snap):
         if tool_state.plane_method == "YZ":
             pivot_axis = "X"
 
+        # Get axis that are closer than the stick factor threshold
+        elegible_axis = []
         for axis in snap_axis:
             rot_mat = Matrix.Rotation(math.radians(360 - axis), 3, pivot_axis)
-            start, end = create_axis_line_data(rot_mat, last_point)
             rot_intersection = rot_mat @ translated_intersection
             proximity = rot_intersection.y
             if tool_state.plane_method == "XZ":
                 proximity = rot_intersection.z
-            PolylineDecorator.set_angle_axis_line(start, end)
-            if lock_angle:
-                is_on_rot_axis = True
-            else:
-                is_on_rot_axis = abs(proximity) <= stick_factor
 
+            is_on_rot_axis = abs(proximity) <= stick_factor
             if is_on_rot_axis:
-                # Snap to axis
-                rot_intersection = Vector((rot_intersection.x, 0, rot_intersection.z))
-                if tool_state.plane_method == "XZ":
-                    rot_intersection = Vector((rot_intersection.x, rot_intersection.y, 0))
-                # Convert it back
-                snap_intersection = rot_mat.inverted() @ rot_intersection + last_point
-                return snap_intersection, axis, start, end
+                elegible_axis.append((abs(proximity), axis))
+
+
+        # Get the elegible axis with the lowest proximity
+        if elegible_axis:
+            proximity, axis = sorted(elegible_axis)[0]
+
+
+        # If lock axis is on it will use the snap angle so there is no need to search for elegible axis
+        if elegible_axis or tool_state.lock_axis:
+            rot_mat = Matrix.Rotation(math.radians(360 - axis), 3, pivot_axis)
+            rot_intersection = rot_mat @ translated_intersection
+            start, end = create_axis_line_data(rot_mat, last_point)
+            PolylineDecorator.set_angle_axis_line(start, end)
+
+            # Snap to axis
+            rot_intersection = Vector((rot_intersection.x, 0, rot_intersection.z))
+            if tool_state.plane_method == "XZ":
+                rot_intersection = Vector((rot_intersection.x, rot_intersection.y, 0))
+            # Convert it back
+            snap_intersection = rot_mat.inverted() @ rot_intersection + last_point
+            return snap_intersection, axis, start, end
 
         return None, None, None, None
 
