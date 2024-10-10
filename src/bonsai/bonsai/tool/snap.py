@@ -183,8 +183,8 @@ class Snap(bonsai.core.tool.Snap):
         translated_intersection = intersection - last_point
         snap_axis = []
         if not tool_state.lock_axis:
-            for i in range(1, 25):
-                angle = 15 * i
+            for i in range(1, 13):
+                angle = 30 * i
                 snap_axis.append(angle)
         else:
             snap_axis = [tool_state.snap_angle]
