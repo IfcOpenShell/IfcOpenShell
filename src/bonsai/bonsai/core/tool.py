@@ -551,13 +551,12 @@ class Misc:
 class Model:
     def convert_si_to_unit(cls, value): pass
     def convert_unit_to_si(cls, value): pass
-    def export_curve(cls, position, edge_indices): pass
     def export_points(cls, position, indices): pass
     def export_profile(cls, obj, position=None): pass
     def generate_occurrence_name(cls, element_type, ifc_class): pass
     def get_extrusion(cls, representation): pass
     def import_profile(cls, profile, obj=None, position=None): pass
-    def import_curve(cls, obj, position, curve): pass
+    def import_curve(cls, curve, obj=None, position=None): pass
     def import_rectangle(cls, obj, position, profile): pass
     def load_openings(cls, openings): pass
     def clear_scene_openings(cls): pass
