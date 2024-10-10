@@ -220,6 +220,7 @@ if "v" in flags:
 else:
     logger.setLevel(logging.INFO)
 
+OFF_ON = ["OFF", "ON"]
 BUILD_STATIC = "shared" not in flags
 ENABLE_FLAG = "--enable-static" if BUILD_STATIC else "--enable-shared"
 DISABLE_FLAG = "--disable-shared" if BUILD_STATIC else "--disable-static"
@@ -331,7 +332,7 @@ def run_cmake(arg1, cmake_args, cmake_dir=None, cwd=None):
     if "wasm" in flags:
         wasm.append("emcmake")
         
-    run([*wasm, "cmake", P, *cmake_args, f"-DCMAKE_BUILD_TYPE={BUILD_CFG}"], cwd=cwd)
+    run([*wasm, "cmake", P, *cmake_args, f"-DCMAKE_BUILD_TYPE={BUILD_CFG}", f"-DBUILD_SHARED_LIBS={OFF_ON[not BUILD_STATIC]}"], cwd=cwd)
 
 
 def git_clone_or_pull_repository(clone_url, target_dir, revision=None):
@@ -829,7 +830,6 @@ os.makedirs(IFCOS_DIR, exist_ok=True)
 executables_dir = os.path.join(IFCOS_DIR, "executables")
 os.makedirs(executables_dir, exist_ok=True)
 
-OFF_ON = ["OFF", "ON"]
 
 cmake_args = [
     "-DUSE_MMAP="                      "OFF",
