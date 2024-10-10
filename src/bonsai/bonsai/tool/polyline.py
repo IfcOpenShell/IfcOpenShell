@@ -89,7 +89,7 @@ class Polyline(bonsai.core.tool.Polyline):
         C: Close
         Backspace: Remove
         X Y: Axis
-        Shift: Lock axis
+        L: Lock axis
     """
         snap_info: str = None
         mode: str = None
