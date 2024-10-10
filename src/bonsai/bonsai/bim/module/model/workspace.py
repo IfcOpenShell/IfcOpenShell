@@ -308,6 +308,10 @@ class BIM_MT_add_representation_item(Menu):
                 "bim.add_swept_area_solid_item", icon="MESH_CYLINDER", text="Extruded Area Solid Cylinder"
             ).shape = "CYLINDER"
 
+        if ItemData.data["representation_type"] in ("Annotation2D"):
+            self.layout.operator("bim.add_curvelike_item", icon="IPO_CONSTANT", text="Polycurve").shape = "LINE"
+            self.layout.operator("bim.add_curvelike_item", icon="MESH_CIRCLE", text="Circle").shape = "CIRCLE"
+
 
 class CreateObjectUI:
     @classmethod

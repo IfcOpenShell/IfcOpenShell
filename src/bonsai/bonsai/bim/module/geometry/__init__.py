@@ -20,6 +20,7 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
+    operator.AddCurvelikeItem,
     operator.AddMeshlikeItem,
     operator.AddRepresentation,
     operator.AddSweptAreaSolidItem,

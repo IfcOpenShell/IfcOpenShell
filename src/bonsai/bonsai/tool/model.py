@@ -455,14 +455,13 @@ class Model(bonsai.core.tool.Model):
             if is_closed:
                 cls.edges.append([len(cls.vertices) - 1, offset])  # Close the loop
         elif curve.is_a("IfcCircle"):
-            center = cls.convert_unit_to_si(
-                Matrix(ifcopenshell.util.placement.get_axis2placement(curve.Position).tolist()).translation
-            )
+            circle_position = Matrix(ifcopenshell.util.placement.get_axis2placement(curve.Position).tolist())
+            circle_position.translation *= cls.unit_scale
             radius = cls.convert_unit_to_si(curve.Radius)
             cls.vertices.extend(
                 [
-                    position @ Vector((center[0], center[1] - radius, 0.0)),
-                    position @ Vector((center[0], center[1] + radius, 0.0)),
+                    position @ circle_position @ Vector((0, 0 - radius, 0.0)),
+                    position @ circle_position @ Vector((0, 0 + radius, 0.0)),
                 ]
             )
             cls.circles.append([offset, offset + 1])

@@ -2637,7 +2637,7 @@ class AddSweptAreaSolidItem(bpy.types.Operator, tool.Ifc.Operator):
         if self.shape == "CUBE":
             curve = builder.rectangle(size=Vector((0.5, 0.5)) / unit_scale)
         elif self.shape == "CYLINDER":
-            curve = builder.circle(radius=0.25)
+            curve = builder.circle(radius=0.25 / unit_scale)
         item = builder.extrude(
             curve,
             magnitude=0.5 / unit_scale,
@@ -2648,6 +2648,62 @@ class AddSweptAreaSolidItem(bpy.types.Operator, tool.Ifc.Operator):
 
         representation = tool.Geometry.get_active_representation(props.representation_obj)
         representation = ifcopenshell.util.representation.resolve_representation(representation)
+
+        representation.Items = list(representation.Items) + [item]
+        tool.Geometry.reload_representation(bpy.context.scene.BIMGeometryProperties.representation_obj)
+
+        obj.name = obj.data.name = f"Item/{item.is_a()}/{item.id()}"
+        obj.data.BIMMeshProperties.ifc_definition_id = item.id()
+        tool.Geometry.import_item(obj)
+        tool.Geometry.import_item_attributes(obj)
+
+
+class AddCurvelikeItem(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.add_curvelike_item"
+    bl_label = "Add Curvelike Item"
+    bl_options = {"REGISTER", "UNDO"}
+    shape: bpy.props.StringProperty(name="Shape")
+
+    def _execute(self, context):
+        props = context.scene.BIMGeometryProperties
+
+        representation = tool.Geometry.get_active_representation(props.representation_obj)
+        is_2d = representation.ContextOfItems.ContextType == "Plan"
+        representation = ifcopenshell.util.representation.resolve_representation(representation)
+
+        mesh = bpy.data.meshes.new("Tmp")
+        obj = bpy.data.objects.new("Tmp", mesh)
+        scene = bpy.context.scene
+        scene.collection.objects.link(obj)
+        bpy.context.view_layer.objects.active = obj
+        obj.select_set(True)
+        new = props.item_objs.add()
+        new.obj = obj
+        tool.Geometry.lock_object(obj)
+
+        matrix = props.representation_obj.matrix_world.copy()
+        matrix.translation = context.scene.cursor.location
+        local_matrix = props.representation_obj.matrix_world.inverted() @ matrix
+
+        obj.show_in_front = True
+        obj.matrix_world = matrix
+        tool.Geometry.record_object_position(obj)
+
+        builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+
+        offset = local_matrix.translation.to_2d() / unit_scale
+        if not is_2d:
+            offset = offset.to_3d()
+
+        if self.shape == "LINE":
+            if is_2d:
+                points = [Vector((0, 0)), Vector((0.5 / unit_scale, 0))]
+            else:
+                points = [Vector((0, 0, 0)), Vector((0.5 / unit_scale, 0, 0))]
+            item = builder.polyline(points=points, position_offset=offset)
+        elif self.shape == "CIRCLE":
+            item = builder.circle(radius=0.25 / unit_scale, center=offset)
 
         representation.Items = list(representation.Items) + [item]
         tool.Geometry.reload_representation(bpy.context.scene.BIMGeometryProperties.representation_obj)
