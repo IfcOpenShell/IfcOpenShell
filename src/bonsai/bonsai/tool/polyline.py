@@ -577,7 +577,6 @@ class Polyline(bonsai.core.tool.Polyline):
         polyline_point.dim = d
         polyline_point.angle = a
         polyline_point.position = Vector((x, y, z))
-        print(polyline_point.x, polyline_point.y, polyline_point.z)
 
         # Add total length
         total_length = 0
