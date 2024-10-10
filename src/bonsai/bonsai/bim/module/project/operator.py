@@ -2394,7 +2394,7 @@ class MeasureTool(bpy.types.Operator, PolylineOperator):
         BACKSPACE: Remove Point
         X, Y, Z: Choose Axis
         S-X, S-Y, S-Z: Choose Plane
-        SHIFT: Lock axis
+        L: Lock axis
         """
 
     def modal(self, context, event):
@@ -2412,7 +2412,6 @@ class MeasureTool(bpy.types.Operator, PolylineOperator):
         self.handle_mouse_move(context, event)
 
         self.choose_axis(event, z=True)
-
 
         self.choose_plane(event)
 
