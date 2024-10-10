@@ -27,6 +27,8 @@ if(CCACHE_FOUND)
     set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
 endif()
 
+add_definitions(-D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
+
 cmake_policy(SET CMP0048 NEW)
 cmake_policy(SET CMP0074 NEW)
 cmake_policy(SET CMP0078 NEW)
