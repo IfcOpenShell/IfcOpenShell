@@ -124,20 +124,20 @@ class PolylineOperator:
 
     def choose_axis(self, event, x=True, y=True, z=False):
         if x:
-            if event.value == "PRESS" and event.type == "X":
+            if not event.shift and event.value == "PRESS" and event.type == "X":
                 self.tool_state.axis_method = "X" if self.tool_state.axis_method != event.type else None
                 self.tool_state.lock_axis = False if self.tool_state.lock_axis else True
                 PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
                 tool.Blender.update_viewport()
 
         if y:
-            if event.value == "PRESS" and event.type == "Y":
+            if not event.shift and event.value == "PRESS" and event.type == "Y":
                 self.tool_state.axis_method = "Y" if self.tool_state.axis_method != event.type else None
                 self.tool_state.lock_axis = False if self.tool_state.lock_axis else True
                 PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
                 tool.Blender.update_viewport()
         if z:
-            if event.value == "PRESS" and event.type == "Z":
+            if not event.shift and event.value == "PRESS" and event.type == "Z":
                 self.tool_state.axis_method = "Z" if self.tool_state.axis_method != event.type else None
                 self.tool_state.lock_axis = False if self.tool_state.lock_axis else True
                 PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])

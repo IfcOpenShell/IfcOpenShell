@@ -185,7 +185,10 @@ class Snap(bonsai.core.tool.Snap):
 
         # Get axis that are closer than the stick factor threshold
         elegible_axis = []
+            
         for axis in snap_axis:
+            if not axis:
+                continue
             rot_mat = Matrix.Rotation(math.radians(360 - axis), 3, pivot_axis)
             rot_intersection = rot_mat @ translated_intersection
             proximity = rot_intersection.y
@@ -200,7 +203,8 @@ class Snap(bonsai.core.tool.Snap):
         # Get the elegible axis with the lowest proximity
         if elegible_axis:
             proximity, axis = sorted(elegible_axis)[0]
-
+        else:
+            pass
 
         # If lock axis is on it will use the snap angle so there is no need to search for elegible axis
         if elegible_axis or tool_state.lock_axis:

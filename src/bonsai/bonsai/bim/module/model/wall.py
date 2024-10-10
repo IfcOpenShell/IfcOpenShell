@@ -336,7 +336,6 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator):
 
         self.choose_axis(event)
 
-
         self.handle_snap_selection(context, event)
 
         if (
