@@ -66,6 +66,9 @@ class TestCreateProject:
         project.run_context_add_context(
             context_type="Plan", context_identifier="Annotation", target_view="PLAN_VIEW", parent="plan"
         ).should_be_called()
+        project.run_context_add_context(
+            context_type="Plan", context_identifier="Annotation", target_view="REFLECTED_PLAN_VIEW", parent="plan"
+        ).should_be_called()
 
     def test_create_an_ifc4_project(self, ifc, georeference, project, spatial):
         ifc.get().should_be_called().will_return(None)
@@ -98,6 +101,7 @@ class TestCreateProject:
         project.load_default_thumbnails().should_be_called()
         project.set_default_context().should_be_called()
         project.set_default_modeling_dimensions().should_be_called()
+        project.run_root_reload_grid_decorator().should_be_called()
         georeference.set_model_origin().should_be_called()
 
         subject.create_project(ifc, georeference, project, spatial, schema="IFC4", template=None)
@@ -134,6 +138,7 @@ class TestCreateProject:
         project.load_default_thumbnails().should_be_called()
         project.set_default_context().should_be_called()
         project.set_default_modeling_dimensions().should_be_called()
+        project.run_root_reload_grid_decorator().should_be_called()
         georeference.set_model_origin().should_be_called()
 
         subject.create_project(ifc, georeference, project, spatial, schema="IFC4", template=None)
@@ -171,6 +176,7 @@ class TestCreateProject:
         project.load_default_thumbnails().should_be_called()
         project.set_default_context().should_be_called()
         project.set_default_modeling_dimensions().should_be_called()
+        project.run_root_reload_grid_decorator().should_be_called()
         georeference.set_model_origin().should_be_called()
 
         subject.create_project(ifc, georeference, project, spatial, schema="IFC4", template="template")
@@ -213,6 +219,7 @@ class TestCreateProject:
         project.load_default_thumbnails().should_be_called()
         project.set_default_context().should_be_called()
         project.set_default_modeling_dimensions().should_be_called()
+        project.run_root_reload_grid_decorator().should_be_called()
         georeference.set_model_origin().should_be_called()
 
         subject.create_project(ifc, georeference, project, spatial, schema="IFC2X3", template=None)

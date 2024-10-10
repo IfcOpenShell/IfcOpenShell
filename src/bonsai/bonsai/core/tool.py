@@ -388,11 +388,11 @@ class Geometry:
     def clear_scale(cls, obj): pass
     def delete_data(cls, data): pass
     def delete_ifc_object(cls, obj): pass
+    def delete_opening_object_placement(cls, opening): pass
     def does_representation_id_exist(cls, representation_id): pass
     def duplicate_object_data(cls, obj): pass
-    def get_cartesian_point_offset(cls, obj): pass
-    def delete_opening_object_placement(cls, opening): pass
     def get_blender_offset_type(cls, obj): pass
+    def get_cartesian_point_offset(cls, obj): pass
     def get_element_type(cls, element): pass
     def get_elements_of_type(cls, type): pass
     def get_ifc_representation_class(cls, element, representation): pass
@@ -418,6 +418,7 @@ class Geometry:
     def record_object_materials(cls, obj): pass
     def record_object_position(cls, obj): pass
     def recreate_object_with_data(cls, obj, data): pass
+    def reimport_element_representations(cls, obj, representation, apply_openings=True): pass
     def reload_representation_item_ids(cls, representation, data) -> None: pass
     def remove_connection(cls, connection): pass
     def rename_object(cls, obj, name): pass
@@ -639,6 +640,7 @@ class Project:
     def run_owner_add_person_and_organisation(cls, person=None, organisation=None): pass
     def run_owner_set_user(cls, user=None): pass
     def run_root_assign_class(cls, obj=None, ifc_class=None, predefined_type=None, should_add_representation=True, context=None, ifc_representation_class=None): pass
+    def run_root_reload_grid_decorator(cls): pass
     def run_unit_assign_scene_units(cls): pass
     def set_context(cls, context): pass
     def set_default_context(cls): pass
@@ -901,7 +903,7 @@ class Spatial:
     def run_spatial_import_spatial_decomposition(cls): pass
     def select_object(cls, obj): pass
     def select_products(cls, products, unhide=False): pass
-    def set_active_object(cls, obj): pass
+    def set_active_object(cls, obj, selection_mode=None): pass
     def set_relative_object_matrix(cls, target_obj, relative_to_obj, matrix): pass
     def set_target_container_as_default(cls): pass
     def show_scene_objects(cls): pass
