@@ -125,6 +125,8 @@ def update_sun_path(self):
     local_time = timezone.localize(dt, is_dst=None)
     sun_props.use_daylight_savings = bool(local_time.dst())
     sun_props.UTC_zone = local_time.utcoffset().total_seconds() / 3600
+    if sun_props.use_daylight_savings:
+        sun_props.UTC_zone -= 1
     zone = -sun_props.UTC_zone
     if sun_props.use_daylight_savings:
         zone -= 1
