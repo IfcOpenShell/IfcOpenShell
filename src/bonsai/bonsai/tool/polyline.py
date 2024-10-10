@@ -174,7 +174,7 @@ class Polyline(bonsai.core.tool.Polyline):
             orientation_angle = 0
         if input_ui:
             if should_round:
-                angle = round(angle)
+                angle = 5 * round(angle/5)
                 factor = tool.Snap.get_increment_snap_value(context)
                 distance = factor * round(distance / factor)
             input_ui.set_value("X", snap_vector.x)
