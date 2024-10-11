@@ -696,9 +696,6 @@ class SetArcIndex(bpy.types.Operator):
             return self.cancel_message("Select 3 vertices.")
 
         bpy.ops.object.mode_set(mode="OBJECT")
-        in_group = any([bool(obj.data.vertices[v].groups) for v in selected_vertices])
-        for group in obj.vertex_groups:
-            group.remove(selected_vertices)
         group = obj.vertex_groups.new(name="IFCARCINDEX")
         group.add(selected_vertices, 1, "REPLACE")
         bpy.ops.object.mode_set(mode="EDIT")

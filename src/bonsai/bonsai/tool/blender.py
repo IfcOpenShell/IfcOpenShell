@@ -713,6 +713,16 @@ class Blender(bonsai.core.tool.Blender):
         return False, None
 
     @classmethod
+    def bmesh_get_vertex_groups(cls, vertex: bmesh.types.BMVert, deform_layer: bmesh.types.BMLayerItem) -> list[int]:
+        results = []
+        for group_index in vertex[deform_layer].keys():
+            # Ignore vertex groups assignments produced by edge subdivision near arcs
+            # They usually have weight = 0.5
+            if vertex[deform_layer][group_index] == 1.0:
+                results.append(group_index)
+        return results
+
+    @classmethod
     def toggle_edit_mode(cls, context: bpy.types.Context) -> set[str]:
         ao = context.active_object
         if not ao:

@@ -128,7 +128,7 @@ class Model(bonsai.core.tool.Model):
     @classmethod
     def export_profile(
         cls, obj: bpy.types.Object, position: Optional[Matrix] = None
-    ) -> Union[ifcopenshell.entity_instance, None]:
+    ) -> ifcopenshell.entity_instance | None:
         """Returns `None` in case if profile was invalid."""
         if position is None:
             position = Matrix()
@@ -140,7 +140,7 @@ class Model(bonsai.core.tool.Model):
     @classmethod
     def export_curves(
         cls, obj: bpy.types.Object, position: Optional[Matrix] = None
-    ) -> Union[list[ifcopenshell.entity_instance], None]:
+    ) -> list[ifcopenshell.entity_instance] | None:
         if position is None:
             position = Matrix()
 
@@ -171,11 +171,14 @@ class Model(bonsai.core.tool.Model):
 
         cls.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
-        helper = Helper(tool.Ifc.get())
-        indices = helper.auto_detect_arbitrary_profile_with_voids(obj, obj.data)
+        result = cls.auto_detect_profiles(obj, obj.data, position)
 
-        if isinstance(indices, tuple) and indices[0] is False:  # Ugly
+        if not isinstance(result, dict):  # Ugly
             return
+
+        profile_def = result["profile_def"]
+        if profile_def.is_a("IfcCompositeProfileDef"):
+            profile_def = profile_def.Profiles[0]
 
         cls.bm = bmesh.new()
         cls.bm.from_mesh(obj.data)
@@ -191,14 +194,10 @@ class Model(bonsai.core.tool.Model):
             )
         )
 
-        if tool.Ifc.get().schema != "IFC2X3":
-            cls.points = cls.export_points(position, indices["points"])
-
-        surface.OuterBoundary = cls.convert_mesh_to_curve(position, indices["profile"])
-        results = []
-        for inner_curve in indices["inner_curves"]:
-            results.append(cls.convert_mesh_to_curve(position, inner_curve))
+        surface.OuterBoundary = tool.Ifc.get().add(profile_def.OuterCurve)
         surface.InnerBoundaries = results
+        if profile_def.is_a("IfcArbitraryProfileDefWithVoids"):
+            surface.InnerBoundaries = [tool.Ifc.get().add(c) for c in profile_def.InnerCurves]
 
         cls.bm.free()
         return surface
@@ -418,42 +417,26 @@ class Model(bonsai.core.tool.Model):
             for segment in curve.Segments:
                 cls.convert_curve_to_mesh(obj, position, segment.ParentCurve)
         elif curve.is_a("IfcIndexedPolyCurve"):
-            is_arc = False
-            is_closed = False
+            for local_point in curve.Points.CoordList:
+                global_point = position @ Vector(cls.convert_unit_to_si(local_point)).to_3d()
+                cls.vertices.append(global_point)
             if curve.Segments:
                 for segment in curve.Segments:
                     if segment.is_a("IfcArcIndex"):
-                        is_arc = True
-                        local_point = cls.convert_unit_to_si(curve.Points.CoordList[segment[0][0] - 1])
-                        global_point = position @ Vector(local_point).to_3d()
-                        cls.vertices.append(global_point)
-                        local_point = cls.convert_unit_to_si(curve.Points.CoordList[segment[0][1] - 1])
-                        global_point = position @ Vector(local_point).to_3d()
-                        cls.vertices.append(global_point)
-                        cls.arcs.append([len(cls.vertices) - 2, len(cls.vertices) - 1])
+                        cls.arcs.append([i - 1 + offset for i in segment[0]])
+                        cls.edges.append([i - 1 + offset for i in segment[0][:2]])
+                        cls.edges.append([i - 1 + offset for i in segment[0][1:]])
                     else:
-                        for segment_index in segment[0][0:-1]:
-                            local_point = cls.convert_unit_to_si(curve.Points.CoordList[segment_index - 1])
-                            global_point = position @ Vector(local_point).to_3d()
-                            cls.vertices.append(global_point)
-                            if is_arc:
-                                cls.arcs[-1].append(len(cls.vertices) - 1)
-                                is_arc = False
-
-                if curve.Segments[0][0][0] == curve.Segments[-1][0][-1]:
-                    is_closed = True
+                        segment = [i - 1 + offset for i in segment[0]]
+                        cls.edges.extend(zip(segment, segment[1:]))
             else:
-                for local_point in curve.Points.CoordList:
-                    global_point = position @ Vector(cls.convert_unit_to_si(local_point)).to_3d()
-                    cls.vertices.append(global_point)
-
+                is_closed = False
                 if cls.vertices[offset] == cls.vertices[-1]:
                     is_closed = True
                     del cls.vertices[-1]
-
-            cls.edges.extend([(i, i + 1) for i in range(offset, len(cls.vertices) - 1)])
-            if is_closed:
-                cls.edges.append([len(cls.vertices) - 1, offset])  # Close the loop
+                cls.edges.extend([(i, i + 1) for i in range(offset, len(cls.vertices) - 1)])
+                if is_closed:
+                    cls.edges.append([len(cls.vertices) - 1, offset])  # Close the loop
         elif curve.is_a("IfcCircle"):
             circle_position = Matrix(ifcopenshell.util.placement.get_axis2placement(curve.Position).tolist())
             circle_position.translation *= cls.unit_scale
@@ -1538,26 +1521,20 @@ class Model(bonsai.core.tool.Model):
 
         # Sanity check
         group_verts = {"IFCARCINDEX": {}, "IFCCIRCLE": {}}
-        for vert in bm.verts:
-            total_groups = 0
-            is_circle = False
-            for group_type, group_indices in groups.items():
-                if not group_indices:
-                    continue
-                is_special, group_index = tool.Blender.bmesh_check_vertex_in_groups(vert, deform_layer, group_indices)
-                if not is_special:
-                    continue
-                if group_type == "IFCCIRCLE":
-                    is_circle = True
-                group_verts[group_type].setdefault(group_index, 0)
-                group_verts[group_type][group_index] += 1
-                total_groups += 0
-            if total_groups > 1:  # A vert can only belong to one group
-                return (False, "AMBIGUOUS_SPECIAL_VERTEX")
-            elif is_circle:
-                pass  # Circles are allowed to be unclosed
-            elif total_groups == 0 and len(vert.link_edges) != 2:  # Unclosed loop or forked loop
-                return (False, "UNCLOSED_LOOP")
+        if deform_layer:
+            for vert in bm.verts:
+                vert_group_indices = tool.Blender.bmesh_get_vertex_groups(vert, deform_layer)
+                is_circle = False
+                for group_index in vert_group_indices:
+                    group_type = "IFCARCINDEX" if group_index in groups["IFCARCINDEX"] else "IFCCIRCLE"
+                    group_verts[group_type].setdefault(group_index, 0)
+                    group_verts[group_type][group_index] += 1
+                    if group_type == "IFCCIRCLE":
+                        is_circle = True
+                if is_circle:
+                    pass  # Circles are allowed to be unclosed
+                elif len(vert.link_edges) != 2:  # Unclosed loop or forked loop
+                    return (False, "UNCLOSED_LOOP")
 
         for group_type, group_counts in group_verts.items():
             if group_type == "IFCARCINDEX":
@@ -1617,10 +1594,13 @@ class Model(bonsai.core.tool.Model):
                 curves.append(
                     tmp.createIfcCircle(tmp.createIfcAxis2Placement2D(tmp.createIfcCartesianPoint(list(mid))), radius)
                 )
-            else:  # For now, assume closed loop
+            else:
                 loop_verts = []
                 for i, edge in enumerate(loop):
-                    if i == 0:
+                    if i == 0 and len(loop) == 1:
+                        loop_verts.append(edge.verts[0])
+                        loop_verts.append(edge.verts[1])
+                    elif i == 0:
                         if edge.verts[0] in loop[i + 1].verts:
                             loop_verts.append(edge.verts[1])
                             loop_verts.append(edge.verts[0])
@@ -1629,15 +1609,23 @@ class Model(bonsai.core.tool.Model):
                             loop_verts.append(edge.verts[1])
                     else:
                         loop_verts.append(edge.other_vert(loop_verts[-1]))
-                loop_verts.pop()
 
-                # Handle loop_verts possibly starting halfway through an arc
-                if (group_index := get_group_index(loop_verts[0], "IFCARCINDEX")) is not None:
-                    if get_group_index(loop_verts[1], "IFCARCINDEX") != group_index:
-                        loop_verts.insert(0, loop_verts.pop())
-                        loop_verts.insert(0, loop_verts.pop())
-                    elif get_group_index(loop_verts[2], "IFCARCINDEX") != group_index:
-                        loop_verts.insert(0, loop_verts.pop())
+                if is_closed := loop_verts[0] == loop_verts[-1]:
+                    loop_verts.pop()
+
+                    # Handle loop_verts possibly starting halfway through an arc
+                    if deform_layer:
+                        if gi := tool.Blender.bmesh_get_vertex_groups(loop_verts[0], deform_layer):
+                            if not (gi2 := tool.Blender.bmesh_get_vertex_groups(loop_verts[1], deform_layer)):
+                                loop_verts.insert(0, loop_verts.pop())
+                                loop_verts.insert(0, loop_verts.pop())
+                            elif not (set(gi) & set(gi2)):
+                                loop_verts.insert(0, loop_verts.pop())
+                                loop_verts.insert(0, loop_verts.pop())
+                            elif not (gi2 := tool.Blender.bmesh_get_vertex_groups(loop_verts[2], deform_layer)):
+                                loop_verts.insert(0, loop_verts.pop())
+                            elif not (set(gi) & set(gi2)):
+                                loop_verts.insert(0, loop_verts.pop())
 
                 if tmp.schema != "IFC2X3" and any([is_in_group(v, "IFCARCINDEX") for v in loop_verts]):
                     # We need to specify segments
@@ -1649,30 +1637,34 @@ class Model(bonsai.core.tool.Model):
                     while i < total_verts:
                         v = loop_verts[i]
                         if (
-                            i + 1 != total_verts
-                            and is_in_group(v, "IFCARCINDEX")
-                            and is_in_group(loop_verts[i + 1], "IFCARCINDEX")
+                            (i + 1 != total_verts)
+                            and (gi := tool.Blender.bmesh_get_vertex_groups(v, deform_layer))
+                            and (gi2 := tool.Blender.bmesh_get_vertex_groups(loop_verts[i + 1], deform_layer))
+                            and (set(gi) & set(gi2))
                         ):
                             segments.append(tmp.createIfcArcIndex([i + 1, i + 2, i + 3]))
                             i += 2
                         else:
                             segments.append(tmp.createIfcLineIndex([i + 1, i + 2]))
                             i += 1
-                    # Close the loop
-                    last_segment_indices = list(segments[-1][0])
-                    last_segment_indices[-1] = 1
-                    segments[-1][0] = last_segment_indices
+                    if is_closed:
+                        # Close the loop
+                        last_segment_indices = list(segments[-1][0])
+                        last_segment_indices[-1] = 1
+                        segments[-1][0] = last_segment_indices
                     curves.append(tmp.createIfcIndexedPolyCurve(points, segments))
                 elif tmp.schema == "IFC2X3":
                     points = [
                         tmp.createIfcCartesianPoint(list((position_i @ (v.co / unit_scale)).to_2d()))
                         for v in loop_verts
                     ]
-                    points.append(points[0])
+                    if is_closed:
+                        points.append(points[0])
                     curves.append(tmp.createIfcPolyline(points))
                 else:  # Pure straight polyline, no segments required
                     coord_list = [list((position_i @ (v.co / unit_scale)).to_2d()) for v in loop_verts]
-                    coord_list.append(coord_list[0])
+                    if is_closed:
+                        coord_list.append(coord_list[0])
                     points = tmp.createIfcCartesianPointList2D(coord_list)
                     curves.append(tmp.createIfcIndexedPolyCurve(points))
 
@@ -1723,7 +1715,6 @@ class Model(bonsai.core.tool.Model):
             profile_def = tmp.createIfcCompositeProfileDef("AREA", None, profile_defs)
         return {"ifc_file": tmp, "profile_def": profile_def}
 
-
     @classmethod
     def auto_detect_curves(
         cls, obj: bpy.types.Object, mesh: bpy.types.Mesh, position: Matrix | None = None
@@ -1752,26 +1743,15 @@ class Model(bonsai.core.tool.Model):
 
         # Sanity check
         group_verts = {"IFCARCINDEX": {}, "IFCCIRCLE": {}}
-        for vert in bm.verts:
-            total_groups = 0
-            is_circle = False
-            for group_type, group_indices in groups.items():
-                if not group_indices:
-                    continue
-                is_special, group_index = tool.Blender.bmesh_check_vertex_in_groups(vert, deform_layer, group_indices)
-                if not is_special:
-                    continue
-                if group_type == "IFCCIRCLE":
-                    is_circle = True
-                group_verts[group_type].setdefault(group_index, 0)
-                group_verts[group_type][group_index] += 1
-                total_groups += 0
-            if total_groups > 1:  # A vert can only belong to one group
-                return (False, "AMBIGUOUS_SPECIAL_VERTEX")
-            elif is_circle:
-                pass  # Circles are allowed to be unclosed
-            elif total_groups == 0 and len(vert.link_edges) > 2:  # Forked loop
-                return (False, "FORKED_LOOP")
+        if deform_layer:
+            for vert in bm.verts:
+                vert_group_indices = tool.Blender.bmesh_get_vertex_groups(vert, deform_layer)
+                for group_index in vert_group_indices:
+                    group_type = "IFCARCINDEX" if group_index in groups["IFCARCINDEX"] else "IFCCIRCLE"
+                    group_verts[group_type].setdefault(group_index, 0)
+                    group_verts[group_type][group_index] += 1
+                if len(vert.link_edges) > 2:  # Forked loop
+                    return (False, "FORKED_LOOP")
 
         for group_type, group_counts in group_verts.items():
             if group_type == "IFCARCINDEX":
@@ -1804,7 +1784,6 @@ class Model(bonsai.core.tool.Model):
                         loop_edges.remove(edge)
                         has_found_connected_edge = True
             loops.append(loop)
-        print('autodetected loops', loops)
 
         tmp = ifcopenshell.file(schema=tool.Ifc.get().schema)
 
@@ -1852,12 +1831,18 @@ class Model(bonsai.core.tool.Model):
                     loop_verts.pop()
 
                     # Handle loop_verts possibly starting halfway through an arc
-                    if (group_index := get_group_index(loop_verts[0], "IFCARCINDEX")) is not None:
-                        if get_group_index(loop_verts[1], "IFCARCINDEX") != group_index:
-                            loop_verts.insert(0, loop_verts.pop())
-                            loop_verts.insert(0, loop_verts.pop())
-                        elif get_group_index(loop_verts[2], "IFCARCINDEX") != group_index:
-                            loop_verts.insert(0, loop_verts.pop())
+                    if deform_layer:
+                        if gi := tool.Blender.bmesh_get_vertex_groups(loop_verts[0], deform_layer):
+                            if not (gi2 := tool.Blender.bmesh_get_vertex_groups(loop_verts[1], deform_layer)):
+                                loop_verts.insert(0, loop_verts.pop())
+                                loop_verts.insert(0, loop_verts.pop())
+                            elif not (set(gi) & set(gi2)):
+                                loop_verts.insert(0, loop_verts.pop())
+                                loop_verts.insert(0, loop_verts.pop())
+                            elif not (gi2 := tool.Blender.bmesh_get_vertex_groups(loop_verts[2], deform_layer)):
+                                loop_verts.insert(0, loop_verts.pop())
+                            elif not (set(gi) & set(gi2)):
+                                loop_verts.insert(0, loop_verts.pop())
 
                 if tmp.schema != "IFC2X3" and any([is_in_group(v, "IFCARCINDEX") for v in loop_verts]):
                     # We need to specify segments
@@ -1869,9 +1854,10 @@ class Model(bonsai.core.tool.Model):
                     while i < total_verts:
                         v = loop_verts[i]
                         if (
-                            i + 1 != total_verts
-                            and is_in_group(v, "IFCARCINDEX")
-                            and is_in_group(loop_verts[i + 1], "IFCARCINDEX")
+                            (i + 1 != total_verts)
+                            and (gi := tool.Blender.bmesh_get_vertex_groups(v, deform_layer))
+                            and (gi2 := tool.Blender.bmesh_get_vertex_groups(loop_verts[i + 1], deform_layer))
+                            and (set(gi) & set(gi2))
                         ):
                             segments.append(tmp.createIfcArcIndex([i + 1, i + 2, i + 3]))
                             i += 2

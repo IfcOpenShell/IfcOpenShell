@@ -144,15 +144,13 @@ class ProfileDecorator:
             # deform_layer is None if there are no verts assigned to vertex groups
             # even if there are vertex groups in the obj.vertex_groups
             if deform_layer:
-                is_arc, group_index = tool.Blender.bmesh_check_vertex_in_groups(vertex, deform_layer, arc_groups)
-                if is_arc:
-                    arcs.setdefault(group_index, []).append(vertex)
-                    special_vertex_indices[vertex.index] = group_index
-
-                is_circle, group_index = tool.Blender.bmesh_check_vertex_in_groups(vertex, deform_layer, circle_groups)
-                if is_circle:
-                    circles.setdefault(group_index, []).append(vertex)
-                    special_vertex_indices[vertex.index] = group_index
+                for group_index in tool.Blender.bmesh_get_vertex_groups(vertex, deform_layer):
+                    if is_arc := group_index in arc_groups:
+                        arcs.setdefault(group_index, []).append(vertex)
+                        special_vertex_indices[vertex.index] = group_index
+                    if is_circle := group_index in circle_groups:
+                        circles.setdefault(group_index, []).append(vertex)
+                        special_vertex_indices[vertex.index] = group_index
 
             if vertex.select:
                 selected_vertices.append(co)
