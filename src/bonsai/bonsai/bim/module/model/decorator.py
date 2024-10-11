@@ -583,16 +583,15 @@ class PolylineDecorator:
 
         # Area and Length text
         polyline_verts = [Vector((p.x, p.y, p.z)) for p in polyline_points]
-        if polyline_verts[0] == polyline_verts[-1]:
-            polyline_verts = polyline_verts[:-1]
-        center = sum(polyline_verts, Vector()) / len(polyline_verts)  # Center between all polyline points
-        area_text_coords = view3d_utils.location_3d_to_region_2d(region, rv3d, center)
-        total_length_text_coords = view3d_utils.location_3d_to_region_2d(region, rv3d, polyline_verts[-1])
 
         # Area
         if measure_type == "AREA" and polyline_data.area:
             if len(polyline_verts) < 3:
                 return
+            center = sum(polyline_verts, Vector()) / len(polyline_verts)  # Center between all polyline points
+            if polyline_verts[0] == polyline_verts[-1]:
+                center = sum(polyline_verts[:-1], Vector()) / len(polyline_verts[:-1])  # Doesn't use the last point if is a closed polyline
+            area_text_coords = view3d_utils.location_3d_to_region_2d(region, rv3d, center)
             value = polyline_data.area
             text = f"area: {value}"
             text_length = blf.dimensions(self.font_id, text)
@@ -603,8 +602,9 @@ class PolylineDecorator:
 
         # Length
         if measure_type in {"POLYLINE", "AREA"}:
-            if len(polyline_verts) < 2:
+            if len(polyline_verts) < 3:
                 return
+            total_length_text_coords = view3d_utils.location_3d_to_region_2d(region, rv3d, polyline_verts[-1])
             blf.position(self.font_id, total_length_text_coords[0], total_length_text_coords[1], 0)
             value = polyline_data.total_length
             text = f"length: {value}"

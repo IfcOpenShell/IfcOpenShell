@@ -360,14 +360,15 @@ class MeasureDecorator:
 
             # Area and Length text
             polyline_verts = [Vector((p.x, p.y, p.z)) for p in polyline_points]
-            center = sum(polyline_verts, Vector()) / len(polyline_verts)  # Center between all polyline points
-            area_text_coords = view3d_utils.location_3d_to_region_2d(region, rv3d, center)
-            total_length_text_coords = view3d_utils.location_3d_to_region_2d(region, rv3d, polyline_verts[-1])
 
             # Area
-            if measure_type == "AREA":
+            if measure_type == "AREA" and polyline_data.area:
                 if len(polyline_verts) < 3:
                     return
+                center = sum(polyline_verts, Vector()) / len(polyline_verts)  # Center between all polyline points
+                if polyline_verts[0] == polyline_verts[-1]:
+                    center = sum(polyline_verts[:-1], Vector()) / len(polyline_verts[:-1])  # Doesn't use the last point if is a closed polyline
+                area_text_coords = view3d_utils.location_3d_to_region_2d(region, rv3d, center)
                 value = polyline_data.area
                 text = f"area: {value}"
                 text_length = blf.dimensions(self.font_id, text)
@@ -378,8 +379,9 @@ class MeasureDecorator:
 
             # Length
             if measure_type in {"POLYLINE", "AREA"}:
-                if len(polyline_verts) < 2:
+                if len(polyline_verts) < 3:
                     return
+                total_length_text_coords = view3d_utils.location_3d_to_region_2d(region, rv3d, polyline_verts[-1])
                 blf.position(self.font_id, total_length_text_coords[0], total_length_text_coords[1], 0)
                 value = polyline_data.total_length
                 text = f"length: {value}"
@@ -437,11 +439,12 @@ class MeasureDecorator:
                 self.draw_batch("LINES", [*z_axis], decorator_color_z_axis, [(0, 1)])
 
             # Area highlight
-            _, area = tool.Polyline.validate_input(polyline_data.area, "AREA")
-            if area:
-                if float(area) > 0:
-                    tris, _ = self.calculate_polygon(polyline_verts)
-                    self.draw_batch("TRIS", polyline_verts, transparent_color(decorator_color_special), tris)
+            if polyline_data:
+                _, area = tool.Polyline.validate_input(polyline_data.area, "AREA")
+                if area:
+                    if float(area) > 0:
+                        tris = self.calculate_polygon(polyline_verts)
+                        self.draw_batch("TRIS", polyline_verts, transparent_color(decorator_color_special), tris)
 
             # Draw polyline with selected points
             self.line_shader.uniform_float("lineWidth", 2.0)
