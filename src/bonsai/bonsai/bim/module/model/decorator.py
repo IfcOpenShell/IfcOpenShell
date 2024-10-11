@@ -749,7 +749,6 @@ class PolylineDecorator:
 
         # Area highlight
         if polyline_data:
-            print("A", polyline_data.area)
             _, area = tool.Polyline.validate_input(polyline_data.area, "AREA")
             if area:
                 if float(area) > 0:
