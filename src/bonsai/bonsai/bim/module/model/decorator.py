@@ -585,6 +585,8 @@ class PolylineDecorator:
 
         # Area and Length text
         polyline_verts = [Vector((p.x, p.y, p.z)) for p in polyline_points]
+        if polyline_verts[0] == polyline_verts[-1]:
+            polyline_verts = polyline_verts[:-1]
         center = sum(polyline_verts, Vector()) / len(polyline_verts)  # Center between all polyline points
         area_text_coords = view3d_utils.location_3d_to_region_2d(region, rv3d, center)
         total_length_text_coords = view3d_utils.location_3d_to_region_2d(region, rv3d, polyline_verts[-1])
