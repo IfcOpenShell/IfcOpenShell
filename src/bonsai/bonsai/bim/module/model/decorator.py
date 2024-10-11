@@ -592,7 +592,7 @@ class PolylineDecorator:
         total_length_text_coords = view3d_utils.location_3d_to_region_2d(region, rv3d, polyline_verts[-1])
 
         # Area
-        if measure_type == "AREA":
+        if measure_type == "AREA" and polyline_data.area:
             if len(polyline_verts) < 3:
                 return
             value = polyline_data.area
