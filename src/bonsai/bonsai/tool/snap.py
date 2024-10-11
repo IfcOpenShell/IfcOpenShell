@@ -243,8 +243,8 @@ class Snap(bonsai.core.tool.Snap):
         intersections.append(tool.Cad.intersect_edge_plane(axis_start, axis_end, snap_point[0], Vector((1, 0, 0))))
         intersections.append(tool.Cad.intersect_edge_plane(axis_start, axis_end, snap_point[0], Vector((0, 1, 0))))
         intersections.append(tool.Cad.intersect_edge_plane(axis_start, axis_end, snap_point[0], Vector((0, 0, 1))))
-        sorted_intersections = sorted(i for i in intersections if i is not None)
-        return (sorted_intersections[0], "Mix"), (sorted_intersections[1], "Mix")
+        sorted_intersections = sorted(((i, "Mix") for i in intersections if i is not None), reverse=False)
+        return sorted_intersections
 
     @classmethod
     def detect_snapping_points(cls, context, event, objs_2d_bbox, tool_state):
@@ -494,8 +494,8 @@ class Snap(bonsai.core.tool.Snap):
                 if point[1] == "Axis":
                     if snapping_points[0][1] not in {"Axis", "Plane"}:
                         mixed_snap = cls.mix_snap_and_axis(snapping_points[0], axis_start, axis_end)
-                        snapping_points.insert(0, (mixed_snap[1][0], mixed_snap[1][1]))
-                        snapping_points.insert(0, (mixed_snap[0][0], mixed_snap[0][1]))
+                        for mixed_point in mixed_snap:
+                            snapping_points.insert(0, mixed_point)
                         cls.update_snapping_point(mixed_snap[0][0], mixed_snap[0][1])
                         return snapping_points
                     cls.update_snapping_point(point[0], point[1])
@@ -505,7 +505,13 @@ class Snap(bonsai.core.tool.Snap):
         return snapping_points
 
     @classmethod
-    def modify_snapping_point_selection(cls, snapping_points):
+    def modify_snapping_point_selection(cls, snapping_points, lock_axis=False):
         shifted_list = snapping_points[1:] + snapping_points[:1]
+        if lock_axis: # Will only cycle through mix or axis
+            non_axis_snap = [point for point in snapping_points if point[1] not in {"Axis", "Mix"}]
+            axis_snap = [point for point in snapping_points if point[1] in {"Axis", "Mix"}]
+            shifted_list = axis_snap[1:] + axis_snap[:1]
+            shifted_list.extend(non_axis_snap)
+            
         cls.update_snapping_point(shifted_list[0][0], shifted_list[0][1])
         return shifted_list
