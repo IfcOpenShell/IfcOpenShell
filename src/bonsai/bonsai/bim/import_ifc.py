@@ -263,6 +263,8 @@ class IfcImporter:
         self.profile_code("Create element types")
         self.place_objects_in_collections()
         self.profile_code("Place objects in collections")
+        self.setup_arrays()
+        self.profile_code("Setup arrays")
         self.add_project_to_scene()
         self.profile_code("Add project to scene")
         if self.ifc_import_settings.should_clean_mesh and len(self.file.by_type("IfcElement")) < 1000:
@@ -275,8 +277,6 @@ class IfcImporter:
         self.profile_code("Setting default context")
         if self.ifc_import_settings.should_setup_viewport_camera:
             self.setup_viewport_camera()
-        self.setup_arrays()
-        self.profile_code("Setup arrays")
         tool.Spatial.run_spatial_import_spatial_decomposition()
         if default_container := tool.Spatial.guess_default_container():
             tool.Spatial.set_default_container(default_container)
@@ -358,6 +358,8 @@ class IfcImporter:
     def parse_native_elements(self) -> None:
         if not self.ifc_import_settings.should_load_geometry:
             return
+        if not self.file.by_type("IfcSweptDiskSolid"):
+            return
         for element in self.elements:
             if self.is_native(element):
                 self.native_elements.add(element)
@@ -420,9 +422,6 @@ class IfcImporter:
                 "type": "IfcSweptDiskSolid",
             }
             return True
-
-        if not self.ifc_import_settings.should_use_native_meshes:
-            return False  # Performance improvements only occur on edge cases currently
 
     def is_native_swept_disk_solid(
         self, element: ifcopenshell.entity_instance, representation: ifcopenshell.entity_instance
@@ -1172,7 +1171,6 @@ class IfcImportSettings:
         self.should_use_cpu_multiprocessing = True
         self.should_merge_materials_by_colour = False
         self.should_load_geometry = True
-        self.should_use_native_meshes = False
         self.should_clean_mesh = False
         self.should_cache = True
         self.deflection_tolerance = 0.001
@@ -1209,7 +1207,6 @@ class IfcImportSettings:
         settings.should_use_cpu_multiprocessing = props.should_use_cpu_multiprocessing
         settings.should_merge_materials_by_colour = props.should_merge_materials_by_colour
         settings.should_load_geometry = props.should_load_geometry
-        settings.should_use_native_meshes = props.should_use_native_meshes
         settings.should_clean_mesh = props.should_clean_mesh
         settings.should_cache = props.should_cache
         settings.deflection_tolerance = props.deflection_tolerance
