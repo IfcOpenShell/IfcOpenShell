@@ -158,7 +158,6 @@ namespace IfcGeom {
 		IfcSchema::IfcProduct::list::ptr ifcproducts;
 		IfcSchema::IfcProduct::list::it ifcproduct_iterator;
 
-        IfcSchema::IfcRepresentation::list::ptr ok_mapped_representations;
 
 		double lowest_precision_encountered;
 		bool any_precision_encountered;
@@ -212,7 +211,6 @@ namespace IfcGeom {
 			}
 
 			representations = IfcSchema::IfcRepresentation::list::ptr(new IfcSchema::IfcRepresentation::list);
-			ok_mapped_representations = IfcSchema::IfcRepresentation::list::ptr(new IfcSchema::IfcRepresentation::list);
 			lowest_precision_encountered = std::numeric_limits<double>::infinity();
 			any_precision_encountered = false;
 
@@ -601,45 +599,90 @@ namespace IfcGeom {
 
 		bool geometry_reuse_ok_for_current_representation_;
 
-		bool reuse_ok_(const IfcSchema::IfcProduct::list::ptr& products) {
+		IfcSchema::IfcTypeProduct* get_product_type(IfcSchema::IfcProduct* product) {
+			auto rels = product->IsTypedBy();
+			for (auto it = rels->begin(); it != rels->end(); ++it) {
+				auto rel = *it;
+				// Avoid segfault if RelatingType is unset.
+				if (rel->get("RelatingType")->isNull()){
+					return nullptr;
+				}
+				return rel->RelatingType()->as<IfcSchema::IfcTypeProduct>();
+			}
+			return nullptr;
+		}
+
+		IfcSchema::IfcPresentationStyle* get_material_style(const IfcSchema::IfcMaterial* material) {
+			if (material_styles.find(material) != material_styles.end()) {
+				return material_styles[material];
+			}
+			auto representations = material->HasRepresentation();
+			if (representations->size() != 0) {
+				auto representation = *representations->begin();
+				auto traversed = IfcParse::traverse(representation)->as<IfcSchema::IfcPresentationStyle>();
+				if (traversed->size() != 0){
+					auto style = *traversed->begin();
+					material_styles[material] = style;
+					return style;
+				}
+			}
+			material_styles[material] = nullptr;
+			return nullptr;
+		}
+
+		// Return true if it's okay for this product to reuse the mapped representation,
+		// returns false if it must use it's immediate representation.
+		bool reuse_ok_(IfcSchema::IfcProduct* product) {
 			// With world coords enabled, object transformations are directly applied to
 			// the BRep. There is no way to re-use the geometry for multiple products.
 			if (settings.get(IteratorSettings::USE_WORLD_COORDS)) {
 				return false;
 			}
 
-			if (products->size() == 1) {
-				return true;
-			}
-
 			std::set<const IfcSchema::IfcMaterial*> associated_single_materials;
 
-			for (IfcSchema::IfcProduct::list::it it = products->begin(); it != products->end(); ++it) {
-				IfcSchema::IfcProduct* product = *it;
+			if (!settings.get(IteratorSettings::DISABLE_OPENING_SUBTRACTIONS) && kernel.find_openings(product)->size()) {
+				return false;
+			}
 
-				if (!settings.get(IteratorSettings::DISABLE_OPENING_SUBTRACTIONS) && kernel.find_openings(product)->size()) {
-					return false;
-				}
-
-				if (settings.get(IteratorSettings::APPLY_LAYERSETS)) {
-					IfcSchema::IfcRelAssociates::list::ptr associations = product->HasAssociations();
-					for (IfcSchema::IfcRelAssociates::list::it jt = associations->begin(); jt != associations->end(); ++jt) {
-						IfcSchema::IfcRelAssociatesMaterial* assoc = (*jt)->as<IfcSchema::IfcRelAssociatesMaterial>();
-						if (assoc) {
-							if (assoc->RelatingMaterial()->declaration().is(IfcSchema::IfcMaterialLayerSetUsage::Class())) {
-								// TODO: Check whether single layer?
-								return false;
-							}
+			if (settings.get(IteratorSettings::APPLY_LAYERSETS)) {
+				IfcSchema::IfcRelAssociates::list::ptr associations = product->HasAssociations();
+				for (IfcSchema::IfcRelAssociates::list::it jt = associations->begin(); jt != associations->end(); ++jt) {
+					IfcSchema::IfcRelAssociatesMaterial* assoc = (*jt)->as<IfcSchema::IfcRelAssociatesMaterial>();
+					if (assoc) {
+						if (assoc->RelatingMaterial()->declaration().is(IfcSchema::IfcMaterialLayerSetUsage::Class())) {
+							// TODO: Check whether single layer?
+							return false;
 						}
 					}
 				}
-
-				// Note that this can be a nullptr (!), but the fact that set size should be one still holds
-				associated_single_materials.insert(kernel.get_single_material_association(product));
-                if (associated_single_materials.size() > 1) return false;
 			}
 
-			return associated_single_materials.size() == 1;
+			// Use an immediate representation in case if product is an occurrence
+			// that has an overriding material style.
+			auto material = kernel.get_single_material_association(product->as<IfcSchema::IfcObjectDefinition>());
+			if (material) {
+				auto style = get_material_style(material);
+				if (style) {
+					// Even if product has no type/type material but has it's own material style,
+					// it should use it's immediate representation
+					// since it's possible that other product with the same mapped
+					// representation will have it's own material style.
+					auto product_type = get_product_type(product);
+					if (!product_type) {
+						return false;
+					}
+					auto type_material = kernel.get_single_material_association(product_type->as<IfcSchema::IfcObjectDefinition>());
+					if (!type_material){
+						return false;
+					}
+					auto type_material_style = get_material_style(type_material);
+					if (!type_material_style || style != type_material_style) {
+						return false;
+					}
+				}
+			}
+			return true;
 		}
 
 		boost::optional<boost::variant<std::pair<IfcSchema::IfcRepresentation*, IfcSchema::IfcProduct*>,IfcParse::IfcException>> try_get_next_task() {
@@ -662,6 +705,7 @@ namespace IfcGeom {
 			return r;
 		}
 
+		std::map<const IfcSchema::IfcMaterial*, IfcSchema::IfcPresentationStyle*> material_styles;
 		boost::optional<std::pair<IfcSchema::IfcRepresentation*, IfcSchema::IfcProduct*>> get_next_task() {
 			for (;;) {
 				IfcSchema::IfcRepresentation* representation;
@@ -689,34 +733,47 @@ namespace IfcGeom {
 						continue;
 					}
 
-					geometry_reuse_ok_for_current_representation_ = reuse_ok_(ifcproducts);
-
-					IfcSchema::IfcRepresentationMap::list::ptr maps = representation->RepresentationMap();
-
-					if (!geometry_reuse_ok_for_current_representation_ && maps->size() == 1) {
-						// unfiltered_products contains products represented by this representation by means of mapped items.
-						// For example because of openings applied to products, reuse might not be acceptable and then the
-						// products will be processed by means of their immediate representation and not the mapped representation.
-
-						// IfcRepresentationMaps are also used for IfcTypeProducts, so an additional check is performed whether the map
-						// is indeed used by IfcMappedItems.
-						IfcSchema::IfcRepresentationMap* map = *maps->begin();
-						if (map->MapUsage()->size() > 0) {
-							_nextShape();
-							continue;
-						}
-					}
-
-					// Check if this representation has (or will be) processed as part its mapped representation
-					bool representation_processed_as_mapped_item = false;
+					// Check if representation is mapped to another.
 					IfcSchema::IfcRepresentation* representation_mapped_to = kernel.representation_mapped_to(representation);
+					IfcSchema::IfcProduct::list::ptr ifcproducts_ = IfcSchema::IfcProduct::list::ptr(new IfcSchema::IfcProduct::list);
 					if (representation_mapped_to) {
-						representation_processed_as_mapped_item = geometry_reuse_ok_for_current_representation_ && (
-							ok_mapped_representations->contains(representation_mapped_to) || reuse_ok_(kernel.products_represented_by(representation_mapped_to)));
+						// Immediate representation that's using mapped representation.
+						// Could be a type occurrence representation or some other type of mapping.
+						// We filter only the products that must use this immediate representation
+						// (e.g. they have openings, see reuse_ok_).
+						for (IfcSchema::IfcProduct::list::it jt = ifcproducts->begin(); jt != ifcproducts->end(); ++jt) {
+							IfcSchema::IfcProduct* prod = *jt;
+							// If there's no reason for this product to have an immediate representaiton,
+							// we skip it as it will be processed with it's mapped representation.
+							if (reuse_ok_(prod)) {
+								continue;
+							}
+							ifcproducts_->push(prod);
+						}
+                        ifcproducts = ifcproducts_;
+						geometry_reuse_ok_for_current_representation_ = false;
+					} else {
+						// Mapped representation / immediate representations that don't use any other mapped representations.
+						// Do opposite of the above, filter products that have no reason
+						// to use their immediate representation (or if they don't have one).
+						for (IfcSchema::IfcProduct::list::it jt = ifcproducts->begin(); jt != ifcproducts->end(); ++jt) {
+							IfcSchema::IfcProduct* prod = *jt;
+							if (!reuse_ok_(prod)) {
+								IfcSchema::IfcRepresentation* prod_representation;
+								prod_representation = kernel.find_representation(prod, representation->ContextOfItems());
+								// Skip product only if it does have a mapped representation.
+								// So we don't skip cases like an occurrence with openings without a type.
+								if (representation != prod_representation) {
+									continue;
+								}
+							}
+							ifcproducts_->push(prod);
+						}
+                        ifcproducts = ifcproducts_;
+						geometry_reuse_ok_for_current_representation_ = true;
 					}
 
-					if (representation_processed_as_mapped_item) {
-						ok_mapped_representations->push(representation_mapped_to);
+					if (ifcproducts->size() == 0) {
 						_nextShape();
 						continue;
 					}

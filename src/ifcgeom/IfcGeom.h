@@ -280,6 +280,7 @@ public:
 	IfcSchema::IfcRelVoidsElement::list::ptr find_openings(IfcSchema::IfcProduct* product);
 
 	IfcSchema::IfcRepresentation* find_representation(const IfcSchema::IfcProduct*, const std::string&);
+	IfcSchema::IfcRepresentation* find_representation(const IfcSchema::IfcProduct*, const IfcSchema::IfcRepresentationContext* context);
 
 	std::pair<std::string, double> initializeUnits(IfcSchema::IfcUnitAssignment*);
 
@@ -289,7 +290,7 @@ public:
     IfcGeom::BRepElement* create_brep_for_processed_representation(
         const IteratorSettings&, IfcSchema::IfcRepresentation*, IfcSchema::IfcProduct*, IfcGeom::BRepElement*);
 
-	const IfcSchema::IfcMaterial* get_single_material_association(const IfcSchema::IfcProduct*);
+	const IfcSchema::IfcMaterial* get_single_material_association(const IfcSchema::IfcObjectDefinition*);
 	IfcSchema::IfcRepresentation* representation_mapped_to(const IfcSchema::IfcRepresentation* representation);
 	IfcSchema::IfcProduct::list::ptr products_represented_by(const IfcSchema::IfcRepresentation*);
 	std::shared_ptr<const SurfaceStyle> get_style(const IfcSchema::IfcRepresentationItem*);
