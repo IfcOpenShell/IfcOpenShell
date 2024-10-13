@@ -83,6 +83,10 @@ class BIM_PT_profiles(Panel):
             self.props,
             "active_profile_index",
         )
+        
+        row = self.layout.row()
+        row.prop(self.props, "is_filtering_material_profiles", text="Filter Material Profiles")
+
         if active_profile:
             if active_profile.ifc_class in (
                 "IfcArbitraryClosedProfileDef",
