@@ -1205,9 +1205,11 @@ class ToggleLinkSelectability(bpy.types.Operator):
         props = context.scene.BIMProjectProperties
         link = props.links.get(self.link)
         self.library_filepath = tool.Blender.ensure_blender_path_is_abs(Path(self.link).with_suffix(".ifc.cache.blend"))
+        link.is_selectable = (is_selectable := not link.is_selectable)
         for collection in self.get_linked_collections():
-            collection.hide_select = not collection.hide_select
-            link.is_selectable = not collection.hide_select
+            collection.hide_select = not is_selectable
+        if handle := link.empty_handle:
+            handle.hide_select = not is_selectable
         return {"FINISHED"}
 
     def get_linked_collections(self) -> list[bpy.types.Collection]:
