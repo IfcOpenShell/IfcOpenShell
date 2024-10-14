@@ -1589,7 +1589,7 @@ class LoadLinkedProject(bpy.types.Operator):
                     vs = np.hstack((vs, np.ones((len(vs), 1))))
                     vs = (np.asmatrix(matrix) * np.asmatrix(vs).T).T.A
                     vs = vs[:, :3].flatten()
-                    fs = ifcopenshell.util.shape.get_faces(shape.geometry)
+                    fs = ifcopenshell.util.shape.get_faces(shape.geometry).ravel()
                     chunked_verts.append(vs)
                     chunked_faces.append(fs + offset)
                     offset += len(vs) // 3
