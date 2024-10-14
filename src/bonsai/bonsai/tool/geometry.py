@@ -645,7 +645,7 @@ class Geometry(bonsai.core.tool.Geometry):
     @classmethod
     def reimport_element_representations(
         cls, obj: bpy.types.Object, representation: ifcopenshell.entity_instance, apply_openings: bool = True
-    ) -> Union[bpy.types.Mesh, bpy.types.Curve]:
+    ) -> None:
         element = tool.Ifc.get_entity(obj)
         assert element
 
