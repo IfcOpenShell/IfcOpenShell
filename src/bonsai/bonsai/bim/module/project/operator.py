@@ -1253,10 +1253,12 @@ class ToggleLinkVisibility(bpy.types.Operator):
     def toggle_visibility(self, link):
         linked_collections = self.get_linked_collections()
 
+        link.is_hidden = (is_hidden := not link.is_hidden)
         layer_collections = tool.Blender.get_layer_collections_mapping(linked_collections)
         for layer_collection in layer_collections.values():
-            layer_collection.exclude = not layer_collection.exclude
-            link.is_hidden = layer_collection.exclude
+            layer_collection.exclude = is_hidden
+        if handle := link.empty_handle:
+            handle.hide_set(is_hidden)
 
     def get_linked_collections(self) -> list[bpy.types.Collection]:
         return [
