@@ -1090,7 +1090,12 @@ class IfcImporter:
             else:
                 geometry = shape
 
-            mesh = bpy.data.meshes.new(tool.Loader.get_mesh_name_from_shape(geometry))
+            # Mesh may already exists (e.g. during representation reimport)
+            # and we assign some suffix to it to prevent Blender from adding '.001' suffix to the new mesh.
+            mesh_name = tool.Loader.get_mesh_name_from_shape(geometry)
+            if old_mesh := bpy.data.meshes.get(mesh_name):
+                old_mesh.name = mesh_name + ".old"
+            mesh = bpy.data.meshes.new(mesh_name)
 
             if cartesian_point_offset is False:
                 verts = geometry.verts
