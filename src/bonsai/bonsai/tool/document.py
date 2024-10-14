@@ -67,7 +67,22 @@ class Document(bonsai.core.tool.Document):
     def import_document_attributes(cls, document: ifcopenshell.entity_instance) -> None:
         props = bpy.context.scene.BIMDocumentProperties
         props.document_attributes.clear()
-        bonsai.bim.helper.import_attributes2(document, props.document_attributes)
+
+        def callback(attr_name: str, _, data: dict[str, Any]) -> Union[bool, None]:
+            if attr_name != "Name":
+                return None  # Proceed normally
+
+            current_value = data[attr_name]
+            # If Name is already filled, display it so user would be able to correct invalid IFC.
+            if current_value is not None:
+                return None
+
+            # Skip import since IFC restricts Name to be filled
+            # for IfcDocumentReference with ReferencedDocument.
+            return False
+
+        import_callback = callback if document.is_a("IfcDocumentReference") else None
+        bonsai.bim.helper.import_attributes2(document, props.document_attributes, callback=import_callback)
 
     @classmethod
     def import_project_documents(cls) -> None:
