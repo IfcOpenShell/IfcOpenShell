@@ -40,7 +40,7 @@ if TYPE_CHECKING:
     # - None  - property should be imported by default workflow
     # - True  - setting value for imported attribute should be skipped
     # - False - property should be skipped entirely from import
-    ImportCallback = Callable[[str, Optional[bonsai.bim.prop.Attribute], dict[str, Any], Union[bool, None]]]
+    ImportCallback = Callable[[str, Optional[bonsai.bim.prop.Attribute], dict[str, Any]], Union[bool, None]]
     # ExportCallback return values:
     # - True  - property should be skipped entirely from export
     # - False - property should be exproted by default workflow

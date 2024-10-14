@@ -29,6 +29,8 @@ import numpy as np
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.project
+import ifcopenshell.geom
+import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.file
 import ifcopenshell.util.selector
 import ifcopenshell.util.geolocation
@@ -1412,10 +1414,14 @@ class LoadLinkedProject(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty()
 
+    file: ifcopenshell.file
+    meshes: dict[str, bpy.types.Mesh]
+    # Material names is derived from diffuse as in 'r-g-b-a'.
+    blender_mats: dict[str, bpy.types.Material]
+
     def execute(self, context):
         import ifcpatch
         import multiprocessing
-        import ifcopenshell.geom
 
         start = time.time()
 
@@ -1528,7 +1534,7 @@ class LoadLinkedProject(bpy.types.Operator):
                             mats, mapping = np.unique(mats, axis=0, return_inverse=True)
                             midx = mapping[midx]
 
-                            mat_results = []
+                            mat_results: list[bpy.types.Material] = []
                             for mat in mats:
                                 mat = tuple(mat)
                                 blender_mat = blender_mats.get(mat, None)
@@ -1660,10 +1666,10 @@ class LoadLinkedProject(bpy.types.Operator):
 
     def process_occurrence(self, shape: ShapeElementType) -> None:
         element = self.file.by_id(shape.id)
-        faces = shape.geometry.faces
-        verts = shape.geometry.verts
-        materials = shape.geometry.materials
-        material_ids = shape.geometry.material_ids
+        faces: tuple[int, ...] = shape.geometry.faces
+        verts: tuple[float, ...] = shape.geometry.verts
+        materials: tuple[W.style, ...] = shape.geometry.materials
+        material_ids: tuple[int, ...] = shape.geometry.material_ids
 
         mat = ifcopenshell.util.shape.get_shape_matrix(shape)
 
@@ -1747,7 +1753,7 @@ class LoadLinkedProject(bpy.types.Operator):
 
         self.collection.objects.link(obj)
 
-    def create_object(self, verts, faces, materials, material_ids, guids, guid_ids):
+    def create_object(self, verts, faces, materials: list[bpy.types.Material], material_ids, guids, guid_ids):
         num_vertices = len(verts) // 3
         if not num_vertices:
             return

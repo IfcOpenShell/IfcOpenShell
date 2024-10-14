@@ -464,8 +464,8 @@ class DumbWallAligner:
 
 
 class DumbWallRecalculator:
-    def recalculate(self, walls):
-        queue = set()
+    def recalculate(self, walls: list[bpy.types.Object]) -> None:
+        queue: set[tuple[ifcopenshell.entity_instance, bpy.types.Object]] = set()
         for wall in walls:
             element = tool.Ifc.get_entity(wall)
             queue.add((element, wall))
@@ -1144,7 +1144,7 @@ class DumbWallJoiner:
         self.recreate_wall(element1, wall1, axis1["reference"], axis1["reference"])
         self.recreate_wall(element2, wall2, axis2["reference"], axis2["reference"])
 
-    def recreate_wall(self, element, obj, axis=None, body=None):
+    def recreate_wall(self, element: ifcopenshell.entity_instance, obj: bpy.types.Object, axis=None, body=None) -> None:
         if axis is None or body is None:
             axis = body = tool.Model.get_wall_axis(obj)["reference"]
         self.axis = copy.deepcopy(axis)
