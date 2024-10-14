@@ -89,22 +89,17 @@ class Document(bonsai.core.tool.Document):
     @classmethod
     def import_references(cls, document: ifcopenshell.entity_instance) -> None:
         props = bpy.context.scene.BIMDocumentProperties
-        if tool.Ifc.get_schema() == "IFC2X3":
-            for element in document.DocumentReferences or []:
-                new = props.documents.add()
-                new.ifc_definition_id = element.id()
-                name = " - ".join([x for x in [element.Description, element.Location] if x])
-                new.name = name or "Unnamed"
-                new.identification = element.ItemReference or "*"
-                new.is_information = False
-        else:
-            for element in document.HasDocumentReferences:
-                new = props.documents.add()
-                new.ifc_definition_id = element.id()
-                name = " - ".join([x for x in [element.Description, element.Location] if x])
-                new.name = name or "Unnamed"
-                new.identification = element.Identification or "*"
-                new.is_information = False
+        is_ifc2x3 = tool.Ifc.get_schema() == "IFC2X3"
+        references = (document.DocumentReference or []) if is_ifc2x3 else document.HasDocumentReferences
+        for element in references:
+            new = props.documents.add()
+            new.ifc_definition_id = element.id()
+            # Use Description + Location instead of Name as IFC has a restriction
+            # for IfcDocumentReference to have Name only if it has no ReferencedDocument.
+            name = " - ".join([x for x in [element.Description, element.Location] if x])
+            new.name = name or "Unnamed"
+            new.identification = (element.ItemReference if is_ifc2x3 else element.Identification) or "*"
+            new.is_information = False
 
     @classmethod
     def import_subdocuments(cls, document: ifcopenshell.entity_instance) -> None:
