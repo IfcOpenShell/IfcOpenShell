@@ -304,7 +304,9 @@ class PolylineOperator:
 
     def handle_snap_selection(self, context, event):
         if event.value == "PRESS" and event.type == "M":
-            self.snapping_points = tool.Snap.modify_snapping_point_selection(self.snapping_points, lock_axis = self.tool_state.lock_axis)
+            self.snapping_points = tool.Snap.modify_snapping_point_selection(
+                self.snapping_points, lock_axis=self.tool_state.lock_axis
+            )
             tool.Polyline.calculate_distance_and_angle(context, self.input_ui, self.tool_state)
             PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
             tool.Blender.update_viewport()
@@ -355,7 +357,9 @@ class PolylineOperator:
                 if self.snapping_points[0][1] in {"Plane", "Axis"}:
                     should_round = True
 
-                tool.Polyline.calculate_distance_and_angle(context, self.input_ui, self.tool_state, should_round=should_round)
+                tool.Polyline.calculate_distance_and_angle(
+                    context, self.input_ui, self.tool_state, should_round=should_round
+                )
                 if should_round:
                     tool.Polyline.calculate_x_y_and_z(context, self.input_ui, self.tool_state)
                 tool.Blender.update_viewport()

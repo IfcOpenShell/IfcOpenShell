@@ -197,7 +197,7 @@ class Snap(bonsai.core.tool.Snap):
 
         # Get axis that are closer than the stick factor threshold
         elegible_axis = []
-            
+
         for axis in snap_axis:
             if not axis:
                 continue
@@ -210,7 +210,6 @@ class Snap(bonsai.core.tool.Snap):
             is_on_rot_axis = abs(proximity) <= stick_factor
             if is_on_rot_axis:
                 elegible_axis.append((abs(proximity), axis))
-
 
         # Get the elegible axis with the lowest proximity
         if elegible_axis:
@@ -267,7 +266,7 @@ class Snap(bonsai.core.tool.Snap):
             (offset, -offset),
         )
 
-        # TODO Snap like Blender snap increment. Enable this when we have a proper snap settings. 
+        # TODO Snap like Blender snap increment. Enable this when we have a proper snap settings.
         # Still need adjustments to improve the feel
         def round_vector_with_increment(intersection, relative_point):
             for i in range(len(intersection)):
@@ -507,11 +506,11 @@ class Snap(bonsai.core.tool.Snap):
     @classmethod
     def modify_snapping_point_selection(cls, snapping_points, lock_axis=False):
         shifted_list = snapping_points[1:] + snapping_points[:1]
-        if lock_axis: # Will only cycle through mix or axis
+        if lock_axis:  # Will only cycle through mix or axis
             non_axis_snap = [point for point in snapping_points if point[1] not in {"Axis", "Mix"}]
             axis_snap = [point for point in snapping_points if point[1] in {"Axis", "Mix"}]
             shifted_list = axis_snap[1:] + axis_snap[:1]
             shifted_list.extend(non_axis_snap)
-            
+
         cls.update_snapping_point(shifted_list[0][0], shifted_list[0][1])
         return shifted_list
