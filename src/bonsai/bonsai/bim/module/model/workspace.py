@@ -404,7 +404,7 @@ class CreateObjectUI:
             op = row.operator(
                 "bim.add_default_type",
                 icon_value=custom_icon_previews["QUICK_DEFAULT"].icon_id,
-                text=f"Quick Create {AuthoringData.data['ifc_element_type']}",
+                text=f"Quick Create {AuthoringData.data['ifc_element_type']}"
             )
             op.ifc_element_type = AuthoringData.data["ifc_element_type"]
 
@@ -480,27 +480,23 @@ class CreateObjectUI:
         if AuthoringData.data["ifc_classes"]:
             if cls.props.ifc_class:
                 box = cls.layout.box()
-                # This trick creates a fake dropdown
-                row1 = box.row(align=True)
+                row = box.row(align=True)
                 if AuthoringData.data["type_thumbnail"] and ui_context == "TOOL_HEADER":
-                    row1.ui_units_y = 0.01
-                    row1.template_icon(icon_value=AuthoringData.data["type_thumbnail"], scale=1)
-                    row2 = box.column(align=True)
-                    row2.operator("bim.launch_type_manager", text="", emboss=False)
-                    row1.operator(
+                    row.template_icon(icon_value=AuthoringData.data["type_thumbnail"])
+                    row.operator(
                         "bim.launch_type_manager", text=AuthoringData.data["relating_type_name"], emboss=False
                     )
                 else:
-                    row1.operator(
+                    row.operator(
                         "bim.launch_type_manager",
                         icon="BLANK1",
                         text=AuthoringData.data["relating_type_name"],
                         emboss=False,
                     )
 
-                row1.operator(
+                row.operator(
                     "bim.launch_type_manager",
-                    icon=tool.Blender.TYPE_MANAGER_ICON,  # "DOWNARROW_HLT",
+                    icon=tool.Blender.TYPE_MANAGER_ICON,
                     text="",
                     emboss=False,
                 )
@@ -520,7 +516,8 @@ class CreateObjectUI:
                         row1.template_icon(icon_value=AuthoringData.data["type_thumbnail"], scale=4)
                         row2 = box.column(align=True)
                         row2.ui_units_y = 4
-                        row2.operator("bim.launch_type_manager", text="", emboss=False)
+                        for _ in range(4):
+                            row2.operator("bim.launch_type_manager", text="", emboss=False)
                     else:
                         op = box.operator(
                             "bim.load_type_thumbnails",
