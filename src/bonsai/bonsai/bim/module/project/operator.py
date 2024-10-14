@@ -1566,7 +1566,7 @@ class LoadLinkedProject(bpy.types.Operator):
 
                     has_processed_chunk = False
 
-                    ms = np.vstack([default_mat, np.frombuffer(shape.geometry.colors_buffer).reshape((-1, 4))])
+                    ms = np.vstack([default_mat, ifcopenshell.util.shape.get_material_colors(shape.geometry)])
                     mi = np.frombuffer(shape.geometry.material_ids_buffer, dtype=np.int32)
                     for geom_material_idx, geom_material in enumerate(shape.geometry.materials):
                         if not geom_material.instance_id():
@@ -1585,11 +1585,11 @@ class LoadLinkedProject(bpy.types.Operator):
                             float(gprops.blender_x_axis_abscissa),
                             float(gprops.blender_x_axis_ordinate),
                         )
-                    vs = np.frombuffer(shape.geometry.verts_buffer).reshape((-1, 3))
+                    vs = ifcopenshell.util.shape.get_vertices(shape.geometry)
                     vs = np.hstack((vs, np.ones((len(vs), 1))))
                     vs = (np.asmatrix(matrix) * np.asmatrix(vs).T).T.A
                     vs = vs[:, :3].flatten()
-                    fs = np.frombuffer(shape.geometry.faces_buffer, dtype=np.int32)
+                    fs = ifcopenshell.util.shape.get_faces(shape.geometry)
                     chunked_verts.append(vs)
                     chunked_faces.append(fs + offset)
                     offset += len(vs) // 3
