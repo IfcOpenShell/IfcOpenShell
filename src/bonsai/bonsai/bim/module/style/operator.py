@@ -317,7 +317,10 @@ class BrowseExternalStyle(bpy.types.Operator):
         layout.label(text="Data Block Type")
         layout.prop(self, "data_block_type", text="", icon="GROUP")
         layout.label(text="Data Block")
-        layout.prop(self, "data_block", text="")
+        cls = BrowseExternalStyle
+        bonsai.bim.helper.prop_with_search(
+            layout, self, "data_block", text="", original_operator_path=f"{cls.__module__}.{cls.__name__}"
+        )
         if Path(tool.Ifc.get_path()).is_file():
             layout.prop(self, "use_relative_path")
         else:
