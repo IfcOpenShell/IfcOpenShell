@@ -1471,7 +1471,7 @@ class Geometry(bonsai.core.tool.Geometry):
             if not (obj := item_obj.obj):
                 continue
             item = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
-            if (is_swept_area := item.is_a("IfcSweptAreaSolid")):
+            if is_swept_area := item.is_a("IfcSweptAreaSolid"):
                 if not tool.Ifc.is_moved(obj):
                     continue
                 has_changed = True
@@ -1529,7 +1529,7 @@ class Geometry(bonsai.core.tool.Geometry):
 
         obj.matrix_world = rep_obj.matrix_world.copy()
 
-        if (is_swept_area := item.is_a("IfcSweptAreaSolid")):
+        if is_swept_area := item.is_a("IfcSweptAreaSolid"):
             position = item.Position
             # Positional is optional only for SweptAreaSolid.
             if position or not is_swept_area:

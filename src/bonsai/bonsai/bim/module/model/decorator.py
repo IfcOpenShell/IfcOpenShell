@@ -590,7 +590,9 @@ class PolylineDecorator:
                 return
             center = sum(polyline_verts, Vector()) / len(polyline_verts)  # Center between all polyline points
             if polyline_verts[0] == polyline_verts[-1]:
-                center = sum(polyline_verts[:-1], Vector()) / len(polyline_verts[:-1])  # Doesn't use the last point if is a closed polyline
+                center = sum(polyline_verts[:-1], Vector()) / len(
+                    polyline_verts[:-1]
+                )  # Doesn't use the last point if is a closed polyline
             area_text_coords = view3d_utils.location_3d_to_region_2d(region, rv3d, center)
             value = polyline_data.area
             text = f"area: {value}"

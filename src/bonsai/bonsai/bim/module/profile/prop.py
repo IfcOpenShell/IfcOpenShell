@@ -70,10 +70,8 @@ class BIMProfileProperties(PropertyGroup):
         name="Filter Material Profiles",
         default=False,
         description="Check to only show IfcProfileDefs attached to IfcMaterialProfiles",
-        update=lambda self, context: bpy.ops.bim.load_profiles() 
+        update=lambda self, context: bpy.ops.bim.load_profiles(),
     )
-
-
 
 
 def generate_thumbnail_for_active_profile():

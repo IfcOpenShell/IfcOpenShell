@@ -404,7 +404,7 @@ class CreateObjectUI:
             op = row.operator(
                 "bim.add_default_type",
                 icon_value=custom_icon_previews["QUICK_DEFAULT"].icon_id,
-                text=f"Quick Create {AuthoringData.data['ifc_element_type']}"
+                text=f"Quick Create {AuthoringData.data['ifc_element_type']}",
             )
             op.ifc_element_type = AuthoringData.data["ifc_element_type"]
 
@@ -483,9 +483,7 @@ class CreateObjectUI:
                 row = box.row(align=True)
                 if AuthoringData.data["type_thumbnail"] and ui_context == "TOOL_HEADER":
                     row.template_icon(icon_value=AuthoringData.data["type_thumbnail"])
-                    row.operator(
-                        "bim.launch_type_manager", text=AuthoringData.data["relating_type_name"], emboss=False
-                    )
+                    row.operator("bim.launch_type_manager", text=AuthoringData.data["relating_type_name"], emboss=False)
                 else:
                     row.operator(
                         "bim.launch_type_manager",

@@ -174,7 +174,7 @@ class Polyline(bonsai.core.tool.Polyline):
             orientation_angle = 0
         if input_ui:
             if should_round:
-                angle = 5 * round(angle/5)
+                angle = 5 * round(angle / 5)
                 factor = tool.Snap.get_increment_snap_value(context)
                 distance = factor * round(distance / factor)
             input_ui.set_value("X", snap_vector.x)
@@ -234,7 +234,7 @@ class Polyline(bonsai.core.tool.Polyline):
 
         area = input_ui.get_number_value("AREA")
         if area:
-            area = tool.Polyline.format_input_ui_units(area, is_area = True)
+            area = tool.Polyline.format_input_ui_units(area, is_area=True)
             polyline_data.area = area
         return
 
@@ -528,7 +528,14 @@ class Polyline(bonsai.core.tool.Polyline):
             if bpy.context.scene.unit_settings.length_unit == "MILLIMETERS":
                 factor = 1000
 
-        return format_distance(value * factor, precision=precision, hide_units=False, isArea=is_area, suppress_zero_inches=True, in_unit_length=True)
+        return format_distance(
+            value * factor,
+            precision=precision,
+            hide_units=False,
+            isArea=is_area,
+            suppress_zero_inches=True,
+            in_unit_length=True,
+        )
 
     @classmethod
     def insert_polyline_point(cls, input_ui, tool_state=None):
@@ -587,7 +594,6 @@ class Polyline(bonsai.core.tool.Polyline):
             total_length += dim
         total_length = tool.Polyline.format_input_ui_units(total_length)
         polyline_data.total_length = total_length
-
 
     @classmethod
     def close_polyline(cls):
