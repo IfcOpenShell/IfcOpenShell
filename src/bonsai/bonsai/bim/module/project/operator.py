@@ -1754,6 +1754,7 @@ class LoadLinkedProject(bpy.types.Operator):
         obj["guids"] = [shape.guid]
         obj["guid_ids"] = [len(mesh.polygons)]
         obj["db"] = self.db_filepath
+        obj["ifc_filepath"] = self.filepath
 
         self.collection.objects.link(obj)
 
