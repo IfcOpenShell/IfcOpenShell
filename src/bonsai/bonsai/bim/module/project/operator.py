@@ -1567,7 +1567,7 @@ class LoadLinkedProject(bpy.types.Operator):
                     has_processed_chunk = False
 
                     ms = np.vstack([default_mat, ifcopenshell.util.shape.get_material_colors(shape.geometry)])
-                    mi = np.frombuffer(shape.geometry.material_ids_buffer, dtype=np.int32)
+                    mi = ifcopenshell.util.shape.get_faces_material_style_ids(shape.geometry)
                     for geom_material_idx, geom_material in enumerate(shape.geometry.materials):
                         if not geom_material.instance_id():
                             ms[geom_material_idx + 1] = (0.8, 0.8, 0.8, 1)

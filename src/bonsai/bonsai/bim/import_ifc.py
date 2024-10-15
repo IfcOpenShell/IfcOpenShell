@@ -70,17 +70,6 @@ class MaterialCreator:
 
         self.mesh = mesh
         self.obj = obj
-
-        # mesh["ios_materials"] can contain:
-        # - ifc style id if style assigned to the representation items directly
-        # or through material with a style;
-        # - ifc material id if both true:
-        #   - element has a material without a style;
-        #   - there are parts of the geometry that has no other style assigned to them;
-        # - -1 in case if there is no material;
-        # - 0 in case if there are default materials used.
-        # Though 0 value will not occur as we don't use default materials in IfcImporter.
-
         self.parsed_meshes.add(self.mesh.name)
         self.load_texture_maps(shape_has_openings)
         self.assign_material_slots_to_faces()
