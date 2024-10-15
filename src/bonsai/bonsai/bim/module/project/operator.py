@@ -1902,6 +1902,7 @@ class QueryLinkedElement(bpy.types.Operator):
             "properties": [(k, properties[k]) for k in sorted(properties.keys())],
             "type_properties": [(k, type_properties[k]) for k in sorted(type_properties.keys())],
         }
+        self.db.close()
 
         for area in bpy.context.screen.areas:
             if area.type == "PROPERTIES":
