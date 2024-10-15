@@ -27,10 +27,13 @@ from bonsai.bim.ifc import IfcStore
 
 
 class BIM_OT_aggregate_assign_object(bpy.types.Operator, tool.Ifc.Operator):
-    """Create aggregation relationship between two ifc elements"""
-
     bl_idname = "bim.aggregate_assign_object"
     bl_label = "Assign Object To Aggregation"
+    bl_description = (
+        "Assign object as an aggregate to the selected IFC elements.\n\n"
+        "If called from Bonsai UI, then either 'Relating Whole' or 'Related Part' must be provided.\n"
+        "If called directly, active object will be considered a relating whole"
+    )
     bl_options = {"REGISTER", "UNDO"}
     relating_object: bpy.props.IntProperty()
     related_object: bpy.props.IntProperty()
@@ -46,8 +49,10 @@ class BIM_OT_aggregate_assign_object(bpy.types.Operator, tool.Ifc.Operator):
         elif context.active_object:
             relating_obj = context.active_object
         if not relating_obj:
+            self.report({"ERROR"}, "No relating object is provided.")
             return
 
+        assert isinstance(relating_obj, bpy.types.Object)
         for obj in tool.Blender.get_selected_objects():
             if obj == relating_obj:
                 continue
@@ -69,7 +74,7 @@ class BIM_OT_aggregate_assign_object(bpy.types.Operator, tool.Ifc.Operator):
 
 
 class BIM_OT_aggregate_unassign_object(bpy.types.Operator, tool.Ifc.Operator):
-    """Remove aggregation relationship between two ifc elements"""
+    """Remove aggregation relationship for selected IFC elements"""
 
     bl_idname = "bim.aggregate_unassign_object"
     bl_label = "Unassign Object From Aggregation"
