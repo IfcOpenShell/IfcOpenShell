@@ -108,9 +108,13 @@ class LaunchTypeManager(bpy.types.Operator):
     def draw(self, context):
         props = context.scene.BIMModelProperties
         row = self.layout.row(align=True)
-        
-        active_relating_type_id = int(context.scene.BIMModelProperties.relating_type_id) if context.scene.BIMModelProperties.relating_type_id else None
-        
+
+        active_relating_type_id = (
+            int(context.scene.BIMModelProperties.relating_type_id)
+            if context.scene.BIMModelProperties.relating_type_id
+            else None
+        )
+
         if AuthoringData.data["total_types"] > 1:
             text = f"{AuthoringData.data['total_types']} {AuthoringData.data['ifc_element_type']}s"
         else:
@@ -148,7 +152,7 @@ class LaunchTypeManager(bpy.types.Operator):
             col2 = split.column()
             op = col2.operator("bim.set_active_type", text=relating_type["name"], emboss=False)
             op.relating_type = relating_type["id"]
-            col2.enabled = (relating_type["id"] == active_relating_type_id)
+            col2.enabled = relating_type["id"] == active_relating_type_id
             col3 = split.column()
             op = col3.operator("bim.launch_type_menu", icon="DOWNARROW_HLT", text="", emboss=False)
             op.relating_type_id = relating_type["id"]
@@ -157,13 +161,13 @@ class LaunchTypeManager(bpy.types.Operator):
             row.alignment = "CENTER"
             op = row.operator("bim.set_active_type", text=relating_type["description"], emboss=False)
             op.relating_type = relating_type["id"]
-            row.enabled=(relating_type["id"] == active_relating_type_id)
+            row.enabled = relating_type["id"] == active_relating_type_id
 
             if relating_type["icon_id"]:
                 row1 = box.row()
                 row1.ui_units_y = 0.01
                 row1.template_icon(icon_value=relating_type["icon_id"], scale=4)
-                row1.enabled=(relating_type["id"] == active_relating_type_id)
+                row1.enabled = relating_type["id"] == active_relating_type_id
                 row2 = box.column(align=True)
                 row2.operator("bim.set_active_type", text="", emboss=False).relating_type = relating_type["id"]
                 row2.operator("bim.set_active_type", text="", emboss=False).relating_type = relating_type["id"]
@@ -173,12 +177,13 @@ class LaunchTypeManager(bpy.types.Operator):
                 row = box.row()
                 op = box.operator("bim.load_type_thumbnails", text="", icon="FILE_REFRESH", emboss=False)
                 op.ifc_class = props.ifc_class
-            
+
             row = box.row()
             row.alignment = "CENTER"
             op = row.operator("bim.set_active_type", text=relating_type["predefined_type"], emboss=False)
             op.relating_type = relating_type["id"]
-            row.enabled=(relating_type["id"] == active_relating_type_id)
+            row.enabled = relating_type["id"] == active_relating_type_id
+
 
 class BIM_PT_authoring(Panel):
     bl_label = "Architectural"

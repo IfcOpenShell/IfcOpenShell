@@ -418,7 +418,7 @@ class CreateObjectUI:
             row.operator(
                 "bim.launch_add_element",
                 text=f"Create New {AuthoringData.data['ifc_element_type']}",
-                )
+            )
 
             row = box.row(align=True)
 
@@ -431,13 +431,13 @@ class CreateObjectUI:
             row.alignment = "CENTER"
             row.template_icon(icon_value=0, scale=3.5)
         elif AuthoringData.data["ifc_element_type"]:
-                row = cls.layout.row(align=True)
-                op = row.operator(
-                    "bim.add_default_type",
-                    icon_value=custom_icon_previews["QUICK_DEFAULT"].icon_id,
-                    text=f"Quick Create {AuthoringData.data['ifc_element_type']}",
-                    )
-                op.ifc_element_type = AuthoringData.data["ifc_element_type"]
+            row = cls.layout.row(align=True)
+            op = row.operator(
+                "bim.add_default_type",
+                icon_value=custom_icon_previews["QUICK_DEFAULT"].icon_id,
+                text=f"Quick Create {AuthoringData.data['ifc_element_type']}",
+            )
+            op.ifc_element_type = AuthoringData.data["ifc_element_type"]
 
     @classmethod
     def draw_add_object(cls, context):
