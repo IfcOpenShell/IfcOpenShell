@@ -541,9 +541,15 @@ class BIMTextProperties(PropertyGroup):
         return text_data
 
 
+def relating_product_poll(self: "BIMAssignedProductProperties", obj: bpy.types.Object) -> bool:
+    if not tool.Ifc.get_entity(obj):
+        return False
+    return True
+
+
 class BIMAssignedProductProperties(PropertyGroup):
     is_editing_product: BoolProperty(name="Is Editing Product", default=False)
-    relating_product: PointerProperty(name="Relating Product", type=bpy.types.Object)
+    relating_product: PointerProperty(name="Relating Product", type=bpy.types.Object, poll=relating_product_poll)
 
 
 annotation_classes = [
