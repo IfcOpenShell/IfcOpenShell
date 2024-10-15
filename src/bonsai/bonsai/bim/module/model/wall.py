@@ -332,7 +332,7 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator):
 
         self.handle_instructions(context)
 
-        self.handle_mouse_move(context, event)
+        self.handle_mouse_move(context, event, should_round=True)
 
         self.choose_axis(event)
 
