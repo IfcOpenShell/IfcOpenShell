@@ -37,7 +37,14 @@ class LoadProfiles(bpy.types.Operator):
         props = context.scene.BIMProfileProperties
         props.profiles.clear()
 
+        filter_material_profiles = props.is_filtering_material_profiles
+
         for profile in tool.Ifc.get().by_type("IfcProfileDef"):
+            if filter_material_profiles:
+                inverse_references = tool.Ifc.get().get_inverse(profile)
+                related_material_profiles = [ref for ref in inverse_references if ref.is_a("IfcMaterialProfile")]
+                if not related_material_profiles:
+                    continue
             if not profile.ProfileName:
                 continue
             new = props.profiles.add()

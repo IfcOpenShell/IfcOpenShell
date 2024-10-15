@@ -324,6 +324,8 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator):
         PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
         tool.Blender.update_viewport()
 
+        self.handle_lock_axis(context, event)
+
         if event.type in {"MIDDLEMOUSE", "WHEELUPMOUSE", "WHEELDOWNMOUSE"}:
             self.handle_mouse_move(context, event)
             return {"PASS_THROUGH"}
@@ -345,7 +347,7 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator):
             context.workspace.status_text_set(text=None)
             PolylineDecorator.uninstall()
             context.scene.BIMPolylineProperties.product_preview.clear()
-            tool.Snap.clear_polyline()
+            tool.Polyline.clear_polyline()
             tool.Blender.update_viewport()
             return {"FINISHED"}
 
@@ -462,8 +464,8 @@ class DumbWallAligner:
 
 
 class DumbWallRecalculator:
-    def recalculate(self, walls):
-        queue = set()
+    def recalculate(self, walls: list[bpy.types.Object]) -> None:
+        queue: set[tuple[ifcopenshell.entity_instance, bpy.types.Object]] = set()
         for wall in walls:
             element = tool.Ifc.get_entity(wall)
             queue.add((element, wall))
@@ -520,18 +522,19 @@ class DumbWallGenerator:
         )
 
     def derive_from_polyline(self):
-        polyline_data = bpy.context.scene.BIMPolylineProperties.polyline_point
+        polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline
+        polyline_points = polyline_data[0].polyline_points if polyline_data else []
         is_polyline_closed = False
-        if len(polyline_data) > 3:
-            first_vec = Vector((polyline_data[0].x, polyline_data[0].y, polyline_data[0].z))
-            last_vec = Vector((polyline_data[-1].x, polyline_data[-1].y, polyline_data[-1].z))
+        if len(polyline_points) > 3:
+            first_vec = Vector((polyline_points[0].x, polyline_points[0].y, polyline_points[0].z))
+            last_vec = Vector((polyline_points[-1].x, polyline_points[-1].y, polyline_points[-1].z))
             if first_vec == last_vec:
                 is_polyline_closed = True
 
         walls = []
-        for i in range(len(polyline_data) - 1):
-            vec1 = Vector((polyline_data[i].x, polyline_data[i].y, polyline_data[i].z))
-            vec2 = Vector((polyline_data[i + 1].x, polyline_data[i + 1].y, polyline_data[i + 1].z))
+        for i in range(len(polyline_points) - 1):
+            vec1 = Vector((polyline_points[i].x, polyline_points[i].y, polyline_points[i].z))
+            vec2 = Vector((polyline_points[i + 1].x, polyline_points[i + 1].y, polyline_points[i + 1].z))
             coords = (vec1, vec2)
             walls.append(self.create_wall_from_2_points(coords))
         return walls, is_polyline_closed
@@ -1141,7 +1144,7 @@ class DumbWallJoiner:
         self.recreate_wall(element1, wall1, axis1["reference"], axis1["reference"])
         self.recreate_wall(element2, wall2, axis2["reference"], axis2["reference"])
 
-    def recreate_wall(self, element, obj, axis=None, body=None):
+    def recreate_wall(self, element: ifcopenshell.entity_instance, obj: bpy.types.Object, axis=None, body=None) -> None:
         if axis is None or body is None:
             axis = body = tool.Model.get_wall_axis(obj)["reference"]
         self.axis = copy.deepcopy(axis)

@@ -66,6 +66,12 @@ class BIMProfileProperties(PropertyGroup):
     active_arbitrary_profile_id: IntProperty(name="Active Arbitrary Profile Id")
     profile_attributes: CollectionProperty(name="Profile Attributes", type=Attribute)
     profile_classes: EnumProperty(items=get_profile_classes, name="Profile Classes")
+    is_filtering_material_profiles: bpy.props.BoolProperty(
+        name="Filter Material Profiles",
+        default=False,
+        description="Check to only show IfcProfileDefs attached to IfcMaterialProfiles",
+        update=lambda self, context: bpy.ops.bim.load_profiles(),
+    )
 
 
 def generate_thumbnail_for_active_profile():

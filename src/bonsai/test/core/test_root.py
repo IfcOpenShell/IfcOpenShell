@@ -59,6 +59,7 @@ class TestCopyClass:
         geometry.get_representation_name("new_representation").should_be_called().will_return("name")
         geometry.rename_object("data", "name").should_be_called()
         geometry.link("new_representation", "data").should_be_called()
+        geometry.reload_representation_item_ids("new_representation", "data").should_be_called()
         root.assign_body_styles("element", "obj").should_be_called()
         geometry.duplicate_object_data("obj").should_be_called().will_return("data")
         collector.assign("obj").should_be_called()

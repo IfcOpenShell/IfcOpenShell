@@ -68,6 +68,10 @@ def update_representation_obj(self, context):
             if data and not data.users:
                 bpy.data.meshes.remove(data)
     self.item_objs.clear()
+    if not self.representation_obj and self.mode != "OBJECT":
+        self.is_changing_mode = True
+        self.mode = "OBJECT"
+        self.is_changing_mode = False
 
 
 def get_mode(self, context):

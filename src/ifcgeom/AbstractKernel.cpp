@@ -22,26 +22,32 @@
 using namespace ifcopenshell::geometry;
 
 bool ifcopenshell::geometry::kernels::AbstractKernel::convert(const taxonomy::ptr item, IfcGeom::ConversionResults& results) {
-	// std::stringstream ss;
-	// item->print(ss);
-	// auto sss = ss.str();
-	// std::wcout << sss.c_str() << std::endl;
-
-	try {
-		return dispatch_conversion<0>::dispatch(this, item->kind(), item, results);
-	} catch (std::exception& e) {
-		std::string prev_exception = std::string(e.what());
+	auto with_exception_handling = [&](auto fn) {
 		try {
-			return dispatch_with_upgrade<0>::dispatch(this, item, results);
+			return fn();
 		} catch (std::exception& e) {
-			Logger::Error(prev_exception + " Conversion for upgraded element failed with: " + std::string(e.what()), item->instance);
+			Logger::Error(e, item->instance);
 			return false;
 		} catch (...) {
+			// @todo we can't log OCCT exceptions here, can we do some reraising to solve this?
 			return false;
 		}
-	} catch (...) {
-		// @todo we can't log OCCT exceptions here, can we do some reraising to solve this?
-		return false;
+	};
+	auto without_exception_handling = [](auto fn) {
+		return fn();
+	};
+	auto process_with_upgrade = [&]() {
+		try {
+			return dispatch_conversion<0>::dispatch(this, item->kind(), item, results);
+		} catch (const not_implemented_error&) {
+			return dispatch_with_upgrade<0>::dispatch(this, item, results);
+		}
+	};
+
+	if (propagate_exceptions) {
+		return without_exception_handling(process_with_upgrade);
+	} else {
+		return with_exception_handling(process_with_upgrade);
 	}
 }
 
@@ -201,6 +207,10 @@ ifcopenshell::geometry::kernels::AbstractKernel* ifcopenshell::geometry::kernels
 			if (kernels.size() != n + 1) {
 				throw IfcParse::IfcException("Invalid hybrid kernel " + geometry_library);
 			}
+		}
+
+		for (auto it = kernels.begin(); it != kernels.end(); ++it) {
+			(**it).propagate_exceptions = it == kernels.begin();
 		}
 
 		if (!kernels.empty()) {

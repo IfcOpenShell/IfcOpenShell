@@ -164,12 +164,12 @@ class BIMProjectProperties(PropertyGroup):
             ("hybrid-cgal-simple-opencascade", "Hybrid CGAL-OCC", "First CGAL then fallback to OCC"),
         ],
         name="Geometry Library",
+        default="hybrid-cgal-simple-opencascade",
     )
     should_use_cpu_multiprocessing: BoolProperty(name="CPU Multiprocessing", default=True)
     should_merge_materials_by_colour: BoolProperty(name="Merge Materials by Colour", default=False)
     should_stream: BoolProperty(name="Stream Data From IFC-SPF (Only for advanced users)", default=False)
     should_load_geometry: BoolProperty(name="Load Geometry", default=True)
-    should_use_native_meshes: BoolProperty(name="Native Meshes", default=False)
     should_clean_mesh: BoolProperty(name="Clean Meshes", default=False)
     should_cache: BoolProperty(name="Cache", default=False)
     deflection_tolerance: FloatProperty(name="Deflection Tolerance", default=0.001)
@@ -199,6 +199,14 @@ class BIMProjectProperties(PropertyGroup):
         description="The angle (postive is anticlockwise) pointing to grid north relative to project north",
         default="0",
     )
+    element_limit_mode: bpy.props.EnumProperty(
+        items=[
+            ("UNLIMITED", "Load Everything", "Load all elements"),
+            ("RANGE", "Load Subset of Elements", "Only load the first N elements"),
+        ],
+        name="Element limit",
+        default="UNLIMITED",
+    )
     element_offset: IntProperty(name="Element Offset", default=0)
     element_limit: IntProperty(name="Element Offset", default=30000)
     should_disable_undo_on_save: BoolProperty(
@@ -221,3 +229,13 @@ class BIMProjectProperties(PropertyGroup):
 
     def get_library_element_index(self, lib_element):
         return next((i for i in range(len(self.library_elements)) if self.library_elements[i] == lib_element))
+
+
+class MeasureToolSettings(PropertyGroup):
+    measurement_type_items = [
+        ("SINGLE", "SINGLE", "Single", "FIXED_SIZE", 1),
+        ("POLYLINE", "POLYLINE", "Polyline", "DRIVER_ROTATIONAL_DIFFERENCE", 2),
+        ("AREA", "AREA", "Area", "OUTLINER_DATA_LIGHTPROBE", 3),
+    ]
+
+    measurement_type: bpy.props.EnumProperty(items=measurement_type_items, default="POLYLINE")

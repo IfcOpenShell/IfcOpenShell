@@ -317,7 +317,10 @@ class BrowseExternalStyle(bpy.types.Operator):
         layout.label(text="Data Block Type")
         layout.prop(self, "data_block_type", text="", icon="GROUP")
         layout.label(text="Data Block")
-        layout.prop(self, "data_block", text="")
+        cls = BrowseExternalStyle
+        bonsai.bim.helper.prop_with_search(
+            layout, self, "data_block", text="", original_operator_path=f"{cls.__module__}.{cls.__name__}"
+        )
         if Path(tool.Ifc.get_path()).is_file():
             layout.prop(self, "use_relative_path")
         else:
@@ -1053,7 +1056,6 @@ class AssignStyleToSelected(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Assign Style To Selected"
     bl_description = "Assign style to the selected objects' active representations"
     bl_options = {"REGISTER", "UNDO"}
-
     style_id: bpy.props.IntProperty(name="Style ID")
 
     @classmethod
@@ -1069,18 +1071,29 @@ class AssignStyleToSelected(bpy.types.Operator, tool.Ifc.Operator):
             return {"CANCELLED"}
         ifc_file = tool.Ifc.get()
         style = ifc_file.by_id(self.style_id)
+        material = tool.Ifc.get_object(style)
 
+        has_items = False
         representations: dict[ifcopenshell.entity_instance, bpy.types.Object] = {}
         for obj in context.selected_objects:
-            representation = tool.Geometry.get_active_representation(obj)
-            if not representation:
-                continue
-            representation = tool.Geometry.resolve_mapped_representation(representation)
-            representations.setdefault(representation, obj)
+            if tool.Geometry.is_representation_item(obj):
+                has_items = True
+                item = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+                tool.Style.assign_style_to_representation_item(item, style)
+                obj.data.materials.clear()
+                obj.data.materials.append(material)
+            elif representation := tool.Geometry.get_active_representation(obj):
+                representation = tool.Geometry.resolve_mapped_representation(representation)
+                representations.setdefault(representation, obj)
 
-        if not representations:
+        if not has_items and not representations:
             self.report({"INFO"}, "No IFC objects with representations selected.")
             return {"FINISHED"}
+
+        if has_items:
+            tool.Geometry.reload_representation(context.scene.BIMGeometryProperties.representation_obj)
+            bpy.ops.bim.disable_editing_representation_items()
+            bpy.ops.bim.enable_editing_representation_items()
 
         for representation in representations:
             ifcopenshell.api.style.assign_representation_styles(

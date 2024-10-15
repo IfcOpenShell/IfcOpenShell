@@ -116,7 +116,7 @@ class AddOccurrence(bpy.types.Operator, PolylineOperator):
         if not self.relating_type:
             return {"FINISHED"}
 
-        result = tool.Snap.insert_polyline_point(self.input_ui)
+        result = tool.Polyline.insert_polyline_point(self.input_ui)
         if result:
             self.report({"WARNING"}, result)
 
@@ -137,9 +137,9 @@ class AddOccurrence(bpy.types.Operator, PolylineOperator):
                 except:
                     pass
 
-        point = context.scene.BIMPolylineProperties.polyline_point[0]
+        point = context.scene.BIMPolylineProperties.insertion_polyline[0].polyline_points[0]
         context.scene.cursor.location = Vector((point.x, point.y, point.z))
-        tool.Snap.clear_polyline()
+        tool.Polyline.clear_polyline()
 
         bpy.ops.bim.add_constr_type_instance("INVOKE_DEFAULT")
 
@@ -181,7 +181,7 @@ class AddOccurrence(bpy.types.Operator, PolylineOperator):
             context.workspace.status_text_set(text=None)
             PolylineDecorator.uninstall()
             context.scene.BIMPolylineProperties.product_preview.clear()
-            tool.Snap.clear_polyline()
+            tool.Polyline.clear_polyline()
             tool.Blender.update_viewport()
             return {"FINISHED"}
 

@@ -58,14 +58,13 @@ class TestRemoveStyle:
 
     def test_removing_a_style(self, ifc, style):
         self.remove_a_style_common(ifc, style)
-        style.is_editing_styles().should_be_called().will_return(False)
         subject.remove_style(ifc, style, style="style")
 
     def test_removing_a_style_and_reloading_imported_styles(self, ifc, style):
         self.remove_a_style_common(ifc, style)
         style.is_editing_styles().should_be_called().will_return(True)
         style.import_presentation_styles("style_type").should_be_called()
-        subject.remove_style(ifc, style, style="style")
+        subject.remove_style(ifc, style, style="style", reload_styles_ui=True)
 
 
 class TestUpdateStyleColours:

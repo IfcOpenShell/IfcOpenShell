@@ -27,6 +27,7 @@ import multiprocessing
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.grid
+import ifcopenshell.api.style
 import ifcopenshell.geom
 import ifcopenshell.guid
 import ifcopenshell.util.element
@@ -47,7 +48,7 @@ from collections import defaultdict
 from math import radians, pi
 from mathutils import Vector, Matrix
 from bonsai.bim.ifc import IfcStore
-from typing import Union, Iterable, Optional, Literal, Iterator
+from typing import Union, Iterable, Optional, Literal, Iterator, List
 from typing_extensions import TypeIs
 
 
@@ -95,7 +96,14 @@ class Geometry(bonsai.core.tool.Geometry):
 
     @classmethod
     def delete_data(cls, data: bpy.types.Mesh) -> None:
-        bpy.data.meshes.remove(data)
+        # Try except is faster than isinstance
+        try:
+            bpy.data.meshes.remove(data)
+        except TypeError:
+            try:
+                bpy.data.curves.remove(data)
+            except TypeError:
+                bpy.data.cameras.remove(data)
 
     @classmethod
     def is_locked(cls, element: ifcopenshell.entity_instance) -> bool:
@@ -637,7 +645,7 @@ class Geometry(bonsai.core.tool.Geometry):
     @classmethod
     def reimport_element_representations(
         cls, obj: bpy.types.Object, representation: ifcopenshell.entity_instance, apply_openings: bool = True
-    ) -> Union[bpy.types.Mesh, bpy.types.Curve]:
+    ) -> None:
         element = tool.Ifc.get_entity(obj)
         assert element
 
@@ -691,7 +699,7 @@ class Geometry(bonsai.core.tool.Geometry):
                         representation = tool.Ifc.get().by_id(int(shape.geometry.id.split("-")[0]))
                         if element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
                             mesh = tool.Loader.create_camera(element, representation, shape)
-                        if element.is_a("IfcAnnotation") and ifc_importer.is_curve_annotation(element):
+                        elif element.is_a("IfcAnnotation") and ifc_importer.is_curve_annotation(element):
                             mesh = ifc_importer.create_curve(element, shape)
                         elif shape:
                             cartesian_point_offset = cls.get_cartesian_point_offset(obj)
@@ -853,8 +861,17 @@ class Geometry(bonsai.core.tool.Geometry):
         return item.is_a("IfcTessellatedItem") or item.is_a("IfcManifoldSolidBrep")
 
     @classmethod
+    def is_curvelike_item(cls, item: ifcopenshell.entity_instance) -> bool:
+        return (
+            item.is_a("IfcPolyline")
+            or item.is_a("IfcCompositeCurve")
+            or item.is_a("IfcIndexedPolyCurve")
+            or item.is_a("IfcCircle")
+        )
+
+    @classmethod
     def is_movable(cls, item: ifcopenshell.entity_instance) -> bool:
-        return item.is_a("IfcSweptAreaSolid") or item.is_a("IfcConic")
+        return item.is_a("IfcSweptAreaSolid")
 
     @classmethod
     def is_profile_based(cls, data: bpy.types.Mesh) -> bool:
@@ -1067,8 +1084,11 @@ class Geometry(bonsai.core.tool.Geometry):
 
         # Filter out unique meshes to avoid
         # reloading the same representation multiple times.
-        meshes_to_objects: dict[bpy.types.Mesh, bpy.types.Object]
-        meshes_to_objects = {(obj := tool.Ifc.get_object(element)).data: obj for element in elements}
+        meshes_to_objects: dict[bpy.types.Mesh, bpy.types.Object] = {}
+        for element in elements:
+            # Some objects may not exist if they are filtered out, or are unloaded (e.g. openings)
+            if (obj := tool.Ifc.get_object(element)) and obj.data:
+                meshes_to_objects[obj.data] = obj
 
         for obj in meshes_to_objects.values():
             cls._reload_representation(obj)
@@ -1451,7 +1471,7 @@ class Geometry(bonsai.core.tool.Geometry):
             if not (obj := item_obj.obj):
                 continue
             item = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
-            if (is_swept_area := item.is_a("IfcSweptAreaSolid")) or item.is_a("IfcConic"):
+            if is_swept_area := item.is_a("IfcSweptAreaSolid"):
                 if not tool.Ifc.is_moved(obj):
                     continue
                 has_changed = True
@@ -1503,11 +1523,15 @@ class Geometry(bonsai.core.tool.Geometry):
             verts = geometry.verts
         tool.Loader.convert_geometry_to_mesh(geometry, obj.data, verts=verts)
 
+        if ios_materials := list(obj.data["ios_materials"]):
+            material = tool.Ifc.get_object(tool.Ifc.get().by_id(ios_materials[0]))
+            obj.data.materials.append(material)
+
         obj.matrix_world = rep_obj.matrix_world.copy()
 
-        if (is_swept_area := item.is_a("IfcSweptAreaSolid")) or item.is_a("IfcConic"):
+        if is_swept_area := item.is_a("IfcSweptAreaSolid"):
             position = item.Position
-            # Positional is optionaly only for SweptAreaSolid.
+            # Positional is optional only for SweptAreaSolid.
             if position or not is_swept_area:
                 unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
                 position = ifcopenshell.util.placement.get_axis2placement(position)
@@ -1562,3 +1586,58 @@ class Geometry(bonsai.core.tool.Geometry):
         ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), item)
         obj.data.BIMMeshProperties.ifc_definition_id = new_item.id()
         cls.reload_representation(bpy.context.scene.BIMGeometryProperties.representation_obj)
+
+    @classmethod
+    def split_by_loose_parts(cls, obj: bpy.types.Object) -> List[bpy.types.Mesh]:
+        dup_obj = obj.copy()
+        dup_obj.data = obj.data.copy()
+        bpy.context.scene.collection.objects.link(dup_obj)
+
+        tool.Blender.select_and_activate_single_object(bpy.context, dup_obj)
+
+        bpy.ops.object.mode_set(mode="EDIT")
+        bpy.ops.mesh.select_all(action="SELECT")
+        bpy.ops.mesh.separate(type="LOOSE")
+        bpy.ops.object.mode_set(mode="OBJECT")
+
+        results = []
+        for obj in bpy.context.selected_objects:
+            results.append(obj.data)
+            bpy.data.objects.remove(obj)
+
+        return results
+
+    @classmethod
+    def reload_representation_item_ids(cls, representation: ifcopenshell.entity_instance, data: bpy.types.Mesh) -> None:
+        data["ios_item_ids"] = [i["item"].id() for i in ifcopenshell.util.representation.resolve_items(representation)]
+
+    @classmethod
+    def export_mesh_to_tessellation(cls, obj: bpy.types.Object, ifc_context) -> ifcopenshell.entity_instance:
+        builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        items = []
+        meshes = cls.split_by_loose_parts(obj)
+        for mesh in meshes:
+            verts = [v.co / unit_scale for v in mesh.vertices]
+            faces = [p.vertices[:] for p in mesh.polygons]
+            item = builder.mesh(verts, faces)
+            items.append(item)
+            material_index = mesh.polygons[0].material_index
+            if materials := list(mesh.materials):
+                material = materials[material_index]
+                if not (style := tool.Style.get_style(material)):
+                    style = ifcopenshell.api.run("style.add_style", tool.Ifc.get(), name=material.name)
+                    if material.use_nodes:
+                        ifc_class = "IfcSurfaceStyleRendering"
+                        attributes = tool.Style.get_surface_rendering_attributes(material)
+                    else:
+                        ifc_class = "IfcSurfaceStyleShading"
+                        attributes = tool.Style.get_surface_shading_attributes(material)
+                    ifcopenshell.api.style.add_surface_style(
+                        tool.Ifc.get(), style=style, ifc_class=ifc_class, attributes=attributes
+                    )
+                    tool.Ifc.link(style, material)
+                    material.use_fake_user = True
+                ifcopenshell.api.style.assign_item_style(tool.Ifc.get(), item=item, style=style)
+            bpy.data.meshes.remove(mesh)
+        return builder.get_representation(ifc_context, items)

@@ -834,6 +834,8 @@ class EditOpenings(Operator, tool.Ifc.Operator):
                         self.get_all_building_objects_of_similar_openings(opening)
                     )  # NB this has nothing to do with clone similar_opening
                     tool.Ifc.unlink(element=opening)
+                    if bpy.context.scene.BIMGeometryProperties.representation_obj == opening_obj:
+                        bpy.context.scene.BIMGeometryProperties.representation_obj = None
                     bpy.data.objects.remove(opening_obj)
 
         tool.Model.reload_body_representation(building_objs)

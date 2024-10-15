@@ -200,7 +200,7 @@ def format_distance(
                 inches = 0
 
         if not isArea:
-            add_inches = bool(inches) or not suppress_zero_inches
+            add_inches = bool(inches) or not suppress_zero_inches or (inches == 0 and frac)
             tx_dist = ""
             if feet:
                 tx_dist += str(feet) + "'"
@@ -211,9 +211,15 @@ def format_distance(
             if not feet and value < 0:
                 tx_dist += "-"
             if add_inches:
-                tx_dist += str(inches)
+                if feet == 0 and inches == 0:
+                    pass
+                else:
+                    tx_dist += str(inches)
             if add_inches and frac:
-                tx_dist += " "
+                if feet == 0 and inches == 0:
+                    pass
+                else:
+                    tx_dist += " "
             if frac:
                 tx_dist += str(frac) + "/" + str(base)
             if add_inches or frac:
