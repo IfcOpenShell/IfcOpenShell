@@ -676,7 +676,11 @@ class LoadProject(bpy.types.Operator, IFCFileSelector):
         description="Load IFC file with advanced settings. Checking this option will skip loading IFC file and will open advanced load settings",
         default=False,
     )
-    use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
+    use_relative_path: bpy.props.BoolProperty(
+        name="Use Relative Path",
+        description="Store the IFC project path relative to the .blend file. Requires .blend file to be saved",
+        default=False,
+    )
     should_start_fresh_session: bpy.props.BoolProperty(
         name="Should Start Fresh Session",
         description="Clear current Blender session before loading IFC",
@@ -757,6 +761,7 @@ class LoadProject(bpy.types.Operator, IFCFileSelector):
     def finish_loading_project(self, context):
         try:
             if not self.is_existing_ifc_file():
+                self.report({"ERROR"}, f"Couldn't find IFC file: '{self.get_filepath()}'.")
                 return {"FINISHED"}
 
             if self.should_start_fresh_session and tool.Blender.is_default_scene():
@@ -767,12 +772,11 @@ class LoadProject(bpy.types.Operator, IFCFileSelector):
             if not self.is_advanced and not self.should_start_fresh_session:
                 bpy.ops.bim.convert_to_blender()
 
-            filepath = Path(self.get_filepath())
-            context.scene.BIMProperties.ifc_file = filepath.as_posix()
+            context.scene.BIMProperties.ifc_file = self.get_filepath()
             context.scene.BIMProjectProperties.is_loading = True
             context.scene.BIMProjectProperties.total_elements = len(tool.Ifc.get().by_type("IfcElement"))
             tool.Blender.register_toolbar()
-            tool.Project.add_recent_ifc_project(filepath.absolute())
+            tool.Project.add_recent_ifc_project(self.get_filepath_abs())
 
             if self.is_advanced:
                 pass
