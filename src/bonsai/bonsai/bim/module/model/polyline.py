@@ -330,7 +330,7 @@ class PolylineOperator:
                 tool.Blender.update_viewport()
                 return {"CANCELLED"}
 
-    def handle_mouse_move(self, context, event):
+    def handle_mouse_move(self, context, event, should_round=False):
         if not self.tool_state.is_input_on:
             if event.type == "MOUSEMOVE" or event.type == "INBETWEEN_MOUSEMOVE":
                 self.mousemove_count += 1
@@ -353,15 +353,15 @@ class PolylineOperator:
                 detected_snaps = tool.Snap.detect_snapping_points(context, event, self.objs_2d_bbox, self.tool_state)
                 self.snapping_points = tool.Snap.select_snapping_points(context, event, self.tool_state, detected_snaps)
 
-                should_round = False
-                if self.snapping_points[0][1] in {"Plane", "Axis"}:
-                    should_round = True
+                if self.snapping_points[0][1] not in {"Plane", "Axis"}:
+                    should_round=False
 
                 tool.Polyline.calculate_distance_and_angle(
                     context, self.input_ui, self.tool_state, should_round=should_round
                 )
                 if should_round:
                     tool.Polyline.calculate_x_y_and_z(context, self.input_ui, self.tool_state)
+
                 tool.Blender.update_viewport()
                 return {"RUNNING_MODAL"}
 
