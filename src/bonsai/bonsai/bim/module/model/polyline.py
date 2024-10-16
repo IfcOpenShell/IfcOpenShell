@@ -354,7 +354,7 @@ class PolylineOperator:
                 self.snapping_points = tool.Snap.select_snapping_points(context, event, self.tool_state, detected_snaps)
 
                 if self.snapping_points[0][1] not in {"Plane", "Axis"}:
-                    should_round=False
+                    should_round = False
 
                 tool.Polyline.calculate_distance_and_angle(
                     context, self.input_ui, self.tool_state, should_round=should_round

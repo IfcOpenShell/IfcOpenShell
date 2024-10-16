@@ -152,13 +152,13 @@ class BIMModelProperties(PropertyGroup):
     direction_sense: bpy.props.EnumProperty(
         items=[("POSITIVE", "Positive", ""), ("NEGATIVE", "Negative", "")],
         name="Material Usage Direction Sense",
-        default="POSITIVE"
+        default="POSITIVE",
     )
     offset_type: bpy.props.EnumProperty(
         items=[("EXTERIOR", "Exterior", ""), ("CENTER", "Center", ""), ("INTERIOR", "Interior", "")],
         name="Layer Offset Type",
         default="EXTERIOR",
-        description="It's a convention that affects the offset to reference line"
+        description="It's a convention that affects the offset to reference line",
     )
     offset: bpy.props.FloatProperty(name="Offset", default=0.0, description="Material usage offset from reference line")
 
