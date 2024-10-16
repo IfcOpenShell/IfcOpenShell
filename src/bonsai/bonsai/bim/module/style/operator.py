@@ -379,8 +379,13 @@ class ActivateExternalStyle(bpy.types.Operator):
         else:
             material = bpy.data.materials[self.material_name]
 
+        style = tool.Ifc.get_entity(material)
+        if not style:
+            self.report({"INFO"}, "Material '{self.material_name}' is not an IFC style.")
+            return {"CANCELLED"}
+
         props = context.scene.BIMStylesProperties
-        if props.is_editing:
+        if props.is_editing_style == style.id() and props.is_editing_class == "IfcExternallyDefinedSurfaceStyle":
             location = props.external_style_attributes["Location"].string_value
             identification = props.external_style_attributes["Identification"].string_value
         else:
