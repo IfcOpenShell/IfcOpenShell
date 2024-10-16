@@ -33,7 +33,7 @@ from bpy.props import (
 )
 
 import gettext
-from typing import Literal
+from typing import Literal, Union
 
 
 _ = gettext.gettext
@@ -77,14 +77,14 @@ STYLE_TYPES = [
 ]
 
 
-def update_shading_styles(self, context):
+def update_shading_styles(self: "BIMStylesProperties", context: bpy.types.Context) -> None:
     for mat in bpy.data.materials:
         if mat.BIMStyleProperties.ifc_definition_id == 0:
             continue
         tool.Style.change_current_style_type(mat, self.active_style_type)
 
 
-def update_shader_graph(self, context):
+def update_shader_graph(self: Union["Texture", "BIMStylesProperties"], context: bpy.types.Context) -> None:
     props = self.id_data.BIMStylesProperties if isinstance(self, Texture) else self
 
     if not props.update_graph:
@@ -258,7 +258,7 @@ class BIMStylesProperties(PropertyGroup):
     )
 
 
-def update_shading_style(self, context):
+def update_shading_style(self: "BIMStyleProperties", context: bpy.types.Context) -> None:
     blender_material = self.id_data
     style_elements = tool.Style.get_style_elements(blender_material)
     if self.active_style_type == "External":
