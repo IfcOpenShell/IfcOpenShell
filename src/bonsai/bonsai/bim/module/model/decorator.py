@@ -751,7 +751,7 @@ class PolylineDecorator:
 
         # Area highlight
         if polyline_data:
-            _, area = tool.Polyline.validate_input(polyline_data.area, "AREA")
+            area = polyline_data.area.split(" ")[0]
             if area:
                 if float(area) > 0:
                     tris = self.calculate_polygon(polyline_verts)
