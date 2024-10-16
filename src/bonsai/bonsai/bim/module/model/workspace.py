@@ -625,6 +625,8 @@ class EditObjectUI:
     @classmethod
     def draw_operations(cls, context):
         ui_context = str(context.region.type)
+        display_mode = tool.Blender.detect_display_mode()
+        icon = f"{display_mode}_ifc"
 
         row = cls.layout.row(align=True)
         row.separator()
@@ -698,7 +700,7 @@ class EditObjectUI:
                 row.operator(
                     "bim.mep_add_obstruction",
                     text="Add Obstruction" if ui_context != "TOOL_HEADER" else "",
-                    icon_value=custom_icon_previews["IFC"].icon_id,
+                    icon_value=custom_icon_previews[icon].icon_id,
                 )
                 row.label(text="", icon="BLANK1") if ui_context != "TOOL_HEADER" else row
                 row.label(text="", icon="BLANK1") if ui_context != "TOOL_HEADER" else row
