@@ -309,7 +309,7 @@ class Polyline(bonsai.core.tool.Polyline):
         def create_bmesh_from_vertices(vertices):
             bm = bmesh.new()
 
-            new_verts = [bm.verts.new(v) for v in base_vertices]
+            new_verts = [bm.verts.new(v) for v in polyline_vertices]
             if is_closed:
                 new_edges = [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
                 new_edges.append(
@@ -327,36 +327,61 @@ class Polyline(bonsai.core.tool.Polyline):
         if not layers["thickness"]:
             return
         thickness = layers["thickness"]
+        model_props = context.scene.BIMModelProperties
+        direction_sense = model_props.direction_sense
+        direction = 1
+        if direction_sense == "NEGATIVE":
+            direction = -1
+        offset_type = model_props.offset_type
+        offset = 0
+        if offset_type == "CENTER":
+            offset = -thickness/2
+        elif offset_type == "INTERIOR":
+            offset = -thickness
 
-        height = float(context.scene.BIMModelProperties.extrusion_depth)
-        rl = float(context.scene.BIMModelProperties.rl1)
-        x_angle = float(context.scene.BIMModelProperties.x_angle)
+        unit_system = tool.Drawing.get_unit_system()
+        factor = 1
+        if unit_system == "IMPERIAL":
+            factor = 3.048
+        if unit_system == "METRIC":
+            unit_length = bpy.context.scene.unit_settings.length_unit
+            if unit_length == "MILLIMETERS":
+                factor = 1000
+
+        # For the model properties, the offset value should just be converted
+        # However, for the wall preview logic that follows, offset and thickness must change direction
+        model_props.offset = offset * factor
+        thickness *= direction
+        offset *= direction
+            
+        height = float(model_props.extrusion_depth)
+        rl = float(model_props.rl1)
+        x_angle = float(model_props.x_angle)
         angle_distortion = height * tan(x_angle)
 
-        base_vertices = []
-        top_vertices = []
+        polyline_vertices = []
         polyline_data = context.scene.BIMPolylineProperties.insertion_polyline
         polyline_points = polyline_data[0].polyline_points if polyline_data else []
         if len(polyline_points) < 2:
             context.scene.BIMPolylineProperties.product_preview.clear()
             return
         for point in polyline_points:
-            base_vertices.append(Vector((point.x, point.y, point.z)))
+            polyline_vertices.append(Vector((point.x, point.y, point.z)))
 
         is_closed = False
         if (
-            base_vertices[0].x == base_vertices[-1].x
-            and base_vertices[0].y == base_vertices[-1].y
-            and base_vertices[0].z == base_vertices[-1].z
+            polyline_vertices[0].x == polyline_vertices[-1].x
+            and polyline_vertices[0].y == polyline_vertices[-1].y
+            and polyline_vertices[0].z == polyline_vertices[-1].z
         ):
             is_closed = True
-            base_vertices.pop(-1)  # Remove the last point. The edges are going to inform that the shape is closed.
+            polyline_vertices.pop(-1)  # Remove the last point. The edges are going to inform that the shape is closed.
 
-        bm_base = create_bmesh_from_vertices(base_vertices)
-
-        offset_base_verts = tool.Cad.offset_edges(bm_base, thickness)
-        top_vertices = tool.Cad.offset_edges(bm_base, angle_distortion)
-        offset_top_verts = tool.Cad.offset_edges(bm_base, angle_distortion + thickness)
+        bm_base = create_bmesh_from_vertices(polyline_vertices)
+        base_vertices = tool.Cad.offset_edges(bm_base, offset)
+        offset_base_verts = tool.Cad.offset_edges(bm_base, thickness + offset)
+        top_vertices = tool.Cad.offset_edges(bm_base, angle_distortion + offset)
+        offset_top_verts = tool.Cad.offset_edges(bm_base, angle_distortion + thickness + offset)
 
         if is_closed:
             base_vertices.append(base_vertices[0])
@@ -367,10 +392,11 @@ class Polyline(bonsai.core.tool.Polyline):
         if offset_base_verts is not None:
             context.scene.BIMPolylineProperties.product_preview.clear()
             for v in base_vertices:
+                new_v = Vector((v.co.x, v.co.y, v.co.z))
                 prop = context.scene.BIMPolylineProperties.product_preview.add()
-                prop.x = v.x
-                prop.y = v.y
-                prop.z = v.z + rl
+                prop.x = new_v.x
+                prop.y = new_v.y
+                prop.z = new_v.z + rl
 
             for v in offset_base_verts[::-1]:
                 new_v = Vector((v.co.x, v.co.y, v.co.z))

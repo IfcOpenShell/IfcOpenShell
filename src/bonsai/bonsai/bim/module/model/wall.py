@@ -297,7 +297,8 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator):
     def __init__(self):
         super().__init__()
         self.relating_type = None
-        relating_type_id = bpy.context.scene.BIMModelProperties.relating_type_id
+        props = bpy.context.scene.BIMModelProperties
+        relating_type_id = props.relating_type_id
         if relating_type_id:
             self.relating_type = tool.Ifc.get().by_id(int(relating_type_id))
 
@@ -305,7 +306,25 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator):
         if not self.relating_type:
             return {"FINISHED"}
 
+        model_props = context.scene.BIMModelProperties
+        direction_sense = model_props.direction_sense
+        offset = model_props.offset
+
         walls, is_polyline_closed = DumbWallGenerator(self.relating_type).generate(True)
+        for wall in walls:
+            model = IfcStore.get_file()
+            element = tool.Ifc.get_entity(wall["obj"])
+            material = ifcopenshell.util.element.get_material(element)
+            material_set_usage = model.by_id(material.id())
+            # if material.is_a("IfcMaterialLayerSetUsage"):
+            attributes = {"OffsetFromReferenceLine": offset, "DirectionSense": direction_sense}
+            ifcopenshell.api.run(
+                "material.edit_layer_usage",
+                model,
+                **{"usage": material_set_usage, "attributes": attributes},
+            )
+            DumbWallRecalculator().recalculate([wall["obj"]])
+
         if walls:
             if is_polyline_closed:
                 for wall1, wall2 in zip(walls, walls[1:] + [walls[0]]):
@@ -330,7 +349,28 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator):
             self.handle_mouse_move(context, event)
             return {"PASS_THROUGH"}
 
-        self.handle_instructions(context)
+        # Wall axis settings
+        if event.value == "RELEASE" and event.type == "F":
+            direction_sense = context.scene.BIMModelProperties.direction_sense
+            context.scene.BIMModelProperties.direction_sense = (
+                "NEGATIVE" if direction_sense == "POSITIVE" else "POSITIVE"
+            )
+            tool.Polyline.create_wall_preview_vertices(context, self.relating_type)
+
+        if event.value == "RELEASE" and event.type == "O":
+            offset_type = context.scene.BIMModelProperties.offset_type
+            items = ["EXTERIOR", "CENTER", "INTERIOR"]
+            index = items.index(offset_type)
+            size = len(items)
+            context.scene.BIMModelProperties.offset_type = items[((index + 1) % size)]
+            tool.Polyline.create_wall_preview_vertices(context, self.relating_type)
+
+        props = bpy.context.scene.BIMModelProperties
+        wall_config = f"""Direction: {props.direction_sense}
+        Offset Type: {props.offset_type}
+        Offset Value: {props.offset}
+        """
+        self.handle_instructions(context, wall_config)
 
         self.handle_mouse_move(context, event, should_round=True)
 

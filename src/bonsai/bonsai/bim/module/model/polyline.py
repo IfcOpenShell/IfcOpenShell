@@ -165,13 +165,13 @@ class PolylineOperator:
                 self.tool_state.axis_method = None
                 tool.Blender.update_viewport()
 
-    def handle_instructions(self, context):
+    def handle_instructions(self, context, custom_instructions):
         self.snap_info = f"""|
         Axis: {self.tool_state.axis_method}
         Plane: {self.tool_state.plane_method}
         Snap: {self.snapping_points[0][1]}
         """
-        context.workspace.status_text_set(self.instructions + self.snap_info)
+        context.workspace.status_text_set(self.instructions + custom_instructions + self.snap_info)
 
     def handle_lock_axis(self, context, event):
         if event.value == "RELEASE" and event.type == "L":

@@ -149,6 +149,18 @@ class BIMModelProperties(PropertyGroup):
     type_page: bpy.props.IntProperty(name="Type Page", default=1, update=update_type_page)
     type_name: bpy.props.StringProperty(name="Name", default="TYPEX")
     boundary_class: bpy.props.EnumProperty(items=get_boundary_class, name="Boundary Class")
+    direction_sense: bpy.props.EnumProperty(
+        items=[("POSITIVE", "Positive", ""), ("NEGATIVE", "Negative", "")],
+        name="Material Usage Direction Sense",
+        default="POSITIVE"
+    )
+    offset_type: bpy.props.EnumProperty(
+        items=[("EXTERIOR", "Exterior", ""), ("CENTER", "Center", ""), ("INTERIOR", "Interior", "")],
+        name="Layer Offset Type",
+        default="EXTERIOR",
+        description="It's a convention that affects the offset to reference line"
+    )
+    offset: bpy.props.FloatProperty(name="Offset", default=0.0, description="Material usage offset from reference line")
 
 
 class BIMArrayProperties(PropertyGroup):
