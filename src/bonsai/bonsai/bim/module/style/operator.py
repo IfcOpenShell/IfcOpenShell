@@ -219,10 +219,12 @@ class UpdateCurrentStyle(bpy.types.Operator):
             context.scene.BIMStylesProperties.active_style_type = current_style_type
             return {"FINISHED"}
 
+        updated_materials = set()
         for obj in context.selected_objects:
             for mat in obj.data.materials:
-                if mat and mat.BIMStyleProperties.ifc_definition_id != 0:
+                if mat and mat not in updated_materials and mat.BIMStyleProperties.ifc_definition_id != 0:
                     mat.BIMStyleProperties.active_style_type = current_style_type
+                    updated_materials.add(mat)
         return {"FINISHED"}
 
 
