@@ -18,6 +18,7 @@
 
 import bpy
 import bmesh
+import math
 import bonsai.core.tool
 import bonsai.tool as tool
 from bonsai.bim.module.drawing.helper import format_distance
@@ -275,6 +276,13 @@ class Polyline(bonsai.core.tool.Polyline):
             angle = radians(input_ui.get_number_value("A"))
 
             rot_vector = tool.Cad.angle_3_vectors(second_to_last_point, last_point, snap_vector, angle, degrees=True)
+
+            # When the angle in 180 degrees it might create a rotation vector that is equal to
+            # when the angle is 0 degress, leading the insertion point to the opposite direction
+            # This prevents the issue by ensuring the the negative x direction
+            if round(angle, 4) == round(math.pi, 4):
+                rot_vector.x = -1.0
+
 
             coords = rot_vector * distance + last_point
 
