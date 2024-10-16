@@ -145,8 +145,6 @@ def enable_editing_style(style_tool: tool.Style, style: ifcopenshell.entity_inst
 
 def disable_editing_style(style: tool.Style) -> None:
     obj = style.get_currently_edited_material()
-    # TODO: is reloading twice necessary?
-    style.reload_material_from_ifc(obj)
     style.disable_editing()
     style.reload_material_from_ifc(obj)
 
