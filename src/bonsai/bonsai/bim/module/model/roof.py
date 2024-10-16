@@ -551,7 +551,7 @@ class AddRoof(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_roof"
     bl_label = "Add Roof"
     bl_description = "Add Bonsai parametric roof to the active IFC element"
-    bl_options = {"REGISTER"}
+    bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
         obj = context.active_object

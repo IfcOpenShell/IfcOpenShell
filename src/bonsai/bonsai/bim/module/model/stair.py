@@ -178,7 +178,7 @@ class AddStair(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_stair"
     bl_label = "Add Stair"
     bl_description = "Add Bonsai parametric stair to the active IFC element"
-    bl_options = {"REGISTER"}
+    bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
         obj = context.active_object

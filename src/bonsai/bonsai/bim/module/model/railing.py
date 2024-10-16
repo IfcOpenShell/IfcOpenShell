@@ -327,7 +327,7 @@ class AddRailing(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_railing"
     bl_label = "Add Railing"
     bl_description = "Add Bonsai parametric railing to the active IFC element"
-    bl_options = {"REGISTER"}
+    bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
         obj = context.active_object
