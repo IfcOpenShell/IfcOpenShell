@@ -283,7 +283,6 @@ class Polyline(bonsai.core.tool.Polyline):
             if round(angle, 4) == round(math.pi, 4):
                 rot_vector.x = -1.0
 
-
             coords = rot_vector * distance + last_point
 
             x = coords[0]
@@ -335,7 +334,7 @@ class Polyline(bonsai.core.tool.Polyline):
         offset_type = model_props.offset_type
         offset = 0
         if offset_type == "CENTER":
-            offset = -thickness/2
+            offset = -thickness / 2
         elif offset_type == "INTERIOR":
             offset = -thickness
 
@@ -353,7 +352,7 @@ class Polyline(bonsai.core.tool.Polyline):
         model_props.offset = offset * factor
         thickness *= direction
         offset *= direction
-            
+
         height = float(model_props.extrusion_depth)
         rl = float(model_props.rl1)
         x_angle = float(model_props.x_angle)
