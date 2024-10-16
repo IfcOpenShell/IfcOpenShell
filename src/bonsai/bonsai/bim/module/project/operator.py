@@ -778,6 +778,7 @@ class LoadProject(bpy.types.Operator, IFCFileSelector):
             context.scene.BIMProperties.ifc_file = self.get_filepath()
             context.scene.BIMProjectProperties.is_loading = True
             context.scene.BIMProjectProperties.total_elements = len(tool.Ifc.get().by_type("IfcElement"))
+            context.scene.BIMProjectProperties.use_relative_project_path = self.use_relative_path
             tool.Blender.register_toolbar()
             tool.Project.add_recent_ifc_project(self.get_filepath_abs())
 
@@ -1306,7 +1307,6 @@ class ExportIFC(bpy.types.Operator):
     json_compact: bpy.props.BoolProperty(name="Export Compact IFCJSON", default=False)
     should_save_as: bpy.props.BoolProperty(name="Should Save As", default=False, options={"HIDDEN"})
     use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
-    save_as_invoked: bpy.props.BoolProperty(name="Save As Dialog Was Invoked", default=False, options={"HIDDEN"})
 
     @classmethod
     def poll(cls, context):
@@ -1328,7 +1328,7 @@ class ExportIFC(bpy.types.Operator):
             bpy.ops.wm.save_mainfile("INVOKE_DEFAULT")
             return {"FINISHED"}
 
-        self.save_as_invoked = False
+        self.use_relative_path = context.scene.BIMProjectProperties.use_relative_project_path
         if (filepath := context.scene.BIMProperties.ifc_file) and not self.should_save_as:
             self.filepath = str(tool.Blender.ensure_blender_path_is_abs(Path(filepath)))
             return self.execute(context)
@@ -1338,15 +1338,13 @@ class ExportIFC(bpy.types.Operator):
             else:
                 self.filepath = "untitled.ifc"
 
-        self.save_as_invoked = True
         WindowManager = context.window_manager
         WindowManager.fileselect_add(self)
         return {"RUNNING_MODAL"}
 
     def execute(self, context):
         project_props = context.scene.BIMProjectProperties
-        if self.save_as_invoked:
-            project_props.use_relative_project_path = self.use_relative_path
+        project_props.use_relative_project_path = self.use_relative_path
         if project_props.should_disable_undo_on_save:
             old_history_size = tool.Ifc.get().history_size
             old_undo_steps = context.preferences.edit.undo_steps
