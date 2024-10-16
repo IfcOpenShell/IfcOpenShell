@@ -392,6 +392,7 @@ class BIM_PT_tabs(Panel):
     bl_options = {"HIDE_HEADER"}
 
     def draw(self, context):
+
         try:
             is_ifc_project = bool(tool.Ifc.get())
             aprops = tool.Blender.get_area_props(context)
@@ -399,14 +400,17 @@ class BIM_PT_tabs(Panel):
                 # Fallback in case areas aren't setup yet.
                 aprops = context.screen.BIMTabProperties
 
+            display_mode = tool.Blender.detect_display_mode()
+            icon = f"{display_mode}_ifc"
+
             row = self.layout.row()
             row.alignment = "CENTER"
             row.operator(
                 "bim.set_tab",
                 text="",
                 emboss=aprops.tab == "PROJECT",
-                depress=True,
-                icon_value=bonsai.bim.icons["IFC"].icon_id,
+                depress=False,
+                icon_value=bonsai.bim.icons[icon].icon_id,
             ).tab = "PROJECT"
             self.draw_tab_entry(row, "FILE_3D", "OBJECT", is_ifc_project, aprops.tab == "OBJECT")
             self.draw_tab_entry(row, "MATERIAL", "GEOMETRY", is_ifc_project, aprops.tab == "GEOMETRY")
@@ -501,7 +505,8 @@ class BIM_PT_tabs(Panel):
 
     def draw_tab_entry(self, row, icon, tab_name, enabled=True, highlight=False):
         tab_entry = row.row(align=True)
-        tab_entry.operator("bim.set_tab", text="", emboss=highlight, icon=icon, depress=True).tab = tab_name
+        # tab_entry.operator("bim.set_tab", text="", emboss=highlight, icon=icon, depress=True).tab = tab_name
+        tab_entry.operator("bim.set_tab", text="", emboss=highlight, icon=icon, depress=False).tab = tab_name
         tab_entry.enabled = enabled
 
 

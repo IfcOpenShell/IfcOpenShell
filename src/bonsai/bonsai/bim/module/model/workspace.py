@@ -32,27 +32,13 @@ from bonsai.bim.module.model.prop import get_ifc_class
 
 
 # TODO duplicate code in cad/workspace and model/workspace
-def check_display_mode():
-    global display_mode
-    try:
-        theme = bpy.context.preferences.themes["Default"]
-        text_color = theme.user_interface.wcol_menu_item.text
-        if sum(text_color) < 2.6:
-            display_mode = "lm"
-        else:
-            display_mode = "dm"
-    except:
-        display_mode = "dm"
 
 
 def load_custom_icons():
     global custom_icon_previews
-    if display_mode is None:
-        check_display_mode()
-
+    display_mode = tool.Blender.detect_display_mode()
     icons_dir = os.path.join(os.path.dirname(__file__), "..", "..", "data", "icons")
     custom_icon_previews = bpy.utils.previews.new()
-
     prefix = f"{display_mode}_"
 
     for entry in os.scandir(icons_dir):
@@ -1199,7 +1185,6 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
 
 
 custom_icon_previews = None
-display_mode = None
 
 LIST_OF_TOOLS = [cls.bl_idname for cls in (BimTool.__subclasses__() + [BimTool])]
 TOOLS_TO_CLASSES_MAP = {cls.bl_idname: cls.ifc_element_type for cls in BimTool.__subclasses__()}
