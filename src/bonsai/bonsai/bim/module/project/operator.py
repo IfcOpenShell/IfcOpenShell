@@ -1290,7 +1290,7 @@ class SelectLinkHandle(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class ExportIFCBase:
+class ExportIFC(bpy.types.Operator):
     bl_idname = "bim.save_project"
     bl_label = "Save IFC"
     bl_options = {"REGISTER", "UNDO"}
@@ -1410,10 +1410,6 @@ class ExportIFCBase:
         if properties.should_save_as:
             return "Save the IFC file under a new name, or relocate file"
         return "Save the IFC file.  Will save both .IFC/.BLEND files if synced together"
-
-
-class ExportIFC(ExportIFCBase, bpy.types.Operator):
-    pass
 
 
 class LoadLinkedProject(bpy.types.Operator):
