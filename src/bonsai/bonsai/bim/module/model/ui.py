@@ -630,7 +630,9 @@ class BIM_PT_roof(bpy.types.Panel):
         if not RoofData.is_loaded:
             RoofData.load()
 
-        props = context.active_object.BIMRoofProperties
+        obj = context.active_object
+        assert obj
+        props = obj.BIMRoofProperties
 
         if RoofData.data["pset_data"]:
             row = self.layout.row(align=True)
@@ -645,7 +647,7 @@ class BIM_PT_roof(bpy.types.Panel):
                 for prop in general_props:
                     self.layout.prop(props, prop)
 
-                update_roof_modifier_bmesh(context)
+                update_roof_modifier_bmesh(obj)
 
             elif props.is_editing_path:
                 row.operator("bim.finish_editing_roof_path", icon="CHECKMARK", text="")
