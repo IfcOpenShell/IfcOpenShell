@@ -70,11 +70,19 @@ class Style(bonsai.core.tool.Style):
 
     @classmethod
     def disable_editing(cls) -> None:
-        bpy.context.scene.BIMStylesProperties.is_editing_style = 0
+        props = bpy.context.scene.BIMStylesProperties
+        props.is_editing_style = 0
+        props.attributes.clear()
+        props.external_style_attributes.clear()
+        props.refraction_style_attributes.clear()
+        props.lighting_style_colours.clear()
+        props.textures.clear()
 
     @classmethod
     def disable_editing_styles(cls) -> None:
-        bpy.context.scene.BIMStylesProperties.is_editing = False
+        props = bpy.context.scene.BIMStylesProperties
+        props.is_editing = False
+        props.styles.clear()
 
     @classmethod
     def duplicate_style(cls, style: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
