@@ -887,6 +887,7 @@ class Geometry(bonsai.core.tool.Geometry):
     def is_representation_item(cls, obj: bpy.types.Object) -> bool:
         return (
             obj.data
+            and hasattr(obj.data, "BIMMeshProperties")
             and (ifc_id := obj.data.BIMMeshProperties.ifc_definition_id)
             and tool.Ifc.get().by_id(ifc_id).is_a("IfcRepresentationItem")
         )
