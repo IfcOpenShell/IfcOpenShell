@@ -165,7 +165,7 @@ class PolylineOperator:
                 self.tool_state.axis_method = None
                 tool.Blender.update_viewport()
 
-    def handle_instructions(self, context, custom_instructions):
+    def handle_instructions(self, context, custom_instructions=""):
         self.snap_info = f"""|
         Axis: {self.tool_state.axis_method}
         Plane: {self.tool_state.plane_method}
