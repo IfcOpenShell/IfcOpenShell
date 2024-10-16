@@ -280,7 +280,9 @@ class BIM_PT_stair(bpy.types.Panel):
         if not StairData.is_loaded:
             StairData.load()
 
-        props = context.active_object.BIMStairProperties
+        obj = context.active_object
+        assert obj
+        props = obj.BIMStairProperties
 
         if StairData.data["pset_data"]:
             row = self.layout.row(align=True)
@@ -300,7 +302,7 @@ class BIM_PT_stair(bpy.types.Panel):
                         self.layout.prop(props, prop_name, text="")
                     else:
                         self.layout.prop(props, prop_name)
-                regenerate_stair_mesh(context)
+                regenerate_stair_mesh(obj)
             else:
                 calculated_params = StairData.data["calculated_params"]
                 row.operator("bim.enable_editing_stair", icon="GREASEPENCIL", text="")
