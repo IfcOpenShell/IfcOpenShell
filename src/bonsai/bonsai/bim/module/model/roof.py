@@ -763,7 +763,7 @@ class FinishEditingRoofPath(bpy.types.Operator, tool.Ifc.Operator):
 
         update_bbim_roof_pset(element, roof_data)
         refresh()  # RoofData has to be updated before run update_roof_modifier_bmesh
-        update_roof_modifier_bmesh(context)
+        update_roof_modifier_bmesh(obj)
 
         update_roof_modifier_ifc_data(context)
         if bpy.context.active_object.mode == "EDIT":
