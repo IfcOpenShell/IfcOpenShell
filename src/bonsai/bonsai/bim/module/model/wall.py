@@ -1469,22 +1469,43 @@ class DumbWallJoiner:
 
             if connection1 == connection2:
                 if (connected_at_end and angle > 0) or (not connected_at_end and angle < 0):
-                    pt = bbf.to_2d().to_3d()
-                    x_axis = bsn - bbf
-                    y_axis = tbf - bbf
+                    if layers1['direction_sense'] == 'POSITIVE':
+                        pt = bbf.to_2d().to_3d()
+                        x_axis = bsn - bbf
+                        y_axis = tbf - bbf
+                    else:
+                        pt = bsf.to_2d().to_3d()
+                        x_axis = bbn - bsf
+                        y_axis = tsf - bsf
                 else:
-                    pt = bbn.to_2d().to_3d()
-                    x_axis = bsf - bbn
-                    y_axis = tbn - bbn
+                    print(">>>>B")
+                    if layers1['direction_sense'] == 'POSITIVE':
+                        pt = bbn.to_2d().to_3d()
+                        x_axis = bsf - bbn
+                        y_axis = tbn - bbn
+                    else:
+                        pt = bsn.to_2d().to_3d()
+                        x_axis = bbf - bsn
+                        y_axis = tsn - bsn
             else:
                 if (connected_at_end and angle < 0) or (not connected_at_end and angle > 0):
-                    pt = bbf.to_2d().to_3d()
-                    x_axis = bsn - bbf
-                    y_axis = tbf - bbf
+                    if layers1['direction_sense'] == 'POSITIVE':
+                        pt = bbf.to_2d().to_3d()
+                        x_axis = bsn - bbf
+                        y_axis = tbf - bbf
+                    else:
+                        pt = bsf.to_2d().to_3d()
+                        x_axis = bbn - bsf
+                        y_axis = tsf - bsf
                 else:
-                    pt = bbn.to_2d().to_3d()
-                    x_axis = bsf - bbn
-                    y_axis = tbn - bbn
+                    if layers1['direction_sense'] == 'POSITIVE':
+                        pt = bbn.to_2d().to_3d()
+                        x_axis = bsf - bbn
+                        y_axis = tbn - bbn
+                    else:
+                        pt = bsn.to_2d().to_3d()
+                        x_axis = bbf - bsn
+                        y_axis = tsn - bsn
 
             if connection1 != "ATEND":
                 y_axis *= -1
