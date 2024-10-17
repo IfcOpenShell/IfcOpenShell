@@ -6,6 +6,7 @@
 #include <GProp_GProps.hxx>
 #include <Geom_SphericalSurface.hxx>
 #include <Geom_Plane.hxx>
+#include <BRepTools_WireExplorer.hxx>
 
 #include "OpenCascadeConversionResult.h"
 
@@ -225,13 +226,29 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
 		// and loose edges is discouraged by the standard. An alternative would be to use
 		// TopExp_Explorer texp(s, TopAbs_EDGE, TopAbs_FACE) to find edges that do not
 		// belong to any face.
-		for (TopExp_Explorer texp(shape_, TopAbs_EDGE); texp.More(); texp.Next()) {
-			BRepAdaptor_Curve crv(TopoDS::Edge(texp.Current()));
+
+		TopTools_ListOfShape edges;
+		// First collect edges part of wire in order
+		for (TopExp_Explorer texp(shape_, TopAbs_WIRE); texp.More(); texp.Next()) {
+			BRepTools_WireExplorer wexp(TopoDS::Wire(texp.Current()));
+			for (; wexp.More(); wexp.Next()) {
+				edges.Append(wexp.Current());
+			}
+		}
+
+		// Then collect edges not part of wire
+		for (TopExp_Explorer texp(shape_, TopAbs_EDGE, TopAbs_WIRE); texp.More(); texp.Next()) {
+			edges.Append(texp.Current());
+		}
+
+		for (TopTools_ListIteratorOfListOfShape texp(edges); texp.More(); texp.Next()) {
+			BRepAdaptor_Curve crv(TopoDS::Edge(texp.Value()));
 			GCPnts_QuasiUniformDeflection tessellater(crv, settings.get<settings::MesherLinearDeflection>().get());
 			int n = tessellater.NbPoints();
 			int previous = -1;
-
-			for (int i = 1; i <= n; ++i) {
+			const bool reversed = texp.Value().Orientation() == TopAbs_REVERSED;
+			bool first = true;
+			for (int i = (reversed ? n : 1); reversed ? (i >= 1) : (i <= n); i += reversed ? -1 : 1) {
 				gp_XYZ p = tessellater.Value(i).XYZ();
 				auto p_local = p;
 				taxonomy_transform(place.components_, p);
@@ -239,9 +256,10 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
 				int current = t->addVertex(item_id, surface_style_id, p.X(), p.Y(), p.Z());
 
 				std::vector<std::pair<int, int>> segments;
-				if (i > 1) {
+				if (!first) {
 					segments.push_back(std::make_pair(previous, current));
 				}
+				first = false;
 
 				if (settings.get<settings::EdgeArrows>().get()) {
 					// In case you want direction arrows on your edges
@@ -252,7 +270,7 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
 					crv.D1(u, tmp, tmp2);
 					gp_Dir d1, d2, d3, d4;
 					d1 = tmp2;
-					if (texp.Current().Orientation() == TopAbs_REVERSED) {
+					if (reversed) {
 						d1 = -d1;
 					}
 					if (fabs(d1.Z()) < 0.5) {
