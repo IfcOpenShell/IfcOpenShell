@@ -371,7 +371,7 @@ class CreateObjectUI:
         )
         row1.operator(
             "bim.launch_type_manager",
-            icon=tool.Blender.TYPE_MANAGER_ICON,  # "DOWNARROW_HLT",
+            icon=tool.Blender.TYPE_MANAGER_ICON,
             text="",
             emboss=False,
         )
@@ -399,37 +399,7 @@ class CreateObjectUI:
             row = box.row(align=True)
             row.alignment = "CENTER"
             row.template_icon(icon_value=0, scale=3.5)
-        elif AuthoringData.data["ifc_element_type"]:
-            row = cls.layout.row(align=True)
-            op = row.operator(
-                "bim.add_default_type",
-                icon_value=custom_icon_previews["QUICK_DEFAULT"].icon_id,
-                text=f"Quick Create {AuthoringData.data['ifc_element_type']}",
-            )
 
-        if ui_context != "TOOL_HEADER":
-
-            row = box.row(align=True)
-            row.alignment = "CENTER"
-            row.template_icon(icon_value=0, scale=3.3)
-
-            row = box.row(align=True)
-            row.alignment = "CENTER"
-            row.operator(
-                "bim.launch_add_element",
-                text=f"Create New {AuthoringData.data['ifc_element_type']}",
-            )
-
-            row = box.row(align=True)
-
-            if not AuthoringData.data["ifc_element_type"]:
-                row = box.row(align=True)
-                row.alignment = "CENTER"
-                row.template_icon(icon_value=0, scale=1)
-
-            row = box.row(align=True)
-            row.alignment = "CENTER"
-            row.template_icon(icon_value=0, scale=3.5)
         elif AuthoringData.data["ifc_element_type"]:
             row = cls.layout.row(align=True)
             op = row.operator(
