@@ -200,6 +200,8 @@ class CreateDrawing(bpy.types.Operator):
         default=True,
     )
 
+    drawing_name: str
+
     @classmethod
     def poll(cls, context):
         if not tool.Ifc.get():
@@ -305,7 +307,9 @@ class CreateDrawing(bpy.types.Operator):
             width = height / render.resolution_y * render.resolution_x
         return width, height
 
-    def combine_svgs(self, context, underlay, linework, annotation):
+    def combine_svgs(
+        self, context: bpy.types.Context, underlay: Optional[str], linework: Optional[str], annotation: Optional[str]
+    ) -> str:
         # Hacky :)
         svg_path = self.get_svg_path()
         with open(svg_path, "w") as outfile:
@@ -349,7 +353,7 @@ class CreateDrawing(bpy.types.Operator):
             outfile.write("</svg>")
         return svg_path
 
-    def generate_underlay(self, context):
+    def generate_underlay(self, context: bpy.types.Context) -> Union[str, None]:
         if not ifcopenshell.util.element.get_pset(self.drawing, "EPset_Drawing", "HasUnderlay"):
             return
         svg_path = self.get_svg_path(cache_type="underlay")
@@ -360,7 +364,7 @@ class CreateDrawing(bpy.types.Operator):
         for obj in bpy.context.view_layer.objects:
             obj.hide_render = obj.name not in visible_object_names
 
-        context.scene.render.filepath = svg_path[0:-4] + ".png"
+        context.scene.render.filepath = Path(svg_path).with_suffix(".png").as_posix()
         drawing_style = context.scene.DocProperties.drawing_styles[self.cprops.active_drawing_style_index]
 
         if drawing_style.render_type == "DEFAULT":
@@ -1311,7 +1315,7 @@ class CreateDrawing(bpy.types.Operator):
             projection.getparent().remove(projection)
             group.insert(0, projection)
 
-    def generate_annotation(self, context):
+    def generate_annotation(self, context: bpy.types.Context) -> Union[str, None]:
         if not ifcopenshell.util.element.get_pset(self.drawing, "EPset_Drawing", "HasAnnotation"):
             return
         svg_path = self.get_svg_path(cache_type="annotation")
@@ -1367,6 +1371,7 @@ class CreateDrawing(bpy.types.Operator):
 
     def get_svg_path(self, cache_type: Optional[str] = None) -> str:
         drawing_path = tool.Drawing.get_document_uri(self.camera_document)
+        assert drawing_path
         drawings_dir = os.path.dirname(drawing_path)
 
         if cache_type:

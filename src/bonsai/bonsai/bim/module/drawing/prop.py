@@ -181,18 +181,18 @@ def get_diagram_scales(self, context):
     return diagram_scales_enum
 
 
-def update_drawing_name(self, context):
+def update_drawing_name(self: "Drawing", context: bpy.types.Context) -> None:
     if self.ifc_definition_id:
         drawing = tool.Ifc.get().by_id(self.ifc_definition_id)
         core.update_drawing_name(tool.Ifc, tool.Drawing, drawing=drawing, name=self.name)
 
 
-def get_drawing_style_name(self):
+def get_drawing_style_name(self: "DrawingStyle"):
     """needed to make `set_drawing_style_name` work"""
     return self.get("name", "")
 
 
-def set_drawing_style_name(self, new_value):
+def set_drawing_style_name(self: "DrawingStyle", new_value: str) -> None:
     """ensure the name is unique"""
     scene = bpy.context.scene
     drawing_styles = [s.name for s in scene.DocProperties.drawing_styles if s.name != self.name]
