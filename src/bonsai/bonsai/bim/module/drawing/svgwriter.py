@@ -32,16 +32,11 @@ import ifcopenshell.util.selector
 import ifcopenshell.util.unit
 import bonsai.tool as tool
 import bonsai.bim.module.drawing.helper as helper
-import bonsai.bim.module.drawing.annotation as annotation
 from bonsai.bim.module.drawing.data import DrawingsData
-
 from bonsai.bim.module.drawing.data import DecoratorData
-from bonsai.bim.ifc import IfcStore
-
 from math import pi, ceil, atan, degrees, acos
 from mathutils import geometry, Vector
-from bpy_extras import view3d_utils
-from typing import Optional
+from typing import Optional, Self
 
 
 class External(svgwrite.container.Group):
@@ -71,7 +66,7 @@ class SvgWriter:
         self.camera_height = None
         self.resource_paths = {}
 
-    def create_blank_svg(self, output_path):
+    def create_blank_svg(self, output_path: str) -> Self:
         self.calculate_scale()
         self.svg = svgwrite.Drawing(
             output_path,
@@ -84,14 +79,14 @@ class SvgWriter:
         self.svg.attribs["xmlns:ifc"] = "http://www.ifcopenshell.org/ns"
         return self
 
-    def save(self):
+    def save(self) -> None:
         self.svg.save(pretty=True)
 
-    def draw_underlay(self, image):
+    def draw_underlay(self, image: str) -> Self:
         self.svg.add(self.svg.image(os.path.basename(image), width=self.width, height=self.height))
         return self
 
-    def setup_drawing_resource_paths(self, element):
+    def setup_drawing_resource_paths(self, element: ifcopenshell.entity_instance) -> None:
         pset = ifcopenshell.util.element.get_pset(element, "EPset_Drawing")
         for resource in ("Stylesheet", "Markers", "Symbols", "Patterns", "ShadingStyles"):
             resource_path = pset.get(resource)

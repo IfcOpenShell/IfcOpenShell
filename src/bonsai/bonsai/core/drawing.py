@@ -362,7 +362,7 @@ def remove_drawing(ifc: tool.Ifc, drawing_tool: tool.Drawing, drawing: ifcopensh
 
 
 def update_drawing_name(
-    ifc: tool.Ifc, drawing_tool: tool.Drawing, drawing: ifcopenshell.entity_instance, name=None
+    ifc: tool.Ifc, drawing_tool: tool.Drawing, drawing: ifcopenshell.entity_instance, name: str
 ) -> None:
     if drawing_tool.get_name(drawing) != name:
         ifc.run("attribute.edit_attributes", product=drawing, attributes={"Name": name})
