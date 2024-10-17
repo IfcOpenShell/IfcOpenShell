@@ -64,7 +64,10 @@ jobs:
         run: echo "version=$(cat VERSION)" >> $GITHUB_OUTPUT
       - name: Get current date
         id: date
-        run: echo "date=$(date +'%y%m%d')" >> $GITHUB_OUTPUT
+        # Include hours and minutes to release tag
+        # to avoid possibility of unstable repo's index.json
+        # pointing to the new file when index.json itself wasn't yet updated.
+        run: echo "date=$(date +'%y%m%d%H%M')" >> $GITHUB_OUTPUT
       - name: Compile
         run: |
           cd src/bonsai && make dist PLATFORM=${{ matrix.config.short_name }} PYVERSION=${{ matrix.pyver }}
