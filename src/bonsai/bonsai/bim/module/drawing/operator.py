@@ -1372,7 +1372,8 @@ class CreateDrawing(bpy.types.Operator):
         if cache_type:
             drawings_dir = os.path.join(drawings_dir, "cache")
             os.makedirs(drawings_dir, exist_ok=True)
-            return os.path.join(drawings_dir, f"{self.drawing_name}-{cache_type}.svg")
+            filename = tool.Drawing.sanitise_filename(f"{self.drawing_name}-{cache_type}.svg")
+            return os.path.join(drawings_dir, filename)
         os.makedirs(drawings_dir, exist_ok=True)
         return drawing_path
 
