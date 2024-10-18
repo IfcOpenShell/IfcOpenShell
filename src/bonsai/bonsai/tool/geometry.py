@@ -48,8 +48,11 @@ from collections import defaultdict
 from math import radians, pi
 from mathutils import Vector, Matrix
 from bonsai.bim.ifc import IfcStore
-from typing import Union, Iterable, Optional, Literal, Iterator, List
+from typing import Union, Iterable, Optional, Literal, Iterator, List, TYPE_CHECKING
 from typing_extensions import TypeIs
+
+if TYPE_CHECKING:
+    from bonsai.bim.prop import Attribute
 
 
 class Geometry(bonsai.core.tool.Geometry):
@@ -1500,8 +1503,10 @@ class Geometry(bonsai.core.tool.Geometry):
         props.item_attributes.clear()
         item = tool.Ifc.get().by_id(props.ifc_definition_id)
         if item.is_a("IfcExtrudedAreaSolid"):
-            new = props.item_attributes.add()
+            new: Attribute = props.item_attributes.add()
             new.name = "Depth"
+            new.data_type = "float"
+            new.special_type = "LENGTH"
             new.float_value = item.Depth
 
     @classmethod

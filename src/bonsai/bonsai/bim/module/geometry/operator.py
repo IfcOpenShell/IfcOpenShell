@@ -2528,6 +2528,7 @@ class ImportRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
 class UpdateItemAttributes(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.update_item_attributes"
     bl_label = "Update Item Attributes"
+    bl_description = "Update item attributes in IFC and reload mesh for representation item"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
