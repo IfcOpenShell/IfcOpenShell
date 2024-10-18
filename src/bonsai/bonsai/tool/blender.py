@@ -595,6 +595,33 @@ class Blender(bonsai.core.tool.Blender):
         return None
 
     @classmethod
+    def ensure_enum_is_valid(cls, props: bpy.types.PropertyGroup, prop_name: str) -> bool:
+        """Ensure that enum is valid after current enum item was deleted.
+
+        :return: True if enum is valid and update callback was triggered,
+            False if enum is still invalid (as there no enum items)
+            and update callback was not triggered (may need to trigger it manually).
+        """
+        current_value = tool.Blender.get_enum_safe(props, prop_name)
+        if current_value is not None:
+            # Value is valid, just trigger the update callback.
+            setattr(props, prop_name, current_value)
+            return True
+
+        # If enum was never changed prop_name won't be present in props
+        # and implicit 0 index is assumed.
+        current_index = props.get(prop_name, 0)
+        # Index is still invalid and triggering update callback directly
+        # will cause an error, so we just stop here.
+        if current_index == 0:
+            return False
+
+        props[prop_name] = current_index - 1
+        # Trigger update callback.
+        setattr(props, prop_name, getattr(props, prop_name))
+        return True
+
+    @classmethod
     def append_data_block(cls, filepath: str, data_block_type: str, name: str, link=False, relative=False) -> dict:
         if Path(filepath) == Path(bpy.data.filepath):
             data_block = getattr(bpy.data, data_block_type).get(name, None)
