@@ -87,7 +87,9 @@ class PsetTemplatesData:
         return sorted(results, key=lambda x: x[1])
 
     @classmethod
-    def pset_templates(cls):
+    def pset_templates(cls) -> list[tuple[str, str, str]]:
+        if not cls.data["pset_template_files"]:
+            return []
         if not IfcStore.pset_template_file:
             IfcStore.pset_template_path = bpy.context.scene.BIMPsetTemplateProperties.pset_template_files
             IfcStore.pset_template_file = ifcopenshell.open(IfcStore.pset_template_path)
