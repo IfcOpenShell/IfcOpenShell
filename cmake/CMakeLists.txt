@@ -1051,10 +1051,19 @@ if(BUILD_CONVERT)
         target_include_directories(cityjson_converter PRIVATE ../src)
         set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} cityjson_converter)
 
+        install(TARGETS cityjson_converter
+            ARCHIVE DESTINATION ${LIBDIR}
+            LIBRARY DESTINATION ${LIBDIR}
+        )
+
         add_executable(cityjson_converter_exe ${CITYJSON_CONVERT_FILES})
         set_target_properties(cityjson_converter_exe PROPERTIES COMPILE_FLAGS "-DCITYJSON_EXECUTABLE")
         target_include_directories(cityjson_converter_exe PRIVATE ../src)
         target_link_libraries(cityjson_converter_exe ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${HDF5_LIBRARIES} ${USD_LIBRARIES})
+
+        install(TARGETS cityjson_converter_exe
+            RUNTIME DESTINATION ${BINDIR}
+        )
     endif()
 
     # IfcConvert
