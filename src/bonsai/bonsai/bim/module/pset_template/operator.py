@@ -20,6 +20,7 @@ import os
 import bpy
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.pset_template
 import bonsai.bim.schema
 import bonsai.bim.handler
 import bonsai.tool as tool
@@ -86,9 +87,11 @@ class AddPsetTemplate(bpy.types.Operator, PsetTemplateOperator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        template = ifcopenshell.api.run("pset_template.add_pset_template", IfcStore.pset_template_file)
-        ifcopenshell.api.run("pset_template.add_prop_template", IfcStore.pset_template_file, pset_template=template)
-        IfcStore.pset_template_file.write(IfcStore.pset_template_path)
+        existing_psets = {template.Name for template in self.template_file.by_type("IfcPropertySetTemplate")}
+        name = tool.Blender.ensure_unique_name("New_Pset", existing_psets)
+        template = ifcopenshell.api.pset_template.add_pset_template(self.template_file, name=name)
+        ifcopenshell.api.pset_template.add_prop_template(self.template_file, pset_template=template)
+        self.template_file.write(IfcStore.pset_template_path)
         bonsai.bim.handler.refresh_ui_data()
         bonsai.bim.schema.reload(tool.Ifc.get().schema)
         context.scene.BIMPsetTemplateProperties.pset_templates = str(template.id())
