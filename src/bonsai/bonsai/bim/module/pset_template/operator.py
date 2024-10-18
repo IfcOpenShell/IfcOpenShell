@@ -25,34 +25,6 @@ import bonsai.bim.schema
 import bonsai.bim.handler
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
-from typing import final
-
-
-class PsetTemplateOperator:
-    """`tool.Ifc.Operator` but for pset template file."""
-
-    @final
-    def execute(self, context):
-        IfcStore.begin_transaction(self)
-        template_file = IfcStore.pset_template_file
-        assert template_file
-        self.template_file = template_file
-        template_file.begin_transaction()
-        result = self._execute(context)
-        template_file.end_transaction()
-        IfcStore.add_transaction_operation(self)
-        IfcStore.end_transaction(self)
-        bonsai.bim.handler.refresh_ui_data()
-        return {"FINISHED"}
-
-    def rollback(self, data):
-        self.template_file.undo()
-
-    def commit(self, data):
-        self.template_file.redo()
-
-    def _execute(self, context: bpy.types.Context) -> None:
-        tool.Ifc.Operator._execute(self, context)
 
 
 class AddPsetTemplateFile(bpy.types.Operator):
@@ -81,7 +53,7 @@ class AddPsetTemplateFile(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class AddPsetTemplate(bpy.types.Operator, PsetTemplateOperator):
+class AddPsetTemplate(bpy.types.Operator, tool.PsetTemplate.PsetTemplateOperator):
     bl_idname = "bim.add_pset_template"
     bl_label = "Add Pset Template"
     bl_options = {"REGISTER", "UNDO"}
@@ -97,7 +69,7 @@ class AddPsetTemplate(bpy.types.Operator, PsetTemplateOperator):
         context.scene.BIMPsetTemplateProperties.pset_templates = str(template.id())
 
 
-class RemovePsetTemplate(bpy.types.Operator, PsetTemplateOperator):
+class RemovePsetTemplate(bpy.types.Operator, tool.PsetTemplate.PsetTemplateOperator):
     bl_idname = "bim.remove_pset_template"
     bl_label = "Remove Pset Template"
     bl_options = {"REGISTER", "UNDO"}
@@ -206,7 +178,7 @@ class DisableEditingPropTemplate(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class EditPsetTemplate(bpy.types.Operator, PsetTemplateOperator):
+class EditPsetTemplate(bpy.types.Operator, tool.PsetTemplate.PsetTemplateOperator):
     bl_idname = "bim.edit_pset_template"
     bl_label = "Edit Pset Template"
     bl_options = {"REGISTER", "UNDO"}
@@ -268,7 +240,7 @@ class RemovePsetTemplateFile(bpy.types.Operator):
         bonsai.bim.module.pset_template.prop.updatePsetTemplateFiles(self.props, context)
 
 
-class AddPropTemplate(bpy.types.Operator, PsetTemplateOperator):
+class AddPropTemplate(bpy.types.Operator, tool.PsetTemplate.PsetTemplateOperator):
     bl_idname = "bim.add_prop_template"
     bl_label = "Add Prop Template"
     bl_options = {"REGISTER", "UNDO"}
@@ -287,7 +259,7 @@ class AddPropTemplate(bpy.types.Operator, PsetTemplateOperator):
         bonsai.bim.schema.reload(tool.Ifc.get().schema)
 
 
-class RemovePropTemplate(bpy.types.Operator, PsetTemplateOperator):
+class RemovePropTemplate(bpy.types.Operator, tool.PsetTemplate.PsetTemplateOperator):
     bl_idname = "bim.remove_prop_template"
     bl_label = "Remove Prop Template"
     bl_options = {"REGISTER", "UNDO"}
@@ -304,7 +276,7 @@ class RemovePropTemplate(bpy.types.Operator, PsetTemplateOperator):
         bonsai.bim.schema.reload(tool.Ifc.get().schema)
 
 
-class EditPropTemplate(bpy.types.Operator, PsetTemplateOperator):
+class EditPropTemplate(bpy.types.Operator, tool.PsetTemplate.PsetTemplateOperator):
     bl_idname = "bim.edit_prop_template"
     bl_label = "Edit Prop Template"
     bl_options = {"REGISTER", "UNDO"}

@@ -674,6 +674,11 @@ class Pset:
 
 
 @interface
+class PsetTemplate:
+    pass
+
+
+@interface
 class Qto:
     def get_radius_of_selected_vertices(cls, obj): pass
     def get_related_cost_item_quantities(cls, product): pass
