@@ -41,7 +41,11 @@ def updatePsetTemplateFiles(self, context):
     PsetTemplatesData.is_loaded = False
     PsetTemplatesData.data["pset_template_files"] = PsetTemplatesData.pset_template_files()
     PsetTemplatesData.data["pset_templates"] = PsetTemplatesData.pset_templates()
-    PsetTemplatesData.data["prop_templates"] = PsetTemplatesData.prop_templates()
+
+    # Ensure enum is valid.
+    self["pset_templates"] = 0
+    updatePsetTemplates(self, context)
+
     PsetTemplatesData.data["primary_measure_type"] = PsetTemplatesData.primary_measure_type()
     PsetTemplatesData.data["property_template_type"] = PsetTemplatesData.property_template_type()
 
