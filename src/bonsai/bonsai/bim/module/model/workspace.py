@@ -371,7 +371,7 @@ class CreateObjectUI:
         )
         row1.operator(
             "bim.launch_type_manager",
-            icon=tool.Blender.TYPE_MANAGER_ICON,  # "DOWNARROW_HLT",
+            icon=tool.Blender.TYPE_MANAGER_ICON,
             text="",
             emboss=False,
         )
@@ -399,6 +399,7 @@ class CreateObjectUI:
             row = box.row(align=True)
             row.alignment = "CENTER"
             row.template_icon(icon_value=0, scale=3.5)
+
         elif AuthoringData.data["ifc_element_type"]:
             row = cls.layout.row(align=True)
             op = row.operator(
