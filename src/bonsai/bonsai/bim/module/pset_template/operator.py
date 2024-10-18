@@ -241,6 +241,7 @@ class SavePsetTemplateFile(bpy.types.Operator):
 class RemovePsetTemplateFile(bpy.types.Operator):
     bl_idname = "bim.remove_pset_template_file"
     bl_label = "Remove Pset Template File"
+    bl_description = "Remove pset template file from disk.\nWARNING. Be careful as this action is irreversible"
 
     def execute(self, context):
         try:
