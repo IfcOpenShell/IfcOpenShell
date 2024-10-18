@@ -218,7 +218,7 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
 	}
 
 	if (!t->normals().empty() && settings.get<settings::GenerateUvs>().get()) {
-		t->uvs() = IfcGeom::Representation::Triangulation::box_project_uvs(t->verts(), t->normals());
+		t->uvs_ref() = IfcGeom::Representation::Triangulation::box_project_uvs(t->verts(), t->normals());
 	}
 
 	if (num_faces == 0) {

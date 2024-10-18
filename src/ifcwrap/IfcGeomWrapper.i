@@ -703,6 +703,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
         verts = property(verts)
         normals = property(normals)
         item_ids = property(item_ids)
+        uvs = property(uvs)
 
         faces_buffer = property(faces_buffer)
         edges_buffer = property(edges_buffer)
