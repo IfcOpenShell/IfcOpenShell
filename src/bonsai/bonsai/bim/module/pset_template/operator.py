@@ -59,21 +59,21 @@ class AddPsetTemplateFile(bpy.types.Operator):
     bl_label = "Add Pset Template File"
     bl_options = {"REGISTER", "UNDO"}
 
+    new_template_filename: bpy.props.StringProperty(name="New Template Filename", options={"SKIP_SAVE"})
+
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self, width=250)
 
     def draw(self, context):
-        self.props = context.scene.BIMPsetTemplateProperties
-        self.layout.prop(self.props, "new_template_filename", text="Filename:")
+        self.layout.prop(self, "new_template_filename", text="Filename")
 
     def execute(self, context):
         template = ifcopenshell.file()
-        filepath = os.path.join(context.scene.BIMProperties.data_dir, "pset", self.props.new_template_filename + ".ifc")
+        filepath = os.path.join(context.scene.BIMProperties.data_dir, "pset", self.new_template_filename + ".ifc")
 
         pset_template = ifcopenshell.api.run("pset_template.add_pset_template", template)
         ifcopenshell.api.run("pset_template.add_prop_template", template, pset_template=pset_template)
         template.write(filepath)
-        self.props.new_template_filename = ""
         bonsai.bim.handler.refresh_ui_data()
         bonsai.bim.schema.reload(tool.Ifc.get().schema)
         context.scene.BIMPsetTemplateProperties.pset_template_files = filepath
