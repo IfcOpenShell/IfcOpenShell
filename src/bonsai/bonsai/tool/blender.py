@@ -1197,3 +1197,15 @@ class Blender(bonsai.core.tool.Blender):
         system = bpy.context.preferences.system
         system_scale = system.dpi * system.pixel_size
         return (system_scale / default_scale) * size
+
+    @classmethod
+    def detect_display_mode(cls):
+        try:
+            theme = bpy.context.preferences.themes["Default"]
+            text_color = theme.user_interface.wcol_menu_item.text
+            if sum(text_color) < 2.6:
+                return "lm"
+            else:
+                return "dm"
+        except:
+            return "dm"
