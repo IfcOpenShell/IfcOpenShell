@@ -33,19 +33,22 @@ class PsetTemplateOperator:
     @final
     def execute(self, context):
         IfcStore.begin_transaction(self)
-        IfcStore.pset_template_file.begin_transaction()
+        template_file = IfcStore.pset_template_file
+        assert template_file
+        self.template_file = template_file
+        template_file.begin_transaction()
         result = self._execute(context)
-        IfcStore.pset_template_file.end_transaction()
+        template_file.end_transaction()
         IfcStore.add_transaction_operation(self)
         IfcStore.end_transaction(self)
         bonsai.bim.handler.refresh_ui_data()
         return {"FINISHED"}
 
     def rollback(self, data):
-        IfcStore.pset_template_file.undo()
+        self.template_file.undo()
 
     def commit(self, data):
-        IfcStore.pset_template_file.redo()
+        self.template_file.redo()
 
     def _execute(self, context: bpy.types.Context) -> None:
         tool.Ifc.Operator._execute(self, context)
@@ -102,10 +105,10 @@ class RemovePsetTemplate(bpy.types.Operator, PsetTemplateOperator):
             bpy.ops.bim.disable_editing_pset_template()
         ifcopenshell.api.run(
             "pset_template.remove_pset_template",
-            IfcStore.pset_template_file,
-            **{"pset_template": IfcStore.pset_template_file.by_id(int(props.pset_templates))}
+            self.template_file,
+            **{"pset_template": self.template_file.by_id(int(props.pset_templates))}
         )
-        IfcStore.pset_template_file.write(IfcStore.pset_template_path)
+        self.template_file.write(IfcStore.pset_template_path)
         bonsai.bim.handler.refresh_ui_data()
         bonsai.bim.schema.reload(tool.Ifc.get().schema)
 
