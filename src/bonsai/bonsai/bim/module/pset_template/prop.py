@@ -187,9 +187,17 @@ class PropTemplate(PropertyGroup):
 
 class BIMPsetTemplateProperties(PropertyGroup):
     pset_template_files: EnumProperty(
-        items=getPsetTemplateFiles, name="Pset Template Files", update=updatePsetTemplateFiles
+        items=getPsetTemplateFiles,
+        name="Pset Template Files",
+        description="Pset Template File",
+        update=updatePsetTemplateFiles,
     )
-    pset_templates: EnumProperty(items=getPsetTemplates, name="Pset Templates", update=updatePsetTemplates)
+    pset_templates: EnumProperty(
+        items=getPsetTemplates,
+        name="Pset Templates",
+        description="Pset Template",
+        update=updatePsetTemplates,
+    )
     active_pset_template_id: IntProperty(name="Active Pset Template Id")
     active_prop_template_id: IntProperty(name="Active Prop Template Id")
     active_pset_template: PointerProperty(type=PsetTemplate)
