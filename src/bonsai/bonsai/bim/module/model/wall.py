@@ -1469,7 +1469,7 @@ class DumbWallJoiner:
 
             if connection1 == connection2:
                 if (connected_at_end and angle > 0) or (not connected_at_end and angle < 0):
-                    if layers1['direction_sense'] == 'POSITIVE':
+                    if layers1["direction_sense"] == "POSITIVE":
                         pt = bbf.to_2d().to_3d()
                         x_axis = bsn - bbf
                         y_axis = tbf - bbf
@@ -1479,7 +1479,7 @@ class DumbWallJoiner:
                         y_axis = tsf - bsf
                 else:
                     print(">>>>B")
-                    if layers1['direction_sense'] == 'POSITIVE':
+                    if layers1["direction_sense"] == "POSITIVE":
                         pt = bbn.to_2d().to_3d()
                         x_axis = bsf - bbn
                         y_axis = tbn - bbn
@@ -1489,7 +1489,7 @@ class DumbWallJoiner:
                         y_axis = tsn - bsn
             else:
                 if (connected_at_end and angle < 0) or (not connected_at_end and angle > 0):
-                    if layers1['direction_sense'] == 'POSITIVE':
+                    if layers1["direction_sense"] == "POSITIVE":
                         pt = bbf.to_2d().to_3d()
                         x_axis = bsn - bbf
                         y_axis = tbf - bbf
@@ -1498,7 +1498,7 @@ class DumbWallJoiner:
                         x_axis = bbn - bsf
                         y_axis = tsf - bsf
                 else:
-                    if layers1['direction_sense'] == 'POSITIVE':
+                    if layers1["direction_sense"] == "POSITIVE":
                         pt = bbn.to_2d().to_3d()
                         x_axis = bsf - bbn
                         y_axis = tbn - bbn
