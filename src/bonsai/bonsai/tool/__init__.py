@@ -48,6 +48,7 @@ from bonsai.tool.polyline import Polyline
 from bonsai.tool.project import Project
 from bonsai.tool.profile import Profile
 from bonsai.tool.pset import Pset
+from bonsai.tool.pset_template import PsetTemplate
 from bonsai.tool.qto import Qto
 from bonsai.tool.raycast import Raycast
 from bonsai.tool.resource import Resource
