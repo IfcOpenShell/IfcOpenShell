@@ -453,3 +453,34 @@ class AddProposedProp(bpy.types.Operator):
             self.report({"ERROR"}, res)
             return {"CANCELLED"}
         return {"FINISHED"}
+
+
+class SavePsetAsTemplate(bpy.types.Operator, tool.PsetTemplate.PsetTemplateOperator):
+    bl_idname = "bim.save_pset_as_template"
+    bl_label = "Save Pset As Template"
+    bl_description = "Save the provided pset as a pset template"
+    bl_options = {"REGISTER", "UNDO"}
+    pset_id: bpy.props.IntProperty()
+
+    def invoke(self, context, event):
+        props = context.scene.BIMPsetTemplateProperties
+        if tool.Blender.get_enum_safe(props, "pset_template_files") is None:
+            self.report({"ERROR"}, "No template files found. You can create one in Property Set Templates UI.")
+            return {"CANCELLED"}
+        return context.window_manager.invoke_props_dialog(self, width=250)
+
+    def draw(self, context):
+        props = context.scene.BIMPsetTemplateProperties
+        self.layout.prop(props, "pset_template_files", text="Template File")
+
+    def _execute(self, context):
+        ifc_file = tool.Ifc.get()
+        pset = ifc_file.by_id(self.pset_id)
+        template_file = IfcStore.pset_template_file
+        assert template_file
+
+        tool.PsetTemplate.add_pset_as_template(pset, template_file)
+
+        template_file.write(IfcStore.pset_template_path)
+        bonsai.bim.handler.refresh_ui_data()
+        bonsai.bim.schema.reload(ifc_file.schema)
