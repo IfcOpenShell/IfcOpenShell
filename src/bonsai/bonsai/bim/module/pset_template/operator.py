@@ -101,16 +101,18 @@ class RemovePsetTemplate(bpy.types.Operator, PsetTemplateOperator):
 
     def _execute(self, context):
         props = context.scene.BIMPsetTemplateProperties
-        if props.active_pset_template_id == int(props.pset_templates):
+        current_pset_template_id = int(props.pset_templates)
+        if props.active_pset_template_id == current_pset_template_id:
             bpy.ops.bim.disable_editing_pset_template()
         ifcopenshell.api.run(
             "pset_template.remove_pset_template",
             self.template_file,
-            **{"pset_template": self.template_file.by_id(int(props.pset_templates))}
+            **{"pset_template": self.template_file.by_id(current_pset_template_id)}
         )
         self.template_file.write(IfcStore.pset_template_path)
         bonsai.bim.handler.refresh_ui_data()
         bonsai.bim.schema.reload(tool.Ifc.get().schema)
+        tool.Blender.ensure_enum_is_valid(props, "pset_templates")
 
 
 class EnableEditingPsetTemplate(bpy.types.Operator):
@@ -250,7 +252,17 @@ class RemovePsetTemplateFile(bpy.types.Operator):
             pass
         bonsai.bim.handler.refresh_ui_data()
         bonsai.bim.schema.reload(tool.Ifc.get().schema)
+
+        # Ensure enum is valid after deletion.
+        self.props = context.scene.BIMPsetTemplateProperties
+        if not tool.Blender.ensure_enum_is_valid(self.props, "pset_template_files"):
+            self.update_template_files_prop(context)
         return {"FINISHED"}
+
+    def update_template_files_prop(self, context: bpy.types.Context) -> None:
+        import bonsai.bim.module.pset_template.prop
+
+        bonsai.bim.module.pset_template.prop.updatePsetTemplateFiles(self.props, context)
 
 
 class AddPropTemplate(bpy.types.Operator, PsetTemplateOperator):
