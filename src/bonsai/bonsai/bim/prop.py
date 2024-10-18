@@ -328,6 +328,11 @@ class Attribute(PropertyGroup):
             assert_never(data_type)
 
     def get_value_name(self, display_only: bool = False) -> str:
+        """Get name of the value attribute.
+
+        :param display_only: Should be `True` if the value won't be accessed directly
+            by this name, only through UI (e.g. with `layout.prop`).
+        """
         data_type = self.data_type
         if data_type == "string":
             return "string_value"

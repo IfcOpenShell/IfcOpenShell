@@ -274,7 +274,7 @@ class EditItemUI:
             return
         for item_attribute in obj.data.BIMMeshProperties.item_attributes:
             row = cls.layout.row()
-            row.prop(item_attribute, "float_value", text=item_attribute.name)
+            row.prop(item_attribute, item_attribute.get_value_name(display_only=True), text=item_attribute.name)
         if len(obj.data.BIMMeshProperties.item_attributes):
             row = cls.layout.row()
             row.operator("bim.update_item_attributes", icon="FILE_REFRESH", text="")
