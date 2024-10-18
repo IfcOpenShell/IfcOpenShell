@@ -559,6 +559,8 @@ class Blender(bonsai.core.tool.Blender):
     def get_enum_safe(cls, props: bpy.types.PropertyGroup, prop_name: str) -> Union[str, None]:
         """method created for readibility and to avoid console warnings like
         `pyrna_enum_to_py: current value '17' matches no enum in 'BIMModelProperties', '', 'relating_type_id'`
+
+        :return: Enum property value as a string or None if current enum value is invalid.
         """
         # Yes, accessing items through annotations is a bit hacky
         # but it's the only way to get the dynamic enum items
