@@ -303,7 +303,6 @@ class Polyline(bonsai.core.tool.Polyline):
 
         return
 
-
     @classmethod
     def validate_input(cls, input_number, input_type):
 
