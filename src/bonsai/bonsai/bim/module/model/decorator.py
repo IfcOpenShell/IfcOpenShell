@@ -309,6 +309,7 @@ class PolylineDecorator:
     instructions = None
     snap_info = None
     tool_state = None
+    relating_type = None
 
     @classmethod
     def install(cls, context):
@@ -395,30 +396,116 @@ class PolylineDecorator:
         shader.uniform_float("color", color)
         batch.draw(shader)
 
-    def draw_product_preview(self, context):
-        def transparent_color(color, alpha=0.1):
-            color = [i for i in color]
-            color[3] = alpha
-            return color
+    def get_wall_preview_data(cls, context, relating_type):
+        def create_bmesh_from_vertices(vertices):
+            bm = bmesh.new()
 
-        self.addon_prefs = tool.Blender.get_addon_preferences()
-        self.line_shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
-        self.line_shader.bind()  # required to be able to change uniforms of the shader
-        self.line_shader.uniform_float("viewportSize", (context.region.width, context.region.height))
-        self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
-        self.line_shader.uniform_float("lineWidth", 2.0)
-        decorator_color = self.addon_prefs.decorator_color_special
+            new_verts = [bm.verts.new(v) for v in polyline_vertices]
+            if is_closed:
+                new_edges = [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
+                new_edges.append(
+                    bm.edges.new((new_verts[-1], new_verts[0]))
+                )  # Add an edge between the last an first point to make it closed.
+            else:
+                new_edges = [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
+
+            bm.verts.index_update()
+            bm.edges.index_update()
+            return bm
+
+        # Get properties from object type
+        layers = tool.Model.get_material_layer_parameters(relating_type)
+        if not layers["thickness"]:
+            return
+        thickness = layers["thickness"]
+        model_props = context.scene.BIMModelProperties
+        direction_sense = model_props.direction_sense
+        direction = 1
+        if direction_sense == "NEGATIVE":
+            direction = -1
+        offset_type = model_props.offset_type
+        offset = 0
+        if offset_type == "CENTER":
+            offset = -thickness / 2
+        elif offset_type == "INTERIOR":
+            offset = -thickness
+
+        unit_system = tool.Drawing.get_unit_system()
+        factor = 1
+        if unit_system == "IMPERIAL":
+            factor = 3.048
+        if unit_system == "METRIC":
+            unit_length = context.scene.unit_settings.length_unit
+            if unit_length == "MILLIMETERS":
+                factor = 1000
+
+        # For the model properties, the offset value should just be converted
+        # However, for the wall preview logic that follows, offset and thickness must change direction
+        model_props.offset = offset * factor
+        thickness *= direction
+        offset *= direction
+
+        height = float(model_props.extrusion_depth)
+        rl = float(model_props.rl1)
+        x_angle = float(model_props.x_angle)
+        angle_distortion = height * math.tan(x_angle)
+
+        wall_preview_data = {}
+        wall_preview_data["verts"] = []
+
+        # Verts
+        polyline_vertices = []
         polyline_data = context.scene.BIMPolylineProperties.insertion_polyline
         polyline_points = polyline_data[0].polyline_points if polyline_data else []
-        prop = context.scene.BIMPolylineProperties.product_preview
+        if len(polyline_points) < 2:
+            wall_preview_data = []
+            return
+        for point in polyline_points:
+            polyline_vertices.append(Vector((point.x, point.y, point.z)))
 
+        is_closed = False
+        if (
+            polyline_vertices[0].x == polyline_vertices[-1].x
+            and polyline_vertices[0].y == polyline_vertices[-1].y
+            and polyline_vertices[0].z == polyline_vertices[-1].z
+        ):
+            is_closed = True
+            polyline_vertices.pop(-1)  # Remove the last point. The edges are going to inform that the shape is closed.
+
+        bm_base = create_bmesh_from_vertices(polyline_vertices)
+        base_vertices = tool.Cad.offset_edges(bm_base, offset)
+        offset_base_verts = tool.Cad.offset_edges(bm_base, thickness + offset)
+        top_vertices = tool.Cad.offset_edges(bm_base, angle_distortion + offset)
+        offset_top_verts = tool.Cad.offset_edges(bm_base, angle_distortion + thickness + offset)
+        if is_closed:
+            base_vertices.append(base_vertices[0])
+            offset_base_verts.append(offset_base_verts[0])
+            top_vertices.append(top_vertices[0])
+            offset_top_verts.append(offset_top_verts[0])
+
+        if offset_base_verts is not None:
+            for v in base_vertices:
+                wall_preview_data["verts"].append((v.co.x, v.co.y, v.co.z + rl))
+
+            for v in offset_base_verts[::-1]:
+                wall_preview_data["verts"].append((v.co.x, v.co.y, v.co.z + rl))
+
+            for v in top_vertices:
+                wall_preview_data["verts"].append((v.co.x, v.co.y, v.co.z + rl + height))
+
+            for v in offset_top_verts[::-1]:
+                wall_preview_data["verts"].append((v.co.x, v.co.y, v.co.z + rl + height))
+
+        bm_base.free()
+
+        # Edges and Tris
         points = []
         side_edges_1 = []
         side_edges_2 = []
         base_edges = []
 
-        for i in range(len(prop)):
-            points.append(Vector((prop[i].x, prop[i].y, prop[i].z)))
+        for i in range(len(wall_preview_data["verts"])):
+            points.append(Vector(wall_preview_data["verts"][i]))
 
         n = len(points) // 2
         bottom_side_1 = [[i, (i + 1) % (n)] for i in range((n - 1) // 2)]
@@ -438,8 +525,8 @@ class PolylineDecorator:
 
         loops = [side_edges_1, side_edges_2, base_edges]
 
-        all_edges = []
-        all_tris = []
+        wall_preview_data["edges"] = []
+        wall_preview_data["tris"] = []
         for i, group in enumerate(loops):
             bm = bmesh.new()
 
@@ -457,13 +544,42 @@ class PolylineDecorator:
             bm.edges.index_update()
             edges = [[v.index for v in e.verts] for e in bm.edges]
             tris = [[l.vert.index for l in loop] for loop in bm.calc_loop_triangles()]
-            all_edges.extend(edges)
-            all_tris.extend(tris)
+            wall_preview_data["edges"].extend(edges)
+            wall_preview_data["tris"].extend(tris)
 
-        all_edges = list(set(tuple(e) for e in all_edges))
-        all_tris = list(set(tuple(t) for t in all_tris))
-        self.draw_batch("LINES", points, decorator_color, all_edges)
-        self.draw_batch("TRIS", points, transparent_color(decorator_color), all_tris)
+        wall_preview_data["edges"] = list(set(tuple(e) for e in wall_preview_data["edges"]))
+        wall_preview_data["tris"] = list(set(tuple(t) for t in wall_preview_data["tris"]))
+
+        return wall_preview_data
+
+    def draw_product_preview(self, context):
+        def transparent_color(color, alpha=0.1):
+            color = [i for i in color]
+            color[3] = alpha
+            return color
+
+        self.addon_prefs = tool.Blender.get_addon_preferences()
+        self.line_shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
+        self.line_shader.bind()  # required to be able to change uniforms of the shader
+        self.line_shader.uniform_float("viewportSize", (context.region.width, context.region.height))
+        self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
+        self.line_shader.uniform_float("lineWidth", 2.0)
+        decorator_color = self.addon_prefs.decorator_color_special
+        polyline_data = context.scene.BIMPolylineProperties.insertion_polyline
+        polyline_points = polyline_data[0].polyline_points if polyline_data else []
+
+        snap_prop = context.scene.BIMPolylineProperties.snap_mouse_point[0]
+        mouse_point = Vector((snap_prop.x, snap_prop.y, snap_prop.z))
+        self.relating_type = None
+        props = context.scene.BIMModelProperties
+        relating_type_id = props.relating_type_id
+        if relating_type_id:
+            self.relating_type = tool.Ifc.get().by_id(int(relating_type_id))
+
+        wall_preview_data = self.get_wall_preview_data(context, self.relating_type)
+        if wall_preview_data:
+            self.draw_batch("LINES", wall_preview_data["verts"], decorator_color, wall_preview_data["edges"])
+            self.draw_batch("TRIS", wall_preview_data["verts"], transparent_color(decorator_color), wall_preview_data["tris"])
 
     def draw_input_ui(self, context):
         texts = {

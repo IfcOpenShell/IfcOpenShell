@@ -355,7 +355,6 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator):
             context.scene.BIMModelProperties.direction_sense = (
                 "NEGATIVE" if direction_sense == "POSITIVE" else "POSITIVE"
             )
-            tool.Polyline.create_wall_preview_vertices(context, self.relating_type)
 
         if event.value == "RELEASE" and event.type == "O":
             offset_type = context.scene.BIMModelProperties.offset_type
@@ -363,7 +362,6 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator):
             index = items.index(offset_type)
             size = len(items)
             context.scene.BIMModelProperties.offset_type = items[((index + 1) % size)]
-            tool.Polyline.create_wall_preview_vertices(context, self.relating_type)
 
         props = bpy.context.scene.BIMModelProperties
         wall_config = f"""Direction: {props.direction_sense}
@@ -386,7 +384,6 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator):
             self.create_walls_from_polyline(context)
             context.workspace.status_text_set(text=None)
             PolylineDecorator.uninstall()
-            context.scene.BIMPolylineProperties.product_preview.clear()
             tool.Polyline.clear_polyline()
             tool.Blender.update_viewport()
             return {"FINISHED"}
@@ -395,12 +392,8 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator):
 
         self.handle_inserting_polyline(context, event)
 
-        if event.type in {"C", "LEFTMOUSE", "RIGHTMOUSE", "RET", "NUMPAD_ENTER", "BACK_SPACE"}:
-            tool.Polyline.create_wall_preview_vertices(context, self.relating_type)
-
         cancel = self.handle_cancelation(context, event)
         if cancel is not None:
-            context.scene.BIMPolylineProperties.product_preview.clear()
             return cancel
 
         return {"RUNNING_MODAL"}
@@ -1478,7 +1471,6 @@ class DumbWallJoiner:
                         x_axis = bbn - bsf
                         y_axis = tsf - bsf
                 else:
-                    print(">>>>B")
                     if layers1["direction_sense"] == "POSITIVE":
                         pt = bbn.to_2d().to_3d()
                         x_axis = bsf - bbn
