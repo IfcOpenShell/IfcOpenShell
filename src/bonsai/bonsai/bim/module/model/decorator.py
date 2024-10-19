@@ -30,6 +30,7 @@ from gpu_extras.batch import batch_for_shader
 from gpu_extras.presets import draw_circle_2d
 from typing import Union
 from bonsai.bim.module.drawing.helper import format_distance
+from bonsai.bim.module.geometry.decorator import ItemDecorator
 
 
 def transparent_color(color, alpha=0.1):
@@ -552,6 +553,22 @@ class PolylineDecorator:
 
         return wall_preview_data
 
+    def get_product_preview_data(cls, context, relating_type):
+        model_props = context.scene.BIMModelProperties
+        if relating_type.is_a("IfcDoorType"):
+            rl = float(model_props.rl1)
+        elif relating_type.is_a("IfcWindowType"):
+            rl = float(model_props.rl2)
+        else:
+            rl = 0
+        snap_prop = context.scene.BIMPolylineProperties.snap_mouse_point[0]
+        mouse_point = Vector((snap_prop.x, snap_prop.y, snap_prop.z))
+        obj_type = tool.Ifc.get_object(relating_type)
+        if obj_type.data:
+            data = ItemDecorator.get_obj_data(obj_type)
+            data["verts"] = [tuple(Vector((v[0], v[1], (v[2] + rl))) + mouse_point) for v in data["verts"]]
+            return data
+
     def draw_product_preview(self, context):
         def transparent_color(color, alpha=0.1):
             color = [i for i in color]
@@ -568,18 +585,24 @@ class PolylineDecorator:
         polyline_data = context.scene.BIMPolylineProperties.insertion_polyline
         polyline_points = polyline_data[0].polyline_points if polyline_data else []
 
-        snap_prop = context.scene.BIMPolylineProperties.snap_mouse_point[0]
-        mouse_point = Vector((snap_prop.x, snap_prop.y, snap_prop.z))
         self.relating_type = None
         props = context.scene.BIMModelProperties
         relating_type_id = props.relating_type_id
         if relating_type_id:
             self.relating_type = tool.Ifc.get().by_id(int(relating_type_id))
 
+        # Wall
         wall_preview_data = self.get_wall_preview_data(context, self.relating_type)
         if wall_preview_data:
             self.draw_batch("LINES", wall_preview_data["verts"], decorator_color, wall_preview_data["edges"])
             self.draw_batch("TRIS", wall_preview_data["verts"], transparent_color(decorator_color), wall_preview_data["tris"])
+
+        # Mesh type products
+        product_preview_data = self.get_product_preview_data(context, self.relating_type)
+        if product_preview_data:
+            self.draw_batch("LINES", product_preview_data["verts"], decorator_color, product_preview_data["edges"])
+            self.draw_batch("TRIS", product_preview_data["verts"], transparent_color(decorator_color), product_preview_data["tris"])
+
 
     def draw_input_ui(self, context):
         texts = {
