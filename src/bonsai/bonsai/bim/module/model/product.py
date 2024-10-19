@@ -180,7 +180,6 @@ class AddOccurrence(bpy.types.Operator, PolylineOperator):
         if not self.tool_state.is_input_on and event.value == "RELEASE" and event.type in {"RIGHTMOUSE"}:
             context.workspace.status_text_set(text=None)
             PolylineDecorator.uninstall()
-            context.scene.BIMPolylineProperties.product_preview.clear()
             tool.Polyline.clear_polyline()
             tool.Blender.update_viewport()
             return {"FINISHED"}
@@ -190,7 +189,6 @@ class AddOccurrence(bpy.types.Operator, PolylineOperator):
 
         cancel = self.handle_cancelation(context, event)
         if cancel is not None:
-            context.scene.BIMPolylineProperties.product_preview.clear()
             return cancel
 
         return {"RUNNING_MODAL"}
