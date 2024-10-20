@@ -696,6 +696,14 @@ class curve_segment_evaluator {
        auto pcDx = dr[0];
        auto pcDy = dr[1];
 
+       if (segment_type_ == ST_VERTICAL && placement_) {
+          // the general algorithm for mapping parent curve onto curve segment doesn't
+          // exactly work for IfcLine. This is easily overcome by usnig the curve segment
+          // placement for the IfcLine direction
+          pcDx = (*placement_)(0, 0);
+          pcDy = (*placement_)(1, 0);
+       }
+
        if (segment_type_ == ST_HORIZONTAL || segment_type_ == ST_VERTICAL || segment_type_ == ST_CANT) {
           std::function<double(double)> convert_u;
           if (segment_type_ == ST_HORIZONTAL || segment_type_ == ST_CANT) {
