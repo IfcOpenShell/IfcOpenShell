@@ -16,15 +16,17 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import bpy
 import blf
 import bpy
 import gpu
 import gpu_extras
 import bmesh
+import ifcopenshell
 import bonsai.tool as tool
-from math import sin, cos, radians, degrees, atan2, acos
-from bpy.types import SpaceView3D
 import math
+from math import sin, cos, tan, radians
+from bpy.types import SpaceView3D
 from bpy_extras import view3d_utils
 from mathutils import Vector, Matrix, Quaternion
 from gpu_extras.batch import batch_for_shader
@@ -386,11 +388,13 @@ class PolylineDecorator:
 
         bm.verts.index_update()
         bm.edges.index_update()
+        verts = bm.verts
+        edges = bm.edges
         tris = [[loop.vert.index for loop in triangles] for triangles in bm.calc_loop_triangles()]
 
         bm.free()
 
-        return tris
+        return {"verts": verts, "edges": edges, "tris": tris}
 
     def draw_batch(self, shader_type, content_pos, color, indices=None):
         shader = self.line_shader if shader_type == "LINES" else self.shader
@@ -450,7 +454,7 @@ class PolylineDecorator:
         height = float(model_props.extrusion_depth)
         rl = float(model_props.rl1)
         x_angle = float(model_props.x_angle)
-        angle_distortion = height * math.tan(x_angle)
+        angle_distortion = height * tan(x_angle)
 
         wall_preview_data = {}
         wall_preview_data["verts"] = []
@@ -576,6 +580,106 @@ class PolylineDecorator:
             data["verts"] = [tuple(rot_mat @ (Vector((v[0], v[1], (v[2] + rl)))) + mouse_point) for v in data["verts"]]
             return data
 
+    def get_profile_preview_data(self, context, relating_type):
+        material = ifcopenshell.util.element.get_material(relating_type)
+        profile = material.MaterialProfiles[0].Profile
+        model_props = context.scene.BIMModelProperties
+        extrusion_depth = model_props.extrusion_depth
+        cardinal_point = model_props.cardinal_point
+        rot_mat = Quaternion()
+        if relating_type.is_a("IfcBeamType"):
+            y_rot = Quaternion((0.0, 1.0, 0.0), radians(90))
+            z_rot = Quaternion((0.0, 0.0, 1.0), radians(90))
+            rot_mat = y_rot @ z_rot
+        # Get profile data
+        settings = ifcopenshell.geom.settings()
+        settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
+        shape = ifcopenshell.geom.create_shape(settings, profile)
+
+        verts = shape.verts
+        if not verts:
+            raise RuntimeError("Profile shape has no vertices, it probably is invalid.")
+
+        edges = shape.edges
+
+        grouped_verts = [[verts[i], verts[i + 1], 0] for i in range(0, len(verts), 3)]
+        grouped_edges = [[edges[i], edges[i + 1]] for i in range(0, len(edges), 2)]
+
+        # Create extrusion bmesh
+        bm = bmesh.new()
+
+        new_verts = [bm.verts.new(v) for v in grouped_verts]
+        new_edges = [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(grouped_verts) - 1)]
+
+        bm.verts.index_update()
+        bm.edges.index_update()
+
+        new_faces = bmesh.ops.contextual_create(bm, geom=bm.edges)
+
+        new_faces = bmesh.ops.extrude_face_region(bm, geom=bm.faces)
+        new_verts = [e for e in new_faces["geom"] if isinstance(e, bmesh.types.BMVert)]
+        new_faces = bmesh.ops.translate(bm, verts=new_verts, vec=(0.0, 0.0, extrusion_depth))
+
+        bm.verts.index_update()
+        bm.edges.index_update()
+        tris = [[loop.vert.index for loop in triangles] for triangles in bm.calc_loop_triangles()]
+
+        # Create bounding box
+        verts = bm.verts
+        i = len(verts)
+
+        min_x = min(v.co.x for v in verts)
+        max_x = max(v.co.x for v in verts)
+        min_y = min(v.co.y for v in verts)
+        max_y = max(v.co.y for v in verts)
+        min_z = min(v.co.z for v in verts)
+        max_z = max(v.co.z for v in verts)
+
+        bbox_verts = [
+            (min_x, min_y, min_z),
+            (max_x, min_y, min_z),
+            (max_x, max_y, min_z),
+            (min_x, max_y, min_z),
+            (min_x, min_y, max_z),
+            (max_x, min_y, max_z),
+            (max_x, max_y, max_z),
+            (min_x, max_y, max_z),
+        ]
+
+        bbox_edges = [
+            (0 + i, 3 + i),
+            (3 + i, 7 + i),
+            (7 + i, 4 + i),
+            (4 + i, 0 + i),
+            (0 + i, 1 + i),
+            (3 + i, 2 + i),
+            (7 + i, 6 + i),
+            (4 + i, 5 + i),
+            (1 + i, 2 + i),
+            (2 + i, 6 + i),
+            (6 + i, 5 + i),
+            (5 + i, 1 + i),
+        ]
+
+        # Calculate rotation, mouse position, angle and cardinal point
+        # TODO Cardinal point
+        # TODO Angle
+        snap_prop = context.scene.BIMPolylineProperties.snap_mouse_point[0]
+        mouse_point = Vector((snap_prop.x, snap_prop.y, snap_prop.z))
+        data = {}
+
+        verts = [tuple(v.co) for v in verts]
+        verts.extend(bbox_verts)
+        verts = [tuple(rot_mat @ Vector(v)) for v in verts]
+        verts = [tuple(Vector(v) + mouse_point) for v in verts]
+        data["verts"] = verts
+        data["edges"] = bbox_edges
+        # data["edges"] = [(edge.verts[0].index, edge.verts[1].index) for edge in bm.edges]
+        data["tris"] = tris
+
+        bm.free()
+        return data
+
     def draw_product_preview(self, context):
         def transparent_color(color, alpha=0.1):
             color = [i for i in color]
@@ -608,6 +712,14 @@ class PolylineDecorator:
 
         # Mesh type products
         product_preview_data = self.get_product_preview_data(context, self.relating_type)
+        if product_preview_data:
+            self.draw_batch("LINES", product_preview_data["verts"], decorator_color, product_preview_data["edges"])
+            self.draw_batch(
+                "TRIS", product_preview_data["verts"], transparent_color(decorator_color), product_preview_data["tris"]
+            )
+
+        # Profile type products
+        product_preview_data = self.get_profile_preview_data(context, self.relating_type)
         if product_preview_data:
             self.draw_batch("LINES", product_preview_data["verts"], decorator_color, product_preview_data["edges"])
             self.draw_batch(
@@ -903,7 +1015,7 @@ class PolylineDecorator:
             area = polyline_data.area.split(" ")[0]
             if area:
                 if float(area) > 0:
-                    tris = self.calculate_polygon(polyline_verts)
+                    tris = self.calculate_polygon(polyline_verts)["tris"]
                     self.draw_batch("TRIS", polyline_verts, transparent_color(decorator_color_special), tris)
 
         # Mouse points
