@@ -1015,6 +1015,8 @@ class Style:
     def import_surface_attributes(cls, style): pass
     def is_editing_styles(cls): pass
     def reload_material_from_ifc(cls, obj): pass
+    def is_style_side_attribute_edited(cls, style, new_attributes): pass
+    def reload_repersentations(cls, style): pass
 
 
 @interface

@@ -675,3 +675,17 @@ class Style(bonsai.core.tool.Style):
             bonsai.core.style.remove_style(tool.Ifc, tool.Style, element, reload_styles_ui=False)
             i += 1
         return i
+
+    @classmethod
+    def is_style_side_attribute_edited(
+        cls, style: ifcopenshell.entity_instance, new_attributes: dict[str, Any]
+    ) -> bool:
+        old_value, new_value = style.Side, new_attributes["Side"]
+        # Only need to reload if there it was change from/become NEGATIVE.
+        return old_value != new_value and "NEGATIVE" in (old_value, new_value)
+
+    @classmethod
+    def reload_repersentations(cls, style: ifcopenshell.entity_instance) -> None:
+        elements = ifcopenshell.util.element.get_elements_by_style(tool.Ifc.get(), style)
+        objects = [tool.Ifc.get_object(e) for e in elements]
+        tool.Geometry.reload_representation(objects)

@@ -152,10 +152,14 @@ def disable_editing_style(style: tool.Style) -> None:
 def edit_style(ifc: tool.Ifc, style: tool.Style) -> None:
     obj = style.get_currently_edited_material()
     style_element = style.get_style(obj)
+    assert style_element
     attributes = style.export_surface_attributes()
+    is_style_side_attribute_edited = style.is_style_side_attribute_edited(style_element, attributes)
     ifc.run("style.edit_presentation_style", style=style_element, attributes=attributes)
     style.disable_editing()
     load_styles(style, style.get_active_style_type())
+    if is_style_side_attribute_edited:
+        style.reload_repersentations(style_element)
 
 
 def load_styles(style: tool.Style, style_type: str) -> None:
