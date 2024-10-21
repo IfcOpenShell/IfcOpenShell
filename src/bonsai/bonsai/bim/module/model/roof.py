@@ -417,7 +417,7 @@ def update_roof_modifier_ifc_data(context: bpy.types.Context) -> None:
     # occurrences attributes
     # occurrences = tool.Ifc.get_all_element_occurrences(element)
 
-    tool.Ifc.edit(obj)
+    tool.Model.add_body_representation(obj)
 
 
 def update_bbim_roof_pset(element: ifcopenshell.entity_instance, roof_data: dict[str, Any]) -> None:
