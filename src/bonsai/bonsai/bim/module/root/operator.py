@@ -20,6 +20,7 @@ import bpy
 import bmesh
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.geometry
 import ifcopenshell.util.schema
 import ifcopenshell.util.element
 import ifcopenshell.util.type
