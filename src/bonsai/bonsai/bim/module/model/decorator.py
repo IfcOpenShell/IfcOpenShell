@@ -17,6 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import blf
+import bpy
 import gpu
 import gpu_extras
 import bmesh
@@ -563,10 +564,16 @@ class PolylineDecorator:
             rl = 0
         snap_prop = context.scene.BIMPolylineProperties.snap_mouse_point[0]
         mouse_point = Vector((snap_prop.x, snap_prop.y, snap_prop.z))
+        snap_obj = bpy.data.objects[snap_prop.snap_object]
+        snap_element = tool.Ifc.get_entity(snap_obj)
+        rot_mat = Vector((0.0, 0.0, 0.0))
+        if snap_element and snap_element.is_a("IfcWall"):
+            rot_mat = snap_obj.matrix_world.to_quaternion()
+
         obj_type = tool.Ifc.get_object(relating_type)
         if obj_type.data:
             data = ItemDecorator.get_obj_data(obj_type)
-            data["verts"] = [tuple(Vector((v[0], v[1], (v[2] + rl))) + mouse_point) for v in data["verts"]]
+            data["verts"] = [tuple(rot_mat @ (Vector((v[0], v[1], (v[2] + rl)))) + mouse_point) for v in data["verts"]]
             return data
 
     def draw_product_preview(self, context):
