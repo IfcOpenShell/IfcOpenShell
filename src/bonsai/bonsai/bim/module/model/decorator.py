@@ -26,7 +26,7 @@ from math import sin, cos, radians, degrees, atan2, acos
 from bpy.types import SpaceView3D
 import math
 from bpy_extras import view3d_utils
-from mathutils import Vector, Matrix
+from mathutils import Vector, Matrix, Quaternion
 from gpu_extras.batch import batch_for_shader
 from gpu_extras.presets import draw_circle_2d
 from typing import Union
@@ -564,9 +564,12 @@ class PolylineDecorator:
             rl = 0
         snap_prop = context.scene.BIMPolylineProperties.snap_mouse_point[0]
         mouse_point = Vector((snap_prop.x, snap_prop.y, snap_prop.z))
-        snap_obj = bpy.data.objects[snap_prop.snap_object]
+        try:
+            snap_obj = bpy.data.objects[snap_prop.snap_object]
+        except:
+            snap_obj = None
         snap_element = tool.Ifc.get_entity(snap_obj)
-        rot_mat = Vector((0.0, 0.0, 0.0))
+        rot_mat = Quaternion()
         if snap_element and snap_element.is_a("IfcWall"):
             rot_mat = snap_obj.matrix_world.to_quaternion()
 
