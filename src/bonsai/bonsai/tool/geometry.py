@@ -48,7 +48,7 @@ from collections import defaultdict
 from math import radians, pi
 from mathutils import Vector, Matrix
 from bonsai.bim.ifc import IfcStore
-from typing import Union, Iterable, Optional, Literal, Iterator, List, TYPE_CHECKING
+from typing import Union, Iterable, Optional, Literal, Iterator, List, TYPE_CHECKING, get_args
 from typing_extensions import TypeIs
 
 if TYPE_CHECKING:
@@ -815,13 +815,9 @@ class Geometry(bonsai.core.tool.Geometry):
     ]
 
     @classmethod
-    def has_mesh_properties(cls, data: Union[bpy.types.ID, None]) -> TypeIs[TYPES_WITH_MESH_PROPERTIES]:
-        supported_types = (
-            bpy.types.Mesh,
-            bpy.types.Curve,
-            bpy.types.Camera,
-            bpy.types.PointLight,
-        )
+    def has_mesh_properties(
+        cls, data: Union[bpy.types.ID, None], supported_types=get_args(TYPES_WITH_MESH_PROPERTIES)
+    ) -> TypeIs[TYPES_WITH_MESH_PROPERTIES]:
         if not data:
             return False
         return isinstance(data, supported_types)
@@ -888,10 +884,10 @@ class Geometry(bonsai.core.tool.Geometry):
 
     @classmethod
     def is_representation_item(cls, obj: bpy.types.Object) -> bool:
-        return (
-            obj.data
-            and hasattr(obj.data, "BIMMeshProperties")
-            and (ifc_id := obj.data.BIMMeshProperties.ifc_definition_id)
+        return bool(
+            (data := obj.data)
+            and isinstance(data, Geometry.TYPES_WITH_MESH_PROPERTIES)
+            and (ifc_id := data.BIMMeshProperties.ifc_definition_id)
             and tool.Ifc.get().by_id(ifc_id).is_a("IfcRepresentationItem")
         )
 
