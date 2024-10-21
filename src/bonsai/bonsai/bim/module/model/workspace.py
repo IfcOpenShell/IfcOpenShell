@@ -442,10 +442,12 @@ class CreateObjectUI:
 
         elif cls.props.ifc_class in ("IfcColumnType", "IfcMemberType"):
             row.prop(data=cls.props, property="cardinal_point", text="Axis")
+            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             row.prop(data=cls.props, property="extrusion_depth", text="Height" if ui_context != "TOOL_HEADER" else "H")
 
         elif cls.props.ifc_class in ("IfcBeamType"):
             row.prop(data=cls.props, property="cardinal_point", text="Axis")
+            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             row.prop(data=cls.props, property="extrusion_depth", text="Length" if ui_context != "TOOL_HEADER" else "L")
 
         elif cls.props.ifc_class in ("IfcDoorType", "IfcDoorStyle"):
