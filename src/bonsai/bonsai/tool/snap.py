@@ -102,7 +102,7 @@ class Snap(bonsai.core.tool.Snap):
         return snap_point
 
     @classmethod
-    def update_snapping_point(cls, snap_point, snap_type):
+    def update_snapping_point(cls, snap_point, snap_type, snap_obj=None):
         try:
             snap_vertex = bpy.context.scene.BIMPolylineProperties.snap_mouse_point[0]
         except:
@@ -112,6 +112,7 @@ class Snap(bonsai.core.tool.Snap):
         snap_vertex.y = snap_point[1]
         snap_vertex.z = snap_point[2]
         snap_vertex.snap_type = snap_type
+        snap_vertex.snap_object = snap_obj.name
 
     @classmethod
     def clear_snapping_point(cls):
@@ -446,7 +447,8 @@ class Snap(bonsai.core.tool.Snap):
     def select_snapping_points(cls, context, event, tool_state, detected_snaps):
         snapping_points = []
         for origin in detected_snaps:
-            if "Object" in list(origin.keys()):
+            snap_obj = None
+            if "Object" in origin:
                 snap_obj, hit, face_index = origin["Object"]
                 matrix = snap_obj.matrix_world.copy()
                 face = snap_obj.data.polygons[face_index]
@@ -456,35 +458,35 @@ class Snap(bonsai.core.tool.Snap):
 
                 options = tool.Raycast.ray_cast_by_proximity(context, event, snap_obj, face)
                 if not options:
-                    snapping_points.append((hit, "Face"))
+                    snapping_points.append((hit, "Face", snap_obj))
                 else:
                     for op in options:
-                        snapping_points.append(op)
+                        snapping_points.append(op + (snap_obj,))
 
                 break
 
-            if "Edge-Vertex" in list(origin.keys()):
+            if "Edge-Vertex" in origin:
                 snap_obj, options = origin["Edge-Vertex"]
                 for op in options:
-                    snapping_points.append(op)
+                    snapping_points.append(op + (snap_obj,))
                 break
 
-            if "Polyline" in list(origin.keys()):
+            if "Polyline" in origin:
                 options = origin["Polyline"]
                 for op in options:
-                    snapping_points.append(op)
+                    snapping_points.append(op + (snap_obj,))
                 break
 
         for origin in detected_snaps:
-            if "Axis" in list(origin.keys()):
+            if "Axis" in origin:
                 intersection = origin["Axis"]
                 axis_start = intersection[1]
                 axis_end = intersection[2]
-                snapping_points.append((intersection[0], "Axis"))
+                snapping_points.append((intersection[0], "Axis", snap_obj))
 
-            if "Plane" in list(origin.keys()):
+            if "Plane" in origin:
                 intersection = origin["Plane"]
-                snapping_points.append((intersection, "Plane"))
+                snapping_points.append((intersection, "Plane", snap_obj))
 
         # Make Axis first priority
         if tool_state.lock_axis or tool_state.axis_method in {"X", "Y", "Z"}:
@@ -500,7 +502,7 @@ class Snap(bonsai.core.tool.Snap):
                     cls.update_snapping_point(point[0], point[1])
                     return snapping_points
 
-        cls.update_snapping_point(snapping_points[0][0], snapping_points[0][1])
+        cls.update_snapping_point(snapping_points[0][0], snapping_points[0][1], snapping_points[0][2])
         return snapping_points
 
     @classmethod

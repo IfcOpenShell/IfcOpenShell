@@ -751,6 +751,7 @@ class SnapMousePoint(PropertyGroup):
     y: bpy.props.FloatProperty(name="Y")
     z: bpy.props.FloatProperty(name="Z")
     snap_type: bpy.props.StringProperty(name="Snap Type")
+    snap_object: bpy.props.StringProperty(name="Object Name")
 
 
 class PolylinePoint(PropertyGroup):
