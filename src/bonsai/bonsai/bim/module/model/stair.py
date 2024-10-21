@@ -110,7 +110,6 @@ def update_ifc_stair_props(obj: bpy.types.Object) -> None:
             "NosingLength": nosing_length,
         },
     )
-    tool.Ifc.edit(obj)
 
     # update related annotation objects
     def get_elements_from_product(product: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
