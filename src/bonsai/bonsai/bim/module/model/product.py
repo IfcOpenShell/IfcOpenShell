@@ -116,26 +116,24 @@ class AddOccurrence(bpy.types.Operator, PolylineOperator):
         if not self.relating_type:
             return {"FINISHED"}
 
-        result = tool.Polyline.insert_polyline_point(self.input_ui)
+        result = tool.Polyline.insert_polyline_point(self.input_ui, self.tool_state)
         if result:
             self.report({"WARNING"}, result)
 
         # TODO: when this workflow matures a bit, recode it so it doesn't rely on selection and cursor
         # Select snapped object so we can insert doors and windows
-        detected_snaps = tool.Snap.detect_snapping_points(context, event, self.objs_2d_bbox, self.tool_state)
-        snap_obj = None
-        for snap in detected_snaps:
-            if snap_obj := snap.get("Object", None):
-                try:
-                    # During undo, sometimes objects get invalidated.
-                    # This is a safe way to check for invalid objects.
-                    snap_obj[0].name
-                    snap_obj = bpy.data.objects.get(snap_obj[0].name)
-                    snap_obj.name
-                    tool.Blender.select_and_activate_single_object(context, snap_obj)
-                    break
-                except:
-                    pass
+        snap_prop = context.scene.BIMPolylineProperties.snap_mouse_point[0]
+        snap_obj = bpy.data.objects.get(snap_prop.snap_object)
+        if snap_obj:
+            try:
+                # During undo, sometimes objects get invalidated.
+                # This is a safe way to check for invalid objects.
+                snap_obj.name
+                snap_obj = bpy.data.objects.get(snap_obj.name)
+                snap_obj.name
+                tool.Blender.select_and_activate_single_object(context, snap_obj)
+            except:
+                pass
 
         point = context.scene.BIMPolylineProperties.insertion_polyline[0].polyline_points[0]
         context.scene.cursor.location = Vector((point.x, point.y, point.z))
