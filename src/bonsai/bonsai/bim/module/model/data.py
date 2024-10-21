@@ -555,6 +555,7 @@ class ItemData:
         cls.data = {}
         cls.data["representation_identifier"] = cls.representation_identifier()
         cls.data["representation_type"] = cls.representation_type()
+        cls.data["is_representation_item_active"] = cls.is_representation_item_active()
 
     @classmethod
     def representation_identifier(cls):
@@ -567,3 +568,10 @@ class ItemData:
         props = bpy.context.scene.BIMGeometryProperties
         rep = tool.Geometry.get_active_representation(props.representation_obj)
         return rep.RepresentationType
+
+    @classmethod
+    def is_representation_item_active(cls) -> bool:
+        object = bpy.context.active_object
+        if not object:
+            return False
+        return tool.Geometry.is_representation_item(object)

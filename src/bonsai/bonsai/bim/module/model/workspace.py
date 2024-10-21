@@ -258,7 +258,7 @@ def format_ifc_camel_case(string):
 
 class EditItemUI:
     @classmethod
-    def draw(cls, context, layout):
+    def draw(cls, context: bpy.types.Context, layout: bpy.types.UILayout):
         if not ItemData.is_loaded:
             ItemData.load()
 
@@ -270,8 +270,10 @@ class EditItemUI:
         row = cls.layout.row()
         row.label(text="Type: " + ItemData.data["representation_type"], icon="OUTLINER_OB_MESH")
         cls.layout.menu("BIM_MT_add_representation_item", icon="ADD")
-        if not (obj := context.active_object) or not tool.Geometry.is_representation_item(obj):
+        if not ItemData.data["is_representation_item_active"]:
             return
+        obj = context.active_object
+        assert obj
         for item_attribute in obj.data.BIMMeshProperties.item_attributes:
             row = cls.layout.row()
             row.prop(item_attribute, item_attribute.get_value_name(display_only=True), text=item_attribute.name)
