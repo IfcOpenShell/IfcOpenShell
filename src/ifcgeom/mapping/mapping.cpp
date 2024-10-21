@@ -430,9 +430,11 @@ namespace {
         }
 #endif
 
+        IfcSchema::IfcSurfaceStyle *surface_style_ = nullptr;
         for (auto& style : prs_styles) {
             if (auto surface_style = style->as<IfcSchema::IfcSurfaceStyle>()) {
                 if (surface_style->Side() != IfcSchema::IfcSurfaceSide::IfcSurfaceSide_NEGATIVE) {
+                    surface_style_ = surface_style;
                     auto styles_elements = surface_style->Styles();
                     for (auto mt = styles_elements->begin(); mt != styles_elements->end(); ++mt) {
                         if ((*mt)->template as<T>()) {
@@ -442,7 +444,7 @@ namespace {
                 }
             }
         }
-        return std::make_pair(nullptr, nullptr);
+        return std::make_pair(surface_style_, nullptr);
     }
 
     bool process_colour(IfcSchema::IfcColourRgb* colour, double* rgb) {
@@ -555,9 +557,6 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSurfaceStyle* style) {
         if (shading = s->as<IfcSchema::IfcSurfaceStyleShading>()) {
             break;
         }
-    }
-    if (shading == nullptr) {
-        return nullptr;
     }
     taxonomy::style::ptr surface_style = taxonomy::make<taxonomy::style>();
     surface_style->instance = style;
