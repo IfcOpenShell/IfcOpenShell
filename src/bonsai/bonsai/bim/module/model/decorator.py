@@ -564,10 +564,7 @@ class PolylineDecorator:
             rl = 0
         snap_prop = context.scene.BIMPolylineProperties.snap_mouse_point[0]
         mouse_point = Vector((snap_prop.x, snap_prop.y, snap_prop.z))
-        try:
-            snap_obj = bpy.data.objects[snap_prop.snap_object]
-        except:
-            snap_obj = None
+        snap_obj = bpy.data.objects.get(snap_prop.snap_object)
         snap_element = tool.Ifc.get_entity(snap_obj)
         rot_mat = Quaternion()
         if snap_element and snap_element.is_a("IfcWall"):
