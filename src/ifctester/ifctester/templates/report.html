@@ -107,10 +107,10 @@
             {{/instructions}}
 
             <div class="container">
-                <div class="{{#status}}pass{{/status}}{{^status}}fail{{/status}} percent" style="width: {{percent_checks_pass}}%;">{{percent_checks_pass}}%</div>
+                <div class="{{^total_checks}}skipped{{/total_checks}}{{#total_checks}}{{#status}}pass{{/status}}{{^status}}fail{{/status}}{{/total_checks}} percent" style="width: {{^total_checks}}100{{/total_checks}}{{#total_checks}}{{percent_checks_pass}}{{/total_checks}}%;">{{^total_checks}}Skipped{{/total_checks}}{{#total_checks}}{{percent_checks_pass}}%{{/total_checks}}</div>
             </div>
             <p>
-                <span class="item {{#status}}pass{{/status}}{{^status}}fail{{/status}}">{{#status}}Pass{{/status}}{{^status}}Fail{{/status}}</span>
+                <span class="item {{^total_checks}}skipped{{/total_checks}}{{#total_checks}}{{#status}}pass{{/status}}{{^status}}fail{{/status}}{{/total_checks}}">{{^total_checks}}Skipped{{/total_checks}}{{#total_checks}}{{#status}}Pass{{/status}}{{^status}}Fail{{/status}}{{/total_checks}}</span>
                 <span class="item">
                     Checks passed: <strong>{{total_checks_pass}}</strong> / <strong>{{total_checks}}</strong>
                 </span>
@@ -140,11 +140,17 @@
             </p>
             <ol>
                 {{#requirements}}
-                <li class="{{#status}}pass{{/status}}{{^status}}fail{{/status}}">
+                <li class="{{^total_checks}}skipped{{/total_checks}}{{#total_checks}}{{#status}}pass{{/status}}{{^status}}fail{{/status}}{{/total_checks}}">
                     <details>
                         <summary>
                             {{description}}
                         </summary>
+                        {{#total_ckecks}}
+                        <table class="skipped">
+                            <thead>
+                            </thead>
+                        </table>
+                        {{/total_ckecks}} 
                         {{#total_pass}}
                         <table class="pass">
                             <thead>
