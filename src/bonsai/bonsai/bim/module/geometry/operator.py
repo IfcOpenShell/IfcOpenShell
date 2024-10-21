@@ -392,6 +392,12 @@ class UpdateRepresentation(bpy.types.Operator, tool.Ifc.Operator):
     obj: bpy.props.StringProperty()
     ifc_representation_class: bpy.props.StringProperty()
 
+    from_ui = False
+
+    def invoke(self, context, event):
+        self.from_ui = True
+        return self.execute(context)
+
     def _execute(self, context):
         if context.view_layer.objects.active and context.view_layer.objects.active.mode != "OBJECT":
             # Ensure mode is object to prevent invalid mesh data causing CTD
@@ -419,6 +425,8 @@ class UpdateRepresentation(bpy.types.Operator, tool.Ifc.Operator):
 
         if getattr(product, "HasOpenings", False) and obj.data.BIMMeshProperties.has_openings_applied:
             # Meshlike things with openings can only be updated without openings applied.
+            if self.from_ui:
+                self.report({"ERROR"}, f"Object '{obj.name}' has openings - representation cannot be updated.")
             return
 
         if not product.is_a("IfcGridAxis"):
