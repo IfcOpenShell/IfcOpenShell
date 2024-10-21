@@ -107,11 +107,12 @@ def update_railing_modifier_ifc_data(context: bpy.types.Context) -> None:
         )
         tool.Model.replace_object_ifc_representation(body, obj, model_representation)
 
+        # TODO: is still necessary? Seems to be needed only because FRAMELESS_PANEL was using too.Ifc.edit.
         # hacky way to ensure tha ifc representation won't get tessellated at project save
         tool.Ifc.finish_edit(obj)
 
     elif props.railing_type == "FRAMELESS_PANEL":
-        tool.Ifc.edit(obj)
+        tool.Model.add_body_representation(obj)
 
 
 def update_bbim_railing_pset(element: ifcopenshell.entity_instance, railing_data: dict[str, Any]) -> None:
