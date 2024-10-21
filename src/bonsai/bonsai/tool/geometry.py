@@ -1591,6 +1591,9 @@ class Geometry(bonsai.core.tool.Geometry):
 
     @classmethod
     def split_by_loose_parts(cls, obj: bpy.types.Object) -> List[bpy.types.Mesh]:
+        # Before .copy() since it also copies the selection.
+        selection = tool.Blender.get_objects_selection(bpy.context)
+
         dup_obj = obj.copy()
         dup_obj.data = obj.data.copy()
         bpy.context.scene.collection.objects.link(dup_obj)
@@ -1607,6 +1610,8 @@ class Geometry(bonsai.core.tool.Geometry):
             results.append(obj.data)
             bpy.data.objects.remove(obj)
 
+        # Preserve original selection.
+        tool.Blender.set_objects_selection(*selection)
         return results
 
     @classmethod

@@ -539,6 +539,13 @@ class Blender(bonsai.core.tool.Blender):
                 cls.clear_active_object()
 
     @classmethod
+    def get_objects_selection(
+        cls, context: bpy.types.Context
+    ) -> tuple[bpy.types.Context, Union[bpy.types.Object, None], list[bpy.types.Object]]:
+        """Get objects selection to later pass to `set_objects_selection`."""
+        return context, context.view_layer.objects.active, context.selected_objects
+
+    @classmethod
     def set_objects_selection(
         cls,
         context: bpy.types.Context,
