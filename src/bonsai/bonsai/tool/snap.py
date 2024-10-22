@@ -115,8 +115,7 @@ class Snap(bonsai.core.tool.Snap):
         if snap_obj:
             snap_vertex.snap_object = snap_obj.name
         else:
-            snap_vertex.snap_object = ''
-        
+            snap_vertex.snap_object = ""
 
     @classmethod
     def clear_snapping_point(cls):
