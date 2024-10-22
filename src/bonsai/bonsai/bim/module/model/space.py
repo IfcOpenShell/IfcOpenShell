@@ -27,9 +27,12 @@ class GenerateSpace(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Generate Space from Cursor"
     bl_options = {"REGISTER"}
     bl_description = (
-        "Create a space from the cursor position. "
+        "Create a space from the cursor position.\n\n"
         "Move the cursor position into the desired position, "
-        "select the right space collection and run the operator"
+        "set RL value in Spatial Tool (it's a height of the cutting plane to generate space footprint), "
+        "select the right default space container and run the operator.\n\n"
+        "Note that if object is active, it will be used as a reference point instead of cursor. "
+        "If the active object is IfcSpace, it will be reused instead of creating a new IfcSpace"
     )
 
     def _execute(self, context):
