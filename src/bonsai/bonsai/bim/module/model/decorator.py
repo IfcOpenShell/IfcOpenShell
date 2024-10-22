@@ -1074,12 +1074,13 @@ class ProductDecorator:
             self.relating_type = tool.Ifc.get().by_id(int(relating_type_id))
 
         # Wall
-        wall_preview_data = self.get_wall_preview_data(context, self.relating_type)
-        if wall_preview_data:
-            self.draw_batch("LINES", wall_preview_data["verts"], decorator_color, wall_preview_data["edges"])
-            self.draw_batch(
-                "TRIS", wall_preview_data["verts"], transparent_color(decorator_color), wall_preview_data["tris"]
-            )
+        if self.relating_type.is_a("IfcWallType"):
+            wall_preview_data = self.get_wall_preview_data(context, self.relating_type)
+            if wall_preview_data:
+                self.draw_batch("LINES", wall_preview_data["verts"], decorator_color, wall_preview_data["edges"])
+                self.draw_batch(
+                    "TRIS", wall_preview_data["verts"], transparent_color(decorator_color), wall_preview_data["tris"]
+                )
 
         # Mesh type products
         product_preview_data = self.get_product_preview_data(context, self.relating_type)
