@@ -272,13 +272,17 @@ def get_enum_items(
 ) -> Union[
     Iterable[Union[tuple[str, str, str], tuple[str, str, str, int], tuple[str, str, str, str, int], None]], None
 ]:
-    # Retrieve items from a dynamic EnumProperty, which is otherwise not supported
-    # Or throws an error in the console when the items callback returns an empty list
-    # See https://blender.stackexchange.com/q/215781/86891
+    """Retrieve items from a dynamic EnumProperty.
+
+    Otherwise it's not supported or throws an error in the console when the items callback returns an empty list.
+    See https://blender.stackexchange.com/q/215781/86891
+
+    :param original_operator_path: python path to the original operator class. Needed only if `data` is `bpy.types.Operator`.
+    """
 
     # OperatorProperties is missing __annotations__, so need to somehow provide original Operator.
     # Couldn't find any way to get Operator from OperatorProperties, so we provide the path explicitly.
-    # E.g. OpeartorProperties occur when Operator is passed with context_pointer_set.
+    # E.g. OperatorProperties occur when Operator is passed with context_pointer_set.
     if isinstance(data, bpy.types.OperatorProperties):
         if not original_operator_path:
             raise Exception("For OperatorProperties providing the original operator path is required.")

@@ -265,6 +265,9 @@ class Ifc(bonsai.core.tool.Ifc):
         IFC changes for Undo system.
         """
 
+        transaction_key = ""
+        transaction_data: Union[Any, None] = None
+
         @final
         def execute(self, context):
             IfcStore.execute_ifc_operator(self, context)
