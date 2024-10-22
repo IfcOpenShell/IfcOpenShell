@@ -16,8 +16,16 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+from typing import TYPE_CHECKING, Optional
 
-def resize_to_storey(misc, obj=None, total_storeys=None):
+if TYPE_CHECKING:
+    import bpy
+    import ifcopenshell
+    import bonsai.tool as tool
+
+
+def resize_to_storey(misc: tool.Misc, obj: bpy.types.Object, total_storeys: int) -> None:
     storey = misc.get_object_storey(obj)
     if not storey:
         return

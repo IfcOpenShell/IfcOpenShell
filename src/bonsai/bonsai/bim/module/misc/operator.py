@@ -19,6 +19,9 @@
 import bpy
 import numpy as np
 import ifcopenshell
+import ifcopenshell.util.geolocation
+import ifcopenshell.util.placement
+import ifcopenshell.util.unit
 import bonsai.tool as tool
 import bonsai.core.misc as core
 import bonsai.core.geometry as core_geometry

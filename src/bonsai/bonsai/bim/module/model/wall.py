@@ -412,11 +412,11 @@ class DumbWallAligner:
     # An alignment shifts the origin of all walls to the closest point on the
     # local X axis of the reference wall. In addition, the Z rotation is copied.
     # Z translations are ignored for alignment.
-    def __init__(self, wall, reference_wall):
+    def __init__(self, wall: bpy.types.Object, reference_wall: bpy.types.Object):
         self.wall = wall
         self.reference_wall = reference_wall
 
-    def align_centerline(self):
+    def align_centerline(self) -> None:
         self.align_rotation()
 
         l_start = Vector(self.reference_wall.bound_box[0]).lerp(Vector(self.reference_wall.bound_box[3]), 0.5)
@@ -434,7 +434,7 @@ class DumbWallAligner:
         new_origin = point - offset
         self.wall.matrix_world.translation[0], self.wall.matrix_world.translation[1] = new_origin.xy
 
-    def align_last_layer(self):
+    def align_last_layer(self) -> None:
         self.align_rotation()
 
         if self.is_rotation_flipped():
@@ -457,7 +457,7 @@ class DumbWallAligner:
         new_origin = point - offset
         self.wall.matrix_world.translation[0], self.wall.matrix_world.translation[1] = new_origin.xy
 
-    def align_first_layer(self):
+    def align_first_layer(self) -> None:
         self.align_rotation()
 
         if self.is_rotation_flipped():
@@ -480,7 +480,7 @@ class DumbWallAligner:
         new_origin = point - offset
         self.wall.matrix_world.translation[0], self.wall.matrix_world.translation[1] = new_origin.xy
 
-    def align_rotation(self):
+    def align_rotation(self) -> None:
         reference = (self.reference_wall.matrix_world.to_quaternion() @ Vector((1, 0, 0))).to_2d()
         wall = (self.wall.matrix_world.to_quaternion() @ Vector((1, 0, 0))).to_2d()
         angle = reference.angle_signed(wall)
@@ -492,7 +492,7 @@ class DumbWallAligner:
             self.wall.rotation_euler[2] += angle
         bpy.context.view_layer.update()
 
-    def is_rotation_flipped(self):
+    def is_rotation_flipped(self) -> bool:
         reference = (self.reference_wall.matrix_world.to_quaternion() @ Vector((1, 0, 0))).to_2d()
         wall = (self.wall.matrix_world.to_quaternion() @ Vector((1, 0, 0))).to_2d()
         angle = reference.angle_signed(wall)
@@ -835,7 +835,7 @@ class DumbWallJoiner:
         body = copy.deepcopy(axis1["reference"])
         self.recreate_wall(element1, wall1, axis, body)
 
-    def split(self, wall1, target):
+    def split(self, wall1: bpy.types.Object, target: Vector) -> None:
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
         element1 = tool.Ifc.get_entity(wall1)
@@ -895,7 +895,7 @@ class DumbWallJoiner:
         self.recreate_wall(element1, wall1, axis1["reference"], axis1["reference"])
         self.recreate_wall(element2, wall2, axis2["reference"], axis2["reference"])
 
-    def flip(self, wall1):
+    def flip(self, wall1: bpy.types.Object) -> None:
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
         if tool.Ifc.is_moved(wall1):

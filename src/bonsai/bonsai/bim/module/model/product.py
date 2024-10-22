@@ -519,7 +519,7 @@ class AlignProduct(bpy.types.Operator):
                 obj.matrix_world = Matrix.Translation(active_y_axis * -y_distances[i]) @ obj.matrix_world
         return {"FINISHED"}
 
-    def get_axis_distances(self, point, axis, context):
+    def get_axis_distances(self, point: Vector, axis: Vector, context: bpy.types.Context) -> list[float]:
         results = []
         for obj in context.selected_objects:
             if self.align_type == "CENTERLINE":
