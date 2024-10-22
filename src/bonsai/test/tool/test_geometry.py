@@ -298,18 +298,6 @@ class TestIsBoxRepresentation(NewFile):
         assert subject.is_box_representation(representation) is False
 
 
-class TestIsEdited(NewFile):
-    def test_run(self):
-        obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
-        assert subject.is_edited(obj) is False
-        obj.scale[0] = 2
-        assert subject.is_edited(obj) is True
-        obj.scale[0] = 1
-        assert subject.is_edited(obj) is False
-        tool.Ifc.edit(obj)
-        assert subject.is_edited(obj) is True
-
-
 class TestIsMappedRepresentation(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()

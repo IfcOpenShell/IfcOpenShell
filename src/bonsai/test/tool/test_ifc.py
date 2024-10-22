@@ -66,6 +66,18 @@ class TestGetSchema(test.bim.bootstrap.NewFile):
         assert subject.get_schema() == "IFC4"
 
 
+class TestIsEdited(test.bim.bootstrap.NewFile):
+    def test_run(self):
+        obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
+        assert subject.is_edited(obj) is False
+        obj.scale[0] = 2
+        assert subject.is_edited(obj) is True
+        obj.scale[0] = 1
+        assert subject.is_edited(obj) is False
+        tool.Ifc.edit(obj)
+        assert subject.is_edited(obj) is True
+
+
 class TestIsMoved(test.bim.bootstrap.NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
