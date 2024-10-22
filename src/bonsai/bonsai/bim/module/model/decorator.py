@@ -925,7 +925,7 @@ class ProductDecorator:
             profile = material.MaterialProfiles[0].Profile
         except:
             return {}
-            
+
         model_props = context.scene.BIMModelProperties
         extrusion_depth = model_props.extrusion_depth
         cardinal_point = model_props.cardinal_point
