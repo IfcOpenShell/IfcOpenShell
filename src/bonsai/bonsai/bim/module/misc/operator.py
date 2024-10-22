@@ -114,7 +114,7 @@ class ResizeToStorey(bpy.types.Operator, tool.Ifc.Operator):
             if element.HasOpenings:
                 self.report({"ERROR"}, f"Object '{obj.name}', scaling is not supported.")
                 continue
-            core.resize_to_storey(tool.Misc, obj=obj, total_storeys=self.total_storeys)
+            core.resize_to_storey(tool.Misc, tool.Ifc, obj=obj, total_storeys=self.total_storeys)
 
 
 class SplitAlongEdge(bpy.types.Operator, tool.Ifc.Operator):

@@ -99,10 +99,6 @@ class Misc(bonsai.core.tool.Misc):
         bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
 
     @classmethod
-    def mark_object_as_edited(cls, obj: bpy.types.Object) -> None:
-        tool.Ifc.edit(obj)
-
-    @classmethod
     def split_objects_with_cutter(
         cls, objs: list[bpy.types.Object], cutter: bpy.types.Object
     ) -> list[bpy.types.Object]:
