@@ -605,6 +605,35 @@ class PolylineDecorator:
         grouped_verts = [[verts[i], verts[i + 1], 0] for i in range(0, len(verts), 3)]
         grouped_edges = [[edges[i], edges[i + 1]] for i in range(0, len(edges), 2)]
 
+        # Create offsets based on cardinal point
+        min_x = min(v[0] for v in grouped_verts)
+        max_x = max(v[0] for v in grouped_verts)
+        min_y = min(v[1] for v in grouped_verts)
+        max_y = max(v[1] for v in grouped_verts)
+
+        x_offset = (max_x - min_x) / 2
+        y_offset = (max_y - min_y) / 2
+
+        match cardinal_point:
+            case "1":
+                grouped_verts = [(v[0] - x_offset, v[1] + y_offset, v[2]) for v in grouped_verts]
+            case "2":
+                grouped_verts = [(v[0], v[1] + y_offset, v[2]) for v in grouped_verts]
+            case "3":
+                grouped_verts = [(v[0] + x_offset, v[1] + y_offset, v[2]) for v in grouped_verts]
+            case "4":
+                grouped_verts = [(v[0] - x_offset, v[1], v[2]) for v in grouped_verts]
+            case "5":
+                grouped_verts = [(v[0], v[1], v[2]) for v in grouped_verts]
+            case "6":
+                grouped_verts = [(v[0] + x_offset, v[1], v[2]) for v in grouped_verts]
+            case "7":
+                grouped_verts = [(v[0] - x_offset, v[1] - y_offset, v[2]) for v in grouped_verts]
+            case "8":
+                grouped_verts = [(v[0], v[1] - y_offset, v[2]) for v in grouped_verts]
+            case "9":
+                grouped_verts = [(v[0] + x_offset, v[1] - y_offset, v[2]) for v in grouped_verts]
+
         # Create extrusion bmesh
         bm = bmesh.new()
 
@@ -662,7 +691,6 @@ class PolylineDecorator:
         ]
 
         # Calculate rotation, mouse position, angle and cardinal point
-        # TODO Cardinal point
         # TODO Angle
         snap_prop = context.scene.BIMPolylineProperties.snap_mouse_point[0]
         mouse_point = Vector((snap_prop.x, snap_prop.y, snap_prop.z))
