@@ -21,6 +21,28 @@ import bonsai.tool as tool
 from bonsai.bim.module.light.data import SolarData
 
 
+def get_enum_items(data, prop_name, context=None):
+    prop = data.__annotations__[prop_name]
+    items = prop.keywords.get("items")
+    if items is None:
+        return
+    if not isinstance(items, (list, tuple)):
+        items = items(data, context or bpy.context)
+    return items
+
+
+def prop_with_search(layout, data, prop_name, **kwargs):
+    row = layout.row(align=True)
+    row.prop(data, prop_name, **kwargs)
+    try:
+        if len(get_enum_items(data, prop_name)) > 10:
+            row.context_pointer_set(name="data", data=data)
+            op = row.operator("bim.enum_property_search", text="", icon="VIEWZOOM")
+            op.prop_name = prop_name
+    except TypeError:
+        pass
+
+
 class BIM_PT_radiance_exporter(bpy.types.Panel):
     """Creates a Panel in the render properties window"""
 
@@ -54,11 +76,14 @@ class BIM_PT_radiance_exporter(bpy.types.Panel):
         row = layout.row()
         row.template_list("MATERIAL_UL_radiance_materials", "", props, "materials", props, "active_material_index")
         row.operator("radiance.open_spectraldb", text="", icon="WORLD")  # Globe icon
+        # layout.use_property_split = True
+        # layout.use_property_decorate = False
+        # layout.width_hint = 350
         if len(props.materials) > 0:
             col = layout.column(align=True)
-            col.prop(props, "category")
+            prop_with_search(col, props, "category")
             if props.category:
-                col.prop(props, "subcategory")
+                prop_with_search(col, props, "subcategory")
 
             if props.active_material_index >= 0 and props.active_material_index < len(props.materials):
                 active_material = props.materials[props.active_material_index]
@@ -77,13 +102,6 @@ class BIM_PT_radiance_exporter(bpy.types.Panel):
 
         layout.separator()
 
-        row = layout.row()
-        layout.label(text="Step 1: Export geometry for simulation")
-        row = layout.row()
-        row.operator("export_scene.radiance", text="Export Geometry for Simulation")
-
-        layout.separator()
-
         box = layout.box()
         box.label(text="Camera Settings")
         row = box.row()
@@ -98,34 +116,54 @@ class BIM_PT_radiance_exporter(bpy.types.Panel):
         row.prop(props, "radiance_resolution_x", text="X")
         row.prop(props, "radiance_resolution_y", text="Y")
 
-        row = layout.row()
-        row.prop(props, "radiance_quality")
-
-        row = layout.row()
-        row.prop(props, "radiance_detail")
-
-        row = layout.row()
-        row.prop(props, "radiance_variability")
-
         layout.separator()
 
-        row = layout.row()
+        box = layout.box()
+        box.label(text="Render Settings")
+
+        row = box.row()
+        row.prop(props, "radiance_quality")
+
+        row = box.row()
+        row.prop(props, "radiance_detail")
+
+        row = box.row()
+        row.prop(props, "radiance_variability")
+
+        row = box.row()
         row.prop(props, "output_file_name")
 
-        row = layout.row()
+        row = box.row()
         row.prop(props, "output_file_format")
         layout.separator()
 
-        row = layout.row()
+        row = box.row()
         row.prop(props, "use_hdr")
 
         if props.use_hdr:
-            row = layout.row()
+            row = box.row()
             row.prop(props, "choose_hdr_image")
 
-        row = layout.row()
-        layout.label(text="Step 2: Run the simulation")
-        row = layout.row()
+        # Step 1: Export geometry for simulation
+        box = layout.box()
+        box.label(text="Step 1: Export geometry for simulation")
+        row = box.row()
+        row.operator("export_scene.radiance", text="Export Geometry for Simulation")
+
+        layout.separator()
+
+        # Step 2: Prepare Radiance scene
+        box = layout.box()
+        box.label(text="Step 2: Prepare Radiance scene")
+        row = box.row()
+        row.operator("scene.prepare_radiance", text="Prepare Scene")
+
+        layout.separator()
+
+        # Step 3: Run the simulation
+        box = layout.box()
+        box.label(text="Step 3: Run the simulation")
+        row = box.row()
         row.operator("render_scene.radiance", text="Radiance Render")
         row.enabled = not props.is_exporting
 
