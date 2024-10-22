@@ -37,7 +37,7 @@ from bonsai.bim.ifc import IfcStore
 from math import pi, sin, cos, degrees
 from mathutils import Vector, Matrix
 from bonsai.bim.module.model.opening import FilledOpeningGenerator
-from bonsai.bim.module.model.decorator import PolylineDecorator
+from bonsai.bim.module.model.decorator import PolylineDecorator, ProductDecorator
 from bonsai.bim.module.model.polyline import PolylineOperator
 from typing import Optional
 from lark import Lark, Transformer
@@ -383,6 +383,7 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator):
         ):
             self.create_walls_from_polyline(context)
             context.workspace.status_text_set(text=None)
+            ProductDecorator.uninstall()
             PolylineDecorator.uninstall()
             tool.Polyline.clear_polyline()
             tool.Blender.update_viewport()
@@ -394,12 +395,14 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator):
 
         cancel = self.handle_cancelation(context, event)
         if cancel is not None:
+            ProductDecorator.uninstall()
             return cancel
 
         return {"RUNNING_MODAL"}
 
     def invoke(self, context, event):
         super().invoke(context, event)
+        ProductDecorator.install(context)
         self.tool_state.use_default_container = True
         self.tool_state.plane_method = "XY"
         return {"RUNNING_MODAL"}
