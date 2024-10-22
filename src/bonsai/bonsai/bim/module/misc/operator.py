@@ -95,6 +95,11 @@ class SnapSpacesTogether(bpy.types.Operator):
 class ResizeToStorey(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.resize_to_storey"
     bl_label = "Resize To Storey"
+    bl_description = (
+        "Change object's origin to the bottom, move object to it's storey elevation and scale object to storey height.\n"
+        "Storey height is based on the provided number of storeys above object's storey.\n"
+        "If object's storey is the last storey, operator will have no effect"
+    )
     bl_options = {"REGISTER", "UNDO"}
     total_storeys: bpy.props.IntProperty()
 
@@ -104,6 +109,11 @@ class ResizeToStorey(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         for obj in context.selected_objects:
+            if not (element := tool.Ifc.get_entity(obj)):
+                continue
+            if element.HasOpenings:
+                self.report({"ERROR"}, f"Object '{obj.name}', scaling is not supported.")
+                continue
             core.resize_to_storey(tool.Misc, obj=obj, total_storeys=self.total_storeys)
 
 
