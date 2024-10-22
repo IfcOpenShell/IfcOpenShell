@@ -39,7 +39,7 @@ from bonsai.bim.ifc import IfcStore
 from bonsai.bim.helper import get_enum_items
 from bonsai.bim.module.model.data import AuthoringData
 from bonsai.bim.module.model.polyline import PolylineOperator
-from bonsai.bim.module.model.decorator import PolylineDecorator
+from bonsai.bim.module.model.decorator import PolylineDecorator, ProductDecorator
 from mathutils import Vector, Matrix
 from bpy_extras.object_utils import AddObjectHelper
 import json
@@ -187,12 +187,14 @@ class AddOccurrence(bpy.types.Operator, PolylineOperator):
 
         cancel = self.handle_cancelation(context, event)
         if cancel is not None:
+            ProductDecorator.uninstall()
             return cancel
 
         return {"RUNNING_MODAL"}
 
     def invoke(self, context, event):
         super().invoke(context, event)
+        ProductDecorator.install(context)
         self.tool_state.use_default_container = True
         self.tool_state.plane_method = "XY"
         return {"RUNNING_MODAL"}
