@@ -959,9 +959,9 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             return
         if self.active_material_usage == "LAYER2":
             if bpy.ops.bim.align_wall.poll():
-                bpy.ops.bim.align_wall(align_type="Centreline")
+                bpy.ops.bim.align_wall(align_type="CENTERLINE")
         else:
-            bpy.ops.bim.align_product(align_type="Centreline")
+            bpy.ops.bim.align_product(align_type="CENTERLINE")
 
     def hotkey_S_E(self):
         if not bpy.context.selected_objects:
