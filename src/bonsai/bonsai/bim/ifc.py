@@ -48,7 +48,7 @@ class OperationData(TypedDict):
 class Operation(TypedDict):
     rollback: Callable
     commit: Callable
-    data: OperationData
+    data: Union[OperationData, None]
 
 
 class TransactionStep(TypedDict):
@@ -197,7 +197,7 @@ class IfcStore:
         return IfcStore.schema
 
     @staticmethod
-    def get_element(id_or_guid: Union[int, str]) -> IFC_CONNECTED_TYPE:
+    def get_element(id_or_guid: Union[int, str]) -> Union[IFC_CONNECTED_TYPE, None]:
         if isinstance(id_or_guid, int):
             obj = IfcStore.id_map.get(id_or_guid)
         else:
@@ -385,7 +385,7 @@ class IfcStore:
             obj.BIMObjectProperties.ifc_definition_id = 0
 
     @staticmethod
-    def execute_ifc_operator(operator: bpy.types.Operator, context: bpy.types.Context, is_invoke=False):
+    def execute_ifc_operator(operator: tool.Ifc.Operator, context: bpy.types.Context, is_invoke=False) -> set[str]:
         bonsai.last_actions.append({"type": "operator", "name": operator.bl_idname})
         bpy.context.scene.BIMProperties.is_dirty = True
         is_top_level_operator = not bool(IfcStore.current_transaction)
@@ -424,17 +424,19 @@ class IfcStore:
         return result
 
     @staticmethod
-    def begin_transaction(operator: bpy.types.Operator) -> None:
+    def begin_transaction(operator: tool.Ifc.Operator) -> None:
         IfcStore.current_transaction = str(uuid.uuid4())
         operator.transaction_key = IfcStore.current_transaction
 
     @staticmethod
-    def end_transaction(operator: bpy.types.Operator) -> None:
+    def end_transaction(operator: tool.Ifc.Operator) -> None:
         IfcStore.current_transaction = ""
         operator.transaction_key = ""
 
     @staticmethod
-    def add_transaction_operation(operator: bpy.types.Operator, rollback=None, commit=None) -> None:
+    def add_transaction_operation(
+        operator: tool.Ifc.Operator, rollback: Optional[Callable] = None, commit: Optional[Callable] = None
+    ) -> None:
         key = getattr(operator, "transaction_key", None)
         data = getattr(operator, "transaction_data", None)
         bpy.context.scene.BIMProperties.last_transaction = key
@@ -442,10 +444,10 @@ class IfcStore:
         rollback = rollback or getattr(operator, "rollback", lambda data: True)
         commit = commit or getattr(operator, "commit", lambda data: True)
         if IfcStore.history and IfcStore.history[-1]["key"] == key:
-            IfcStore.history[-1]["operations"].append(OperationData(rollback=rollback, commit=commit, data=data))
+            IfcStore.history[-1]["operations"].append(Operation(rollback=rollback, commit=commit, data=data))
         else:
             IfcStore.history.append(
-                TransactionStep(key=key, operations=[OperationData(rollback=rollback, commit=commit, data=data)])
+                TransactionStep(key=key, operations=[Operation(rollback=rollback, commit=commit, data=data)])
             )
         IfcStore.future = []
 

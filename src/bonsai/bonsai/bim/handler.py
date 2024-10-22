@@ -32,14 +32,14 @@ from bonsai.bim.module.model.data import AuthoringData
 from bonsai.bim.module.model.workspace import LIST_OF_TOOLS, TOOLS_TO_CLASSES_MAP
 from mathutils import Vector
 from math import cos, degrees
-from typing import Union
+from typing import Union, Callable
 
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 global_subscription_owner = object()
 
 
-def name_callback(obj, data):
+def name_callback(obj: Union[bpy.types.Object, bpy.types.Material], data: str) -> None:
     try:
         obj.name
     except:
@@ -150,7 +150,7 @@ def active_material_index_callback(obj, data):
     refresh_ui_data()
 
 
-def subscribe_to(obj, data_path, callback):
+def subscribe_to(obj: bpy.types.ID, data_path: str, callback: Callable[[bpy.types.ID, str], None]):
     try:
         subscribe_to = obj.path_resolve(data_path, False)
     except:
