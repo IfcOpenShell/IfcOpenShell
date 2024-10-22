@@ -149,11 +149,7 @@ class Style(bonsai.core.tool.Style):
 
         Return None if material is not linked to IFC or it's linked to non-existent element.
         """
-        if ifc_definition_id := obj.BIMStyleProperties.ifc_definition_id:
-            try:
-                return tool.Ifc.get().by_id(ifc_definition_id)
-            except:
-                return
+        return tool.Ifc.get_entity(obj)
 
     @classmethod
     def get_style_elements(

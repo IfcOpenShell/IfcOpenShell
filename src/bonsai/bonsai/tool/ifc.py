@@ -96,7 +96,7 @@ class Ifc(bonsai.core.tool.Ifc):
 
     @classmethod
     def get_entity(cls, obj: IFC_CONNECTED_TYPE) -> Union[ifcopenshell.entity_instance, None]:
-        """Get linked IFC entity based on obj's BIMObjectProperties.ifc_definition_id.
+        """Get linked IFC entity based on obj's ifc_definition_id.
 
         Return None if object is not linked to IFC or it's linked to non-existent element.
         """
@@ -172,13 +172,11 @@ class Ifc(bonsai.core.tool.Ifc):
 
             bpy.msgbus.clear_by_owner(obj)
 
-            material = cls.get_entity(obj)
-            style = tool.Style.get_style(obj)
-            if material:
-                IfcStore.id_map[material.id()] = obj
-            if style:
-                IfcStore.id_map[style.id()] = obj
+            style = cls.get_entity(obj)
+            if not style:
+                continue
 
+            IfcStore.id_map[style.id()] = obj
             bonsai.bim.handler.subscribe_to(obj, "name", bonsai.bim.handler.name_callback)
 
     @classmethod
