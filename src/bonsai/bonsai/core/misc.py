@@ -25,7 +25,7 @@ if TYPE_CHECKING:
     import bonsai.tool as tool
 
 
-def resize_to_storey(misc: tool.Misc, obj: bpy.types.Object, total_storeys: int) -> None:
+def resize_to_storey(misc: tool.Misc, ifc: tool.Ifc, obj: bpy.types.Object, total_storeys: int) -> None:
     storey = misc.get_object_storey(obj)
     if not storey:
         return
@@ -35,4 +35,4 @@ def resize_to_storey(misc: tool.Misc, obj: bpy.types.Object, total_storeys: int)
     misc.set_object_origin_to_bottom(obj)
     misc.move_object_to_elevation(obj, misc.get_storey_elevation_in_si(storey))
     misc.scale_object_to_height(obj, height)
-    misc.mark_object_as_edited(obj)
+    ifc.edit(obj)

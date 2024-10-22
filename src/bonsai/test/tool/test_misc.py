@@ -167,13 +167,6 @@ class TestScaleObjectToHeight(test.bim.bootstrap.NewFile):
         assert list(obj.scale) == [1.0, 1.0, 1.0]
 
 
-class TestMarkObjectAsEdited(test.bim.bootstrap.NewFile):
-    def test_run(self):
-        obj = bpy.data.objects.new("Cube", None)
-        subject.mark_object_as_edited(obj)
-        assert obj in IfcStore.edited_objs
-
-
 class TestSplitObjectsWithCutter(test.bim.bootstrap.NewFile):
     def test_run(self):
         bpy.ops.mesh.primitive_cube_add()

@@ -540,7 +540,6 @@ class Misc:
     def get_object_storey(cls, obj): pass
     def get_storey_elevation_in_si(cls, storey): pass
     def get_storey_height_in_si(cls, storey, total_storeys): pass
-    def mark_object_as_edited(cls, obj): pass
     def move_object_to_elevation(cls, obj, elevation): pass
     def run_root_copy_class(cls, obj=None): pass
     def scale_object_to_height(cls, obj, height): pass
