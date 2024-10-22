@@ -95,7 +95,6 @@ class AlignWall(bpy.types.Operator):
                 aligner.align_last_layer()
             else:
                 assert_never(self.align_type)
-            tool.Ifc.edit(obj)
         return {"FINISHED"}
 
 
@@ -279,21 +278,6 @@ class ChangeLayerLength(bpy.types.Operator, tool.Ifc.Operator):
         for obj in context.selected_objects:
             joiner.set_length(obj, self.length)
         return {"FINISHED"}
-
-
-def recalculate_dumb_wall_origin(wall, new_origin=None):
-    if new_origin is None:
-        new_origin = wall.matrix_world @ Vector(wall.bound_box[0])
-    if (wall.matrix_world.translation - new_origin).length < 0.001:
-        return
-    wall.data.transform(
-        Matrix.Translation(
-            (wall.matrix_world.inverted().to_quaternion() @ (wall.matrix_world.translation - new_origin))
-        )
-    )
-    wall.matrix_world.translation = new_origin
-    for child in wall.children:
-        child.matrix_parent_inverse = wall.matrix_world.inverted()
 
 
 class DrawPolylineWall(bpy.types.Operator, PolylineOperator):
