@@ -491,6 +491,7 @@ class SetActiveType(bpy.types.Operator, tool.Ifc.Operator):
 class AlignProduct(bpy.types.Operator):
     bl_idname = "bim.align_product"
     bl_label = "Align Product"
+    bl_description = "Align the selected objects to the active object"
     bl_options = {"REGISTER", "UNDO"}
 
     AlignType = Literal["CENTERLINE", "POSITIVE", "NEGATIVE"]
@@ -504,6 +505,7 @@ class AlignProduct(bpy.types.Operator):
     def execute(self, context):
         selected_objs = context.selected_objects
         if len(selected_objs) < 2 or not context.active_object:
+            self.report({"ERROR"}, "Please select atleast 2 objects.")
             return {"FINISHED"}
         if self.align_type == "CENTERLINE":
             point = context.active_object.matrix_world @ (
