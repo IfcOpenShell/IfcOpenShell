@@ -491,11 +491,7 @@ class BIM_PT_tabs(Panel):
             op = row.operator("bim.open_uri", text="", icon="QUESTION")
             op.uri = "https://docs.bonsaibim.org/guides/troubleshooting.html#incompatible-blender-features"
 
-        if (
-            (o := context.active_object)
-            and tool.Ifc.get_entity(o)
-            and [round(x, 4) for x in list(o.matrix_world.to_scale())] != [1, 1, 1]
-        ):
+        if (o := context.active_object) and tool.Ifc.get_entity(o) and tool.Geometry.is_scaled(o):
             box = self.layout.box()
             box.alert = True
             row = box.row(align=True)

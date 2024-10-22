@@ -823,8 +823,8 @@ class Geometry(bonsai.core.tool.Geometry):
         return isinstance(data, supported_types)
 
     @classmethod
-    def is_edited(cls, obj: bpy.types.Object) -> bool:
-        return not all([tool.Cad.is_x(o, 1.0) for o in obj.scale]) or obj in IfcStore.edited_objs
+    def is_scaled(cls, obj: bpy.types.Object) -> bool:
+        return not all([tool.Cad.is_x(o, 1.0) for o in obj.scale])
 
     @classmethod
     def is_mapped_representation(cls, representation: ifcopenshell.entity_instance) -> bool:
