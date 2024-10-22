@@ -956,11 +956,15 @@ class Spatial(bonsai.core.tool.Spatial):
     @classmethod
     def edit_active_space_obj_from_mesh(cls, mesh: bpy.types.Mesh) -> None:
         active_obj = bpy.context.active_object
-        assert active_obj and isinstance(active_obj.data, bpy.types.Mesh)
-        mesh.name = active_obj.data.name
-        mesh.BIMMeshProperties.ifc_definition_id = active_obj.data.BIMMeshProperties.ifc_definition_id
+        old_mesh = active_obj.data
+        old_mesh_name = old_mesh.name
+        assert active_obj and isinstance(old_mesh, bpy.types.Mesh)
+        mesh.BIMMeshProperties.ifc_definition_id = old_mesh.BIMMeshProperties.ifc_definition_id
         tool.Geometry.change_object_data(active_obj, mesh, is_global=True)
         tool.Ifc.edit(active_obj)
+        tool.Blender.remove_data_block(old_mesh)
+        # Rename after old mesh is removed to avoid .001 suffix.
+        mesh.name = old_mesh_name
 
     @classmethod
     def set_obj_origin_to_bboxcenter(cls, obj: bpy.types.Object) -> None:
