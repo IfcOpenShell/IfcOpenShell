@@ -15,6 +15,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
+#
+# pyright: reportUnnecessaryTypeIgnoreComment=error
 
 import bpy
 import bmesh
@@ -43,7 +45,7 @@ from bonsai.bim.module.model.decorator import PolylineDecorator, ProductDecorato
 from mathutils import Vector, Matrix
 from bpy_extras.object_utils import AddObjectHelper
 import json
-from typing import Any, Union, Optional
+from typing import Any, Union, Optional, Literal, get_args, assert_never, TYPE_CHECKING
 
 
 class AddEmptyType(bpy.types.Operator, AddObjectHelper):
@@ -490,7 +492,14 @@ class AlignProduct(bpy.types.Operator):
     bl_idname = "bim.align_product"
     bl_label = "Align Product"
     bl_options = {"REGISTER", "UNDO"}
-    align_type: bpy.props.StringProperty()
+
+    AlignType = Literal["CENTERLINE", "POSITIVE", "NEGATIVE"]
+    align_type: bpy.props.EnumProperty(  # type: ignore [reportRedeclaration]
+        items=((i, i, "") for i in get_args(AlignType))
+    )
+
+    if TYPE_CHECKING:
+        align_type: AlignType
 
     def execute(self, context):
         selected_objs = context.selected_objects
@@ -504,6 +513,8 @@ class AlignProduct(bpy.types.Operator):
             point = context.active_object.matrix_world @ Vector(context.active_object.bound_box[6])
         elif self.align_type == "NEGATIVE":
             point = context.active_object.matrix_world @ Vector(context.active_object.bound_box[0])
+        else:
+            assert_never(self.align_type)
 
         active_x_axis = context.active_object.matrix_world.to_quaternion() @ Vector((1, 0, 0))
         active_y_axis = context.active_object.matrix_world.to_quaternion() @ Vector((0, 1, 0))
@@ -528,6 +539,8 @@ class AlignProduct(bpy.types.Operator):
                 obj_point = obj.matrix_world @ Vector(obj.bound_box[6])
             elif self.align_type == "NEGATIVE":
                 obj_point = obj.matrix_world @ Vector(obj.bound_box[0])
+            else:
+                assert_never(self.align_type)
             results.append(mathutils.geometry.distance_point_to_plane(obj_point, point, axis))
         return results
 
