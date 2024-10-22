@@ -25,7 +25,7 @@ import bonsai.core.spatial as core
 class GenerateSpace(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.generate_space"
     bl_label = "Generate Space from Cursor"
-    bl_options = {"REGISTER"}
+    bl_options = {"REGISTER", "UNDO"}
     bl_description = (
         "Create a space from the cursor position.\n\n"
         "Move the cursor position into the desired position, "
