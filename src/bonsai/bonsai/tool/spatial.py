@@ -628,14 +628,20 @@ class Spatial(bonsai.core.tool.Spatial):
         return False
 
     @classmethod
-    def get_space_polygon_from_context_visible_objects(cls, x: float, y: float) -> Union[shapely.Polygon, None]:
+    def get_space_polygon_from_context_visible_objects(
+        cls, x: float, y: float
+    ) -> Union[shapely.Polygon, Literal["NO POLYGONS FOUND", "NO POLYGON FOR POINT"]]:
         boundary_lines = cls.get_boundary_lines_from_context_visible_objects()
         unioned_boundaries = shapely.union_all(shapely.GeometryCollection(boundary_lines))
         closed_polygons = shapely.polygonize(unioned_boundaries.geoms)
+        if not closed_polygons:
+            return "NO POLYGONS FOUND"
         space_polygon = None
         for polygon in closed_polygons.geoms:
             if shapely.contains_xy(polygon, x, y):
                 space_polygon = shapely.force_3d(polygon)
+        if space_polygon is None:
+            return "NO POLYGON FOR POINT"
         return space_polygon
 
     @classmethod

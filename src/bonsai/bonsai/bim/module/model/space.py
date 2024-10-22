@@ -42,8 +42,8 @@ class GenerateSpace(bpy.types.Operator, tool.Ifc.Operator):
 
         try:
             core.generate_space(tool.Ifc, tool.Model, tool.Root, tool.Spatial, tool.Type)
-        except core.NoDefaultContainer:
-            return self.report({"ERROR"}, "Please set a default container to create the space in.")
+        except core.SpaceGenerationError as e:
+            return self.report({"ERROR"}, str(e))
 
 
 class GenerateSpacesFromWalls(bpy.types.Operator, tool.Ifc.Operator):
