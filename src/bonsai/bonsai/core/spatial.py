@@ -178,7 +178,7 @@ def generate_space(ifc: tool.Ifc, model: tool.Model, root: tool.Root, spatial: t
     if not space_polygon:
         return
 
-    bm = spatial.get_bmesh_from_polygon(space_polygon, h=h)
+    bm = spatial.get_bmesh_from_polygon(space_polygon, h=h, polygon_is_si=True)
 
     mesh = spatial.get_named_mesh_from_bmesh(name="Space", bmesh=bm)
 
