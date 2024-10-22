@@ -893,14 +893,18 @@ class Spatial(bonsai.core.tool.Spatial):
         return poly
 
     @classmethod
-    def get_bmesh_from_polygon(cls, poly: Polygon, h: float) -> bmesh.types.BMesh:
+    def get_bmesh_from_polygon(cls, poly: Polygon, h: float, polygon_is_si: bool = False) -> bmesh.types.BMesh:
+        """
+        :param h: Height, in meters.
+        :param polygon_is_si: Should be True if `poly` is defined in meters.
+        """
         mat = Matrix()
         bm = bmesh.new()
         bm.verts.index_update()
         bm.edges.index_update()
 
         mat_invert = mat.inverted()
-        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        si_conversion = 1.0 if polygon_is_si else ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         new_verts = [
             bm.verts.new(mat_invert @ (Vector([v[0], v[1], 0]) * si_conversion)) for v in poly.exterior.coords[0:-1]
         ]

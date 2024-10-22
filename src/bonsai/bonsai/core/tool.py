@@ -930,7 +930,7 @@ class Spatial:
     def get_purged_inner_holes_poly(cls, union_geom, min_area): pass
     def get_poly_valid_interior_list(cls, poly, min_area, interiors_list): pass
     def get_buffered_poly_from_linear_ring(cls, linear_ring): pass
-    def get_bmesh_from_polygon(cls, poly, h): pass
+    def get_bmesh_from_polygon(cls, poly, h, polygon_is_si=False): pass
     def get_named_obj_from_bmesh(cls, name, bmesh): pass
     def get_named_obj_from_mesh(cls, name, mesh): pass
     def get_named_mesh_from_bmesh(cls, name, bmesh): pass
