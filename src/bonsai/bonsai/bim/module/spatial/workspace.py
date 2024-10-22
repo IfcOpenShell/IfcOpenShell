@@ -156,8 +156,8 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         else:
             try:
                 bonsai.core.spatial.generate_space(tool.Ifc, tool.Model, tool.Root, tool.Spatial, tool.Type)
-            except bonsai.core.spatial.NoDefaultContainer:
-                return self.report({"ERROR"}, "Please set a default container to create the space in.")
+            except bonsai.core.spatial.SpaceGenerationError as e:
+                return self.report({"ERROR"}, str(e))
 
     def hotkey_S_B(self):
         bpy.ops.bim.add_boundary()
