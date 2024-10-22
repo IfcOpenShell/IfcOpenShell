@@ -15,6 +15,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
+#
+# pyright: reportUnnecessaryTypeIgnoreComment=error
 
 import bpy
 import copy
@@ -39,7 +41,7 @@ from mathutils import Vector, Matrix
 from bonsai.bim.module.model.opening import FilledOpeningGenerator
 from bonsai.bim.module.model.decorator import PolylineDecorator, ProductDecorator
 from bonsai.bim.module.model.polyline import PolylineOperator
-from typing import Optional
+from typing import Optional, assert_never, TYPE_CHECKING, get_args, Literal
 from lark import Lark, Transformer
 
 
@@ -61,11 +63,18 @@ class AlignWall(bpy.types.Operator):
     bl_idname = "bim.align_wall"
     bl_label = "Align Wall"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = """ Align the selected walls to the last selected wall:
+    bl_description = """ Align the selected walls to the active wall:
     'Ext.': align to the EXTERIOR face
     'C/L': align to wall CENTERLINE
     'Int.': align to the INTERIOR face"""
-    align_type: bpy.props.StringProperty()
+
+    AlignType = Literal["CENTERLINE", "EXTERIOR", "INTERIOR"]
+    align_type: bpy.props.EnumProperty(  # type: ignore [reportRedeclaration]
+        items=((i, i, "") for i in get_args(AlignType))
+    )
+
+    if TYPE_CHECKING:
+        align_type: AlignType
 
     @classmethod
     def poll(cls, context):
@@ -84,6 +93,8 @@ class AlignWall(bpy.types.Operator):
                 aligner.align_first_layer()
             elif self.align_type == "INTERIOR":
                 aligner.align_last_layer()
+            else:
+                assert_never(self.align_type)
             tool.Ifc.edit(obj)
         return {"FINISHED"}
 
