@@ -85,13 +85,17 @@ class SpatialToolUI:
         row.prop(data=cls.model_props, property="rl3", text="RL")
         row = cls.layout.row(align=True)
         op_name = lambda op: op.get_rna_type().name
-        add_layout_hotkey(
-            cls.layout,
-            op_name(bpy.ops.bim.generate_spaces_from_walls),
-            "S_A",
-            bpy.ops.bim.generate_spaces_from_walls.__doc__,
-        )
-        add_layout_hotkey(cls.layout, op_name(bpy.ops.bim.generate_space), "S_A", bpy.ops.bim.generate_space.__doc__)
+        if AuthoringData.data["active_class"] == "IfcWall" and context.selected_objects:
+            add_layout_hotkey(
+                cls.layout,
+                op_name(bpy.ops.bim.generate_spaces_from_walls),
+                "S_A",
+                bpy.ops.bim.generate_spaces_from_walls.__doc__,
+            )
+        else:
+            add_layout_hotkey(
+                cls.layout, op_name(bpy.ops.bim.generate_space), "S_A", bpy.ops.bim.generate_space.__doc__
+            )
         add_layout_hotkey(
             cls.layout, op_name(bpy.ops.bim.toggle_space_visibility), "S_T", bpy.ops.bim.toggle_space_visibility.__doc__
         )
