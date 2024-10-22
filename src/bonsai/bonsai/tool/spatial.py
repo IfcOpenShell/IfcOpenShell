@@ -762,6 +762,12 @@ class Spatial(bonsai.core.tool.Spatial):
 
     @classmethod
     def get_x_y_z_h_mat_from_obj(cls, obj: bpy.types.Object) -> tuple[float, float, float, float, Matrix]:
+        """
+        `x`, `y` - object's center XY in world space;\n
+        `z` - object's local Z- in world space;\n
+        `h` - object's Z dimension;\n
+        `mat` - object's matrix
+        """
         mat = obj.matrix_world
         local_bbox_center = 0.125 * sum((Vector(b) for b in obj.bound_box), Vector())
         global_bbox_center = mat @ local_bbox_center
@@ -774,6 +780,12 @@ class Spatial(bonsai.core.tool.Spatial):
 
     @classmethod
     def get_x_y_z_h_mat_from_cursor(cls) -> tuple[float, float, float, float, Matrix]:
+        """
+        `x`, `y` - from cursor;\n
+        `z` - from default container Z location (if set);\n
+        `h` - default value of 3;\n
+        `mat` - identity matrix
+        """
         x, y, z = bpy.context.scene.cursor.location.xyz
         if container := tool.Root.get_default_container():
             if container_obj := tool.Ifc.get_object(container):
@@ -940,6 +952,7 @@ class Spatial(bonsai.core.tool.Spatial):
     @classmethod
     def edit_active_space_obj_from_mesh(cls, mesh: bpy.types.Mesh) -> None:
         active_obj = bpy.context.active_object
+        assert active_obj and isinstance(active_obj.data, bpy.types.Mesh)
         mesh.name = active_obj.data.name
         mesh.BIMMeshProperties.ifc_definition_id = active_obj.data.BIMMeshProperties.ifc_definition_id
         tool.Geometry.change_object_data(active_obj, mesh, is_global=True)

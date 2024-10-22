@@ -49,8 +49,8 @@ class SpatialTool(WorkSpaceTool):
         SpatialToolUI.draw(context, layout)
 
 
-def add_layout_hotkey(layout, text, hotkey, description):
-    args = ["spatial", layout, text, hotkey, description]
+def add_layout_hotkey(layout: bpy.types.UILayout, text: str, hotkey: str, description: str) -> None:
+    args = ("spatial", layout, text, hotkey, description)
     tool.Blender.add_layout_hotkey_operator(*args)
 
 

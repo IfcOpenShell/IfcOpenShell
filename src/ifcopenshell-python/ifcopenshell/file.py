@@ -50,8 +50,8 @@ HEADER_FIELDS = {
 
 
 class Transaction:
-    def __init__(self, ifc_file):
-        self.file = ifc_file
+    def __init__(self, ifc_file: file):
+        self.file: file = ifc_file
         self.operations = []
         self.is_batched = False
         self.batch_delete_index = 0
