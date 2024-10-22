@@ -935,6 +935,10 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
                 relating_type_id := tool.Blender.get_enum_safe(props, "relating_type_id")
             ) and tool.Model.get_usage_type(tool.Ifc.get().by_id(int(relating_type_id))) == "LAYER2":
                 bpy.ops.bim.draw_polyline_wall("INVOKE_DEFAULT")
+            elif (
+                relating_type_id := tool.Blender.get_enum_safe(props, "relating_type_id")
+            ) and tool.Model.get_usage_type(tool.Ifc.get().by_id(int(relating_type_id))) == "LAYER3":
+                bpy.ops.bim.draw_polyline_slab("INVOKE_DEFAULT")
             else:
                 bpy.ops.bim.add_occurrence("INVOKE_DEFAULT")
 
