@@ -433,30 +433,33 @@ class CreateObjectUI:
         if not AuthoringData.data["relating_type_id"]:
             return
 
-        if cls.props.ifc_class == "IfcWallType":
+        ifc_class = tool.Blender.get_enum_safe(cls.props, "ifc_class")
+        if not ifc_class:
+            ifc_class = AuthoringData.data["ifc_classes"][0][0]
+        if ifc_class == "IfcWallType":
             row.prop(data=cls.props, property="rl1", text="Relative Level" if ui_context != "TOOL_HEADER" else "RL")
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             row.prop(data=cls.props, property="extrusion_depth", text="Height" if ui_context != "TOOL_HEADER" else "H")
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             row.prop(data=cls.props, property="x_angle", text="Slope") if ui_context != "TOOL_HEADER" else "A"
 
-        elif cls.props.ifc_class in ("IfcSlabType", "IfcRampType", "IfcRoofType"):
+        elif ifc_class in ("IfcSlabType", "IfcRampType", "IfcRoofType"):
             row.prop(
                 data=cls.props, property="x_angle", text="Slope" if ui_context != "TOOL_HEADER" else "A", icon="FILE_3D"
             )
 
-        elif cls.props.ifc_class in ("IfcColumnType", "IfcMemberType"):
+        elif ifc_class in ("IfcColumnType", "IfcMemberType"):
             row.prop(data=cls.props, property="cardinal_point", text="Axis")
             row.prop(data=cls.props, property="extrusion_depth", text="Height" if ui_context != "TOOL_HEADER" else "H")
 
-        elif cls.props.ifc_class in ("IfcBeamType"):
+        elif ifc_class in ("IfcBeamType"):
             row.prop(data=cls.props, property="cardinal_point", text="Axis")
             row.prop(data=cls.props, property="extrusion_depth", text="Length" if ui_context != "TOOL_HEADER" else "L")
 
-        elif cls.props.ifc_class in ("IfcDoorType", "IfcDoorStyle"):
+        elif ifc_class in ("IfcDoorType", "IfcDoorStyle"):
             row.prop(data=cls.props, property="rl1", text="Relative Level" if ui_context != "TOOL_HEADER" else "RL")
 
-        elif cls.props.ifc_class in (
+        elif ifc_class in (
             "IfcWindowType",
             "IfcWindowStyle",
             "IfcDoorType",
@@ -471,7 +474,7 @@ class CreateObjectUI:
             )
 
         ### this neeeds to move
-        elif cls.props.ifc_class in ("IfcSpaceType"):
+        elif ifc_class in ("IfcSpaceType"):
             add_layout_hotkey_operator(cls.layout, "Generate", "S_G", bpy.ops.bim.generate_space.__doc__, ui_context)
         ###
         else:
@@ -485,7 +488,10 @@ class CreateObjectUI:
         if not AuthoringData.data["ifc_element_type"]:
             prop_with_search(row, cls.props, "ifc_class", text="Type Class" if ui_context != "TOOL_HEADER" else "")
         if AuthoringData.data["ifc_classes"]:
-            if cls.props.ifc_class:
+            ifc_class = tool.Blender.get_enum_safe(cls.props, "ifc_class")
+            if not ifc_class:
+                ifc_class = AuthoringData.data["ifc_classes"][0][0]
+            if ifc_class:
                 box = cls.layout.box()
                 row = box.row(align=True)
                 if AuthoringData.data["type_thumbnail"] and ui_context == "TOOL_HEADER":
@@ -530,7 +536,7 @@ class CreateObjectUI:
                             icon="FILE_REFRESH",
                             emboss=False,
                         )
-                        op.ifc_class = cls.props.ifc_class
+                        op.ifc_class = ifc_class
 
                     row = box.row(align=True)
                     row.alignment = "CENTER"
