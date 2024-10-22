@@ -86,7 +86,7 @@ IF NOT EXIST "%INSTALL_DIR%". mkdir "%INSTALL_DIR%"
 IF %VS_VER%==2008 set PATH=C:\Windows\Microsoft.NET\Framework\v3.5;%PATH%
 
 :: User-configurable build options
-IF NOT DEFINED IFCOS_INSTALL_PYTHON set IFCOS_INSTALL_PYTHON=TRUE
+IF NOT DEFINED IFCOS_INSTALL_PYTHON set IFCOS_INSTALL_PYTHON=FALSE
 IF NOT DEFINED IFCOS_NUM_BUILD_PROCS set IFCOS_NUM_BUILD_PROCS=%NUMBER_OF_PROCESSORS%
 
 :: For subroutines
@@ -265,7 +265,7 @@ powershell -c "get-content %~dp0patches\mpfr.patch | %%{$_ -replace \"sdk\",\"%U
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 if NOT "%USE_STATIC_RUNTIME%"=="FALSE" git apply "%~dp0patches\mpfr_runtime.patch" --unidiff-zero --ignore-whitespace
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-if "%VS_VER%"=="2017" (
+if "%VS_VER%" LEQ "2017" (
   set mpfr_sln=build.vc15
   set orig_platform_toolset=v141
 ) else (
