@@ -24,6 +24,7 @@ import ifcopenshell.util.representation
 import ifcopenshell.util.type
 import ifcopenshell.util.unit
 import ifcopenshell.api
+import bonsai.bim.helper
 import bonsai.tool as tool
 import bonsai.core.geometry
 import bonsai.core.type as core
@@ -315,6 +316,12 @@ class DuplicateType(bpy.types.Operator, tool.Ifc.Operator):
             tool.Blender.select_and_activate_single_object(context, new_obj)
         else:
             self.report({"INFO"}, "Type object can't be selected : It may be hidden or in an excluded collection.")
-        context.scene.BIMModelProperties.ifc_class = new.is_a()
-        context.scene.BIMModelProperties.relating_type_id = str(new_obj.BIMObjectProperties.ifc_definition_id)
+
+        props = context.scene.BIMModelProperties
+
+        ifc_class = new.is_a()
+        # Set duplicated type as active in current tool.
+        if ifc_class in (i[0] for i in (bonsai.bim.helper.get_enum_items(props, "ifc_class", context) or ()) if i):
+            context.scene.BIMModelProperties.ifc_class = new.is_a()
+            context.scene.BIMModelProperties.relating_type_id = str(new_obj.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}
