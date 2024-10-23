@@ -95,7 +95,7 @@ class BIM_PT_styles(Panel):
         # style ui tools
         if active_style:
             row = self.layout.row(align=True)
-            material_name = StylesData.data["styles_to_blender_material_names"][style]
+            material_name = StylesData.data["styles_to_blender_material_names"][self.props.active_style_index]
             if material_name:  # The user may have unlinked the style, so the material may not exist
                 material = bpy.data.materials[material_name]
                 row.prop(material.BIMStyleProperties, "active_style_type", icon="SHADING_RENDERED", text="")
@@ -265,10 +265,10 @@ class BIM_PT_styles(Panel):
 
 
 class BIM_UL_styles(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         if item:
             row = layout.row(align=True)
-            material_name: Union[str, None] = StylesData.data["styles_to_blender_material_names"][item]
+            material_name: Union[str, None] = StylesData.data["styles_to_blender_material_names"][index]
             material_icon = 0
             if material_name and (material := bpy.data.materials.get(material_name)):
                 preview = material.preview_ensure()
