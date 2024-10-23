@@ -283,16 +283,26 @@ class IfcStore:
             )
 
     @staticmethod
+    def get_object_by_name(name: str) -> Union[IFC_CONNECTED_TYPE, None]:
+        obj = bpy.data.objects.get(name)
+        if not obj:
+            obj = bpy.data.materials.get(name)
+        return obj
+
+    @staticmethod
     def rollback_link_element(data: OperationData) -> None:
         del IfcStore.id_map[data["id"]]
         if data["guid"]:
             del IfcStore.guid_map[data["guid"]]
+        obj = IfcStore.get_object_by_name(data["obj"])
+        if obj is None:
+            # obj was just created during this step and didn't existed before.
+            return
+        bpy.msgbus.clear_by_owner(obj)
 
     @staticmethod
     def commit_link_element(data: OperationData) -> None:
-        obj = bpy.data.objects.get(data["obj"])
-        if not obj:
-            obj = bpy.data.materials.get(data["obj"])
+        obj = IfcStore.get_object_by_name(data["obj"])
         IfcStore.id_map[data["id"]] = obj
         if "guid" in data:
             IfcStore.guid_map[data["guid"]] = obj
