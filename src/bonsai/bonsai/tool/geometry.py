@@ -583,7 +583,7 @@ class Geometry(bonsai.core.tool.Geometry):
     def get_styles(
         cls, obj: bpy.types.Object, only_assigned_to_faces: bool = False
     ) -> list[Union[ifcopenshell.entity_instance, None]]:
-        styles = [tool.Style.get_style(s.material) for s in obj.material_slots if s.material]
+        styles = [tool.Ifc.get_entity(s.material) for s in obj.material_slots if s.material]
         if not only_assigned_to_faces:
             return styles
 
@@ -1632,7 +1632,7 @@ class Geometry(bonsai.core.tool.Geometry):
             material_index = mesh.polygons[0].material_index
             if materials := list(mesh.materials):
                 material = materials[material_index]
-                if not (style := tool.Style.get_style(material)):
+                if not (style := tool.Ifc.get_entity(material)):
                     style = ifcopenshell.api.run("style.add_style", tool.Ifc.get(), name=material.name)
                     if material.use_nodes:
                         ifc_class = "IfcSurfaceStyleRendering"
