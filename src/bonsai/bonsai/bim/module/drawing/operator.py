@@ -1316,22 +1316,21 @@ class CreateDrawing(bpy.types.Operator):
         for projection in projections:
             projection.getparent().remove(projection)
             group.insert(0, projection)
-    
+
     def move_elements_to_top(self, root):
         group = root.find("{http://www.w3.org/2000/svg}g")
-        
-        #TODO:  don't hardcode, make the following an assignable preference
-        classes_to_move = ['IfcColumn', 'IfcBeam']
-        
+
+        # TODO:  don't hardcode, make the following an assignable preference
+        classes_to_move = ["IfcColumn", "IfcBeam"]
+
         xpath_query = " or ".join([f"contains(@class, '{name}')" for name in classes_to_move])
         full_xpath = f".//svg:g[{xpath_query}]"
-        
+
         elements_to_top = root.xpath(full_xpath, namespaces={"svg": "http://www.w3.org/2000/svg"})
-        
+
         for element in elements_to_top:
             element.getparent().remove(element)
             group.append(element)
-
 
     def generate_annotation(self, context: bpy.types.Context) -> Union[str, None]:
         if not ifcopenshell.util.element.get_pset(self.drawing, "EPset_Drawing", "HasAnnotation"):
