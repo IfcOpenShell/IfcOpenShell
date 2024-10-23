@@ -33,7 +33,7 @@ import bonsai.bim.handler
 import bonsai.tool as tool
 from pathlib import Path
 from bonsai.tool.brick import BrickStore
-from typing import Set, Union, Optional, TypedDict, Callable
+from typing import Set, Union, Optional, TypedDict, Callable, NotRequired
 
 
 IFC_CONNECTED_TYPE = Union[bpy.types.Material, bpy.types.Object]
@@ -41,7 +41,7 @@ IFC_CONNECTED_TYPE = Union[bpy.types.Material, bpy.types.Object]
 
 class OperationData(TypedDict):
     id: int
-    guid: Union[str, None]
+    guid: NotRequired[str]
     obj: str
 
 
@@ -266,8 +266,8 @@ class IfcStore:
             IfcStore.unlink_element(obj=existing_obj)
 
         IfcStore.id_map[element.id()] = obj
-        if hasattr(element, "GlobalId"):
-            IfcStore.guid_map[element.GlobalId] = obj
+        if global_id := getattr(element, "GlobalId", None):
+            IfcStore.guid_map[global_id] = obj
 
         if element.is_a("IfcSurfaceStyle"):
             obj.BIMStyleProperties.ifc_definition_id = element.id()
@@ -277,7 +277,9 @@ class IfcStore:
         tool.Ifc.setup_listeners(obj)
 
         if IfcStore.history:
-            data = OperationData(id=element.id(), guid=getattr(element, "GlobalId", None), obj=obj.name)
+            data = OperationData(id=element.id(), obj=obj.name)
+            if global_id:
+                data["guid"] = global_id
             IfcStore.history[-1]["operations"].append(
                 Operation(rollback=IfcStore.rollback_link_element, commit=IfcStore.commit_link_element, data=data)
             )
@@ -292,7 +294,7 @@ class IfcStore:
     @staticmethod
     def rollback_link_element(data: OperationData) -> None:
         del IfcStore.id_map[data["id"]]
-        if data["guid"]:
+        if "guid" in data:
             del IfcStore.guid_map[data["guid"]]
         obj = IfcStore.get_object_by_name(data["obj"])
         if obj is None:
@@ -316,13 +318,13 @@ class IfcStore:
             return
         obj = bpy.data.objects.get(data["obj"])
         IfcStore.id_map[data["id"]] = obj
-        if data["guid"]:
+        if "guid" in data:
             IfcStore.guid_map[data["guid"]] = obj
 
     @staticmethod
     def commit_unlink_element(data: OperationData) -> None:
         del IfcStore.id_map[data["id"]]
-        if data["guid"]:
+        if "guid" in data:
             del IfcStore.guid_map[data["guid"]]
 
     @staticmethod
@@ -371,7 +373,9 @@ class IfcStore:
                 pass
 
         if IfcStore.history:
-            data = OperationData(id=element.id(), guid=global_id)
+            data = OperationData(id=element.id())
+            if global_id:
+                data["guid"] = global_id
             if obj:
                 data["obj"] = obj.name
             IfcStore.history[-1]["operations"].append(
