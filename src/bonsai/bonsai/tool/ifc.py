@@ -274,7 +274,6 @@ class Ifc(bonsai.core.tool.Ifc):
         @final
         def execute(self, context):
             IfcStore.execute_ifc_operator(self, context)
-            bonsai.bim.handler.refresh_ui_data()
             return {"FINISHED"}
 
         # NOTE: this class can't inherit from abc.ABC to use abc.abstractmethod
