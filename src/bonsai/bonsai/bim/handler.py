@@ -147,7 +147,11 @@ def update_bim_tool_props():
 
 
 def active_material_index_callback(obj, data):
-    refresh_ui_data()
+    from bonsai.bim.module.style.data import BlenderMaterialStyleData
+
+    # Simple UI for showing whether blender material is linked to IFC style,
+    # no need to update the entire UI.
+    BlenderMaterialStyleData.is_loaded = False
 
 
 def subscribe_to(obj: bpy.types.ID, data_path: str, callback: Callable[[bpy.types.ID, str], None]):
