@@ -23,7 +23,7 @@ import math
 from bonsai.bim.prop import ObjProperty
 from bonsai.bim.module.model.data import AuthoringData
 from bpy.types import PropertyGroup, NodeTree
-from math import pi
+from math import pi, radians
 
 
 def get_ifc_class(self, context):
@@ -677,7 +677,21 @@ class BIMRailingProperties(PropertyGroup):
             setattr(self, prop_name, kwargs[prop_name])
 
 
+def to_angle(percentage: float) -> float:
+    return math.atan(percentage / 100)
+
+
+def to_percentage(angle: float) -> float:
+    return math.tan(angle) * 100
+
+
 class BIMRoofProperties(PropertyGroup):
+    def update_angle(self, context) -> None:
+        self["angle"] = to_angle(self.percentage)
+
+    def update_percentage(self, context) -> None:
+        self["percentage"] = to_percentage(self.angle)
+
     non_si_units_props = (
         "is_editing",
         "path_data",
@@ -704,13 +718,24 @@ class BIMRoofProperties(PropertyGroup):
         name="Height", default=1.0, description="Maximum height of the roof to be generated.", subtype="DISTANCE"
     )
     angle: bpy.props.FloatProperty(
-        name="Slope Angle", default=pi / 18, subtype="ANGLE", update=lambda self, context: self.update_percentage()
+        name="Slope Angle",
+        default=pi / 18,
+        subtype="ANGLE",
+        update=update_percentage,
+        min=0.0,
+        max=pi / 2,
+        soft_min=radians(5.0),
+        soft_max=radians(60.0),
     )
     percentage: bpy.props.FloatProperty(
         name="Slope %",
-        default=math.tan(pi / 18) * 100,
+        default=to_percentage(pi / 18),
         subtype="PERCENTAGE",
-        update=lambda self, context: self.update_angle(),
+        update=update_angle,
+        min=0.0,
+        max=to_percentage(pi / 2),
+        soft_min=to_percentage(radians(5.0)),
+        soft_max=to_percentage(radians(60.0)),
     )
     roof_thickness: bpy.props.FloatProperty(name="Roof Thickness", default=0.1, subtype="DISTANCE")
     rafter_edge_angle: bpy.props.FloatProperty(name="Rafter Edge Angle", min=0, max=pi, default=pi / 2, subtype="ANGLE")
@@ -738,12 +763,6 @@ class BIMRoofProperties(PropertyGroup):
         kwargs = tool.Model.convert_data_to_si_units(kwargs, self.non_si_units_props)
         for prop_name in kwargs:
             setattr(self, prop_name, kwargs[prop_name])
-
-    def update_angle(self) -> None:
-        self["angle"] = math.atan(self.percentage / 100)
-
-    def update_percentage(self) -> None:
-        self["percentage"] = math.tan(self.angle) * 100
 
 
 class SnapMousePoint(PropertyGroup):
