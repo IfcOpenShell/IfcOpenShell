@@ -144,14 +144,6 @@ class Style(bonsai.core.tool.Style):
         return obj
 
     @classmethod
-    def get_style(cls, obj: bpy.types.Material) -> Union[ifcopenshell.entity_instance, None]:
-        """Get linked IFC style based on material's BIMStyleProperties.ifc_definition_id.
-
-        Return None if material is not linked to IFC or it's linked to non-existent element.
-        """
-        return tool.Ifc.get_entity(obj)
-
-    @classmethod
     def get_style_elements(
         cls, blender_material_or_style: Union[bpy.types.Material, ifcopenshell.entity_instance]
     ) -> dict[str, ifcopenshell.entity_instance]:

@@ -272,7 +272,7 @@ class UnlinkObject(bpy.types.Operator, tool.Ifc.Operator):
                             material_replacement = replacements[material]
 
                         # no need to copy non-ifc materials as unlinking won't do anything to them
-                        elif tool.Ifc.get_entity(material) is None and tool.Style.get_style(material) is None:
+                        elif tool.Ifc.get_entity(material) is None:
                             replacements[material] = material
                             continue
 
