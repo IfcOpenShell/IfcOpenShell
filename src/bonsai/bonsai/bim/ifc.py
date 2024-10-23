@@ -399,6 +399,18 @@ class IfcStore:
         else:
             operator.transaction_key = IfcStore.current_transaction
 
+        def end_top_level_operator() -> None:
+            if is_top_level_operator:
+                if tool.Ifc.get():
+                    tool.Ifc.get().end_transaction()
+                    IfcStore.add_transaction_operation(
+                        operator, rollback=lambda d: tool.Ifc.get().undo(), commit=lambda d: tool.Ifc.get().redo()
+                    )
+                if BrickStore.graph is not None:  # `if BrickStore.graph` by itself takes ages.
+                    BrickStore.end_transaction()
+                IfcStore.end_transaction(operator)
+                bonsai.bim.handler.refresh_ui_data()
+
         try:
             if is_invoke:
                 result = getattr(operator, "_invoke")(context, None)
@@ -406,19 +418,16 @@ class IfcStore:
                 result = getattr(operator, "_execute")(context)
         except:
             bonsai.last_error = traceback.format_exc()
+            # Try to ensure undo will work since Blender undo does work in case of errors.
+            # As error come unexpectedly, it's important that user might have a chance to save the file
+            # before they got the error and not to lose the work they've done.
+            #
+            # Also, some users won't stop seeing the error,
+            # so we need to try to ensure that undo for further operations will work.
+            end_top_level_operator()
             raise
 
-        if is_top_level_operator:
-            if tool.Ifc.get():
-                tool.Ifc.get().end_transaction()
-                IfcStore.add_transaction_operation(
-                    operator, rollback=lambda d: tool.Ifc.get().undo(), commit=lambda d: tool.Ifc.get().redo()
-                )
-            if BrickStore.graph is not None:  # `if BrickStore.graph` by itself takes ages.
-                BrickStore.end_transaction()
-            IfcStore.end_transaction(operator)
-            bonsai.bim.handler.refresh_ui_data()
-
+        end_top_level_operator()
         return result
 
     @staticmethod
