@@ -133,8 +133,8 @@ namespace IfcGeom {
 			const std::vector<std::vector<std::vector<int>>>& polyhedral_faces_with_holes() const { return polyhedral_faces_with_holes_; }
 			const std::vector<int>& edges() const { return edges_; }
 			const std::vector<double>& normals() const { return normals_; }
-			std::vector<double>& uvs() { return uvs_; }
 			const std::vector<double>& uvs() const { return uvs_; }
+			std::vector<double>& uvs_ref() { return uvs_; }
 			const std::vector<int>& material_ids() const { return material_ids_; }
 			const std::vector<ifcopenshell::geometry::taxonomy::style::ptr>& materials() const { return materials_; }
 			const std::vector<int>& item_ids() const { return item_ids_; }

@@ -85,7 +85,7 @@ BLENDER_PLATFORM:=windows-x64
 endif
 
 # Current build commit hash.
-OLD:=a51ed6e
+OLD:=0e5008d
 .PHONY: bump
 bump:
 ifndef NEW
@@ -275,11 +275,6 @@ endif
 
 ifeq ($(PLATFORM), macosm1)
 	# Has universal and x86_64 builds.
-	prev_whl_name=$$(find build/bonsai/wheels/MarkupSafe-*.whl); \
-	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/_arm64/"); \
-	mv "$$prev_whl_name" "$$whl_name";
-
-	# Has universal and x86_64 builds.
 	prev_whl_name=$$(find build/bonsai/wheels/lxml-*.whl); \
 	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/_arm64/"); \
 	mv "$$prev_whl_name" "$$whl_name";
@@ -294,6 +289,11 @@ ifeq ($(PLATFORM), macosm1)
 	mv "$$prev_whl_name" "$$whl_name";
 endif
 ifeq ($(PLATFORM), macos)
+	# Has universal and arm64 builds.
+	prev_whl_name=$$(find build/bonsai/wheels/MarkupSafe-*.whl); \
+	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/_x86_64/"); \
+	mv "$$prev_whl_name" "$$whl_name";
+
 	prev_whl_name=$$(find build/bonsai/wheels/tzfpy-*.whl); \
 	whl_name=$$(echo $$prev_whl_name | sed -E "s/macosx_10_([0-9]+)_x86_64\.macosx_11_0_arm64\.macosx_10_\1_universal2/macosx_10_\1_x86_64/"); \
 	mv "$$prev_whl_name" "$$whl_name";
@@ -302,7 +302,7 @@ ifeq ($(PLATFORM), macos)
 	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/_x86_64/"); \
 	mv "$$prev_whl_name" "$$whl_name";
 
-	# has universal and amr64 builds.
+	# has universal and arm builds.
 	prev_whl_name=$$(find build/bonsai/wheels/fonttools-*.whl); \
 	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/_x86_64/"); \
 	mv "$$prev_whl_name" "$$whl_name";

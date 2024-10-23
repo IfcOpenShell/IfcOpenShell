@@ -17,6 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+import importlib
 import bpy
 import json
 import math
@@ -39,7 +40,7 @@ if TYPE_CHECKING:
     # - None  - property should be imported by default workflow
     # - True  - setting value for imported attribute should be skipped
     # - False - property should be skipped entirely from import
-    ImportCallback = Callable[[str, Optional[bonsai.bim.prop.Attribute], dict[str, Any], Union[bool, None]]]
+    ImportCallback = Callable[[str, Optional[bonsai.bim.prop.Attribute], dict[str, Any]], Union[bool, None]]
     # ExportCallback return values:
     # - True  - property should be skipped entirely from export
     # - False - property should be exproted by default workflow
@@ -237,36 +238,57 @@ def export_attributes(
     return attributes
 
 
+ENUM_ITEMS_DATA = Union[bpy.types.PropertyGroup, bpy.types.ID, bpy.types.Operator, bpy.types.OperatorProperties]
+
+
 def prop_with_search(
     layout: bpy.types.UILayout,
-    data: Union[bpy.types.PropertyGroup, bpy.types.ID],
+    data: ENUM_ITEMS_DATA,
     prop_name: str,
     should_click_ok_to_validate: bool = False,
+    original_operator_path: Optional[str] = None,
     **kwargs: Any,
 ):
     # kwargs are layout.prop arguments (text, icon, etc.)
     row = layout.row(align=True)
     row.prop(data, prop_name, **kwargs)
     try:
-        if len(get_enum_items(data, prop_name)) > 10:
+        if len(get_enum_items(data, prop_name, original_operator_path=original_operator_path)) > 10:
             # Magick courtesy of https://blender.stackexchange.com/a/203443/86891
             row.context_pointer_set(name="data", data=data)
             op = row.operator("bim.enum_property_search", text="", icon="VIEWZOOM")
             op.prop_name = prop_name
             op.should_click_ok_to_validate = should_click_ok_to_validate
+            op.original_operator_path = original_operator_path or ""
     except TypeError:  # Prop is not iterable
         pass
 
 
 def get_enum_items(
-    data: Union[bpy.types.PropertyGroup, bpy.types.ID], prop_name: str, context: Optional[bpy.types.Context] = None
+    data: ENUM_ITEMS_DATA,
+    prop_name: str,
+    context: Optional[bpy.types.Context] = None,
+    original_operator_path: Optional[str] = None,
 ) -> Union[
     Iterable[Union[tuple[str, str, str], tuple[str, str, str, int], tuple[str, str, str, str, int], None]], None
 ]:
     # Retrieve items from a dynamic EnumProperty, which is otherwise not supported
     # Or throws an error in the console when the items callback returns an empty list
     # See https://blender.stackexchange.com/q/215781/86891
-    prop = data.__annotations__[prop_name]
+
+    # OperatorProperties is missing __annotations__, so need to somehow provide original Operator.
+    # Couldn't find any way to get Operator from OperatorProperties, so we provide the path explicitly.
+    # E.g. OpeartorProperties occur when Operator is passed with context_pointer_set.
+    if isinstance(data, bpy.types.OperatorProperties):
+        if not original_operator_path:
+            raise Exception("For OperatorProperties providing the original operator path is required.")
+        operator_module_path, operator_class = original_operator_path.rsplit(".", 1)
+        operator_module = importlib.import_module(operator_module_path)
+        annotations_data = getattr(operator_module, operator_class)
+    else:
+        annotations_data = data
+
+    prop = annotations_data.__annotations__[prop_name]
     items = prop.keywords.get("items")
     if items is None:
         return

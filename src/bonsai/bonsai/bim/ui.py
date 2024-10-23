@@ -39,6 +39,7 @@ from typing import Optional
 
 class IFCFileSelector:
     filepath: str
+    use_relative_path: bool
 
     def is_existing_ifc_file(self, filepath: Optional[str] = None) -> bool:
         """Check if file path exists and if it's an IFC file.
@@ -46,16 +47,26 @@ class IFCFileSelector:
         If `filepath` is not provided, will use filepath property from the current operator.
         """
         if filepath is None:
-            filepath = self.filepath
-        return os.path.exists(filepath) and "ifc" in os.path.splitext(filepath)[1].lower()
+            path = self.get_filepath_abs()
+        else:
+            path = Path(filepath)
+        return path.exists() and "ifc" in path.suffix.lower()
+
+    def get_filepath_abs(self) -> Path:
+        # self.filepath filled by fileselect_add is absolute
+        # but we support relative paths provided by custom scripts.
+        filepath = Path(self.filepath)
+        if not filepath.is_absolute():
+            filepath = Path(bpy.path.abspath("//")) / filepath
+        return filepath
 
     def get_filepath(self) -> str:
         """get filepath taking into account relative paths"""
+        filepath = self.get_filepath_abs()
+
         if self.use_relative_path:
-            filepath = os.path.relpath(self.filepath, bpy.path.abspath("//"))
-        else:
-            filepath = self.filepath
-        return filepath
+            filepath = filepath.relative_to(bpy.path.abspath("//"))
+        return filepath.as_posix()
 
     def draw(self, context):
         # Access filepath & Directory https://blender.stackexchange.com/a/207665
@@ -480,7 +491,7 @@ class BIM_PT_tabs(Panel):
             op = row.operator("bim.open_uri", text="", icon="QUESTION")
             op.uri = "https://docs.bonsaibim.org/guides/troubleshooting.html#incompatible-blender-features"
 
-        if (o := context.active_object) and [round(x, 4) for x in list(o.matrix_world.to_scale())] != [1, 1, 1]:
+        if (o := context.active_object) and tool.Ifc.get_entity(o) and tool.Geometry.is_scaled(o):
             box = self.layout.box()
             box.alert = True
             row = box.row(align=True)

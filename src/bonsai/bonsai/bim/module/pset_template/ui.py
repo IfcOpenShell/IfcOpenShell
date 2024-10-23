@@ -38,9 +38,13 @@ class BIM_PT_pset_template(Panel):
         self.props = context.scene.BIMPsetTemplateProperties
 
         row = self.layout.row(align=True)
-        prop_with_search(row, self.props, "pset_template_files", text="", icon="FILE")
+        if PsetTemplatesData.data["pset_template_files"]:
+            prop_with_search(row, self.props, "pset_template_files", text="", icon="FILE")
+        else:
+            row.label(text="No Pset Template Files", icon="FILE")
         row.operator("bim.add_pset_template_file", icon="ADD", text="")
-        row.operator("bim.remove_pset_template_file", icon="X", text="")
+        if PsetTemplatesData.data["pset_template_files"]:
+            row.operator("bim.remove_pset_template_file", icon="X", text="")
 
         row = self.layout.row(align=True)
 
@@ -55,7 +59,8 @@ class BIM_PT_pset_template(Panel):
         else:
             row.operator("bim.add_pset_template", text="", icon="ADD")
             row.operator("bim.enable_editing_pset_template", text="", icon="GREASEPENCIL")
-            row.operator("bim.remove_pset_template", text="", icon="X")
+            if PsetTemplatesData.data["pset_templates"]:
+                row.operator("bim.remove_pset_template", text="", icon="X")
 
         if PsetTemplatesData.data["pset_template"]:
             self.draw_pset_template()

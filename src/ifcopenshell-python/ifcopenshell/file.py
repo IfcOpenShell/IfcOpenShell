@@ -50,8 +50,8 @@ HEADER_FIELDS = {
 
 
 class Transaction:
-    def __init__(self, ifc_file):
-        self.file = ifc_file
+    def __init__(self, ifc_file: file):
+        self.file: file = ifc_file
         self.operations = []
         self.is_batched = False
         self.batch_delete_index = 0
@@ -216,6 +216,7 @@ class file:
     """
 
     wrapped_data: ifcopenshell_wrapper.file
+    history_size: int = 64
 
     def __init__(
         self,
@@ -286,7 +287,6 @@ class file:
             args = filter(None, [schema])
             args = map(ifcopenshell_wrapper.schema_by_name, args)
             self.wrapped_data = ifcopenshell_wrapper.file(*args)
-        self.history_size = 64
         self.history = []
         self.future = []
         self.transaction: Optional[Transaction] = None

@@ -22,6 +22,7 @@ import bonsai.tool as tool
 import ifcopenshell.util.file
 from bonsai.bim.ifc import IfcStore
 from pathlib import Path
+from collections import defaultdict
 from typing import Union
 
 
@@ -40,9 +41,11 @@ class ProjectData:
         cls.data = {
             "export_schema": cls.get_export_schema(),
             "library_file": cls.library_file(),
-            "template_file": cls.template_file(),
             "last_saved": cls.last_saved(),
+            "total_elements": cls.total_elements(),
         }
+        # After export_schema.
+        cls.data["template_file"] = cls.template_file()
         cls.is_loaded = True
 
     @classmethod
@@ -77,11 +80,20 @@ class ProjectData:
         return results
 
     @classmethod
-    def template_file(cls):
-        files = os.listdir(os.path.join(bpy.context.scene.BIMProperties.data_dir, "templates", "projects"))
-        results = [("0", "Blank Project", "")]
-        results.extend([(f, os.path.splitext(f)[0], "") for f in files if ".ifc" in f])
-        return results
+    def template_file(cls) -> dict[str, list[tuple[str, str, str]]]:
+        template_files: dict[str, list[tuple[str, str, str]]] = defaultdict(list)
+        for export_schema in cls.data["export_schema"]:
+            template_files[export_schema[0]].append(("0", "Blank Project", ""))
+
+        files = (Path(bpy.context.scene.BIMProperties.data_dir) / "templates" / "projects").iterdir()
+        for f in files:
+            if not f.suffix.lower().startswith(".ifc"):
+                continue
+            current_schema = cls.get_file_schema(f)
+            if current_schema not in template_files:
+                continue
+            template_files[current_schema].append((f.name, f.stem, "Template"))
+        return template_files
 
     @classmethod
     def last_saved(cls):
@@ -94,6 +106,12 @@ class ProjectData:
             return f"{save_date} {':'.join(save_time.split(':')[0:2])}"
         except:
             return ""
+
+    @classmethod
+    def total_elements(cls):
+        if ifc := tool.Ifc.get():
+            return len(ifc.by_type("IfcElement"))
+        return 0
 
 
 class LinksData:

@@ -200,6 +200,8 @@ class CreateDrawing(bpy.types.Operator):
         default=True,
     )
 
+    drawing_name: str
+
     @classmethod
     def poll(cls, context):
         if not tool.Ifc.get():
@@ -305,7 +307,9 @@ class CreateDrawing(bpy.types.Operator):
             width = height / render.resolution_y * render.resolution_x
         return width, height
 
-    def combine_svgs(self, context, underlay, linework, annotation):
+    def combine_svgs(
+        self, context: bpy.types.Context, underlay: Optional[str], linework: Optional[str], annotation: Optional[str]
+    ) -> str:
         # Hacky :)
         svg_path = self.get_svg_path()
         with open(svg_path, "w") as outfile:
@@ -349,7 +353,7 @@ class CreateDrawing(bpy.types.Operator):
             outfile.write("</svg>")
         return svg_path
 
-    def generate_underlay(self, context):
+    def generate_underlay(self, context: bpy.types.Context) -> Union[str, None]:
         if not ifcopenshell.util.element.get_pset(self.drawing, "EPset_Drawing", "HasUnderlay"):
             return
         svg_path = self.get_svg_path(cache_type="underlay")
@@ -360,7 +364,7 @@ class CreateDrawing(bpy.types.Operator):
         for obj in bpy.context.view_layer.objects:
             obj.hide_render = obj.name not in visible_object_names
 
-        context.scene.render.filepath = svg_path[0:-4] + ".png"
+        context.scene.render.filepath = Path(svg_path).with_suffix(".png").as_posix()
         drawing_style = context.scene.DocProperties.drawing_styles[self.cprops.active_drawing_style_index]
 
         if drawing_style.render_type == "DEFAULT":
@@ -487,35 +491,11 @@ class CreateDrawing(bpy.types.Operator):
                 geom_settings = ifcopenshell.geom.settings()
                 geom_settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
                 geom_settings.set("iterator-output", ifcopenshell.ifcopenshell_wrapper.NATIVE)
-                # See bug 5231 - offset no longer available in v0.8.0
-                absolute_placements = set()
-                placement_replacements = {}
+
                 if ifc.by_id(context[0]).ContextType == "Plan" and "PLAN_VIEW" in target_view:
                     # A 2mm Z offset to combat Z-fighting in plan or RCPs
-                    offset_z = 0.002 if target_view == "PLAN_VIEW" else -0.002
+                    geom_settings.set("model-offset", (0.0, 0.0, 0.002 if target_view == "PLAN_VIEW" else -0.002))
 
-                    for product in self.file.by_type("IfcProduct"):
-                        if not product.ObjectPlacement:
-                            continue
-                        absolute_placement = self.get_absolute_placement(product.ObjectPlacement)
-                        if absolute_placement.is_a("IfcLocalPlacement"):
-                            absolute_placements.add(absolute_placement)
-
-                    transformation = np.eye(4)
-                    transformation[2][3] = offset_z
-
-                    # Don't use undo system in case we bork up a parent caller
-                    for placement in absolute_placements:
-                        old = placement.RelativePlacement
-                        new = self.get_relative_placement(
-                            ifc, transformation @ ifcopenshell.util.placement.get_local_placement(placement)
-                        )
-                        placement.RelativePlacement = new
-                        placement_replacements[placement] = (old, new)
-
-                    # offset = ifcopenshell.ifcopenshell_wrapper.float_array_3()
-                    # offset[2] = 0.002 if target_view == "PLAN_VIEW" else -0.002
-                    # geom_settings.offset = offset
                 geom_settings.set("context-ids", context)
                 it = ifcopenshell.geom.iterator(
                     geom_settings, ifc, multiprocessing.cpu_count(), include=drawing_elements
@@ -526,36 +506,6 @@ class CreateDrawing(bpy.types.Operator):
                     self.serialiser.write(elem)
                     tree.add_element(elem)
                 drawing_elements -= processed
-
-                for placement, oldnew in placement_replacements.items():
-                    old, new = oldnew
-                    placement.RelativePlacement = old
-                    ifcopenshell.util.element.remove_deep2(ifc, new)
-                placement_replacements = {}
-
-    def get_absolute_placement(self, object_placement):
-        if object_placement.PlacementRelTo:
-            return self.get_absolute_placement(object_placement.PlacementRelTo)
-        return object_placement
-
-    def get_relative_placement(self, ifc, m):
-        x = np.array((m[0][0], m[1][0], m[2][0]))
-        z = np.array((m[0][2], m[1][2], m[2][2]))
-        o = np.array((m[0][3], m[1][3], m[2][3]))
-        object_matrix = ifcopenshell.util.placement.a2p(o, z, x)
-        return self.create_ifc_axis_2_placement_3d(
-            ifc,
-            object_matrix[:, 3][0:3],
-            object_matrix[:, 2][0:3],
-            object_matrix[:, 0][0:3],
-        )
-
-    def create_ifc_axis_2_placement_3d(self, ifc, point, up, forward):
-        return self.file.createIfcAxis2Placement3D(
-            self.file.createIfcCartesianPoint(point.tolist()),
-            self.file.createIfcDirection(up.tolist()),
-            self.file.createIfcDirection(forward.tolist()),
-        )
 
     def generate_bisect_linework(self, context: bpy.types.Context, root):
         camera_matrix_i = context.scene.camera.matrix_world.inverted()
@@ -798,9 +748,11 @@ class CreateDrawing(bpy.types.Operator):
             self.remove_cut_linework(root)
             self.generate_bisect_linework(context, root)
             self.merge_linework_and_add_metadata(root)
+            self.move_elements_to_top(root)
         elif self.camera.data.BIMCameraProperties.cut_mode == "OPENCASCADE":
             self.move_projection_to_bottom(root)
             self.merge_linework_and_add_metadata(root)
+            self.move_elements_to_top(root)
 
         if self.camera.data.BIMCameraProperties.fill_mode == "SHAPELY":
             # shapely variant
@@ -1364,8 +1316,24 @@ class CreateDrawing(bpy.types.Operator):
         for projection in projections:
             projection.getparent().remove(projection)
             group.insert(0, projection)
+    
+    def move_elements_to_top(self, root):
+        group = root.find("{http://www.w3.org/2000/svg}g")
+        
+        #TODO:  don't hardcode, make the following an assignable preference
+        classes_to_move = ['IfcColumn', 'IfcBeam']
+        
+        xpath_query = " or ".join([f"contains(@class, '{name}')" for name in classes_to_move])
+        full_xpath = f".//svg:g[{xpath_query}]"
+        
+        elements_to_top = root.xpath(full_xpath, namespaces={"svg": "http://www.w3.org/2000/svg"})
+        
+        for element in elements_to_top:
+            element.getparent().remove(element)
+            group.append(element)
 
-    def generate_annotation(self, context):
+
+    def generate_annotation(self, context: bpy.types.Context) -> Union[str, None]:
         if not ifcopenshell.util.element.get_pset(self.drawing, "EPset_Drawing", "HasAnnotation"):
             return
         svg_path = self.get_svg_path(cache_type="annotation")
@@ -1421,12 +1389,14 @@ class CreateDrawing(bpy.types.Operator):
 
     def get_svg_path(self, cache_type: Optional[str] = None) -> str:
         drawing_path = tool.Drawing.get_document_uri(self.camera_document)
+        assert drawing_path
         drawings_dir = os.path.dirname(drawing_path)
 
         if cache_type:
             drawings_dir = os.path.join(drawings_dir, "cache")
             os.makedirs(drawings_dir, exist_ok=True)
-            return os.path.join(drawings_dir, f"{self.drawing_name}-{cache_type}.svg")
+            filename = tool.Drawing.sanitise_filename(f"{self.drawing_name}-{cache_type}.svg")
+            return os.path.join(drawings_dir, filename)
         os.makedirs(drawings_dir, exist_ok=True)
         return drawing_path
 

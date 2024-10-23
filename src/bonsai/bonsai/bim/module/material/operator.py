@@ -749,6 +749,8 @@ class ExpandMaterialCategory(bpy.types.Operator):
             if category.name == self.category:
                 props.active_material_index = index
         core.load_materials(tool.Material, props.material_type)
+        # Update UI data as material_styles_data depends on props.materials.
+        bonsai.bim.handler.refresh_ui_data()
         return {"FINISHED"}
 
 
@@ -796,8 +798,13 @@ class EnableEditingMaterialStyle(bpy.types.Operator):
         if not 0 <= props.active_material_index < len(props.materials):
             return {"FINISHED"}
 
-        material = tool.Ifc.get().by_id(props.materials[props.active_material_index].ifc_definition_id)
+        ifc_file = tool.Ifc.get()
+        material = ifc_file.by_id(props.materials[props.active_material_index].ifc_definition_id)
         if not material.HasRepresentation:
+            # MODEL_VIEW is probably the one that's used with the styles most frequently.
+            context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
+            if context:
+                props.contexts = str(context.id())
             return {"FINISHED"}
 
         rep = material.HasRepresentation[0].Representations[0]  # IfcStyledRepresentation

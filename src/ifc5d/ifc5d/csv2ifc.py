@@ -45,7 +45,7 @@ class Csv2Ifc:
         self.parents = {}
         self.headers = {}
         locale.setlocale(locale.LC_ALL, "")  # set the system locale
-        with open(self.csv, "r", encoding="ISO-8859-1") as csv_file:
+        with open(self.csv, "r", encoding="utf-8") as csv_file:
             reader = csv.reader(csv_file)
             for row in reader:
                 if not row[0]:

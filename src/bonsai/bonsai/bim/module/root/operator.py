@@ -20,6 +20,7 @@ import bpy
 import bmesh
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.geometry
 import ifcopenshell.util.schema
 import ifcopenshell.util.element
 import ifcopenshell.util.type
@@ -210,12 +211,7 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
                 ifc_representation_class=self.ifc_representation_class,
             )
             if self.should_add_representation and obj.data and len(obj.data.vertices):
-                builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
-                unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-                verts = [v.co / unit_scale for v in obj.data.vertices]
-                faces = [p.vertices[:] for p in obj.data.polygons]
-                item = builder.mesh(verts, faces)
-                representation = builder.get_representation(ifc_context, [item])
+                representation = tool.Geometry.export_mesh_to_tessellation(obj, ifc_context)
                 ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), element, representation)
                 bonsai.core.geometry.switch_representation(
                     tool.Ifc,
@@ -291,6 +287,8 @@ class UnlinkObject(bpy.types.Operator, tool.Ifc.Operator):
                 obj = obj_copy
                 obj.name = object_name
             elif element:
+                if obj.data.users > 1:
+                    obj.data = obj.data.copy()
                 tool.Ifc.unlink(element)
 
             tool.Root.unlink_object(obj)
@@ -313,19 +311,6 @@ class UnlinkObject(bpy.types.Operator, tool.Ifc.Operator):
         return context.window_manager.invoke_props_dialog(self)
 
 
-class CopyClass(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.copy_class"
-    bl_label = "Copy Class"
-    bl_options = {"REGISTER", "UNDO"}
-    obj: bpy.props.StringProperty()
-
-    def _execute(self, context):
-        objects = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
-        for obj in objects:
-            core.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=obj)
-        bonsai.bim.handler.refresh_ui_data()
-
-
 class AddElement(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_element"
     bl_label = "Add Element"
@@ -336,6 +321,11 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
         return IfcStore.execute_ifc_operator(self, context, is_invoke=True)
 
     def _invoke(self, context, event):
+        # For convenience, preselect OBJ representation template if applicable
+        if (obj := context.active_object) and obj.type == "MESH":
+            props = context.scene.BIMRootProperties
+            props.representation_template = "OBJ"
+            props.representation_obj = obj
         return context.window_manager.invoke_props_dialog(self)
 
     def _execute(self, context):
@@ -377,16 +367,9 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
 
         if representation_template == "EMTPY" or not ifc_context:
             pass
-        elif representation_template == "OBJ" and not props.representation_obj:
-            pass
-        elif representation_template == "OBJ":
+        elif representation_template == "OBJ" and props.representation_obj:
             obj.matrix_world = props.representation_obj.matrix_world
-            builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
-            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-            verts = [v.co / unit_scale for v in props.representation_obj.data.vertices]
-            faces = [p.vertices[:] for p in props.representation_obj.data.polygons]
-            item = builder.mesh(verts, faces)
-            representation = builder.get_representation(ifc_context, [item])
+            representation = tool.Geometry.export_mesh_to_tessellation(props.representation_obj, ifc_context)
             ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), element, representation)
             bonsai.core.geometry.switch_representation(
                 tool.Ifc,

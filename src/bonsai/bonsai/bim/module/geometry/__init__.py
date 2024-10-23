@@ -20,6 +20,7 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
+    operator.AddCurvelikeItem,
     operator.AddMeshlikeItem,
     operator.AddRepresentation,
     operator.AddSweptAreaSolidItem,
@@ -44,6 +45,7 @@ classes = (
     operator.OverrideDuplicateMoveLinked,
     operator.OverrideDuplicateMoveLinkedMacro,
     operator.OverrideDuplicateMoveMacro,
+    operator.OverrideEscape,
     operator.OverrideJoin,
     operator.OverrideMeshSeparate,
     operator.OverrideModeSetEdit,
@@ -100,6 +102,7 @@ def register():
     bpy.types.VIEW3D_MT_object_context_menu.append(ui.object_menu)
     bpy.types.VIEW3D_MT_edit_mesh.append(ui.edit_mesh_menu)
     bpy.types.VIEW3D_HT_header.append(ui.mode_menu)
+
     wm = bpy.context.window_manager
     if wm.keyconfigs.addon:
         km = wm.keyconfigs.addon.keymaps.new(name="Object Mode", space_type="EMPTY")

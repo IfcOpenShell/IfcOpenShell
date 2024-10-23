@@ -35,6 +35,7 @@ import bonsai.core.root
 from bonsai.bim.module.model.window import create_bm_window, create_bm_box
 
 from mathutils import Vector, Matrix
+from typing import Union, Any, Optional
 
 import json
 import collections
@@ -169,7 +170,9 @@ def update_door_modifier_representation(context: bpy.types.Context) -> None:
 
 
 # TODO: move it out to tools
-def bm_sort_out_geom(geom_data):
+def bm_sort_out_geom(
+    geom_data: list[Union[bmesh.types.BMVert, bmesh.types.BMEdge, bmesh.types.BMFace]]
+) -> dict[str, Any]:
     geom_dict = {"verts": [], "edges": [], "faces": []}
 
     for el in geom_data:
@@ -183,8 +186,12 @@ def bm_sort_out_geom(geom_data):
 
 
 def bm_mirror(
-    bm, verts, mirror_axes: Vector = V(1, 0, 0).freeze(), mirror_point: Vector = V(0, 0, 0).freeze(), create_copy=False
-):
+    bm: bmesh.types.BMesh,
+    verts: list[bmesh.types.BMVert],
+    mirror_axes: Vector = V(1, 0, 0).freeze(),
+    mirror_point: Vector = V(0, 0, 0).freeze(),
+    create_copy: bool = False,
+) -> list[bmesh.types.BMVert]:
     matrix = Matrix.Translation(mirror_point)
     for i, v in enumerate(mirror_axes):
         if not v:
@@ -208,14 +215,14 @@ def bm_mirror(
 
 
 def create_bm_extruded_profile(
-    bm,
-    points,
-    edges=None,
-    faces=None,
+    bm: bmesh.types.BMesh,
+    points: list[Vector],
+    edges: Optional[list[tuple[int, int]]] = None,
+    faces: Optional[list[list[int]]] = None,
     position: Vector = V(0, 0, 0).freeze(),
-    magnitude=1.0,
+    magnitude: float = 1.0,
     extrusion_vector: Vector = V(0, 0, 1).freeze(),
-):
+) -> list[bmesh.types.BMVert]:
     bm.verts.index_update()
     bm.edges.index_update()
     bm.faces.ensure_lookup_table()
@@ -242,7 +249,9 @@ def create_bm_extruded_profile(
     return new_verts + extruded_verts
 
 
-def create_bm_door_lining(bm, size: Vector, thickness: list, position: Vector = V(0, 0, 0).freeze()):
+def create_bm_door_lining(
+    bm: bmesh.types.BMesh, size: Vector, thickness: list, position: Vector = V(0, 0, 0).freeze()
+) -> list[bmesh.types.BMVert]:
     """`thickness` of the profile is defined as list in the following order: `(SIDE, TOP)`
 
     `thickness` can be also defined just as 1 float value.
@@ -303,7 +312,7 @@ def create_bm_door_lining(bm, size: Vector, thickness: list, position: Vector = 
     return new_verts + translate_verts
 
 
-def update_door_modifier_bmesh(context):
+def update_door_modifier_bmesh(context: bpy.types.Context) -> None:
     obj = context.active_object
     props = obj.BIMDoorProperties
 
@@ -400,7 +409,9 @@ def update_door_modifier_bmesh(context):
         inner_casing_verts = create_bm_door_lining(bm, casing_size, inner_casing_thickness, inner_casing_position)
         casing_verts.extend(inner_casing_verts)
 
-    def create_bm_door_panel(panel_size, panel_position, door_swing_type):
+    def create_bm_door_panel(
+        panel_size: Vector, panel_position: Vector, door_swing_type: str
+    ) -> list[bmesh.types.BMVert]:
         door_verts = []
         # add door panel
         door_verts.extend(create_bm_box(bm, panel_size, panel_position))
@@ -535,7 +546,7 @@ class AddDoor(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_door"
     bl_label = "Add Door"
     bl_description = "Add Bonsai parametric door to the active IFC element"
-    bl_options = {"REGISTER"}
+    bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
         obj = context.active_object

@@ -259,15 +259,8 @@ def viewport_shading_changed_callback(area):
         bpy.context.scene.BIMStylesProperties.active_style_type = "External"
 
 
-@persistent
-def load_post(scene):
-    global global_subscription_owner
-    active_object_key = bpy.types.LayerObjects, "active"
-    bpy.msgbus.subscribe_rna(
-        key=active_object_key, owner=global_subscription_owner, args=(), notify=active_object_callback
-    )
-
-    # subscribe to changes in viewport shading mode
+def subscribe_to_viewport_shading_changes():
+    """Subscribe to changes in viewport shading mode"""
     # NOTE: couldn't find a way to make it work for new areas too
     # it starts working for them after blender restart though
     for screen in bpy.data.screens:
@@ -280,6 +273,15 @@ def load_post(scene):
             bpy.msgbus.subscribe_rna(
                 key=key, owner=global_subscription_owner, args=(area,), notify=viewport_shading_changed_callback
             )
+
+
+@persistent
+def load_post(scene):
+    global global_subscription_owner
+    active_object_key = bpy.types.LayerObjects, "active"
+    bpy.msgbus.subscribe_rna(
+        key=active_object_key, owner=global_subscription_owner, args=(), notify=active_object_callback
+    )
 
     ifcopenshell.api.owner.settings.get_user = get_user
     ifcopenshell.api.owner.settings.get_application = get_application
@@ -295,6 +297,11 @@ def load_post(scene):
                 bpy.context.window.workspace = bpy.data.workspaces["BIM"]
         else:
             bpy.ops.workspace.append_activate(idname="BIM", filepath=os.path.join(cwd, "data", "workspace.blend"))
+
+    # After appending the workspace to ensure BIM viewport is affected.
+    subscribe_to_viewport_shading_changes()
+
+    bpy.ops.bim.override_escape("INVOKE_DEFAULT")
 
     # To improve usability for new users, we hijack the scene properties
     # tab. We override default scene properties panels with our own poll

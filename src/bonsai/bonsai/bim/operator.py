@@ -40,7 +40,7 @@ from mathutils import Vector, Matrix, Euler
 from math import radians
 from pathlib import Path
 from collections import namedtuple
-from typing import List
+from typing import List, Iterable, Union
 
 
 class SetTab(bpy.types.Operator):
@@ -890,11 +890,14 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
     collection_predefined_types: bpy.props.CollectionProperty(type=StrProperty)
     prop_name: bpy.props.StringProperty()
     should_click_ok_to_validate: bpy.props.BoolProperty(default=False)
+    original_operator_path: bpy.props.StringProperty(name="Original Operator Path", default="", options={"SKIP_SAVE"})
+
+    identifiers: list[str]
 
     def invoke(self, context, event):
         self.clear_collections()
         self.data = context.data
-        items = get_enum_items(self.data, self.prop_name, context)
+        items = get_enum_items(self.data, self.prop_name, context, original_operator_path=self.original_operator_path)
         if items is None:
             return {"FINISHED"}
         self.add_items_regular(items)
@@ -909,7 +912,7 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
     def execute(self, context):
         return {"FINISHED"}
 
-    def clear_collections(self):
+    def clear_collections(self) -> None:
         self.collection_names.clear()
         self.collection_identifiers.clear()
 
@@ -918,17 +921,21 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
         self.collection_names.add().name = name
         self.collection_predefined_types.add().name = predefined_type
 
-    def add_items_regular(self, items):
+    def add_items_regular(
+        self,
+        items: Iterable[Union[tuple[str, str, str], tuple[str, str, str, int], tuple[str, str, str, str, int], None]],
+    ) -> None:
         self.identifiers = []
+        current_value = getattr(self.data, self.prop_name)
         for item in items:
             if item is None:  # Used as a separator
                 continue
             self.identifiers.append(item[0])
             self.add_item(identifier=item[0], name=item[1])
-            if item[0] == getattr(self.data, self.prop_name):
+            if item[0] == current_value:
                 self.dummy_name = item[1]  # We found the current enum name
 
-    def add_items_suggestions(self):
+    def add_items_suggestions(self) -> None:
         getter_suggestions = getattr(self.data, "getter_enum_suggestions", None)
         if getter_suggestions is not None:
             mapping = getter_suggestions.get(self.prop_name)

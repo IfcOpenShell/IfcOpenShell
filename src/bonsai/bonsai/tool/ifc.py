@@ -67,7 +67,7 @@ class Ifc(bonsai.core.tool.Ifc):
 
     @classmethod
     def is_edited(cls, obj: bpy.types.Object) -> bool:
-        return list(obj.scale) != [1.0, 1.0, 1.0] or obj in IfcStore.edited_objs
+        return tool.Geometry.is_scaled(obj) or obj in IfcStore.edited_objs
 
     @classmethod
     def is_moved(cls, obj: bpy.types.Object) -> bool:
@@ -191,7 +191,22 @@ class Ifc(bonsai.core.tool.Ifc):
 
     @classmethod
     def edit(cls, obj: bpy.types.Object) -> None:
-        """Mark object as edited."""
+        """Mark object as edited.
+
+        Marking object as edited is an optimization mechanism - instead of saving
+        changed geometry to IFC, we mark it as changed and then it's saved later
+        (typically during project save or switch_representation(should_sync_changes_first=True)).
+
+        Currently, underlying storage for edited objects, IfcStore.edited_objs, is not tracked
+        by undo system. So, it's error prone:
+        - undo after object was marked as edited, will keep it edited, adding unnecessary sync
+        - undo after object was unmarked as edited, will keep it unmarked, so edit geometry may be lost
+
+        Other caveat of using edited objects is that it won't have an effect for objects with openings,
+        since we can't deduce non-openings representation from edited representation with openings.
+
+        So, it's preferable not to use edited objects if object can have an opening. It's still can be used for spaces.
+        """
         IfcStore.edited_objs.add(obj)
 
     @classmethod

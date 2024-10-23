@@ -135,6 +135,11 @@ def draw_psetqto_ui(
         op.pset_id = pset_id
         op.obj = obj_name
         op.obj_type = obj_type
+        if pset["has_template"]:
+            row.label(text="", icon="ASSET_MANAGER")
+        else:
+            op = row.operator("bim.save_pset_as_template", icon="ASSET_MANAGER", text="")
+            op.pset_id = pset_id
         remove_pset_row = row.row(align=True)
         op = remove_pset_row.operator("bim.remove_pset", icon="X", text="")
         op.pset_id = pset_id

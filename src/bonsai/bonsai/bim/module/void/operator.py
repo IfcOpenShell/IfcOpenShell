@@ -126,6 +126,8 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
                         representation=representation,
                         should_reload=True,
                         is_global=True,
+                        # Don't sync changes because object has an opening,
+                        # therefore bim.update_representaiton wouldn't work either way.
                         should_sync_changes_first=False,
                     )
 

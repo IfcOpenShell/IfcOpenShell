@@ -17,8 +17,8 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef IFCSHAPELIST_H
-#define IFCSHAPELIST_H
+#ifndef CONVERSIONRESULT_H
+#define CONVERSIONRESULT_H
 
 #include "../ifcgeom/IfcGeomRenderStyles.h"
 #include "../ifcgeom/ConversionSettings.h"
@@ -26,6 +26,45 @@
 
 #include <memory>
 #include <vector>
+#include <unordered_map>
+
+struct EdgeKey {
+	int v1, v2;
+
+	// These are not part of the hash or equality,
+	// but retained to easily created a directed
+	// graph of the original boundary edges. Since
+	// the boundary edges are exactly those with
+	// count=1 we don't need to worry about
+	// conflicting original vertex indices.
+	int ov1, ov2;
+
+	EdgeKey(int a, int b)
+		: ov1(a)
+		, ov2(b)
+	{
+		if (a < b) {
+			v1 = a;
+			v2 = b;
+		} else {
+			v1 = b;
+			v2 = a;
+		}
+	}
+
+	bool operator==(const EdgeKey& other) const {
+		return v1 == other.v1 && v2 == other.v2;
+	}
+};
+
+namespace std {
+	template <>
+	struct hash<EdgeKey> {
+		std::size_t operator()(const EdgeKey& ek) const {
+			return std::hash<int>()(ek.v1) ^ std::hash<int>()(ek.v2);
+		}
+	};
+}
 
 namespace IfcGeom {	
 
@@ -296,6 +335,80 @@ namespace IfcGeom {
 	namespace util {
 		// @todo this is now moved to occt kernel, do we need something similar in cgal?
 		// bool flatten_shape_list(const IfcGeom::ConversionResults& shapes, TopoDS_Shape& result, bool fuse, double tol);
+
+		// Function to find boundary loops from triangles
+		template <typename NT>
+		std::vector<std::vector<int>> find_boundary_loops(const std::vector<NT>& positions, const std::vector<std::tuple<int, int, int>>& triangles) {
+			std::unordered_map<EdgeKey, int> edge_count;
+
+			// Count how many triangles each edge belongs to
+			for (const auto& triangle : triangles) {
+				int v1, v2, v3;
+				std::tie(v1, v2, v3) = triangle;
+
+				edge_count[{v1, v2}]++;
+				edge_count[{v2, v3}]++;
+				edge_count[{v3, v1}]++;
+			}
+
+			// Boundary edges have count 1
+			std::vector<EdgeKey> boundary_edges;
+			for (auto& p : edge_count) {
+				if (p.second == 1) {
+					boundary_edges.push_back(p.first);
+				}
+			}
+
+			// We retained original directed edges so we build
+			// a mapping out of these directed edges.
+			std::unordered_map<int, int> vertex_successors;
+			for (const auto& e : boundary_edges) {
+				vertex_successors[e.ov1] = e.ov2;
+			}
+
+			std::vector<std::vector<int>> loops;
+			while (!vertex_successors.empty()) {
+				loops.emplace_back();
+				auto it = vertex_successors.begin();
+				loops.back() = { it->first, it->second };
+				vertex_successors.erase(it);
+
+				int current = loops.back().back();
+				while (!vertex_successors.empty() && current != loops.back().front()) {
+					auto next = vertex_successors[current];
+					if (loops.back().front() != next) {
+						loops.back().push_back(next);
+					}
+					vertex_successors.erase(current);
+					current = next;
+				}
+			}
+
+			// Sort the loops by smallest x-coord of their constituent positions
+			// In order to put the outermost loop in front
+			if (loops.size() > 1) {
+				std::vector<std::pair<NT, size_t>> min_xs;
+				for (auto& l : loops) {
+					NT min_x = std::numeric_limits<double>::infinity();
+					for (auto& i : l) {
+						const auto& x = positions[i * 3];
+						if (x < min_x) {
+							min_x = x;
+						}
+					}
+					min_xs.push_back({ min_x, min_xs.size() });
+				}
+				std::sort(min_xs.begin(), min_xs.end());
+				decltype(loops) loops_copy;
+				for (auto& p : min_xs) {
+					loops_copy.emplace_back(std::move(loops[p.second]));
+				}
+				std::swap(loops, loops_copy);
+			}
+
+			return loops;
+		}
 	}
 }
+
 #endif

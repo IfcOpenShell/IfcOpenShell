@@ -18,58 +18,74 @@
 
 import bpy
 import ifcopenshell.util.system
+import bonsai.bim.helper
 import bonsai.core.tool
 import bonsai.tool as tool
-from bonsai.bim import import_ifc
+from typing import Any, Union
 
 
 class Document(bonsai.core.tool.Document):
     @classmethod
-    def add_breadcrumb(cls, document):
+    def add_breadcrumb(cls, document: ifcopenshell.entity_instance) -> None:
         props = bpy.context.scene.BIMDocumentProperties
         new = props.breadcrumbs.add()
         new.name = str(document.id())
 
     @classmethod
-    def clear_breadcrumbs(cls):
+    def clear_breadcrumbs(cls) -> None:
         props = bpy.context.scene.BIMDocumentProperties
         props.breadcrumbs.clear()
 
     @classmethod
-    def clear_document_tree(cls):
+    def clear_document_tree(cls) -> None:
         props = bpy.context.scene.BIMDocumentProperties
         props.documents.clear()
 
     @classmethod
-    def disable_editing_document(cls):
+    def disable_editing_document(cls) -> None:
         bpy.context.scene.BIMDocumentProperties.active_document_id = 0
 
     @classmethod
-    def disable_editing_ui(cls):
+    def disable_editing_ui(cls) -> None:
         bpy.context.scene.BIMDocumentProperties.is_editing = False
 
     @classmethod
-    def enable_editing_ui(cls):
+    def enable_editing_ui(cls) -> None:
         bpy.context.scene.BIMDocumentProperties.is_editing = True
 
     @classmethod
-    def export_document_attributes(cls):
+    def export_document_attributes(cls) -> dict[str, Any]:
         return bonsai.bim.helper.export_attributes(bpy.context.scene.BIMDocumentProperties.document_attributes)
 
     @classmethod
-    def get_active_breadcrumb(cls):
+    def get_active_breadcrumb(cls) -> Union[ifcopenshell.entity_instance, None]:
         props = bpy.context.scene.BIMDocumentProperties
         if len(props.breadcrumbs):
             return tool.Ifc.get().by_id(int(props.breadcrumbs[-1].name))
 
     @classmethod
-    def import_document_attributes(cls, document):
+    def import_document_attributes(cls, document: ifcopenshell.entity_instance) -> None:
         props = bpy.context.scene.BIMDocumentProperties
         props.document_attributes.clear()
-        bonsai.bim.helper.import_attributes2(document, props.document_attributes)
+
+        def callback(attr_name: str, _, data: dict[str, Any]) -> Union[bool, None]:
+            if attr_name != "Name":
+                return None  # Proceed normally
+
+            current_value = data[attr_name]
+            # If Name is already filled, display it so user would be able to correct invalid IFC.
+            if current_value is not None:
+                return None
+
+            # Skip import since IFC restricts Name to be filled
+            # for IfcDocumentReference with ReferencedDocument.
+            return False
+
+        import_callback = callback if document.is_a("IfcDocumentReference") else None
+        bonsai.bim.helper.import_attributes2(document, props.document_attributes, callback=import_callback)
 
     @classmethod
-    def import_project_documents(cls):
+    def import_project_documents(cls) -> None:
         props = bpy.context.scene.BIMDocumentProperties
         props.documents.clear()
         project = tool.Ifc.get().by_type("IfcProject")[0]
@@ -86,27 +102,22 @@ class Document(bonsai.core.tool.Document):
                     new.identification = element.Identification or "*"
 
     @classmethod
-    def import_references(cls, document):
+    def import_references(cls, document: ifcopenshell.entity_instance) -> None:
         props = bpy.context.scene.BIMDocumentProperties
-        if tool.Ifc.get_schema() == "IFC2X3":
-            for element in document.DocumentReferences or []:
-                new = props.documents.add()
-                new.ifc_definition_id = element.id()
-                name = " - ".join([x for x in [element.Description, element.Location] if x])
-                new.name = name or "Unnamed"
-                new.identification = element.ItemReference or "*"
-                new.is_information = False
-        else:
-            for element in document.HasDocumentReferences:
-                new = props.documents.add()
-                new.ifc_definition_id = element.id()
-                name = " - ".join([x for x in [element.Description, element.Location] if x])
-                new.name = name or "Unnamed"
-                new.identification = element.Identification or "*"
-                new.is_information = False
+        is_ifc2x3 = tool.Ifc.get_schema() == "IFC2X3"
+        references = (document.DocumentReference or []) if is_ifc2x3 else document.HasDocumentReferences
+        for element in references:
+            new = props.documents.add()
+            new.ifc_definition_id = element.id()
+            # Use Description + Location instead of Name as IFC has a restriction
+            # for IfcDocumentReference to have Name only if it has no ReferencedDocument.
+            name = " - ".join([x for x in [element.Description, element.Location] if x])
+            new.name = name or "Unnamed"
+            new.identification = (element.ItemReference if is_ifc2x3 else element.Identification) or "*"
+            new.is_information = False
 
     @classmethod
-    def import_subdocuments(cls, document):
+    def import_subdocuments(cls, document: ifcopenshell.entity_instance) -> None:
         props = bpy.context.scene.BIMDocumentProperties
         if document.IsPointer:
             for element in document.IsPointer[0].RelatedDocuments or []:
@@ -120,15 +131,15 @@ class Document(bonsai.core.tool.Document):
                     new.identification = element.Identification or "*"
 
     @classmethod
-    def is_document_information(cls, document):
+    def is_document_information(cls, document: ifcopenshell.entity_instance) -> bool:
         return document.is_a("IfcDocumentInformation")
 
     @classmethod
-    def remove_latest_breadcrumb(cls):
+    def remove_latest_breadcrumb(cls) -> None:
         props = bpy.context.scene.BIMDocumentProperties
         if len(props.breadcrumbs):
             props.breadcrumbs.remove(len(props.breadcrumbs) - 1)
 
     @classmethod
-    def set_active_document(cls, document):
+    def set_active_document(cls, document: ifcopenshell.entity_instance) -> None:
         bpy.context.scene.BIMDocumentProperties.active_document_id = document.id()

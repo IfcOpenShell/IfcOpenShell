@@ -20,15 +20,11 @@ import os
 import bpy
 import json
 import ifcopenshell
+import ifcpatch
 import bonsai.tool as tool
 import bonsai.core.patch as core
 import bonsai.bim.handler
 from pathlib import Path
-
-try:
-    import ifcpatch
-except:
-    print("IfcPatch not available")
 
 
 class SelectIfcPatchInput(bpy.types.Operator):
@@ -71,6 +67,9 @@ class ExecuteIfcPatch(bpy.types.Operator):
     @classmethod
     def poll(cls, context):
         props = context.scene.BIMPatchProperties
+        if props.ifc_patch_recipes == "-":
+            cls.poll_message_set("No recipe selected.")
+            return False
         if not props.should_load_from_memory and not props.ifc_patch_input:
             cls.poll_message_set("Select an IFC file or use 'load from memory' if it's loaded in Bonsai.")
             return False

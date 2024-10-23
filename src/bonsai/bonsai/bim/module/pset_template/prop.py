@@ -41,7 +41,11 @@ def updatePsetTemplateFiles(self, context):
     PsetTemplatesData.is_loaded = False
     PsetTemplatesData.data["pset_template_files"] = PsetTemplatesData.pset_template_files()
     PsetTemplatesData.data["pset_templates"] = PsetTemplatesData.pset_templates()
-    PsetTemplatesData.data["prop_templates"] = PsetTemplatesData.prop_templates()
+
+    # Ensure enum is valid.
+    self["pset_templates"] = 0
+    updatePsetTemplates(self, context)
+
     PsetTemplatesData.data["primary_measure_type"] = PsetTemplatesData.primary_measure_type()
     PsetTemplatesData.data["property_template_type"] = PsetTemplatesData.property_template_type()
 
@@ -183,11 +187,18 @@ class PropTemplate(PropertyGroup):
 
 class BIMPsetTemplateProperties(PropertyGroup):
     pset_template_files: EnumProperty(
-        items=getPsetTemplateFiles, name="Pset Template Files", update=updatePsetTemplateFiles
+        items=getPsetTemplateFiles,
+        name="Pset Template Files",
+        description="Pset Template File",
+        update=updatePsetTemplateFiles,
     )
-    pset_templates: EnumProperty(items=getPsetTemplates, name="Pset Templates", update=updatePsetTemplates)
+    pset_templates: EnumProperty(
+        items=getPsetTemplates,
+        name="Pset Templates",
+        description="Pset Template",
+        update=updatePsetTemplates,
+    )
     active_pset_template_id: IntProperty(name="Active Pset Template Id")
     active_prop_template_id: IntProperty(name="Active Prop Template Id")
     active_pset_template: PointerProperty(type=PsetTemplate)
     active_prop_template: PointerProperty(type=PropTemplate)
-    new_template_filename: StringProperty(name="New TemplateFileName")

@@ -539,6 +539,13 @@ class Blender(bonsai.core.tool.Blender):
                 cls.clear_active_object()
 
     @classmethod
+    def get_objects_selection(
+        cls, context: bpy.types.Context
+    ) -> tuple[bpy.types.Context, Union[bpy.types.Object, None], list[bpy.types.Object]]:
+        """Get objects selection to later pass to `set_objects_selection`."""
+        return context, context.view_layer.objects.active, context.selected_objects
+
+    @classmethod
     def set_objects_selection(
         cls,
         context: bpy.types.Context,
@@ -559,6 +566,8 @@ class Blender(bonsai.core.tool.Blender):
     def get_enum_safe(cls, props: bpy.types.PropertyGroup, prop_name: str) -> Union[str, None]:
         """method created for readibility and to avoid console warnings like
         `pyrna_enum_to_py: current value '17' matches no enum in 'BIMModelProperties', '', 'relating_type_id'`
+
+        :return: Enum property value as a string or None if current enum value is invalid.
         """
         # Yes, accessing items through annotations is a bit hacky
         # but it's the only way to get the dynamic enum items
@@ -591,6 +600,33 @@ class Blender(bonsai.core.tool.Blender):
         if items_amount > index >= 0:
             return items[index][0]
         return None
+
+    @classmethod
+    def ensure_enum_is_valid(cls, props: bpy.types.PropertyGroup, prop_name: str) -> bool:
+        """Ensure that enum is valid after current enum item was deleted.
+
+        :return: True if enum is valid and update callback was triggered,
+            False if enum is still invalid (as there no enum items)
+            and update callback was not triggered (may need to trigger it manually).
+        """
+        current_value = tool.Blender.get_enum_safe(props, prop_name)
+        if current_value is not None:
+            # Value is valid, just trigger the update callback.
+            setattr(props, prop_name, current_value)
+            return True
+
+        # If enum was never changed prop_name won't be present in props
+        # and implicit 0 index is assumed.
+        current_index = props.get(prop_name, 0)
+        # Index is still invalid and triggering update callback directly
+        # will cause an error, so we just stop here.
+        if current_index == 0:
+            return False
+
+        props[prop_name] = current_index - 1
+        # Trigger update callback.
+        setattr(props, prop_name, getattr(props, prop_name))
+        return True
 
     @classmethod
     def append_data_block(cls, filepath: str, data_block_type: str, name: str, link=False, relative=False) -> dict:
@@ -711,6 +747,16 @@ class Blender(bonsai.core.tool.Blender):
             if group_index in groups and vertex[deform_layer][group_index] == 1.0:
                 return True, group_index
         return False, None
+
+    @classmethod
+    def bmesh_get_vertex_groups(cls, vertex: bmesh.types.BMVert, deform_layer: bmesh.types.BMLayerItem) -> list[int]:
+        results = []
+        for group_index in vertex[deform_layer].keys():
+            # Ignore vertex groups assignments produced by edge subdivision near arcs
+            # They usually have weight = 0.5
+            if vertex[deform_layer][group_index] == 1.0:
+                results.append(group_index)
+        return results
 
     @classmethod
     def toggle_edit_mode(cls, context: bpy.types.Context) -> set[str]:

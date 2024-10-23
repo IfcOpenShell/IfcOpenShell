@@ -6,6 +6,7 @@
 #include <GProp_GProps.hxx>
 #include <Geom_SphericalSurface.hxx>
 #include <Geom_Plane.hxx>
+#include <BRepTools_WireExplorer.hxx>
 
 #include "OpenCascadeConversionResult.h"
 
@@ -31,44 +32,6 @@ using IfcGeom::OpaqueCoordinate;
 using IfcGeom::NumberNativeDouble;
 using IfcGeom::ConversionResultShape;
 
-struct EdgeKey {
-	int v1, v2;
-
-	// These are not part of the hash or equality,
-	// but retained to easily created a directed
-	// graph of the original boundary edges. Since
-	// the boundary edges are exactly those with
-	// count=1 we don't need to worry about
-	// conflicting original vertex indices.
-	int ov1, ov2;
-
-	EdgeKey(int a, int b)
-		: ov1(a)
-		, ov2(b)
-	{
-		if (a < b) {
-			v1 = a;
-			v2 = b;
-		} else {
-			v1 = b;
-			v2 = a;
-		}
-	}
-
-	bool operator==(const EdgeKey& other) const {
-		return v1 == other.v1 && v2 == other.v2;
-	}
-};
-
-namespace std {
-	template <>
-	struct hash<EdgeKey> {
-		std::size_t operator()(const EdgeKey& ek) const {
-			return std::hash<int>()(ek.v1) ^ std::hash<int>()(ek.v2);
-		}
-	};
-}
-
 namespace {
 	// We bypass the conversion to gp_GTrsf, because it does not work
 	void taxonomy_transform(const Eigen::Matrix4d* m, gp_XYZ& xyz) {
@@ -79,78 +42,6 @@ namespace {
 			xyz.ChangeData()[1] = v2(1);
 			xyz.ChangeData()[2] = v2(2);
 		}
-	}
-
-	// Function to find boundary loops from triangles
-	std::vector<std::vector<int>> find_boundary_loops(const std::vector<double>& positions, const std::vector<std::tuple<int, int, int>>& triangles) {
-		std::unordered_map<EdgeKey, int> edge_count;
-
-		// Count how many triangles each edge belongs to
-		for (const auto& triangle : triangles) {
-			int v1, v2, v3;
-			std::tie(v1, v2, v3) = triangle;
-
-			edge_count[{v1, v2}]++;
-			edge_count[{v2, v3}]++;
-			edge_count[{v3, v1}]++;
-		}
-
-		// Boundary edges have count 1
-		std::vector<EdgeKey> boundary_edges;
-		for (auto& p : edge_count) {
-			if (p.second == 1) {
-				boundary_edges.push_back(p.first);
-			}
-		}
-
-		// We retained original directed edges so we build
-		// a mapping out of these directed edges.
-		std::unordered_map<int, int> vertex_successors;
-		for (const auto& e : boundary_edges) {
-			vertex_successors[e.ov1] = e.ov2;
-		}
-
-		std::vector<std::vector<int>> loops;
-		while (!vertex_successors.empty()) {
-			loops.emplace_back();
-			auto it = vertex_successors.begin();
-			loops.back() = { it->first, it->second };
-			vertex_successors.erase(it);
-
-			int current = loops.back().back();
-			while (!vertex_successors.empty() && current != loops.back().front()) {
-				auto next = vertex_successors[current];
-				if (loops.back().front() != next) {
-					loops.back().push_back(next);
-				}
-				vertex_successors.erase(current);
-				current = next;
-			}
-		}
-
-		// Sort the loops by smallest x-coord of their constituent positions
-		// In order to put the outermost loop in front
-		if (loops.size() > 1) {
-			std::vector<std::pair<double, size_t>> min_xs;
-			for (auto& l : loops) {
-				double min_x = std::numeric_limits<double>::infinity();
-				for (auto& i : l) {
-					const auto& x = positions[i * 3];
-					if (x < min_x) {
-						min_x = x;
-					}
-				}
-				min_xs.push_back({ min_x, min_xs.size() });
-			}
-			std::sort(min_xs.begin(), min_xs.end());
-			decltype(loops) loops_copy;
-			for (auto& p : min_xs) {
-				loops_copy.emplace_back(std::move(loops[p.second]));
-			}
-			std::swap(loops, loops_copy);
-		}
-
-		return loops;
 	}
 }
 
@@ -313,7 +204,7 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
 		}
 
 		if (polyhedral_output_without_holes || polyhedral_output_with_holes) {
-			auto loops = find_boundary_loops(t->verts(), triangle_indices);
+			auto loops = IfcGeom::util::find_boundary_loops(t->verts(), triangle_indices);
 			if (polyhedral_output_without_holes) {
 				if (!loops.empty() && !loops[0].empty()) {
 					t->addFace(item_id, surface_style_id, loops[0]);
@@ -327,7 +218,7 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
 	}
 
 	if (!t->normals().empty() && settings.get<settings::GenerateUvs>().get()) {
-		t->uvs() = IfcGeom::Representation::Triangulation::box_project_uvs(t->verts(), t->normals());
+		t->uvs_ref() = IfcGeom::Representation::Triangulation::box_project_uvs(t->verts(), t->normals());
 	}
 
 	if (num_faces == 0) {
@@ -335,13 +226,29 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
 		// and loose edges is discouraged by the standard. An alternative would be to use
 		// TopExp_Explorer texp(s, TopAbs_EDGE, TopAbs_FACE) to find edges that do not
 		// belong to any face.
-		for (TopExp_Explorer texp(shape_, TopAbs_EDGE); texp.More(); texp.Next()) {
-			BRepAdaptor_Curve crv(TopoDS::Edge(texp.Current()));
+
+		TopTools_ListOfShape edges;
+		// First collect edges part of wire in order
+		for (TopExp_Explorer texp(shape_, TopAbs_WIRE); texp.More(); texp.Next()) {
+			BRepTools_WireExplorer wexp(TopoDS::Wire(texp.Current()));
+			for (; wexp.More(); wexp.Next()) {
+				edges.Append(wexp.Current());
+			}
+		}
+
+		// Then collect edges not part of wire
+		for (TopExp_Explorer texp(shape_, TopAbs_EDGE, TopAbs_WIRE); texp.More(); texp.Next()) {
+			edges.Append(texp.Current());
+		}
+
+		for (TopTools_ListIteratorOfListOfShape texp(edges); texp.More(); texp.Next()) {
+			BRepAdaptor_Curve crv(TopoDS::Edge(texp.Value()));
 			GCPnts_QuasiUniformDeflection tessellater(crv, settings.get<settings::MesherLinearDeflection>().get());
 			int n = tessellater.NbPoints();
 			int previous = -1;
-
-			for (int i = 1; i <= n; ++i) {
+			const bool reversed = texp.Value().Orientation() == TopAbs_REVERSED;
+			bool first = true;
+			for (int i = (reversed ? n : 1); reversed ? (i >= 1) : (i <= n); i += reversed ? -1 : 1) {
 				gp_XYZ p = tessellater.Value(i).XYZ();
 				auto p_local = p;
 				taxonomy_transform(place.components_, p);
@@ -349,9 +256,10 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
 				int current = t->addVertex(item_id, surface_style_id, p.X(), p.Y(), p.Z());
 
 				std::vector<std::pair<int, int>> segments;
-				if (i > 1) {
+				if (!first) {
 					segments.push_back(std::make_pair(previous, current));
 				}
+				first = false;
 
 				if (settings.get<settings::EdgeArrows>().get()) {
 					// In case you want direction arrows on your edges
@@ -362,7 +270,7 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
 					crv.D1(u, tmp, tmp2);
 					gp_Dir d1, d2, d3, d4;
 					d1 = tmp2;
-					if (texp.Current().Orientation() == TopAbs_REVERSED) {
+					if (reversed) {
 						d1 = -d1;
 					}
 					if (fabs(d1.Z()) < 0.5) {

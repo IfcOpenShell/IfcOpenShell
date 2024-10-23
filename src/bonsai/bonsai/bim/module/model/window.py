@@ -34,9 +34,10 @@ import ifcopenshell.util.unit
 from ifcopenshell.util.shape_builder import V
 from bmesh.types import BMVert
 from mathutils import Vector
+from typing import Optional
 
 
-def update_window_modifier_representation(context):
+def update_window_modifier_representation(context: bpy.types.Context) -> None:
     obj = context.active_object
     element = tool.Ifc.get_entity(obj)
     props = obj.BIMWindowProperties
@@ -129,7 +130,9 @@ def update_window_modifier_representation(context):
     tool.Model.update_simple_openings(element)
 
 
-def create_bm_window_frame(bm, size: Vector, thickness: list, position: Vector = V(0, 0, 0).freeze()):
+def create_bm_window_frame(
+    bm: bmesh.types.BMesh, size: Vector, thickness: list, position: Vector = V(0, 0, 0).freeze()
+) -> list[bmesh.types.BMVert]:
     """`thickness` of the profile is defined as list in the following order:
     `(LEFT, TOP, RIGHT, BOTTOM)`
 
@@ -194,7 +197,9 @@ def create_bm_window_frame(bm, size: Vector, thickness: list, position: Vector =
     return new_verts + translate_verts
 
 
-def create_bm_box(bm, size: Vector = V(1, 1, 1).freeze(), position: Vector = V(0, 0, 0).freeze()):
+def create_bm_box(
+    bm: bmesh.types.BMesh, size: Vector = V(1, 1, 1).freeze(), position: Vector = V(0, 0, 0).freeze()
+) -> list[bmesh.types.BMVert]:
     """create a box of `size`, position box first vertex at `position`"""
     box_verts = bmesh.ops.create_cube(bm, size=1)["verts"]
     bmesh.ops.translate(bm, vec=-box_verts[0].co, verts=box_verts)
@@ -204,17 +209,17 @@ def create_bm_box(bm, size: Vector = V(1, 1, 1).freeze(), position: Vector = V(0
 
 
 def create_bm_window(
-    bm,
+    bm: bmesh.types.BMesh,
     lining_size: Vector,
     lining_thickness: list,
     lining_to_panel_offset_x,
     lining_to_panel_offset_y_full,
     frame_size: Vector,
-    frame_thickness,
-    glass_thickness,
+    frame_thickness: float,
+    glass_thickness: float,
     position: Vector,
-    x_offsets: list = None,
-):
+    x_offsets: Optional[list] = None,
+) -> tuple[list[bmesh.types.BMVert], list[bmesh.types.BMVert], list[bmesh.types.BMVert]]:
     """`lining_thickness` and `x_offsets` are expected to be defined as a list,
     similarly to `create_bm_window_frame` `thickness` argument"""
 
@@ -241,7 +246,7 @@ def create_bm_window(
     return (window_lining_verts, frame_verts, glass_verts)
 
 
-def update_window_modifier_bmesh(context):
+def update_window_modifier_bmesh(context: bpy.types.Context) -> None:
     obj = context.active_object
     props = obj.BIMWindowProperties
     panel_schema = DEFAULT_PANEL_SCHEMAS[props.window_type]
@@ -428,7 +433,7 @@ class AddWindow(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_window"
     bl_label = "Add Window"
     bl_description = "Add Bonsai parametric window to the active IFC element"
-    bl_options = {"REGISTER"}
+    bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
         obj = context.active_object

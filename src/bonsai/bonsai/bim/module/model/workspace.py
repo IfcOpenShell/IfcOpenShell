@@ -107,10 +107,9 @@ class BimTool(WorkSpaceTool):
 
     @classmethod
     def draw_settings(cls, context, layout, ws_tool):
-        # Unlike operators, Blender doesn't treat workspace tools as a class, so we'll create our own.
         if context.scene.BIMGeometryProperties.mode == "ITEM":
             EditItemUI.draw(context, layout)
-        elif context.active_object and context.selected_objects:
+        elif context.active_object and context.selected_objects and tool.Ifc.get_entity(context.active_object):
             EditObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
         else:
             CreateObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
@@ -259,7 +258,7 @@ def format_ifc_camel_case(string):
 
 class EditItemUI:
     @classmethod
-    def draw(cls, context, layout):
+    def draw(cls, context: bpy.types.Context, layout: bpy.types.UILayout):
         if not ItemData.is_loaded:
             ItemData.load()
 
@@ -271,11 +270,13 @@ class EditItemUI:
         row = cls.layout.row()
         row.label(text="Type: " + ItemData.data["representation_type"], icon="OUTLINER_OB_MESH")
         cls.layout.menu("BIM_MT_add_representation_item", icon="ADD")
-        if not (obj := context.active_object) or not tool.Geometry.is_representation_item(obj):
+        if not ItemData.data["is_representation_item_active"]:
             return
+        obj = context.active_object
+        assert obj
         for item_attribute in obj.data.BIMMeshProperties.item_attributes:
             row = cls.layout.row()
-            row.prop(item_attribute, "float_value", text=item_attribute.name)
+            row.prop(item_attribute, item_attribute.get_value_name(display_only=True), text=item_attribute.name)
         if len(obj.data.BIMMeshProperties.item_attributes):
             row = cls.layout.row()
             row.operator("bim.update_item_attributes", icon="FILE_REFRESH", text="")
@@ -309,6 +310,10 @@ class BIM_MT_add_representation_item(Menu):
                 "bim.add_swept_area_solid_item", icon="MESH_CYLINDER", text="Extruded Area Solid Cylinder"
             ).shape = "CYLINDER"
 
+        if ItemData.data["representation_type"] in ("Annotation2D"):
+            self.layout.operator("bim.add_curvelike_item", icon="IPO_CONSTANT", text="Polycurve").shape = "LINE"
+            self.layout.operator("bim.add_curvelike_item", icon="MESH_CIRCLE", text="Circle").shape = "CIRCLE"
+
 
 class CreateObjectUI:
     @classmethod
@@ -340,9 +345,9 @@ class CreateObjectUI:
             cls.layout.label(text=tool_name, icon="TOOL_SETTINGS")
 
         if AuthoringData.data["ifc_classes"] and AuthoringData.data["relating_type_id"]:
-            cls.draw_add_object(context)
-            cls.draw_thumbnail() if context.region.type != "TOOL_HEADER" else cls
+            cls.draw_thumbnail(context)
             cls.draw_add_object_parameters(context)
+            cls.draw_add_object(context)
         else:
             cls.draw_type_manager_launcher(context)
 
@@ -356,42 +361,60 @@ class CreateObjectUI:
 
     @classmethod
     def draw_type_manager_launcher(cls, context):
+        ui_context = context.region.type
         row = cls.layout.row(align=True)
-        row.label(text="No Element Types Found", icon="ERROR")
-        row = cls.layout.row(align=True)
-        row.operator("bim.add_element", icon_value=bonsai.bim.icons["IFC"].icon_id, text="Add New Type")
-        if AuthoringData.data["ifc_element_type"]:
+        box = cls.layout.box()
+        row1 = box.row(align=True)
+        row1.operator(
+            "bim.launch_type_manager",
+            icon="ERROR",
+            text=f"No {AuthoringData.data['ifc_element_type']}s Found",
+            emboss=False,
+        )
+        row1.operator(
+            "bim.launch_type_manager",
+            icon=tool.Blender.TYPE_MANAGER_ICON,  # "DOWNARROW_HLT",
+            text="",
+            emboss=False,
+        )
+
+        if ui_context != "TOOL_HEADER":
+
+            row = box.row(align=True)
+            row.alignment = "CENTER"
+            row.template_icon(icon_value=0, scale=3.3)
+
+            row = box.row(align=True)
+            row.alignment = "CENTER"
+            row.operator(
+                "bim.launch_add_element",
+                text=f"Create New {AuthoringData.data['ifc_element_type']}",
+            )
+
+            row = box.row(align=True)
+
+            if not AuthoringData.data["ifc_element_type"]:
+                row = box.row(align=True)
+                row.alignment = "CENTER"
+                row.template_icon(icon_value=0, scale=1)
+
+            row = box.row(align=True)
+            row.alignment = "CENTER"
+            row.template_icon(icon_value=0, scale=3.5)
+        elif AuthoringData.data["ifc_element_type"]:
             row = cls.layout.row(align=True)
             op = row.operator(
                 "bim.add_default_type",
-                icon_value=custom_icon_previews["ADD_TYPE"].icon_id,
-                text=f"Quick Create Default {AuthoringData.data['ifc_element_type']}",
+                icon_value=custom_icon_previews["QUICK_DEFAULT"].icon_id,
+                text=f"Quick Create {AuthoringData.data['ifc_element_type']}",
             )
             op.ifc_element_type = AuthoringData.data["ifc_element_type"]
 
     @classmethod
     def draw_add_object(cls, context):
         ui_context = str(context.region.type)
-        if not AuthoringData.data["ifc_element_type"]:
-            row = cls.layout.row(align=True)
-            prop_with_search(row, cls.props, "ifc_class", text="Type Class" if ui_context != "TOOL_HEADER" else "")
+        row = cls.layout.row(align=True)
         if AuthoringData.data["relating_type_id"]:
-            row = cls.layout.row(align=True)
-            box = row.box()
-            # This trick creates a fake dropdown
-            row2 = box.row(align=True)
-            row2.operator(
-                "bim.launch_type_manager",
-                icon="FILE_3D",
-                text=AuthoringData.data["relating_type_name"],
-                emboss=False,
-            )
-            row2.operator(
-                "bim.launch_type_manager",
-                icon="DOWNARROW_HLT",
-                text="",
-                emboss=False,
-            )
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             op = row.operator("bim.hotkey", text="Add", icon_value=custom_icon_previews["ADD"].icon_id)
             op.hotkey = "S_A"
@@ -409,8 +432,6 @@ class CreateObjectUI:
             row.prop(data=cls.props, property="rl1", text="Relative Level" if ui_context != "TOOL_HEADER" else "RL")
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             row.prop(data=cls.props, property="extrusion_depth", text="Height" if ui_context != "TOOL_HEADER" else "H")
-            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
-            row.prop(data=cls.props, property="length", text="Length" if ui_context != "TOOL_HEADER" else "L")
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             row.prop(data=cls.props, property="x_angle", text="Slope") if ui_context != "TOOL_HEADER" else "A"
 
@@ -453,15 +474,66 @@ class CreateObjectUI:
             row.prop(data=cls.props, property="rl_mode", text="RL Mode" if ui_context != "TOOL_HEADER" else "RL")
 
     @classmethod
-    def draw_thumbnail(cls):
+    def draw_thumbnail(cls, context):
+        ui_context = context.region.type
+        row = cls.layout.row(align=True)
+        if not AuthoringData.data["ifc_element_type"]:
+            prop_with_search(row, cls.props, "ifc_class", text="Type Class" if ui_context != "TOOL_HEADER" else "")
         if AuthoringData.data["ifc_classes"]:
             if cls.props.ifc_class:
                 box = cls.layout.box()
-                if AuthoringData.data["type_thumbnail"]:
-                    box.template_icon(icon_value=AuthoringData.data["type_thumbnail"], scale=5)
+                row = box.row(align=True)
+                if AuthoringData.data["type_thumbnail"] and ui_context == "TOOL_HEADER":
+                    row.template_icon(icon_value=AuthoringData.data["type_thumbnail"])
+                    row.operator("bim.launch_type_manager", text=AuthoringData.data["relating_type_name"], emboss=False)
                 else:
-                    op = box.operator("bim.load_type_thumbnails", text="Load Thumbnails", icon="FILE_REFRESH")
-                    op.ifc_class = cls.props.ifc_class
+                    row.operator(
+                        "bim.launch_type_manager",
+                        icon="BLANK1",
+                        text=AuthoringData.data["relating_type_name"],
+                        emboss=False,
+                    )
+
+                row.operator(
+                    "bim.launch_type_manager",
+                    icon=tool.Blender.TYPE_MANAGER_ICON,
+                    text="",
+                    emboss=False,
+                )
+
+                if ui_context != "TOOL_HEADER":
+                    row = box.row(align=True)
+                    row.alignment = "CENTER"
+                    row.operator(
+                        "bim.launch_type_manager",
+                        text=AuthoringData.data["relating_type_description"],
+                        emboss=False,
+                    )
+
+                    if AuthoringData.data["type_thumbnail"]:
+                        row1 = box.row()
+                        row1.ui_units_y = 0.01
+                        row1.template_icon(icon_value=AuthoringData.data["type_thumbnail"], scale=4)
+                        row2 = box.column(align=True)
+                        row2.ui_units_y = 4
+                        for _ in range(4):
+                            row2.operator("bim.launch_type_manager", text="", emboss=False)
+                    else:
+                        op = box.operator(
+                            "bim.load_type_thumbnails",
+                            text="",
+                            icon="FILE_REFRESH",
+                            emboss=False,
+                        )
+                        op.ifc_class = cls.props.ifc_class
+
+                    row = box.row(align=True)
+                    row.alignment = "CENTER"
+                    row.operator(
+                        "bim.launch_type_manager",
+                        text=AuthoringData.data["predefined_type"],
+                        emboss=False,
+                    )
 
 
 class EditObjectUI:
@@ -863,6 +935,10 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
                 relating_type_id := tool.Blender.get_enum_safe(props, "relating_type_id")
             ) and tool.Model.get_usage_type(tool.Ifc.get().by_id(int(relating_type_id))) == "LAYER2":
                 bpy.ops.bim.draw_polyline_wall("INVOKE_DEFAULT")
+            elif (
+                relating_type_id := tool.Blender.get_enum_safe(props, "relating_type_id")
+            ) and tool.Model.get_usage_type(tool.Ifc.get().by_id(int(relating_type_id))) == "LAYER3":
+                bpy.ops.bim.draw_polyline_slab("INVOKE_DEFAULT")
             else:
                 bpy.ops.bim.add_occurrence("INVOKE_DEFAULT")
 
@@ -887,9 +963,9 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             return
         if self.active_material_usage == "LAYER2":
             if bpy.ops.bim.align_wall.poll():
-                bpy.ops.bim.align_wall(align_type="Centreline")
+                bpy.ops.bim.align_wall(align_type="CENTERLINE")
         else:
-            bpy.ops.bim.align_product(align_type="Centreline")
+            bpy.ops.bim.align_product(align_type="CENTERLINE")
 
     def hotkey_S_E(self):
         if not bpy.context.selected_objects:

@@ -172,8 +172,6 @@ class BIM_PT_project(Panel):
         row = self.layout.row()
         row.prop(pprops, "should_load_geometry")
         row = self.layout.row()
-        row.prop(pprops, "should_use_native_meshes")
-        row = self.layout.row()
         row.prop(pprops, "should_merge_materials_by_colour")
         row = self.layout.row()
         row.prop(pprops, "geometry_library")
@@ -193,11 +191,25 @@ class BIM_PT_project(Panel):
             row = self.layout.row()
             row.prop(pprops, "project_north")
 
+        if ProjectData.data["total_elements"] > 30000:
+            box = self.layout.box()
+            box.alert = True
+            row = box.row()
+            row.alignment = "CENTER"
+            row.label(text=f"Large Model ({ProjectData.data['total_elements']} Elements)", icon="ERROR")
+            row = box.row()
+            row.alignment = "CENTER"
+            row.label(text="Large models may slow down Bonsai")
+
         row = self.layout.row()
-        row.label(text="Element Range")
-        row = self.layout.row(align=True)
-        row.prop(pprops, "element_offset", text="")
-        row.prop(pprops, "element_limit", text="")
+        row.prop(pprops, "element_limit_mode")
+
+        if pprops.element_limit_mode == "RANGE":
+            row = self.layout.row()
+            row.label(text="Element Range")
+            row = self.layout.row(align=True)
+            row.prop(pprops, "element_offset", text="")
+            row.prop(pprops, "element_limit", text="")
 
         row = self.layout.row(align=True)
         row.operator("bim.load_project_elements")
@@ -524,7 +536,10 @@ class BIM_PT_purge(Panel):
         layout = self.layout
         layout.operator("bim.purge_unused_objects", text="Purge Unused Profiles").object_type = "PROFILE"
         layout.operator("bim.purge_unused_objects", text="Purge Unused Types").object_type = "TYPE"
-        layout.operator("bim.purge_unused_objects", text="Purge Unused Materials").object_type = "MATERIAL"
+        row = layout.row(align=True)
+        row.label(text="Materials: ")
+        row.operator("bim.purge_unused_objects", text="Purge Unused").object_type = "MATERIAL"
+        row.operator("bim.merge_identical_objects", text="Merge Identical").object_type = "MATERIAL"
         row = layout.row(align=True)
         row.label(text="Styles: ")
         row.operator("bim.purge_unused_objects", text="Purge Unused").object_type = "STYLE"

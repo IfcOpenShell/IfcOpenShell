@@ -149,6 +149,18 @@ class BIMModelProperties(PropertyGroup):
     type_page: bpy.props.IntProperty(name="Type Page", default=1, update=update_type_page)
     type_name: bpy.props.StringProperty(name="Name", default="TYPEX")
     boundary_class: bpy.props.EnumProperty(items=get_boundary_class, name="Boundary Class")
+    direction_sense: bpy.props.EnumProperty(
+        items=[("POSITIVE", "Positive", ""), ("NEGATIVE", "Negative", "")],
+        name="Material Usage Direction Sense",
+        default="POSITIVE",
+    )
+    offset_type: bpy.props.EnumProperty(
+        items=[("EXTERIOR", "Exterior", ""), ("CENTER", "Center", ""), ("INTERIOR", "Interior", "")],
+        name="Layer Offset Type",
+        default="EXTERIOR",
+        description="It's a convention that affects the offset to reference line",
+    )
+    offset: bpy.props.FloatProperty(name="Offset", default=0.0, description="Material usage offset from reference line")
 
 
 class BIMArrayProperties(PropertyGroup):
@@ -739,6 +751,7 @@ class SnapMousePoint(PropertyGroup):
     y: bpy.props.FloatProperty(name="Y")
     z: bpy.props.FloatProperty(name="Z")
     snap_type: bpy.props.StringProperty(name="Snap Type")
+    snap_object: bpy.props.StringProperty(name="Object Name")
 
 
 class PolylinePoint(PropertyGroup):
@@ -750,13 +763,15 @@ class PolylinePoint(PropertyGroup):
     position: bpy.props.FloatVectorProperty(name="Decorator Position", size=3)
 
 
-class MeasurePolyline(PropertyGroup):
-    polyline_point: bpy.props.CollectionProperty(type=PolylinePoint)
+class Polyline(PropertyGroup):
+    polyline_points: bpy.props.CollectionProperty(type=PolylinePoint)
+    measurement_type: bpy.props.StringProperty(name="Measurement Type")
+    area: bpy.props.StringProperty(name="Measured Area")
+    total_length: bpy.props.StringProperty(name="Total Length")
 
 
 class BIMPolylineProperties(PropertyGroup):
     snap_mouse_point: bpy.props.CollectionProperty(type=SnapMousePoint)
     snap_mouse_ref: bpy.props.CollectionProperty(type=SnapMousePoint)
-    polyline_point: bpy.props.CollectionProperty(type=PolylinePoint)
-    product_preview: bpy.props.CollectionProperty(type=PolylinePoint)
-    measure_polyline: bpy.props.CollectionProperty(type=MeasurePolyline)
+    insertion_polyline: bpy.props.CollectionProperty(type=Polyline)
+    measurement_polyline: bpy.props.CollectionProperty(type=Polyline)

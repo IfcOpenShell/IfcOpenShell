@@ -280,13 +280,15 @@ IfcEntityInstanceData IfcParse::parse_context::construct(int name, unresolved_re
             if constexpr (std::is_same_v<std::decay_t<decltype(v)>, IfcParse::Token>) {
                 dispatch_token(v, param_type && param_type->as_named_type() ? param_type->as_named_type()->declared_type() : nullptr, [this, &storage, name, &references_to_resolve, index](auto v) {
                     if constexpr (std::is_same_v<std::decay_t<decltype(v)>, IfcParse::reference_or_simple_type>) {
-                        references_to_resolve.push_back(std::make_pair(
-                            // @todo previously this was storage but apparently the 
-                            // pointer is not constant with the moving and temporary nature
-                            // maybe it ought to be and in that case a pointer is more direct
-                            MutableAttributeValue{ name, index },
-                            v
-                        ));
+                        if (name > 0) {
+                            references_to_resolve.push_back(std::make_pair(
+                                // @todo previously this was storage but apparently the 
+                                // pointer is not constant with the moving and temporary nature
+                                // maybe it ought to be and in that case a pointer is more direct
+                                MutableAttributeValue{ name, index },
+                                v
+                            ));
+                        }
                     } else {
                         storage.set(index, v);
                     }
@@ -300,9 +302,13 @@ IfcEntityInstanceData IfcParse::parse_context::construct(int name, unresolved_re
                 }
                 construct_<0>(*v, pt ? pt->as_aggregation_type() : nullptr, [this, &storage, name, &references_to_resolve, index](const auto& v) {
                     if constexpr (std::is_same_v<std::decay_t<decltype(v)>, std::vector<reference_or_simple_type>>) {
-                        references_to_resolve.push_back({ {name, index }, v });
+                        if (name > 0) {
+                            references_to_resolve.push_back({ {name, index }, v });
+                        }
                     } else if constexpr (std::is_same_v<std::decay_t<decltype(v)>, std::vector<std::vector<reference_or_simple_type>>>) {
-                        references_to_resolve.push_back({ {name, index }, v });
+                        if (name > 0) {
+                            references_to_resolve.push_back({ {name, index }, v });
+                        }
                     } else {
                         storage.set(index, v);
                     }
