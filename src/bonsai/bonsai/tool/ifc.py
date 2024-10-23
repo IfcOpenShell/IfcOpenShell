@@ -161,10 +161,7 @@ class Ifc(bonsai.core.tool.Ifc):
             if global_id:
                 IfcStore.guid_map[global_id] = obj
 
-            bonsai.bim.handler.subscribe_to(obj, "name", bonsai.bim.handler.name_callback)
-            bonsai.bim.handler.subscribe_to(
-                obj, "active_material_index", bonsai.bim.handler.active_material_index_callback
-            )
+            cls.setup_listeners(obj)
 
         for obj in bpy.data.materials:
             if obj.library:
@@ -177,7 +174,15 @@ class Ifc(bonsai.core.tool.Ifc):
                 continue
 
             IfcStore.id_map[style.id()] = obj
-            bonsai.bim.handler.subscribe_to(obj, "name", bonsai.bim.handler.name_callback)
+            cls.setup_listeners(obj)
+
+    @classmethod
+    def setup_listeners(cls, obj: IFC_CONNECTED_TYPE) -> None:
+        if isinstance(obj, bpy.types.Object):
+            bonsai.bim.handler.subscribe_to(
+                obj, "active_material_index", bonsai.bim.handler.active_material_index_callback
+            )
+        bonsai.bim.handler.subscribe_to(obj, "name", bonsai.bim.handler.name_callback)
 
     @classmethod
     def link(

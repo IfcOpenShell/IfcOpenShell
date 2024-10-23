@@ -274,12 +274,7 @@ class IfcStore:
         else:
             obj.BIMObjectProperties.ifc_definition_id = element.id()
 
-        bonsai.bim.handler.subscribe_to(obj, "name", bonsai.bim.handler.name_callback)
-
-        if isinstance(obj, bpy.types.Object):
-            bonsai.bim.handler.subscribe_to(
-                obj, "active_material_index", bonsai.bim.handler.active_material_index_callback
-            )
+        tool.Ifc.setup_listeners(obj)
 
         if IfcStore.history:
             data = OperationData(id=element.id(), guid=getattr(element, "GlobalId", None), obj=obj.name)
@@ -301,11 +296,7 @@ class IfcStore:
         IfcStore.id_map[data["id"]] = obj
         if "guid" in data:
             IfcStore.guid_map[data["guid"]] = obj
-        bonsai.bim.handler.subscribe_to(obj, "name", bonsai.bim.handler.name_callback)
-        if isinstance(obj, bpy.types.Object):
-            bonsai.bim.handler.subscribe_to(
-                obj, "active_material_index", bonsai.bim.handler.active_material_index_callback
-            )
+        tool.Ifc.setup_listeners(obj)
         # TODO Listeners are not re-registered. Does this cause nasty problems to debug later on?
         # TODO We're handling id_map and guid_map, but what about edited_objs? This might cause big problems.
 
