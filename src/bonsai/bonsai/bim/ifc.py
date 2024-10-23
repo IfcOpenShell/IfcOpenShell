@@ -295,23 +295,27 @@ class IfcStore:
         if "guid" in data:
             IfcStore.guid_map[data["guid"]] = obj
         tool.Ifc.setup_listeners(obj)
-        # TODO Listeners are not re-registered. Does this cause nasty problems to debug later on?
         # TODO We're handling id_map and guid_map, but what about edited_objs? This might cause big problems.
 
     @staticmethod
     def rollback_unlink_element(data: OperationData) -> None:
         if "id" not in data or "obj" not in data:
             return
-        obj = bpy.data.objects.get(data["obj"])
+        obj = IfcStore.get_object_by_name(data["obj"])
         IfcStore.id_map[data["id"]] = obj
         if "guid" in data:
             IfcStore.guid_map[data["guid"]] = obj
+        tool.Ifc.setup_listeners(obj)
 
     @staticmethod
     def commit_unlink_element(data: OperationData) -> None:
         del IfcStore.id_map[data["id"]]
         if "guid" in data:
             del IfcStore.guid_map[data["guid"]]
+        obj = IfcStore.get_object_by_name(data["obj"])
+        # obj might be removed after unlink.
+        if not obj:
+            bpy.msgbus.clear_by_owner(obj)
 
     @staticmethod
     def unlink_element(
