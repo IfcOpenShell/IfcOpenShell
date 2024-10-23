@@ -227,7 +227,7 @@ class TestSwitchRepresentation:
             should_sync_changes_first=True,
         )
 
-    def test_not_switching_if_an_updated_representation_is_the_same_one_we_were_going_to_switch_to(self, geometry):
+    def test_not_switching_if_an_updated_representation_is_the_same_one_we_were_going_to_switch_to(self, ifc, geometry):
         ifc.is_edited("obj").should_be_called().will_return(True)
         geometry.is_box_representation("mapped_rep").should_be_called().will_return(False)
         geometry.get_representation_id("mapped_rep").should_be_called().will_return("representation_id")
