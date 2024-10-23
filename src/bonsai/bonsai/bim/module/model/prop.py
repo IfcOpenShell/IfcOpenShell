@@ -739,11 +739,11 @@ class BIMRoofProperties(PropertyGroup):
         for prop_name in kwargs:
             setattr(self, prop_name, kwargs[prop_name])
 
-    def update_angle(self):
-        self.angle = math.atan(self.percentage / 100)
+    def update_angle(self) -> None:
+        self["angle"] = math.atan(self.percentage / 100)
 
-    def update_percentage(self):
-        self.percentage = math.tan(self.angle) * 100
+    def update_percentage(self) -> None:
+        self["percentage"] = math.tan(self.angle) * 100
 
 
 class SnapMousePoint(PropertyGroup):
