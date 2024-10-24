@@ -82,7 +82,11 @@ class Geometry(bonsai.core.tool.Geometry):
 
     @classmethod
     def clear_scale(cls, obj: bpy.types.Object) -> None:
-        # Note that clearing scale has no impact on cameras.
+        """Apply and clear object scale.
+
+        If it's a mesh object, scale will be applied to it's mesh.
+        Note that clearing scale has no impact on cameras.
+        """
         if cls.is_scaled(obj):
             if not obj.data:
                 location, rotation, _ = obj.matrix_world.decompose()

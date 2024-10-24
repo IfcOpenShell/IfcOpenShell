@@ -40,11 +40,11 @@ from logging import Logger
 
 
 class IfcExporter:
-    def __init__(self, ifc_export_settings):
+    def __init__(self, ifc_export_settings: IfcExportSettings):
         self.ifc_export_settings = ifc_export_settings
 
     def export(self):
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         self.set_header()
         IfcStore.update_cache()
         self.sync_all_objects()
