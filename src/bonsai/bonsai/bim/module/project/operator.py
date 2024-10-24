@@ -1000,7 +1000,7 @@ class LinkIfc(bpy.types.Operator):
             status = bpy.ops.bim.load_link(filepath=filepath.as_posix(), use_cache=self.use_cache)
             if status == {"CANCELLED"}:
                 error_msg = (
-                    f'Error processing IFC file "{self.filepath}" '
+                    f'Error processing IFC file "{filepath.as_posix()}" '
                     "was critical and blend file either wasn't saved or wasn't updated. "
                     "See logs above in system console for details."
                 )
