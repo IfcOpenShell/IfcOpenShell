@@ -1548,7 +1548,7 @@ class Drawing(bonsai.core.tool.Drawing):
     def sync_object_placement(cls, obj: bpy.types.Object) -> Union[ifcopenshell.entity_instance, None]:
         blender_matrix = np.array(obj.matrix_world)
         element = tool.Ifc.get_entity(obj)
-        if (obj.scale - mathutils.Vector((1.0, 1.0, 1.0))).length > 1e-4:
+        if tool.Geometry.is_scaled(obj):
             bpy.ops.bim.update_representation(obj=obj.name)
             return element
         if element.is_a("IfcGridAxis"):
