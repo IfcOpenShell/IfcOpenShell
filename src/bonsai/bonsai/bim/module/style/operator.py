@@ -141,6 +141,13 @@ class UnlinkStyle(bpy.types.Operator, tool.Ifc.Operator):
             core.remove_style(tool.Ifc, tool.Style, style)
         else:
             material_copy.use_fake_user = True
+            # Need to reload Styles UI since it's item is now pointing to wrong Blender material.
+            if (
+                tool.Style.is_editing_styles()
+                and (style_type := tool.Style.get_active_style_type())
+                and style_type == style.is_a()
+            ):
+                tool.Style.import_presentation_styles(style_type)
 
         # Ensure there won't be any style sync on project save:
         # bim.update_representation would create new IfcSurfaceStyle
