@@ -321,7 +321,7 @@ class curve_segment_evaluator {
 
 #ifdef SCHEMA_HAS_IfcClothoid
     void operator()(const IfcSchema::IfcClothoid* c) {
-        auto A = c->ClothoidConstant();
+        auto A = c->ClothoidConstant() * length_unit_;
 
         if (segment_type_ == ST_CANT) {
             boost::optional<std::function<double(double)>> super, slope;
@@ -698,7 +698,7 @@ class curve_segment_evaluator {
 
        if (segment_type_ == ST_VERTICAL && placement_) {
           // the general algorithm for mapping parent curve onto curve segment doesn't
-          // exactly work for IfcLine. This is easily overcome by usnig the curve segment
+          // exactly work for IfcLine. This is easily overcome by using the curve segment
           // placement for the IfcLine direction
           pcDx = (*placement_)(0, 0);
           pcDy = (*placement_)(1, 0);
