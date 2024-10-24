@@ -146,6 +146,11 @@ class IfcExporter:
             return
         if tool.Geometry.is_scaled(obj):
             bpy.ops.bim.update_representation(obj=obj.name)
+            # update_representation might not apply scale if the object has openings
+            # reset it, so let user know that the scale wasn't saved.
+            if tool.Geometry.is_scaled(obj):
+                print(f"WARNING. Object '{obj.name}' scales ({obj.scale[:]}) are reset during project save.")
+                obj.scale = (1.0, 1.0, 1.0)
             return element
         if element.is_a("IfcGridAxis"):
             return self.sync_grid_axis_object_placement(obj, element)
