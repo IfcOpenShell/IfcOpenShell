@@ -83,7 +83,7 @@ class Geometry(bonsai.core.tool.Geometry):
     @classmethod
     def clear_scale(cls, obj: bpy.types.Object) -> None:
         # Note that clearing scale has no impact on cameras.
-        if (obj.scale - Vector((1.0, 1.0, 1.0))).length > 1e-4:
+        if cls.is_scaled(obj):
             if not obj.data:
                 location, rotation, _ = obj.matrix_world.decompose()
                 obj.matrix_world = Matrix.Translation(location) @ rotation.to_matrix().to_4x4()
