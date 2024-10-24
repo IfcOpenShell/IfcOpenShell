@@ -772,6 +772,7 @@ class EditObjectUI:
     @classmethod
     def draw_void(cls, context, row):
         ui_context = str(context.region.type)
+        IS_TOOL_HEADER = ui_context == "TOOL_HEADER"
 
         if len(context.selected_objects) > 1:
             op_text = "Apply Void" if ui_context != "TOOL_HEADER" else ""
@@ -790,12 +791,14 @@ class EditObjectUI:
         if AuthoringData.data["is_voidable_element"]:
             if AuthoringData.data["has_visible_openings"]:
                 row = cls.layout.row(align=True)
-                row.operator("bim.edit_openings", icon="CHECKMARK", text="")
+                op_text = "" if IS_TOOL_HEADER else "Edit Openings"
+                row.operator("bim.edit_openings", icon="CHECKMARK", text=op_text)
                 row.operator("bim.hide_openings", icon="CANCEL", text="")
 
         if AuthoringData.data["active_class"] in ("IfcOpeningElement",):
             row = cls.layout.row(align=True)
-            row.operator("bim.edit_openings", icon="CHECKMARK", text="")
+            op_text = "" if IS_TOOL_HEADER else "Edit Openings"
+            row.operator("bim.edit_openings", icon="CHECKMARK", text=op_text)
             row.operator("bim.hide_openings", icon="CANCEL", text="")
             if len(context.selected_objects) == 2:
                 row = cls.layout.row(align=True)
