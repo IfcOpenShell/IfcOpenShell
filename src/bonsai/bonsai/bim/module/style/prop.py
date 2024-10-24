@@ -69,6 +69,13 @@ class Style(PropertyGroup):
     diffuse_colour: bpy.props.FloatVectorProperty(
         name="Diffuse Colour", subtype="COLOR", default=(1, 1, 1), min=0.0, max=1.0, size=3
     )
+    blender_material: PointerProperty(
+        description=(
+            "Needed for UI to have style->blender material link that won't break on undo. "
+            "Can be None if it's not a surface style"
+        ),
+        type=bpy.types.Material,
+    )
 
 
 STYLE_TYPES = [
