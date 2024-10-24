@@ -1142,7 +1142,8 @@ def run():
     pprops.false_origin = "{pprops.false_origin}"
     pprops.project_north = "{pprops.project_north}"
     bpy.ops.bim.load_linked_project(filepath="{self.filepath}")
-    bpy.ops.wm.save_as_mainfile(filepath="{blend_filepath.as_posix()}")
+    # Use str instead of as_posix to avoid issues with Windows shared paths.
+    bpy.ops.wm.save_as_mainfile(filepath=r"{str(blend_filepath)}")
 
 try:
     run()
