@@ -188,7 +188,7 @@ class Unit(bonsai.core.tool.Unit):
     def format_value(cls, value: float) -> str:
         precision = tool.Ifc.get().by_type("IfcGeometricRepresentationContext")[0].Precision
         if precision:
-            decimal_places = math.ceil(math.log10(1/precision))
+            decimal_places = math.ceil(math.log10(1 / precision))
         else:
             precision = 1e-5
             decimal_places = 5
