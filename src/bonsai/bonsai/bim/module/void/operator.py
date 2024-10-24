@@ -130,6 +130,7 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
                         # therefore bim.update_representaiton wouldn't work either way.
                         should_sync_changes_first=False,
                     )
+                tool.Geometry.lock_scale(voided_obj)
 
             if not has_visible_openings:
                 tool.Ifc.unlink(element=element2)
@@ -173,6 +174,8 @@ class RemoveOpening(bpy.types.Operator, tool.Ifc.Operator):
                     is_global=True,
                     should_sync_changes_first=False,
                 )
+            if building_obj and not getattr(element, "HasOpenings", None):
+                tool.Geometry.unlock_scale(building_obj)
 
         tool.Geometry.clear_cache(element)
         return {"FINISHED"}

@@ -137,6 +137,14 @@ class Geometry(bonsai.core.tool.Geometry):
         obj.lock_scale = (False, False, False)
 
     @classmethod
+    def lock_scale(cls, obj: bpy.types.Object) -> None:
+        obj.lock_scale = (True, True, True)
+
+    @classmethod
+    def unlock_scale(cls, obj: bpy.types.Object) -> None:
+        obj.lock_scale = (False, False, False)
+
+    @classmethod
     def delete_ifc_item(cls, obj: bpy.types.Object) -> None:
         props = bpy.context.scene.BIMGeometryProperties
         if len(props.item_objs) == 1:
