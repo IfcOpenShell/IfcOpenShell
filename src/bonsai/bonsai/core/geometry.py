@@ -28,6 +28,12 @@ if TYPE_CHECKING:
 def edit_object_placement(
     ifc: tool.Ifc, geometry: tool.Geometry, surveyor: tool.Surveyor, obj: Optional[bpy.types.Object] = None
 ) -> None:
+    """Sync current object placement.
+
+    - apply and clear object scale;
+    - write current object position to IFC;
+    - update position checksums;
+    """
     element = ifc.get_entity(obj)
     if not element:
         return
