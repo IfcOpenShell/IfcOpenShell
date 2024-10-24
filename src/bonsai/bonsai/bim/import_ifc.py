@@ -811,6 +811,8 @@ class IfcImporter:
 
         obj = bpy.data.objects.new(tool.Loader.get_name(element), mesh)
         self.link_element(element, obj)
+        if getattr(element, "HasOpenings", None):
+            tool.Geometry.lock_scale(obj)
 
         if shape:
             # We use numpy here because Blender mathutils.Matrix is not accurate enough
