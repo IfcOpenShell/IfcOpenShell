@@ -175,27 +175,40 @@ class DumbSlabGenerator:
 class DumbSlabPlaner:
     def regenerate_from_layer(self, usecase_path, ifc_file, settings):
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
-        layer = settings["layer"]
-        thickness = settings["attributes"].get("LayerThickness")
-        if thickness is None:
+        try:
+            layer = settings["layer"]
+            thickness = settings["attributes"].get("LayerThickness")
+            if thickness is None:
+                return
+            layer_set = layer.ToMaterialLayerSet[0]
+
+        # Called from materil.add_layer or material.remove_layer
+        except:
+            obj = tool.Blender.get_active_object()
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                return
+            material = ifcopenshell.util.element.get_material(element)
+            material_set_usage = tool.Ifc.get().by_id(material.id())
+            layer_set = material_set_usage.ForLayerSet
+
+        total_thickness = sum([l.LayerThickness for l in layer_set.MaterialLayers])
+        if not total_thickness:
             return
-        for layer_set in layer.ToMaterialLayerSet:
-            total_thickness = sum([l.LayerThickness for l in layer_set.MaterialLayers])
-            if not total_thickness:
+
+        for inverse in ifc_file.get_inverse(layer_set):
+            if not inverse.is_a("IfcMaterialLayerSetUsage") or inverse.LayerSetDirection != "AXIS3":
                 continue
-            for inverse in ifc_file.get_inverse(layer_set):
-                if not inverse.is_a("IfcMaterialLayerSetUsage") or inverse.LayerSetDirection != "AXIS3":
-                    continue
-                if ifc_file.schema == "IFC2X3":
-                    for rel in ifc_file.get_inverse(inverse):
-                        if not rel.is_a("IfcRelAssociatesMaterial"):
-                            continue
-                        for element in rel.RelatedObjects:
-                            self.change_thickness(element, total_thickness)
-                else:
-                    for rel in inverse.AssociatedTo:
-                        for element in rel.RelatedObjects:
-                            self.change_thickness(element, total_thickness)
+            if ifc_file.schema == "IFC2X3":
+                for rel in ifc_file.get_inverse(inverse):
+                    if not rel.is_a("IfcRelAssociatesMaterial"):
+                        continue
+                    for element in rel.RelatedObjects:
+                        self.change_thickness(element, total_thickness)
+            else:
+                for rel in inverse.AssociatedTo:
+                    for element in rel.RelatedObjects:
+                        self.change_thickness(element, total_thickness)
 
     def regenerate_from_type(self, usecase_path, ifc_file, settings):
         relating_type = settings["relating_type"]
