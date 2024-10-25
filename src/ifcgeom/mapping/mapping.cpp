@@ -179,7 +179,12 @@ aggregate_of_instance::ptr mapping::find_openings(const IfcUtil::IfcBaseEntity* 
         for (;;) {
             auto decomposes = obdef->Decomposes()->generalize();
             if (decomposes->size() != 1) break;
-            IfcSchema::IfcObjectDefinition* rel_obdef = (*decomposes->begin())->as<IfcSchema::IfcRelAggregates>()->RelatingObject();
+            IfcSchema::IfcObjectDefinition* rel_obdef;
+#ifdef SCHEMA_IfcRelDecomposes_HAS_RelatingObject
+            rel_obdef = (*decomposes->begin())->as<IfcSchema::IfcRelDecomposes>()->RelatingObject();
+#else // IFC4+
+            rel_obdef = (*decomposes->begin())->as<IfcSchema::IfcRelAggregates>()->RelatingObject();
+#endif
             if (rel_obdef->as<IfcSchema::IfcElement>() && !rel_obdef->as<IfcSchema::IfcFeatureElementSubtraction>()) {
                 IfcSchema::IfcElement* element = rel_obdef->as<IfcSchema::IfcElement>();
                 auto rels = element->HasOpenings();
