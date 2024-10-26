@@ -549,17 +549,27 @@ void POSTFIX_SCHEMA(XmlSerializer)::finalize() {
 
 	ptree root, header, units, decomposition, properties, quantities, types, layers, materials, work, calendars, connections, groups;
 
+	auto catch_exceptions = [this](const auto& fn) {
+		try {
+			return fn();
+		} catch(const std::exception& e) {
+			Logger::Error(e);
+			static std::invoke_result_t<decltype(fn)> v;
+			return v;
+		}
+	};
+
 	// Write the SPF header as XML nodes.
-	BOOST_FOREACH(const std::string& s, file->header().file_description().description()) {
+	BOOST_FOREACH(const std::string & s, catch_exceptions([this]() { return file->header().file_description().description(); })) {
 		header.add_child("file_description.description", ptree(s));
 	}
-	BOOST_FOREACH(const std::string& s, file->header().file_name().author()) {
+	BOOST_FOREACH(const std::string& s, catch_exceptions([this]() { return file->header().file_name().author(); })) {
 		header.add_child("file_name.author", ptree(s));
 	}
-	BOOST_FOREACH(const std::string& s, file->header().file_name().organization()) {
+	BOOST_FOREACH(const std::string& s, catch_exceptions([this]() { return file->header().file_name().organization(); })) {
 		header.add_child("file_name.organization", ptree(s));
 	}
-	BOOST_FOREACH(const std::string& s, file->header().file_schema().schema_identifiers()) {
+	BOOST_FOREACH(const std::string& s, catch_exceptions([this]() { return file->header().file_schema().schema_identifiers(); })) {
 		header.add_child("file_schema.schema_identifiers", ptree(s));
 	}
 	try {
