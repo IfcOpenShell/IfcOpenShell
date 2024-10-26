@@ -178,13 +178,17 @@ aggregate_of_instance::ptr mapping::find_openings(const IfcUtil::IfcBaseEntity* 
     if (obdef != nullptr) {
         for (;;) {
             auto decomposes = obdef->Decomposes()->generalize();
-            if (decomposes->size() != 1) break;
-            IfcSchema::IfcObjectDefinition* rel_obdef;
-#ifdef SCHEMA_IfcRelDecomposes_HAS_RelatingObject
-            rel_obdef = (*decomposes->begin())->as<IfcSchema::IfcRelDecomposes>()->RelatingObject();
-#else // IFC4+
-            rel_obdef = (*decomposes->begin())->as<IfcSchema::IfcRelAggregates>()->RelatingObject();
-#endif
+            if (decomposes->size() != 1) {
+                // If we have multiple decompositions, not allowed by schema,
+                // openings associated to relating decompositions are not
+                // considered;
+                break;
+            }
+            if ((*decomposes->begin())->as<IfcSchema::IfcRelAggregates>() == nullptr) {
+                // Only aggregation, not nesting is considered.
+                break;
+            }
+            IfcSchema::IfcObjectDefinition* rel_obdef = (*decomposes->begin())->as<IfcSchema::IfcRelAggregates>()->RelatingObject();
             if (rel_obdef->as<IfcSchema::IfcElement>() && !rel_obdef->as<IfcSchema::IfcFeatureElementSubtraction>()) {
                 IfcSchema::IfcElement* element = rel_obdef->as<IfcSchema::IfcElement>();
                 auto rels = element->HasOpenings();
