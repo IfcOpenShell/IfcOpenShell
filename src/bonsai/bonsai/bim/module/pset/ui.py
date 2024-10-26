@@ -102,6 +102,11 @@ def draw_psetqto_ui(
     allow_removing: bool = True,
     filter_keyword: str = "",
 ) -> None:
+
+
+    active_operator = context.active_operator
+    
+
     filter_keyword = filter_keyword.lower()
     box = layout.box()
     row = box.row(align=True)
@@ -195,7 +200,12 @@ def draw_psetqto_ui(
                 row.label(text=prop["Name"])
                 op = row.operator("bim.select_similar", text=nominal_value, icon="NONE", emboss=False)
                 op.key = '"' + pset["Name"].replace('"', '\\"') + '"."' + prop["Name"].replace('"', '\\"') + '"'
-
+                # calculate sum of all selected objects
+                if active_operator:
+                    if active_operator.bl_idname == "BIM_OT_select_similar":
+                        calculated_sum = getattr(active_operator, "calculated_sum", 0.0)
+                        if op.key == active_operator.key and calculated_sum != 0 and isinstance(float(nominal_value), (int, float)):
+                            row.label(text=f"(Sum: {calculated_sum})")
             if not has_props_displayed:
                 row = box.row()
                 row.scale_y = 0.8
