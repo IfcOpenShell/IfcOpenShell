@@ -24,7 +24,7 @@ import ifcopenshell.util.doc
 import ifcopenshell.util.schema
 import bonsai.tool as tool
 from bonsai.bim.module.drawing.helper import format_distance
-from typing import Any
+from typing import Any, Union
 
 
 def refresh():
@@ -174,7 +174,7 @@ class ObjectMaterialData:
         cls.is_loaded = True
 
     @classmethod
-    def material_class(cls):
+    def material_class(cls) -> Union[str, None]:
         element = tool.Ifc.get_entity(bpy.context.active_object)
         cls.material = ifcopenshell.util.element.get_material(element)
         if cls.material:

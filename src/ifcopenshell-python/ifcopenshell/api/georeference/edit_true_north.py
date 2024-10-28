@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.util.element
 import ifcopenshell.util.geolocation
 from typing import Union, Optional
 
