@@ -197,9 +197,7 @@ class RemoveOpening(bpy.types.Operator, tool.Ifc.Operator):
                     is_global=True,
                     should_sync_changes_first=False,
                 )
-            if building_obj and not getattr(element, "HasOpenings", None):
-                tool.Geometry.unlock_scale(building_obj)
-
+        tool.Geometry.unlock_scale_object_with_openings(obj)
         tool.Geometry.clear_cache(element)
         return {"FINISHED"}
 
