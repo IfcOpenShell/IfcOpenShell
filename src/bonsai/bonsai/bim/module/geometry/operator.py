@@ -442,7 +442,7 @@ class UpdateRepresentation(bpy.types.Operator, tool.Ifc.Operator):
             ifcopenshell.api.run("boundary.assign_connection_geometry", tool.Ifc.get(), **settings)
             return
 
-        if tool.Ifc.is_moved(obj):
+        if tool.Ifc.is_moved(obj) or tool.Geometry.is_scaled(obj):
             core.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
 
         if material and material.is_a() in ["IfcMaterialProfileSet", "IfcMaterialLayerSet"]:
