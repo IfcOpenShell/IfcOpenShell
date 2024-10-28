@@ -488,11 +488,17 @@ class BIM_PT_material_set_item_psets(Panel):
         if not MaterialSetItemPsetsData.is_loaded:
             MaterialSetItemPsetsData.load()
 
-        props = context.active_object.MaterialSetItemPsetProperties
+        obj = context.active_object
+        assert obj
+        if not obj.BIMObjectMaterialProperties.active_material_set_item_id:
+            self.layout.label(text="No Material Set Item Edited.")
+            return
+
+        props = obj.MaterialSetItemPsetProperties
         row = self.layout.row(align=True)
         prop_with_search(row, props, "pset_name", text="")
         op = row.operator("bim.add_pset", icon="ADD", text="")
-        op.obj = context.active_object.name
+        op.obj = obj.name
         op.obj_type = "MaterialSetItem"
 
         if not props.active_pset_id and props.active_pset_name and props.active_pset_type == "PSET":
