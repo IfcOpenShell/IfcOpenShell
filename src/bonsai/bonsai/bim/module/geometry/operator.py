@@ -423,7 +423,10 @@ class UpdateRepresentation(bpy.types.Operator, tool.Ifc.Operator):
         product = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         material = ifcopenshell.util.element.get_material(product, should_skip_usage=True)
 
-        if getattr(product, "HasOpenings", False) and obj.data.BIMMeshProperties.has_openings_applied:
+        # NOTE: Currently iterator doesn't detect whether opening is actually affected the representation
+        # or it's just present on the element. In theory, we can also allow editing representations
+        # if we know that representation wasn't affected by existing openings.
+        if tool.Geometry.has_openings(product) and obj.data.BIMMeshProperties.has_openings_applied:
             # Meshlike things with openings can only be updated without openings applied.
             if self.from_ui:
                 self.report({"ERROR"}, f"Object '{obj.name}' has openings - representation cannot be updated.")
