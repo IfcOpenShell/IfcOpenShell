@@ -25,6 +25,7 @@ import ifcopenshell.util.element
 import bonsai.tool as tool
 from bonsai.bim.prop import Attribute, StrProperty
 from bonsai.bim.module.pset.data import AddEditCustomPropertiesData, ObjectPsetsData, MaterialPsetsData
+from bonsai.bim.module.material.data import ObjectMaterialData
 from bonsai.bim.ifc import IfcStore
 from bpy.types import PropertyGroup
 from bpy.props import (
@@ -98,13 +99,11 @@ def get_material_pset_names(self, context):
 
 def get_material_set_pset_names(self, context):
     global psetnames
-    element = tool.Ifc.get_entity(context.active_object)
-    if not element:
+    if not ObjectMaterialData.is_loaded:
+        ObjectMaterialData.load()
+    ifc_class = ObjectMaterialData.data["material_class"]
+    if not ifc_class or "Set" not in ifc_class:
         return []
-    material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
-    if not material or "Set" not in material.is_a():
-        return []
-    ifc_class = material.is_a()
     if ifc_class not in psetnames:
         psets = bonsai.bim.schema.ifc.psetqto.get_applicable(ifc_class, pset_only=True)
         psetnames[ifc_class] = blender_formatted_enum_from_psets(psets)
