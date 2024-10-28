@@ -76,7 +76,9 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
                 obj1, obj2 = obj2, obj1
                 element1, element2 = element2, element1
 
-            # element1 - voided element, element2 - opening.
+            voided_element, opening_element = element1, element2
+            voided_obj_main, opening_obj = obj1, obj2
+
             if element1.is_a("IfcOpeningElement"):
                 self.report({"INFO"}, "You can't add an opening to another opening.")
                 continue
@@ -95,6 +97,7 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
                     has_visible_openings = True
                     break
 
+            element_had_openings = tool.Geometry.has_openings(voided_element)
             body_context = ifcopenshell.util.representation.get_context(IfcStore.get_file(), "Model", "Body")
             if not element2:
                 element2 = bonsai.core.root.assign_class(
@@ -120,10 +123,23 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
 
             for voided_obj in voided_objs:
                 if voided_obj.data:
+                    if tool.Ifc.is_edited(voided_obj):
+                        voided_element_ = tool.Ifc.get_entity(voided_obj)
+                        if element_had_openings or (voided_element_ != voided_element and voided_element_.HasOpenings):
+                            self.report(
+                                {"INFO"},
+                                f"Object {voided_obj.name} has been edited. It's representation will be reset to add an opening.",
+                            )
+                            voided_obj.scale = (1.0, 1.0, 1.0)
+                            tool.Ifc.finish_edit(voided_obj)
+                        else:
+                            bpy.ops.bim.update_representation(obj=voided_obj.name)
+
                     if tool.Ifc.is_moved(voided_obj):
                         bonsai.core.geometry.edit_object_placement(
                             tool.Ifc, tool.Geometry, tool.Surveyor, obj=voided_obj
                         )
+
                     representation = tool.Ifc.get().by_id(voided_obj.data.BIMMeshProperties.ifc_definition_id)
                     bonsai.core.geometry.switch_representation(
                         tool.Ifc,

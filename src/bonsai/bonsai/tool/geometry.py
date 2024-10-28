@@ -1457,6 +1457,14 @@ class Geometry(bonsai.core.tool.Geometry):
         return use_immediate_repr
 
     @classmethod
+    def has_openings(cls, element: ifcopenshell.entity_instance) -> bool:
+        if getattr(element, "HasOpenings", None):
+            return True
+        if aggregate := ifcopenshell.util.element.get_aggregate(element):
+            return cls.has_openings(aggregate)
+        return False
+
+    @classmethod
     def get_elements_by_representation(
         cls, representation: ifcopenshell.entity_instance
     ) -> set[ifcopenshell.entity_instance]:
