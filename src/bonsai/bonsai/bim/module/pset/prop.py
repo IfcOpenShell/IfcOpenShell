@@ -52,7 +52,7 @@ def purge():
     qtonames = {}
 
 
-def blender_formatted_enum_from_psets(psets):
+def blender_formatted_enum_from_psets(psets: list[ifcopenshell.entity_instance]) -> list[tuple[str, str, str]]:
     enum_items = []
     version = tool.Ifc.get_schema()
     for pset in psets:

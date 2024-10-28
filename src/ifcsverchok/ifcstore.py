@@ -21,11 +21,12 @@ import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.representation
 from ifcopenshell import template
+from typing import Union
 
 
 class SvIfcStore:
     path = ""
-    file = None
+    file: Union[ifcopenshell.file, None] = None
     schema = None
     cache = None
     cache_path = None
@@ -47,7 +48,7 @@ class SvIfcStore:
     schema_identifiers = ["IFC4", "IFC2X3"]
 
     @staticmethod
-    def purge():
+    def purge() -> None:
         SvIfcStore.path = ""
         SvIfcStore.file = None
         SvIfcStore.schema = None
@@ -67,8 +68,7 @@ class SvIfcStore:
         SvIfcStore.schema_identifiers = ["IFC4", "IFC2X3"]
 
     @staticmethod
-    def create_boilerplate():
-
+    def create_boilerplate() -> ifcopenshell.file:
         file = template.create(
             filename="IfcSverchokDemoFile",
             organization=None,
@@ -93,7 +93,7 @@ class SvIfcStore:
         return SvIfcStore.file
 
     @staticmethod
-    def get_file():
+    def get_file() -> ifcopenshell.file:
         if SvIfcStore.file is None:
             SvIfcStore.create_boilerplate()
         return SvIfcStore.file
