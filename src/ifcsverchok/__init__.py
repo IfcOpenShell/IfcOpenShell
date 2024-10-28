@@ -183,7 +183,10 @@ class IFC_Sv_write_file(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return any("IFC" in n for n in context.space_data.edit_tree.nodes.keys())
+        space = context.space_data
+        if not isinstance(space, bpy.types.SpaceNodeEditor):
+            return False
+        return any("IFC" in n for n in space.edit_tree.nodes.keys())
 
     def ensure_hirarchy(self, file: ifcopenshell.file) -> None:
         elements_in_buildings: set[ifcopenshell.entity_instance] = set()
