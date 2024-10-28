@@ -35,6 +35,7 @@ from bonsai.bim.module.pset.data import (
     ProfilePsetsData,
     WorkSchedulePsetsData,
 )
+from bonsai.bim.module.material.data import ObjectMaterialData
 from typing import Any, Optional
 
 
@@ -438,7 +439,10 @@ class BIM_PT_material_set_psets(Panel):
             return False  # We don't support material psets in IFC2X3 because they suck
         if not tool.Ifc.get_entity(context.active_object):
             return False
-        return True
+        if not ObjectMaterialData.is_loaded:
+            ObjectMaterialData.load()
+        ifc_class = ObjectMaterialData.data["material_class"]
+        return bool(ifc_class and "Set" in ifc_class)
 
     def draw(self, context):
         if not MaterialSetPsetsData.is_loaded:
@@ -475,7 +479,10 @@ class BIM_PT_material_set_item_psets(Panel):
             return False  # We don't support material psets in IFC2X3 because they suck
         if not tool.Ifc.get_entity(context.active_object):
             return False
-        return True
+        if not ObjectMaterialData.is_loaded:
+            ObjectMaterialData.load()
+        ifc_class = ObjectMaterialData.data["material_class"]
+        return bool(ifc_class and "Set" in ifc_class)
 
     def draw(self, context):
         if not MaterialSetItemPsetsData.is_loaded:
