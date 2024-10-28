@@ -85,6 +85,7 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
                 self.report({"INFO"}, f"An {element1.is_a()} is not allowed to have an opening.")
                 continue
 
+            # Sync placement before void.add_opening.
             if tool.Ifc.is_moved(obj1):
                 bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj1)
 
@@ -111,6 +112,7 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
                 bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj2)
 
             voided_objs = [obj1]
+            # TODO: should we use get_parts instead?
             for subelement in ifcopenshell.util.element.get_decomposition(element1):
                 subobj = tool.Ifc.get_object(subelement)
                 if subobj:
@@ -118,6 +120,10 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
 
             for voided_obj in voided_objs:
                 if voided_obj.data:
+                    if tool.Ifc.is_moved(voided_obj):
+                        bonsai.core.geometry.edit_object_placement(
+                            tool.Ifc, tool.Geometry, tool.Surveyor, obj=voided_obj
+                        )
                     representation = tool.Ifc.get().by_id(voided_obj.data.BIMMeshProperties.ifc_definition_id)
                     bonsai.core.geometry.switch_representation(
                         tool.Ifc,
