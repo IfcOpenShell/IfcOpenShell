@@ -21,12 +21,17 @@ import bonsai.core.tool
 import bonsai.tool as tool
 import bpy
 import bcf.v2.model
+import bcf.v2.model.visinfo
 import bcf.v2.topic
+
 import bcf.v3.model
+import bcf.v3.model.visinfo
 import bcf.v3.topic
+
 import bcf.agnostic.model
 import bcf.agnostic.topic
 import bcf.agnostic.visinfo
+
 from typing import Any, Union, TypeVar, TypeGuard, Optional
 
 
@@ -260,3 +265,19 @@ class Bcf(bonsai.core.tool.Bcf):
             bitmaps = viewpoint.visualization_info.bitmaps
             bitmaps = bitmaps.bitmap if bitmaps else []
         return bitmaps
+
+    @classmethod
+    def get_viewpoint_view_setup_hints(
+        cls, viewpoint: bcf.agnostic.visinfo.VisualizationInfoHandler
+    ) -> Union[bcf.v2.model.visinfo.ViewSetupHints, bcf.v3.model.visinfo.ViewSetupHints, None]:
+        components = viewpoint.visualization_info.components
+        if not components:
+            return None
+
+        if isinstance(components, bcf.v2.model.visinfo.Components):
+            return components.view_setup_hints
+
+        visibility = components.visibility
+        if not visibility:
+            return None
+        return visibility.view_setup_hints
