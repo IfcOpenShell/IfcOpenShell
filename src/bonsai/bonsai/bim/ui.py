@@ -837,7 +837,12 @@ class BIM_PT_tab_object_metadata(Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "OBJECT") and tool.Ifc.get()
+        return (
+            tool.Blender.is_tab(context, "OBJECT")
+            and tool.Ifc.get()
+            and (obj := context.active_object)
+            and tool.Ifc.get_entity(obj)
+        )
 
     def draw(self, context):
         pass
@@ -852,7 +857,12 @@ class BIM_PT_tab_placement(Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "GEOMETRY") and tool.Ifc.get()
+        return (
+            tool.Blender.is_tab(context, "GEOMETRY")
+            and tool.Ifc.get()
+            and (obj := context.active_object)
+            and tool.Ifc.get_entity(obj)
+        )
 
     def draw(self, context):
         pass
@@ -867,7 +877,12 @@ class BIM_PT_tab_representations(Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "GEOMETRY") and tool.Ifc.get()
+        return (
+            tool.Blender.is_tab(context, "GEOMETRY")
+            and tool.Ifc.get()
+            and (obj := context.active_object)
+            and tool.Ifc.get_entity(obj)
+        )
 
     def draw(self, context):
         pass
@@ -899,7 +914,12 @@ class BIM_PT_tab_parametric_geometry(Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "GEOMETRY") and tool.Ifc.get()
+        return (
+            tool.Blender.is_tab(context, "GEOMETRY")
+            and tool.Ifc.get()
+            and (obj := context.active_object)
+            and tool.Ifc.get_entity(obj)
+        )
 
     def draw(self, context):
         pass
@@ -914,7 +934,12 @@ class BIM_PT_tab_object_materials(Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "GEOMETRY") and tool.Ifc.get()
+        return (
+            tool.Blender.is_tab(context, "GEOMETRY")
+            and tool.Ifc.get()
+            and (obj := context.active_object)
+            and tool.Ifc.get_entity(obj)
+        )
 
     def draw(self, context):
         pass
