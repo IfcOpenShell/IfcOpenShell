@@ -57,6 +57,7 @@ classes = (
     operator.RemoveProfile,
     operator.ReorderMaterialSetItem,
     operator.SelectByMaterial,
+    operator.SelectMaterialInMaterialsUI,
     operator.UnassignMaterial,
     operator.UnassignMaterialStyle,
     prop.Material,

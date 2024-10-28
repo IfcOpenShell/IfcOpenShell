@@ -186,6 +186,8 @@ class BIM_PT_object_material(Panel):
                 op.material_set_usage = ObjectMaterialData.data["material_id"]
             row.operator("bim.disable_editing_assigned_material", icon="CANCEL", text="")
         else:
+            op = row.operator("bim.material_ui_select", icon="ZOOM_SELECTED", text="")
+            op.material_id = ObjectMaterialData.data["material_id"]
             row.operator("bim.enable_editing_assigned_material", icon="GREASEPENCIL", text="")
             row.operator("bim.unassign_material", icon="X", text="")
 
