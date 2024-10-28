@@ -149,7 +149,11 @@ class IfcExporter:
             if tool.Geometry.is_scaled(obj):
                 print(f"WARNING. Object '{obj.name}' scales ({obj.scale[:]}) are reset during project save.")
                 obj.scale = (1.0, 1.0, 1.0)
-            return element
+            else:
+                # Return and don't handle is_moved as
+                # updata_representation will run edit_object_placement if object is scaled
+                # and had no openings.
+                return element
         if not tool.Ifc.is_moved(obj):
             return
         if element.is_a("IfcGridAxis"):
