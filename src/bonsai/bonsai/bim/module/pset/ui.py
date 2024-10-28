@@ -103,9 +103,7 @@ def draw_psetqto_ui(
     filter_keyword: str = "",
 ) -> None:
 
-
     active_operator = context.active_operator
-    
 
     filter_keyword = filter_keyword.lower()
     box = layout.box()
@@ -204,7 +202,11 @@ def draw_psetqto_ui(
                 if active_operator:
                     if active_operator.bl_idname == "BIM_OT_select_similar":
                         calculated_sum = getattr(active_operator, "calculated_sum", 0.0)
-                        if op.key == active_operator.key and calculated_sum != 0 and isinstance(float(nominal_value), (int, float)):
+                        if (
+                            op.key == active_operator.key
+                            and calculated_sum != 0
+                            and isinstance(float(nominal_value), (int, float))
+                        ):
                             row.label(text=f"(Sum: {calculated_sum})")
             if not has_props_displayed:
                 row = box.row()

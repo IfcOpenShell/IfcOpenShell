@@ -696,13 +696,12 @@ class SelectSimilar(Operator, tool.Ifc.Operator):
     bl_idname = "bim.select_similar"
     bl_label = "Select Similar"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = (
-        "Select objects with a similar value\n\n"
-        + "SHIFT+CLICK display the sum of all selected objects"
-    )
+    bl_description = "Select objects with a similar value\n\n" + "SHIFT+CLICK display the sum of all selected objects"
 
     key: bpy.props.StringProperty()
-    calculate_sum: bpy.props.BoolProperty(name="Calculate Sum of Selected Objects", default=False, options={"SKIP_SAVE"})
+    calculate_sum: bpy.props.BoolProperty(
+        name="Calculate Sum of Selected Objects", default=False, options={"SKIP_SAVE"}
+    )
     calculated_sum: bpy.props.FloatProperty(name="Calculated Sum", default=0.0)
 
     def invoke(self, context, event):
@@ -718,7 +717,6 @@ class SelectSimilar(Operator, tool.Ifc.Operator):
         if key == "PredefinedType":
             key = "predefined_type"
         value = ifcopenshell.util.selector.get_element_value(element, key)
-
 
         if self.calculate_sum and isinstance(value, (int, float)):
             total = 0
@@ -740,4 +738,3 @@ class SelectSimilar(Operator, tool.Ifc.Operator):
                     continue
                 if ifcopenshell.util.selector.get_element_value(element, key) == value:
                     obj.select_set(True)
-
