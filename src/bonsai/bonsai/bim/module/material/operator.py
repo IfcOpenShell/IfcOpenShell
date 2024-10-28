@@ -30,6 +30,7 @@ import bonsai.core.material as core
 import bonsai.bim.module.model.profile as model_profile
 from bonsai.bim.module.material.prop import purge as material_prop_purge
 from bonsai.bim.ifc import IfcStore
+from typing import Any, Union
 
 
 class LoadMaterials(bpy.types.Operator):
@@ -854,3 +855,36 @@ class UnassignMaterialStyle(bpy.types.Operator, tool.Ifc.Operator):
         )
         core.load_materials(tool.Material, props.material_type)
         tool.Material.update_elements_using_material(material)
+
+
+class SelectMaterialInMaterialsUI(bpy.types.Operator):
+    bl_idname = "bim.material_ui_select"
+    bl_label = "Select Material In Materials UI"
+    bl_options = {"REGISTER", "UNDO"}
+    material_id: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = bpy.context.scene.BIMMaterialProperties
+        ifc_file = tool.Ifc.get()
+        material = ifc_file.by_id(self.material_id)
+        core.load_materials(tool.Material, material.is_a())
+
+        def get_material_item() -> Union[tuple[int, bpy.types.PropertyGroup], None]:
+            return next(
+                ((i, m) for i, m in enumerate(props.materials) if m.ifc_definition_id == self.material_id), None
+            )
+
+        material_item = get_material_item()
+
+        # Material category is contracted, won't occur for non-IfcMaterials.
+        if material_item is None:
+            material_category = tool.Material.get_material_category(material)
+            bpy.ops.bim.expand_material_category(category=material_category)
+            material_item = get_material_item()
+            assert material_item
+
+        item_index, _ = material_item
+        props.active_material_index = item_index
+
+        self.report({"INFO"}, f"Material '{material.Name}' is selected in Materials UI.")
+        return {"FINISHED"}

@@ -74,6 +74,11 @@ class Material(bonsai.core.tool.Material):
         return None
 
     @classmethod
+    def get_material_category(cls, material: ifcopenshell.entity_instance) -> str:
+        # IfcMaterial has Category since IFC4.
+        return getattr(material, "Category", None) or "Uncategorised"
+
+    @classmethod
     def import_material_definitions(cls, material_type: str) -> None:
         props = bpy.context.scene.BIMMaterialProperties
 
@@ -99,8 +104,7 @@ class Material(bonsai.core.tool.Material):
 
             for m in materials:
                 # IfcMaterial has Category since IFC4.
-                category = getattr(m, "Category", None)
-                category = category or "Uncategorised"
+                category = cls.get_material_category(m)
                 categories[category].append(m)
 
             for category, mats in categories.items():
