@@ -142,8 +142,6 @@ class IfcExporter:
 
     def sync_object_placement(self, obj: bpy.types.Object) -> Union[ifcopenshell.entity_instance, None]:
         element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-        if not tool.Ifc.is_moved(obj):
-            return
         if tool.Geometry.is_scaled(obj):
             bpy.ops.bim.update_representation(obj=obj.name)
             # update_representation might not apply scale if the object has openings
@@ -152,6 +150,8 @@ class IfcExporter:
                 print(f"WARNING. Object '{obj.name}' scales ({obj.scale[:]}) are reset during project save.")
                 obj.scale = (1.0, 1.0, 1.0)
             return element
+        if not tool.Ifc.is_moved(obj):
+            return
         if element.is_a("IfcGridAxis"):
             return self.sync_grid_axis_object_placement(obj, element)
         if not hasattr(element, "ObjectPlacement"):
