@@ -254,6 +254,8 @@ class IfcImporter:
         self.profile_code("Place objects in collections")
         self.setup_arrays()
         self.profile_code("Setup arrays")
+        self.lock_scales()
+        self.profile_code("Lock objects scales")
         self.add_project_to_scene()
         self.profile_code("Add project to scene")
         if self.ifc_import_settings.should_clean_mesh and len(self.file.by_type("IfcElement")) < 1000:
@@ -811,8 +813,6 @@ class IfcImporter:
 
         obj = bpy.data.objects.new(tool.Loader.get_name(element), mesh)
         self.link_element(element, obj)
-        if getattr(element, "HasOpenings", None):
-            tool.Geometry.lock_scale(obj)
 
         if shape:
             # We use numpy here because Blender mathutils.Matrix is not accurate enough
@@ -1156,6 +1156,20 @@ class IfcImporter:
                     for i in range(len(data)):
                         tool.Blender.Modifier.Array.set_children_lock_state(element, i, True)
                         tool.Blender.Modifier.Array.constrain_children_to_parent(element)
+
+    def lock_scales(self) -> None:
+        elements = set(self.file.by_type("IfcProduct"))
+        while elements:
+            element = elements.pop()
+            if not getattr(element, "HasOpenings", False):
+                continue
+            voided_elements = tool.Aggregate.get_parts_recursively(element)
+            voided_elements.add(element)
+            elements.difference_update(voided_elements)
+            for element in voided_elements:
+                if not (obj := tool.Ifc.get_object(element)):
+                    continue
+                tool.Geometry.lock_scale(obj)
 
 
 class IfcImportSettings:

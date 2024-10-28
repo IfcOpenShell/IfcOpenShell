@@ -149,6 +149,19 @@ class Geometry(bonsai.core.tool.Geometry):
         obj.lock_scale = (False, False, False)
 
     @classmethod
+    def unlock_scale_object_with_openings(cls, obj: bpy.types.Object) -> None:
+        element = tool.Ifc.get_entity(obj)
+        queue = {element}
+        while queue:
+            element = queue.pop()
+            if getattr(element, "HasOpenings", None):
+                # Part still has openings, keep it locked.
+                continue
+            obj = tool.Ifc.get_object(element)
+            cls.unlock_scale(obj)
+            queue.update(new_parts := set(ifcopenshell.util.element.get_parts(element)))
+
+    @classmethod
     def delete_ifc_item(cls, obj: bpy.types.Object) -> None:
         props = bpy.context.scene.BIMGeometryProperties
         if len(props.item_objs) == 1:
