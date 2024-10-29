@@ -111,9 +111,9 @@ class DumbSlabGenerator:
         matrix_world = Matrix()
         matrix_world.translation = self.location
         if self.container_obj:
-            matrix_world.translation.z = self.container_obj.location.z - self.depth
+            matrix_world.translation.z = self.container_obj.location.z
         else:
-            matrix_world.translation.z -= self.depth
+            matrix_world.translation.z
         obj.matrix_world = Matrix.Rotation(self.x_angle, 4, "X") @ matrix_world
         bpy.context.view_layer.update()
 
@@ -175,19 +175,22 @@ class DumbSlabGenerator:
 class DumbSlabPlaner:
     def regenerate_from_layer(self, usecase_path, ifc_file, settings):
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+        obj = tool.Blender.get_active_object()
+        element = tool.Ifc.get_entity(obj)
+        if not element:
+            return
+        direction_sense = tool.Model.get_material_layer_parameters(element)['direction_sense']
+
         try:
+            # Called from materil.edit_layer
             layer = settings["layer"]
             thickness = settings["attributes"].get("LayerThickness")
             if thickness is None:
                 return
             layer_set = layer.ToMaterialLayerSet[0]
 
-        # Called from materil.add_layer or material.remove_layer
         except:
-            obj = tool.Blender.get_active_object()
-            element = tool.Ifc.get_entity(obj)
-            if not element:
-                return
+            # Called from materil.add_layer or material.remove_layer
             material = ifcopenshell.util.element.get_material(element)
             material_set_usage = tool.Ifc.get().by_id(material.id())
             layer_set = material_set_usage.ForLayerSet
@@ -204,11 +207,11 @@ class DumbSlabPlaner:
                     if not rel.is_a("IfcRelAssociatesMaterial"):
                         continue
                     for element in rel.RelatedObjects:
-                        self.change_thickness(element, total_thickness)
+                        self.change_thickness(element, total_thickness, direction_sense)
             else:
                 for rel in inverse.AssociatedTo:
                     for element in rel.RelatedObjects:
-                        self.change_thickness(element, total_thickness)
+                        self.change_thickness(element, total_thickness, direction_sense)
 
     def regenerate_from_type(self, usecase_path, ifc_file, settings):
         relating_type = settings["relating_type"]
@@ -242,13 +245,13 @@ class DumbSlabPlaner:
         if material.LayerSetDirection == "AXIS3":
             self.change_thickness(related_object, new_thickness)
 
-    def change_thickness(self, element: ifcopenshell.entity_instance, thickness: float) -> None:
+    def change_thickness(self, element: ifcopenshell.entity_instance, thickness: float, direction_sense: str) -> None:
         body_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
         obj = tool.Ifc.get_object(element)
         if not obj:
             return
 
-        delta_thickness = (thickness * self.unit_scale) - obj.dimensions.z
+        delta_thickness = (thickness * self.unit_scale)
         if round(delta_thickness, 2) == 0:
             return
 
@@ -256,6 +259,14 @@ class DumbSlabPlaner:
         if representation:
             extrusion = tool.Model.get_extrusion(representation)
             if extrusion:
+                x, y, z = extrusion.ExtrudedDirection.DirectionRatios
+                if direction_sense == "POSITIVE":
+                    y = -y if y <=0 else y
+                    z = -z if z <=0 else z
+                elif direction_sense == "NEGATIVE":
+                    y = -y if y >0 else y
+                    z = -z if z >0 else z
+                extrusion.ExtrudedDirection.DirectionRatios = (x, y, z)
                 extrusion.Depth = thickness
             else:
                 props = bpy.context.scene.BIMModelProperties
@@ -305,8 +316,6 @@ class DumbSlabPlaner:
             is_global=True,
             should_sync_changes_first=False,
         )
-
-        obj.location[2] -= delta_thickness
 
 
 class EnableEditingSketchExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):

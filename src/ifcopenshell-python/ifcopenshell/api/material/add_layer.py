@@ -81,7 +81,6 @@ def add_layer(
         ifcopenshell.api.material.assign_material(model, products=[wall_type], material=material_set)
     """
     unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file)
-    print("SCALE", unit_scale)
     settings = {"layer_set": layer_set, "material": material}
 
     layers = list(settings["layer_set"].MaterialLayers or [])

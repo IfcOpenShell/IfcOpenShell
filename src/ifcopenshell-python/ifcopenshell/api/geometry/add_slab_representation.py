@@ -27,6 +27,7 @@ def add_slab_representation(
     file: ifcopenshell.file,
     context: ifcopenshell.entity_instance,
     depth: float = 0.2,
+    direction_sense: str = "POSITIVE",
     x_angle: float = 0.0,
     clippings: Optional[list[Union[Clipping, dict[str, Any]]]] = None,
     polyline: Optional[list[tuple[float, float]]] = None,
@@ -56,6 +57,7 @@ def add_slab_representation(
     usecase.settings = {
         "context": context,
         "depth": depth,
+        "direction_sense": direction_sense,
         "x_angle": x_angle,
         "clippings": clippings if clippings is not None else [],
         "polyline": polyline,
@@ -89,8 +91,16 @@ class Usecase:
             extrusion_direction = self.file.createIfcDirection(
                 (0.0, sin(self.settings["x_angle"]), cos(self.settings["x_angle"]))
             )
+            if self.settings["direction_sense"] == "NEGATIVE":
+                extrusion_direction = self.file.createIfcDirection(
+                    (0.0, -sin(self.settings["x_angle"]), -cos(self.settings["x_angle"]))
+                )
         else:
             extrusion_direction = self.file.createIfcDirection((0.0, 0.0, 1.0))
+            if self.settings["direction_sense"] == "NEGATIVE":
+                extrusion_direction = self.file.createIfcDirection((0.0, 0.0, -1.0))
+            
+
 
         position = None
         # default position for IFC2X3 where .Position is not optional
