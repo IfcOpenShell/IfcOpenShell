@@ -134,6 +134,10 @@ class Material(bonsai.core.tool.Material):
             new.ifc_definition_id = material.id()
             new.total_elements = len(ifcopenshell.util.element.get_elements_by_material(tool.Ifc.get(), material))
 
+        from bonsai.bim.module.material.data import MaterialsData
+
+        MaterialsData.data["material_styles_data"] = MaterialsData.material_styles_data()
+
     @classmethod
     def is_editing_materials(cls) -> bool:
         return bpy.context.scene.BIMMaterialProperties.is_editing
