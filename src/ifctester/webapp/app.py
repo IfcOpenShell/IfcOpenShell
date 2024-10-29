@@ -76,3 +76,7 @@ def audit():
     engine = ifctester.reporter.Json(specs)
     engine.report()
     return engine.to_string()
+
+
+if __name__ == "__main__":
+    app.run(debug=False)
