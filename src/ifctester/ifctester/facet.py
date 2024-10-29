@@ -1047,7 +1047,7 @@ class Restriction:
 
 
 class Result:
-    def __init__(self, is_pass, reason=None):
+    def __init__(self, is_pass: bool, reason: Optional[dict[str, Any]] = None):
         self.is_pass = is_pass
         self.reason = reason
 

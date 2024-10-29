@@ -187,6 +187,7 @@ class RemoveOpening(bpy.types.Operator, tool.Ifc.Operator):
             building_obj = tool.Ifc.get_object(building_element)
             if building_obj and building_obj.data:
                 representation = tool.Geometry.get_active_representation(building_obj)
+                assert representation
                 bonsai.core.geometry.switch_representation(
                     tool.Ifc,
                     tool.Geometry,
