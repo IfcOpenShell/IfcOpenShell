@@ -429,3 +429,14 @@ class Material(bonsai.core.tool.Material):
 
         i += cls.purge_unused_materials()
         return i
+
+    @classmethod
+    def get_material_name(cls, material: ifcopenshell.entity_instance) -> Union[str, None]:
+        ifc_class = material.is_a()
+        if ifc_class == "IfcMaterialList":
+            return None
+        elif ifc_class == "IfcMaterialLayerSet":
+            # Optional IfcLabel.
+            return material.LayerSetName
+        # Optional IfcLabel except for IfcMaterial.
+        return material.Name
