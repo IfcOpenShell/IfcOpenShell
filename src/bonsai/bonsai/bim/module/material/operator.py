@@ -741,14 +741,15 @@ class ExpandMaterialCategory(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMMaterialProperties
-        for index, category in [
+        for index, category in (
             (i, c)
             for i, c in enumerate(props.materials)
             if c.is_category and (self.expand_all or c.name == self.category)
-        ]:
+        ):
             category.is_expanded = True
             if category.name == self.category:
                 props.active_material_index = index
+            break
         core.load_materials(tool.Material, props.material_type)
         # Update UI data as material_styles_data depends on props.materials.
         bonsai.bim.handler.refresh_ui_data()
@@ -772,14 +773,15 @@ class ContractMaterialCategory(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMMaterialProperties
-        for index, category in [
+        for index, category in (
             (i, c)
             for i, c in enumerate(props.materials)
             if c.is_category and (self.contract_all or c.name == self.category)
-        ]:
+        ):
             category.is_expanded = False
             if category.name == self.category:
                 props.active_material_index = index
+            break
         core.load_materials(tool.Material, props.material_type)
         return {"FINISHED"}
 
