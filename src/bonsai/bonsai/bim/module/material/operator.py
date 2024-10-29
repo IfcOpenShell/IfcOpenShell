@@ -888,5 +888,8 @@ class SelectMaterialInMaterialsUI(bpy.types.Operator):
         item_index, _ = material_item
         props.active_material_index = item_index
 
-        self.report({"INFO"}, f"Material '{material.Name}' is selected in Materials UI.")
+        self.report(
+            {"INFO"},
+            f"Material '{tool.Material.get_material_name(material) or 'Unnamed'}' is selected in Materials UI.",
+        )
         return {"FINISHED"}
