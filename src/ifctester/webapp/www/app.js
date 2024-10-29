@@ -615,7 +615,7 @@ class IDSFacet extends HTMLElement {
 
         var parameters = {};
 
-        var name = this.idsElement.getElementsByTagNameNS(ns, 'name')[0];
+        var name = this.idsElement.getElementsByTagNameNS(ns, 'baseName')[0];
         var value = this.getIdsValue(name);
         if (value.type == 'simpleValue') {
             parameters.name = '<ids-param filter="propertyName">' + this.sentence(value.content) + '</ids-param>';
