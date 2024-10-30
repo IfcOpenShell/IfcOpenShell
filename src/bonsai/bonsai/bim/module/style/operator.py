@@ -1119,3 +1119,23 @@ class AssignStyleToSelected(bpy.types.Operator, tool.Ifc.Operator):
 
         tool.Geometry.reload_representation(representations.values())
         return {"FINISHED"}
+
+
+class SelectStyleInStylesUI(bpy.types.Operator):
+    bl_idname = "bim.styles_ui_select"
+    bl_label = "Select Style In Styles UI"
+    bl_options = {"REGISTER", "UNDO"}
+    style_id: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = bpy.context.scene.BIMStylesProperties
+        ifc_file = tool.Ifc.get()
+        style = ifc_file.by_id(self.style_id)
+        core.load_styles(tool.Style, style.is_a())
+
+        props.active_style_index = next((i for i, m in enumerate(props.styles) if m.ifc_definition_id == self.style_id))
+        self.report(
+            {"INFO"},
+            f"Style '{style.Name or 'Unnamed'}' is selected in Styles UI.",
+        )
+        return {"FINISHED"}

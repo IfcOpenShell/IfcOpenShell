@@ -211,6 +211,7 @@ class BIM_PT_representation_items(Panel):
 
         active_item = props.items[props.active_item_index]
         surface_style = active_item.surface_style
+        surface_style_id = active_item.surface_style_id
         shape_aspect = active_item.shape_aspect
 
         row = self.layout.row(align=True)
@@ -223,6 +224,8 @@ class BIM_PT_representation_items(Panel):
         else:
             if surface_style:
                 row.label(text=surface_style, icon="SHADING_RENDERED")
+                op = row.operator("bim.styles_ui_select", icon="ZOOM_SELECTED", text="")
+                op.style_id = surface_style_id
             else:
                 row.label(text="No Surface Style", icon="MESH_UVSPHERE")
             row.operator("bim.enable_editing_representation_item_style", icon="GREASEPENCIL", text="")
