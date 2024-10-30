@@ -115,17 +115,12 @@ class IfcExporter:
         for obj in IfcStore.edited_objs.copy():
             if not obj:
                 continue
-            try:
-                if isinstance(obj, bpy.types.Material):
-                    # TODO: do we add materials to edited_objs?
-                    continue
-                else:
-                    element = tool.Ifc.get_entity(obj)
-                    if element:
-                        results.append(element)
-                    bpy.ops.bim.update_representation(obj=obj.name)
-            except ReferenceError:
-                pass  # The object is likely deleted
+            if not tool.Blender.is_valid_data_block(obj):
+                continue
+            element = tool.Ifc.get_entity(obj)
+            if element:
+                results.append(element)
+            bpy.ops.bim.update_representation(obj=obj.name)
         IfcStore.edited_objs.clear()
         return results
 
