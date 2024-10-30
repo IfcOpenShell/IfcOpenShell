@@ -30,6 +30,7 @@ import bonsai.core.type
 import bonsai.core.geometry
 import bonsai.core.root
 import bonsai.tool as tool
+from math import sin, cos
 from mathutils import Vector, Matrix
 from bonsai.bim.module.geometry.helper import Helper
 from bonsai.bim.module.model.decorator import ProfileDecorator, PolylineDecorator, ProductDecorator
@@ -260,6 +261,8 @@ class DumbSlabPlaner:
             extrusion = tool.Model.get_extrusion(representation)
             if extrusion:
                 x, y, z = extrusion.ExtrudedDirection.DirectionRatios
+                existing_x_angle = Vector((0, 1)).angle_signed(Vector((y, z)))
+                perpendicular_depth = thickness * (1 / cos(existing_x_angle))
                 if direction_sense == "POSITIVE":
                     y = -y if y <=0 else y
                     z = -z if z <=0 else z
@@ -267,7 +270,7 @@ class DumbSlabPlaner:
                     y = -y if y >0 else y
                     z = -z if z >0 else z
                 extrusion.ExtrudedDirection.DirectionRatios = (x, y, z)
-                extrusion.Depth = thickness
+                extrusion.Depth = perpendicular_depth
             else:
                 props = bpy.context.scene.BIMModelProperties
                 x_angle = 0 if tool.Cad.is_x(props.x_angle, 0, tolerance=0.001) else props.x_angle

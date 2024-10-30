@@ -242,6 +242,13 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
             if tool.Model.get_usage_type(element) == "LAYER2":
                 layer2_objs.append(obj)
             else:
+                if tool.Model.get_usage_type(element) == "LAYER3":
+                    # Reset the transformation and returns to the original points with 0 degrees
+                    extrusion.SweptArea.OuterCurve.Points.CoordList = [(p[0], p[1] * (cos(existing_x_angle))) for p in extrusion.SweptArea.OuterCurve.Points.CoordList]
+                
+                    # Apply the transformation for the new x_angle
+                    extrusion.SweptArea.OuterCurve.Points.CoordList = [(p[0], p[1] * (1 / cos(x_angle))) for p in extrusion.SweptArea.OuterCurve.Points.CoordList]
+
                 bonsai.core.geometry.switch_representation(
                     tool.Ifc,
                     tool.Geometry,
