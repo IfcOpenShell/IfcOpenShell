@@ -39,6 +39,8 @@ ifeq ($(PYVERSION), py312)
 PYNUMBER:=312
 endif
 
+# We actually do support glibc 2.28-2.30 (see #5636)
+# but those are old and there's no demand for it.
 ifeq ($(PLATFORM), linux64)
 PLATFORMTAG:=manylinux_2_31_x86_64
 endif
