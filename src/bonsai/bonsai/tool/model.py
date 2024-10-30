@@ -1491,7 +1491,6 @@ class Model(bonsai.core.tool.Model):
             profile_set_usage=None,
         )
         tool.Model.replace_object_ifc_representation(body, obj, representation)
-        tool.Ifc.finish_edit(obj)
 
     @classmethod
     def auto_detect_profiles(
