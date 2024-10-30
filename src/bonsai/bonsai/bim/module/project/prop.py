@@ -174,7 +174,11 @@ class BIMProjectProperties(PropertyGroup):
     should_cache: BoolProperty(name="Cache", default=False)
     deflection_tolerance: FloatProperty(name="Deflection Tolerance", default=0.001)
     angular_tolerance: FloatProperty(name="Angular Tolerance", default=0.5)
-    void_limit: IntProperty(name="Void Limit", default=30)
+    void_limit: IntProperty(
+        name="Void Limit",
+        default=30,
+        description="Maxium number of openings that object can have. If object has more openings, it will be loaded without openings",
+    )
     distance_limit: FloatProperty(name="Distance Limit", default=1000, subtype="DISTANCE")
     false_origin_mode: bpy.props.EnumProperty(
         items=[
