@@ -127,12 +127,12 @@ class Material(bonsai.core.tool.Material):
 
             if category_index_to_reselect is not None:
                 props.active_material_index = category_index_to_reselect
-            return
-        for material in materials:
-            new = props.materials.add()
-            new["name"] = get_name(material)
-            new.ifc_definition_id = material.id()
-            new.total_elements = len(ifcopenshell.util.element.get_elements_by_material(tool.Ifc.get(), material))
+        else:
+            for material in materials:
+                new = props.materials.add()
+                new["name"] = get_name(material)
+                new.ifc_definition_id = material.id()
+                new.total_elements = len(ifcopenshell.util.element.get_elements_by_material(tool.Ifc.get(), material))
 
         from bonsai.bim.module.material.data import MaterialsData
 
