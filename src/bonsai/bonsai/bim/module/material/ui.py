@@ -96,6 +96,8 @@ class BIM_PT_materials(Panel):
                 row.label(text=style["context_identifier"])
                 row.label(text=style["target_view"])
                 row.label(text=style["name"])
+                op = row.operator("bim.styles_ui_select", icon="ZOOM_SELECTED", text="")
+                op.style_id = style["id"]
                 op = row.operator("bim.unassign_material_style", text="", icon="X")
                 op.style = style["id"]
                 op.context = style["context_id"]
