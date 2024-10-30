@@ -64,6 +64,7 @@ classes = (
     prop.LibraryElement,
     prop.FilterCategory,
     prop.Link,
+    prop.EditedObj,
     prop.BIMProjectProperties,
     prop.MeasureToolSettings,
     ui.BIM_MT_new_project,

@@ -126,6 +126,10 @@ class Link(PropertyGroup):
     )
 
 
+class EditedObj(PropertyGroup):
+    obj: PointerProperty(type=bpy.types.Object)
+
+
 class BIMProjectProperties(PropertyGroup):
     is_editing: BoolProperty(name="Is Editing", default=False)
     is_loading: BoolProperty(name="Is Loading", default=False)
@@ -226,6 +230,7 @@ class BIMProjectProperties(PropertyGroup):
     queried_obj_root: bpy.props.PointerProperty(type=bpy.types.Object)
     clipping_planes: bpy.props.CollectionProperty(type=ObjProperty)
     clipping_planes_active: bpy.props.IntProperty(min=0, default=0, max=5)
+    edited_objs: bpy.props.CollectionProperty(type=EditedObj)
 
     @property
     def clipping_planes_objs(self):

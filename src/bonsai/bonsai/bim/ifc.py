@@ -45,10 +45,14 @@ class OperationData(TypedDict):
     obj: str
 
 
+class EditObjectOperationData(TypedDict):
+    obj: str
+
+
 class Operation(TypedDict):
     rollback: Callable
     commit: Callable
-    data: Union[OperationData, None]
+    data: Union[OperationData, EditObjectOperationData, None]
 
 
 class TransactionStep(TypedDict):
@@ -295,7 +299,28 @@ class IfcStore:
         if "guid" in data:
             IfcStore.guid_map[data["guid"]] = obj
         tool.Ifc.setup_listeners(obj)
-        # TODO We're handling id_map and guid_map, but what about edited_objs? This might cause big problems.
+
+    @staticmethod
+    def history_edit_object(obj: bpy.types.Object, *, finish_editing: bool) -> None:
+        if not IfcStore.history:
+            return
+
+        commit, rollback = IfcStore.commit_edit_object, IfcStore.rollback_edit_object
+        if finish_editing:
+            commit, rollback = rollback, commit
+
+        data = EditObjectOperationData(obj=obj.name)
+        IfcStore.history[-1]["operations"].append(Operation(rollback=rollback, commit=commit, data=data))
+
+    @staticmethod
+    def commit_edit_object(data: EditObjectOperationData) -> None:
+        obj = bpy.data.objects[data["obj"]]
+        IfcStore.edited_objs.add(obj)
+
+    @staticmethod
+    def rollback_edit_object(data: EditObjectOperationData) -> None:
+        obj = bpy.data.objects[data["obj"]]
+        IfcStore.edited_objs.discard(obj)
 
     @staticmethod
     def rollback_unlink_element(data: OperationData) -> None:
