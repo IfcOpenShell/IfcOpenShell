@@ -176,6 +176,16 @@ class Ifc(bonsai.core.tool.Ifc):
             IfcStore.id_map[style.id()] = obj
             cls.setup_listeners(obj)
 
+        IfcStore.edited_objs = set()
+        edited_objs = bpy.context.scene.BIMProjectProperties.edited_objs
+        for i in range(len(edited_objs))[::-1]:
+            obj = edited_objs[i].obj
+            if obj:
+                IfcStore.edited_objs.add(obj)
+            else:
+                # Object was removed.
+                edited_objs.remove(i)
+
     @classmethod
     def setup_listeners(cls, obj: IFC_CONNECTED_TYPE) -> None:
         if isinstance(obj, bpy.types.Object):
@@ -200,17 +210,17 @@ class Ifc(bonsai.core.tool.Ifc):
         changed geometry to IFC, we mark it as changed and then it's saved later
         (typically during project save or switch_representation(should_sync_changes_first=True)).
 
-        Currently, underlying storage for edited objects, IfcStore.edited_objs, is not tracked
-        by undo system. So, it's error prone:
-        - undo after object was marked as edited, will keep it edited, adding unnecessary sync
-        - undo after object was unmarked as edited, will keep it unmarked, so edit geometry may be lost
-
         Other caveat of using edited objects is that it won't have an effect for objects with openings,
         since we can't deduce non-openings representation from edited representation with openings.
 
         So, it's preferable not to use edited objects if object can have an opening. It's still can be used for spaces.
         """
+        if obj in IfcStore.edited_objs:
+            return
+        edited_objs = bpy.context.scene.BIMProjectProperties.edited_objs
+        edited_objs.add().obj = obj
         IfcStore.edited_objs.add(obj)
+        IfcStore.history_edit_object(obj, finish_editing=False)
 
     @classmethod
     def finish_edit(cls, obj: bpy.types.Object) -> None:
@@ -218,7 +228,12 @@ class Ifc(bonsai.core.tool.Ifc):
 
         Method is safe to use on an object that wasn't marked as edited before.
         """
+        if obj not in IfcStore.edited_objs:
+            return
+        edited_objs = bpy.context.scene.BIMProjectProperties.edited_objs
+        edited_objs.remove(next(i for i, o in enumerate(edited_objs) if o.obj == obj))
         IfcStore.edited_objs.discard(obj)
+        IfcStore.history_edit_object(obj, finish_editing=True)
 
     @classmethod
     def resolve_uri(cls, uri: str) -> str:
