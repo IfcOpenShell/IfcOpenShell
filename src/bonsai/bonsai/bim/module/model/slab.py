@@ -115,7 +115,7 @@ class DumbSlabGenerator:
             matrix_world.translation.z = self.container_obj.location.z
         else:
             matrix_world.translation.z
-        obj.matrix_world = Matrix.Rotation(self.x_angle, 4, "X") @ matrix_world
+        obj.matrix_world = matrix_world @ Matrix.Rotation(self.x_angle, 4, "X")
         bpy.context.view_layer.update()
 
         element = bonsai.core.root.assign_class(
