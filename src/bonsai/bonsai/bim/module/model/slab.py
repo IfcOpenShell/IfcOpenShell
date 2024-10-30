@@ -180,7 +180,7 @@ class DumbSlabPlaner:
         element = tool.Ifc.get_entity(obj)
         if not element:
             return
-        direction_sense = tool.Model.get_material_layer_parameters(element)['direction_sense']
+        layer_params = tool.Model.get_material_layer_parameters(element)
 
         try:
             # Called from materil.edit_layer
@@ -208,11 +208,11 @@ class DumbSlabPlaner:
                     if not rel.is_a("IfcRelAssociatesMaterial"):
                         continue
                     for element in rel.RelatedObjects:
-                        self.change_thickness(element, total_thickness, direction_sense)
+                        self.change_thickness(element, total_thickness, layer_params)
             else:
                 for rel in inverse.AssociatedTo:
                     for element in rel.RelatedObjects:
-                        self.change_thickness(element, total_thickness, direction_sense)
+                        self.change_thickness(element, total_thickness, layer_params)
 
     def regenerate_from_type(self, usecase_path, ifc_file, settings):
         relating_type = settings["relating_type"]
@@ -246,7 +246,7 @@ class DumbSlabPlaner:
         if material.LayerSetDirection == "AXIS3":
             self.change_thickness(related_object, new_thickness)
 
-    def change_thickness(self, element: ifcopenshell.entity_instance, thickness: float, direction_sense: str) -> None:
+    def change_thickness(self, element: ifcopenshell.entity_instance, thickness: float, layer_params: dict) -> None:
         body_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
         obj = tool.Ifc.get_object(element)
         if not obj:
@@ -263,14 +263,18 @@ class DumbSlabPlaner:
                 x, y, z = extrusion.ExtrudedDirection.DirectionRatios
                 existing_x_angle = Vector((0, 1)).angle_signed(Vector((y, z)))
                 perpendicular_depth = thickness * (1 / cos(existing_x_angle))
-                if direction_sense == "POSITIVE":
-                    y = -y if y <=0 else y
-                    z = -z if z <=0 else z
-                elif direction_sense == "NEGATIVE":
-                    y = -y if y >0 else y
-                    z = -z if z >0 else z
+                if layer_params["direction_sense"] == "POSITIVE":
+                    y = -y if y < 0 else y
+                    z = -z if z < 0 else z
+                elif layer_params["direction_sense"] == "NEGATIVE":
+                    y = -y if y > 0 else y
+                    z = -z if z > 0 else z
                 extrusion.ExtrudedDirection.DirectionRatios = (x, y, z)
                 extrusion.Depth = perpendicular_depth
+
+                x, y, z =  extrusion.Position.Location.Coordinates
+                z = layer_params["offset"] / self.unit_scale
+                extrusion.Position.Location.Coordinates = (x, y, z)
             else:
                 props = bpy.context.scene.BIMModelProperties
                 x_angle = 0 if tool.Cad.is_x(props.x_angle, 0, tolerance=0.001) else props.x_angle
