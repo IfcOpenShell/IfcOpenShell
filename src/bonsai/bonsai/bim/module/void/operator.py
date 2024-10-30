@@ -115,8 +115,7 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
                 bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj2)
 
             voided_objs = [obj1]
-            # TODO: should we use get_parts instead?
-            for subelement in ifcopenshell.util.element.get_decomposition(element1):
+            for subelement in tool.Aggregate.get_parts_recursively(voided_element):
                 subobj = tool.Ifc.get_object(subelement)
                 if subobj:
                     voided_objs.append(subobj)
@@ -180,8 +179,8 @@ class RemoveOpening(bpy.types.Operator, tool.Ifc.Operator):
 
         ifcopenshell.api.run("void.remove_opening", tool.Ifc.get(), opening=opening)
 
-        decomposed_building_elements = set([element])
-        decomposed_building_elements.update(ifcopenshell.util.element.get_decomposition(element))
+        decomposed_building_elements = {element}
+        decomposed_building_elements.update(tool.Aggregate.get_parts_recursively(element))
 
         for building_element in decomposed_building_elements:
             building_obj = tool.Ifc.get_object(building_element)
