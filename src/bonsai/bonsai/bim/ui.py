@@ -837,12 +837,7 @@ class BIM_PT_tab_object_metadata(Panel):
 
     @classmethod
     def poll(cls, context):
-        return (
-            tool.Blender.is_tab(context, "OBJECT")
-            and tool.Ifc.get()
-            and (obj := context.active_object)
-            and tool.Ifc.get_entity(obj)
-        )
+        return tool.Blender.is_tab(context, "OBJECT") and tool.Ifc.get() and (obj := context.active_object)
 
     def draw(self, context):
         pass
