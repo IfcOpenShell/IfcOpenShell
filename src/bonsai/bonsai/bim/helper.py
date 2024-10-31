@@ -67,15 +67,12 @@ def draw_attributes(
 def draw_attribute(
     attribute: bonsai.bim.prop.Attribute, layout: bpy.types.UILayout, copy_operator: Optional[str] = None
 ) -> None:
-    value_name = attribute.get_value_name()
-    if not value_name:
-        layout.label(text=attribute.name)
-        return
+    value_name = attribute.get_value_name(display_only=True)
     if value_name == "enum_value":
         prop_with_search(layout, attribute, "enum_value", text=attribute.name)
     elif value_name == "filepath_value":
         attribute.filepath_value.layout_file_select(layout, filter_glob=attribute.filter_glob, text=attribute.name)
-    elif attribute.name in ["ScheduleDuration", "ActualDuration", "FreeFloat", "TotalFloat"]:
+    elif attribute.name in ("ScheduleDuration", "ActualDuration", "FreeFloat", "TotalFloat"):
         propis = bpy.context.scene.BIMWorkScheduleProperties
         for item in propis.durations_attributes:
             if item.name == attribute.name:
@@ -169,6 +166,8 @@ def import_attribute(
     elif data_type == "integer":
         new.int_value = 0 if new.is_null else int(data[attribute.name()])
     elif data_type == "float":
+        if attribute.type_of_attribute()._is("IfcLengthMeasure"):
+            new.special_type = "LENGTH"
         new.float_value = 0.0 if new.is_null else float(data[attribute.name()])
     elif data_type == "enum":
         enum_items = ifcopenshell.util.attribute.get_enum_items(attribute)
