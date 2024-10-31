@@ -954,6 +954,12 @@ class OverrideDuplicateMove(bpy.types.Operator):
             new_obj = obj.copy()
             temp_data = None
 
+            # Currently for optimization we do not apply pending changes (scale or changed .data)
+            # to the original and duplicated objects.
+            # Keep new object edited if original is.
+            if tool.Ifc.is_edited(obj, ignore_scale=True):
+                tool.Ifc.edit(new_obj)
+
             if obj.data and not linked_non_ifc_object:
                 # assure root.copy_class won't replace the previous mesh globally
                 temp_data = obj.data.copy()

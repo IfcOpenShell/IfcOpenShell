@@ -66,8 +66,8 @@ class Ifc(bonsai.core.tool.Ifc):
             return IfcStore.get_file().schema
 
     @classmethod
-    def is_edited(cls, obj: bpy.types.Object) -> bool:
-        return tool.Geometry.is_scaled(obj) or obj in IfcStore.edited_objs
+    def is_edited(cls, obj: bpy.types.Object, *, ignore_scale: bool = False) -> bool:
+        return (not ignore_scale and tool.Geometry.is_scaled(obj)) or obj in IfcStore.edited_objs
 
     @classmethod
     def is_moved(cls, obj: bpy.types.Object) -> bool:
