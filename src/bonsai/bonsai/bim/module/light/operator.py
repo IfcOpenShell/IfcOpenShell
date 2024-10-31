@@ -43,6 +43,8 @@ from bpy_extras.io_utils import ImportHelper
 
 ifc_materials = []
 
+scene = None
+
 with open(os.path.join(os.path.dirname(__file__), "spectraldb.json"), "r") as f:
     spectraldb = json.load(f)
 
@@ -54,15 +56,8 @@ class ExportOBJ(bpy.types.Operator):
     bl_label = "Export"
     bl_description = "Export the IFC to OBJ"
 
-    @classmethod
-    def poll(cls, context):
-        props = context.scene.radiance_exporter_properties
-        if not props.should_load_from_memory and not props.ifc_file:
-            cls.poll_message_set("Select an IFC file or use 'load from memory' if it's loaded in Bonsai.")
-            return False
-        return True
-
     def execute(self, context):
+
         # Get the output directory
         should_load_from_memory = context.scene.radiance_exporter_properties.should_load_from_memory
         output_dir = context.scene.radiance_exporter_properties.output_dir
@@ -125,12 +120,20 @@ class ExportOBJ(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class RadianceRender(bpy.types.Operator):
-    """Radiance Rendering"""
+class PrepareRadianceScene(bpy.types.Operator):
+    bl_idname = "scene.prepare_radiance"
+    bl_label = "Prepare Radiance Scene"
+    bl_description = "Prepares the Radiance scene by creating necessary files and setting up the view"
 
-    bl_idname = "render_scene.radiance"
-    bl_label = "Render"
-    bl_description = "Renders the scene using Radiance"
+    def get_camera_data(self, camera):
+        # Get camera position
+        position = camera.matrix_world.to_translation()
+
+        # Get camera direction
+        direction = camera.matrix_world.to_quaternion() @ Vector((0, 0, -1))
+        direction.normalize()
+
+        return (position.x, position.y, position.z), (direction.x, direction.y, direction.z)
 
     def execute(self, context):
         if pr is None:
@@ -150,10 +153,11 @@ class RadianceRender(bpy.types.Operator):
         detail = props.radiance_detail.upper()
         variability = props.radiance_variability.upper()
         output_dir = props.output_dir
-        output_file_name = props.output_file_name
-        output_file_format = props.output_file_format
         use_hdr = props.use_hdr
         choose_hdr_image = props.choose_hdr_image
+
+        global scene
+        scene = None
 
         print(f"Resolution: {resolution_x}x{resolution_y}")
         print(f"Quality: {quality}, Detail: {detail}, Variability: {variability}")
@@ -204,7 +208,6 @@ class RadianceRender(bpy.types.Operator):
         print(f"Camera position: {camera_position}")
         print(f"Camera direction: {camera_direction}")
 
-        # sun_position = tool.Blender.get_sun_position_addon()
         #     azimuth, elevation = sun_position.sun_calc.get_sun_coordinates(
         #     sun_pos_props.time,
         #     sun_pos_props.latitude,
@@ -216,16 +219,18 @@ class RadianceRender(bpy.types.Operator):
         # )
 
         dt = datetime(sun_pos_props.year, sun_props.month, sun_props.day, sun_props.hour, sun_props.minute)
-
+        print(dt)
+        print(sun_props.latitude)
+        print(sun_props.longitude)
+        print(sun_props.UTC_zone)
+        print(sun_pos_props.year)
         sky_description = pr.gensky(
             dt=dt,
-            # azimuth=64.1,
-            # altitude=-26.6,
             latitude=sun_props.latitude,
             longitude=sun_props.longitude,
             year=sun_pos_props.year,
             timezone=-int(sun_props.UTC_zone),
-            # sunny_with_sun=False,
+            # sunny_with_sun=True,
             # sunny_without_sun=False,
             # cloudy=False,
             # ground_reflectance=0.2,
@@ -233,7 +238,6 @@ class RadianceRender(bpy.types.Operator):
         )
 
         sky_description_str = sky_description.decode("utf-8")
-
         # Write all this to file
         # skyfunc glow sky_glow
         # 0
@@ -323,14 +327,14 @@ ground_glow source ground
             with open(sky_file_path, "w") as f:
                 f.write(sky_description_str)
                 f.write("\n")
-                # f.write("skyfunc glow sky_glow\n0\n0\n4 .9 .9 1.15 0\n")
-                # f.write("sky_glow source sky\n0\n0\n4 0 0 1 180\n")
-                # f.write("skyfunc glow ground_glow\n0\n0\n4 1.4 .9 .6 0\n")
-                # f.write("ground_glow source ground\n0\n0\n4 0 0 -1 180\n")
+                f.write("skyfunc glow sky_glow\n0\n0\n4 .9 .9 1.15 0\n")
+                f.write("sky_glow source sky\n0\n0\n4 0 0 1 180\n")
+                f.write("skyfunc glow ground_glow\n0\n0\n4 1.4 .9 .6 0\n")
+                f.write("ground_glow source ground\n0\n0\n4 0 0 -1 180\n")
 
-        props = context.scene.radiance_exporter_properties
+        # props = context.scene.radiance_exporter_properties
 
-        data = props.get_mappings_dict()
+        # data = props.get_mappings_dict()
 
         materials_file = os.path.join(output_dir, "materials.rad")
         written_materials = set()
@@ -423,7 +427,37 @@ ground_glow source ground
             )
         scene.add_view(aview)
         print("Starting render...")
+
+        self.report({"INFO"}, "Radiance scene prepared successfully.")
+        return {"FINISHED"}
+
+
+class RadianceRender(bpy.types.Operator):
+    """Radiance Rendering"""
+
+    bl_idname = "render_scene.radiance"
+    bl_label = "Render"
+    bl_description = "Renders the scene using Radiance"
+
+    def execute(self, context):
+        props = context.scene.radiance_exporter_properties
+        resolution_x, resolution_y = props.radiance_resolution_x, props.radiance_resolution_y
+
+        context.scene.render.resolution_x = resolution_x
+        context.scene.render.resolution_y = resolution_y
+
+        quality = props.radiance_quality.upper()
+        detail = props.radiance_detail.upper()
+        variability = props.radiance_variability.upper()
+        output_dir = props.output_dir
+        output_file_name = props.output_file_name
+        output_file_format = props.output_file_format
+
+        global scene
+
         start_time = time.time()
+        cwd_saved = os.getcwd()
+        os.chdir(output_dir)
         image = pr.render(
             scene,
             ambbounce=1,
@@ -433,49 +467,42 @@ ground_glow source ground
             variability=variability,
             nproc=multiprocessing.cpu_count(),
         )
+        os.chdir(cwd_saved)
         end_time = time.time()
         print(f"Render completed in {end_time - start_time:.2f} seconds")
 
-        output_hdr_path = os.path.join(output_dir, f"{output_file_name}.{output_file_format.lower()}")
+        output_hdr_path = os.path.join(output_dir, f"{output_file_name}.hdr")
         print(f"Saving HDR output to: {output_hdr_path}")
-        if output_file_format == "HDR":
-            with open(output_hdr_path, "wb") as wtr:
-                wtr.write(image)
-        else:
-            pass
-        print("Applying tone mapping...")
-        pcond_image = pr.pcond(hdr=output_hdr_path, human=True)
+        with open(output_hdr_path, "wb") as wtr:
+            wtr.write(image)
 
-        tiff_path = os.path.join(output_dir, f"{output_file_name}.tiff")
-        print(f"Saving TIFF output to: {tiff_path}")
-        pr.ra_tiff(inp=pcond_image, out=tiff_path, lzw=True)
+        if output_file_format == "HDR_TIFF":
+            print("Applying tone mapping...")
+            pcond_image = pr.pcond(hdr=output_hdr_path, human=True)
+
+            tiff_path = os.path.join(output_dir, f"{output_file_name}.tiff")
+            print(f"Saving TIFF output to: {tiff_path}")
+            pr.ra_tiff(inp=pcond_image, out=tiff_path, lzw=True)
+
         print("Radiance rendering process completed successfully.")
-        self.report({"INFO"}, "Radiance rendering completed. Output: {}".format(tiff_path))
+        self.report({"INFO"}, f"Radiance rendering completed. HDR Output: {output_hdr_path}")
+        if output_file_format == "HDR_TIFF":
+            self.report({"INFO"}, f"TIFF Output: {tiff_path}")
         return {"FINISHED"}
 
-    def get_active_camera(self, context):
-        props = context.scene.radiance_exporter_properties
-        if props.use_active_camera:
-            return context.scene.camera
-        else:
-            return props.selected_camera
+    # def get_active_camera(self, context):
+    #     props = context.scene.radiance_exporter_properties
+    #     if props.use_active_camera:
+    #         return context.scene.camera
+    #     else:
+    #         return props.selected_camera
 
-    def get_camera_data(self, camera):
-        # Get camera position
-        position = camera.matrix_world.to_translation()
-
-        # Get camera direction
-        direction = camera.matrix_world.to_quaternion() @ Vector((0, 0, -1))
-        direction.normalize()
-
-        return (position.x, position.y, position.z), (direction.x, direction.y, direction.z)
-
-    def getResolution(self, context):
-        scene = context.scene
-        props = scene.radiance_exporter_properties
-        resolution_x = props.radiance_resolution_x
-        resolution_y = props.radiance_resolution_y
-        return resolution_x, resolution_y
+    # def getResolution(self, context):
+    #     scene = context.scene
+    #     props = scene.radiance_exporter_properties
+    #     resolution_x = props.radiance_resolution_x
+    #     resolution_y = props.radiance_resolution_y
+    #     return resolution_x, resolution_y
 
 
 def save_obj2mesh_output(inp: Union[bytes, str, Path], output_file: str, **kwargs):
@@ -573,27 +600,21 @@ class RefreshIFCMaterials(bpy.types.Operator):
                     style_id = f"IfcSurfaceStyleRendering-{render_item.id()}"
                     style_name = style.Name or f"Unnamed Style {render_item.id()}"
 
-                    # Extract color and transparency
+                    # Extract color
                     color = (1.0, 1.0, 1.0)  # Default white
-                    transparency = 0.0  # Default opaque
                     if render_item.SurfaceColour:
                         color = (
                             render_item.SurfaceColour.Red,
                             render_item.SurfaceColour.Green,
                             render_item.SurfaceColour.Blue,
                         )
-                    if hasattr(render_item, "Transparency") and render_item.Transparency is not None:
-                        transparency = render_item.Transparency
 
-                    # Add material with color
                     material = props.add_material_mapping(style_id, style_name)
                     material.color = color
 
-                    # If transparency is high, consider it as glass
-                    if transparency > 0.5:
-                        material.category = "Glass"
-                        material.subcategory = "Clear Glass"
-                        material.is_mapped = True
+                    material.category = ""
+                    material.subcategory = ""
+                    material.is_mapped = False
 
         props.active_material_index = 0 if props.materials else -1
 
@@ -679,4 +700,48 @@ class RADIANCE_OT_open_spectraldb(bpy.types.Operator):
 
     def execute(self, context):
         webbrowser.open("https://spectraldb.com")
+        return {"FINISHED"}
+
+
+class EnumPropertySearch(bpy.types.Operator):
+    bl_idname = "bim.enum_property_search"
+    bl_label = "Search Enum Property"
+    bl_options = {"REGISTER", "UNDO"}
+
+    prop_name: bpy.props.StringProperty()
+    search_term: bpy.props.StringProperty()
+
+    def execute(self, context):
+        data = context.space_data.context_pointer_get("data")
+        enum_items = get_enum_items(data, self.prop_name)
+        filtered_items = [item for item in enum_items if self.search_term.lower() in item[1].lower()]
+
+        def draw_menu(self, context):
+            layout = self.layout
+            for item in filtered_items:
+                props = layout.operator("bim.set_enum_property", text=item[1])
+                props.prop_name = self.prop_name
+                props.enum_value = item[0]
+
+        bpy.context.window_manager.popup_menu(draw_menu, title="Search Results", icon="VIEWZOOM")
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        self.layout.prop(self, "search_term", text="Search")
+
+
+class SetEnumProperty(bpy.types.Operator):
+    bl_idname = "bim.set_enum_property"
+    bl_label = "Set Enum Property"
+    bl_options = {"REGISTER", "UNDO"}
+
+    prop_name: bpy.props.StringProperty()
+    enum_value: bpy.props.StringProperty()
+
+    def execute(self, context):
+        data = context.space_data.context_pointer_get("data")
+        setattr(data, self.prop_name, self.enum_value)
         return {"FINISHED"}
