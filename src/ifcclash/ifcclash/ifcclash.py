@@ -97,13 +97,13 @@ class Clasher:
         self.create_group("a")
         for source in clash_set["a"]:
             source["ifc"] = self.load_ifc(source["file"])
-            self.add_collision_objects("a", source["ifc"], source.get("mode", None), source.get("selector", None))
+            self.add_collision_objects("a", source["ifc"], source)
 
         if "b" in clash_set and clash_set["b"]:
             self.create_group("b")
             for source in clash_set["b"]:
                 source["ifc"] = self.load_ifc(source["file"])
-                self.add_collision_objects("b", source["ifc"], source.get("mode", None), source.get("selector", None))
+                self.add_collision_objects("b", source["ifc"], source)
             b = "b"
         else:
             b = "a"
@@ -171,9 +171,10 @@ class Clasher:
         self,
         name: str,
         ifc_file: ifcopenshell.file,
-        mode: Optional[Literal["a", "e", "i"]] = None,
-        selector: Optional[str] = None,
+        source: ClashSource,
     ) -> None:
+        mode = source.get("mode")
+        selector = source.get("selector")
         start = time.time()
         self.settings.logger.info("Creating iterator")
         if not mode or mode == "a" or not selector:

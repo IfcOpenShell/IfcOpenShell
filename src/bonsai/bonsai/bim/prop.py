@@ -34,7 +34,6 @@ from ifcopenshell.util.doc import (
 import bonsai.bim
 import bonsai.bim.schema
 import bonsai.bim.handler
-from bonsai.bim.ifc import IfcStore
 import bonsai.tool as tool
 from collections import defaultdict
 from bpy.types import PropertyGroup
@@ -54,12 +53,12 @@ from typing_extensions import assert_never
 cwd = os.path.dirname(os.path.realpath(__file__))
 
 
-def update_tab(self, context):
+def update_tab(self: "BIMAreaProperties", context: bpy.types.Context) -> None:
     self.alt_tab = self.previous_tab
     self.previous_tab = self.tab
 
 
-def update_global_tab(self, context):
+def update_global_tab(self: "BIMTabProperties", context: bpy.types.Context) -> None:
     tool.Blender.setup_tabs()
     screen = tool.Blender.get_screen(context)
     aprops = screen.BIMAreaProperties[screen.areas[:].index(context.area)]
@@ -81,7 +80,7 @@ def cache_string(s):
 cache_string.data = {}
 
 
-def get_attribute_enum_values(prop, context):
+def get_attribute_enum_values(prop: "Attribute", context: bpy.types.Context) -> list[tuple[str, str, str]]:
     # Support weird buildingSMART dictionary mappings which behave like enums
     items = []
     data = json.loads(prop.enum_items)
@@ -111,24 +110,24 @@ def get_attribute_enum_values(prop, context):
     return items
 
 
-def update_schema_dir(self, context):
+def update_schema_dir(self: "BIMProperties", context: bpy.types.Context) -> None:
     import bonsai.bim.schema
 
     bonsai.bim.schema.ifc.schema_dir = context.scene.BIMProperties.schema_dir
 
 
-def update_data_dir(self, context):
+def update_data_dir(self: "BIMProperties", context: bpy.types.Context) -> None:
     import bonsai.bim.schema
 
     bonsai.bim.schema.ifc.data_dir = context.scene.BIMProperties.data_dir
 
 
-def update_ifc_file(self, context):
+def update_ifc_file(self: "BIMProperties", context: bpy.types.Context) -> None:
     if context.scene.BIMProperties.ifc_file:
         bonsai.bim.handler.loadIfcStore(context.scene)
 
 
-def update_section_color(self, context):
+def update_section_color(self: "BIMProperties", context: bpy.types.Context) -> None:
     section_node_group = bpy.data.node_groups.get("Section Override")
     if section_node_group is None:
         return
@@ -139,7 +138,7 @@ def update_section_color(self, context):
         pass
 
 
-def update_section_line_decorator(self, context):
+def update_section_line_decorator(self: "BIMProperties", context: bpy.types.Context) -> None:
     compare_node_group = bpy.data.node_groups.get("Section Compare")
     if compare_node_group is None:
         return
@@ -159,7 +158,7 @@ class ObjProperty(PropertyGroup):
     obj: bpy.props.PointerProperty(type=bpy.types.Object)
 
 
-def update_single_file(self, context):
+def update_single_file(self: "MultipleFileSelect", context: bpy.types.Context) -> None:
     self.file_list.clear()
     new = self.file_list.add()
     new.name = self.single_file
@@ -187,7 +186,7 @@ class MultipleFileSelect(PropertyGroup):
         op.filter_glob = filter_glob
 
 
-def update_attribute_value(self, context):
+def update_attribute_value(self: "Attribute", context: bpy.types.Context) -> None:
     value_name = self.get_value_name()
     if value_name:
         value_names = [value_name]
@@ -201,7 +200,7 @@ def update_attribute_value(self, context):
             self.is_null = False
 
 
-def update_is_null(self, context):
+def update_is_null(self: "Attribute", context: bpy.types.Context) -> None:
     if not self.is_null:
         return
     self.string_value = ""
@@ -213,15 +212,15 @@ def update_is_null(self, context):
         self.is_null = True
 
 
-def set_int_value(self, new_value):
+def set_int_value(self: "Attribute", new_value: int) -> None:
     set_numerical_value(self, "int_value", new_value)
 
 
-def set_float_value(self, new_value):
+def set_float_value(self: "Attribute", new_value: float) -> None:
     set_numerical_value(self, "float_value", new_value)
 
 
-def set_numerical_value(self, value_name, new_value):
+def set_numerical_value(self: "Attribute", value_name: str, new_value: Union[float, int]) -> None:
     if self.value_min_constraint and new_value < self.value_min:
         new_value = self.value_min
     elif self.value_max_constraint and new_value > self.value_max:
@@ -229,17 +228,17 @@ def set_numerical_value(self, value_name, new_value):
     self[value_name] = new_value
 
 
-def get_length_value(self):
+def get_length_value(self: "Attribute") -> float:
     si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
     return self.float_value * si_conversion
 
 
-def set_length_value(self, value):
+def set_length_value(self: "Attribute", value: float) -> None:
     si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
     self.float_value = value / si_conversion
 
 
-def get_display_name(self):
+def get_display_name(self: "Attribute") -> str:
     name = self.name
     if not self.special_type or self.special_type == "LENGTH":
         return name
@@ -366,7 +365,9 @@ class Attribute(PropertyGroup):
         setattr(self, self.get_value_name(), value)
 
 
-def get_tab(self, context):
+def get_tab(
+    self: "Union[BIMAreaProperties, BIMTabProperties]", context: bpy.types.Context
+) -> list[tuple[str, str, str, str, int]]:
     return [
         ("PROJECT", "Project Overview", "", bonsai.bim.icons["IFC"].icon_id, 0),
         ("OBJECT", "Object Information", "", "FILE_3D", 1),
