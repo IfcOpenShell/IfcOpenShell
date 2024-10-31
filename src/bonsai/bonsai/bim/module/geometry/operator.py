@@ -1106,16 +1106,20 @@ class OverrideDuplicateMove(bpy.types.Operator):
         return arrays_to_create, array_children
 
     def remove_old_connections(old_to_new):
+        single_obj = False
+        if len(old_to_new) == 1:
+            single_obj = True
+            
         for new in old_to_new.values():
             if not hasattr(new[0], "ConnectedTo"):
                 continue
             for connection in new[0].ConnectedTo:
                 entity = connection.RelatedElement
-                if entity in old_to_new.keys():
+                if entity in old_to_new.keys() or single_obj:
                     core.remove_connection(tool.Geometry, connection=connection)
             for connection in new[0].ConnectedFrom:
                 entity = connection.RelatingElement
-                if entity in old_to_new.keys():
+                if entity in old_to_new.keys() or single_obj:
                     core.remove_connection(tool.Geometry, connection=connection)
 
     def remove_linked_aggregate_data(old_to_new):
