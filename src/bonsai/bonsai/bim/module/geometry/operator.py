@@ -947,7 +947,9 @@ class OverrideDuplicateMove(bpy.types.Operator):
 
             # Prior to duplicating, sync the object placement to make decomposition recreation more stable.
             if tool.Ifc.is_moved(obj):
-                bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+                bonsai.core.geometry.edit_object_placement(
+                    tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj, apply_scale=False
+                )
 
             new_obj = obj.copy()
             temp_data = None
