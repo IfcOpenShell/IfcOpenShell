@@ -28,7 +28,8 @@ import ifcopenshell
 import ifcopenshell.geom
 import ifcopenshell.util.selector
 from logging import Logger
-from typing import Optional, Literal, TypedDict, NotRequired
+from typing import Literal, TypedDict
+from typing_extensions import NotRequired
 
 
 class ClashSource(TypedDict):
