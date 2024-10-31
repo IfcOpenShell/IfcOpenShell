@@ -3,7 +3,8 @@ import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.date
 from datetime import datetime, timedelta, date
-from typing import Union, Any, TypedDict, NotRequired
+from typing import Union, Any, TypedDict
+from typing_extensions import NotRequired
 
 
 class WorkSlot(TypedDict):
