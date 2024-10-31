@@ -30,7 +30,7 @@ import bonsai.core.type
 import bonsai.core.geometry
 import bonsai.core.root
 import bonsai.tool as tool
-from math import sin, cos
+from math import sin, cos, degrees, radians
 from mathutils import Vector, Matrix
 from bonsai.bim.module.geometry.helper import Helper
 from bonsai.bim.module.model.decorator import ProfileDecorator, PolylineDecorator, ProductDecorator
@@ -252,7 +252,7 @@ class DumbSlabPlaner:
         if not obj:
             return
 
-        delta_thickness = (thickness * self.unit_scale)
+        delta_thickness = thickness * self.unit_scale
         if round(delta_thickness, 2) == 0:
             return
 
@@ -261,18 +261,26 @@ class DumbSlabPlaner:
             extrusion = tool.Model.get_extrusion(representation)
             if extrusion:
                 x, y, z = extrusion.ExtrudedDirection.DirectionRatios
+                # The existing angle result can change when the direction sense in Negative because the DirectionRatios may have negative y and z.
+                # For instance, a 30 degree angled slab, with negative direction will show as -150 degrees. To prevent that we do the following transformations
                 existing_x_angle = Vector((0, 1)).angle_signed(Vector((y, z)))
+                existing_x_angle = (
+                    existing_x_angle + radians(180) if existing_x_angle < -radians(90) else existing_x_angle
+                )
+                existing_x_angle = (
+                    existing_x_angle - radians(180) if existing_x_angle > radians(90) else existing_x_angle
+                )
                 perpendicular_depth = thickness * (1 / cos(existing_x_angle))
                 if layer_params["direction_sense"] == "POSITIVE":
-                    y = -y if y < 0 else y
-                    z = -z if z < 0 else z
+                    y = abs(y) if existing_x_angle > 0 else -abs(y)
+                    z = abs(z)
                 elif layer_params["direction_sense"] == "NEGATIVE":
-                    y = -y if y > 0 else y
-                    z = -z if z > 0 else z
+                    y = -abs(y) if existing_x_angle > 0 else abs(y)
+                    z = -abs(z)
                 extrusion.ExtrudedDirection.DirectionRatios = (x, y, z)
                 extrusion.Depth = perpendicular_depth
 
-                x, y, z =  extrusion.Position.Location.Coordinates
+                x, y, z = extrusion.Position.Location.Coordinates
                 z = layer_params["offset"] / self.unit_scale
                 extrusion.Position.Location.Coordinates = (x, y, z)
             else:

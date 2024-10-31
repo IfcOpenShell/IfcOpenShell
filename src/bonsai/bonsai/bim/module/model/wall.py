@@ -36,7 +36,7 @@ import bonsai.core.geometry
 import bonsai.core.model as core
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
-from math import pi, sin, cos, degrees
+from math import pi, sin, cos, degrees, radians
 from mathutils import Vector, Matrix
 from bonsai.bim.module.model.opening import FilledOpeningGenerator
 from bonsai.bim.module.model.decorator import PolylineDecorator, ProductDecorator
@@ -236,6 +236,14 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
                 return
             x, y, z = extrusion.ExtrudedDirection.DirectionRatios
             existing_x_angle = Vector((0, 1)).angle_signed(Vector((y, z)))
+            # The existing angle result can change when the direction sense in Negative because the DirectionRatios may have negative y and z.
+            # For instance, a 30 degree angled slab, with negative direction will show as -150 degrees. To prevent that we do the following transformations
+            existing_x_angle = (
+                existing_x_angle + radians(180) if existing_x_angle < -radians(90) else existing_x_angle
+            )
+            existing_x_angle = (
+                existing_x_angle - radians(180) if existing_x_angle > radians(90) else existing_x_angle
+            )
             perpendicular_depth = extrusion.Depth / (1 / cos(existing_x_angle))
             extrusion.Depth = perpendicular_depth * (1 / cos(x_angle))
             extrusion.ExtrudedDirection.DirectionRatios = (0.0, sin(x_angle), cos(x_angle))
@@ -248,6 +256,16 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
                 
                     # Apply the transformation for the new x_angle
                     extrusion.SweptArea.OuterCurve.Points.CoordList = [(p[0], p[1] * (1 / cos(x_angle))) for p in extrusion.SweptArea.OuterCurve.Points.CoordList]
+
+                    # The extrusion direction calculated previously default to the positive direction
+                    # Here we set the extrusion direction to negative it that's the case
+                    x, y, z = extrusion.ExtrudedDirection.DirectionRatios
+                    existing_x_angle = Vector((0, 1)).angle_signed(Vector((y, z)))
+                    layer_params = tool.Model.get_material_layer_parameters(element)
+                    if layer_params["direction_sense"] == "NEGATIVE":
+                        y = -abs(y) if existing_x_angle > 0 else abs(y)
+                        z = -abs(z)
+                    extrusion.ExtrudedDirection.DirectionRatios = (x, y, z)
 
                 bonsai.core.geometry.switch_representation(
                     tool.Ifc,
