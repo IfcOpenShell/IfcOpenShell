@@ -1076,7 +1076,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 				if (is_extrusion_b) {
 					Logger::Notice("Operand B " + std::to_string(nb) + "/" + std::to_string(b.Extent()) + " is an extrusion");
 
-					if (b_interval.first < a_interval.first + fuzz && b_interval.second > a_interval.second - fuzz) {
+					if (b_interval.first < a_interval.first + (fuzz * 100.) && b_interval.second > a_interval.second - (fuzz * 100.)) {
 						Logger::Notice("Operand B creates a through hole");
 
 						// Align b with a operand
