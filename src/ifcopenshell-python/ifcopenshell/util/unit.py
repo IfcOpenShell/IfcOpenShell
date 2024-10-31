@@ -741,9 +741,7 @@ def is_attr_type(
                     return select_item
 
     if hasattr(cur_decl, "declared_type"):
-        return is_attr_type(
-            cur_decl.declared_type(), ifc_unit_type_name, include_select_types
-        )
+        return is_attr_type(cur_decl.declared_type(), ifc_unit_type_name, include_select_types)
 
     if isinstance(cur_decl, ifcopenshell_wrapper.aggregation_type):
         # support aggregate of aggregates, as in IfcCartesianPointList3D.CoordList
