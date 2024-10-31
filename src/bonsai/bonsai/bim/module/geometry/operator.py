@@ -386,15 +386,28 @@ class UpdateRepresentation(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Update Representation"
     bl_description = (
         "Write selected objects representations to IFC.\n"
-        "A star in the operator name indicates that active object representation in IFC is not yet synced with Blender"
+        "A star in the operator name indicates that active object representation in IFC is not yet synced with Blender.\n"
+        "ALT+CLICK to apply openings to the mesh"
     )
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     ifc_representation_class: bpy.props.StringProperty()
+    apply_openings: bpy.props.BoolProperty(
+        name="Apply Openings",
+        description=(
+            "Whether to apply openings to the mesh.\n"
+            "If False, operator will skip updating representation that has openings"
+        ),
+        default=False,
+        options={"SKIP_SAVE"},
+    )
 
     from_ui = False
 
     def invoke(self, context, event):
+        if event.type == "LEFTMOUSE" and event.alt:
+            self.apply_openings = True
+
         self.from_ui = True
         return self.execute(context)
 
@@ -426,7 +439,8 @@ class UpdateRepresentation(bpy.types.Operator, tool.Ifc.Operator):
         # NOTE: Currently iterator doesn't detect whether opening is actually affected the representation
         # or it's just present on the element. In theory, we can also allow editing representations
         # if we know that representation wasn't affected by existing openings.
-        if tool.Geometry.has_openings(product) and obj.data.BIMMeshProperties.has_openings_applied:
+        has_openings = tool.Geometry.has_openings(product) and obj.data.BIMMeshProperties.has_openings_applied
+        if has_openings and not self.apply_openings:
             # Meshlike things with openings can only be updated without openings applied.
             if self.from_ui:
                 self.report({"ERROR"}, f"Object '{obj.name}' has openings - representation cannot be updated.")
@@ -513,6 +527,17 @@ class UpdateRepresentation(bpy.types.Operator, tool.Ifc.Operator):
         # TODO: move this into a replace_representation usecase or something
         for inverse in self.file.get_inverse(old_representation):
             ifcopenshell.util.element.replace_attribute(inverse, old_representation, new_representation)
+
+        # As openings are already 'baked' to the geometry, we mark their representation as 'Reference'
+        # as they're not part of the object representation anymore.
+        if has_openings and self.apply_openings:
+            ifc_context = new_representation.ContextOfItems
+            for opening_rel in tool.Geometry.get_openings(product):
+                opening = opening_rel.RelatedOpeningElement
+                representation = ifcopenshell.util.representation.get_representation(opening, ifc_context)
+                if not representation:
+                    continue
+                representation.RepresentationIdentifier = "Reference"
 
         obj.data.BIMMeshProperties.ifc_definition_id = int(new_representation.id())
         obj.data.name = f"{old_representation.ContextOfItems.id()}/{new_representation.id()}"

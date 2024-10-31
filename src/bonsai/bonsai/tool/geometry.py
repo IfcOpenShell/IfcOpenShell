@@ -48,7 +48,7 @@ from collections import defaultdict
 from math import radians, pi
 from mathutils import Vector, Matrix
 from bonsai.bim.ifc import IfcStore
-from typing import Union, Iterable, Optional, Literal, Iterator, List, TYPE_CHECKING, get_args
+from typing import Union, Iterable, Optional, Literal, Iterator, List, TYPE_CHECKING, get_args, Generator
 from typing_extensions import TypeIs
 
 if TYPE_CHECKING:
@@ -1470,12 +1470,20 @@ class Geometry(bonsai.core.tool.Geometry):
         return use_immediate_repr
 
     @classmethod
-    def has_openings(cls, element: ifcopenshell.entity_instance) -> bool:
-        if getattr(element, "HasOpenings", None):
-            return True
+    def get_openings(cls, element: ifcopenshell.entity_instance) -> Generator[ifcopenshell.entity_instance, None, None]:
+        """Get element openings as IfcRelVoidsElements.
+
+        Use `.RelatedOpeningElement` to get the opening element.
+        """
+        for element in getattr(element, "HasOpenings", ()):
+            yield element
+
         if aggregate := ifcopenshell.util.element.get_aggregate(element):
-            return cls.has_openings(aggregate)
-        return False
+            yield from cls.get_openings(aggregate)
+
+    @classmethod
+    def has_openings(cls, element: ifcopenshell.entity_instance) -> bool:
+        return bool(next(cls.get_openings(element), False))
 
     @classmethod
     def get_elements_by_representation(
