@@ -32,27 +32,13 @@ from bonsai.bim.module.model.prop import get_ifc_class
 
 
 # TODO duplicate code in cad/workspace and model/workspace
-def check_display_mode():
-    global display_mode
-    try:
-        theme = bpy.context.preferences.themes["Default"]
-        text_color = theme.user_interface.wcol_menu_item.text
-        if sum(text_color) < 2.6:
-            display_mode = "lm"
-        else:
-            display_mode = "dm"
-    except:
-        display_mode = "dm"
 
 
 def load_custom_icons():
     global custom_icon_previews
-    if display_mode is None:
-        check_display_mode()
-
+    display_mode = tool.Blender.detect_display_mode()
     icons_dir = os.path.join(os.path.dirname(__file__), "..", "..", "data", "icons")
     custom_icon_previews = bpy.utils.previews.new()
-
     prefix = f"{display_mode}_"
 
     for entry in os.scandir(icons_dir):
@@ -641,6 +627,8 @@ class EditObjectUI:
     @classmethod
     def draw_operations(cls, context):
         ui_context = str(context.region.type)
+        display_mode = tool.Blender.detect_display_mode()
+        icon = f"{display_mode}_ifc"
 
         row = cls.layout.row(align=True)
         row.separator()
@@ -714,7 +702,7 @@ class EditObjectUI:
                 row.operator(
                     "bim.mep_add_obstruction",
                     text="Add Obstruction" if ui_context != "TOOL_HEADER" else "",
-                    icon_value=custom_icon_previews["IFC"].icon_id,
+                    icon_value=custom_icon_previews[icon].icon_id,
                 )
                 row.label(text="", icon="BLANK1") if ui_context != "TOOL_HEADER" else row
                 row.label(text="", icon="BLANK1") if ui_context != "TOOL_HEADER" else row
@@ -1208,7 +1196,6 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
 
 
 custom_icon_previews = None
-display_mode = None
 
 LIST_OF_TOOLS = [cls.bl_idname for cls in (BimTool.__subclasses__() + [BimTool])]
 TOOLS_TO_CLASSES_MAP = {cls.bl_idname: cls.ifc_element_type for cls in BimTool.__subclasses__()}

@@ -46,6 +46,8 @@ class BIM_MT_project(Menu):
 class BIM_MT_recent_projects(Menu):
     bl_idname = "BIM_MT_recent_projects"
     bl_label = "Open Recent IFC Project"
+    display_mode = tool.Blender.detect_display_mode()
+    icon = f"{display_mode}_ifc"
 
     def draw(self, context):
         paths = tool.Project.get_recent_ifc_projects()
@@ -54,7 +56,7 @@ class BIM_MT_recent_projects(Menu):
             return
 
         for path in paths:
-            op = self.layout.operator("bim.load_project", text=path.name, icon_value=bonsai.bim.icons["IFC"].icon_id)
+            op = self.layout.operator("bim.load_project", text=path.name, icon_value=bonsai.bim.icons[icon].icon_id)
             op.filepath = str(path)
             op.should_start_fresh_session = True
             op.use_detailed_tooltip = True
@@ -66,6 +68,8 @@ class BIM_MT_recent_projects(Menu):
 class BIM_MT_new_project(Menu):
     bl_idname = "BIM_MT_new_project"
     bl_label = "New Project"
+    display_mode = tool.Blender.detect_display_mode()
+    icon = f"{display_mode}_ifc"
 
     def draw(self, context):
         self.layout.operator_context = "INVOKE_DEFAULT"
@@ -75,7 +79,7 @@ class BIM_MT_new_project(Menu):
         # Do we need to set it back to exec default?
         # self.layout.operator_context = "EXEC_DEFAULT"
         self.layout.separator()
-        self.layout.label(text="New IFC Project", icon_value=bonsai.bim.icons["IFC"].icon_id)
+        self.layout.label(text="New IFC Project", icon_value=bonsai.bim.icons[icon].icon_id)
         self.layout.operator("bim.new_project", text="Metric (m) Project").preset = "metric_m"
         self.layout.operator("bim.new_project", text="Metric (mm) Project").preset = "metric_mm"
         self.layout.operator("bim.new_project", text="Imperial (ft) Project").preset = "imperial_ft"

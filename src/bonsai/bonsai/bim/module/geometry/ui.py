@@ -33,12 +33,14 @@ from bonsai.bim.module.layer.data import LayersData
 
 
 def mode_menu(self, context):
+    display_mode = tool.Blender.detect_display_mode()
+    icon = f"{display_mode}_ifc"
     if not tool.Ifc.get():
         return
     row = self.layout.row(align=True)
     if context.scene.BIMGeometryProperties.mode == "EDIT":
         row.operator("bim.override_mode_set_object", icon="CANCEL", text="Discard Changes").should_save = False
-    row.prop(context.scene.BIMGeometryProperties, "mode", text="", icon_value=bonsai.bim.icons["IFC"].icon_id)
+    row.prop(context.scene.BIMGeometryProperties, "mode", text="", icon_value=bonsai.bim.icons[icon].icon_id)
 
 
 def object_menu(self, context):
@@ -69,7 +71,10 @@ class BIM_MT_hotkey_separate(Menu):
     bl_label = "Separate"
 
     def draw(self, context):
-        self.layout.label(text="IFC Separate", icon_value=bonsai.bim.icons["IFC"].icon_id)
+        display_mode = tool.Blender.detect_display_mode()
+        icon = f"{display_mode}_ifc"
+
+        self.layout.label(text="IFC Separate", icon_value=bonsai.bim.icons[icon].icon_id)
         self.layout.operator("bim.override_mesh_separate", text="Selection").type = "SELECTED"
         self.layout.operator("bim.override_mesh_separate", text="By Material").type = "MATERIAL"
         self.layout.operator("bim.override_mesh_separate", text="By Loose Parts").type = "LOOSE"

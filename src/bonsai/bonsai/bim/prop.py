@@ -53,6 +53,8 @@ from typing_extensions import assert_never
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 
+display_mode = None
+
 
 def update_tab(self, context):
     self.alt_tab = self.previous_tab
@@ -367,8 +369,10 @@ class Attribute(PropertyGroup):
 
 
 def get_tab(self, context):
+    display_mode = tool.Blender.detect_display_mode()
+    icon = f"{display_mode}_ifc"
     return [
-        ("PROJECT", "Project Overview", "", bonsai.bim.icons["IFC"].icon_id, 0),
+        ("PROJECT", "Project Overview", "", bonsai.bim.icons[icon].icon_id, 0),
         ("OBJECT", "Object Information", "", "FILE_3D", 1),
         ("GEOMETRY", "Geometry and Materials", "", "MATERIAL", 2),
         ("DRAWINGS", "Drawings and Documents", "", "DOCUMENTS", 3),
