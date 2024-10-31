@@ -274,3 +274,28 @@ class EditArbitraryProfile(bpy.types.Operator, tool.Ifc.Operator):
         props.active_arbitrary_profile_id = 0
 
         model_profile.DumbProfileRegenerator().regenerate_from_profile_def(profile)
+
+
+class SelectProfileInProfilesUI(bpy.types.Operator):
+    bl_idname = "bim.profiles_ui_select"
+    bl_label = "Select Profile In Profiles UI"
+    bl_options = {"REGISTER", "UNDO"}
+    profile_id: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = bpy.context.scene.BIMProfileProperties
+        ifc_file = tool.Ifc.get()
+        profile = ifc_file.by_id(self.profile_id)
+        bpy.ops.bim.load_profiles()
+
+        profile_index = next((i for i, m in enumerate(props.profiles) if m.ifc_definition_id == self.profile_id), None)
+        if profile_index is None:
+            self.report({"INFO"}, "Profile not found in Profiles UI. Perhaps it's unnamed?")
+            return {"CANCELLED"}
+
+        props.active_profile_index = profile_index
+        self.report(
+            {"INFO"},
+            f"Profile '{profile.Name or 'Unnamed'}' is selected in Profiles UI.",
+        )
+        return {"FINISHED"}
