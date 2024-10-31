@@ -331,7 +331,7 @@ class IfcImporter:
         if self.gross_elements:
             print("Warning! Excessive voids were found and skipped for the following elements:")
             for element in self.gross_elements:
-                print(element)
+                print(f"{element} - {len(getattr(element, 'HasOpenings', []))} openings")
 
     def get_spatial_elements_filtered_by_elements(
         self, elements: set[ifcopenshell.entity_instance]
