@@ -7,6 +7,13 @@ prepackaged scripts on IFC models on a server with a standardised interface.
 It's also great for distributing little scripts that need to modify an IFC to
 users who don't know how to code or aren't interested in knowing the details.
 
+PyPI
+----
+
+.. code-block::
+
+    pip install ifcpatch
+
 Source installation
 -------------------
 
