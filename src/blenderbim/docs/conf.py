@@ -81,6 +81,7 @@ html_css_files = ["custom.css"]
 pygments_style = "one-dark"
 pygments_dark_style = "one-dark"
 
+html_favicon = "https://blenderbim.org/assets/images/blender/blender-logo.png"
 html_logo = "https://blenderbim.org/assets/images/blender/blender-logo.png"
 html_theme_options = {
     "source_repository": "https://github.com/IfcOpenShell/IfcOpenShell/",
