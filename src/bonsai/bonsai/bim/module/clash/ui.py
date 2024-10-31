@@ -118,8 +118,12 @@ class BIM_PT_ifcclash(Panel):
 
         row = layout.row()
         row.prop(props, "should_create_clash_snapshots")
+
+        layout.prop(props, "export_path")
+
         row = layout.row()
-        row.operator("bim.execute_ifc_clash")
+        op = row.operator("bim.execute_ifc_clash")
+        op.filepath = props.export_path
 
         row = layout.row()
         row.label(text=f"{len(clash_set.clashes)} Clashes Found", icon="PIVOT_CURSOR")

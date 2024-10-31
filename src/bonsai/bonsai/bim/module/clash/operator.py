@@ -205,16 +205,12 @@ class ExecuteIfcClash(bpy.types.Operator):
     bl_label = "Execute IFC Clash"
     bl_description = "Execute clash detection and save the information to a .bcf or .json file"
     filter_glob: bpy.props.StringProperty(default="*.bcf;*.json", options={"HIDDEN"})
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH", options={"SKIP_SAVE"})
 
     def invoke(self, context, event):
-        _, extension = os.path.splitext(self.filepath)
-        if extension != ".bcf":
-            self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".json")
-        if extension != ".json":
-            self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".bcf")
-        WindowManager = context.window_manager
-        WindowManager.fileselect_add(self)
+        if self.filepath:
+            return self.execute(context)
+        context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
 
     def execute(self, context):
@@ -229,6 +225,7 @@ class ExecuteIfcClash(bpy.types.Operator):
         if extension != ".json":
             self.filepath = bpy.path.ensure_ext(self.filepath, ".bcf")
 
+        self.props.export_path = self.filepath
         settings = ifcclash.ClashSettings()
         settings.output = self.filepath
         settings.logger = logging.getLogger("Clash")
