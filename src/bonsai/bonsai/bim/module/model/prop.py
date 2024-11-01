@@ -18,6 +18,7 @@
 
 import bpy
 import ifcopenshell
+import ifcopenshell.util.element
 import bonsai.tool as tool
 import math
 from bonsai.bim.prop import ObjProperty
