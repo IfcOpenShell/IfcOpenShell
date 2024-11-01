@@ -3076,13 +3076,15 @@ class ConvertSVGToDXF(bpy.types.Operator):
         # convert all drawings on shift+click
         # make sure to use SKIP_SAVE on property, otherwise it might get stuck
         if event.type == "LEFTMOUSE" and event.shift:
-            self.open_all = True
+            self.convert_all = True
         return self.execute(context)
 
     def execute(self, context):
         if self.convert_all:
             drawings = [
-                tool.Ifc.get().by_id(d.ifc_definition_id) for d in context.scene.DocProperties.drawings if d.is_selected
+                tool.Ifc.get().by_id(d.ifc_definition_id)
+                for d in context.scene.DocProperties.drawings
+                if d.is_drawing and d.is_selected
             ]
         else:
             drawings = [tool.Ifc.get().by_id(context.scene.DocProperties.drawings.get(self.view).ifc_definition_id)]
