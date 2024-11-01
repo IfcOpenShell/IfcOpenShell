@@ -1722,12 +1722,15 @@ class OpenDrawing(bpy.types.Operator):
         return self.execute(context)
 
     def execute(self, context):
+        self.props = context.scene.DocProperties
         if self.open_all:
             drawings = [
-                tool.Ifc.get().by_id(d.ifc_definition_id) for d in context.scene.DocProperties.drawings if d.is_selected
+                tool.Ifc.get().by_id(d.ifc_definition_id)
+                for d in self.props.drawings
+                if d.is_drawing and d.is_selected
             ]
         else:
-            drawings = [tool.Ifc.get().by_id(context.scene.DocProperties.drawings.get(self.view).ifc_definition_id)]
+            drawings = [tool.Ifc.get().by_id(self.props.drawings.get(self.view).ifc_definition_id)]
 
         drawing_uris = []
         drawings_not_found = []
