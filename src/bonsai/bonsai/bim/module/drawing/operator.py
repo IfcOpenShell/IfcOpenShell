@@ -158,6 +158,16 @@ class DuplicateDrawing(bpy.types.Operator, tool.Ifc.Operator):
     drawing: bpy.props.IntProperty()
     should_duplicate_annotations: bpy.props.BoolProperty(name="Should Duplicate Annotations", default=False)
 
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.DocProperties
+        active_drawing = props.drawings[props.active_drawing_index]
+        is_drawing_selected = active_drawing.ifc_definition_id > 0
+        if not is_drawing_selected:
+            cls.poll_message_set("No drawing selected.")
+            return False
+        return True
+
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self)
 
@@ -1441,6 +1451,15 @@ class OpenSheet(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Open Sheet Layout"
     bl_options = {"REGISTER", "UNDO"}
 
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.DocProperties
+        active_sheet = props.sheets[props.active_sheet_index]
+        if not active_sheet.is_sheet:
+            cls.poll_message_set("No sheet selected.")
+            return False
+        return True
+
     def _execute(self, context):
         self.props = context.scene.DocProperties
         sheet = tool.Ifc.get().by_id(self.props.sheets[self.props.active_sheet_index].ifc_definition_id)
@@ -1515,6 +1534,16 @@ class RemoveDrawingFromSheet(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
     reference: bpy.props.IntProperty()
 
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.DocProperties
+        active_sheet = props.sheets[props.active_sheet_index]
+
+        if active_sheet.reference_type == "TITLEBLOCK":
+            cls.poll_message_set("No effect deleting this.")
+            return False
+        return True
+
     def _execute(self, context):
         reference = tool.Ifc.get().by_id(self.reference)
         sheet = tool.Drawing.get_reference_document(reference)
@@ -1536,7 +1565,12 @@ class CreateSheets(bpy.types.Operator, tool.Ifc.Operator):
 
     @classmethod
     def poll(cls, context):
-        return context.scene.DocProperties.sheets and context.scene.BIMProperties.data_dir
+        props = context.scene.DocProperties
+        active_sheet = props.sheets[props.active_sheet_index]
+        if not active_sheet.is_sheet:
+            cls.poll_message_set("No sheet selected.")
+            return False
+        return props.sheets and context.scene.BIMProperties.data_dir
 
     def _execute(self, context):
         scene = context.scene
@@ -1656,6 +1690,16 @@ class OpenDrawing(bpy.types.Operator):
         + "SHIFT+CLICK to open all selected drawings"
     )
     open_all: bpy.props.BoolProperty(name="Open All", default=False, options={"SKIP_SAVE"})
+
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.DocProperties
+        active_drawing = props.drawings[props.active_drawing_index]
+        is_drawing_selected = active_drawing.ifc_definition_id > 0
+        if not is_drawing_selected:
+            cls.poll_message_set("No drawing selected.")
+            return False
+        return True
 
     def invoke(self, context, event):
         # opening all drawings on shift+click
@@ -1855,6 +1899,16 @@ class RemoveDrawing(bpy.types.Operator, tool.Ifc.Operator):
 
     drawing: bpy.props.IntProperty()
     remove_all: bpy.props.BoolProperty(name="Remove All", default=False, options={"SKIP_SAVE"})
+
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.DocProperties
+        active_drawing = props.drawings[props.active_drawing_index]
+        is_drawing_selected = active_drawing.ifc_definition_id > 0
+        if not is_drawing_selected:
+            cls.poll_message_set("No drawing selected.")
+            return False
+        return True
 
     def invoke(self, context, event):
         # removing all selected drawings on shift+click
@@ -2265,6 +2319,9 @@ class AddScheduleToSheet(bpy.types.Operator, tool.Ifc.Operator):
     @classmethod
     def poll(cls, context):
         props = context.scene.DocProperties
+        if not props.schedules:
+            cls.poll_message_set("No schedule selected.")
+            return False
         return props.schedules and props.sheets and context.scene.BIMProperties.data_dir
 
     def _execute(self, context):
@@ -2321,6 +2378,9 @@ class AddReferenceToSheet(bpy.types.Operator, tool.Ifc.Operator):
     @classmethod
     def poll(cls, context):
         props = context.scene.DocProperties
+        if not props.references:
+            cls.poll_message_set("No reference selected.")
+            return False
         return props.references and props.sheets and context.scene.BIMProperties.data_dir
 
     def _execute(self, context):
@@ -3071,6 +3131,16 @@ class ConvertSVGToDXF(bpy.types.Operator):
     view: bpy.props.StringProperty()
     bl_description = "Convert current drawing's .svg to .dxf.\n\nSHIFT+CLICK to convert all selected drawings"
     convert_all: bpy.props.BoolProperty(name="Convert All", default=False, options={"SKIP_SAVE"})
+
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.DocProperties
+        active_drawing = props.drawings[props.active_drawing_index]
+        is_drawing_selected = active_drawing.ifc_definition_id > 0
+        if not is_drawing_selected:
+            cls.poll_message_set("No drawing selected.")
+            return False
+        return True
 
     def invoke(self, context, event):
         # convert all drawings on shift+click
