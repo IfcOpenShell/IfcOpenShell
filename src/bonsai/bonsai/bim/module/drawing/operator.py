@@ -1916,21 +1916,7 @@ class ActivateModel(bpy.types.Operator):
         bonsai.bim.handler.refresh_ui_data()
         return {"FINISHED"}
 
-
-class ActivateDrawing(bpy.types.Operator):
-    bl_idname = "bim.activate_drawing"
-    bl_label = "Activate Drawing"
-    bl_options = {"REGISTER", "UNDO"}
-    bl_description = (
-        "Activates the selected drawing view.\n\n"
-        + "ALT+CLICK to keep the viewport position.\n\n"
-        + "SHIFT+CLICK to load a quick preview of the drawing view."
-    )
-
-    drawing: bpy.props.IntProperty()
-    should_view_from_camera: bpy.props.BoolProperty(name="Should View From Camera", default=True, options={"SKIP_SAVE"})
-    use_quick_preview: bpy.props.BoolProperty(name="Use Quick Preview", default=False, options={"SKIP_SAVE"})
-
+class ActivateDrawingBase:
     def invoke(self, context, event):
         if event.type == "LEFTMOUSE" and event.alt:
             self.should_view_from_camera = False
@@ -1977,7 +1963,54 @@ class ActivateDrawing(bpy.types.Operator):
             bpy.ops.bim.update_representation(obj=camera.name, ifc_representation_class="")
 
         return {"FINISHED"}
+    
+class ActivateDrawing(bpy.types.Operator, ActivateDrawingBase):
+    bl_idname = "bim.activate_drawing"
+    bl_label = "Activate Drawing"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = (
+        "Activates the selected drawing view.\n\n"
+        + "ALT+CLICK to keep the viewport position.\n\n"
+        + "SHIFT+CLICK to load a quick preview of the drawing view"
+    )
 
+    drawing: bpy.props.IntProperty()
+    should_view_from_camera: bpy.props.BoolProperty(name="Should View From Camera", default=True, options={"SKIP_SAVE"})
+    use_quick_preview: bpy.props.BoolProperty(name="Use Quick Preview", default=False, options={"SKIP_SAVE"})
+
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.DocProperties
+        active_drawing = props.drawings[props.active_drawing_index]
+        is_drawing_selected = active_drawing.ifc_definition_id > 0
+        if not is_drawing_selected:
+            cls.poll_message_set("No drawing selected.")
+            return False
+        return True
+
+class ActivateDrawingFromSheet(bpy.types.Operator, ActivateDrawingBase):
+    bl_idname = "bim.activate_drawing_from_sheet"
+    bl_label = "Activate Drawing"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = (
+        "Activates the selected drawing view.\n\n"
+        + "ALT+CLICK to keep the viewport position.\n\n"
+        + "SHIFT+CLICK to load a quick preview of the drawing view"
+    )
+
+    drawing: bpy.props.IntProperty()
+    should_view_from_camera: bpy.props.BoolProperty(name="Should View From Camera", default=True, options={"SKIP_SAVE"})
+    use_quick_preview: bpy.props.BoolProperty(name="Use Quick Preview", default=False, options={"SKIP_SAVE"})
+
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.DocProperties
+        active_sheet = props.sheets[props.active_sheet_index]
+        is_drawing_selected = active_sheet.reference_type == "DRAWING"
+        if not is_drawing_selected:
+            cls.poll_message_set("No drawing selected.")
+            return False
+        return True
 
 class SelectDocIfcFile(bpy.types.Operator):
     bl_idname = "bim.select_doc_ifc_file"

@@ -21,6 +21,7 @@ from . import ui, prop, operator, handler, gizmos, workspace
 
 classes = (
     operator.ActivateDrawing,
+    operator.ActivateDrawingFromSheet,
     operator.ActivateDrawingStyle,
     operator.ActivateModel,
     operator.AddAnnotation,
