@@ -69,15 +69,16 @@ def update_global_tab(self: "BIMTabProperties", context: bpy.types.Context) -> N
 # https://blender.stackexchange.com/questions/216230/is-there-a-workaround-for-the-known-bug-in-dynamic-enumproperty
 # https://github.com/IfcOpenShell/IfcOpenShell/pull/1945
 # https://github.com/IfcOpenShell/IfcOpenShell/issues/1941
-def cache_string(s):
+# TODO: it would be nice to have some mechanism to clear that cache
+# instead of storing it forever.
+def cache_string(s: Any) -> str:
+    # TODO: is it ever non-string?
     s = str(s)
-    if not hasattr(cache_string, "data"):  # Another way to define a function attribute
-        cache_string.data = defaultdict(str)
     cache_string.data[s] = s
-    return cache_string.data[s]
+    return s
 
 
-cache_string.data = {}
+cache_string.data: dict[str, str] = {}
 
 
 def get_attribute_enum_values(prop: "Attribute", context: bpy.types.Context) -> list[tuple[str, str, str]]:
@@ -96,10 +97,11 @@ def get_attribute_enum_values(prop: "Attribute", context: bpy.types.Context) -> 
             )
     else:
         for e in data:
+            cache_string(e)
             items.append(
                 (
-                    cache_string(e),
-                    cache_string(e),
+                    e,
+                    e,
                     "",
                 )
             )
