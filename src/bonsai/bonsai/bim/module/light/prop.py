@@ -270,6 +270,7 @@ class RadianceExporterProperties(PropertyGroup):
         items=categories, name="Category", description="Material category", update=update_material_mapping
     )
 
+    # TODO: unsafe?
     def get_subcategories(self, context):
         if self.category in spectraldb:
             return [(k, k, "") for k in spectraldb[self.category].keys()]

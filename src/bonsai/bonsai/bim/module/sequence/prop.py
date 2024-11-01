@@ -82,10 +82,12 @@ def getTaskTimeColumns(self, context):
 
 
 def getWorkSchedules(self, context):
+    # TODO: unsafe?
     return [(str(k), v["Name"], "") for k, v in SequenceData.data["work_schedules"].items()]
 
 
 def getWorkCalendars(self, context):
+    # TODO: unsafe?
     return [(str(k), v["Name"], "") for k, v in SequenceData.data["work_calendars"].items()]
 
 
@@ -229,6 +231,7 @@ def updateTaskDuration(self, context):
     tool.Sequence.refresh_task_resources()
 
 
+# TODO: unsafe?
 def get_schedule_predefined_types(self, context):
     results = []
     declaration = tool.Ifc().schema().declaration_by_name("IfcWorkSchedule")

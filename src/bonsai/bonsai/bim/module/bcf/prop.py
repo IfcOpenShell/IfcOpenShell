@@ -184,6 +184,7 @@ class BcfTopic(PropertyGroup):
     is_editable: BoolProperty(name="Edit Topic Attributes", default=False, update=updateBcfTopicIsEditable)
 
 
+# TODO: unsafe?
 def get_related_topics(self: "BCFProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
     props = self
     active_topic = props.active_topic

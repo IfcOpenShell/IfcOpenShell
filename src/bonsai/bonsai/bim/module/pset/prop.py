@@ -61,6 +61,7 @@ def blender_formatted_enum_from_psets(psets: list[ifcopenshell.entity_instance])
     return enum_items
 
 
+# TODO: unsafe?
 def get_pset_name(self, context):
     pset_type = repr(self)
     prop_type = pset_type.split(".")[-1]
@@ -190,6 +191,7 @@ def get_work_schedule_pset_names(self, context):
     return psetnames[ifc_class]
 
 
+# TODO: unsafe?
 def get_qto_name(self, context):
     pset_type = repr(self)
     prop_type = pset_type.split(".")[-1]
@@ -211,12 +213,14 @@ def get_object_qto_name(self, context):
     return ObjectPsetsData.data["qto_name"]
 
 
+# TODO: unsafe?
 def get_template_type(self, context):
     version = tool.Ifc.get_schema()
     for t in ("IfcPropertySingleValue", "IfcPropertyEnumeratedValue"):
         yield (t, t, ifcopenshell.util.doc.get_entity_doc(version, t).get("description", ""))
 
 
+# TODO: unsafe?
 def get_primary_measure_type(self, context):
     if not AddEditCustomPropertiesData.is_loaded:
         AddEditCustomPropertiesData.load()

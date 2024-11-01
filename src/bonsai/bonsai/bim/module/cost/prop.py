@@ -115,6 +115,7 @@ def get_schedule_predefined_types(self, context):
     return CostSchedulesData.data["predefined_types"]
 
 
+# TODO: unsafe?
 def get_currencies(self, context):
     return [
         ("USD", "USD", "Dollar"),

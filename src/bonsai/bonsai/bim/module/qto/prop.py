@@ -32,6 +32,7 @@ from bpy.props import (
 )
 
 
+# TODO: unsafe?
 def get_qto_rule(self, context):
     results = []
     for rule_id, rule in ifc5d.qto.rules.items():
@@ -39,6 +40,7 @@ def get_qto_rule(self, context):
     return results
 
 
+# TODO: unsafe?
 def get_calculator(self, context):
     results = []
     for name, calculator in ifc5d.qto.calculators.items():
@@ -46,6 +48,7 @@ def get_calculator(self, context):
     return results
 
 
+# TODO: unsafe?
 def get_calculator_function(self, context):
     calculator = ifc5d.qto.calculators[self.calculator]
     results = []

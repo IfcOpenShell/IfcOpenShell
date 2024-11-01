@@ -79,6 +79,7 @@ def get_property_template_type(self, context):
     return PsetTemplatesData.data["property_template_type"]
 
 
+# TODO: unsafe?
 def get_template_type(self, context):
     return [
         (

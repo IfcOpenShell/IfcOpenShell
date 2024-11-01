@@ -33,6 +33,7 @@ from bpy.props import (
 )
 
 
+# TODO: unsafe?
 def get_available_constraint_types(self, context):
     version = tool.Ifc.get_schema()
     return [(c, c, get_entity_doc(version, c).get("description", "")) for c in ["IfcObjective"]]

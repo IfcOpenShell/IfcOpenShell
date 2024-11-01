@@ -45,19 +45,23 @@ def get_libraries(self, context):
     return BrickschemaReferencesData.data["libraries"]
 
 
+# TODO: unsafe?
 def get_namespaces(self, context):
     return [(uri, f"{alias}: {uri}", "") for alias, uri in BrickStore.namespaces]
 
 
+# TODO: unsafe?
 def get_brick_entity_classes(self, context):
     entity = self.brick_entity_create_type
     return [(uri, uri.split("#")[-1], "") for uri in BrickStore.entity_classes[entity]]
 
 
+# TODO: unsafe?
 def get_brick_roots(self, context):
     return [(root, root, "") for root in BrickStore.root_classes]
 
 
+# TODO: unsafe?
 def get_brick_relations(self, context):
     relations = [(uri, uri.split("#")[-1], "") for uri in BrickStore.relationships]
     for relation in BrickschemaData.data["active_relations"]:
