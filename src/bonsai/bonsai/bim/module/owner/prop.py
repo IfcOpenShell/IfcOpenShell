@@ -66,6 +66,7 @@ def update_actor_class(self, context):
     ActorData.data["actors"] = ActorData.actors()
 
 
+# TODO: unsafe?
 def get_actor_class_enum(self, context):
     version = tool.Ifc.get_schema()
     return [
@@ -74,6 +75,7 @@ def get_actor_class_enum(self, context):
     ]
 
 
+# TODO: unsafe?
 def get_actor_type_enum(self, context):
     version = tool.Ifc.get_schema()
     return [

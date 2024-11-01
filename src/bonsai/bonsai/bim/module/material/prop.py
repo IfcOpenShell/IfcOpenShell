@@ -48,6 +48,7 @@ def purge():
     parameterizedprofileclasses_enum = []
 
 
+# TODO: unsafe?
 def get_profile_classes(self, context):
     global profileclasses_enum
     if len(profileclasses_enum) == 0 and IfcStore.get_schema():
@@ -60,6 +61,7 @@ def get_profile_classes(self, context):
     return profileclasses_enum
 
 
+# TODO: unsafe?
 def get_parameterized_profile_classes(self, context):
     global parameterizedprofileclasses_enum
     if len(parameterizedprofileclasses_enum) == 0 and IfcStore.get_schema():
