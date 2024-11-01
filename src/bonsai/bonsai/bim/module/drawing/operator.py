@@ -2022,7 +2022,9 @@ class RemoveDrawing(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         if self.remove_all:
             drawings = [
-                tool.Ifc.get().by_id(d.ifc_definition_id) for d in context.scene.DocProperties.drawings if d.is_selected
+                tool.Ifc.get().by_id(d.ifc_definition_id)
+                for d in context.scene.DocProperties.drawings
+                if d.is_drawing and d.is_selected
             ]
         else:
             if not self.drawing:
