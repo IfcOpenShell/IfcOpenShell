@@ -301,8 +301,6 @@ class CreateDrawing(bpy.types.Operator):
                 with profile("Combine SVG layers"):
                     svg_path = self.combine_svgs(context, underlay_svg, linework_svg, annotation_svg)
 
-            tool.Drawing.open_with_user_command(tool.Blender.get_addon_preferences().svg_command, svg_path)
-
         if self.print_all:
             bpy.ops.bim.activate_drawing(drawing=original_drawing_id, should_view_from_camera=False)
         return {"FINISHED"}
@@ -1672,11 +1670,6 @@ class CreateSheets(bpy.types.Operator, tool.Ifc.Operator):
             for command in commands:
                 command[0] = shutil.which(command[0]) or command[0]
                 subprocess.run([replacements.get(c, c) for c in command])
-
-        if svg2pdf_command:
-            tool.Drawing.open_with_user_command(tool.Blender.get_addon_preferences().pdf_command, pdf)
-        else:
-            tool.Drawing.open_with_user_command(tool.Blender.get_addon_preferences().svg_command, svg)
 
 
 class SelectAllDrawings(bpy.types.Operator):
