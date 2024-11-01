@@ -92,12 +92,6 @@ class BIM_PT_camera(Panel):
             row = self.layout.row()
             row.prop(props, "dpi")
 
-        row = self.layout.row(align=True)
-        row.operator("bim.create_drawing", text="Create Drawing", icon="OUTPUT")
-        op = row.operator("bim.open_drawing", icon="URL", text="")
-        op.view = context.scene.camera.name.split("/")[1]
-
-
 class BIM_PT_element_filters(Panel):
     bl_label = "Element Filters"
     bl_idname = "BIM_PT_element_filters"
