@@ -20,6 +20,7 @@ import bpy
 from ifcopenshell.util.doc import get_entity_doc
 import bonsai.tool as tool
 from bonsai.bim.prop import Attribute
+from bonsai.bim.module.constraint.data import ConstraintsData
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -33,10 +34,10 @@ from bpy.props import (
 )
 
 
-# TODO: unsafe?
 def get_available_constraint_types(self, context):
-    version = tool.Ifc.get_schema()
-    return [(c, c, get_entity_doc(version, c).get("description", "")) for c in ["IfcObjective"]]
+    if not ConstraintsData.is_loaded:
+        ConstraintsData.load()
+    return ConstraintsData.data["constraint_types_enum"]
 
 
 class Constraint(PropertyGroup):
