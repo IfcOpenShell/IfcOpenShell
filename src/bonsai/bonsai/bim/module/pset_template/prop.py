@@ -79,50 +79,48 @@ def get_property_template_type(self, context):
     return PsetTemplatesData.data["property_template_type"]
 
 
-# TODO: unsafe?
-def get_template_type(self, context):
-    return [
-        (
-            "PSET_TYPEDRIVENONLY",
-            "Pset - IfcTypeObject",
-            "The property sets defined by this IfcPropertySetTemplate can only be assigned to subtypes of IfcTypeObject.",
-        ),
-        (
-            "PSET_TYPEDRIVENOVERRIDE",
-            "Pset - IfcTypeObject - Override",
-            "The property sets defined by this IfcPropertySetTemplate can only be assigned to subtypes of IfcTypeObject.",
-        ),
-        (
-            "PSET_OCCURRENCEDRIVEN",
-            "Pset - IfcObject",
-            "The property sets defined by this IfcPropertySetTemplate can only be assigned to subtypes of IfcObject.",
-        ),
-        (
-            "PSET_PERFORMANCEDRIVEN",
-            "Pset - IfcPerformanceHistory",
-            "The property sets defined by this IfcPropertySetTemplate can only be assigned to IfcPerformanceHistory.",
-        ),
-        (
-            "QTO_TYPEDRIVENONLY",
-            "Qto - IfcTypeObject",
-            "The element quantity defined by this IfcPropertySetTemplate can only be assigned to subtypes of IfcTypeObject.",
-        ),
-        (
-            "QTO_TYPEDRIVENOVERRIDE",
-            "Qto - IfcTypeObject - Override",
-            "The element quantity defined by this IfcPropertySetTemplate can be assigned to subtypes of IfcTypeObject and can be overridden by an element quantity with same name at subtypes of IfcObject.",
-        ),
-        (
-            "QTO_OCCURRENCEDRIVEN",
-            "Qto - IfcObject",
-            "The element quantity defined by this IfcPropertySetTemplate can only be assigned to subtypes of IfcObject.",
-        ),
-        (
-            "NOTDEFINED",
-            "Not defined",
-            "No restriction provided, the property sets defined by this IfcPropertySetTemplate can be assigned to any entity, if not otherwise restricted by the ApplicableEntity attribute.",
-        ),
-    ]
+TEMPLATE_TYPE_ENUM_ITEMS = (
+    (
+        "PSET_TYPEDRIVENONLY",
+        "Pset - IfcTypeObject",
+        "The property sets defined by this IfcPropertySetTemplate can only be assigned to subtypes of IfcTypeObject.",
+    ),
+    (
+        "PSET_TYPEDRIVENOVERRIDE",
+        "Pset - IfcTypeObject - Override",
+        "The property sets defined by this IfcPropertySetTemplate can only be assigned to subtypes of IfcTypeObject.",
+    ),
+    (
+        "PSET_OCCURRENCEDRIVEN",
+        "Pset - IfcObject",
+        "The property sets defined by this IfcPropertySetTemplate can only be assigned to subtypes of IfcObject.",
+    ),
+    (
+        "PSET_PERFORMANCEDRIVEN",
+        "Pset - IfcPerformanceHistory",
+        "The property sets defined by this IfcPropertySetTemplate can only be assigned to IfcPerformanceHistory.",
+    ),
+    (
+        "QTO_TYPEDRIVENONLY",
+        "Qto - IfcTypeObject",
+        "The element quantity defined by this IfcPropertySetTemplate can only be assigned to subtypes of IfcTypeObject.",
+    ),
+    (
+        "QTO_TYPEDRIVENOVERRIDE",
+        "Qto - IfcTypeObject - Override",
+        "The element quantity defined by this IfcPropertySetTemplate can be assigned to subtypes of IfcTypeObject and can be overridden by an element quantity with same name at subtypes of IfcObject.",
+    ),
+    (
+        "QTO_OCCURRENCEDRIVEN",
+        "Qto - IfcObject",
+        "The element quantity defined by this IfcPropertySetTemplate can only be assigned to subtypes of IfcObject.",
+    ),
+    (
+        "NOTDEFINED",
+        "Not defined",
+        "No restriction provided, the property sets defined by this IfcPropertySetTemplate can be assigned to any entity, if not otherwise restricted by the ApplicableEntity attribute.",
+    ),
+)
 
 
 class PsetTemplate(PropertyGroup):
@@ -139,7 +137,7 @@ class PsetTemplate(PropertyGroup):
         description=get_attribute_doc("IFC4", "IfcPropertySetTemplate", "Description"),
     )
     template_type: EnumProperty(
-        items=get_template_type,
+        items=TEMPLATE_TYPE_ENUM_ITEMS,
         name="Template Type",
         description=get_attribute_doc("IFC4", "IfcPropertySetTemplate", "TemplateType"),
     )
