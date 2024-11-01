@@ -184,20 +184,19 @@ class BcfTopic(PropertyGroup):
     is_editable: BoolProperty(name="Edit Topic Attributes", default=False, update=updateBcfTopicIsEditable)
 
 
-# TODO: unsafe?
 def get_related_topics(self: "BCFProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
+    global RELATED_TOPICS_ENUM_ITEMS
     props = self
     active_topic = props.active_topic
     active_related_topics = active_topic.related_topics.keys()
-    enum_items = []
-    i = 0
+    RELATED_TOPICS_ENUM_ITEMS = []
     for t in props.topics:
         if t.name == active_topic.name:
             continue
         if t.name in active_related_topics:
             continue
-        enum_items.append((t.name, t.title, t.description))
-    return enum_items
+        RELATED_TOPICS_ENUM_ITEMS.append((t.name, t.title, t.description))
+    return RELATED_TOPICS_ENUM_ITEMS
 
 
 class BCFProperties(PropertyGroup):
