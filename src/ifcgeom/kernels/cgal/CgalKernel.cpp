@@ -1930,6 +1930,17 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result::ptr br, Conversion
 				if (!convert(face, fs) || fs.size() != 1) {
 					return false;
 				}
+				
+				auto& w = fs.front().outer;
+				CGAL::Polygon_2<Kernel_> ps;
+				for (auto& p : w) {
+					ps.push_back({ p.x(), p.y() });
+				}
+				if (!ps.is_simple()) {
+					Logger::Warning("Polygonal boundary not simple", face->children[0]->instance);
+					continue;
+				}
+
 				// static 
 				auto z = taxonomy::make<taxonomy::direction3>(0, 0, 1);
 				cgal_shape_t poly;
