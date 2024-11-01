@@ -594,6 +594,11 @@ class BIM_UL_drawinglist(bpy.types.UIList):
             selected_icon = "CHECKBOX_HLT" if item.is_selected else "CHECKBOX_DEHLT"
             row.prop(item, "is_selected", text="", icon=selected_icon, emboss=False)
             row.prop(item, "name", text="", emboss=False)
+            self.props = context.scene.DocProperties
+            if self.props.drawings and \
+               self.props.active_drawing_id and \
+               item.ifc_definition_id == self.props.active_drawing_id:
+                    row.label(text="", icon="OUTLINER_OB_CAMERA")
         else:
             if item.target_view == "PLAN_VIEW":
                 icon = "UV_FACESEL"
