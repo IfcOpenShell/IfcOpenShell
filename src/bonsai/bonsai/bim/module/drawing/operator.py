@@ -304,6 +304,7 @@ class CreateDrawing(bpy.types.Operator):
 
         if self.print_all:
             bpy.ops.bim.activate_drawing(drawing=original_drawing_id, should_view_from_camera=False)
+        self.report({"INFO"}, f"{len(drawings_to_print)} drawings created...")
         return {"FINISHED"}
 
     def get_camera_dimensions(self):
@@ -1769,6 +1770,8 @@ class CreateSheets(bpy.types.Operator, tool.Ifc.Operator):
                 for command in commands:
                     command[0] = shutil.which(command[0]) or command[0]
                     subprocess.run([replacements.get(c, c) for c in command])
+
+        self.report({"INFO"}, f"{len(sheets)} sheets created...")
 
 
 class SelectAllDrawings(bpy.types.Operator):
