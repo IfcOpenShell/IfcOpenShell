@@ -1496,7 +1496,7 @@ class AddDrawingToSheet(bpy.types.Operator, tool.Ifc.Operator):
         attributes = tool.Drawing.generate_reference_attributes(
             reference,
             Identification=str(
-                len([r for r in references if tool.Drawing.get_reference_description(r) in ("DRAWING", "SCHEDULE")]) + 1
+                len([r for r in references if tool.Drawing.get_reference_description(r) in ("DRAWING", "SCHEDULE", "REFERENCE")]) + 1
             ),
             Location=drawing_reference.Location,
             Description="DRAWING",
@@ -2299,7 +2299,7 @@ class AddScheduleToSheet(bpy.types.Operator, tool.Ifc.Operator):
         attributes = tool.Drawing.generate_reference_attributes(
             reference,
             Identification=str(
-                len([r for r in references if tool.Drawing.get_reference_description(r) in ("DRAWING", "SCHEDULE")]) + 1
+                len([r for r in references if tool.Drawing.get_reference_description(r) in ("DRAWING", "SCHEDULE", "REFERENCE")]) + 1
             ),
             Location=schedule_location,
             Description="SCHEDULE",
@@ -2355,7 +2355,7 @@ class AddReferenceToSheet(bpy.types.Operator, tool.Ifc.Operator):
         attributes = tool.Drawing.generate_reference_attributes(
             reference,
             Identification=str(
-                len([r for r in references if tool.Drawing.get_reference_description(r) in ("DRAWING", "REFERENCE")])
+                len([r for r in references if tool.Drawing.get_reference_description(r) in ("DRAWING", "SCHEDULE", "REFERENCE")])
                 + 1
             ),
             Location=extref_location,
