@@ -1446,8 +1446,8 @@ class AddSheet(bpy.types.Operator, tool.Ifc.Operator):
         core.add_sheet(tool.Ifc, tool.Drawing, titleblock=context.scene.DocProperties.titleblock)
 
 
-class OpenSheet(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.open_sheet"
+class OpenLayout(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.open_layout"
     bl_label = "Open Sheet Layout"
     bl_options = {"REGISTER", "UNDO"}
 
@@ -1465,7 +1465,7 @@ class OpenSheet(bpy.types.Operator, tool.Ifc.Operator):
         sheet = tool.Ifc.get().by_id(self.props.sheets[self.props.active_sheet_index].ifc_definition_id)
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.update_sheet_drawing_sizes(sheet)
-        core.open_sheet(tool.Drawing, sheet=sheet)
+        core.open_layout(tool.Drawing, sheet=sheet)
 
 
 class AddDrawingToSheet(bpy.types.Operator, tool.Ifc.Operator):
