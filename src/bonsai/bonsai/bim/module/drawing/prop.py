@@ -47,14 +47,11 @@ from bpy.props import (
 
 
 diagram_scales_enum = []
-sheets_enum = []
 
 
 def purge():
     global diagram_scales_enum
-    global sheets_enum
     diagram_scales_enum = []
-    sheets_enum = []
 
 
 def update_target_view(self, context):

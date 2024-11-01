@@ -45,6 +45,8 @@ class SequenceData:
             "has_work_schedules": cls.has_work_schedules(),
             "has_work_calendars": cls.has_work_calendars(),
             "schedule_predefined_types_enum": cls.schedule_predefined_types_enum(),
+            "task_columns_enum": cls.task_columns_enum(),
+            "tasktimecolumns_enum": cls.tasktimecolumns_enum(),
         }
         cls.load_work_plans()
         cls.load_work_schedules()
@@ -258,6 +260,38 @@ class SequenceData:
                 )
                 break
         return results
+
+    @classmethod
+    def task_columns_enum(cls) -> list[tuple[str, str, str]]:
+        schema = tool.Ifc.schema()
+        taskcolumns_enum = []
+        for a in schema.declaration_by_name("IfcTask").all_attributes():
+            if (primitive_type := ifcopenshell.util.attribute.get_primitive_type(a)) not in (
+                "string",
+                "float",
+                "integer",
+                "boolean",
+                "enum",
+            ):
+                continue
+            schema.append((f"{a.name()}/{primitive_type}", a.name(), ""))
+        return taskcolumns_enum
+
+    @classmethod
+    def tasktimecolumns_enum(cls) -> list[tuple[str, str, str]]:
+        schema = tool.Ifc.schema()
+        tasktimecolumns_enum = []
+        for a in schema.declaration_by_name("IfcTaskTime").all_attributes():
+            if (primitive_type := ifcopenshell.util.attribute.get_primitive_type(a)) not in (
+                "string",
+                "float",
+                "integer",
+                "boolean",
+                "enum",
+            ):
+                continue
+            schema.append((f"{a.name()}/{primitive_type}", a.name(), ""))
+        return tasktimecolumns_enum
 
 
 class WorkScheduleData:
