@@ -41,43 +41,17 @@ from bpy.props import (
     CollectionProperty,
 )
 
-taskcolumns_enum = []
-tasktimecolumns_enum = []
-
-
-def purge():
-    global taskcolumns_enum
-    global tasktimecolumns_enum
-    taskcolumns_enum = []
-    tasktimecolumns_enum = []
-
 
 def getTaskColumns(self, context):
-    global taskcolumns_enum
-    if not len(taskcolumns_enum) and IfcStore.get_schema():
-        taskcolumns_enum.extend(
-            [
-                (a.name() + "/" + ifcopenshell.util.attribute.get_primitive_type(a), a.name(), "")
-                for a in IfcStore.get_schema().declaration_by_name("IfcTask").all_attributes()
-                if ifcopenshell.util.attribute.get_primitive_type(a)
-                in ["string", "float", "integer", "boolean", "enum"]
-            ]
-        )
-    return taskcolumns_enum
+    if not SequenceData.is_loaded:
+        SequenceData.load()
+    return SequenceData.data["taskcolumns_enum"]
 
 
 def getTaskTimeColumns(self, context):
-    global tasktimecolumns_enum
-    if not len(tasktimecolumns_enum) and IfcStore.get_schema():
-        tasktimecolumns_enum.extend(
-            [
-                (a.name() + "/" + ifcopenshell.util.attribute.get_primitive_type(a), a.name(), "")
-                for a in IfcStore.get_schema().declaration_by_name("IfcTaskTime").all_attributes()
-                if ifcopenshell.util.attribute.get_primitive_type(a)
-                in ["string", "float", "integer", "boolean", "enum"]
-            ]
-        )
-    return tasktimecolumns_enum
+    if not SequenceData.is_loaded:
+        SequenceData.load()
+    return SequenceData.data["tasktimecolumns_enum"]
 
 
 def getWorkSchedules(self, context):

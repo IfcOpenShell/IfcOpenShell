@@ -28,7 +28,6 @@ import bonsai.tool as tool
 import bonsai.core.style
 import bonsai.core.material as core
 import bonsai.bim.module.model.profile as model_profile
-from bonsai.bim.module.material.prop import purge as material_prop_purge
 from bonsai.bim.ifc import IfcStore
 from typing import Any, Union
 
@@ -143,7 +142,6 @@ class AddMaterial(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         core.add_material(tool.Ifc, tool.Material, name=self.name, category=self.category, description=self.description)
-        material_prop_purge()
 
 
 class DuplicateMaterial(bpy.types.Operator, tool.Ifc.Operator):
@@ -155,7 +153,6 @@ class DuplicateMaterial(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         material = tool.Ifc.get().by_id(self.material)
         tool.Material.duplicate_material(material)
-        material_prop_purge()
         bpy.ops.bim.load_materials()
 
 
@@ -168,7 +165,6 @@ class AddMaterialSet(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         core.add_material_set(tool.Ifc, tool.Material, set_type=self.set_type)
-        material_prop_purge()
 
 
 class RemoveMaterial(bpy.types.Operator, tool.Ifc.Operator):
