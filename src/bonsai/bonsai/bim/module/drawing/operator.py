@@ -1581,6 +1581,8 @@ class CreateSheets(bpy.types.Operator, tool.Ifc.Operator):
     bl_description = "Build a sheet from the sheet layout"
     bl_options = {"REGISTER", "UNDO"}
 
+    create_all: bpy.props.BoolProperty(name="Create All", default=False, options={"SKIP_SAVE"})
+
     @classmethod
     def poll(cls, context):
         props = context.scene.DocProperties
@@ -1590,86 +1592,100 @@ class CreateSheets(bpy.types.Operator, tool.Ifc.Operator):
             return False
         return props.sheets and context.scene.BIMProperties.data_dir
 
+    def invoke(self, context, event):
+        # opening all sheets on shift+click
+        # make sure to use SKIP_SAVE on property, otherwise it might get stuck
+        if event.type == "LEFTMOUSE" and event.shift:
+            self.create_all = True
+        return self.execute(context)
+
     def _execute(self, context):
         scene = context.scene
         props = scene.DocProperties
-        active_sheet = props.sheets[props.active_sheet_index]
-        sheet = tool.Ifc.get().by_id(active_sheet.ifc_definition_id)
-
-        # Update any drawing boundary changes
-        sheet_builder = sheeter.SheetBuilder()
-        sheet_builder.update_sheet_drawing_sizes(sheet)
-
-        if not sheet.is_a("IfcDocumentInformation"):
-            return
-
-        name = os.path.splitext(os.path.basename(tool.Drawing.get_document_uri(sheet)))[0]
-        sheet_builder = sheeter.SheetBuilder()
-        sheet_builder.data_dir = scene.BIMProperties.data_dir
-
-        references = sheet_builder.build(sheet)
-        raster_references = [tool.Ifc.get_relative_uri(r) for r in references["RASTER"]]
-
-        # These variables will be made available to the evaluated commands
-        svg = references["SHEET"]
-        pdf = os.path.splitext(svg)[0] + ".pdf"
-        replacements = {
-            "svg": svg,
-            "basename": os.path.basename(svg),
-            "path": os.path.dirname(svg),
-            "pdf": pdf,
-            "eps": os.path.splitext(svg)[0] + ".eps",
-            "dxf": os.path.splitext(svg)[0] + ".dxf",
-        }
-
-        has_sheet_reference = False
-        for reference in tool.Drawing.get_document_references(sheet):
-            reference_description = tool.Drawing.get_reference_description(reference)
-            if reference_description == "SHEET":
-                has_sheet_reference = True
-            elif reference_description == "RASTER":
-                if reference.Location in raster_references:
-                    raster_references.remove(reference.Location)
-                else:
-                    tool.Ifc.run("document.remove_reference", reference=reference)
-
-        if not has_sheet_reference:
-            reference = tool.Ifc.run("document.add_reference", information=sheet)
-            tool.Ifc.run(
-                "document.edit_reference",
-                reference=reference,
-                attributes=tool.Drawing.generate_reference_attributes(
-                    reference, Location=tool.Ifc.get_relative_uri(svg), Description="SHEET"
-                ),
-            )
-
-        for raster_reference in raster_references:
-            reference = tool.Ifc.run("document.add_reference", information=sheet)
-            tool.Ifc.run(
-                "document.edit_reference",
-                reference=reference,
-                attributes=tool.Drawing.generate_reference_attributes(
-                    reference, Location=tool.Ifc.get_relative_uri(raster_reference), Description="RASTER"
-                ),
-            )
-
         svg2pdf_command = tool.Blender.get_addon_preferences().svg2pdf_command
         svg2dxf_command = tool.Blender.get_addon_preferences().svg2dxf_command
 
-        if svg2pdf_command:
-            # With great power comes great responsibility. Example:
-            # [["inkscape", "svg", "-o", "pdf"]]
-            commands = json.loads(svg2pdf_command)
-            for command in commands:
-                subprocess.run([replacements.get(c, c) for c in command])
+        if self.create_all:
+            sheets = [
+                tool.Ifc.get().by_id(s.ifc_definition_id)
+                for s in props.sheets
+                if s.is_sheet and s.is_selected
+            ]
+        else:
+            sheets = [tool.Ifc.get().by_id(props.sheets[props.active_sheet_index].ifc_definition_id)]
 
-        if svg2dxf_command:
-            # With great power comes great responsibility. Example:
-            # [["inkscape", "svg", "-o", "eps"], ["pstoedit", "-dt", "-f", "dxf:-polyaslines -mm", "eps", "dxf", "-psarg", "-dNOSAFER"]]
-            commands = json.loads(svg2dxf_command)
-            for command in commands:
-                command[0] = shutil.which(command[0]) or command[0]
-                subprocess.run([replacements.get(c, c) for c in command])
+        for sheet in sheets:
+            # Update any drawing boundary changes
+            sheet_builder = sheeter.SheetBuilder()
+            sheet_builder.update_sheet_drawing_sizes(sheet)
+
+            if not sheet.is_a("IfcDocumentInformation"):
+                return
+
+            name = os.path.splitext(os.path.basename(tool.Drawing.get_document_uri(sheet)))[0]
+            sheet_builder = sheeter.SheetBuilder()
+            sheet_builder.data_dir = scene.BIMProperties.data_dir
+
+            references = sheet_builder.build(sheet)
+            raster_references = [tool.Ifc.get_relative_uri(r) for r in references["RASTER"]]
+
+            # These variables will be made available to the evaluated commands
+            svg = references["SHEET"]
+            pdf = os.path.splitext(svg)[0] + ".pdf"
+            replacements = {
+                "svg": svg,
+                "basename": os.path.basename(svg),
+                "path": os.path.dirname(svg),
+                "pdf": pdf,
+                "eps": os.path.splitext(svg)[0] + ".eps",
+                "dxf": os.path.splitext(svg)[0] + ".dxf",
+            }
+
+            has_sheet_reference = False
+            for reference in tool.Drawing.get_document_references(sheet):
+                reference_description = tool.Drawing.get_reference_description(reference)
+                if reference_description == "SHEET":
+                    has_sheet_reference = True
+                elif reference_description == "RASTER":
+                    if reference.Location in raster_references:
+                        raster_references.remove(reference.Location)
+                    else:
+                        tool.Ifc.run("document.remove_reference", reference=reference)
+
+            if not has_sheet_reference:
+                reference = tool.Ifc.run("document.add_reference", information=sheet)
+                tool.Ifc.run(
+                    "document.edit_reference",
+                    reference=reference,
+                    attributes=tool.Drawing.generate_reference_attributes(
+                        reference, Location=tool.Ifc.get_relative_uri(svg), Description="SHEET"
+                    ),
+                )
+
+            for raster_reference in raster_references:
+                reference = tool.Ifc.run("document.add_reference", information=sheet)
+                tool.Ifc.run(
+                    "document.edit_reference",
+                    reference=reference,
+                    attributes=tool.Drawing.generate_reference_attributes(
+                        reference, Location=tool.Ifc.get_relative_uri(raster_reference), Description="RASTER"
+                    ),
+                )
+
+            if svg2pdf_command:
+                # With great power comes great responsibility. Example:
+                # [["inkscape", "svg", "-o", "pdf"]]
+                commands = json.loads(svg2pdf_command)
+                for command in commands:
+                    subprocess.run([replacements.get(c, c) for c in command])
+
+            if svg2dxf_command:
+                # With great power comes great responsibility. Example:
+                # [["inkscape", "svg", "-o", "eps"], ["pstoedit", "-dt", "-f", "dxf:-polyaslines -mm", "eps", "dxf", "-psarg", "-dNOSAFER"]]
+                commands = json.loads(svg2dxf_command)
+                for command in commands:
+                    command[0] = shutil.which(command[0]) or command[0]
+                    subprocess.run([replacements.get(c, c) for c in command])
 
 
 class SelectAllDrawings(bpy.types.Operator):
