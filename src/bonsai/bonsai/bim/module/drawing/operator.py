@@ -1486,6 +1486,76 @@ class SelectAllSheets(bpy.types.Operator):
                 sheet.is_selected = self.select_all
         return {"FINISHED"}
 
+class OpenSheet(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.open_sheet"
+    bl_label = "Open Sheet"
+    bl_description = (
+        "Opens selected sheet with default system viewer\n"
+        + 'or using "svg_command" or "pdf_command" from\n'
+        + 'the Bonsai preferences (if provided).\n\n'
+        + "SHIFT+CLICK to open all shown checked sheets"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+    open_all: bpy.props.BoolProperty(name="Open All", default=False, options={"SKIP_SAVE"})
+
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.DocProperties
+        active_sheet = props.sheets[props.active_sheet_index]
+        if not active_sheet.is_sheet:
+            cls.poll_message_set("No sheet selected.")
+            return False
+        return True
+
+    def invoke(self, context, event):
+        # opening all sheets on shift+click
+        # make sure to use SKIP_SAVE on property, otherwise it might get stuck
+        if event.type == "LEFTMOUSE" and event.shift:
+            self.open_all = True
+        return self.execute(context)
+
+    def execute(self, context):
+        self.props = context.scene.DocProperties
+        svg2pdf_command = tool.Blender.get_addon_preferences().svg2pdf_command
+        
+        if self.open_all:
+            sheets = [
+                tool.Ifc.get().by_id(s.ifc_definition_id)
+                for s in self.props.sheets
+                if s.is_sheet and s.is_selected
+            ]
+        else:
+            sheets = [tool.Ifc.get().by_id(self.props.sheets[self.props.active_sheet_index].ifc_definition_id)]
+
+        sheet_uris = []
+        sheets_not_found = []
+
+        for sheet in sheets:
+            if not sheet.is_a("IfcDocumentInformation"):
+                continue
+            sheet_builder = sheeter.SheetBuilder()
+            references = sheet_builder.build(sheet)
+            sheet_uri = references["SHEET"]
+            if svg2pdf_command:
+                sheet_uri = os.path.splitext(sheet_uri)[0] + ".pdf"
+            sheet_uris.append(sheet_uri)
+            if not os.path.exists(sheet_uri):
+                sheets_not_found.append(sheet.Name)
+
+        if sheets_not_found:
+            msg = "Some sheets .svg/.pdf files were not found, need to create them first: \n{}.".format(
+                "\n".join(sheets_not_found)
+            )
+            self.report({"ERROR"}, msg)
+            return {"CANCELLED"}
+
+        for sheet_uri in sheet_uris:
+            if svg2pdf_command:
+                tool.Drawing.open_with_user_command(tool.Blender.get_addon_preferences().pdf_command, sheet_uri)
+            else:
+                tool.Drawing.open_with_user_command(tool.Blender.get_addon_preferences().svg_command, sheet_uri)
+        return {"FINISHED"}
+
 class AddDrawingToSheet(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_drawing_to_sheet"
     bl_label = "Add Drawing To Sheet"
