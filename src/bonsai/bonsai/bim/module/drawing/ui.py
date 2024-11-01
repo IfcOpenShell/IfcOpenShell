@@ -640,6 +640,9 @@ class BIM_UL_sheets(bpy.types.UIList):
                     item.ifc_definition_id
                 )
 
+            selected_icon = "CHECKBOX_HLT" if item.is_selected else "CHECKBOX_DEHLT"
+            row.prop(item, "is_selected", text="", icon=selected_icon, emboss=False)
+            
             row.label(text=f"{item.identification} - {item.name}")
         else:
             row.label(text="", icon="BLANK1")

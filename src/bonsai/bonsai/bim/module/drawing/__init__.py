@@ -86,6 +86,7 @@ classes = (
     operator.SaveDrawingStyle,
     operator.SaveDrawingStylesData,
     operator.SelectAllDrawings,
+    operator.SelectAllSheets,
     operator.SelectAssignedProduct,
     operator.SelectDocIfcFile,
     operator.OpenDocumentationWebUi,

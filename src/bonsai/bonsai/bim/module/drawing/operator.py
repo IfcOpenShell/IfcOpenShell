@@ -1468,6 +1468,26 @@ class OpenLayout(bpy.types.Operator, tool.Ifc.Operator):
         core.open_layout(tool.Drawing, sheet=sheet)
 
 
+class SelectAllSheets(bpy.types.Operator):
+    bl_idname = "bim.select_all_sheets"
+    bl_label = "Select All Sheetss"
+    view: bpy.props.StringProperty()
+    bl_description = "Select all sheets in the sheet list.\n\n" + "SHIFT+CLICK to deselect all sheets"
+    select_all: bpy.props.BoolProperty(name="Open All", default=True, options={"SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        # deselect all sheets on shift+click
+        # make sure to use SKIP_SAVE on property, otherwise it might get stuck
+        if event.type == "LEFTMOUSE" and event.shift:
+            self.select_all = False
+        return self.execute(context)
+
+    def execute(self, context):
+        for sheet in context.scene.DocProperties.sheets:
+            if sheet.is_selected != self.select_all:
+                sheet.is_selected = self.select_all
+        return {"FINISHED"}
+
 class AddDrawingToSheet(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_drawing_to_sheet"
     bl_label = "Add Drawing To Sheet"
