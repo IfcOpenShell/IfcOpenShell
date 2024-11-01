@@ -154,6 +154,7 @@ class AddDrawing(bpy.types.Operator, tool.Ifc.Operator):
 class DuplicateDrawing(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.duplicate_drawing"
     bl_label = "Duplicate Drawing"
+    bl_description = "Make a copy of currently selected drawing"
     bl_options = {"REGISTER", "UNDO"}
     drawing: bpy.props.IntProperty()
     should_duplicate_annotations: bpy.props.BoolProperty(name="Should Duplicate Annotations", default=False)
@@ -201,7 +202,7 @@ class CreateDrawing(bpy.types.Operator):
     bl_label = "Create Drawing"
     bl_description = (
         "Creates/refreshes a .svg drawing based on currently active camera.\n\n"
-        + "SHIFT+CLICK to print all selected drawings"
+        + "SHIFT+CLICK to create/refresh all shown checked drawings"
     )
     print_all: bpy.props.BoolProperty(name="Print All", default=False, options={"SKIP_SAVE"})
     sync: bpy.props.BoolProperty(
@@ -1447,6 +1448,11 @@ class AddSheet(bpy.types.Operator, tool.Ifc.Operator):
 class OpenLayout(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.open_layout"
     bl_label = "Open Sheet Layout"
+    bl_description = (
+        "Opens selected .svg layout with default system viewer\n"
+        + 'or using "layout_svg_command" from the Bonsai preferences\n'
+        + '(if provided)'
+    )
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -1558,7 +1564,8 @@ class OpenSheet(bpy.types.Operator, tool.Ifc.Operator):
 
 class AddDrawingToSheet(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_drawing_to_sheet"
-    bl_label = "Add Drawing To Sheet"
+    bl_label = "Add Selected Drawing To Sheet"
+    bl_description = "Add the drawing selected in the\nDrawings list below to the sheet"
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -1619,6 +1626,7 @@ class AddDrawingToSheet(bpy.types.Operator, tool.Ifc.Operator):
 class RemoveDrawingFromSheet(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_drawing_from_sheet"
     bl_label = "Remove Drawing From Sheet"
+    bl_description = "Remove currently selected drawing from sheet"
     bl_options = {"REGISTER", "UNDO"}
     reference: bpy.props.IntProperty()
 
@@ -1648,7 +1656,12 @@ class RemoveDrawingFromSheet(bpy.types.Operator, tool.Ifc.Operator):
 class CreateSheets(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.create_sheets"
     bl_label = "Create Sheets"
-    bl_description = "Build a sheet from the sheet layout"
+    bl_description = (
+        "Build selected sheet from the sheet layout and\n"
+        + 'optionally create .pdf and .dxf from commands in\n'
+        + 'the Bonsai preferences (if provided).\n\n'
+        + "SHIFT+CLICK to create all shown checked sheets"
+    )
     bl_options = {"REGISTER", "UNDO"}
 
     create_all: bpy.props.BoolProperty(name="Create All", default=False, options={"SKIP_SAVE"})
@@ -1784,9 +1797,9 @@ class OpenDrawing(bpy.types.Operator):
     bl_label = "Open Drawing"
     view: bpy.props.StringProperty()
     bl_description = (
-        "Opens a .svg drawing based on currently active camera with default system viewer\n"
+        "Opens selected .svg drawing with default system viewer\n"
         + 'or using "svg_command" from the Bonsai preferences (if provided).\n\n'
-        + "SHIFT+CLICK to open all selected drawings"
+        + "SHIFT+CLICK to open all shown checked drawings"
     )
     open_all: bpy.props.BoolProperty(name="Open All", default=False, options={"SKIP_SAVE"})
 
@@ -1828,7 +1841,7 @@ class OpenDrawing(bpy.types.Operator):
                 drawings_not_found.append(drawing.Name)
 
         if drawings_not_found:
-            msg = "Some drawings .svg files were not found, need to print them first: \n{}.".format(
+            msg = "Some drawings .svg files were not found, need to create them first: \n{}.".format(
                 "\n".join(drawings_not_found)
             )
             self.report({"ERROR"}, msg)
@@ -2350,6 +2363,7 @@ class RemoveSheet(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_sheet"
     bl_label = "Remove Sheet"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Remove currently selected sheet"
     sheet: bpy.props.IntProperty()
 
     def _execute(self, context):
@@ -2418,6 +2432,7 @@ class BuildSchedule(bpy.types.Operator, tool.Ifc.Operator):
 class AddScheduleToSheet(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_schedule_to_sheet"
     bl_label = "Add Schedule To Sheet"
+    bl_description = "Add the schedule selected in the\nSchedules list below to the sheet"
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -2477,6 +2492,7 @@ class AddScheduleToSheet(bpy.types.Operator, tool.Ifc.Operator):
 class AddReferenceToSheet(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_reference_to_sheet"
     bl_label = "Add Reference To Sheet"
+    bl_description = "Add the reference selected in the\nReferences list below to the sheet"
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -2884,7 +2900,8 @@ class LoadSheets(bpy.types.Operator, tool.Ifc.Operator):
 
 class EditSheet(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_sheet"
-    bl_label = "Edit Sheet"
+    bl_label = "Edit Sheet / Drawing"
+    bl_description = "Edit details of sheet or drawing"
     bl_options = {"REGISTER", "UNDO"}
     identification: bpy.props.StringProperty()
     name: bpy.props.StringProperty()
@@ -3233,7 +3250,7 @@ class ConvertSVGToDXF(bpy.types.Operator):
     bl_label = "Convert SVG to DXF"
     bl_options = {"REGISTER", "UNDO"}
     view: bpy.props.StringProperty()
-    bl_description = "Convert current drawing's .svg to .dxf.\n\nSHIFT+CLICK to convert all selected drawings"
+    bl_description = "Convert selected drawing's .svg to .dxf.\n\nSHIFT+CLICK to convert all shown checked drawings"
     convert_all: bpy.props.BoolProperty(name="Convert All", default=False, options={"SKIP_SAVE"})
 
     @classmethod
