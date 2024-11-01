@@ -316,6 +316,8 @@ class BIM_MT_add_representation_item(Menu):
 
 
 class CreateObjectUI:
+    layout: bpy.types.UILayout
+
     @classmethod
     def draw(cls, context, layout, ifc_element_type=None):
         cls.layout = layout
