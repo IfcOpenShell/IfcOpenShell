@@ -68,6 +68,7 @@ classes = (
     operator.LoadSchedules,
     operator.LoadSheets,
     operator.OpenDrawing,
+    operator.OpenLayout,
     operator.OpenReference,
     operator.OpenSchedule,
     operator.OpenSheet,
