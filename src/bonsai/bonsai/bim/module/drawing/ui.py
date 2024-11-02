@@ -251,7 +251,7 @@ class BIM_PT_drawings(Panel):
                 row2 = col.row(align=True)
                 row2.operator("bim.remove_drawing", icon="X", text="").drawing = active_drawing.ifc_definition_id
 
-                row2.operator("bim.duplicate_drawing", icon="COPYDOWN", text="").drawing = (
+                row2.operator("bim.duplicate_drawing", icon="DUPLICATE", text="").drawing = (
                     active_drawing.ifc_definition_id
                 )
 
@@ -259,14 +259,14 @@ class BIM_PT_drawings(Panel):
                 col.alignment = "RIGHT"
 
                 convert_to_dxf = row.row(align=True)
-                op = convert_to_dxf.operator("bim.convert_svg_to_dxf", text="", icon="IMAGE_DATA")
+                op = convert_to_dxf.operator("bim.convert_svg_to_dxf", text="", icon="SEQ_PREVIEW")
                 op.view = active_drawing.name
                 convert_to_dxf.enabled = active_drawing.ifc_definition_id > 0
 
-                op = row.operator("bim.select_all_drawings", icon="SELECT_SUBTRACT", text="")
+                op = row.operator("bim.select_all_drawings", icon="CHECKBOX_HLT", text="")
 
                 open_drawing_button = row.row(align=True)
-                op = open_drawing_button.operator("bim.open_drawing", icon="URL", text="")
+                op = open_drawing_button.operator("bim.open_drawing", icon="HIDE_OFF", text="")
                 op.view = active_drawing.name
                 open_drawing_button.enabled = active_drawing.ifc_definition_id > 0
 
@@ -319,7 +319,7 @@ class BIM_PT_schedules(Panel):
 
         if not self.props.is_editing_schedules:
             row = self.layout.row(align=True)
-            row.label(text=f"{DocumentsData.data['total_schedules']} Schedules Found", icon="LONGDISPLAY")
+            row.label(text=f"{DocumentsData.data['total_schedules']} Schedules Found", icon="PRESET")
             row.operator("bim.load_schedules", text="", icon="IMPORT")
             return
 
@@ -369,7 +369,7 @@ class BIM_PT_references(Panel):
 
         if not self.props.is_editing_references:
             row = self.layout.row(align=True)
-            row.label(text=f"{DocumentsData.data['total_references']} References Found", icon="OBJECT_HIDDEN")
+            row.label(text=f"{DocumentsData.data['total_references']} References Found", icon="IMAGE_REFERENCE")
             row.operator("bim.load_references", text="", icon="IMPORT")
             return
 
@@ -446,11 +446,11 @@ class BIM_PT_sheets(Panel):
                     print(f"No matching drawing ID found for {drawingname}")
 
             row.operator("bim.edit_sheet", icon="GREASEPENCIL", text="")
-            row.operator("bim.open_sheet", icon="URL", text="")
+            row.operator("bim.open_sheet", icon="CURRENT_FILE", text="")
             row.operator("bim.add_drawing_to_sheet", icon="IMAGE_PLANE", text="")
             row.operator("bim.add_schedule_to_sheet", icon="PRESET_NEW", text="")
             row.operator("bim.add_reference_to_sheet", icon="IMAGE_REFERENCE", text="")
-            row.operator("bim.create_sheets", icon="FILE_REFRESH", text="")
+            row.operator("bim.create_sheets", icon="OUTPUT", text="")
             if active_sheet.is_sheet:
                 row.operator("bim.remove_sheet", icon="X", text="").sheet = active_sheet.ifc_definition_id
             else:
@@ -649,7 +649,7 @@ class BIM_UL_sheets(bpy.types.UIList):
             if item.reference_type == "DRAWING":
                 row.label(text="", icon="IMAGE_DATA")
             elif item.reference_type == "SCHEDULE":
-                row.label(text="", icon="LONGDISPLAY")
+                row.label(text="", icon="PRESET")
             elif item.reference_type == "TITLEBLOCK":
                 row.label(text="", icon="MENU_PANEL")
             elif item.reference_type == "REVISION":
