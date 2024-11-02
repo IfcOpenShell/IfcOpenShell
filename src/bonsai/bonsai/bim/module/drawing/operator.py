@@ -1446,6 +1446,44 @@ class AddSheet(bpy.types.Operator, tool.Ifc.Operator):
         core.add_sheet(tool.Ifc, tool.Drawing, titleblock=context.scene.DocProperties.titleblock)
 
 
+class DuplicateSheet(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.duplicate_sheet"
+    bl_label = "Duplicate Sheet"
+    bl_description = "Make a copy of currently selected sheet"
+    bl_options = {"REGISTER", "UNDO"}
+    drawing: bpy.props.IntProperty()
+
+    @classmethod
+    def poll(cls, context):
+        # Unconditionally disable until implemented
+        cls.poll_message_set("Not implemented yet.")
+        return False
+
+        props = context.scene.DocProperties
+        active_drawing = props.drawings[props.active_drawing_index]
+        is_drawing_selected = active_drawing.ifc_definition_id > 0
+        if not is_drawing_selected:
+            cls.poll_message_set("No drawing selected.")
+            return False
+        return True
+
+    def _execute(self, context):
+        pass
+        '''
+        self.props = context.scene.DocProperties
+        core.duplicate_sheet(
+            tool.Ifc,
+            tool.Drawing,
+            sheet=tool.Ifc.get().by_id(self.sheet),
+        )
+        try:
+            sheet = tool.Ifc.get().by_id(self.props.active_sheet_id)
+            core.sync_references(tool.Ifc, tool.Collector, tool.Sheet, drawing=sheet)
+        except:
+            pass
+        '''
+
+
 class OpenLayout(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.open_layout"
     bl_label = "Open Sheet Layout"

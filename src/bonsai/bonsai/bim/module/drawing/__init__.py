@@ -53,6 +53,7 @@ classes = (
     operator.DisableEditingSheets,
     operator.DisableEditingText,
     operator.DuplicateDrawing,
+    operator.DuplicateSheet,
     operator.EditAssignedProduct,
     operator.EditElementFilter,
     operator.EditSheet,
