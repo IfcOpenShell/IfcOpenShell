@@ -246,43 +246,27 @@ class BIM_PT_drawings(Panel):
             if self.props.active_drawing_index < len(self.props.drawings):
                 active_drawing = self.props.drawings[self.props.active_drawing_index]
                 row = self.layout.row(align=True)
-                col = row.column()
-                col.alignment = "LEFT"
-                row2 = col.row(align=True)
+                row2 = row.row(align=True)
                 row2.operator("bim.remove_drawing", icon="X", text="").drawing = active_drawing.ifc_definition_id
+
+                row2.separator(factor=0.5, type="SPACE")
 
                 row2.operator("bim.duplicate_drawing", icon="DUPLICATE", text="").drawing = (
                     active_drawing.ifc_definition_id
                 )
 
-                col = row.column()
-                col.alignment = "RIGHT"
+                row3 = row.row(align=True)
+                row3.alignment = "RIGHT"
 
-                convert_to_dxf = row.row(align=True)
-                op = convert_to_dxf.operator("bim.convert_svg_to_dxf", text="", icon="SEQ_PREVIEW")
-                op.view = active_drawing.name
-                convert_to_dxf.enabled = active_drawing.ifc_definition_id > 0
+                row3.operator("bim.activate_drawing", icon="OUTLINER_OB_CAMERA", text="").drawing = active_drawing.ifc_definition_id
+                row3.operator("bim.activate_model", icon="VIEW3D", text="")
 
-                op = row.operator("bim.select_all_drawings", icon="CHECKBOX_HLT", text="")
+                row3.separator(factor=0.5, type="SPACE")
 
-                open_drawing_button = row.row(align=True)
-                op = open_drawing_button.operator("bim.open_drawing", icon="HIDE_OFF", text="")
-                op.view = active_drawing.name
-                open_drawing_button.enabled = active_drawing.ifc_definition_id > 0
-
-                row.operator("bim.activate_model", icon="VIEW3D", text="")
-
-                drawing_button = row.row(align=True)
-                op = drawing_button.operator("bim.activate_drawing", icon="OUTLINER_OB_CAMERA", text="")
-                op.drawing = active_drawing.ifc_definition_id
-                drawing_button.enabled = active_drawing.ifc_definition_id > 0
-
-                create_drawing_button = row.row(align=True)
-                create_drawing_button.operator("bim.create_drawing", text="", icon="OUTPUT")
-                create_drawing_button.enabled = active_drawing.ifc_definition_id > 0
-
-                # might need a different icon since the URL icon is already used by the open_drawing
-                row.operator("bim.open_documentation_web_ui", icon="URL", text="")
+                row3.operator("bim.select_all_drawings", icon="CHECKBOX_HLT", text="")
+                row3.operator("bim.create_drawing", text="", icon="OUTPUT")
+                row3.operator("bim.convert_svg_to_dxf", text="", icon="SEQ_PREVIEW").view = active_drawing.name
+                row3.operator("bim.open_drawing", icon="HIDE_OFF", text="").view = active_drawing.name
             self.layout.template_list(
                 "BIM_UL_drawinglist", "", self.props, "drawings", self.props, "active_drawing_index"
             )
@@ -423,8 +407,24 @@ class BIM_PT_sheets(Panel):
         if self.props.sheets and self.props.active_sheet_index < len(self.props.sheets):
             active_sheet = self.props.sheets[self.props.active_sheet_index]
             row = self.layout.row(align=True)
-            row.alignment = "RIGHT"
+            row2 = row.row(align=True)
+            if active_sheet.is_sheet:
+                row2.operator("bim.remove_sheet", icon="X", text="").sheet = active_sheet.ifc_definition_id
+            else:
+                row2.operator("bim.remove_drawing_from_sheet", icon="X", text="").reference = active_sheet.ifc_definition_id
 
+            row2.separator(factor=0.5, type="SPACE")
+
+            row2.operator("bim.duplicate_sheet", icon="DUPLICATE", text="").drawing = (
+                active_sheet.ifc_definition_id
+            )
+            row2.operator("bim.open_documentation_web_ui", icon="URL", text="")
+
+            row3 = row.row(align=True)
+            row3.alignment = "RIGHT"
+
+            op = row3.operator("bim.activate_drawing_from_sheet", icon="OUTLINER_OB_CAMERA", text="")
+            
             if active_sheet.reference_type == "DRAWING":
                 drawingnamesvg = active_sheet.name
                 drawingname = drawingnamesvg.split(".svg")[0]
@@ -439,23 +439,21 @@ class BIM_PT_sheets(Panel):
                         break
 
                 if drawingid is not None:
-                    drawing_button = row.row(align=True)
-                    op = drawing_button.operator("bim.activate_drawing", icon="OUTLINER_OB_CAMERA", text="")
                     op.drawing = drawingid
-                else:
-                    print(f"No matching drawing ID found for {drawingname}")
 
-            row.operator("bim.edit_sheet", icon="GREASEPENCIL", text="")
-            row.operator("bim.open_sheet", icon="CURRENT_FILE", text="")
-            row.operator("bim.add_drawing_to_sheet", icon="IMAGE_PLANE", text="")
-            row.operator("bim.add_schedule_to_sheet", icon="PRESET_NEW", text="")
-            row.operator("bim.add_reference_to_sheet", icon="IMAGE_REFERENCE", text="")
-            row.operator("bim.create_sheets", icon="OUTPUT", text="")
-            if active_sheet.is_sheet:
-                row.operator("bim.remove_sheet", icon="X", text="").sheet = active_sheet.ifc_definition_id
-            else:
-                op = row.operator("bim.remove_drawing_from_sheet", icon="X", text="")
-                op.reference = active_sheet.ifc_definition_id
+            row3.separator(factor=0.5, type="SPACE")
+
+            row3.operator("bim.edit_sheet", icon="GREASEPENCIL", text="")
+            row3.operator("bim.add_drawing_to_sheet", icon="IMAGE_PLANE", text="")
+            row3.operator("bim.add_schedule_to_sheet", icon="PRESET_NEW", text="")
+            row3.operator("bim.add_reference_to_sheet", icon="IMAGE_REFERENCE", text="")
+            row3.operator("bim.open_layout", icon="CURRENT_FILE", text="")
+
+            row3.separator(factor=0.5, type="SPACE")
+
+            row3.operator("bim.select_all_sheets", icon="CHECKBOX_HLT", text="")
+            row3.operator("bim.create_sheets", icon="OUTPUT", text="")
+            row3.operator("bim.open_sheet", icon="HIDE_OFF", text="")
 
         self.layout.template_list("BIM_UL_sheets", "", self.props, "sheets", self.props, "active_sheet_index")
 
