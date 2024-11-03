@@ -397,7 +397,15 @@ class SheetBuilder:
                 data.update({"Sheet" + k: v for k, v in sheet.get_info().items()})
                 if not data["Name"]:
                     data["Name"] = ntpath.basename(foreground_path)[0:-4]
-                data["Scale"] = tool.Drawing.get_drawing_human_scale(drawing)
+                
+                #If a perspective drawing, don't add scale to view title
+                try:
+                    is_perspective = drawing.Representation.Representations[0].Items[0].TreeRootExpression.FirstOperand.is_a("IfcRectangularPyramid")
+                except AttributeError:
+                    is_perspective = False
+                
+                if not is_perspective:
+                    data["Scale"] = tool.Drawing.get_drawing_human_scale(drawing)
                 view.append(self.parse_embedded_svg(view_title, data))
 
             for image in images:
