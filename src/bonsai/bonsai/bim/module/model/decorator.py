@@ -916,6 +916,7 @@ class ProductDecorator:
         obj_type = tool.Ifc.get_object(relating_type)
         if obj_type.data:
             data = ItemDecorator.get_obj_data(obj_type)
+            data["verts"] = [tuple(obj_type.matrix_world.inverted() @ Vector(v)) for v in data["verts"]]
             data["verts"] = [tuple(rot_mat @ (Vector((v[0], v[1], (v[2] + rl)))) + mouse_point) for v in data["verts"]]
             return data
 
