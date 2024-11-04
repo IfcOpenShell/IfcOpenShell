@@ -178,7 +178,9 @@ class AddOccurrence(bpy.types.Operator, PolylineOperator):
         self.handle_snap_selection(context, event)
 
         if not self.tool_state.is_input_on and event.value == "RELEASE" and event.type in {"RIGHTMOUSE"}:
+            self.tool_state.axis_method = None
             context.workspace.status_text_set(text=None)
+            ProductDecorator.uninstall()
             PolylineDecorator.uninstall()
             tool.Polyline.clear_polyline()
             tool.Blender.update_viewport()
