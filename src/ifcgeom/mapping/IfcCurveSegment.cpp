@@ -382,7 +382,7 @@ class curve_segment_evaluator {
 
             if (!slope.has_value()) {
                 slope = [cosine_term, L](double t) -> double {
-                    auto a1 = -(PI / L) * (L / cosine_term) * sin(PI * t / L);
+                    auto a1 = -(PI / cosine_term) * sin(PI * t / L);
                     return a1;
                 };
             }
@@ -439,7 +439,7 @@ class curve_segment_evaluator {
             if (!slope.has_value()) {
                 slope = [linear_term, sine_term, L](double t) -> double {
                     auto a1 = linear_term.has_value() ? sign(linear_term.value()) * pow(L / linear_term.value(), 2.0) * (1.0 / L) : 0.0;
-                    auto a2 = (2 * PI / L) * (L / sine_term) * cos(2 * PI * t / L);
+                    auto a2 = (2 * PI / sine_term) * cos(2 * PI * t / L);
                     return a1 + a2;
                 };
             }
