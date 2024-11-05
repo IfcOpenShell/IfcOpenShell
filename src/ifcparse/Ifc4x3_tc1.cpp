@@ -24,10 +24,10 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "../ifcparse/Ifc4x3_tc1.h"
-#include "../ifcparse/IfcSchema.h"
-#include "../ifcparse/IfcException.h"
-#include "../ifcparse/IfcFile.h"
+#include "Ifc4x3_tc1.h"
+#include "IfcSchema.h"
+#include "IfcException.h"
+#include "IfcFile.h"
 
 #include <map>
 

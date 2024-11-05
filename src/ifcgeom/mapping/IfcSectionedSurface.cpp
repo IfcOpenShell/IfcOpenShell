@@ -21,8 +21,8 @@
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geometry;
 
-#include "../../ifcgeom/profile_helper.h"
-#include "../../ifcgeom/infra_sweep_helper.h"
+#include "../profile_helper.h"
+#include "../infra_sweep_helper.h"
 
 #ifdef SCHEMA_HAS_IfcSectionedSurface
 

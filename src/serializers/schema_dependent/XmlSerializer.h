@@ -22,7 +22,7 @@
 
 #include "../../ifcgeom/abstract_mapping.h"
 #include "../../ifcparse/macros.h"
-#include "../../serializers/XmlSerializer.h"
+#include "../XmlSerializer.h"
 
 #define INCLUDE_PARENT_PARENT_DIR(x) STRINGIFY(../../ifcparse/x.h)
 #include INCLUDE_PARENT_PARENT_DIR(IfcSchema)

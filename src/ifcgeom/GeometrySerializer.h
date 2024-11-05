@@ -20,8 +20,8 @@
 #ifndef GEOMETRYSERIALIZER_H
 #define GEOMETRYSERIALIZER_H
 
-#include "../ifcgeom/Serializer.h"
-#include "../ifcgeom/IfcGeomElement.h"
+#include "Serializer.h"
+#include "IfcGeomElement.h"
 #include <fstream>
 
 namespace ifcopenshell {

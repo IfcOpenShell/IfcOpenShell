@@ -2,12 +2,12 @@
 #define ITERATOR_KERNEL_H
 
 #include "../ifcparse/IfcFile.h"
-#include "../ifcgeom/ConversionSettings.h"
-#include "../ifcgeom/ConversionResult.h"
-#include "../ifcgeom/abstract_mapping.h"
-#include "../ifcgeom/ConversionSettings.h"
-#include "../ifcgeom/AbstractKernel.h"
-#include "../ifcgeom/IfcGeomElement.h"
+#include "ConversionSettings.h"
+#include "ConversionResult.h"
+#include "abstract_mapping.h"
+#include "ConversionSettings.h"
+#include "AbstractKernel.h"
+#include "IfcGeomElement.h"
 
 #include <boost/function.hpp>
 

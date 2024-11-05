@@ -28,9 +28,9 @@
 #define BOOST_REGEX_NO_W32
 #endif
 
-#include "../ifcgeom/AbstractKernel.h"
+#include "AbstractKernel.h"
 #include "../ifcparse/IfcFile.h"
-#include "../ifcgeom/abstract_mapping.h"
+#include "abstract_mapping.h"
 
 #include <boost/foreach.hpp>
 #include <boost/function.hpp>

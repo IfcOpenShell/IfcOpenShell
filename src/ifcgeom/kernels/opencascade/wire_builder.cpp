@@ -1,7 +1,7 @@
 #include "wire_builder.h"
 
 #include "../../../ifcparse/IfcLogger.h"
-#include "../../../ifcgeom/ConversionSettings.h"
+#include "../../ConversionSettings.h"
 
 #include <TopExp.hxx>
 #include <TopoDS.hxx>

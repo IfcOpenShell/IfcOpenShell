@@ -11,7 +11,7 @@
 #include "OpenCascadeConversionResult.h"
 
 #include "../../../ifcparse/IfcLogger.h"
-#include "../../../ifcgeom/IfcGeomRepresentation.h"
+#include "../../IfcGeomRepresentation.h"
 #include "base_utils.h"
 #include "boolean_utils.h"
 

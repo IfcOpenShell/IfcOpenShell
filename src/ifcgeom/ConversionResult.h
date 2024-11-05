@@ -20,9 +20,9 @@
 #ifndef CONVERSIONRESULT_H
 #define CONVERSIONRESULT_H
 
-#include "../ifcgeom/IfcGeomRenderStyles.h"
-#include "../ifcgeom/ConversionSettings.h"
-#include "../ifcgeom/taxonomy.h"
+#include "IfcGeomRenderStyles.h"
+#include "ConversionSettings.h"
+#include "taxonomy.h"
 
 #include <memory>
 #include <vector>

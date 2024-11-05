@@ -24,8 +24,8 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "../ifcparse/IfcSchema.h"
-#include "../ifcparse/Ifc4x3_add1.h"
+#include "IfcSchema.h"
+#include "Ifc4x3_add1.h"
 #include <string>
 
 using namespace std::string_literals;

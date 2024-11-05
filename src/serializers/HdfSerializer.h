@@ -28,7 +28,7 @@
 
 #include "H5Cpp.h"
 
-#include "../serializers/serializers_api.h"
+#include "serializers_api.h"
 #include "../ifcgeom/GeometrySerializer.h"
 
 #define USE_BINARY

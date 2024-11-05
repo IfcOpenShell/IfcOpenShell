@@ -43,7 +43,7 @@
 
 #include "../ifcgeom/Iterator.h"
 
-#include "../serializers/serializers_api.h"
+#include "serializers_api.h"
 #include "../ifcgeom/GeometrySerializer.h"
 
 #include <boost/numeric/ublas/matrix.hpp>

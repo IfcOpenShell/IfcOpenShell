@@ -22,7 +22,7 @@
 
 #ifdef WITH_GLTF
 
-#include "../serializers/serializers_api.h"
+#include "serializers_api.h"
 #include "../ifcgeom/GeometrySerializer.h"
 
 #include <nlohmann/json.hpp>

@@ -20,11 +20,11 @@
 #ifndef CGALCONVERSIONRESULT_H
 #define CGALCONVERSIONRESULT_H
 
-#include "../../../ifcgeom/IfcGeomElement.h"
+#include "../../IfcGeomElement.h"
 
 #undef Handle
 
-#include "../../../ifcgeom/kernels/cgal/nef_to_halfspace_tree.h"
+#include "../../kernels/cgal/nef_to_halfspace_tree.h"
 
 #define CGAL_NO_DEPRECATED_CODE
 
@@ -84,7 +84,7 @@ typedef CGAL::Polyhedron_3<Kernel_> cgal_shape_t;
 typedef boost::graph_traits<CGAL::Polyhedron_3<Kernel_>>::vertex_descriptor cgal_vertex_descriptor_t;
 typedef boost::graph_traits<CGAL::Polyhedron_3<Kernel_>>::face_descriptor cgal_face_descriptor_t;
 
-#include "../../../ifcgeom/ConversionResult.h"
+#include "../../ConversionResult.h"
 
 namespace ifcopenshell { namespace geometry {
 

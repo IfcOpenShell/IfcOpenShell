@@ -43,18 +43,18 @@
 #include <BRep_Builder.hxx>
 #include <BRepBuilderAPI_MakeEdge.hxx>
 
-#include "../../../ifcgeom/AbstractKernel.h" 
+#include "../../AbstractKernel.h" 
 
-#include "../../../ifcgeom/IfcGeomElement.h" 
-#include "../../../ifcgeom/IfcGeomRepresentation.h" 
-#include "../../../ifcgeom/ConversionResult.h"
+#include "../../IfcGeomElement.h" 
+#include "../../IfcGeomRepresentation.h" 
+#include "../../ConversionResult.h"
 
-#include "../../../ifcgeom/kernels/opencascade/OpenCascadeConversionResult.h"
+#include "../../kernels/opencascade/OpenCascadeConversionResult.h"
 
-#include "../../../ifcgeom/ifc_geom_api.h"
+#include "../../ifc_geom_api.h"
 
-#include "../../../ifcgeom/taxonomy.h"
-#include "../../../ifcgeom/ConversionSettings.h"
+#include "../../taxonomy.h"
+#include "../../ConversionSettings.h"
 
 namespace IfcGeom {
 

@@ -34,7 +34,7 @@
 #include <BRepAdaptor_Curve.hxx>
 #include <GCPnts_QuasiUniformDeflection.hxx>
 
-#include "../../../ifcgeom/ConversionResult.h"
+#include "../../ConversionResult.h"
 
 namespace ifcopenshell {
 	namespace geometry {

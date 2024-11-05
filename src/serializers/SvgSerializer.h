@@ -26,8 +26,8 @@
 
 #include "../ifcgeom/GeometrySerializer.h"
 #include "../ifcgeom/kernels/opencascade/base_utils.h"
-#include "../serializers/serializers_api.h"
-#include "../serializers/util.h"
+#include "serializers_api.h"
+#include "util.h"
 
 #include "../ifcparse/utils.h"
 

@@ -1,7 +1,7 @@
 #ifndef BASE_UTILS_H
 #define BASE_UTILS_H
 
-#include "../../../ifcgeom/ConversionResult.h"
+#include "../../ConversionResult.h"
 
 #include <gp_Pln.hxx>
 #include <gp_Pnt.hxx>

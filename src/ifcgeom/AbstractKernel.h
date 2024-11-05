@@ -3,10 +3,10 @@
 
 #include "../ifcparse/macros.h"
 #include "../ifcparse/IfcLogger.h"
-#include "../ifcgeom/ifc_geom_api.h"
-#include "../ifcgeom/IfcGeomRepresentation.h"
-#include "../ifcgeom/taxonomy.h"
-#include "../ifcgeom/ConversionSettings.h"
+#include "ifc_geom_api.h"
+#include "IfcGeomRepresentation.h"
+#include "taxonomy.h"
+#include "ConversionSettings.h"
 
 static const double ALMOST_ZERO = 1.e-9;
 

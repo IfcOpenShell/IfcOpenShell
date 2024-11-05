@@ -1,21 +1,21 @@
 #include "AbstractKernel.h"
 
-#include "../ifcgeom/IfcGeomElement.h"
-#include "../ifcgeom/ConversionSettings.h"
-#include "../ifcgeom/abstract_mapping.h"
-#include "../ifcgeom/piecewise_function_evaluator.h"
+#include "IfcGeomElement.h"
+#include "ConversionSettings.h"
+#include "abstract_mapping.h"
+#include "piecewise_function_evaluator.h"
 
 #ifdef IFOPSH_WITH_OPENCASCADE
-#include "../ifcgeom/kernels/opencascade/OpenCascadeKernel.h"
+#include "kernels/opencascade/OpenCascadeKernel.h"
 #undef Handle
 #endif
 
 #ifdef IFOPSH_WITH_CGAL
-#include "../ifcgeom/kernels/cgal/CgalKernel.h"
+#include "kernels/cgal/CgalKernel.h"
 #undef CGAL_KERNEL_H
 #undef CGALCONVERSIONRESULT_H
 #define IFOPSH_SIMPLE_KERNEL
-#include "../ifcgeom/kernels/cgal/CgalKernel.h"
+#include "kernels/cgal/CgalKernel.h"
 #undef CgalKernel
 #endif
 

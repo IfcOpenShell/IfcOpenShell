@@ -22,7 +22,7 @@
 #ifndef OPENCASCADEBASEDSERIALIZER_H
 #define OPENCASCADEBASEDSERIALIZER_H
 
-#include "../serializers/serializers_api.h"
+#include "serializers_api.h"
 #include "../ifcgeom/Iterator.h"
 
 #include "../ifcgeom/GeometrySerializer.h"

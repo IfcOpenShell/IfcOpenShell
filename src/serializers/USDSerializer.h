@@ -25,7 +25,7 @@
 #define __TBB_NO_IMPLICIT_LINKAGE 1
 #define __TBB_LIB_NAME bier
 
-#include "../serializers/serializers_api.h"
+#include "serializers_api.h"
 #include "../ifcgeom/GeometrySerializer.h"
 #include "../ifcparse/utils.h"
 

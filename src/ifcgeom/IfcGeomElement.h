@@ -27,9 +27,9 @@
 #include "../ifcparse/IfcGlobalId.h"
 #include "../ifcparse/IfcLogger.h"
 
-#include "../ifcgeom/IfcGeomRepresentation.h"
-#include "../ifcgeom/IteratorSettings.h"
-#include "../ifcgeom/ifc_geom_api.h"
+#include "IfcGeomRepresentation.h"
+#include "IteratorSettings.h"
+#include "ifc_geom_api.h"
 
 namespace IfcGeom {
 

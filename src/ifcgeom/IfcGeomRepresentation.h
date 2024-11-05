@@ -20,8 +20,8 @@
 #ifndef IFCGEOMREPRESENTATION_H
 #define IFCGEOMREPRESENTATION_H
 
-#include "../ifcgeom/ConversionSettings.h"
-#include "../ifcgeom/ConversionResult.h"
+#include "ConversionSettings.h"
+#include "ConversionResult.h"
 
 #include <map>
 

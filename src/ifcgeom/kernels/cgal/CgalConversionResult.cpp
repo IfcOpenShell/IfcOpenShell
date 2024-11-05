@@ -5,7 +5,7 @@
 #include <CGAL/Polygon_mesh_processing/self_intersections.h>
 
 #include "../../../ifcparse/IfcLogger.h"
-#include "../../../ifcgeom/IfcGeomRepresentation.h"
+#include "../../IfcGeomRepresentation.h"
 
 using IfcGeom::OpaqueNumber;
 using IfcGeom::OpaqueCoordinate;

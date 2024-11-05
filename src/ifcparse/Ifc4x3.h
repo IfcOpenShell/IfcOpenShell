@@ -32,13 +32,13 @@
 
 #include <boost/optional.hpp>
 
-#include "../ifcparse/ifc_parse_api.h"
+#include "ifc_parse_api.h"
 
-#include "../ifcparse/aggregate_of_instance.h"
-#include "../ifcparse/IfcBaseClass.h"
-#include "../ifcparse/IfcSchema.h"
-#include "../ifcparse/IfcException.h"
-#include "../ifcparse/Argument.h"
+#include "aggregate_of_instance.h"
+#include "IfcBaseClass.h"
+#include "IfcSchema.h"
+#include "IfcException.h"
+#include "Argument.h"
 
 struct Ifc4x3 {
 

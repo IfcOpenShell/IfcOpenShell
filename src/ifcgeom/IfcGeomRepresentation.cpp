@@ -21,8 +21,8 @@
 
 #ifdef IFOPSH_WITH_OPENCASCADE
 #include "../ifcparse/IfcLogger.h"
-#include "../ifcgeom/kernels/opencascade/OpenCascadeConversionResult.h"
-#include "../ifcgeom/kernels/opencascade/base_utils.h"
+#include "kernels/opencascade/OpenCascadeConversionResult.h"
+#include "kernels/opencascade/base_utils.h"
 
 #include <BRep_Tool.hxx>
 #include <BRepTools.hxx>

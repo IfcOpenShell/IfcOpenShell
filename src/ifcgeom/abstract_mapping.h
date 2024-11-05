@@ -3,9 +3,9 @@
 
 #include "../ifcparse/IfcBaseClass.h"
 #include "../ifcparse/aggregate_of_instance.h"
-#include "../ifcgeom/taxonomy.h"
-#include "../ifcgeom/IteratorSettings.h"
-#include "../ifcgeom/ConversionSettings.h"
+#include "taxonomy.h"
+#include "IteratorSettings.h"
+#include "ConversionSettings.h"
 
 #include <boost/function.hpp>
 

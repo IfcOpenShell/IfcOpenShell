@@ -1,6 +1,6 @@
 #include "../../ifcparse/IfcBaseClass.h"
 
-#include "../../ifcgeom/ifc_geom_api.h"
+#include "../ifc_geom_api.h"
 
 #include <TopoDS_Shape.hxx>
 

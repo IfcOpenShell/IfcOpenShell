@@ -1,7 +1,7 @@
 #include "wire_utils.h"
 
 #include "../../../ifcparse/IfcLogger.h"
-#include "../../../ifcgeom/ConversionSettings.h"
+#include "../../ConversionSettings.h"
 
 #include "base_utils.h"
 #include "boolean_utils.h"

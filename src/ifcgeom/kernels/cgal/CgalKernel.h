@@ -43,10 +43,10 @@ if ( it != cache.T.end() ) { e = it->second; return true; }
 
 #include "../../../ifcparse/macros.h"
 
-#include "../../../ifcgeom/AbstractKernel.h"
+#include "../../AbstractKernel.h"
 
-#include "../../../ifcgeom/IfcGeomElement.h"
-#include "../../../ifcgeom/kernels/cgal/CgalConversionResult.h"
+#include "../../IfcGeomElement.h"
+#include "../../kernels/cgal/CgalConversionResult.h"
 
 #include <CGAL/Polygon_2.h>
 

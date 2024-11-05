@@ -1,6 +1,6 @@
 #define SCHEMA_METHOD
 
-#include "../serializers/serializers_api.h"
+#include "serializers_api.h"
 #include "../ifcgeom/Serializer.h"
 #include "../ifcparse/IfcFile.h"
 

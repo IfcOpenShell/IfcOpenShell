@@ -1,7 +1,7 @@
 #ifndef ITERATOR_PWF_EVALUATOR_H
 #define ITERATOR_PWF_EVALUATOR_H
 
-#include "../ifcgeom/taxonomy.h"
+#include "taxonomy.h"
 
 #include <boost/function.hpp>
 

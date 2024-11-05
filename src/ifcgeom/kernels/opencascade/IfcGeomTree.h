@@ -22,8 +22,8 @@
 
 #include "../../../ifcparse/IfcFile.h"
 
-#include "../../../ifcgeom/IfcGeomElement.h"
-#include "../../../ifcgeom/Iterator.h"
+#include "../../IfcGeomElement.h"
+#include "../../Iterator.h"
 #include "OpenCascadeConversionResult.h"
 #include "base_utils.h"
 

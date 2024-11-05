@@ -27,7 +27,7 @@
 
 #include "../ifcgeom/Iterator.h"
 
-#include "../serializers/OpenCascadeBasedSerializer.h"
+#include "OpenCascadeBasedSerializer.h"
 
 class StepSerializer : public OpenCascadeBasedSerializer
 {

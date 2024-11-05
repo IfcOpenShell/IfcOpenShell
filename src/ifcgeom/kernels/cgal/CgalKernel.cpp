@@ -22,7 +22,7 @@
 #include "CgalKernel.h"
 
 #include "../../../ifcparse/IfcLogger.h"
-#include "../../../ifcgeom/kernels/cgal/CgalConversionResult.h"
+#include "../../kernels/cgal/CgalConversionResult.h"
 
 #include <CGAL/minkowski_sum_3.h>
 #include <CGAL/exceptions.h>

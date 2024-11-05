@@ -1,4 +1,4 @@
-#include "../ifcgeom/IfcGeomRenderStyles.h"
+#include "IfcGeomRenderStyles.h"
 
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/ptree.hpp>

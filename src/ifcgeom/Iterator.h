@@ -60,14 +60,14 @@
 
 #include "../ifcparse/IfcFile.h"
 
-#include "../ifcgeom/IfcGeomElement.h"
-#include "../ifcgeom/IteratorSettings.h"
-#include "../ifcgeom/ConversionResult.h"
-#include "../ifcgeom/IfcGeomFilter.h"
-#include "../ifcgeom/taxonomy.h"
-#include "../ifcgeom/Converter.h"
-#include "../ifcgeom/abstract_mapping.h"
-#include "../ifcgeom/GeometrySerializer.h"
+#include "IfcGeomElement.h"
+#include "IteratorSettings.h"
+#include "ConversionResult.h"
+#include "IfcGeomFilter.h"
+#include "taxonomy.h"
+#include "Converter.h"
+#include "abstract_mapping.h"
+#include "GeometrySerializer.h"
 
 #ifdef IFOPSH_WITH_OPENCASCADE
 #include <Standard_Failure.hxx>

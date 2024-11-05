@@ -24,7 +24,7 @@
 #include <string>
 #include <fstream>
 
-#include "../serializers/serializers_api.h"
+#include "serializers_api.h"
 #include "../ifcgeom/GeometrySerializer.h"
 
  // http://people.sc.fsu.edu/~jburkardt/txt/obj_format.txt

@@ -1,6 +1,6 @@
 #include "Converter.h"
 
-#include "../ifcgeom/IfcGeomElement.h"
+#include "IfcGeomElement.h"
 
 using namespace ifcopenshell::geometry;
 
@@ -406,7 +406,7 @@ IfcGeom::ConversionResults ifcopenshell::geometry::Converter::convert(IfcUtil::I
 //#include "../../ifcparse/Ifc4.h"
 //
 //// @todo remove
-//#include "../../ifcgeom/schema_agnostic/opencascade/OpenCascadeConversionResult.h"
+//#include "kernels/opencascade/OpenCascadeConversionResult.h"
 //
 //#include <TopExp.hxx>
 //#include <TopTools_ListOfShape.hxx>
