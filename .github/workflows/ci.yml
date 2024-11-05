@@ -15,6 +15,7 @@ on:
       - 'src/ifcparse/**'
       - 'src/ifcwrap/**'
       - 'src/qtviewer/**'
+      - 'src/svgfill/**'
       - 'src/serializers/**'
       - 'conda/**'
       - 'cmake/**'
