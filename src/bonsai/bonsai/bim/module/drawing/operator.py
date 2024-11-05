@@ -201,8 +201,11 @@ class CreateDrawing(bpy.types.Operator):
     bl_idname = "bim.create_drawing"
     bl_label = "Create Drawing"
     bl_description = (
-        "Creates/refreshes a .svg drawing based on currently active camera.\n\n"
-        + "SHIFT+CLICK to create/refresh all shown checked drawings"
+        "Creates/refreshes a .svg drawing based on currently active camera\n"
+        + 'and open with default system viewer or using "svg_command" or\n'
+        + '"pdf_command" from the Bonsai preferences (if provided).\n\n'
+        + "SHIFT+CLICK to create/refresh all shown checked drawings, but doesn't\n"
+        + "open them for viewing"
     )
     print_all: bpy.props.BoolProperty(name="Print All", default=False, options={"SKIP_SAVE"})
     sync: bpy.props.BoolProperty(
@@ -302,9 +305,13 @@ class CreateDrawing(bpy.types.Operator):
                 with profile("Combine SVG layers"):
                     svg_path = self.combine_svgs(context, underlay_svg, linework_svg, annotation_svg)
 
-        if self.print_all:
+        if not self.print_all:
+            drawing = tool.Ifc.get().by_id(drawing_id)
+            drawing_uri = tool.Drawing.get_document_uri(tool.Drawing.get_drawing_document(drawing))
+            tool.Drawing.open_with_user_command(tool.Blender.get_addon_preferences().svg_command, drawing_uri)
+        else:
             bpy.ops.bim.activate_drawing(drawing=original_drawing_id, should_view_from_camera=False)
-        self.report({"INFO"}, f"{len(drawings_to_print)} drawings created...")
+            self.report({"INFO"}, f"{len(drawings_to_print)} drawings created...")
         return {"FINISHED"}
 
     def get_camera_dimensions(self):
@@ -1696,10 +1703,11 @@ class CreateSheets(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.create_sheets"
     bl_label = "Create Sheets"
     bl_description = (
-        "Build selected sheet from the sheet layout and\n"
+        "Build and open selected sheet from the sheet layout and\n"
         + 'optionally create .pdf and .dxf from commands in\n'
         + 'the Bonsai preferences (if provided).\n\n'
-        + "SHIFT+CLICK to create all shown checked sheets"
+        + "SHIFT+CLICK to create all shown checked sheets, but doesn't\n"
+        + "open them for viewing"
     )
     bl_options = {"REGISTER", "UNDO"}
 
@@ -1809,7 +1817,15 @@ class CreateSheets(bpy.types.Operator, tool.Ifc.Operator):
                     command[0] = shutil.which(command[0]) or command[0]
                     subprocess.run([replacements.get(c, c) for c in command])
 
-        self.report({"INFO"}, f"{len(sheets)} sheets created...")
+        if not self.create_all:
+            sheet_uri = sheeter.SheetBuilder().build(sheet)["SHEET"]
+            if svg2pdf_command:
+                sheet_uri = os.path.splitext(sheet_uri)[0] + ".pdf"
+                tool.Drawing.open_with_user_command(tool.Blender.get_addon_preferences().pdf_command, sheet_uri)
+            else:
+                tool.Drawing.open_with_user_command(tool.Blender.get_addon_preferences().svg_command, sheet_uri)
+        else:
+            self.report({"INFO"}, f"{len(sheets)} sheets created...")
 
 
 class SelectAllDrawings(bpy.types.Operator):
