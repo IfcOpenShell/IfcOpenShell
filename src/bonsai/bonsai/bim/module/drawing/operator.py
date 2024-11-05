@@ -205,9 +205,12 @@ class CreateDrawing(bpy.types.Operator):
         + 'and open with default system viewer or using "svg_command" or\n'
         + '"pdf_command" from the Bonsai preferences (if provided).\n\n'
         + "SHIFT+CLICK to create/refresh all shown checked drawings, but doesn't\n"
-        + "open them for viewing"
+        + "open them for viewing.\n\n"
+        + "Add the CTRL modifier to optionally open drawings to view them as\n"
+        + "they are created"
     )
     print_all: bpy.props.BoolProperty(name="Print All", default=False, options={"SKIP_SAVE"})
+    open_viewer: bpy.props.BoolProperty(name="Open in Viewer", default=False, options={"SKIP_SAVE"})
     sync: bpy.props.BoolProperty(
         name="Sync Before Creating Drawing",
         description="Could save some time if you're sure IFC and current Blender session are already in sync",
@@ -237,6 +240,8 @@ class CreateDrawing(bpy.types.Operator):
         # make sure to use SKIP_SAVE on property, otherwise it might get stuck
         if event.type == "LEFTMOUSE" and event.shift:
             self.print_all = True
+        if event.type == "LEFTMOUSE" and event.ctrl:
+            self.open_viewer = True
         return self.execute(context)
 
     def execute(self, context):
@@ -305,13 +310,13 @@ class CreateDrawing(bpy.types.Operator):
                 with profile("Combine SVG layers"):
                     svg_path = self.combine_svgs(context, underlay_svg, linework_svg, annotation_svg)
 
-        if not self.print_all:
-            drawing = tool.Ifc.get().by_id(drawing_id)
-            drawing_uri = tool.Drawing.get_document_uri(tool.Drawing.get_drawing_document(drawing))
-            tool.Drawing.open_with_user_command(tool.Blender.get_addon_preferences().svg_command, drawing_uri)
-        else:
-            bpy.ops.bim.activate_drawing(drawing=original_drawing_id, should_view_from_camera=False)
+            if self.open_viewer:
+                drawing_uri = tool.Drawing.get_document_uri(tool.Drawing.get_drawing_document(self.drawing))
+                tool.Drawing.open_with_user_command(tool.Blender.get_addon_preferences().svg_command, drawing_uri)
+        if not self.open_viewer:
             self.report({"INFO"}, f"{len(drawings_to_print)} drawings created...")
+        if self.print_all:
+            bpy.ops.bim.activate_drawing(drawing=original_drawing_id, should_view_from_camera=False)
         return {"FINISHED"}
 
     def get_camera_dimensions(self):
@@ -1707,11 +1712,14 @@ class CreateSheets(bpy.types.Operator, tool.Ifc.Operator):
         + 'optionally create .pdf and .dxf from commands in\n'
         + 'the Bonsai preferences (if provided).\n\n'
         + "SHIFT+CLICK to create all shown checked sheets, but doesn't\n"
-        + "open them for viewing"
+        + "open them for viewing\n\n"
+        + "Add the CTRL modifier to optionally open sheets to view them as\n"
+        + "they are created"
     )
     bl_options = {"REGISTER", "UNDO"}
 
     create_all: bpy.props.BoolProperty(name="Create All", default=False, options={"SKIP_SAVE"})
+    open_viewer: bpy.props.BoolProperty(name="Open in Viewer", default=False, options={"SKIP_SAVE"})
 
     @classmethod
     def poll(cls, context):
@@ -1727,6 +1735,8 @@ class CreateSheets(bpy.types.Operator, tool.Ifc.Operator):
         # make sure to use SKIP_SAVE on property, otherwise it might get stuck
         if event.type == "LEFTMOUSE" and event.shift:
             self.create_all = True
+        if event.type == "LEFTMOUSE" and event.ctrl:
+            self.open_viewer = True
         return self.execute(context)
 
     def _execute(self, context):
@@ -1817,14 +1827,12 @@ class CreateSheets(bpy.types.Operator, tool.Ifc.Operator):
                     command[0] = shutil.which(command[0]) or command[0]
                     subprocess.run([replacements.get(c, c) for c in command])
 
-        if not self.create_all:
-            sheet_uri = sheeter.SheetBuilder().build(sheet)["SHEET"]
-            if svg2pdf_command:
-                sheet_uri = os.path.splitext(sheet_uri)[0] + ".pdf"
-                tool.Drawing.open_with_user_command(tool.Blender.get_addon_preferences().pdf_command, sheet_uri)
-            else:
-                tool.Drawing.open_with_user_command(tool.Blender.get_addon_preferences().svg_command, sheet_uri)
-        else:
+            if self.open_viewer:
+                if svg2pdf_command:
+                    tool.Drawing.open_with_user_command(tool.Blender.get_addon_preferences().pdf_command, pdf)
+                else:
+                    tool.Drawing.open_with_user_command(tool.Blender.get_addon_preferences().svg_command, svg)
+        if not self.open_viewer:
             self.report({"INFO"}, f"{len(sheets)} sheets created...")
 
 
