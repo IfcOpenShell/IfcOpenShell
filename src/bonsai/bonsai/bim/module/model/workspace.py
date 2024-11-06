@@ -24,11 +24,12 @@ import bonsai.bim
 import bonsai.tool as tool
 import bonsai.core.model as core
 from bonsai.bim.module.model.wall import DumbWallJoiner
-from bonsai.bim.helper import prop_with_search
+from bonsai.bim.helper import prop_with_search, get_enum_items
 from bpy.types import WorkSpaceTool, Menu
 from bonsai.bim.module.model.data import AuthoringData, ItemData
 from bonsai.bim.module.system.data import PortData
 from bonsai.bim.module.model.prop import get_ifc_class
+from typing import Optional, Union
 
 
 # TODO duplicate code in cad/workspace and model/workspace
@@ -375,7 +376,7 @@ class CreateObjectUI:
         )
         row1.operator(
             "bim.launch_type_manager",
-            icon=tool.Blender.TYPE_MANAGER_ICON,  # "DOWNARROW_HLT",
+            icon=tool.Blender.TYPE_MANAGER_ICON,
             text="",
             emboss=False,
         )
@@ -403,6 +404,7 @@ class CreateObjectUI:
             row = box.row(align=True)
             row.alignment = "CENTER"
             row.template_icon(icon_value=0, scale=3.5)
+
         elif AuthoringData.data["ifc_element_type"]:
             row = cls.layout.row(align=True)
             op = row.operator(
@@ -444,10 +446,12 @@ class CreateObjectUI:
 
         elif cls.props.ifc_class in ("IfcColumnType", "IfcMemberType"):
             row.prop(data=cls.props, property="cardinal_point", text="Axis")
+            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             row.prop(data=cls.props, property="extrusion_depth", text="Height" if ui_context != "TOOL_HEADER" else "H")
 
         elif cls.props.ifc_class in ("IfcBeamType"):
             row.prop(data=cls.props, property="cardinal_point", text="Axis")
+            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             row.prop(data=cls.props, property="extrusion_depth", text="Length" if ui_context != "TOOL_HEADER" else "L")
 
         elif cls.props.ifc_class in ("IfcDoorType", "IfcDoorStyle"):
@@ -477,25 +481,31 @@ class CreateObjectUI:
 
     @classmethod
     def draw_thumbnail(cls, context):
+        ENUM_ITEMS_DATA = Union[bpy.types.PropertyGroup, bpy.types.ID, bpy.types.Operator, bpy.types.OperatorProperties]
         ui_context = context.region.type
-        row = cls.layout.row(align=True)
-        if not AuthoringData.data["ifc_element_type"]:
-            prop_with_search(row, cls.props, "ifc_class", text="Type Class" if ui_context != "TOOL_HEADER" else "")
-        if AuthoringData.data["ifc_classes"]:
-            if cls.props.ifc_class:
-                box = cls.layout.box()
-                row = box.row(align=True)
-                if AuthoringData.data["type_thumbnail"] and ui_context == "TOOL_HEADER":
-                    row.template_icon(icon_value=AuthoringData.data["type_thumbnail"])
-                    row.operator("bim.launch_type_manager", text=AuthoringData.data["relating_type_name"], emboss=False)
-                else:
-                    row.operator(
-                        "bim.launch_type_manager",
-                        icon="BLANK1",
-                        text=AuthoringData.data["relating_type_name"],
-                        emboss=False,
-                    )
 
+        data: ENUM_ITEMS_DATA = cls.props
+        should_click_ok_to_validate: bool = False
+        original_operator_path: Optional[str] = None
+        prop_name: str = "relating_type_id"
+        props_count = AuthoringData.data["total_types"]
+
+        row = cls.layout.row(align=True)
+        prop_with_search(row, cls.props, "ifc_class", text="", emboss=not AuthoringData.data["ifc_element_type"])
+
+        box = cls.layout.box()
+        row = box.row(align=True)
+
+        if ui_context == "TOOL_HEADER":
+            row.template_icon(icon_value=AuthoringData.data["type_thumbnail"], scale=1)
+            row.operator("bim.launch_type_manager", text=AuthoringData.data["relating_type_name"], emboss=False)
+            if props_count > 9:
+                row.context_pointer_set(name="data", data=data)
+                op = row.operator("bim.enum_property_search", text="", icon="VIEWZOOM", emboss=False)
+                op.prop_name = prop_name
+                op.should_click_ok_to_validate = should_click_ok_to_validate
+                op.original_operator_path = original_operator_path or ""
+            else:
                 row.operator(
                     "bim.launch_type_manager",
                     icon=tool.Blender.TYPE_MANAGER_ICON,
@@ -503,39 +513,55 @@ class CreateObjectUI:
                     emboss=False,
                 )
 
-                if ui_context != "TOOL_HEADER":
-                    row = box.row(align=True)
-                    row.alignment = "CENTER"
-                    row.operator(
-                        "bim.launch_type_manager",
-                        text=AuthoringData.data["relating_type_description"],
-                        emboss=False,
-                    )
+        else:  # Side panel
+            row.label(icon="BLANK1")
+            row.operator("bim.launch_type_manager", text=AuthoringData.data["relating_type_name"], emboss=False)
+            if props_count > 9:
+                row.context_pointer_set(name="data", data=data)
+                op = row.operator("bim.enum_property_search", text="", icon="VIEWZOOM", emboss=False)
+                op.prop_name = prop_name
+                op.should_click_ok_to_validate = should_click_ok_to_validate
+                op.original_operator_path = original_operator_path or ""
+            else:
+                row.operator(
+                    "bim.launch_type_manager",
+                    icon=tool.Blender.TYPE_MANAGER_ICON,
+                    text="",
+                    emboss=False,
+                )
 
-                    if AuthoringData.data["type_thumbnail"]:
-                        row1 = box.row()
-                        row1.ui_units_y = 0.01
-                        row1.template_icon(icon_value=AuthoringData.data["type_thumbnail"], scale=4)
-                        row2 = box.column(align=True)
-                        row2.ui_units_y = 4
-                        for _ in range(4):
-                            row2.operator("bim.launch_type_manager", text="", emboss=False)
-                    else:
-                        op = box.operator(
-                            "bim.load_type_thumbnails",
-                            text="",
-                            icon="FILE_REFRESH",
-                            emboss=False,
-                        )
-                        op.ifc_class = cls.props.ifc_class
+            row = box.row(align=True)
+            row.alignment = "CENTER"
+            row.operator(
+                "bim.launch_type_manager",
+                text=AuthoringData.data["relating_type_description"],
+                emboss=False,
+            )
 
-                    row = box.row(align=True)
-                    row.alignment = "CENTER"
-                    row.operator(
-                        "bim.launch_type_manager",
-                        text=AuthoringData.data["predefined_type"],
-                        emboss=False,
-                    )
+            if AuthoringData.data["type_thumbnail"]:
+                row1 = box.row()
+                row1.ui_units_y = 0.01
+                row1.template_icon(icon_value=AuthoringData.data["type_thumbnail"], scale=4)
+                row2 = box.column(align=True)
+                row2.ui_units_y = 4
+                for _ in range(4):
+                    row2.operator("bim.launch_type_manager", text="", emboss=False)
+            else:
+                op = box.operator(
+                    "bim.load_type_thumbnails",
+                    text="",
+                    icon="FILE_REFRESH",
+                    emboss=False,
+                )
+                op.ifc_class = cls.props.ifc_class
+
+            row = box.row(align=True)
+            row.alignment = "CENTER"
+            row.operator(
+                "bim.launch_type_manager",
+                text=AuthoringData.data["predefined_type"],
+                emboss=False,
+            )
 
 
 class EditObjectUI:
