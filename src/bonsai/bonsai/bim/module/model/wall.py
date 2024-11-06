@@ -1565,7 +1565,7 @@ class DumbWallJoiner:
         axis1 = tool.Model.get_wall_axis(wall1, layers1)
 
         bases = [axis1["base"][0].to_3d(), axis1["base"][1].to_3d(), axis1["side"][0].to_3d(), axis1["side"][1].to_3d()]
-        bases = [Vector((v[0], v[1], wall1.matrix_world.translation.z)) for v in bases] # add wall Z location
+        bases = [Vector((v[0], v[1], wall1.matrix_world.translation.z)) for v in bases]  # add wall Z location
 
         extrusion = self.get_extrusion_data(tool.Ifc.get().by_id(wall1.data.BIMMeshProperties.ifc_definition_id))
         wall_dir = wall1.matrix_world.to_quaternion() @ extrusion["direction"]

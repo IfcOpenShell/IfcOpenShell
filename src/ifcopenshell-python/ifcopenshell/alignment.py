@@ -47,7 +47,7 @@ def evaluate_representation(shape_rep: entity_instance, dist_along: float) -> np
 
     s = ifcopenshell.geom.settings()
     piecewise_function = ifcopenshell_wrapper.map_shape(s, shape_rep.wrapped_data)
-    pwf_evaluator = ifcopenshell_wrapper.piecewise_function_evaluator(piecewise_function,s)
+    pwf_evaluator = ifcopenshell_wrapper.piecewise_function_evaluator(piecewise_function, s)
 
     trans_matrix = pwf_evaluator.evaluate(dist_along)
 
@@ -69,7 +69,7 @@ def evaluate_segment(segment: entity_instance, dist_along: float) -> np.ndarray:
 
     s = ifcopenshell.geom.settings()
     piecewise_function = ifcopenshell_wrapper.map_shape(s, segment.wrapped_data)
-    pwf_evaluator = ifcopenshell_wrapper.piecewise_function_evaluator(piecewise_function,s)
+    pwf_evaluator = ifcopenshell_wrapper.piecewise_function_evaluator(piecewise_function, s)
 
     trans_matrix = pwf_evaluator.evaluate(dist_along)
 
