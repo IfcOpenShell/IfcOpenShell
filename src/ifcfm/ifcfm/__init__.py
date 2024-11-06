@@ -49,6 +49,21 @@ __version__ = version = "0.0.0"
 
 
 ParserPreset = Literal["basic", "cobie24", "cobie24legacy"]
+_parser_presets_configs = {}
+
+
+def get_presets_configs() -> dict[ParserPreset, dict[str, Any]]:
+    global _parser_presets_configs
+    if not _parser_presets_configs:
+        fm_dir = Path(__file__).parent
+        for f in fm_dir.iterdir():
+            if not f.suffix == ".py" or f.name.startswith("_"):
+                continue
+            preset = f.stem
+            module = importlib.import_module(f"ifcfm.{preset}")
+            config = getattr(module, "config")
+            _parser_presets_configs[preset] = config
+    return _parser_presets_configs
 
 
 class Parser:
@@ -59,7 +74,7 @@ class Parser:
     ]
     duplicate_keys: list[tuple[dict[str, Any], dict[str, Any]]]
 
-    def __init__(self, preset: Union[ParserPreset, dict[str, Any]] = "basic"):
+    def __init__(self, preset: Union[str, ParserPreset, dict[str, Any]] = "basic"):
         self.file = None
         self.preset = preset
         self.categories = defaultdict(dict)
@@ -67,8 +82,10 @@ class Parser:
         self.duplicate_keys = []
 
         if isinstance(preset, str):
-            module = importlib.import_module(f"ifcfm.{preset}")
-            self.config = getattr(module, "config")
+            presets = get_presets_configs()
+            if preset not in presets:
+                raise Exception(f"Invalid preset '{preset}'. Available presets: {','.join(presets.keys())}.")
+            self.config = get_presets_configs()[preset]
         else:
             self.config = preset
 
@@ -134,8 +151,7 @@ class Writer:
     def __init__(self, parser: Parser):
         self.parser = parser
         if isinstance(self.parser.preset, str):
-            module = importlib.import_module(f"ifcfm.{self.parser.preset}")
-            self.config = getattr(module, "config")
+            self.config = get_presets_configs()[self.parser.preset]
         elif isinstance(self.parser.preset, dict):
             self.config = self.parser.preset["config"]
         else:
