@@ -22,6 +22,7 @@ from bpy.types import Panel
 from bonsai.bim.ifc import IfcStore
 from bonsai.bim.helper import prop_with_search
 from bonsai.bim.module.root.data import IfcClassData
+from bonsai.bim.module.model.data import AuthoringData
 
 
 class BIM_PT_class(Panel):
@@ -72,6 +73,11 @@ class BIM_PT_class(Panel):
                 if IfcClassData.data["can_reassign_class"]:
                     row.operator("bim.enable_reassign_class", icon="GREASEPENCIL", text="")
         else:
+            if not AuthoringData.is_loaded:
+                AuthoringData.load()
+            if AuthoringData.data["is_representation_item_active"]:
+                return
+
             ifc_predefined_types = root_prop.get_ifc_predefined_types(context.scene.BIMRootProperties, context)
             self.draw_class_dropdowns(context, ifc_predefined_types)
             row = self.layout.row(align=True)

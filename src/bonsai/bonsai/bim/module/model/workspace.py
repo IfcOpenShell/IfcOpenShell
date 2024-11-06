@@ -261,6 +261,8 @@ class EditItemUI:
     def draw(cls, context: bpy.types.Context, layout: bpy.types.UILayout):
         if not ItemData.is_loaded:
             ItemData.load()
+        if not AuthoringData.is_loaded:
+            AuthoringData.load()
 
         cls.layout = layout
         row = cls.layout.row()
@@ -270,7 +272,7 @@ class EditItemUI:
         row = cls.layout.row()
         row.label(text="Type: " + ItemData.data["representation_type"], icon="OUTLINER_OB_MESH")
         cls.layout.menu("BIM_MT_add_representation_item", icon="ADD")
-        if not ItemData.data["is_representation_item_active"]:
+        if not AuthoringData.data["is_representation_item_active"]:
             return
         obj = context.active_object
         assert obj
