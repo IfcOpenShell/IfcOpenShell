@@ -1109,7 +1109,7 @@ class OverrideDuplicateMove(bpy.types.Operator):
         single_obj = False
         if len(old_to_new) == 1:
             single_obj = True
-            
+
         for new in old_to_new.values():
             if not hasattr(new[0], "ConnectedTo"):
                 continue
