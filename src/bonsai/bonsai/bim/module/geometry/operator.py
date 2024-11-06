@@ -42,7 +42,7 @@ from mathutils import Vector, Matrix
 from time import time
 from bonsai.bim.ifc import IfcStore
 from ifcopenshell.util.shape_builder import ShapeBuilder
-from typing import Any, Union
+from typing import Any, Union, Literal, get_args, TYPE_CHECKING, assert_never
 from bonsai.bim.module.model.decorator import ProfileDecorator
 
 
@@ -2713,7 +2713,12 @@ class AddCurvelikeItem(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_curvelike_item"
     bl_label = "Add Curvelike Item"
     bl_options = {"REGISTER", "UNDO"}
-    shape: bpy.props.StringProperty(name="Shape")
+    CurveShape = Literal["LINE", "CIRCLE", "ELLIPSE"]
+
+    shape: bpy.props.EnumProperty(name="Shape", items=[(i, i, i) for i in get_args(CurveShape)])
+
+    if TYPE_CHECKING:
+        shape: CurveShape
 
     def _execute(self, context):
         props = context.scene.BIMGeometryProperties
@@ -2740,8 +2745,9 @@ class AddCurvelikeItem(bpy.types.Operator, tool.Ifc.Operator):
         obj.matrix_world = matrix
         tool.Geometry.record_object_position(obj)
 
-        builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
-        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        ifc_file = tool.Ifc.get()
+        builder = ifcopenshell.util.shape_builder.ShapeBuilder(ifc_file)
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
 
         offset = local_matrix.translation.to_2d() / unit_scale
         if not is_2d:
@@ -2755,6 +2761,15 @@ class AddCurvelikeItem(bpy.types.Operator, tool.Ifc.Operator):
             item = builder.polyline(points=points, position_offset=offset)
         elif self.shape == "CIRCLE":
             item = builder.circle(radius=0.25 / unit_scale, center=offset)
+        elif self.shape == "ELLIPSE":
+            item = ifc_file.create_entity(
+                "IfcEllipse",
+                Position=builder.create_axis2_placement_2d(),
+                SemiAxis1=0.25 / unit_scale,
+                SemiAxis2=0.125 / unit_scale,
+            )
+        else:
+            assert_never(self.shape)
 
         representation.Items = list(representation.Items) + [item]
         tool.Geometry.reload_representation(bpy.context.scene.BIMGeometryProperties.representation_obj)
