@@ -171,7 +171,7 @@ class BIM_OT_multiple_file_selector(bpy.types.Operator):
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     @classmethod
-    def poll(self, context):
+    def poll(cls, context):
         return getattr(context, "file_props", None) is not None
 
     def execute(self, context):
