@@ -24,7 +24,7 @@ import bonsai.bim
 import bonsai.tool as tool
 import bonsai.core.model as core
 from bonsai.bim.module.model.wall import DumbWallJoiner
-from bonsai.bim.helper import prop_with_search
+from bonsai.bim.helper import prop_with_search, draw_attribute
 from bpy.types import WorkSpaceTool, Menu
 from bonsai.bim.module.model.data import AuthoringData, ItemData
 from bonsai.bim.module.system.data import PortData
@@ -278,7 +278,7 @@ class EditItemUI:
         assert obj
         for item_attribute in obj.data.BIMMeshProperties.item_attributes:
             row = cls.layout.row()
-            row.prop(item_attribute, item_attribute.get_value_name(display_only=True), text=item_attribute.name)
+            draw_attribute(item_attribute, cls.layout)
         if len(obj.data.BIMMeshProperties.item_attributes):
             row = cls.layout.row()
             row.operator("bim.update_item_attributes", icon="FILE_REFRESH", text="")

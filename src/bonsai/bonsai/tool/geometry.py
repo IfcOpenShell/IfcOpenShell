@@ -1539,12 +1539,27 @@ class Geometry(bonsai.core.tool.Geometry):
         props = obj.data.BIMMeshProperties
         props.item_attributes.clear()
         item = tool.Ifc.get().by_id(props.ifc_definition_id)
-        if item.is_a("IfcExtrudedAreaSolid"):
+        attributes = item.wrapped_data.declaration().as_entity().all_attributes()
+        for attribute in attributes:
+            if not attribute.type_of_attribute()._is("IfcLengthMeasure"):
+                continue
             new: Attribute = props.item_attributes.add()
-            new.name = "Depth"
+            attr_name = attribute.name()
+            new.name = attr_name
             new.data_type = "float"
             new.special_type = "LENGTH"
-            new.float_value = item.Depth
+            value = getattr(item, attr_name)
+            is_null = value is None
+            new.is_null = is_null
+            new.float_value = 0.0 if is_null else value
+            new.is_optional = attribute.optional()
+
+    @classmethod
+    def update_item_attributes(cls, obj: bpy.types.Object) -> None:
+        props = obj.data.BIMMeshProperties
+        item = tool.Ifc.get().by_id(props.ifc_definition_id)
+        for attribute in props.item_attributes:
+            setattr(item, attribute.name, attribute.get_value())
 
     @classmethod
     def import_item(cls, obj: bpy.types.Object) -> None:

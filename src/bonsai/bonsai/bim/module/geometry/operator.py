@@ -2582,11 +2582,7 @@ class UpdateItemAttributes(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         obj = context.active_object
-        props = obj.data.BIMMeshProperties
-        item = tool.Ifc.get().by_id(props.ifc_definition_id)
-        for attribute in props.item_attributes:
-            if attribute.name == "Depth":
-                item.Depth = attribute.float_value
+        tool.Geometry.update_item_attributes(obj)
         tool.Geometry.reload_representation(bpy.context.scene.BIMGeometryProperties.representation_obj)
         tool.Geometry.import_item(obj)
         tool.Root.reload_item_decorator()
