@@ -54,6 +54,12 @@ cwd = os.path.dirname(os.path.realpath(__file__))
 
 
 def update_tab(self: "BIMAreaProperties", context: bpy.types.Context) -> None:
+    # Some tabs are intended only for loaded IFC project.
+    if self.tab not in ("PROJECT", "FM", "QUALITY", "BLENDER") and not tool.Ifc.get():
+        enum_items = [i[0] for i in get_tab.enum_items if i]
+        tool.Blender.show_info_message(f"Tab '{self.tab}' only available with loaded IFC project.", "ERROR")
+        self["tab"] = enum_items.index(self.previous_tab)
+        return
     self.alt_tab = self.previous_tab
     self.previous_tab = self.tab
 
