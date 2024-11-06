@@ -199,12 +199,14 @@ class Writer:
                     rows = sorted(rows, key=lambda x: natural_sort(x[i]), reverse=reverse)
             self.categories[category] = {"headers": headers, "rows": rows}
 
-    def write_csv(self, output, delimiter=","):
+    def write_csv(self, output_folder: str, delimiter: str = ",") -> None:
+        output_folder_ = Path(output_folder)
+        output_folder_.mkdir(exist_ok=True)
         filename = None
-        if len(self.categories.keys()) == 1 and "." in os.path.basename(output):
-            filename = output
+        if len(self.categories.keys()) == 1 and "." in os.path.basename(output_folder_):
+            filename = output_folder_
         for category, data in self.categories.items():
-            category_filename = filename or os.path.join(output, f"{category}.csv")
+            category_filename = filename or output_folder_ / f"{category}.csv"
             with open(category_filename, "w", newline="", encoding="utf-8") as f:
                 writer = csv.writer(f, delimiter=delimiter)
                 writer.writerow(data["headers"])
