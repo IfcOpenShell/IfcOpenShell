@@ -500,7 +500,7 @@ def get_type(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity
 
     Note: `get_type(type_element) == type_element`.
 
-    :param element: The element occurrence
+    :param element: The element occurrence (IfcObject)
     :type: ifcopenshell.entity_instance
     :return: The related type element
     :rtype: Union[ifcopenshell.entity_instance, None]
@@ -517,11 +517,11 @@ def get_type(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity
 
     schema = element.file.schema
     if schema != "IFC2X3":
-        if is_typed_by := getattr(element, "IsTypedBy", []):
+        if is_typed_by := getattr(element, "IsTypedBy", ()):
             return is_typed_by[0].RelatingType
         return
 
-    if is_defined_by := element.IsDefinedBy:  # IFC2X3
+    if is_defined_by := getattr(element, "IsDefinedBy", ()):  # IFC2X3
         for relationship in is_defined_by:
             if relationship.is_a("IfcRelDefinesByType"):
                 return relationship.RelatingType
