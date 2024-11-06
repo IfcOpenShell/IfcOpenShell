@@ -20,6 +20,7 @@ import os
 import re
 import csv
 import importlib
+import ifcopenshell.util.selector
 from pathlib import Path
 from collections import defaultdict
 from typing import Literal, Union, Any, Callable
