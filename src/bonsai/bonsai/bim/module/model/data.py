@@ -74,6 +74,7 @@ class AuthoringData:
         cls.data["has_visible_boundaries"] = cls.has_visible_boundaries()
         cls.data["active_class"] = cls.active_class()
         cls.data["active_material_usage"] = cls.active_material_usage()
+        cls.data["is_representation_item_active"] = cls.is_representation_item_active()
         cls.data["active_representation_type"] = cls.active_representation_type()
         cls.data["boundary_class"] = cls.boundary_class()
         cls.data["selected_material_usages"] = cls.selected_material_usages()
@@ -191,6 +192,13 @@ class AuthoringData:
             element = tool.Ifc.get_entity(active_object)
             if element:
                 return tool.Model.get_usage_type(element)
+
+    @classmethod
+    def is_representation_item_active(cls) -> bool:
+        object = bpy.context.active_object
+        if not object:
+            return False
+        return tool.Geometry.is_representation_item(object)
 
     @classmethod
     def active_representation_type(cls):
@@ -555,7 +563,6 @@ class ItemData:
         cls.data = {}
         cls.data["representation_identifier"] = cls.representation_identifier()
         cls.data["representation_type"] = cls.representation_type()
-        cls.data["is_representation_item_active"] = cls.is_representation_item_active()
 
     @classmethod
     def representation_identifier(cls):
@@ -568,10 +575,3 @@ class ItemData:
         props = bpy.context.scene.BIMGeometryProperties
         rep = tool.Geometry.get_active_representation(props.representation_obj)
         return rep.RepresentationType
-
-    @classmethod
-    def is_representation_item_active(cls) -> bool:
-        object = bpy.context.active_object
-        if not object:
-            return False
-        return tool.Geometry.is_representation_item(object)
