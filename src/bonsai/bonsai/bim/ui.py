@@ -392,58 +392,52 @@ class BIM_PT_tabs(Panel):
     bl_options = {"HIDE_HEADER"}
 
     def draw(self, context):
-        try:
-            is_ifc_project = bool(tool.Ifc.get())
-            aprops = tool.Blender.get_area_props(context)
-            if not aprops:
-                # Fallback in case areas aren't setup yet.
-                aprops = context.screen.BIMTabProperties
+        is_ifc_project = bool(tool.Ifc.get())
+        aprops = tool.Blender.get_area_props(context)
 
-            row = self.layout.row()
-            row.alignment = "CENTER"
-            row.operator(
-                "bim.set_tab",
-                text="",
-                emboss=aprops.tab == "PROJECT",
-                depress=True,
-                icon_value=bonsai.bim.icons["IFC"].icon_id,
-            ).tab = "PROJECT"
-            self.draw_tab_entry(row, "FILE_3D", "OBJECT", is_ifc_project, aprops.tab == "OBJECT")
-            self.draw_tab_entry(row, "MATERIAL", "GEOMETRY", is_ifc_project, aprops.tab == "GEOMETRY")
-            self.draw_tab_entry(row, "DOCUMENTS", "DRAWINGS", is_ifc_project, aprops.tab == "DRAWINGS")
-            self.draw_tab_entry(row, "NETWORK_DRIVE", "SERVICES", is_ifc_project, aprops.tab == "SERVICES")
-            self.draw_tab_entry(row, "EDITMODE_HLT", "STRUCTURE", is_ifc_project, aprops.tab == "STRUCTURE")
-            self.draw_tab_entry(row, "NLA", "SCHEDULING", is_ifc_project, aprops.tab == "SCHEDULING")
-            self.draw_tab_entry(row, "PACKAGE", "FM", True, aprops.tab == "FM")
-            self.draw_tab_entry(row, "COMMUNITY", "QUALITY", True, aprops.tab == "QUALITY")
-            row.operator("bim.switch_tab", text="", emboss=False, icon="UV_SYNC_SELECT")
+        row = self.layout.row()
+        row.alignment = "CENTER"
+        row.operator(
+            "bim.set_tab",
+            text="",
+            emboss=aprops.tab == "PROJECT",
+            depress=True,
+            icon_value=bonsai.bim.icons["IFC"].icon_id,
+        ).tab = "PROJECT"
+        self.draw_tab_entry(row, "FILE_3D", "OBJECT", is_ifc_project, aprops.tab == "OBJECT")
+        self.draw_tab_entry(row, "MATERIAL", "GEOMETRY", is_ifc_project, aprops.tab == "GEOMETRY")
+        self.draw_tab_entry(row, "DOCUMENTS", "DRAWINGS", is_ifc_project, aprops.tab == "DRAWINGS")
+        self.draw_tab_entry(row, "NETWORK_DRIVE", "SERVICES", is_ifc_project, aprops.tab == "SERVICES")
+        self.draw_tab_entry(row, "EDITMODE_HLT", "STRUCTURE", is_ifc_project, aprops.tab == "STRUCTURE")
+        self.draw_tab_entry(row, "NLA", "SCHEDULING", is_ifc_project, aprops.tab == "SCHEDULING")
+        self.draw_tab_entry(row, "PACKAGE", "FM", True, aprops.tab == "FM")
+        self.draw_tab_entry(row, "COMMUNITY", "QUALITY", True, aprops.tab == "QUALITY")
+        row.operator("bim.switch_tab", text="", emboss=False, icon="UV_SYNC_SELECT")
 
-            # Yes, that's right.
-            row = self.layout.row()
-            row.alignment = "CENTER"
-            row.scale_y = 0.2
-            for tab in [
-                "PROJECT",
-                "OBJECT",
-                "GEOMETRY",
-                "DRAWINGS",
-                "SERVICES",
-                "STRUCTURE",
-                "SCHEDULING",
-                "FM",
-                "QUALITY",
-                "SWITCH",
-            ]:
-                # Draw a little underscore below the active tab icon.
-                if aprops.tab == tab:
-                    row.prop(aprops, "active_tab", text="", icon="BLANK1")
-                else:
-                    row.prop(aprops, "inactive_tab", text="", icon="BLANK1", emboss=False)
+        # Yes, that's right.
+        row = self.layout.row()
+        row.alignment = "CENTER"
+        row.scale_y = 0.2
+        for tab in [
+            "PROJECT",
+            "OBJECT",
+            "GEOMETRY",
+            "DRAWINGS",
+            "SERVICES",
+            "STRUCTURE",
+            "SCHEDULING",
+            "FM",
+            "QUALITY",
+            "SWITCH",
+        ]:
+            # Draw a little underscore below the active tab icon.
+            if aprops.tab == tab:
+                row.prop(aprops, "active_tab", text="", icon="BLANK1")
+            else:
+                row.prop(aprops, "inactive_tab", text="", icon="BLANK1", emboss=False)
 
-            row = self.layout.row(align=True)
-            row.prop(aprops, "tab", text="")
-        except:
-            pass  # Prior to load_post, we may not have any area properties setup
+        row = self.layout.row(align=True)
+        row.prop(aprops, "tab", text="")
 
         if bonsai.REINSTALLED_BBIM_VERSION:
             box = self.layout.box()

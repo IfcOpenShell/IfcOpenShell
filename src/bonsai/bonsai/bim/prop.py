@@ -60,7 +60,7 @@ def update_tab(self: "BIMAreaProperties", context: bpy.types.Context) -> None:
 
 def update_global_tab(self: "BIMTabProperties", context: bpy.types.Context) -> None:
     tool.Blender.setup_tabs()
-    screen = tool.Blender.get_screen(context)
+    screen = context.id_data
     aprops = screen.BIMAreaProperties[screen.areas[:].index(context.area)]
     aprops.tab = self.tab
 
@@ -400,10 +400,9 @@ class BIMAreaProperties(PropertyGroup):
 # BIMAreaProperties exists per area and is setup on load post. However, for new
 # or temporary screens, they may not be setup yet, so this global tab
 # properties is used as a fallback.
+# Need it basically only for UI - to display those props and allow changing tab from the dropdown.
 class BIMTabProperties(PropertyGroup):
     tab: EnumProperty(default=0, items=get_tab, name="Tab", update=update_global_tab)
-    previous_tab: StringProperty(default="PROJECT", name="Previous Tab")
-    alt_tab: StringProperty(default="OBJECT", name="Alt Tab")
     active_tab: BoolProperty(default=True, name="Active Tab")
     inactive_tab: BoolProperty(default=False, name="Inactive Tab")
 

@@ -86,16 +86,17 @@ class Blender(bonsai.core.tool.Blender):
         area.spaces[0].region_3d.view_perspective = "CAMERA"
 
     @classmethod
-    def get_area_props(cls, context: bpy.types.Context) -> Any:
+    def get_area_props(cls, context: bpy.types.Context) -> bpy.types.PropertyGroup:
         try:
             if context.screen.name.endswith("-nonnormal"):  # Ctrl-space temporary fullscreen
-                screen = bpy.data.screens[context.screen.name[0 : -len("-nonnormal")]]
+                screen = bpy.data.screens[context.screen.name.removesuffix("-nonnormal")]
                 # The original area object has its type changed to "EMPTY" apparently
                 index = [a.type for a in screen.areas].index("EMPTY")
                 return screen.BIMAreaProperties[index]
             return context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
-        except:
-            return
+        except IndexError:
+            # Fallback in case areas aren't setup yet.
+            return context.screen.BIMTabProperties
 
     @classmethod
     def set_active_object(cls, obj: bpy.types.Object) -> None:
@@ -119,9 +120,7 @@ class Blender(bonsai.core.tool.Blender):
     @classmethod
     def is_tab(cls, context: bpy.types.Context, tab: str) -> bool:
         aprops = cls.get_area_props(context)
-        if not aprops:
-            return context.screen.BIMTabProperties.tab == tab
-        if context.area.spaces.active.search_filter:
+        if aprops.path_from_id() == "BIMAreaProperties" and context.area.spaces.active.search_filter:
             return True
         return aprops.tab == tab
 
