@@ -315,6 +315,7 @@ class BIM_MT_add_representation_item(Menu):
         if ItemData.data["representation_type"] in ("Annotation2D"):
             self.layout.operator("bim.add_curvelike_item", icon="IPO_CONSTANT", text="Polycurve").shape = "LINE"
             self.layout.operator("bim.add_curvelike_item", icon="MESH_CIRCLE", text="Circle").shape = "CIRCLE"
+            self.layout.operator("bim.add_curvelike_item", icon="MESH_CIRCLE", text="Ellipse").shape = "ELLIPSE"
 
 
 class CreateObjectUI:
