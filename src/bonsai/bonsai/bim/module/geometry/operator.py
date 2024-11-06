@@ -2589,6 +2589,7 @@ class UpdateItemAttributes(bpy.types.Operator, tool.Ifc.Operator):
                 item.Depth = attribute.float_value
         tool.Geometry.reload_representation(bpy.context.scene.BIMGeometryProperties.representation_obj)
         tool.Geometry.import_item(obj)
+        tool.Root.reload_item_decorator()
 
 
 class AddMeshlikeItem(bpy.types.Operator, tool.Ifc.Operator):
