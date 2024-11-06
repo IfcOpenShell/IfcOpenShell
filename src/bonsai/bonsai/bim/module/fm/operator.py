@@ -78,6 +78,7 @@ class ExecuteIfcFM(bpy.types.Operator):
                 writer.write_ods(filepath)
             elif props.format == "xlsx":
                 writer.write_xlsx(filepath)
+            self.report({"INFO"}, "IfcFM spreadsheet is saved.")
         return {"FINISHED"}
 
 
@@ -134,4 +135,5 @@ class ExecuteIfcFMFederate(bpy.types.Operator):
             writer.write_ods(self.filepath)
         elif props.format == "xlsx":
             writer.write_xlsx(self.filepath)
+        self.report({"INFO"}, "IfcFM spreadsheets is saved.")
         return {"FINISHED"}
