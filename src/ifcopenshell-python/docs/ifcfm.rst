@@ -88,3 +88,60 @@ mapping with the following goals:
 4. Prioritise bSI standardised property sets over custom ones.
 5. Prevent needless repetition of data / fallback defaults that may result in
    invalid or unexpected data in obscure edge cases.
+
+
+Usage
+--------------------
+
+Here is a minimal example of how to use IfcFm as a Python module or CLI
+utility:
+
+.. code-block:: console
+
+    $ python -m ifcfm -h
+
+    usage: __main__.py [-h] [-p PRESET] -i IFC [-s SPREADSHEET] [-f FORMAT] [-d DELIMITER] [-n NULL] [-e EMPTY] [--bool_true BOOL_TRUE] [--bool_false BOOL_FALSE]
+
+    Extracts FM data from IFC to spreadsheets
+
+    options:
+    -h, --help            show this help message and exit
+    -p PRESET, --preset PRESET
+                            The FM standard to extract. Built-in preset standards include cobie24, cobie3, aohbsem, and basic.
+    -i IFC, --ifc IFC     The IFC file
+    -s SPREADSHEET, --spreadsheet SPREADSHEET
+                            The spreadsheet file, or directory if the format is csv. Defaults to output.ods
+    -f FORMAT, --format FORMAT
+                            The format, chosen from csv, ods, or xlsx. Defaults to ods.
+    -d DELIMITER, --delimiter DELIMITER
+                            The delimiter in CSV. Defaults to a comma.
+    -n NULL, --null NULL  How to represent null values. Defaults to N/A.
+    -e EMPTY, --empty EMPTY
+                            How to represent empty strings. Defaults to a hyphen.
+    --bool_true BOOL_TRUE
+                            How to represent true values. Defaults to YES.
+    --bool_false BOOL_FALSE
+                            How to represent false values. Defaults to NO.
+
+
+A minimal example on how to use IfcFm as a library:
+
+.. code-block:: python
+
+    import ifcfm
+    import ifcopenshell
+    from pathlib import Path
+
+    filepath = Path("cobie/test.ifc")
+    ifc_file = ifcopenshell.open(filepath)
+
+    parser = ifcfm.Parser(preset="cobie24")
+    parser.parse(ifc_file)
+
+    writer = ifcfm.Writer(parser)
+    writer.write()
+
+    # Save the results in the format you need.
+    writer.write_csv(str(filepath.parent / "csv")) # Need to provide a folder, not filepath.
+    writer.write_ods(str(filepath.with_suffix(".ods")))
+    writer.write_xlsx(str(filepath.with_suffix(".xlsx")))
