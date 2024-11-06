@@ -434,6 +434,7 @@ class BIM_PT_tabs(Panel):
                 "QUALITY",
                 "SWITCH",
             ]:
+                # Draw a little underscore below the active tab icon.
                 if aprops.tab == tab:
                     row.prop(aprops, "active_tab", text="", icon="BLANK1")
                 else:

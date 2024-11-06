@@ -19,6 +19,7 @@
 import ifcopenshell
 import ifcopenshell.guid
 import ifcopenshell.util.element
+import ifcopenshell.util.representation
 from typing import Any, Callable, Optional, Union, Literal, overload
 from collections import namedtuple
 
