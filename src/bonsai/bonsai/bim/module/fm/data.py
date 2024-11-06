@@ -36,13 +36,9 @@ class FMData:
         cls.data["engine"] = cls.engine()
 
     @classmethod
-    def engine(cls):
+    def engine(cls) -> list[tuple[str, str, str]]:
         results = []
-        fm_dir = os.path.dirname(ifcfm.__file__)
-        for f in os.listdir(fm_dir):
-            if f.endswith(".py") and not f.startswith("_"):
-                preset = os.path.splitext(f)[0]
-                module = importlib.import_module(f"ifcfm.{preset}")
-                config = getattr(module, "config")
-                results.append((preset, config["name"], config["description"]))
+        presets = ifcfm.get_presets_configs()
+        for preset, config in presets.items():
+            results.append((preset, config["name"], config["description"]))
         return results
