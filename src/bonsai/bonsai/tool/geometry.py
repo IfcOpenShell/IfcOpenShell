@@ -43,6 +43,7 @@ import bonsai.core.spatial
 import bonsai.core.style
 import bonsai.core.system
 import bonsai.tool as tool
+import bonsai.bim.helper
 import bonsai.bim.import_ifc
 from collections import defaultdict
 from math import radians, pi
@@ -1539,20 +1540,18 @@ class Geometry(bonsai.core.tool.Geometry):
         props = obj.data.BIMMeshProperties
         props.item_attributes.clear()
         item = tool.Ifc.get().by_id(props.ifc_definition_id)
-        attributes = item.wrapped_data.declaration().as_entity().all_attributes()
-        for attribute in attributes:
-            if not attribute.type_of_attribute()._is("IfcLengthMeasure"):
-                continue
-            new: Attribute = props.item_attributes.add()
-            attr_name = attribute.name()
-            new.name = attr_name
-            new.data_type = "float"
-            new.special_type = "LENGTH"
-            value = getattr(item, attr_name)
-            is_null = value is None
-            new.is_null = is_null
-            new.float_value = 0.0 if is_null else value
-            new.is_optional = attribute.optional()
+        allowed_attributes = [
+            a.name()
+            for a in item.wrapped_data.declaration().as_entity().all_attributes()
+            if a.type_of_attribute()._is("IfcLengthMeasure")
+        ]
+
+        def callback(attr_name: str, *_) -> Union[None, Literal[False]]:
+            if attr_name not in allowed_attributes:
+                return False
+            return None
+
+        bonsai.bim.helper.import_attributes2(item, props.item_attributes, callback=callback)
 
     @classmethod
     def update_item_attributes(cls, obj: bpy.types.Object) -> None:
