@@ -410,7 +410,12 @@ class Usecase:
 
         raise TypeError(f"'{self.settings['pset']}' is not a valid pset")
 
-    def get_primary_measure_type(self, name, old_value=None, new_value=None):
+    def get_primary_measure_type(
+        self,
+        name: str,
+        old_value: Optional[ifcopenshell.entity_instance] = None,
+        new_value: Optional[Union[ifcopenshell.entity_instance, str, float, bool, int]] = None,
+    ) -> Union[str, None]:
         if old_value:
             return old_value.is_a()
         if self.pset_template:
@@ -418,7 +423,7 @@ class Usecase:
                 if prop_template.Name != name:
                     continue
                 return prop_template.PrimaryMeasureType or "IfcLabel"
-        if new_value and hasattr(new_value, "is_a"):
+        if isinstance(new_value, ifcopenshell.entity_instance):
             return new_value.is_a()
         elif new_value is not None:
             if isinstance(new_value, str):

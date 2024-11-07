@@ -1070,11 +1070,20 @@ class OverrideDuplicateMove(bpy.types.Operator):
         tool.Root.reload_item_decorator()
 
     @staticmethod
-    def process_arrays(self, context):
+    def process_arrays(
+        self, context: bpy.types.Context
+    ) -> tuple[dict[bpy.types.Object, Any], set[ifcopenshell.entity_instance]]:
+        """ "Process arrays for currently selected objects.
+
+        :return: A tuple of two elements:\n
+            - dictionary of objects and their array data. Those objects are safe to duplicate and regenerate arrays using the data.\n
+            - set of array children objects. Those objects can be ignored during duplication, they will be recreated automatically
+            when arrays are regenerated for objects from the dictionary.
+        """
         selected_objects = set(context.selected_objects)
         array_parents = set()
-        arrays_to_create = dict()
-        array_children = set()  # will be ignored during the duplication
+        arrays_to_create: dict[bpy.types.Object, Any] = dict()
+        array_children: set[ifcopenshell.entity_instance] = set()  # will be ignored during the duplication
 
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
