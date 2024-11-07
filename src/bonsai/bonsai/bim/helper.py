@@ -176,18 +176,23 @@ def import_attribute(
         if data[new.name]:
             new.enum_value = data[new.name]
     add_attribute_description(new, data)
-    add_attribute_min_max(new)
+    add_attribute_min_max(attribute, new)
 
 
 ATTRIBUTE_MIN_MAX_CONSTRAINTS = {"IfcMaterialLayer": {"Priority": {"value_min": 0, "value_max": 100}}}
 
 
-def add_attribute_min_max(attribute_blender: bonsai.bim.prop.Attribute) -> None:
+def add_attribute_min_max(attribute: W.attribute, attribute_blender: bonsai.bim.prop.Attribute) -> None:
     if attribute_blender.ifc_class in ATTRIBUTE_MIN_MAX_CONSTRAINTS:
         constraints = ATTRIBUTE_MIN_MAX_CONSTRAINTS[attribute_blender.ifc_class].get(attribute_blender.name, {})
         for constraint, value in constraints.items():
             setattr(attribute_blender, constraint, value)
             setattr(attribute_blender, constraint + "_constraint", True)
+    attribute_type = attribute.type_of_attribute()
+
+    if attribute_type._is("IfcPositiveLengthMeasure") or attribute_type._is("IfcNonNegativeLengthMeasure"):
+        attribute_blender.value_min = 0.0
+        attribute_blender.value_min_constraint = True
 
 
 def add_attribute_enum_items_descriptions(
