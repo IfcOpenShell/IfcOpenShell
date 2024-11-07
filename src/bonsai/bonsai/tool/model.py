@@ -675,13 +675,14 @@ class Model(bonsai.core.tool.Model):
 
             # remove constraints
             obj = tool.Ifc.get_object(element)
+            assert isinstance(obj, bpy.types.Object)
             if not array_pset_data:  # skip array parents
                 constraint = next((c for c in obj.constraints if c.type == "CHILD_OF"), None)
                 if constraint:
                     matrix = obj.matrix_world.copy()
                     obj.constraints.remove(constraint)
-                    # keep the matrix before the constraint
-                    # otherwise object will jump to some previous position
+                    # Keep the matrix before removing the constraint,
+                    # otherwise object will jump to some previous position.
                     obj.matrix_world = matrix
                 tool.Blender.lock_transform(obj, False)
 
