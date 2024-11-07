@@ -59,6 +59,10 @@ class Demo:
     def set_message(cls, message): pass
     def show_user_hints(cls): pass
 
+@interface
+class Alignment:
+    def build(cls): pass
+
 # The rest of the code in this file is not part of the Demo tutorial.
 
 # ############################################################################ #

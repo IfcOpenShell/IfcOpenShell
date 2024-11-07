@@ -630,7 +630,7 @@ class IfcAlignmentHelper:
         """
         Create a new alignment with a horizontal alignment using the PI layout method
         """
-        self._add_horizontal_alignment(
+        return self._add_horizontal_alignment(
             alignment_name=name,
             points=hpoints,
             radii=radii,

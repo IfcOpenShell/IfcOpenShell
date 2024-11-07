@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from bonsai.tool.alignment import Alignment
 from bonsai.tool.aggregate import Aggregate
 from bonsai.tool.bcf import Bcf
 from bonsai.tool.blender import Blender
