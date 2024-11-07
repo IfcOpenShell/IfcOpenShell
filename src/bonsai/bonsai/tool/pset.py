@@ -118,12 +118,25 @@ class Pset(bonsai.core.tool.Pset):
                 metadata.name = prop.Name
                 metadata.is_null = len(simple_prop.enumerated_value.enumerated_values) == 0
                 metadata.is_optional = True
-                metadata.set_value(prop.EnumerationReference.EnumerationValues[0].wrappedValue)
+                enum_reference = prop.EnumerationReference
+                selected_enum_items = [v.wrappedValue for v in (prop.EnumerationValues or ())]
 
-                enum_items = [v.wrappedValue for v in prop.EnumerationReference.EnumerationValues]
-                selected_enum_items = [v.wrappedValue for v in prop.EnumerationValues]
-                data_type = metadata.get_value_name(display_only=True)
+                # If there is no reference, then just use the current values.
+                if enum_reference is None:
+                    enum_items = selected_enum_items
+                else:
+                    enum_items = [v.wrappedValue for v in enum_reference.EnumerationValues]
 
+                # In theory there could be no reference and no current values,
+                # nothing to show then, I guess.
+                if not enum_items:
+                    continue
+
+                # Trigger metadata to detect data_type.
+                metadata.set_value(enum_items[0])
+                data_type = metadata.get_value_name()
+
+                # Fill enum items.
                 for enum in enum_items:
                     new = simple_prop.enumerated_value.enumerated_values.add()
                     setattr(new, data_type, enum)
