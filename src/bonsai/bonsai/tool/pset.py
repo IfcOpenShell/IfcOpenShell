@@ -252,19 +252,38 @@ class Pset(bonsai.core.tool.Pset):
         props: bpy.types.PropertyGroup,
     ) -> None:
         if pset:
-            data = ifcopenshell.util.element.get_property_definition(pset)
+            data = ifcopenshell.util.element.get_property_definition(pset, verbose=True)
             del data["id"]
         else:
             data = {}
+        simplified_data = {prop_name: prop_data["value"] for prop_name, prop_data in data.items()}
+
+        # For every prop we first ensure that existing prop value type matches the template value type
+        # to prevent data loss and error casting data.
+        # Property will be added later by import_pset_from_existing.
         for prop_template in sorted(pset_template.HasPropertyTemplates, key=lambda p: p.Name):
             if not prop_template.is_a("IfcSimplePropertyTemplate"):
                 continue  # Other types not yet supported
+            prop_data = data.get(prop_template.Name)
             if prop_template.TemplateType == "P_SINGLEVALUE":
-                cls.import_single_value_from_template(pset_template, prop_template, data, props)
+                if prop_data:
+                    if prop_data["class"] != "IfcPropertySingleValue":
+                        continue
+                    template_data_type = cls.get_prop_template_primitive_type(prop_template)
+                    existing_data_type = prop_data.get("value_type", None)
+                    if existing_data_type and template_data_type != existing_data_type:
+                        continue
+                    continue
+                cls.import_single_value_from_template(pset_template, prop_template, simplified_data, props)
+
             elif prop_template.TemplateType.startswith("Q_"):
-                cls.import_single_value_from_template(pset_template, prop_template, data, props)
+                cls.import_single_value_from_template(pset_template, prop_template, simplified_data, props)
+
             elif prop_template.TemplateType == "P_ENUMERATEDVALUE":
-                cls.import_enumerated_value_from_template(prop_template, data, props)
+                if prop_data and prop_data["class"] != "IfcPropertyEnumeratedValue":
+                    continue
+                cls.import_enumerated_value_from_template(prop_template, simplified_data, props)
+
             else:
                 # NOTE: currently unsupported types:
                 # - P_BOUNDEDVALUE
