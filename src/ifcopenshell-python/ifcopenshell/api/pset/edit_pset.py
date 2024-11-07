@@ -247,10 +247,15 @@ class Usecase:
             if not value:
                 if self._try_purge(prop):
                     return
+            # Only need the first enum type since all enums are of the same type.
+            if reference := prop.EnumerationReference:
+                primary_measure_type = reference.EnumerationValues[0].is_a()
+            elif enum_values := prop.EnumerationValues:
+                primary_measure_type = enum_values[0].is_a()
+            else:
+                primary_measure_type = self.get_primary_measure_type(prop.Name, new_value=value[0])
+                assert primary_measure_type, f"Couldn't find primary measure type for the prop value: '{value[0]}'."
             for val in value:
-                primary_measure_type = prop.EnumerationReference.EnumerationValues[
-                    0
-                ].is_a()  # Only need the first enum type since all enums are of the same type
                 ifc_val = self.file.create_entity(primary_measure_type, val)
                 sel_vals.append(ifc_val)
             prop.EnumerationValues = tuple(sel_vals) or None
