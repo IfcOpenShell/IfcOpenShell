@@ -394,6 +394,7 @@ def get_properties(
                     "id": prop.id(),
                     "class": prop.is_a(),
                     "value": results[prop_name],
+                    "value_type": v.is_a() if v else None,
                 }
         elif ifc_class == "IfcPropertyEnumeratedValue":
             # 2 IfcPropertyEnumeratedValue.EnumerationValues
