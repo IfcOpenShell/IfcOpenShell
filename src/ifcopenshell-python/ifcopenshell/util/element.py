@@ -1166,10 +1166,13 @@ def get_parts(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity
         element = file.by_type("IfcElementAssembly")[0]
         parts = ifcopenshell.util.element.get_parts(element)
     """
-    if (is_decomposed_by := getattr(element, "IsDecomposedBy", None)) is not None and is_decomposed_by:
-        if is_decomposed_by[0].is_a("IfcRelAggregates"):
-            return is_decomposed_by[0].RelatedObjects
-    return []
+    objects: list[ifcopenshell.entity_instance] = []
+    is_not_ifc2x3 = element.file.schema != "IFC2X3"
+    if is_decomposed_by := getattr(element, "IsDecomposedBy", ()):
+        for rel in is_decomposed_by:
+            if is_not_ifc2x3 or rel.is_a("IfcRelAggregates"):
+                objects.extend(rel.RelatedObjects)
+    return objects
 
 
 def get_contained(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
@@ -1186,12 +1189,16 @@ def get_contained(element: ifcopenshell.entity_instance) -> list[ifcopenshell.en
         element = file.by_type("IfcBuildingStorey")[0]
         elements = ifcopenshell.util.element.get_contained(element)
     """
-    if (rel := getattr(element, "ContainsElements", None)) is not None and rel:
-        return rel[0].RelatedElements
-    return []
+    objects: list[ifcopenshell.entity_instance] = []
+    if contains_elements := getattr(element, "ContainsElements", ()):
+        for rel in contains_elements:
+            objects.extend(rel.RelatedElements)
+    return objects
 
 
-def get_components(element: ifcopenshell.entity_instance, include_ports=False) -> list[ifcopenshell.entity_instance]:
+def get_components(
+    element: ifcopenshell.entity_instance, include_ports: bool = False
+) -> list[ifcopenshell.entity_instance]:
     """
     Retrieves the components of an element that have an nest relationship.
 
@@ -1208,15 +1215,20 @@ def get_components(element: ifcopenshell.entity_instance, include_ports=False) -
         element = file.by_type("IfcElementAssembly")[0]
         components = ifcopenshell.util.element.get_components(element)
     """
-    if (is_nested_by := getattr(element, "IsNestedBy", None)) is not None:
-        if is_nested_by:
-            if include_ports:
-                return is_nested_by[0].RelatedObjects
-            return [e for e in is_nested_by[0].RelatedObjects if not e.is_a("IfcPort")]
-    elif (is_decomposed_by := getattr(element, "IsDecomposedBy", None)) is not None and is_decomposed_by:
-        if is_decomposed_by[0].is_a("IfcRelNests"):
-            return is_decomposed_by[0].RelatedObjects
-    return []
+    objects: list[ifcopenshell.entity_instance] = []
+    is_ifc2x3 = element.file.schema == "IFC2X3"
+    if is_ifc2x3:
+        if is_decomposed_by := getattr(element, "IsDecomposedBy", ()):
+            for rel in is_decomposed_by:
+                if rel.is_a("IfcRelNests"):
+                    objects.extend(rel.RelatedObjects)
+    else:
+        if is_nested_by := getattr(element, "IsNestedBy", None):
+            for rel in is_nested_by:
+                objects.extend(rel.RelatedObjects)
+    if include_ports:
+        return objects
+    return [e for e in objects if not e.is_a("IfcPort")]
 
 
 ReferenceData = namedtuple("ReferenceData", "inverse_attribute, rel_class, relating_element_attribute")
