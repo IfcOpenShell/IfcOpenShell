@@ -25,6 +25,7 @@ import shutil
 import mathutils
 import xml.etree.ElementTree as ET
 import svgwrite
+import svgwrite.text
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
@@ -774,7 +775,7 @@ class SvgWriter:
             "text-anchor": text_anchor,
         }
 
-    def add_fill_bg(self, element, copy=True):
+    def add_fill_bg(self, element: svgwrite.text.Text, copy: bool = True) -> svgwrite.text.Text:
         if copy:
             element = element.copy()
         if hasattr(element, "xml"):

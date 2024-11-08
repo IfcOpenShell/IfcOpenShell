@@ -16,10 +16,12 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import bpy
 import bonsai.bim.helper
 from bpy.types import Panel, UIList
 from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.resource.data import ResourceData
+from typing import Any
 
 
 class BIM_PT_resources(Panel):
@@ -287,7 +289,7 @@ class BIM_PT_resources(Panel):
         if self.props.cost_value_editing_type == "ATTRIBUTES":
             bonsai.bim.helper.draw_attributes(self.props.cost_value_attributes, self.layout.box())
 
-    def draw_readonly_cost_value_ui(self, layout, cost_value):
+    def draw_readonly_cost_value_ui(self, layout: bpy.types.UILayout, cost_value: dict[str, Any]) -> None:
         if self.props.active_cost_value_id == cost_value["id"] and self.props.cost_value_editing_type == "FORMULA":
             layout.prop(self.props, "cost_value_formula", text="")
         else:
@@ -295,7 +297,7 @@ class BIM_PT_resources(Panel):
 
         self.draw_cost_value_operator_ui(layout, cost_value["id"], self.props.active_resource_id)
 
-    def draw_cost_value_operator_ui(self, layout, cost_value_id, parent_id):
+    def draw_cost_value_operator_ui(self, layout: bpy.types.UILayout, cost_value_id: int, parent_id: int) -> None:
         if self.props.active_cost_value_id and self.props.active_cost_value_id == cost_value_id:
             if self.props.cost_value_editing_type == "ATTRIBUTES":
                 op = layout.operator("bim.edit_resource_cost_value", text="", icon="CHECKMARK")
