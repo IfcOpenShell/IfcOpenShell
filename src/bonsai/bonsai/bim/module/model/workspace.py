@@ -433,9 +433,7 @@ class CreateObjectUI:
         if not AuthoringData.data["relating_type_id"]:
             return
 
-        ifc_class = tool.Blender.get_enum_safe(cls.props, "ifc_class")
-        if not ifc_class:
-            ifc_class = AuthoringData.data["ifc_classes"][0][0]
+        ifc_class = AuthoringData.data["ifc_class_current"]
         if ifc_class == "IfcWallType":
             row.prop(data=cls.props, property="rl1", text="Relative Level" if ui_context != "TOOL_HEADER" else "RL")
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
@@ -488,9 +486,7 @@ class CreateObjectUI:
         if not AuthoringData.data["ifc_element_type"]:
             prop_with_search(row, cls.props, "ifc_class", text="Type Class" if ui_context != "TOOL_HEADER" else "")
         if AuthoringData.data["ifc_classes"]:
-            ifc_class = tool.Blender.get_enum_safe(cls.props, "ifc_class")
-            if not ifc_class:
-                ifc_class = AuthoringData.data["ifc_classes"][0][0]
+            ifc_class = AuthoringData.data["ifc_class_current"]
             if ifc_class:
                 box = cls.layout.box()
                 row = box.row(align=True)
@@ -916,7 +912,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
 
         if get_ifc_class(None, None):
             try:
-                self.has_ifc_class = bool(self.props.ifc_class)
+                self.has_ifc_class = bool(tool.Blender.get_enum_safe(self.props, "ifc_class"))
             except:
                 pass
         getattr(self, f"hotkey_{self.hotkey}")()
