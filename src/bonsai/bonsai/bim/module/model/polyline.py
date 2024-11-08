@@ -89,12 +89,11 @@ class PolylineOperator:
         self.snapping_points = []
         self.instructions = """TAB: Cycle Input
         D: Distance Input
-        A: Angle Input
+        A: Angle Lock
         M: Modify Snap Point
         C: Close Polyline
         BACKSPACE: Remove Point
         X, Y: Choose Axis
-        SHIFT: Lock axis
         """
         self.snap_info = """
         Snap: 
@@ -174,7 +173,7 @@ class PolylineOperator:
         context.workspace.status_text_set(self.instructions + custom_instructions + self.snap_info)
 
     def handle_lock_axis(self, context, event):
-        if event.value == "RELEASE" and event.type == "L":
+        if event.value == "PRESS" and event.type in {"L", "A"}:
             self.tool_state.lock_axis = False if self.tool_state.lock_axis else True
             self.tool_state.snap_angle = self.input_ui.get_number_value("WORLD_ANGLE")
             # Round to the closest 5
