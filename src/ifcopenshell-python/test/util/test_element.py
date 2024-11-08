@@ -53,6 +53,7 @@ class TestGetPsetIFC4(test.bootstrap.IFC4):
             "id": 4,
             "class": "IfcPropertySingleValue",
             "value": "b",
+            "value_type": "IfcLabel",
         }
 
     def test_getting_the_psets_of_a_product_type_as_a_dictionary(self):
@@ -66,6 +67,7 @@ class TestGetPsetIFC4(test.bootstrap.IFC4):
                 "id": 3,
                 "class": "IfcPropertySingleValue",
                 "value": "y",
+                "value_type": "IfcLabel",
             },
             "id": pset.id(),
         }
