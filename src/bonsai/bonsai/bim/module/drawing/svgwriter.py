@@ -776,6 +776,8 @@ class SvgWriter:
         }
 
     def add_fill_bg(self, element: svgwrite.text.Text, copy: bool = True) -> svgwrite.text.Text:
+        # Useful since tspans and texts do not support "background-color"
+        # so we just add a filter. Have to do it in a separate tag to avoid blurry image.
         if copy:
             element = element.copy()
         if hasattr(element, "xml"):
