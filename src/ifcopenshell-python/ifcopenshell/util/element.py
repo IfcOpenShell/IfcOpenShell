@@ -525,10 +525,12 @@ def get_types(type: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_in
         element_type = ifcopenshell.by_type("IfcWallType")[0]
         walls = ifcopenshell.util.element.get_types(element_type)
     """
-    for rel in getattr(type, "Types", []):
-        return rel.RelatedObjects
-    for rel in getattr(type, "ObjectTypeOf", []):
-        return rel.RelatedObjects
+    if type.file.schema == "IFC2X3":
+        if object_type_of := getattr(type, "ObjectTypeOf", ()):
+            return object_type_of[0].RelatedObjects
+    else:
+        if types := getattr(type, "Types", ()):
+            return types[0].RelatedObjects
     return []
 
 
@@ -1125,8 +1127,9 @@ def get_aggregate(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.e
         element = file.by_type("IfcBeam")[0]
         aggregate = ifcopenshell.util.element.get_aggregate(element)
     """
+    is_not_ifc2x3 = element.file.schema != "IFC2X3"
     if decomposes := getattr(element, "Decomposes", None):
-        if decomposes[0].is_a("IfcRelAggregates"):  # IFC2X3
+        if is_not_ifc2x3 or decomposes[0].is_a("IfcRelAggregates"):
             return decomposes[0].RelatingObject
 
 
@@ -1144,12 +1147,15 @@ def get_nest(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity
         element = file.by_type("IfcBeam")[0]
         aggregate = ifcopenshell.util.element.get_nest(element)
     """
-    if (nests := getattr(element, "Nests", None)) is not None:
-        if nests:
-            return nests[0].RelatingObject
-    elif (decomposes := getattr(element, "Decomposes", None)) is not None and decomposes:  # IFC2X3
+    is_ifc2x3 = element.file.schema == "IFC2X3"
+    if is_ifc2x3:
+        if not (decomposes := getattr(element, "Decomposes", None)):
+            return
         if decomposes[0].is_a("IfcRelNests"):
             return decomposes[0].RelatingObject
+    else:
+        if nests := getattr(element, "Nests", None):
+            return nests[0].RelatingObject
 
 
 def get_parts(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
