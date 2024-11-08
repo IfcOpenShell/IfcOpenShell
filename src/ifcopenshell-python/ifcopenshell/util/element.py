@@ -333,9 +333,12 @@ def get_property(
     for prop in properties or []:
         if prop.Name != name:
             continue
+        is_single_value = False  # For now we pass value type only for single values.
         if prop.is_a("IfcPropertySingleValue"):
             # 2 IfcPropertySingleValue.NominalValue
             result = v.wrappedValue if (v := prop[2]) else None
+            result_type = v.is_a() if v else None
+            is_single_value = True
         elif prop.is_a("IfcPropertyEnumeratedValue"):
             # 2 IfcPropertyEnumeratedValue.EnumerationValues
             result = [v.wrappedValue for v in values] if (values := prop[2]) else None
@@ -355,6 +358,8 @@ def get_property(
             result = data
         if verbose:
             result = {"id": prop.id(), "class": prop.is_a(), "value": result}
+            if is_single_value:
+                result["value_type"] = result_type
         return result
 
 
