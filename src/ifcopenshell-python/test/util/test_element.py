@@ -909,6 +909,34 @@ class TestGetContainedIFC2X3(test.bootstrap.IFC2X3, TestGetContainedIFC4):
     pass
 
 
+class TestGetComponentsIFC4(test.bootstrap.IFC4):
+    def test_run(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcElementAssembly")
+        subelement = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWindow")
+        ifcopenshell.api.nest.assign_object(self.file, related_objects=[subelement], relating_object=element)
+
+        # Test two separate rels.
+        rel = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcRelNests")
+        subelement2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWindow")
+        rel.RelatingObject = element
+        rel.RelatedObjects = [subelement2]
+
+        assert set(subject.get_components(element)) == {subelement, subelement2}
+
+    def test_include_ports(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcFlowSegment")
+        port = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcDistributionPort")
+        subelement = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcFlowSegment")
+        ifcopenshell.api.nest.assign_object(self.file, related_objects=[port, subelement], relating_object=element)
+
+        assert set(subject.get_components(element)) == {subelement}
+        assert set(subject.get_components(element, include_ports=True)) == {port, subelement}
+
+
+class TestGetComponentsIFC2X3(test.bootstrap.IFC2X3, TestGetComponentsIFC4):
+    pass
+
+
 class TestGetReferencedElements(test.bootstrap.IFC4):
     # TODO: test other references:
     # IfcExternallyDefinedHatchStyle
