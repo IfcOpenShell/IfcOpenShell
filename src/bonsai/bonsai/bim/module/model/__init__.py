@@ -105,6 +105,7 @@ classes = (
     slab.EditSketchExtrusionProfile,
     slab.EnableEditingExtrusionProfile,
     slab.EnableEditingSketchExtrusionProfile,
+    slab.RecalculateSlab,
     slab.ResetVertex,
     slab.SetArcIndex,
     space.GenerateSpace,
