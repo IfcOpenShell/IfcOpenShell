@@ -403,7 +403,7 @@ class AddCostValue(bpy.types.Operator, tool.Ifc.Operator):
 
 class RemoveCostItemValue(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_cost_value"
-    bl_label = "Add Cost Item Value"
+    bl_label = "Remove Cost Item Value"
     bl_options = {"REGISTER", "UNDO"}
     parent: bpy.props.IntProperty()
     cost_value: bpy.props.IntProperty()
