@@ -338,7 +338,7 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator):
         PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
         tool.Blender.update_viewport()
 
-        self.handle_lock_axis(context, event)
+        self.handle_lock_axis(context, event) # Must come before "PASS_TRHOUGH"
 
         if event.type in {"MIDDLEMOUSE", "WHEELUPMOUSE", "WHEELDOWNMOUSE"}:
             self.handle_mouse_move(context, event)
