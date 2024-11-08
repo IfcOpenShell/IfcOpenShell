@@ -90,7 +90,8 @@ def generate_vertices(rep_curve: entity_instance, distance_interval: float = 5.0
         raise ValueError("Alignment representation not found.")
 
     s = ifcopenshell.geom.settings()
-    s.set("PIECEWISE_STEP_PARAM", distance_interval)
+    s.set("piecewise-step-type",0) # 0 = step-size is maximum step size, 1 = step-size is mininimum number of steps
+    s.set("piecewise-step-size", distance_interval)
     shape = ifcopenshell.geom.create_shape(s, rep_curve)
     vertices = shape.verts
     if len(vertices) == 0:
@@ -184,6 +185,88 @@ class IfcAlignmentHelper:
             )
             alignment_segment.ObjectPlacement = global_placement
             alignment_segment.Representation = product
+
+    def _map_alignment_vertical_segment(self, segment: entity_instance) -> Sequence[entity_instance]:
+        segment_type = segment.is_a().upper()
+        expected_type = "IFCALIGNMENTVERTICALSEGMENT"
+        if not segment_type == expected_type:
+            raise TypeError(f"Expected to see type '{expected_type}', instead received '{segment_type}'.")
+        
+        start_distance_along = segment.StartDisAlong
+        horizontal_length = segment.HorizontalLength
+        start_height = segment.StartHeight
+        start_gradient = segment.StartGradient
+        end_gradient = segment.EndGradient
+        radius_of_curvature = segment.RadiusOfCurvature
+        
+        if math.isclose(horizontal_length, 0):
+            # set transition value based on whether this is the final zero-length segment
+            transition = "DISCONTINUOUS"
+        else:
+            transition = "CONTSAMEGRADIENTSAMECURVATURE"
+
+        _type = segment.PredefinedType
+
+        match _type:
+            case "CONSTANTGRADIENT":
+                parent_curve = self._file.create(
+                    type="IfcLine",
+                    Pnt=self._file.create_entity(type="IfcCartesianPoint",Coordinates=(0.0,0.0),),
+                    Dir=self._file.create_entity(type="IfcVector",
+                        Orientation=self._file.create_entity("IfcDirection",DirectionRatios=(1.0,0.0),),
+                        Magnitude=1.0,),
+                    )
+                curve_segment = self._file.create_entity(
+                    type="IfcCurveSegment",
+                    Transition=transition,
+                    Placement=self._file.create_entity(
+                        type="IfcAxis2Placement2D",
+                        Location=self._file.c(type="IfcCartesianPoint",Coordinates=(start_distance_along,start_height)),
+                        RefDirection=self._file.createIfcDirection(
+                            (math.sqrt(1.0 - start_gradient*start_gradient), start_gradient),
+                        ),
+                    ),
+                    SegmentStart=self._file.createIfcLengthMeasure(0.0),
+                    SegmentLength=self._file.createIfcLengthMeasure(horizontal_length),
+                    ParentCurve=parent_curve,
+                )
+                result = (curve_segment, None)
+
+            case "PARABOLICARC":
+                A = start_height
+                B = start_gradient
+                C = (end_gradient - start_gradient)/(2.0*horizontal_length)
+
+                parent_curve = self._file.create_entity(
+                    type="IfcPolynomialCurve",
+                    Placement=self._file.create_entity(
+                        type="IfcAxis2Placement2D",
+                        Location=self._file.create_entity(type="IfcCartesianPoint",Coordinates=(0.0,0.0)),
+                        RefDirection=self._file.createIfcDirection((1.0, 0.0),),
+                    ),
+                    CoefficientsX=(0.0,1.0),
+                    CoefficientsY=(A,B,C),
+                )
+                curve_segment = self._file.create_entity(
+                    type="IfcCurveSegment",
+                    Transition=transition,
+                    Placement=self._file.create_entity(
+                        type="IfcAxis2Placement2D",
+                        Location=self._file.create_entity(type="IfcCartesianPoint",Coordinates=(start_distance_along,start_height)),
+                        RefDirection=self._file.createIfcDirection(
+                            (math.sqrt(1.0 - start_gradient*start_gradient), start_gradient),
+                        ),
+                    ),
+                    SegmentStart=self._file.createIfcLengthMeasure(0.0),
+                    SegmentLength=self._file.createIfcLengthMeasure(horizontal_length),
+                    ParentCurve=parent_curve,
+                )
+                result = (curve_segment, None)
+                
+            case _:
+                result = (None, None)
+
+        return result
 
     def _map_alignment_horizontal_segment(self, segment: entity_instance) -> Sequence[entity_instance]:
         segment_type = segment.is_a().upper()
