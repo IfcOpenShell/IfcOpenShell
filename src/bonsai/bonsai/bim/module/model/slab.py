@@ -84,7 +84,7 @@ class DumbSlabGenerator:
         polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline
         polyline_points = polyline_data[0].polyline_points if polyline_data else []
         self.location = Vector((polyline_points[0].x, polyline_points[0].y, self.container_obj.location.z))
-        self.polyline = [Vector((p.x, p.y, 0.0)) - self.location for p in polyline_points]
+        self.polyline = [tuple(Vector((p.x, p.y, 0.0)) - self.location) for p in polyline_points]
 
         if len(self.polyline) <= 2:
             return
