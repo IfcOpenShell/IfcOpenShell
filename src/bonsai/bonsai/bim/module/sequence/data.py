@@ -274,7 +274,7 @@ class SequenceData:
                 "enum",
             ):
                 continue
-            schema.append((f"{a.name()}/{primitive_type}", a.name(), ""))
+            taskcolumns_enum.append((f"{a.name()}/{primitive_type}", a.name(), ""))
         return taskcolumns_enum
 
     @classmethod
@@ -290,7 +290,7 @@ class SequenceData:
                 "enum",
             ):
                 continue
-            schema.append((f"{a.name()}/{primitive_type}", a.name(), ""))
+            tasktimecolumns_enum.append((f"{a.name()}/{primitive_type}", a.name(), ""))
         return tasktimecolumns_enum
 
 
