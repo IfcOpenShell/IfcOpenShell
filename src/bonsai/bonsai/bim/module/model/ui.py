@@ -94,7 +94,7 @@ class LaunchTypeManager(bpy.types.Operator):
         props = context.scene.BIMModelProperties
         props.type_page = 1
         if get_ifc_class(None, context):
-            ifc_class = props.ifc_class or AuthoringData.data["ifc_element_type"]
+            ifc_class = AuthoringData.data["ifc_class_current"] or AuthoringData.data["ifc_element_type"]
         else:
             ifc_class = AuthoringData.data["ifc_element_type"]
 
@@ -167,7 +167,7 @@ class LaunchTypeManager(bpy.types.Operator):
             else:
                 row = box.row()
                 op = box.operator("bim.load_type_thumbnails", text="", icon="FILE_REFRESH", emboss=False)
-                op.ifc_class = props.ifc_class
+                op.ifc_class = AuthoringData.data["ifc_class_current"]
 
             row = box.row()
             row.alignment = "CENTER"

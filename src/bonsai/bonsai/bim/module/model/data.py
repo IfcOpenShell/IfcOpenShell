@@ -56,6 +56,7 @@ class AuthoringData:
         cls.data["default_container"] = cls.default_container()
         cls.data["ifc_element_type"] = cls.ifc_element_type
         cls.data["ifc_classes"] = cls.ifc_classes()
+        cls.data["ifc_class_current"] = cls.ifc_class_current()
         cls.data["relating_type_id"] = cls.relating_type_id()  # only after .ifc_classes()
         cls.data["relating_type_name"] = cls.relating_type_name()  # only after .relating_type_id()
         cls.data["relating_type_description"] = cls.relating_type_description()  # only after .relating_type_id()
@@ -108,12 +109,12 @@ class AuthoringData:
 
     @classmethod
     def total_types(cls):
-        ifc_class = cls.props.ifc_class
+        ifc_class = cls.data["ifc_class_current"]
         return len(tool.Ifc.get().by_type(ifc_class)) if ifc_class else 0
 
     @classmethod
     def total_pages(cls):
-        ifc_class = cls.props.ifc_class
+        ifc_class = cls.data["ifc_class_current"]
         total_types = len(tool.Ifc.get().by_type(ifc_class)) if ifc_class else 0
         return math.ceil(total_types / cls.types_per_page)
 
@@ -129,7 +130,7 @@ class AuthoringData:
 
     @classmethod
     def paginated_relating_types(cls):
-        ifc_class = cls.props.ifc_class
+        ifc_class = cls.data["ifc_class_current"]
         if not ifc_class:
             return []
         results = []
@@ -226,15 +227,20 @@ class AuthoringData:
         results.extend([(c, c, "") for c in sorted(classes)])
         return results
 
-    @classmethod
-    def relating_type_id(cls):
+    @classmethod 
+    def ifc_class_current(cls):
         ifc_classes = cls.data["ifc_classes"]
         if not ifc_classes:
             return []
-        results = []
         ifc_class = tool.Blender.get_enum_safe(cls.props, "ifc_class")
         if not ifc_class and ifc_classes:
             ifc_class = ifc_classes[0][0]
+        return ifc_class
+
+    @classmethod
+    def relating_type_id(cls):
+        results = []
+        ifc_class = cls.data["ifc_class_current"]
         if ifc_class:
             elements = natsorted(tool.Ifc.get().by_type(ifc_class), key=lambda s: (s.Name or "Unnamed").lower())
             results.extend(elements)
