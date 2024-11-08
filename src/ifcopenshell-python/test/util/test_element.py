@@ -869,6 +869,25 @@ class TestGetNestIFC2X3(test.bootstrap.IFC2X3, TestGetNestIFC4):
     pass
 
 
+class TestGetPartsIFC4(test.bootstrap.IFC4):
+    def test_run(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcElementAssembly")
+        subelement = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWindow")
+        ifcopenshell.api.aggregate.assign_object(self.file, products=[subelement], relating_object=element)
+
+        # Test two separate rels.
+        rel = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcRelAggregates")
+        subelement2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWindow")
+        rel.RelatingObject = element
+        rel.RelatedObjects = [subelement2]
+
+        assert set(subject.get_parts(element)) == {subelement, subelement2}
+
+
+class TestGetPartsIFC2X3(test.bootstrap.IFC2X3, TestGetPartsIFC4):
+    pass
+
+
 class TestGetReferencedElements(test.bootstrap.IFC4):
     # TODO: test other references:
     # IfcExternallyDefinedHatchStyle
