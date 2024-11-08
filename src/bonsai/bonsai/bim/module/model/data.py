@@ -58,6 +58,7 @@ class AuthoringData:
         cls.data["ifc_classes"] = cls.ifc_classes()
         cls.data["ifc_class_current"] = cls.ifc_class_current()
         cls.data["relating_type_id"] = cls.relating_type_id()  # only after .ifc_classes()
+        cls.data["relating_type_id_current"] = cls.relating_type_id_current()  # only after .ifc_classes()
         cls.data["relating_type_name"] = cls.relating_type_name()  # only after .relating_type_id()
         cls.data["relating_type_description"] = cls.relating_type_description()  # only after .relating_type_id()
         cls.data["predefined_type"] = cls.predefined_type()  # only after .relating_type_id()
@@ -247,18 +248,22 @@ class AuthoringData:
             return [(str(e.id()), e.Name or "Unnamed", e.Description or "") for e in results]
         return []
 
-    @classmethod
-    def relating_type_name(cls):
+    @classmethod 
+    def relating_type_id_current(cls):
         relating_type_id = tool.Blender.get_enum_safe(cls.props, "relating_type_id")
         relating_type_id_data = cls.data["relating_type_id"]
         if not relating_type_id and relating_type_id_data:
             relating_type_id = relating_type_id_data[0][0]
-        if relating_type_id:
+        return relating_type_id
+
+    @classmethod
+    def relating_type_name(cls):
+        if relating_type_id := cls.data["relating_type_id_current"]:
             return tool.Ifc.get().by_id(int(relating_type_id)).Name or "Unnamed"
 
     @classmethod
     def relating_type_description(cls):
-        if relating_type_id := cls.props.relating_type_id:
+        if relating_type_id := cls.data["relating_type_id_current"]:
             return tool.Ifc.get().by_id(int(relating_type_id)).Description or "No description"
 
     @classmethod
