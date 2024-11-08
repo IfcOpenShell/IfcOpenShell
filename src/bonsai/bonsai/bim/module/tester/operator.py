@@ -31,7 +31,7 @@ import bonsai.bim.handler
 from pathlib import Path
 
 
-class ExecuteIfcTester(bpy.types.Operator, tool.Ifc.Operator):
+class ExecuteIfcTester(bpy.types.Operator):
     bl_idname = "bim.execute_ifc_tester"
     bl_label = "Execute IfcTester"
 
