@@ -1073,6 +1073,8 @@ class ProductDecorator:
         relating_type_id = props.relating_type_id
         if relating_type_id:
             self.relating_type = tool.Ifc.get().by_id(int(relating_type_id))
+        else:
+            return
 
         # Wall
         if self.relating_type.is_a("IfcWallType"):
