@@ -21,6 +21,7 @@ import bpy
 import time
 import tempfile
 import webbrowser
+import traceback
 import ifctester
 import ifctester.ids
 import ifctester.reporter
@@ -72,7 +73,19 @@ class ExecuteIfcTester(bpy.types.Operator, tool.Ifc.Operator):
             start = time.time()
             output = Path(os.path.join(dirpath, "{}_{}.html".format(ifc_path, os.path.basename(specs_path))))
 
-            specs = ifctester.ids.open(specs_path)
+            try:
+                specs = ifctester.ids.open(specs_path)
+            except ifctester.ids.IdsXmlValidationError as e:
+                traceback.print_exc()
+                YELLOW = "\033[93m"
+                RESET = "\033[0m"
+                print("------------------\n" * 3)
+                print(f"{YELLOW}Validation error details:\n\n{str(e.xml_error)}{RESET}")
+                print("------------------\n" * 3)
+                self.report(
+                    {"ERROR"}, "Provided IDS file appears to be invalid. Open system console to see the details."
+                )
+                return {"CANCELLED"}
             print("Finished loading:", time.time() - start)
             start = time.time()
             specs.validate(ifc_data, filepath=ifc_path)
