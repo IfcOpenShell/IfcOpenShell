@@ -19,7 +19,6 @@
 import ifcopenshell.util.unit
 from ifcopenshell.util.data import Clipping
 from math import sin, cos
-from mathutils import Vector
 from typing import Any, Optional, Union
 
 
@@ -35,7 +34,7 @@ def add_slab_representation(
     # Planes are defined either by Clipping objects
     # or by dictionaries of arguments for `Clipping.parse`
     clippings: Optional[list[Union[Clipping, dict[str, Any]]]] = None,
-    polyline: Optional[list[Vector]] = None,
+    polyline: Optional[list[tuple]] = None,
 ) -> ifcopenshell.entity_instance:
     usecase = Usecase()
     usecase.file = file
