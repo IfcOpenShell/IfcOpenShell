@@ -85,6 +85,7 @@ class Polyline(bonsai.core.tool.Polyline):
         # angle_axis_end: Vector
         axis_method: str = None
         plane_method: str = None
+        plane_origin: Vector = Vector((0.0, 0.0, 0.0))
         instructions: str = """TAB: Cycle Input
         M: Modify Snap Point
         C: Close
@@ -466,6 +467,15 @@ class Polyline(bonsai.core.tool.Polyline):
         snap_vertex = bpy.context.scene.BIMPolylineProperties.snap_mouse_point[0]
         if tool_state and tool_state.use_default_container:
             z = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
+
+        # Lock one dimension when in plane method
+        if tool_state.plane_origin:
+            if tool_state.plane_method == "XY":
+                z = tool_state.plane_origin.z
+            elif tool_state.plane_method == "XZ":
+                y = tool_state.plane_origin.y
+            elif tool_state.plane_method == "YZ":
+                x = tool_state.plane_origin.x
 
         if x is None and y is None:
             x = snap_vertex.x
