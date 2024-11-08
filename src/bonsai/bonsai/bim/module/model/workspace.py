@@ -1086,6 +1086,8 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             return
         if self.active_material_usage == "LAYER2":
             bpy.ops.bim.recalculate_wall()
+        elif self.active_material_usage == "LAYER3":
+            bpy.ops.bim.recalculate_slab()
         elif tool.System.get_ports(element):
             bpy.ops.bim.regenerate_distribution_element()
         elif self.active_material_usage == "PROFILE":
