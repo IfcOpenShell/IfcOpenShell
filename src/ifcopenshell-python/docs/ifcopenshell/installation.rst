@@ -28,7 +28,7 @@ IfcOpenShell depends on:
   for IfcConvert to be able to write tessellated Collada (.dae) files
 - (Optional) `SWIG <http://www.swig.org/>`__ and `Python
   <https://www.python.org/>`__ - for building the IfcOpenShell Python interface
-  and use in the BlenderBIM Add-on
+  and use in Bonsai
 - (Optional) `HDF5 <https://www.hdfgroup.org/solutions/hdf5>`__ - for caching
   geometry using the HDF5 format
 
@@ -219,7 +219,7 @@ Compiling on Windows (Visual Studio)
 ------------------------------------
 
 This is for users of  `Visual Studio <https://www.visualstudio.com/>`__ 2008 to
-2019 (2022 not yet supported by dependency CMake) with C++ toolset (or `Visual
+2022 with C++ toolset, recommend to install the C++ toolset with VisualStudio Installer (or `Visual
 C++ Build Tools <http://landinghub.visualstudio.com/visual-cpp-build-tools>`__).
 
 1. Fetch the latest source code, including all submodules.

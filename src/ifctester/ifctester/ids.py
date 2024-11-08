@@ -20,6 +20,7 @@ from __future__ import annotations
 import os
 import datetime
 import ifcopenshell
+from xmlschema.validators.exceptions import XMLSchemaValidationError
 from xmlschema import XMLSchema
 from xmlschema import etree_tostring
 from xml.etree import ElementTree as ET
@@ -43,16 +44,26 @@ cwd = os.path.dirname(os.path.realpath(__file__))
 schema = None
 
 
+class IdsXmlValidationError(Exception):
+    def __init__(self, xml_error: XMLSchemaValidationError, message: str):
+        self.xml_error = xml_error
+        super().__init__(message)
+
+
 @overload
 def open(filepath: str, validate: Literal[False] = False) -> Ids: ...
 @overload
 def open(filepath: str, validate: Literal[True]) -> None: ...
 def open(filepath: str, validate=False) -> Union[Ids, None]:
-    if validate:
-        get_schema().validate(filepath)
-    return Ids().parse(
-        get_schema().decode(filepath, strip_namespaces=True, namespaces={"": "http://standards.buildingsmart.org/IDS"})
-    )
+    try:
+        if validate:
+            get_schema().validate(filepath)
+        decode = get_schema().decode(
+            filepath, strip_namespaces=True, namespaces={"": "http://standards.buildingsmart.org/IDS"}
+        )
+    except XMLSchemaValidationError as e:
+        raise IdsXmlValidationError(e, f"Provided .ids file ({filepath}) appears to be invalid. See details above.")
+    return Ids().parse(decode)
 
 
 def get_schema():
@@ -139,7 +150,9 @@ class Ids:
         ET.ElementTree(get_schema().encode(self.asdict())).write(filepath, encoding="utf-8", xml_declaration=True)
         return get_schema().is_valid(filepath)
 
-    def validate(self, ifc_file: ifcopenshell.file, filter_version=False, filepath: Optional[str] = None) -> None:
+    def validate(
+        self, ifc_file: ifcopenshell.file, should_filter_version: bool = False, filepath: Optional[str] = None
+    ) -> None:
         if filepath:
             self.filepath = filepath
             self.filename = os.path.basename(filepath)
@@ -149,7 +162,8 @@ class Ids:
         get_psets.cache_clear()
         for specification in self.specifications:
             specification.reset_status()
-            specification.validate(ifc_file, filter_version=filter_version)
+            specification.check_ifc_version(ifc_file)
+            specification.validate(ifc_file, should_filter_version=should_filter_version)
 
 
 class Specification:
@@ -177,6 +191,7 @@ class Specification:
         self.passed_entities: set[ifcopenshell.entity_instance] = set()
         self.failed_entities: set[ifcopenshell.entity_instance] = set()
         self.status = None
+        self.is_ifc_version = None
 
     def asdict(self):
         results = {
@@ -246,8 +261,12 @@ class Specification:
             facet.failures.clear()
         self.status = None
 
-    def validate(self, ifc_file: ifcopenshell.file, filter_version=False) -> None:
-        if filter_version and ifc_file.schema not in self.ifcVersion:
+    def check_ifc_version(self, ifc_file: ifcopenshell.file) -> bool:
+        self.is_ifc_version = ifc_file.schema_identifier in self.ifcVersion
+        return self.is_ifc_version
+
+    def validate(self, ifc_file: ifcopenshell.file, should_filter_version: bool = False) -> None:
+        if should_filter_version and not self.is_ifc_version:
             return
 
         elements = None

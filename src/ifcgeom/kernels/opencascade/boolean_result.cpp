@@ -107,7 +107,7 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result::ptr br, Con
 
 			if (settings_.get<settings::DisableBooleanResult>().get()) {
 				results.emplace_back(IfcGeom::ConversionResult(
-					(int)br->instance->data().id(),
+					br->instance->as<IfcUtil::IfcBaseEntity>()->id(),
 					br->matrix,
 					new OpenCascadeShape(a),
 					br->surface_style ? br->surface_style : first_item_style
@@ -189,7 +189,7 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result::ptr br, Con
 	}
 
 	results.emplace_back(IfcGeom::ConversionResult(
-		(int) br->instance->data().id(),
+		br->instance->as<IfcUtil::IfcBaseEntity>()->id(),
 		br->matrix,
 		new OpenCascadeShape(a),
 		br->surface_style ? br->surface_style : first_item_style

@@ -153,6 +153,20 @@ CGAL::Nef_polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_nef_polyhe
 #endif
 
 bool CgalKernel::convert(const taxonomy::shell::ptr l, cgal_shape_t& shape) {
+	for (auto& f : l->children) {
+		if (f->basis && f->basis->kind() != taxonomy::PLANE) {
+			Logger::Error("CGAL Kernel: Non-planar faces not supported at the moment");
+			throw not_supported_error();
+		}
+		for (auto& w : f->children) {
+			for (auto& e : w->children) {
+				if (e->basis && e->basis->kind() == taxonomy::BSPLINE_CURVE) {
+					Logger::Error("CGAL Kernel: B-spline edge curves not supported at the moment");
+					throw not_supported_error();
+				}
+			}
+		}
+	}
 	if (false && l->children.size() > 100) {
 		static double inf = 1.e9; //  std::numeric_limits<double>::infinity();
 		std::pair<Eigen::Vector3d, Eigen::Vector3d> minmax(
@@ -215,7 +229,7 @@ bool CgalKernel::convert(const taxonomy::face::ptr face, std::list<cgal_face_t>&
 		if (bound->external.get_value_or(false)) num_outer_bounds++;
 	}
 
-	if (num_outer_bounds != 1 && num_outer_bounds != face->children.size()) {
+	if (face->children.size() > 1 && num_outer_bounds > 1 && face->children.size() != num_outer_bounds) {
 		Logger::Message(Logger::LOG_ERROR, "Invalid configuration of boundaries for:", face->instance);
 		return false;
 	}
@@ -224,7 +238,8 @@ bool CgalKernel::convert(const taxonomy::face::ptr face, std::list<cgal_face_t>&
 
 	for (auto& bound : face->children) {
 
-		const bool is_interior = !bound->external.get_value_or(false);
+		const bool is_interior = !(bound->external.get_value_or(false) || face->children.size() == 1);
+		// single face bound is always external... even if not marked as such
 
 		cgal_wire_t wire;
 		if (!convert(bound, wire)) {
@@ -244,7 +259,7 @@ bool CgalKernel::convert(const taxonomy::face::ptr face, std::list<cgal_face_t>&
 		}
 	}
 
-	if (num_outer_bounds == 1) {
+	if (num_outer_bounds == 1 || face->children.size() == 1) {
 		result.push_back(mf);
 	}
 
@@ -297,7 +312,7 @@ namespace {
 	};
 
 	void evaluate_curve(const taxonomy::line::ptr& c, double u, taxonomy::point3& p) {
-		Eigen::Vector4d xy{ u, 0, 0, 1. };
+		Eigen::Vector4d xy{ 0, 0, u, 1. };
 		p.components() = (c->matrix->ccomponents() * xy).head<3>();
 	}
 
@@ -314,7 +329,7 @@ namespace {
 	// ----
 
 	void project_onto_curve(const taxonomy::line::ptr& c, const taxonomy::point3& p, double& u) {
-		u = (c->matrix->ccomponents().inverse() * p.ccomponents().homogeneous())(0);
+		u = (c->matrix->ccomponents().inverse() * p.ccomponents().homogeneous())(2);
 	}
 
 	void project_onto_curve(const taxonomy::circle::ptr& c, const taxonomy::point3& p, double& u) {
@@ -427,11 +442,19 @@ namespace {
 		}
 
 		void operator()(const taxonomy::trimmed_curve::ptr& e) {
+			auto e_basis = e->basis;
+
+			while (e_basis->kind() == taxonomy::EDGE && e_basis->instance && e_basis->instance->declaration().name() == "IfcTrimmedCurve") {
+				// @todo we still might have something to wrt orientation on periodic curves
+				// to make sure we select the correct arc later on.
+				e_basis = taxonomy::cast<taxonomy::edge>(e_basis)->basis;
+			}
+
 			point_projection_visitor v1{ e->basis }, v2{ e->basis };
 			boost::apply_visitor(v1, e->start);
 			boost::apply_visitor(v2, e->end);
 
-			if (!e->orientation.get_value_or(true)) {
+			if (!e->curve_sense.get_value_or(true)) {
 				std::swap(v1.u, v2.u);
 			}
 
@@ -440,7 +463,7 @@ namespace {
 			dispatch_curve_creation<cgal_curve_creation_visitor>::dispatch(e->basis, v);
 			this->points = v.points;
 
-			if (!e->orientation.get_value_or(true)) {
+			if (!e->curve_sense.get_value_or(true)) {
 				std::reverse(this->points.begin(), this->points.end());
 			}
 		}
@@ -652,20 +675,19 @@ bool CgalKernel::convert(const taxonomy::loop::ptr loop, cgal_wire_t& result) {
 
 	for (auto& e : loop->children) {
 		std::vector<taxonomy::point3> edge;
-		if (e->basis) {
+		if (e->basis && e->basis->kind() != taxonomy::LINE) {
 			convert_curve(settings_, e, edge);
-			if (!e->curve_sense.get_value_or(true)) {
-				std::reverse(edge.begin(), edge.end());
-			}
 		} else {
 			edge = {
 				*boost::get<taxonomy::point3::ptr>(e->start),
 				*boost::get<taxonomy::point3::ptr>(e->end)
 			};
 		}
+
 		if (!e->orientation.get_value_or(true)) {
 			std::reverse(edge.begin(), edge.end());
 		}
+
 		extend_wire(points, edge);
 	}
 
@@ -767,7 +789,7 @@ bool CgalKernel::convert_impl(const taxonomy::shell::ptr shell, ConversionResult
 		return false;
 	}
 	results.emplace_back(ConversionResult(
-		shell->instance->data().id(),
+		shell->instance->as<IfcUtil::IfcBaseEntity>()->id(),
 		shell->matrix,
 		new CgalShape(shape),
 		shell->surface_style
@@ -776,19 +798,23 @@ bool CgalKernel::convert_impl(const taxonomy::shell::ptr shell, ConversionResult
 }
 
 bool CgalKernel::convert_impl(const taxonomy::solid::ptr solid, ConversionResults& results) {
+	if (solid->children.size() > 1) {
+		Logger::Error("Multiple shells in solid not supported at the moment");
+		return false;
+	}
 	cgal_shape_t shape;
 	if (solid->children.empty()) {
 		return false;
 	}
 	// @todo
-	if (!convert((taxonomy::shell::ptr)solid->children[0], shape)) {
+	if (!convert(solid->children[0], shape)) {
 		return false;
 	}
 	if (shape.size_of_facets() == 0) {
 		return false;
 	}
 	results.emplace_back(ConversionResult(
-		solid->instance->data().id(),
+		solid->instance->as<IfcUtil::IfcBaseEntity>()->id(),
 		solid->matrix,
 		new CgalShape(shape),
 		solid->surface_style
@@ -840,7 +866,7 @@ bool ifcopenshell::geometry::kernels::CgalKernel::convert_openings(const IfcUtil
 
 		CGAL::Nef_polyhedron_3<Kernel_> a;
 		if (!preprocess_boolean_operand(entity, {}, {}, {}, entity_shape, a, PP_NONE /*PP_UNIFY_PLANES_INTERNALLY*/)) {
-			continue;
+			return false;
 		}
 
 		first_operands_nef.push_back(a);
@@ -938,7 +964,7 @@ bool CgalKernel::convert_impl(const taxonomy::extrusion::ptr extrusion, Conversi
 		return false;
 	}
 	results.emplace_back(ConversionResult(
-		extrusion->instance->data().id(),
+		extrusion->instance->as<IfcUtil::IfcBaseEntity>()->id(),
 		extrusion->matrix,
 		new CgalShape(shape),
 		extrusion->surface_style
@@ -1289,7 +1315,11 @@ bool CgalKernel::preprocess_boolean_operand(const IfcUtil::IfcBaseClass* log_ref
 	if (proc == PP_SNAP_POINTS_TO_FIRST_OPERAND) {
 		static int NN = 0;
 		typedef CGAL::AABB_face_graph_triangle_primitive<cgal_shape_t>                AABB_face_graph_primitive;
-		typedef CGAL::AABB_traits<Kernel_, AABB_face_graph_primitive>               AABB_face_graph_traits;
+#if CGAL_VERSION_NR >= 1060000000
+	    typedef CGAL::AABB_traits_3<Kernel_, AABB_face_graph_primitive>               AABB_face_graph_traits;
+#else
+	    typedef CGAL::AABB_traits<Kernel_, AABB_face_graph_primitive>               AABB_face_graph_traits;
+#endif
 
 		CGAL::AABB_tree<AABB_face_graph_traits> tree;
 
@@ -1814,7 +1844,7 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result::ptr br, Conversion
 			}
 
 			return ConversionResult(
-				br->instance->data().id(),
+				br->instance->as<IfcUtil::IfcBaseEntity>()->id(),
 				br->matrix,
 				new CgalShape(shp),
 				br->surface_style ? br->surface_style : first_item_style
@@ -1900,6 +1930,17 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result::ptr br, Conversion
 				if (!convert(face, fs) || fs.size() != 1) {
 					return false;
 				}
+				
+				auto& w = fs.front().outer;
+				CGAL::Polygon_2<Kernel_> ps;
+				for (auto& p : w) {
+					ps.push_back({ p.x(), p.y() });
+				}
+				if (!ps.is_simple()) {
+					Logger::Warning("Polygonal boundary not simple", face->children[0]->instance);
+					continue;
+				}
+
 				// static 
 				auto z = taxonomy::make<taxonomy::direction3>(0, 0, 1);
 				cgal_shape_t poly;
@@ -2047,7 +2088,7 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result::ptr br, Conversion
 	}
 
 	results.emplace_back(ConversionResult(
-		br->instance->data().id(),
+		br->instance->as<IfcUtil::IfcBaseEntity>()->id(),
 		br->matrix,
 		new CgalShape(a_poly),
 		br->surface_style ? br->surface_style : first_item_style

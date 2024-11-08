@@ -263,7 +263,7 @@ Create a simple model from scratch
     ifcopenshell.api.geometry.assign_representation(model, product=wall, representation=representation)
 
     # Place our wall in the ground floor
-    ifcopenshell.api.spatial.assign_container(model, relating_structure=storey, product=wall)
+    ifcopenshell.api.spatial.assign_container(model, relating_structure=storey, products=[wall])
 
     # Write out to a file
     model.write("/home/dion/model.ifc")

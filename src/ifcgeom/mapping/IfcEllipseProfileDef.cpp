@@ -39,14 +39,17 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcEllipseProfileDef* inst) {
 #endif
 	if (has_position) {
 		m4 = taxonomy::cast<taxonomy::matrix4>(map(inst->Position()));
+	} else {
+		// matrix needs to be set on elementary curves.
+		m4 = taxonomy::make<taxonomy::matrix4>();
 	}
 
 	if (ry > rx) {
 		// @todo is a copy necesary here or can this be done in place?
 		auto m4_copy = *m4;
 		m4->components() <<
-			-m4_copy.components().col(1),
-			m4_copy.components().col(0),
+			m4_copy.components().col(1),
+			-m4_copy.components().col(0),
 			m4_copy.components().col(2),
 			m4_copy.components().col(3);
 		std::swap(rx, ry);
@@ -58,9 +61,9 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcEllipseProfileDef* inst) {
 	auto el = taxonomy::make<taxonomy::ellipse>();
 	el->radius = rx;
 	el->radius2 = ry;
+	el->matrix = m4;
 	ed->basis = el;
 	lp->children.push_back(ed);
 	fc->children.push_back(lp);
-	fc->matrix = m4;
 	return fc;
 }

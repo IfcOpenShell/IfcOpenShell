@@ -39,6 +39,8 @@ ifeq ($(PYVERSION), py312)
 PYNUMBER:=312
 endif
 
+# We actually do support glibc 2.28-2.30 (see #5636)
+# but those are old and there's no demand for it.
 ifeq ($(PLATFORM), linux64)
 PLATFORMTAG:=manylinux_2_31_x86_64
 endif
@@ -52,8 +54,8 @@ ifeq ($(PLATFORM), win64)
 PLATFORMTAG:=win_amd64
 endif
 
-IOS_URL:=https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v0.7.11-d51fa2c-$(PLATFORM).zip
-IFCCONVERT_URL:=https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v0.7.11-d51fa2c-$(PLATFORM).zip
+IOS_URL:=https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v0.8.1-a2538fd-$(PLATFORM).zip
+IFCCONVERT_URL:=https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v0.8.1-a2538fd-$(PLATFORM).zip
 
 .PHONY: test
 test:

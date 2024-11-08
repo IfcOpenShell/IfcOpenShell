@@ -27,9 +27,11 @@ if(CCACHE_FOUND)
     set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
 endif()
 
+add_definitions(-D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
+
 cmake_policy(SET CMP0048 NEW)
 cmake_policy(SET CMP0074 NEW)
-cmake_policy(SET CMP0078 OLD)
+cmake_policy(SET CMP0078 NEW)
 cmake_policy(SET CMP0086 NEW)
 if (POLICY CMP0144)
     cmake_policy(SET CMP0144 NEW) # find_package() uses upper-case <PACKAGENAME>_ROOT variables.
@@ -221,7 +223,7 @@ endif()
 
 if(GLTF_SUPPORT OR CITYJSON_SUPPORT)
     UNIFY_ENVVARS_AND_CACHE(JSON_INCLUDE_DIR)
-    find_path(json_header_path "json.hpp" ${JSON_INCLUDE_DIR} PATH_SUFFIXES "nlohmann")
+    find_path(json_header_path "nlohmann/json.hpp" HINTS ${JSON_INCLUDE_DIR})
     set(JSON_INCLUDE_DIR ${json_header_path})
 
     if(json_header_path)
@@ -730,6 +732,10 @@ if(MSVC)
     # endif()
 
 	add_definitions(-D_ENABLE_EXTENDED_ALIGNED_STORAGE)
+	# See #5158.
+	if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 19.40)
+		add_definitions(-D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
+	endif()
 else()
     add_definitions(-Wall -Wextra)
 
@@ -1045,10 +1051,19 @@ if(BUILD_CONVERT)
         target_include_directories(cityjson_converter PRIVATE ../src)
         set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} cityjson_converter)
 
+        install(TARGETS cityjson_converter
+            ARCHIVE DESTINATION ${LIBDIR}
+            LIBRARY DESTINATION ${LIBDIR}
+        )
+
         add_executable(cityjson_converter_exe ${CITYJSON_CONVERT_FILES})
         set_target_properties(cityjson_converter_exe PROPERTIES COMPILE_FLAGS "-DCITYJSON_EXECUTABLE")
         target_include_directories(cityjson_converter_exe PRIVATE ../src)
         target_link_libraries(cityjson_converter_exe ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${HDF5_LIBRARIES} ${USD_LIBRARIES})
+
+        install(TARGETS cityjson_converter_exe
+            RUNTIME DESTINATION ${BINDIR}
+        )
     endif()
 
     # IfcConvert

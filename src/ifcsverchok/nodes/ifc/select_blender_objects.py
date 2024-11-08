@@ -23,7 +23,7 @@ import ifcsverchok.helper
 from bpy.props import StringProperty
 from sverchok.node_tree import SverchCustomTreeNode
 from sverchok.data_structure import updateNode
-from blenderbim.bim.ifc import IfcStore
+from bonsai.bim.ifc import IfcStore
 
 
 class SvIfcSelectBlenderObjectsRefresh(bpy.types.Operator):

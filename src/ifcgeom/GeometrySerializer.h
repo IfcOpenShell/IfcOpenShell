@@ -76,11 +76,22 @@ inline namespace settings {
 			" and any other value means that 6 or 7 decimals are used.";
 		static constexpr int defaultvalue = 15;
 	};
+
+	struct BaseUri : public SettingBase<BaseUri, std::string> {
+		static constexpr const char* const name = "base-uri";
+		static constexpr const char* const description = "Base URI for products to be used in RDF-based serializations.";
+	};
+
+	struct WktUseSection : public SettingBase<WktUseSection, bool> {
+		static constexpr const char* const name = "wkt-use-section";
+		static constexpr const char* const description = "Use a geometrical section rather than full polyhedral output and footprint in TTL WKT";
+		static constexpr bool defaultvalue = false;
+	};
 }
 
 class SerializerSettings : public SettingsContainer <
 	// @todo should we use tuple_cat here to unify the settings into a single class?
-	std::tuple<UseElementNames, UseElementGuids, UseElementStepIds, UseMaterialNames, UseElementTypes, UseYUp, WriteGltfEcef, FloatingPointDigits>
+	std::tuple<UseElementNames, UseElementGuids, UseElementStepIds, UseElementTypes, UseYUp, WriteGltfEcef, FloatingPointDigits, BaseUri, WktUseSection>
 >
 {};
 

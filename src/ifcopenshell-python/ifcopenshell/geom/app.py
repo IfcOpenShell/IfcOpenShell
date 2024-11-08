@@ -22,6 +22,7 @@ import time
 import operator
 import functools
 import multiprocessing
+import ifcopenshell.ifcopenshell_wrapper as W
 
 try:
     from OCC.Core import AIS
@@ -522,8 +523,8 @@ class application(QtWidgets.QApplication):
 
             if setting is None:
                 setting = settings()
-                setting.set(setting.INCLUDE_CURVES, True)
-                setting.set(setting.USE_PYTHON_OPENCASCADE, True)
+                setting.set("dimensionality", W.CURVES_SURFACES_AND_SOLIDS)
+                setting.set("use-python-opencascade", True)
 
             self.signals = geometry_creation_signals()
             thread = self.thread = geometry_creation_thread(self.signals, setting, f)

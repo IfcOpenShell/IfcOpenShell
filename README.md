@@ -12,7 +12,7 @@ is implemented for the IFC releases [IFC2x3 TC1] and [IFC4 Add2 TC1]. Extending 
 is possible at compile-time when using C++ and at run-time when using Python.
 
 In addition to a C++ and Python API, IfcOpenShell comes with an ecosystem of tools, notably including IfcConvert (an application
-to convert IFC models to other formats), the BlenderBIM Add-on (an add-on to Blender providing a graphical IFC authoring platform),
+to convert IFC models to other formats), Bonsai (an add-on to Blender providing a graphical IFC authoring platform),
 and many other libraries, CLI apps, and more. Support is also provided for auxiliary standards such as BCF and IDS.
 
 For more information, see:
@@ -22,10 +22,10 @@ For more information, see:
   * [IfcOpenShell C++ Installation](https://docs.ifcopenshell.org/ifcopenshell/installation.html)
   * [IfcOpenShell Python Installation](https://docs.ifcopenshell.org/ifcopenshell-python/installation.html)
   * [IfcOpenShell Python Hello World Tutorial](https://docs.ifcopenshell.org/ifcopenshell-python/hello_world.html)
-* [BlenderBIM Add-on Website](https://blenderbim.org)
-* [BlenderBIM Add-on Documentation](https://docs.blenderbim.org/index.html)
-  * [Add-on Installation](https://docs.blenderbim.org/users/installation.html)
-  * [Exploring an IFC model](https://docs.blenderbim.org/users/exploring_an_ifc_model.html)
+* [Bonsai Website](https://bonsaibim.org)
+* [Bonsai Documentation](https://docs.bonsaibim.org/index.html)
+  * [Add-on Installation](https://docs.bonsaibim.org/quickstart/installation.html)
+  * [Exploring an IFC model](https://docs.bonsaibim.org/quickstart/explore_model.html)
  
 Development is sponsored through your generous donations!
 
@@ -36,8 +36,8 @@ Contents
 
 | Name                      | Description                                                           | License             | Service |
 | ------------------------- | --------------------------------------------------------------------- | ------------------- | ------- |
-| bcf                       | Library to read and write BCF-XML and query OpenCDE BCF-API modules   | LGPL-3.0-or-later   | [![PyPI](https://img.shields.io/pypi/v/bcf-client?label=PyPI&color=006dad)](https://pypi.org/project/bcf-client/) |
-| blenderbim                | Add-on to Blender providing a graphical native IFC authoring platform | GPL-3.0-or-later    | [![Official](https://img.shields.io/badge/BlenderBIM.org-Download-70ba35)](https://blenderbim.org/download.html) [![GitHub Unstable](https://img.shields.io/github/v/release/ifcopenshell/ifcopenshell?filter=blenderbim-*&label=GitHub-Unstable&color=f6f8fa)](https://github.com/IfcOpenShell/IfcOpenShell/releases?q=blenderbim&expanded=true) [![Chocolatey](https://img.shields.io/chocolatey/v/blenderbim-nightly?label=Chocolatey&color=5c9fd8)](https://community.chocolatey.org/packages/blenderbim-nightly/) |
+| bcf                       | Library to read and write BCF-XML and query OpenCDE BCF-API modules   | LGPL-3.0-or-later   | [![PyPI](https://img.shields.io/pypi/v/bcf-client?label=PyPI&color=006dad)](https://pypi.org/project/bcf-client/) [![Anaconda-Server Badge](https://anaconda.org/conda-forge/bcf-client/badges/version.svg)](https://anaconda.org/conda-forge/bcf-client) |
+| bonsai                    | Add-on to Blender providing a graphical native IFC authoring platform | GPL-3.0-or-later    | [![Official](https://img.shields.io/badge/BonsaiBIM.org-Download-70ba35)](https://bonsaibim.org/download.html) [![GitHub Unstable](https://img.shields.io/github/v/release/ifcopenshell/ifcopenshell?filter=bonsai-*&label=GitHub-Unstable&color=f6f8fa)](https://github.com/IfcOpenShell/IfcOpenShell/releases?q=bonsai&expanded=true) [![Chocolatey](https://img.shields.io/chocolatey/v/blenderbim-nightly?label=Chocolatey&color=5c9fd8)](https://community.chocolatey.org/packages/blenderbim-nightly/) |
 | bsdd                      | Library to query the bSDD API                                         | LGPL-3.0-or-later   | [![PyPI](https://img.shields.io/pypi/v/bsdd?label=PyPI&color=006dad)](https://pypi.org/project/bsdd/) |
 | ifc2ca                    | Utility to convert IFC structural analysis models to Code_Aster       | LGPL-3.0-or-later   |
 | ifc4d                     | Convert to and from IFC and project management software               | LGPL-3.0-or-later   | [![PyPI](https://img.shields.io/pypi/v/ifc4d?label=PyPI&color=006dad)](https://pypi.org/project/ifc4d/) |

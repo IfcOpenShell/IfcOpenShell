@@ -29,8 +29,11 @@
 #include <atomic>
 #include <boost/shared_ptr.hpp>
 
-class Argument;
 class aggregate_of_instance;
+
+namespace IfcParse {
+    class IfcFile;
+}
 
 namespace IfcUtil {
 
@@ -54,6 +57,7 @@ class IFC_PARSE_API IfcBaseInterface {
     virtual const IfcEntityInstanceData& data() const = 0;
     virtual IfcEntityInstanceData& data() = 0;
     virtual const IfcParse::declaration& declaration() const = 0;
+    virtual ~IfcBaseInterface() {}
 
     template <class T>
     T* as(bool do_throw = false) {
@@ -82,36 +86,42 @@ class IFC_PARSE_API IfcBaseInterface {
 };
 
 class IFC_PARSE_API IfcBaseClass : public virtual IfcBaseInterface {
-  private:
-    uint32_t identity_;
+ protected:
     static std::atomic_uint32_t counter_;
 
-  protected:
-    IfcEntityInstanceData* data_;
+    uint32_t identity_;
+public:
+    uint32_t id_;
+    IfcParse::IfcFile* file_;
+protected:
+    IfcEntityInstanceData data_;
 
-    static bool is_null(const IfcBaseClass* not_this) {
-        return not_this == nullptr;
-    }
+public:
+    IfcBaseClass(IfcEntityInstanceData&& data)
+        : identity_(counter_++)
+        , id_(0)
+        , file_(nullptr)
+        , data_(std::move(data))
+    {}
 
-  public:
-    IfcBaseClass() : identity_(counter_++),
-                     data_(0) {}
-    IfcBaseClass(IfcEntityInstanceData* data) : identity_(counter_++),
-                                                data_(data) {}
-    virtual ~IfcBaseClass() { delete data_; }
-
-    const IfcEntityInstanceData& data() const { return *data_; }
-    IfcEntityInstanceData& data() { return *data_; }
-    void data(IfcEntityInstanceData* data);
+    const IfcEntityInstanceData& data() const { return data_; }
+    IfcEntityInstanceData& data() { return data_; }
 
     virtual const IfcParse::declaration& declaration() const = 0;
 
     template <typename T>
-    void set_value(int index, const T& value);
+    void set_attribute_value(size_t i, const T& t);
 
-    void unset_value(int index);
+    template <typename T>
+    void set_attribute_value(const std::string& name, const T& t);
+    
+    void unset_attribute_value(size_t i);
 
     uint32_t identity() const { return identity_; }
+
+    uint32_t id() const { return id_; }
+
+    void toString(std::ostream&, bool upper = false) const;
 };
 
 class IFC_PARSE_API IfcLateBoundEntity : public IfcBaseClass {
@@ -119,7 +129,7 @@ class IFC_PARSE_API IfcLateBoundEntity : public IfcBaseClass {
     const IfcParse::declaration* decl_;
 
   public:
-    IfcLateBoundEntity(const IfcParse::declaration* decl, IfcEntityInstanceData* data) : IfcBaseClass(data),
+    IfcLateBoundEntity(const IfcParse::declaration* decl, IfcEntityInstanceData&& data) : IfcBaseClass(std::move(data)),
                                                                                          decl_(decl) {}
 
     virtual const IfcParse::declaration& declaration() const {
@@ -129,12 +139,15 @@ class IFC_PARSE_API IfcLateBoundEntity : public IfcBaseClass {
 
 class IFC_PARSE_API IfcBaseEntity : public IfcBaseClass {
   public:
-    IfcBaseEntity() : IfcBaseClass() {}
-    IfcBaseEntity(IfcEntityInstanceData* data) : IfcBaseClass(data) {}
+    IfcBaseEntity(IfcEntityInstanceData&& data);
+
+    IfcBaseEntity(size_t n)
+        : IfcBaseClass(IfcEntityInstanceData(storage_t(n)))
+    {}
 
     virtual const IfcParse::entity& declaration() const = 0;
 
-    Argument* get(const std::string& name) const;
+    AttributeValue get(const std::string& name) const;
 
     template <typename T>
     T get_value(const std::string& name) const;
@@ -143,13 +156,22 @@ class IFC_PARSE_API IfcBaseEntity : public IfcBaseClass {
     T get_value(const std::string& name, const T& default_value) const;
 
     boost::shared_ptr<aggregate_of_instance> get_inverse(const std::string& name) const;
+
+    unsigned set_id(const boost::optional<unsigned>& i);
+
+    void populate_derived();
 };
 
 // TODO: Investigate whether these should be template classes instead
 class IFC_PARSE_API IfcBaseType : public IfcBaseClass {
   public:
-    IfcBaseType() : IfcBaseClass() {}
-    IfcBaseType(IfcEntityInstanceData* data) : IfcBaseClass(data) {}
+    IfcBaseType(IfcEntityInstanceData&& data)\
+        : IfcBaseClass(std::move(data))
+    {}
+
+    IfcBaseType()
+        : IfcBaseClass(IfcEntityInstanceData(storage_t(1)))
+    {}
 
     virtual const IfcParse::declaration& declaration() const = 0;
 };
@@ -159,18 +181,46 @@ class IFC_PARSE_API IfcBaseType : public IfcBaseClass {
 namespace IfcUtil {
 template <typename T>
 T IfcBaseEntity::get_value(const std::string& name) const {
-    auto* attr = get(name);
-    return (T)*attr;
+    auto attr = get(name);
+    return (T) attr;
 }
 
 template <typename T>
 T IfcBaseEntity::get_value(const std::string& name, const T& default_value) const {
-    auto* attr = get(name);
-    if (attr->isNull()) {
+    auto attr = get(name);
+    if (attr.isNull()) {
         return default_value;
     }
-    return (T)*attr;
+    return (T) attr;
 }
+
 } // namespace IfcUtil
+
+template <class U>
+typename U::list::ptr aggregate_of_instance::as() {
+    typename U::list::ptr result(new typename U::list);
+    for (it i = begin(); i != end(); ++i) {
+        if ((*i)->template as<U>()) {
+            result->push((*i)->template as<U>());
+        }
+    }
+    return result;
+}
+
+template <class U>
+typename aggregate_of_aggregate_of<U>::ptr aggregate_of_aggregate_of_instance::as() {
+    typename aggregate_of_aggregate_of<U>::ptr result(new aggregate_of_aggregate_of<U>);
+    for (outer_it outer = begin(); outer != end(); ++outer) {
+        const std::vector<IfcUtil::IfcBaseClass*>& from = *outer;
+        typename std::vector<U*> to;
+        for (inner_it inner = from.begin(); inner != from.end(); ++inner) {
+            if ((*inner)->template as<U>()) {
+                to.push_back((*inner)->template as<U>());
+            }
+        }
+        result->push(to);
+    }
+    return result;
+}
 
 #endif

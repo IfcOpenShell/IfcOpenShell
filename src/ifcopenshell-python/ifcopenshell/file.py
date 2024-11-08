@@ -24,15 +24,34 @@ import zipfile
 import functools
 import ifcopenshell
 from pathlib import Path
-from typing import Optional, Any, Union, Callable, Generator, Literal
+from typing import Optional, Any, Union, Callable, Generator, Literal, TYPE_CHECKING
 
 from . import ifcopenshell_wrapper
 from .entity_instance import entity_instance
 
+if TYPE_CHECKING:
+    import ifcopenshell.util.schema
+
+HEADER_FIELDS = {
+    "file_description": [
+        "description",
+        "implementation_level",
+    ],
+    "file_name": [
+        "name",
+        "time_stamp",
+        "author",
+        "organization",
+        "preprocessor_version",
+        "originating_system",
+        "authorization",
+    ],
+}
+
 
 class Transaction:
-    def __init__(self, ifc_file):
-        self.file = ifc_file
+    def __init__(self, ifc_file: file):
+        self.file: file = ifc_file
         self.operations = []
         self.is_batched = False
         self.batch_delete_index = 0
@@ -197,6 +216,7 @@ class file:
     """
 
     wrapped_data: ifcopenshell_wrapper.file
+    history_size: int = 64
 
     def __init__(
         self,
@@ -267,7 +287,6 @@ class file:
             args = filter(None, [schema])
             args = map(ifcopenshell_wrapper.schema_by_name, args)
             self.wrapped_data = ifcopenshell_wrapper.file(*args)
-        self.history_size = 64
         self.history = []
         self.future = []
         self.transaction: Optional[Transaction] = None
@@ -406,10 +425,10 @@ class file:
         return e
 
     @property
-    def schema(self) -> Literal["IFC2X3", "IFC4", "IFC4X3"]:
+    def schema(self) -> ifcopenshell.util.schema.IFC_SCHEMA:
         """General IFC schema version: IFC2X3, IFC4, IFC4X3."""
         prefixes = ("IFC", "X", "_ADD", "_TC")
-        reg = "".join(f"(?P<{s}>{s}\d+)?" for s in prefixes)
+        reg = "".join(f"(?P<{s}>{s}\\d+)?" for s in prefixes)
         match = re.match(reg, self.wrapped_data.schema)
         version_tuple = tuple(
             map(
@@ -515,18 +534,14 @@ class file:
         return [entity_instance(e, self) for e in self.wrapped_data.by_type_excl_subtypes(type)]
 
     def traverse(
-        self, inst: ifcopenshell.entity_instance, max_levels=None, breadth_first=False
+        self, inst: ifcopenshell.entity_instance, max_levels: Optional[int] = None, breadth_first: bool = False
     ) -> list[ifcopenshell.entity_instance]:
         """Get a list of all referenced instances for a particular instance including itself
 
         :param inst: The entity instance to get all sub instances
-        :type inst: ifcopenshell.entity_instance
         :param max_levels: How far deep to recursively fetch sub instances. None or -1 means infinite.
-        :type max_levels: None|int
         :param breadth_first: Whether to use breadth-first search, the default is depth-first.
-        :type max_levels: bool
         :returns: A list of ifcopenshell.entity_instance objects
-        :rtype: list[ifcopenshell.entity_instance]
         """
         if max_levels is None:
             max_levels = -1
@@ -613,6 +628,11 @@ class file:
     def __iter__(self) -> Generator[ifcopenshell.entity_instance, None, None]:
         return iter(self[id] for id in self.wrapped_data.entity_names())
 
+    def assign_header_from(self, other):
+        for k, vs in HEADER_FIELDS.items():
+            for v in vs:
+                setattr(getattr(self.header, k), v, getattr(getattr(other.header, k), v))
+
     def write(self, path: "os.PathLike | str", format: Optional[str] = None, zipped: bool = False) -> None:
         """Write ifc model to file.
 
@@ -670,3 +690,6 @@ class file:
     @staticmethod
     def from_pointer(v) -> "file":
         return file_dict.get(v)()
+
+    def to_string(self) -> str:
+        return self.wrapped_data.to_string()

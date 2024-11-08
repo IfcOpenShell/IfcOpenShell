@@ -1,0 +1,43 @@
+
+.selected {
+    border-color: #28a745;
+    outline: none;
+    box-shadow: 0 0 0 3px #28a745;
+    color: #ddd;
+  }
+  
+  
+  .classificationView {
+    border-left: 5px solid #28a745;
+    min-height: 200px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 5px;
+    max-height: 400px;
+  }
+  
+  .selectedClassificationText {
+    color: #28a745;
+  }
+  
+  .back-button {
+    margin-bottom: 20px;
+  }
+  
+  .back-button:disabled {
+    cursor: not-allowed;
+    background-color: #ccc;
+  }
+  
+  .classification-cell {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+  }
+  
+  .classification {
+    height: 100%;
+  }
+  

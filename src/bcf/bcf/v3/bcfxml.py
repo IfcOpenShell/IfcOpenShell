@@ -26,7 +26,7 @@ class BcfXml:
         self._version: Optional[mdl.Version] = None
         self._project_info: Optional[mdl.ProjectInfo] = None
         self._extensions: Optional[mdl.Extensions] = None
-        self._topics: dict[str, TopicHandler] = {}
+        self._topics: Optional[dict[str, TopicHandler]] = None
         self._documents: Optional[DocumentsHandler] = None
         self._zip_file = self._load_zip_file()
 
@@ -91,18 +91,22 @@ class BcfXml:
     @property
     def topics(self) -> dict[str, TopicHandler]:
         """BCF topics."""
-        if not self._topics and self._zip_file:
-            self._load_topics()
+        if self._topics is None:
+            self._topics = self._load_topics()
         return self._topics
 
-    def _load_topics(self) -> None:
+    def _load_topics(self) -> dict[str, TopicHandler]:
+        topics = {}
+        if self._zip_file is None:
+            return topics
         for topic_dir in zipfile.Path(self._zip_file).iterdir():
             if not topic_dir.is_dir():
                 continue
             markup_path = topic_dir.joinpath("markup.bcf")
             if not markup_path.exists():
                 continue
-            self._topics[topic_dir.name] = TopicHandler(topic_dir, self._xml_handler)
+            topics[topic_dir.name] = TopicHandler(topic_dir, self._xml_handler)
+        return topics
 
     @property
     def documents(self) -> Optional[DocumentsHandler]:

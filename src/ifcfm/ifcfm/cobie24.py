@@ -17,11 +17,13 @@
 # along with IfcFM.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.util.fm
-import ifcopenshell.util.date
-import ifcopenshell.util.system
-import ifcopenshell.util.placement
 import ifcopenshell.util.classification
+import ifcopenshell.util.date
+import ifcopenshell.util.element
+import ifcopenshell.util.fm
+import ifcopenshell.util.placement
+import ifcopenshell.util.system
+from typing import Any, Union, Optional
 
 
 # The original BIMServer plugin has a function called ifcToCOBie:
@@ -34,15 +36,15 @@ import ifcopenshell.util.classification
 # Impact, Coordinate, Issue, Picklist
 
 
-def get_contacts(ifc_file):
+def get_contacts(ifc_file: ifcopenshell.file) -> list[ifcopenshell.entity_instance]:
     return ifc_file.by_type("IfcActor")
 
 
-def get_facilities(ifc_file):
+def get_facilities(ifc_file: ifcopenshell.file) -> list[ifcopenshell.entity_instance]:
     return ifc_file.by_type("IfcBuilding")
 
 
-def get_floors(ifc_file):
+def get_floors(ifc_file: ifcopenshell.file) -> list[ifcopenshell.entity_instance]:
     return [
         e
         for e in ifc_file.by_type("IfcBuildingStorey")
@@ -50,11 +52,11 @@ def get_floors(ifc_file):
     ]
 
 
-def get_spaces(ifc_file):
+def get_spaces(ifc_file: ifcopenshell.file) -> list[ifcopenshell.entity_instance]:
     return ifc_file.by_type("IfcSpace")
 
 
-def get_zones(ifc_file):
+def get_zones(ifc_file: ifcopenshell.file) -> list[ifcopenshell.entity_instance]:
     results = []
     zones = ifc_file.by_type("IfcZone")
     for zone in zones or []:
@@ -69,18 +71,18 @@ def get_zones(ifc_file):
     return results
 
 
-def get_types(ifc_file):
+def get_types(ifc_file: ifcopenshell.file) -> list[ifcopenshell.entity_instance]:
     return ifcopenshell.util.fm.get_cobie_types(ifc_file)
 
 
-def get_components(ifc_file):
+def get_components(ifc_file: ifcopenshell.file) -> set[ifcopenshell.entity_instance]:
     elements = set()
     for element_type in get_types(ifc_file):
         elements.update(ifcopenshell.util.element.get_types(element_type))
     return elements
 
 
-def get_systems(ifc_file):
+def get_systems(ifc_file: ifcopenshell.file) -> list[ifcopenshell.entity_instance]:
     results = []
     components = get_components(ifc_file)
     if ifc_file.schema == "IFC2X3":
@@ -94,7 +96,7 @@ def get_systems(ifc_file):
     return results
 
 
-def get_assemblies(ifc_file):
+def get_assemblies(ifc_file: ifcopenshell.file) -> list[ifcopenshell.entity_instance]:
     results = []
     layer_sets = ifc_file.by_type("IfcMaterialLayerSet")
     layer_sets = []  # This is temporarily overridden because it is unclear exactly how this is stored in Type.
@@ -128,23 +130,25 @@ def get_assemblies(ifc_file):
     return results
 
 
-def get_connections(ifc_file):
+def get_connections(ifc_file: ifcopenshell.file) -> list[ifcopenshell.entity_instance]:
     return ifc_file.by_type("IfcRelConnectsPorts")
 
 
-def get_spares(ifc_file):
+def get_spares(ifc_file: ifcopenshell.file) -> list[ifcopenshell.entity_instance]:
     return ifc_file.by_type("IfcConstructionProductResource")
 
 
-def get_resources(ifc_file):
+def get_resources(ifc_file: ifcopenshell.file) -> list[ifcopenshell.entity_instance]:
     return ifc_file.by_type("IfcConstructionEquipmentResource")
 
 
-def get_jobs(ifc_file):
+def get_jobs(ifc_file: ifcopenshell.file) -> list[ifcopenshell.entity_instance]:
     return ifc_file.by_type("IfcTask")
 
 
-def get_documents(ifc_file):
+def get_documents(
+    ifc_file: ifcopenshell.file,
+) -> list[tuple[ifcopenshell.entity_instance, ifcopenshell.entity_instance, ifcopenshell.entity_instance]]:
     # The original COBie-Plugins assumes a single related object per rel. I think this was wrong.
     results = []
     for rel in ifc_file.by_type("IfcRelAssociatesDocument"):
@@ -158,7 +162,7 @@ def get_documents(ifc_file):
     return results
 
 
-def get_attributes(ifc_file):
+def get_attributes(ifc_file: ifcopenshell.file) -> list[dict[str, Any]]:
     results = []
     history = get_history(ifc_file)
     created_by = get_email_from_history(history) if history else None
@@ -247,7 +251,7 @@ def get_attributes(ifc_file):
     return results
 
 
-def get_contact_data(ifc_file, element):
+def get_contact_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_instance) -> dict[str, Any]:
     the_actor = element.TheActor
 
     if the_actor.is_a("IfcPerson"):
@@ -299,7 +303,7 @@ def get_contact_data(ifc_file, element):
     }
 
 
-def get_facility_data(ifc_file, element):
+def get_facility_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_instance) -> dict[str, Any]:
     site = get_facility_parent(element, "IfcSite")
     site_name = None
     site_description = None
@@ -343,7 +347,7 @@ def get_facility_data(ifc_file, element):
     }
 
 
-def get_floor_data(ifc_file, element):
+def get_floor_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_instance) -> dict[str, Any]:
     height_names = {
         "Height",
         "NetHeight",
@@ -382,7 +386,7 @@ def get_floor_data(ifc_file, element):
     }
 
 
-def get_space_data(ifc_file, element):
+def get_space_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_instance) -> dict[str, Any]:
     floor_name = None
     floor = ifcopenshell.util.element.get_aggregate(element)
     if floor and floor.is_a("IfcBuildingStorey"):
@@ -425,7 +429,7 @@ def get_space_data(ifc_file, element):
     }
 
 
-def get_zone_data(ifc_file, element):
+def get_zone_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_instance) -> dict[str, Any]:
     zone, space = element
 
     name = zone.Name
@@ -449,7 +453,7 @@ def get_zone_data(ifc_file, element):
     }
 
 
-def get_type_data(ifc_file, element):
+def get_type_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_instance) -> dict[str, Any]:
     asset_type = None
     manufacturer = None
     model_number = None
@@ -555,7 +559,7 @@ def get_type_data(ifc_file, element):
     }
 
 
-def get_component_data(ifc_file, element):
+def get_component_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_instance) -> dict[str, Any]:
     space = ifcopenshell.util.element.get_container(element)
     space_name = space.Name if space.is_a("IfcSpace") else None
     systems = ifcopenshell.util.system.get_element_systems(element)
@@ -610,7 +614,7 @@ def get_component_data(ifc_file, element):
     }
 
 
-def get_system_data(ifc_file, element):
+def get_system_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_instance) -> dict[str, Any]:
     system, component = element
     category = get_category(system)
     component_name = val(component.Name)
@@ -627,7 +631,7 @@ def get_system_data(ifc_file, element):
     }
 
 
-def get_assembly_data(ifc_file, element):
+def get_assembly_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_instance) -> dict[str, Any]:
     rel, relating_object, related_object = element
 
     if relating_object.is_a("IfcMaterialLayerSet"):
@@ -663,7 +667,7 @@ def get_assembly_data(ifc_file, element):
     }
 
 
-def get_connection_data(ifc_file, element):
+def get_connection_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_instance) -> dict[str, Any]:
     connection_type = (
         val(element.RelatingPort.ObjectType)
         or val(element.RelatedPort.ObjectType)
@@ -691,7 +695,7 @@ def get_connection_data(ifc_file, element):
     }
 
 
-def get_spare_data(ifc_file, element):
+def get_spare_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_instance) -> dict[str, Any]:
     type_name = None
     for rel in element.ResourceOf or []:
         for related_object in rel.RelatedObjects or []:
@@ -726,7 +730,7 @@ def get_spare_data(ifc_file, element):
     }
 
 
-def get_resource_data(ifc_file, element):
+def get_resource_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_instance) -> dict[str, Any]:
     return {
         "Name": val(element.Name),
         "CreatedBy": get_created_by(element),
@@ -739,7 +743,7 @@ def get_resource_data(ifc_file, element):
     }
 
 
-def get_job_data(ifc_file, element):
+def get_job_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_instance) -> dict[str, Any]:
     type_names = []
     resource_names = []
     for rel in element.OperatesOn or []:
@@ -810,7 +814,7 @@ def get_job_data(ifc_file, element):
     }
 
 
-def get_document_data(ifc_file, element):
+def get_document_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_instance) -> dict[str, Any]:
     rel, doc, related_object = element
     directory = getattr(doc, "Location", None)
     file = None
@@ -847,11 +851,13 @@ def get_document_data(ifc_file, element):
     }
 
 
-def get_attribute_data(ifc_file, element):
+def get_attribute_data(
+    ifc_file: ifcopenshell.file, element: ifcopenshell.entity_instance
+) -> ifcopenshell.entity_instance:
     return element
 
 
-def get_unit_type_name(ifc_file, unit_type):
+def get_unit_type_name(ifc_file: ifcopenshell.file, unit_type: str) -> Union[str, None]:
     for unit in ifc_file.by_type("IfcUnitAssignment")[0].Units:
         if unit.is_a("IfcNamedUnit") and unit.UnitType == unit_type:
             if unit.is_a("IfcSIUnit"):
@@ -868,17 +874,17 @@ def get_unit_type_name(ifc_file, unit_type):
             return val(unit.Currency)
 
 
-def get_unit_name(ifc_file, unit):
+def get_unit_name(ifc_file: ifcopenshell.entity_instance, unit: ifcopenshell.entity_instance) -> Union[str, None]:
     if unit.is_a("IfcNamedUnit"):
         return val(unit.Name)
 
 
-def get_created_by(element):
+def get_created_by(element: ifcopenshell.entity_instance) -> Union[str, None]:
     if getattr(element, "OwnerHistory", None):
         return get_email_from_history(element.OwnerHistory)
 
 
-def get_email_from_history(element):
+def get_email_from_history(element: ifcopenshell.entity_instance) -> Union[str, None]:
     pao = element.OwningUser
     if pao.is_a("IfcPersonAndOrganization"):
         return get_email_from_pao(pao.ThePerson, pao.TheOrganization)
@@ -888,7 +894,9 @@ def get_email_from_history(element):
         return get_email_from_pao(None, pao)
 
 
-def get_email_from_pao(person, organization):
+def get_email_from_pao(
+    person: ifcopenshell.entity_instance, organization: ifcopenshell.entity_instance
+) -> Union[str, None]:
     if organization:
         for address in organization.Addresses or []:
             if address.is_a("IfcTelecomAddress") and address.ElectronicMailAddresses:
@@ -900,23 +908,25 @@ def get_email_from_pao(person, organization):
                 return address.ElectronicMailAddresses[0]
 
 
-def get_owner_name(element):
+def get_owner_name(element: ifcopenshell.entity_instance) -> Union[str, None]:
     if getattr(element, "OwnerHistory", None):
         return element.OwnerHistory.OwningUser.TheOrganization.Name
 
 
-def get_created_on(element):
+def get_created_on(element: ifcopenshell.entity_instance) -> str:
     if getattr(element, "OwnerHistory", None):
         return ifcopenshell.util.date.ifc2datetime(element.OwnerHistory.CreationDate).isoformat()
     return "1900-12-31T23:59:59"  # Yes, really
 
 
-def get_external_system(element):
+def get_external_system(element: ifcopenshell.entity_instance) -> Union[str, None]:
     if getattr(element, "OwnerHistory", None):
         return val(element.OwnerHistory.OwningApplication.ApplicationFullName)
 
 
-def get_facility_parent(element, ifc_class):
+def get_facility_parent(
+    element: ifcopenshell.entity_instance, ifc_class: str
+) -> Union[ifcopenshell.entity_instance, None]:
     parent = ifcopenshell.util.element.get_aggregate(element)
     while parent:
         if parent.is_a(ifc_class):
@@ -926,11 +936,11 @@ def get_facility_parent(element, ifc_class):
         parent = ifcopenshell.util.element.get_aggregate(parent)
 
 
-def val(x):
+def val(x: Any) -> Any:
     return x if x not in ("", "n/a") else None
 
 
-def get_area_measurement(element):
+def get_area_measurement(element: ifcopenshell.entity_instance) -> Union[str, None]:
     for relationship in getattr(element, "IsDefinedBy", []) or []:
         if relationship.is_a("IfcRelDefinesByProperties"):
             definition = relationship.RelatingPropertyDefinition
@@ -950,7 +960,7 @@ def get_area_measurement(element):
                     return value
 
 
-def get_category(element):
+def get_category(element: ifcopenshell.entity_instance) -> Union[str, None]:
     references = list(ifcopenshell.util.classification.get_references(element))
     results = []
     for reference in references:
@@ -968,7 +978,9 @@ def get_category(element):
         return ",".join(results)
 
 
-def get_pao_address(person, organization, name):
+def get_pao_address(
+    person: ifcopenshell.entity_instance, organization: ifcopenshell.entity_instance, name: str
+) -> Union[str, None]:
     for actor in [organization, person]:
         if not actor:
             continue
@@ -982,7 +994,9 @@ def get_pao_address(person, organization, name):
                 return result
 
 
-def get_property(psets, pset_name, prop_name, decimals=None):
+def get_property(
+    psets: dict[str, dict[str, Any]], pset_name: str, prop_name: str, decimals: Optional[int] = None
+) -> Union[Any, None, float]:
     if pset_name in psets:
         result = psets[pset_name].get(prop_name, None)
         if decimals is None or result is None:
@@ -990,13 +1004,13 @@ def get_property(psets, pset_name, prop_name, decimals=None):
         return round(result, decimals)
 
 
-def get_history(ifc_file):
+def get_history(ifc_file: ifcopenshell.file) -> Union[ifcopenshell.entity_instance, None]:
     histories = ifc_file.by_type("IfcOwnerHistory")
     if histories:
         return sorted(histories, key=lambda x: x.id())[-1]
 
 
-def get_property_unit(pset, prop_name):
+def get_property_unit(pset: ifcopenshell.entity_instance, prop_name: str) -> Union[str, None]:
     for prop in getattr(pset, "HasProperties", []) or []:
         if prop.Name == prop_name:
             unit = getattr(prop, "Unit", None)
@@ -1004,7 +1018,8 @@ def get_property_unit(pset, prop_name):
                 return get_unit_name(unit)
 
 
-def get_allowed_values(pset_id, prop_name):
+# TODO: never used?
+def get_allowed_values(ifc_file: ifcopenshell.file, pset_id: int, prop_name: str) -> Union[str, None]:
     pset = ifc_file.by_id(pset_id)
     for prop in getattr(pset, "HasProperties", []) or []:
         if prop.Name == prop_name:
@@ -1012,7 +1027,7 @@ def get_allowed_values(pset_id, prop_name):
                 return ",".join([v.wrappedValue for v in prop.EnumerationValues])
 
 
-def get_sheet_name(element):
+def get_sheet_name(element: ifcopenshell.entity_instance) -> Union[str, None]:
     if element.is_a("IfcBuilding"):
         return "Facility"
     elif element.is_a("IfcBuildingStorey"):

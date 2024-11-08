@@ -1,7 +1,6 @@
 import uuid
 import zipfile
-from functools import lru_cache
-from typing import Any, Iterable, Optional
+from typing import Any, Iterable, Optional, Literal, Union
 
 import numpy as np
 from ifcopenshell import entity_instance
@@ -134,6 +133,15 @@ class VisualizationInfoHandler:
         self._save_bitmaps(bcf_zip, topic_dir)
 
     def _save_snapshot(self, bcf_zip: ZipFileInterface, topic_dir: str, filename: Optional[str]) -> None:
+        if bool(self.snapshot) ^ bool(filename):
+            data = ["data (VisualizationInfoHandler.snapshot)", "filename (ViewPoint.snapshot)"]
+            provided_data, missing_data = data if self.snapshot else data[::-1]
+            print(
+                f"WARNING. Snapshot with viewpoint guid '{self.guid}' won't be saved to bcf. "
+                f"Only snapshot {provided_data} is provided but snapshot {missing_data} is missing."
+            )
+            return
+
         if self.snapshot and filename:
             bcf_zip.writestr(f"{topic_dir}/{filename}", self.snapshot)
 
@@ -196,13 +204,110 @@ class VisualizationInfoHandler:
             visualization_info=build_viewpoint_from_position_and_guids(position, *guids), xml_handler=xml_handler
         )
 
+    def get_selected_guids(self) -> Union[list[str], None]:
+        """
+        Return viewpoint selected elements IFC guids.
 
-@lru_cache(maxsize=None)
+        Returns:
+            If viewpoint has no selection settings, return `None`.
+            Otherwise return a list of selected elements IFC guids.
+        """
+        visualization_info = self.visualization_info
+        components = visualization_info.components
+        if not components:
+            return None
+
+        selection = components.selection
+        if not selection:
+            return None
+        return [guid for c in selection.component if (guid := c.ifc_guid)]
+
+    def set_selected_elements(self, elements: list[ifcopenshell.entity_instance]) -> None:
+        visualization_info = self.visualization_info
+
+        guids = [e.GlobalId for e in elements]
+        components = visualization_info.components
+        if not components:
+            visibility = mdl.ComponentVisibility(default_visibility=True)
+            components = mdl.Components(visibility=visibility)
+            visualization_info.components = components
+
+        selection = components.selection
+        components_list = [mdl.Component(ifc_guid=guid) for guid in guids]
+        if not selection:
+            selection = mdl.ComponentSelection()
+            components.selection = selection
+        selection.component = components_list
+
+    def set_visible_elements(self, elements: list[ifcopenshell.entity_instance]) -> None:
+        self.set_visibility(elements, elements_visibility="VISIBLE")
+
+    def set_hidden_elements(self, elements: list[ifcopenshell.entity_instance]) -> None:
+        self.set_visibility(elements, elements_visibility="HIDDEN")
+
+    def set_visibility(
+        self, elements: list[ifcopenshell.entity_instance], elements_visibility: Literal["VISIBLE", "HIDDEN"]
+    ) -> None:
+        visualization_info = self.visualization_info
+        default_visibility = elements_visibility == "HIDDEN"
+
+        guids = [e.GlobalId for e in elements]
+        components_list = [mdl.Component(ifc_guid=guid) for guid in guids]
+        components = visualization_info.components
+        if not components:
+            visibility = mdl.ComponentVisibility(default_visibility=default_visibility)
+            components = mdl.Components(visibility=visibility)
+            visualization_info.components = components
+
+        visibility = components.visibility
+        if not visibility:
+            visibility = mdl.ComponentVisibility(default_visibility=default_visibility)
+            components.visibility = visibility
+        elif visibility.default_visibility != default_visibility:
+            visibility.default_visibility = default_visibility
+
+        exceptions = visibility.exceptions
+        if not exceptions:
+            exceptions = mdl.ComponentVisibilityExceptions()
+            visibility.exceptions = exceptions
+        exceptions.component = components_list
+
+    def get_elements_visibility(self) -> Union[tuple[bool, list[str]], None]:
+        """
+        Return viewpoint elements visibility settings.
+
+        Returns:
+            If viewpoint has no visibility settings, return `None`.
+            Otherwise return a tuple containing the default visibility
+            and a list of IFC element GUIDs listed as exceptions.
+
+            If default visibility is `True`, all elements are visible except the exceptions.
+
+            If default visibility is `False`, all elements are hidden except the exceptions.
+        """
+
+        visualization_info = self.visualization_info
+        components = visualization_info.components
+        if not components:
+            return None
+
+        visibility = components.visibility
+        if not visibility:
+            return None
+        default_visibility = visibility.default_visibility or False
+
+        exceptions = visibility.exceptions
+        if not exceptions:
+            return default_visibility, []
+        guids = [guid for c in exceptions.component if (guid := c.ifc_guid)]
+        return default_visibility, guids
+
+
 def build_viewpoint(element: entity_instance) -> mdl.VisualizationInfo:
     """
     Return a BCF viewpoint of an IFC element.
 
-    This function is cached to speedudp the creation of multiple BCF topics regarding the same element.
+    This function is cached to speed up the creation of multiple BCF topics regarding the same element.
 
     Args:
         element: The IFC element to point at.
@@ -228,7 +333,7 @@ def build_viewpoint_from_position_and_guids(position: NDArray[np.float64], *guid
     """
     Return a BCF viewpoint of an IFC element.
 
-    This function is cached to speedudp the creation of multiple BCF topics regarding the same element.
+    This function is cached to speed up the creation of multiple BCF topics regarding the same element.
 
     Args:
         position: target point coordinates.
@@ -249,7 +354,7 @@ def build_components(*guids: str) -> mdl.Components:
     Return the BCF components from an IFC element GUID.
 
     Args:
-        *guids: One or more IFC element GUID.
+        *guids: One or more selected IFC element GUID.
 
     Returns:
         The BCF components definition.

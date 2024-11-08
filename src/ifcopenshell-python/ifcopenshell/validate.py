@@ -43,6 +43,7 @@ from logging import Logger, Handler
 
 import ifcopenshell
 import ifcopenshell.ifcopenshell_wrapper
+import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.express.rule_executor
 
 named_type = ifcopenshell.ifcopenshell_wrapper.named_type
@@ -95,11 +96,13 @@ simple_type_python_mapping = {
 }
 
 
-def annotate_inst_attr_pos(inst: ifcopenshell.entity_instance, pos: int) -> str:
+def annotate_inst_attr_pos(
+    inst: Union[ifcopenshell.entity_instance, W.HeaderEntity], pos: int, entity_str: str = ""
+) -> str:
     def get_pos() -> Iterator[int]:
         depth = 0
         idx = -1
-        for c in str(inst):
+        for c in entity_str or str(inst):
             if c == "(":
                 depth += 1
                 if depth == 1:
@@ -256,11 +259,12 @@ def assert_valid(
         return True
 
 
-def log_internal_cpp_errors(filename: str, logger: Logger) -> None:
+def log_internal_cpp_errors(f: ifcopenshell.file, filename: str, logger: Logger) -> None:
     import re
     import bisect
 
     chr_offset_re = re.compile(r"at offset (\d+)\s*")
+    for_instance_re = re.compile(r"\s*for instance #(\d+)\s*")
 
     log = ifcopenshell.get_log()
     msgs = list(map(json.loads, filter(None, log.split("\n"))))
@@ -285,6 +289,24 @@ def log_internal_cpp_errors(filename: str, logger: Logger) -> None:
                     logger.error("%s:\n\n%s" % (m, line))
                 else:
                     logger.error("For instance:\n    %s\n%s", line, m)
+
+    instance_messages = [for_instance_re.findall(m["message"]) for m in msgs]
+    if instance_messages:
+        for instid, msg in zip(instance_messages, msgs):
+            if instid:
+                m = for_instance_re.sub("", msg["message"])
+                try:
+                    inst = f[int(instid[0])]
+                except:
+                    inst = None
+                if hasattr(logger, "set_state"):
+                    logger.set_state("instance", inst)
+                    logger.set_state("attribute", None)
+                    logger.error(m)
+                elif inst:
+                    logger.error("For instance:\n    %s\n%s", inst, m)
+                else:
+                    logger.error(m)
 
 
 entity_attribute_map: dict[tuple[str, str], tuple[entity_type, tuple[attribute]]] = {}
@@ -368,7 +390,9 @@ def validate(f: Union[ifcopenshell.file, str], logger: Logger, express_rules=Fal
                 logger.error(f"Unsupported schema: {schema_name}")
                 return
 
-        log_internal_cpp_errors(filename, logger)
+        log_internal_cpp_errors(f, filename, logger)
+
+    validate_ifc_header(f, logger)
 
     schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(f.schema_identifier)
     used_guids: dict[str, ifcopenshell.entity_instance] = dict()
@@ -383,7 +407,7 @@ def validate(f: Union[ifcopenshell.file, str], logger: Logger, express_rules=Fal
                 rule = "Rule IfcRoot.UR1:\n    The attribute GlobalId should be unique"
                 previous_element = used_guids[guid]
                 logger.error(
-                    "On instance:\n    %s\n   %s\n%s\nViolated by:\n    %s\n    %s",
+                    "On instance:\n    %s\n    %s\n%s\nViolated by:\n    %s\n    %s",
                     inst,
                     annotate_inst_attr_pos(inst, 0),
                     rule,
@@ -490,7 +514,7 @@ def validate(f: Union[ifcopenshell.file, str], logger: Logger, express_rules=Fal
         # Re capturing the log when validate() is finished
         # iterating over every instance so that all attribute counts
         # are verified.
-        log_internal_cpp_errors(filename, logger)
+        log_internal_cpp_errors(f, filename, logger)
 
     # Restore the original value for 'use_attribute_value_derived'
     ifcopenshell.ifcopenshell_wrapper.set_feature("use_attribute_value_derived", attribute_value_derived_org)
@@ -502,12 +526,72 @@ def validate(f: Union[ifcopenshell.file, str], logger: Logger, express_rules=Fal
         ifcopenshell.express.rule_executor.run(f, logger)
 
 
+def validate_ifc_header(f: ifcopenshell.file, logger: Logger) -> None:
+    header: W.IfcSpfHeader = f.wrapped_data.header
+    AGGREGATE_TYPE = "LIST [ 1 : ? ] OF STRING (256)"
+    STRING_TYPE = "STRING (256)"
+
+    def log_error(header_entity: W.HeaderEntity, name: str, index: int, expected_type: str, provided_type: str) -> None:
+        logger.error(
+            (
+                "For instance:\n    %s\n    %s\n"
+                "Attribute '%s' has invalid type:\n"
+                "    Expected: %s\n    Current value type: %s\n"
+            ),
+            (s := header_entity.toString()),
+            annotate_inst_attr_pos(header_entity, index, s),
+            name,
+            expected_type,
+            provided_type,
+        )
+
+    def validate_attribute(header_entity: W.HeaderEntity, name: str, index: int, *, aggregate: bool = False) -> None:
+        value = getattr(header_entity, name)
+        if aggregate:
+            if not isinstance(value, tuple):
+                log_error(header_entity, name, index, AGGREGATE_TYPE, type(value).__name__)
+                return
+            if not value:
+                log_error(header_entity, name, index, AGGREGATE_TYPE, "EMPTY LIST")
+                return
+            if not all(isinstance(last_value := v, str) for v in value):
+                log_error(
+                    header_entity,
+                    name,
+                    index,
+                    AGGREGATE_TYPE,
+                    f"LIST with {type(last_value).__name__} (value: {last_value})",
+                )
+            return
+
+        if not isinstance(value, str):
+            log_error(header_entity, name, index, STRING_TYPE, type(value).__name__)
+
+    # Ignore header.file_schema as file won't load to IfcOpenShell with invalid file_schema.
+    file_description: W.FileDescription = header.file_description
+    validate_attribute(file_description, "description", 0, aggregate=True)
+    validate_attribute(file_description, "implementation_level", 1)
+    file_name: W.FileName = header.file_name
+    validate_attribute(file_name, "name", 0)
+    validate_attribute(file_name, "time_stamp", 1)
+    validate_attribute(file_name, "author", 2, aggregate=True)
+    validate_attribute(file_name, "organization", 3, aggregate=True)
+    validate_attribute(file_name, "preprocessor_version", 4)
+    validate_attribute(file_name, "originating_system", 5)
+    validate_attribute(file_name, "authorization", 6)
+
+
 class LogDetectionHandler(Handler):
     message_logged = False
+
+    def __init__(self):
+        super().__init__()
+        self.default_handler = logging.StreamHandler()
 
     def emit(self, record):
         if not self.message_logged:
             self.message_logged = True
+        self.default_handler.emit(record)
 
 
 if __name__ == "__main__":
@@ -516,6 +600,7 @@ if __name__ == "__main__":
 
     filenames = [x for x in sys.argv[1:] if not x.startswith("--")]
     flags = set(x for x in sys.argv[1:] if x.startswith("--"))
+    some_file_is_invalid = False
 
     for fn in filenames:
         handler = None
@@ -552,5 +637,10 @@ if __name__ == "__main__":
         else:  # json_logger.
             invalid_ifc = bool(logger.statements)
 
-        if not invalid_ifc:
+        if invalid_ifc:
+            some_file_is_invalid = True
+        else:
             print("No validation issues found.")
+
+    if some_file_is_invalid:
+        exit(1)

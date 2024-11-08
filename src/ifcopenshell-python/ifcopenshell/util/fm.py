@@ -17,7 +17,10 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.attribute
+from typing import Literal
+from typing_extensions import assert_never
 
 # COBie actually uses an exclusion list, but this inclusion list is equivalent.
 cobie_type_classes = [
@@ -114,7 +117,7 @@ fmhem_excluded_classes = [
 ]
 
 
-def get_cobie_types(ifc_file):
+def get_cobie_types(ifc_file: ifcopenshell.file) -> list[ifcopenshell.entity_instance]:
     elements = []
     for ifc_class in cobie_type_classes:
         try:
@@ -124,7 +127,7 @@ def get_cobie_types(ifc_file):
     return elements
 
 
-def get_cobie_components(ifc_file):
+def get_cobie_components(ifc_file: ifcopenshell.file) -> list[ifcopenshell.entity_instance]:
     elements = []
     for ifc_class in cobie_component_classes:
         try:
@@ -134,7 +137,7 @@ def get_cobie_components(ifc_file):
     return elements
 
 
-def get_fmhem_types(ifc_file):
+def get_fmhem_types(ifc_file: ifcopenshell.file) -> list[ifcopenshell.entity_instance]:
     elements = []
     if ifc_file.schema == "IFC2X3":
         fmhem_classes = fmhem_classes_ifc2x3
@@ -148,10 +151,10 @@ def get_fmhem_types(ifc_file):
     return elements
 
 
-def get_fmhem_classes(schema="IFC4"):
+def get_fmhem_classes(schema: Literal["IFC4", "IFC2X3"] = "IFC4") -> dict[str, list[str]]:
     results = {}
 
-    def get_fmhem_class(declaration):
+    def get_fmhem_class(declaration: W.entity) -> None:
         if declaration.name() in fmhem_excluded_classes:
             pass
         elif declaration.is_abstract():
@@ -172,8 +175,10 @@ def get_fmhem_classes(schema="IFC4"):
         classes = fmhem_classes_ifc4
     elif schema == "IFC2X3":
         classes = fmhem_classes_ifc2x3
-    schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(schema)
+    else:
+        assert_never(schema)
+    schema_ = ifcopenshell.schema_by_name(schema)
     for ifc_class in classes:
-        declaration = schema.declaration_by_name(ifc_class)
+        declaration = schema_.declaration_by_name(ifc_class)
         get_fmhem_class(declaration)
     return results

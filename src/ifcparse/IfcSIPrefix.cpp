@@ -120,7 +120,7 @@ double IfcParse::get_SI_equivalent(typename Schema::IfcNamedUnit* named_unit) {
         if (component->declaration().is(Schema::IfcSIUnit::Class())) {
             si_unit = component->template as<typename Schema::IfcSIUnit>();
             typename Schema::IfcValue* value = factor->ValueComponent();
-            scale = *value->data().getArgument(0);
+            scale = value->data().get_attribute_value(0);
         }
     } else if (named_unit->declaration().is(Schema::IfcSIUnit::Class())) {
         si_unit = named_unit->template as<typename Schema::IfcSIUnit>();

@@ -26,16 +26,22 @@ For example, if a door has a fire rating, it is stored as a property.
 from .. import wrap_usecases
 from .add_pset import add_pset
 from .add_qto import add_qto
+from .assign_pset import assign_pset
 from .edit_pset import edit_pset
 from .edit_qto import edit_qto
 from .remove_pset import remove_pset
+from .unassign_pset import unassign_pset
+from .unshare_pset import unshare_pset
 
 wrap_usecases(__path__, __name__)
 
 __all__ = [
     "add_pset",
     "add_qto",
+    "assign_pset",
     "edit_pset",
     "edit_qto",
     "remove_pset",
+    "unassign_pset",
+    "unshare_pset",
 ]

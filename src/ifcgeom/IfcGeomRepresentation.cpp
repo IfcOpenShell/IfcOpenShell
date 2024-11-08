@@ -142,19 +142,18 @@ namespace {
 #endif
 
 IfcGeom::Representation::Serialization::Serialization(const BRep& brep)
-	: Representation(brep.settings(), brep.entity())
-	, id_(brep.id())
+	: Representation(brep.settings(), brep.entity(), brep.id())
 {
 	for (auto it = brep.begin(); it != brep.end(); ++it) {
 		int sid = -1;
 
 		if (it->hasStyle()) {
-			const auto& clr = it->Style().diffuse.ccomponents();
+            const auto& clr = it->Style().get_color().ccomponents();
 			surface_styles_.push_back(clr(0));
 			surface_styles_.push_back(clr(1));
 			surface_styles_.push_back(clr(2));
 
-			sid = it->Style().instance ? it->Style().instance->data().id() : -1;
+			sid = it->Style().instance ? it->Style().instance->as<IfcUtil::IfcBaseEntity>()->id() : -1;
 		} else {
 			surface_styles_.push_back(-1.);
 			surface_styles_.push_back(-1.);
@@ -323,8 +322,7 @@ bool IfcGeom::Representation::BRep::calculate_projected_surface_area(const ifcop
 }
 
 IfcGeom::Representation::Triangulation::Triangulation(const BRep& shape_model)
-	: Representation(shape_model.settings(), shape_model.entity())
-	, id_(shape_model.id())
+	: Representation(shape_model.settings(), shape_model.entity(), shape_model.id())
 	, weld_offset_(0)
 {
 	for (IfcGeom::ConversionResults::const_iterator iit = shape_model.begin(); iit != shape_model.end(); ++iit) {
@@ -334,23 +332,23 @@ IfcGeom::Representation::Triangulation::Triangulation(const BRep& shape_model)
 
 		int surface_style_id = -1;
 		if (iit->hasStyle()) {
-			auto jt = std::find(_materials.begin(), _materials.end(), iit->StylePtr());
-			if (jt == _materials.end()) {
-				surface_style_id = (int)_materials.size();
-				_materials.push_back(iit->StylePtr());
+			auto jt = std::find(materials_.begin(), materials_.end(), iit->StylePtr());
+			if (jt == materials_.end()) {
+				surface_style_id = (int)materials_.size();
+				materials_.push_back(iit->StylePtr());
 			} else {
-				surface_style_id = (int)(jt - _materials.begin());
+				surface_style_id = (int)(jt - materials_.begin());
 			}
 		}
 
 		if (settings().get<ifcopenshell::geometry::settings::ApplyDefaultMaterials>().get() && surface_style_id == -1) {
 			const auto& material = IfcGeom::get_default_style(shape_model.entity());
-			auto mit = std::find(_materials.begin(), _materials.end(), material);
-			if (mit == _materials.end()) {
-				surface_style_id = (int)_materials.size();
-				_materials.push_back(material);
+			auto mit = std::find(materials_.begin(), materials_.end(), material);
+			if (mit == materials_.end()) {
+				surface_style_id = (int)materials_.size();
+				materials_.push_back(material);
 			} else {
-				surface_style_id = (int)(mit - _materials.begin());
+				surface_style_id = (int)(mit - materials_.begin());
 			}
 		}
 
@@ -395,7 +393,7 @@ int IfcGeom::Representation::Triangulation::addVertex(int item_id, int material_
 	const double X = convert ? (pX /unit_magnitude) : pX;
 	const double Y = convert ? (pY /unit_magnitude) : pY;
 	const double Z = convert ? (pZ /unit_magnitude) : pZ;
-	int i = (int)_verts.size() / 3;
+	int i = (int)verts_.size() / 3;
 	if (settings().get<ifcopenshell::geometry::settings::WeldVertices>().get()) {
 		const VertexKey key = std::make_tuple(item_id, material_index, X, Y, Z);
 		typename VertexKeyMap::const_iterator it = welds.find(key);
@@ -403,13 +401,13 @@ int IfcGeom::Representation::Triangulation::addVertex(int item_id, int material_
 		i = (int)(welds.size() + weld_offset_);
 		welds[key] = i;
 	}
-	_verts.push_back(X);
-	_verts.push_back(Y);
-	_verts.push_back(Z);
+	verts_.push_back(X);
+	verts_.push_back(Y);
+	verts_.push_back(Z);
 	return i;
 }
 
-void IfcGeom::Representation::Triangulation::addEdge(int n1, int n2, std::map<std::pair<int, int>, int>& edgecount) {
+void IfcGeom::Representation::Triangulation::registerEdgeCount(int n1, int n2, std::map<std::pair<int, int>, int>& edgecount) {
 	const Edge e = Edge((std::min)(n1, n2), (std::max)(n1, n2));
 	edgecount[e] ++;
 }

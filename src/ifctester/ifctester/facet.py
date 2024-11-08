@@ -133,6 +133,10 @@ class Facet:
             if requirement.cardinality == "prohibited":
                 is_prohibited = not is_prohibited
             templates = self.prohibited_templates if is_prohibited else self.requirement_templates
+            if requirement.cardinality == "optional":
+                templates = [
+                    t.replace("shall", "may").replace("Shall", "May").replace("must", "may") for t in templates
+                ]
 
         for template in templates:
             total_variables = len(template) - len(template.replace("{", ""))
@@ -149,8 +153,8 @@ class Facet:
         return "This facet cannot be interpreted"
 
     def to_ids_value(self, parameter: Union[str, Restriction, list]) -> dict[str, Any]:
-        if isinstance(parameter, str):
-            parameter_dict = {"simpleValue": parameter}
+        if isinstance(parameter, (int, float, str)):
+            parameter_dict = {"simpleValue": str(parameter)}
         elif isinstance(parameter, Restriction):
             parameter_dict = {"xs:restriction": [parameter.asdict()]}
         elif isinstance(parameter, list):
@@ -1047,7 +1051,7 @@ class Restriction:
 
 
 class Result:
-    def __init__(self, is_pass, reason=None):
+    def __init__(self, is_pass: bool, reason: Optional[dict[str, Any]] = None):
         self.is_pass = is_pass
         self.reason = reason
 

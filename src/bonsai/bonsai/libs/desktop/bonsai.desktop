@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Terminal=false
+Exec=bonsai %f
+Name=Bonsai
+Icon=bonsai
+X-Desktop-File-Install-Version=0.26
+GenericName=Bonsai
+MimeType=application/x-ifc;

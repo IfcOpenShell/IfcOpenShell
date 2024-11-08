@@ -22,11 +22,12 @@ import time
 import ifcopenshell
 import ifcopenshell.util.attribute
 import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
-from typing import Union, Any
+from typing import Union, Any, Literal
 
 # This is highly experimental and incomplete, however, it may work for simple datasets.
 
 cwd = os.path.dirname(os.path.realpath(__file__))
+IFC_SCHEMA = Literal["IFC2X3", "IFC4", "IFC4X3"]
 
 
 def get_fallback_schema(version: str) -> str:
@@ -39,25 +40,108 @@ def get_fallback_schema(version: str) -> str:
     return version
 
 
-def is_a(entity: ifcopenshell.entity_instance, ifc_class: str) -> bool:
+def get_declaration(element: ifcopenshell.entity_instance):
+    """Get the schema declaration of an actively used entity instance
+
+    IFC models are made out of instances (e.g. with a STEP ID) of entities
+    (e.g. IfcWall). Those entities are defined through a **Schema
+    Declaration**.
+
+    **Schema Declaration** objects can be used to query information about the
+    IFC schema itself, such as data types, enumeration values, and inheritance.
+
+    :param element: Any instance, typically from a loaded or created IFC model
+
+    Example:
+
+    .. code:: python
+
+        wall = model.createIfcWall()
+        declaration = ifcopenshell.util.schema.get_declaration(wall)
+        print(declaration.name()) # IfcWall
+        print(declaration.is_abstract()) # False
+        print(declaration.supertype().name()) # IfcBuildingElement
+    """
+    return element.wrapped_data.declaration().as_entity()
+
+
+def is_a(declaration: ifcopenshell.ifcopenshell_wrapper.entity, ifc_class: str) -> bool:
+    """Checks if a schema declaration is a class
+
+    :param declaration: The declaration from the schema.
+    :param ifc_class: A case insensitive IFC class name (e.g. IfcRoot)
+    :return: True is the declaration is of that class
+
+    Example:
+
+    .. code:: python
+
+        wall = model.createIfcWall()
+        declaration = ifcopenshell.util.schema.get_declaration(wall)
+        ifcopenshell.util.schema.is_a(declaration, "IfcRoot") # True
+    """
     ifc_class = ifc_class.upper()
-    if entity.name_uc() == ifc_class:
+    if declaration.name_uc() == ifc_class:
         return True
-    if entity.supertype():
-        return is_a(entity.supertype(), ifc_class)
+    if declaration.supertype():
+        return is_a(declaration.supertype(), ifc_class)
     return False
 
 
-def get_subtypes(entity):
-    def get_classes(declaration):
+def get_supertypes(
+    declaration: ifcopenshell.ifcopenshell_wrapper.entity,
+) -> list[ifcopenshell.ifcopenshell_wrapper.entity]:
+    """Gets a list of supertype declarations
+
+    :param declaration: The declaration from the schema, as an entity.
+    :return: A list of supertypes in order from parent to grandparent.
+
+    Example:
+
+    .. code:: python
+
+        wall = model.createIfcWall()
+        results = ifcopenshell.util.schema.get_supertypes(wall.wrapped_data.declaration().as_entity())
+        # [<entity IfcBuildingElement>, <entity IfcElement>, ..., <entity IfcRoot>]
+    """
+    results = []
+    while True:
+        if not (declaration := declaration.supertype()):
+            break
+        results.append(declaration)
+    return results
+
+
+def get_subtypes(
+    declaration: ifcopenshell.ifcopenshell_wrapper.entity,
+) -> list[ifcopenshell.ifcopenshell_wrapper.entity]:
+    """Get a flat list of subtype declarations
+
+    Abstract classes are skipped.
+
+    Inconsistently, the declaration itself is also added to this list. This
+    should be fixed exclude the declaration itself.
+
+    :param declaration: The declaration from the schema, as an entity.
+    :return: A list of subtypes in order from child to grandchild.
+
+    .. code:: python
+
+        schema = ifcopenshell.schema_by_name("IFC4")
+        declaration = schema.declaration_by_name("IfcFlowSegment")
+        print(ifcopenshell.util.schema.get_subtypes(declaration))
+        [<entity IfcFlowSegment>, <entity IfcCableCarrierSegment>, ..., <entity IfcPipeSegment>]
+    """
+
+    def get_classes(decl):
         results = []
-        if not declaration.is_abstract():
-            results.append(declaration)
-        for subtype in declaration.subtypes():
+        if not decl.is_abstract():
+            results.append(decl)
+        for subtype in decl.subtypes():
             results.extend(get_classes(subtype))
         return results
 
-    return get_classes(entity)
+    return get_classes(declaration)
 
 
 def reassign_class(

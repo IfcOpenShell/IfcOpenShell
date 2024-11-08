@@ -18,6 +18,7 @@
 
 import ifcopenshell.api.geometry
 import ifcopenshell.util.element
+from typing import Any
 
 
 def unassign_representation(
@@ -30,26 +31,35 @@ def unassign_representation(
 
 
 class Usecase:
-    def execute(self):
-        if self.settings["product"].is_a("IfcProduct"):
-            self.unassign_product_representation(self.settings["product"], self.settings["representation"])
-        elif self.settings["product"].is_a("IfcTypeProduct"):
+    file: ifcopenshell.file
+    settings: dict[str, Any]
+
+    def execute(self) -> None:
+        product: ifcopenshell.entity_instance = self.settings["product"]
+        representation: ifcopenshell.entity_instance = self.settings["representation"]
+        if product.is_a("IfcProduct"):
+            self.unassign_product_representation(product, representation)
+        elif product.is_a("IfcTypeProduct"):
             self.unassign_type_representation()
 
-    def unassign_product_representation(self, product, representation):
+    def unassign_product_representation(
+        self, product: ifcopenshell.entity_instance, representation: ifcopenshell.entity_instance
+    ) -> None:
         representations = list(product.Representation.Representations or [])
         if representation not in representations:
             return
         representations.remove(representation)
         if not representations:
-            self.file.remove(product.Representation)
+            product_def = product.Representation
+            # TODO: should somehow find matching shape aspect and remove it
+            # even before the last representation is removed.
+            self.process_shape_aspects(product_def)
+            self.file.remove(product_def)
         else:
             product.Representation.Representations = representations
 
-    def unassign_type_representation(self):
-
+    def unassign_type_representation(self) -> None:
         matching_representation_map = None
-        representation_maps = self.settings["product"].RepresentationMaps or []
 
         for representation_map in self.settings["product"].RepresentationMaps or []:
             if representation_map.MappedRepresentation == self.settings["representation"]:
@@ -61,13 +71,31 @@ class Usecase:
             self.settings["product"].RepresentationMaps = [
                 rm for rm in self.settings["product"].RepresentationMaps if rm != matching_representation_map
             ] or None
+            self.process_shape_aspects(matching_representation_map)
             self.remove_representation_map_only(matching_representation_map)
 
-    def remove_representation_map_only(self, representation_map):
+    def process_shape_aspects(self, product_representation: ifcopenshell.entity_instance) -> None:
+        # Technically IfcShapeAspect doesn't become invalid when product representation is removed,
+        # but shape aspect makes sense only in context of some other representation.
+        if self.file.schema == "IFC2X3" and product_representation.is_a("IfcRepresentationMap"):
+            shape_aspects = [
+                a
+                for a in self.file.by_type("IfcShapeAspect")
+                if a.PartOfProductDefinitionShape == product_representation
+            ]
+        else:
+            shape_aspects = product_representation.HasShapeAspects
+        for shape_aspect in shape_aspects:
+            representations = shape_aspect.ShapeRepresentations
+            self.file.remove(shape_aspect)
+            for rep in representations:
+                ifcopenshell.api.geometry.remove_representation(self.file, rep)
+
+    def remove_representation_map_only(self, representation_map: ifcopenshell.entity_instance) -> None:
         representation_map.MappedRepresentation = self.file.createIfcShapeRepresentation()
         ifcopenshell.util.element.remove_deep2(self.file, representation_map)
 
-    def unassign_products_using_mapped_representation(self, representation_map):
+    def unassign_products_using_mapped_representation(self, representation_map: ifcopenshell.entity_instance) -> None:
         mapped_representations = []
         just_representations = []
         for map_usage in representation_map.MapUsage or []:

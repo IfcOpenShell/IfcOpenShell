@@ -44,7 +44,7 @@ you make in the spreadsheet or table will also be made in the IFC.
 There are different methods of installation, depending on your situation.
 
 1. **PyPI** is recommended for developers using Pip.
-2. **Using the BlenderBIM Add-on** is recommended for non-developers wanting a
+2. **Using Bonsai** is recommended for non-developers wanting a
    graphical interface.
 3. **Source installation** is recommended for developers wanting to use the
    latest code as a library or a CLI utility.
@@ -56,19 +56,19 @@ PyPI
 
     pip install ifccsv
 
-Using the BlenderBIM Add-on
+Using Bonsai
 ---------------------------
 
-The BlenderBIM Add-on is a Blender based graphical interface to IfcOpenShell.
+Bonsai is a Blender Add-on that provides a graphical interface for IfcOpenShell.
 Other than providing a graphical IFC authoring platform, it also comes with
 IfcOpenShell, its utilities, and a Python shell built-in. This means you don't
 need to install Python first, and you also can compare your IfcOpenShell
 scripting to what you see with a visual model viewer, or use a graphical
 interface to access the IfcOpenShell utilities.
 
-1. Install the BlenderBIM Add-on by following the `BlenderBIM Add-on
+1. Install Bonsai by following the `Bonsai
    installation documentation
-   <https://docs.blenderbim.org/users/installation.html>`_.
+   <https://docs.bonsaibim.org/guides/installation.html>`_.
 
 2. Launch Blender. Change to the **Scene Properties** tab in the **Properties
    Panel**. Scroll down to the **IFC Collaboration > IFC CSV Import / Export**

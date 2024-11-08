@@ -114,7 +114,7 @@ if "%CMAKE_VERSION%" LSS "cmake version 3.11.4" (
 )
 
 :: NOTE Boost < 1.64 doesn't work without tricks if the user has only VS 2017 installed and no earlier versions.
-set BOOST_VERSION=1.79.0
+set BOOST_VERSION=1.86.0
 :: Version string with underscores instead of dots.
 set BOOST_VER=%BOOST_VERSION:.=_%
 
@@ -169,7 +169,7 @@ cd "%DEPS_DIR%"
 :: VERSIONS
 set HDF5_VERSION=1.8.22
 set HDF5_VERSION_MAJOR=1.8
-set OCCT_VERSION=7.7.1
+set OCCT_VERSION=7.8.1
 :: NOTE If updating the default Python version, change PY_VER_MAJOR_MINOR accordingly in run-cmake.bat
 set PYTHON_VERSION=3.11.7
 

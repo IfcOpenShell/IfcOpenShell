@@ -59,7 +59,7 @@ IfcSchema::IfcProduct::list::ptr mapping::products_represented_by(const IfcSchem
 
         // IfcProductRepresentation also lacks the INVERSE relation to IfcProduct
         // Let's find the IfcProducts that reference the IfcProductRepresentation anyway
-        products->push((*it)->data().getInverse((&IfcSchema::IfcProduct::Class()), -1)->as<IfcSchema::IfcProduct>());
+        products->push((*it)->file_->getInverse((*it)->id(), &IfcSchema::IfcProduct::Class(), -1)->as<IfcSchema::IfcProduct>());
     }
 
     if (only_direct) {
@@ -81,13 +81,13 @@ IfcSchema::IfcProduct::list::ptr mapping::products_represented_by(const IfcSchem
                     continue;
                 }
 
-                IfcSchema::IfcRepresentation::list::ptr reps = item->data().getInverse((&IfcSchema::IfcRepresentation::Class()), -1)->as<IfcSchema::IfcRepresentation>();
+                IfcSchema::IfcRepresentation::list::ptr reps = item->file_->getInverse(item->id(), (&IfcSchema::IfcRepresentation::Class()), -1)->as<IfcSchema::IfcRepresentation>();
                 for (IfcSchema::IfcRepresentation::list::it jt = reps->begin(); jt != reps->end(); ++jt) {
                     IfcSchema::IfcRepresentation* rep = *jt;
                     if (rep->Items()->size() != 1) continue;
                     IfcSchema::IfcProductRepresentation::list::ptr prodreps_mapped = rep->OfProductRepresentation();
                     for (IfcSchema::IfcProductRepresentation::list::it kt = prodreps_mapped->begin(); kt != prodreps_mapped->end(); ++kt) {
-                        IfcSchema::IfcProduct::list::ptr ps = (*kt)->data().getInverse((&IfcSchema::IfcProduct::Class()), -1)->as<IfcSchema::IfcProduct>();
+                        IfcSchema::IfcProduct::list::ptr ps = (*kt)->file_->getInverse((*kt)->id(), (&IfcSchema::IfcProduct::Class()), -1)->as<IfcSchema::IfcProduct>();
                         products->push(ps);
                     }
                 }
@@ -165,10 +165,8 @@ aggregate_of_instance::ptr mapping::find_openings(const IfcUtil::IfcBaseEntity* 
         return openings;
     }
 
-    auto product = inst->as<IfcSchema::IfcProduct>();
-
-    if (product->as<IfcSchema::IfcElement>() && !product->as<IfcSchema::IfcFeatureElementSubtraction>()) {
-        const IfcSchema::IfcElement* element = product->as<IfcSchema::IfcElement>();
+    if (inst->as<IfcSchema::IfcElement>() && !inst->as<IfcSchema::IfcFeatureElementSubtraction>()) {
+        const IfcSchema::IfcElement* element = inst->as<IfcSchema::IfcElement>();
         auto rels = element->HasOpenings();
         for (auto& rel : *rels) {
             openings->push(rel->RelatedOpeningElement());
@@ -176,20 +174,31 @@ aggregate_of_instance::ptr mapping::find_openings(const IfcUtil::IfcBaseEntity* 
     }
 
     // Is the IfcElement a decomposition of an IfcElement with any IfcOpeningElements?
-    const IfcSchema::IfcObjectDefinition* obdef = product->as<IfcSchema::IfcObjectDefinition>();
-    for (;;) {
-        auto decomposes = obdef->Decomposes()->generalize();
-        if (decomposes->size() != 1) break;
-        IfcSchema::IfcObjectDefinition* rel_obdef = (*decomposes->begin())->as<IfcSchema::IfcRelAggregates>()->RelatingObject();
-        if (rel_obdef->as<IfcSchema::IfcElement>() && !rel_obdef->as<IfcSchema::IfcFeatureElementSubtraction>()) {
-            IfcSchema::IfcElement* element = rel_obdef->as<IfcSchema::IfcElement>();
-            auto rels = element->HasOpenings();
-            for (auto& rel : *rels) {
-                openings->push(rel->RelatedOpeningElement());
+    const IfcSchema::IfcObjectDefinition* obdef = inst->as<IfcSchema::IfcObjectDefinition>();
+    if (obdef != nullptr) {
+        for (;;) {
+            auto decomposes = obdef->Decomposes()->generalize();
+            if (decomposes->size() != 1) {
+                // If we have multiple decompositions, not allowed by schema,
+                // openings associated to relating decompositions are not
+                // considered;
+                break;
             }
-        }
+            if ((*decomposes->begin())->as<IfcSchema::IfcRelAggregates>() == nullptr) {
+                // Only aggregation, not nesting is considered.
+                break;
+            }
+            IfcSchema::IfcObjectDefinition* rel_obdef = (*decomposes->begin())->as<IfcSchema::IfcRelAggregates>()->RelatingObject();
+            if (rel_obdef->as<IfcSchema::IfcElement>() && !rel_obdef->as<IfcSchema::IfcFeatureElementSubtraction>()) {
+                IfcSchema::IfcElement* element = rel_obdef->as<IfcSchema::IfcElement>();
+                auto rels = element->HasOpenings();
+                for (auto& rel : *rels) {
+                    openings->push(rel->RelatedOpeningElement());
+                }
+            }
 
-        obdef = rel_obdef;
+            obdef = rel_obdef;
+        }
     }
 
     return openings;
@@ -273,7 +282,7 @@ const IfcUtil::IfcBaseEntity* mapping::get_product_type(const IfcUtil::IfcBaseEn
         }
 #endif
         // Avoid segfault if RelatingType is unset.
-        if (rel->get("RelatingType")->isNull()){
+        if (rel->get("RelatingType").isNull()){
             break;
             return nullptr;
         }
@@ -303,7 +312,7 @@ const IfcUtil::IfcBaseEntity* mapping::get_single_material_association(const Ifc
                 if (associated_material->as<IfcSchema::IfcMaterialLayerSetUsage>() || associated_material->as<IfcSchema::IfcMaterialLayerSet>()) {
                     IfcSchema::IfcMaterialLayerSet* layerset;
                     if (auto *m = associated_material->as<IfcSchema::IfcMaterialLayerSetUsage>()) {
-                        if (m->get("ForLayerSet")->isNull()) {
+                        if (m->get("ForLayerSet").isNull()) {
                             Logger::Warning("Missing ForLayerSet for:", m);
                             return nullptr;
                         }
@@ -322,7 +331,7 @@ const IfcUtil::IfcBaseEntity* mapping::get_single_material_association(const Ifc
                 if (associated_material->as<IfcSchema::IfcMaterialProfileSetUsage>() || associated_material->as<IfcSchema::IfcMaterialProfileSet>()) {
                     IfcSchema::IfcMaterialProfileSet* profileset;
                     if (auto* m = associated_material->as<IfcSchema::IfcMaterialProfileSetUsage>()) {
-                        if (m->get("ForProfileSet")->isNull()) {
+                        if (m->get("ForProfileSet").isNull()) {
                             Logger::Warning("Missing ForProfileSet for:", m);
                             return nullptr;
                         }
@@ -430,11 +439,11 @@ namespace {
         }
 #endif
 
-        IfcSchema::IfcSurfaceStyle *surface_style = nullptr;
+        IfcSchema::IfcSurfaceStyle *surface_style_ = nullptr;
         for (auto& style : prs_styles) {
-            if (style->declaration().is(IfcSchema::IfcSurfaceStyle::Class())) {
-                surface_style = (IfcSchema::IfcSurfaceStyle*)style;
+            if (auto surface_style = style->as<IfcSchema::IfcSurfaceStyle>()) {
                 if (surface_style->Side() != IfcSchema::IfcSurfaceSide::IfcSurfaceSide_NEGATIVE) {
+                    surface_style_ = surface_style;
                     auto styles_elements = surface_style->Styles();
                     for (auto mt = styles_elements->begin(); mt != styles_elements->end(); ++mt) {
                         if ((*mt)->template as<T>()) {
@@ -444,7 +453,7 @@ namespace {
                 }
             }
         }
-        return std::make_pair(surface_style, nullptr);
+        return std::make_pair(surface_style_, nullptr);
     }
 
     bool process_colour(IfcSchema::IfcColourRgb* colour, double* rgb) {
@@ -523,7 +532,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcMaterial* material) {
         material_style->name = material->Name();
     } else {
         std::ostringstream oss;
-        oss << material->declaration().name() << "-" << material->data().id();
+        oss << material->declaration().name() << "-" << material->id();
         material_style->name = oss.str();
     }
     return material_style;
@@ -546,6 +555,18 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcStyledItem* inst) {
         return nullptr;
     }
 
+    // map and not map_impl otherwise no caching
+    return map(style);
+}
+
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSurfaceStyle* style) {
+    auto styles = style->Styles();
+    IfcSchema::IfcSurfaceStyleShading* shading = nullptr;
+    for (auto& s : *styles) {
+        if (shading = s->as<IfcSchema::IfcSurfaceStyleShading>()) {
+            break;
+        }
+    }
     taxonomy::style::ptr surface_style = taxonomy::make<taxonomy::style>();
     surface_style->instance = style;
     if (settings_.get<settings::UseMaterialNames>().get() && style->Name()) {
@@ -553,7 +574,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcStyledItem* inst) {
     } else {
         std::ostringstream oss;
         if (shading) {
-            oss << shading->declaration().name() << "-" << shading->data().id();
+            oss << shading->declaration().name() << "-" << shading->id();
         } else {
             oss << "-";
         }
@@ -565,11 +586,14 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcStyledItem* inst) {
         return surface_style;
     }
 
-    static taxonomy::colour white = taxonomy::colour(1., 1., 1.);
-    double rgb[3];
-    if (process_colour(shading->SurfaceColour(), rgb)) {
-        surface_style->diffuse.components() << rgb[0], rgb[1], rgb[2];
-    }
+	surface_style->use_surface_color = settings_.get<settings::SurfaceColour>().get();
+
+	static taxonomy::colour white = taxonomy::colour(1., 1., 1.);
+	double rgb[3];
+	if (process_colour(shading->SurfaceColour(), rgb)) {
+		surface_style->surface.components() << rgb[0], rgb[1], rgb[2];
+        surface_style->diffuse = surface_style->surface;
+	}
 
     if (auto rendering_style = shading->as<IfcSchema::IfcSurfaceStyleRendering>()) {
         if (rendering_style->DiffuseColour() && process_colour(rendering_style->DiffuseColour(), rgb)) {
@@ -607,7 +631,6 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcStyledItem* inst) {
     
     return surface_style;
 }
-
 
 taxonomy::ptr mapping::map(const IfcBaseInterface* inst) {
     auto iden = inst->as<IfcUtil::IfcBaseClass>()->identity();
@@ -693,8 +716,8 @@ IfcUtil::IfcBaseEntity* mapping::get_decomposing_entity(const IfcUtil::IfcBaseEn
 
     /* Parent decompositions to the RelatingObject */
     if (!parent) {
-        aggregate_of_instance::ptr parents = product->data().getInverse((&IfcSchema::IfcRelAggregates::Class()), -1);
-        parents->push(product->data().getInverse((&IfcSchema::IfcRelNests::Class()), -1));
+        aggregate_of_instance::ptr parents = product->file_->getInverse(product->id(), (&IfcSchema::IfcRelAggregates::Class()), -1);
+        parents->push(product->file_->getInverse(product->id(), (&IfcSchema::IfcRelNests::Class()), -1));
         for (aggregate_of_instance::it it = parents->begin(); it != parents->end(); ++it) {
             IfcSchema::IfcRelDecomposes* decompose = (*it)->as<IfcSchema::IfcRelDecomposes>();
             IfcUtil::IfcBaseEntity* ifc_objectdef;
@@ -807,6 +830,28 @@ void mapping::initialize_units_() {
     if (settings_.get<settings::SiteLocalPlacement>().get()) {
         placement_rel_to_type_ = file_->schema()->declaration_by_name("IfcSite");
     }
+
+    // Translation is applied first, then rotation.
+    if (settings_.get<ModelOffset>().has()) {
+        auto vs = settings_.get<ModelOffset>().get();
+        if (vs.size() == 3) {
+            offset_and_rotation_ *= Eigen::Affine3d(Eigen::Translation3d(vs[0], vs[1], vs[2])).matrix();
+        } else {
+            Logger::Error("Expected 3 values for model-offset setting");
+        }
+    }
+
+    if (settings_.get<ModelRotation>().has()) {
+        auto vs = settings_.get<ModelRotation>().get();
+        if (vs.size() == 4) {
+            auto m3 = Eigen::Quaterniond(vs[0], vs[1], vs[2], vs[3]).matrix();
+            Eigen::Matrix4d m4 = Eigen::Matrix4d::Identity();
+            m4 << m3;
+            offset_and_rotation_ *= m4;
+        } else {
+            Logger::Error("Expected 4 values for model-rotation setting");
+        }
+    }
 }
 
 void mapping::initialize_settings() {
@@ -827,11 +872,11 @@ void mapping::initialize_settings() {
         // See if there is a context_id filter and whether the context is selected
         if (settings_.get<settings::ContextIds>().has()) {
             auto cids = settings_.get<settings::ContextIds>().get();
-            if (cids.find(context->data().id()) == cids.end()) {
+            if (cids.find(context->id()) == cids.end()) {
                 bool selected_sub_context = false;
                 auto subs = context->HasSubContexts();
                 for (auto& sub : *subs) {
-                    if (cids.find(context->data().id()) != cids.end()) {
+                    if (cids.find(context->id()) != cids.end()) {
                         selected_sub_context = true;
                         break;
                     }

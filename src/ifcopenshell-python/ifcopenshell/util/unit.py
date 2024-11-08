@@ -725,9 +725,14 @@ def format_length(
 
 
 def is_attr_type(
-    content_type: ifcopenshell_wrapper.parameter_type, ifc_unit_type_name: str, include_select_types: bool = True
+    content_type: ifcopenshell_wrapper.parameter_type,
+    ifc_unit_type_name: str,
+    include_select_types: bool = True,
 ) -> Union[ifcopenshell_wrapper.type_declaration, None]:
     cur_decl = content_type
+
+    if hasattr(cur_decl, "name") and cur_decl.name() == ifc_unit_type_name:
+        return cur_decl
 
     if include_select_types:
         if hasattr(cur_decl, "select_list"):
@@ -735,17 +740,8 @@ def is_attr_type(
                 if is_attr_type(select_item, ifc_unit_type_name):
                     return select_item
 
-    while hasattr(cur_decl, "declared_type") is True:
-        cur_decl = cur_decl.declared_type()
-        if include_select_types:
-            if hasattr(cur_decl, "select_list"):
-                for select_item in cur_decl.select_list():
-                    if is_attr_type(select_item, ifc_unit_type_name):
-                        return select_item
-        if hasattr(cur_decl, "name") is False:
-            continue
-        if cur_decl.name() == ifc_unit_type_name:
-            return cur_decl
+    if hasattr(cur_decl, "declared_type"):
+        return is_attr_type(cur_decl.declared_type(), ifc_unit_type_name, include_select_types)
 
     if isinstance(cur_decl, ifcopenshell_wrapper.aggregation_type):
         # support aggregate of aggregates, as in IfcCartesianPointList3D.CoordList
@@ -756,14 +752,7 @@ def is_attr_type(
             return get_declared_type_from_aggregate(cur_decl)
 
         cur_decl = get_declared_type_from_aggregate(cur_decl)
-        if hasattr(cur_decl, "name") and cur_decl.name() == ifc_unit_type_name:
-            return cur_decl
-        while hasattr(cur_decl, "declared_type") is True:
-            cur_decl = cur_decl.declared_type()
-            if hasattr(cur_decl, "name") is False:
-                continue
-            if cur_decl.name() == ifc_unit_type_name:
-                return cur_decl
+        return is_attr_type(cur_decl, ifc_unit_type_name, include_select_types)
 
     return None
 

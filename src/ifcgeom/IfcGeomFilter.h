@@ -76,7 +76,7 @@ namespace IfcGeom {
 			// schema.
 			// @todo pass settings
 			ifcopenshell::geometry::Settings s;
-			static auto mapping = ifcopenshell::geometry::impl::mapping_implementations().construct(prod->data().file, s);
+			static auto mapping = ifcopenshell::geometry::impl::mapping_implementations().construct(prod->file_, s);
             while ((parent = mapping->get_decomposing_entity(current, traverse_openings)) != nullptr) {
                 if (pred(parent)) {
                     return true;
@@ -138,7 +138,7 @@ namespace IfcGeom {
 
 		std::string value(IfcUtil::IfcBaseEntity* prod) const {
 			try {
-				return (std::string) *prod->get(attribute_name);
+				return (std::string) prod->get(attribute_name);
 			} catch (...) {
 				// Either
 				// (a) not an attribute name for this entity instance
@@ -184,7 +184,7 @@ namespace IfcGeom {
 		bool match(IfcUtil::IfcBaseEntity* prod) const {
 			// @todo
 			ifcopenshell::geometry::Settings s;
-			static auto mapping = ifcopenshell::geometry::impl::mapping_implementations().construct(prod->data().file, s);
+			static auto mapping = ifcopenshell::geometry::impl::mapping_implementations().construct(prod->file_, s);
 			layer_map_t layers = mapping->get_layers(prod);
             return std::find_if(layers.begin(), layers.end(), wildcards_match(values)) != layers.end();
         }
@@ -255,7 +255,7 @@ namespace IfcGeom {
 			, instance_ids_(instance_ids) {}
 
 		bool match(IfcUtil::IfcBaseEntity* prod) const {
-			return instance_ids_.find(prod->data().id()) != instance_ids_.end();
+			return instance_ids_.find(prod->id()) != instance_ids_.end();
 		}
 
 		bool operator()(IfcUtil::IfcBaseEntity* prod) const {

@@ -174,7 +174,7 @@ class Usecase:
             return self.create_surface_texture(links[0].from_node, "DIFFUSE")
 
     def create_surface_texture(self, node, mode):
-        import blenderbim.tool as tool
+        import bonsai.tool as tool
 
         texture = self.file.create_entity(
             "IfcImageTexture",

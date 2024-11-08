@@ -30,8 +30,8 @@ license:
 # TODO: make this based on xsd file presence
 .PHONY: models
 models:
-	cd src && xsdata generate -p bcf.v2.model --unnest-classes --kw-only --slots -ds Google bcf/v2/xsd
-	cd src && xsdata generate -p bcf.v3.model --unnest-classes --kw-only --slots -ds Google bcf/v3/xsd
+	xsdata generate -p bcf.v2.model --unnest-classes --kw-only --slots -ds Google bcf/v2/xsd
+	xsdata generate -p bcf.v3.model --unnest-classes --kw-only --slots -ds Google bcf/v3/xsd
 
 .PHONY: test
 test:

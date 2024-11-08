@@ -19,7 +19,10 @@
 import lark
 import ifcopenshell
 from typing import Optional, Union, Literal, Generator, Any
-
+import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
+from ifcopenshell.util.doc import get_predefined_type_doc
+from ifcopenshell.util.element import get_psets
+from ifcopenshell.util.unit import get_unit_symbol
 
 arithmetic_operator_symbols = {"ADD": "+", "DIVIDE": "/", "MULTIPLY": "*", "SUBTRACT": "-"}
 symbol_arithmetic_operators = {"+": "ADD", "/": "DIVIDE", "*": "MULTIPLY", "-": "SUBTRACT"}
@@ -239,11 +242,94 @@ def get_cost_item_assignments(
     if not is_deep:
         return get_cost_assignments_by_type(cost_item, filter_by_type)
     else:
-        return [
+        current_assignments = get_cost_assignments_by_type(cost_item, filter_by_type)
+        nested_assignments = [
             product
             for nested_cost_item in get_all_nested_cost_items(cost_item)
             for product in get_cost_assignments_by_type(nested_cost_item, filter_by_type)
         ]
+        return current_assignments + nested_assignments
+
+
+def get_cost_values(cost_item: ifcopenshell.entity_instance) -> list[dict[str, str]]:
+    results = []
+    for cost_value in cost_item.CostValues or []:
+        label = "{0:.2f}".format(calculate_applied_value(cost_item, cost_value))
+        label += " = {}".format(serialise_cost_value(cost_value))
+        unit_data = {"value_component": None, "unit_component": None, "unit_symbol": ""}
+        if cost_value.UnitBasis:
+            data = cost_value.UnitBasis.get_info()
+            unit_data["value_component"] = data["ValueComponent"].wrappedValue
+            unit_data["unit_component"] = data["UnitComponent"].id()
+            unit_data["unit_symbol"] = get_unit_symbol(cost_value.UnitBasis.UnitComponent)
+
+        results.append(
+            {
+                "id": cost_value.id(),
+                "label": label,
+                "name": cost_value.Name,
+                "category": cost_value.Category,
+                "applied_value": (
+                    get_primitive_applied_value(cost_value.AppliedValue) if cost_value.AppliedValue else None
+                ),
+                "unit_data": unit_data,
+            }
+        )
+    return results
+
+
+def get_cost_schedule_types(file):
+    schema: ifcopenshell_wrapper.schema_definition = ifcopenshell_wrapper.schema_by_name(file.schema)
+    results = []
+    declaration = schema.declaration_by_name("IfcCostSchedule")
+    version = file.schema_identifier
+    for attribute in declaration.attributes():
+        if attribute.name() == "PredefinedType":
+            for enumeration in attribute.type_of_attribute().declared_type().enumeration_items():
+                results.append(
+                    {
+                        "name": enumeration,
+                        "description": get_predefined_type_doc(version, "IfcCostSchedule", enumeration),
+                    }
+                )
+            break
+    return results
+
+
+def get_product_quantity_names(elements: list[ifcopenshell.entity_instance]) -> list[str]:
+    names = set()
+    for element in elements or []:
+        potential_names = set()
+        qtos = get_psets(element, qtos_only=True)
+        for qset, quantities in qtos.items():
+            potential_names.update(quantities.keys())
+        names = names.intersection(potential_names) if names else potential_names
+    return [n for n in names if n != "id"]
+
+
+def get_cost_schedule(cost_item: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+    """Returns the cost schedule of a cost item."""
+    for rel in cost_item.HasAssignments or []:
+        if rel.is_a("IfcRelAssignsToControl") and rel.RelatingControl.is_a("IfcCostSchedule"):
+            return rel.RelatingControl
+    for rel in cost_item.Nests or []:
+        return get_cost_schedule(rel.RelatingObject)
+
+
+def get_cost_rate(
+    file: ifcopenshell_wrapper.file, cost_item: ifcopenshell.entity_instance
+) -> Optional[ifcopenshell.entity_instance]:
+    """Returns the cost rate of a cost item."""
+    # There is no direct relationship between a cost item and a cost rate in IFC, so we need to infer it, based on the assumption that cost_rate.CostValues == cost_item.CostValues.
+    if get_cost_schedule(cost_item).PredefinedType == "SCHEDULEOFRATES":
+        return None  # Cost item is already a cost rate
+    if cost_item.CostValues:
+        potential_rates = file.get_inverse(cost_item.CostValues[0])
+        for potential_rate in potential_rates:
+            schedule = get_cost_schedule(potential_rate)
+            if schedule.PredefinedType == "SCHEDULEOFRATES":
+                return potential_rate
+    return None
 
 
 class CostValueUnserialiser:

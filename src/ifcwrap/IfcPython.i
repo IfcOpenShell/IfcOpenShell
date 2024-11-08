@@ -84,6 +84,7 @@
 %{
 	#include "../ifcgeom/Iterator.h"
 	#include "../ifcgeom/taxonomy.h"
+	#include "../ifcgeom/piecewise_function_evaluator.h"
 #ifdef IFOPSH_WITH_OPENCASCADE
 	#include "../ifcgeom/Serialization/Serialization.h"
 	#include "../ifcgeom/kernels/opencascade/IfcGeomTree.h"
@@ -147,6 +148,24 @@
 #endif
 %}
 
+%{
+
+template<typename T>
+struct is_std_vector : std::false_type {};
+template<typename T, typename Alloc>
+struct is_std_vector<std::vector<T, Alloc>> : std::true_type {};
+template<typename T>
+constexpr bool is_std_vector_v = is_std_vector<T>::value;
+
+template<typename T>
+struct is_std_vector_vector : std::false_type {};
+template<typename T, typename Alloc, typename Alloc2>
+struct is_std_vector_vector<std::vector<std::vector<T, Alloc>, Alloc2>> : std::true_type {};
+template<typename T>
+constexpr bool is_std_vector_vector_v = is_std_vector_vector<T>::value;
+
+%}
+
 // Create docstrings for generated python code.
 %feature("autodoc", "1");
 
@@ -159,6 +178,7 @@
 %module ifcopenshell_wrapper %{
 	#include "../ifcgeom/Converter.h"
 	#include "../ifcgeom/taxonomy.h"
+	#include "../ifcgeom/piecewise_function_evaluator.h"
 #ifdef IFOPSH_WITH_OPENCASCADE
 	#include "../ifcgeom/Serialization/Serialization.h"
 	#include "../ifcgeom/kernels/opencascade/IfcGeomTree.h"
@@ -173,7 +193,8 @@
 	#include "../serializers/HdfSerializer.h"
 	#include "../serializers/XmlSerializer.h"
 	#include "../serializers/GltfSerializer.h"
-	
+	#include "../serializers/TtlWktSerializer.h"
+
 #ifdef HAS_SCHEMA_2x3
 	#include "../ifcparse/Ifc2x3.h"
 #endif

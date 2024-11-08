@@ -48,26 +48,43 @@ bool OpenCascadeKernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& re
 
 	for (auto it = loft->children.begin(); it < loft->children.end() - 1; ++it) {
 		auto jt = it + 1;
-		std::array<taxonomy::face::ptr, 2> fa = { *it, *jt };
+		std::array<taxonomy::item::ptr, 2> fa = { *it, *jt };
 		std::array<TopoDS_Shape, 2> shps;
 		std::array<TopoDS_Wire, 2> ws;
 		for (int i = 0; i < 2; ++i) {
-			if (!convert(fa[i], shps[i])) {
-				return false;
+			if (fa[i]->kind() == taxonomy::FACE) {
+				if (!convert(std::static_pointer_cast<taxonomy::face>(fa[i]), shps[i])) {
+					return false;
+				}
 			}
-			if (shps[i].ShapeType() != TopAbs_FACE) {
+			if (fa[i]->kind() == taxonomy::LOOP) {
+				TopoDS_Wire w;
+				if (!convert(std::static_pointer_cast<taxonomy::loop>(fa[i]), w)) {
+					return false;
+				}
+				shps[i] = w;
+			}
+			if (shps[i].ShapeType() != TopAbs_FACE && shps[i].ShapeType() != TopAbs_WIRE) {
 				return false;
 			}
 			// @todo this is only outer wire
-			ws[i] = BRepTools::OuterWire(TopoDS::Face(shps[i]));
+			if (shps[i].ShapeType() == TopAbs_FACE) {
+				ws[i] = BRepTools::OuterWire(TopoDS::Face(shps[i]));
+			} else {
+				ws[i] = TopoDS::Wire(shps[i]);
+			}
 		}
-		if (it == loft->children.begin()) {
-			// faces.Append(shps[0]);
-			BB.Add(comp, shps[0]);
-		}
-		if (jt == loft->children.end() - 1) {
-			// faces.Append(shps[1]);
-			BB.Add(comp, shps[1]);
+		if (shps[0].ShapeType() == TopAbs_FACE) {
+			// When processing a sectioned *surface* there are no
+			// begin and end caps that need to be added.
+			if (it == loft->children.begin()) {
+				// faces.Append(shps[0]);
+				BB.Add(comp, shps[0]);
+			}
+			if (jt == loft->children.end() - 1) {
+				// faces.Append(shps[1]);
+				BB.Add(comp, shps[1]);
+			}
 		}
 		BRepTools_WireExplorer a(ws[0]);
 		BRepTools_WireExplorer b(ws[1]);
@@ -113,7 +130,7 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::loft::ptr loft, IfcGeom::Co
 		return false;
 	}
 	results.emplace_back(ConversionResult(
-		loft->instance->data().id(),
+		loft->instance->as<IfcUtil::IfcBaseEntity>()->id(),
 		loft->matrix,
 		new OpenCascadeShape(shape),
 		loft->surface_style

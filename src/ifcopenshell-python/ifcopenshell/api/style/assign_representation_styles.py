@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 import ifcopenshell
+from typing import Any
 
 
 def assign_representation_styles(
@@ -112,6 +113,10 @@ def assign_representation_styles(
 
 
 class Usecase:
+    file: ifcopenshell.file
+    settings: dict[str, Any]
+    results: list[ifcopenshell.entity_instance]
+
     def execute(self):
         if not self.settings["styles"]:
             return []
@@ -121,10 +126,12 @@ class Usecase:
         replace_previous_same_type_style = self.settings["replace_previous_same_type_style"]
 
         for element in self.file.traverse(self.settings["shape_representation"]):
-            if not element.is_a("IfcShapeRepresentation"):
+            if not element.is_a("IfcShapeModel"):
                 continue
             for item in element.Items:
-                if not item.is_a("IfcGeometricRepresentationItem"):
+                if not item.is_a("IfcGeometricRepresentationItem") and not item.is_a(
+                    "IfcTopologicalRepresentationItem"
+                ):
                     continue
                 if self.settings["styles"]:
                     # If there are more items than styles, fallback to using the last style

@@ -135,6 +135,9 @@ BIND(IfcFixedReferenceSweptAreaSolid)
 #ifdef SCHEMA_HAS_IfcSectionedSolidHorizontal
 BIND(IfcSectionedSolidHorizontal)
 #endif
+#ifdef SCHEMA_HAS_IfcSectionedSurface
+BIND(IfcSectionedSurface)
+#endif
 
 BIND(IfcCircle);
 BIND(IfcEllipse);
@@ -168,6 +171,7 @@ BIND(IfcVector);
 // BIND(IfcColourRgb);
 BIND(IfcMaterial); // -> style
 BIND(IfcStyledItem); // -> style
+BIND(IfcSurfaceStyle); // -> style
 
 #ifdef SCHEMA_HAS_IfcCurveSegment
 BIND(IfcCurveSegment);

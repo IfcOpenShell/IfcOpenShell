@@ -48,6 +48,10 @@
 #     on OS X El Capitan with homebrew:                                       #
 #          $ brew install git bison autoconf automake libffi cmake            #
 #                                                                             #
+#     on RHEL-related distros:                                                #
+#          $ yum install git gcc gcc-c++ autoconf bison make cmake            #
+#            mesa-libGL-devel libffi-devel fontconfig-devel bzip2             #
+#            automake patch                                                   #
 ###############################################################################
 import logging
 import os
@@ -78,10 +82,10 @@ PROJECT_NAME = "IfcOpenShell"
 USE_CURRENT_PYTHON_VERSION = os.getenv("USE_CURRENT_PYTHON_VERSION")
 ADD_COMMIT_SHA = os.getenv("ADD_COMMIT_SHA")
 
-PYTHON_VERSIONS = ["3.9.11", "3.10.3", "3.11.8", "3.12.1"]
+PYTHON_VERSIONS = ["3.9.11", "3.10.3", "3.11.8", "3.12.1", "3.13.0"]
 JSON_VERSION = "v3.6.1"
 OCE_VERSION = "0.18.3"
-OCCT_VERSION = "7.7.1"
+OCCT_VERSION = "7.8.1"
 BOOST_VERSION = "1.80.0"
 PCRE_VERSION = "8.41"
 LIBXML2_VERSION = "2.9.11"
@@ -220,6 +224,7 @@ if "v" in flags:
 else:
     logger.setLevel(logging.INFO)
 
+OFF_ON = ["OFF", "ON"]
 BUILD_STATIC = "shared" not in flags
 ENABLE_FLAG = "--enable-static" if BUILD_STATIC else "--enable-shared"
 DISABLE_FLAG = "--disable-shared" if BUILD_STATIC else "--disable-static"
@@ -331,7 +336,7 @@ def run_cmake(arg1, cmake_args, cmake_dir=None, cwd=None):
     if "wasm" in flags:
         wasm.append("emcmake")
         
-    run([*wasm, "cmake", P, *cmake_args, f"-DCMAKE_BUILD_TYPE={BUILD_CFG}"], cwd=cwd)
+    run([*wasm, "cmake", P, *cmake_args, f"-DCMAKE_BUILD_TYPE={BUILD_CFG}", f"-DBUILD_SHARED_LIBS={OFF_ON[not BUILD_STATIC]}"], cwd=cwd)
 
 
 def git_clone_or_pull_repository(clone_url, target_dir, revision=None):
@@ -351,6 +356,8 @@ def git_clone_or_pull_repository(clone_url, target_dir, revision=None):
         run([git, "pull", clone_url], cwd=target_dir)
 
     if revision != None:
+        run([git, "reset", "--hard"], cwd=target_dir)
+        run([git, "fetch", "--all"], cwd=target_dir)
         run([git, "checkout", revision], cwd=target_dir)
 
 
@@ -588,6 +595,12 @@ if USE_OCCT and "occ" in targets:
     if OCCT_VERSION == "7.7.1":
         patches.append("./patches/occt/no_ExpToCasExe.patch")
     
+    if OCCT_VERSION == "7.7.2":
+        patches.append("./patches/occt/no_ExpToCasExe_7_7_2.patch")
+
+    if OCCT_VERSION == "7.8.1":
+        patches.append("./patches/occt/no_ExpToCasExe_7_8_1.patch")
+    
     if "wasm" in flags:
         patches.append("./patches/occt/no_em_js.patch")
 
@@ -821,7 +834,6 @@ os.makedirs(IFCOS_DIR, exist_ok=True)
 executables_dir = os.path.join(IFCOS_DIR, "executables")
 os.makedirs(executables_dir, exist_ok=True)
 
-OFF_ON = ["OFF", "ON"]
 
 cmake_args = [
     "-DUSE_MMAP="                      "OFF",
@@ -963,7 +975,7 @@ if "IfcOpenShell-Python" in targets:
 
         logger.info(f"\rBuilding python {python_version} wrapper...   ")
 
-        run([make, f"-j{IFCOS_NUM_BUILD_PROCS}", "_ifcopenshell_wrapper"], cwd=python_dir)
+        run([make, f"-j{IFCOS_NUM_BUILD_PROCS}", "ifcopenshell_wrapper"], cwd=python_dir)
         run([make, "install/local"], cwd=os.path.join(python_dir, "ifcwrap"))
 
         if python_executable:

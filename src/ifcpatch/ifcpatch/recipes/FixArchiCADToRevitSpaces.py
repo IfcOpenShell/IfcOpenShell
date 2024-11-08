@@ -58,10 +58,10 @@ class Patcher:
 
     def patch(self):
         import bpy
-        import blenderbim.tool as tool
+        import bonsai.tool as tool
         import ifcopenshell
         import ifcopenshell.util.element
-        from blenderbim.bim.ifc import IfcStore
+        from bonsai.bim.ifc import IfcStore
         from mathutils import Vector, Matrix
 
         if len(bpy.data.objects) > 0:

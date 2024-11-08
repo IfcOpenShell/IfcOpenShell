@@ -1,0 +1,104 @@
+@import url("https://fonts.googleapis.com/css2?family=Nunito:wght@200;300;400;500;600;700;800&display=swap");
+@import url('https://fonts.googleapis.com/css2?family=Inconsolata:wght@200;300;400;500;600;700&display=swap');
+h1, h2, h3, h4 {
+    font-weight: normal;
+    color: #7cbf33;
+    background: -webkit-linear-gradient(0deg, #7cbf33, #049344);
+    background-clip: border-box;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+a {
+    text-decoration: none;
+}
+.toc-tree .reference:hover {
+    color: #d98014;
+}
+.sidebar-brand-text {
+    font-size: 1rem;
+    text-align: center;
+}
+.blockbutton {
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+}
+.blockbutton a {
+    display: block;
+    padding-top: 15px;
+    padding-bottom: 15px;
+    border-radius: 5px;
+    background: #40b74c;
+    width: 100%;
+    height: 100%;
+    color: #fff;
+    text-decoration: none;
+}
+.blockbutton a:hover {
+    background: #70ba35;
+}
+.highlight .hll {
+    background-color: #ffc2;
+}
+section img {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
+    border-radius: 5px;
+}
+.location-scene img {
+    display: inline;
+    border-radius: 0px;
+    box-shadow: none;
+    vertical-align: middle;
+    margin-top: -3px;
+}
+.location-scene p {
+    margin: 0.75rem;
+}
+.location-scene {
+    border: 1px solid var(--color-admonition-title);
+    background-color: var(--color-admonition-title-background);
+    border-radius: 5px;
+    font-style: italic;
+    color: var(--color-admonition-text);
+}
+img.transparent {
+    width: auto;
+    height: auto;
+    box-shadow: none;
+}
+img.icon {
+    width: auto;
+    height: auto;
+    border-radius: 0px;
+    box-shadow: none;
+    vertical-align: middle;
+    vertical-align: middle;
+}
+.content figure figcaption>p {
+    font-style: italic;
+    font-size: small;
+    color: #808080;
+}
+span.menuselection {
+    border: 1px solid var(--color-admonition-title);
+    background-color: var(--color-admonition-title-background);
+    color: var(--color-admonition-text);
+    border-radius: 5px;
+    padding-left: 3px;
+    padding-right: 3px;
+}
+
+
+
+/* Start section cards. */
+.toc-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    grid-gap: 20px;
+    list-style-type: none;
+    margin-bottom: 24px;
+}

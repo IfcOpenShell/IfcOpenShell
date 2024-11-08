@@ -21,24 +21,32 @@ import json
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.pset
-import ifcopenshell.util.element
 import ifcopenshell.util.unit
+import ifcopenshell.util.element
 import ifcopenshell.util.selector
+import ifcopenshell.util.shape
+import ifcopenshell.util.representation
 import multiprocessing
 from collections import namedtuple
-from typing import Any
+from typing import Any, Literal, get_args
 
 
 Function = namedtuple("Function", ["measure", "name", "description"])
-rules = {}
+RULE_SET = Literal["IFC4QtoBaseQuantities", "IFC4QtoBaseQuantitiesBlender"]
+rules: dict[RULE_SET, dict[str, Any]] = {}
 
 cwd = os.path.dirname(os.path.realpath(__file__))
-for name in ("IFC4QtoBaseQuantities", "IFC4QtoBaseQuantitiesBlender"):
+for name in get_args(RULE_SET):
     with open(os.path.join(cwd, name + ".json"), "r") as f:
         rules[name] = json.load(f)
 
 
 def quantify(ifc_file: ifcopenshell.file, elements: set[ifcopenshell.entity_instance], rules: dict) -> dict:
+    """
+
+    :param rules: Set of rules from `ifc5d.qto.rules`.
+
+    """
     results = {}
     for calculator, queries in rules["calculators"].items():
         calculator = calculators[calculator]
@@ -50,6 +58,11 @@ def quantify(ifc_file: ifcopenshell.file, elements: set[ifcopenshell.entity_inst
 
 
 def edit_qtos(ifc_file: ifcopenshell.file, results: dict[ifcopenshell.entity_instance, Any]) -> None:
+    """
+
+    :param results: Results from `ifc5d.qto.quantify`.
+
+    """
     for element, qtos in results.items():
         for name, quantities in qtos.items():
             qto = ifcopenshell.util.element.get_pset(element, name, should_inherit=False)
@@ -106,6 +119,9 @@ class IfcOpenShell:
             "Footprint Perimeter",
             "The perimeter if the object's faces were projected along the Z-axis and seen top down",
         ),
+        "get_segment_length": Function(
+            "IfcLengthMeasure", "Segment Length", "Intelligently guesses the length of flow segments"
+        ),
         # IfcAreaMeasure
         "get_area": Function("IfcAreaMeasure", "Area", "The total surface area of the element"),
         "get_footprint_area": Function(
@@ -137,8 +153,9 @@ class IfcOpenShell:
         functions[f"gross_{k}"] = Function(v.measure, f"Gross {v.name}", v.description)
         functions[f"net_{k}"] = Function(v.measure, f"Net {v.name}", v.description)
 
-    @staticmethod
+    @classmethod
     def calculate(
+        cls,
         ifc_file: ifcopenshell.file,
         elements: set[ifcopenshell.entity_instance],
         qtos: dict,
@@ -150,9 +167,10 @@ class IfcOpenShell:
 
         formula_functions = {}
 
-        gross_settings = ifcopenshell.geom.settings()
-        gross_settings.set("disable-opening-subtractions", True)
-        net_settings = ifcopenshell.geom.settings()
+        cls.gross_settings = ifcopenshell.geom.settings()
+        cls.gross_settings.set("disable-opening-subtractions", True)
+        cls.net_settings = ifcopenshell.geom.settings()
+        cls.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
 
         gross_qtos = {}
         net_qtos = {}
@@ -161,24 +179,27 @@ class IfcOpenShell:
             for quantity, formula in quantities.items():
                 if not formula:
                     continue
-                if formula.startswith("gross_"):
-                    formula = formula[6:]
-                    gross_qtos.setdefault(name, {})[quantity] = formula
+                gross_or_net_qtos = gross_qtos if formula.startswith("gross_") else net_qtos
+                if formula.endswith("get_segment_length"):
+                    gross_or_net_qtos.setdefault(name, {})[quantity] = formula.partition("_")[2]
+                elif formula.startswith("gross_"):
+                    formula = formula.partition("_")[2]
+                    gross_or_net_qtos.setdefault(name, {})[quantity] = formula
                     formula_functions[formula] = getattr(ifcopenshell.util.shape, formula)
                 elif formula.startswith("net_"):
-                    formula = formula[4:]
-                    net_qtos.setdefault(name, {})[quantity] = formula
+                    formula = formula.partition("_")[2]
+                    gross_or_net_qtos.setdefault(name, {})[quantity] = formula
                     formula_functions[formula] = getattr(ifcopenshell.util.shape, formula)
 
         tasks = []
 
         if gross_qtos:
-            tasks.append((IfcOpenShell.create_iterator(ifc_file, gross_settings, list(elements)), gross_qtos))
+            tasks.append((IfcOpenShell.create_iterator(ifc_file, cls.gross_settings, list(elements)), gross_qtos))
 
         if net_qtos:
-            tasks.append((IfcOpenShell.create_iterator(ifc_file, net_settings, list(elements)), net_qtos))
+            tasks.append((IfcOpenShell.create_iterator(ifc_file, cls.net_settings, list(elements)), net_qtos))
 
-        unit_converter = SI2ProjectUnitConverter(ifc_file)
+        cls.unit_converter = SI2ProjectUnitConverter(ifc_file)
 
         for iterator, qtos in tasks:
             if iterator.initialize():
@@ -189,9 +210,13 @@ class IfcOpenShell:
                     for name, quantities in qtos.items():
                         results[element].setdefault(name, {})
                         for quantity, formula in quantities.items():
-                            results[element][name][quantity] = unit_converter.convert(
-                                formula_functions[formula](shape.geometry), IfcOpenShell.raw_functions[formula].measure
-                            )
+                            if formula == "get_segment_length":
+                                results[element][name][quantity] = cls.get_segment_length(ifc_file, shape)
+                            else:
+                                results[element][name][quantity] = cls.unit_converter.convert(
+                                    formula_functions[formula](shape.geometry),
+                                    IfcOpenShell.raw_functions[formula].measure,
+                                )
                     if not iterator.next():
                         break
 
@@ -200,6 +225,31 @@ class IfcOpenShell:
         ifc_file: ifcopenshell.file, settings: ifcopenshell.geom.settings, elements: list[ifcopenshell.entity_instance]
     ) -> ifcopenshell.geom.iterator:
         return ifcopenshell.geom.iterator(settings, ifc_file, multiprocessing.cpu_count(), include=elements)
+
+    @classmethod
+    def get_segment_length(cls, ifc_file: ifcopenshell.file, shape) -> float:
+        element = ifc_file.by_id(shape.id)
+        rep = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+        if rep and len(rep.Items or []) == 1 and rep.Items[0].is_a("IfcExtrudedAreaSolid"):
+            item = rep.Items[0]
+            if item.SweptArea.is_a("IfcRectangleProfileDef"):
+                # Revit doesn't follow the +Z extrusion rule, so the rectangle isn't the cross section
+                x = item.SweptArea.XDim
+                y = item.SweptArea.YDim
+                z = item.Depth
+                return max([x, y, z])
+            elif item.SweptArea.is_a("IfcCircleProfileDef"):
+                return item.Depth
+            elif item.SweptArea.is_a("IfcParameterizedProfileDef"):
+                return item.Depth
+            try:
+                area_shape = ifcopenshell.geom.create_shape(settings, item.SweptArea)
+            except:
+                return
+            x = ifcopenshell.util.shape.get_x(area_shape.geometry) / cls.unit_scale
+            y = ifcopenshell.util.shape.get_y(area_shape.geometry) / cls.unit_scale
+            z = item.Depth
+            return max([x, y, z])
 
 
 class Blender:
@@ -250,8 +300,8 @@ class Blender:
     def calculate(
         ifc_file: ifcopenshell.file, elements: set[ifcopenshell.entity_instance], qtos: dict, results: dict
     ) -> None:
-        import blenderbim.tool as tool
-        import blenderbim.bim.module.qto.calculator as calculator
+        import bonsai.tool as tool
+        import bonsai.bim.module.qto.calculator as calculator
 
         unit_converter = SI2ProjectUnitConverter(ifc_file)
         formula_functions = {}

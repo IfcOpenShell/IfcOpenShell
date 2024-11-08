@@ -167,6 +167,9 @@ def edit_pset(
 
 
 class Usecase:
+    file: ifcopenshell.file
+    settings: dict[str, Any]
+
     def execute(self) -> None:
         self.update_pset_name()
         self.load_pset_template()
@@ -244,10 +247,15 @@ class Usecase:
             if not value:
                 if self._try_purge(prop):
                     return
+            # Only need the first enum type since all enums are of the same type.
+            if reference := prop.EnumerationReference:
+                primary_measure_type = reference.EnumerationValues[0].is_a()
+            elif enum_values := prop.EnumerationValues:
+                primary_measure_type = enum_values[0].is_a()
+            else:
+                primary_measure_type = self.get_primary_measure_type(prop.Name, new_value=value[0])
+                assert primary_measure_type, f"Couldn't find primary measure type for the prop value: '{value[0]}'."
             for val in value:
-                primary_measure_type = prop.EnumerationReference.EnumerationValues[
-                    0
-                ].is_a()  # Only need the first enum type since all enums are of the same type
                 ifc_val = self.file.create_entity(primary_measure_type, val)
                 sel_vals.append(ifc_val)
             prop.EnumerationValues = tuple(sel_vals) or None
@@ -378,7 +386,7 @@ class Usecase:
                 properties.append(self.file.create_entity("IfcPropertySingleValue", **args))
         return properties
 
-    def assign_new_properties(self, props: ifcopenshell.entity_instance) -> None:
+    def assign_new_properties(self, props: list[ifcopenshell.entity_instance]) -> None:
         if hasattr(self.settings["pset"], "HasProperties"):
             self.settings["pset"].HasProperties = props
 
@@ -407,15 +415,20 @@ class Usecase:
 
         raise TypeError(f"'{self.settings['pset']}' is not a valid pset")
 
-    def get_primary_measure_type(self, name, old_value=None, new_value=None):
+    def get_primary_measure_type(
+        self,
+        name: str,
+        old_value: Optional[ifcopenshell.entity_instance] = None,
+        new_value: Optional[Union[ifcopenshell.entity_instance, str, float, bool, int]] = None,
+    ) -> Union[str, None]:
+        if old_value:
+            return old_value.is_a()
         if self.pset_template:
             for prop_template in self.pset_template.HasPropertyTemplates:
                 if prop_template.Name != name:
                     continue
                 return prop_template.PrimaryMeasureType or "IfcLabel"
-        if old_value:
-            return old_value.is_a()
-        elif new_value and hasattr(new_value, "is_a"):
+        if isinstance(new_value, ifcopenshell.entity_instance):
             return new_value.is_a()
         elif new_value is not None:
             if isinstance(new_value, str):

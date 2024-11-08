@@ -25,7 +25,7 @@ import operator
 import subprocess
 import sys
 import time
-from typing import Union, Any, Callable, TypeVar, overload
+from typing import Union, Any, Callable, TypeVar, overload, Iterable
 
 from . import ifcopenshell_wrapper
 from . import settings
@@ -429,13 +429,13 @@ class entity_instance:
         """
         return self.wrapped_data.id()
 
-    def __eq__(self, other):
+    def __eq__(self, other: "entity_instance") -> bool:
         if not isinstance(self, type(other)):
             return False
         elif None in (self.wrapped_data.file, other.wrapped_data.file):
             # when not added to a file, we can only compare attribute values
             # and we need this for where rule evaluation
-            return self.get_info(recursive=True, include_identifier=False) == other.get_info(
+            return self.get_info_2(recursive=True, include_identifier=False) == other.get_info_2(
                 recursive=True, include_identifier=False
             )
         else:
@@ -547,22 +547,21 @@ class entity_instance:
         )
 
     def get_info(
-        self, include_identifier=True, recursive=False, return_type=dict, ignore=(), scalar_only=False
-    ) -> dict:
+        self,
+        include_identifier: bool = True,
+        recursive: bool = False,
+        return_type: Union[type[dict], type] = dict,
+        ignore: Iterable[str] = (),
+        scalar_only: bool = False,
+    ) -> dict[str, Any]:
         """Return a dictionary of the entity_instance's properties (Python and IFC) and their values.
 
         :param include_identifier: Whether or not to include the STEP numerical identifier
-        :type include_identifier: bool
         :param recursive: Whether or not to convert referenced IFC elements into dictionaries too. All attributes also apply recursively
-        :type recursive: bool
         :param return_type: The return data type to be casted into
-        :type return_type: dict|list|other
         :param ignore: A list of attribute names to ignore
-        :type ignore: set|list
         :param scalar_only: Filters out all values that are IFC instances
-        :type scalar_only: bool
         :returns: A dictionary of properties and their corresponding values
-        :rtype: dict
 
         Example:
 
@@ -622,19 +621,25 @@ class entity_instance:
 
     __dict__ = property(get_info)
 
-    def get_info_2(self, include_identifier=True, recursive=False, return_type=dict, ignore=()):
+    def get_info_2(
+        self,
+        include_identifier: bool = True,
+        recursive: bool = False,
+        return_type: type[dict] = dict,
+        ignore: Iterable[str] = (),
+    ) -> dict[str, Any]:
         """More perfomant version of `.get_info()` but with limited arguments values.\n
         Method has exactly the same signature as `.get_info()` but it doesn't support getting information non-recursively.
 
         Currently supported arguments values:
-            * include_identifier: `True`
             * recursive: `True` (will fail with default `False` value from `.get_info()`)
             * return_type: `dict`
             * ignore: `()` (empty tuple)
         """
 
-        assert include_identifier
         assert recursive
         assert return_type is dict
         assert len(ignore) == 0
+        # TODO: remove after bonsai build update.
         return ifcopenshell_wrapper.get_info_cpp(self.wrapped_data)
+        return ifcopenshell_wrapper.get_info_cpp(self.wrapped_data, include_identifier)

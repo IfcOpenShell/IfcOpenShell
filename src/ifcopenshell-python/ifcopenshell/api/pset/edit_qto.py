@@ -154,6 +154,9 @@ class Usecase:
         name = prop.Name
         if value is None:
             self.file.remove(prop)
+        elif prop.is_a("IfcPhysicalComplexQuantity") and isinstance(value, dict):
+            prop.Discrimination = value.get("Discrimination", prop.Discrimination)
+            ifcopenshell.api.pset.edit_qto(self.file, qto=prop, properties=value["HasQuantities"])
         elif prop.is_a("IfcPhysicalSimpleQuantity"):
             value = value.wrappedValue if isinstance(value, ifcopenshell.entity_instance) else value
             prop[3] = float(value)
@@ -164,14 +167,21 @@ class Usecase:
         for name, value in self.settings["properties"].items():
             if value is None:
                 continue
-            property_type = self.get_canonical_property_type(name, value)
-            value = value.wrappedValue if isinstance(value, ifcopenshell.entity_instance) else value
-            properties.append(
-                self.file.create_entity(
-                    "IfcQuantity{}".format(property_type),
-                    **{"Name": name, "{}Value".format(property_type): value},
+            if isinstance(value, dict):
+                complex_qto = self.file.create_entity(
+                    "IfcPhysicalComplexQuantity", Name=name, Discrimination=value["Discrimination"]
                 )
-            )
+                properties.append(complex_qto)
+                ifcopenshell.api.pset.edit_qto(self.file, qto=complex_qto, properties=value["HasQuantities"])
+            else:
+                property_type = self.get_canonical_property_type(name, value)
+                value = value.wrappedValue if isinstance(value, ifcopenshell.entity_instance) else value
+                properties.append(
+                    self.file.create_entity(
+                        "IfcQuantity{}".format(property_type),
+                        **{"Name": name, "{}Value".format(property_type): value},
+                    )
+                )
         return properties
 
     def extend_qto_with_new_properties(self, new_properties):

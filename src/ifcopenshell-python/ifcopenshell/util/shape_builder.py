@@ -228,10 +228,8 @@ class ShapeBuilder:
         :return: IfcCircle
         :rtype: ifcopenshell.entity_instance
         """
-        ifc_center = self.file.createIfcAxis2Placement2D(self.file.createIfcCartesianPoint(center))
+        ifc_center = self.create_axis2_placement_2d(center)
         ifc_curve = self.file.createIfcCircle(ifc_center, radius)
-
-        #  self.file_file.createIfcAxis2Placement2D(tool.Ifc.get().createIfcCartesianPoint(center[0:2]))
         return ifc_curve
 
     def plane(
@@ -323,10 +321,7 @@ class ShapeBuilder:
         Notion: trimmed ellipse also contains polyline between trim points, meaning IfcTrimmedCurve could be used
         for further extrusion.
         """
-        direction = self.file.createIfcDirection(ref_x_direction)
-        ifc_position = self.file.createIfcAxis2Placement2D(
-            self.file.createIfcCartesianPoint(position), RefDirection=direction
-        )
+        ifc_position = self.create_axis2_placement_2d(position, ref_x_direction)
         ifc_ellipse = self.file.createIfcEllipse(
             Position=ifc_position, SemiAxis1=x_axis_radius, SemiAxis2=y_axis_radius
         )
@@ -372,10 +367,9 @@ class ShapeBuilder:
             "ProfileType": profile_type,
             "OuterCurve": outer_curve,
         }
+
         if self.file.schema == "IFC2X3":
-            kwargs["Position"] = self.file.create_entity(
-                "IfcAxis2Placement2D", self.file.create_entity("IfcCartesianPoint", [0.0, 0.0])
-            )
+            kwargs["Position"] = self.create_axis2_placement_2d()
 
         if inner_curves:
             if not isinstance(inner_curves, collections.abc.Iterable):
@@ -582,6 +576,17 @@ class ShapeBuilder:
             matrix = np.eye(4, dtype=float)
         return self.create_axis2_placement_3d(
             position=matrix[:, 3][:3].tolist(), z_axis=matrix[:, 2][:3].tolist(), x_axis=matrix[:, 0][:3].tolist()
+        )
+
+    def create_axis2_placement_2d(
+        self, position: VectorTuple = (0.0, 0.0), x_direction: Optional[VectorTuple] = None
+    ) -> ifcopenshell.entity_instance:
+        """Create IfcAxis2Placement2D."""
+        ref_direction = self.file.create_entity("IfcDirection", x_direction) if x_direction else None
+        return self.file.create_entity(
+            "IfcAxis2Placement2D",
+            Location=self.file.create_entity("IfcCartesianPoint", position),
+            RefDirection=ref_direction,
         )
 
     def mirror(
@@ -1081,24 +1086,42 @@ class ShapeBuilder:
         )
         return points, segments, transition_arc
 
-    def polygonal_face_set(self, points: list[Vector], faces: list[list[int]]) -> ifcopenshell.entity_instance:
-        """
-        Generate an IfcPolygonalFaceSet.
+    def mesh(self, points: list[list[float]], faces: list[list[int]]) -> ifcopenshell.entity_instance:
+        if self.file.schema == "IFC2X3":
+            return self.faceted_brep(points, faces)
+        return self.polygonal_face_set(points, faces)
 
-        :param points: rectangle size, could be either 2d or 3d, defaults to `(1,1)`
+    def faceted_brep(self, points: list[list[float]], faces: list[list[int]]) -> ifcopenshell.entity_instance:
+        """Generate an IfcFacetedBrep with a closed shell
+
+        Note that :func:`polygonal_face_set` is recommended in IFC4.
+
+        :param points: list of 3d coordinates
+        :param faces: list of faces consisted of point indices (points indices starting from 0)
+        :return: IfcFacetedBrep
+        """
+        verts = [self.file.createIfcCartesianPoint(p) for p in points]
+        faces = [
+            self.file.createIfcFace(
+                [self.file.createIfcFaceOuterBound(self.file.createIfcPolyLoop([verts[v] for v in f]), True)]
+            )
+            for f in faces
+        ]
+        return self.file.createIfcFacetedBrep(self.file.createIfcClosedShell(faces))
+
+    def polygonal_face_set(self, points: list[list[float]], faces: list[list[int]]) -> ifcopenshell.entity_instance:
+        """
+        Generate an IfcPolygonalFaceSet
+
+        Note that this is not available in IFC2X3.
+
+        :param points: list of 3d coordinates
         :param faces: list of faces consisted of point indices (points indices starting from 0)
         :return: IfcPolygonalFaceSet
         """
-
         ifc_points = self.file.createIfcCartesianPointList3D(points)
-        ifc_faces = []
-        for face in faces:
-            face = [i + 1 for i in face]
-            ifc_faces.append(self.file.createIfcIndexedPolygonalFace(face))
-
-        face_set = self.file.createIfcPolygonalFaceSet(Coordinates=ifc_points, Faces=ifc_faces)
-
-        return face_set
+        ifc_faces = [self.file.createIfcIndexedPolygonalFace([i + 1 for i in face]) for face in faces]
+        return self.file.createIfcPolygonalFaceSet(Coordinates=ifc_points, Faces=ifc_faces)
 
     def extrude_face_set(
         self,

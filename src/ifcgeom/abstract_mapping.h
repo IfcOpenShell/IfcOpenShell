@@ -30,8 +30,10 @@ namespace geometry {
 		Settings settings_;
 
 		bool use_caching_ = true;
+
 	public:
 		abstract_mapping(Settings& s) : settings_(s) {}
+		virtual ~abstract_mapping() {}
 
 		virtual ifcopenshell::geometry::taxonomy::ptr map(const IfcUtil::IfcBaseInterface*) = 0;
 		virtual void get_representations(std::vector<geometry_conversion_task>& tasks, std::vector<filter_t>& filters) = 0;

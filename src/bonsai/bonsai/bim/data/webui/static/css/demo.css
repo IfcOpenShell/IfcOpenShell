@@ -1,0 +1,345 @@
+:root {
+    --font-family: Arial, sans-serif;
+    --base-font-size: 16px;
+    --margin-tiny: 0.125rem;
+    --margin-small: 0.625rem;
+    --margin-medium: 1.25rem;
+    --margin-large: 2.5rem;
+    --padding-tiny: 0.125rem;
+    --padding-small: 0.625rem;
+    --padding-medium: 1rem;
+    --font-size-large: 1.2rem;
+    --logo-height: 1.5rem;
+    --nav-height: 0.625rem;
+    --border-radius: 0.3rem;
+}
+
+:root.dark {
+    color-scheme: dark;
+    --bg-color: #252525;
+    --text-color: #e0e0e0;
+    --nav-bg-color: #121212;
+    --nav-border-color: #25682a;
+    --nav-link-color: #fff;
+    --nav-link-hover-color: #3fb449;
+    --warning-color: #FFDB8F;
+    --border-color: #464444;
+}
+
+:root.light {
+    color-scheme: light;
+    --bg-color: #ffffff;
+    --text-color: #000000;
+    --nav-bg-color: #f8f8f8;
+    --nav-border-color: #cccccc;
+    --nav-link-color: #000000;
+    --nav-link-hover-color: #38a63d;
+    --warning-color: #FF4500;
+    --border-color: #222;
+}
+
+html {
+    font-size: var(--base-font-size);
+}
+
+body {
+    background-color: var(--blender-window-background, var(--bg-color));
+    color: var(--blender-text, var(--text-color));
+    margin: 0;
+    font-family: var(--font-family);
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+#container {
+    flex: 1;
+    padding: var(--margin-small);
+}
+
+h3 {
+    margin-top: 0;
+}
+
+nav {
+    background-color: var(--blender-top-bar-header, var(--nav-bg-color));
+    height: var(--nav-height);
+    padding: var(--padding-medium) 0;
+    display: flex;
+    align-items: center;
+    position: relative;
+    border-bottom: 2px solid var(--blender-tab-outline, var(--nav-border-color));
+}
+
+nav .logo {
+    margin-left: var(--margin-large);
+    height: var(--logo-height);
+}
+
+nav ul {
+    list-style-type: none;
+    margin: 0;
+    display: flex;
+    flex: 1;
+    justify-content: center;
+}
+
+nav ul li {
+    margin-right: var(--margin-large);
+}
+
+nav ul li a {
+    text-decoration: none;
+    color: var(--blender-text, var(--nav-link-color));
+}
+
+nav ul li a:hover,
+nav ul li a.active {
+    color: var(--blender-selected-object, var(--nav-link-hover-color));
+}
+
+#toggle-theme {
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: var(--font-size-large);
+    margin-right: var(--margin-medium);
+}
+
+#toggle-theme:focus {
+    outline: none;
+}
+
+button,
+input {
+    background-color: var(--blender-button-background, var(--bg-color));
+    color: var(--blender-button-text, var(--text-color));
+    border-color: var(--blender-button-border, var(--border-color));
+    transition: filter 0.2s ease;
+}
+
+footer {
+    background-color: var(--blender-top-bar-header, var(--nav-bg-color));
+    text-align: right;
+    padding: var(--padding-tiny);
+    border-top: 1px solid var(--blender-tab-outline, var(--nav-border-color));
+}
+
+footer p {
+    margin: 0;
+    color: var(--blender-text, var(--nav-link-color));
+    margin-right: var(--margin-small);
+    font-size: 0.8rem;
+}
+
+
+/* =========== styling for code blocks and rendering =========== */
+/* ================== This is auto-generated ================== */
+
+
+#explanation {
+    font-family: "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif;
+    font-size: 16px;
+    padding: 0 26px;
+    line-height: 22px;
+    word-wrap: break-word;
+    margin: 0;
+}
+
+#code-csp-warning {
+    position: fixed;
+    top: 0;
+    right: 0;
+    color: white;
+    margin: 16px;
+    text-align: center;
+    font-size: 12px;
+    font-family: sans-serif;
+    background-color: #444444;
+    cursor: pointer;
+    padding: 6px;
+    box-shadow: 1px 1px 1px rgba(0, 0, 0, .25);
+}
+
+#code-csp-warning:hover {
+    text-decoration: none;
+    background-color: #007acc;
+    box-shadow: 2px 2px 2px rgba(0, 0, 0, .25);
+}
+
+#explanation.scrollBeyondLastLine {
+    margin-bottom: calc(100vh - 22px);
+}
+
+#explanation.showEditorSelection .code-line {
+    position: relative;
+}
+
+#explanation.showEditorSelection .code-active-line:before,
+#explanation.showEditorSelection .code-line:hover:before {
+    content: "";
+    display: block;
+    position: absolute;
+    top: 0;
+    left: -12px;
+    height: 100%;
+}
+
+#explanation.showEditorSelection li.code-active-line:before,
+#explanation.showEditorSelection li.code-line:hover:before {
+    left: -30px;
+}
+
+#explanation a:focus,
+#explanation input:focus,
+#explanation select:focus,
+#explanation textarea:focus {
+    outline: 1px solid -webkit-focus-ring-color;
+    outline-offset: -1px;
+}
+
+#explanation hr {
+    border: 0;
+    height: 2px;
+    border-bottom: 2px solid;
+}
+
+#explanation h1 {
+    padding-bottom: 0.3em;
+    line-height: 1.2;
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
+}
+
+#explanation h1,
+#explanation h2,
+#explanation h3 {
+    font-weight: normal;
+}
+
+#explanation code {
+    font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+    font-size: 1em;
+    line-height: 1.357em;
+}
+
+#explanation .wordWrap pre {
+    white-space: pre-wrap;
+}
+
+#explanation pre:not(.hljs),
+#explanation pre.hljs code>div {
+    padding: 16px;
+    border-radius: 3px;
+    overflow: auto;
+}
+
+#explanation pre code {
+    tab-size: 4;
+}
+
+#explanation .hljs-comment,
+#explanation .hljs-quote {
+    color: #B6B18B;
+}
+
+#explanation .hljs-variable,
+#explanation .hljs-template-variable,
+#explanation .hljs-tag,
+#explanation .hljs-name,
+#explanation .hljs-selector-id,
+#explanation .hljs-selector-class,
+#explanation .hljs-regexp,
+#explanation .hljs-deletion {
+    color: #EB3C54;
+}
+
+#explanation .hljs-number,
+#explanation .hljs-built_in,
+#explanation .hljs-builtin-name,
+#explanation .hljs-literal,
+#explanation .hljs-type,
+#explanation .hljs-params,
+#explanation .hljs-meta,
+#explanation .hljs-link {
+    color: #E7CE56;
+}
+
+#explanation .hljs-attribute {
+    color: #EE7C2B;
+}
+
+#explanation .hljs-string,
+#explanation .hljs-symbol,
+#explanation .hljs-bullet,
+#explanation .hljs-addition {
+    color: #4FB4D7;
+}
+
+#explanation .hljs-title,
+#explanation .hljs-section {
+    color: #78BB65;
+}
+
+#explanation .hljs-keyword,
+#explanation .hljs-selector-tag {
+    color: #B45EA4;
+}
+
+#explanation .hljs {
+    display: block;
+    overflow-x: auto;
+    background: #1C1D21;
+    color: #c0c5ce;
+    padding: 0.5em;
+}
+
+#explanation .hljs-emphasis {
+    font-style: italic;
+}
+
+#explanation .hljs-strong {
+    font-weight: bold;
+}
+
+#explanation {
+    font-family: "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif, "Meiryo";
+    padding: 0 12px;
+}
+
+#explanation pre {
+    background-color: #f8f8f8;
+    border: 1px solid #cccccc;
+    border-radius: 3px;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+}
+
+#explanation pre:not(.hljs) {
+    padding: 23px;
+    line-height: 19px;
+}
+
+#explanation blockquote {
+    background: rgba(127, 127, 127, 0.1);
+    border-color: rgba(0, 122, 204, 0.5);
+}
+
+#explanation .emoji {
+    height: 1.4em;
+}
+
+#explanation code {
+    font-size: 14px;
+    line-height: 19px;
+}
+
+#explanation :not(pre):not(.hljs)>code {
+    color: #C9AE75;
+    font-size: inherit;
+}
+
+#explanation .page {
+    page-break-after: always;
+}

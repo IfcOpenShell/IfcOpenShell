@@ -166,9 +166,9 @@ def get_quantity(resource: ifcopenshell.entity_instance) -> float:
         return duration.total_seconds() / 3600
 
 
-def get_parent_cost(resource: ifcopenshell.entity_instance) -> Union[None, tuple[float, Union[str, None]]]:
-    if not resource.Nests:
+def get_parent_cost(resource: ifcopenshell.entity_instance) -> Union[tuple[float, Union[str, None]], None]:
+    if not (nests := resource.Nests):
         return
     else:
-        cost = get_cost(resource.Nests[0].RelatingObject)
+        cost = get_cost(nests[0].RelatingObject)
         return cost

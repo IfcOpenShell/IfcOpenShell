@@ -34,6 +34,7 @@ def add_slab_representation(
     # Planes are defined either by Clipping objects
     # or by dictionaries of arguments for `Clipping.parse`
     clippings: Optional[list[Union[Clipping, dict[str, Any]]]] = None,
+    polyline: Optional[list[tuple]] = None,
 ) -> ifcopenshell.entity_instance:
     usecase = Usecase()
     usecase.file = file
@@ -42,6 +43,7 @@ def add_slab_representation(
         "depth": depth,
         "x_angle": x_angle,
         "clippings": clippings if clippings is not None else [],
+        "polyline": polyline,
     }
     return usecase.execute()
 
@@ -59,6 +61,8 @@ class Usecase:
     def create_item(self):
         size = self.convert_si_to_unit(1)
         points = ((0.0, 0.0), (size, 0.0), (size, size), (0.0, size), (0.0, 0.0))
+        if self.settings["polyline"]:
+            points = [(self.convert_si_to_unit(p[0]), self.convert_si_to_unit(p[1])) for p in self.settings["polyline"]]
         if self.file.schema == "IFC2X3":
             curve = self.file.createIfcPolyline([self.file.createIfcCartesianPoint(p) for p in points])
         else:

@@ -17,26 +17,28 @@
 # along with IfcFM.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.util.fm
-import ifcopenshell.util.date
-import ifcopenshell.util.system
-import ifcopenshell.util.placement
 import ifcopenshell.util.classification
+import ifcopenshell.util.date
+import ifcopenshell.util.element
+import ifcopenshell.util.fm
+import ifcopenshell.util.placement
+import ifcopenshell.util.system
+from typing import Any, Union, Optional
 
 
-def get_facilities(ifc_file):
+def get_facilities(ifc_file: ifcopenshell.file) -> list[ifcopenshell.entity_instance]:
     return ifc_file.by_type("IfcBuilding")
 
 
-def get_storeys(ifc_file):
+def get_storeys(ifc_file: ifcopenshell.file) -> list[ifcopenshell.entity_instance]:
     return ifc_file.by_type("IfcBuildingStorey")
 
 
-def get_spaces(ifc_file):
+def get_spaces(ifc_file: ifcopenshell.file) -> list[ifcopenshell.entity_instance]:
     return ifc_file.by_type("IfcSpace")
 
 
-def get_zones(ifc_file):
+def get_zones(ifc_file: ifcopenshell.file) -> list[ifcopenshell.entity_instance]:
     zones = []
     for zone in ifc_file.by_type("IfcZone"):
         for rel in zone.IsGroupedBy:
@@ -44,22 +46,22 @@ def get_zones(ifc_file):
     return zones
 
 
-def get_element_types(ifc_file):
+def get_element_types(ifc_file: ifcopenshell.file) -> list[ifcopenshell.entity_instance]:
     return ifcopenshell.util.fm.get_fmhem_types(ifc_file)
 
 
-def get_elements(ifc_file):
+def get_elements(ifc_file: ifcopenshell.file) -> set[ifcopenshell.entity_instance]:
     elements = set()
     for element_type in get_element_types(ifc_file):
         elements.update(ifcopenshell.util.element.get_types(element_type))
     return elements
 
 
-def get_systems(ifc_file):
+def get_systems(ifc_file: ifcopenshell.file) -> list[ifcopenshell.entity_instance]:
     return ifc_file.by_type("IfcSystem")
 
 
-def get_facility_data(ifc_file, element):
+def get_facility_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_instance) -> dict[str, Any]:
     return {
         "Name": element.Name,
         "ProjectName": ifc_file.by_type("IfcProject")[0].Name,
@@ -78,7 +80,7 @@ def get_facility_data(ifc_file, element):
     }
 
 
-def get_storey_data(ifc_file, element):
+def get_storey_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_instance) -> dict[str, Any]:
     return {
         "Name": element.Name,
         "ClassificationIdentification": "Level",
@@ -92,7 +94,7 @@ def get_storey_data(ifc_file, element):
     }
 
 
-def get_space_data(ifc_file, element):
+def get_space_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_instance) -> dict[str, Any]:
     psets = ifcopenshell.util.element.get_psets(element)
     return {
         "Name": element.Name,
@@ -110,7 +112,7 @@ def get_space_data(ifc_file, element):
     }
 
 
-def get_zone_data(ifc_file, element):
+def get_zone_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_instance) -> dict[str, Any]:
     zone, space = element
     return {
         "Name": zone.Name,
@@ -122,7 +124,7 @@ def get_zone_data(ifc_file, element):
     }
 
 
-def get_element_type_data(ifc_file, element):
+def get_element_type_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_instance) -> dict[str, Any]:
     psets = ifcopenshell.util.element.get_psets(element)
     return {
         "Name": element.Name,
@@ -143,7 +145,7 @@ def get_element_type_data(ifc_file, element):
     }
 
 
-def get_element_data(ifc_file, element):
+def get_element_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_instance) -> dict[str, Any]:
     space = ifcopenshell.util.element.get_container(element)
     space_name = space.Name if space.is_a("IfcSpace") else None
     systems = ifcopenshell.util.system.get_element_systems(element)
@@ -170,7 +172,7 @@ def get_element_data(ifc_file, element):
     }
 
 
-def get_system_data(ifc_file, element):
+def get_system_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_instance) -> dict[str, Any]:
     return {
         "Name": element.Name,
         "Description": element.Description,
@@ -183,25 +185,27 @@ def get_system_data(ifc_file, element):
     }
 
 
-def get_owner_name(element):
+def get_owner_name(element: ifcopenshell.entity_instance) -> Union[str, None]:
     if not getattr(element, "OwnerHistory", None):
         return
     return element.OwnerHistory.OwningUser.TheOrganization.Name
 
 
-def get_owner_creation_date(element):
+def get_owner_creation_date(element: ifcopenshell.entity_instance) -> Union[str, None]:
     if not getattr(element, "OwnerHistory", None):
         return
     return ifcopenshell.util.date.ifc2datetime(element.OwnerHistory.CreationDate).isoformat()
 
 
-def get_owner_application(element):
+def get_owner_application(element: ifcopenshell.entity_instance) -> Union[str, None]:
     if not getattr(element, "OwnerHistory", None):
         return
     return element.OwnerHistory.OwningApplication.ApplicationFullName
 
 
-def get_facility_parent(element, ifc_class):
+def get_facility_parent(
+    element: ifcopenshell.entity_instance, ifc_class: str
+) -> Union[ifcopenshell.entity_instance, None]:
     parent = ifcopenshell.util.element.get_aggregate(element)
     while parent:
         if parent.is_a(ifc_class):
@@ -211,7 +215,7 @@ def get_facility_parent(element, ifc_class):
         parent = ifcopenshell.util.element.get_aggregate(parent)
 
 
-def get_classification_identification(element):
+def get_classification_identification(element: ifcopenshell.entity_instance) -> Union[str, None]:
     references = list(ifcopenshell.util.classification.get_references(element))
     if references:
         if hasattr(references[0], "Identification"):
@@ -219,13 +223,15 @@ def get_classification_identification(element):
         return references[0].ItemReference
 
 
-def get_classification_name(element):
+def get_classification_name(element: ifcopenshell.entity_instance) -> Union[str, None]:
     references = list(ifcopenshell.util.classification.get_references(element))
     if references:
         return references[0].Name
 
 
-def get_property(psets, pset_name, prop_name, decimals=None):
+def get_property(
+    psets: dict[str, Any], pset_name: str, prop_name: str, decimals: Optional[int] = None
+) -> Union[Any, None, float]:
     if pset_name in psets:
         result = psets[pset_name].get(prop_name, None)
         if decimals is None or result is None:

@@ -15,6 +15,7 @@ on:
       - 'src/ifcparse/**'
       - 'src/ifcwrap/**'
       - 'src/qtviewer/**'
+      - 'src/svgfill/**'
       - 'src/serializers/**'
       - 'conda/**'
       - 'cmake/**'
@@ -107,7 +108,7 @@ jobs:
 
       - name: Run IfcConvert on Sample files
         run: |
-          (find test/input src/blenderbim/test/files -name '*.ifc' | while read i; do \
+          (find test/input src/bonsai/test/files -name '*.ifc' | while read i; do \
             echo $i | tee -a log; \
             timeout 1m "$(which IfcConvert)" -yv "$i" "$i.obj" --validate >> log 2>&1; \
             echo $i $? >> statuses; \
@@ -130,5 +131,7 @@ jobs:
           cd ../bcf && make test
           pip install requests
           cd ../bsdd && make test
+          pip install deepdiff
+          cd ../ifcdiff && make test
           cd ../ifcpatch && make test
           cd ../ifctester && make test

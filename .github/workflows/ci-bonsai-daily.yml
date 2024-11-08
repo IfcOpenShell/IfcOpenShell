@@ -1,0 +1,156 @@
+name: ci-bonsai-daily
+
+on:
+  push:
+    paths:
+      - '.github/workflows/ci-bonsai-daily.yml'
+      - 'src/bonsai/**'
+      - 'src/ifcopenshell-python/ifcopenshell/**'
+      - 'src/bcf/bcf/**'
+      - 'src/ifcclash/ifcclash/**'
+      - 'src/ifccobie/**'
+      - 'src/ifcdiff/**'
+      - 'src/ifccsv/**'
+      - 'src/ifcpatch/ifcpatch/**'
+      - 'src/ifc4d/ifc4d/**'
+      - 'src/ifc5d/ifc5d/**'
+      - 'src/ifccityjson/**'
+    branches:
+      - v0.8.0
+  workflow_dispatch:
+
+jobs:
+  activate:
+    runs-on: ubuntu-latest
+    if: |
+      github.repository == 'IfcOpenShell/IfcOpenShell'
+    steps:
+    - name: Set env
+      run: echo ok go
+
+  build:
+    needs: activate
+    name: ${{ matrix.config.name }}-${{ matrix.pyver }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        pyver: [py311, py312]
+        config:
+          - {
+            name: "Windows Build",
+            short_name: win,
+          }
+          - {
+            name: "Linux Build",
+            short_name: linux,
+          }
+          - {
+            name: "MacOS Build",
+            short_name: macos,
+          }
+          - {
+            name: "MacOS ARM Build",
+            short_name: macosm1,
+          }
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2 # https://github.com/actions/setup-python
+        with:
+          architecture: 'x64' # optional x64 or x86. Defaults to x64 if not specified
+          python-version: '3.11'
+      - name: Get current version
+        id: version
+        run: echo "version=$(cat VERSION)" >> $GITHUB_OUTPUT
+      - name: Get current date
+        id: date
+        # Include hours and minutes to release tag
+        # to avoid possibility of unstable repo's index.json
+        # pointing to the new file when index.json itself wasn't yet updated.
+        run: echo "date=$(date +'%y%m%d%H%M')" >> $GITHUB_OUTPUT
+      - name: Compile
+        run: |
+          cd src/bonsai && make dist PLATFORM=${{ matrix.config.short_name }} PYVERSION=${{ matrix.pyver }}
+      - name: Find zip file name
+        id: find_zip
+        run: |
+          filepath=$(ls src/bonsai/dist/bonsai_*.zip)
+          echo "filepath=$filepath" >> $GITHUB_OUTPUT
+          echo "filename=$(basename $filepath)" >> $GITHUB_OUTPUT
+      - name: Upload zip file to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ${{ steps.find_zip.outputs.filepath }}
+          asset_name: ${{ steps.find_zip.outputs.filename }}
+          release_name: "bonsai-${{steps.version.outputs.version}}-alpha${{steps.date.outputs.date}} (unstable)"
+          tag: "bonsai-${{steps.version.outputs.version}}-alpha${{steps.date.outputs.date}}"
+          overwrite: true
+          body: "See README in https://github.com/IfcOpenShell/bonsai_unstable_repo/ on how to setup autoupdates for daily Bonsai builds."
+
+  update-extensions-repo-and-run-tests:
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout bonsai_unstable_repo repository
+        uses: actions/checkout@v2
+        with:
+          repository: IfcOpenShell/bonsai_unstable_repo
+          token: ${{ secrets.IOS_TO_BLENDER_REPO }}
+          path: bonsai_unstable_repo
+
+      - name: Update index.json on extensions repo
+        run: |
+          set -x -e
+
+          # Download Blender.
+          wget -q -O blender.tar.xz https://ftp.nluug.nl/pub/graphics/blender/release/Blender4.2/blender-4.2.3-linux-x64.tar.xz
+          tar -xf blender.tar.xz
+
+          # Setup Blender.
+          BLENDER_PATH=$(find blender-*/ -maxdepth 0 -exec readlink -f {} \;)
+          export PATH="$PATH:$BLENDER_PATH"
+          blender --version
+
+          cd bonsai_unstable_repo
+          pip install -r requirements.txt
+          python setup_extensions_repo.py --last-tag
+          git config --global user.name 'IfcOpenBot'
+          git config --global user.email 'IfcOpenBot@users.noreply.github.com'
+          git add index.json
+          git add readme.md
+          git commit -m "Update index.json"
+          git push
+      - name: Run bonsai tests
+        run: |
+          set -x -e
+          BLENDER_PATH=$(find blender-*/ -maxdepth 0 -exec readlink -f {} \;)
+          export PATH="$PATH:$BLENDER_PATH"
+          bonsai_zip="$(pwd)/$(ls bonsai_unstable_repo/bonsai_py311*-linux-x64.zip)"
+          blender --version
+          blender --command extension install-file -r user_default -e $bonsai_zip
+          blender --command extension list
+
+          wget -q -O sverchok.zip https://github.com/nortikin/sverchok/archive/refs/heads/master.zip
+          # ifcsverchok expecting sverchok to be named "sverchok" and not "sverchok-master".
+          unzip -q sverchok.zip
+          mv sverchok-master sverchok
+          zip -q -r sverchok.zip sverchok
+          rm -r sverchok
+          blender --command extension install-file -r user_default sverchok.zip
+
+          git clone https://github.com/IfcOpenShell/IfcOpenShell.git IfcOpenShell
+          cd IfcOpenShell/src/ifcsverchok
+          make dist
+          sverchok_zip="$(pwd)/dist/$(ls dist)"
+          blender --command extension install-file -r user_default $sverchok_zip
+
+          # Install Sun Position extension.
+          blender --online-mode --command extension sync
+          blender --online-mode --command extension install --enable --sync sun_position
+
+          cd ../bonsai
+          pip install pytest-blender
+          blender --background --python scripts/setup_pytest.py
+          blender --python-expr "import bonsai; print(bonsai.bbim_semver); import ifcopenshell; print(ifcopenshell.version)" --background
+          make test

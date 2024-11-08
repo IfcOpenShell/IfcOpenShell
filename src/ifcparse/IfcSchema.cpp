@@ -152,11 +152,11 @@ IfcParse::schema_definition::~schema_definition() {
     delete factory_;
 }
 
-IfcUtil::IfcBaseClass* IfcParse::schema_definition::instantiate(IfcEntityInstanceData* data) const {
+IfcUtil::IfcBaseClass* IfcParse::schema_definition::instantiate(const IfcParse::declaration* decl, IfcEntityInstanceData&& data) const {
     if (factory_ != nullptr) {
-        return (*factory_)(data);
+        return (*factory_)(decl, std::move(data));
     }
-    return new IfcUtil::IfcLateBoundEntity(data->type(), data);
+    return new IfcUtil::IfcLateBoundEntity(decl, std::move(data));
 }
 
 void IfcParse::register_schema(schema_definition* schema) {

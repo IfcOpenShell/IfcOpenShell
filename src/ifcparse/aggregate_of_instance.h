@@ -20,10 +20,19 @@
 #ifndef IFCENTITYLIST_H
 #define IFCENTITYLIST_H
 
-#include "IfcBaseClass.h"
+// #include "IfcBaseClass.h"
+#include "ifc_parse_api.h"
 
 #include <boost/shared_ptr.hpp>
 #include <set>
+#include <vector>
+
+namespace IfcParse {
+    class declaration;
+}
+namespace IfcUtil {
+    class IfcBaseClass;
+}
 
 template <class T>
 class aggregate_of;
@@ -42,16 +51,10 @@ class IFC_PARSE_API aggregate_of_instance {
     unsigned int size() const;
     void reserve(unsigned capacity);
     bool contains(IfcUtil::IfcBaseClass*) const;
+    
     template <class U>
-    typename U::list::ptr as() {
-        typename U::list::ptr result(new typename U::list);
-        for (it i = begin(); i != end(); ++i) {
-            if ((*i)->as<U>()) {
-                result->push((*i)->as<U>());
-            }
-        }
-        return result;
-    }
+    typename U::list::ptr as();
+
     void remove(IfcUtil::IfcBaseClass*);
     aggregate_of_instance::ptr filtered(const std::set<const IfcParse::declaration*>& entities);
     aggregate_of_instance::ptr unique();
@@ -146,21 +149,10 @@ class IFC_PARSE_API aggregate_of_aggregate_of_instance {
         }
         return false;
     }
+
     template <class U>
-    typename aggregate_of_aggregate_of<U>::ptr as() {
-        typename aggregate_of_aggregate_of<U>::ptr result(new aggregate_of_aggregate_of<U>);
-        for (outer_it outer = begin(); outer != end(); ++outer) {
-            const std::vector<IfcUtil::IfcBaseClass*>& from = *outer;
-            typename std::vector<U*> to;
-            for (inner_it inner = from.begin(); inner != from.end(); ++inner) {
-                if ((*inner)->as<U>()) {
-                    to.push_back((*inner)->as<U>());
-                }
-            }
-            result->push(to);
-        }
-        return result;
-    }
+    typename aggregate_of_aggregate_of<U>::ptr as();
+
 };
 
 template <class T>

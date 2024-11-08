@@ -195,7 +195,7 @@ The BlenderBIM Add-on is available either as a stable build or a daily build.
 
 1. Install the BlenderBIM Add-on by following the `BlenderBIM Add-on
    installation documentation
-   <https://docs.blenderbim.org/users/installation.html>`_.
+   <https://docs.bonsaibim.org/guides/installation.html>`_.
 
 2. Launch Blender. On the top left of the Viewport panel, click the **Editor
    Type** icon to change the viewport into a **Python Console**.
@@ -229,7 +229,7 @@ and run your script using the **Text > Run Script** menu or by clicking on the
    Blender.  This can help when learning how to write scripts as you can double
    check the results of your scripts with what you see in the graphical
    interface. `Read more
-   <https://docs.blenderbim.org/users/exploring_an_ifc_model.html>`_.
+   <https://docs.bonsaibim.org/guides/exploring_an_ifc_model.html>`_.
 
 From source with precompiled binaries
 -------------------------------------

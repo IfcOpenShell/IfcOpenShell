@@ -585,7 +585,7 @@ def process_local_variable(context):
         if (
             context.parameter_type.generalized_types.general_aggregation_types.general_set_type
         ):
-            expr = re.sub("(\[[^\]]*\])", "express_set(\\1)", expr)
+            expr = re.sub(r"(\[[^\]]*\])", "express_set(\\1)", expr)
 
         return "%s = %s" % (str(context.variable_id).lower(), expr)
     else:

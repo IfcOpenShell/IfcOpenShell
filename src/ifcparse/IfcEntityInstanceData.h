@@ -21,90 +21,179 @@
 #define IFCENTITYINSTANCEDATA_H
 
 #include "ArgumentType.h"
+#include "variantarray.h"
+#include "aggregate_of_instance.h"
+#include "IfcSchema.h"
 
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/logic/tribool.hpp>
+#include <boost/dynamic_bitset.hpp>
 
-class Argument;
-class aggregate_of_instance;
-namespace IfcParse {
-class IfcFile;
-}
+class EnumerationReference {
+private:
+    const IfcParse::enumeration_type* enumeration_;
+    size_t index_;
+public:
+
+    EnumerationReference(const IfcParse::enumeration_type* enumeration, size_t index)
+        : enumeration_(enumeration)
+        , index_(index)
+    {}
+
+    const char* value() const {
+        return enumeration_->lookup_enum_value(index_);
+    }
+
+    size_t index() const {
+        return index_;
+    }
+
+    const IfcParse::enumeration_type* enumeration() const {
+        return enumeration_;
+    }
+};
+class Blank {};
+class Derived {};
+class empty_aggregate_t {};
+class empty_aggregate_of_aggregate_t {};
+
+typedef VariantArray <
+    // A null argument, it will always serialize to $
+    Blank,
+    // @todo Derived is not really necessary anymore, just serialize correctly based on schema
+    // A derived argument, it will always serialize to *
+    Derived,
+    // An integer argument, e.g. 123
+
+    // SCALARS:
+    int,
+    // A boolean argument, it will serialize to either .T. or .F.
+    bool,
+    // A logical argument, it will serialize to either .T. or .F. or .U.
+    boost::logic::tribool,
+    // A floating point argument, e.g. 12.3
+    double,
+    // A character string argument, e.g. 'IfcOpenShell'
+    std::string,
+    // A binary argument, e.g. "092A" -> 100100101010
+    boost::dynamic_bitset<>,
+    // An enumeration argument, e.g. .USERDEFINED.
+    // To initialize the argument a string representation
+    // has to be explicitly passed of the enumeration value
+    // which is stored internally as an integer. The argument
+    // itself does not keep track of what schema enumeration
+    // type is represented.
+    EnumerationReference,
+    // An entity instance argument. It will either serialize to
+    // e.g. #123 or datatype identifier for simple types, e.g.
+    // IFCREAL(12.3)
+    IfcUtil::IfcBaseClass*,
+
+    // AGGREGATES:
+    empty_aggregate_t,
+    // An aggregate of integers, e.g. (1,2,3)
+    std::vector<int>,
+    // An aggregate of floats, e.g. (12.3,4.)
+    std::vector<double>,
+    // An aggregate of strings, e.g. ('Ifc','Open','Shell')
+    std::vector<std::string>,
+    // An aggregate of binaries, e.g. ("23B", "092A") -> (111011, 100100101010)
+    std::vector<boost::dynamic_bitset<>>,
+    // An aggregate of entity instances. It will either serialize to
+    // e.g. (#1,#2,#3) or datatype identifier for simple types,
+    // e.g. (IFCREAL(1.2),IFCINTEGER(3.))
+    aggregate_of_instance::ptr,
+
+    // AGGREGATES OF AGGREGATES:
+    empty_aggregate_of_aggregate_t,
+    // An aggregate of an aggregate of ints. E.g. ((1, 2), (3))
+    std::vector<std::vector<int>>,
+    // An aggregate of an aggregate of floats. E.g. ((1., 2.3), (4.))
+    std::vector<std::vector<double>>,
+    // An aggregate of an aggregate of entities. E.g. ((#1, #2), (#3))
+    aggregate_of_aggregate_of_instance::ptr
+> storage_t;
+
+struct MutableAttributeValue {
+    int name_;
+    uint8_t index_;
+};
+
+// short lived
+struct AttributeValue {
+    const storage_t* array_;
+    uint8_t index_;
+
+    AttributeValue()
+        : array_(nullptr)
+        , index_(0)
+    {}
+
+    AttributeValue(const storage_t* arr, uint8_t index)
+        : array_(arr)
+        , index_(index)
+    {}
+
+    operator int() const;
+    operator bool() const;
+    operator boost::logic::tribool() const;
+    operator double() const;
+    operator std::string() const;
+    operator boost::dynamic_bitset<>() const;
+    operator IfcUtil::IfcBaseClass* () const;
+
+    operator std::vector<int>() const;
+    operator std::vector<double>() const;
+    operator std::vector<std::string>() const;
+    operator std::vector<boost::dynamic_bitset<>>() const;
+    operator boost::shared_ptr<aggregate_of_instance>() const;
+
+    operator std::vector<std::vector<int>>() const;
+    operator std::vector<std::vector<double>>() const;
+    operator boost::shared_ptr<aggregate_of_aggregate_of_instance>() const;
+
+    bool isNull() const;
+    unsigned int size() const;
+
+    IfcUtil::ArgumentType type() const;
+};
 
 class IFC_PARSE_API IfcEntityInstanceData {
   public:
-    // Public for backwards compatibility
-    IfcParse::IfcFile* file;
+      storage_t storage_;
 
-  protected:
-    unsigned id_;
-    const IfcParse::declaration* type_;
-    mutable Argument** attributes_;
-    unsigned offset_in_file_;
+      IfcEntityInstanceData(storage_t&& storage)
+          : storage_(std::move(storage))
+      {}
 
-  public:
-    IfcEntityInstanceData(const IfcParse::declaration* type,
-                          IfcParse::IfcFile* file,
-                          unsigned id = 0,
-                          unsigned offset_in_file = 0)
-        : file(file),
-          id_(id),
-          type_(type),
-          attributes_(0),
-          offset_in_file_(offset_in_file) {}
+      IfcEntityInstanceData(IfcEntityInstanceData&& other) noexcept
+          : storage_(std::move(other.storage_))
+      {}
 
-    IfcEntityInstanceData(IfcParse::IfcFile* file_, size_t size)
-        : file(file_),
-          id_(0),
-          type_(0),
-          attributes_(new Argument* [size] { 0 }),
-          offset_in_file_(0) {}
+      IfcEntityInstanceData(const IfcEntityInstanceData& data);
 
-    IfcEntityInstanceData(const IfcParse::declaration* type)
-        : file(0),
-          id_(0),
-          type_(type),
-          attributes_(new Argument* [getArgumentCount()] { 0 }),
-          offset_in_file_(0) {}
+      IfcEntityInstanceData& operator=(IfcEntityInstanceData&& other) {
+          if (this != &other) {
+              storage_ = std::move(other.storage_);
+          }
+          return *this;
+      }
 
-    void load() const;
+    AttributeValue get_attribute_value(size_t index) const;
 
-    IfcEntityInstanceData(const IfcEntityInstanceData& data);
+    /*
+    template <typename T>
+    void set_attribute_value(size_t index, const T& t);
 
-    virtual ~IfcEntityInstanceData();
+    void set_attribute_value(size_t index, AttributeValue&, IfcUtil::ArgumentType attr_type = IfcUtil::Argument_UNKNOWN);
+    */
 
-    boost::shared_ptr<aggregate_of_instance> getInverse(const IfcParse::declaration* type, int attribute_index) const;
-
-    Argument* getArgument(size_t index) const;
-
-    // NB: This makes a copy of the argument if make_copy is set
-    void setArgument(size_t ibdex, Argument* argument, IfcUtil::ArgumentType attr_type = IfcUtil::Argument_UNKNOWN, bool make_copy = false);
-
-    virtual size_t getArgumentCount() const {
-        if (type_ == 0) {
-            return 0;
-        }
-        if (type_->as_entity() != nullptr) {
-            return type_->as_entity()->attribute_count();
-        }
-        return 1;
+    size_t size() const {
+        return storage_.size();
     }
 
-    void clearArguments();
-
-    const IfcParse::declaration* type() const {
-        return type_;
-    }
-
-    std::string toString(bool upper = false) const;
-
-    unsigned int id() const { return id_; }
-    unsigned int offset_in_file() const { return offset_in_file_; }
-
-    // NB: const ommitted for lazy loading
-    Argument**& attributes() const { return attributes_; }
-
-    unsigned set_id(boost::optional<unsigned> id = boost::none);
+    void toString(std::ostream&, bool upper = false, const IfcParse::entity* ent = nullptr) const;
 };
 
 #endif

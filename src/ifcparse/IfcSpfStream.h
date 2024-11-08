@@ -71,9 +71,9 @@ class IFC_PARSE_API IfcSpfStream {
     /// Moves the file cursor to an arbitrary offset in the file
     void Seek(unsigned int offset);
     /// Returns the cursor position
-    unsigned int Tell();
+    unsigned int Tell() const;
 
-    bool is_eof_at(unsigned int);
+    bool is_eof_at(unsigned int) const;
     void increment_at(unsigned int&);
     char peek_at(unsigned int);
 };

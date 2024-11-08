@@ -104,12 +104,14 @@ class Usecase:
         if self.settings["prop_name"]:
             self.quantities = set(self.settings["cost_item"].CostQuantities or [])
         for product in self.settings["products"]:
+            if product.is_a("IfcSpatialElement"):
+                continue
             self.assign_cost_control(related_object=product, cost_item=self.settings["cost_item"])
             if self.settings["prop_name"]:
                 if (
                     self.settings["cost_item"].CostQuantities
                     and self.settings["cost_item"].CostQuantities[0].Name.lower() != self.settings["prop_name"].lower()
-                ) or not product.is_a("IfcObject"):
+                ):
                     continue
                 self.add_quantity_from_related_object(product)
         if self.settings["prop_name"]:

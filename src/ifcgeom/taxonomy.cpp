@@ -313,7 +313,7 @@ namespace {
 	}
 
 	bool compare(const loft& a, const loft& b) {
-		return compare_collection<face>(a, b);
+		return compare_collection<geom_item>(a, b);
 	}
 
 	bool compare(const collection& a, const collection& b) {
@@ -464,12 +464,12 @@ ifcopenshell::geometry::taxonomy::solid::ptr ifcopenshell::geometry::create_box(
 }
 
 ///////////////////
-piecewise_function::piecewise_function(double start, const spans_t& s, ifcopenshell::geometry::Settings* settings, const IfcUtil::IfcBaseInterface* instance) : implicit_item(instance) {
-    impl_ = new piecewise_function_impl(start, s, settings);
+piecewise_function::piecewise_function(double start, const spans_t& s, const IfcUtil::IfcBaseInterface* instance) : implicit_item(instance) {
+    impl_ = new piecewise_function_impl(start, s);
 }
 
-piecewise_function::piecewise_function(double start, const std::vector<piecewise_function::ptr>& pwfs, ifcopenshell::geometry::Settings* settings, const IfcUtil::IfcBaseInterface* instance) : implicit_item(instance) {
-    impl_ = new piecewise_function_impl(start, pwfs, settings);
+piecewise_function::piecewise_function(double start, const std::vector<piecewise_function::ptr>& pwfs, const IfcUtil::IfcBaseInterface* instance) : implicit_item(instance) {
+    impl_ = new piecewise_function_impl(start, pwfs);
 };
 
 piecewise_function::piecewise_function(const piecewise_function& other) : implicit_item(other) {
@@ -486,11 +486,6 @@ double piecewise_function::start() const { return impl_->start(); }
 double piecewise_function::end() const { return impl_->end(); }
 double piecewise_function::length() const {   return impl_->length(); }
 
-std::vector<double> piecewise_function::evaluation_points() const { return impl_->evaluation_points(); }
-std::vector<double> piecewise_function::evaluation_points(double ustart, double uend, unsigned nsteps) const { return impl_->evaluation_points(ustart, uend, nsteps); }
-item::ptr piecewise_function::evaluate() const { return impl_->evaluate(); }
-item::ptr piecewise_function::evaluate(double ustart, double uend, unsigned nsteps) const { return impl_->evaluate(ustart, uend, nsteps); }
-Eigen::Matrix4d piecewise_function::evaluate(double u) const { return impl_->evaluate(u); }
 
 ifcopenshell::geometry::taxonomy::collection::ptr ifcopenshell::geometry::flatten(const taxonomy::collection::ptr& deep) {
 	auto flat = make<taxonomy::collection>();
@@ -588,7 +583,9 @@ void ifcopenshell::geometry::taxonomy::trimmed_curve::print(std::ostream& o, int
 	}
 
 	if (this->instance) {
-		o << std::string(indent + 4, ' ') << this->instance->data().toString() << std::endl;
+		std::ostringstream oss;
+		this->instance->as<IfcUtil::IfcBaseClass>()->toString(oss);
+		o << std::string(indent + 4, ' ') << oss.str() << std::endl;
 	}
 }
 
@@ -596,4 +593,161 @@ void ifcopenshell::geometry::taxonomy::extrusion::print(std::ostream& o, int ind
 	o << std::string(indent, ' ') << "extrusion " << depth << std::endl;
 	direction->print(o, indent + 4);
 	basis->print(o, indent + 4);
+}
+
+boost::optional<face::ptr> ifcopenshell::geometry::taxonomy::loop_to_face_upgrade_impl(ptr item) {
+	boost::optional<face::ptr> face_;
+	auto loop_ = dcast<loop>(item);
+		if (loop_) {
+			loop_->external = true;
+
+			face_ = make<face>();
+			(*face_)->instance = loop_->instance;
+			(*face_)->matrix = loop_->matrix;
+			(*face_)->children = { clone(loop_) };
+		}
+	return face_;
+}
+
+boost::optional<edge::ptr> ifcopenshell::geometry::taxonomy::curve_to_edge_upgrade_impl(ptr item) {
+	boost::optional<edge::ptr> edge_;
+	auto circle_ = dcast<circle>(item);
+	auto ellipse_ = dcast<ellipse>(item);
+	auto line_ = dcast<line>(item);
+	auto bspline_curve_ = dcast<bspline_curve>(item);
+	if (circle_ || ellipse_ || line_ || bspline_curve_) {
+		edge_ = make<edge>();
+		if (circle_) {
+			(*edge_)->basis = circle_;
+			(*edge_)->instance = circle_->instance;
+		} else if (ellipse_) {
+			(*edge_)->basis = ellipse_;
+			(*edge_)->instance = ellipse_->instance;
+		} else if (line_) {
+			(*edge_)->basis = line_;
+			(*edge_)->instance = line_->instance;
+		} else if (bspline_curve_) {
+			(*edge_)->basis = bspline_curve_;
+			(*edge_)->instance = bspline_curve_->instance;
+		}
+
+		if (circle_ || ellipse_) {
+			// @todo
+			(*edge_)->start = 0.;
+			(*edge_)->end = 2 * boost::math::constants::pi<double>();
+		}
+	}
+	return edge_;
+}
+
+boost::optional<loop::ptr> ifcopenshell::geometry::taxonomy::curve_to_loop_upgrade_impl(ptr item) {
+	boost::optional<loop::ptr> loop_;
+	auto circle_ = dcast<circle>(item);
+	auto ellipse_ = dcast<ellipse>(item);
+	auto line_ = dcast<line>(item);
+	auto bspline_curve_ = dcast<bspline_curve>(item);
+	if (circle_ || ellipse_ || line_ || bspline_curve_) {
+		auto edge_ = make<edge>();
+		if (circle_) {
+			edge_->basis = circle_;
+		} else if (ellipse_) {
+			edge_->basis = ellipse_;
+		} else if (line_) {
+			edge_->basis = line_;
+		} else if (bspline_curve_) {
+			edge_->basis = bspline_curve_;
+		}
+
+		if (circle_ || ellipse_) {
+			// @todo
+			edge_->start = 0.;
+			edge_->end = 2 * boost::math::constants::pi<double>();
+		}
+
+		loop_ = make<loop>();
+		(*loop_)->children.push_back(edge_);
+	}
+	return loop_;
+}
+
+boost::optional<loop::ptr> ifcopenshell::geometry::taxonomy::edge_to_loop_upgrade_impl(ptr item) {
+	boost::optional<loop::ptr> loop_;
+	auto edge_ = dcast<edge>(item);
+	if (edge_) {
+		loop_ = make<loop>();
+		(*loop_)->children.push_back(edge_);
+	}
+	return loop_;
+}
+
+boost::optional<face::ptr> ifcopenshell::geometry::taxonomy::curve_to_face_upgrade_impl(ptr item) {
+    boost::optional<face::ptr> face_;
+    auto circle_ = dcast<circle>(item);
+    auto ellipse_ = dcast<ellipse>(item);
+    auto line_ = dcast<line>(item);
+    auto bspline_curve_ = dcast<bspline_curve>(item);
+
+    if (circle_ || ellipse_ || line_ || bspline_curve_) {
+        auto edge_ = make<edge>();
+        if (circle_) {
+            edge_->basis = circle_;
+        } else if (ellipse_) {
+            edge_->basis = ellipse_;
+        } else if (line_) {
+            edge_->basis = line_;
+        } else if (bspline_curve_) {
+            edge_->basis = bspline_curve_;
+        }
+
+        if (circle_ || ellipse_) {
+            // @todo
+            edge_->start = 0.;
+            edge_->end = 2 * boost::math::constants::pi<double>();
+        }
+
+        auto loop_ = make<loop>();
+        loop_->children.push_back(edge_);
+
+        face_ = make<face>();
+        (*face_)->instance = loop_->instance;
+        (*face_)->matrix = loop_->matrix;
+        (*face_)->children = { clone(loop_) };
+    }
+    return face_;
+}
+
+
+boost::optional<piecewise_function::ptr> ifcopenshell::geometry::taxonomy::loop_to_piecewise_function_upgrade_impl(ptr item) {
+	boost::optional<piecewise_function::ptr> pwf_;
+	auto loop_ = dcast<loop>(item);
+	if (loop_) {
+		if (loop_->pwf.is_initialized()) {
+			pwf_ = loop_->pwf;
+		} else {
+			piecewise_function::spans_t spans;
+			spans.reserve(loop_->children.size());
+			for (auto& edge_ : loop_->children) {
+				// the edge could be an arc or trimmed circle in the case of IfcIndexPolyCurve - support for this isn't implemented yet
+				if (edge_->basis) {
+					Logger::Message(Logger::Severity::LOG_NOTICE, "Shape of basis curve ignored - edge is treated as a straight line edge");
+				}
+
+				const auto& s = boost::get<point3::ptr>(edge_->start)->ccomponents();
+				const auto& e = boost::get<point3::ptr>(edge_->end)->ccomponents();
+				Eigen::Vector3d v = e - s;
+				auto l = v.norm(); // the norm of a vector is a measure of its length
+				v.normalize();     // normalize the vector so that it is a unit direction vector
+				std::function<Eigen::Matrix4d(double)> fn = [s, v](double u) {
+					Eigen::Vector3d o(s + u * v), axis(0, 0, 1), refDirection(v);
+					auto Y = axis.cross(refDirection).normalized();
+					axis = refDirection.cross(Y).normalized();
+					return make<matrix4>(o, axis, refDirection)->components();
+				};
+				spans.emplace_back(l, fn);
+			}
+			pwf_ = make<piecewise_function>(0.0,spans);
+			loop_->pwf = pwf_;
+		}
+	}
+	return pwf_;
 }

@@ -20,6 +20,7 @@ import shapely
 import shapely.ops
 import numpy as np
 import numpy.typing as npt
+import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
@@ -175,18 +176,21 @@ def get_bbox_centroid(geometry: ShapeType) -> tuple[float, float, float]:
     :return: A tuple representing the XYZ centroid
     :rtype: tuple[float, float, float]
     """
-    verts_flat = get_vertices(geometry).ravel()
-    x_values = verts_flat[0::3]
-    y_values = verts_flat[1::3]
-    z_values = verts_flat[2::3]
-    minx = min(x_values)
-    maxx = max(x_values)
-    miny = min(y_values)
-    maxy = max(y_values)
-    minz = min(z_values)
-    maxz = max(z_values)
-    res = np.array((minx + ((maxx - minx) / 2), miny + ((maxy - miny) / 2), minz + ((maxz - minz) / 2)))
-    return res.tolist()
+    vertices_array = get_vertices(geometry)
+    return (np.min(vertices_array, axis=0) + np.max(vertices_array, axis=0)) / 2
+
+
+def get_vert_centroid(geometry: ShapeType) -> tuple[float, float, float]:
+    """Calculates the average vertex centroid of the geometry
+
+    The centroid is in local coordinates relative to the object's placement.
+
+    :param geometry: Geometry output calculated by IfcOpenShell
+    :type geometry: geometry
+    :return: A tuple representing the XYZ centroid
+    :rtype: tuple[float, float, float]
+    """
+    return np.mean(get_vertices(geometry), axis=0)
 
 
 def get_element_bbox_centroid(element: ifcopenshell.entity_instance, geometry) -> npt.NDArray[np.float64]:
@@ -226,7 +230,7 @@ def get_shape_bbox_centroid(shape: ShapeType, geometry: ShapeType) -> npt.NDArra
     return (get_shape_matrix(shape) @ np.array([*centroid, 1.0]))[0:3]
 
 
-def get_vertices(geometry: ShapeType) -> npt.NDArray[np.float64]:
+def get_vertices(geometry: ShapeType, is_2d: bool = False) -> npt.NDArray[np.float64]:
     """Get all the vertices as a numpy array
 
     Vertices are in local coordinates.
@@ -235,9 +239,12 @@ def get_vertices(geometry: ShapeType) -> npt.NDArray[np.float64]:
 
     :param geometry: Geometry output calculated by IfcOpenShell
     :type geometry: geometry
+    :param is_2d: Set to True to to get XY coordinates only.
     :return: A numpy array listing all the vertices. Each vertex is a numpy array with XYZ coordinates.
     :rtype: np.array[np.array[float]]
     """
+    if is_2d:
+        return np.frombuffer(geometry.verts_buffer, "d").reshape(-1, 3)[:, :2]
     return np.frombuffer(geometry.verts_buffer, "d").reshape(-1, 3)
 
 
@@ -274,9 +281,62 @@ def get_faces(geometry: ShapeType) -> npt.NDArray[np.int32]:
     return np.frombuffer(geometry.faces_buffer, dtype="i").reshape(-1, 3)
 
 
-def get_representation_item_ids(geometry: ShapeType) -> npt.NDArray[np.int32]:
+def get_material_colors(geometry: ShapeType) -> npt.NDArray[np.float64]:
+    """Get material colors as a numpy array.
+
+    :return: A numpy array listing RGBA color for each shape's material.
+    """
+    # colors_buffer comes from geometry.materials and doesn't account
+    # for colors that can be set by some other way (e.g. IfcIndexedColourMap).
+    return np.frombuffer(geometry.colors_buffer, dtype="d").reshape(-1, 4)
+
+
+def get_normals(geometry: ShapeType) -> npt.NDArray[np.float64]:
+    """Get vertex normals as a numpy array.
+
+    See geometry settings documentation for settings that affect normals.
+
+    :return: A numpy array listing normal for each shape vertex.
+    """
+    return np.frombuffer(geometry.normals_buffer, dtype="d").reshape(-1, 3)
+
+
+def get_shape_material_styles(geometry: ShapeType) -> tuple[W.style, ...]:
+    """Get list of material styles.
+
+    Possible values for `style.instance_id()`:
+    - IFC style id if style assigned to the representation items directly
+    or through material with a style;
+    - IFC material id if both true:
+      - element has a material without a style;
+      - there are parts of the geometry that has no other style assigned to them;
+    - -1 in case if there is no material;
+    - 0 in case if there are default materials used.
+    """
+    return geometry.materials
+
+
+def get_faces_material_style_ids(geometry: ShapeType) -> npt.NDArray[np.int32]:
+    """Get material styles ids for the geometry faces.
+
+    Return a list of corresponding indices of styles from get_shape_material_styles for each face.
+    If face has no style assigned, index -1 is used.
+    """
+    return np.frombuffer(geometry.material_ids_buffer, dtype="i")
+
+
+def get_faces_representation_item_ids(geometry: ShapeType) -> npt.NDArray[np.int32]:
     """Get representation item ids for the geometry faces."""
     return np.frombuffer(geometry.item_ids_buffer, dtype="i")
+
+
+def get_edges_representation_item_ids(geometry: ShapeType) -> npt.NDArray[np.int32]:
+    """Get representation item ids for the geometry edges.
+
+    Can be useful for geometry without faces and in general is more universal
+    since it's possible that geometry will have elements with and without faces.
+    """
+    return np.frombuffer(geometry.edges_item_ids_buffer, dtype="i")
 
 
 def get_shape_vertices(shape: ShapeType, geometry: ShapeType) -> npt.NDArray[np.float64]:

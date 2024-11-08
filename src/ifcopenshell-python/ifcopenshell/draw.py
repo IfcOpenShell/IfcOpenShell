@@ -72,6 +72,7 @@ class draw_settings:
     prefilter: bool = True
     include_curves: bool = False
     unify_inputs: bool = True
+    arrange_spaces: bool = False
 
 
 def main(
@@ -88,7 +89,8 @@ def main(
     )
 
     # this is required for serialization
-    geom_settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
+    dimensionality = W.CURVES_SURFACES_AND_SOLIDS if settings.include_curves else W.SURFACES_AND_SOLIDS
+    geom_settings.set("dimensionality", dimensionality)
     geom_settings.set("iterator-output", ifcopenshell.ifcopenshell_wrapper.NATIVE)
     geom_settings.set("apply-default-materials", True)
 
@@ -109,7 +111,8 @@ def main(
         )
 
         if settings.cache:
-            cache = ifcopenshell.geom.serializers.hdf5("cache.h5", geom_settings)
+            serializer_settings = ifcopenshell.geom.serializer_settings()
+            cache = ifcopenshell.geom.serializers.hdf5("cache.h5", geom_settings, serializer_settings)
             for it in iterators:
                 it.set_cache(cache)
 
@@ -127,6 +130,15 @@ def main(
     # it's up to user to keep them valid for the provided projects.
     if settings.drawing_guid or settings.drawing_object_type:
         if settings.drawing_guid:
+            found_guid = False
+            for f in files:
+                try:
+                    f.by_guid(settings.drawing_guid)
+                    found_guid = True
+                except:
+                    pass
+            if not found_guid:
+                raise ValueError(f"Unable to find guid {settings.drawing_guid!r}")
             sr.setElevationRefGuid(settings.drawing_guid)
         elif settings.drawing_object_type:
             sr.setElevationRef(settings.drawing_object_type)
@@ -338,7 +350,13 @@ def main(
                     # - style transparency
                     # the factor determines how much white will be interpolated
                     # into the style diffuse color.
-                    clr = numpy.array(style.diffuse if style else (0.6, 0.6, 0.6))
+                    def clr(c):
+                        if isinstance(c, ifcopenshell.ifcopenshell_wrapper.colour):
+                            return c.r(), c.g(), c.b()
+                        else:
+                            return c
+
+                    clr = numpy.array(clr(style.diffuse) if style else (0.6, 0.6, 0.6))
                     factor = (math.log(elements[0].distance + 2.0) / 7.0) * (1.0 - 0.5 * abs(elements[0].dot_product))
                     if style and style.has_transparency:
                         factor *= 1.0 - style.transparency
@@ -397,7 +415,41 @@ def main(
             # This generally shouldn't happen
             g1.appendChild(g2)
 
-    data = dom1.toxml()
+    if settings.arrange_spaces:
+        root_groups = [g for g in yield_groups(svg1) if g.parentNode.tagName == "svg"]
+        ref_node = root_groups[-1].nextSibling
+        parent = root_groups[0].parentNode
+        zone_groups = []
+
+        for i in range(len(root_groups)):
+            for j in range(len(root_groups)):
+                if i != j:
+                    parent.removeChild(root_groups[j])
+            polies = W.svg_to_polygons(svg1.toxml(), "IfcSpace")
+
+            def min_bound_extent(p):
+                arr = numpy.array(p.boundary)
+                return (arr.max(axis=0) - arr.min(axis=0)).min() > 0.5
+
+            polies = type(polies)(filter(min_bound_extent, polies))
+            arranged = W.arrange_polygons(polies)
+            svg_data_3 = W.polygons_to_svg(arranged, False)
+            dom3 = parseString(svg_data_3)
+            svg3 = dom3.childNodes[0]
+            g3 = next(yield_groups(svg3))
+            for p in g3.getElementsByTagName("path"):
+                p.setAttribute("style", "fill: none; stroke: black; stroke-width: 0.2")
+            zone_groups.append(g3)
+            parent.removeChild(root_groups[i])
+            for j in range(len(root_groups)):
+                parent.insertBefore(root_groups[j], ref_node)
+
+        for rg, zg in zip(root_groups, zone_groups):
+            for p in rg.getElementsByTagName("path"):
+                p.setAttribute("style", "fill: none; stroke: black; stroke-width: 0.05")
+            rg.appendChild(zg)
+
+    data = dom1.toprettyxml()
     data = data.encode("ascii", "xmlcharrefreplace")
 
     return data

@@ -72,15 +72,14 @@ def create_axis_curve(
 class Usecase:
     def execute(self):
         existing_curve = self.settings["grid_axis"].AxisCurve
-        if existing_curve and len(self.file.get_inverse(existing_curve)) == 1:
-            ifcopenshell.util.element.remove_deep(self.file, existing_curve)
-            self.file.remove(existing_curve)
 
         self.settings["unit_scale"] = ifcopenshell.util.unit.calculate_unit_scale(self.file)
         grid = [i for i in self.file.get_inverse(self.settings["grid_axis"]) if i.is_a("IfcGrid")][0]
+        grid_matrix_i = Matrix(ifcopenshell.util.placement.get_local_placement(grid.ObjectPlacement))
+        grid_matrix_i.translation *= self.settings["unit_scale"]
+        grid_matrix_i = grid_matrix_i.inverted()
         points = [
-            Matrix(ifcopenshell.util.placement.get_local_placement(grid.ObjectPlacement)).inverted()
-            @ (self.settings["axis_curve"].matrix_world @ v.co)
+            grid_matrix_i @ (self.settings["axis_curve"].matrix_world @ v.co)
             for v in self.settings["axis_curve"].data.vertices[0:2]
         ]
         self.settings["grid_axis"].AxisCurve = self.file.createIfcPolyline(
@@ -90,13 +89,13 @@ class Usecase:
             ]
         )
 
-    def create_cartesian_point(self, x, y, z=None):
+        if existing_curve:
+            ifcopenshell.util.element.remove_deep2(self.file, existing_curve)
+
+    def create_cartesian_point(self, x, y):
         x = self.convert_si_to_unit(x)
         y = self.convert_si_to_unit(y)
-        if z is None:
-            return self.file.createIfcCartesianPoint((x, y))
-        z = self.convert_si_to_unit(z)
-        return self.file.createIfcCartesianPoint((x, y, z))
+        return self.file.createIfcCartesianPoint((x, y))
 
     def convert_si_to_unit(self, co):
         return co / self.settings["unit_scale"]

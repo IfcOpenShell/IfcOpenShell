@@ -88,8 +88,15 @@
 namespace {
 	struct geometry_conversion_result {
 		int index;
+
+		// For NoParallelMapping==true
 		ifcopenshell::geometry::taxonomy::ptr item;
 		std::vector<std::pair<const IfcUtil::IfcBaseEntity*, ifcopenshell::geometry::taxonomy::matrix4::ptr>> products;
+
+		// For NoParallelMapping==false
+		IfcUtil::IfcBaseEntity* representation;
+		aggregate_of_instance::ptr products_2;
+
 		std::vector<IfcGeom::BRepElement*> breps;
 		std::vector<IfcGeom::Element*> elements;
 	};
@@ -199,20 +206,26 @@ namespace IfcGeom {
 
 			for (auto& task : reps) {
 				geometry_conversion_result res;
-				res.item = converter_->mapping()->map(task.representation);
-				if (!res.item) {
-					continue;
+				res.index = task.index;
+				if (!settings_.get<ifcopenshell::geometry::settings::NoParallelMapping>().get()) {
+					res.representation = task.representation;
+					res.products_2 = task.products;
+				} else {
+					res.item = converter_->mapping()->map(task.representation);
+					if (!res.item) {
+						continue;
+					}
+					std::transform(task.products->begin(), task.products->end(), std::back_inserter(res.products), [this, &res](IfcUtil::IfcBaseClass* prod) {
+						auto prod_item = converter_->mapping()->map(prod);
+						return std::make_pair(prod->as<IfcUtil::IfcBaseEntity>(), ifcopenshell::geometry::taxonomy::cast<ifcopenshell::geometry::taxonomy::geom_item>(prod_item)->matrix);
+					});
 				}
-				std::transform(task.products->begin(), task.products->end(), std::back_inserter(res.products), [this, &res](IfcUtil::IfcBaseClass* prod) {
-					auto prod_item = converter_->mapping()->map(prod);
-					return std::make_pair(prod->as<IfcUtil::IfcBaseEntity>(), ifcopenshell::geometry::taxonomy::cast<ifcopenshell::geometry::taxonomy::geom_item>(prod_item)->matrix);
-				});
 				tasks_.push_back(res);
 			}
 
 			size_t num_products = 0;
 			for (auto& r : tasks_) {
-				num_products += r.products.size();
+				num_products += !settings_.get<ifcopenshell::geometry::settings::NoParallelMapping>().get() ? r.products_2->size() : r.products.size();
 			}
 
 			time_points[2] = high_resolution_clock::now();
@@ -510,7 +523,17 @@ namespace IfcGeom {
 			ifcopenshell::geometry::Settings settings,
 			geometry_conversion_result* rep)
 		{
-			auto representation = rep->item;
+			if (!settings_.get<ifcopenshell::geometry::settings::NoParallelMapping>().get()) {
+				rep->item = kernel->mapping()->map(rep->representation);
+				if (!rep->item) {
+					return;
+				}
+				std::transform(rep->products_2->begin(), rep->products_2->end(), std::back_inserter(rep->products), [this, &rep, kernel](IfcUtil::IfcBaseClass* prod) {
+					auto prod_item = kernel->mapping()->map(prod);
+					return std::make_pair(prod->as<IfcUtil::IfcBaseEntity>(), ifcopenshell::geometry::taxonomy::cast<ifcopenshell::geometry::taxonomy::geom_item>(prod_item)->matrix);
+				});
+			} else {
+			}
 
 			auto product_node = rep->products.front();
 			const IfcUtil::IfcBaseEntity* product = product_node.first;
@@ -518,8 +541,8 @@ namespace IfcGeom {
 
 			Logger::SetProduct(product);
 			
-			IfcGeom::BRepElement* brep = static_cast<IfcGeom::BRepElement*>(decorate_with_cache_(GeometrySerializer::READ_BREP, (std::string)*product->get("GlobalId"), std::to_string(representation->instance->data().id()), [kernel, settings, product, place, representation]() {
-				return kernel->create_brep_for_representation_and_product(representation, product, place);
+			IfcGeom::BRepElement* brep = static_cast<IfcGeom::BRepElement*>(decorate_with_cache_(GeometrySerializer::READ_BREP, (std::string)product->get("GlobalId"), std::to_string(rep->item->instance->as<IfcUtil::IfcBaseEntity>()->id()), [kernel, settings, product, place, rep]() {
+				return kernel->create_brep_for_representation_and_product(rep->item, product, place);
 			}));
 
 			if (!brep) {
@@ -539,7 +562,7 @@ namespace IfcGeom {
 				const IfcUtil::IfcBaseEntity* product2 = p.first;
 				const auto& place2 = p.second;
 
-				IfcGeom::BRepElement* brep2 = static_cast<IfcGeom::BRepElement*>(decorate_with_cache_(GeometrySerializer::READ_BREP, (std::string)*product2->get("GlobalId"), std::to_string(representation->instance->data().id()), [kernel, settings, product2, place2, representation, brep]() {
+				IfcGeom::BRepElement* brep2 = static_cast<IfcGeom::BRepElement*>(decorate_with_cache_(GeometrySerializer::READ_BREP, (std::string)product2->get("GlobalId"), std::to_string(rep->item->instance->as<IfcUtil::IfcBaseEntity>()->id()), [kernel, settings, product2, place2, brep]() {
 					return kernel->create_brep_for_processed_representation(product2, place2, brep);
 				}));
 				if (brep2) {
@@ -678,6 +701,10 @@ namespace IfcGeom {
 		/// Gets the representation of the current geometrical entity.
 		Element* get()
 		{
+			if (!initialization_outcome_) {
+				throw std::runtime_error("Iterator not initialized");
+			}
+
 			auto ret = *task_result_iterator_;
 			
 			// If we want to organize the element considering their hierarchy
@@ -746,13 +773,13 @@ namespace IfcGeom {
 				instance_type = ifc_product->declaration().name();
 
 				if (ifc_product->declaration().is("IfcRoot")) {
-					product_guid = (std::string) *ifc_product->get("GlobalId");
+					product_guid = (std::string) ifc_product->get("GlobalId");
 					product_name = ifc_product->get_value<std::string>("Name", "");
 				}
 
 				auto parent_object = converter_->mapping()->get_decomposing_entity(ifc_product);
 				if (parent_object) {
-					parent_id = parent_object->data().id();
+					parent_id = parent_object->id();
 				}
 
 				// fails in case of IfcProject

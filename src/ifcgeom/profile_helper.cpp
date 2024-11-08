@@ -128,7 +128,7 @@ taxonomy::loop::ptr ifcopenshell::geometry::profile_helper(const taxonomy::matri
 
 	std::vector<profile_point_with_edges> pps(points.size());
 	for (int b = 0; b < points.size(); ++b) {
-		int c = (b - 1) % points.size();
+		int c = (b + points.size() - 1) % points.size();
 		pps[b] = { Eigen::Vector2d(points[b].xy[0], points[b].xy[1]), points[b].radius, loop->children[c], loop->children[b] };
 	}
 

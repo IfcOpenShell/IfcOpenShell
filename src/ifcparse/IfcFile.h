@@ -30,6 +30,7 @@
 #include <boost/multi_index/sequenced_index.hpp>
 #include <boost/multi_index_container.hpp>
 #include <boost/unordered_map.hpp>
+#include <boost/variant.hpp>
 #include <iterator>
 #include <map>
 
@@ -41,7 +42,8 @@ class IFC_PARSE_API file_open_status {
         SUCCESS,
         READ_ERROR,
         NO_HEADER,
-        UNSUPPORTED_SCHEMA
+        UNSUPPORTED_SCHEMA,
+        INVALID_SYNTAX
     };
 
   private:
@@ -64,15 +66,46 @@ class IFC_PARSE_API file_open_status {
     }
 };
 
+typedef boost::variant<int, IfcUtil::IfcBaseClass*> reference_or_simple_type;
+typedef std::list<std::pair<MutableAttributeValue, boost::variant<reference_or_simple_type, std::vector<reference_or_simple_type>, std::vector<std::vector<reference_or_simple_type>>>>> unresolved_references;
+
+struct parse_context {
+    std::list<
+        boost::variant<
+        IfcUtil::IfcBaseClass*,
+        Token,
+        parse_context*
+        >> tokens_;
+
+    parse_context() {};
+    ~parse_context();
+
+    parse_context(const parse_context&) = delete;
+    parse_context& operator=(const parse_context&) = delete;
+
+    parse_context(parse_context&&) = default;
+    parse_context& operator=(parse_context&&) = default;
+
+    parse_context& push();
+
+    void push(Token t);
+
+    void push(IfcUtil::IfcBaseClass* inst);
+
+    IfcEntityInstanceData construct(int name, unresolved_references& references_to_resolve, const IfcParse::declaration* decl, boost::optional<size_t> expected_size);
+};
+
 /// This class provides several static convenience functions and variables
 /// and provide access to the entities in an IFC file
 class IFC_PARSE_API IfcFile {
   public:
+      unresolved_references references_to_resolve;
+
     typedef std::map<const IfcParse::declaration*, aggregate_of_instance::ptr> entities_by_type_t;
     typedef boost::unordered_map<unsigned int, IfcUtil::IfcBaseClass*> entity_by_id_t;
     typedef boost::unordered_map<uint32_t, IfcUtil::IfcBaseClass*> entity_by_iden_t;
     typedef std::map<std::string, IfcUtil::IfcBaseClass*> entity_by_guid_t;
-    typedef std::tuple<int, int, int> inverse_attr_record;
+    typedef std::tuple<int, short, short> inverse_attr_record;
     enum INVERSE_ATTR {
         INSTANCE_ID,
         INSTANCE_TYPE,
@@ -116,10 +149,6 @@ class IFC_PARSE_API IfcFile {
         }
     };
 
-    static bool lazy_load_;
-    static bool lazy_load() { return lazy_load_; }
-    static void lazy_load(bool b) { lazy_load_ = b; }
-
     static bool guid_map_;
     static bool guid_map() { return guid_map_; }
     static void guid_map(bool b) { guid_map_ = b; }
@@ -127,21 +156,20 @@ class IFC_PARSE_API IfcFile {
   private:
     typedef std::map<uint32_t, IfcUtil::IfcBaseClass*> entity_entity_map_t;
 
-    bool parsing_complete_;
     file_open_status good_ = file_open_status::SUCCESS;
 
     const IfcParse::schema_definition* schema_;
     const IfcParse::declaration* ifcroot_type_;
 
-    std::vector<Argument*> internal_attribute_vector_, internal_attribute_vector_simple_type_;
+    // std::vector<Argument*> internal_attribute_vector_, internal_attribute_vector_simple_type_;
 
     entity_by_id_t byid_;
     // this is for simple types
     entity_by_iden_t byidentity_;
-    entities_by_type_t bytype_;
+    // entities_by_type_t bytype_;
     entities_by_type_t bytype_excl_;
-    entities_by_ref_t byref_;
-    entities_by_ref_excl_t byref_excl_;
+    // entities_by_ref_t byref_;
+    entities_by_ref_t byref_excl_;
     entity_by_guid_t byguid_;
     entity_entity_map_t entity_file_map_;
 
@@ -195,8 +223,8 @@ class IFC_PARSE_API IfcFile {
     type_iterator types_begin() const;
     type_iterator types_end() const;
 
-    type_iterator types_incl_super_begin() const;
-    type_iterator types_incl_super_end() const;
+    // type_iterator types_incl_super_begin() const;
+    // type_iterator types_incl_super_end() const;
 
     /// Returns all entities in the file that match the template argument.
     /// NOTE: This also returns subtypes of the requested type, for example:
@@ -247,11 +275,11 @@ class IFC_PARSE_API IfcFile {
     /// Performs a depth-first traversal, returning all entity instance
     /// attributes as a flat list. NB: includes the root instance specified
     /// in the first function argument.
-    aggregate_of_instance::ptr traverse(IfcUtil::IfcBaseClass* instance, int max_level = -1);
+    static aggregate_of_instance::ptr traverse(IfcUtil::IfcBaseClass* instance, int max_level = -1);
 
     /// Same as traverse() but maintains topological order by using a
     /// breadth-first search
-    aggregate_of_instance::ptr traverse_breadth_first(IfcUtil::IfcBaseClass* instance, int max_level = -1);
+    static aggregate_of_instance::ptr traverse_breadth_first(IfcUtil::IfcBaseClass* instance, int max_level = -1);
 
     /// Get the attribute indices corresponding to the list of entity instances
     /// returned by getInverse().
@@ -264,7 +292,7 @@ class IFC_PARSE_API IfcFile {
 
     aggregate_of_instance::ptr getInverse(int instance_id, const IfcParse::declaration* type, int attribute_index);
 
-    int getTotalInverses(int instance_id);
+    size_t getTotalInverses(int instance_id);
 
     unsigned int FreshId() { return ++MaxId; }
 
@@ -297,11 +325,10 @@ class IFC_PARSE_API IfcFile {
     const IfcSpfHeader& header() const { return _header; }
     IfcSpfHeader& header() { return _header; }
 
-    std::string createTimestamp() const;
+    static std::string createTimestamp() ;
 
-    size_t load(unsigned entity_instance_name, const IfcParse::entity* entity, Argument**& attributes, size_t num_attributes, int attribute_index = -1);
-    void seek_to(const IfcEntityInstanceData& data);
-    void try_read_semicolon();
+    void load(unsigned entity_instance_name, const IfcParse::entity* entity, parse_context&, int attribute_index = -1);
+    void try_read_semicolon() const;
 
     void register_inverse(unsigned, const IfcParse::entity* from_entity, Token, int attribute_index);
     void register_inverse(unsigned, const IfcParse::entity* from_entity, IfcUtil::IfcBaseClass*, int attribute_index);
@@ -310,9 +337,6 @@ class IFC_PARSE_API IfcFile {
     const IfcParse::schema_definition* schema() const { return schema_; }
 
     std::pair<IfcUtil::IfcBaseClass*, double> getUnit(const std::string& unit_type);
-
-    bool parsing_complete() const { return parsing_complete_; }
-    bool& parsing_complete() { return parsing_complete_; }
 
     void build_inverses();
 

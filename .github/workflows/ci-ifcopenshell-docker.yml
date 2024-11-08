@@ -93,7 +93,7 @@ jobs:
         lfs: true
     
     - name: Download 
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v4.1.7
       with:
         # Artifact name
         name: ifcos-artifacts
@@ -116,6 +116,8 @@ jobs:
       with: 
         context: artifacts
         repository: aecgeeks/ifcopenshell
-        tags: aecgeeks/ifcopenshell:latest
+        # Since the dispatch is set to `tag`, `github.ref_name` should evaluate to the pushed tag
+        # On a workflow dispatch, `ref_name` will take on the value from the dispatch payload
+        tags: aecgeeks/ifcopenshell:${{ github.ref_name }}${{ github.ref_name == github.event.repository.default_branch && ',aecgeeks/ifcopenshell:latest' }}
         file: ./Dockerfile
         push: true

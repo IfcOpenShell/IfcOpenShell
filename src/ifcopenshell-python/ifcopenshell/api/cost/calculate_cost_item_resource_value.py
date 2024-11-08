@@ -102,9 +102,10 @@ def calculate_cost_item_resource_value(file: ifcopenshell.file, cost_item: ifcop
     for resource in resources:
         cost, unit = ifcopenshell.util.resource.get_cost(resource)
         if not cost:
-            cost, unit = ifcopenshell.util.resource.get_parent_cost(
-                resource
-            )  # Concept to standardise - Not defined in schema, but this makes manual scheduling of resources 10x faster and less duplicate data.
+            # Concept to standardise - Not defined in schema, but this makes manual scheduling of resources 10x faster and less duplicate data.
+            parent_cost = ifcopenshell.util.resource.get_parent_cost(resource)
+            assert parent_cost
+            cost, unit = parent_cost
         quantity = ifcopenshell.util.resource.get_quantity(resource)
         if not cost or not quantity:
             continue

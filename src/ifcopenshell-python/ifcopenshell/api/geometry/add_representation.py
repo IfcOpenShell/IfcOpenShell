@@ -24,7 +24,7 @@ from mathutils import Vector, Matrix
 from typing import Union, Optional, Literal, Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from blenderbim.bim.module.geometry.helper import Helper
+    from bonsai.bim.module.geometry.helper import Helper
 
 
 Z_AXIS = Vector((0, 0, 1))
@@ -72,7 +72,7 @@ def add_representation(
 ) -> ifcopenshell.entity_instance:
     # lazy import Helper to avoid circular import
     if "Helper" not in globals():
-        from blenderbim.bim.module.geometry.helper import Helper
+        from bonsai.bim.module.geometry.helper import Helper
 
         globals()["Helper"] = Helper
 
@@ -83,7 +83,7 @@ def add_representation(
         "context": context,
         "blender_object": blender_object,
         "geometry": geometry,
-        "coordinate_offset": coordinate_offset,
+        "coordinate_offset": Vector(coordinate_offset) if coordinate_offset is not None else None,
         "total_items": total_items,
         "unit_scale": unit_scale,
         "should_force_faceted_brep": should_force_faceted_brep,
@@ -460,7 +460,7 @@ class Usecase:
         return results
 
     def is_mesh_curve_consecutive(self, geom_data):
-        import blenderbim.tool as tool
+        import bonsai.tool as tool
 
         bm = tool.Blender.get_bmesh_for_mesh(geom_data)
         bm.verts.ensure_lookup_table()
@@ -514,7 +514,7 @@ class Usecase:
                     return self.create_curves_from_mesh_ifc2x3(should_exclude_faces=should_exclude_faces, is_2d=is_2d)
                 return self.create_curves_from_mesh(should_exclude_faces=should_exclude_faces, is_2d=is_2d)
 
-        import blenderbim.tool as tool
+        import bonsai.tool as tool
 
         selected_objects = bpy.context.selected_objects
         active_object = bpy.context.active_object
@@ -568,7 +568,7 @@ class Usecase:
         return curves
 
     def remove_doubles_from_mesh(self, mesh):
-        import blenderbim.tool as tool
+        import bonsai.tool as tool
 
         bm = tool.Blender.get_bmesh_for_mesh(mesh)
         bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0001)
@@ -659,7 +659,7 @@ class Usecase:
         return self.file.createIfcShapeRepresentation(
             self.settings["context"],
             self.settings["context"].ContextIdentifier,
-            "PointCloud",
+            "Point" if self.file.schema == "IFC4X3" else "PointCloud",
             [point_cloud],
         )
 

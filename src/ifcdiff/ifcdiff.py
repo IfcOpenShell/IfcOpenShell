@@ -34,10 +34,14 @@ import ifcopenshell.util.placement
 import ifcopenshell.util.classification
 import ifcopenshell.util.representation
 from deepdiff import DeepDiff
-from ordered_set import OrderedSet
+from orderly_set import OrderedSet
+from typing import Optional, Union, Literal, Any
 
 
 __version__ = version = "0.0.0"
+
+
+RELATIONSHIP_TYPE = Literal["geometry", "attributes", "type", "property", "container", "aggregate", "classification"]
 
 
 class IfcDiff:
@@ -46,19 +50,14 @@ class IfcDiff:
     If you are using IfcDiff as a library, this is the class you should use.
 
     :param old: IFC file object for the old model
-    :type old: ifcopenshell.file.file
     :param new: IFC file object for the new model
-    :type new: ifcopenshell.file.file
     :param relationships: List of relationships to check. None means that only
-        geometry is compared.
-    :type relationships: list[string]
+        geometry is compared. See RELATIONSHIP_TYPE for available relationships.
     :param is_shallow: True if you want only the first difference to be listed.
         False if you want all differences to be checked. Choosing False means
         that comparisons will take longer.
-    :type is_shallow: bool
     :param filter_elements: An IFC filter query if you only want to compare a
         subset of elements. For example: ``IfcWall`` to only compare walls.
-    :type filter_elements: string
 
     Example::
 
@@ -70,7 +69,19 @@ class IfcDiff:
         ifc_diff.export()
     """
 
-    def __init__(self, old, new, relationships=None, is_shallow=True, filter_elements=None):
+    added_elements: set[ifcopenshell.entity_instance]
+    deleted_elements: set[ifcopenshell.entity_instance]
+    # GlobalIds to changes dictionary.
+    change_register: dict[str, dict[str, Any]]
+
+    def __init__(
+        self,
+        old: ifcopenshell.file,
+        new: ifcopenshell.file,
+        relationships: Optional[list[RELATIONSHIP_TYPE]] = None,
+        is_shallow: bool = True,
+        filter_elements: Optional[str] = None,
+    ):
         self.old = old
         self.new = new
         self.change_register = {}
@@ -80,7 +91,7 @@ class IfcDiff:
         self.is_shallow = is_shallow
         self.filter_elements = filter_elements
 
-    def diff(self):
+    def diff(self) -> None:
         logging.disable(logging.CRITICAL)
 
         self.precision = self.get_precision()
@@ -187,7 +198,9 @@ class IfcDiff:
 
         logging.disable(logging.NOTSET)
 
-    def summarise_shapes(self, ifc, elements):
+    def summarise_shapes(
+        self, ifc: ifcopenshell.file, elements: list[ifcopenshell.entity_instance]
+    ) -> dict[str, dict[str, Any]]:
         shapes = {}
         iterator = ifcopenshell.geom.iterator(
             self.get_settings(ifc), ifc, multiprocessing.cpu_count(), include=elements
@@ -203,7 +216,7 @@ class IfcDiff:
                     "sum_verts": sum(geometry.verts),
                     "min_vert": min(geometry.verts),
                     "max_vert": max(geometry.verts),
-                    "matrix": tuple(shape.transformation.matrix.data),
+                    "matrix": tuple(shape.transformation.matrix),
                     "openings": sorted(
                         [o.RelatedOpeningElement.GlobalId for o in getattr(element, "HasOpenings", []) or []]
                     ),
@@ -215,12 +228,12 @@ class IfcDiff:
                 break
         return shapes
 
-    def get_settings(self, ifc):
+    def get_settings(self, ifc: ifcopenshell.file) -> ifcopenshell.geom.settings:
         settings = ifcopenshell.geom.settings()
         # Are you feeling lucky?
-        settings.set(settings.DISABLE_BOOLEAN_RESULT, True)
+        settings.set("disable-boolean-result", True)
         # Are you feeling very lucky?
-        settings.set(settings.DISABLE_OPENING_SUBTRACTIONS, True)
+        settings.set("disable-opening-subtractions", True)
         # Facetation is to accommodate broken Revit files
         # See https://forums.buildingsmart.org/t/suggestions-on-how-to-improve-clarity-of-representation-context-usage-in-documentation/3663/6?u=moult
         body_contexts = [
@@ -237,7 +250,7 @@ class IfcDiff:
             ]
         )
         if body_contexts:
-            settings.set_context_ids(body_contexts)
+            settings.set("context-ids", body_contexts)
         return settings
 
     def json_dump_default(self, obj):
@@ -246,7 +259,7 @@ class IfcDiff:
             return list(obj)
         return json.JSONEncoder.default(None, obj)
 
-    def export(self, path):
+    def export(self, path: str) -> None:
         with open(path, "w", encoding="utf-8") as diff_file:
             json.dump(
                 {
@@ -259,7 +272,7 @@ class IfcDiff:
                 default=self.json_dump_default,
             )
 
-    def get_precision(self):
+    def get_precision(self) -> float:
         contexts = [c for c in self.new.by_type("IfcGeometricRepresentationContext") if c.ContextType == "Model"]
         if contexts:
             return contexts[0].Precision or 1e-4
@@ -356,7 +369,7 @@ class IfcDiff:
         # self.representation_ids[new_rep_id] = result
         # return result
 
-    def diff_representation(self, old_rep_id, new_rep_id):
+    def diff_representation(self, old_rep_id: int, new_rep_id: int) -> bool:
         old_rep = self.old.by_id(old_rep_id)
         new_rep = self.new.by_id(new_rep_id)
         if len(old_rep.Items) != len(new_rep.Items):
@@ -365,8 +378,11 @@ class IfcDiff:
             result = self.diff_representation_item(old_item, new_rep.Items[i])
             if result is True:
                 return True
+        return False
 
-    def diff_representation_item(self, old_item, new_item):
+    def diff_representation_item(
+        self, old_item: ifcopenshell.entity_instance, new_item: ifcopenshell.entity_instance
+    ) -> bool:
         if old_item.is_a() != new_item.is_a():
             return True
         try:
@@ -381,8 +397,9 @@ class IfcDiff:
             return True
         if diff:
             return True
+        return False
 
-    def get_representation_id(self, element):
+    def get_representation_id(self, element: ifcopenshell.entity_instance) -> Union[int, None]:
         if not element.Representation:
             return
         for representation in element.Representation.Representations:
@@ -404,6 +421,7 @@ class DiffTerminator:
     def give_up_diffing(self, level, diff_instance) -> bool:
         if any(diff_instance.tree.values()):
             raise Exception("Terminated")
+        return False
 
 
 if __name__ == "__main__":

@@ -28,7 +28,7 @@ from ..entity_instance import entity_instance
 
 from . import has_occ
 
-from typing import TypeVar, Union, Optional, Generator, Any, Literal, overload, TYPE_CHECKING
+from typing import TypeVar, Union, Optional, Generator, Any, Literal, overload, TYPE_CHECKING, Iterable
 
 if TYPE_CHECKING:
     from OCC.Core import TopoDS
@@ -78,6 +78,7 @@ SETTING = Literal[
     "boolean-attempt-2d",
     "weld-vertices",
     "use-world-coords",
+    "unify-shapes",
     "use-material-names",
     "convert-back-units",
     "context-ids",
@@ -100,12 +101,15 @@ SETTING = Literal[
     "piecewise-step-type",
     "piecewise-step-param",
     "use-python-opencascade",
+    "no-parallel-mapping",
+    "triangulation-type",
+    "model-rotation",
+    "model-offset",
 ]
 SERIALIZER_SETTING = Literal[
     "use-element-names",
     "use-element-guids",
     "use-element-step-ids",
-    "use-material-names",
     "use-element-types",
     "y-up",
     "ecef",
@@ -343,15 +347,29 @@ class tree(ifcopenshell_wrapper.tree):
             args.append(kwargs.get("extend", -1.0e-5))
         return [entity_instance(e) for e in ifcopenshell_wrapper.tree.select_box(*args)]
 
-    def clash_intersection_many(self, set_a, set_b, tolerance=0.002, check_all=True):
+    def clash_intersection_many(
+        self,
+        set_a: Iterable[entity_instance],
+        set_b: Iterable[entity_instance],
+        tolerance: float = 0.002,
+        check_all: bool = True,
+    ):
         args = [self, [e.wrapped_data for e in set_a], [e.wrapped_data for e in set_b], tolerance, check_all]
         return ifcopenshell_wrapper.tree.clash_intersection_many(*args)
 
-    def clash_collision_many(self, set_a, set_b, allow_touching=False):
+    def clash_collision_many(
+        self, set_a: Iterable[entity_instance], set_b: Iterable[entity_instance], allow_touching=False
+    ):
         args = [self, [e.wrapped_data for e in set_a], [e.wrapped_data for e in set_b], allow_touching]
         return ifcopenshell_wrapper.tree.clash_collision_many(*args)
 
-    def clash_clearance_many(self, set_a, set_b, clearance=0.05, check_all=False):
+    def clash_clearance_many(
+        self,
+        set_a: Iterable[entity_instance],
+        set_b: Iterable[entity_instance],
+        clearance: float = 0.05,
+        check_all: bool = False,
+    ):
         args = [self, [e.wrapped_data for e in set_a], [e.wrapped_data for e in set_b], clearance, check_all]
         return ifcopenshell_wrapper.tree.clash_clearance_many(*args)
 
@@ -365,7 +383,7 @@ def create_shape(
     """
     Return a geometric representation from STEP-based IFCREPRESENTATIONSHAPE
     or
-    Return an OpenCASCADE BRep if settings.USE_PYTHON_OPENCASCADE == True
+    Return an OpenCASCADE BRep if 'use-python-opencascade' is True
 
     Note that in Python, you must store a reference to the element returned by this function to prevent garbage
     collection when you access its children. See #1124.
@@ -391,7 +409,7 @@ def create_shape(
     .. code:: python
 
         settings = ifcopenshell.geom.settings()
-        settings.set(settings.USE_PYTHON_OPENCASCADE, True)
+        settings.set("use-python-opencascade", True)
 
         ifc_file = ifcopenshell.open(file_path)
         products = ifc_file.by_type("IfcProduct")
@@ -437,6 +455,8 @@ def consume_iterator(
                 break
 
 
+# Overloads need to cover different return types
+# based on `with_progress` argument.
 @overload
 def iterate(
     settings: settings,
@@ -444,8 +464,10 @@ def iterate(
     num_threads: int = 1,
     include: Optional[Union[list[entity_instance], list[str]]] = None,
     exclude: Optional[Union[list[entity_instance], list[str]]] = None,
+    *,
     with_progress: Literal[False] = False,
-    cache: Optional[serializers.hdf5] = None,
+    cache: Optional[str] = None,
+    serializer_settings: Optional[serializer_settings] = None,
     geometry_library: GEOMETRY_LIBRARY = "opencascade",
 ) -> Generator[IteratorOutput, None, None]: ...
 @overload
@@ -455,8 +477,10 @@ def iterate(
     num_threads: int = 1,
     include: Optional[Union[list[entity_instance], list[str]]] = None,
     exclude: Optional[Union[list[entity_instance], list[str]]] = None,
+    *,
     with_progress: Literal[True] = True,
-    cache: Optional[serializers.hdf5] = None,
+    cache: Optional[str] = None,
+    serializer_settings: Optional[serializer_settings] = None,
     geometry_library: GEOMETRY_LIBRARY = "opencascade",
 ) -> Generator[tuple[int, IteratorOutput], None, None]: ...
 @overload
@@ -466,8 +490,10 @@ def iterate(
     num_threads: int = 1,
     include: Optional[Union[list[entity_instance], list[str]]] = None,
     exclude: Optional[Union[list[entity_instance], list[str]]] = None,
+    *,
     with_progress: bool = False,
-    cache: Optional[serializers.hdf5] = None,
+    cache: Optional[str] = None,
+    serializer_settings: Optional[serializer_settings] = None,
     geometry_library: GEOMETRY_LIBRARY = "opencascade",
 ) -> Generator[Union[IteratorOutput, tuple[int, IteratorOutput]], None, None]: ...
 def iterate(
@@ -476,13 +502,21 @@ def iterate(
     num_threads: int = 1,
     include: Optional[Union[list[entity_instance], list[str]]] = None,
     exclude: Optional[Union[list[entity_instance], list[str]]] = None,
+    *,
     with_progress: bool = False,
-    cache: Optional[serializers.hdf5] = None,
+    cache: Optional[str] = None,
+    serializer_settings: Optional[serializer_settings] = None,
     geometry_library: GEOMETRY_LIBRARY = "opencascade",
 ) -> Generator[Union[IteratorOutput, tuple[int, IteratorOutput]], None, None]:
+    """Get a geometry iterator for the provided file.
+
+    :param cache: .h5 cache filepath (might not exist, will be created).
+    :param serializer_settings: Settings for cache serializer. Required if `cache` is provided.
+    """
     it = iterator(settings, file_or_filename, num_threads, include, exclude, geometry_library)
     if cache:
-        hdf5_cache = serializers.hdf5(cache, settings)
+        assert serializer_settings, "`serializer_settings` argument is not optional if `cache` is provided."
+        hdf5_cache = serializers.hdf5(cache, settings, serializer_settings)
         it.set_cache(hdf5_cache)
     yield from consume_iterator(it, with_progress=with_progress)
 
@@ -551,3 +585,14 @@ class serializers:
         hdf5 = ifcopenshell_wrapper.HdfSerializer
     except:
         pass
+
+    # ttl is always available since it doesn't depend on any C++ libraries,
+    # just people might be using an outdated binary
+    if hasattr(ifcopenshell_wrapper, "TtlWktSerializer"):
+
+        @staticmethod
+        def ttl(
+            out_filename: Union[str, serializers.buffer], geometry_settings: settings, settings: serializer_settings
+        ) -> ifcopenshell_wrapper.SvgSerializer:
+            out_filename = transform_string(out_filename)
+            return ifcopenshell_wrapper.TtlWktSerializer(out_filename, geometry_settings, settings)

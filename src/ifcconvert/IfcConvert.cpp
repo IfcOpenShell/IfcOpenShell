@@ -39,6 +39,7 @@
 #include "../serializers/XmlSerializer.h"
 #include "../serializers/SvgSerializer.h"
 #include "../serializers/USDSerializer.h"
+#include "../serializers/TtlWktSerializer.h"
 
 #include "../ifcgeom/IfcGeomFilter.h"
 #include "../ifcgeom/Iterator.h"
@@ -132,6 +133,7 @@ void print_usage(bool suggest_help = true)
 #ifdef IFOPSH_WITH_CGAL
 		<< "  .cityjson             City JSON format for geospatial data\n"
 #endif
+		<< "  .ttl   TTL/WKT        RDF Turtle with Well-Known-Text geometry\n"
 		<< "  .ifc   IFC-SPF        Industry Foundation Classes\n"
 		<< "\n"
         << "If no output filename given, <input>" << IfcUtil::path::from_utf8(DEFAULT_EXTENSION) << " will be used as the output file.\n";
@@ -297,10 +299,6 @@ int main(int argc, char** argv) {
             "Can take several minutes on large models.")
 		("center-model-geometry",
             "Centers the elements by applying the center point of all mesh vertices as an offset.")
-        ("model-offset", po::value<std::string>(&offset_str),
-            "Applies an arbitrary offset of form 'x;y;z' to all placements.")
-		("model-rotation", po::value<std::string>(&rotation_str),
-			"Applies an arbitrary quaternion rotation of form 'x;y;z;w' to all placements.")
 		("include", po::value<inclusion_filter>(&include_filter)->multitoken(),
 			"Specifies that the instances that match a specific filtering criteria are to be included in the geometrical output:\n"
 			"1) 'entities': the following list of types should be included. SVG output defaults "
@@ -651,7 +649,8 @@ int main(int argc, char** argv) {
 		IFC = IfcUtil::path::from_utf8(".ifc"),
 		USD = IfcUtil::path::from_utf8(".usd"),
 		USDA = IfcUtil::path::from_utf8(".usda"),
-		USDC = IfcUtil::path::from_utf8(".usdc");
+		USDC = IfcUtil::path::from_utf8(".usdc"),
+		TTL = IfcUtil::path::from_utf8(".ttl");
 
 	// @todo clean up serializer selection
 	// @todo detect program options that conflict with the chosen serializer
@@ -830,6 +829,10 @@ int main(int argc, char** argv) {
 		geometry_settings.get<ifcopenshell::geometry::settings::UseWorldCoords>().value = true;
 	}
 
+	if (output_extension == TTL) {
+		geometry_settings.get<ifcopenshell::geometry::settings::TriangulationType>().value = ifcopenshell::geometry::settings::TriangulationMethod::POLYHEDRON_WITH_HOLES;
+	}
+
 	boost::shared_ptr<GeometrySerializer> serializer; /**< @todo use std::unique_ptr when possible */
 	if (output_extension == OBJ) {
         // Do not use temp file for MTL as it's such a small file.
@@ -865,6 +868,8 @@ int main(int argc, char** argv) {
 		serializer = boost::make_shared<HdfSerializer>(IfcUtil::path::to_utf8(output_temp_filename), geometry_settings, serializer_settings);
 #endif
 #endif	
+	} else if (output_extension == TTL) {
+		serializer = boost::make_shared<TtlWktSerializer>(IfcUtil::path::to_utf8(output_temp_filename), geometry_settings, serializer_settings);
 	} else {
         cerr_ << "[Error] Unknown output filename extension '" << output_extension << "'\n";
 		write_log(!quiet);
@@ -1025,6 +1030,7 @@ int main(int argc, char** argv) {
 
 #ifdef IFOPSH_WITH_OPENCASCADE
 	if (output_extension == SVG) {
+		// @todo turn these all into proper settings
 		if (vmap.count("section-height-from-storeys") != 0) {
 			if (vmap.count("section-height")) {
 				static_cast<SvgSerializer*>(serializer.get())->setSectionHeightsFromStoreys(section_height);
@@ -1486,7 +1492,7 @@ namespace latebound_access {
 			enum_type->enumeration_items().end(),
 			t);
 
-		return set(inst, attr, IfcWrite::IfcWriteArgument::EnumerationReference(it - enum_type->enumeration_items().begin(), it->c_str()));
+		return set(inst, attr, EnumerationReference(enum_type, it - enum_type->enumeration_items().begin()));
 	}
 
 	template <typename T>
@@ -1495,19 +1501,17 @@ namespace latebound_access {
 		auto i = decl->attribute_index(attr);
 
 		auto attr_type = decl->attribute_by_index(i)->type_of_attribute();
-		if (attr_type->as_named_type() && attr_type->as_named_type()->declared_type()->as_enumeration_type() && !std::is_same<T, IfcWrite::IfcWriteArgument::EnumerationReference>::value) {
+		if (attr_type->as_named_type() && attr_type->as_named_type()->declared_type()->as_enumeration_type() && !std::is_same<T, EnumerationReference>::value) {
 			set_enumeration(inst, attr, attr_type->as_named_type()->declared_type()->as_enumeration_type(), t);
 		} else {
-			IfcWrite::IfcWriteArgument* a = new IfcWrite::IfcWriteArgument;
-			a->set(t);
-			inst->data().attributes()[i] = a;
+			inst->set_attribute_value(i, t);
 		}
 	}
 
 	IfcUtil::IfcBaseClass* create(IfcParse::IfcFile& f, const std::string& entity) {
 		auto decl = f.schema()->declaration_by_name(entity);
-		auto data = new IfcEntityInstanceData(decl);
-		auto inst = f.schema()->instantiate(data);
+		auto data = IfcEntityInstanceData(storage_t(decl->as_entity()->attribute_count()));
+		auto inst = f.schema()->instantiate(decl, std::move(data));
 		if (decl->is("IfcRoot")) {
 			IfcParse::IfcGlobalId guid;
 			latebound_access::set(inst, "GlobalId", (std::string) guid);
@@ -1547,7 +1551,7 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 		auto IfcRelDefinesByProperties = f.schema()->declaration_by_name("IfcRelDefinesByProperties");
 		if (element_quantities) {
 			for (auto& eq : *element_quantities) {
-				auto rels = eq->data().getInverse(IfcRelDefinesByProperties, -1);
+				auto rels = eq->file_->getInverse(eq->id(), IfcRelDefinesByProperties, -1);
 				for (auto& rel : *rels) {
 					relationships.push_back(rel);
 				}
