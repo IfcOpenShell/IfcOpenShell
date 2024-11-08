@@ -890,6 +890,25 @@ class TestGetPartsIFC2X3(test.bootstrap.IFC2X3, TestGetPartsIFC4):
     pass
 
 
+class TestGetContainedIFC4(test.bootstrap.IFC4):
+    def test_run(self):
+        container = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuildingStorey")
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWindow")
+        ifcopenshell.api.spatial.assign_container(self.file, products=[element], relating_structure=container)
+
+        # Test two separate rels.
+        rel = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcRelContainedInSpatialStructure")
+        element2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWindow")
+        rel.RelatingStructure = container
+        rel.RelatedElements = [element2]
+
+        assert set(subject.get_contained(container)) == {element, element2}
+
+
+class TestGetContainedIFC2X3(test.bootstrap.IFC2X3, TestGetContainedIFC4):
+    pass
+
+
 class TestGetReferencedElements(test.bootstrap.IFC4):
     # TODO: test other references:
     # IfcExternallyDefinedHatchStyle
