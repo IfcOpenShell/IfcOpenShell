@@ -27,35 +27,35 @@ from logging import Logger
 
 
 class Patcher:
-    def __init__(self, src: str, file: ifcopenshell.file, logger: Logger, filepath: Union[str, ifcopenshell.file]):
-        """Merge two IFC models into one
+    def __init__(self, src: str, file: ifcopenshell.file, logger: Logger, filepaths: Union[str, ifcopenshell.file]):
+        """Merge two or more IFC models into one
 
-        Note that other than combining the two IfcProject elements into one, no
-        further processing will be done. This means that you may end up with
-        duplicate spatial hierarchies (i.e. 2 sites, 2 buildings, etc).
+        Note that other than combining the two (or more) IfcProject elements into
+        one, no further processing will be done. This means that you may end up
+        with duplicate spatial hierarchies (i.e. 2 sites, 2 buildings, etc).
 
         Will automatically convert length units in the second model to the main
         model's unit before merging.
 
-        :param filepath: The filepath of the second IFC model to merge into the
-            first. The first model is already specified as the input to
-            IfcPatch.
-        :type filepath: Union[str, ifcopenshell.file]
-        :filter_glob filepath: *.ifc;*.ifczip;*.ifcxml
+        :param filepaths: The filepath(s) of the second (, third, ...) IFC model
+            to merge into the first. The first model is already specified as the
+            input to IfcPatch.
+        :type filepaths: Union[str, ifcopenshell.file]
+        :filter_glob filepaths: *.ifc;*.ifczip;*.ifcxml
 
         Example:
 
         .. code:: python
 
-            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "MergeProject", "arguments": ["/path/to/model2.ifc"]})
+            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "MergeProjects", "arguments": ["/path/to/model2.ifc"]})
         """
         self.src = src
         self.file = file
         self.logger = logger
-        self.filepath = filepath
+        self.filepaths = filepaths
 
     def patch(self):
-        for filepath in self.filepath:
+        for filepath in self.filepaths:
             if isinstance(filepath, ifcopenshell.file):
                 other = filepath
             else:
