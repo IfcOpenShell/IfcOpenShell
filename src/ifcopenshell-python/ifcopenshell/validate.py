@@ -598,6 +598,17 @@ if __name__ == "__main__":
     import sys
     import logging
 
+    def handle_exception(exc_type, exc_value, exc_traceback):
+        import traceback
+
+        print(f"Unhandled exception: {exc_value}", file=sys.stderr)
+        traceback.print_tb(exc_traceback, file=sys.stderr)
+        # Exit with a negative code so that it's possible to distinguish
+        # internal errors from invalid files.
+        sys.exit(-1)
+
+    sys.excepthook = handle_exception
+
     filenames = [x for x in sys.argv[1:] if not x.startswith("--")]
     flags = set(x for x in sys.argv[1:] if x.startswith("--"))
     some_file_is_invalid = False
