@@ -60,12 +60,14 @@ namespace {
         } else if (t.type == IfcParse::Token_BOOL) {
             fn(IfcParse::TokenFunc::asBool(t));
         } else if (t.type == IfcParse::Token_ENUMERATION) {
-            if (decl->as_enumeration_type()) {
+            if (decl && decl->as_enumeration_type()) {
                 try {
                     fn(EnumerationReference(decl->as_enumeration_type(), decl->as_enumeration_type()->lookup_enum_offset(IfcParse::TokenFunc::asStringRef(t))));
                 } catch (IfcParse::IfcException& e) {
                     Logger::Error(e);
                 }
+            } else {
+                Logger::Error("Untyped enumeration encountered");
             }
         } else if (t.type == IfcParse::Token_FLOAT) {
             fn(IfcParse::TokenFunc::asFloat(t));
