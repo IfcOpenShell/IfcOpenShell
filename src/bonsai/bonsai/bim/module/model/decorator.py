@@ -797,22 +797,23 @@ class ProductDecorator:
         shader.uniform_float("color", color)
         batch.draw(shader)
 
+    def create_bmesh_from_vertices(self, vertices, is_closed):
+        bm = bmesh.new()
+
+        new_verts = [bm.verts.new(v) for v in vertices]
+        if is_closed:
+            new_edges = [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
+            new_edges.append(
+                bm.edges.new((new_verts[-1], new_verts[0]))
+            )  # Add an edge between the last an first point to make it closed.
+        else:
+            new_edges = [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
+
+        bm.verts.index_update()
+        bm.edges.index_update()
+        return bm
+
     def get_wall_preview_data(cls, context, relating_type):
-        def create_bmesh_from_vertices(vertices):
-            bm = bmesh.new()
-
-            new_verts = [bm.verts.new(v) for v in polyline_vertices]
-            if is_closed:
-                new_edges = [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
-                new_edges.append(
-                    bm.edges.new((new_verts[-1], new_verts[0]))
-                )  # Add an edge between the last an first point to make it closed.
-            else:
-                new_edges = [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
-
-            bm.verts.index_update()
-            bm.edges.index_update()
-            return bm
 
         # Get properties from object type
         layers = tool.Model.get_material_layer_parameters(relating_type)
@@ -873,7 +874,7 @@ class ProductDecorator:
             is_closed = True
             polyline_vertices.pop(-1)  # Remove the last point. The edges are going to inform that the shape is closed.
 
-        bm_base = create_bmesh_from_vertices(polyline_vertices)
+        bm_base = cls.create_bmesh_from_vertices(polyline_vertices, is_closed)
         base_vertices = tool.Cad.offset_edges(bm_base, offset)
         offset_base_verts = tool.Cad.offset_edges(bm_base, thickness + offset)
         top_vertices = tool.Cad.offset_edges(bm_base, angle_distortion + offset)
@@ -953,6 +954,52 @@ class ProductDecorator:
 
         return wall_preview_data
 
+    def get_slab_preview_data(cls, context, relating_type):
+        layers = tool.Model.get_material_layer_parameters(relating_type)
+        if not layers["thickness"]:
+            return
+        thickness = layers["thickness"]
+
+        slab_preview_data = {}
+        slab_preview_data["verts"] = []
+
+        # Verts
+        polyline_vertices = []
+        polyline_data = context.scene.BIMPolylineProperties.insertion_polyline
+        polyline_points = polyline_data[0].polyline_points if polyline_data else []
+        if len(polyline_points) < 3:
+            slab_preview_data = []
+            return
+        for point in polyline_points:
+            polyline_vertices.append(Vector((point.x, point.y, point.z)))
+
+        is_closed = True
+        if (
+            polyline_vertices[0].x == polyline_vertices[-1].x
+            and polyline_vertices[0].y == polyline_vertices[-1].y
+            and polyline_vertices[0].z == polyline_vertices[-1].z
+        ):
+            polyline_vertices.pop(-1)  # Remove the last point. The edges are going to inform that the shape is closed.
+
+        bm = cls.create_bmesh_from_vertices(polyline_vertices, is_closed)
+        new_faces = bmesh.ops.contextual_create(bm, geom=bm.edges)
+
+        new_faces = bmesh.ops.extrude_face_region(bm, geom=bm.edges[:] + bm.faces[:])
+        new_verts = [e for e in new_faces["geom"] if isinstance(e, bmesh.types.BMVert)]
+        new_faces = bmesh.ops.translate(bm, verts=new_verts, vec=(0.0, 0.0, thickness))
+
+        bm.verts.index_update()
+        bm.edges.index_update()
+
+        verts = [tuple(v.co) for v in bm.verts]
+        edges = [[v.index for v in e.verts] for e in bm.edges]
+        tris = [[loop.vert.index for loop in triangles] for triangles in bm.calc_loop_triangles()]
+
+        slab_preview_data["verts"] = verts
+        slab_preview_data["edges"] = edges
+        slab_preview_data["tris"] = tris
+        return slab_preview_data
+        
     def get_product_preview_data(cls, context, relating_type):
         model_props = context.scene.BIMModelProperties
         if relating_type.is_a("IfcDoorType"):
@@ -1139,6 +1186,15 @@ class ProductDecorator:
                 self.draw_batch("LINES", wall_preview_data["verts"], decorator_color, wall_preview_data["edges"])
                 self.draw_batch(
                     "TRIS", wall_preview_data["verts"], transparent_color(decorator_color), wall_preview_data["tris"]
+                )
+
+        # Slab
+        if self.relating_type.is_a("IfcSlabType"):
+            slab_preview_data = self.get_slab_preview_data(context, self.relating_type)
+            if slab_preview_data:
+                self.draw_batch("LINES", slab_preview_data["verts"], decorator_color, slab_preview_data["edges"])
+                self.draw_batch(
+                    "TRIS", slab_preview_data["verts"], transparent_color(decorator_color), slab_preview_data["tris"]
                 )
 
         # Mesh type products
