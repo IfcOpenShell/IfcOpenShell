@@ -823,6 +823,7 @@ class DrawPolylineSlab(bpy.types.Operator, PolylineOperator):
         self.tool_state.plane_method = "XY"
         return {"RUNNING_MODAL"}
 
+
 class RecalculateSlab(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.recalculate_slab"
     bl_label = "Recalculate Slab"
@@ -840,6 +841,6 @@ class RecalculateSlab(bpy.types.Operator, tool.Ifc.Operator):
                 for rel in element.ConnectedTo:
                     if rel.is_a() == "IfcRelConnectsElements" and rel.RelatedElement.is_a("IfcWall"):
                         walls.append(tool.Ifc.get_object(rel.RelatedElement))
-                
+
         DumbWallRecalculator().recalculate(walls)
         return {"FINISHED"}

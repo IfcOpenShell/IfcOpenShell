@@ -404,7 +404,7 @@ class Snap(bonsai.core.tool.Snap):
         elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
 
         plane_origin, plane_normal = select_plane_method()
-        tool_state.plane_origin = plane_origin # This will be used along with plane method
+        tool_state.plane_origin = plane_origin  # This will be used along with plane method
 
         intersection = tool.Raycast.ray_cast_to_plane(context, event, plane_origin, plane_normal)
 
