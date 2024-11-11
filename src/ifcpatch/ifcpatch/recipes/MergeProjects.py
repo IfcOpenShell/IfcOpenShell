@@ -42,7 +42,6 @@ class Patcher:
         :param filepaths: The filepath(s) of the second (, third, ...) IFC model
             to merge into the first. The first model is already specified as the
             input to IfcPatch.
-        :type filepaths: list[Union[str, ifcopenshell.file]]
         :filter_glob filepaths: *.ifc;*.ifczip;*.ifcxml
 
         Example:

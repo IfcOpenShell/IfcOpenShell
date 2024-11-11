@@ -151,7 +151,7 @@ class UpdateIfcPatchArguments(bpy.types.Operator):
                 new_attr.set_value(arg_info.get("default", new_attr.get_value_default()))
         return {"FINISHED"}
 
-    def pretty_arg_name(self, arg_name: str):
+    def pretty_arg_name(self, arg_name: str) -> str:
         words = []
 
         for word in arg_name.split("_"):
