@@ -29,11 +29,13 @@
 # Blender's property systems, IFC's data structures, the filesystem, geometry
 # processing, and more.
 
+import ifcopenshell.settings
 import bpy
 import bonsai.core.tool
 import bonsai.tool as tool
 import ifcopenshell.api
 import ifcopenshell.alignment
+import ifcopenshell
 
 # There is always one class in each tool file, which implements the interface
 # defined by `core/tool.py`.
@@ -44,5 +46,21 @@ class Alignment(bonsai.core.tool.Alignment):
         radii = [(50.0)]
         helper = ifcopenshell.alignment.IfcAlignmentHelper(tool.Ifc.get())
         alignment = helper.add_alignment("Dummy",coordinates,radii)
-        #need to get all of the "IfcSite" in the model and reference the alignment in the spatial structure with IfcRelReferencedInSpatialStructure
+        # add_alignment isn't returning anything, so to 
+        # get around that, get the alignment from the file
+        # this is a bad soluton because it only works for the first
+        # alignment in the file
+        if not alignment:
+            alignment = tool.Ifc.by_type("IfcAlignment")[0]
+        
+        # get the IfcCompositeCurve
+        curve = alignment.Representation.Representations[0].Items[0]
 
+        #need to get all of the "IfcSite" in the model and reference the alignment in the spatial structure with IfcRelReferencedInSpatialStructure
+ 
+        s = ifcopenshell.geom.settings()
+        shape = ifcopenshell.geom.create_shape(s,curve)
+        mesh = bpy.data.meshes.new("IfcAlignment")
+        m = tool.Loader.convert_geometry_to_mesh(shape,mesh)
+        tool.Geometry.link(alignment,m)
+        tool.Collector.assign(mesh)
