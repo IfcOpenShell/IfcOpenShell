@@ -105,8 +105,10 @@ SETTING = Literal[
     "triangulation-type",
     "model-rotation",
     "model-offset",
+    "surface-colour",
 ]
 SERIALIZER_SETTING = Literal[
+    "base-uri",
     "use-element-names",
     "use-element-guids",
     "use-element-step-ids",
@@ -114,6 +116,7 @@ SERIALIZER_SETTING = Literal[
     "y-up",
     "ecef",
     "digits",
+    "wkt-use-section",
 ]
 
 # NOTE: hybrid-cgal-simple-opencascade is added just as an example
