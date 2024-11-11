@@ -179,6 +179,9 @@ class DumbSlabPlaner:
         obj = bpy.context.active_object
         element = tool.Ifc.get_entity(obj)
 
+        if tool.Model.get_usage_type(element) != "LAYER3":
+            return
+
         # Called from materil.add_layer or material.remove_layer
         material = ifcopenshell.util.element.get_material(element)
         material_set_usage = tool.Ifc.get().by_id(material.id())
