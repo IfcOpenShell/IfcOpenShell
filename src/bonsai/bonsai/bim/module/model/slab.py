@@ -278,15 +278,7 @@ class DumbSlabPlaner:
             extrusion = tool.Model.get_extrusion(representation)
             if extrusion:
                 x, y, z = extrusion.ExtrudedDirection.DirectionRatios
-                # The existing angle result can change when the direction sense in Negative because the DirectionRatios may have negative y and z.
-                # For instance, a 30 degree angled slab, with negative direction will show as -150 degrees. To prevent that we do the following transformations
-                existing_x_angle = Vector((0, 1)).angle_signed(Vector((y, z)))
-                existing_x_angle = (
-                    existing_x_angle + radians(180) if existing_x_angle < -radians(90) else existing_x_angle
-                )
-                existing_x_angle = (
-                    existing_x_angle - radians(180) if existing_x_angle > radians(90) else existing_x_angle
-                )
+                existing_x_angle = self.get_slab_existing_angle(extrusion)
                 perpendicular_depth = thickness * (1 / cos(existing_x_angle))
                 if layer_params["direction_sense"] == "POSITIVE":
                     y = abs(y) if existing_x_angle > 0 else -abs(y)
@@ -348,6 +340,21 @@ class DumbSlabPlaner:
             is_global=True,
             should_sync_changes_first=False,
         )
+
+    def get_slab_existing_angle(extrusion):
+        x, y, z = extrusion.ExtrudedDirection.DirectionRatios
+        # The existing angle result can change when the direction sense in Negative because the DirectionRatios may have negative y and z.
+        # For instance, a 30 degree angled slab, with negative direction will show as -150 degrees. To prevent that we do the following transformations
+        existing_x_angle = Vector((0, 1)).angle_signed(Vector((y, z)))
+        existing_x_angle = (
+            existing_x_angle + radians(180) if existing_x_angle < -radians(90) else existing_x_angle
+        )
+        existing_x_angle = (
+            existing_x_angle - radians(180) if existing_x_angle > radians(90) else existing_x_angle
+        )
+
+        return existing_x_angle
+        
 
 
 class EnableEditingSketchExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
@@ -636,7 +643,8 @@ class EnableEditingExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
         else:
             position = Matrix()
 
-        tool.Model.import_profile(extrusion.SweptArea, obj=obj, position=position)
+        existing_x_angle = DumbSlabPlaner.get_slab_existing_angle(extrusion)
+        tool.Model.import_profile(extrusion.SweptArea, obj=obj, position=position, angle=existing_x_angle)
 
         bpy.ops.object.mode_set(mode="EDIT")
         ProfileDecorator.install(context, exit_edit_mode_callback=lambda: disable_editing_extrusion_profile(context))
@@ -680,6 +688,10 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
             )
             bpy.ops.object.mode_set(mode="EDIT")
             return
+
+        existing_x_angle = DumbSlabPlaner.get_slab_existing_angle(extrusion)
+        curve = profile.OuterCurve
+        curve.Points.CoordList = [(p[0], p[1] / (cos(existing_x_angle)**2)) for p in curve.Points.CoordList]
 
         old_profile = extrusion.SweptArea
         for inverse in tool.Ifc.get().get_inverse(old_profile):

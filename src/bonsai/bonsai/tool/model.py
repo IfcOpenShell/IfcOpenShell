@@ -34,7 +34,7 @@ import bonsai.core.geometry
 import bonsai.core.tool
 import bonsai.tool as tool
 import bonsai.core.geometry as geometry
-from math import atan, degrees
+from math import atan, degrees, cos
 from mathutils import Matrix, Vector
 from copy import deepcopy
 from functools import partial
@@ -269,6 +269,7 @@ class Model(bonsai.core.tool.Model):
         profile: ifcopenshell.entity_instance,
         obj: Optional[bpy.types.Object] = None,
         position: Optional[Matrix] = None,
+        angle: Optional[float] = None,
     ) -> bpy.types.Object:
         """Creates new profile mesh and assigns it to `obj`,
         if `obj` is `None` then new "Profile" object will be created.
@@ -288,7 +289,7 @@ class Model(bonsai.core.tool.Model):
         profiles = profile.Profiles if profile.is_a("IfcCompositeProfileDef") else [profile]
         for profile in profiles:
             if profile.is_a("IfcArbitraryClosedProfileDef"):
-                cls.convert_curve_to_mesh(obj, position, profile.OuterCurve)
+                cls.convert_curve_to_mesh(obj, position, profile.OuterCurve, angle=angle)
                 if profile.is_a("IfcArbitraryProfileDefWithVoids"):
                     for inner_curve in profile.InnerCurves:
                         cls.convert_curve_to_mesh(obj, position, inner_curve)
@@ -296,6 +297,8 @@ class Model(bonsai.core.tool.Model):
                 cls.import_rectangle(obj, position, profile)
 
         mesh = bpy.data.meshes.new("Profile")
+        cls.vertices = [Vector(v) @ obj.matrix_world for v in cls.vertices]
+
         mesh.from_pydata(cls.vertices, cls.edges, [])
         mesh.BIMMeshProperties.subshape_type = "PROFILE"
 
@@ -399,7 +402,7 @@ class Model(bonsai.core.tool.Model):
 
     @classmethod
     def convert_curve_to_mesh(
-        cls, obj: bpy.types.Object, position: Matrix, curve: ifcopenshell.entity_instance
+        cls, obj: bpy.types.Object, position: Matrix, curve: ifcopenshell.entity_instance, angle: Optional[float] = None
     ) -> None:
         offset = len(cls.vertices)
 
@@ -420,6 +423,8 @@ class Model(bonsai.core.tool.Model):
         elif curve.is_a("IfcIndexedPolyCurve"):
             for local_point in curve.Points.CoordList:
                 global_point = position @ Vector(cls.convert_unit_to_si(local_point)).to_3d()
+                if angle:
+                    global_point = Vector((global_point[0], global_point[1] * cos(angle), global_point[2]))
                 cls.vertices.append(global_point)
             if curve.Segments:
                 for segment in curve.Segments:
