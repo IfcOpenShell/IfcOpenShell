@@ -157,6 +157,13 @@ def _extract_docs(cls, method_name, boilerplate_args):
         type_hint = type_hints.get(input_name, None)
         if type_hint is None:  # The argument is not type-hinted. (Or hinted to None ??)
             continue
+
+        input_data = inputs[input_name]
+        # E.g. list[str].
+        if isinstance(type_hint, typing.GenericAlias):
+            input_data["generic_type"] = type_hint.__name__
+            type_hint = typing.get_args(type_hint)[0]
+
         if isinstance(type_hint, typing._UnionGenericAlias):
             inputs[input_name]["type"] = [t.__name__ for t in typing.get_args(type_hint)]
         elif type_hint.__name__ == "Literal":
