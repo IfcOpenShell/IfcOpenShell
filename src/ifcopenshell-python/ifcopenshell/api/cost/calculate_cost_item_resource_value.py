@@ -107,7 +107,7 @@ def calculate_cost_item_resource_value(file: ifcopenshell.file, cost_item: ifcop
             assert parent_cost
             cost, unit = parent_cost
         quantity = ifcopenshell.util.resource.get_quantity(resource)
-        if not cost or not quantity:
+        if cost is None or quantity is None:
             continue
         if unit and "day" in unit:
             quantity = quantity / 8  # Assume 8 hour working day - TODO implement resource calendar
