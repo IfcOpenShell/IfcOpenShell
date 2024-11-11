@@ -184,14 +184,24 @@ class MultipleFileSelect(PropertyGroup):
             new.name = os.path.join(dirname, f)
 
     def layout_file_select(self, layout: bpy.types.UILayout, filter_glob: str = "", text: str = "") -> None:
-        if len(self.file_list) > 1:
-            layout.label(text=f"{len(self.file_list)} Files Selected")
+        # NOTE: current multifile selector design doesn't allow selecting files from different folders.
+        column = layout.column(align=True)
+        multiple_files = len(self.file_list) > 1
+        row = column.row(align=True)
+        if multiple_files:
+            row.label(text=f"{len(self.file_list)} Files Selected")
         else:
-            layout.prop(self, "single_file", text=text)
+            row.prop(self, "single_file", text=text)
 
-        layout.context_pointer_set("file_props", self)
-        op = layout.operator("bim.multiple_file_selector", icon="FILE_FOLDER", text="")
+        row.context_pointer_set("file_props", self)
+        op = row.operator("bim.multiple_file_selector", icon="FILE_FOLDER", text="")
         op.filter_glob = filter_glob
+
+        if not multiple_files:
+            return
+
+        for file in self.file_list:
+            column.prop(file, "name", text="")
 
 
 def update_attribute_value(self: "Attribute", context: bpy.types.Context) -> None:
