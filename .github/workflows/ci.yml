@@ -127,6 +127,7 @@ jobs:
           python tests.py
           cd ../src/ifcopenshell-python
           mv ifcopenshell ifcopenshell-local # Force testing on installed module
+          pip install -e ../ifcpatch --no-deps # Needed for sql.py tests.
           make test
           cd ../bcf && make test
           pip install requests
