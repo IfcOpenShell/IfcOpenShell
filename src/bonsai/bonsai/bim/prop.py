@@ -176,14 +176,14 @@ class MultipleFileSelect(PropertyGroup):
     single_file: bpy.props.StringProperty(name="Single File Path", description="", update=update_single_file)
     file_list: bpy.props.CollectionProperty(type=StrProperty)
 
-    def set_file_list(self, dirname: str, files: list[str]):
+    def set_file_list(self, dirname: str, files: list[str]) -> None:
         self.file_list.clear()
 
         for f in files:
             new = self.file_list.add()
             new.name = os.path.join(dirname, f)
 
-    def layout_file_select(self, layout, filter_glob="", text=""):
+    def layout_file_select(self, layout: bpy.types.UILayout, filter_glob: str = "", text: str = "") -> None:
         if len(self.file_list) > 1:
             layout.label(text=f"{len(self.file_list)} Files Selected")
         else:

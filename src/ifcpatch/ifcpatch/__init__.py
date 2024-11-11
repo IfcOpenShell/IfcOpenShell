@@ -27,7 +27,7 @@ import inspect
 import collections
 import importlib
 import importlib.util
-from typing import Union
+from typing import Union, Iterable, Optional, Any
 
 
 __version__ = version = "0.0.0"
@@ -114,7 +114,7 @@ def write(output: Union[ifcopenshell.file, str], filepath: str) -> None:
 
 
 def extract_docs(
-    submodule_name: str, cls_name: str, method_name: str = "__init__", boilerplate_args: typing.Iterable[str] = None
+    submodule_name: str, cls_name: str, method_name: str = "__init__", boilerplate_args: Optional[Iterable[str]] = None
 ):
     """Extract class docstrings and method arguments
 
@@ -137,10 +137,10 @@ def extract_docs(
         print(f"Error : IFCPatch {str(submodule)} could not load because : {str(e)}")
 
 
-def _extract_docs(cls, method_name, boilerplate_args):
+def _extract_docs(cls: type, method_name: str, boilerplate_args: Union[Iterable[str], None]):
     inputs = collections.OrderedDict()
     method = getattr(cls, method_name)
-    docs = {"class": cls}
+    docs: dict[str, Any] = {"class": cls}
     if boilerplate_args is None:
         boilerplate_args = []
 
@@ -152,6 +152,7 @@ def _extract_docs(cls, method_name, boilerplate_args):
         if isinstance(parameter.default, (str, float, int, bool)):
             inputs[name]["default"] = parameter.default
 
+    # Parse data from type hints.
     type_hints = typing.get_type_hints(method)
     for input_name in inputs.keys():
         type_hint = type_hints.get(input_name, None)
@@ -172,6 +173,7 @@ def _extract_docs(cls, method_name, boilerplate_args):
         else:
             inputs[input_name]["type"] = type_hint.__name__
 
+    # Parse the docstring.
     description = ""
     doc = method.__doc__
     if doc is not None:
@@ -185,6 +187,7 @@ def _extract_docs(cls, method_name, boilerplate_args):
                 param_name = line.split(":")[1].strip().replace("param ", "")
                 if param_name in inputs:
                     inputs[param_name]["description"] = line.split(":")[2].strip()
+            # :filter_glob is our special doc-tag.
             elif line.startswith(":filter_glob"):
                 param_name = line.split(":")[1].strip().replace("filter_glob ", "")
                 if param_name in inputs:
