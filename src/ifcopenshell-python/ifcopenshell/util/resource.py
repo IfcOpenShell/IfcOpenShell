@@ -159,11 +159,12 @@ def get_cost(resource: ifcopenshell.entity_instance) -> tuple[float, Union[str, 
 
 
 def get_quantity(resource: ifcopenshell.entity_instance) -> float:
-    if resource.BaseQuantity:
-        return resource.BaseQuantity[3]
     if resource.Usage and resource.Usage.ScheduleWork:
         duration = ifcopenshell.util.date.ifc2datetime(resource.Usage.ScheduleWork)
         return duration.total_seconds() / 3600
+    # TODO: is it safe to assume None quantity should be treated as 1.0? See #910 in ifc4x3dev.
+    quantity = resource.BaseQuantity
+    return 1.0 if quantity is None else quantity[3]
 
 
 def get_parent_cost(resource: ifcopenshell.entity_instance) -> Union[tuple[float, Union[str, None]], None]:
