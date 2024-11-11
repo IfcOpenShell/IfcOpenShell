@@ -614,7 +614,7 @@ if USE_OCCT and "occ" in targets:
             "-DBUILD_RELEASE_DISABLE_EXCEPTIONS=Off",
             f"-D3RDPARTY_FREETYPE_DIR={DEPS_DIR}/install/freetype"
         ],
-        download_url = "https://git.dev.opencascade.org/repos/occt.git",
+        download_url = "https://github.com/Open-Cascade-SAS/OCCT",
         download_name = "occt",
         download_tool=download_tool_git,
         patch=patches,
