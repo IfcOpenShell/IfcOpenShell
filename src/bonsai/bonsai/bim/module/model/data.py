@@ -228,7 +228,7 @@ class AuthoringData:
         results.extend([(c, c, "") for c in sorted(classes)])
         return results
 
-    @classmethod 
+    @classmethod
     def ifc_class_current(cls):
         ifc_classes = cls.data["ifc_classes"]
         if not ifc_classes:
@@ -248,7 +248,7 @@ class AuthoringData:
             return [(str(e.id()), e.Name or "Unnamed", e.Description or "") for e in results]
         return []
 
-    @classmethod 
+    @classmethod
     def relating_type_id_current(cls):
         relating_type_id = tool.Blender.get_enum_safe(cls.props, "relating_type_id")
         relating_type_id_data = cls.data["relating_type_id"]
