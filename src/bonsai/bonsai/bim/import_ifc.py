@@ -21,6 +21,7 @@ import bpy
 import time
 import json
 import logging
+import traceback
 import mathutils
 import numpy as np
 import multiprocessing
@@ -1226,12 +1227,20 @@ class IfcImportSettings:
         settings.false_origin_mode = props.false_origin_mode
         try:
             settings.false_origin = [float(o) for o in props.false_origin.split(",")[:3]]
-        except:
-            settings.false_origin = [0, 0, 0]
+        except Exception as e:
+            print(traceback.format_exc())
+            raise Exception(
+                f"Failed to set false origin from string '{props.false_origin}'.\n"
+                f"Error: {str(e)}.\nSee above for the details."
+            )
         try:
             settings.project_north = float(props.project_north)
-        except:
-            settings.project_north = 0
+        except Exception as e:
+            print(traceback.format_exc())
+            raise Exception(
+                f"Failed to set project north from string '{props.project_north}'.\n"
+                f"Error: {str(e)}.\nSee above for the details."
+            )
         settings.element_limit_mode = props.element_limit_mode
         settings.element_offset = props.element_offset
         settings.element_limit = props.element_limit
