@@ -1481,7 +1481,7 @@ class DuplicateSheet(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         pass
-        '''
+        """
         self.props = context.scene.DocProperties
         core.duplicate_sheet(
             tool.Ifc,
@@ -1493,7 +1493,7 @@ class DuplicateSheet(bpy.types.Operator, tool.Ifc.Operator):
             core.sync_references(tool.Ifc, tool.Collector, tool.Sheet, drawing=sheet)
         except:
             pass
-        '''
+        """
 
 
 class OpenLayout(bpy.types.Operator, tool.Ifc.Operator):
@@ -1502,7 +1502,7 @@ class OpenLayout(bpy.types.Operator, tool.Ifc.Operator):
     bl_description = (
         "Opens selected .svg layout with default system viewer\n"
         + 'or using "layout_svg_command" from the Bonsai preferences\n'
-        + '(if provided)'
+        + "(if provided)"
     )
     bl_options = {"REGISTER", "UNDO"}
 
@@ -1543,13 +1543,14 @@ class SelectAllSheets(bpy.types.Operator):
                 sheet.is_selected = self.select_all
         return {"FINISHED"}
 
+
 class OpenSheet(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.open_sheet"
     bl_label = "Open Sheet"
     bl_description = (
         "Opens selected sheet with default system viewer\n"
         + 'or using "svg_command" or "pdf_command" from\n'
-        + 'the Bonsai preferences (if provided).\n\n'
+        + "the Bonsai preferences (if provided).\n\n"
         + "SHIFT+CLICK to open all shown checked sheets"
     )
     bl_options = {"REGISTER", "UNDO"}
@@ -1574,12 +1575,10 @@ class OpenSheet(bpy.types.Operator, tool.Ifc.Operator):
     def execute(self, context):
         self.props = context.scene.DocProperties
         svg2pdf_command = tool.Blender.get_addon_preferences().svg2pdf_command
-        
+
         if self.open_all:
             sheets = [
-                tool.Ifc.get().by_id(s.ifc_definition_id)
-                for s in self.props.sheets
-                if s.is_sheet and s.is_selected
+                tool.Ifc.get().by_id(s.ifc_definition_id) for s in self.props.sheets if s.is_sheet and s.is_selected
             ]
         else:
             sheets = [tool.Ifc.get().by_id(self.props.sheets[self.props.active_sheet_index].ifc_definition_id)]
@@ -1612,6 +1611,7 @@ class OpenSheet(bpy.types.Operator, tool.Ifc.Operator):
             else:
                 tool.Drawing.open_with_user_command(tool.Blender.get_addon_preferences().svg_command, sheet_uri)
         return {"FINISHED"}
+
 
 class AddDrawingToSheet(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_drawing_to_sheet"
@@ -1661,7 +1661,14 @@ class AddDrawingToSheet(bpy.types.Operator, tool.Ifc.Operator):
         attributes = tool.Drawing.generate_reference_attributes(
             reference,
             Identification=str(
-                len([r for r in references if tool.Drawing.get_reference_description(r) in ("DRAWING", "SCHEDULE", "REFERENCE")]) + 1
+                len(
+                    [
+                        r
+                        for r in references
+                        if tool.Drawing.get_reference_description(r) in ("DRAWING", "SCHEDULE", "REFERENCE")
+                    ]
+                )
+                + 1
             ),
             Location=drawing_reference.Location,
             Description="DRAWING",
@@ -1709,8 +1716,8 @@ class CreateSheets(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Create Sheets"
     bl_description = (
         "Build and open selected sheet from the sheet layout and\n"
-        + 'optionally create .pdf and .dxf from commands in\n'
-        + 'the Bonsai preferences (if provided).\n\n'
+        + "optionally create .pdf and .dxf from commands in\n"
+        + "the Bonsai preferences (if provided).\n\n"
         + "SHIFT+CLICK to create all shown checked sheets, but doesn't\n"
         + "open them for viewing\n\n"
         + "Add the CTRL modifier to optionally open sheets to view them as\n"
@@ -1746,11 +1753,7 @@ class CreateSheets(bpy.types.Operator, tool.Ifc.Operator):
         svg2dxf_command = tool.Blender.get_addon_preferences().svg2dxf_command
 
         if self.create_all:
-            sheets = [
-                tool.Ifc.get().by_id(s.ifc_definition_id)
-                for s in props.sheets
-                if s.is_sheet and s.is_selected
-            ]
+            sheets = [tool.Ifc.get().by_id(s.ifc_definition_id) for s in props.sheets if s.is_sheet and s.is_selected]
         else:
             sheets = [tool.Ifc.get().by_id(props.sheets[props.active_sheet_index].ifc_definition_id)]
 
@@ -1889,9 +1892,7 @@ class OpenDrawing(bpy.types.Operator):
         self.props = context.scene.DocProperties
         if self.open_all:
             drawings = [
-                tool.Ifc.get().by_id(d.ifc_definition_id)
-                for d in self.props.drawings
-                if d.is_drawing and d.is_selected
+                tool.Ifc.get().by_id(d.ifc_definition_id) for d in self.props.drawings if d.is_drawing and d.is_selected
             ]
         else:
             drawings = [tool.Ifc.get().by_id(self.props.drawings.get(self.view).ifc_definition_id)]
@@ -1978,6 +1979,7 @@ class ActivateModel(bpy.types.Operator):
         bonsai.bim.handler.refresh_ui_data()
         return {"FINISHED"}
 
+
 class ActivateDrawingBase:
     def invoke(self, context, event):
         if event.type == "LEFTMOUSE" and event.alt:
@@ -2025,7 +2027,8 @@ class ActivateDrawingBase:
             bpy.ops.bim.update_representation(obj=camera.name, ifc_representation_class="")
 
         return {"FINISHED"}
-    
+
+
 class ActivateDrawing(bpy.types.Operator, ActivateDrawingBase):
     bl_idname = "bim.activate_drawing"
     bl_label = "Activate Drawing"
@@ -2050,6 +2053,7 @@ class ActivateDrawing(bpy.types.Operator, ActivateDrawingBase):
             return False
         return True
 
+
 class ActivateDrawingFromSheet(bpy.types.Operator, ActivateDrawingBase):
     bl_idname = "bim.activate_drawing_from_sheet"
     bl_label = "Activate Drawing"
@@ -2073,6 +2077,7 @@ class ActivateDrawingFromSheet(bpy.types.Operator, ActivateDrawingBase):
             cls.poll_message_set("No drawing selected.")
             return False
         return True
+
 
 class SelectDocIfcFile(bpy.types.Operator):
     bl_idname = "bim.select_doc_ifc_file"
@@ -2573,7 +2578,14 @@ class AddScheduleToSheet(bpy.types.Operator, tool.Ifc.Operator):
         attributes = tool.Drawing.generate_reference_attributes(
             reference,
             Identification=str(
-                len([r for r in references if tool.Drawing.get_reference_description(r) in ("DRAWING", "SCHEDULE", "REFERENCE")]) + 1
+                len(
+                    [
+                        r
+                        for r in references
+                        if tool.Drawing.get_reference_description(r) in ("DRAWING", "SCHEDULE", "REFERENCE")
+                    ]
+                )
+                + 1
             ),
             Location=schedule_location,
             Description="SCHEDULE",
@@ -2633,7 +2645,13 @@ class AddReferenceToSheet(bpy.types.Operator, tool.Ifc.Operator):
         attributes = tool.Drawing.generate_reference_attributes(
             reference,
             Identification=str(
-                len([r for r in references if tool.Drawing.get_reference_description(r) in ("DRAWING", "SCHEDULE", "REFERENCE")])
+                len(
+                    [
+                        r
+                        for r in references
+                        if tool.Drawing.get_reference_description(r) in ("DRAWING", "SCHEDULE", "REFERENCE")
+                    ]
+                )
                 + 1
             ),
             Location=extref_location,

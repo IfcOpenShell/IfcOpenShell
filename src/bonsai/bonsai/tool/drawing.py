@@ -774,9 +774,9 @@ class Drawing(bonsai.core.tool.Drawing):
     def import_drawings(cls) -> None:
         props = bpy.context.scene.DocProperties
         expanded_target_views = {d.target_view for d in props.drawings if d.is_expanded}
-        if not hasattr(cls, 'drawing_selected_states'):
-             cls.drawing_selected_states = {}
-        cls.drawing_selected_states.update({d.ifc_definition_id:d.is_selected for d in props.drawings if d.is_drawing})
+        if not hasattr(cls, "drawing_selected_states"):
+            cls.drawing_selected_states = {}
+        cls.drawing_selected_states.update({d.ifc_definition_id: d.is_selected for d in props.drawings if d.is_drawing})
         props.drawings.clear()
         drawings = [e for e in tool.Ifc.get().by_type("IfcAnnotation") if e.ObjectType == "DRAWING"]
         grouped_drawings = {
@@ -830,9 +830,9 @@ class Drawing(bonsai.core.tool.Drawing):
     def import_sheets(cls) -> None:
         props = bpy.context.scene.DocProperties
         expanded_sheets = {s.ifc_definition_id for s in props.sheets if s.is_expanded}
-        if not hasattr(cls, 'sheet_selected_states'):
-             cls.sheet_selected_states = {}
-        cls.sheet_selected_states.update({s.ifc_definition_id:s.is_selected for s in props.sheets if s.is_sheet})
+        if not hasattr(cls, "sheet_selected_states"):
+            cls.sheet_selected_states = {}
+        cls.sheet_selected_states.update({s.ifc_definition_id: s.is_selected for s in props.sheets if s.is_sheet})
         props.sheets.clear()
         sheets = [d for d in tool.Ifc.get().by_type("IfcDocumentInformation") if d.Scope == "SHEET"]
         for sheet in sorted(sheets, key=lambda s: getattr(s, "Identification", getattr(s, "DocumentId", None))):
