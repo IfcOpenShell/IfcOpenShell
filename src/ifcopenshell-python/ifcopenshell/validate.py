@@ -387,7 +387,7 @@ def validate(f: Union[ifcopenshell.file, str], logger: Logger, express_rules=Fal
 
                 f = ifcopenshell.open(f)
             else:
-                logger.error(f"Unsupported schema: {schema_name}")
+                logger.error(f'Only official IFC versions allowed, Expected: OneOf:[IFC4X3_ADD2,IFC4,IFC2X3], Observed: {schema_name}')
                 return
 
         log_internal_cpp_errors(f, filename, logger)
