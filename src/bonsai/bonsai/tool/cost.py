@@ -246,7 +246,9 @@ class Cost(bonsai.core.tool.Cost):
     def load_cost_item_quantity_assignments(
         cls, cost_item: ifcopenshell.entity_instance, related_object_type: RELATED_OBJECT_TYPE
     ) -> None:
-        def create_list_items(collection, cost_item, is_deep):
+        def create_list_items(
+            collection: bpy.types.bpy_prop_collection, cost_item: ifcopenshell.entity_instance, is_deep: bool
+        ) -> None:
             products = cls.get_cost_item_assignments(cost_item, filter_by_type=related_object_type, is_deep=False)
             for product in products:
                 new = collection.add()
@@ -285,14 +287,17 @@ class Cost(bonsai.core.tool.Cost):
         cls, cost_item: ifcopenshell.entity_instance, product: ifcopenshell.entity_instance
     ) -> tuple[list[ifcopenshell.entity_instance], Union[str, None]]:
         selected_quantitites = []
-        unit = ""
+        unit = None
+        cost_quantities = cost_item.CostQuantities
+        if not cost_quantities:
+            return selected_quantitites, unit
+
+        cost_quantities = set(cost_quantities)
         for quantities in ifcopenshell.util.element.get_psets(product, qtos_only=True).values():
             for qto in tool.Ifc.get().by_id(quantities["id"]).Quantities or []:
-                for quantity in cost_item.CostQuantities or []:
-                    if quantity == qto:
-                        selected_quantitites.append(quantity)
-                        if not unit:
-                            unit = cls.get_quantity_unit_symbol(quantity)
+                if qto in cost_quantities:
+                    selected_quantitites.append(qto)
+        unit = next((symbol for q in cost_quantities if (symbol := cls.get_quantity_unit_symbol(q))), None)
         return selected_quantitites, unit
 
     @classmethod
