@@ -44,6 +44,7 @@ classes = (
     operator.LoadProject,
     operator.LoadProjectElements,
     operator.MeasureTool,
+    operator.ClearMeasurement,
     operator.NewProject,
     operator.QueryLinkedElement,
     operator.RefreshClippingPlanes,

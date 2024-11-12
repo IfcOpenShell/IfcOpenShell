@@ -2492,3 +2492,20 @@ class MeasureTool(bpy.types.Operator, PolylineOperator):
     def invoke(self, context, event):
         super().invoke(context, event)
         return {"RUNNING_MODAL"}
+
+
+class ClearMeasurement(bpy.types.Operator):
+    bl_idname = "bim.clear_measurement"
+    bl_label = "Clear measurement from the screen"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return len(context.scene.BIMPolylineProperties.measurement_polyline) > 0
+
+
+    def execute(self, context):
+        context.scene.BIMPolylineProperties.measurement_polyline.clear()
+        MeasureDecorator.uninstall()
+        tool.Blender.update_viewport()
+        return {"FINISHED"}
