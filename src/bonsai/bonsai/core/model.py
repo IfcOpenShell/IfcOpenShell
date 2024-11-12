@@ -72,7 +72,7 @@ def join_walls_TZ(ifc: tool.Ifc, blender: tool.Blender, geometry: tool.Geometry,
         for o in blender.get_selected_objects()
         if (e := ifc.get_entity(o)) and model.get_usage_type(e) in ("LAYER2", "LAYER3")
     ]
-    if len(selected_objs) != 2:
+    if len(selected_objs) < 2:
         raise RequireAtLeastTwoLayeredElements(
             "Two or more vertically or horizontally layered elements must be selected to connect their paths together"
         )
