@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.util.element
 import ifcopenshell.util.pset
 from typing import Optional, Any, Union
 
@@ -261,15 +262,27 @@ class Usecase:
             prop.EnumerationValues = tuple(sel_vals) or None
 
         elif isinstance(value, ifcopenshell.entity_instance) and value.is_a("IfcPropertyEnumeratedValue"):
-            if not value.EnumerationReference.EnumerationValues:
+            # Copy enum value.
+            if (value_enum_values := value.EnumerationValues) is None:
                 if self._try_purge(prop):
                     return
-                prop.EnumerationReference.EnumerationValues = None
-                prop.EnumerationValues = None
+            prop.EnumerationValues = value_enum_values
 
+            # Copy values from / recreate value EnumerationReference in prop.
+            value_reference = value.EnumerationReference
+            prop_reference = prop.EnumerationReference
+            if value_reference is None:
+                if prop_reference:
+                    ifcopenshell.util.element.remove_deep2(self.file, prop_reference)
+                prop.EnumerationReference = None
             else:
-                prop.EnumerationReference.EnumerationValues = value.EnumerationReference.EnumerationValues
-                prop.EnumerationValues = value.EnumerationValues
+                if prop_reference is None:
+                    prop_reference = ifcopenshell.util.element.copy_deep(self.file, value_reference)
+                    prop.EnumerationReference = prop_reference
+                else:
+                    prop_reference.Name = value_reference.Name
+                    prop_reference.EnumerationValues = value_reference.EnumerationValues
+                    prop_reference.Unit = value_reference.Unit
 
         else:
             raise ValueError(
