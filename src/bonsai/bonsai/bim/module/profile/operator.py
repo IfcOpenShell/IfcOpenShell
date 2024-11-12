@@ -154,7 +154,7 @@ class AddProfileDef(bpy.types.Operator, tool.Ifc.Operator):
         obj_points = []
         obj = context.scene.BIMProfileProperties.object_to_profile
         if obj:
-            if len(obj.data.polygongs > 1): 
+            if len(obj.data.polygons) != 1:
                 self.report({"WARNING"}, "This mesh is invalid to create a profile. Select a flat mesh with no more then one face.")
                 return
             for v in obj.data.polygons[0].vertices:
