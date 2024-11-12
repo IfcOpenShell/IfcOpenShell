@@ -151,10 +151,26 @@ class AddProfileDef(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
+        obj_points = []
+        obj = context.scene.BIMProfileProperties.object_to_profile
+        if obj:
+            if len(obj.data.polygongs > 1): 
+                self.report({"WARNING"}, "This mesh is invalid to create a profile. Select a flat mesh with no more then one face.")
+                return
+            for v in obj.data.polygons[0].vertices:
+                vert = obj.data.vertices[v]
+                if vert.co.z > 0:
+                    self.report({"WARNING"}, "This mesh is invalid to create a profile. Select a flat mesh with all its vertices at z=0")
+                    return
+                obj_points.append((vert.co.x, vert.co.y))
+            if obj_points:
+                obj_points.append(obj_points[0])
+            obj_points = [(v[0] - obj_points[0][0], v[1] - obj_points[0][1]) for v in obj_points] # Make sure the first point is (0, 0)
+            
         props = context.scene.BIMProfileProperties
         profile_class = props.profile_classes
         if profile_class == "IfcArbitraryClosedProfileDef":
-            points = [(0, 0), (0.1, 0), (0.1, 0.1), (0, 0.1), (0, 0)]
+            points = [(0, 0), (0.1, 0), (0.1, 0.1), (0, 0.1), (0, 0)] if not obj_points else obj_points
             profile = ifcopenshell.api.run("profile.add_arbitrary_profile", tool.Ifc.get(), profile=points)
         else:
             profile = ifcopenshell.api.run("profile.add_parameterized_profile", tool.Ifc.get(), ifc_class=profile_class)
