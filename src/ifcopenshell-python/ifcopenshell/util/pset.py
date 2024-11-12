@@ -45,6 +45,8 @@ class PsetQto:
     # fmt: on
 
     def __init__(self, schema_identifier: str, templates=None) -> None:
+        if schema_identifier == "IFC4X3":
+            schema_identifier = "IFC4X3_ADD2"
         self.schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(schema_identifier)
         if not templates:
             folder_path = pathlib.Path(__file__).parent.absolute()
