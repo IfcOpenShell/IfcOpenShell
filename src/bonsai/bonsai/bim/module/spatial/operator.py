@@ -400,7 +400,7 @@ class SetContainerVisibility(bpy.types.Operator, tool.Ifc.Operator):
         if self.mode == "ISOLATE":
             if tool.Ifc.get_schema() == "IFC2X3":
                 containers = tool.Ifc.get().by_type("IfcSpatialStructureElement")
-            elif tool.Ifc.get_schema() != "IFC2X3":
+            else:
                 containers = set(tool.Ifc.get().by_type("IfcSpatialElement"))
                 containers -= set(tool.Ifc.get().by_type("IfcSpatialZone"))
             for container in containers:
