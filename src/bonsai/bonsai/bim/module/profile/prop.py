@@ -72,6 +72,7 @@ class BIMProfileProperties(PropertyGroup):
         description="Check to only show IfcProfileDefs attached to IfcMaterialProfiles",
         update=lambda self, context: bpy.ops.bim.load_profiles(),
     )
+    object_to_profile: PointerProperty(name="Object to profile", type=bpy.types.Object, description="Object to copy the mesh to a profile")
 
 
 def generate_thumbnail_for_active_profile():
