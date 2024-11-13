@@ -774,7 +774,9 @@ class Drawing(bonsai.core.tool.Drawing):
     def import_drawings(cls) -> None:
         props = bpy.context.scene.DocProperties
         expanded_target_views = {d.target_view for d in props.drawings if d.is_expanded}
-        current_drawings_selection = {d.ifc_definition_id: d.is_selected for d in props.drawings}
+        if not hasattr(cls, "drawing_selected_states"):
+            cls.drawing_selected_states = {}
+        cls.drawing_selected_states.update({d.ifc_definition_id: d.is_selected for d in props.drawings if d.is_drawing})
         props.drawings.clear()
         drawings = [e for e in tool.Ifc.get().by_type("IfcAnnotation") if e.ObjectType == "DRAWING"]
         grouped_drawings = {
@@ -801,7 +803,7 @@ class Drawing(bonsai.core.tool.Drawing):
             for drawing in sorted(drawings, key=lambda x: x.Name or "Unnamed"):
                 new = props.drawings.add()
                 new.name = drawing.Name or "Unnamed"
-                new.is_selected = current_drawings_selection.get(drawing.id(), True)
+                new.is_selected = cls.drawing_selected_states.setdefault(drawing.id(), True)
                 new.is_drawing = True
                 new.ifc_definition_id = drawing.id()  # Last, to prevent unnecessary prop callbacks
 
@@ -828,6 +830,9 @@ class Drawing(bonsai.core.tool.Drawing):
     def import_sheets(cls) -> None:
         props = bpy.context.scene.DocProperties
         expanded_sheets = {s.ifc_definition_id for s in props.sheets if s.is_expanded}
+        if not hasattr(cls, "sheet_selected_states"):
+            cls.sheet_selected_states = {}
+        cls.sheet_selected_states.update({s.ifc_definition_id: s.is_selected for s in props.sheets if s.is_sheet})
         props.sheets.clear()
         sheets = [d for d in tool.Ifc.get().by_type("IfcDocumentInformation") if d.Scope == "SHEET"]
         for sheet in sorted(sheets, key=lambda s: getattr(s, "Identification", getattr(s, "DocumentId", None))):
@@ -840,6 +845,7 @@ class Drawing(bonsai.core.tool.Drawing):
             new.name = sheet.Name
             new.is_sheet = True
             new.is_expanded = sheet.id() in expanded_sheets
+            new.is_selected = cls.sheet_selected_states.setdefault(sheet.id(), True)
 
             if not new.is_expanded:
                 continue
