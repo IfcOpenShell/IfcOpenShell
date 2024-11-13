@@ -21,6 +21,7 @@ from . import ui, prop, operator, handler, gizmos, workspace
 
 classes = (
     operator.ActivateDrawing,
+    operator.ActivateDrawingFromSheet,
     operator.ActivateDrawingStyle,
     operator.ActivateModel,
     operator.AddAnnotation,
@@ -52,6 +53,7 @@ classes = (
     operator.DisableEditingSheets,
     operator.DisableEditingText,
     operator.DuplicateDrawing,
+    operator.DuplicateSheet,
     operator.EditAssignedProduct,
     operator.EditElementFilter,
     operator.EditSheet,
@@ -68,6 +70,7 @@ classes = (
     operator.LoadSchedules,
     operator.LoadSheets,
     operator.OpenDrawing,
+    operator.OpenLayout,
     operator.OpenReference,
     operator.OpenSchedule,
     operator.OpenSheet,
@@ -86,6 +89,7 @@ classes = (
     operator.SaveDrawingStyle,
     operator.SaveDrawingStylesData,
     operator.SelectAllDrawings,
+    operator.SelectAllSheets,
     operator.SelectAssignedProduct,
     operator.SelectDocIfcFile,
     operator.OpenDocumentationWebUi,
