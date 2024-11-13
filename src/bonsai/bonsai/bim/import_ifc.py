@@ -1061,11 +1061,7 @@ class IfcImporter:
             v2 = vertices[edge[1]]
             polyline.points.add(1)
             polyline.points[-1].co = mathutils.Vector(v2)
-        # TODO: remove error handling after we update build in Bonsai.
-        try:
-            edges_item_ids = ifcopenshell.util.shape.get_edges_representation_item_ids(geometry).tolist()
-        except AttributeError:
-            edges_item_ids = []
+        edges_item_ids = ifcopenshell.util.shape.get_edges_representation_item_ids(geometry).tolist()
         curve["ios_edges_item_ids"] = edges_item_ids
         return curve
 
