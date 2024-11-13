@@ -747,7 +747,10 @@ class Geometry(bonsai.core.tool.Geometry):
                         meshes[mesh_name] = mesh
 
                     old_mesh = obj.data
-                    cls.change_object_data(obj, mesh, is_global=False)
+                    if type(old_mesh) == type(mesh):
+                        cls.change_object_data(obj, mesh, is_global=False)
+                    else:
+                        obj = cls.recreate_object_with_data(obj, mesh, is_global=False)
                     cls.record_object_materials(obj)
                     if not cls.has_data_users(old_mesh):
                         cls.delete_data(old_mesh)
@@ -778,7 +781,10 @@ class Geometry(bonsai.core.tool.Geometry):
                         meshes[mesh_name] = mesh
 
                     old_mesh = obj.data
-                    cls.change_object_data(obj, mesh, is_global=False)
+                    if type(old_mesh) == type(mesh):
+                        cls.change_object_data(obj, mesh, is_global=False)
+                    else:
+                        obj = cls.recreate_object_with_data(obj, mesh, is_global=False)
                     cls.record_object_materials(obj)
                     if not cls.has_data_users(old_mesh):
                         cls.delete_data(old_mesh)
