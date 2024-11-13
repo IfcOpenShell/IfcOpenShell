@@ -1197,7 +1197,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         bpy.ops.bim.unjoin_walls()
 
     def hotkey_A_D(self):
-        if not bpy.context.selected_objects:
+        if not tool.Blender.get_selected_objects():
             return
         bpy.ops.bim.select_decomposition()
 

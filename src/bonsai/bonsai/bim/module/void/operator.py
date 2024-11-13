@@ -245,7 +245,7 @@ class SelectDecomposition(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        for obj in context.selected_objects:
+        for obj in tool.Blender.get_selected_objects():
             element = tool.Ifc.get_entity(obj)
             if not element:
                 continue
