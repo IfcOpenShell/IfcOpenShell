@@ -745,7 +745,6 @@ class ExpandMaterialCategory(bpy.types.Operator):
             category.is_expanded = True
             if category.name == self.category:
                 props.active_material_index = index
-            break
         core.load_materials(tool.Material, props.material_type)
         return {"FINISHED"}
 
@@ -775,7 +774,6 @@ class ContractMaterialCategory(bpy.types.Operator):
             category.is_expanded = False
             if category.name == self.category:
                 props.active_material_index = index
-            break
         core.load_materials(tool.Material, props.material_type)
         return {"FINISHED"}
 
