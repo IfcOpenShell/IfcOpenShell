@@ -162,9 +162,7 @@ class DuplicateDrawing(bpy.types.Operator, tool.Ifc.Operator):
     @classmethod
     def poll(cls, context):
         props = context.scene.DocProperties
-        active_drawing = tool.Drawing.get_active_drawing_item()
-        is_drawing_selected = active_drawing.ifc_definition_id > 0
-        if not is_drawing_selected:
+        if not tool.Drawing.get_active_drawing_item():
             cls.poll_message_set("No drawing selected.")
             return False
         return True
@@ -1472,9 +1470,7 @@ class DuplicateSheet(bpy.types.Operator, tool.Ifc.Operator):
         return False
 
         props = context.scene.DocProperties
-        active_drawing = tool.Drawing.get_active_drawing_item()
-        is_drawing_selected = active_drawing.ifc_definition_id > 0
-        if not is_drawing_selected:
+        if not tool.Drawing.get_active_drawing_item():
             cls.poll_message_set("No drawing selected.")
             return False
         return True
@@ -1874,9 +1870,7 @@ class OpenDrawing(bpy.types.Operator):
     @classmethod
     def poll(cls, context):
         props = context.scene.DocProperties
-        active_drawing = tool.Drawing.get_active_drawing_item()
-        is_drawing_selected = active_drawing.ifc_definition_id > 0
-        if not is_drawing_selected:
+        if not tool.Drawing.get_active_drawing_item():
             cls.poll_message_set("No drawing selected.")
             return False
         return True
@@ -2046,9 +2040,7 @@ class ActivateDrawing(bpy.types.Operator, ActivateDrawingBase):
     @classmethod
     def poll(cls, context):
         props = context.scene.DocProperties
-        active_drawing = tool.Drawing.get_active_drawing_item()
-        is_drawing_selected = active_drawing.ifc_definition_id > 0
-        if not is_drawing_selected:
+        if not tool.Drawing.get_active_drawing_item():
             cls.poll_message_set("No drawing selected.")
             return False
         return True
@@ -2121,9 +2113,7 @@ class RemoveDrawing(bpy.types.Operator, tool.Ifc.Operator):
     @classmethod
     def poll(cls, context):
         props = context.scene.DocProperties
-        active_drawing = tool.Drawing.get_active_drawing_item()
-        is_drawing_selected = active_drawing.ifc_definition_id > 0
-        if not is_drawing_selected:
+        if not tool.Drawing.get_active_drawing_item():
             cls.poll_message_set("No drawing selected.")
             return False
         return True
@@ -3372,9 +3362,7 @@ class ConvertSVGToDXF(bpy.types.Operator):
     @classmethod
     def poll(cls, context):
         props = context.scene.DocProperties
-        active_drawing = tool.Drawing.get_active_drawing_item()
-        is_drawing_selected = active_drawing.ifc_definition_id > 0
-        if not is_drawing_selected:
+        if not tool.Drawing.get_active_drawing_item():
             cls.poll_message_set("No drawing selected.")
             return False
         return True
