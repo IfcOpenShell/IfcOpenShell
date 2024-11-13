@@ -109,7 +109,7 @@ class BimTool(WorkSpaceTool):
     def draw_settings(cls, context, layout, ws_tool):
         if context.scene.BIMGeometryProperties.mode == "ITEM":
             EditItemUI.draw(context, layout)
-        elif context.active_object and context.selected_objects and tool.Ifc.get_entity(context.active_object):
+        elif context.active_object and tool.Ifc.get_entity(context.active_object):
             EditObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
         else:
             CreateObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
