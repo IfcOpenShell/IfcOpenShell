@@ -320,7 +320,7 @@ endif
 	# Temporary workaround for Blender not handling non-3.11 wheels #5743.
 	# Use '-n' as on macos x86-64 doesn't have a binary wheel and it autoincludes 'cp311'.
 	prev_whl_name=$$(find build/bonsai/wheels/tzfpy-*.whl); \
-	whl_name=$$(echo $$prev_whl_name | sed "s/-cp39-/-cp311-/"); \
+	whl_name=$$(echo $$prev_whl_name | sed "s/-cp39-/-cp$(PYNUMBER)-/"); \
 	mv -n "$$prev_whl_name" "$$whl_name";
 
 ifneq ($(PLATFORM), linux)
