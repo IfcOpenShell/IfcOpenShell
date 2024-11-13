@@ -844,14 +844,46 @@ class IfcImporter:
         curve = bpy.data.curves.new(mesh_name, type="CURVE")
         curve.dimensions = "3D"
         curve.resolution_u = 2
-        polyline = curve.splines.new("POLY")
 
-        for item_data in ifcopenshell.util.representation.resolve_items(native_data["representation"]):
+        rep_items = ifcopenshell.util.representation.resolve_items(native_data["representation"])
+
+        # Find item styles and add them to the curve.
+        material_style = None
+        material = ifcopenshell.util.element.get_material(element)
+        if material:
+            material_style = tool.Material.get_style(material)
+        item_styles: list[Union[bpy.types.Material, None]] = []
+        for item_data in rep_items:
             item = item_data["item"]
+            item_style = tool.Style.get_representation_item_style(item) or material_style
+            if item_style is not None:
+                item_style = tool.Ifc.get_object(item_style)
+                assert isinstance(item_style, bpy.types.Material)
+            item_styles.append(item_style)
+        item_styles_unique = list(set(item_styles))
+        for item_style in item_styles_unique:
+            curve.materials.append(item_style)
+        use_same_material_index = len(item_styles_unique) < 2
+
+        def new_polyline(item_style: Union[bpy.types.Material, None]) -> bpy.types.Spline:
+            if use_same_material_index:
+                material_index = 0
+            else:
+                material_index = item_styles_unique.index(item_style)
+
+            polyline = curve.splines.new("POLY")
+            polyline.material_index = material_index
+            return polyline
+
+        for item_data, item_style in zip(rep_items, item_styles):
+            item = item_data["item"]
+
+            polyline = new_polyline(item_style)
             matrix = item_data["matrix"]
             matrix[0][3] *= self.unit_scale
             matrix[1][3] *= self.unit_scale
             matrix[2][3] *= self.unit_scale
+
             # TODO: support inner radius, start param, and end param
             geometry = tool.Loader.create_generic_shape(item.Directrix)
             if not geometry:
@@ -864,7 +896,7 @@ class IfcImporter:
             for edge in edges:
                 v1 = vertices[edge[0]]
                 if v1 != v2:
-                    polyline = curve.splines.new("POLY")
+                    polyline = new_polyline(item_style)
                     polyline.points[-1].co = native_data["matrix"] @ mathutils.Vector(v1)
                 v2 = vertices[edge[1]]
                 polyline.points.add(1)
