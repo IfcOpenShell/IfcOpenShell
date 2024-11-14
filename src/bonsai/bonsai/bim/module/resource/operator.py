@@ -349,7 +349,6 @@ class ImportResources(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
 
 class AddProductivityData(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_productivity_data"
-    bl_description = "Apply"
     bl_label = "Add Productivity"
     bl_options = {"REGISTER", "UNDO"}
 
@@ -359,7 +358,6 @@ class AddProductivityData(bpy.types.Operator, tool.Ifc.Operator):
 
 class EditProductivityData(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_productivity_data"
-    bl_description = "Apply"
     bl_label = "Edit Productivity"
     bl_options = {"REGISTER", "UNDO"}
 
