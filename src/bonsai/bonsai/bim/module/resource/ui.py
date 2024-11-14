@@ -258,6 +258,9 @@ class BIM_PT_resources(Panel):
             else:
                 op = row.operator("bim.enable_editing_resource_quantity", text="", icon="GREASEPENCIL")
                 op.resource = self.props.active_resource_id
+                if resource["type"] == "IfcConstructionMaterialResource":
+                    op = row.operator("bim.calculate_resource_quantity", text="", icon="FILE_REFRESH")
+                    op.resource = self.props.active_resource_id
                 op = row.operator("bim.remove_resource_quantity", text="", icon="X")
                 op.resource = self.props.active_resource_id
 
