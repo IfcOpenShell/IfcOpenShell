@@ -86,11 +86,22 @@ class Csv2Ifc:
                 if not row[0]:
                     continue
                 if row[0] == "HIERARCHY":
+                    missing_columns = set(self.SUPPORTED_COLUMNS) - set(row)
+                    if missing_columns:
+                        raise Exception(
+                            f"Header is missing some of the required columns: {', '.join(missing_columns)}."
+                        )
+
                     for i, col in enumerate(row):
                         if not col:
                             continue
                         self.headers[col] = i
                     continue
+
+                if not self.headers:
+                    raise Exception(
+                        f"No header found in CSV file before data row: '{row}'. Note that header should start with 'HIERARCHY' column."
+                    )
 
                 resource_data = self.get_row_resource_data(row)
                 hierarchy_key = int(row[0])
