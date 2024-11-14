@@ -17,3 +17,6 @@
 [submodule "docs/cpp-api/assets/doxygen-awesome-css"]
 	path = docs/cpp-api/assets/doxygen-awesome-css
 	url = https://github.com/jothepro/doxygen-awesome-css.git
+[submodule "src/ifcopenshell-python/ifcopenshell/simple_spf"]
+	path = src/ifcopenshell-python/ifcopenshell/simple_spf
+	url = https://github.com/IfcOpenShell/step-file-parser
