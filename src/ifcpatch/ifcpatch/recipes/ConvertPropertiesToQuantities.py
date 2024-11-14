@@ -96,8 +96,10 @@ class Patcher:
                         has_quantity = True
 
         if value and not has_quantity:
-            qto_name = self.get_qto_name(product.is_a())
-            qto = qtos.get(qto_name, ifcopenshell.api.pset.add_qto(self.file, product=product, name=qto_name))
+            qto_name = self.get_qto_name(product.is_a()) or "UnnamedQset"
+            qto = qtos.get(qto_name)
+            if qto is None:
+                qto = ifcopenshell.api.pset.add_qto(self.file, product=product, name=qto_name)
             ifcopenshell.api.pset.edit_qto(self.file, qto=qto, properties={self.destination_quantity_name: value})
 
     def get_qto_name(self, ifc_class: str) -> Union[str, None]:
