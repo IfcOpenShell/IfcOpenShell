@@ -510,6 +510,10 @@ class AssignProcess(bpy.types.Operator, tool.Ifc.Operator):
     related_object_type: bpy.props.StringProperty()
     related_object: bpy.props.IntProperty()
 
+    @classmethod
+    def description(cls, context, properties):
+        return f"Assign selected {properties.related_object_type} to the selected task"
+
     def _execute(self, context):
         if self.related_object_type == "RESOURCE":
             core.assign_resource(tool.Ifc, tool.Sequence, tool.Resource, task=tool.Ifc.get().by_id(self.task))
@@ -536,6 +540,10 @@ class UnassignProcess(bpy.types.Operator, tool.Ifc.Operator):
     related_object_type: bpy.props.StringProperty()
     related_object: bpy.props.IntProperty()
     resource: bpy.props.IntProperty()
+
+    @classmethod
+    def description(cls, context, properties):
+        return f"Unassign selected {properties.related_object_type} from the selected task"
 
     def _execute(self, context):
         if self.related_object_type == "RESOURCE":
