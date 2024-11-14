@@ -18,6 +18,7 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.pset
 import ifcopenshell.util.pset
 import ifcopenshell.util.element
 from logging import Logger
@@ -96,10 +97,8 @@ class Patcher:
 
         if value and not has_quantity:
             qto_name = self.get_qto_name(product.is_a())
-            qto = qtos.get(qto_name, ifcopenshell.api.run("pset.add_qto", self.file, product=product, Name=qto_name))
-            ifcopenshell.api.run(
-                "pset.edit_qto", self.file, qto=qto, Properties={self.destination_quantity_name: value}
-            )
+            qto = qtos.get(qto_name, ifcopenshell.api.pset.add_qto(self.file, product=product, name=qto_name))
+            ifcopenshell.api.pset.edit_qto(self.file, qto=qto, properties={self.destination_quantity_name: value})
 
     def get_qto_name(self, ifc_class: str) -> Union[str, None]:
         for template in self.get_qto_templates(ifc_class):
