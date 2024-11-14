@@ -2503,7 +2503,6 @@ class ClearMeasurement(bpy.types.Operator):
     def poll(cls, context):
         return len(context.scene.BIMPolylineProperties.measurement_polyline) > 0
 
-
     def execute(self, context):
         context.scene.BIMPolylineProperties.measurement_polyline.clear()
         MeasureDecorator.uninstall()

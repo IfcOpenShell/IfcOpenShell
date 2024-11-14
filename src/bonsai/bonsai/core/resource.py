@@ -262,3 +262,7 @@ def calculate_resource_usage(
 ) -> None:
     ifc.run("resource.calculate_resource_usage", resource=resource)
     resource_tool.load_resources()
+
+
+def calculate_resource_quantity(resource_tool: tool.Resource, resource: ifcopenshell.entity_instance) -> None:
+    resource_tool.calculate_resource_quantity(resource)

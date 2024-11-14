@@ -39,6 +39,7 @@ class Collector(bonsai.core.tool.Collector):
                     users_collection.objects.unlink(obj)
 
         element = tool.Ifc.get_entity(obj)
+        assert element
 
         # Note that tool.Geometry.is_locked is only checked within the if
         # statements for efficiency as it is a slow check.

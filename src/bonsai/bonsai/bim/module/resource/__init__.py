@@ -25,6 +25,7 @@ classes = (
     operator.AddProductivityData,
     operator.AssignResource,
     operator.CalculateResourceWork,
+    operator.CalculateResourceQuantity,
     operator.ConstrainResourceWork,
     operator.ContractResource,
     operator.DisableEditingResource,

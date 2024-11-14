@@ -90,22 +90,24 @@ class AssignContainer(bpy.types.Operator, tool.Ifc.Operator):
             core.assign_container(tool.Ifc, tool.Collector, tool.Spatial, container=container, element_obj=element_obj)
 
 
-class EnableEditingContainer(bpy.types.Operator, tool.Ifc.Operator):
+class EnableEditingContainer(bpy.types.Operator):
     bl_idname = "bim.enable_editing_container"
     bl_label = "Enable Editing Container"
     bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
+    def execute(self, context):
         core.enable_editing_container(tool.Spatial, obj=context.active_object)
+        return {"FINISHED"}
 
 
-class DisableEditingContainer(bpy.types.Operator, tool.Ifc.Operator):
+class DisableEditingContainer(bpy.types.Operator):
     bl_idname = "bim.disable_editing_container"
     bl_label = "Disable Editing Container"
     bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
+    def execute(self, context):
         core.disable_editing_container(tool.Spatial, obj=context.active_object)
+        return {"FINISHED"}
 
 
 class RemoveContainer(bpy.types.Operator, tool.Ifc.Operator):
@@ -155,7 +157,7 @@ class CopyToContainer(bpy.types.Operator, tool.Ifc.Operator):
         bonsai.bim.handler.refresh_ui_data()
 
 
-class SelectContainer(bpy.types.Operator, tool.Ifc.Operator):
+class SelectContainer(bpy.types.Operator):
     bl_idname = "bim.select_container"
     bl_label = "Select Container"
     bl_options = {"REGISTER", "UNDO"}
@@ -172,13 +174,13 @@ class SelectContainer(bpy.types.Operator, tool.Ifc.Operator):
             self.selection_mode = "SINGLE"
         return self.execute(context)
 
-    def _execute(self, context):
+    def execute(self, context):
         if self.container:
             container = tool.Ifc.get().by_id(self.container)
         elif element := tool.Ifc.get_entity(context.active_object):
             container = ifcopenshell.util.element.get_container(element)
         else:
-            return
+            return {"CANCELLED"}
         if container:
             core.select_container(
                 tool.Ifc,
@@ -186,15 +188,17 @@ class SelectContainer(bpy.types.Operator, tool.Ifc.Operator):
                 container=container,
                 selection_mode=self.selection_mode,
             )
+        return {"FINISHED"}
 
 
-class SelectSimilarContainer(bpy.types.Operator, tool.Ifc.Operator):
+class SelectSimilarContainer(bpy.types.Operator):
     bl_idname = "bim.select_similar_container"
     bl_label = "Select Similar Container"
     bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
+    def execute(self, context):
         core.select_similar_container(tool.Ifc, tool.Spatial, obj=context.active_object)
+        return {"FINISHED"}
 
 
 class SelectProduct(bpy.types.Operator):
@@ -279,18 +283,19 @@ class ToggleContainerElement(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SelectDecomposedElement(bpy.types.Operator, tool.Ifc.Operator):
+class SelectDecomposedElement(bpy.types.Operator):
     bl_idname = "bim.select_decomposed_element"
     bl_label = "Select Decomposed Element"
     bl_options = {"REGISTER", "UNDO"}
     element: bpy.props.IntProperty()
 
-    def _execute(self, context):
+    def execute(self, context):
         if self.element:
             core.select_decomposed_element(tool.Ifc, tool.Spatial, element=tool.Ifc.get().by_id(self.element))
+        return {"FINISHED"}
 
 
-class SelectDecomposedElements(bpy.types.Operator, tool.Ifc.Operator):
+class SelectDecomposedElements(bpy.types.Operator):
     bl_idname = "bim.select_decomposed_elements"
     bl_label = "Select Children"
     bl_options = {"REGISTER", "UNDO"}
@@ -306,7 +311,7 @@ class SelectDecomposedElements(bpy.types.Operator, tool.Ifc.Operator):
             self.should_filter = False
         return self.execute(context)
 
-    def _execute(self, context):
+    def execute(self, context):
         ifc_file = tool.Ifc.get()
         container = ifc_file.by_id(self.container)
         props = context.scene.BIMSpatialDecompositionProperties
@@ -315,13 +320,13 @@ class SelectDecomposedElements(bpy.types.Operator, tool.Ifc.Operator):
 
         if not self.should_filter and not element_filter:
             tool.Spatial.select_products(tool.Spatial.get_decomposed_elements(container))
-            return
+            return {"CANCELLED"}
 
         if props.element_mode == "TYPE":
             if active_element.type == "OCCURRENCE":
                 if obj := tool.Ifc.get_object(ifc_file.by_id(active_element.ifc_definition_id)):
                     tool.Blender.set_active_object(obj)
-                return
+                return {"CANCELLED"}
 
             ifc_class = relating_type = None
             is_untyped = False
@@ -346,7 +351,7 @@ class SelectDecomposedElements(bpy.types.Operator, tool.Ifc.Operator):
             if active_element.type == "OCCURRENCE":
                 if obj := tool.Ifc.get_object(ifc_file.by_id(active_element.ifc_definition_id)):
                     tool.Blender.set_active_object(obj)
-                return
+                return {"CANCELLED"}
 
             if active_element.type == "CLASSIFICATION":
                 identification = active_element.identification
@@ -362,20 +367,22 @@ class SelectDecomposedElements(bpy.types.Operator, tool.Ifc.Operator):
                     return False
 
                 tool.Spatial.select_products(filter(filter_element, elements))
+        return {"FINISHED"}
 
 
-class SetDefaultContainer(bpy.types.Operator, tool.Ifc.Operator):
+class SetDefaultContainer(bpy.types.Operator):
     bl_idname = "bim.set_default_container"
     bl_label = "Set Default Container"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Set this as the default container that all new elements will be contained in"
     container: bpy.props.IntProperty()
 
-    def _execute(self, context):
+    def execute(self, context):
         core.set_default_container(tool.Spatial, container=tool.Ifc.get().by_id(self.container))
+        return {"FINISHED"}
 
 
-class SetContainerVisibility(bpy.types.Operator, tool.Ifc.Operator):
+class SetContainerVisibility(bpy.types.Operator):
     bl_idname = "bim.set_container_visibility"
     bl_label = "Set Container Visibility"
     bl_options = {"REGISTER", "UNDO"}
@@ -396,11 +403,11 @@ class SetContainerVisibility(bpy.types.Operator, tool.Ifc.Operator):
             self.should_include_children = False
         return self.execute(context)
 
-    def _execute(self, context):
+    def execute(self, context):
         if self.mode == "ISOLATE":
             if tool.Ifc.get_schema() == "IFC2X3":
                 containers = tool.Ifc.get().by_type("IfcSpatialStructureElement")
-            elif tool.Ifc.get_schema() != "IFC2X3":
+            else:
                 containers = set(tool.Ifc.get().by_type("IfcSpatialElement"))
                 containers -= set(tool.Ifc.get().by_type("IfcSpatialZone"))
             for container in containers:
@@ -420,29 +427,31 @@ class SetContainerVisibility(bpy.types.Operator, tool.Ifc.Operator):
                     collection.hide_viewport = should_hide
             if self.should_include_children:
                 queue.extend(ifcopenshell.util.element.get_parts(container))
+        return {"FINISHED"}
 
 
-class ToggleGrids(bpy.types.Operator, tool.Ifc.Operator):
+class ToggleGrids(bpy.types.Operator):
     bl_idname = "bim.toggle_grids"
     bl_label = "Toggle Grids"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Show or hide grids and grid axes"
     is_visible: bpy.props.BoolProperty(name="Is Visible", default=False, options={"SKIP_SAVE"})
 
-    def _execute(self, context):
+    def execute(self, context):
         for element in tool.Ifc.get().by_type("IfcGrid") + tool.Ifc.get().by_type("IfcGridAxis"):
             if obj := tool.Ifc.get_object(element):
                 obj.hide_set(not self.is_visible)
+        return {"FINISHED"}
 
 
-class ToggleSpatialElements(bpy.types.Operator, tool.Ifc.Operator):
+class ToggleSpatialElements(bpy.types.Operator):
     bl_idname = "bim.toggle_spatial_elements"
     bl_label = "Toggle Spatial Elements"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Show or hide spatial elements, such as buildings, sites, etc"
     is_visible: bpy.props.BoolProperty(name="Is Visible", default=False, options={"SKIP_SAVE"})
 
-    def _execute(self, context):
+    def execute(self, context):
         if tool.Ifc.get().schema == "IFC2X3":
             elements = tool.Ifc.get().by_type("IfcSpatialStructureElement")
         else:
@@ -450,3 +459,4 @@ class ToggleSpatialElements(bpy.types.Operator, tool.Ifc.Operator):
         for element in elements:
             if obj := tool.Ifc.get_object(element):
                 obj.hide_set(not self.is_visible)
+        return {"FINISHED"}

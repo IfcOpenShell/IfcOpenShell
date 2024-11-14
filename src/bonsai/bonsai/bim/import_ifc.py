@@ -21,6 +21,7 @@ import bpy
 import time
 import json
 import logging
+import traceback
 import mathutils
 import numpy as np
 import multiprocessing
@@ -843,14 +844,46 @@ class IfcImporter:
         curve = bpy.data.curves.new(mesh_name, type="CURVE")
         curve.dimensions = "3D"
         curve.resolution_u = 2
-        polyline = curve.splines.new("POLY")
 
-        for item_data in ifcopenshell.util.representation.resolve_items(native_data["representation"]):
+        rep_items = ifcopenshell.util.representation.resolve_items(native_data["representation"])
+
+        # Find item styles and add them to the curve.
+        material_style = None
+        material = ifcopenshell.util.element.get_material(element)
+        if material:
+            material_style = tool.Material.get_style(material)
+        item_styles: list[Union[bpy.types.Material, None]] = []
+        for item_data in rep_items:
             item = item_data["item"]
+            item_style = tool.Style.get_representation_item_style(item) or material_style
+            if item_style is not None:
+                item_style = tool.Ifc.get_object(item_style)
+                assert isinstance(item_style, bpy.types.Material)
+            item_styles.append(item_style)
+        item_styles_unique = list(set(item_styles))
+        for item_style in item_styles_unique:
+            curve.materials.append(item_style)
+        use_same_material_index = len(item_styles_unique) < 2
+
+        def new_polyline(item_style: Union[bpy.types.Material, None]) -> bpy.types.Spline:
+            if use_same_material_index:
+                material_index = 0
+            else:
+                material_index = item_styles_unique.index(item_style)
+
+            polyline = curve.splines.new("POLY")
+            polyline.material_index = material_index
+            return polyline
+
+        for item_data, item_style in zip(rep_items, item_styles):
+            item = item_data["item"]
+
+            polyline = new_polyline(item_style)
             matrix = item_data["matrix"]
             matrix[0][3] *= self.unit_scale
             matrix[1][3] *= self.unit_scale
             matrix[2][3] *= self.unit_scale
+
             # TODO: support inner radius, start param, and end param
             geometry = tool.Loader.create_generic_shape(item.Directrix)
             if not geometry:
@@ -863,7 +896,7 @@ class IfcImporter:
             for edge in edges:
                 v1 = vertices[edge[0]]
                 if v1 != v2:
-                    polyline = curve.splines.new("POLY")
+                    polyline = new_polyline(item_style)
                     polyline.points[-1].co = native_data["matrix"] @ mathutils.Vector(v1)
                 v2 = vertices[edge[1]]
                 polyline.points.add(1)
@@ -1060,11 +1093,7 @@ class IfcImporter:
             v2 = vertices[edge[1]]
             polyline.points.add(1)
             polyline.points[-1].co = mathutils.Vector(v2)
-        # TODO: remove error handling after we update build in Bonsai.
-        try:
-            edges_item_ids = ifcopenshell.util.shape.get_edges_representation_item_ids(geometry).tolist()
-        except AttributeError:
-            edges_item_ids = []
+        edges_item_ids = ifcopenshell.util.shape.get_edges_representation_item_ids(geometry).tolist()
         curve["ios_edges_item_ids"] = edges_item_ids
         return curve
 
@@ -1226,12 +1255,20 @@ class IfcImportSettings:
         settings.false_origin_mode = props.false_origin_mode
         try:
             settings.false_origin = [float(o) for o in props.false_origin.split(",")[:3]]
-        except:
-            settings.false_origin = [0, 0, 0]
+        except Exception as e:
+            print(traceback.format_exc())
+            raise Exception(
+                f"Failed to set false origin from string '{props.false_origin}'.\n"
+                f"Error: {str(e)}.\nSee above for the details."
+            )
         try:
             settings.project_north = float(props.project_north)
-        except:
-            settings.project_north = 0
+        except Exception as e:
+            print(traceback.format_exc())
+            raise Exception(
+                f"Failed to set project north from string '{props.project_north}'.\n"
+                f"Error: {str(e)}.\nSee above for the details."
+            )
         settings.element_limit_mode = props.element_limit_mode
         settings.element_offset = props.element_offset
         settings.element_limit = props.element_limit
