@@ -19,16 +19,50 @@
 import csv
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.util.date
 import ifcopenshell.util.unit
 import datetime
+from typing import Any, Optional, Union
 
 
 class Csv2Ifc:
-    def __init__(self):
-        self.csv = None
-        self.file = None
-        self.resources = []
-        self.units = {}
+    """Class to import resources from a CSV file into an IFC file.
+
+    See resource_spreadsheet.csv for example of the format.
+    Notes about format:
+    - empty rows are skipped.
+    - 'HIERARCHY' must be the first column.
+    - See SUPPORTED_COLUMNS below for the list of supported columns.
+
+    Example:
+
+    .. code:: python
+
+        csv2ifc = Csv2Ifc("resource_spreadsheet.csv", ifc_file)
+        csv2ifc.execute()
+    """
+
+    SUPPORTED_COLUMNS = (
+        "HIERARCHY",
+        "TYPE",  # CREW, LABOR, EQUIPMENT, SUBCONTRACTOR, MATERIAL, PRODUCT.
+        "ACTIVITY/RESOURCE NAME",
+        "DESCRIPTION",
+        "COST",
+        "QUANTITY NAME",
+        "LABOR OUTPUT",
+        "EQUIPMENT OUTPUT",
+    )
+
+    def __init__(self, csv: str, ifc_file: Optional[ifcopenshell.file] = None):
+        """
+        :param csv: CSV filepath to load resources from.
+        :param ifc_file: IFC file to load imported resources to. If not provided,
+            a simple empty IFC file will be created.
+        """
+        self.csv = csv
+        self.file = ifc_file
+        self.resources: list[dict[str, Any]] = []
+        self.units = {}  # TODO: never used
         self.resource_map = {
             "CREW": "IfcCrewResource",
             "LABOR": "IfcLaborResource",
@@ -38,16 +72,17 @@ class Csv2Ifc:
             "PRODUCT": "IfcConstructionProductResource",
         }
 
-    def execute(self):
+    def execute(self) -> None:
         self.parse_csv()
         self.create_ifc()
 
-    def parse_csv(self):
+    def parse_csv(self) -> None:
         self.parents = {}
-        self.headers = {}
+        self.headers: dict[str, int] = {}
         with open(self.csv, "r") as csv_file:
             reader = csv.reader(csv_file)
             for row in reader:
+                # Skip empty rows.
                 if not row[0]:
                     continue
                 if row[0] == "HIERARCHY":
@@ -56,6 +91,7 @@ class Csv2Ifc:
                             continue
                         self.headers[col] = i
                     continue
+
                 resource_data = self.get_row_resource_data(row)
                 hierarchy_key = int(row[0])
                 if hierarchy_key == 1:
@@ -64,7 +100,7 @@ class Csv2Ifc:
                     self.parents[hierarchy_key - 1]["children"].append(resource_data)
                 self.parents[hierarchy_key] = resource_data
 
-    def get_row_resource_data(self, row):
+    def get_row_resource_data(self, row: list[str]) -> dict[str, Any]:
         name = row[self.headers["ACTIVITY/RESOURCE NAME"]]
         resource_class = self.resource_map[row[self.headers["TYPE"]]]
         base_cost_value = row[self.headers["COST"]]
@@ -93,16 +129,19 @@ class Csv2Ifc:
             "children": [],
         }
 
-    def create_ifc(self):
+    def create_ifc(self) -> None:
         if not self.file:
             self.create_boilerplate_ifc()
         self.create_resources(self.resources)
 
-    def create_resources(self, resources, parent=None):
+    def create_resources(
+        self, resources: list[dict[str, Any]], parent: Optional[ifcopenshell.entity_instance] = None
+    ) -> None:
         for resource in resources:
             self.create_resource(resource, parent)
 
-    def create_resource(self, resource, parent):
+    def create_resource(self, resource: dict[str, Any], parent: Union[ifcopenshell.entity_instance, None]) -> None:
+        assert self.file
         if parent is None:
             resource["ifc"] = ifcopenshell.api.run("resource.add_resource", self.file, ifc_class=resource["class"])
         else:
@@ -125,7 +164,9 @@ class Csv2Ifc:
             cost_value.AppliedValue = self.file.createIfcMonetaryMeasure(resource["BaseCostValue"])
         self.create_resources(resource["children"], resource["ifc"])
 
+    # TODO: never used.
     def create_unit(self, symbol, unit_type):
+        assert self.file
         unit = self.units.get(symbol, None)
         if unit:
             return unit
@@ -137,7 +178,7 @@ class Csv2Ifc:
         self.units[symbol] = unit
         return unit
 
-    def create_boilerplate_ifc(self):
+    def create_boilerplate_ifc(self) -> None:
         self.file = ifcopenshell.file(schema="IFC4")
         ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
         ifcopenshell.api.run("unit.assign_unit", self.file)

@@ -29,6 +29,7 @@ from bpy.types import WorkSpaceTool, Menu
 from bonsai.bim.module.model.data import AuthoringData, ItemData
 from bonsai.bim.module.system.data import PortData
 from bonsai.bim.module.model.prop import get_ifc_class
+from typing import Optional
 
 
 # TODO duplicate code in cad/workspace and model/workspace
@@ -106,7 +107,9 @@ class BimTool(WorkSpaceTool):
     ifc_element_type = "all"
 
     @classmethod
-    def draw_settings(cls, context, layout, ws_tool):
+    def draw_settings(
+        cls, context: bpy.types.Context, layout: bpy.types.UILayout, ws_tool: bpy.types.WorkSpaceTool
+    ) -> None:
         if context.scene.BIMGeometryProperties.mode == "ITEM":
             EditItemUI.draw(context, layout)
         elif (
@@ -263,8 +266,10 @@ def format_ifc_camel_case(string):
 
 
 class EditItemUI:
+    layout: bpy.types.UILayout
+
     @classmethod
-    def draw(cls, context: bpy.types.Context, layout: bpy.types.UILayout):
+    def draw(cls, context: bpy.types.Context, layout: bpy.types.UILayout) -> None:
         if not ItemData.is_loaded:
             ItemData.load()
         if not AuthoringData.is_loaded:
@@ -328,7 +333,9 @@ class CreateObjectUI:
     layout: bpy.types.UILayout
 
     @classmethod
-    def draw(cls, context, layout, ifc_element_type=None):
+    def draw(
+        cls, context: bpy.types.Context, layout: bpy.types.UILayout, ifc_element_type: Optional[str] = None
+    ) -> None:
         cls.layout = layout
         cls.props = context.scene.BIMModelProperties
 
@@ -550,8 +557,12 @@ class CreateObjectUI:
 
 
 class EditObjectUI:
+    layout: bpy.types.UILayout
+
     @classmethod
-    def draw(cls, context, layout, ifc_element_type=None):
+    def draw(
+        cls, context: bpy.types.Context, layout: bpy.types.UILayout, ifc_element_type: Optional[str] = None
+    ) -> None:
         cls.layout = layout
         cls.props = context.scene.BIMModelProperties
 
@@ -858,7 +869,7 @@ class EditObjectUI:
         )
 
     @classmethod
-    def draw_modes(cls, context):
+    def draw_modes(cls, context: bpy.types.Context) -> None:
         ui_context = str(context.region.type)
         row = cls.layout.row(align=True)
         row.separator()

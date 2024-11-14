@@ -65,7 +65,7 @@ class Patcher:
         self.destination_quantity_name = quantity_name
 
     def patch(self) -> None:
-        self.qto_template_cache = {}
+        self.qto_template_cache: dict[str, list[ifcopenshell.entity_instance]] = {}
         self.psetqto = ifcopenshell.util.pset.get_template("IFC4")
 
         for product in self.file.by_type("IfcTypeProduct"):
@@ -82,7 +82,7 @@ class Patcher:
     ) -> None:
         value = None
         has_quantity = False
-        qtos = {}
+        qtos: dict[str, ifcopenshell.entity_instance] = {}
         for definition in definitions or []:
             if definition.is_a("IfcPropertySet"):
                 for prop in definition.HasProperties:
