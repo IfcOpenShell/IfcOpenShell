@@ -121,10 +121,11 @@ class BIM_PT_resources(Panel):
                 col3.ui_units_x = 2
 
                 row1_col1 = col1.row()
-                row1_col1.label(text="Schedule Work")
-                row1col2 = col2.row()
                 schedule_work = resource.get("ScheduleWork", None)
                 derived_schedule_work = resource.get("DerivedScheduleWork", None)
+                derived_str = "" if schedule_work else " (Derived)"
+                row1_col1.label(text=f"Schedule Work {derived_str}")
+                row1col2 = col2.row()
                 row1col2.label(
                     text="{}".format(schedule_work) if schedule_work else "{} h*".format(derived_schedule_work),
                     icon="TIME",
