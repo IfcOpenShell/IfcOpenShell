@@ -113,7 +113,7 @@ def regenerate_sheet(drawing: tool.Drawing, sheet: ifcopenshell.entity_instance)
             drawing.delete_file(path_layout)
 
 
-def open_sheet(drawing: tool.Drawing, sheet: ifcopenshell.entity_instance) -> None:
+def open_layout(drawing: tool.Drawing, sheet: ifcopenshell.entity_instance) -> None:
     drawing.open_layout_svg(drawing.get_document_uri(sheet, "LAYOUT"))
 
 

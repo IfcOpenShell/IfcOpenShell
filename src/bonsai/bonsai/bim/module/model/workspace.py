@@ -109,10 +109,16 @@ class BimTool(WorkSpaceTool):
     def draw_settings(cls, context, layout, ws_tool):
         if context.scene.BIMGeometryProperties.mode == "ITEM":
             EditItemUI.draw(context, layout)
-        elif context.active_object and context.selected_objects and tool.Ifc.get_entity(context.active_object):
+        elif (
+            active_ifc_object := (context.active_object and tool.Ifc.get_entity(context.active_object))
+        ) and context.selected_objects:
             EditObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
         else:
             CreateObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
+            # Show some UI for spatial elements that are unselectable by default.
+            if active_ifc_object:
+                EditObjectUI.layout = layout  # Prevent .draw_modes from using old layout and crash.
+                EditObjectUI.draw_modes(context)
 
 
 class WallTool(BimTool):

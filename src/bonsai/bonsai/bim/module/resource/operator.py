@@ -189,9 +189,13 @@ class CalculateResourceWork(bpy.types.Operator, tool.Ifc.Operator):
     @classmethod
     def poll(cls, context):
         active_resource = tool.Resource.get_highlighted_resource()
-        if active_resource:
-            if tool.Resource.get_productivity(active_resource, should_inherit=True):
-                return True
+        if not active_resource:
+            cls.poll_message_set("No resource is active.")
+            return False
+        if not tool.Resource.get_productivity(active_resource, should_inherit=True):
+            cls.poll_message_set("No productivity data for active resource.")
+            return False
+        return True
 
     def _execute(self, context):
         core.calculate_resource_work(tool.Ifc, tool.Resource, resource=tool.Ifc.get().by_id(self.resource))
@@ -345,7 +349,6 @@ class ImportResources(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
 
 class AddProductivityData(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_productivity_data"
-    bl_description = "Apply"
     bl_label = "Add Productivity"
     bl_options = {"REGISTER", "UNDO"}
 
@@ -355,7 +358,6 @@ class AddProductivityData(bpy.types.Operator, tool.Ifc.Operator):
 
 class EditProductivityData(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_productivity_data"
-    bl_description = "Apply"
     bl_label = "Edit Productivity"
     bl_options = {"REGISTER", "UNDO"}
 
@@ -415,13 +417,27 @@ class CalculateResourceUsage(bpy.types.Operator, tool.Ifc.Operator):
     @classmethod
     def poll(cls, context):
         active_resource = tool.Resource.get_highlighted_resource()
-        if active_resource:
-            if active_resource.Usage and active_resource.Usage.ScheduleWork:
-                task = tool.Resource.get_task_assignments(active_resource)
-                if task and tool.Sequence.has_duration(task):
-                    return True
-
+        if not active_resource:
+            cls.poll_message_set("No resource is active.")
+            return False
+        if active_resource.Usage and active_resource.Usage.ScheduleWork:
+            task = tool.Resource.get_task_assignments(active_resource)
+            if task and tool.Sequence.has_duration(task):
+                return True
+        cls.poll_message_set("No usage data for active resource.")
         return False
 
     def _execute(self, context):
         core.calculate_resource_usage(tool.Ifc, tool.Resource, resource=tool.Resource.get_highlighted_resource())
+
+
+class CalculateResourceQuantity(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.calculate_resource_quantity"
+    bl_label = "Calculate Resource Quantity"
+    bl_description = "Calcule resource quantity based on the same name quantities from the output products"
+    bl_options = {"REGISTER", "UNDO"}
+    resource: bpy.props.IntProperty(name="Resource ID")
+
+    def _execute(self, context):
+        core.calculate_resource_quantity(tool.Resource, resource=tool.Ifc.get().by_id(self.resource))
+        return {"FINISHED"}
