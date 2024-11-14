@@ -65,7 +65,7 @@ def remove_resource(file: ifcopenshell.file, resource: ifcopenshell.entity_insta
                     ifcopenshell.api.resource.unassign_resource(
                         file, related_object=related_object, relating_resource=settings["resource"]
                     )
-            elif inverse.RelatedObjects == tuple(settings["resource"]):
+            elif inverse.RelatedObjects == (resource,):
                 remove_consider_history(inverse)
     # Usage was added in IFC4.
     if usage := getattr(settings["resource"], "Usage", None):
