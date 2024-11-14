@@ -67,7 +67,11 @@ class Patcher:
 
     def patch(self) -> None:
         self.qto_template_cache: dict[str, list[ifcopenshell.entity_instance]] = {}
-        self.psetqto = ifcopenshell.util.pset.get_template("IFC4")
+        templates_schema = self.file.schema
+        # No official qto templates in IFC2X3, fallback to IFC4.
+        if templates_schema == "IFC2X3":
+            templates_schema = "IFC4"
+        self.psetqto = ifcopenshell.util.pset.get_template(templates_schema)
 
         for product in self.file.by_type("IfcTypeProduct"):
             self.process_product(product, product.HasPropertySets or [])
