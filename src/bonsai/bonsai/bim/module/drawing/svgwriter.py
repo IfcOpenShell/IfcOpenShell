@@ -805,7 +805,8 @@ class SvgWriter:
         text_height = bottom - top
 
         # 3.4 and 3.9 from a lot of trial and error
-        rect_width = text_width/3.4 #TO DO: for some reason the longer the text string, the more width grows exponentially
+        scale_factor = min(1, 23.3 / len(text))
+        rect_width = (text_width * scale_factor) / 3.4
         rect_height = text_height/2.9
 
         
