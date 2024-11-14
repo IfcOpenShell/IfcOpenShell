@@ -1223,11 +1223,11 @@ if(BUILD_CONVERT)
         RUNTIME DESTINATION ${BINDIR}
     )
 
-    install(FILES ${SERIALIZERS_FILES}
+    install(FILES ${SERIALIZERS_H_FILES}
         DESTINATION ${INCLUDEDIR}/serializers/
     )
 
-    install(FILES ${SERIALIZERS_S_FILES}
+    install(FILES ${SERIALIZERS_S_H_FILES}
         DESTINATION ${INCLUDEDIR}/serializers/schema_dependent
     )
 endif(BUILD_CONVERT)
