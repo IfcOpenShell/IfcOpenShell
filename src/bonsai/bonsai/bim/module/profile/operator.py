@@ -158,7 +158,10 @@ class AddProfileDef(bpy.types.Operator, tool.Ifc.Operator):
             obj = props.object_to_profile
             if obj:
                 if len(obj.data.polygons) == 0:
-                    self.report({"WARNING"}, "This mesh is invalid to create a profile. Select a flat mesh with at least one face.")
+                    self.report(
+                        {"WARNING"},
+                        "This mesh is invalid to create a profile. Select a flat mesh with at least one face.",
+                    )
                     props.object_to_profile = None
                     return
                 helper = Helper(tool.Ifc.get())
@@ -171,17 +174,25 @@ class AddProfileDef(bpy.types.Operator, tool.Ifc.Operator):
                 profile = ifcopenshell.api.run("profile.add_arbitrary_profile", tool.Ifc.get(), profile=points)
             else:
                 if "inner_curves" not in indices:
-                    points = [(obj.data.vertices[i].co.x,obj.data.vertices[i].co.y) for i in indices["profile"]]
+                    points = [(obj.data.vertices[i].co.x, obj.data.vertices[i].co.y) for i in indices["profile"]]
                     points.append(points[0])
                     profile = ifcopenshell.api.run("profile.add_arbitrary_profile", tool.Ifc.get(), profile=points)
                 else:
-                    outer_points = [(obj.data.vertices[i].co.x,obj.data.vertices[i].co.y) for i in indices["profile"]]
+                    outer_points = [(obj.data.vertices[i].co.x, obj.data.vertices[i].co.y) for i in indices["profile"]]
                     outer_points.append(outer_points[0])
-                    inner_points = [[(obj.data.vertices[i].co.x,obj.data.vertices[i].co.y) for i in curve] for curve in indices["inner_curves"]]
+                    inner_points = [
+                        [(obj.data.vertices[i].co.x, obj.data.vertices[i].co.y) for i in curve]
+                        for curve in indices["inner_curves"]
+                    ]
                     for curve in inner_points:
                         curve.append(curve[0])
-                    profile = ifcopenshell.api.run("profile.add_arbitrary_profile_with_voids", tool.Ifc.get(), outer_profile=outer_points, inner_profiles=inner_points)
-                    
+                    profile = ifcopenshell.api.run(
+                        "profile.add_arbitrary_profile_with_voids",
+                        tool.Ifc.get(),
+                        outer_profile=outer_points,
+                        inner_profiles=inner_points,
+                    )
+
         else:
             profile = ifcopenshell.api.run("profile.add_parameterized_profile", tool.Ifc.get(), ifc_class=profile_class)
             tool.Profile.set_default_profile_attrs(profile)
