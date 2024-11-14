@@ -444,6 +444,12 @@ class Resource(bonsai.core.tool.Resource):
         tool.Ifc.run("resource.calculate_resource_usage", resource=resource)
 
     @classmethod
+    def calculate_resource_quantity(cls, resource: ifcopenshell.entity_instance) -> None:
+        quantity: ifcopenshell.entity_instance = resource.BaseQuantity
+        quantity_from_products = ifcopenshell.util.resource.get_total_quantity_produced(resource, quantity.Name)
+        quantity[3] = quantity_from_products
+
+    @classmethod
     def get_task_assignments(cls, resource: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
         return ifcopenshell.util.resource.get_task_assignments(resource)
 

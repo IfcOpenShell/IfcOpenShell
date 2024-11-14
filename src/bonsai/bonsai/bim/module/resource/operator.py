@@ -429,3 +429,15 @@ class CalculateResourceUsage(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         core.calculate_resource_usage(tool.Ifc, tool.Resource, resource=tool.Resource.get_highlighted_resource())
+
+
+class CalculateResourceQuantity(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.calculate_resource_quantity"
+    bl_label = "Calculate Resource Quantity"
+    bl_description = "Calcule resource quantity based on the same name quantities from the output products"
+    bl_options = {"REGISTER", "UNDO"}
+    resource: bpy.props.IntProperty(name="Resource ID")
+
+    def _execute(self, context):
+        core.calculate_resource_quantity(tool.Resource, resource=tool.Ifc.get().by_id(self.resource))
+        return {"FINISHED"}
