@@ -197,7 +197,7 @@ file_dict = {}
 READ_ERROR = ifcopenshell_wrapper.file_open_status.READ_ERROR
 NO_HEADER = ifcopenshell_wrapper.file_open_status.NO_HEADER
 UNSUPPORTED_SCHEMA = ifcopenshell_wrapper.file_open_status.UNSUPPORTED_SCHEMA
-
+INVALID_SYNTAX = ifcopenshell_wrapper.file_open_status.INVALID_SYNTAX
 
 class file:
     """Base class for containing IFC files.
@@ -280,6 +280,7 @@ class file:
                         SchemaError,
                         "Unsupported schema: %s" % ",".join(f.header.file_schema.schema_identifiers),
                     ),
+                    INVALID_SYNTAX: (Error, "Syntax error during parse, check logs"),
                 }[f.good().value()]
                 raise exc(msg)
             self.wrapped_data = f
