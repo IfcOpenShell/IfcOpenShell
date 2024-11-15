@@ -45,9 +45,11 @@ class PsetTemplatesData:
 
         # after pset_template_files because it loads IfcStore.pset_template_file
         cls.data["primary_measure_type"] = cls.primary_measure_type()
-        cls.data["property_template_type"] = cls.property_template_type()
         cls.data["pset_template"] = cls.pset_template()
         cls.data["prop_templates"] = cls.prop_templates()
+
+        # after pset_template and prop_templates
+        cls.data["property_template_type"] = cls.property_template_type()
 
     @classmethod
     def primary_measure_type(cls) -> list[tuple[str, str, str]]:
@@ -66,9 +68,43 @@ class PsetTemplatesData:
         ifc_file = IfcStore.pset_template_file
         if not ifc_file:
             return []
+        pset_data = cls.data["pset_template"]
+        if not pset_data:
+            return []
+
+        # Can't use get_pset_template_type
+        # because need to check both template and prop templates to avoid conflicts during transition.
+        pset_types = set()
+        template_type = pset_data["TemplateType"]
+        if template_type:
+            if template_type.startswith("PSET_"):
+                pset_types.add("PSET")
+            elif template_type.startswith("QTO_"):
+                pset_types.add("QTO")
+            # Can also be 'NOTDEFINED'.
+
+        prop_templates = cls.data["prop_templates"]
+        for prop in prop_templates:
+            prop_template_type = prop["TemplateType"]
+            if prop_template_type:
+                if prop_template_type.startswith("P_"):
+                    pset_types.add("PSET")
+                else:  # All other values are Q_.
+                    pset_types.add("QTO")
+
+        # If mixed typed are used (e.g. during transition), assume type is not specified.
+        pset_type = next(iter(pset_types)) if len(pset_types) == 1 else None
+
         schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(ifc_file.schema)
         attribute = schema.declaration_by_name("IfcSimplePropertyTemplate").attributes()[0]
-        return [(i, i, "") for i in ifcopenshell.util.attribute.get_enum_items(attribute)]
+        enum_items = [
+            a
+            for a in ifcopenshell.util.attribute.get_enum_items(attribute)
+            if pset_type is None
+            or (pset_type == "PSET" and a.startswith("P_"))
+            or (pset_type == "QTO" and a.startswith("Q_"))
+        ]
+        return [(i, i, "") for i in enum_items]
 
     @classmethod
     def pset_template_files(cls):

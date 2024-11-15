@@ -104,6 +104,8 @@ class EnableEditingPsetTemplate(bpy.types.Operator):
         props.active_pset_template.description = template.Description or ""
         props.active_pset_template.template_type = template.TemplateType
         props.active_pset_template.applicable_entity = template.ApplicableEntity or ""
+        # Disable because of the intersecting enums in data.py.
+        props.active_prop_template_id = 0
         return {"FINISHED"}
 
 
@@ -140,6 +142,9 @@ class EnableEditingPropTemplate(bpy.types.Operator):
             for e in template.Enumerators.EnumerationValues:
                 new = props.active_prop_template.enum_values.add()
                 setattr(new, data_type, e.wrappedValue)
+
+        # Disable because of the intersecting enums in data.py.
+        props.active_pset_template_id = 0
         return {"FINISHED"}
 
 
