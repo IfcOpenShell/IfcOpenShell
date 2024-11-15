@@ -271,7 +271,7 @@ def get_quantity(
         if quantity[0] != name:
             continue
         if quantity.is_a("IfcPhysicalSimpleQuantity"):
-            # 3 IfcPhysicalSimpleQuantity.Unit
+            # 3 IfcPhysicalSimpleQuantity.XXXValue
             result = quantity[3]
         elif quantity.is_a("IfcPhysicalComplexQuantity"):
             data = {k: v for k, v in quantity.get_info().items() if v is not None and k != "Name"}
@@ -299,7 +299,7 @@ def get_quantities(
         # 0 IfcPhysicalQuantity.Name
         quantity_name = quantity[0]
         if quantity.is_a("IfcPhysicalSimpleQuantity"):
-            # 3 IfcPhysicalSimpleQuantity.Unit
+            # 3 IfcPhysicalSimpleQuantity.XXXValue
             results[quantity_name] = quantity[3]
             if verbose:
                 results[quantity_name] = {
