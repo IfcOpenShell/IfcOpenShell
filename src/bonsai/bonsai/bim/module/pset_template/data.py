@@ -58,10 +58,12 @@ class PsetTemplatesData:
             return []
         schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(ifc_file.schema)
         version = ifc_file.schema
-        return [
+        enum_items = [
             (t, t, ifcopenshell.util.doc.get_type_doc(version, t).get("description", ""))
             for t in sorted([d.name() for d in schema.declarations() if hasattr(d, "declared_type")])
         ]
+        enum_items = [("-", "-", "")] + enum_items
+        return enum_items
 
     @classmethod
     def property_template_type(cls) -> list[tuple[str, str, str]]:
