@@ -177,7 +177,11 @@ class Usecase:
             ifcopenshell.api.pset.edit_qto(self.file, qto=prop, properties=value["HasQuantities"])
         elif prop.is_a("IfcPhysicalSimpleQuantity"):
             value = value.wrappedValue if isinstance(value, ifcopenshell.entity_instance) else value
-            prop[3] = float(value)
+            # 3 IfcPhysicalSimpleQuantity.XXXValue
+            if self.file.schema == "IFC4X3" and prop.is_a("IfcQuantityCount"):
+                prop[3] = int(value)
+            else:
+                prop[3] = float(value)
         del self.settings["properties"][name]
 
     def add_new_properties(self) -> list[ifcopenshell.entity_instance]:
