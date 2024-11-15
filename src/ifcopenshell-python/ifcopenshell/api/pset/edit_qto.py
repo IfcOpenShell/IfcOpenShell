@@ -20,6 +20,15 @@ import ifcopenshell
 import ifcopenshell.api.pset
 import ifcopenshell.util.pset
 from typing import Optional, Any, Union
+from typing_extensions import assert_never
+
+FLOAT_TYPE_KEYWORDS = (
+    ("Area", ("area",)),
+    ("Volume", ("volume",)),
+    ("Weight", ("weight", "mass")),
+    ("Length", ("length", "width", "height", "depth", "distance")),
+    ("Time", ("time", "duration")),
+)
 
 
 def edit_qto(
@@ -46,12 +55,16 @@ def edit_qto(
     :param properties: A dictionary of properties. The keys must be a string
         of the name of the quantity. The data type of the value will be
         determined by the quantity set template. If no quantity set
-        template is found, the data types of the Python values will
-        influence the IFC data type of the quantity. String values will
-        become IfcLabel, float values will become IfcReal, booleans will
-        become IfcBoolean, and integers will become IfcInteger. If more
-        control is desired, you may explicitly specify IFC data objects
-        directly.
+        template is found, the data types of the Python values and
+        properties names will influence the IFC data type of the quantity.
+
+        - For `float` values - see `FLOAT_TYPE_KEYWORDS` for the keywords in property name
+        used to detect the quantity type. If no keyword matches,
+        the default quantity type will be IfcQuantityLength.
+
+        - `int` values will map to IfcQuantityCount.
+
+        If more control is desired, you may explicitly specify IFC data objects directly.
     :param pset_template: If a quantity set template is provided, this will
         be used to determine data types. If no user-defined template is
         provided, the built-in buildingSMART templates will be loaded.
@@ -203,4 +216,19 @@ class Usecase:
                 if prop_template.Name != name:
                     continue
                 return prop_template.TemplateType[2:].lower().capitalize()
+        return infer_property_type(name, value)
+
+
+def infer_property_type(name: str, value: Union[float, int]) -> str:
+    name_lower = name.lower()
+    # Only undetected type is IfcQuantityNumber (IFC4X3),
+    # not sure when it's appropriate.
+    if isinstance(value, float):
+        for category, keywords in FLOAT_TYPE_KEYWORDS:
+            if any(keyword in name_lower for keyword in keywords):
+                return category
         return "Length"
+    elif isinstance(value, int):
+        return "Count"
+    else:
+        assert_never(value)
