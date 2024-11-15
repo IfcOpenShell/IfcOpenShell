@@ -98,6 +98,39 @@ class Pset(bonsai.core.tool.Pset):
         )
 
     @classmethod
+    def get_special_type_for_prop(cls, prop_or_prop_template: ifcopenshell.entity_instance) -> str:
+        special_type = ""
+        if prop_or_prop_template.is_a("IfcPropertyTemplate"):
+            primary_measure_type = prop_or_prop_template.PrimaryMeasureType
+            template_type = prop_or_prop_template.TemplateType
+            if primary_measure_type in ("IfcPositiveLengthMeasure", "IfcLengthMeasure") or template_type == "Q_LENGTH":
+                special_type = "LENGTH"
+            elif primary_measure_type == "IfcAreaMeasure" or template_type == "Q_AREA":
+                special_type = "AREA"
+            elif primary_measure_type == "IfcVolumeMeasure" or template_type == "Q_VOLUME":
+                special_type = "VOLUME"
+        else:
+            if prop_or_prop_template.is_a("IfcPropertySingleValue"):
+                value = prop_or_prop_template.NominalValue
+                if value is not None:
+                    value_type = value.is_a()
+                    if value_type in ("IfcLengthMeasure", "IfcPositiveLengthMeasure"):
+                        special_type = "LENGTH"
+                    elif value_type == "IfcAreaMeasure":
+                        special_type = "AREA"
+                    elif value_type == "IfcVolumeMeasure":
+                        special_type = "VOLUME"
+            elif prop_or_prop_template.is_a("IfcPhysicalSimpleQuantity"):
+                prop_class = prop_or_prop_template.is_a()
+                if prop_class == "IfcQuantityArea":
+                    special_type = "AREA"
+                elif prop_class == "IfcQuantityVolume":
+                    special_type = "VOLUME"
+                elif prop_class == "IfcQuantityLength":
+                    special_type = "LENGTH"
+        return special_type
+
+    @classmethod
     def import_pset_from_existing(cls, pset: ifcopenshell.entity_instance, props: bpy.types.PropertyGroup) -> None:
         pset_props = []
         if pset.is_a("IfcElementQuantity"):
@@ -146,6 +179,8 @@ class Pset(bonsai.core.tool.Pset):
                     value = prop.NominalValue.wrappedValue if prop.NominalValue else None
                 elif prop.is_a("IfcPhysicalSimpleQuantity"):
                     value = prop[3]
+                else:
+                    assert False
                 new_prop = props.properties.add()
                 new_prop.name = prop.Name
                 metadata = new_prop.metadata
@@ -153,6 +188,7 @@ class Pset(bonsai.core.tool.Pset):
                 metadata.name = prop.Name
                 metadata.is_null = value is None
                 metadata.is_optional = True
+                metadata.special_type = cls.get_special_type_for_prop(prop)
                 metadata.set_value(metadata.get_value_default() if metadata.is_null else value)
 
     @classmethod
@@ -228,22 +264,7 @@ class Pset(bonsai.core.tool.Pset):
         metadata.is_optional = True
         metadata.is_uri = prop_template.PrimaryMeasureType == "IfcURIReference"
         metadata.data_type = cls.get_prop_template_primitive_type(prop_template)
-
-        special_type = ""
-        if (
-            prop_template.PrimaryMeasureType
-            in (
-                "IfcPositiveLengthMeasure",
-                "IfcLengthMeasure",
-            )
-            or prop_template.TemplateType == "Q_LENGTH"
-        ):
-            special_type = "LENGTH"
-        elif prop_template.PrimaryMeasureType == "IfcAreaMeasure" or prop_template.TemplateType == "Q_AREA":
-            special_type = "AREA"
-        elif prop_template.PrimaryMeasureType == "IfcVolumeMeasure" or prop_template.TemplateType == "Q_VOLUME":
-            special_type = "VOLUME"
-        metadata.special_type = special_type
+        metadata.special_type = cls.get_special_type_for_prop(prop_template)
 
         if metadata.data_type == "string":
             metadata.string_value = "" if metadata.is_null else str(data[prop_template.Name])
