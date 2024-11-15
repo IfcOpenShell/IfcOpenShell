@@ -22,7 +22,19 @@ import ifcopenshell.api
 import ifcopenshell.util.date
 import ifcopenshell.util.unit
 import datetime
-from typing import Any, Optional, Union
+from typing import Any, Optional, Union, Literal, get_args
+
+
+SUPPORTED_COLUMN = Literal[
+    "HIERARCHY",
+    "TYPE",  # CREW, LABOR, EQUIPMENT, SUBCONTRACTOR, MATERIAL, PRODUCT.
+    "ACTIVITY/RESOURCE NAME",
+    "DESCRIPTION",
+    "COST",
+    "QUANTITY NAME",
+    "LABOR OUTPUT",
+    "EQUIPMENT OUTPUT",
+]
 
 
 class Csv2Ifc:
@@ -32,7 +44,7 @@ class Csv2Ifc:
     Notes about format:
     - empty rows are skipped.
     - 'HIERARCHY' must be the first column.
-    - See SUPPORTED_COLUMNS below for the list of supported columns.
+    - See SUPPORTED_COLUMN above for the list of supported columns.
 
     Example:
 
@@ -41,17 +53,6 @@ class Csv2Ifc:
         csv2ifc = Csv2Ifc("resource_spreadsheet.csv", ifc_file)
         csv2ifc.execute()
     """
-
-    SUPPORTED_COLUMNS = (
-        "HIERARCHY",
-        "TYPE",  # CREW, LABOR, EQUIPMENT, SUBCONTRACTOR, MATERIAL, PRODUCT.
-        "ACTIVITY/RESOURCE NAME",
-        "DESCRIPTION",
-        "COST",
-        "QUANTITY NAME",
-        "LABOR OUTPUT",
-        "EQUIPMENT OUTPUT",
-    )
 
     def __init__(self, csv: str, ifc_file: Optional[ifcopenshell.file] = None):
         """
@@ -78,7 +79,7 @@ class Csv2Ifc:
 
     def parse_csv(self) -> None:
         self.parents = {}
-        self.headers: dict[str, int] = {}
+        self.headers: dict[SUPPORTED_COLUMN, int] = {}
         with open(self.csv, "r") as csv_file:
             reader = csv.reader(csv_file)
             for row in reader:
@@ -86,7 +87,7 @@ class Csv2Ifc:
                 if not row[0]:
                     continue
                 if row[0] == "HIERARCHY":
-                    missing_columns = set(self.SUPPORTED_COLUMNS) - set(row)
+                    missing_columns = set(get_args(SUPPORTED_COLUMN)) - set(row)
                     if missing_columns:
                         raise Exception(
                             f"Header is missing some of the required columns: {', '.join(missing_columns)}."

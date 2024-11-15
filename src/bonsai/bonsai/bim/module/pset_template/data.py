@@ -24,6 +24,7 @@ import ifcopenshell.util.attribute
 import ifcopenshell.util.doc
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
+from typing import Any
 
 
 def refresh():
@@ -49,7 +50,7 @@ class PsetTemplatesData:
         cls.data["prop_templates"] = cls.prop_templates()
 
     @classmethod
-    def primary_measure_type(cls):
+    def primary_measure_type(cls) -> list[tuple[str, str, str]]:
         ifc_file = IfcStore.pset_template_file
         if not ifc_file:
             return []
@@ -61,7 +62,7 @@ class PsetTemplatesData:
         ]
 
     @classmethod
-    def property_template_type(cls):
+    def property_template_type(cls) -> list[tuple[str, str, str]]:
         ifc_file = IfcStore.pset_template_file
         if not ifc_file:
             return []
@@ -96,7 +97,7 @@ class PsetTemplatesData:
         return [(str(t.id()), t.Name, "") for t in IfcStore.pset_template_file.by_type("IfcPropertySetTemplate")]
 
     @classmethod
-    def pset_template(cls):
+    def pset_template(cls) -> dict[str, Any]:
         props = bpy.context.scene.BIMPsetTemplateProperties
         template_id = props.pset_templates
         if not template_id:
@@ -109,7 +110,7 @@ class PsetTemplatesData:
         return info
 
     @classmethod
-    def prop_templates(cls):
+    def prop_templates(cls) -> list[dict[str, Any]]:
         props = bpy.context.scene.BIMPsetTemplateProperties
         template_id = props.pset_templates
         if not template_id:

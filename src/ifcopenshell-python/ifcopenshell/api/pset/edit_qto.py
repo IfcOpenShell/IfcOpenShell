@@ -17,15 +17,16 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.api.pset
 import ifcopenshell.util.pset
-from typing import Optional, Any
+from typing import Optional, Any, Union
 
 
 def edit_qto(
     file: ifcopenshell.file,
     qto: ifcopenshell.entity_instance,
     name: Optional[str] = None,
-    properties: Optional[dict[str, Any]] = None,
+    properties: Optional[dict[str, Union[ifcopenshell.entity_instance, float, int]]] = None,
     pset_template: Optional[ifcopenshell.entity_instance] = None,
 ) -> None:
     """Edits a quantity set and its quantities
@@ -40,10 +41,8 @@ def edit_qto(
     It is not allowed to have None quantities in IFC.
 
     :param qto: The IfcElementQuantity to edit.
-    :type qto: ifcopenshell.entity_instance
     :param name: A new name for the quantity set. If no name is specified,
         the quantity set name is not changed.
-    :type name: str, optional
     :param properties: A dictionary of properties. The keys must be a string
         of the name of the quantity. The data type of the value will be
         determined by the quantity set template. If no quantity set
@@ -53,13 +52,11 @@ def edit_qto(
         become IfcBoolean, and integers will become IfcInteger. If more
         control is desired, you may explicitly specify IFC data objects
         directly.
-    :type properties: dict
     :param pset_template: If a quantity set template is provided, this will
         be used to determine data types. If no user-defined template is
         provided, the built-in buildingSMART templates will be loaded.
     :type pset_template: ifcopenshell.entity_instance, optional
     :return: None
-    :rtype: None
 
     Example:
 
@@ -121,6 +118,9 @@ def edit_qto(
 
 
 class Usecase:
+    file: ifcopenshell.file
+    settings: dict[str, Any]
+
     def execute(self):
         self.qto_idx = 5
         if self.settings["qto"].is_a("IfcPhysicalComplexQuantity"):
@@ -132,22 +132,22 @@ class Usecase:
         new_properties = self.add_new_properties()
         self.extend_qto_with_new_properties(new_properties)
 
-    def update_qto_name(self):
+    def update_qto_name(self) -> None:
         if self.settings["name"]:
             self.settings["qto"].Name = self.settings["name"]
 
-    def load_qto_template(self):
+    def load_qto_template(self) -> None:
         if self.settings["pset_template"]:
             self.pset_template = self.settings["pset_template"]
         else:
             self.psetqto = ifcopenshell.util.pset.get_template(self.file.schema_identifier)
             self.qto_template = self.psetqto.get_by_name(self.settings["qto"].Name)
 
-    def update_existing_properties(self):
+    def update_existing_properties(self) -> None:
         for prop in self.settings["qto"][self.qto_idx] or []:
             self.update_existing_property(prop)
 
-    def update_existing_property(self, prop):
+    def update_existing_property(self, prop: ifcopenshell.entity_instance) -> None:
         if prop.Name not in self.settings["properties"]:
             return
         value = self.settings["properties"][prop.Name]
@@ -162,7 +162,7 @@ class Usecase:
             prop[3] = float(value)
         del self.settings["properties"][name]
 
-    def add_new_properties(self):
+    def add_new_properties(self) -> list[ifcopenshell.entity_instance]:
         properties = []
         for name, value in self.settings["properties"].items():
             if value is None:
@@ -184,12 +184,12 @@ class Usecase:
                 )
         return properties
 
-    def extend_qto_with_new_properties(self, new_properties):
+    def extend_qto_with_new_properties(self, new_properties: list[ifcopenshell.entity_instance]) -> None:
         props = list(self.settings["qto"][self.qto_idx]) if self.settings["qto"][self.qto_idx] else []
         props.extend(new_properties)
         self.settings["qto"][self.qto_idx] = props
 
-    def get_canonical_property_type(self, name, value):
+    def get_canonical_property_type(self, name: str, value: Union[ifcopenshell.entity_instance, float, int]) -> str:
         if isinstance(value, ifcopenshell.entity_instance):
             result = value.is_a().replace("Ifc", "").replace("Measure", "")
             # Sigh, IFC inconsistencies
@@ -205,7 +205,8 @@ class Usecase:
                 return prop_template.TemplateType[2:].lower().capitalize()
         return "Length"
 
-    def get_primary_measure_type(self, name, previous_value=None):
+    # TODO: unused code.
+    def get_primary_measure_type(self, name: str, previous_value: Optional[Any] = None) -> str:
         if not self.qto_template:
             return previous_value.is_a() if previous_value else "IfcLabel"
         for prop_template in self.qto_template.HasPropertyTemplates:
