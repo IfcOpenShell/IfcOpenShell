@@ -30,12 +30,14 @@ FLOAT_TYPE_KEYWORDS = (
     ("Time", ("time", "duration")),
 )
 
+PROP_VALUE_TYPE = Union[ifcopenshell.entity_instance, float, int, dict[str, "PROP_VALUE_TYPE"]]
+
 
 def edit_qto(
     file: ifcopenshell.file,
     qto: ifcopenshell.entity_instance,
     name: Optional[str] = None,
-    properties: Optional[dict[str, Union[ifcopenshell.entity_instance, float, int]]] = None,
+    properties: Optional[dict[str, PROP_VALUE_TYPE]] = None,
     pset_template: Optional[ifcopenshell.entity_instance] = None,
 ) -> None:
     """Edits a quantity set and its quantities
@@ -49,7 +51,7 @@ def edit_qto(
     One major difference is that quantities set to None are always purged.
     It is not allowed to have None quantities in IFC.
 
-    :param qto: The IfcElementQuantity to edit.
+    :param qto: The IfcElementQuantity or IfcPhysicalComplexQuantity to edit.
     :param name: A new name for the quantity set. If no name is specified,
         the quantity set name is not changed.
     :param properties: A dictionary of properties. The keys must be a string
@@ -63,6 +65,9 @@ def edit_qto(
         the default quantity type will be IfcQuantityLength.
 
         - `int` values will map to IfcQuantityCount.
+
+        - dictionary values will be used to create IfcPhysicalComplexQuantity with
+        properties from the dictionary.
 
         If more control is desired, you may explicitly specify IFC data objects directly.
     :param pset_template: If a quantity set template is provided, this will
