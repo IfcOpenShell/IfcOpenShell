@@ -204,13 +204,3 @@ class Usecase:
                     continue
                 return prop_template.TemplateType[2:].lower().capitalize()
         return "Length"
-
-    # TODO: unused code.
-    def get_primary_measure_type(self, name: str, previous_value: Optional[Any] = None) -> str:
-        if not self.qto_template:
-            return previous_value.is_a() if previous_value else "IfcLabel"
-        for prop_template in self.qto_template.HasPropertyTemplates:
-            if prop_template.Name != name:
-                continue
-            return prop_template.PrimaryMeasureType or "IfcLabel"
-        return previous_value.is_a() if previous_value else "IfcLabel"
