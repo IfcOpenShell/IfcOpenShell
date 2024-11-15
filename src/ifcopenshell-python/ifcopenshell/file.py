@@ -199,6 +199,7 @@ NO_HEADER = ifcopenshell_wrapper.file_open_status.NO_HEADER
 UNSUPPORTED_SCHEMA = ifcopenshell_wrapper.file_open_status.UNSUPPORTED_SCHEMA
 INVALID_SYNTAX = ifcopenshell_wrapper.file_open_status.INVALID_SYNTAX
 
+
 class file:
     """Base class for containing IFC files.
 
