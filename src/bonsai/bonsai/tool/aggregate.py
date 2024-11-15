@@ -83,3 +83,15 @@ class Aggregate(bonsai.core.tool.Aggregate):
             queue.update(new_parts := set(ifcopenshell.util.element.get_parts(element)))
             parts.update(new_parts)
         return parts
+
+    @classmethod
+    def constrain_parts_to_aggregate(cls, aggregate: ifcopenshell.entity_instance):
+        agg_element = tool.Ifc.get_entity(aggregate)
+        parts = ifcopenshell.util.element.get_parts(agg_element)
+        parts_objs = [tool.Ifc.get_object(p) for p in parts]
+        for obj in parts_objs:
+            constraint = next((c for c in obj.constraints if c.type == "CHILD_OF"), None)
+            if constraint:
+                obj.constraints.remove(constraint)
+            constraint = obj.constraints.new("CHILD_OF")
+            constraint.target = aggregate
