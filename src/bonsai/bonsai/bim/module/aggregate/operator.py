@@ -66,6 +66,7 @@ class BIM_OT_aggregate_assign_object(bpy.types.Operator, tool.Ifc.Operator):
                     relating_obj=relating_obj,
                     related_obj=obj,
                 )
+                tool.Aggregate.constrain_parts_to_aggregate(relating_obj)
             except core.IncompatibleAggregateError:
                 self.report({"ERROR"}, f"Cannot aggregate {obj.name} to {relating_obj.name}")
             except core.AggregateRepresentationError:
@@ -177,6 +178,7 @@ class BIM_OT_add_aggregate(bpy.types.Operator, tool.Ifc.Operator):
                     element_obj=aggregate,
                 )
             core.assign_object(tool.Ifc, tool.Aggregate, tool.Collector, relating_obj=aggregate, related_obj=obj)
+            tool.Aggregate.constrain_parts_to_aggregate(aggregate)
 
     def create_aggregate(self, context, ifc_class, aggregate_name):
         aggregate = bpy.data.objects.new(aggregate_name, None)
