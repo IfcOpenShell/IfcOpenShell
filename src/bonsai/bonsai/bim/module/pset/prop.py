@@ -243,7 +243,11 @@ class PsetProperties(PropertyGroup):
     active_pset_id: IntProperty(name="Active Pset ID")
     active_pset_has_template: BoolProperty(name="Active Pset Has Template")
     active_pset_name: StringProperty(name="Pset Name")
-    active_pset_type: StringProperty(name="Active Pset Type")
+    active_pset_type: EnumProperty(
+        name="Active Pset Type",
+        items=((i, i, "") for i in ("-", "PSET", "QTO")),
+        default="-",
+    )
     properties: CollectionProperty(name="Properties", type=IfcProperty)
     pset_name: EnumProperty(items=get_pset_name, name="Pset Name")
     qto_name: EnumProperty(items=get_qto_name, name="Qto Name")

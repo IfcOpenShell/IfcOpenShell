@@ -81,7 +81,7 @@ class DisablePsetEditing(bpy.types.Operator, tool.Ifc.Operator):
                 )
         props.active_pset_id = 0
         props.active_pset_name = ""
-        props.active_pset_type = ""
+        props.active_pset_type = "-"
 
 
 class EditPset(bpy.types.Operator, tool.Ifc.Operator):
