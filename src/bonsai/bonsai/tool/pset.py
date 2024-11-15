@@ -355,6 +355,9 @@ class Pset(bonsai.core.tool.Pset):
     def add_proposed_property(cls, name: str, value: Any, props: bpy.types.PropertyGroup) -> Union[None, str]:
         if props.properties.get(name):
             return f"Property '{name}' already exists."
+        if props.active_pset_type == "QTO":
+            if not isinstance(value, (float, int)):
+                return f"Quantity sets support only numeric values. Provided value: '{value}' ({type(value).__name__})."
         prop = props.properties.add()
         prop.name = name
         metadata = prop.metadata
