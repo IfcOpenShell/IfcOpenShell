@@ -96,6 +96,8 @@ class BIM_OT_aggregate_unassign_object(bpy.types.Operator, tool.Ifc.Operator):
                 related_obj=tool.Ifc.get_object(element),
             )
 
+            tool.Aggregate.remove_constraints(tool.Ifc.get_object(element))
+
             # Removes Pset related to Linked Aggregates
             if not element.is_a("IfcElementAssembly"):
                 pset = ifcopenshell.util.element.get_pset(element, "BBIM_Linked_Aggregate")
