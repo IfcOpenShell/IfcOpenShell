@@ -85,7 +85,7 @@ class Aggregate(bonsai.core.tool.Aggregate):
         return parts
 
     @classmethod
-    def constrain_parts_to_aggregate(cls, aggregate: ifcopenshell.entity_instance):
+    def constrain_parts_to_aggregate(cls, aggregate: bpy.types.Object):
         agg_element = tool.Ifc.get_entity(aggregate)
         parts = ifcopenshell.util.element.get_parts(agg_element)
         parts_objs = [tool.Ifc.get_object(p) for p in parts]
@@ -95,3 +95,11 @@ class Aggregate(bonsai.core.tool.Aggregate):
                 obj.constraints.remove(constraint)
             constraint = obj.constraints.new("CHILD_OF")
             constraint.target = aggregate
+
+    @classmethod
+    def remove_constraints(cls, part: bpy.types.Object):
+        constraint = next((c for c in part.constraints if c.type == "CHILD_OF"), None)
+        if constraint:
+            part.constraints.remove(constraint)
+
+        
