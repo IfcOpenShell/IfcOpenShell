@@ -18,6 +18,7 @@
 
 import bpy
 import ifcopenshell
+import ifcopenshell.api.pset
 import ifcopenshell.util.attribute
 import ifcopenshell.util.element
 import bonsai.core.tool
@@ -353,11 +354,17 @@ class Pset(bonsai.core.tool.Pset):
 
     @classmethod
     def add_proposed_property(cls, name: str, value: Any, props: bpy.types.PropertyGroup) -> Union[None, str]:
+        from ifcopenshell.api.pset.edit_qto import infer_property_type
+
         if props.properties.get(name):
             return f"Property '{name}' already exists."
+        special_type = ""
         if props.active_pset_type == "QTO":
             if not isinstance(value, (float, int)):
                 return f"Quantity sets support only numeric values. Provided value: '{value}' ({type(value).__name__})."
+            property_type = infer_property_type(name, value)
+            if property_type in ("Area", "Length", "Volume"):
+                special_type = property_type.upper()
         prop = props.properties.add()
         prop.name = name
         metadata = prop.metadata
@@ -365,6 +372,7 @@ class Pset(bonsai.core.tool.Pset):
         metadata.name = name
         metadata.is_null = value is None
         metadata.is_optional = True
+        metadata.special_type = special_type
         metadata.set_value(metadata.get_value_default() if metadata.is_null else value)
 
     @classmethod
