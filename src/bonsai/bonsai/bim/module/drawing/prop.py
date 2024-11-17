@@ -522,6 +522,7 @@ class BIMTextProperties(PropertyGroup):
         default="2.5",
         name="Font Size",
     )
+    newline_at: IntProperty(name="Newline At")
 
     def get_text_edited_data(self):
         """should be called only if `is_editing`

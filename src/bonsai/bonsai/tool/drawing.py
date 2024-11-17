@@ -1021,6 +1021,21 @@ class Drawing(bonsai.core.tool.Drawing):
                 properties={"Classes": classes},
             )
 
+    @classmethod
+    def update_newline_at(cls, obj: bpy.types.Object) -> None:
+        props = obj.BIMTextProperties
+        element = tool.Ifc.get_entity(obj)
+        newline_at = int(props.newline_at)
+        ifc_file = tool.Ifc.get()
+        pset = tool.Pset.get_element_pset(element, "EPset_Annotation")
+        if not pset:
+            pset = ifcopenshell.api.run("pset.add_pset", ifc_file, product=element, name="EPset_Annotation")
+        ifcopenshell.api.run(
+            "pset.edit_pset",
+            ifc_file,
+            pset=pset,
+            properties={"Newline_At": newline_at},
+        )
     # TODO below this point is highly experimental prototype code with no tests
 
     @classmethod
