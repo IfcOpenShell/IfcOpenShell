@@ -533,6 +533,8 @@ class BIM_PT_text(Panel):
 
             row = self.layout.row(align=True)
             row.prop(props, "font_size")
+            row = self.layout.row(align=True)
+            row.prop(props, "newline_at")
 
             for i, literal_props in enumerate(props.literals):
                 box = self.layout.box()
@@ -574,6 +576,9 @@ class BIM_PT_text(Panel):
             row = self.layout.row(align=True)
             row.label(text="FontSize")
             row.label(text=str(text_data["FontSize"]))
+            row = self.layout.row(align=True)
+            row.label(text="Newline_At")
+            row.label(text=str(props.newline_at))
 
             for literal_data in text_data["Literals"]:
                 box = self.layout.box()

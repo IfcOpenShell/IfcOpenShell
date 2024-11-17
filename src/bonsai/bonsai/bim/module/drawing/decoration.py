@@ -605,8 +605,16 @@ class BaseDecorator:
         font_size_mm = text_data["FontSize"] * text_scale
         for literal_data in literals_data:
             box_alignment = literal_data["BoxAlignment"]
+            text = literal_data["CurrentValue"]
 
-            for line in literal_data["CurrentValue"].split("\n"):
+            newline_at = props.newline_at
+
+            if newline_at != 0:
+                text = helper.add_newline_between_words (text, newline_at)
+
+            multiple_lines = text.split("\n")
+
+            for line in multiple_lines:
                 self.draw_label(
                     context,
                     line,
@@ -620,6 +628,8 @@ class BaseDecorator:
                     box_alignment=box_alignment,
                 )
                 line_i += 1 if not reverse_lines_order else -1
+
+
 
 
 class DimensionDecorator(BaseDecorator):
