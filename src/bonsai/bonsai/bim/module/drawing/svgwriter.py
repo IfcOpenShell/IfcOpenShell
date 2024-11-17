@@ -25,7 +25,8 @@ import shutil
 import mathutils
 import xml.etree.ElementTree as ET
 import svgwrite
-import svgwrite.text
+from svgwrite import text, shapes
+from PIL import ImageFont, ImageDraw, Image
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
@@ -775,19 +776,88 @@ class SvgWriter:
             "text-anchor": text_anchor,
         }
 
-    def add_fill_bg(self, element: svgwrite.text.Text, copy: bool = True) -> svgwrite.text.Text:
-        # Useful since tspans and texts do not support "background-color"
-        # so we just add a filter. Have to do it in a separate tag to avoid blurry image.
-        if copy:
-            element = element.copy()
-        if hasattr(element, "xml"):
-            attrib = element.xml.attrib
-        elif isinstance(element, ET.Element):
-            attrib = element.attrib
-        else:  # assuming it's svgwrite.base.BaseElement
-            attrib = element.attribs
-        attrib["filter"] = "url(#fill-background)"
-        return element
+    def add_fill_bg(self, element: svgwrite.text.Text, text, font_size, copy: bool = True) -> svgwrite.text.Text:
+        """Adds a background rectangle for each text line based on text dimensions."""
+        # font_path = "c:/users/ryan schultz/appdata/local/microsoft/windows/fonts/century_gothic.ttf"
+
+
+        attribs = getattr(element, 'attribs', None) or getattr(element, 'attrib', {})
+        #TO DO: need to find a way to use the font designated in the preferences, and grab it from the OS
+        # from matplotlib import font_manager
+        # if font_name := bpy.context.scene.DocProperties.drawing_font:
+        #     font_files = font_manager.findSystemFonts(fontpaths=None, fontext='ttf')
+        #     for font_path in font_files:
+        #         font = font_manager.FontProperties(fname=font_path)
+        #         if font.get_name() == font_name:
+        #             font = ImageFont.truetype(font_path, int(font_size))
+            
+
+        font_path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "fonts", "OpenGost Type B TT.ttf")
+        font = ImageFont.truetype(font_path, int(font_size))
+
+        # Create a temporary image to draw text and measure its size
+        image = Image.new('RGB', (1, 1))
+        draw = ImageDraw.Draw(image)
+        
+        # Get text bounding box (returns (left, top, right, bottom))
+        left, top, right, bottom = draw.textbbox((0, 0), text, font=font)
+        text_width = right - left
+        text_height = bottom - top
+
+        # 3.4 and 3.9 from a lot of trial and error
+        scale_factor = min(1, 23.3 / len(text))
+        rect_width = (text_width * scale_factor) / 3.4
+        rect_height = text_height/2.9
+
+        
+        x = float(attribs['x']) if 'x' in attribs else 0
+        y = float(attribs['y']) if 'y' in attribs else 0
+
+
+        # 1.19 and 6 from a lot of trial and error
+        shift_y_constant = 1.19
+        shift_x_constant = rect_height/6
+
+        # Adjust based on text-anchor
+        text_anchor = attribs.get("text-anchor", "start")
+        if text_anchor == "start":
+            x -= shift_x_constant
+        if text_anchor == "middle":
+            x -= rect_width / 2 
+        elif text_anchor == "end":
+            x -= rect_width - shift_x_constant
+
+        # Adjust based on dominant-baseline
+        # 1.46 and .78 from a lot of trial and error
+        dominant_baseline = attribs.get("dominant-baseline", "baseline")
+        if dominant_baseline == "hanging":
+            y += rect_height*shift_y_constant*1.46
+        elif dominant_baseline == "middle":
+            y += rect_height*shift_y_constant
+        elif dominant_baseline == "baseline":
+            y += rect_height*shift_y_constant*.78
+
+
+        rect_bg = shapes.Rect(
+            insert=(x, y - rect_height * 0.8),
+            size=(rect_width, rect_height),
+            fill="gray" #will be white when done. :)
+        )
+
+        if "transform" in attribs:
+            transform_str = attribs["transform"]
+            if "translate" in transform_str:
+                try:
+                    translation_values = transform_str[transform_str.index("(") + 1:transform_str.index(")")].split(",")
+                    x_translation = float(translation_values[0])
+                    y_translation = float(translation_values[1]) - rect_height  if len(translation_values) > 1 else 0.0
+                    rect_bg.attribs["transform"] = f"translate({x_translation}, {y_translation})"
+                except (ValueError, IndexError):
+                    rect_bg.attribs["transform"] = transform_str
+            else:
+                rect_bg.attribs["transform"] = transform_str
+
+        return rect_bg
 
     def draw_text_annotation(self, text_obj: bpy.types.Object, position: Vector) -> None:
         x_offset = self.raw_width / 2
@@ -828,14 +898,17 @@ class SvgWriter:
                         field.attrib["class"] = classes_str
 
                     if fill_bg:
-                        symbol_copied = symbol_svg.copy()
-                        for text_tag in symbol_copied.xml.findall("text"):
-                            self.add_fill_bg(text_tag, copy=False)
+                        for text_tag in symbol_svg.xml.findall("text"):
+                            text_line = text_tag.text
+                            font_size = self.get_font_size (classes_str)
+                            bg_rect = self.add_fill_bg(text_tag, text_line, font_size, copy=False)
+                            symbol_svg.add(bg_rect)
                         # NOTE: in case we'll later need to add fill-bg for the entire symbol:
                         # self.add_fill_bg(symbol_svg, copy=False)
-                        self.svg.add(symbol_copied)
                     self.svg.add(symbol_svg)
                     return None
+
+
 
             if not symbol_svg or not template_text_fields:
                 self.draw_symbol(symbol, symbol_transform)
@@ -1361,6 +1434,8 @@ class SvgWriter:
         for tag in text_tags:
             self.svg.add(tag)
 
+
+
     def create_text_tag(
         self,
         text,
@@ -1378,47 +1453,50 @@ class SvgWriter:
         text_tags = []
         base_text_attrs = SvgWriter.get_box_alignment_parameters(box_alignment)
 
-        if not multiline:
-            transform_kwargs = {"transform": "rotate({} {} {})".format(angle, text_position.x, text_position.y)}
-            text_tag = self.svg.text(
-                text_format(text),
-                insert=text_position,
-                class_=class_str,
-                **(transform_kwargs | base_text_attrs),
-            )
-            text_tags.append(text_tag)
-            return text_tags
+        font_size = self.get_font_size (class_str)
 
-        text_position_svg_str = ", ".join(map(str, text_position))
-        text_transform = f"translate({text_position_svg_str}) rotate({angle})"
-        # after pretty indentation some redundant spaces can occur in svg tags
-        # this is why we apply "font-size: 0;" to the text tag to remove those spaces
-        # and add clases to the tspan tags
-        # ref: https://github.com/IfcOpenShell/IfcOpenShell/issues/2833#issuecomment-1471584960
-        text_kwargs = {
-            "transform": text_transform,
-            "style": "font-size: 0;",
-        }
-
-        text_tag = self.svg.text("", **text_kwargs, **base_text_attrs)
-        text_tags.append(text_tag)
         text_lines = text.replace("\\n", "\n").split("\n")
         text_lines = text_lines if multiline_to_bottom else text_lines[::-1]
 
         for line_number, text_line in enumerate(text_lines, line_number_start):
-            # position has to be inserted at tspan to avoid x offset between tspans
-            # note that tspan doesn't support using `transform` attribute
-            # so we use (0,0) position because tspan is already offseted by text transform
-            tspan = self.svg.tspan(text_format(text_line), class_=class_str, insert=(0, 0))
-            # doing it here and not in tspan constructor because constructor adds unnecessary spaces
-            tspan.update({"dy": f"{line_number if multiline_to_bottom else -line_number}em"})
-            text_tag.add(tspan)
-
-        if fill_bg:
-            fill_bg_tags = [self.add_fill_bg(text_tag) for text_tag in text_tags]
-            text_tags = fill_bg_tags + text_tags
+            line_position = (
+                text_position.x,
+                text_position.y + line_number * .3 * font_size 
+            )
+            transform_str = f"translate({line_position[0]}, {line_position[1]}) rotate({angle})"
+            
+            text_tag = self.svg.text(
+                text_format(text_line),
+                insert=(0, 0),  
+                class_=class_str,
+                transform=transform_str,
+                **base_text_attrs,
+            )
+            
+            if fill_bg:
+                bg_rect = self.add_fill_bg(text_tag, text_line, font_size)
+                text_tags.append(bg_rect)
+                
+            text_tags.append(text_tag)
 
         return text_tags
+
+    def get_font_size (self, class_str):
+        font_adjustement = 3.9  #a lot of trial and error to find
+        if "title" in class_str.split():
+            font_size = 11.55 * font_adjustement
+        elif "header" in class_str.split():
+            font_size = 8.25 * font_adjustement
+        elif "large" in class_str.split():
+            font_size = 5.78 * font_adjustement
+        elif "regular" in class_str.split():
+            font_size = 4.13 * font_adjustement
+        elif "small" in class_str.split():
+            font_size = 2.97 * font_adjustement
+        else: 
+            font_size = 4.13 * font_adjustement
+
+        return font_size
 
     def project_point_onto_camera(self, point: Vector) -> Vector:
         # TODO is this needlessly complex?
