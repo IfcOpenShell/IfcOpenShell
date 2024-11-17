@@ -77,7 +77,7 @@ class BIM_PT_cost_schedules(Panel):
                 cost_schedule["id"]
             )
             row1.operator(
-                "bim.generate_cost_schedule_browser", text="Generate spreadsheet browsser", icon="URL"
+                "bim.generate_cost_schedule_browser", text="Generate spreadsheet browser", icon="URL"
             ).cost_schedule = cost_schedule["id"]
             row2 = col.row(align=True)
             row2.alignment = "RIGHT"
@@ -95,7 +95,7 @@ class BIM_PT_cost_schedules(Panel):
             row1.prop(self.props, "should_show_column_ui", text="Schedule Columns", icon="SHORTDISPLAY")
             if self.props.is_editing == "COST_SCHEDULE_ATTRIBUTES":
                 row.operator("bim.edit_cost_schedule", text="", icon="CHECKMARK")
-            row.operator("bim.disable_editing_cost_schedule", text="Disable Editing", icon="CANCEL")
+            row.operator("bim.disable_editing_cost_schedule", text="", icon="CANCEL")
         else:
             row.label(
                 text="{}[{}]".format(cost_schedule["name"], cost_schedule["predefined_type"]), icon="LINENUMBERS_ON"
