@@ -262,7 +262,7 @@ def update_titleblocks(self, context):
     SheetsData.data["titleblocks"] = SheetsData.titleblocks()
 
 
-def update_should_draw_decorations(self, context):
+def update_should_draw_decorations(self, context: bpy.types.Context) -> None:
     if self.should_draw_decorations:
         # TODO: design a proper text variable templating renderer
         collection = context.scene.camera.BIMObjectProperties.collection

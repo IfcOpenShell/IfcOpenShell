@@ -57,6 +57,7 @@ def edit_assigned_product(
     ifc: tool.Ifc, drawing: tool.Drawing, obj: bpy.types.Object, product: Optional[ifcopenshell.entity_instance] = None
 ) -> None:
     element = ifc.get_entity(obj)
+    assert element
     existing_product = drawing.get_assigned_product(element)
     if existing_product != product:
         if existing_product:

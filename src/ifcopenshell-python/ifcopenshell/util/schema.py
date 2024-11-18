@@ -246,6 +246,9 @@ class BatchReassignClass:
 
 
 class Migrator:
+    migrated_ids: dict[int, int]
+    attribute_overrides: dict[int, dict[int, str]]
+
     def __init__(self):
         self.migrated_ids = {}
         self.attribute_overrides = {}
@@ -308,7 +311,7 @@ class Migrator:
             "User": None,
         }
 
-    def preprocess(self, old_file: ifcopenshell.file, new_file: ifcopenshell.file):
+    def preprocess(self, old_file: ifcopenshell.file, new_file: ifcopenshell.file) -> None:
         to_delete = set()
 
         if old_file.schema == "IFC2X3" and new_file.schema == "IFC4":
@@ -381,7 +384,13 @@ class Migrator:
                 new_element = new_file.create_entity(self.class_2x3_to_4[ifc_class])
         return new_element
 
-    def migrate_attributes(self, element, new_file, new_element, new_element_schema):
+    def migrate_attributes(
+        self,
+        element: ifcopenshell.entity_instance,
+        new_file: ifcopenshell.file,
+        new_element: ifcopenshell.entity_instance,
+        new_element_schema: ifcopenshell_wrapper.declaration,
+    ) -> ifcopenshell.entity_instance:
         for attribute_index, value in self.attribute_overrides.get(element.id(), {}).items():
             new_element[attribute_index] = value
         for i, attribute in enumerate(new_element_schema.all_attributes()):
