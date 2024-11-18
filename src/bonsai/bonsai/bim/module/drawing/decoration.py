@@ -609,7 +609,7 @@ class BaseDecorator:
             text = literal_data["CurrentValue"]
 
             if newline_at != 0:
-                text = helper.add_newline_between_words (text, newline_at)
+                text = helper.add_newline_between_words(text, newline_at)
 
             multiple_lines = text.split("\n")
 
@@ -627,8 +627,6 @@ class BaseDecorator:
                     box_alignment=box_alignment,
                 )
                 line_i += 1 if not reverse_lines_order else -1
-
-
 
 
 class DimensionDecorator(BaseDecorator):
