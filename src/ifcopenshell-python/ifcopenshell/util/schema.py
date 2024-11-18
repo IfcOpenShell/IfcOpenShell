@@ -364,15 +364,21 @@ class Migrator:
     def migrate_class(
         self, element: ifcopenshell.entity_instance, new_file: ifcopenshell.file
     ) -> ifcopenshell.entity_instance:
+        ifc_class = element.is_a()
+        if ifc_class == "IfcQuantityCount" and new_file.schema == "IFC4X3":
+            # 3 IfcPhysicalSimpleQuantity Value
+            value = element[3]
+            if isinstance(value, float):
+                ifc_class = "IfcQuantityNumber"
         try:
-            new_element = new_file.create_entity(element.is_a())
+            new_element = new_file.create_entity(ifc_class)
         except:
             # The element does not exist in this schema
             # Complex migration is not yet supported (e.g. polygonal face set to faceted brep)
             if new_file.schema == "IFC2X3":
-                new_element = new_file.create_entity(self.class_4_to_2x3[element.is_a()])
+                new_element = new_file.create_entity(self.class_4_to_2x3[ifc_class])
             elif new_file.schema == "IFC4":
-                new_element = new_file.create_entity(self.class_2x3_to_4[element.is_a()])
+                new_element = new_file.create_entity(self.class_2x3_to_4[ifc_class])
         return new_element
 
     def migrate_attributes(self, element, new_file, new_element, new_element_schema):
@@ -393,21 +399,32 @@ class Migrator:
         reverse_mapping: bool = False,
     ) -> Union[Any, None]:
         # print("Searching for an equivalent", element, new_element, attribute.name())
+        ifc_class = new_element.is_a()
+        attr_name = attribute.name()
         try:
             if reverse_mapping:
-                equivalent_map = attributes_mapping[new_element.is_a()]
-                equivalent = list(equivalent_map.keys())[list(equivalent_map.values()).index(attribute.name())]
+                equivalent_map = attributes_mapping[ifc_class]
+                equivalent = list(equivalent_map.keys())[list(equivalent_map.values()).index(attr_name)]
             else:
-                equivalent = attributes_mapping[new_element.is_a()][attribute.name()]
+                equivalent = attributes_mapping[ifc_class][attr_name]
             if hasattr(element, equivalent):
                 # print("Equivalent found", equivalent)
                 return getattr(element, equivalent)
             else:
                 return
         except Exception as e:
+            if (
+                ifc_class == "IfcQuantityNumber"
+                and attr_name == "NumberValue"
+                and new_element.file.schema == "IFC4X3"
+                and element.is_a("IfcQuantityCount")
+            ):
+                # 3 IfcPhysicalSimpleQuantity Value
+                return element[3]
+
             print(
                 "Unable to find equivalent attribute of {} to migrate from {} to {}".format(
-                    attribute.name(), element, new_element
+                    attr_name, element, new_element
                 )
             )
             raise e
