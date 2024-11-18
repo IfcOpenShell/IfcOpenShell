@@ -16,13 +16,18 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcResources.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import csv
+import _csv
+import isodate
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.date
+import ifcopenshell.util.element
+import ifcopenshell.util.resource
 import ifcopenshell.util.unit
 import datetime
-from typing import Any, Optional, Union, Literal, get_args
+from typing import Any, Optional, Union, Literal, get_args, NamedTuple, cast
 
 
 SUPPORTED_COLUMN = Literal[
@@ -35,6 +40,15 @@ SUPPORTED_COLUMN = Literal[
     "LABOR OUTPUT",
     "EQUIPMENT OUTPUT",
 ]
+
+RESOURCE_MAP = {
+    "CREW": "IfcCrewResource",
+    "LABOR": "IfcLaborResource",
+    "EQUIPMENT": "IfcConstructionEquipmentResource",
+    "SUBCONTRACTOR": "IfcSubContractResource",
+    "MATERIAL": "IfcConstructionMaterialResource",
+    "PRODUCT": "IfcConstructionProductResource",
+}
 
 
 class Csv2Ifc:
@@ -64,14 +78,6 @@ class Csv2Ifc:
         self.file = ifc_file
         self.resources: list[dict[str, Any]] = []
         self.units = {}  # TODO: never used
-        self.resource_map = {
-            "CREW": "IfcCrewResource",
-            "LABOR": "IfcLaborResource",
-            "EQUIPMENT": "IfcConstructionEquipmentResource",
-            "SUBCONTRACTOR": "IfcSubContractResource",
-            "MATERIAL": "IfcConstructionMaterialResource",
-            "PRODUCT": "IfcConstructionProductResource",
-        }
 
     def execute(self) -> None:
         self.parse_csv()
@@ -114,7 +120,7 @@ class Csv2Ifc:
 
     def get_row_resource_data(self, row: list[str]) -> dict[str, Any]:
         name = row[self.headers["ACTIVITY/RESOURCE NAME"]]
-        resource_class = self.resource_map[row[self.headers["TYPE"]]]
+        resource_class = RESOURCE_MAP[row[self.headers["TYPE"]]]
         base_cost_value = row[self.headers["COST"]]
         productivity = {}
 
@@ -194,3 +200,87 @@ class Csv2Ifc:
         self.file = ifcopenshell.file(schema="IFC4")
         ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
         ifcopenshell.api.run("unit.assign_unit", self.file)
+
+
+class Ifc2CsvRow(NamedTuple):
+    hierarchy: int
+    resource_type: str
+    name: str
+    description: str
+    cost: Union[float, None]
+    quantity_name: Union[str, None]
+    labor_output: Union[float, None]
+    equipment_output: Union[float, None]
+
+
+class Ifc2Csv:
+    """Class to export resources from an IFC file to csv file."""
+
+    HEADER = (
+        "HIERARCHY",
+        "TYPE",
+        "ACTIVITY/RESOURCE NAME",
+        "DESCRIPTION",
+        "COST",
+        "QUANTITY NAME",
+        "LABOR OUTPUT",
+        "EQUIPMENT OUTPUT",
+        "GUID",
+    )
+    assert len(HEADER) == len(Ifc2CsvRow._fields)
+
+    def __init__(self, filepath: str, ifc_file: ifcopenshell.file):
+        self.filepath = filepath
+        self.file = ifc_file
+        self.inverse_resource_map = {value: key for key, value in RESOURCE_MAP.items()}
+
+    def execute(self) -> None:
+        # TODO: unused columns: USAGE, UNIT, PRODUCTIVITY UNIT.
+        with open(self.filepath, "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow(self.HEADER)
+            for resource in self.file.by_type("IfcConstructionResource"):
+                if resource.Nests:
+                    continue
+                self.process_recourse(writer, resource, 1)
+
+    def process_recourse(
+        self, writer: _csv._writer, resource: ifcopenshell.entity_instance, hierarchy_level: int
+    ) -> None:
+        row = self.get_row(resource, hierarchy_level)
+        writer.writerow(row)
+        resources = ifcopenshell.util.resource.get_nested_resources(resource)
+        for resource in resources:
+            self.process_recourse(writer, resource, hierarchy_level + 1)
+        if resources:
+            writer.writerow((None,) * len(self.HEADER))
+
+    def get_row(self, resource: ifcopenshell.entity_instance, hierarchy_level: int) -> Ifc2CsvRow:
+        resource_class = resource.is_a()
+        cost, unit = ifcopenshell.util.resource.get_cost(resource)
+
+        quantity_name = None
+        labor_output, equipment_output = None, None
+        if resource_class in ("IfcConstructionEquipmentResource", "IfcLaborResource"):
+            pset: dict[str, Any] = ifcopenshell.util.element.get_pset(resource, "EPset_Productivity")
+            if pset:
+                quantity_name = cast(str, pset["BaseQuantityProducedName"])
+                time_consumed: float = isodate.parse_duration(pset["BaseQuantityConsumed"]).total_seconds() / 3600
+                produced: float = pset["BaseQuantityProducedValue"]
+                output = time_consumed / produced
+                if resource_class == "IfcLaborResource":
+                    labor_output = output
+                else:
+                    equipment_output, labor_output = None, output
+
+        return Ifc2CsvRow(
+            hierarchy=hierarchy_level,
+            resource_type=self.inverse_resource_map[resource.is_a()],
+            name=resource.Name,
+            description=resource.Description,
+            cost=cost,
+            quantity_name=quantity_name,
+            labor_output=labor_output,
+            equipment_output=equipment_output,
+            guid=resource.GlobalId,
+        )

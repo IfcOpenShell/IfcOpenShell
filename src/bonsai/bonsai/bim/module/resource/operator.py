@@ -17,7 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from bpy_extras.io_utils import ImportHelper
+from bpy_extras.io_utils import ImportHelper, ExportHelper
 from bonsai.bim.module.resource.ui import draw_productivity_ui
 import bonsai.core.resource as core
 import bonsai.tool as tool
@@ -334,6 +334,7 @@ class EditResourceQuantity(bpy.types.Operator, tool.Ifc.Operator):
 class ImportResources(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     bl_idname = "bim.import_resources"
     bl_label = "Import Resources"
+    bl_description = "Import resources from a .csv file"
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".csv"
     filter_glob: bpy.props.StringProperty(default="*.csv", options={"HIDDEN"})
@@ -349,6 +350,24 @@ class ImportResources(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
         core.import_resources(tool.Resource, file_path=self.filepath)
         resources_after = len(ifc_file.by_type("IfcConstructionResource"))
         self.report({"INFO"}, f"{resources_after - resources_before} resources are imported.")
+
+
+class ExportResources(bpy.types.Operator, tool.Ifc.Operator, ExportHelper):
+    bl_idname = "bim.export_resources"
+    bl_label = "Export Resources"
+    bl_description = "Export resources to a .csv file"
+    bl_options = {"REGISTER", "UNDO"}
+    filename_ext = ".csv"
+    filter_glob: bpy.props.StringProperty(default="*.csv", options={"HIDDEN"})
+
+    @classmethod
+    def poll(cls, context):
+        ifc_file = tool.Ifc.get()
+        return ifc_file is not None
+
+    def _execute(self, context):
+        core.export_resources(tool.Resource, file_path=self.filepath)
+        self.report({"INFO"}, f"Resources are exported to {self.filepath}")
 
 
 class AddProductivityData(bpy.types.Operator, tool.Ifc.Operator):

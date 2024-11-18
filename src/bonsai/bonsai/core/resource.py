@@ -171,6 +171,10 @@ def import_resources(resource_tool: tool.Resource, file_path: str) -> None:
     resource_tool.load_resources()
 
 
+def export_resources(resource_tool: tool.Resource, file_path: str) -> None:
+    resource_tool.export_resources(file_path)
+
+
 def expand_resource(resource_tool: tool.Resource, resource: ifcopenshell.entity_instance) -> None:
     resource_tool.expand_resource(resource)
     resource_tool.load_resources()

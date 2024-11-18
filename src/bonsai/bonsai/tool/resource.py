@@ -304,8 +304,17 @@ class Resource(bonsai.core.tool.Resource):
         from ifc4d.csv2ifc import Csv2Ifc
 
         start = time.time()
-        p62ifc = Csv2Ifc(file_path, tool.Ifc.get())
-        p62ifc.execute()
+        csv2ifc = Csv2Ifc(file_path, tool.Ifc.get())
+        csv2ifc.execute()
+        print("Importing Resources CSV finished in {:.2f} seconds".format(time.time() - start))
+
+    @classmethod
+    def export_resources(cls, file_path: str) -> None:
+        from ifc4d.csv2ifc import Ifc2Csv
+
+        start = time.time()
+        csv2ifc = Ifc2Csv(file_path, tool.Ifc.get())
+        csv2ifc.execute()
         print("Importing Resources CSV finished in {:.2f} seconds".format(time.time() - start))
 
     @classmethod
