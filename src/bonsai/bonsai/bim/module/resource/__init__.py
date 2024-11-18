@@ -43,6 +43,7 @@ classes = (
     operator.EnableEditingResourceBaseQuantity,
     operator.EnableEditingResourceCosts,
     operator.EnableEditingResourceCostValue,
+    operator.ExportResources,
     operator.CalculateResourceUsage,
     operator.EnableEditingResourceCostValueFormula,
     operator.EnableEditingResourceQuantity,

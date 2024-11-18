@@ -54,6 +54,7 @@ class BIM_PT_resources(Panel):
         else:
             row.operator("bim.load_resources", text="", icon="GREASEPENCIL")
             row.operator("bim.import_resources", text="", icon="IMPORT")
+            row.operator("bim.export_resources", text="", icon="EXPORT")
         if not self.props.is_editing:
             return
 
