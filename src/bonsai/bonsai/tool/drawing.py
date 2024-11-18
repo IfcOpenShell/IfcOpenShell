@@ -767,6 +767,14 @@ class Drawing(bonsai.core.tool.Drawing):
                 camera.BIMCameraProperties.has_annotation = bool(pset["HasAnnotation"])
             if "IsNTS" in pset:
                 camera.BIMCameraProperties.is_nts = bool(pset["IsNTS"])
+            if "DPI" in pset:
+                camera.BIMCameraProperties.dpi = int(pset["DPI"])
+            if "LineworkMode" in pset:
+                camera.BIMCameraProperties.linework_mode = str(pset["LineworkMode"])
+            if "FillMode" in pset:
+                camera.BIMCameraProperties.fill_mode = str(pset["FillMode"])
+            if "CutMode" in pset:
+                camera.BIMCameraProperties.cut_mode = str(pset["CutMode"])
 
         camera_props.update_props = update_props
 
