@@ -48,7 +48,7 @@ from shapely.ops import unary_union
 from lxml import etree
 from mathutils import Vector, Matrix
 from fractions import Fraction
-from typing import Optional, Union, Iterable, Any, Literal
+from typing import Optional, Union, Iterable, Any, Literal, Sequence
 from pathlib import Path
 
 
@@ -212,7 +212,7 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def is_annotation_object_type(
-        cls, element: ifcopenshell.entity_instance, object_types: Union[str, list[str]]
+        cls, element: ifcopenshell.entity_instance, object_types: Union[str, Sequence[str]]
     ) -> bool:
         if not isinstance(object_types, collections.abc.Iterable):
             object_types = [object_types]
