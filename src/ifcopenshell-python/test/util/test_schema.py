@@ -71,3 +71,50 @@ class TestMigrator(test.bootstrap.IFC4):
 
         new_element = ifc2x3_file.by_type(original_element.is_a())[0]
         assert original_element.Mode == new_element.TextureType
+
+    def test_migrate_ifccountmeasure_to_ifc4x3(self):
+        ifc_str = """
+ISO-10303-21;
+HEADER;
+FILE_DESCRIPTION(('ViewDefinition[DesignTransferView]'),'2;1');
+FILE_NAME('count.ifc','2024-11-18T12:44:20+05:00',(''),(''),'','','Nobody');
+FILE_SCHEMA(('IFC4'));
+ENDSEC;
+DATA;
+#1=IFCPROPERTYSINGLEVALUE('PropCountInt',$,IFCCOUNTMEASURE(232),$);
+#2=IFCPROPERTYSINGLEVALUE('PropCountFloat',$,IFCCOUNTMEASURE(232.),$);
+#3=IFCQUANTITYCOUNT('QuantityCountInt',$,$,723,$);
+#4=IFCQUANTITYCOUNT('QuantityCountFloat',$,$,723.,$);
+ENDSEC;
+END-ISO-10303-21;
+"""
+        ifc4_file = ifcopenshell.file.from_string(ifc_str)
+        ifc4x3_file = ifcopenshell.api.project.create_file(version="IFC4X3")
+
+        migrator = subject.Migrator()
+
+        prop_int_count_measure = ifc4_file.by_id(1)
+        prop_int_count_measure_ifc4x3 = migrator.migrate(prop_int_count_measure, ifc4x3_file)
+        value = prop_int_count_measure_ifc4x3.NominalValue
+        assert value.is_a("IfcCountMeasure")
+        assert isinstance(value.wrappedValue, int)
+        assert value.wrappedValue == 232
+
+        float_count_measure = ifc4_file.by_id(2)
+        float_count_measure_ifc4x3 = migrator.migrate(float_count_measure, ifc4x3_file)
+        value = float_count_measure_ifc4x3.NominalValue
+        assert value.is_a("IfcNumericMeasure")
+        assert isinstance(value.wrappedValue, float)
+        assert value.wrappedValue == 232.0
+
+        qt_int_count_measure = ifc4_file.by_id(3)
+        qt_int_count_measure_ifc4x3 = migrator.migrate(qt_int_count_measure, ifc4x3_file)
+        assert qt_int_count_measure_ifc4x3.is_a("IfcQuantityCount")
+        assert isinstance(qt_int_count_measure_ifc4x3[3], int)
+        assert qt_int_count_measure_ifc4x3[3] == 723
+
+        qt_float_count_measure = ifc4_file.by_id(4)
+        qt_float_count_measure_ifc4x3 = migrator.migrate(qt_float_count_measure, ifc4x3_file)
+        assert qt_float_count_measure_ifc4x3.is_a("IfcQuantityNumber")
+        assert isinstance(qt_float_count_measure_ifc4x3[3], float)
+        assert qt_float_count_measure_ifc4x3[3] == 723.0
