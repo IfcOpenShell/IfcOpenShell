@@ -171,7 +171,9 @@ class PropTemplate(PropertyGroup):
     template_type: EnumProperty(items=get_property_template_type, name="Template Type")
     enum_values: CollectionProperty(type=EnumerationValues)
 
-    def get_value_name(self):
+    def get_value_name(self) -> str:
+        if self.primary_measure_type == "-":
+            return "string_value"
         ifc_data_type = IfcStore.get_schema().declaration_by_name(self.primary_measure_type)
         data_type = ifcopenshell.util.attribute.get_primitive_type(ifc_data_type)
         if data_type == "string":
@@ -182,6 +184,8 @@ class PropTemplate(PropertyGroup):
             return "int_value"
         elif data_type == "float":
             return "float_value"
+        else:
+            assert False, "Unknown data type"
 
 
 class BIMPsetTemplateProperties(PropertyGroup):
