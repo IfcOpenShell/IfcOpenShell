@@ -88,9 +88,12 @@ class BIM_PT_pset_template(Panel):
             row = self.layout.row(align=True)
 
             if self.props.active_prop_template_id and self.props.active_prop_template_id == prop_template["id"]:
+                active_prop_template = self.props.active_prop_template
                 row.prop(self.props.active_prop_template, "name", text="")
                 row.prop(self.props.active_prop_template, "description", text="")
-                prop_with_search(row, self.props.active_prop_template, "primary_measure_type", text="")
+                # Quantities don't use primary measure type.
+                if active_prop_template.template_type.startswith("P_"):
+                    prop_with_search(row, self.props.active_prop_template, "primary_measure_type", text="")
                 row.prop(self.props.active_prop_template, "template_type", text="")
 
                 if self.props.active_prop_template.template_type == "P_ENUMERATEDVALUE":

@@ -296,7 +296,11 @@ class EditPropTemplate(bpy.types.Operator, tool.PsetTemplate.PsetTemplateOperato
             enumerators = [getattr(ev, data_type) for ev in prop.enum_values]
         else:
             enumerators = None
-        if (primary_measure_type := active_prop_template.primary_measure_type) == "-":
+
+        template_type = active_prop_template.template_type
+        primary_measure_type = active_prop_template.primary_measure_type
+        # Quantities don't use primary measure type.
+        if primary_measure_type == "-" or template_type.startswith("Q_"):
             primary_measure_type = None
 
         ifcopenshell.api.run(
@@ -307,7 +311,7 @@ class EditPropTemplate(bpy.types.Operator, tool.PsetTemplate.PsetTemplateOperato
                 "Name": props.active_prop_template.name,
                 "Description": props.active_prop_template.description,
                 "PrimaryMeasureType": primary_measure_type,
-                "TemplateType": props.active_prop_template.template_type,
+                "TemplateType": template_type,
                 "Enumerators": enumerators,
             },
         )
