@@ -1339,15 +1339,15 @@ class CreateDrawing(bpy.types.Operator):
 
     def move_elements_to_top(self, root):
         group = root.find("{http://www.w3.org/2000/svg}g")
-        
+
         # TODO: Make this an assignable preference
-        classes_to_move = ['IfcColumn', 'IfcBeam', 'EPsetStatusStatus-NEW']
-        
+        classes_to_move = ["IfcColumn", "IfcBeam", "EPsetStatusStatus-NEW"]
+
         # Iterate through classes in order of preference
         for class_name in classes_to_move:
             xpath_query = f".//svg:g[contains(@class, '{class_name}')]"
             elements_to_move = root.xpath(xpath_query, namespaces={"svg": "http://www.w3.org/2000/svg"})
-            
+
             # Move each element to the end of the group (effectively placing them at the top visually)
             for element in elements_to_move:
                 element.getparent().remove(element)

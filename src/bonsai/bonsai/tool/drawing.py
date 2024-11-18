@@ -1044,6 +1044,7 @@ class Drawing(bonsai.core.tool.Drawing):
             pset=pset,
             properties={"Newline_At": newline_at},
         )
+
     # TODO below this point is highly experimental prototype code with no tests
 
     @classmethod
