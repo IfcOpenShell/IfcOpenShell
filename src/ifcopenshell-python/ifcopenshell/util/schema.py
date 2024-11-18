@@ -340,7 +340,12 @@ class Migrator:
         self, element: ifcopenshell.entity_instance, new_file: ifcopenshell.file
     ) -> ifcopenshell.entity_instance:
         if element.id() == 0:
-            return new_file.create_entity(element.is_a(), element.wrappedValue)
+            ifc_class = element.is_a()
+            if ifc_class == "IfcCountMeasure" and new_file.schema == "IFC4X3":
+                value = element.wrappedValue
+                if isinstance(value, float):
+                    ifc_class = "IfcNumericMeasure"
+            return new_file.create_entity(ifc_class, element.wrappedValue)
         try:
             return new_file.by_id(self.migrated_ids[element.id()])
         except:
