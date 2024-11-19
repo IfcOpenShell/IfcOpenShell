@@ -1233,3 +1233,27 @@ class Blender(bonsai.core.tool.Blender):
         system = bpy.context.preferences.system
         system_scale = system.dpi * system.pixel_size
         return (system_scale / default_scale) * size
+
+    @classmethod
+    def apply_transform_as_local(cls, obj: bpy.types.Object) -> bool:
+        """Apply object transforms as local matrix, if possible.
+
+        Clear parent and constraints.
+
+        :return: `True` if transform was applied and `False`
+            if transform wasn't applied it's not possible due to a shear.
+        """
+
+        if not obj.parent or not obj.constraints:
+            return True
+
+        matrix = obj.matrix_world.copy()
+        # Matrix has a shear, it cannot be represented as a local matrix
+        # based on rotation+translation+scale.
+        if not matrix.to_3x3().is_orthogonal_axis_vectors:
+            return False
+
+        obj.parent = None
+        obj.constraints.clear()
+        obj.matrix_world = matrix
+        return True
