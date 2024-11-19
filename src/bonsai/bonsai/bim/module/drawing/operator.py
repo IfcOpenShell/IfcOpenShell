@@ -569,7 +569,6 @@ class CreateDrawing(bpy.types.Operator):
         if os.path.isfile(svg_path) and self.props.should_use_linework_cache:
             return svg_path
 
-        context.scene.render.engine = "BLENDER_WORKBENCH"
         context.scene.render.use_freestyle = True
         context.scene.svg_export.use_svg_export = True
 
