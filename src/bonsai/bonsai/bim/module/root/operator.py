@@ -199,6 +199,16 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
             if obj.mode != "OBJECT":
                 self.report({"ERROR"}, "Object must be in OBJECT mode to assign class")
                 continue
+
+            # Clear any transform modifications.
+            if not tool.Blender.apply_transform_as_local(obj):
+                self.report(
+                    {"ERROR"},
+                    f"Object '{obj.name}' has parent/constraints with a shear transform that cannot be applied safely as a local transform. "
+                    "Please apply parent/constraints manually and try again.",
+                )
+                continue
+
             element = core.assign_class(
                 tool.Ifc,
                 tool.Collector,
