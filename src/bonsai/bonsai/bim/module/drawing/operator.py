@@ -2128,6 +2128,7 @@ class RemoveDrawing(bpy.types.Operator, tool.Ifc.Operator):
         return self.execute(context)
 
     def _execute(self, context):
+        props = context.scene.DocProperties
         if self.remove_all:
             drawings = [
                 tool.Ifc.get().by_id(d.ifc_definition_id)
@@ -2140,13 +2141,15 @@ class RemoveDrawing(bpy.types.Operator, tool.Ifc.Operator):
                 return {"CANCELLED"}
             drawings = [tool.Ifc.get().by_id(self.drawing)]
 
-        removed_drawings = [drawing.id() for drawing in drawings]
-
         for drawing in drawings:
             sheet_references = tool.Drawing.get_sheet_references(drawing)
             for reference in sheet_references:
                 bpy.ops.bim.remove_drawing_from_sheet(reference=reference.id())
             core.remove_drawing(tool.Ifc, tool.Drawing, drawing=drawing)
+
+        # In case we removed the active drawing.
+        if not context.scene.camera and props.should_draw_decorations:
+            props.should_draw_decorations = False
 
 
 class ReloadDrawingStyles(bpy.types.Operator):
