@@ -245,7 +245,7 @@ class PsetProperties(PropertyGroup):
     active_pset_name: StringProperty(name="Pset Name")
     active_pset_type: EnumProperty(
         name="Active Pset Type",
-        items=((i, i, "") for i in ("-", "PSET", "QTO")),
+        items=[(i, i, "") for i in ("-", "PSET", "QTO")],
         default="-",
     )
     properties: CollectionProperty(name="Properties", type=IfcProperty)
