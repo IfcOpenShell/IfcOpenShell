@@ -569,7 +569,7 @@ class CreateDrawing(bpy.types.Operator):
         if os.path.isfile(svg_path) and self.props.should_use_linework_cache:
             return svg_path
 
-        context.scene.render.engine = "BLENDER_WORKBENCH"
+		context.scene.render.engine = "BLENDER_EEVEE_NEXT"
         context.scene.render.use_freestyle = True
         context.scene.svg_export.use_svg_export = True
 
@@ -672,6 +672,7 @@ class CreateDrawing(bpy.types.Operator):
         if tool.Drawing.is_camera_orthographic():
             self.generate_bisect_linework(context, root)
             self.merge_linework_and_add_metadata(root)
+            self.move_elements_to_top(root)
 
         with open(svg_path, "wb") as svg:
             svg.write(etree.tostring(root))
@@ -1339,18 +1340,19 @@ class CreateDrawing(bpy.types.Operator):
 
     def move_elements_to_top(self, root):
         group = root.find("{http://www.w3.org/2000/svg}g")
-
-        # TODO:  don't hardcode, make the following an assignable preference
-        classes_to_move = ["IfcColumn", "IfcBeam"]
-
-        xpath_query = " or ".join([f"contains(@class, '{name}')" for name in classes_to_move])
-        full_xpath = f".//svg:g[{xpath_query}]"
-
-        elements_to_top = root.xpath(full_xpath, namespaces={"svg": "http://www.w3.org/2000/svg"})
-
-        for element in elements_to_top:
-            element.getparent().remove(element)
-            group.append(element)
+        
+        # TODO: Make this an assignable preference
+        classes_to_move = ['IfcColumn', 'IfcBeam', 'EPsetStatusStatus-NEW']
+        
+        # Iterate through classes in order of preference
+        for class_name in classes_to_move:
+            xpath_query = f".//svg:g[contains(@class, '{class_name}')]"
+            elements_to_move = root.xpath(xpath_query, namespaces={"svg": "http://www.w3.org/2000/svg"})
+            
+            # Move each element to the end of the group (effectively placing them at the top visually)
+            for element in elements_to_move:
+                element.getparent().remove(element)
+                group.append(element)
 
     def generate_annotation(self, context: bpy.types.Context) -> Union[str, None]:
         if not ifcopenshell.util.element.get_pset(self.drawing, "EPset_Drawing", "HasAnnotation"):
