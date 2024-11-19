@@ -63,7 +63,8 @@ def edit_assigned_product(
             ifc.run("drawing.unassign_product", relating_product=existing_product, related_object=element)
         if product:
             ifc.run("drawing.assign_product", relating_product=product, related_object=element)
-        drawing.update_text_value(obj)
+        if drawing.is_annotation_object_type(element, ("TEXT", "TEXT_LEADER")):
+            drawing.update_text_value(obj)
 
     drawing.disable_editing_assigned_product(obj)
 
