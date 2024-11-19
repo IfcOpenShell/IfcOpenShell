@@ -220,6 +220,22 @@ def update_has_annotation(self, context):
     update_layer(self, context, "HasAnnotation", self.has_annotation)
 
 
+def update_dpi(self, context):
+    update_layer(self, context, "DPI", self.dpi)
+
+
+def update_linework_mode(self, context):
+    update_layer(self, context, "LineworkMode", self.linework_mode)
+
+
+def update_fill_mode(self, context):
+    update_layer(self, context, "FillMode", self.fill_mode)
+
+
+def update_cut_mode(self, context):
+    update_layer(self, context, "CutMode", self.cut_mode)
+
+
 def update_layer(self, context, name, value):
     if not self.update_props:
         return
@@ -395,6 +411,7 @@ class BIMCameraProperties(PropertyGroup):
         ],
         default="OPENCASCADE",
         name="Linework Mode",
+        update=update_linework_mode,
     )
     fill_mode: EnumProperty(
         items=[
@@ -404,6 +421,7 @@ class BIMCameraProperties(PropertyGroup):
         ],
         default="NONE",
         name="Fill Mode",
+        update=update_fill_mode,
     )
     cut_mode: EnumProperty(
         items=[
@@ -412,6 +430,7 @@ class BIMCameraProperties(PropertyGroup):
         ],
         default="BISECT",
         name="Cut Mode",
+        update=update_cut_mode,
     )
     has_underlay: BoolProperty(name="Underlay", default=False, update=update_has_underlay)
     has_linework: BoolProperty(name="Linework", default=True, update=update_has_linework)
@@ -423,7 +442,7 @@ class BIMCameraProperties(PropertyGroup):
     custom_scale_denominator: bpy.props.StringProperty(default="100", update=update_diagram_scale)
     raster_x: IntProperty(name="Raster X", default=1000)
     raster_y: IntProperty(name="Raster Y", default=1000)
-    dpi: IntProperty(name="DPI", default=75)
+    dpi: IntProperty(name="DPI", default=75, update=update_dpi)
     width: FloatProperty(name="Width", default=50, subtype="DISTANCE")
     height: FloatProperty(name="Height", default=50, subtype="DISTANCE")
     is_nts: BoolProperty(name="Is NTS", update=update_is_nts)
