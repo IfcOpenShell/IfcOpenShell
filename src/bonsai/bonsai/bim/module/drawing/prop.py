@@ -536,6 +536,7 @@ class BIMTextProperties(PropertyGroup):
         text_data = {
             "Literals": literals_data,
             "FontSize": float(self.font_size),
+            "Newline_At": int(self.newline_at),
         }
         return text_data
 

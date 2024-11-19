@@ -321,6 +321,9 @@ class DecoratorData:
         # get symbol
         symbol = tool.Drawing.get_annotation_symbol(element)
 
+        # get newline_at
+        newline_at = pset_data['Newline_At']
+
         # other attributes
         props_literals = props.literals
         props_literals_n = len(props.literals)
@@ -338,7 +341,7 @@ class DecoratorData:
 
             literals_data.append(literal_data)
 
-        text_data = {"Literals": literals_data, "FontSize": font_size, "Symbol": symbol}
+        text_data = {"Literals": literals_data, "FontSize": font_size, "Symbol": symbol, "Newline_At": newline_at}
         cls.data[obj.name] = text_data
         return text_data
 
