@@ -498,7 +498,7 @@ class AlignProduct(bpy.types.Operator):
 
     AlignType = Literal["CENTERLINE", "POSITIVE", "NEGATIVE"]
     align_type: bpy.props.EnumProperty(  # type: ignore [reportRedeclaration]
-        items=((i, i, "") for i in get_args(AlignType))
+        items=[(i, i, "") for i in get_args(AlignType)]
     )
 
     if TYPE_CHECKING:
