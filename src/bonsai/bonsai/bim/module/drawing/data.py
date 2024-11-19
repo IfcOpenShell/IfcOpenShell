@@ -322,7 +322,7 @@ class DecoratorData:
         symbol = tool.Drawing.get_annotation_symbol(element)
 
         # get newline_at
-        newline_at = pset_data['Newline_At']
+        newline_at = pset_data.get('Newline_At', 0)
 
         # other attributes
         props_literals = props.literals
