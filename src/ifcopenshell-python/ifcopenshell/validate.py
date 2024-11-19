@@ -89,7 +89,7 @@ simple_type_python_mapping = {
     "string": str,
     "integer": int,
     "real": float,
-    "number": float,
+    "number": (int, float),
     "boolean": bool,
     "logical": {True, False, "UNKNOWN"},
     "binary": str,  # maps to a str of "0" and "1"
@@ -214,6 +214,8 @@ def assert_valid(
         simple_type_python = simple_type_python_mapping[attr_type.declared_type()]
         if type(simple_type_python) == set:
             invalid = val not in simple_type_python
+        elif type(simple_type_python) == tuple:
+            invalid = not any(type(val) == t for t in simple_type_python)
         else:
             invalid = type(val) != simple_type_python
     elif isinstance(attr_type, (entity_type, type_declaration)):
