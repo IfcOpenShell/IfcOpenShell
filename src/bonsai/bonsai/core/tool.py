@@ -357,6 +357,7 @@ class Drawing:
     def import_sheets(cls): pass
     def import_text_attributes(cls, obj): pass
     def is_active_drawing(cls, drawing): pass
+    def is_annotation_object_type(cls, element, object_types): pass
     def is_camera_orthographic(cls): pass
     def is_drawing_active(cls): pass
     def is_editing_sheets(cls): pass
