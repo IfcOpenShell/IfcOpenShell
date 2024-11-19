@@ -578,7 +578,7 @@ class BIM_PT_text(Panel):
             row.label(text=str(text_data["FontSize"]))
             row = self.layout.row(align=True)
             row.label(text="Newline_At")
-            row.label(text=str(props.newline_at))
+            row.label(text=str(text_data["Newline_At"]))
 
             for literal_data in text_data["Literals"]:
                 box = self.layout.box()
