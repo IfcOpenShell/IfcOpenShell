@@ -344,7 +344,11 @@ class ImportResources(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
         return ifc_file is not None
 
     def _execute(self, context):
+        ifc_file = tool.Ifc.get()
+        resources_before = len(ifc_file.by_type("IfcConstructionResource"))
         core.import_resources(tool.Resource, file_path=self.filepath)
+        resources_after = len(ifc_file.by_type("IfcConstructionResource"))
+        self.report({"INFO"}, f"{resources_after - resources_before} resources are imported.")
 
 
 class AddProductivityData(bpy.types.Operator, tool.Ifc.Operator):
