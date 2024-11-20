@@ -618,6 +618,7 @@ class LoadCostItemTypes(bpy.types.Operator):
 class AssignCostValue(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_cost_value"
     bl_label = "Assign Cost Rate Value"
+    bl_description = "Assign cost rate value to active cost item"
     bl_options = {"REGISTER", "UNDO"}
     cost_item: bpy.props.IntProperty()
     cost_rate: bpy.props.IntProperty()
