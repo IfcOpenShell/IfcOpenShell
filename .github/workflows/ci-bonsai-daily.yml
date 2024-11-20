@@ -104,7 +104,7 @@ jobs:
           set -x -e
 
           # Download Blender.
-          wget -q -O blender.tar.xz https://ftp.nluug.nl/pub/graphics/blender/release/Blender4.2/blender-4.2.3-linux-x64.tar.xz
+          wget -q -O blender.tar.xz https://ftp.nluug.nl/pub/graphics/blender/release/Blender4.3/blender-4.3.0-linux-x64.tar.xz
           tar -xf blender.tar.xz
 
           # Setup Blender.
