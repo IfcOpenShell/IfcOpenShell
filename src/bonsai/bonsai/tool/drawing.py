@@ -214,7 +214,7 @@ class Drawing(bonsai.core.tool.Drawing):
     def is_annotation_object_type(
         cls, element: ifcopenshell.entity_instance, object_types: Union[str, Sequence[str]]
     ) -> bool:
-        if not isinstance(object_types, collections.abc.Iterable):
+        if isinstance(object_types, str):
             object_types = [object_types]
 
         element_type = element.is_a()
