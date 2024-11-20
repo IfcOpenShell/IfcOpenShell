@@ -832,7 +832,17 @@ class BIM_PT_tab_object_metadata(Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "OBJECT") and tool.Ifc.get() and (obj := context.active_object)
+        return (
+            tool.Blender.is_tab(context, "OBJECT")
+            and tool.Ifc.get()
+            and (obj := context.active_object)
+            # Hide links empty handles.
+            and (
+                obj.type != "EMPTY"
+                or not obj.instance_collection
+                or not any(l.empty_handle == obj for l in context.scene.BIMProjectProperties.links)
+            )
+        )
 
     def draw(self, context):
         pass
