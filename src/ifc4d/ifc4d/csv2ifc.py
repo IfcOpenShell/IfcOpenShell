@@ -19,6 +19,7 @@
 from __future__ import annotations
 import csv
 import _csv
+import ifcopenshell.api.resource
 import isodate
 import ifcopenshell
 import ifcopenshell.api
@@ -36,9 +37,12 @@ SUPPORTED_COLUMN = Literal[
     "ACTIVITY/RESOURCE NAME",
     "DESCRIPTION",
     "COST",
-    "QUANTITY NAME",
-    "LABOR OUTPUT",
-    "EQUIPMENT OUTPUT",
+    "USAGE",  # ScheduleUsage.
+    "QUANTITY NAME",  # EPset_Productivity.BaseQuantityProducedName.
+    # OUTPUT = EPset_Productivity.BaseQuantityConsumed / EPset_Productivity.BaseQuantityProducedValue.
+    # In hours per quantity.
+    "LABOR OUTPUT",  # OUTPUT for LABOR TYPE.
+    "EQUIPMENT OUTPUT",  # OUTPUT for EQUIPMENT TYPE.
 ]
 
 RESOURCE_MAP = {
@@ -55,6 +59,7 @@ class Csv2Ifc:
     """Class to import resources from a CSV file into an IFC file.
 
     See resource_spreadsheet.csv for example of the format.
+    Note that columns UNIT and PRODUCTIVITY UNIT are not actually used during import.
     Notes about format:
     - empty rows are skipped.
     - 'HIERARCHY' must be the first column.
@@ -145,6 +150,7 @@ class Csv2Ifc:
             "BaseCostValue": float(base_cost_value) if base_cost_value else None,
             "Productivity": productivity,
             "children": [],
+            "usage": row[self.headers["USAGE"]],
         }
 
     def create_ifc(self) -> None:
@@ -180,6 +186,9 @@ class Csv2Ifc:
         if resource["BaseCostValue"]:
             cost_value = ifcopenshell.api.run("cost.add_cost_value", self.file, parent=resource["ifc"])
             cost_value.AppliedValue = self.file.createIfcMonetaryMeasure(resource["BaseCostValue"])
+        if usage_value := resource["usage"]:
+            usage = ifcopenshell.api.resource.add_resource_time(self.file, resource=resource["ifc"])
+            ifcopenshell.api.resource.edit_resource_time(self.file, usage, {"ScheduleUsage": float(usage_value)})
         self.create_resources(resource["children"], resource["ifc"])
 
     # TODO: never used.
@@ -208,9 +217,11 @@ class Ifc2CsvRow(NamedTuple):
     name: str
     description: str
     cost: Union[float, None]
+    usage: Union[float, None]
     quantity_name: Union[str, None]
     labor_output: Union[float, None]
     equipment_output: Union[float, None]
+    guid: str
 
 
 class Ifc2Csv:
@@ -222,6 +233,7 @@ class Ifc2Csv:
         "ACTIVITY/RESOURCE NAME",
         "DESCRIPTION",
         "COST",
+        "USAGE",
         "QUANTITY NAME",
         "LABOR OUTPUT",
         "EQUIPMENT OUTPUT",
@@ -235,7 +247,6 @@ class Ifc2Csv:
         self.inverse_resource_map = {value: key for key, value in RESOURCE_MAP.items()}
 
     def execute(self) -> None:
-        # TODO: unused columns: USAGE, UNIT, PRODUCTIVITY UNIT.
         with open(self.filepath, "w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f)
             writer.writerow(self.HEADER)
@@ -273,12 +284,18 @@ class Ifc2Csv:
                 else:
                     equipment_output, labor_output = None, output
 
+        # Get usage_value.
+        usage_value = None
+        if usage := resource.Usage:
+            usage_value: Union[float, None] = usage.ScheduleUsage
+
         return Ifc2CsvRow(
             hierarchy=hierarchy_level,
             resource_type=self.inverse_resource_map[resource.is_a()],
             name=resource.Name,
             description=resource.Description,
             cost=cost,
+            usage=usage_value,
             quantity_name=quantity_name,
             labor_output=labor_output,
             equipment_output=equipment_output,
