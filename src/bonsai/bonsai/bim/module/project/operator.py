@@ -1003,6 +1003,7 @@ class LinkIfc(bpy.types.Operator):
                     filepath = filepath.relative_to(bpy.path.abspath("//"))
                 except:
                     pass  # Perhaps on another drive or something
+            # Store link paths as posix for cross-platform.
             new.name = filepath.as_posix()
             status = bpy.ops.bim.load_link(filepath=filepath.as_posix(), use_cache=self.use_cache)
             if status == {"CANCELLED"}:
@@ -1081,7 +1082,7 @@ class LoadLink(bpy.types.Operator):
     bl_label = "Load Link"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Load the selected file"
-    filepath: bpy.props.StringProperty()
+    filepath: bpy.props.StringProperty(name="Link Filepath")
     use_cache: bpy.props.BoolProperty(name="Use Cache", default=True)
 
     filepath_: Path
@@ -1100,7 +1101,7 @@ class LoadLink(bpy.types.Operator):
     def link_blend(self, filepath: Path) -> None:
         with bpy.data.libraries.load(str(filepath), link=True) as (data_from, data_to):
             data_to.scenes = data_from.scenes
-        link = bpy.context.scene.BIMProjectProperties.links.get(self.filepath_.as_posix())
+        link = bpy.context.scene.BIMProjectProperties.links[self.filepath]
         for scene in bpy.data.scenes:
             if not scene.library or Path(scene.library.filepath) != filepath:
                 continue
@@ -1148,7 +1149,8 @@ def run():
     pprops.false_origin_mode = "{pprops.false_origin_mode}"
     pprops.false_origin = "{pprops.false_origin}"
     pprops.project_north = "{pprops.project_north}"
-    bpy.ops.bim.load_linked_project(filepath="{self.filepath}")
+    # Use absolute path to be safe from cwd changes.
+    bpy.ops.bim.load_linked_project(filepath=r"{str(self.filepath_)}")
     # Use str instead of as_posix to avoid issues with Windows shared paths.
     bpy.ops.wm.save_as_mainfile(filepath=r"{str(blend_filepath)}")
 
