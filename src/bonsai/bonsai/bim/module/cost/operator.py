@@ -265,13 +265,18 @@ class AssignCostItemQuantity(bpy.types.Operator, tool.Ifc.Operator):
     prop_name: bpy.props.StringProperty()
 
     def _execute(self, context):
-        core.assign_cost_item_quantity(
+        result = core.assign_cost_item_quantity(
             tool.Ifc,
             tool.Cost,
             cost_item=tool.Ifc.get().by_id(self.cost_item),
             related_object_type=self.related_object_type,
             prop_name=self.prop_name,  # TODO: REVIEW PROP_NAME USABILITY
         )
+        if not result:
+            self.report(
+                {"ERROR"},
+                f"Cost item wasn't assigned - no objects of type '{self.related_object_type}' are selected.",
+            )
 
 
 class UnassignCostItemQuantity(bpy.types.Operator, tool.Ifc.Operator):
