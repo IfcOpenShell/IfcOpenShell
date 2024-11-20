@@ -1503,15 +1503,6 @@ class OpenLayout(bpy.types.Operator, tool.Ifc.Operator):
     )
     bl_options = {"REGISTER", "UNDO"}
 
-    @classmethod
-    def poll(cls, context):
-        props = context.scene.DocProperties
-        active_sheet = props.sheets[props.active_sheet_index]
-        if not active_sheet.is_sheet:
-            cls.poll_message_set("No sheet selected.")
-            return False
-        return True
-
     def _execute(self, context):
         self.props = context.scene.DocProperties
         sheet = tool.Ifc.get().by_id(self.props.sheets[self.props.active_sheet_index].ifc_definition_id)
