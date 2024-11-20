@@ -1088,7 +1088,7 @@ class Blender(bonsai.core.tool.Blender):
         for item_name in dir(bpy.types):
             item = getattr(bpy.types, item_name)
             # filter only panels
-            if not hasattr(item, "bl_rna") or not isinstance(item.bl_rna, bpy.types.Panel):
+            if not hasattr(item, "bl_rna") or not isinstance(item.bl_rna.base, bpy.types.Panel):
                 continue
             # ignore bbim panels
             if item.__module__.startswith("bonsai"):
