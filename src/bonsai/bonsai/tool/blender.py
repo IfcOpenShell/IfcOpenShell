@@ -1244,7 +1244,7 @@ class Blender(bonsai.core.tool.Blender):
             if transform wasn't applied it's not possible due to a shear.
         """
 
-        if not obj.parent or not obj.constraints:
+        if not obj.parent and not obj.constraints:
             return True
 
         matrix = obj.matrix_world.copy()
