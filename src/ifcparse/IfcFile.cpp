@@ -54,20 +54,21 @@ namespace {
     };
 
     template <typename Fn>
-    void dispatch_token(IfcParse::Token t, IfcParse::declaration* decl, Fn fn) {
+    void dispatch_token(int instance_id, int attribute_id, IfcParse::Token t, IfcParse::declaration* decl, Fn fn) {
         if (t.type == IfcParse::Token_BINARY) {
             fn(IfcParse::TokenFunc::asBinary(t));
         } else if (t.type == IfcParse::Token_BOOL) {
             fn(IfcParse::TokenFunc::asBool(t));
         } else if (t.type == IfcParse::Token_ENUMERATION) {
+            auto& s = IfcParse::TokenFunc::asStringRef(t);
             if (decl && decl->as_enumeration_type()) {
                 try {
-                    fn(EnumerationReference(decl->as_enumeration_type(), decl->as_enumeration_type()->lookup_enum_offset(IfcParse::TokenFunc::asStringRef(t))));
+                    fn(EnumerationReference(decl->as_enumeration_type(), decl->as_enumeration_type()->lookup_enum_offset(s)));
                 } catch (IfcParse::IfcException& e) {
-                    Logger::Error(e);
+                    Logger::Error("An enumeration literal '" + s + "' is not valid for type '" + decl->name() + "' at offset " + std::to_string(t.startPos));
                 }
             } else {
-                Logger::Error("Untyped enumeration encountered");
+                Logger::Error("An enumeration literal '" + s + "' is not expected at attribute index '" + std::to_string(attribute_id) + "' at offset " + std::to_string(t.startPos));
             }
         } else if (t.type == IfcParse::Token_FLOAT) {
             fn(IfcParse::TokenFunc::asFloat(t));
@@ -84,7 +85,7 @@ namespace {
     }
 
     template <size_t Depth, typename Fn>
-    void construct_(IfcParse::parse_context& p, const IfcParse::aggregation_type* aggr, Fn fn) {
+    void construct_(int instance_id, int attribute_id, IfcParse::parse_context& p, const IfcParse::aggregation_type* aggr, Fn fn) {
         if (p.tokens_.empty()) {
             // @todo instead of ugly if-else we could also default initialize the respective
             // variant types below.
@@ -210,14 +211,14 @@ namespace {
         };
 
         for (auto& t : p.tokens_) {
-            boost::apply_visitor([&aggregate_storage, &append_to_aggregate_storage, aggr](const auto& v) {
+            boost::apply_visitor([&aggregate_storage, &append_to_aggregate_storage, aggr, instance_id, attribute_id](const auto& v) {
                 if constexpr (std::is_same_v<std::decay_t<decltype(v)>, IfcParse::Token>) {
                     // @todo get aggregate of enumeration
-                    dispatch_token(v, aggr && aggr->type_of_element()->as_named_type() ? aggr->type_of_element()->as_named_type()->declared_type() : nullptr, append_to_aggregate_storage);
+                    dispatch_token(instance_id, attribute_id, v, aggr && aggr->type_of_element()->as_named_type() ? aggr->type_of_element()->as_named_type()->declared_type() : nullptr, append_to_aggregate_storage);
                 } else if constexpr (std::is_same_v<std::decay_t<decltype(v)>, IfcParse::parse_context*>) {
                     // nested list
                     if constexpr (Depth < 3) {
-                        construct_<Depth + 1>(*v, nullptr, append_to_aggregate_storage);
+                        construct_<Depth + 1>(instance_id, attribute_id, *v, nullptr, append_to_aggregate_storage);
                     }
                 } else {
                     append_to_aggregate_storage(IfcParse::reference_or_simple_type{ v });
@@ -280,7 +281,7 @@ IfcEntityInstanceData IfcParse::parse_context::construct(int name, unresolved_re
 
         boost::apply_visitor([this, &storage, name, &references_to_resolve, index, param_type](const auto& v) {
             if constexpr (std::is_same_v<std::decay_t<decltype(v)>, IfcParse::Token>) {
-                dispatch_token(v, param_type && param_type->as_named_type() ? param_type->as_named_type()->declared_type() : nullptr, [this, &storage, name, &references_to_resolve, index](auto v) {
+                dispatch_token(name, index, v, param_type && param_type->as_named_type() ? param_type->as_named_type()->declared_type() : nullptr, [this, &storage, name, &references_to_resolve, index](auto v) {
                     if constexpr (std::is_same_v<std::decay_t<decltype(v)>, IfcParse::reference_or_simple_type>) {
                         if (name > 0) {
                             references_to_resolve.push_back(std::make_pair(
@@ -302,7 +303,7 @@ IfcEntityInstanceData IfcParse::parse_context::construct(int name, unresolved_re
                         pt = pt->as_named_type()->declared_type()->as_type_declaration()->declared_type();
                     }
                 }
-                construct_<0>(*v, pt ? pt->as_aggregation_type() : nullptr, [this, &storage, name, &references_to_resolve, index](const auto& v) {
+                construct_<0>(name, index, *v, pt ? pt->as_aggregation_type() : nullptr, [this, &storage, name, &references_to_resolve, index](const auto& v) {
                     if constexpr (std::is_same_v<std::decay_t<decltype(v)>, std::vector<reference_or_simple_type>>) {
                         if (name > 0) {
                             references_to_resolve.push_back({ {name, index }, v });
