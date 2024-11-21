@@ -54,6 +54,8 @@ def enable_editing_cost_items(cost: tool.Cost, cost_schedule: ifcopenshell.entit
     cost.enable_editing_cost_items(cost_schedule)
     cost.load_active_schedule_columns()
     cost.load_cost_schedule_tree()
+    if not cost.is_active_schedule_of_rates() and (schedule_of_rates := cost.get_active_schedule_of_rates()):
+        cost.load_schedule_of_rates_tree(schedule_of_rates)
     cost.play_sound()
 
 
