@@ -807,6 +807,20 @@ class Usecase:
         else:
             items = [self.file.createIfcTriangulatedFaceSet(coordinates, None, None, i) for i in ifc_raw_items if i]
 
+#This assigns every triangle their own Cartesian Points.          
+        tempCoord_IndexList=[]
+        finalCoord_IndexList=[]
+        if self.settings["should_generate_uvs"]:
+            for x in (coord_index):
+                tempCoord_IndexList = x
+                for v in range(len(tempCoord_IndexList)):
+                    if not tempCoord_IndexList:
+                        continue
+                    if len(tempCoord_IndexList) >= v:
+                        finalCoord_IndexList.append(coordinates.CoordList[tempCoord_IndexList[v]-1])
+            coordinates.CoordList = finalCoord_IndexList
+            items[0].CoordIndex = ifc_raw_uv_items[0]
+#-----------------------------------
         return self.file.createIfcShapeRepresentation(
             self.settings["context"],
             self.settings["context"].ContextIdentifier,
