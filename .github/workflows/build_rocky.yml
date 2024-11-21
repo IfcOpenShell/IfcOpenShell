@@ -1,0 +1,118 @@
+name: Build IfcOpenShell Linux
+
+on:
+  push:
+    branches:
+      - v0.8.0
+  workflow_dispatch:
+
+jobs:
+  build_ifcopenshell:
+    runs-on: ubuntu-20.04
+    container: rockylinux:8
+
+    steps:
+      - name: Install Dependencies
+        run: |
+          yum update -y
+          yum install -y gcc gcc-c++ git autoconf automake bison make zip cmake python3  \
+                         bzip2 patch mesa-libGL-devel libffi-devel fontconfig-devel      \
+                         sqlite-devel bzip2-devel zlib-devel openssl-devel xz-devel      \
+                         readline-devel ncurses-devel libffi-devel libuuid-devel git-lfs \
+                         findutils
+
+      - name: Install aws cli
+        run: |
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          ./aws/install
+          rm -rf awscliv2.zip aws
+          aws --version
+
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Checkout Build Repository
+        uses: actions/checkout@v3
+        with:
+          repository: aothms/build-outputs
+          path: ./build
+          ref: rockylinux8-x64
+          lfs: true
+          token: ${{ secrets.BUILD_REPO_TOKEN }}
+
+      - name: Unpack Dependencies
+        run: |
+          install_root=$(find ./build -maxdepth 4 -name install)
+          find "$install_root" -type f -name 'cache-*.tar.gz' -maxdepth 1 -exec tar -xzf {} -C "$install_root" \;
+
+      # Not supported on docker
+      # - name: ccache
+      #   uses: hendrikmuhs/ccache-action@v1
+      #   with:
+      #     key: ${GITHUB_WORKFLOW}-rockylinux8-x64
+
+      - name: Run Build Script
+        run: |
+          CXXFLAGS="-O3" CFLAGS="-O3 ${DARWIN_C_SOURCE}" ADD_COMMIT_SHA=1 BUILD_CFG=Release python3 ./nix/build-all.py --diskcleanup
+
+      - name: Pack Dependencies
+        run: |
+          cd build
+          for install_dir in $(find $(find . -maxdepth 4 -name install) -mindepth 1 -maxdepth 1 -type d); do
+            test -f $(dirname "$install_dir")/cache-$(basename "$install_dir").tar.gz || tar -czf $(dirname "$install_dir")/cache-$(basename "$install_dir").tar.gz -C $(dirname "$install_dir") $(basename "$install_dir");
+          done
+
+      - name: Commit and Push Changes to Build Repository
+        run: |
+          cd build
+          git config user.name "IfcOpenBot"
+          git config user.email "ifcopenbot@ifcopenshell.org"
+          git add "$(find . -maxdepth 4 -name install)/*.tar.gz"
+          git commit -m "Update build artifacts [skip ci]" || echo "No changes to commit"
+          git push || true
+
+      - name: Package .zip archives
+        run: |
+          VERSION=v`cat VERSION`
+          cd ./build/`uname`/*/install/ifcopenshell
+          mkdir ~/output
+
+          ls -d python-* | while read py_version; do
+              postfix=`echo ${py_version: -1} | sed s/[0-9]//`
+              numbers=`echo $py_version | grep -oE '[0-9]+\.[0-9]+' | tr -d '.'`
+              py_version_major=python-${numbers}$postfix
+              pushd . > /dev/null
+              cd $py_version
+              if [ ! -d ifcopenshell ]; then
+                  mkdir ../ifcopenshell_
+                  mv * ../ifcopenshell_
+                  mv ../ifcopenshell_ ifcopenshell
+              fi
+              [ -d ifcopenshell/__pycache__ ] && rm -rf ifcopenshell/__pycache__
+              find ifcopenshell -name "*.pyc" -delete
+              zip -r -qq ifcopenshell-${py_version_major}-${VERSION}-${GITHUB_SHA:0:7}-linux64.zip ifcopenshell/*
+              mv *.zip ~/output
+              popd > /dev/null
+          done
+
+          cd bin
+          rm *.zip || true
+          ls | while read exe; do
+              zip -qq -r ${exe}-${VERSION}-${GITHUB_SHA:0:7}-linux64.zip $exe
+          done
+          mv *.zip ~/output
+          cd ..
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_UPLOAD_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_UPLOAD_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Upload .zip archives to S3
+        run: |
+          aws s3 cp ~/output s3://ifcopenshell-builds/ --recursive
