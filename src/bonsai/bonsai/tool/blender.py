@@ -31,7 +31,7 @@ import importlib
 from mathutils import Vector
 from pathlib import Path
 from bonsai.bim.ifc import IFC_CONNECTED_TYPE
-from typing import Any, Optional, Union, Literal, Iterable, Callable
+from typing import Any, Optional, Union, Literal, Iterable, Callable, TypeVar
 from typing_extensions import assert_never
 
 
@@ -1257,3 +1257,18 @@ class Blender(bonsai.core.tool.Blender):
         obj.constraints.clear()
         obj.matrix_world = matrix
         return True
+
+    @classmethod
+    def set_prop_from_path(cls, bpy_object: bpy.types.bpy_struct, prop_path: str, value: Any) -> None:
+        """Set `data_block` property value using path from `path_from_id`."""
+
+        T = TypeVar("T", bound=bpy.types.bpy_struct)
+
+        def path_resolve(obj: T, prop_path: str) -> tuple[T, str]:
+            if "." in prop_path:
+                extra_path, prop_path = prop_path.rsplit(".", 1)
+                obj = obj.path_resolve(extra_path)
+            return obj, prop_path
+
+        obj, path = path_resolve(bpy_object, prop_path)
+        setattr(obj, path, value)

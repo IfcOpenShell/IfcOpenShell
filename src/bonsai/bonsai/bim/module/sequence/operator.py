@@ -1215,17 +1215,13 @@ class Bonsai_DatePicker(bpy.types.Operator):
         context.scene.DatePickerProperties.selected_date = self.display_date
         return context.window_manager.invoke_props_dialog(self)
 
-    def get_scene_prop(self, prop_path):
-        prop = bpy.context.scene.get(prop_path.split(".")[0])
-        for part in prop_path.split(".")[1:]:
-            if part:
-                prop = prop.get(part)
-        return prop
+    def get_scene_prop(self, prop_path: str) -> str:
+        scene = bpy.context.scene
+        return scene.path_resolve(prop_path)
 
-    def set_scene_prop(self, prop_path, value):
-        parent = self.get_scene_prop(prop_path[: prop_path.rfind(".")])
-        prop = prop_path.split(".")[-1]
-        parent[prop] = value
+    def set_scene_prop(self, prop_path: str, value: str) -> None:
+        scene = bpy.context.scene
+        tool.Blender.set_prop_from_path(scene, prop_path, value)
 
 
 class Bonsai_DatePickerSetDate(bpy.types.Operator):

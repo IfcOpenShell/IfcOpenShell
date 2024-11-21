@@ -95,6 +95,10 @@ def draw_attribute(
     if attribute.is_uri:
         op = layout.operator("bim.select_uri_attribute", text="", icon="FILE_FOLDER")
         op.data_path = attribute.path_from_id("string_value")
+    elif attribute.special_type == "DATE":
+        op = layout.operator("bim.datepicker", text="", icon="TIME")
+        op.target_prop = attribute.path_from_id("string_value")
+
     if attribute.is_optional:
         layout.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
 
@@ -161,6 +165,8 @@ def import_attribute(
         new.string_value = "" if new.is_null else str(data[attribute.name()]).replace("\n", "\\n")
         if attribute.type_of_attribute().declared_type().name() == "IfcURIReference":
             new.is_uri = True
+        elif attribute.type_of_attribute()._is("IfcDate"):
+            new.special_type = "DATE"
     elif data_type == "boolean":
         new.bool_value = False if new.is_null else bool(data[attribute.name()])
     elif data_type == "integer":

@@ -506,15 +506,10 @@ class Sequence(bonsai.core.tool.Sequence):
 
     @classmethod
     def load_work_time_attributes(cls, work_time: ifcopenshell.entity_instance) -> None:
-        def callback(name, prop, data):
-            if name in ["Start", "Finish"]:
-                prop.string_value = "" if prop.is_null else data[name]
-                return True
-
         props = bpy.context.scene.BIMWorkCalendarProperties
         props.work_time_attributes.clear()
 
-        bonsai.bim.helper.import_attributes2(work_time, props.work_time_attributes, callback)
+        bonsai.bim.helper.import_attributes2(work_time, props.work_time_attributes)
 
     @classmethod
     def enable_editing_work_time(cls, work_time: ifcopenshell.entity_instance) -> None:
