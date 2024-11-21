@@ -204,7 +204,7 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
             if not tool.Blender.apply_transform_as_local(obj):
                 self.report(
                     {"ERROR"},
-                    f"Object '{obj.name}' has parent/constraints with a shear transform that cannot be applied safely as a local transform. "
+                    f"Object '{obj.name}' has parent/constraints with a shear transform that cannot be applied safely as a local transform.\n"
                     "Please apply parent/constraints manually and try again.",
                 )
                 continue
