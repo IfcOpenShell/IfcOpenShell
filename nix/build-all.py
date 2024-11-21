@@ -86,7 +86,7 @@ PYTHON_VERSIONS = ["3.9.11", "3.10.3", "3.11.8", "3.12.1", "3.13.0"]
 JSON_VERSION = "v3.6.1"
 OCE_VERSION = "0.18.3"
 OCCT_VERSION = "7.8.1"
-BOOST_VERSION = "1.80.0"
+BOOST_VERSION = "1.86.0"
 PCRE_VERSION = "8.41"
 LIBXML2_VERSION = "2.9.11"
 SWIG_VERSION = "4.0.2"
@@ -464,6 +464,9 @@ def build_dependency(name, mode, build_tool_args, download_url, download_name, d
         shutil.copytree(os.path.join(extract_dir, "boost"), os.path.join(DEPS_DIR, "install", f"boost-{BOOST_VERSION}", "boost"))
         logger.info(f"\rInstalled {name}     \n")
 
+    if "diskcleanup" in flags:
+        shutil.rmtree(build_dir, ignore_errors=True)
+
 cecho("Collecting dependencies:", GREEN)
 
 # Set compiler flags for 32bit builds on 64bit system
@@ -524,7 +527,7 @@ if 'hdf5' in targets:
     # not supported
     orig = [os.environ[f] for f in compiler_flags]
     for f in compiler_flags:
-        os.environ[f] = re.sub("-flto(=\w+)?", "", os.environ[f])
+        os.environ[f] = re.sub(r"-flto(=\w+)?", "", os.environ[f])
 
     HDF5_MAJOR = ".".join(HDF5_VERSION.split(".")[:-1])
     build_dependency(
@@ -740,7 +743,8 @@ if "boost" in targets:
             *map(str_concat("linkflags"), LDFLAGS.strip().split(' ')),
             "stage", "-s", "NO_BZIP2=1"],
         download_url=BOOST_LOCATION,
-        patch="./patches/boost/boostorg_regex_62.patch",
+        # don't remember what this is, but fail on 1.86
+        # patch="./patches/boost/boostorg_regex_62.patch",
         download_name=f"boost_{BOOST_VERSION_UNDERSCORE}.tar.bz2"
     )
     if "wasm" in flags:
