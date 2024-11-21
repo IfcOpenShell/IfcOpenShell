@@ -552,6 +552,14 @@ class Cost(bonsai.core.tool.Cost):
         props.columns.remove(props.columns.find(name))
 
     @classmethod
+    def get_active_schedule_of_rates(cls) -> Union[ifcopenshell.entity_instance, None]:
+        props = bpy.context.scene.BIMCostProperties
+        schedule_id = tool.Blender.get_enum_safe(props, "schedule_of_rates")
+        if schedule_id is None:
+            return
+        return tool.Ifc.get().by_id(int(schedule_id))
+
+    @classmethod
     def expand_cost_item_rate(cls, cost_item: ifcopenshell.entity_instance) -> None:
         props = bpy.context.scene.BIMCostProperties
         contracted_cost_item_rates = json.loads(props.contracted_cost_item_rates)
