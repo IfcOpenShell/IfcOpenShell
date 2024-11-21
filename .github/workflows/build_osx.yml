@@ -31,7 +31,7 @@ jobs:
       - name: Checkout Build Repository
         uses: actions/checkout@v3
         with:
-          repository: aothms/build-outputs
+          repository: IfcOpenShell/build-outputs
           path: ./build
           ref: ${{ matrix.os }}-${{ matrix.arch }}
           lfs: true

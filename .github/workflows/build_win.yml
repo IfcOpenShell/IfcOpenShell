@@ -23,7 +23,7 @@ jobs:
       - name: Checkout Build Repository
         uses: actions/checkout@v3
         with:
-          repository: aothms/build-outputs
+          repository: IfcOpenShell/build-outputs
           path: _deps-vs2019-x64-installed
           ref: windows-${{ matrix.arch }}
           lfs: true
