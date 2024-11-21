@@ -1,0 +1,130 @@
+name: Build IfcOpenShell OSX
+
+on:
+  push:
+    branches:
+      - v0.8.0
+  workflow_dispatch:
+
+jobs:
+  build_ifcopenshell:
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos
+            runner: macos-13
+            arch: x64
+            oldarch: 
+          - os: macos
+            runner: macos-14
+            arch: arm64
+            oldarch: m1
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Checkout Build Repository
+        uses: actions/checkout@v3
+        with:
+          repository: aothms/build-outputs
+          path: ./build
+          ref: ${{ matrix.os }}-${{ matrix.arch }}
+          lfs: true
+          token: ${{ secrets.BUILD_REPO_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+        
+      - name: Install Dependencies
+        run: |
+          brew update
+          brew install git bison autoconf automake libffi cmake findutils
+          echo "$(brew --prefix findutils)/libexec/gnubin" >> $GITHUB_PATH
+        
+      - name: Unpack Dependencies
+        run: |
+          install_root=$(find ./build -maxdepth 4 -name install)
+          find "$install_root" -type f -name 'cache-*.tar.gz' -maxdepth 1 -exec tar -xzf {} -C "$install_root" \;
+
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1
+        with:
+          key: ${GITHUB_WORKFLOW}-${{ matrix.os }}
+
+      - name: Run Build Script
+        run: |
+          if [ "${{ matrix.os }}" == "macos" ]; then
+            DARWIN_C_SOURCE=-D_DARWIN_C_SOURCE
+          fi
+          CXXFLAGS="-O3" CFLAGS="-O3 ${DARWIN_C_SOURCE}" ADD_COMMIT_SHA=1 BUILD_CFG=Release python3 ./nix/build-all.py --diskcleanup
+
+      - name: Pack Dependencies
+        run: |
+          cd build
+          for install_dir in $(find $(find . -maxdepth 4 -name install) -mindepth 1 -maxdepth 1 -type d); do
+            test -f $(dirname "$install_dir")/cache-$(basename "$install_dir").tar.gz || tar -czf $(dirname "$install_dir")/cache-$(basename "$install_dir").tar.gz -C $(dirname "$install_dir") $(basename "$install_dir");
+          done
+
+      - name: Commit and Push Changes to Build Repository
+        run: |
+          cd build
+          git config user.name "IfcOpenBot"
+          git config user.email "ifcopenbot@ifcopenshell.org"
+          git add "$(find . -maxdepth 4 -name install)/*.tar.gz"
+          git commit -m "Update build artifacts [skip ci]" || echo "No changes to commit"
+          git push || true
+
+      - name: Package .zip archives
+        run: |
+          VERSION=v`cat VERSION`
+          cd ./build/`uname`/*/10.9/install/ifcopenshell
+          mkdir ~/output
+
+          ls -d python-* | while read py_version; do
+              postfix=`echo ${py_version: -1} | sed s/[0-9]//`
+              numbers=`echo $py_version | grep -oE '[0-9]+\.[0-9]+' | tr -d '.'`
+              py_version_major=python-${numbers}$postfix
+              pushd . > /dev/null
+              cd $py_version
+              if [ ! -d ifcopenshell ]; then
+                  mkdir ../ifcopenshell_
+                  mv * ../ifcopenshell_
+                  mv ../ifcopenshell_ ifcopenshell
+              fi
+              [ -d ifcopenshell/__pycache__ ] && rm -rf ifcopenshell/__pycache__
+              find ifcopenshell -name "*.pyc" -delete
+              zip -r -qq ifcopenshell-${py_version_major}-${VERSION}-${GITHUB_SHA:0:7}-macos${{ matrix.oldarch }}64.zip ifcopenshell/*
+              mv *.zip ~/output
+              popd > /dev/null
+          done
+
+          cd bin
+          rm *.zip || true
+          ls | while read exe; do
+              zip -qq -r ${exe}-${VERSION}-${GITHUB_SHA:0:7}-macos${{ matrix.oldarch }}64.zip $exe
+          done
+          mv *.zip ~/output
+          cd ..
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_UPLOAD_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_UPLOAD_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Overwrite aws cli
+        run: |
+          # https://github.com/rust-lang/rustup/pull/3989/files
+          brew install --overwrite awscli
+
+      - name: Upload .zip archives to S3
+        run: |
+          aws s3 cp ~/output s3://ifcopenshell-builds/ --recursive
