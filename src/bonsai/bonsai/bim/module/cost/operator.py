@@ -629,17 +629,6 @@ class AssignCostValue(bpy.types.Operator, tool.Ifc.Operator):
         )
 
 
-class LoadScheduleOfRates(bpy.types.Operator):
-    bl_idname = "bim.load_schedule_of_rates_tree"
-    bl_label = "Load Schedule of Rates"
-    bl_options = {"REGISTER", "UNDO"}
-    cost_schedule: bpy.props.IntProperty()
-
-    def execute(self, context):
-        core.load_schedule_of_rates_tree(tool.Cost, schedule_of_rates=tool.Ifc.get().by_id(self.cost_schedule))
-        return {"FINISHED"}
-
-
 class ExpandCostItemRate(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.expand_cost_item_rate"
     bl_label = "Expand Cost Item Rate"
