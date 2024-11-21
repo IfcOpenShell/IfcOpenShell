@@ -197,6 +197,11 @@ IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
 
 :proj
 
+IF EXIST "%INSTALL_DIR%\proj-9.2.1" (
+    echo Found existing "%INSTALL_DIR%\proj-9.2.1", skipping
+    goto :mpir
+)
+
 set DEPENDENCY_NAME=sqlite3
 md %INSTALL_DIR%\sqlite3\lib %INSTALL_DIR%\sqlite3\bin %INSTALL_DIR%\sqlite3\include
 call :DownloadFile https://www.sqlite.org/2023/sqlite-amalgamation-3430100.zip "%DEPS_DIR%" sqlite-amalgamation-3430100.zip
@@ -232,6 +237,12 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 
 :mpir
+
+IF EXIST "%INSTALL_DIR%\mpir" (
+    echo Found existing "%INSTALL_DIR%\mpir", skipping
+    goto :mpfr
+)
+
 set DEPENDENCY_NAME=mpir
 set DEPENDENCY_DIR=%DEPS_DIR%\mpir
 call :GitCloneAndCheckoutRevision https://github.com/BrianGladman/mpir.git "%DEPENDENCY_DIR%"
@@ -255,6 +266,12 @@ copy ..\..\lib\%VS_PLATFORM%\%DEBUG_OR_RELEASE%\* "%INSTALL_DIR%\mpir"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 :mpfr
+
+IF EXIST "%INSTALL_DIR%\mpfr" (
+    echo Found existing "%INSTALL_DIR%\mpfr", skipping
+    goto :HDF5
+)
+
 set DEPENDENCY_NAME=mpfr
 set DEPENDENCY_DIR=%DEPS_DIR%\mpfr
 call :GitCloneAndCheckoutRevision https://github.com/aothms/mpfr.git "%DEPENDENCY_DIR%" 2ebbe10fd029a480cf6e8a64c493afa9f3654251
@@ -282,11 +299,18 @@ copy lib\%VS_PLATFORM%\%DEBUG_OR_RELEASE%\* "%INSTALL_DIR%\mpfr"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 :HDF5
+
 set DEPENDENCY_NAME=hdf5
 set DEPENDENCY_DIR=%DEPS_DIR%
 cd "%DEPENDENCY_DIR%"
 set HDF5_CMAKE_ZIP=CMake-hdf5-%HDF5_VERSION%.zip
 set HDF5_INSTALL_ZIP_NAME=HDF5-%HDF5_VERSION%-win%ARCH_BITS%
+
+IF EXIST "%INSTALL_DIR%\%HDF5_INSTALL_ZIP_NAME%" (
+    echo Found existing "%INSTALL_DIR%\%HDF5_INSTALL_ZIP_NAME%", skipping
+    goto :Boost
+)
+
 if "%ARCH_BITS%"=="64" set ARCH_BITS_64=64
 call :DownloadFile http://support.hdfgroup.org/ftp/HDF5/releases/hdf5-%HDF5_VERSION_MAJOR%/hdf5-%HDF5_VERSION%/src/CMake-hdf5-%HDF5_VERSION%.zip "%DEPS_DIR%" %HDF5_CMAKE_ZIP%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
@@ -347,11 +371,19 @@ IF NOT EXIST "%INSTALL_DIR%\json\nlohmann". mkdir "%INSTALL_DIR%\json\nlohmann"
 call :DownloadFile https://github.com/nlohmann/json/releases/download/v3.6.1/json.hpp "%INSTALL_DIR%\json\nlohmann" json.hpp
 
 :OpenCOLLADA
+
 :: Note OpenCOLLADA has only Release and Debug builds.
 set DEPENDENCY_NAME=OpenCOLLADA
 set DEPENDENCY_DIR=%DEPS_DIR%\OpenCOLLADA
 :: Use a fixed revision in order to prevent introducing breaking changes
 call :GitCloneAndCheckoutRevision https://github.com/KhronosGroup/OpenCOLLADA.git "%DEPENDENCY_DIR%" 064a60b65c2c31b94f013820856bc84fb1937cc6
+
+IF EXIST "%INSTALL_DIR%\OpenCOLLADA" (
+    echo Found existing "%INSTALL_DIR%\OpenCOLLADA", skipping
+    :: we do need to clone though because the bundled libxml includes are not installed
+    goto :OCCT
+)
+
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 cd "%DEPENDENCY_DIR%"
 :: Debug build of OpenCOLLADAValidator fails (https://github.com/KhronosGroup/OpenCOLLADA/issues/377) so
@@ -372,14 +404,20 @@ call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %DEBUG_OR_RELEASE%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 :OCCT
+
 SET OCCT_VER=V%OCCT_VERSION:.=_%
+
+IF EXIST "%INSTALL_DIR%\opencascade-%OCCT_VERSION%" (
+    echo Found existing "%INSTALL_DIR%\opencascade-%OCCT_VERSION%", skipping
+    goto :Python
+)
 
 :: OCCT has many dependencies but FreeType is the only mandatory
 set DEPENDENCY_NAME=FreeType
 set DEPENDENCY_DIR=%DEPS_DIR%\freetype-2.7.1
 set FREETYPE_ZIP=ft271.zip
 cd "%DEPS_DIR%"
-call :DownloadFile https://sourceforge.net/projects/freetype/files/freetype2/2.7.1/%FREETYPE_ZIP%/download "%DEPS_DIR%" %FREETYPE_ZIP%
+call :DownloadFile https://download-mirror.savannah.gnu.org/releases/freetype/ft271.zip "%DEPS_DIR%" %FREETYPE_ZIP%
 if not %ERRORLEVEL%==0 goto :Error
 call :ExtractArchive %FREETYPE_ZIP% "%DEPS_DIR%" "%DEPENDENCY_DIR%"
 if not %ERRORLEVEL%==0 goto :Error
@@ -471,12 +509,18 @@ IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
 )
 
 :SWIG
+
+IF EXIST "%INSTALL_DIR%\swigwin" (
+    echo Found existing "%INSTALL_DIR%\swigwin", skipping
+    goto :cgal
+)
+
 set SWIG_VERSION=3.0.12
 set DEPENDENCY_NAME=SWIG %SWIG_VERSION%
 set DEPENDENCY_DIR=N/A
 set SWIG_ZIP=swigwin-%SWIG_VERSION%.zip
 cd "%DEPS_DIR%"
-call :DownloadFile https://sourceforge.net/projects/swig/files/swigwin/swigwin-%SWIG_VERSION%/%SWIG_ZIP% "%DEPS_DIR%" %SWIG_ZIP%
+call :DownloadFile https://github.com/aothms/swigwin-3.0.12/raw/refs/heads/main/swigwin-3.0.12.zip "%DEPS_DIR%" %SWIG_ZIP%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :ExtractArchive %SWIG_ZIP% "%DEPS_DIR%" "%DEPS_DIR%\swigwin"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
@@ -488,6 +532,12 @@ IF EXIST "%DEPS_DIR%\swigwin-%SWIG_VERSION%". (
 IF EXIST "%DEPS_DIR%\swigwin\". robocopy "%DEPS_DIR%\swigwin" "%INSTALL_DIR%\swigwin" /E /IS /MOVE /njh /njs
 
 :cgal
+
+IF EXIST "%INSTALL_DIR%\cgal" (
+    echo Found existing "%INSTALL_DIR%\cgal", skipping
+    goto :Eigen
+)
+
 set DEPENDENCY_NAME=cgal
 set DEPENDENCY_DIR=%DEPS_DIR%\cgal
 call :GitCloneAndCheckoutRevision https://github.com/CGAL/cgal.git "%DEPENDENCY_DIR%" v5.2.3
