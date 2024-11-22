@@ -45,6 +45,12 @@ SUPPORTED_COLUMN = Literal[
     "EQUIPMENT OUTPUT",  # OUTPUT for EQUIPMENT TYPE.
 ]
 
+# Optional columns:
+# - GUID
+# - BASE QUANTITY NAME
+# - BASE QUANTITY VALUE
+# - BASE QUANTITY CLASS
+
 RESOURCE_MAP = {
     "CREW": "IfcCrewResource",
     "LABOR": "IfcLaborResource",
@@ -143,6 +149,18 @@ class Csv2Ifc:
                     "BaseQuantityProducedValue": 1,
                 }
 
+        quantity_data = None
+        if (header_index := self.headers.get("BASE QUANTITY CLASS", None)) is not None and (
+            quantity_class := row[header_index]
+        ):
+            quantity_value = row[self.headers["BASE QUANTITY VALUE"]]
+            quantity_value = float(quantity_value) if "." in quantity_value else int(quantity_value)
+            quantity_data = {
+                "name": row[self.headers["BASE QUANTITY NAME"]],
+                "value": quantity_value,
+                "class": quantity_class,
+            }
+
         return {
             "Name": str(name).strip() if name else None,
             "Description": row[self.headers["DESCRIPTION"]],
@@ -151,6 +169,7 @@ class Csv2Ifc:
             "Productivity": productivity,
             "children": [],
             "usage": row[self.headers["USAGE"]],
+            "quantity_data": quantity_data,
         }
 
     def create_ifc(self) -> None:
@@ -189,6 +208,16 @@ class Csv2Ifc:
         if usage_value := resource["usage"]:
             usage = ifcopenshell.api.resource.add_resource_time(self.file, resource=resource["ifc"])
             ifcopenshell.api.resource.edit_resource_time(self.file, usage, {"ScheduleUsage": float(usage_value)})
+
+        if quantity_data := resource["quantity_data"]:
+            quantity = ifcopenshell.api.resource.add_resource_quantity(
+                self.file, resource["ifc"], ifc_class=quantity_data["class"]
+            )
+            # 0 IfcPhysicalSimpleQuantity Name
+            quantity[0] = quantity_data["name"]
+            # 3 IfcPhysicalSimpleQuantity Value
+            quantity[3] = quantity_data["value"]
+
         self.create_resources(resource["children"], resource["ifc"])
 
     # TODO: never used.
@@ -221,6 +250,9 @@ class Ifc2CsvRow(NamedTuple):
     quantity_name: Union[str, None]
     labor_output: Union[float, None]
     equipment_output: Union[float, None]
+    base_quantity_name: Union[str, None]
+    base_quantity_value: Union[float, None]
+    base_quantity_type: Union[str, None]
     guid: str
 
 
@@ -237,6 +269,9 @@ class Ifc2Csv:
         "QUANTITY NAME",
         "LABOR OUTPUT",
         "EQUIPMENT OUTPUT",
+        "BASE QUANTITY NAME",
+        "BASE QUANTITY VALUE",
+        "BASE QUANTITY CLASS",
         "GUID",
     )
     assert len(HEADER) == len(Ifc2CsvRow._fields)
@@ -289,6 +324,15 @@ class Ifc2Csv:
         if usage := resource.Usage:
             usage_value: Union[float, None] = usage.ScheduleUsage
 
+        # Get base quantities.
+        base_quantity_name, base_quantity_value, base_quantity_class = None, None, None
+        if base_quantity := resource.BaseQuantity:
+            # 0 IfcPhysicalSimpleQuantity Name
+            base_quantity_name = base_quantity[0]
+            # 3 IfcPhysicalSimpleQuantity Value
+            base_quantity_value = base_quantity[3]
+            base_quantity_class = base_quantity.is_a()
+
         return Ifc2CsvRow(
             hierarchy=hierarchy_level,
             resource_type=self.inverse_resource_map[resource.is_a()],
@@ -299,5 +343,8 @@ class Ifc2Csv:
             quantity_name=quantity_name,
             labor_output=labor_output,
             equipment_output=equipment_output,
+            base_quantity_name=base_quantity_name,
+            base_quantity_value=base_quantity_value,
+            base_quantity_type=base_quantity_class,
             guid=resource.GlobalId,
         )
