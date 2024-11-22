@@ -737,6 +737,7 @@ if "boost" in targets:
             "--with-thread",
             "--with-date_time",
             "--with-iostreams",
+            "--with-filesystem",
             f"link={LINK_TYPE}",
             *toolset,
             *map(str_concat("cxxflags"), CXXFLAGS.strip().split(' ')),
