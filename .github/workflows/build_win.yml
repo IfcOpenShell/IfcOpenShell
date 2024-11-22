@@ -91,7 +91,7 @@ jobs:
           $OUTPUT_DIR = "$env:USERPROFILE\output"
           New-Item -ItemType Directory -Force -Path $OUTPUT_DIR
 
-          if (${{ matrix.python }} -eq '3.9.11') {
+          if ("${{ matrix.python }}" -eq "3.9.11") {
             # only for the first python version the executables are assembled for upload
             cd _installed-vs2019-x64/bin
             Get-ChildItem -Path . | ForEach-Object {
