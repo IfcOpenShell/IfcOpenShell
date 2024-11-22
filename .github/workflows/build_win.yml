@@ -88,24 +88,28 @@ jobs:
         run: |
           $VERSION = 'v' + ((Get-Content VERSION).Trim())
           $SHA = ${env:GITHUB_SHA}.Substring(0, 7)
-          cd _installed-vs2019-x64/bin
-          Get-ChildItem -Path . | ForEach-Object {
-            echo $_
-            $exe = $_.Name
-            $baseName = $exe.Substring(0, $exe.Length - 4)
-            $zipName = "${baseName}-$VERSION-$SHA-win64.zip"
-            7z a $zipName $exe
-          }
           $OUTPUT_DIR = "$env:USERPROFILE\output"
           New-Item -ItemType Directory -Force -Path $OUTPUT_DIR
-          mv *.zip $OUTPUT_DIR
 
-          $version = "${{ matrix.python }}"
-          $pyVersionMajor = ($version -split '\.')[0..1] -join '.'
+          if (${{ matrix.python }} -eq '3.9.11') {
+            # only for the first python version the executables are assembled for upload
+            cd _installed-vs2019-x64/bin
+            Get-ChildItem -Path . | ForEach-Object {
+              echo $_
+              $exe = $_.Name
+              $baseName = $exe.Substring(0, $exe.Length - 4)
+              $zipName = "${baseName}-$VERSION-$SHA-win64.zip"
+              7z a $zipName $exe
+            }
+            mv *.zip $OUTPUT_DIR
+          }
+
+          $pyVersion = "${{ matrix.python }}"
+          $pyVersionMajor = ($pyVersion -split '\.')[0..1] -join ''
           cd C:\Python\${{ matrix.python }}\Lib\site-packages
           Remove-Item -Recurse -Force ifcopenshell\__pycache__ -ErrorAction SilentlyContinue
           Get-ChildItem -Path ifcopenshell -Filter "*.pyc" -Recurse | Remove-Item -Force
-          $zipName = "ifcopenshell-$pyVersionMajor-$VERSION-$SHA-win64.zip"
+          $zipName = "ifcopenshell-python-$pyVersionMajor-$VERSION-$SHA-win64.zip"
           7z a $zipName ifcopenshell
           mv $zipName $OUTPUT_DIR
 
