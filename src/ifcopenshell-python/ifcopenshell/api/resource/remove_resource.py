@@ -46,9 +46,12 @@ def remove_resource(file: ifcopenshell.file, resource: ifcopenshell.entity_insta
     for inverse in file.get_inverse(settings["resource"]):
         if inverse.is_a("IfcRelNests"):
             if inverse.RelatingObject == settings["resource"]:
-                for related_object in inverse.RelatedObjects:
-                    ifcopenshell.api.resource.remove_resource(file, resource=related_object)
+                # Remove rel before iteration over objects
+                # to simplify removal of nested resources and avoid crashes.
+                related_objects = inverse.RelatedObjects
                 remove_consider_history(inverse)
+                for related_object in related_objects:
+                    ifcopenshell.api.resource.remove_resource(file, resource=related_object)
             elif inverse.RelatedObjects == (resource,):
                 remove_consider_history(inverse)
 
