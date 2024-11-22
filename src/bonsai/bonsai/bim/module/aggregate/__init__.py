@@ -30,7 +30,11 @@ classes = (
     operator.BIM_OT_aggregate_unassign_object,
     operator.BIM_OT_break_link_to_other_aggregates,
     operator.BIM_OT_select_linked_aggregates,
+    operator.BIM_OT_aggregate_mode_set_edit,
+    operator.BIM_OT_disable_aggregate_mode_set_edit,
     prop.BIMObjectAggregateProperties,
+    prop.NotEditingObjects,
+    prop.BIMAggregateProperties,
     ui.BIM_PT_aggregate,
     ui.BIM_PT_linked_aggregate,
 )
@@ -38,7 +42,9 @@ classes = (
 
 def register():
     bpy.types.Object.BIMObjectAggregateProperties = bpy.props.PointerProperty(type=prop.BIMObjectAggregateProperties)
+    bpy.types.Scene.BIMAggregateProperties = bpy.props.PointerProperty(type=prop.BIMAggregateProperties)
 
 
 def unregister():
     del bpy.types.Object.BIMObjectAggregateProperties
+    del bpy.types.Scene.BIMAggregateProperties
