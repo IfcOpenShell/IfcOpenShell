@@ -1272,3 +1272,17 @@ class Blender(bonsai.core.tool.Blender):
 
         obj, path = path_resolve(bpy_object, prop_path)
         setattr(obj, path, value)
+
+    @classmethod
+    def get_microsoft_store_app_id(cls) -> Union[str, None]:
+        """Get Microsoft Store app ID for current Blender instance.
+
+        :return: `None` if Blender is installed not from Microsoft Store (possibly using non-Windows platform).
+            Otherwise return app ID string (e.g. 'ppwjx1n5r4v9t').
+        """
+        if os.name != "nt":
+            return None
+        blender_binary_path = Path(bpy.app.binary_path)
+        if len(blender_binary_path.parents) > 3 and blender_binary_path.parents[2].name == "WindowsApps":
+            return blender_binary_path.parents[1].name.rsplit("__", 1)[-1]
+        return None
