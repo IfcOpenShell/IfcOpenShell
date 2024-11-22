@@ -90,12 +90,13 @@ class Aggregate(bonsai.core.tool.Aggregate):
         parts = ifcopenshell.util.element.get_parts(agg_element)
         parts_objs = [tool.Ifc.get_object(p) for p in parts]
         for obj in parts_objs:
-            if not obj.data:
-                continue
-            tool.Geometry.lock_object(obj)
             constraint = next((c for c in obj.constraints if c.type == "CHILD_OF"), None)
             if constraint:
-                obj.constraints.remove(constraint)
+                try:
+                    bpy.context.view_layer.objects.active = obj
+                    bpy.ops.constraint.apply(constraint="Child Of")
+                except:
+                    pass
             constraint = obj.constraints.new("CHILD_OF")
             constraint.target = aggregate
 
@@ -103,5 +104,5 @@ class Aggregate(bonsai.core.tool.Aggregate):
     def apply_constraints(cls, part: bpy.types.Object):
         constraint = next((c for c in part.constraints if c.type == "CHILD_OF"), None)
         if constraint:
+            bpy.context.view_layer.objects.active = part
             bpy.ops.constraint.apply(constraint=constraint.name)
-        tool.Geometry.unlock_object(part)

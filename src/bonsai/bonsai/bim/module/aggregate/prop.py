@@ -82,3 +82,11 @@ class BIMObjectAggregateProperties(PropertyGroup):
         type=bpy.types.Object,
         poll=poll_related_object,
     )
+    
+class NotEditingObjects(bpy.types.PropertyGroup):
+    obj: PointerProperty(type=bpy.types.Object)
+    
+class BIMAggregateProperties(PropertyGroup):
+    in_edit_mode: BoolProperty(name="In Edit Mode")
+    not_editing_objects: CollectionProperty(type=NotEditingObjects)
+

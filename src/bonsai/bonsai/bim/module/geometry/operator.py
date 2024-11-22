@@ -2783,3 +2783,51 @@ class AddCurvelikeItem(bpy.types.Operator, tool.Ifc.Operator):
         obj.data.BIMMeshProperties.ifc_definition_id = item.id()
         tool.Geometry.import_item(obj)
         tool.Geometry.import_item_attributes(obj)
+
+
+class OverrideMoveAggregateMacro(bpy.types.Macro):
+    bl_idname = "bim.override_move_aggregate_macro"
+    bl_label = "IFC Move Aggregate"
+    bl_options = {"REGISTER", "UNDO"}
+
+class OverrideMoveAggregate(bpy.types.Operator):
+    bl_idname = "bim.override_move_aggregate"
+    bl_label = "IFC Move Aggregate"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return len(context.selected_objects) > 0
+
+    def execute(self, context):
+        # Deep magick from the dawn of time
+        if IfcStore.get_file():
+            IfcStore.execute_ifc_operator(self, context)
+            if self.new_active_obj:
+                context.view_layer.objects.active = self.new_active_obj
+            return {"FINISHED"}
+
+        return {"FINISHED"}
+
+    def _execute(self, context):
+        props = context.scene.BIMAggregateProperties
+        not_editing_objs = [o.obj for o in props.not_editing_objects]
+        aggregates_to_move = []
+        for obj in context.selected_objects:
+            self.new_active_obj = None
+            if obj in not_editing_objs:
+                obj.select_set(False)
+                print("foi")
+                break
+            element = tool.Ifc.get_entity(obj)
+            if not element or props.in_edit_mode:
+                continue
+            aggregate = ifcopenshell.util.element.get_aggregate(element)
+            if aggregate:
+                aggregates_to_move.append(tool.Ifc.get_object(aggregate))
+                obj.select_set(False)
+        aggregates_to_move = set(aggregates_to_move)
+        for obj in aggregates_to_move:
+            obj.select_set(True)
+            self.new_active_obj = obj
+        return {"FINISHED"}
