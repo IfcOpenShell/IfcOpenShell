@@ -23,6 +23,8 @@ import ifcopenshell.util.element
 import bonsai.tool as tool
 import bonsai.core.aggregate as core
 import bonsai.core.spatial
+from bonsai.bim.ifc import IfcStore
+from bonsai.bim.module.geometry.decorator import ItemDecorator
 
 
 class BIM_OT_aggregate_assign_object(bpy.types.Operator, tool.Ifc.Operator):
@@ -369,3 +371,77 @@ class BIM_OT_select_linked_aggregates(bpy.types.Operator):
                         obj.select_set(True)
 
         return {"FINISHED"}
+
+class BIM_OT_aggregate_mode_set_edit(bpy.types.Operator, tool.Ifc.Operator):
+    bl_description = "Switch from Object to Aggregate Edit mode"
+    bl_idname = "bim.aggregate_mode_set_edit"
+    bl_label = "IFC Aggregate Mode Set Edit"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def invoke(self, context, event):
+        return IfcStore.execute_ifc_operator(self, context, is_invoke=True)
+
+    def _invoke(self, context, event):
+        if not tool.Ifc.get():
+            return {"FINISHED"}
+        return self.execute(context)
+
+    def _execute(self, context):
+        active_object = context.active_object
+        props = context.scene.BIMAggregateProperties
+        if props.in_edit_mode == True:
+            BIM_OT_disable_aggregate_mode_set_edit._execute(self, context)
+
+        element = tool.Ifc.get_entity(active_object)
+        if not element:
+            return {"FINISHED"}
+        aggregate = ifcopenshell.util.element.get_aggregate(element)
+        parts = ifcopenshell.util.element.get_parts(element)
+        if not aggregate and not parts:
+            return {"FINISHED"}
+        if not parts:
+            parts = ifcopenshell.util.element.get_parts(aggregate)
+        if parts:
+            parts_objs = [tool.Ifc.get_object(part) for part in parts]
+            objs = []
+            visible_objects = tool.Raycast.get_visible_objects(context)
+            for obj in visible_objects:
+                if obj.visible_in_viewport_get(context.space_data):
+                    objs.append(obj.original)
+            for obj in objs:
+                if obj.original not in parts_objs:
+                    if not obj.data:
+                        continue
+                    obj.original.display_type = "BOUNDS"
+                    data = ItemDecorator.get_obj_data(obj.original)
+                    not_editing_obj = props.not_editing_objects.add()
+                    not_editing_obj.obj = obj.original
+
+        props.in_edit_mode = True
+        return {"FINISHED"}
+
+class BIM_OT_disable_aggregate_mode_set_edit(bpy.types.Operator, tool.Ifc.Operator):
+    bl_description = "Switch from Aggregate to Object Edit mode"
+    bl_idname = "bim.disable_aggregate_mode_set_edit"
+    bl_label = "IFC Disable Aggregate Mode Set Edit"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def invoke(self, context, event):
+        return IfcStore.execute_ifc_operator(self, context, is_invoke=True)
+
+    def _invoke(self, context, event):
+        if not tool.Ifc.get():
+            return {"FINISHED"}
+        return self.execute(context)
+
+    def _execute(self, context):
+        props = context.scene.BIMAggregateProperties
+        objs = [o.obj for o in props.not_editing_objects]
+        for obj in objs:
+            obj.original.display_type = "TEXTURED"
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+
+        props.in_edit_mode = False
+        props.not_editing_objects.clear()
