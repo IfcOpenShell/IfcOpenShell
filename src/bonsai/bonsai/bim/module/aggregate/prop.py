@@ -32,6 +32,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+from bonsai.bim.module.aggregate.decorator import AggregateDecorator
 
 
 def can_aggregate(relating_obj: bpy.types.Object, related_obj: bpy.types.Object) -> bool:
@@ -73,6 +74,13 @@ def poll_related_object(self: "BIMObjectAggregateProperties", related_obj: bpy.t
     return True
 
 
+def update_aggregate_decorator(self, context):
+    if self.aggregate_decorator:
+        AggregateDecorator.install(bpy.context)
+    else:
+        AggregateDecorator.uninstall()
+
+
 class BIMObjectAggregateProperties(PropertyGroup):
     is_editing: BoolProperty(name="Is Editing")
     relating_object: PointerProperty(name="Relating Whole", type=bpy.types.Object, poll=poll_relating_object)
@@ -89,4 +97,8 @@ class NotEditingObjects(bpy.types.PropertyGroup):
 class BIMAggregateProperties(PropertyGroup):
     in_edit_mode: BoolProperty(name="In Edit Mode")
     not_editing_objects: CollectionProperty(type=NotEditingObjects)
-
+    aggregate_decorator: BoolProperty(
+        name="Display Aggregate",
+        default=False,
+        update=update_aggregate_decorator,
+    )

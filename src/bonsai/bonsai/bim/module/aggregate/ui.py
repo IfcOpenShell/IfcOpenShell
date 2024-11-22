@@ -47,6 +47,9 @@ class BIM_PT_aggregate(Panel):
 
     def draw(self, context):
         layout = self.layout
+        row = layout.row()
+        row.label(text="Aggregate Decorator")
+        row.prop(context.scene.BIMAggregateProperties, "aggregate_decorator", icon="HIDE_OFF", text="")
         if not AggregateData.is_loaded:
             AggregateData.load()
 
