@@ -264,6 +264,13 @@ class AssignCostItemQuantity(bpy.types.Operator, tool.Ifc.Operator):
     related_object_type: bpy.props.StringProperty()
     prop_name: bpy.props.StringProperty()
 
+    @classmethod
+    def description(cls, context, properties) -> str:
+        descr = f"Assign cost item quantity to the active cost item from active {properties.related_object_type}"
+        if prop_name := properties.prop_name:
+            descr += f" property '{prop_name}'"
+        return descr
+
     def _execute(self, context):
         result = core.assign_cost_item_quantity(
             tool.Ifc,
