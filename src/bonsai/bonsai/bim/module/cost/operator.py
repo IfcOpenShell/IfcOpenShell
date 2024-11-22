@@ -16,12 +16,15 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+# pyright: reportUnnecessaryTypeIgnoreComment=error
+
 import bpy
 import ifcopenshell.api
 import bonsai.tool as tool
 from bpy_extras.io_utils import ImportHelper
 import bonsai.tool as tool
 import bonsai.core.cost as core
+from typing import get_args, TYPE_CHECKING
 
 
 class AddCostSchedule(bpy.types.Operator, tool.Ifc.Operator):
@@ -261,8 +264,13 @@ class AssignCostItemQuantity(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Assign Cost Item Quantity"
     bl_options = {"REGISTER", "UNDO"}
     cost_item: bpy.props.IntProperty()
-    related_object_type: bpy.props.StringProperty()
+    related_object_type: bpy.props.EnumProperty(  # type: ignore [reportRedeclaration]
+        items=[(i, i, "") for i in get_args(tool.Cost.RELATED_OBJECT_TYPE)],
+    )
     prop_name: bpy.props.StringProperty()
+
+    if TYPE_CHECKING:
+        related_object_type: tool.Cost.RELATED_OBJECT_TYPE
 
     @classmethod
     def description(cls, context, properties) -> str:
@@ -708,7 +716,12 @@ class ClearCostItemAssignments(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Clear Cost Item Product Assignments"
     bl_options = {"REGISTER", "UNDO"}
     cost_item: bpy.props.IntProperty()
-    related_object_type: bpy.props.StringProperty()
+    related_object_type: bpy.props.EnumProperty(  # type: ignore [reportRedeclaration]
+        items=[(i, i, "") for i in get_args(tool.Cost.RELATED_OBJECT_TYPE)],
+    )
+
+    if TYPE_CHECKING:
+        related_object_type: tool.Cost.RELATED_OBJECT_TYPE
 
     def _execute(self, context):
         core.clear_cost_item_assignments(

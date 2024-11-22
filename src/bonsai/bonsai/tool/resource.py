@@ -22,7 +22,6 @@ import bpy
 import bonsai.core.tool
 import bonsai.tool as tool
 import bonsai.bim.helper
-import bonsai.bim.module.sequence.helper as helper
 import json
 import time
 import isodate
@@ -362,6 +361,8 @@ class Resource(bonsai.core.tool.Resource):
                 )
                 time_consumed = ifcopenshell.util.resource.get_unit_consumed(productivity)
                 if time_consumed:
+                    import bonsai.bim.module.sequence.helper as helper
+
                     durations_attributes = helper.parse_duration_as_blender_props(time_consumed)
                     duration_props.years = durations_attributes["years"]
                     duration_props.months = durations_attributes["months"]
@@ -375,6 +376,8 @@ class Resource(bonsai.core.tool.Resource):
         props = bpy.context.scene.BIMResourceProductivity
         productivity = {}
         if props.quantity_consumed:
+            import bonsai.bim.module.sequence.helper as helper
+
             productivity["BaseQuantityConsumed"] = helper.blender_props_to_iso_duration(
                 props.quantity_consumed, "ELAPSEDTIME", "BaseQuantityConsumed"
             )
