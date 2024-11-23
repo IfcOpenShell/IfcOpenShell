@@ -412,6 +412,7 @@ class BIM_OT_aggregate_mode_set_edit(bpy.types.Operator, tool.Ifc.Operator):
                     if not obj.data:
                         continue
                     obj.original.display_type = "BOUNDS"
+                    obj.hide_select = True
                     not_editing_obj = props.not_editing_objects.add()
                     not_editing_obj.obj = obj.original
 
@@ -437,6 +438,7 @@ class BIM_OT_disable_aggregate_mode_set_edit(bpy.types.Operator, tool.Ifc.Operat
         objs = [o.obj for o in props.not_editing_objects]
         for obj in objs:
             obj.original.display_type = "TEXTURED"
+            obj.hide_select = False
             element = tool.Ifc.get_entity(obj)
             if not element:
                 continue
