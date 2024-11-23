@@ -362,23 +362,6 @@ class Snap(bonsai.core.tool.Snap):
                     ):  # Check for local view and local collections for this viewport and object
                         objs_to_raycast.append(obj)
 
-        # Obj
-        snap_obj, hit, face_index = cast_rays_and_get_best_object(objs_to_raycast, mouse_pos)
-        if hit is not None:
-            detected_snaps.append({"Object": (snap_obj, hit, face_index)})
-
-        # Edge-Vertex
-        for obj in objs_to_raycast:
-            if obj.type == "MESH":
-                if len(obj.data.polygons) == 0:
-                    options = tool.Raycast.ray_cast_by_proximity(context, event, obj)
-                    snap_obj = obj
-                    if options:
-                        detected_snaps.append({"Edge-Vertex": (snap_obj, options)})
-                        break
-            if obj.type == "EMPTY":
-                snap_point = [(obj.location, "Vertex")]
-                detected_snaps.append({"Edge-Vertex": (obj, snap_point)})
         # Polyline
         try:
             polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline[0]
@@ -399,6 +382,24 @@ class Snap(bonsai.core.tool.Snap):
             snap_points = tool.Raycast.ray_cast_to_measure(context, event, measure_points)
             if snap_points:
                 detected_snaps.append({"Polyline": snap_points})
+
+        # Edge-Vertex
+        for obj in objs_to_raycast:
+            if obj.type == "MESH":
+                if len(obj.data.polygons) == 0:
+                    options = tool.Raycast.ray_cast_by_proximity(context, event, obj)
+                    snap_obj = obj
+                    if options:
+                        detected_snaps.append({"Edge-Vertex": (snap_obj, options)})
+                        break
+            if obj.type == "EMPTY":
+                snap_point = [(obj.location, "Vertex")]
+                detected_snaps.append({"Edge-Vertex": (obj, snap_point)})
+
+        # Obj
+        snap_obj, hit, face_index = cast_rays_and_get_best_object(objs_to_raycast, mouse_pos)
+        if hit is not None:
+            detected_snaps.append({"Object": (snap_obj, hit, face_index)})
 
         # Axis and Plane
         elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
@@ -453,6 +454,22 @@ class Snap(bonsai.core.tool.Snap):
         snapping_points = []
         for origin in detected_snaps:
             snap_obj = None
+            if "Polyline" in origin:
+                options = origin["Polyline"]
+                for op in options:
+                    snapping_points.append(op + (snap_obj,))
+                break
+            if "Measure" in origin:
+                options = origin["Measure"]
+                for op in options:
+                    snapping_points.append(op + (snap_obj,))
+                break
+            if "Edge-Vertex" in origin:
+                snap_obj, options = origin["Edge-Vertex"]
+                print(">>>", snap_obj, options)
+                for op in options:
+                    snapping_points.append(op + (snap_obj,))
+                break
             if "Object" in origin:
                 snap_obj, hit, face_index = origin["Object"]
                 matrix = snap_obj.matrix_world.copy()
@@ -467,19 +484,6 @@ class Snap(bonsai.core.tool.Snap):
                 else:
                     for op in options:
                         snapping_points.append(op + (snap_obj,))
-
-                break
-
-            if "Edge-Vertex" in origin:
-                snap_obj, options = origin["Edge-Vertex"]
-                for op in options:
-                    snapping_points.append(op + (snap_obj,))
-                break
-
-            if "Polyline" in origin:
-                options = origin["Polyline"]
-                for op in options:
-                    snapping_points.append(op + (snap_obj,))
                 break
 
         for origin in detected_snaps:

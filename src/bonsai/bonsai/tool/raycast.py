@@ -18,6 +18,7 @@
 
 import bmesh
 import bpy
+import copy
 from bpy_extras import view3d_utils
 import bonsai.core.tool
 import bonsai.tool as tool
@@ -194,7 +195,8 @@ class Raycast(bonsai.core.tool.Raycast):
         snapping_points = []
         sorted_points = sorted(points)
         for p in sorted_points:
-            snapping_points.append(p[1])
+            point = copy.deepcopy(p)
+            snapping_points.append(point[1])
 
         return snapping_points
 
