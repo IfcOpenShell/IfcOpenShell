@@ -636,62 +636,65 @@ class PolylineDecorator:
         # Plane Method or Default Container
         default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
         projection_point = []
-        if self.tool_state.plane_method:
-            plane_origin = self.tool_state.plane_origin
-            axis1 = None
-            axis2 = None
-            if self.tool_state.plane_method == "XY":
-                projection_point = [Vector((snap_prop.x, snap_prop.y, self.tool_state.plane_origin.z))]
-                axis1 = [
-                    (plane_origin.x - 10000, plane_origin.y, plane_origin.z),
-                    (plane_origin.x + 10000, plane_origin.y, plane_origin.z),
-                ]
-                axis2 = [
-                    (plane_origin.x, plane_origin.y - 10000, plane_origin.z),
-                    (plane_origin.x, plane_origin.y + 100000, plane_origin.z),
-                ]
-                axis_color1 = decorator_color_x_axis
-                axis_color2 = decorator_color_y_axis
-            elif self.tool_state.plane_method == "XZ":
-                projection_point = [Vector((snap_prop.x, self.tool_state.plane_origin.y, snap_prop.z))]
-                axis1 = [
-                    (plane_origin.x - 10000, plane_origin.y, plane_origin.z),
-                    (plane_origin.x + 10000, plane_origin.y, plane_origin.z),
-                ]
-                axis2 = [
-                    (plane_origin.x, plane_origin.y, plane_origin.z - 10000),
-                    (plane_origin.x, plane_origin.y, plane_origin.z + 100000),
-                ]
-                axis_color1 = decorator_color_x_axis
-                axis_color2 = decorator_color_z_axis
-            elif self.tool_state.plane_method == "YZ":
-                projection_point = [Vector((self.tool_state.plane_origin.x, snap_prop.y, snap_prop.z))]
-                axis1 = [
-                    (plane_origin.x, plane_origin.y - 10000, plane_origin.z),
-                    (plane_origin.x, plane_origin.y + 10000, plane_origin.z),
-                ]
-                axis2 = [
-                    (plane_origin.x, plane_origin.y, plane_origin.z - 10000),
-                    (plane_origin.x, plane_origin.y, plane_origin.z + 100000),
-                ]
-                axis_color1 = decorator_color_y_axis
-                axis_color2 = decorator_color_z_axis
-            else:
-                return
-            # When a point is above the plane it projects the point
-            # to the plane and creates a line
-            if snap_prop.snap_type != "Plane":
-                if self.tool_state.use_default_container and snap_prop.z != 0:
-                    projection_point = [Vector((snap_prop.x, snap_prop.y, default_container_elevation))]
-                self.line_shader.uniform_float("lineWidth", 1.0)
-                self.draw_batch("POINTS", projection_point, decorator_color_unselected)
-                edges = [[0, 1]]
-                self.draw_batch("LINES", mouse_point + projection_point, decorator_color_unselected, edges)
+        if not self.tool_state:
+            pass            
+        else:
+            if self.tool_state.plane_method:
+                plane_origin = self.tool_state.plane_origin
+                axis1 = None
+                axis2 = None
+                if self.tool_state.plane_method == "XY":
+                    projection_point = [Vector((snap_prop.x, snap_prop.y, self.tool_state.plane_origin.z))]
+                    axis1 = [
+                        (plane_origin.x - 10000, plane_origin.y, plane_origin.z),
+                        (plane_origin.x + 10000, plane_origin.y, plane_origin.z),
+                    ]
+                    axis2 = [
+                        (plane_origin.x, plane_origin.y - 10000, plane_origin.z),
+                        (plane_origin.x, plane_origin.y + 100000, plane_origin.z),
+                    ]
+                    axis_color1 = decorator_color_x_axis
+                    axis_color2 = decorator_color_y_axis
+                elif self.tool_state.plane_method == "XZ":
+                    projection_point = [Vector((snap_prop.x, self.tool_state.plane_origin.y, snap_prop.z))]
+                    axis1 = [
+                        (plane_origin.x - 10000, plane_origin.y, plane_origin.z),
+                        (plane_origin.x + 10000, plane_origin.y, plane_origin.z),
+                    ]
+                    axis2 = [
+                        (plane_origin.x, plane_origin.y, plane_origin.z - 10000),
+                        (plane_origin.x, plane_origin.y, plane_origin.z + 100000),
+                    ]
+                    axis_color1 = decorator_color_x_axis
+                    axis_color2 = decorator_color_z_axis
+                elif self.tool_state.plane_method == "YZ":
+                    projection_point = [Vector((self.tool_state.plane_origin.x, snap_prop.y, snap_prop.z))]
+                    axis1 = [
+                        (plane_origin.x, plane_origin.y - 10000, plane_origin.z),
+                        (plane_origin.x, plane_origin.y + 10000, plane_origin.z),
+                    ]
+                    axis2 = [
+                        (plane_origin.x, plane_origin.y, plane_origin.z - 10000),
+                        (plane_origin.x, plane_origin.y, plane_origin.z + 100000),
+                    ]
+                    axis_color1 = decorator_color_y_axis
+                    axis_color2 = decorator_color_z_axis
+                else:
+                    return
+                # When a point is above the plane it projects the point
+                # to the plane and creates a line
+                if snap_prop.snap_type != "Plane":
+                    if self.tool_state.use_default_container and snap_prop.z != 0:
+                        projection_point = [Vector((snap_prop.x, snap_prop.y, default_container_elevation))]
+                    self.line_shader.uniform_float("lineWidth", 1.0)
+                    self.draw_batch("POINTS", projection_point, decorator_color_unselected)
+                    edges = [[0, 1]]
+                    self.draw_batch("LINES", mouse_point + projection_point, decorator_color_unselected, edges)
 
-            if axis1 and axis2:
-                self.line_shader.uniform_float("lineWidth", 1.5)
-                self.draw_batch("LINES", axis1, highlight_color(axis_color1), [(0, 1)])
-                self.draw_batch("LINES", axis2, highlight_color(axis_color2), [(0, 1)])
+                if axis1 and axis2:
+                    self.line_shader.uniform_float("lineWidth", 1.5)
+                    self.draw_batch("LINES", axis1, highlight_color(axis_color1), [(0, 1)])
+                    self.draw_batch("LINES", axis2, highlight_color(axis_color2), [(0, 1)])
 
         # Create polyline with selected points
         polyline_data = context.scene.BIMPolylineProperties.insertion_polyline
