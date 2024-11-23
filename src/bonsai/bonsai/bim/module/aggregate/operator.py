@@ -24,7 +24,6 @@ import bonsai.tool as tool
 import bonsai.core.aggregate as core
 import bonsai.core.spatial
 from bonsai.bim.ifc import IfcStore
-from bonsai.bim.module.geometry.decorator import ItemDecorator
 
 
 class BIM_OT_aggregate_assign_object(bpy.types.Operator, tool.Ifc.Operator):
@@ -413,7 +412,6 @@ class BIM_OT_aggregate_mode_set_edit(bpy.types.Operator, tool.Ifc.Operator):
                     if not obj.data:
                         continue
                     obj.original.display_type = "BOUNDS"
-                    data = ItemDecorator.get_obj_data(obj.original)
                     not_editing_obj = props.not_editing_objects.add()
                     not_editing_obj.obj = obj.original
 

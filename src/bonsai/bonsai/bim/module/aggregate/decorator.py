@@ -23,7 +23,6 @@ import bonsai.tool as tool
 from bpy.types import SpaceView3D
 from gpu_extras.batch import batch_for_shader
 from mathutils import Vector
-from bonsai.bim.module.geometry.decorator import ItemDecorator
 
 
 class AggregateDecorator:
