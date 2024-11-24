@@ -509,7 +509,7 @@ class Literal(PropertyGroup):
         return self.get("box_alignment", DEFAULT_BOX_ALIGNMENT)
 
     attributes: CollectionProperty(name="Attributes", type=Attribute)
-    # Current text value with evaluated experessions stored in `value`.
+    # Current text value with evaluated expressions stored in `value`.
     # The original (Literal) value stored in `attributes['Literal']`
     # and can be accessed with `get_text()`
     value: StringProperty(name="Value", default="TEXT")
