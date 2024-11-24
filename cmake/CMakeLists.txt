@@ -489,7 +489,7 @@ if(COLLADA_SUPPORT)
     if("${OPENCOLLADA_LIBRARY_DIR}" STREQUAL "")
         message(STATUS "No OpenCOLLADA library directory specified")
         find_library(OPENCOLLADA_FRAMEWORK_LIB NAMES OpenCOLLADAFramework
-            PATHS /usr/lib64/opencollada /usr/lib/opencollada /usr/lib64 /usr/lib /usr/local/lib64 /usr/local/lib)
+            PATHS /usr/lib/opencollada /usr/lib64/opencollada /usr/lib64 /usr/lib /usr/local/lib64 /usr/local/lib)
         get_filename_component(OPENCOLLADA_LIBRARY_DIR ${OPENCOLLADA_FRAMEWORK_LIB} PATH)
     endif()
 
@@ -584,7 +584,11 @@ if(HDF5_SUPPORT)
                 set(zlib_post lib)
                 set(lib_ext lib)
             else()
+                if(BUILD_SHARED_LIBS)
+                    set(lib_ext so)
+                else()
                 set(lib_ext a)
+            endif()
             endif()
 
             if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
@@ -868,14 +872,15 @@ if(BUILD_CONVERT OR BUILD_IFCPYTHON)
 
     if(WITH_OPENCASCADE)
         foreach(schema ${SCHEMA_VERSIONS})
-            set(GEOM_SERIALIZER_SCHEMA_LIBRARIES ${GEOM_SERIALIZER_SCHEMA_LIBRARIES} GeometrySerializers_ifc${schema})
+            set(GEOM_SERIALIZER_SCHEMA_LIBRARIES ${GEOM_SERIALIZER_SCHEMA_LIBRARIES} geometry_serializer_ifc${schema})
 
-            add_library(geometry_serializer_ifc${schema} STATIC ../src/ifcgeom/Serialization/schema/Serialization.cpp)
+            add_library(geometry_serializer_ifc${schema} ../src/ifcgeom/Serialization/schema/Serialization.cpp)
+            target_link_libraries(geometry_serializer_ifc${schema} ${OPENCASCADE_LIBRARIES})
             set_target_properties(geometry_serializer_ifc${schema} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${schema}")
             list(APPEND geometry_serializer_libraries geometry_serializer_ifc${schema})
         endforeach()
 
-        add_library(geometry_serializer STATIC ../src/ifcgeom/Serialization/Serialization.cpp)
+        add_library(geometry_serializer ../src/ifcgeom/Serialization/Serialization.cpp)
         target_link_libraries(geometry_serializer ${geometry_serializer_libraries})
         set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} geometry_serializer ${geometry_serializer_libraries})
     endif()
@@ -972,7 +977,7 @@ if(BUILD_IFCGEOM)
         file(GLOB IFCGEOM_CPP_FILES ../src/ifcgeom/mapping/*.cpp)
         set(IFCGEOM_FILES ${IFCGEOM_CPP_FILES} ${IFCGEOM_H_FILES} ${IFCGEOM_I_FILES})
         
-        add_library(geometry_mapping_ifc${schema} STATIC ${IFCGEOM_FILES})
+        add_library(geometry_mapping_ifc${schema} ${IFCGEOM_FILES})
         set_target_properties(geometry_mapping_ifc${schema} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${schema}")
         target_link_libraries(geometry_mapping_ifc${schema} IfcParse)
         list(APPEND mapping_libraries geometry_mapping_ifc${schema})
@@ -1008,9 +1013,8 @@ if(BUILD_CONVERT OR BUILD_IFCPYTHON)
     set(SERIALIZERS_S_FILES ${SERIALIZERS_S_H_FILES} ${SERIALIZERS_S_CPP_FILES})
 
     foreach(schema ${SCHEMA_VERSIONS})
-        add_library(Serializers_ifc${schema} STATIC ${SERIALIZERS_S_FILES})
+        add_library(Serializers_ifc${schema} ${SERIALIZERS_S_FILES})
         set_target_properties(Serializers_ifc${schema} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${schema}")
-        
         if(WASM_BUILD)
             target_link_libraries(Serializers_ifc${schema} ${HDF5_LIBRARIES})
         else()
@@ -1090,7 +1094,7 @@ if(BUILD_CONVERT)
         # Only set RPATHs when building shared libraries (i.e. IfcParse and
         # IfcGeom are dynamically linked). Not necessarily a perfect solution
         # but probably a good indication of whether RPATHs are necessary.
-        SET_INSTALL_RPATHS(IfcConvert "${IFCOPENSHELL_LIBRARY_DIR};${OCC_LIBRARY_DIR};${Boost_LIBRARY_DIRS};${OPENCOLLADA_LIBRARY_DIR}")
+        SET_INSTALL_RPATHS(IfcConvert "${OCC_LIBRARY_DIR};${Boost_LIBRARY_DIRS};${OPENCOLLADA_LIBRARY_DIR}")
     endif()
 
     install(TARGETS IfcConvert
@@ -1098,6 +1102,17 @@ if(BUILD_CONVERT)
         LIBRARY DESTINATION ${LIBDIR}
         RUNTIME DESTINATION ${BINDIR}
     )
+    if (CITYJSON_SUPPORT)
+        file(GLOB CITYJSON_CONVERT_H_FILES ../src/ifcconvert/cityjson/*.h)
+        install(TARGETS cityjson_converter
+            ARCHIVE DESTINATION ${LIBDIR}
+            LIBRARY DESTINATION ${LIBDIR}
+            RUNTIME DESTINATION ${BINDIR}
+        )
+        install(FILES ${CITYJSON_CONVERT_H_FILES}
+            DESTINATION ${INCLUDEDIR}/cityjson
+        )
+    endif()
 endif(BUILD_CONVERT)
 
 # IfcGeomServer
@@ -1109,7 +1124,7 @@ if(BUILD_GEOMSERVER)
     target_link_libraries(IfcGeomServer ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES})
 
     if((NOT WIN32) AND BUILD_SHARED_LIBS)
-        SET_INSTALL_RPATHS(IfcGeomServer "${IFCOPENSHELL_LIBRARY_DIR};${OCC_LIBRARY_DIR};${Boost_LIBRARY_DIRS}")
+        SET_INSTALL_RPATHS(IfcGeomServer "${OCC_LIBRARY_DIR};${Boost_LIBRARY_DIRS}")
     endif()
 
     install(TARGETS IfcGeomServer
@@ -1217,7 +1232,7 @@ if(BUILD_IFCGEOM)
 endif(BUILD_IFCGEOM)
 
 if(BUILD_CONVERT)
-    install(TARGETS Serializers ${SERIALIZER_SCHEMA_LIBRARIES}
+    install(TARGETS Serializers ${SERIALIZER_SCHEMA_LIBRARIES} geometry_serializer  ${GEOM_SERIALIZER_SCHEMA_LIBRARIES}
         ARCHIVE DESTINATION ${LIBDIR}
         LIBRARY DESTINATION ${LIBDIR}
         RUNTIME DESTINATION ${BINDIR}
