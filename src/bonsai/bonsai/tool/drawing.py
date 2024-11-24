@@ -910,6 +910,7 @@ class Drawing(bonsai.core.tool.Drawing):
 
         text_data = DecoratorData.get_ifc_text_data(obj)
         props.font_size = str(text_data["FontSize"])
+        props.newline_at = text_data['Newline_At']
 
     @classmethod
     def import_assigned_product(cls, obj: bpy.types.Object) -> None:
@@ -1691,6 +1692,12 @@ class Drawing(bonsai.core.tool.Drawing):
             # EPset_AnnotationSurveyArea is not standard! See bSI-4.3 proposal #660.
             symbol = ifcopenshell.util.element.get_pset(element, "EPset_AnnotationSurveyArea", "PointType")
         return symbol
+
+    @classmethod
+    def get_newline_at(cls, element: ifcopenshell.entity_instance) -> Union[int, 0]:
+        newline_at = ifcopenshell.util.element.get_pset(element, "EPset_Annotation", "Newline_At")
+        return newline_at
+
 
     @classmethod
     def has_linework(cls, drawing: ifcopenshell.entity_instance) -> bool:

@@ -807,6 +807,7 @@ class SvgWriter:
         fill_bg = "fill-bg" in classes
 
         symbol = tool.Drawing.get_annotation_symbol(element)
+        newline_at = tool.Drawing.get_newline_at(element)
         template_text_fields = []
         if symbol:
             symbol_transform = self.get_symbol_transform(text_position_svg_str, angle, text_obj)
@@ -841,7 +842,7 @@ class SvgWriter:
                 self.draw_symbol(symbol, symbol_transform)
 
         line_number = 0
-        newline_at = text_obj.BIMTextProperties.newline_at
+
         for text_literal in text_literals:
             text = tool.Drawing.replace_text_literal_variables(text_literal.Literal, product or element)
             text_tags = self.create_text_tag(
