@@ -1201,13 +1201,20 @@ install(TARGETS IfcParse
 )
 
 if(BUILD_IFCGEOM)
-    install(FILES ${IFCGEOM_H_FILES}
+    # install(FILES ${IFCGEOM_H_FILES}
+    #     DESTINATION ${INCLUDEDIR}/ifcgeom
+    # )
+
+    install(FILES ${SCHEMA_AGNOSTIC_H_FILES}
         DESTINATION ${INCLUDEDIR}/ifcgeom
     )
 
-    install(FILES ${SCHEMA_AGNOSTIC_H_FILES}
-        DESTINATION ${INCLUDEDIR}/ifcgeom_schema_agnostic
-    )
+    foreach(kernel ${GEOMETRY_KERNELS})
+        file(GLOB IFCGEOM_H_FILES ../src/ifcgeom/kernels/${kernel}/*.h)
+         install(FILES ${IFCGEOM_H_FILES}
+            DESTINATION ${INCLUDEDIR}/ifcgeom/kernels/${kernel}
+        )
+    endforeach()
 
     install(TARGETS ${IFCGEOM_SCHEMA_LIBRARIES} ${kernel_libraries} IfcGeom
         ARCHIVE DESTINATION ${LIBDIR}
