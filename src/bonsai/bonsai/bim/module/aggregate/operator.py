@@ -24,6 +24,7 @@ import bonsai.tool as tool
 import bonsai.core.aggregate as core
 import bonsai.core.spatial
 from bonsai.bim.ifc import IfcStore
+from bonsai.bim.module.aggregate.decorator import AggregateModeDecorator
 
 
 class BIM_OT_aggregate_assign_object(bpy.types.Operator, tool.Ifc.Operator):
@@ -388,10 +389,10 @@ class BIM_OT_toggle_mode_set_aggregate(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         props = context.scene.BIMAggregateProperties
         if props.in_aggregate_mode:
-            #AggregateModeDecorator.uninstall()
+            AggregateModeDecorator.uninstall()
             BIM_OT_disable_mode_set_aggregate._execute(self, context)
         else:
-            #AggregateModeDecorator.install(context)
+            AggregateModeDecorator.install(context)
             BIM_OT_mode_set_aggregate._execute(self, context)
             
 
