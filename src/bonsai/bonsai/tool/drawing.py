@@ -1889,7 +1889,7 @@ class Drawing(bonsai.core.tool.Drawing):
                 subcontexts.append(context_filter)
 
         # Hide everything first, then selectively show. This is significantly faster.
-        with bpy.context.temp_override(area=next(a for a in bpy.context.screen.areas if a.type == "VIEW_3D")):
+        with bpy.context.temp_override(**tool.Blender.get_viewport_context()):
             bpy.ops.object.hide_view_set(unselected=False)
             bpy.ops.object.hide_view_set(unselected=True)
 
