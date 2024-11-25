@@ -2820,7 +2820,7 @@ class OverrideMoveAggregate(bpy.types.Operator):
                 print("foi")
                 break
             element = tool.Ifc.get_entity(obj)
-            if not element or props.in_edit_mode:
+            if not element or props.in_aggregate_mode:
                 continue
             aggregate = ifcopenshell.util.element.get_aggregate(element)
             if aggregate:
