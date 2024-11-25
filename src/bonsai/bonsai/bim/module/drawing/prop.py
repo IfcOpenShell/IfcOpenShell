@@ -401,7 +401,7 @@ class DocProperties(PropertyGroup):
     drawing_font: StringProperty(default="OpenGost Type B TT.ttf", name="Drawing Font")
     magic_font_scale: bpy.props.FloatProperty(default=0.004118616, name="Font Scale Factor")
     imperial_precision: StringProperty(default="1/32", name="Imperial Precision")
-    tolerance:  bpy.props.FloatProperty(default=0.00001, name="A tolerance used when selecting objects")
+    tolerance: bpy.props.FloatProperty(default=0.00001, name="A tolerance used when selecting objects")
 
 
 class BIMCameraProperties(PropertyGroup):

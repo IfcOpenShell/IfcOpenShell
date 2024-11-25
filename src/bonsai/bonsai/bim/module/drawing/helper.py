@@ -449,5 +449,3 @@ def add_newline_between_words(text, newline_at):
         start = space_index + 1  # Skip the space itself
 
     return "\n".join(result)
-
-
