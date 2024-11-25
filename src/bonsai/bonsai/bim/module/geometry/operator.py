@@ -1876,6 +1876,10 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         selected_objs = context.selected_objects  # Purposely exclude active object
 
+        if self.has_aggregates(selected_objs):
+            self.report({"INFO"}, "One or more selected objects belong to an aggregate. Please enter Aggregate Mode to edit them.")
+            return {"FINISHED"}
+
         if len(selected_objs) == 1 and context.active_object == selected_objs[0]:
             self.handle_single_object(context, context.active_object)
         elif len(selected_objs) == 0:
@@ -1977,6 +1981,18 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
         if context.scene.BIMGeometryProperties.mode != "EDIT":
             context.scene.BIMGeometryProperties.mode = "EDIT"
         context.scene.BIMGeometryProperties.is_changing_mode = False
+
+    def has_aggregates(self, objs):
+        for obj in objs:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            aggregate = ifcopenshell.util.element.get_aggregate(element)
+            parts = ifcopenshell.util.element.get_parts(element)
+            if (aggregate or parts) and not bpy.context.scene.BIMAggregateProperties.in_aggregate_mode:
+                return True
+            else:
+                return False
 
 
 class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
@@ -2870,6 +2886,7 @@ class OverrideMoveAggregateMacro(bpy.types.Macro):
     bl_idname = "bim.override_move_aggregate_macro"
     bl_label = "IFC Move Aggregate"
     bl_options = {"REGISTER", "UNDO"}
+
 
 class OverrideMoveAggregate(bpy.types.Operator):
     bl_idname = "bim.override_move_aggregate"
