@@ -637,7 +637,7 @@ class PolylineDecorator:
         default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
         projection_point = []
         if not self.tool_state:
-            pass            
+            pass
         else:
             if self.tool_state.plane_method:
                 plane_origin = self.tool_state.plane_origin
