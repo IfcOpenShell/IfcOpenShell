@@ -131,6 +131,7 @@ class AddDrawing(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_drawing"
     bl_label = "Add Drawing"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Add a drawing view to the IFC project"
 
     def _execute(self, context):
         self.props = context.scene.DocProperties
@@ -1452,6 +1453,7 @@ class AddSheet(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_sheet"
     bl_label = "Add Sheet"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Add a sheet to the project"
 
     def _execute(self, context):
         core.add_sheet(tool.Ifc, tool.Drawing, titleblock=context.scene.DocProperties.titleblock)
@@ -2462,6 +2464,8 @@ class AddSchedule(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_schedule"
     bl_label = "Add Schedule"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Add an .ods, .xls or .xlsx file as a schedule"
+
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.ods;*.xls;*.xlsx", options={"HIDDEN"})
     use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=True)
@@ -2492,6 +2496,8 @@ class RemoveSchedule(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_schedule"
     bl_label = "Remove Schedule"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Remove the currently selected schedule"
+
     schedule: bpy.props.IntProperty()
 
     def _execute(self, context):
@@ -2502,6 +2508,8 @@ class OpenSchedule(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.open_schedule"
     bl_label = "Open Schedule"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Open the currently selected schedule \nin the default system viewer"
+
     schedule: bpy.props.IntProperty()
 
     def _execute(self, context):
@@ -2511,6 +2519,7 @@ class OpenSchedule(bpy.types.Operator, tool.Ifc.Operator):
 class BuildSchedule(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.build_schedule"
     bl_label = "Build Schedule"
+    bl_description = "Create a .svg file of the selected schedule\nand open it with default system viewer"
     schedule: bpy.props.IntProperty()
 
     def _execute(self, context):
@@ -2654,6 +2663,8 @@ class AddReferenceToSheet(bpy.types.Operator, tool.Ifc.Operator):
 class AddReference(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_reference"
     bl_label = "Add Reference"
+    bl_description = "Import a .svg file to the project as a reference"
+
     bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.svg", options={"HIDDEN"})
@@ -2685,6 +2696,8 @@ class RemoveReference(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_reference"
     bl_label = "Remove Reference"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Remove the currently selected reference\nfrom the project"
+
     reference: bpy.props.IntProperty()
 
     def _execute(self, context):
@@ -2695,6 +2708,8 @@ class OpenReference(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.open_reference"
     bl_label = "Open Reference"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Open the reference into default system viewer"
+
     reference: bpy.props.IntProperty()
 
     def _execute(self, context):
@@ -2807,6 +2822,8 @@ class EditTextPopup(bpy.types.Operator):
 class EditText(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_text"
     bl_label = "Edit Text"
+    bl_description = "Save changes to the text annotation and\ndisable the text editing options"
+
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
@@ -2817,6 +2834,8 @@ class EditText(bpy.types.Operator, tool.Ifc.Operator):
 class EnableEditingText(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_text"
     bl_label = "Enable Editing Text"
+    bl_description = "Enable the text editing options for this\ntext annotation"
+
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
@@ -2826,6 +2845,8 @@ class EnableEditingText(bpy.types.Operator, tool.Ifc.Operator):
 class DisableEditingText(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.disable_editing_text"
     bl_label = "Disable Editing Text"
+    bl_description = "Discard changes to the text annotation\nand disable the text editing options"
+
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
@@ -2841,6 +2862,8 @@ class DisableEditingText(bpy.types.Operator, tool.Ifc.Operator):
 class AddTextLiteral(bpy.types.Operator):
     bl_idname = "bim.add_text_literal"
     bl_label = "Add Text Literal"
+    bl_description = "Add another text literal to the\ntext annotation"
+
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -2876,6 +2899,8 @@ class AddTextLiteral(bpy.types.Operator):
 class RemoveTextLiteral(bpy.types.Operator):
     bl_idname = "bim.remove_text_literal"
     bl_label = "Remove Text Literal"
+    bl_description = "Delete the text literal from the\ntext annotation"
+
     bl_options = {"REGISTER", "UNDO"}
 
     literal_prop_id: bpy.props.IntProperty()
@@ -2889,6 +2914,8 @@ class RemoveTextLiteral(bpy.types.Operator):
 class OrderTextLiteralUp(bpy.types.Operator):
     bl_idname = "bim.order_text_literal_up"
     bl_label = "Move Text Literal Up"
+    bl_description = "Move the text literal up in the\norder of literals"
+
     bl_options = {"REGISTER", "UNDO"}
 
     literal_prop_id: bpy.props.IntProperty()
@@ -2902,6 +2929,8 @@ class OrderTextLiteralUp(bpy.types.Operator):
 class OrderTextLiteralDown(bpy.types.Operator):
     bl_idname = "bim.order_text_literal_down"
     bl_label = "Move Text Literal Down"
+    bl_description = "Move the text literal down in the\norder of literals"
+
     bl_options = {"REGISTER", "UNDO"}
 
     literal_prop_id: bpy.props.IntProperty()
@@ -2975,6 +3004,8 @@ class DisableEditingAssignedProduct(bpy.types.Operator, tool.Ifc.Operator):
 class LoadSheets(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.load_sheets"
     bl_label = "Load Sheets"
+    bl_description = "Load the saved sheets in this IFC project"
+
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
@@ -3068,6 +3099,8 @@ class DisableEditingSheets(bpy.types.Operator, tool.Ifc.Operator):
 class LoadSchedules(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.load_schedules"
     bl_label = "Load Schedules"
+    bl_description = "Load the saved schedules in this IFC project"
+
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
@@ -3086,6 +3119,8 @@ class DisableEditingSchedules(bpy.types.Operator, tool.Ifc.Operator):
 class LoadReferences(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.load_references"
     bl_label = "Load References"
+    bl_description = "Load the saved references in this IFC project"
+
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
@@ -3104,6 +3139,8 @@ class DisableEditingReferences(bpy.types.Operator, tool.Ifc.Operator):
 class LoadDrawings(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.load_drawings"
     bl_label = "Load Drawings"
+    bl_description = "Load the saved drawings in this IFC project"
+
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
@@ -3122,6 +3159,8 @@ class DisableEditingDrawings(bpy.types.Operator, tool.Ifc.Operator):
 class ExpandTargetView(bpy.types.Operator):
     bl_idname = "bim.expand_target_view"
     bl_label = "Expand Target View"
+    bl_description = "Show views in this category"
+
     bl_options = {"REGISTER", "UNDO"}
     target_view: bpy.props.StringProperty()
 
@@ -3136,6 +3175,8 @@ class ExpandTargetView(bpy.types.Operator):
 class ContractTargetView(bpy.types.Operator):
     bl_idname = "bim.contract_target_view"
     bl_label = "Contract Target View"
+    bl_description = "Hide views in this category"
+
     bl_options = {"REGISTER", "UNDO"}
     target_view: bpy.props.StringProperty()
 
@@ -3150,6 +3191,8 @@ class ContractTargetView(bpy.types.Operator):
 class ExpandSheet(bpy.types.Operator):
     bl_idname = "bim.expand_sheet"
     bl_label = "Expand Sheet"
+    bl_description = "Show views, schedules, references etc\nplaced on this sheet"
+
     bl_options = {"REGISTER", "UNDO"}
     sheet: bpy.props.IntProperty()
 
@@ -3164,6 +3207,8 @@ class ExpandSheet(bpy.types.Operator):
 class ContractSheet(bpy.types.Operator):
     bl_idname = "bim.contract_sheet"
     bl_label = "Contract Sheet"
+    bl_description = "Hide views, schedules, references etc\nplaced on this sheet"
+
     bl_options = {"REGISTER", "UNDO"}
     sheet: bpy.props.IntProperty()
 
@@ -3178,6 +3223,8 @@ class ContractSheet(bpy.types.Operator):
 class SelectAssignedProduct(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.select_assigned_product"
     bl_label = "Select Assigned Product"
+    bl_description = "Select the product this element is assigned to"
+
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
@@ -3187,6 +3234,8 @@ class SelectAssignedProduct(bpy.types.Operator, tool.Ifc.Operator):
 class EnableEditingElementFilter(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_element_filter"
     bl_label = "Enable Editing Element Filter"
+    bl_description = "Enable editing options for the include or exclude filter"
+
     bl_options = {"REGISTER", "UNDO"}
     filter_mode: bpy.props.StringProperty()
 
@@ -3229,6 +3278,8 @@ class EditElementFilter(bpy.types.Operator, tool.Ifc.Operator):
 class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_reference_image"
     bl_label = "Add Reference Image"
+    bl_description = "Add or import reference image to the IFC project"
+
     bl_options = {"REGISTER", "UNDO"}
 
     use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=True)
