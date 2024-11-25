@@ -156,6 +156,7 @@ class AddProfileDef(bpy.types.Operator, tool.Ifc.Operator):
         profile_class = props.profile_classes
         if profile_class == "IfcArbitraryClosedProfileDef":
             obj = props.object_to_profile
+            indices = []
             if obj:
                 if len(obj.data.polygons) == 0:
                     self.report(
