@@ -490,6 +490,7 @@ class Model(bonsai.core.tool.Model):
 
     @classmethod
     def clear_scene_openings(cls) -> None:
+        """Clear removed scene openings."""
         props = bpy.context.scene.BIMModelProperties
         has_deleted_opening = True
         while has_deleted_opening:

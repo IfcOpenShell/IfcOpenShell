@@ -610,7 +610,7 @@ class ShowBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
         obj = context.active_object
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
-        booleans = []
+        booleans: list[ifcopenshell.entity_instance] = []
         for item in representation.Items:
             booleans.extend(self.get_booleans(item))
 
@@ -668,14 +668,14 @@ class ShowBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
             DecorationsHandler.install(bpy.context)
         return {"FINISHED"}
 
-    def get_booleans(self, item):
+    def get_booleans(self, item: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
         results = []
         if item.is_a("IfcBooleanResult"):
             results.extend(self.get_booleans(item.FirstOperand))
             results.append(item.SecondOperand)
         return results
 
-    def create_half_space_solid(self):
+    def create_half_space_solid(self) -> bpy.types.Object:
         bm = bmesh.new()
         bmesh.ops.create_grid(bm, size=0.5)
         bm.verts.ensure_lookup_table()

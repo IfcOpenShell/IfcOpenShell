@@ -3036,6 +3036,8 @@ class EditSheet(bpy.types.Operator, tool.Ifc.Operator):
     identification: bpy.props.StringProperty()
     name: bpy.props.StringProperty()
 
+    document_type: Literal["SHEET", "TITLEBLOCK", "EMBEDDED"]
+
     def invoke(self, context, event):
         self.props = context.scene.DocProperties
         sheet = tool.Ifc.get().by_id(self.props.sheets[self.props.active_sheet_index].ifc_definition_id)
