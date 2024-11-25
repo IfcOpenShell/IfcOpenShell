@@ -371,7 +371,34 @@ class BIM_OT_select_linked_aggregates(bpy.types.Operator):
 
         return {"FINISHED"}
 
-class BIM_OT_aggregate_mode_set_edit(bpy.types.Operator, tool.Ifc.Operator):
+class BIM_OT_toggle_mode_set_aggregate(bpy.types.Operator, tool.Ifc.Operator):
+    bl_description = "Toggle Aggregate mode on and off"
+    bl_idname = "bim.toggle_mode_set_aggregate"
+    bl_label = "IFC Toggle Mode Set Aggregate"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def invoke(self, context, event):
+        return IfcStore.execute_ifc_operator(self, context, is_invoke=True)
+
+    def _invoke(self, context, event):
+        if not tool.Ifc.get():
+            return {"FINISHED"}
+        return self.execute(context)
+
+    def _execute(self, context):
+        props = context.scene.BIMAggregateProperties
+        if props.in_aggregate_mode:
+            #AggregateModeDecorator.uninstall()
+            BIM_OT_disable_mode_set_aggregate._execute(self, context)
+        else:
+            #AggregateModeDecorator.install(context)
+            BIM_OT_mode_set_aggregate._execute(self, context)
+            
+
+
+
+        
+class BIM_OT_mode_set_aggregate(bpy.types.Operator, tool.Ifc.Operator):
     bl_description = "Switch from Object to Aggregate Edit mode"
     bl_idname = "bim.aggregate_mode_set_edit"
     bl_label = "IFC Aggregate Mode Set Edit"
@@ -388,8 +415,8 @@ class BIM_OT_aggregate_mode_set_edit(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         active_object = context.active_object
         props = context.scene.BIMAggregateProperties
-        if props.in_edit_mode == True:
-            BIM_OT_disable_aggregate_mode_set_edit._execute(self, context)
+        if props.in_aggregate_mode:
+            BIM_OT_disable_mode_set_aggregate._execute(self, context)
 
         element = tool.Ifc.get_entity(active_object)
         if not element:
@@ -401,6 +428,7 @@ class BIM_OT_aggregate_mode_set_edit(bpy.types.Operator, tool.Ifc.Operator):
         if not parts:
             parts = ifcopenshell.util.element.get_parts(aggregate)
         if parts:
+            props.editing_aggregate = tool.Ifc.get_object(aggregate) if aggregate else tool.Ifc.get_object(element)
             parts_objs = [tool.Ifc.get_object(part) for part in parts]
             objs = []
             visible_objects = tool.Raycast.get_visible_objects(context)
@@ -416,10 +444,10 @@ class BIM_OT_aggregate_mode_set_edit(bpy.types.Operator, tool.Ifc.Operator):
                     not_editing_obj = props.not_editing_objects.add()
                     not_editing_obj.obj = obj.original
 
-        props.in_edit_mode = True
+        props.in_aggregate_mode = True
         return {"FINISHED"}
 
-class BIM_OT_disable_aggregate_mode_set_edit(bpy.types.Operator, tool.Ifc.Operator):
+class BIM_OT_disable_mode_set_aggregate(bpy.types.Operator, tool.Ifc.Operator):
     bl_description = "Switch from Aggregate to Object Edit mode"
     bl_idname = "bim.disable_aggregate_mode_set_edit"
     bl_label = "IFC Disable Aggregate Mode Set Edit"
@@ -443,5 +471,5 @@ class BIM_OT_disable_aggregate_mode_set_edit(bpy.types.Operator, tool.Ifc.Operat
             if not element:
                 continue
 
-        props.in_edit_mode = False
+        props.in_aggregate_mode = False
         props.not_editing_objects.clear()
