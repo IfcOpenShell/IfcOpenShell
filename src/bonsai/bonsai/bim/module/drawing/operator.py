@@ -385,7 +385,7 @@ class CreateDrawing(bpy.types.Operator):
         for obj in bpy.context.view_layer.objects:
             obj.hide_render = obj.name not in visible_object_names
 
-        context.scene.render.filepath = Path(svg_path).with_suffix(".png").as_posix()
+        context.scene.render.filepath = str(Path(svg_path).with_suffix(".png"))
         drawing_style = context.scene.DocProperties.drawing_styles[self.cprops.active_drawing_style_index]
 
         if drawing_style.render_type == "DEFAULT":
