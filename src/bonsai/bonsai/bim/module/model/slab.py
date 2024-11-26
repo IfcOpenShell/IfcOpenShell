@@ -341,7 +341,8 @@ class DumbSlabPlaner:
             should_sync_changes_first=False,
         )
 
-    def get_slab_existing_angle(extrusion):
+    @classmethod
+    def get_slab_existing_angle(self, extrusion):
         x, y, z = extrusion.ExtrudedDirection.DirectionRatios
         # The existing angle result can change when the direction sense in Negative because the DirectionRatios may have negative y and z.
         # For instance, a 30 degree angled slab, with negative direction will show as -150 degrees. To prevent that we do the following transformations
