@@ -527,7 +527,7 @@ class BIMObjectProperties(PropertyGroup):
 class BIMMeshProperties(PropertyGroup):
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     ifc_boolean_id: IntProperty(name="IFC Boolean ID")
-    obj: bpy.props.PointerProperty(type=bpy.types.Object)
+    obj: bpy.props.PointerProperty(type=bpy.types.Object, description="Object that using this mesh as a boolean")
     has_openings_applied: BoolProperty(name="Has Openings Applied", default=True)
     is_native: BoolProperty(name="Is Native", default=False)
     is_swept_solid: BoolProperty(name="Is Swept Solid")
