@@ -593,6 +593,7 @@ class AddBoolean(Operator, tool.Ifc.Operator):
 class ShowBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
     bl_idname = "bim.show_booleans"
     bl_label = "Show Booleans"
+    bl_description = "Show active object booleans.\nCan be used to reset booleans positions"
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -616,16 +617,28 @@ class ShowBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
         props = bpy.context.scene.BIMModelProperties
         tool.Model.clear_scene_openings()
 
+        existing_booleans = {
+            boolean_obj.data.BIMMeshProperties.ifc_boolean_id: boolean_obj
+            for opening in props.openings
+            if (boolean_obj := opening.obj).data.BIMMeshProperties.obj == obj
+        }
+
         for boolean in booleans:
             boolean_obj = None
 
             if boolean.is_a() == "IfcHalfSpaceSolid":
-                if boolean.BaseSurface.is_a("IfcPlane"):
+                surface = boolean.BaseSurface
+                if surface.is_a("IfcPlane"):
                     boolean_obj = self.create_half_space_solid()
-                    position = boolean.BaseSurface.Position
+                    position = surface.Position
                     position = Matrix(ifcopenshell.util.placement.get_axis2placement(position).tolist())
                     position.translation *= unit_scale
                     boolean_obj.matrix_world = obj.matrix_world @ position
+                else:
+                    self.report(
+                        {"INFO"},
+                        f"Showing boolean using non-IfcPlane IfcSurface ({surface.is_a()}) is not supported.",
+                    )
             else:
                 settings = ifcopenshell.geom.settings()
                 logger = logging.getLogger("ImportIFC")
@@ -642,7 +655,11 @@ class ShowBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
                 boolean_obj.matrix_world = obj.matrix_world
 
             if boolean_obj:
-                boolean_obj.data.BIMMeshProperties.ifc_boolean_id = boolean.id()
+                boolean_id = boolean.id()
+                # Remove existing boolean as it will be reloaded.
+                if boolean_id in existing_booleans:
+                    bpy.data.objects.remove(existing_booleans[boolean_id])
+                boolean_obj.data.BIMMeshProperties.ifc_boolean_id = boolean_id
                 boolean_obj.data.BIMMeshProperties.obj = obj
                 new = props.openings.add()
                 new.obj = boolean_obj
