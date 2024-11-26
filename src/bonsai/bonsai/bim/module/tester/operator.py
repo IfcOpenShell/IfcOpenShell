@@ -177,6 +177,7 @@ class SelectFailedEntities(bpy.types.Operator):
             else:
                 obj.select_set(False)
 
+        self.report({"INFO"}, f"{len(failed_ids)} failed entities found, {len(context.selected_objects)} selected.")
         return {"FINISHED"}
 
 
