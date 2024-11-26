@@ -1703,15 +1703,39 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
                 placement = np.array(obj.matrix_world)
                 placement[:, 3][:3] /= si_conversion
 
-                supported_item_types = ("IfcSweptAreaSolid", "IfcIndexedPolyCurve")
-                rep_items = obj_rep.Items
+                rep_items = list(obj_rep.Items)
+                curve_set_items = {}
+                curve_set_mapping = {}
+
+                supported_item_types = ("IfcSweptAreaSolid", "IfcIndexedPolyCurve", "IfcGeometricCurveSet")
+
+                def validate_item(item: ifcopenshell.entity_instance) -> bool:
+                    return any(item.is_a(ifc_class) for ifc_class in supported_item_types)
+
+                error_msg = "Unsupported representation item type for joining: {}."
                 for item in rep_items:
-                    if not any(item.is_a(ifc_class) for ifc_class in supported_item_types):
-                        self.report({"ERROR"}, f"Unsupported representation item type for joining: {item.is_a()}.")
+                    item_class = item.is_a()
+                    if not validate_item(item):
+                        self.report({"ERROR"}, error_msg.format(item_class))
                         return
+                    if item_class == "IfcGeometricCurveSet":
+                        sub_items = item.Elements
+                        for sub_item in item.Elements:
+                            if not validate_item(sub_item):
+                                self.report({"ERROR"}, error_msg.format(sub_item.is_a()))
+                                return
+                        rep_items.extend(sub_items)
+                        for sub_item in sub_items:
+                            curve_set_items[sub_item] = item
 
                 for item in rep_items:
-                    copied_item = ifcopenshell.util.element.copy_deep(ifc_file, item)
+                    item_class = item.is_a()
+
+                    if item_class == "IfcGeometricCurveSet":
+                        copied_item = ifc_file.create_entity("IfcGeometricCurveSet", Elements=())
+                    else:
+                        copied_item = ifcopenshell.util.element.copy_deep(ifc_file, item)
+
                     for style in item.StyledByItem:
                         copied_style = ifcopenshell.util.element.copy(ifc_file, style)
                         copied_style.Item = copied_item
@@ -1726,8 +1750,21 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
                     elif item.is_a("IfcIndexedPolyCurve"):
                         points = copied_item.Points
                         coords = points.CoordList
+                        dim = copied_item.Dim
+                        append_coord = (1.0,) if dim == 3 else (0.0, 1.0)
                         # We're assuming those are 3D coordinates, since we do not support Curve2D.
-                        points.CoordList = [apply_placement(np.append(c, 1.0), placement).tolist()[:3] for c in coords]
+                        points.CoordList = [
+                            apply_placement(np.append(c, append_coord), placement).tolist()[:3] for c in coords
+                        ]
+
+                        curve_set = curve_set_items.get(item)
+                        if curve_set:
+                            new_curve_set = curve_set_mapping[curve_set]
+                            new_curve_set.Elements = new_curve_set.Elements + (copied_item,)
+                            continue  # Item is added to curve set items instead of representation items.
+
+                    elif item_class == "IfcGeometricCurveSet":
+                        curve_set_mapping[item] = copied_item
                     else:
                         assert False, f"Unexpected item type: {item.is_a()}. This is a bug."
 
