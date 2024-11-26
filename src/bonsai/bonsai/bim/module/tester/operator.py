@@ -113,7 +113,6 @@ class ExecuteIfcTester(bpy.types.Operator):
                 tool.Tester.report = report
 
             for spec in report:
-                print(spec)
                 new_spec = props.specifications.add()
                 new_spec.name = spec["name"]
                 new_spec.description = spec["description"]
