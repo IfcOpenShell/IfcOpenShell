@@ -1728,11 +1728,28 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
                         for sub_item in sub_items:
                             curve_set_items[sub_item] = item
 
+                processed_point_lists = {}
                 for item in rep_items:
                     item_class = item.is_a()
 
                     if item_class == "IfcGeometricCurveSet":
                         copied_item = ifc_file.create_entity("IfcGeometricCurveSet", Elements=())
+                    elif item_class == "IfcIndexedPolyCurve":
+                        # Process points lists separately as they tend to be reused.
+                        copied_item = ifcopenshell.util.element.copy_deep(
+                            ifc_file, item, exclude=("IfcCartesianPointList",)
+                        )
+                        new_points = processed_point_lists.get((points := item.Points))
+                        if new_points is None:
+                            new_points = ifcopenshell.util.element.copy_deep(ifc_file, points)
+                            dim = item.Dim
+                            append_coord = (1.0,) if dim == 3 else (0.0, 1.0)
+                            coords = points.CoordList
+                            points.CoordList = [
+                                apply_placement(np.append(c, append_coord), placement).tolist()[:3] for c in coords
+                            ]
+                            processed_point_lists[points] = new_points
+                        item.Points = new_points
                     else:
                         copied_item = ifcopenshell.util.element.copy_deep(ifc_file, item)
 
@@ -1748,15 +1765,6 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
                         position = apply_placement(position, placement)
                         copied_item.Position = builder.create_axis2_placement_3d_from_matrix(position)
                     elif item.is_a("IfcIndexedPolyCurve"):
-                        points = copied_item.Points
-                        coords = points.CoordList
-                        dim = copied_item.Dim
-                        append_coord = (1.0,) if dim == 3 else (0.0, 1.0)
-                        # We're assuming those are 3D coordinates, since we do not support Curve2D.
-                        points.CoordList = [
-                            apply_placement(np.append(c, append_coord), placement).tolist()[:3] for c in coords
-                        ]
-
                         curve_set = curve_set_items.get(item)
                         if curve_set:
                             new_curve_set = curve_set_mapping[curve_set]
