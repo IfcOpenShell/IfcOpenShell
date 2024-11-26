@@ -618,7 +618,7 @@ class Model(bonsai.core.tool.Model):
             elif material.is_a("IfcMaterialLayerSet"):
                 axis = ifcopenshell.util.element.get_pset(element, "EPset_Parametric", "LayerSetDirection")
                 if axis is None:
-                    if element.is_a() in ["IfcSlabType", "IfcRoofType", "IfcRampType", "IfcPlateType"]:
+                    if element.is_a() in ["IfcSlabType", "IfcRoofType", "IfcRampType", "IfcPlateType", "IfcCovering", "IfcFurniture"]:
                         axis = "AXIS3"
                     else:
                         axis = "AXIS2"
