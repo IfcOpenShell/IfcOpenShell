@@ -1693,7 +1693,12 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
                 obj_rep = ifc_file.by_id(obj.data.BIMMeshProperties.ifc_definition_id)
                 if obj_rep.RepresentationType != representation_type:
                     obj.select_set(False)
-                    continue
+                    self.report(
+                        {"ERROR"},
+                        f"IFC join failed - object '{obj}' has a different representation type "
+                        f"({obj_rep.RepresentationType}) than target '{self.target}' ({representation_type}).",
+                    )
+                    return
 
                 placement = np.array(obj.matrix_world)
                 placement[:, 3][:3] /= si_conversion
