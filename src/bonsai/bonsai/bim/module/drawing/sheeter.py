@@ -493,7 +493,7 @@ class SheetBuilder:
 
     def change_titleblock(self, sheet: ifcopenshell.entity_instance, titleblock_name: str) -> None:
         ootb_titleblock_path = os.path.join(self.data_dir, "templates", "titleblocks", titleblock_name + ".svg")
-        titleblock_path = tool.Drawing.get_default_titleblock_path(titleblock_name)
+        titleblock_path = tool.Ifc.resolve_uri(tool.Drawing.get_default_titleblock_path(titleblock_name))
         sheet_path = tool.Drawing.get_document_uri(sheet, "LAYOUT")
         sheet_dir = os.path.dirname(sheet_path)
 
