@@ -533,7 +533,6 @@ class BIMMeshProperties(PropertyGroup):
     is_swept_solid: BoolProperty(name="Is Swept Solid")
     is_parametric: BoolProperty(name="Is Parametric", default=False)
     subshape_type: StringProperty(name="Subshape Type")
-    ifc_definition: StringProperty(name="IFC Definition")
     ifc_parameters: CollectionProperty(name="IFC Parameters", type=IfcParameter)
     item_attributes: CollectionProperty(name="Item Attributes", type=Attribute)
     material_checksum: StringProperty(name="Material Checksum", default="[]")
