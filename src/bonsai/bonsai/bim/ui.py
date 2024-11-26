@@ -380,7 +380,8 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row.prop(context.scene.DocProperties, "magic_font_scale")
         row = self.layout.row()
         row.prop(context.scene.DocProperties, "imperial_precision")
-
+        row = self.layout.row()
+        row.prop(context.scene.DocProperties, "tolerance")
 
 # Scene panel groups
 class BIM_PT_tabs(Panel):
