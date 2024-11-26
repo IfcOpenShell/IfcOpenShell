@@ -717,6 +717,15 @@ class SelectSimilar(Operator, tool.Ifc.Operator):
         if key == "PredefinedType":
             key = "predefined_type"
         value = ifcopenshell.util.selector.get_element_value(element, key)
+        tolerance = bpy.context.scene.DocProperties.tolerance
+
+
+        # Determine the number of decimal places based on the magnitude of the rounding value
+        if tolerance < 1:
+            decimal_places = max(0, -int(f"{tolerance:.1e}".split('e')[-1]))  # Exponent in scientific notation
+            formatted_tolerance = f"{tolerance:.{decimal_places}f}"
+        else:
+            formatted_tolerance = f"{tolerance:.1f}"  # For values >= 1, one decimal place is enough
 
         if self.calculate_sum and isinstance(value, (int, float)):
             total = 0
@@ -736,5 +745,14 @@ class SelectSimilar(Operator, tool.Ifc.Operator):
                 element = tool.Ifc.get_entity(obj)
                 if not element:
                     continue
-                if ifcopenshell.util.selector.get_element_value(element, key) == value:
+                obj_value = ifcopenshell.util.selector.get_element_value(element, key)
+                if isinstance(obj_value, (int, float)):
+                    # Check within rounding value
+                    if abs(obj_value - value) <= tolerance:
+                        obj.select_set(True)
+                elif obj_value == value:
                     obj.select_set(True)
+            if isinstance(value, (int, float)):     
+                self.report({"INFO"}, f"Selected all objects that share the same ({key}) value--within a ({formatted_tolerance}) tolerance.")
+            else:
+                self.report({"INFO"}, f"Selected all objects that share the same ({key}) value")
