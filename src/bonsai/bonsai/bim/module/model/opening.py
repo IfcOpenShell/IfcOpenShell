@@ -43,7 +43,7 @@ from bpy.types import SpaceView3D
 from bpy.props import FloatProperty
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
 from gpu_extras.batch import batch_for_shader
-from typing import Union, Optional, Any
+from typing import Union, Optional, Any, cast
 
 
 class AddFilledOpening(bpy.types.Operator, tool.Ifc.Operator):
@@ -692,14 +692,57 @@ class ShowBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
 class HideBooleans(Operator, tool.Ifc.Operator):
     bl_idname = "bim.hide_booleans"
     bl_label = "Hide Booleans"
+    bl_description = (
+        "Hide boolean objects and apply their changed transforms.\n"
+        "If boolean object is active, hide it, otherwise hide all boolean objects"
+    )
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        props = bpy.context.scene.BIMModelProperties
-        for opening in props.openings:
-            obj = opening.obj
-            if obj and obj.data.BIMMeshProperties.ifc_boolean_id:
-                bpy.data.objects.remove(obj)
+        ifc_file = tool.Ifc.get()
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+        builder = ifcopenshell.util.shape_builder.ShapeBuilder(ifc_file)
+
+        set_active_obj = None
+        boolean_objs: list[bpy.types.Object]
+        active_boolean_obj = (obj := context.active_object) and tool.Model.is_boolean_obj(obj)
+        if active_boolean_obj:
+            boolean_objs = [obj]
+            set_active_obj = obj.data.BIMMeshProperties.obj
+        else:
+            props = bpy.context.scene.BIMModelProperties
+            boolean_objs = [obj for o in props.openings if (obj := o.obj)]
+
+        for obj in boolean_objs:
+            ifc_boolean_id = obj.data.BIMMeshProperties.ifc_boolean_id
+            boolean = tool.Ifc.get_entity_by_id(ifc_boolean_id)
+
+            # Update boolean transform.
+            if boolean:
+                main_obj = cast(bpy.types.Object, obj.data.BIMMeshProperties.obj)
+                if boolean.is_a("IfcHalfSpaceSolid"):
+                    surface = boolean.BaseSurface
+
+                    # Only IfcPlane is supported currently.
+                    position = surface.Position
+                    m = Matrix(ifcopenshell.util.placement.get_axis2placement(position).tolist())
+                    m.translation *= unit_scale
+
+                    # Only update if transform was changed.
+                    if not np.allclose(m, obj.matrix_world):
+                        new_m = main_obj.matrix_world.inverted() @ obj.matrix_world
+                        new_m.normalize()
+                        new_m.translation /= unit_scale
+                        new_m = np.array(new_m)
+                        ifcopenshell.util.element.remove_deep2(ifc_file, position)
+                        surface.Position = builder.create_axis2_placement_3d_from_matrix(new_m)
+                        tool.Geometry.reload_representation(main_obj)
+
+            bpy.data.objects.remove(obj)
+        tool.Model.clear_scene_openings()
+
+        if set_active_obj:
+            tool.Blender.set_active_object(set_active_obj)
         return {"FINISHED"}
 
 
