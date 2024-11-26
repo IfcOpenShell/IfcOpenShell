@@ -1406,7 +1406,7 @@ class SvgWriter:
 
         text_tag = self.svg.text("", **text_kwargs, **base_text_attrs)
         text_tags.append(text_tag)
-        if newline_at != 0:
+        if isinstance(newline_at, int) and newline_at > 0:
             text = helper.add_newline_between_words(text, newline_at)
         text_lines = text.replace("\\n", "\n").split("\n")
         text_lines = text_lines if multiline_to_bottom else text_lines[::-1]
