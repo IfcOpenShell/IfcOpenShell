@@ -1890,3 +1890,7 @@ class Model(bonsai.core.tool.Model):
                     curves.append(tmp.createIfcIndexedPolyCurve(points))
 
         return {"ifc_file": tmp, "curves": curves}
+
+    @classmethod
+    def is_boolean_obj(cls, obj: bpy.types.Object) -> bool:
+        return obj.type == "MESH" and obj.data.BIMMeshProperties.ifc_boolean_id
