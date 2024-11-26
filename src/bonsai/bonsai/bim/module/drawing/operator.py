@@ -1549,8 +1549,7 @@ class OpenSheet(bpy.types.Operator, tool.Ifc.Operator):
     @classmethod
     def poll(cls, context):
         props = context.scene.DocProperties
-        active_sheet = props.sheets[props.active_sheet_index]
-        if not active_sheet.is_sheet:
+        if not tool.Drawing.get_active_sheet_item(is_sheet=True):
             cls.poll_message_set("No sheet selected.")
             return False
         return True
@@ -1681,9 +1680,11 @@ class RemoveDrawingFromSheet(bpy.types.Operator, tool.Ifc.Operator):
     @classmethod
     def poll(cls, context):
         props = context.scene.DocProperties
-        active_sheet = props.sheets[props.active_sheet_index]
+        active_item = tool.Drawing.get_active_sheet_item()
+        if active_item is None:
+            return False
 
-        if active_sheet.reference_type == "TITLEBLOCK":
+        if active_item.reference_type == "TITLEBLOCK":
             cls.poll_message_set("No effect deleting this.")
             return False
         return True
@@ -1721,8 +1722,7 @@ class CreateSheets(bpy.types.Operator, tool.Ifc.Operator):
     @classmethod
     def poll(cls, context):
         props = context.scene.DocProperties
-        active_sheet = props.sheets[props.active_sheet_index]
-        if not active_sheet.is_sheet:
+        if not tool.Drawing.get_active_sheet_item(is_sheet=True):
             cls.poll_message_set("No sheet selected.")
             return False
         return props.sheets and context.scene.BIMProperties.data_dir
@@ -2057,9 +2057,7 @@ class ActivateDrawingFromSheet(bpy.types.Operator, ActivateDrawingBase):
     @classmethod
     def poll(cls, context):
         props = context.scene.DocProperties
-        active_sheet = props.sheets[props.active_sheet_index]
-        is_drawing_selected = active_sheet.reference_type == "DRAWING"
-        if not is_drawing_selected:
+        if not tool.Drawing.get_active_sheet_item(reference_type="DRAWING"):
             cls.poll_message_set("No drawing selected.")
             return False
         return True

@@ -890,6 +890,23 @@ class Drawing(bonsai.core.tool.Drawing):
                 return item
 
     @classmethod
+    def get_active_sheet_item(
+        cls, *, is_sheet: bool = False, reference_type: str = ""
+    ) -> Union[bpy.types.PropertyGroup, None]:
+        props = bpy.context.scene.DocProperties
+        sheet_index = props.active_sheet_index
+        if len(props.sheets) > sheet_index >= 0:
+            item = props.sheets[sheet_index]
+            if not is_sheet and not reference_type:
+                return item
+            if is_sheet:
+                if item.is_sheet:
+                    return item
+            elif reference_type:
+                if item.reference_type == reference_type:
+                    return item
+
+    @classmethod
     def import_text_attributes(cls, obj: bpy.types.Object) -> None:
         from bonsai.bim.module.drawing.prop import BOX_ALIGNMENT_POSITIONS
 
