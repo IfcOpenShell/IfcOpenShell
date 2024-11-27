@@ -393,6 +393,7 @@ def validate(f: Union[ifcopenshell.file, str], logger: Logger, express_rules=Fal
                 logger.error(f"Unsupported schema: {schema_name}")
                 return
 
+        assert isinstance(f, ifcopenshell.file)
         log_internal_cpp_errors(f, filename, logger)
 
     validate_ifc_header(f, logger)
