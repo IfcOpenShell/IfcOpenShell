@@ -70,9 +70,11 @@ class ExecuteIfcTester(bpy.types.Operator):
     def execute_tester(self, ifc_data: ifcopenshell.file, ifc_path: str, specs_path: str) -> Union[set[str], None]:
         props = bpy.context.scene.IfcTesterProperties
 
-        with tempfile.TemporaryDirectory() as dirpath:
+        # No need for if-statement, just postponing lots of diffs.
+        if True:
+            dirpath = tempfile.mkdtemp()
             start = time.time()
-            output = Path(os.path.join(dirpath, "{}_{}.html".format(ifc_path, os.path.basename(specs_path))))
+            output = Path(os.path.join(dirpath, "{}_{}.html".format(Path(ifc_path).name, Path(specs_path).name)))
 
             try:
                 specs = ifctester.ids.open(specs_path)
