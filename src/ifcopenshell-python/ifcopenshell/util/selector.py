@@ -23,15 +23,15 @@ import ifcopenshell.api.pset
 import ifcopenshell.api.geometry
 import ifcopenshell.util
 import ifcopenshell.util.attribute
-import ifcopenshell.util.fm
-import ifcopenshell.util.unit
-import ifcopenshell.util.element
-import ifcopenshell.util.placement
-import ifcopenshell.util.geolocation
 import ifcopenshell.util.classification
+import ifcopenshell.util.element
+import ifcopenshell.util.fm
+import ifcopenshell.util.geolocation
+import ifcopenshell.util.placement
 import ifcopenshell.util.schema
 import ifcopenshell.util.shape
 import ifcopenshell.util.system
+import ifcopenshell.util.unit
 from decimal import Decimal
 from typing import Optional, Any, Union, Iterable
 
