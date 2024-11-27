@@ -1805,12 +1805,16 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
         selected_objs = context.selected_objects  # Purposely exclude active object
 
         if self.has_aggregates(selected_objs):
-            self.report({"INFO"}, "One or more selected objects belong to an aggregate. Please enter Aggregate Mode to edit them.")
-            return {"FINISHED"}
+            if not context.scene.BIMAggregateProperties.in_aggregate_mode:
+                bonsai.core.aggregate.enable_aggregate_mode(tool.Aggregate, context.active_object)
+                return {"FINISHED"}
 
         if len(selected_objs) == 1 and context.active_object == selected_objs[0]:
             self.handle_single_object(context, context.active_object)
         elif len(selected_objs) == 0:
+            if context.scene.BIMAggregateProperties.in_aggregate_mode:
+                bonsai.core.aggregate.disable_aggregate_mode(tool.Aggregate)
+                return {"FINISHED"}
             tool.Geometry.disable_item_mode()
         elif len(selected_objs) > 1:
             self.handle_multiple_selected_objects(context)
@@ -2834,10 +2838,13 @@ class OverrideMoveAggregate(bpy.types.Operator):
             self.new_active_obj = None
             if obj in not_editing_objs:
                 obj.select_set(False)
-                print("foi")
                 break
             element = tool.Ifc.get_entity(obj)
             if not element or props.in_aggregate_mode:
+                continue
+            parts = ifcopenshell.util.element.get_parts(element)
+            if parts:
+                aggregates_to_move.append(tool.Ifc.get_object(element))
                 continue
             aggregate = ifcopenshell.util.element.get_aggregate(element)
             if aggregate:
