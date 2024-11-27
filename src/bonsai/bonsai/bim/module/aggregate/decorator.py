@@ -191,6 +191,7 @@ class AggregateDecorator:
             parts = ifcopenshell.util.element.get_parts(element)
             if parts:
                 aggregates.append(obj)
+                continue
 
             aggregate = ifcopenshell.util.element.get_aggregate(element)
             if aggregate:
