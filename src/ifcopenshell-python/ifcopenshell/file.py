@@ -673,6 +673,8 @@ class file:
         if format == ".ifcZIP":
             return self.write(path, ".ifc", zipped=True)
         self.wrapped_data.write(str(path))
+        if not path.exists():
+            raise PermissionError(f"Failed to write to '{path}', check folder permissions.")
         if zipped:
             unzipped_path = path.with_suffix(format)
             path.rename(unzipped_path)
