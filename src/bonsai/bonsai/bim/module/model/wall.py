@@ -267,6 +267,12 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
                         z = -abs(z)
                     extrusion.ExtrudedDirection.DirectionRatios = (x, y, z)
 
+                    # Update the extrusion's location based on its current rotation angle
+                    rot_matrix = Matrix.Rotation(x_angle, 4, "X")
+                    offset = Vector((0.0, 0.0, layer_params["offset"] / unit_scale))
+                    rot_offset = offset @ rot_matrix
+                    extrusion.Position.Location.Coordinates = tuple(rot_offset)
+
                 bonsai.core.geometry.switch_representation(
                     tool.Ifc,
                     tool.Geometry,
@@ -277,11 +283,12 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
                     should_sync_changes_first=False,
                 )
 
-                euler = obj.matrix_world.to_euler()
-                euler.x = x_angle
-                new_matrix = euler.to_matrix().to_4x4()
-                new_matrix.translation = obj.matrix_world.translation
-                obj.matrix_world = new_matrix
+                # Object rotation
+                rot_matrix = Matrix.Rotation(x_angle, 4, "X")
+                matrix_world = Matrix()
+                matrix_world.translation = obj.location
+                obj.matrix_world = matrix_world @ rot_matrix
+
         if layer2_objs:
             DumbWallRecalculator().recalculate(layer2_objs)
         return {"FINISHED"}

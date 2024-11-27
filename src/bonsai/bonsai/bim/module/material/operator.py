@@ -565,9 +565,6 @@ class EditAssignedMaterial(bpy.types.Operator, tool.Ifc.Operator):
                     **{"usage": material_set_usage, "attributes": attributes},
                 )
 
-        print("OPerator")
-        print(bpy.context.active_object)
-        print(active_obj)
         bpy.ops.bim.disable_editing_assigned_material(obj=active_obj.name)
 
 
