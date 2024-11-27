@@ -28,6 +28,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.fm
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.placement
+import ifcopenshell.util.pset
 import ifcopenshell.util.schema
 import ifcopenshell.util.shape
 import ifcopenshell.util.system
@@ -464,7 +465,17 @@ def set_element_value(
     element: Union[ifcopenshell.entity_instance, Iterable[ifcopenshell.entity_instance], None],
     query: Union[str, list[str]],
     value: Any,
+    *,
+    concat: str = ", ",
 ) -> None:
+    """Set element value based on the provided query.
+
+    :param element: IFC element to change.
+    :param query: String query to identify the attribute to change.
+    :param value: Value to set.
+    :param concat: Concatenation symbol, used only to deserialize property
+        set enum values from string values.
+    """
     original_element = element
     if isinstance(query, (list, tuple)):
         keys = query
@@ -640,6 +651,55 @@ def set_element_value(
                         elif pset.is_a("IfcElementQuantity") and prop_value != float(value):
                             ifcopenshell.api.pset.edit_qto(ifc_file, qto=pset, properties={prop: float(value)})
             elif pset.is_a("IfcPropertySet") and element.get(key, None) != value:
+
+                def process_pset_prop_value(pset: ifcopenshell.entity_instance, prop: str, value: Any) -> Any:
+                    """Try to process value for edit_pset.
+
+                    `edit_pset` is expecting a sequence of values
+                    for enum properties, not just a string of some-symbol-separated values.
+                    """
+                    if not isinstance(value, str):
+                        return value
+                    template = ifcopenshell.util.pset.get_template(ifc_file.schema)
+                    pset_template = template.get_by_name(pset.Name)
+                    if pset_template is None:
+                        return value
+                    for prop_template in pset_template.HasPropertyTemplates:
+                        # 2 IfcSimplePropertyTemplate.Name
+                        if prop_template[2] != prop:
+                            continue
+
+                        # 4 IfcSimplePropertyTemplate.TemplateType
+                        if prop_template[4] != "P_ENUMERATEDVALUE":
+                            # Not a enum property.
+                            return value
+
+                        # 7 IfcSimplePropertyTemplate.Enumerators
+                        if (enumeration := prop_template[7]) is None:
+                            # Enum property but without enumerators,
+                            # make it a sequence to keep it assignable as a enum.
+                            return (value,)
+
+                        # 1 IfcPropertyEnumeration.EnumerationValues
+                        available_enum_values = {v.wrappedValue for v in enumeration[1]}
+                        if value in available_enum_values:
+                            # Valid enum item, just keep it a sequence.
+                            return (value,)
+
+                        # Taking a wild guess that it's `concat` separated list.
+                        enum_values = value.split(concat)
+                        if not all(v in available_enum_values for v in enum_values):
+                            raise Exception(
+                                "Error setting pset enum property.\n"
+                                f"Invalid enum values for property '{prop} in pset '{pset}': '{', '.join(enum_values)}'.\n"
+                                f"Possible enum values for this property: {', '.join(available_enum_values)}."
+                            )
+                        return enum_values
+
+                    # Couldn't find property template for this prop - delegate decision to edit_pset.
+                    return value
+
+                value = process_pset_prop_value(pset, key, value)
                 ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties={key: value})
             elif pset.is_a("IfcElementQuantity"):
                 try:
@@ -661,7 +721,7 @@ def set_element_value(
                 return
 
     raise SetElementValueException(
-        f"Failed to set value for element '{original_element}' with query '{query}' (invalid or unsupported query)."
+        f"Failed to set value '{value}' for element '{original_element}' with query '{query}' (invalid or unsupported query)."
     )
 
 
