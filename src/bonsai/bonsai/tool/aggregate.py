@@ -135,7 +135,11 @@ class Aggregate(bonsai.core.tool.Aggregate):
                     objs.append(obj.original)
             for obj in objs:
                 if obj.original not in parts_objs:
-                    if not obj.data and not tool.Ifc.get_entity(obj.original).is_a("IfcElementAssembly"):
+                    try:
+                        is_element_assembly = tool.Ifc.get_entity(obj.original).is_a("IfcElementAssembly")
+                    except:
+                        is_element_assembly = False
+                    if not obj.data and not is_element_assembly:
                         continue
                     obj.original.display_type = "BOUNDS"
                     obj.hide_select = True
