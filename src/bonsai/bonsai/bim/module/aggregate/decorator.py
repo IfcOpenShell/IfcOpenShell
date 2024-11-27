@@ -110,7 +110,67 @@ class AggregateDecorator:
         shader.uniform_float("color", color)
         batch.draw(shader)
 
+    def create_bounding_box(self, objs):
+        # Initialize the bounding box coordinates
+        min_x, min_y, min_z = float('inf'), float('inf'), float('inf')
+        max_x, max_y, max_z = float('-inf'), float('-inf'), float('-inf')
+
+        print("OOO", objs)
+        # Iterate over the selected objects
+        for obj in objs:
+            # Get the object's bounding box coordinates
+            bbox_world = [obj.matrix_world @ Vector(b) for b in obj.bound_box]
+            obj_min = []
+            obj_min.append(min([b[0] for b in bbox_world]))
+            obj_min.append(min([b[1] for b in bbox_world]))
+            obj_min.append(min([b[2] for b in bbox_world]))
+            obj_max = []
+            obj_max.append(max([b[0] for b in bbox_world]))
+            obj_max.append(max([b[1] for b in bbox_world]))
+            obj_max.append(max([b[2] for b in bbox_world]))
+
+            # Update the overall bounding box coordinates
+            min_x = min(min_x, min(obj_min[0], obj_max[0]))
+            min_y = min(min_y, min(obj_min[1], obj_max[1]))
+            min_z = min(min_z, min(obj_min[2], obj_max[2]))
+            max_x = max(max_x, max(obj_min[0], obj_max[0]))
+            max_y = max(max_y, max(obj_min[1], obj_max[1]))
+            max_z = max(max_z, max(obj_min[2], obj_max[2]))
+            print("MIN", min_x, min_y, min_z)
+            print("MAX", max_x, max_y, max_z)
+
+
+        indices = [
+            (min_x, min_y, min_z),
+            (max_x, min_y, min_z),
+            (max_x, max_y, min_z),
+            (min_x, max_y, min_z),
+            (min_x, min_y, max_z),
+            (max_x, min_y, max_z),
+            (max_x, max_y, max_z),
+            (min_x, max_y, max_z)
+        ]
+
+        edges = [
+            (0, 1),
+            (1, 2),
+            (2, 3),
+            (3, 0),
+            (4, 5),
+            (5, 6),
+            (6, 7),
+            (7, 4),
+            (0, 4),
+            (1, 5),
+            (2, 6),
+            (3, 7)
+        ]
+
+        return indices, edges
+
     def draw_aggregate(self, context):
+        if context.scene.BIMAggregateProperties.in_aggregate_mode:
+            return
         self.addon_prefs = tool.Blender.get_addon_preferences()
         decorator_color_special = self.addon_prefs.decorator_color_special
         decorator_color_selected = self.addon_prefs.decorator_color_selected
@@ -157,10 +217,15 @@ class AggregateDecorator:
             if context.scene.BIMAggregateProperties.in_aggregate_mode:
                 return
             parts = ifcopenshell.util.element.get_parts(tool.Ifc.get_entity(aggregate))
-            for part in parts:
-                part_obj = tool.Ifc.get_object(part)
+            parts_objs = [tool.Ifc.get_object(p) for p in parts]
+
+            for part_obj in parts_objs:
                 line = (part_obj.matrix_world.translation, location)
                 self.draw_custom_batch(line, decorator_color_unselected)
+
+            indices, edges = self.create_bounding_box(parts_objs)
+            self.line_shader.uniform_float("lineWidth", 0.5)
+            self.draw_batch("LINES", indices, color, edges)
 
 class AggregateModeDecorator:
     is_installed = False
