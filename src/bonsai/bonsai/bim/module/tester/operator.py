@@ -29,6 +29,7 @@ import ifcopenshell
 import bonsai.tool as tool
 import bonsai.bim.handler
 from pathlib import Path
+from typing import Union
 
 
 class ExecuteIfcTester(bpy.types.Operator):
@@ -66,7 +67,7 @@ class ExecuteIfcTester(bpy.types.Operator):
         bonsai.bim.handler.refresh_ui_data()
         return {"FINISHED"}
 
-    def execute_tester(self, ifc_data, ifc_path, specs_path):
+    def execute_tester(self, ifc_data: ifcopenshell.file, ifc_path: str, specs_path: str) -> Union[set[str], None]:
         props = bpy.context.scene.IfcTesterProperties
 
         with tempfile.TemporaryDirectory() as dirpath:

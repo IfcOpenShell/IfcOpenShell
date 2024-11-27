@@ -29,7 +29,7 @@ import ifcopenshell.util.selector
 import ifcopenshell.util.element
 import ifcopenshell.util.schema
 from statistics import mean
-from typing import Optional, Union, Literal
+from typing import Optional, Union, Literal, Iterable
 
 try:
     from odf.namespaces import OFFICENS
@@ -65,6 +65,9 @@ FILE_FORMAT = Literal[
 
 
 class IfcCsv:
+    attributes: list[str]
+    headers: list[str]
+
     def __init__(self):
         self.headers = []
         self.results = []
@@ -73,9 +76,9 @@ class IfcCsv:
     def export(
         self,
         ifc_file: ifcopenshell.file,
-        elements: ifcopenshell.entity_instance,
-        attributes,
-        headers=None,
+        elements: Iterable[ifcopenshell.entity_instance],
+        attributes: Union[list[str], None],
+        headers: Optional[list[str]] = None,
         output=None,
         format: FILE_FORMAT = None,
         should_preserve_existing: bool = False,
