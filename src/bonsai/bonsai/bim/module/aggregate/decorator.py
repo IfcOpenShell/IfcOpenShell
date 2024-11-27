@@ -199,7 +199,7 @@ class AggregateDecorator:
 
         aggregates = set(aggregates)
         for aggregate in aggregates:
-            self.line_shader.uniform_float("lineWidth", 2.0)
+            self.line_shader.uniform_float("lineWidth", 1.0)
             color = decorator_color_unselected
             if aggregate in selected_objects:
                 color = selected_object_color
@@ -268,7 +268,7 @@ class AggregateModeDecorator:
         blf.size(self.font_id, font_size)
         blf.enable(self.font_id, blf.SHADOW)
         blf.shadow(self.font_id, 6, 0, 0, 0, 1)
-        color = self.addon_prefs.decorator_color_special
+        color = self.addon_prefs.decorator_color_selected
         if aggregate_obj in context.selected_objects:
             color = self.addon_prefs.decorator_color_selected
         blf.color(self.font_id, *color)
@@ -290,11 +290,10 @@ class AggregateModeDecorator:
         self.line_shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
         self.line_shader.bind()
         self.line_shader.uniform_float("viewportSize", (context.region.width, context.region.height))
-        self.line_shader.uniform_float("lineWidth", 1.0)
-        color = self.addon_prefs.decorator_color_special
-        if aggregate_obj in context.selected_objects:
-            self.line_shader.uniform_float("lineWidth", 2.0)
-            color = self.addon_prefs.decorator_color_selected
+        self.line_shader.uniform_float("lineWidth", 2.0)
+        color = self.addon_prefs.decorator_color_selected
+        theme = context.preferences.themes.items()[0][1]
+        selected_object_color = (*theme.view_3d.object_active, 1)
         size = aggregate_obj.empty_display_size
         location = aggregate_obj.location
         line_x = (location - Vector((size, 0.0, 0.0)), location + Vector((size, 0.0, 0.0)))
@@ -303,4 +302,22 @@ class AggregateModeDecorator:
         self.draw_batch("LINES", line_y, color, [(0, 1)])
         line_z = (location - Vector((0.0, 0.0, size)), location + Vector((0.0, 0.0, size)))
         self.draw_batch("LINES", line_z, color, [(0, 1)])
+        parts = ifcopenshell.util.element.get_parts(tool.Ifc.get_entity(aggregate_obj))
+        if parts:
+            for part in parts:
+                if part.is_a("IfcElementAssembly"):
+                    part_obj = tool.Ifc.get_object(part)
+                    self.line_shader.uniform_float("lineWidth", 1.0)
+                    size = part_obj.empty_display_size
+                    location = part_obj.location
+                    color = self.addon_prefs.decorator_color_unselected
+                    if part_obj in context.selected_objects:
+                        color = selected_object_color
+                    line_x = (location - Vector((size, 0.0, 0.0)), location + Vector((size, 0.0, 0.0)))
+                    self.draw_batch("LINES", line_x, color, [(0, 1)])
+                    line_y = (location - Vector((0.0, size, 0.0)), location + Vector((0.0, size, 0.0)))
+                    self.draw_batch("LINES", line_y, color, [(0, 1)])
+                    line_z = (location - Vector((0.0, 0.0, size)), location + Vector((0.0, 0.0, size)))
+                    self.draw_batch("LINES", line_z, color, [(0, 1)])
+                    parts = ifcopenshell.util.element.get_parts(tool.Ifc.get_entity(aggregate_obj))
         
