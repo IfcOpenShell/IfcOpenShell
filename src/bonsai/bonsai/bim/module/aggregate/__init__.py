@@ -30,9 +30,6 @@ classes = (
     operator.BIM_OT_aggregate_unassign_object,
     operator.BIM_OT_break_link_to_other_aggregates,
     operator.BIM_OT_select_linked_aggregates,
-    operator.BIM_OT_mode_set_aggregate,
-    operator.BIM_OT_disable_mode_set_aggregate,
-    operator.BIM_OT_toggle_mode_set_aggregate,
     prop.BIMObjectAggregateProperties,
     prop.NotEditingObjects,
     prop.BIMAggregateProperties,
@@ -40,24 +37,12 @@ classes = (
     ui.BIM_PT_linked_aggregate,
 )
 
-addon_keymaps = []
 
 def register():
     bpy.types.Object.BIMObjectAggregateProperties = bpy.props.PointerProperty(type=prop.BIMObjectAggregateProperties)
     bpy.types.Scene.BIMAggregateProperties = bpy.props.PointerProperty(type=prop.BIMAggregateProperties)
-    wm = bpy.context.window_manager
-    if wm.keyconfigs.addon:
-        km = wm.keyconfigs.addon.keymaps.new(name="Object Mode", space_type="EMPTY")
-        kmi = km.keymap_items.new("bim.toggle_mode_set_aggregate", "TAB", "PRESS", ctrl=True)
-        addon_keymaps.append((km, kmi))
 
 
 def unregister():
     del bpy.types.Object.BIMObjectAggregateProperties
     del bpy.types.Scene.BIMAggregateProperties
-    wm = bpy.context.window_manager
-    kc = wm.keyconfigs.addon
-    if kc:
-        for km, kmi in addon_keymaps:
-            km.keymap_items.remove(kmi)
-    addon_keymaps.clear()
