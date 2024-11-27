@@ -243,3 +243,8 @@ nest formulas, for example ``concat(title("foo"), lower("Bar"))`` will produce
     "``number({{value}}[, {{decimal_separator}}[, {{thousands_separator}}]])``", "``number(1234.56, "","", ""."")``", "``1.234,56``", "Formats {{value}} with an optional custom {{decimal_separator}} and {{thousands_separator}}. The default separators are ``.`` and ``,``."
     "``metric_length({{value}}, {{precision}}, {{decimals}})``", "``metric_length(3.123, 0.1, 2)``", "``3.10``", "Rounds ``{{value}}`` to the nearest ``{{precision}}`` then displays using a certain amount of decimal places."
     "``imperial_length({{value}}, {{precision}}, {{input_unit}}, {{output_unit}})``", "``imperial_length(3.22, 4, ""foot"")``", "``3' - 3 3/4""``", "``The {{value}}`` may be specified either as ``foot`` or ``inch`` depending on ``{{input_unit}}``. The ``{{value}}`` is then rounded to the nearest ``1/{{precision}}`` inch then formatted using fractional feet and inches if ``{{output_unit}}`` is set to ``foot`` or just inches if ``{{output_unit}}`` is set to ``inch``."
+
+When using queries in an IfcAnnotation tag surround with backticks. 
+Examples: 
+````number({{Qto_WallBaseQuantities.Width}}, ",",".")```` or 
+````round({{Qto_BuildingElementProxyQuantities.NetVolume}},.1)````
