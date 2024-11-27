@@ -115,7 +115,6 @@ class AggregateDecorator:
         min_x, min_y, min_z = float('inf'), float('inf'), float('inf')
         max_x, max_y, max_z = float('-inf'), float('-inf'), float('-inf')
 
-        print("OOO", objs)
         # Iterate over the selected objects
         for obj in objs:
             # Get the object's bounding box coordinates
@@ -136,9 +135,6 @@ class AggregateDecorator:
             max_x = max(max_x, max(obj_min[0], obj_max[0]))
             max_y = max(max_y, max(obj_min[1], obj_max[1]))
             max_z = max(max_z, max(obj_min[2], obj_max[2]))
-            print("MIN", min_x, min_y, min_z)
-            print("MAX", max_x, max_y, max_z)
-
 
         indices = [
             (min_x, min_y, min_z),
