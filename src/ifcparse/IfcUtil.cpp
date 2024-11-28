@@ -207,10 +207,10 @@ IfcUtil::IfcBaseEntity::IfcBaseEntity(IfcEntityInstanceData&& data)
 {}
 
 void IfcUtil::IfcBaseEntity::populate_derived() {
-    for (auto it = declaration().derived().begin(); it != declaration().derived().end(); ++it) {
+    for (auto it = declaration().as_entity()->derived().begin(); it != declaration().as_entity()->derived().end(); ++it) {
         if (*it) {
             this->data().storage_.set(
-                std::distance(declaration().derived().begin(), it),
+                std::distance(declaration().as_entity()->derived().begin(), it),
                 Derived{}
             );
         }
