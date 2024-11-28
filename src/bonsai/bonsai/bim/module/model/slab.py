@@ -291,7 +291,7 @@ class DumbSlabPlaner:
                 extrusion.ExtrudedDirection.DirectionRatios = (x, y, z)
                 extrusion.Depth = perpendicular_depth
 
-                # Update the extrusion's location based on its current rotation angle
+                # Update the extrusion's location based on its current rotation angle and offset
                 rot_matrix = Matrix.Rotation(existing_x_angle, 4, "X")
                 rot_offset = offset @ rot_matrix
                 extrusion.Position.Location.Coordinates = tuple(rot_offset)
@@ -640,14 +640,23 @@ class EnableEditingExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
         body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
         body = ifcopenshell.util.representation.resolve_representation(body)
         extrusion = tool.Model.get_extrusion(body)
+        existing_x_angle = DumbSlabPlaner.get_slab_existing_angle(extrusion)
+        layer_params = tool.Model.get_material_layer_parameters(element)
 
         if extrusion.Position:
             position = Matrix(ifcopenshell.util.placement.get_axis2placement(extrusion.Position).tolist())
             position.translation *= self.unit_scale
+
+            # Restore the position that was changed by the offset and extrusiuon angle
+            rot_matrix = Matrix.Rotation(existing_x_angle, 4, "X")
+            offset = Vector((0, 0.0, layer_params["offset"]))
+            rot_offset = offset @ rot_matrix
+            translation_matrix = Matrix.Translation(-rot_offset)
+            position = position @ translation_matrix
+
         else:
             position = Matrix()
 
-        existing_x_angle = DumbSlabPlaner.get_slab_existing_angle(extrusion)
         tool.Model.import_profile(extrusion.SweptArea, obj=obj, position=position, angle=existing_x_angle)
 
         bpy.ops.object.mode_set(mode="EDIT")
