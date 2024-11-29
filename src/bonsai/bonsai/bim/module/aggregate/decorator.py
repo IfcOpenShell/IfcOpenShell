@@ -248,7 +248,8 @@ class AggregateModeDecorator:
         region = context.region
         rv3d = region.data
         props = context.scene.BIMAggregateProperties
-        aggregate_obj = props.editing_aggregate
+        if aggregate_obj := props.editing_aggregate:
+            return
         self.addon_prefs = tool.Blender.get_addon_preferences()
         self.font_id = 0
         font_size = tool.Blender.scale_font_size(12)
@@ -272,7 +273,8 @@ class AggregateModeDecorator:
 
     def draw_aggregate_empty(self, context):
         props = context.scene.BIMAggregateProperties
-        aggregate_obj = props.editing_aggregate
+        if aggregate_obj := props.editing_aggregate:
+            return
         self.addon_prefs = tool.Blender.get_addon_preferences()
         self.line_shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
         self.line_shader.bind()
