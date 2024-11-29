@@ -99,14 +99,15 @@ class BIMObjectAggregateProperties(PropertyGroup):
     )
 
 
-class NotEditingObjects(bpy.types.PropertyGroup):
+class Objects(bpy.types.PropertyGroup):
     obj: PointerProperty(type=bpy.types.Object)
 
 
 class BIMAggregateProperties(PropertyGroup):
     in_aggregate_mode: BoolProperty(name="In Edit Mode", update=update_aggregate_mode_decorator)
     editing_aggregate: PointerProperty(name="Editing Aggregate", type=bpy.types.Object)
-    not_editing_objects: CollectionProperty(type=NotEditingObjects)
+    editing_objects: CollectionProperty(type=Objects)
+    not_editing_objects: CollectionProperty(type=Objects)
     aggregate_decorator: BoolProperty(
         name="Display Aggregate",
         default=False,
