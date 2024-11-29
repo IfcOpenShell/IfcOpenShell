@@ -2838,7 +2838,7 @@ class OverrideMoveAggregate(bpy.types.Operator):
             self.new_active_obj = None
             if obj in not_editing_objs:
                 obj.select_set(False)
-                break
+                continue
             element = tool.Ifc.get_entity(obj)
             if not element or props.in_aggregate_mode:
                 continue
