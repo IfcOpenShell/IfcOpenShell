@@ -566,6 +566,12 @@ class EditObjectUI:
             AuthoringData.load(ifc_element_type)
 
         if context.region.type == "TOOL_HEADER":
+            if context.scene.BIMAggregateProperties.in_aggregate_mode:
+                layout.label(text=f"Aggregate Mode", icon="EMPTY_AXIS")
+                row = cls.layout.row(align=True)
+                op = row.operator("bim.disable_aggregate_mode", text="", icon="X")
+                op = row.operator("bim.toggle_aggregate_mode_local_view", text="", icon="ZOOM_SELECTED")
+                
             text = format_ifc_camel_case(AuthoringData.data["active_class"])
             layout.label(text=f"{text} Edit Tools:", icon="RESTRICT_SELECT_OFF")
             cls.draw_parameter_adjustments(context)

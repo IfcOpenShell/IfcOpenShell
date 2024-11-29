@@ -370,3 +370,32 @@ class BIM_OT_select_linked_aggregates(bpy.types.Operator):
                         obj.select_set(True)
 
         return {"FINISHED"}
+
+class BIM_OT_disable_aggregate_mode(bpy.types.Operator):
+    bl_idname = "bim.disable_aggregate_mode"
+    bl_label = "Disable Aggregate Mode"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        bpy.ops.object.select_all(action="DESELECT")
+        bonsai.core.aggregate.disable_aggregate_mode(tool.Aggregate)
+        return {"FINISHED"}
+
+class BIM_OT_toggle_aggregate_mode_local_view(bpy.types.Operator):
+    bl_idname = "bim.toggle_aggregate_mode_local_view"
+    bl_label = "Toggle Aggregate Mode Local View"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        props = context.scene.BIMAggregateProperties
+        objs = [o.obj for o in props.editing_objects]
+        if props.in_aggregate_mode:
+            if context.space_data.local_view:
+                bpy.ops.view3d.localview()
+            else:
+                for obj in objs:
+                    obj.select_set(True)
+                bpy.ops.view3d.localview()
+
+        return {"FINISHED"}
+
