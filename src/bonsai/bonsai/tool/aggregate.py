@@ -141,10 +141,12 @@ class Aggregate(bonsai.core.tool.Aggregate):
                         is_element_assembly = False
                     if not obj.data and not is_element_assembly:
                         continue
-                    obj.original.display_type = "BOUNDS"
-                    obj.hide_select = True
+                    obj.original.display_type = "WIRE"
                     not_editing_obj = props.not_editing_objects.add()
                     not_editing_obj.obj = obj.original
+                else:
+                    editing_obj = props.editing_objects.add()
+                    editing_obj.obj = obj.original
 
         props.in_aggregate_mode = True
         return {"FINISHED"}
@@ -156,10 +158,10 @@ class Aggregate(bonsai.core.tool.Aggregate):
         objs = [o.obj for o in props.not_editing_objects]
         for obj in objs:
             obj.original.display_type = "TEXTURED"
-            obj.hide_select = False
             element = tool.Ifc.get_entity(obj)
             if not element:
                 continue
 
         props.in_aggregate_mode = False
         props.not_editing_objects.clear()
+        props.editing_objects.clear()
