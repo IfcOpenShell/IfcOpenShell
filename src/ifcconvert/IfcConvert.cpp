@@ -449,8 +449,6 @@ int main(int argc, char** argv) {
 
 	const bool center_model = vmap.count("center-model") != 0;
 	const bool center_model_geometry = vmap.count("center-model-geometry") != 0;
-	const bool model_offset = vmap.count("model-offset") != 0;
-	const bool model_rotation = vmap.count("model-rotation") != 0;
 
     if (!quiet || vmap.count("version")) {
 		print_version();
@@ -894,7 +892,7 @@ int main(int argc, char** argv) {
         if (geometry_settings.get<ifcopenshell::geometry::settings::GenerateUvs>().get()) {
             Logger::Notice("Generate UVs setting ignored when writing non-tesselated output");
         }
-        if (center_model || center_model_geometry || model_offset) {
+        if (center_model || center_model_geometry) {
             Logger::Notice("Centering/offsetting model setting ignored when writing non-tesselated output");
         }
 
@@ -922,72 +920,44 @@ int main(int argc, char** argv) {
 	} else {
 		Logger::SetOutput(quiet ? nullptr : &cout_, vcounter.count > 1 ? &cout_ : &log_stream);
 	}
-
-	/*
-	// @todo
-	if (model_rotation) {
-		std::array<double, 4> &rotation = settings.rotation;
-		if (sscanf(rotation_str.c_str(), "%lf;%lf;%lf;%lf", &rotation[0], &rotation[1], &rotation[2], &rotation[3]) != 4) {
-			cerr_ << "[Error] Invalid use of --model-rotation\n";
-			IfcUtil::path::delete_file(IfcUtil::path::to_utf8(output_temp_filename));
-			print_options(serializer_options);
-			return EXIT_FAILURE;
-		}
-
-		std::stringstream msg;
-		msg << "Using model rotation (" << rotation[0] << "," << rotation[1] << "," << rotation[2] << "," << rotation[3] << ")";
-		Logger::Notice(msg.str());
-	}
 	
-    if (is_tesselated && (center_model || center_model_geometry || model_offset)) {
-		std::array<double, 3> &offset = settings.offset;
-		if (center_model || center_model_geometry) {
-			if (site_local_placement || building_local_placement) {
-				Logger::Error("Cannot use --center-model or --center-model-geometry together with --{site,building}-local-placement");
+    if (is_tesselated && (center_model || center_model_geometry)) {
+		std::vector<double> offset(3);
+
+		IfcGeom::Iterator tmp_context_iterator(geometry_kernel, geometry_settings, ifc_file, filter_funcs, num_threads);
+			
+		time_t start, end;
+		time(&start);
+		if (!quiet) Logger::Status("Computing bounds...");
+
+		if (center_model_geometry) {
+			if (!tmp_context_iterator.initialize()) {
+				/// @todo It would be nice to know and print separate error prints for a case where we found no entities
+				/// and for a case we found no entities that satisfy our filtering criteria.
+				Logger::Notice("No geometrical elements found or none successfully converted");
+				serializer.reset();
+				IfcUtil::path::delete_file(IfcUtil::path::to_utf8(output_temp_filename));
+				write_log(!quiet);
 				return EXIT_FAILURE;
 			}
-
-			IfcGeom::Iterator tmp_context_iterator(geometry_kernel, settings, ifc_file, filter_funcs, num_threads);
-			
-			time_t start, end;
-			time(&start);
-			if (!quiet) Logger::Status("Computing bounds...");
-
-			if (center_model_geometry) {
-				if (!tmp_context_iterator.initialize()) {
-					/// @todo It would be nice to know and print separate error prints for a case where we found no entities
-					/// and for a case we found no entities that satisfy our filtering criteria.
-					Logger::Notice("No geometrical elements found or none successfully converted");
-					serializer.reset();
-					IfcUtil::path::delete_file(IfcUtil::path::to_utf8(output_temp_filename));
-					write_log(!quiet);
-					return EXIT_FAILURE;
-				}
-			}
+		}
 		
-            tmp_context_iterator.compute_bounds(center_model_geometry);
+        tmp_context_iterator.compute_bounds(center_model_geometry);
 
-			time(&end);
-            if (!quiet) Logger::Status("Done ! Bounds computed in " + format_duration(start, end));
+		time(&end);
+        if (!quiet) Logger::Status("Done ! Bounds computed in " + format_duration(start, end));
 
-            auto center = (tmp_context_iterator.bounds_min().ccomponents() + tmp_context_iterator.bounds_max().ccomponents()) * 0.5;
-            offset[0] = -center(0);
-            offset[1] = -center(1);
-            offset[2] = -center(2);
-        } else {
-            if (sscanf(offset_str.c_str(), "%lf;%lf;%lf", &offset[0], &offset[1], &offset[2]) != 3) {
-                cerr_ << "[Error] Invalid use of --model-offset\n";
-				IfcUtil::path::delete_file(IfcUtil::path::to_utf8(output_temp_filename));
-                print_options(serializer_options);
-                return EXIT_FAILURE;
-            }
-        }
+        auto center = (tmp_context_iterator.bounds_min().ccomponents() + tmp_context_iterator.bounds_max().ccomponents()) * 0.5;
+        offset[0] = -center(0);
+        offset[1] = -center(1);
+        offset[2] = -center(2);
 
         std::stringstream msg;
         msg << std::setprecision (std::numeric_limits< double >::max_digits10) << "Using model offset (" << offset[0] << "," << offset[1] << "," << offset[2] << ")";
         Logger::Notice(msg.str());
+
+		geometry_settings.get<ifcopenshell::geometry::settings::ModelOffset>().value = offset;
     }
-	*/
 
 	// backwards compatibility
 	if (vmap.count("plan") && vmap.count("model")) {
