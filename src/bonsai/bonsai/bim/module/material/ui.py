@@ -234,7 +234,11 @@ class BIM_PT_object_material(Panel):
 
         total_items = len(ObjectMaterialData.data["set_items"])
         row = self.layout.row(align=True)
-        row.label(text="----- Exterior -----")
+        layer_set_direction = self.props.material_set_usage_attributes["LayerSetDirection"].enum_value
+        if layer_set_direction == 'AXIS3':
+            row.label(text="----- Top -----")
+        else:
+            row.label(text="----- Exterior -----")
         for index, set_item in enumerate(ObjectMaterialData.data["set_items"]):
             if (
                 len(self.props.material_set_item_profile_attributes)
@@ -246,7 +250,10 @@ class BIM_PT_object_material(Panel):
             else:
                 self.draw_read_only_set_item_ui(set_item, index, is_first=index == 0, is_last=index == total_items - 1)
         row = self.layout.row(align=True)
-        row.label(text="----- Interior -----")
+        if layer_set_direction == 'AXIS3':
+            row.label(text="----- Bottom -----")
+        else:
+            row.label(text="----- Interior -----")
 
     def draw_editable_set_item_profile_ui(self, set_item):
         box = self.layout.box()
