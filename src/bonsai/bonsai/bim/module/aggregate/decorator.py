@@ -32,6 +32,49 @@ def transparent_color(color, alpha=0.1):
     color[3] = alpha
     return color
 
+
+def create_bounding_box(objs):
+    # Initialize the bounding box coordinates
+    min_x, min_y, min_z = float("inf"), float("inf"), float("inf")
+    max_x, max_y, max_z = float("-inf"), float("-inf"), float("-inf")
+
+    # Iterate over the selected objects
+    for obj in objs:
+        # Get the object's bounding box coordinates
+        bbox_world = [obj.matrix_world @ Vector(b) for b in obj.bound_box]
+        obj_min = []
+        obj_min.append(min([b[0] for b in bbox_world]))
+        obj_min.append(min([b[1] for b in bbox_world]))
+        obj_min.append(min([b[2] for b in bbox_world]))
+        obj_max = []
+        obj_max.append(max([b[0] for b in bbox_world]))
+        obj_max.append(max([b[1] for b in bbox_world]))
+        obj_max.append(max([b[2] for b in bbox_world]))
+
+        # Update the overall bounding box coordinates
+        min_x = min(min_x, min(obj_min[0], obj_max[0]))
+        min_y = min(min_y, min(obj_min[1], obj_max[1]))
+        min_z = min(min_z, min(obj_min[2], obj_max[2]))
+        max_x = max(max_x, max(obj_min[0], obj_max[0]))
+        max_y = max(max_y, max(obj_min[1], obj_max[1]))
+        max_z = max(max_z, max(obj_min[2], obj_max[2]))
+
+    indices = [
+        (min_x, min_y, min_z),
+        (max_x, min_y, min_z),
+        (max_x, max_y, min_z),
+        (min_x, max_y, min_z),
+        (min_x, min_y, max_z),
+        (max_x, min_y, max_z),
+        (max_x, max_y, max_z),
+        (min_x, max_y, max_z),
+    ]
+
+    edges = [(0, 1), (1, 2), (2, 3), (3, 0), (4, 5), (5, 6), (6, 7), (7, 4), (0, 4), (1, 5), (2, 6), (3, 7)]
+
+    return indices, edges
+
+
 class AggregateDecorator:
     is_installed = False
     handlers = []
@@ -53,7 +96,6 @@ class AggregateDecorator:
             except ValueError:
                 pass
         cls.is_installed = False
-
 
     def dotted_line_shader(self):
         vert_out = gpu.types.GPUStageInterfaceInfo("my_interface")
@@ -110,60 +152,6 @@ class AggregateDecorator:
         shader.uniform_float("color", color)
         batch.draw(shader)
 
-    def create_bounding_box(self, objs):
-        # Initialize the bounding box coordinates
-        min_x, min_y, min_z = float('inf'), float('inf'), float('inf')
-        max_x, max_y, max_z = float('-inf'), float('-inf'), float('-inf')
-
-        # Iterate over the selected objects
-        for obj in objs:
-            # Get the object's bounding box coordinates
-            bbox_world = [obj.matrix_world @ Vector(b) for b in obj.bound_box]
-            obj_min = []
-            obj_min.append(min([b[0] for b in bbox_world]))
-            obj_min.append(min([b[1] for b in bbox_world]))
-            obj_min.append(min([b[2] for b in bbox_world]))
-            obj_max = []
-            obj_max.append(max([b[0] for b in bbox_world]))
-            obj_max.append(max([b[1] for b in bbox_world]))
-            obj_max.append(max([b[2] for b in bbox_world]))
-
-            # Update the overall bounding box coordinates
-            min_x = min(min_x, min(obj_min[0], obj_max[0]))
-            min_y = min(min_y, min(obj_min[1], obj_max[1]))
-            min_z = min(min_z, min(obj_min[2], obj_max[2]))
-            max_x = max(max_x, max(obj_min[0], obj_max[0]))
-            max_y = max(max_y, max(obj_min[1], obj_max[1]))
-            max_z = max(max_z, max(obj_min[2], obj_max[2]))
-
-        indices = [
-            (min_x, min_y, min_z),
-            (max_x, min_y, min_z),
-            (max_x, max_y, min_z),
-            (min_x, max_y, min_z),
-            (min_x, min_y, max_z),
-            (max_x, min_y, max_z),
-            (max_x, max_y, max_z),
-            (min_x, max_y, max_z)
-        ]
-
-        edges = [
-            (0, 1),
-            (1, 2),
-            (2, 3),
-            (3, 0),
-            (4, 5),
-            (5, 6),
-            (6, 7),
-            (7, 4),
-            (0, 4),
-            (1, 5),
-            (2, 6),
-            (3, 7)
-        ]
-
-        return indices, edges
-
     def draw_aggregate(self, context):
         if context.scene.BIMAggregateProperties.in_aggregate_mode:
             return
@@ -216,13 +204,13 @@ class AggregateDecorator:
             parts = ifcopenshell.util.element.get_parts(tool.Ifc.get_entity(aggregate))
             parts_objs = [tool.Ifc.get_object(p) for p in parts]
 
-            for part_obj in parts_objs:
-                line = (part_obj.matrix_world.translation, location)
-                self.draw_custom_batch(line, decorator_color_unselected)
 
-            indices, edges = self.create_bounding_box(parts_objs)
+            indices, edges = create_bounding_box(parts_objs)
             self.line_shader.uniform_float("lineWidth", 0.5)
             self.draw_batch("LINES", indices, color, edges)
+            line = (Vector(indices[0]), location)
+            self.draw_custom_batch(line, decorator_color_unselected)
+
 
 class AggregateModeDecorator:
     is_installed = False
@@ -256,7 +244,6 @@ class AggregateModeDecorator:
         shader.uniform_float("color", color)
         batch.draw(shader)
 
-
     def draw_aggregate_name(self, context):
         region = context.region
         rv3d = region.data
@@ -275,7 +262,7 @@ class AggregateModeDecorator:
         text = aggregate_obj.name
         text_coords = view3d_utils.location_3d_to_region_2d(region, rv3d, aggregate_obj.location)
         text_length = blf.dimensions(self.font_id, text)
-        text_coords[0] -= (text_length[0] / 2)
+        text_coords[0] -= text_length[0] / 2
         text_coords[1] -= 20
         blf.position(self.font_id, text_coords[0], text_coords[1], 0)
 
@@ -320,4 +307,9 @@ class AggregateModeDecorator:
                     line_z = (location - Vector((0.0, 0.0, size)), location + Vector((0.0, 0.0, size)))
                     self.draw_batch("LINES", line_z, color, [(0, 1)])
                     parts = ifcopenshell.util.element.get_parts(tool.Ifc.get_entity(aggregate_obj))
-        
+
+        color = self.addon_prefs.decorator_color_selected
+        parts_objs = [tool.Ifc.get_object(p) for p in parts]
+        indices, edges = create_bounding_box(parts_objs)
+        self.line_shader.uniform_float("lineWidth", 0.5)
+        self.draw_batch("LINES", indices, color, edges)
