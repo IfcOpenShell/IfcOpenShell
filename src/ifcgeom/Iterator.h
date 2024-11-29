@@ -127,14 +127,12 @@ namespace IfcGeom {
 		// ?
 		size_t async_elements_returned_ = 0;
 		size_t task_result_index_ = 0;
-
-		std::string geometry_library_;
 		
 		ifcopenshell::geometry::Settings settings_;
 		IfcParse::IfcFile* ifc_file;
 		std::vector<filter_t> filters_;
-		bool owns_ifc_file;
 		int num_threads_;
+		std::string geometry_library_;
 
 		// When single-threaded
 		ifcopenshell::geometry::Converter* converter_;
@@ -195,7 +193,6 @@ namespace IfcGeom {
 			}
 
 			time_points[0] = high_resolution_clock::now();
-			converter_ = new ifcopenshell::geometry::Converter(geometry_library_, ifc_file, settings_);
 			std::vector<ifcopenshell::geometry::geometry_conversion_task> reps;
 			if (num_threads_ != 1) {
 				// @todo this shouldn't be necessary with properly immutable taxonomy items
@@ -420,7 +417,7 @@ namespace IfcGeom {
 
 						for (int i = 0; i < 3; ++i) {
 							bounds_min_.components()(i) = std::min(bounds_min_.components()(i), transformed(i));
-							bounds_max_.components()(i) = std::max(bounds_min_.components()(i), transformed(i));
+							bounds_max_.components()(i) = std::max(bounds_max_.components()(i), transformed(i));
 						}
 					}
 				} while (++num_created, next());
@@ -439,7 +436,7 @@ namespace IfcGeom {
 
 					for (int i = 0; i < 3; ++i) {
 						bounds_min_.components()(i) = std::min(bounds_min_.components()(i), vec(i));
-						bounds_max_.components()(i) = std::max(bounds_min_.components()(i), vec(i));
+						bounds_max_.components()(i) = std::max(bounds_max_.components()(i), vec(i));
 					}
 				}
 			}
@@ -838,9 +835,9 @@ namespace IfcGeom {
 			: settings_(settings)
 			, ifc_file(file)
 			, filters_(filters)
-			, owns_ifc_file(false)
 			, num_threads_(num_threads)
 			, geometry_library_(geometry_library)
+			, converter_(new ifcopenshell::geometry::Converter(geometry_library_, ifc_file, settings_))
 		{
 		}
 
@@ -848,36 +845,36 @@ namespace IfcGeom {
 			: settings_(settings)
 			, ifc_file(file)
 			, filters_(filters)
-			, owns_ifc_file(false)
 			, num_threads_(num_threads)
 			, geometry_library_("opencascade")
+			, converter_(new ifcopenshell::geometry::Converter(geometry_library_, ifc_file, settings_))
 		{
 		}
 
 		Iterator(const ifcopenshell::geometry::Settings& settings, IfcParse::IfcFile* file)
 			: settings_(settings)
 			, ifc_file(file)
-			, owns_ifc_file(false)
 			, num_threads_(1)
 			, geometry_library_("opencascade")
+			, converter_(new ifcopenshell::geometry::Converter(geometry_library_, ifc_file, settings_))
 		{
 		}
 
 		Iterator(const std::string& geometry_library, const ifcopenshell::geometry::Settings& settings, IfcParse::IfcFile* file)
 			: settings_(settings)
 			, ifc_file(file)
-			, owns_ifc_file(false)
 			, num_threads_(1)
 			, geometry_library_(geometry_library)
+			, converter_(new ifcopenshell::geometry::Converter(geometry_library_, ifc_file, settings_))
 		{
 		}
 
 		Iterator(const std::string& geometry_library, const ifcopenshell::geometry::Settings& settings, IfcParse::IfcFile* file, int num_threads)
 			: settings_(settings)
 			, ifc_file(file)
-			, owns_ifc_file(false)
 			, num_threads_(num_threads)
 			, geometry_library_(geometry_library)
+			, converter_(new ifcopenshell::geometry::Converter(geometry_library_, ifc_file, settings_))
 		{
 		}
 
@@ -888,10 +885,6 @@ namespace IfcGeom {
 				if (init_future_.valid()) {
 					init_future_.wait();
 				}
-			}
-
-			if (owns_ifc_file) {
-				delete ifc_file;
 			}
 
 			if (!settings_.get<ifcopenshell::geometry::settings::IteratorOutput>().get() == ifcopenshell::geometry::settings::NATIVE) {
