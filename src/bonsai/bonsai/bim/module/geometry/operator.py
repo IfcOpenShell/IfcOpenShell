@@ -1823,6 +1823,9 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
         element = tool.Ifc.get_entity(obj)
         if obj == context.scene.BIMGeometryProperties.representation_obj:
             self.report({"ERROR"}, f"Element '{obj.name}' is in item mode and cannot be edited directly")
+        elif obj in [o.obj for o in context.scene.BIMAggregateProperties.not_editing_objects]:
+            obj.select_set(False)
+            self.report({"ERROR"}, f"Element '{obj.name}' does not belong to this aggregate and cannot be edited directly")
         elif obj in bpy.context.scene.BIMProjectProperties.clipping_planes_objs:
             self.report({"ERROR"}, "Clipping planes cannot be edited")
         elif element:
