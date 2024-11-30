@@ -243,7 +243,7 @@ def assert_valid(
     elif isinstance(attr_type, aggregation_type):
         b1, b2 = attr_type.bound1(), attr_type.bound2()
         ty = attr_type.type_of_element()
-        invalid = (
+        invalid = type(val) != tuple or (
             len(val) < b1
             or (b2 != -1 and len(val) > b2)
             or not all(assert_valid(ty, v, schema, attr=attr) for v in val)
