@@ -108,8 +108,10 @@ def update_spatial_is_locked(self, context):
         if obj := tool.Ifc.get_object(element):
             if self.is_locked:
                 tool.Geometry.lock_object(obj)
+                obj.hide_select = True
             else:
                 tool.Geometry.unlock_object(obj)
+                obj.hide_select = False
     # Need to update ViewportData.mode.
     bonsai.bim.handler.refresh_ui_data()
 
