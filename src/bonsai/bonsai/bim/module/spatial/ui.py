@@ -119,7 +119,7 @@ class BIM_PT_spatial_decomposition(Panel):
         if SpatialDecompositionData.data["default_container"]:
             row = self.layout.row(align=True)
             row.label(
-                text=f"Default: {SpatialDecompositionData.data['default_container']}",
+                text=f"Default: {SpatialDecompositionData.default_container()}",
                 icon="OUTLINER_COLLECTION",
             )
         else:
