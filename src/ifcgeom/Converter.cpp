@@ -6,10 +6,11 @@ using namespace ifcopenshell::geometry;
 
 ifcopenshell::geometry::Converter::Converter(const std::string& geometry_library, IfcParse::IfcFile* file, ifcopenshell::geometry::Settings& s)
 	: geometry_library_(boost::to_lower_copy(geometry_library))
-	, settings_(s)
 {
-	mapping_ = impl::mapping_implementations().construct(file, settings_);
+	mapping_ = impl::mapping_implementations().construct(file, s);
 	kernel_ = kernels::construct(file, geometry_library, mapping_->settings());
+	// Mapping reads unit information and applies to settings
+	settings_ = mapping_->settings();
 }
 
 namespace {
