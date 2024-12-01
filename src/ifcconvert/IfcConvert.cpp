@@ -815,6 +815,15 @@ int main(int argc, char** argv) {
 		}
 	}
 
+	if (geometry_settings.get<ifcopenshell::geometry::settings::UseElementHierarchy>().get() && output_extension != DAE && output_extension != USD && output_extension != USDA && output_extension != USDC) {
+		cerr_ << "[Error] --use-element-hierarchy can be used only with .dae or .usd output.\n";
+		/// @todo Lots of duplicate error-and-exit code.
+		write_log(!quiet);
+		print_usage();
+		IfcUtil::path::delete_file(IfcUtil::path::to_utf8(output_temp_filename));
+		return EXIT_FAILURE;
+	}
+
 	if (vmap[ifcopenshell::geometry::settings::WeldVertices::name].defaulted()) {
 		geometry_settings.get<ifcopenshell::geometry::settings::WeldVertices>().value = false;
 	}
@@ -829,6 +838,11 @@ int main(int argc, char** argv) {
 
 	if (output_extension == TTL) {
 		geometry_settings.get<ifcopenshell::geometry::settings::TriangulationType>().value = ifcopenshell::geometry::settings::TriangulationMethod::POLYHEDRON_WITH_HOLES;
+	}
+
+	if (output_extension == SVG) {
+		// SVG serialiazation depends on element hierarchy now to look up the parent
+		geometry_settings.get<ifcopenshell::geometry::settings::UseElementHierarchy>().value = true;
 	}
 
 	boost::shared_ptr<GeometrySerializer> serializer; /**< @todo use std::unique_ptr when possible */
@@ -872,15 +886,6 @@ int main(int argc, char** argv) {
         cerr_ << "[Error] Unknown output filename extension '" << output_extension << "'\n";
 		write_log(!quiet);
 		print_usage();
-		return EXIT_FAILURE;
-	}
-
-    if (geometry_settings.get<ifcopenshell::geometry::settings::UseElementHierarchy>().get() && output_extension != DAE && output_extension != USD && output_extension != USDA && output_extension != USDC) {
-        cerr_ << "[Error] --use-element-hierarchy can be used only with .dae or .usd output.\n";
-        /// @todo Lots of duplicate error-and-exit code.
-		write_log(!quiet);
-		print_usage();
-		IfcUtil::path::delete_file(IfcUtil::path::to_utf8(output_temp_filename));
 		return EXIT_FAILURE;
 	}
 

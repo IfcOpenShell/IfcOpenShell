@@ -86,6 +86,8 @@ def main(
     geom_settings = ifcopenshell.geom.settings(
         # when not doing booleans, proper solids from shells isn't a requirement
         REORIENT_SHELLS=settings.subtract_before_hlr,
+        # SVG serialiazation depends on element hierarchy now to look up the parent
+        ELEMENT_HIERARCHY=True,
     )
 
     # this is required for serialization
