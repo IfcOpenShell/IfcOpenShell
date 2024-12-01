@@ -435,7 +435,8 @@ def main(
             # polies = W.svg_to_polygons(svg_contents, "IfcSpace")
             
             polies = [p.getAttribute('d') for p in yield_groups(svg1, "path") if 'IfcSpace' in p.parentNode.getAttribute('class')]
-            polies = [[[*map(float, s[1:].split(','))] for s in d.split(' ')] for d in polies]
+            assert(all(s.count('M') == 1 for s in polies))
+            polies = [[[*map(float, s[1:].split(','))] for s in d.split(' ')[:-1]] for d in polies]
             def create_poly(b):
                 p = ifcopenshell.ifcopenshell_wrapper.polygon_2()
                 p.boundary = b
