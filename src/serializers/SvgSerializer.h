@@ -563,7 +563,7 @@ protected:
 	bool unify_inputs_;
 	bool mirror_y_;
 	bool mirror_x_;
-	bool only_valid_;
+	bool only_valid_ = false;
 
 	int profile_threshold_;
 
