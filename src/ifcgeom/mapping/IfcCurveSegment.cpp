@@ -766,15 +766,16 @@ class curve_segment_evaluator {
                 // Distance along the curve is  Integral[0,x] (sqrt(f'(x)^2 + 1) dx
 
                 // This functor is the derivative of y(x) => dy/dx = f'(x)
-                auto df = [coeffY](double x) -> double {
+                auto df = [lu=length_unit_,coeffY](double x) -> double {
                     auto begin = std::next(coeffY.begin());
                     auto iter = begin;
                     auto end = coeffY.end();
                     double value = 0;
+                    double lu_exp = 0.0;
                     for (; iter != end; iter++) {
                         auto exp = std::distance(begin, iter);
                         auto coeff = (*iter);
-                        value += (double)exp * coeff * pow(x, exp);
+                        value += (double)exp * coeff * pow(lu, lu_exp--) * pow(x, exp - 1);
                     }
                     return value;
                 };
@@ -814,7 +815,7 @@ class curve_segment_evaluator {
             }
 
             // This functor evaluates the polynomial at a distance u along the curve
-            parent_curve_fn_ = [start = start_, coeffX, coeffY, convert_u](double u) -> Eigen::Matrix4d {
+            parent_curve_fn_ = [start = start_, lu = length_unit_, coeffX, coeffY, convert_u](double u) -> Eigen::Matrix4d {
                 auto x = convert_u(u + start); // find x for u
                 // evaluate the polynomial at x
                 std::array<const std::vector<double>*, 2> coefficients{&coeffX, &coeffY};
@@ -823,13 +824,14 @@ class curve_segment_evaluator {
                 for (int i = 0; i < 2; i++) {             // loop over X and Y
                     auto begin = coefficients[i]->cbegin();
                     auto end = coefficients[i]->cend();
+                    double lu_exp = 1.0;
                     for (auto iter = begin; iter != end; iter++) {
                         auto exp = std::distance(begin, iter);
                         auto coeff = (*iter);
-                        position[i] += coeff * pow(x, exp);
+                        position[i] += coeff * pow(lu, lu_exp--) * pow(x, exp);
 
                         if (iter != begin) {
-                            slope[i] += coeff * exp * pow(x, exp - 1);
+                            slope[i] += coeff * pow(lu, lu_exp) * exp * pow(x, exp - 1);
                         }
                     }
                 }
