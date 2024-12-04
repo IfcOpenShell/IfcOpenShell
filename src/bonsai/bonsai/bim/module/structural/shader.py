@@ -1,5 +1,6 @@
 import bpy
 import gpu
+import bmesh
 import numpy as np
 from math import sin
 from mathutils import Vector, Matrix
@@ -11,152 +12,319 @@ from bonsai.bim.ifc import IfcStore
 
 
 class ShaderInfo:
-    def __init__(self,shader_type: str):
+    def __init__(self):
         self.is_empty = True
-        self.shader = None
-        self.shader_type = shader_type
-        self.args = {}
-        self.indices = []
+        #self.shader = None
+        #self.shader_type = shader_type
+        #self.args = {}
+        #self.indices = []
+        self.curve_members = []
+        self.point_members = []
+        self.surface_members = {}
         self.text_info = []
         self.info = []
+        self.force_unit = ""
+        self.linear_force_unit = ""
+        self.planar_force_unit = ""
     
     def update(self):
         self.info = []
+        self.get_force_units()
+        self.get_strucutural_elements_and_activities()
         self.get_linear_loads()
         self.get_point_loads()
+        self.get_planar_loads_2()
         if len(self.info):
             self.is_empty = False
+    
+    def get_force_units(self):
+        def get_unit_symbol(unit: ifcopenshell.entity_instance) -> str:
+            prefix_symbols = {
+                "EXA": "E",
+                "PETA": "P",
+                "TERA": "T",
+                "GIGA": "G",
+                "MEGA": "M",
+                "KILO": "k",
+                "HECTO": "h",
+                "DECA": "da",
+                "DECI": "d",
+                "CENTI": "c",
+                "MILLI": "m",
+                "MICRO": "μ",
+                "NANO": "n",
+                "PICO": "p",
+                "FEMTO": "f",
+                "ATTO": "a",
+            }
+
+            unit_symbols = {
+                # si units
+                "CUBIC_METRE": "m3",
+                "GRAM": "g",
+                "SECOND": "s",
+                "SQUARE_METRE": "m2",
+                "METRE": "m",
+                "NEWTON": "N",
+                "PASCAL": "Pa",
+                # conversion based units
+                "pound-force": "lbf",
+                'pound-force per square inch': "psi",
+                "thou": "th",
+                "inch": "in",
+                "foot": "ft",
+                "yard": "yd",
+                "mile": "mi",
+                "square thou": "th2",
+                "square inch": "in2",
+                "square foot": "ft2",
+                "square yard": "yd2",
+                "acre": "ac",
+                "square mile": "mi2",
+                "cubic thou": "th3",
+                "cubic inch": "in3",
+                "cubic foot": "ft3",
+                "cubic yard": "yd3",
+                "cubic mile": "mi3",
+                "litre": "L",
+                "fluid ounce UK": "fl oz",
+                "fluid ounce US": "fl oz",
+                "pint UK": "pt",
+                "pint US": "pt",
+                "gallon UK": "gal",
+                "gallon US": "gal",
+                "degree": "°",
+                "ounce": "oz",
+                "pound": "lb",
+                "ton UK": "ton",
+                "ton US": "ton",
+                "lbf": "lbf",
+                "kip": "kip",
+                "psi": "psi",
+                "ksi": "ksi",
+                "minute": "min",
+                "hour": "hr",
+                "day": "day",
+                "btu": "btu",
+                "fahrenheit": "°F",
+            }
+            symbol = ""
+            if unit.is_a("IfcSIUnit"):
+                symbol += prefix_symbols.get(unit.Prefix, "")
+            symbol += unit_symbols.get(unit.Name.replace("METER", "METRE"), "?")
+            return symbol
+        
+        force_units = [u for u in tool.Ifc.get().by_type("IfcNamedUnit")
+                       if u.UnitType == "FORCEUNIT"]
+        linear_force_units = [u for u in tool.Ifc.get().by_type("IfcDerivedUnit")
+                              if u.UnitType == "LINEARFORCEUNIT"]
+        planar_force_units = [u for u in tool.Ifc.get().by_type("IfcDerivedUnit")
+                              if u.UnitType == "PLANARFORCEUNIT"]
+        
+        conversion_force_unit = [u for u in force_units if u.is_a("IfcConversionBasedUnit")]
+        if len(conversion_force_unit) == 0:
+            conversion_force_unit.append(force_units[0])
+        self.force_unit = get_unit_symbol(conversion_force_unit[0])
+        first = ""
+        second = ""
+        for e in linear_force_units[0].Elements:
+            if e.Unit.UnitType == "FORCEUNIT":
+                first = get_unit_symbol(e.Unit)
+            if e.Unit.UnitType == "LENGTHUNIT":
+                second = get_unit_symbol(e.Unit)
+        self.linear_force_unit = first + "/" + second
+        first = ""
+        second = ""
+        for e in planar_force_units[0].Elements:
+            if e.Unit.UnitType == "FORCEUNIT":
+                first = get_unit_symbol(e.Unit)
+            if e.Unit.UnitType == "LENGTHUNIT":
+                second = get_unit_symbol(e.Unit)+"2"
+            if e.Unit.UnitType == "AREAUNIT":
+                second = get_unit_symbol(e.Unit)
+        self.planar_force_unit = first + "/" + second
+        
+    def get_strucutural_elements_and_activities(self):
+
+        def populate_members_dict(dict_name,element, activity, factor):
+            dic = getattr(self,dict_name,None)
+            if dic is None:
+                return
+            member = dic.get(element.GlobalId)
+            if member is None:
+                dic.update({
+                    element.GlobalId: {
+                        "member": element,
+                        "activities": [(activity,factor)]}
+                    })
+            else:
+                member["activities"].append((activity,factor))
+
+        def recursive_subgroups(groups, rec_limit, factor = 1):
+            if len(groups) == 0 or rec_limit == 0:
+                return None
+            for group in groups:
+                subgorups = []
+                activities = []
+                relationship = [rel for rel in group.IsGroupedBy]
+                group_coef = group.Coefficient if group.Coefficient is not None else 1.0
+                rel_factor = 1.0
+
+                for rel in relationship:
+                    if rel.is_a("IfcRelAssignsToGroupByFactor"):
+                        rel_factor = rel.Factor if rel.Factor is not None else 1.0
+                    objects = rel.RelatedObjects
+                    subgorups = [sg for sg in objects if sg.is_a("IfcStructuralLoadGroup")]
+                    activities = [a for a in objects if a.is_a("IfcStructuralActivity")]
+                    factor = factor*group_coef*rel_factor
+                    for activity in activities:
+                        if len(activity.AssignedToStructuralItem):
+                            element = activity.AssignedToStructuralItem[0].RelatingElement
+                            if element is not None:
+                                if element.is_a("IfcStructuralCurveMember"):
+                                    self.curve_members.append(element)
+                                elif element.is_a("IfcStructuralPoinConnection"):
+                                    self.point_members.append(element)
+                                elif element.is_a("IfcStructuralSurfaceMember"):
+                                    populate_members_dict("surface_members",element,activity,factor)
+                    recursive_subgroups(subgorups,rec_limit-1,factor=factor)
+        
+        props = bpy.context.scene.BIMStructuralProperties
+        group_definition_id = int(props.load_group_to_show)
+        file = IfcStore.get_file()
+        groups = [file.by_id(group_definition_id)]
+        recursive_subgroups(groups,10)
+
         
     def get_shader(self, pattern):
         """ param: pattern: type of pattern in ["force", "force match", "moment"]
         return: shader"""
-        if self.shader_type == "DistributedLoad":
-            vert_out = gpu.types.GPUStageInterfaceInfo("my_interface")
-            vert_out.smooth('VEC3', "forces")
-            vert_out.smooth('VEC3', "co")
+        #if self.shader_type == "DistributedLoad":
+        vert_out = gpu.types.GPUStageInterfaceInfo("my_interface")
+        vert_out.smooth('VEC3', "forces")
+        vert_out.smooth('VEC3', "co")
+    
+        shader_info = gpu.types.GPUShaderCreateInfo()
+        shader_info.push_constant('MAT4', "viewProjectionMatrix")
+        shader_info.push_constant('VEC4', "color")
+        shader_info.push_constant('FLOAT', "spacing")
+        shader_info.push_constant('FLOAT', "maxload")
+    
+        shader_info.vertex_in(0, 'VEC3', "position")
+        shader_info.vertex_in(1, 'VEC3', "sin_quad_lin_forces")
+        shader_info.vertex_in(2, 'VEC3', "coord")
         
-            shader_info = gpu.types.GPUShaderCreateInfo()
-            shader_info.push_constant('MAT4', "viewProjectionMatrix")
-            shader_info.push_constant('VEC4', "color")
-            shader_info.push_constant('FLOAT', "spacing")
-            shader_info.push_constant('FLOAT', "maxload")
-        
-            shader_info.vertex_in(0, 'VEC3', "position")
-            shader_info.vertex_in(1, 'VEC3', "sin_quad_lin_forces")
-            shader_info.vertex_in(2, 'VEC3', "coord")
-            
-            shader_info.vertex_out(vert_out)
-            shader_info.fragment_out(0, 'VEC4', "FragColor")
-        
-            shader_info.vertex_source(
-                "void main()"
-                "{"
-                "  gl_Position = viewProjectionMatrix * vec4(position, 1.0f);"
-                "  co = coord;"
-                "  forces = sin_quad_lin_forces;"
-                "  gl_Position = viewProjectionMatrix * vec4(position, 1.0f);"
-                "}"
-            )
-        
-            if pattern == "force":
-                shader_info.fragment_source(
+        shader_info.vertex_out(vert_out)
+        shader_info.fragment_out(0, 'VEC4', "FragColor")
+    
+        shader_info.vertex_source(
             "void main()"
             "{"
-                "float x = co.x;"
-                "float y = co.y;"
-                "float abs_y = abs(y);"
-        
-                "float a = abs(mod(x,spacing)-0.5*spacing)*5.0;"
-                "float b = step(a,abs_y)*(step(abs_y,1.2*spacing));"
-                "float c = step(0.8*spacing,mod(x+0.4*spacing,spacing))*(step(1.2*spacing,abs_y));"
-        
-                "float sinvalue = forces.x;"
-                "float quadraticvalue = forces.y;"
-                "float linearvalue = forces.z;"
-                "x = co.x/co.z;"
-                "float f = (sin(x*3.1416)*sinvalue"
-                      "+(-4.*x*x+4.*x)*quadraticvalue"
-                      "+linearvalue)/maxload;"
-                "float mask = step(0.,y)*step(y,f)+step(y,0.)*step(f,y);"
-            
-                "float top = step(abs(y-f),0.2*1.2*spacing);"
-                "float d = clamp(0.1+top+b+c,0.0,0.5)*mask;"
-                "if (d == 0.0) discard;"
-                "FragColor = vec4(color.xyz,d*color.w);"
+            "  gl_Position = viewProjectionMatrix * vec4(position, 1.0f);"
+            "  co = coord;"
+            "  forces = sin_quad_lin_forces;"
             "}"
-            )
-
-            if pattern == "force match":
-                shader_info.fragment_source(
-            "void main()"
-            "{"
-                "float y = co.y;"
-                "float x = step(0.,y)*(co.z-co.x)+step(y,0.)*(co.x);"
-                "float abs_y = abs(y);"
+        )
+    
+        if pattern == "force":
+            shader_info.fragment_source(
+        "void main()"
+        "{"
+            "float x = co.x;"
+            "float y = co.y;"
+            "float abs_y = abs(y);"
+    
+            "float a = abs(mod(x,spacing)-0.5*spacing)*5.0;"
+            "float b = step(a,abs_y)*(step(abs_y,1.2*spacing));"
+            "float c = step(0.8*spacing,mod(x+0.4*spacing,spacing))*(step(1.2*spacing,abs_y));"
+    
+            "float sinvalue = forces.x;"
+            "float quadraticvalue = forces.y;"
+            "float linearvalue = forces.z;"
+            "x = co.x/co.z;"
+            "float f = (sin(x*3.1416)*sinvalue"
+                    "+(-4.*x*x+4.*x)*quadraticvalue"
+                    "+linearvalue)/maxload;"
+            "float mask = step(0.,y)*step(y,f)+step(y,0.)*step(f,y);"
         
-                "float a = abs(mod(abs_y,spacing)-0.5*spacing)*5.0;"
-                "float a2 = mod(x,3.0*spacing);"
-                "float b = step(a,a2)*step(a2,1.2*spacing);"
-                "float c = step(0.8*spacing,mod(abs_y+0.4*spacing,spacing))"
-                "*(step(1.2*spacing,a2))*step(a2,2.5*spacing);"
-                "float sinvalue = forces.x;"
-                "float quadraticvalue = forces.y;"
-                "float linearvalue = forces.z;"
-                "x = co.x/co.z;"
-                "float f = (sin(x*3.1416)*sinvalue"
-                      "+(-4.*x*x+4.*x)*quadraticvalue"
-                      "+linearvalue)/maxload;"
-                "float mask = step(0.,y)*step(y,f)+step(y,0.)*step(f,y);"
-            
-                "float top = step(abs(y-f),0.2*1.2*spacing);"
-                "float d = clamp(0.1+top+b+c,0.0,0.5)*mask;"
-                "if (d == 0.0) discard;"
-                "FragColor = vec4(color.xyz,d*color.w);"
-            "}"
-            )
+            "float top = step(abs(y-f),0.2*1.2*spacing);"
+            "float d = clamp(top+b+c,0.0,0.9)*mask;"
+            "if (d == 0.0) discard;"
+            "FragColor = vec4(color.xyz,d*color.w);"
+        "}"
+        )
 
-            if pattern == "moment":
-                shader_info.fragment_source(
-            "void main()"
-            "{"
-                "float x = step(co.y,0.)*(co.x)+step(0.,co.y)*(co.z-co.x);"
-                "float y = step(co.y,-0.00001)*(co.y)+step(0.,co.y)*(0.-co.y);"
-                "x = mod((0.5/spacing)*x,1.4)-0.7;"
-                "y = mod((0.5/spacing)*y,1.4)-0.7;"
-                "float abs_y = abs(y);"
-                "vec2 st = vec2(1.9*x,y);"
-                "vec2 orig = vec2(0.,0.);"
+        if pattern == "force match":
+            shader_info.fragment_source(
+        "void main()"
+        "{"
+            "float y = co.y;"
+            "float x = step(0.,y)*(co.z-co.x)+step(y,0.)*(co.x);"
+            "float abs_y = abs(y);"
+    
+            "float a = abs(mod(abs_y,spacing)-0.5*spacing)*5.0;"
+            "float a2 = mod(x,3.0*spacing);"
+            "float b = step(a,a2)*step(a2,1.2*spacing);"
+            "float c = step(0.8*spacing,mod(abs_y+0.4*spacing,spacing))"
+            "*(step(1.2*spacing,a2))*step(a2,2.5*spacing);"
+            "float sinvalue = forces.x;"
+            "float quadraticvalue = forces.y;"
+            "float linearvalue = forces.z;"
+            "x = co.x/co.z;"
+            "float f = (sin(x*3.1416)*sinvalue"
+                    "+(-4.*x*x+4.*x)*quadraticvalue"
+                    "+linearvalue)/maxload;"
+            "float mask = step(0.,y)*step(y,f)+step(y,0.)*step(f,y);"
         
-                "float circ = step(distance(st,orig),0.33)*step(0.27,distance(st,orig));"
-                "float tri_mask = step(st.y,st.x)+step(-st.x,st.y);"
-                "float circ_arrow = step(st.x,4.0*st.y-0.75)*step(0.25*st.y-0.34,st.x)*(1.-tri_mask);"
+            "float top = step(abs(y-f),0.2*1.2*spacing);"
+            "float d = clamp(top+b+c,0.0,0.9)*mask;"
+            "if (d == 0.0) discard;"
+            "FragColor = vec4(color.xyz,d*color.w);"
+        "}"
+        )
 
-                "float circmask = step(distance(st,orig),0.1)+step(0.5,distance(st,orig))+step(st.x,0.);"
-                "float body = step(-0.03,st.y)*step(st.y,0.03)*step(-0.3,x)*step(x,0.576);"
-                "float body_arrow = step(-0.5+3.*st.y,x)*step(-0.5-3.*st.y,x)*step(x,-0.3);"
-                "float d = clamp(circmask*(body+body_arrow)+circ_arrow+circ*tri_mask,0.,1.);"
+        if pattern == "moment":
+            shader_info.fragment_source(
+        "void main()"
+        "{"
+            "float x = step(co.y,0.)*(co.x)+step(0.,co.y)*(co.z-co.x);"
+            "float y = step(co.y,-0.00001)*(co.y)+step(0.,co.y)*(0.-co.y);"
+            "x = mod((0.5/spacing)*x,1.4)-0.7;"
+            "y = mod((0.5/spacing)*y,1.4)-0.7;"
+            "float abs_y = abs(y);"
+            "vec2 st = vec2(1.9*x,y);"
+            "vec2 orig = vec2(0.,0.);"
+    
+            "float circ = step(distance(st,orig),0.33)*step(0.27,distance(st,orig));"
+            "float tri_mask = step(st.y,st.x)+step(-st.x,st.y);"
+            "float circ_arrow = step(st.x,4.0*st.y-0.75)*step(0.25*st.y-0.34,st.x)*(1.-tri_mask);"
 
-                "float sinvalue = forces.x;"
-                "float quadraticvalue = forces.y;"
-                "float linearvalue = forces.z;"
-                "x = co.x/co.z;"
-                "float f = (sin(x*3.1416)*sinvalue"
-                      "+(-4.*x*x+4.*x)*quadraticvalue"
-                      "+linearvalue)/maxload;"
-                "float mask = step(0.,co.y)*step(co.y,f)+step(co.y,0.)*step(f,co.y);"
-            
-                "float top = step(abs(co.y-f),0.2*1.2*spacing);"
+            "float circmask = step(distance(st,orig),0.1)+step(0.5,distance(st,orig))+step(st.x,0.);"
+            "float body = step(-0.03,st.y)*step(st.y,0.03)*step(-0.3,x)*step(x,0.576);"
+            "float body_arrow = step(-0.5+3.*st.y,x)*step(-0.5-3.*st.y,x)*step(x,-0.3);"
+            "float d = clamp(circmask*(body+body_arrow)+circ_arrow+circ*tri_mask,0.,1.);"
 
-                "d = clamp(0.1+top+d,0.0,0.5)*mask;"
-                "if (d == 0.0) discard;"
-                "FragColor = vec4(color.xyz,d*color.w);"
-            "}"
-            )
+            "float sinvalue = forces.x;"
+            "float quadraticvalue = forces.y;"
+            "float linearvalue = forces.z;"
+            "x = co.x/co.z;"
+            "float f = (sin(x*3.1416)*sinvalue"
+                    "+(-4.*x*x+4.*x)*quadraticvalue"
+                    "+linearvalue)/maxload;"
+            "float mask = step(0.,co.y)*step(co.y,f)+step(co.y,0.)*step(f,co.y);"
         
-            shader = gpu.shader.create_from_info(shader_info)
-            del vert_out
-            del shader_info
-            return shader
+            "float top = step(abs(co.y-f),0.2*1.2*spacing);"
+
+            "d = clamp(top+d,0.0,0.9)*mask;"
+            "if (d == 0.0) discard;"
+            "FragColor = vec4(color.xyz,d*color.w);"
+        "}"
+        )
+    
+        shader = gpu.shader.create_from_info(shader_info)
+        del vert_out
+        del shader_info
+        return shader
     
     def get_point_shader(self, pattern):
         """ param: pattern: type of pattern in ["arrow", "circ arrow"]
@@ -212,6 +380,220 @@ class ShaderInfo:
         del vert_out
         del shader_info
         return shader
+    
+    def get_planar_shader(self):
+        """ param: pattern: type of pattern in ["force", "force match", "moment"]
+        return: shader"""
+        #if self.shader_type == "DistributedLoad":
+        vert_out = gpu.types.GPUStageInterfaceInfo("my_interface")
+        vert_out.smooth('VEC3', "co")
+    
+        shader_info = gpu.types.GPUShaderCreateInfo()
+        shader_info.push_constant('MAT4', "viewProjectionMatrix")
+        shader_info.push_constant('VEC4', "color")
+        shader_info.push_constant('FLOAT', "spacing")
+    
+        shader_info.vertex_in(0, 'VEC3', "position")
+        shader_info.vertex_in(1, 'VEC3', "coord")
+        
+        shader_info.vertex_out(vert_out)
+        shader_info.fragment_out(0, 'VEC4', "FragColor")
+    
+        shader_info.vertex_source(
+            "void main()"
+            "{"
+            "  gl_Position = viewProjectionMatrix * vec4(position, 1.0f);"
+            "  co = coord;"
+            "}"
+        )
+    
+        shader_info.fragment_source(
+        "void main()"
+        "{"
+            "float x = co.x;"
+            "float y = co.y;"
+            "float abs_y = abs(y);"
+    
+            "float a = abs(mod(x,spacing)-0.5*spacing)*5.0;"
+            "float b = step(a,abs_y)*(step(abs_y,1.2*spacing));"
+            "float c = step(0.8*spacing,mod(x+0.4*spacing,spacing))*(step(1.2*spacing,abs_y));"
+    
+            
+            "float mask = step(0.,y)*step(y,0.98)+step(y,0.)*step(0.98,y);"
+        
+            "float top = step(abs(y-0.98),0.2*1.2*spacing);"
+            "float d = clamp(0.2*y+(top+b+c)*mask,0.0,0.4);"
+            "FragColor = vec4(color.xyz,d*color.w);"
+        "}"
+        )#"float d = clamp(0.1+top+b+c,0.0,0.4);"
+    
+        shader = gpu.shader.create_from_info(shader_info)
+        del vert_out
+        del shader_info
+        return shader
+    
+    def get_planar_loads(self):
+        list_of_surfaces = self.surface_members
+        shader = self.get_planar_shader()
+        for value in list_of_surfaces.values():
+            surf = value["element"]
+            activity_list = [getattr(a, 'RelatedStructuralActivity', None) for a in getattr(surf, 'AssignedStructuralActivity', None)
+                             if getattr(a, 'RelatedStructuralActivity', None).is_a() in ['IfcStructuralPlanarAction','IfcStructuralSurfaceAction']]
+            if len(activity_list) == 0:
+                continue
+            blender_object: bpy.types.Object = IfcStore.get_element(getattr(surf, 'GlobalId', None))
+            mat = blender_object.matrix_world
+            mesh: bpy.types.Mesh = blender_object.data
+            z = Vector((0,0,1))
+            positions = []
+            indices = []
+            coord = []
+            for p in mesh.polygons:
+                add_index = len(positions)
+                for i, v in enumerate(p.vertices):
+                    p1 = mesh.vertices[v].co
+                    positions.append(p1)
+                    p2 = p1 + z
+                    positions.append(p2)
+                    if i == 0:
+                        coord.append((0,0,1))
+                        coord.append((0,1,1))
+                    else:
+                        vec = positions[-1] - positions [-3]
+                        l = vec.length
+                        coord.append((l,0,1))
+                        coord.append((l,1,1))
+                        add = add_index+2*i
+                        indices.append((0+add,2+add,1+add))
+                        indices.append((1+add,2+add,3+add))
+                length = len(p.vertices)-1
+                indices.append((length+add_index-1,length+add_index,0+add_index))
+                indices.append((length+add_index,0+add_index,1+add_index))
+                indices.append((1+add_index,3+add_index,5+add_index))
+                if len(p.vertices) > 3:
+                    indices.append((1+add_index,5+add_index,7+add_index))
+            
+            self.info.append(
+                    {
+                        "shader": shader,
+                        "args": {"position": positions, "coord": coord},
+                        "indices": indices,
+                        "uniforms": [["color", (0.2,0,1,1)],["spacing", 0.2]]
+                    }
+            )
+
+    def get_planar_loads_2(self):
+        list_of_surfaces = self.surface_members
+        shader = self.get_planar_shader()
+        maximum = 0
+        for value in list_of_surfaces.values():
+            surf = value["member"]
+            activity_list = [getattr(a, 'RelatedStructuralActivity', None) for a in getattr(surf, 'AssignedStructuralActivity', None)
+                             if getattr(a, 'RelatedStructuralActivity', None).is_a() in ['IfcStructuralPlanarAction','IfcStructuralSurfaceAction']]
+            activity_list = value["activities"]
+            if len(activity_list) == 0:
+                continue
+            values = self.get_planar_loads_values(activity_list)
+            if maximum == 0:
+                maximum = max([abs(float(i)) for i in values])
+                if maximum == 0:
+                    continue
+            blender_object: bpy.types.Object = IfcStore.get_element(getattr(surf, 'GlobalId', None))
+            mat = blender_object.matrix_world
+            mesh: bpy.types.Mesh = blender_object.data
+            rotation = self.get_surface_member_rotation(surf)
+            x = rotation @ (np.array((1,0,0))*0.2)
+            y = rotation @ (np.array((0,1,0))*0.2)
+            z = rotation @ (np.array((0,0,1))*0.2)
+
+            positions = []
+            indices = []
+            coord = []
+            bm = bmesh.new()
+            bm.from_mesh(mesh)
+            bmesh.ops.triangulate(bm, faces = bm.faces)
+            bm.edges.ensure_lookup_table()
+            bm.verts.ensure_lookup_table()
+            bm.faces.ensure_lookup_table()
+
+            add_index = len(positions)
+            for v in bm.verts:
+                p1 = np.array(mat @ v.co)
+                positions.append(p1)
+                p2 = p1 - (rotation@values)*0.2/maximum
+                positions.append(p2)
+                coord.append((float(p1[0]+p1[1]),0,1))
+                coord.append((float(p1[0]+p1[1]),1,1))
+            for e in bm.edges:
+                if len(e.link_faces) > 1:
+                    continue
+                indices.append((2*e.verts[0].index,
+                                2*e.verts[0].index+1,
+                                2*e.verts[1].index))
+                indices.append((2*e.verts[0].index+1,
+                                2*e.verts[1].index,
+                                2*e.verts[1].index+1))
+            for p in bm.faces:
+                indices.append((2*p.verts[0].index+1,
+                                2*p.verts[1].index+1,
+                                2*p.verts[2].index+1))
+            bmesh.ops.dissolve_limit(bm, angle_limit = 0.01, verts = bm.verts, edges = bm.edges)
+            bm.faces.ensure_lookup_table()
+            center = bm.faces[0].calc_center_bounds()
+
+            self.text_info.append(
+                {"position": mat @ center - Vector((rotation@values)*0.2/maximum),
+                "normal": Vector(mesh.polygons[0].normal),
+                "text": f'{values[2]:.5f} {self.planar_force_unit}'}
+                )
+            
+            self.info.append(
+                    {
+                        "shader": shader,
+                        "args": {"position": positions, "coord": coord},
+                        "indices": indices,
+                        "uniforms": [["color", (0.2,0,1,1)],["spacing", 0.2]]
+                    }
+            )
+    def get_planar_loads_values(self, activity_list):
+        values = np.zeros((3))
+        for item in activity_list:
+            activity = item[0]
+            factor = item[1]
+            load = activity.AppliedLoad
+            temp = np.zeros((3))
+            if load is not None and load.is_a("IfcStructuralLoadPlanarForce"):
+                temp[0] = load.PlanarForceX if load.PlanarForceX is not None else 0
+                temp[1] = load.PlanarForceY if load.PlanarForceY is not None else 0
+                temp[2] = load.PlanarForceZ if load.PlanarForceZ is not None else 0
+            temp = temp*factor
+            values = values + temp
+        return values
+
+    def get_surface_member_rotation(self,surface_member):
+        representation = ifcopenshell.util.representation.get_representation(surface_member, "Model")
+        repr_item = representation.Items[0]
+        placement = ifcopenshell.util.placement.get_axis2placement(repr_item.FaceSurface.Position)
+        rotation = placement[0:3,0:3]
+        return rotation
+
+    def get_point_connection_rotation(self, point_connection):
+        if point_connection.ConditionCoordinateSystem is not None:
+            placement = ifcopenshell.util.placement.get_axis2placement(point_connection.ConditionCoordinateSystem)
+        else:
+            placement = np.eye(4)
+        rotation = placement[0:3,0:3]
+        return rotation
+    
+    def get_curve_member_rotation(self, curve_member):
+        z = curve_member.Axis.DirectionRatios
+        edge = curve_member.Representation.Representations[0].Items[0]
+        origin = edge.EdgeStart.VertexGeometry.Coordinates
+        end = edge.EdgeEnd.VertexGeometry.Coordinates
+        x = [c2 - c1 for c1, c2 in zip(origin, end)]
+        placement = ifcopenshell.util.placement.a2p(origin,z,x)
+        rotation = placement[0:3,0:3]
+        return rotation
 
     def get_point_loads(self):
         list_of_point_connections = tool.Ifc.get().by_type("IfcStructuralPointConnection")
@@ -223,9 +605,9 @@ class ShaderInfo:
             blender_object = IfcStore.get_element(getattr(conn, 'GlobalId', None))
             if blender_object.type == 'MESH':
                 conn_location = blender_object.matrix_world @ blender_object.data.vertices[0].co
-            #get local coordinates of the connection
-            loads = self.get_point_loads_list(activity_list)
-            self.get_point_shader_args(loads, conn_location)
+                #get local coordinates of the connection
+                loads = self.get_point_loads_list(activity_list)
+                self.get_point_shader_args(loads, conn_location)
 
     def get_point_shader_args(self,loads, location):
         indices = []
@@ -288,7 +670,7 @@ class ShaderInfo:
                         "shader": shader,
                         "args": {"position": position,"coord": coords_for_shader},
                         "indices": indices,
-                        "uniforms": [["color", color]]#,["spacing", 0.2]]
+                        "uniforms": [["color", color]]
                     }
                 )
 
@@ -316,6 +698,7 @@ class ShaderInfo:
         info = []
     
         list_of_curve_members = tool.Ifc.get().by_type("IfcStructuralCurveMember")
+        list_of_curve_members = self.curve_members
         for member in list_of_curve_members:
             activity_list = [getattr(a, 'RelatedStructuralActivity', None) for a in getattr(member, 'AssignedStructuralActivity', None)
                              if getattr(a, 'RelatedStructuralActivity', None).is_a() in ['IfcStructuralCurveAction','IfcStructuralLinearAction']]
@@ -403,7 +786,8 @@ class ShaderInfo:
                         if func:
                             text_info.append(
                                 {"position": -1*direction*func/maxforce + start_co + x_axis*current.x,
-                                "normal": direction.cross(x_axis).normalized(), "text": f'{func:.2f} '}
+                                "normal": direction.cross(x_axis).normalized(),
+                                "text": f'{func:.2f} {self.linear_force_unit}'}
                                 )
                         maxforce = max(maxforce,abs(func))
                         position.append(positive)
@@ -430,7 +814,8 @@ class ShaderInfo:
                             if func:
                                 text_info.append(
                                     {"position": -1*direction*func/maxforce + start_co + x_axis*nextitem.x,
-                                    "normal": direction.cross(x_axis).normalized(), "text": f'{func:.2f} '}
+                                    "normal": direction.cross(x_axis).normalized(),
+                                    "text": f'{func:.2f} {self.linear_force_unit}'}
                                     )
                             maxforce = max(maxforce,abs(func))
                             position.append(positive)
