@@ -20,15 +20,11 @@ import os
 import bpy
 import json
 import ifcopenshell
+import ifcpatch
 import bonsai.tool as tool
 import bonsai.core.patch as core
 import bonsai.bim.handler
 from pathlib import Path
-
-try:
-    import ifcpatch
-except:
-    print("IfcPatch not available")
 
 
 class SelectIfcPatchInput(bpy.types.Operator):
@@ -71,6 +67,9 @@ class ExecuteIfcPatch(bpy.types.Operator):
     @classmethod
     def poll(cls, context):
         props = context.scene.BIMPatchProperties
+        if props.ifc_patch_recipes == "-":
+            cls.poll_message_set("No recipe selected.")
+            return False
         if not props.should_load_from_memory and not props.ifc_patch_input:
             cls.poll_message_set("Select an IFC file or use 'load from memory' if it's loaded in Bonsai.")
             return False
@@ -112,7 +111,7 @@ class UpdateIfcPatchArguments(bpy.types.Operator):
     recipe: bpy.props.StringProperty()
 
     def execute(self, context):
-        if self.recipe == "":
+        if self.recipe == "-":
             print("No Recipe Selected. Impossible to load arguments")
             return {"FINISHED"}
         patch_args = context.scene.BIMPatchProperties.ifc_patch_args_attr
@@ -152,7 +151,7 @@ class UpdateIfcPatchArguments(bpy.types.Operator):
                 new_attr.set_value(arg_info.get("default", new_attr.get_value_default()))
         return {"FINISHED"}
 
-    def pretty_arg_name(self, arg_name: str):
+    def pretty_arg_name(self, arg_name: str) -> str:
         words = []
 
         for word in arg_name.split("_"):

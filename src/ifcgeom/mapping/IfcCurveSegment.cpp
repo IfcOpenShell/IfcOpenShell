@@ -321,19 +321,20 @@ class curve_segment_evaluator {
 
 #ifdef SCHEMA_HAS_IfcClothoid
     void operator()(const IfcSchema::IfcClothoid* c) {
-        auto A = c->ClothoidConstant();
+        auto A = c->ClothoidConstant() * length_unit_;
+        auto L = length(); // already includes length_unit_
 
         if (segment_type_ == ST_CANT) {
             boost::optional<std::function<double(double)>> super, slope;
             std::tie(super, slope) = get_superelevation_functions();
-            auto cant = [A, L = length_ * length_unit_](double t) -> double { return A ? L * A * t / fabs(pow(A, 3)) : 0.0; };
+            auto cant = [A, L](double t) -> double { return A ? L * A * t / fabs(pow(A, 3)) : 0.0; };
 
             if (!super.has_value()) {
                 super = cant;
             }
 
             if (!slope.has_value()) {
-                slope= [A, L = length_ * length_unit_](double /*t*/) -> double { return A ? L * A / fabs(pow(A, 3)) : 0.0; };
+                slope = [A, L](double /*t*/) -> double { return A ? L * A / fabs(pow(A, 3)) : 0.0; };
             }
 
            set_cant_spiral_function(*super,*slope, cant);
@@ -349,13 +350,16 @@ class curve_segment_evaluator {
 #if defined SCHEMA_HAS_IfcCosineSpiral
     void operator()(const IfcSchema::IfcCosineSpiral* c) {
         auto constant_term = c->ConstantTerm();
-        auto cosine_term = c->CosineTerm();
-        auto L = length() * length_unit_;
+        if (constant_term.has_value()) {
+            constant_term.value() *= length_unit_;
+        }
+        auto cosine_term = c->CosineTerm() * length_unit_;
+        auto L = length(); // already converted to internal units by constructor
         if (segment_type_ == ST_HORIZONTAL) {
 
-            auto theta = [constant_term, cosine_term, L, lu = length_unit_](double t) -> double {
-                auto a0 = constant_term.has_value() ? t / (constant_term.value() * lu) : 0.0;
-                auto a1 = (L / PI) * (1.0 / (cosine_term * lu)) * sin((PI / L) * t);
+            auto theta = [constant_term, cosine_term, L](double t) -> double {
+                auto a0 = constant_term.has_value() ? t / constant_term.value() : 0.0;
+                auto a1 = (L / PI) * (1.0 / cosine_term) * sin((PI / L) * t);
                 return a0 + a1;
             };
             auto fn_x = [theta](double t) -> double { return cos(theta(t)); };
@@ -366,9 +370,9 @@ class curve_segment_evaluator {
             boost::optional<std::function<double(double)>> super, slope;
             std::tie(super, slope) = get_superelevation_functions();
             
-            auto cant = [constant_term, cosine_term, L, lu = length_unit_](double t) -> double {
-                auto a0 = constant_term.has_value() ? L / (constant_term.value() * lu) : 0.0;
-                auto a1 = (L / (cosine_term * lu)) * cos(PI * t * lu / L);
+            auto cant = [constant_term, cosine_term, L](double t) -> double {
+                auto a0 = constant_term.has_value() ? L / constant_term.value() : 0.0;
+                auto a1 = (L / cosine_term) * cos(PI * t / L);
                 return a0 + a1;
             };
 
@@ -377,8 +381,8 @@ class curve_segment_evaluator {
             }
 
             if (!slope.has_value()) {
-                slope = [cosine_term, L, lu = length_unit_](double t) -> double {
-                    auto a1 = -(PI / L) * (L / (cosine_term * lu)) * sin(PI * t * lu / L);
+                slope = [cosine_term, L](double t) -> double {
+                    auto a1 = -(PI / cosine_term) * sin(PI * t / L);
                     return a1;
                 };
             }
@@ -397,14 +401,20 @@ class curve_segment_evaluator {
 #if defined SCHEMA_HAS_IfcSineSpiral
     void operator()(const IfcSchema::IfcSineSpiral* c) {
         auto constant_term = c->ConstantTerm();
+        if (constant_term.has_value()) {
+            constant_term.value() *= length_unit_;
+        }
         auto linear_term = c->LinearTerm();
-        auto sine_term = c->SineTerm();
-        auto L = length() * length_unit_;
+        if (linear_term.has_value()) {
+            linear_term.value() *= length_unit_;
+        }
+        auto sine_term = c->SineTerm() * length_unit_;
+        auto L = length(); // already converted to internal units by constructor
         if (segment_type_ == ST_HORIZONTAL) {
-            auto theta = [constant_term, linear_term, sine_term, L, lu = length_unit_](double t) -> double {
-                auto a0 = constant_term.has_value() ? t / (constant_term.value() * lu) : 0.0;
-                auto a1 = linear_term.has_value() ? sign(linear_term.value()) * pow(t / (linear_term.value() * lu), 2.0) / 2.0 : 0.0;
-                auto a2 = -1.0 * (L / (2 * PI * sine_term * lu)) * (cos(2 * PI * t / L) - 1.0);
+            auto theta = [constant_term, linear_term, sine_term, L](double t) -> double {
+                auto a0 = constant_term.has_value() ? t / constant_term.value() : 0.0;
+                auto a1 = linear_term.has_value() ? sign(linear_term.value()) * pow(t / linear_term.value(), 2.0) / 2.0 : 0.0;
+                auto a2 = -1.0 * (L / (2 * PI * sine_term)) * (cos(2 * PI * t / L) - 1.0);
                 return a0 + a1 + a2;
             };
             auto fn_x = [theta](double t) -> double { return cos(theta(t)); };
@@ -415,10 +425,10 @@ class curve_segment_evaluator {
             boost::optional<std::function<double(double)>> super, slope;
             std::tie(super, slope) = get_superelevation_functions();
             
-            auto cant = [constant_term, linear_term, sine_term, L, lu = length_unit_](double t) -> double {
-               auto a0 = constant_term.has_value() ? L / (constant_term.value() * lu) : 0.0;
-               auto a1 = linear_term.has_value() ? sign(linear_term.value()) * pow(L / (linear_term.value() * lu), 2.0) * (t / L) : 0.0;
-               auto a2 = (L / (sine_term * lu)) * sin(2 * PI * t / L);
+            auto cant = [constant_term, linear_term, sine_term, L](double t) -> double {
+               auto a0 = constant_term.has_value() ? L / constant_term.value() : 0.0;
+               auto a1 = linear_term.has_value() ? sign(linear_term.value()) * pow(L / linear_term.value(), 2.0) * (t / L) : 0.0;
+               auto a2 = (L / sine_term) * sin(2 * PI * t / L);
                return a0 + a1 + a2;
             };
 
@@ -427,9 +437,9 @@ class curve_segment_evaluator {
             }
 
             if (!slope.has_value()) {
-                slope = [linear_term, sine_term, L, lu = length_unit_](double t) -> double {
-                    auto a1 = linear_term.has_value() ? sign(linear_term.value()) * pow(L / (linear_term.value() * lu), 2.0) * (1.0 / L) : 0.0;
-                    auto a2 = (2 * PI / L) * (L / (sine_term * lu)) * cos(2 * PI * t / L);
+                slope = [linear_term, sine_term, L](double t) -> double {
+                    auto a1 = linear_term.has_value() ? sign(linear_term.value()) * pow(L / linear_term.value(), 2.0) * (1.0 / L) : 0.0;
+                    auto a2 = (2 * PI / sine_term) * cos(2 * PI * t / L);
                     return a1 + a2;
                 };
             }
@@ -469,7 +479,7 @@ class curve_segment_evaluator {
         boost::optional<std::function<double(double)>> super, slope;
         std::tie(super, slope) = get_superelevation_functions();
 
-        auto cant = [A0, A1, A2, A3, A4, A5, A6, A7, start = start_ * length_unit_, L = length_ * length_unit_, lu = length_unit_, length = length_](double t) {
+        auto cant = [A0, A1, A2, A3, A4, A5, A6, A7, start = start_, L = length_, lu = length_unit_, length = length_](double t) {
             t += start;
             auto a0 = A0.has_value() ? 1 / (A0.value() * lu) : 0.0;
             auto a1 = A1.has_value() ? A1.value() * lu * t / fabs(std::pow(A1.value() * lu, 3)) : 0.0;
@@ -487,7 +497,7 @@ class curve_segment_evaluator {
         }
 
         if (!slope.has_value()) {
-            slope = [A1, A2, A3, A4, A5, A6, A7, start = start_ * length_unit_, L = length_ * length_unit_, lu = length_unit_, length = length_](double t) {
+            slope = [A1, A2, A3, A4, A5, A6, A7, start = start_, L = length_, lu = length_unit_, length = length_](double t) {
                 t += start;
                 auto a1 = A1.has_value() ? A1.value() * lu / fabs(std::pow(A1.value() * lu, 3)) : 0.0;
                 auto a2 = A2.has_value() ? 2 * t / std::pow(A2.value() * lu, 3) : 0.0;
@@ -696,6 +706,14 @@ class curve_segment_evaluator {
        auto pcDx = dr[0];
        auto pcDy = dr[1];
 
+       if (segment_type_ == ST_VERTICAL && placement_) {
+          // the general algorithm for mapping parent curve onto curve segment doesn't
+          // exactly work for IfcLine. This is easily overcome by using the curve segment
+          // placement for the IfcLine direction
+          pcDx = (*placement_)(0, 0);
+          pcDy = (*placement_)(1, 0);
+       }
+
        if (segment_type_ == ST_HORIZONTAL || segment_type_ == ST_VERTICAL || segment_type_ == ST_CANT) {
           std::function<double(double)> convert_u;
           if (segment_type_ == ST_HORIZONTAL || segment_type_ == ST_CANT) {
@@ -734,8 +752,6 @@ class curve_segment_evaluator {
             Logger::Warning("Expected IfcPolynomialCurve.CoefficientsZ to be undefined for alignment geometry. Coefficients ignored.", pc);
         }
 
-        auto length_unit = length_unit_;
-
         if (segment_type_ == ST_HORIZONTAL || segment_type_ == ST_VERTICAL) {
             projected_length_ = length_;
 
@@ -750,17 +766,16 @@ class curve_segment_evaluator {
                 // Distance along the curve is  Integral[0,x] (sqrt(f'(x)^2 + 1) dx
 
                 // This functor is the derivative of y(x) => dy/dx = f'(x)
-                auto df = [coeffY, length_unit](double x) -> double {
+                auto df = [lu=length_unit_,coeffY](double x) -> double {
                     auto begin = std::next(coeffY.begin());
                     auto iter = begin;
                     auto end = coeffY.end();
-                    auto length_conversion = length_unit;
                     double value = 0;
+                    double lu_exp = 0.0;
                     for (; iter != end; iter++) {
                         auto exp = std::distance(begin, iter);
-                        auto coeff = (*iter) * length_conversion;
-                        value += (double)exp * coeff * pow(x, exp);
-                        length_conversion /= length_unit;
+                        auto coeff = (*iter);
+                        value += (double)exp * coeff * pow(lu, lu_exp--) * pow(x, exp - 1);
                     }
                     return value;
                 };
@@ -800,26 +815,24 @@ class curve_segment_evaluator {
             }
 
             // This functor evaluates the polynomial at a distance u along the curve
-            parent_curve_fn_ = [start = start_, coeffX, coeffY, length_unit, convert_u](double u) -> Eigen::Matrix4d {
+            parent_curve_fn_ = [start = start_, lu = length_unit_, coeffX, coeffY, convert_u](double u) -> Eigen::Matrix4d {
                 auto x = convert_u(u + start); // find x for u
                 // evaluate the polynomial at x
                 std::array<const std::vector<double>*, 2> coefficients{&coeffX, &coeffY};
                 std::array<double, 2> position{0.0, 0.0}; // = SUM(coeff*u^pos)
                 std::array<double, 2> slope{0.0, 0.0};    // slope is derivative of the curve = SUM( coeff*pos*u^(pos-1) )
                 for (int i = 0; i < 2; i++) {             // loop over X and Y
-                    auto length_conversion = length_unit;
                     auto begin = coefficients[i]->cbegin();
                     auto end = coefficients[i]->cend();
+                    double lu_exp = 1.0;
                     for (auto iter = begin; iter != end; iter++) {
                         auto exp = std::distance(begin, iter);
-                        auto coeff = (*iter) * length_conversion;
-                        position[i] += coeff * pow(x, exp);
+                        auto coeff = (*iter);
+                        position[i] += coeff * pow(lu, lu_exp--) * pow(x, exp);
 
                         if (iter != begin) {
-                            slope[i] += coeff * exp * pow(x, exp - 1);
+                            slope[i] += coeff * pow(lu, lu_exp) * exp * pow(x, exp - 1);
                         }
-
-                        length_conversion /= length_unit;
                     }
                 }
 

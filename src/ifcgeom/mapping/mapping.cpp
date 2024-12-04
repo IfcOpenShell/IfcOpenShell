@@ -178,7 +178,16 @@ aggregate_of_instance::ptr mapping::find_openings(const IfcUtil::IfcBaseEntity* 
     if (obdef != nullptr) {
         for (;;) {
             auto decomposes = obdef->Decomposes()->generalize();
-            if (decomposes->size() != 1) break;
+            if (decomposes->size() != 1) {
+                // If we have multiple decompositions, not allowed by schema,
+                // openings associated to relating decompositions are not
+                // considered;
+                break;
+            }
+            if ((*decomposes->begin())->as<IfcSchema::IfcRelAggregates>() == nullptr) {
+                // Only aggregation, not nesting is considered.
+                break;
+            }
             IfcSchema::IfcObjectDefinition* rel_obdef = (*decomposes->begin())->as<IfcSchema::IfcRelAggregates>()->RelatingObject();
             if (rel_obdef->as<IfcSchema::IfcElement>() && !rel_obdef->as<IfcSchema::IfcFeatureElementSubtraction>()) {
                 IfcSchema::IfcElement* element = rel_obdef->as<IfcSchema::IfcElement>();
@@ -430,11 +439,11 @@ namespace {
         }
 #endif
 
-        IfcSchema::IfcSurfaceStyle *surface_style = nullptr;
+        IfcSchema::IfcSurfaceStyle *surface_style_ = nullptr;
         for (auto& style : prs_styles) {
-            if (style->declaration().is(IfcSchema::IfcSurfaceStyle::Class())) {
-                surface_style = (IfcSchema::IfcSurfaceStyle*)style;
+            if (auto surface_style = style->as<IfcSchema::IfcSurfaceStyle>()) {
                 if (surface_style->Side() != IfcSchema::IfcSurfaceSide::IfcSurfaceSide_NEGATIVE) {
+                    surface_style_ = surface_style;
                     auto styles_elements = surface_style->Styles();
                     for (auto mt = styles_elements->begin(); mt != styles_elements->end(); ++mt) {
                         if ((*mt)->template as<T>()) {
@@ -444,7 +453,7 @@ namespace {
                 }
             }
         }
-        return std::make_pair(surface_style, nullptr);
+        return std::make_pair(surface_style_, nullptr);
     }
 
     bool process_colour(IfcSchema::IfcColourRgb* colour, double* rgb) {
@@ -546,6 +555,18 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcStyledItem* inst) {
         return nullptr;
     }
 
+    // map and not map_impl otherwise no caching
+    return map(style);
+}
+
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSurfaceStyle* style) {
+    auto styles = style->Styles();
+    IfcSchema::IfcSurfaceStyleShading* shading = nullptr;
+    for (auto& s : *styles) {
+        if (shading = s->as<IfcSchema::IfcSurfaceStyleShading>()) {
+            break;
+        }
+    }
     taxonomy::style::ptr surface_style = taxonomy::make<taxonomy::style>();
     surface_style->instance = style;
     if (settings_.get<settings::UseMaterialNames>().get() && style->Name()) {
@@ -610,7 +631,6 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcStyledItem* inst) {
     
     return surface_style;
 }
-
 
 taxonomy::ptr mapping::map(const IfcBaseInterface* inst) {
     auto iden = inst->as<IfcUtil::IfcBaseClass>()->identity();

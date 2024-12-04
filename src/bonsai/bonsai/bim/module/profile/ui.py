@@ -71,7 +71,14 @@ class BIM_PT_profiles(Panel):
             return
 
         row = self.layout.row(align=True)
-        row.prop(self.props, "profile_classes", text="")
+        if self.props.profile_classes == "IfcArbitraryClosedProfileDef":
+            split = row.split(factor=0.5, align=True)
+            row = split.row(align=True)
+            row.prop(self.props, "profile_classes", text="")
+            row = split.row(align=True)
+            row.prop(self.props, "object_to_profile", text="")
+        else:
+            row.prop(self.props, "profile_classes", text="")
         row.operator("bim.add_profile_def", text="", icon="ADD")
         row.operator("bim.duplicate_profile_def", icon="DUPLICATE", text="")
 
@@ -83,6 +90,10 @@ class BIM_PT_profiles(Panel):
             self.props,
             "active_profile_index",
         )
+
+        row = self.layout.row()
+        row.prop(self.props, "is_filtering_material_profiles", text="Filter Material Profiles")
+
         if active_profile:
             if active_profile.ifc_class in (
                 "IfcArbitraryClosedProfileDef",

@@ -141,6 +141,13 @@ class UnlinkStyle(bpy.types.Operator, tool.Ifc.Operator):
             core.remove_style(tool.Ifc, tool.Style, style)
         else:
             material_copy.use_fake_user = True
+            # Need to reload Styles UI since it's item is now pointing to wrong Blender material.
+            if (
+                tool.Style.is_editing_styles()
+                and (style_type := tool.Style.get_active_style_type())
+                and style_type == style.is_a()
+            ):
+                tool.Style.import_presentation_styles(style_type)
 
         # Ensure there won't be any style sync on project save:
         # bim.update_representation would create new IfcSurfaceStyle
@@ -219,10 +226,12 @@ class UpdateCurrentStyle(bpy.types.Operator):
             context.scene.BIMStylesProperties.active_style_type = current_style_type
             return {"FINISHED"}
 
+        updated_materials = set()
         for obj in context.selected_objects:
             for mat in obj.data.materials:
-                if mat and mat.BIMStyleProperties.ifc_definition_id != 0:
+                if mat and mat not in updated_materials and mat.BIMStyleProperties.ifc_definition_id != 0:
                     mat.BIMStyleProperties.active_style_type = current_style_type
+                    updated_materials.add(mat)
         return {"FINISHED"}
 
 
@@ -317,7 +326,10 @@ class BrowseExternalStyle(bpy.types.Operator):
         layout.label(text="Data Block Type")
         layout.prop(self, "data_block_type", text="", icon="GROUP")
         layout.label(text="Data Block")
-        layout.prop(self, "data_block", text="")
+        cls = BrowseExternalStyle
+        bonsai.bim.helper.prop_with_search(
+            layout, self, "data_block", text="", original_operator_path=f"{cls.__module__}.{cls.__name__}"
+        )
         if Path(tool.Ifc.get_path()).is_file():
             layout.prop(self, "use_relative_path")
         else:
@@ -374,8 +386,13 @@ class ActivateExternalStyle(bpy.types.Operator):
         else:
             material = bpy.data.materials[self.material_name]
 
+        style = tool.Ifc.get_entity(material)
+        if not style:
+            self.report({"INFO"}, "Material '{self.material_name}' is not an IFC style.")
+            return {"CANCELLED"}
+
         props = context.scene.BIMStylesProperties
-        if props.is_editing:
+        if props.is_editing_style == style.id() and props.is_editing_class == "IfcExternallyDefinedSurfaceStyle":
             location = props.external_style_attributes["Location"].string_value
             identification = props.external_style_attributes["Identification"].string_value
         else:
@@ -1053,7 +1070,6 @@ class AssignStyleToSelected(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Assign Style To Selected"
     bl_description = "Assign style to the selected objects' active representations"
     bl_options = {"REGISTER", "UNDO"}
-
     style_id: bpy.props.IntProperty(name="Style ID")
 
     @classmethod
@@ -1069,18 +1085,29 @@ class AssignStyleToSelected(bpy.types.Operator, tool.Ifc.Operator):
             return {"CANCELLED"}
         ifc_file = tool.Ifc.get()
         style = ifc_file.by_id(self.style_id)
+        material = tool.Ifc.get_object(style)
 
+        has_items = False
         representations: dict[ifcopenshell.entity_instance, bpy.types.Object] = {}
         for obj in context.selected_objects:
-            representation = tool.Geometry.get_active_representation(obj)
-            if not representation:
-                continue
-            representation = tool.Geometry.resolve_mapped_representation(representation)
-            representations.setdefault(representation, obj)
+            if tool.Geometry.is_representation_item(obj):
+                has_items = True
+                item = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+                tool.Style.assign_style_to_representation_item(item, style)
+                obj.data.materials.clear()
+                obj.data.materials.append(material)
+            elif representation := tool.Geometry.get_active_representation(obj):
+                representation = tool.Geometry.resolve_mapped_representation(representation)
+                representations.setdefault(representation, obj)
 
-        if not representations:
+        if not has_items and not representations:
             self.report({"INFO"}, "No IFC objects with representations selected.")
             return {"FINISHED"}
+
+        if has_items:
+            tool.Geometry.reload_representation(context.scene.BIMGeometryProperties.representation_obj)
+            bpy.ops.bim.disable_editing_representation_items()
+            bpy.ops.bim.enable_editing_representation_items()
 
         for representation in representations:
             ifcopenshell.api.style.assign_representation_styles(
@@ -1091,4 +1118,24 @@ class AssignStyleToSelected(bpy.types.Operator, tool.Ifc.Operator):
             )
 
         tool.Geometry.reload_representation(representations.values())
+        return {"FINISHED"}
+
+
+class SelectStyleInStylesUI(bpy.types.Operator):
+    bl_idname = "bim.styles_ui_select"
+    bl_label = "Select Style In Styles UI"
+    bl_options = {"REGISTER", "UNDO"}
+    style_id: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = bpy.context.scene.BIMStylesProperties
+        ifc_file = tool.Ifc.get()
+        style = ifc_file.by_id(self.style_id)
+        core.load_styles(tool.Style, style.is_a())
+
+        props.active_style_index = next((i for i, m in enumerate(props.styles) if m.ifc_definition_id == self.style_id))
+        self.report(
+            {"INFO"},
+            f"Style '{style.Name or 'Unnamed'}' is selected in Styles UI.",
+        )
         return {"FINISHED"}

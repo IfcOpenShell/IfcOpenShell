@@ -18,6 +18,7 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.pset
 import ifcopenshell.util.pset
 import ifcopenshell.util.element
 from logging import Logger
@@ -65,8 +66,12 @@ class Patcher:
         self.destination_quantity_name = quantity_name
 
     def patch(self) -> None:
-        self.qto_template_cache = {}
-        self.psetqto = ifcopenshell.util.pset.get_template("IFC4")
+        self.qto_template_cache: dict[str, list[ifcopenshell.entity_instance]] = {}
+        templates_schema = self.file.schema
+        # No official qto templates in IFC2X3, fallback to IFC4.
+        if templates_schema == "IFC2X3":
+            templates_schema = "IFC4"
+        self.psetqto = ifcopenshell.util.pset.get_template(templates_schema)
 
         for product in self.file.by_type("IfcTypeProduct"):
             self.process_product(product, product.HasPropertySets or [])
@@ -82,7 +87,7 @@ class Patcher:
     ) -> None:
         value = None
         has_quantity = False
-        qtos = {}
+        qtos: dict[str, ifcopenshell.entity_instance] = {}
         for definition in definitions or []:
             if definition.is_a("IfcPropertySet"):
                 for prop in definition.HasProperties:
@@ -95,11 +100,11 @@ class Patcher:
                         has_quantity = True
 
         if value and not has_quantity:
-            qto_name = self.get_qto_name(product.is_a())
-            qto = qtos.get(qto_name, ifcopenshell.api.run("pset.add_qto", self.file, product=product, Name=qto_name))
-            ifcopenshell.api.run(
-                "pset.edit_qto", self.file, qto=qto, Properties={self.destination_quantity_name: value}
-            )
+            qto_name = self.get_qto_name(product.is_a()) or "UnnamedQset"
+            qto = qtos.get(qto_name)
+            if qto is None:
+                qto = ifcopenshell.api.pset.add_qto(self.file, product=product, name=qto_name)
+            ifcopenshell.api.pset.edit_qto(self.file, qto=qto, properties={self.destination_quantity_name: value})
 
     def get_qto_name(self, ifc_class: str) -> Union[str, None]:
         for template in self.get_qto_templates(ifc_class):

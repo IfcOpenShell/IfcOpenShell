@@ -42,7 +42,7 @@ from mathutils import Vector, Matrix
 from time import time
 from bonsai.bim.ifc import IfcStore
 from ifcopenshell.util.shape_builder import ShapeBuilder
-from typing import Any, Union
+from typing import Any, Union, Literal, get_args, TYPE_CHECKING, assert_never
 from bonsai.bim.module.model.decorator import ProfileDecorator
 
 
@@ -386,11 +386,30 @@ class UpdateRepresentation(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Update Representation"
     bl_description = (
         "Write selected objects representations to IFC.\n"
-        "A star in the operator name indicates that active object representation in IFC is not yet synced with Blender"
+        "A star in the operator name indicates that active object representation in IFC is not yet synced with Blender.\n"
+        "ALT+CLICK to apply openings to the mesh"
     )
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     ifc_representation_class: bpy.props.StringProperty()
+    apply_openings: bpy.props.BoolProperty(
+        name="Apply Openings",
+        description=(
+            "Whether to apply openings to the mesh.\n"
+            "If False, operator will skip updating representation that has openings"
+        ),
+        default=False,
+        options={"SKIP_SAVE"},
+    )
+
+    from_ui = False
+
+    def invoke(self, context, event):
+        if event.type == "LEFTMOUSE" and event.alt:
+            self.apply_openings = True
+
+        self.from_ui = True
+        return self.execute(context)
 
     def _execute(self, context):
         if context.view_layer.objects.active and context.view_layer.objects.active.mode != "OBJECT":
@@ -410,14 +429,21 @@ class UpdateRepresentation(bpy.types.Operator, tool.Ifc.Operator):
                 continue
             self.update_obj_mesh_representation(context, obj)
             tool.Ifc.finish_edit(obj)
+        tool.Geometry.reload_representation(objs)
         return {"FINISHED"}
 
     def update_obj_mesh_representation(self, context: bpy.types.Context, obj: bpy.types.Object) -> None:
         product = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         material = ifcopenshell.util.element.get_material(product, should_skip_usage=True)
 
-        if getattr(product, "HasOpenings", False) and obj.data.BIMMeshProperties.has_openings_applied:
+        # NOTE: Currently iterator doesn't detect whether opening is actually affected the representation
+        # or it's just present on the element. In theory, we can also allow editing representations
+        # if we know that representation wasn't affected by existing openings.
+        has_openings = tool.Geometry.has_openings(product) and obj.data.BIMMeshProperties.has_openings_applied
+        if has_openings and not self.apply_openings:
             # Meshlike things with openings can only be updated without openings applied.
+            if self.from_ui:
+                self.report({"ERROR"}, f"Object '{obj.name}' has openings - representation cannot be updated.")
             return
 
         if not product.is_a("IfcGridAxis"):
@@ -433,7 +459,7 @@ class UpdateRepresentation(bpy.types.Operator, tool.Ifc.Operator):
             ifcopenshell.api.run("boundary.assign_connection_geometry", tool.Ifc.get(), **settings)
             return
 
-        if tool.Ifc.is_moved(obj):
+        if tool.Ifc.is_moved(obj) or tool.Geometry.is_scaled(obj):
             core.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
 
         if material and material.is_a() in ["IfcMaterialProfileSet", "IfcMaterialLayerSet"]:
@@ -501,6 +527,17 @@ class UpdateRepresentation(bpy.types.Operator, tool.Ifc.Operator):
         # TODO: move this into a replace_representation usecase or something
         for inverse in self.file.get_inverse(old_representation):
             ifcopenshell.util.element.replace_attribute(inverse, old_representation, new_representation)
+
+        # As openings are already 'baked' to the geometry, we mark their representation as 'Reference'
+        # as they're not part of the object representation anymore.
+        if has_openings and self.apply_openings:
+            ifc_context = new_representation.ContextOfItems
+            for opening_rel in tool.Geometry.get_openings(product):
+                opening = opening_rel.RelatedOpeningElement
+                representation = ifcopenshell.util.representation.get_representation(opening, ifc_context)
+                if not representation:
+                    continue
+                representation.RepresentationIdentifier = "Reference"
 
         obj.data.BIMMeshProperties.ifc_definition_id = int(new_representation.id())
         obj.data.name = f"{old_representation.ContextOfItems.id()}/{new_representation.id()}"
@@ -935,10 +972,18 @@ class OverrideDuplicateMove(bpy.types.Operator):
 
             # Prior to duplicating, sync the object placement to make decomposition recreation more stable.
             if tool.Ifc.is_moved(obj):
-                bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+                bonsai.core.geometry.edit_object_placement(
+                    tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj, apply_scale=False
+                )
 
             new_obj = obj.copy()
             temp_data = None
+
+            # Currently for optimization we do not apply pending changes (scale or changed .data)
+            # to the original and duplicated objects.
+            # Keep new object edited if original is.
+            if tool.Ifc.is_edited(obj, ignore_scale=True):
+                tool.Ifc.edit(new_obj)
 
             if obj.data and not linked_non_ifc_object:
                 # assure root.copy_class won't replace the previous mesh globally
@@ -1025,11 +1070,20 @@ class OverrideDuplicateMove(bpy.types.Operator):
         tool.Root.reload_item_decorator()
 
     @staticmethod
-    def process_arrays(self, context):
+    def process_arrays(
+        self, context: bpy.types.Context
+    ) -> tuple[dict[bpy.types.Object, Any], set[ifcopenshell.entity_instance]]:
+        """ "Process arrays for currently selected objects.
+
+        :return: A tuple of two elements:\n
+            - dictionary of objects and their array data. Those objects are safe to duplicate and regenerate arrays using the data.\n
+            - set of array children objects. Those objects can be ignored during duplication, they will be recreated automatically
+            when arrays are regenerated for objects from the dictionary.
+        """
         selected_objects = set(context.selected_objects)
         array_parents = set()
-        arrays_to_create = dict()
-        array_children = set()  # will be ignored during the duplication
+        arrays_to_create: dict[bpy.types.Object, Any] = dict()
+        array_children: set[ifcopenshell.entity_instance] = set()  # will be ignored during the duplication
 
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
@@ -1061,16 +1115,20 @@ class OverrideDuplicateMove(bpy.types.Operator):
         return arrays_to_create, array_children
 
     def remove_old_connections(old_to_new):
+        single_obj = False
+        if len(old_to_new) == 1:
+            single_obj = True
+
         for new in old_to_new.values():
             if not hasattr(new[0], "ConnectedTo"):
                 continue
             for connection in new[0].ConnectedTo:
                 entity = connection.RelatedElement
-                if entity in old_to_new.keys():
+                if entity in old_to_new.keys() or single_obj:
                     core.remove_connection(tool.Geometry, connection=connection)
             for connection in new[0].ConnectedFrom:
                 entity = connection.RelatingElement
-                if entity in old_to_new.keys():
+                if entity in old_to_new.keys() or single_obj:
                     core.remove_connection(tool.Geometry, connection=connection)
 
     def remove_linked_aggregate_data(old_to_new):
@@ -1635,20 +1693,66 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
                 obj_rep = ifc_file.by_id(obj.data.BIMMeshProperties.ifc_definition_id)
                 if obj_rep.RepresentationType != representation_type:
                     obj.select_set(False)
-                    continue
+                    self.report(
+                        {"ERROR"},
+                        f"IFC join failed - object '{obj}' has a different representation type "
+                        f"({obj_rep.RepresentationType}) than target '{self.target}' ({representation_type}).",
+                    )
+                    return
 
                 placement = np.array(obj.matrix_world)
                 placement[:, 3][:3] /= si_conversion
 
-                supported_item_types = ("IfcSweptAreaSolid", "IfcIndexedPolyCurve")
-                rep_items = obj_rep.Items
-                for item in rep_items:
-                    if not any(item.is_a(ifc_class) for ifc_class in supported_item_types):
-                        self.report({"ERROR"}, f"Unsupported representation item type for joining: {item.is_a()}.")
-                        return
+                rep_items = list(obj_rep.Items)
+                curve_set_items = {}
+                curve_set_mapping = {}
 
+                supported_item_types = ("IfcSweptAreaSolid", "IfcIndexedPolyCurve", "IfcGeometricCurveSet")
+
+                def validate_item(item: ifcopenshell.entity_instance) -> bool:
+                    return any(item.is_a(ifc_class) for ifc_class in supported_item_types)
+
+                error_msg = "Unsupported representation item type for joining: {}."
                 for item in rep_items:
-                    copied_item = ifcopenshell.util.element.copy_deep(ifc_file, item)
+                    item_class = item.is_a()
+                    if not validate_item(item):
+                        self.report({"ERROR"}, error_msg.format(item_class))
+                        return
+                    if item_class == "IfcGeometricCurveSet":
+                        sub_items = item.Elements
+                        for sub_item in item.Elements:
+                            if not validate_item(sub_item):
+                                self.report({"ERROR"}, error_msg.format(sub_item.is_a()))
+                                return
+                        rep_items.extend(sub_items)
+                        for sub_item in sub_items:
+                            curve_set_items[sub_item] = item
+
+                processed_point_lists = {}
+                for item in rep_items:
+                    item_class = item.is_a()
+
+                    if item_class == "IfcGeometricCurveSet":
+                        copied_item = ifc_file.create_entity("IfcGeometricCurveSet", Elements=())
+                    elif item_class == "IfcIndexedPolyCurve":
+                        # Process points lists separately as they tend to be reused.
+                        copied_item = ifcopenshell.util.element.copy_deep(
+                            ifc_file, item, exclude=("IfcCartesianPointList",)
+                        )
+                        new_points = processed_point_lists.get((points := item.Points))
+                        if new_points is None:
+                            new_points = ifcopenshell.util.element.copy_deep(ifc_file, points)
+                            dim = item.Dim
+                            append_coord = (1.0,) if dim == 3 else (0.0, 1.0)
+                            coords = points.CoordList
+                            points.CoordList = [
+                                apply_placement(np.append(c, append_coord), placement).tolist()[:3] for c in coords
+                            ]
+                            processed_point_lists[points] = new_points
+                        item.Points = new_points
+                    else:
+                        copied_item = ifcopenshell.util.element.copy_deep(ifc_file, item)
+
                     for style in item.StyledByItem:
                         copied_style = ifcopenshell.util.element.copy(ifc_file, style)
                         copied_style.Item = copied_item
@@ -1661,10 +1765,14 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
                         position = apply_placement(position, placement)
                         copied_item.Position = builder.create_axis2_placement_3d_from_matrix(position)
                     elif item.is_a("IfcIndexedPolyCurve"):
-                        points = copied_item.Points
-                        coords = points.CoordList
-                        # We're assuming those are 3D coordinates, since we do not support Curve2D.
-                        points.CoordList = [apply_placement(np.append(c, 1.0), placement).tolist()[:3] for c in coords]
+                        curve_set = curve_set_items.get(item)
+                        if curve_set:
+                            new_curve_set = curve_set_mapping[curve_set]
+                            new_curve_set.Elements = new_curve_set.Elements + (copied_item,)
+                            continue  # Item is added to curve set items instead of representation items.
+
+                    elif item_class == "IfcGeometricCurveSet":
+                        curve_set_mapping[item] = copied_item
                     else:
                         assert False, f"Unexpected item type: {item.is_a()}. This is a bug."
 
@@ -1709,6 +1817,24 @@ class OverridePasteBuffer(bpy.types.Operator):
             # element, use the duplicate commands.
             tool.Root.unlink_object(obj)
         return {"FINISHED"}
+
+
+class OverrideEscape(bpy.types.Operator):
+    bl_idname = "bim.override_escape"
+    bl_label = "Override Escape"
+
+    def execute(self, context):
+        self.report({"INFO"}, "Operator executed")
+        return {"FINISHED"}
+
+    def modal(self, context, event):
+        if event.type == "ESC" and context.scene.BIMGeometryProperties.mode == "ITEM":
+            tool.Geometry.disable_item_mode()
+        return {"PASS_THROUGH"}
+
+    def invoke(self, context, event):
+        context.window_manager.modal_handler_add(self)
+        return {"RUNNING_MODAL"}
 
 
 class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
@@ -1807,6 +1933,13 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
         elif item.is_a("IfcSweptAreaSolid"):
             tool.Geometry.sync_item_positions()
             tool.Model.import_profile(item.SweptArea, obj=obj)
+            obj.data.BIMMeshProperties.ifc_definition_id = item.id()
+            self.enable_edit_mode(context)
+            ProfileDecorator.install(context)
+            if not bpy.app.background:
+                tool.Blender.set_viewport_tool("bim.cad_tool")
+        elif tool.Geometry.is_curvelike_item(item):
+            tool.Model.import_curve(item, obj=obj)
             obj.data.BIMMeshProperties.ifc_definition_id = item.id()
             self.enable_edit_mode(context)
             ProfileDecorator.install(context)
@@ -2003,6 +2136,50 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
                             product=element,
                             representation=new_footprint,
                         )
+        elif tool.Geometry.is_curvelike_item(item):
+            ProfileDecorator.uninstall()
+            new = tool.Model.export_curves(obj)
+
+            if not new:
+
+                def msg(self, context):
+                    self.layout.label(text="INVALID PROFILE")
+
+                bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
+                ProfileDecorator.install(bpy.context)
+                self.enable_edit_mode(bpy.context)
+                return
+
+            additional_curves = []
+            if len(new) > 1:
+                additional_curves = new[1:]
+            new = new[0]
+
+            for inverse in tool.Ifc.get().get_inverse(item):
+                ifcopenshell.util.element.replace_attribute(inverse, item, new)
+            ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), item)
+
+            obj.data.BIMMeshProperties.ifc_definition_id = new.id()
+            tool.Geometry.import_item(obj)
+
+            props = bpy.context.scene.BIMGeometryProperties
+            for item in additional_curves:
+                representation = tool.Geometry.get_active_representation(props.representation_obj)
+                representation = ifcopenshell.util.representation.resolve_representation(representation)
+                representation.Items = list(representation.Items) + [item]
+
+                name = f"Item/{item.is_a()}/{item.id()}"
+                mesh = bpy.data.meshes.new(name)
+                new_obj = bpy.data.objects.new(name, mesh)
+                new_obj.data.BIMMeshProperties.ifc_definition_id = item.id()
+                scene = bpy.context.scene
+                scene.collection.objects.link(new_obj)
+                new = props.item_objs.add()
+                new.obj = new_obj
+                new_obj.matrix_world = obj.matrix_world
+                tool.Geometry.import_item(new_obj)
+
+            tool.Geometry.reload_representation(props.representation_obj)
 
     def enable_edit_mode(self, context):
         if tool.Blender.toggle_edit_mode(context) == {"CANCELLED"}:
@@ -2072,6 +2249,7 @@ class EnableEditingRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
                             for style in styles:
                                 if style.is_a("IfcSurfaceStyle"):
                                     new.surface_style = style.Name or "Unnamed"
+                                    new.surface_style_id = style.id()
                         elif inverse.is_a("IfcPresentationLayerAssignment"):
                             new.layer = inverse.Name or "Unnamed"
                         elif inverse.is_a("IfcShapeRepresentation"):
@@ -2458,17 +2636,15 @@ class ImportRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
 class UpdateItemAttributes(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.update_item_attributes"
     bl_label = "Update Item Attributes"
+    bl_description = "Update item attributes in IFC and reload mesh for representation item"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
         obj = context.active_object
-        props = obj.data.BIMMeshProperties
-        item = tool.Ifc.get().by_id(props.ifc_definition_id)
-        for attribute in props.item_attributes:
-            if attribute.name == "Depth":
-                item.Depth = attribute.float_value
+        tool.Geometry.update_item_attributes(obj)
         tool.Geometry.reload_representation(bpy.context.scene.BIMGeometryProperties.representation_obj)
         tool.Geometry.import_item(obj)
+        tool.Root.reload_item_decorator()
 
 
 class AddMeshlikeItem(bpy.types.Operator, tool.Ifc.Operator):
@@ -2567,7 +2743,7 @@ class AddSweptAreaSolidItem(bpy.types.Operator, tool.Ifc.Operator):
         if self.shape == "CUBE":
             curve = builder.rectangle(size=Vector((0.5, 0.5)) / unit_scale)
         elif self.shape == "CYLINDER":
-            curve = builder.circle(radius=0.25)
+            curve = builder.circle(radius=0.25 / unit_scale)
         item = builder.extrude(
             curve,
             magnitude=0.5 / unit_scale,
@@ -2578,6 +2754,77 @@ class AddSweptAreaSolidItem(bpy.types.Operator, tool.Ifc.Operator):
 
         representation = tool.Geometry.get_active_representation(props.representation_obj)
         representation = ifcopenshell.util.representation.resolve_representation(representation)
+
+        representation.Items = list(representation.Items) + [item]
+        tool.Geometry.reload_representation(bpy.context.scene.BIMGeometryProperties.representation_obj)
+
+        obj.name = obj.data.name = f"Item/{item.is_a()}/{item.id()}"
+        obj.data.BIMMeshProperties.ifc_definition_id = item.id()
+        tool.Geometry.import_item(obj)
+        tool.Geometry.import_item_attributes(obj)
+
+
+class AddCurvelikeItem(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.add_curvelike_item"
+    bl_label = "Add Curvelike Item"
+    bl_options = {"REGISTER", "UNDO"}
+    CurveShape = Literal["LINE", "CIRCLE", "ELLIPSE"]
+
+    shape: bpy.props.EnumProperty(name="Shape", items=[(i, i, i) for i in get_args(CurveShape)])
+
+    if TYPE_CHECKING:
+        shape: CurveShape
+
+    def _execute(self, context):
+        props = context.scene.BIMGeometryProperties
+
+        representation = tool.Geometry.get_active_representation(props.representation_obj)
+        is_2d = representation.ContextOfItems.ContextType == "Plan"
+        representation = ifcopenshell.util.representation.resolve_representation(representation)
+
+        mesh = bpy.data.meshes.new("Tmp")
+        obj = bpy.data.objects.new("Tmp", mesh)
+        scene = bpy.context.scene
+        scene.collection.objects.link(obj)
+        bpy.context.view_layer.objects.active = obj
+        obj.select_set(True)
+        new = props.item_objs.add()
+        new.obj = obj
+        tool.Geometry.lock_object(obj)
+
+        matrix = props.representation_obj.matrix_world.copy()
+        matrix.translation = context.scene.cursor.location
+        local_matrix = props.representation_obj.matrix_world.inverted() @ matrix
+
+        obj.show_in_front = True
+        obj.matrix_world = matrix
+        tool.Geometry.record_object_position(obj)
+
+        ifc_file = tool.Ifc.get()
+        builder = ifcopenshell.util.shape_builder.ShapeBuilder(ifc_file)
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+
+        offset = local_matrix.translation.to_2d() / unit_scale
+        if not is_2d:
+            offset = offset.to_3d()
+
+        if self.shape == "LINE":
+            if is_2d:
+                points = [Vector((0, 0)), Vector((0.5 / unit_scale, 0))]
+            else:
+                points = [Vector((0, 0, 0)), Vector((0.5 / unit_scale, 0, 0))]
+            item = builder.polyline(points=points, position_offset=offset)
+        elif self.shape == "CIRCLE":
+            item = builder.circle(radius=0.25 / unit_scale, center=offset)
+        elif self.shape == "ELLIPSE":
+            item = ifc_file.create_entity(
+                "IfcEllipse",
+                Position=builder.create_axis2_placement_2d(),
+                SemiAxis1=0.25 / unit_scale,
+                SemiAxis2=0.125 / unit_scale,
+            )
+        else:
+            assert_never(self.shape)
 
         representation.Items = list(representation.Items) + [item]
         tool.Geometry.reload_representation(bpy.context.scene.BIMGeometryProperties.representation_obj)

@@ -46,7 +46,10 @@ def purge():
 def get_ifcpatch_recipes(self, context):
     global ifcpatchrecipes_enum
     if len(ifcpatchrecipes_enum) < 1:
-        ifcpatchrecipes_enum.clear()
+        # Have to add a blank entry because otherwise default recipe might be not loaded
+        # properly (need to ensure bim.update_ifc_patch_arguments will be called). See #5540.
+        ifcpatchrecipes_enum.append(("-", "-", ""))
+
         ifcpatch_path = Path(importlib.util.find_spec("ifcpatch").submodule_search_locations[0])
         for filename in ifcpatch_path.joinpath("recipes").glob("*.py"):
             f = str(filename.stem)
@@ -54,7 +57,8 @@ def get_ifcpatch_recipes(self, context):
                 continue
             docs = ifcpatch.extract_docs(f, "Patcher", "__init__", ("src", "file", "logger", "args"))
             ifcpatchrecipes_enum.append((f, f, docs.get("description", "") if docs else ""))
-    return sorted(ifcpatchrecipes_enum, key=lambda x: x[0])
+        ifcpatchrecipes_enum.sort(key=lambda x: x[0])
+    return ifcpatchrecipes_enum
 
 
 def update_ifc_patch_recipe(self, context):

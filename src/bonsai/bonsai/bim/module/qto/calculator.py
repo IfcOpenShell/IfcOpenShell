@@ -521,7 +521,7 @@ def has_openings(obj: bpy.types.Object) -> Union[ifcopenshell.entity_instance, l
     return element and getattr(element, "HasOpenings", [])
 
 
-def get_obj_decompositions(obj: bpy.types.Object) -> list[ifcopenshell.entity_instance]:
+def get_obj_decompositions(obj: bpy.types.Object) -> set[ifcopenshell.entity_instance]:
     element = tool.Ifc.get_entity(obj)
     decompositions = ifcopenshell.util.element.get_decomposition(element)
     return decompositions

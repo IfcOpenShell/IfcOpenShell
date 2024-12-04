@@ -15,14 +15,31 @@ inline static bool ALMOST_THE_SAME(const T& a, const T& b, double tolerance = AL
 	return fabs(a - b) < tolerance;
 }
 
-namespace ifcopenshell { namespace geometry { namespace kernels {
+namespace ifcopenshell { 
+	
+	class IFC_GEOM_API not_implemented_error : public std::exception {
+	public:
+		const char* what() const noexcept override {
+			return "Not implemented.";
+		}
+	};
+
+	class IFC_GEOM_API not_supported_error : public std::exception {
+	public:
+		const char* what() const noexcept override {
+			return "Not supported.";
+		}
+	};
+	
+	namespace geometry { namespace kernels {
 
 	class IFC_GEOM_API AbstractKernel {
 	protected:
 		std::string geometry_library_;
 		Settings settings_;
-
 	public:
+		bool propagate_exceptions = false;
+			
 		AbstractKernel(const std::string& geometry_library, const Settings& settings)
 			: geometry_library_(geometry_library)
 			, settings_(settings) {}
@@ -33,31 +50,31 @@ namespace ifcopenshell { namespace geometry { namespace kernels {
 			return geometry_library_;
 		}
 
-		virtual bool convert_impl(const taxonomy::matrix4::ptr, IfcGeom::ConversionResults&) { throw std::runtime_error("Not implemented"); }
-		virtual bool convert_impl(const taxonomy::point3::ptr, IfcGeom::ConversionResults&) { throw std::runtime_error("Not implemented"); }
-		virtual bool convert_impl(const taxonomy::direction3::ptr, IfcGeom::ConversionResults&) { throw std::runtime_error("Not implemented"); }
-		virtual bool convert_impl(const taxonomy::line::ptr, IfcGeom::ConversionResults&) { throw std::runtime_error("Not implemented"); }
-		virtual bool convert_impl(const taxonomy::circle::ptr, IfcGeom::ConversionResults&) { throw std::runtime_error("Not implemented"); }
-		virtual bool convert_impl(const taxonomy::ellipse::ptr, IfcGeom::ConversionResults&) { throw std::runtime_error("Not implemented"); }
-		virtual bool convert_impl(const taxonomy::bspline_curve::ptr, IfcGeom::ConversionResults&) { throw std::runtime_error("Not implemented"); }
-		virtual bool convert_impl(const taxonomy::edge::ptr, IfcGeom::ConversionResults&) { throw std::runtime_error("Not implemented"); }
-		virtual bool convert_impl(const taxonomy::loop::ptr, IfcGeom::ConversionResults&) { throw std::runtime_error("Not implemented"); }
-		virtual bool convert_impl(const taxonomy::shell::ptr, IfcGeom::ConversionResults&) { throw std::runtime_error("Not implemented"); }
-		virtual bool convert_impl(const taxonomy::face::ptr, IfcGeom::ConversionResults&) { throw std::runtime_error("Not implemented"); }
-		virtual bool convert_impl(const taxonomy::extrusion::ptr, IfcGeom::ConversionResults&) { throw std::runtime_error("Not implemented"); }
-		virtual bool convert_impl(const taxonomy::node::ptr, IfcGeom::ConversionResults&) { throw std::runtime_error("Not implemented"); }
-		virtual bool convert_impl(const taxonomy::colour::ptr, IfcGeom::ConversionResults&) { throw std::runtime_error("Not implemented"); }
-		virtual bool convert_impl(const taxonomy::boolean_result::ptr, IfcGeom::ConversionResults&) { throw std::runtime_error("Not implemented"); }
-		virtual bool convert_impl(const taxonomy::plane::ptr, IfcGeom::ConversionResults&) { throw std::runtime_error("Not implemented"); }
-		virtual bool convert_impl(const taxonomy::offset_curve::ptr, IfcGeom::ConversionResults&) { throw std::runtime_error("Not implemented"); }
-		virtual bool convert_impl(const taxonomy::revolve::ptr, IfcGeom::ConversionResults&) { throw std::runtime_error("Not implemented"); }
-		virtual bool convert_impl(const taxonomy::bspline_surface::ptr, IfcGeom::ConversionResults&) { throw std::runtime_error("Not implemented"); }
-		virtual bool convert_impl(const taxonomy::cylinder::ptr, IfcGeom::ConversionResults&) { throw std::runtime_error("Not implemented"); }
-		virtual bool convert_impl(const taxonomy::sphere::ptr, IfcGeom::ConversionResults&) { throw std::runtime_error("Not implemented"); }
-		virtual bool convert_impl(const taxonomy::torus::ptr, IfcGeom::ConversionResults&) { throw std::runtime_error("Not implemented"); }
-		virtual bool convert_impl(const taxonomy::solid::ptr, IfcGeom::ConversionResults&) { throw std::runtime_error("Not implemented"); }
-		virtual bool convert_impl(const taxonomy::sweep_along_curve::ptr, IfcGeom::ConversionResults&) { throw std::runtime_error("Not implemented"); }
-		virtual bool convert_impl(const taxonomy::loft::ptr, IfcGeom::ConversionResults&) { throw std::runtime_error("Not implemented"); }
+		virtual bool convert_impl(const taxonomy::matrix4::ptr, IfcGeom::ConversionResults&) { throw not_implemented_error(); }
+		virtual bool convert_impl(const taxonomy::point3::ptr, IfcGeom::ConversionResults&) { throw not_implemented_error(); }
+		virtual bool convert_impl(const taxonomy::direction3::ptr, IfcGeom::ConversionResults&) { throw not_implemented_error(); }
+		virtual bool convert_impl(const taxonomy::line::ptr, IfcGeom::ConversionResults&) { throw not_implemented_error(); }
+		virtual bool convert_impl(const taxonomy::circle::ptr, IfcGeom::ConversionResults&) { throw not_implemented_error(); }
+		virtual bool convert_impl(const taxonomy::ellipse::ptr, IfcGeom::ConversionResults&) { throw not_implemented_error(); }
+		virtual bool convert_impl(const taxonomy::bspline_curve::ptr, IfcGeom::ConversionResults&) { throw not_implemented_error(); }
+		virtual bool convert_impl(const taxonomy::edge::ptr, IfcGeom::ConversionResults&) { throw not_implemented_error(); }
+		virtual bool convert_impl(const taxonomy::loop::ptr, IfcGeom::ConversionResults&) { throw not_implemented_error(); }
+		virtual bool convert_impl(const taxonomy::shell::ptr, IfcGeom::ConversionResults&) { throw not_implemented_error(); }
+		virtual bool convert_impl(const taxonomy::face::ptr, IfcGeom::ConversionResults&) { throw not_implemented_error(); }
+		virtual bool convert_impl(const taxonomy::extrusion::ptr, IfcGeom::ConversionResults&) { throw not_implemented_error(); }
+		virtual bool convert_impl(const taxonomy::node::ptr, IfcGeom::ConversionResults&) { throw not_implemented_error(); }
+		virtual bool convert_impl(const taxonomy::colour::ptr, IfcGeom::ConversionResults&) { throw not_implemented_error(); }
+		virtual bool convert_impl(const taxonomy::boolean_result::ptr, IfcGeom::ConversionResults&) { throw not_implemented_error(); }
+		virtual bool convert_impl(const taxonomy::plane::ptr, IfcGeom::ConversionResults&) { throw not_implemented_error(); }
+		virtual bool convert_impl(const taxonomy::offset_curve::ptr, IfcGeom::ConversionResults&) { throw not_implemented_error(); }
+		virtual bool convert_impl(const taxonomy::revolve::ptr, IfcGeom::ConversionResults&) { throw not_implemented_error(); }
+		virtual bool convert_impl(const taxonomy::bspline_surface::ptr, IfcGeom::ConversionResults&) { throw not_implemented_error(); }
+		virtual bool convert_impl(const taxonomy::cylinder::ptr, IfcGeom::ConversionResults&) { throw not_implemented_error(); }
+		virtual bool convert_impl(const taxonomy::sphere::ptr, IfcGeom::ConversionResults&) { throw not_implemented_error(); }
+		virtual bool convert_impl(const taxonomy::torus::ptr, IfcGeom::ConversionResults&) { throw not_implemented_error(); }
+		virtual bool convert_impl(const taxonomy::solid::ptr, IfcGeom::ConversionResults&) { throw not_implemented_error(); }
+		virtual bool convert_impl(const taxonomy::sweep_along_curve::ptr, IfcGeom::ConversionResults&) { throw not_implemented_error(); }
+		virtual bool convert_impl(const taxonomy::loft::ptr, IfcGeom::ConversionResults&) { throw not_implemented_error(); }
 		virtual bool convert_impl(const taxonomy::collection::ptr, IfcGeom::ConversionResults&);
 		virtual bool convert_impl(const taxonomy::piecewise_function::ptr item, IfcGeom::ConversionResults& cs);
 
@@ -66,11 +83,11 @@ namespace ifcopenshell { namespace geometry { namespace kernels {
 		virtual void set_rotation(const std::array<double, 4> &p_rotation);
 		*/
 
-		virtual bool apply_layerset(IfcGeom::ConversionResults&, const ifcopenshell::geometry::layerset_information&) { throw std::runtime_error("Not implemented"); }
-		virtual bool apply_folded_layerset(IfcGeom::ConversionResults&, const ifcopenshell::geometry::layerset_information&, const std::map<IfcUtil::IfcBaseEntity*, ifcopenshell::geometry::layerset_information>&) { throw std::runtime_error("Not implemented"); }
+		virtual bool apply_layerset(IfcGeom::ConversionResults&, const ifcopenshell::geometry::layerset_information&) { throw not_implemented_error(); }
+		virtual bool apply_folded_layerset(IfcGeom::ConversionResults&, const ifcopenshell::geometry::layerset_information&, const std::map<IfcUtil::IfcBaseEntity*, ifcopenshell::geometry::layerset_information>&) { throw not_implemented_error(); }
 		virtual bool convert_openings(const IfcUtil::IfcBaseEntity* entity, const std::vector<std::pair<taxonomy::ptr, ifcopenshell::geometry::taxonomy::matrix4>>& openings,
 			const IfcGeom::ConversionResults& entity_shapes, const ifcopenshell::geometry::taxonomy::matrix4& entity_trsf, IfcGeom::ConversionResults& cut_shapes) = 0;
-
+		virtual bool unify_shapes(const IfcGeom::ConversionResults&, IfcGeom::ConversionResults&) { throw not_implemented_error(); }
 	};
 
 	AbstractKernel* construct(IfcParse::IfcFile* file, const std::string& geometry_library, Settings& conv_settings);

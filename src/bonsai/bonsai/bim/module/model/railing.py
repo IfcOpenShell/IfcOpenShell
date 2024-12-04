@@ -33,13 +33,14 @@ from bonsai.bim.module.model.decorator import ProfileDecorator
 
 from mathutils import Vector
 import json
+from typing import Any
 
 # reference:
 # https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcRailing.htm
 # https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcRailingType.htm
 
 
-def bm_split_edge_at_offset(edge, offset):
+def bm_split_edge_at_offset(edge: bmesh.types.BMEdge, offset: float) -> dict[str, Any]:
     v0, v1 = edge.verts
 
     offset = offset / 2
@@ -51,7 +52,7 @@ def bm_split_edge_at_offset(edge, offset):
     return new_geometry
 
 
-def update_railing_modifier_ifc_data(context):
+def update_railing_modifier_ifc_data(context: bpy.types.Context) -> None:
     """should be called after new geometry settled
     since it's going to update ifc representation
     """
@@ -106,14 +107,11 @@ def update_railing_modifier_ifc_data(context):
         )
         tool.Model.replace_object_ifc_representation(body, obj, model_representation)
 
-        # hacky way to ensure tha ifc representation won't get tessellated at project save
-        tool.Ifc.finish_edit(obj)
-
     elif props.railing_type == "FRAMELESS_PANEL":
-        tool.Ifc.edit(obj)
+        tool.Model.add_body_representation(obj)
 
 
-def update_bbim_railing_pset(element, railing_data):
+def update_bbim_railing_pset(element: ifcopenshell.entity_instance, railing_data: dict[str, Any]) -> None:
     pset = tool.Pset.get_element_pset(element, "BBIM_Railing")
     if not pset:
         pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=element, name="BBIM_Railing")
@@ -121,7 +119,7 @@ def update_bbim_railing_pset(element, railing_data):
     ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": railing_data})
 
 
-def update_railing_modifier_bmesh(context):
+def update_railing_modifier_bmesh(context: bpy.types.Context) -> None:
     """before using should make sure that Data contains up-to-date information.
     If BBIM Pset just changed should call refresh() before updating bmesh
     """
@@ -153,7 +151,7 @@ def update_railing_modifier_bmesh(context):
     if props.railing_type != "FRAMELESS_PANEL":
         return
 
-    def generate_frameless_panel_railing():
+    def generate_frameless_panel_railing() -> None:
         # generating FRAMELESS_PANEL railing
         height = props.height
         thickness = props.thickness
@@ -214,7 +212,7 @@ def update_railing_modifier_bmesh(context):
     generate_frameless_panel_railing()
 
 
-def get_path_data(obj):
+def get_path_data(obj: bpy.types.Object) -> dict[str, Any]:
     si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
     bm = tool.Blender.get_bmesh_for_mesh(obj.data)
@@ -326,7 +324,7 @@ class AddRailing(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_railing"
     bl_label = "Add Railing"
     bl_description = "Add Bonsai parametric railing to the active IFC element"
-    bl_options = {"REGISTER"}
+    bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
         obj = context.active_object
@@ -353,7 +351,7 @@ class AddRailing(bpy.types.Operator, tool.Ifc.Operator):
         refresh()
         update_railing_modifier_bmesh(context)
         update_railing_modifier_ifc_data(context)
-        return {"FINISHED"}
+        tool.Model.add_body_representation(obj)
 
 
 class EnableEditingRailing(bpy.types.Operator, tool.Ifc.Operator):
@@ -468,7 +466,7 @@ class EnableEditingRailingPath(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
-def cancel_editing_railing_path(context):
+def cancel_editing_railing_path(context: bpy.types.Context) -> set[str]:
     obj = context.active_object
     props = obj.BIMRailingProperties
 

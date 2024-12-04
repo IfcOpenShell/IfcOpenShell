@@ -39,6 +39,7 @@ from typing import Optional
 
 class IFCFileSelector:
     filepath: str
+    use_relative_path: bool
 
     def is_existing_ifc_file(self, filepath: Optional[str] = None) -> bool:
         """Check if file path exists and if it's an IFC file.
@@ -46,18 +47,29 @@ class IFCFileSelector:
         If `filepath` is not provided, will use filepath property from the current operator.
         """
         if filepath is None:
-            filepath = self.filepath
-        return os.path.exists(filepath) and "ifc" in os.path.splitext(filepath)[1].lower()
+            path = self.get_filepath_abs()
+        else:
+            path = Path(filepath)
+        return path.exists() and path.is_file() and "ifc" in path.suffix.lower()
+
+    def get_filepath_abs(self) -> Path:
+        # self.filepath filled by fileselect_add is absolute
+        # but we support relative paths provided by custom scripts.
+        filepath = Path(self.filepath)
+        if not filepath.is_absolute():
+            filepath = Path(bpy.path.abspath("//")) / filepath
+        return filepath
 
     def get_filepath(self) -> str:
         """get filepath taking into account relative paths"""
-        if self.use_relative_path:
-            filepath = os.path.relpath(self.filepath, bpy.path.abspath("//"))
-        else:
-            filepath = self.filepath
-        return filepath
+        filepath = self.get_filepath_abs()
 
-    def draw(self, context):
+        if self.use_relative_path:
+            filepath = filepath.relative_to(bpy.path.abspath("//"))
+        return filepath.as_posix()
+
+    def draw(self, context: bpy.types.Context) -> None:
+        assert isinstance(context.space_data, bpy.types.SpaceFileBrowser)
         # Access filepath & Directory https://blender.stackexchange.com/a/207665
         params = context.space_data.params
         # Decode byte string https://stackoverflow.com/a/47737082/
@@ -369,6 +381,8 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row.prop(context.scene.DocProperties, "magic_font_scale")
         row = self.layout.row()
         row.prop(context.scene.DocProperties, "imperial_precision")
+        row = self.layout.row()
+        row.prop(context.scene.DocProperties, "tolerance")
 
 
 # Scene panel groups
@@ -381,57 +395,52 @@ class BIM_PT_tabs(Panel):
     bl_options = {"HIDE_HEADER"}
 
     def draw(self, context):
-        try:
-            is_ifc_project = bool(tool.Ifc.get())
-            aprops = tool.Blender.get_area_props(context)
-            if not aprops:
-                # Fallback in case areas aren't setup yet.
-                aprops = context.screen.BIMTabProperties
+        is_ifc_project = bool(tool.Ifc.get())
+        aprops = tool.Blender.get_area_props(context)
 
-            row = self.layout.row()
-            row.alignment = "CENTER"
-            row.operator(
-                "bim.set_tab",
-                text="",
-                emboss=aprops.tab == "PROJECT",
-                depress=True,
-                icon_value=bonsai.bim.icons["IFC"].icon_id,
-            ).tab = "PROJECT"
-            self.draw_tab_entry(row, "FILE_3D", "OBJECT", is_ifc_project, aprops.tab == "OBJECT")
-            self.draw_tab_entry(row, "MATERIAL", "GEOMETRY", is_ifc_project, aprops.tab == "GEOMETRY")
-            self.draw_tab_entry(row, "DOCUMENTS", "DRAWINGS", is_ifc_project, aprops.tab == "DRAWINGS")
-            self.draw_tab_entry(row, "NETWORK_DRIVE", "SERVICES", is_ifc_project, aprops.tab == "SERVICES")
-            self.draw_tab_entry(row, "EDITMODE_HLT", "STRUCTURE", is_ifc_project, aprops.tab == "STRUCTURE")
-            self.draw_tab_entry(row, "NLA", "SCHEDULING", is_ifc_project, aprops.tab == "SCHEDULING")
-            self.draw_tab_entry(row, "PACKAGE", "FM", True, aprops.tab == "FM")
-            self.draw_tab_entry(row, "COMMUNITY", "QUALITY", True, aprops.tab == "QUALITY")
-            row.operator("bim.switch_tab", text="", emboss=False, icon="UV_SYNC_SELECT")
+        row = self.layout.row()
+        row.alignment = "CENTER"
+        row.operator(
+            "bim.set_tab",
+            text="",
+            emboss=aprops.tab == "PROJECT",
+            depress=True,
+            icon_value=bonsai.bim.icons["IFC"].icon_id,
+        ).tab = "PROJECT"
+        self.draw_tab_entry(row, "FILE_3D", "OBJECT", is_ifc_project, aprops.tab == "OBJECT")
+        self.draw_tab_entry(row, "MATERIAL", "GEOMETRY", is_ifc_project, aprops.tab == "GEOMETRY")
+        self.draw_tab_entry(row, "DOCUMENTS", "DRAWINGS", is_ifc_project, aprops.tab == "DRAWINGS")
+        self.draw_tab_entry(row, "NETWORK_DRIVE", "SERVICES", is_ifc_project, aprops.tab == "SERVICES")
+        self.draw_tab_entry(row, "EDITMODE_HLT", "STRUCTURE", is_ifc_project, aprops.tab == "STRUCTURE")
+        self.draw_tab_entry(row, "NLA", "SCHEDULING", is_ifc_project, aprops.tab == "SCHEDULING")
+        self.draw_tab_entry(row, "PACKAGE", "FM", True, aprops.tab == "FM")
+        self.draw_tab_entry(row, "COMMUNITY", "QUALITY", True, aprops.tab == "QUALITY")
+        row.operator("bim.switch_tab", text="", emboss=False, icon="UV_SYNC_SELECT")
 
-            # Yes, that's right.
-            row = self.layout.row()
-            row.alignment = "CENTER"
-            row.scale_y = 0.2
-            for tab in [
-                "PROJECT",
-                "OBJECT",
-                "GEOMETRY",
-                "DRAWINGS",
-                "SERVICES",
-                "STRUCTURE",
-                "SCHEDULING",
-                "FM",
-                "QUALITY",
-                "SWITCH",
-            ]:
-                if aprops.tab == tab:
-                    row.prop(aprops, "active_tab", text="", icon="BLANK1")
-                else:
-                    row.prop(aprops, "inactive_tab", text="", icon="BLANK1", emboss=False)
+        # Yes, that's right.
+        row = self.layout.row()
+        row.alignment = "CENTER"
+        row.scale_y = 0.2
+        for tab in [
+            "PROJECT",
+            "OBJECT",
+            "GEOMETRY",
+            "DRAWINGS",
+            "SERVICES",
+            "STRUCTURE",
+            "SCHEDULING",
+            "FM",
+            "QUALITY",
+            "SWITCH",
+        ]:
+            # Draw a little underscore below the active tab icon.
+            if aprops.tab == tab:
+                row.prop(aprops, "active_tab", text="", icon="BLANK1")
+            else:
+                row.prop(aprops, "inactive_tab", text="", icon="BLANK1", emboss=False)
 
-            row = self.layout.row(align=True)
-            row.prop(aprops, "tab", text="")
-        except:
-            pass  # Prior to load_post, we may not have any area properties setup
+        row = self.layout.row(align=True)
+        row.prop(aprops, "tab", text="")
 
         if bonsai.REINSTALLED_BBIM_VERSION:
             box = self.layout.box()
@@ -480,7 +489,7 @@ class BIM_PT_tabs(Panel):
             op = row.operator("bim.open_uri", text="", icon="QUESTION")
             op.uri = "https://docs.bonsaibim.org/guides/troubleshooting.html#incompatible-blender-features"
 
-        if (o := context.active_object) and [round(x, 4) for x in list(o.matrix_world.to_scale())] != [1, 1, 1]:
+        if (o := context.active_object) and tool.Ifc.get_entity(o) and tool.Geometry.is_scaled(o):
             box = self.layout.box()
             box.alert = True
             row = box.row(align=True)
@@ -826,7 +835,17 @@ class BIM_PT_tab_object_metadata(Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "OBJECT") and tool.Ifc.get()
+        return (
+            tool.Blender.is_tab(context, "OBJECT")
+            and tool.Ifc.get()
+            and (obj := context.active_object)
+            # Hide links empty handles.
+            and (
+                obj.type != "EMPTY"
+                or not obj.instance_collection
+                or not any(l.empty_handle == obj for l in context.scene.BIMProjectProperties.links)
+            )
+        )
 
     def draw(self, context):
         pass
@@ -841,7 +860,12 @@ class BIM_PT_tab_placement(Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "GEOMETRY") and tool.Ifc.get()
+        return (
+            tool.Blender.is_tab(context, "GEOMETRY")
+            and tool.Ifc.get()
+            and (obj := context.active_object)
+            and tool.Ifc.get_entity(obj)
+        )
 
     def draw(self, context):
         pass
@@ -856,7 +880,12 @@ class BIM_PT_tab_representations(Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "GEOMETRY") and tool.Ifc.get()
+        return (
+            tool.Blender.is_tab(context, "GEOMETRY")
+            and tool.Ifc.get()
+            and (obj := context.active_object)
+            and tool.Ifc.get_entity(obj)
+        )
 
     def draw(self, context):
         pass
@@ -888,7 +917,12 @@ class BIM_PT_tab_parametric_geometry(Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "GEOMETRY") and tool.Ifc.get()
+        return (
+            tool.Blender.is_tab(context, "GEOMETRY")
+            and tool.Ifc.get()
+            and (obj := context.active_object)
+            and tool.Ifc.get_entity(obj)
+        )
 
     def draw(self, context):
         pass
@@ -903,7 +937,12 @@ class BIM_PT_tab_object_materials(Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "GEOMETRY") and tool.Ifc.get()
+        return (
+            tool.Blender.is_tab(context, "GEOMETRY")
+            and tool.Ifc.get()
+            and (obj := context.active_object)
+            and tool.Ifc.get_entity(obj)
+        )
 
     def draw(self, context):
         pass

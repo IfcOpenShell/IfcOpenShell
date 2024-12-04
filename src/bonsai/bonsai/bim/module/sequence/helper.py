@@ -19,7 +19,8 @@
 import isodate
 from dateutil import parser
 import ifcopenshell.util.date
-from datetime import timedelta
+from datetime import timedelta, datetime
+from typing import Union
 
 
 def parse_datetime(value):
@@ -36,7 +37,7 @@ def parse_duration(value):
     return ifcopenshell.util.date.parse_duration(value)
 
 
-def canonicalise_time(time):
+def canonicalise_time(time: Union[datetime, None]) -> str:
     if not time:
         return "-"
     return time.strftime("%d/%m/%y")

@@ -18,6 +18,7 @@
 
 import bpy
 import json
+import math
 import ifcopenshell
 import bonsai.bim.helper
 import bonsai.core.tool
@@ -182,3 +183,13 @@ class Unit(bonsai.core.tool.Unit):
             precision=4,
             split_unit=bpy.context.scene.unit_settings.system == "IMPERIAL",
         )
+
+    @classmethod
+    def format_value(cls, value: float) -> str:
+        precision = tool.Ifc.get().by_type("IfcGeometricRepresentationContext")[0].Precision
+        if precision:
+            decimal_places = math.ceil(math.log10(1 / precision))
+        else:
+            precision = 1e-5
+            decimal_places = 5
+        return str(round(precision * round(value / precision), decimal_places))

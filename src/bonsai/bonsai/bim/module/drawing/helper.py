@@ -200,7 +200,7 @@ def format_distance(
                 inches = 0
 
         if not isArea:
-            add_inches = bool(inches) or not suppress_zero_inches
+            add_inches = bool(inches) or not suppress_zero_inches or (inches == 0 and frac)
             tx_dist = ""
             if feet:
                 tx_dist += str(feet) + "'"
@@ -211,9 +211,15 @@ def format_distance(
             if not feet and value < 0:
                 tx_dist += "-"
             if add_inches:
-                tx_dist += str(inches)
+                if feet == 0 and inches == 0:
+                    pass
+                else:
+                    tx_dist += str(inches)
             if add_inches and frac:
-                tx_dist += " "
+                if feet == 0 and inches == 0:
+                    pass
+                else:
+                    tx_dist += " "
             if frac:
                 tx_dist += str(frac) + "/" + str(base)
             if add_inches or frac:
@@ -408,3 +414,38 @@ def elevate_segment(bounds, segm):
         return None
     x = p1.x
     return [Vector((x, ymin, zmin)), Vector((x, ymax, zmin))]
+
+
+def add_newline_between_words(text, newline_at):
+    result = []
+    start = 0
+
+    while start < len(text):
+        # Find the next newline character if present
+        newline_index = text.find("\n", start)
+        if newline_index != -1 and newline_index < start + newline_at:
+            # If a newline is found within the current range
+            result.append(text[start:newline_index])  # Add text up to the newline
+            start = newline_index + 1  # Move past the newline
+            continue
+
+        # Find the end index considering the limit newline_at
+        end = start + newline_at
+        if end >= len(text):  # If we're at the end of the string
+            result.append(text[start:])
+            break
+
+        # Look for the nearest space around the newline_at limit
+        space_index = text.rfind(" ", start, end)  # Try to break before newline_at
+        if space_index == -1:  # No space found, force a break at newline_at
+            space_index = text.find(" ", end)  # Try to break after newline_at
+
+        if space_index == -1:  # If there's still no space, take the rest of the text
+            result.append(text[start:])
+            break
+
+        # Add the chunk and update the start position
+        result.append(text[start:space_index])
+        start = space_index + 1  # Skip the space itself
+
+    return "\n".join(result)

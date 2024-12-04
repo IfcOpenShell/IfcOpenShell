@@ -33,7 +33,7 @@ import bonsai.bim.handler
 import bonsai.tool as tool
 from pathlib import Path
 from bonsai.tool.brick import BrickStore
-from typing import Set, Union, Optional, TypedDict, Callable
+from typing import Set, Union, Optional, TypedDict, Callable, NotRequired
 
 
 IFC_CONNECTED_TYPE = Union[bpy.types.Material, bpy.types.Object]
@@ -41,14 +41,18 @@ IFC_CONNECTED_TYPE = Union[bpy.types.Material, bpy.types.Object]
 
 class OperationData(TypedDict):
     id: int
-    guid: Union[str, None]
+    guid: NotRequired[str]
+    obj: str
+
+
+class EditObjectOperationData(TypedDict):
     obj: str
 
 
 class Operation(TypedDict):
     rollback: Callable
     commit: Callable
-    data: OperationData
+    data: Union[OperationData, EditObjectOperationData, None]
 
 
 class TransactionStep(TypedDict):
@@ -197,7 +201,7 @@ class IfcStore:
         return IfcStore.schema
 
     @staticmethod
-    def get_element(id_or_guid: Union[int, str]) -> IFC_CONNECTED_TYPE:
+    def get_element(id_or_guid: Union[int, str]) -> Union[IFC_CONNECTED_TYPE, None]:
         if isinstance(id_or_guid, int):
             obj = IfcStore.id_map.get(id_or_guid)
         else:
@@ -225,27 +229,13 @@ class IfcStore:
     def relink_object(obj: IFC_CONNECTED_TYPE) -> None:
         if not obj:
             return
-        if isinstance(obj, bpy.types.Object):
-            ifc_definition_id = obj.BIMObjectProperties.ifc_definition_id
-            if not ifc_definition_id:
-                return
-            try:
-                element = IfcStore.get_file().by_id(ifc_definition_id)
-            except RuntimeError:
-                return
-            data = OperationData(id=element.id(), obj=obj.name)
-            if hasattr(element, "GlobalId"):
-                data["guid"] = element.GlobalId
-            IfcStore.commit_link_element(data)
+        element = tool.Ifc.get_entity(obj)
+        if not element:
             return
-        else:  # bpy.types.Material
-            ifc_definition_id = obj.BIMStyleProperties.ifc_definition_id
-            try:
-                element = IfcStore.get_file().by_id(ifc_definition_id)
-            except RuntimeError:
-                return
-            data = OperationData(id=element.id(), obj=obj.name)
-            IfcStore.commit_link_element(data)
+        data = OperationData(id=element.id(), obj=obj.name)
+        if hasattr(element, "GlobalId"):
+            data["guid"] = element.GlobalId
+        IfcStore.commit_link_element(data)
 
     @staticmethod
     def link_element(
@@ -266,63 +256,91 @@ class IfcStore:
             IfcStore.unlink_element(obj=existing_obj)
 
         IfcStore.id_map[element.id()] = obj
-        if hasattr(element, "GlobalId"):
-            IfcStore.guid_map[element.GlobalId] = obj
+        if global_id := getattr(element, "GlobalId", None):
+            IfcStore.guid_map[global_id] = obj
 
         if element.is_a("IfcSurfaceStyle"):
             obj.BIMStyleProperties.ifc_definition_id = element.id()
         else:
             obj.BIMObjectProperties.ifc_definition_id = element.id()
 
-        bonsai.bim.handler.subscribe_to(obj, "name", bonsai.bim.handler.name_callback)
-
-        if isinstance(obj, bpy.types.Object):
-            bonsai.bim.handler.subscribe_to(
-                obj, "active_material_index", bonsai.bim.handler.active_material_index_callback
-            )
+        tool.Ifc.setup_listeners(obj)
 
         if IfcStore.history:
-            data = OperationData(id=element.id(), guid=getattr(element, "GlobalId", None), obj=obj.name)
+            data = OperationData(id=element.id(), obj=obj.name)
+            if global_id:
+                data["guid"] = global_id
             IfcStore.history[-1]["operations"].append(
                 Operation(rollback=IfcStore.rollback_link_element, commit=IfcStore.commit_link_element, data=data)
             )
 
     @staticmethod
+    def get_object_by_name(name: str) -> Union[IFC_CONNECTED_TYPE, None]:
+        obj = bpy.data.objects.get(name)
+        if not obj:
+            obj = bpy.data.materials.get(name)
+        return obj
+
+    @staticmethod
     def rollback_link_element(data: OperationData) -> None:
         del IfcStore.id_map[data["id"]]
-        if data["guid"]:
+        if "guid" in data:
             del IfcStore.guid_map[data["guid"]]
+        obj = IfcStore.get_object_by_name(data["obj"])
+        if obj is None:
+            # obj was just created during this step and didn't existed before.
+            return
+        bpy.msgbus.clear_by_owner(obj)
 
     @staticmethod
     def commit_link_element(data: OperationData) -> None:
-        obj = bpy.data.objects.get(data["obj"])
-        if not obj:
-            obj = bpy.data.materials.get(data["obj"])
+        obj = IfcStore.get_object_by_name(data["obj"])
         IfcStore.id_map[data["id"]] = obj
         if "guid" in data:
             IfcStore.guid_map[data["guid"]] = obj
-        bonsai.bim.handler.subscribe_to(obj, "name", bonsai.bim.handler.name_callback)
-        if isinstance(obj, bpy.types.Object):
-            bonsai.bim.handler.subscribe_to(
-                obj, "active_material_index", bonsai.bim.handler.active_material_index_callback
-            )
-        # TODO Listeners are not re-registered. Does this cause nasty problems to debug later on?
-        # TODO We're handling id_map and guid_map, but what about edited_objs? This might cause big problems.
+        tool.Ifc.setup_listeners(obj)
+
+    @staticmethod
+    def history_edit_object(obj: bpy.types.Object, *, finish_editing: bool) -> None:
+        if not IfcStore.history:
+            return
+
+        commit, rollback = IfcStore.commit_edit_object, IfcStore.rollback_edit_object
+        if finish_editing:
+            commit, rollback = rollback, commit
+
+        data = EditObjectOperationData(obj=obj.name)
+        IfcStore.history[-1]["operations"].append(Operation(rollback=rollback, commit=commit, data=data))
+
+    @staticmethod
+    def commit_edit_object(data: EditObjectOperationData) -> None:
+        obj = bpy.data.objects[data["obj"]]
+        IfcStore.edited_objs.add(obj)
+
+    @staticmethod
+    def rollback_edit_object(data: EditObjectOperationData) -> None:
+        obj = bpy.data.objects[data["obj"]]
+        IfcStore.edited_objs.discard(obj)
 
     @staticmethod
     def rollback_unlink_element(data: OperationData) -> None:
         if "id" not in data or "obj" not in data:
             return
-        obj = bpy.data.objects.get(data["obj"])
+        obj = IfcStore.get_object_by_name(data["obj"])
         IfcStore.id_map[data["id"]] = obj
-        if data["guid"]:
+        if "guid" in data:
             IfcStore.guid_map[data["guid"]] = obj
+        tool.Ifc.setup_listeners(obj)
 
     @staticmethod
     def commit_unlink_element(data: OperationData) -> None:
         del IfcStore.id_map[data["id"]]
-        if data["guid"]:
+        if "guid" in data:
             del IfcStore.guid_map[data["guid"]]
+        obj = IfcStore.get_object_by_name(data["obj"])
+        # obj might be removed after unlink.
+        if not obj:
+            bpy.msgbus.clear_by_owner(obj)
 
     @staticmethod
     def unlink_element(
@@ -370,7 +388,9 @@ class IfcStore:
                 pass
 
         if IfcStore.history:
-            data = OperationData(id=element.id(), guid=global_id)
+            data = OperationData(id=element.id())
+            if global_id:
+                data["guid"] = global_id
             if obj:
                 data["obj"] = obj.name
             IfcStore.history[-1]["operations"].append(
@@ -383,9 +403,12 @@ class IfcStore:
             obj.BIMStyleProperties.ifc_definition_id = 0
         else:  # bpy.types.Object
             obj.BIMObjectProperties.ifc_definition_id = 0
+        # NOTE: in theory this will also remove listeners added by other addons
+        # though never had a report when this would be a problem.
+        bpy.msgbus.clear_by_owner(obj)
 
     @staticmethod
-    def execute_ifc_operator(operator: bpy.types.Operator, context: bpy.types.Context, is_invoke=False):
+    def execute_ifc_operator(operator: tool.Ifc.Operator, context: bpy.types.Context, is_invoke=False) -> set[str]:
         bonsai.last_actions.append({"type": "operator", "name": operator.bl_idname})
         bpy.context.scene.BIMProperties.is_dirty = True
         is_top_level_operator = not bool(IfcStore.current_transaction)
@@ -401,6 +424,18 @@ class IfcStore:
         else:
             operator.transaction_key = IfcStore.current_transaction
 
+        def end_top_level_operator() -> None:
+            if is_top_level_operator:
+                if tool.Ifc.get():
+                    tool.Ifc.get().end_transaction()
+                    IfcStore.add_transaction_operation(
+                        operator, rollback=lambda d: tool.Ifc.get().undo(), commit=lambda d: tool.Ifc.get().redo()
+                    )
+                if BrickStore.graph is not None:  # `if BrickStore.graph` by itself takes ages.
+                    BrickStore.end_transaction()
+                IfcStore.end_transaction(operator)
+                bonsai.bim.handler.refresh_ui_data()
+
         try:
             if is_invoke:
                 result = getattr(operator, "_invoke")(context, None)
@@ -408,33 +443,32 @@ class IfcStore:
                 result = getattr(operator, "_execute")(context)
         except:
             bonsai.last_error = traceback.format_exc()
+            # Try to ensure undo will work since Blender undo does work in case of errors.
+            # As error come unexpectedly, it's important that user might have a chance to save the file
+            # before they got the error and not to lose the work they've done.
+            #
+            # Also, some users won't stop seeing the error,
+            # so we need to try to ensure that undo for further operations will work.
+            end_top_level_operator()
             raise
 
-        if is_top_level_operator:
-            if tool.Ifc.get():
-                tool.Ifc.get().end_transaction()
-                IfcStore.add_transaction_operation(
-                    operator, rollback=lambda d: tool.Ifc.get().undo(), commit=lambda d: tool.Ifc.get().redo()
-                )
-            if BrickStore.graph is not None:  # `if BrickStore.graph` by itself takes ages.
-                BrickStore.end_transaction()
-            IfcStore.end_transaction(operator)
-            bonsai.bim.handler.refresh_ui_data()
-
+        end_top_level_operator()
         return result
 
     @staticmethod
-    def begin_transaction(operator: bpy.types.Operator) -> None:
+    def begin_transaction(operator: tool.Ifc.Operator) -> None:
         IfcStore.current_transaction = str(uuid.uuid4())
         operator.transaction_key = IfcStore.current_transaction
 
     @staticmethod
-    def end_transaction(operator: bpy.types.Operator) -> None:
+    def end_transaction(operator: tool.Ifc.Operator) -> None:
         IfcStore.current_transaction = ""
         operator.transaction_key = ""
 
     @staticmethod
-    def add_transaction_operation(operator: bpy.types.Operator, rollback=None, commit=None) -> None:
+    def add_transaction_operation(
+        operator: tool.Ifc.Operator, rollback: Optional[Callable] = None, commit: Optional[Callable] = None
+    ) -> None:
         key = getattr(operator, "transaction_key", None)
         data = getattr(operator, "transaction_data", None)
         bpy.context.scene.BIMProperties.last_transaction = key
@@ -442,10 +476,10 @@ class IfcStore:
         rollback = rollback or getattr(operator, "rollback", lambda data: True)
         commit = commit or getattr(operator, "commit", lambda data: True)
         if IfcStore.history and IfcStore.history[-1]["key"] == key:
-            IfcStore.history[-1]["operations"].append(OperationData(rollback=rollback, commit=commit, data=data))
+            IfcStore.history[-1]["operations"].append(Operation(rollback=rollback, commit=commit, data=data))
         else:
             IfcStore.history.append(
-                TransactionStep(key=key, operations=[OperationData(rollback=rollback, commit=commit, data=data)])
+                TransactionStep(key=key, operations=[Operation(rollback=rollback, commit=commit, data=data)])
             )
         IfcStore.future = []
 

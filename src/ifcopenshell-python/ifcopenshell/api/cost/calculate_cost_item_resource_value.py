@@ -101,17 +101,16 @@ def calculate_cost_item_resource_value(file: ifcopenshell.file, cost_item: ifcop
 
     for resource in resources:
         cost, unit = ifcopenshell.util.resource.get_cost(resource)
-        if not cost:
+        if cost is None:
             # Concept to standardise - Not defined in schema, but this makes manual scheduling of resources 10x faster and less duplicate data.
             parent_cost = ifcopenshell.util.resource.get_parent_cost(resource)
-            assert parent_cost
-            cost, unit = parent_cost
+            if parent_cost:
+                cost, unit = parent_cost
         quantity = ifcopenshell.util.resource.get_quantity(resource)
-        if not cost or not quantity:
+        if cost is None:
             continue
         if unit and "day" in unit:
             quantity = quantity / 8  # Assume 8 hour working day - TODO implement resource calendar
-        quantity = round(quantity, 2)
         formula = "{}*{}".format(cost, quantity)
         cost_value = ifcopenshell.api.cost.add_cost_value(file, parent=settings["cost_item"])
         cost_value.Name = resource.Name

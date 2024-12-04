@@ -21,65 +21,75 @@ import json
 import ifcopenshell.api
 import ifcopenshell.util.attribute
 import ifcopenshell.util.element
+import bonsai.bim.handler
 import bonsai.tool as tool
 import bonsai.core.document as core
 from bonsai.bim.ifc import IfcStore
 
 
-class LoadProjectDocuments(bpy.types.Operator, tool.Ifc.Operator):
+class LoadProjectDocuments(bpy.types.Operator):
     bl_idname = "bim.load_project_documents"
     bl_label = "Load Project Documents"
     bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
+    def execute(self, context):
         core.load_project_documents(tool.Document)
+        bonsai.bim.handler.refresh_ui_data()  # Update breadcrumbs data.
+        return {"FINISHED"}
 
 
-class LoadDocument(bpy.types.Operator, tool.Ifc.Operator):
+class LoadDocument(bpy.types.Operator):
     bl_idname = "bim.load_document"
     bl_label = "Load Document"
     bl_options = {"REGISTER", "UNDO"}
     document: bpy.props.IntProperty()
 
-    def _execute(self, context):
+    def execute(self, context):
         core.load_document(tool.Document, document=tool.Ifc.get().by_id(self.document))
+        bonsai.bim.handler.refresh_ui_data()  # Update breadcrumbs data.
+        return {"FINISHED"}
 
 
-class LoadParentDocument(bpy.types.Operator, tool.Ifc.Operator):
+class LoadParentDocument(bpy.types.Operator):
     bl_idname = "bim.load_parent_document"
     bl_label = "Load Parent Document"
     bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
+    def execute(self, context):
         core.load_parent_document(tool.Document)
+        bonsai.bim.handler.refresh_ui_data()  # Update breadcrumbs data.
+        return {"FINISHED"}
 
 
-class DisableDocumentEditingUI(bpy.types.Operator, tool.Ifc.Operator):
+class DisableDocumentEditingUI(bpy.types.Operator):
     bl_idname = "bim.disable_document_editing_ui"
     bl_label = "Disable Document Editing UI"
     bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
+    def execute(self, context):
         core.disable_document_editing_ui(tool.Document)
+        return {"FINISHED"}
 
 
-class EnableEditingDocument(bpy.types.Operator, tool.Ifc.Operator):
+class EnableEditingDocument(bpy.types.Operator):
     bl_idname = "bim.enable_editing_document"
     bl_label = "Enable Editing Document"
     bl_options = {"REGISTER", "UNDO"}
     document: bpy.props.IntProperty()
 
-    def _execute(self, context):
+    def execute(self, context):
         core.enable_editing_document(tool.Document, document=tool.Ifc.get().by_id(self.document))
+        return {"FINISHED"}
 
 
-class DisableEditingDocument(bpy.types.Operator, tool.Ifc.Operator):
+class DisableEditingDocument(bpy.types.Operator):
     bl_idname = "bim.disable_editing_document"
     bl_label = "Disable Editing Document"
     bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
+    def execute(self, context):
         core.disable_editing_document(tool.Document)
+        return {"FINISHED"}
 
 
 class AddInformation(bpy.types.Operator, tool.Ifc.Operator):

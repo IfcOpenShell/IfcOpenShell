@@ -48,6 +48,10 @@
 #     on OS X El Capitan with homebrew:                                       #
 #          $ brew install git bison autoconf automake libffi cmake            #
 #                                                                             #
+#     on RHEL-related distros:                                                #
+#          $ yum install git gcc gcc-c++ autoconf bison make cmake            #
+#            mesa-libGL-devel libffi-devel fontconfig-devel bzip2             #
+#            automake patch                                                   #
 ###############################################################################
 import logging
 import os
@@ -78,11 +82,11 @@ PROJECT_NAME = "IfcOpenShell"
 USE_CURRENT_PYTHON_VERSION = os.getenv("USE_CURRENT_PYTHON_VERSION")
 ADD_COMMIT_SHA = os.getenv("ADD_COMMIT_SHA")
 
-PYTHON_VERSIONS = ["3.9.11", "3.10.3", "3.11.8", "3.12.1"]
+PYTHON_VERSIONS = ["3.9.11", "3.10.3", "3.11.8", "3.12.1", "3.13.0"]
 JSON_VERSION = "v3.6.1"
 OCE_VERSION = "0.18.3"
 OCCT_VERSION = "7.8.1"
-BOOST_VERSION = "1.80.0"
+BOOST_VERSION = "1.86.0"
 PCRE_VERSION = "8.41"
 LIBXML2_VERSION = "2.9.11"
 SWIG_VERSION = "4.0.2"
@@ -220,6 +224,7 @@ if "v" in flags:
 else:
     logger.setLevel(logging.INFO)
 
+OFF_ON = ["OFF", "ON"]
 BUILD_STATIC = "shared" not in flags
 ENABLE_FLAG = "--enable-static" if BUILD_STATIC else "--enable-shared"
 DISABLE_FLAG = "--disable-shared" if BUILD_STATIC else "--disable-static"
@@ -331,7 +336,7 @@ def run_cmake(arg1, cmake_args, cmake_dir=None, cwd=None):
     if "wasm" in flags:
         wasm.append("emcmake")
         
-    run([*wasm, "cmake", P, *cmake_args, f"-DCMAKE_BUILD_TYPE={BUILD_CFG}"], cwd=cwd)
+    run([*wasm, "cmake", P, *cmake_args, f"-DCMAKE_BUILD_TYPE={BUILD_CFG}", f"-DBUILD_SHARED_LIBS={OFF_ON[not BUILD_STATIC]}"], cwd=cwd)
 
 
 def git_clone_or_pull_repository(clone_url, target_dir, revision=None):
@@ -459,6 +464,9 @@ def build_dependency(name, mode, build_tool_args, download_url, download_name, d
         shutil.copytree(os.path.join(extract_dir, "boost"), os.path.join(DEPS_DIR, "install", f"boost-{BOOST_VERSION}", "boost"))
         logger.info(f"\rInstalled {name}     \n")
 
+    if "diskcleanup" in flags:
+        shutil.rmtree(build_dir, ignore_errors=True)
+
 cecho("Collecting dependencies:", GREEN)
 
 # Set compiler flags for 32bit builds on 64bit system
@@ -519,7 +527,7 @@ if 'hdf5' in targets:
     # not supported
     orig = [os.environ[f] for f in compiler_flags]
     for f in compiler_flags:
-        os.environ[f] = re.sub("-flto(=\w+)?", "", os.environ[f])
+        os.environ[f] = re.sub(r"-flto(=\w+)?", "", os.environ[f])
 
     HDF5_MAJOR = ".".join(HDF5_VERSION.split(".")[:-1])
     build_dependency(
@@ -609,7 +617,7 @@ if USE_OCCT and "occ" in targets:
             "-DBUILD_RELEASE_DISABLE_EXCEPTIONS=Off",
             f"-D3RDPARTY_FREETYPE_DIR={DEPS_DIR}/install/freetype"
         ],
-        download_url = "https://git.dev.opencascade.org/repos/occt.git",
+        download_url = "https://github.com/Open-Cascade-SAS/OCCT",
         download_name = "occt",
         download_tool=download_tool_git,
         patch=patches,
@@ -729,13 +737,15 @@ if "boost" in targets:
             "--with-thread",
             "--with-date_time",
             "--with-iostreams",
+            "--with-filesystem",
             f"link={LINK_TYPE}",
             *toolset,
             *map(str_concat("cxxflags"), CXXFLAGS.strip().split(' ')),
             *map(str_concat("linkflags"), LDFLAGS.strip().split(' ')),
             "stage", "-s", "NO_BZIP2=1"],
         download_url=BOOST_LOCATION,
-        patch="./patches/boost/boostorg_regex_62.patch",
+        # don't remember what this is, but fail on 1.86
+        # patch="./patches/boost/boostorg_regex_62.patch",
         download_name=f"boost_{BOOST_VERSION_UNDERSCORE}.tar.bz2"
     )
     if "wasm" in flags:
@@ -829,7 +839,6 @@ os.makedirs(IFCOS_DIR, exist_ok=True)
 executables_dir = os.path.join(IFCOS_DIR, "executables")
 os.makedirs(executables_dir, exist_ok=True)
 
-OFF_ON = ["OFF", "ON"]
 
 cmake_args = [
     "-DUSE_MMAP="                      "OFF",

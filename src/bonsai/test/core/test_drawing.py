@@ -56,14 +56,26 @@ class TestDisableEditingAssignedProduct:
 
 
 class TestEditAssignedProduct:
-    def test_run(self, ifc, drawing):
+    def test_text_annotation(self, ifc, drawing):
         ifc.get_entity("obj").should_be_called().will_return("element")
         drawing.get_assigned_product("element").should_be_called().will_return("existing_product")
         ifc.run(
             "drawing.unassign_product", relating_product="existing_product", related_object="element"
         ).should_be_called()
         ifc.run("drawing.assign_product", relating_product="product", related_object="element").should_be_called()
+        drawing.is_annotation_object_type("element", ("TEXT", "TEXT_LEADER")).should_be_called().will_return(True)
         drawing.update_text_value("obj").should_be_called()
+        drawing.disable_editing_assigned_product("obj").should_be_called()
+        subject.edit_assigned_product(ifc, drawing, obj="obj", product="product")
+
+    def test_non_text_annotation(self, ifc, drawing):
+        ifc.get_entity("obj").should_be_called().will_return("element")
+        drawing.get_assigned_product("element").should_be_called().will_return("existing_product")
+        ifc.run(
+            "drawing.unassign_product", relating_product="existing_product", related_object="element"
+        ).should_be_called()
+        ifc.run("drawing.assign_product", relating_product="product", related_object="element").should_be_called()
+        drawing.is_annotation_object_type("element", ("TEXT", "TEXT_LEADER")).should_be_called().will_return(False)
         drawing.disable_editing_assigned_product("obj").should_be_called()
         subject.edit_assigned_product(ifc, drawing, obj="obj", product="product")
 

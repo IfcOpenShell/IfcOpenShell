@@ -66,8 +66,8 @@ class Ifc(bonsai.core.tool.Ifc):
             return IfcStore.get_file().schema
 
     @classmethod
-    def is_edited(cls, obj: bpy.types.Object) -> bool:
-        return list(obj.scale) != [1.0, 1.0, 1.0] or obj in IfcStore.edited_objs
+    def is_edited(cls, obj: bpy.types.Object, *, ignore_scale: bool = False) -> bool:
+        return (not ignore_scale and tool.Geometry.is_scaled(obj)) or obj in IfcStore.edited_objs
 
     @classmethod
     def is_moved(cls, obj: bpy.types.Object) -> bool:
@@ -96,7 +96,7 @@ class Ifc(bonsai.core.tool.Ifc):
 
     @classmethod
     def get_entity(cls, obj: IFC_CONNECTED_TYPE) -> Union[ifcopenshell.entity_instance, None]:
-        """Get linked IFC entity based on obj's BIMObjectProperties.ifc_definition_id.
+        """Get linked IFC entity based on obj's ifc_definition_id.
 
         Return None if object is not linked to IFC or it's linked to non-existent element.
         """
@@ -161,10 +161,7 @@ class Ifc(bonsai.core.tool.Ifc):
             if global_id:
                 IfcStore.guid_map[global_id] = obj
 
-            bonsai.bim.handler.subscribe_to(obj, "name", bonsai.bim.handler.name_callback)
-            bonsai.bim.handler.subscribe_to(
-                obj, "active_material_index", bonsai.bim.handler.active_material_index_callback
-            )
+            cls.setup_listeners(obj)
 
         for obj in bpy.data.materials:
             if obj.library:
@@ -172,14 +169,30 @@ class Ifc(bonsai.core.tool.Ifc):
 
             bpy.msgbus.clear_by_owner(obj)
 
-            material = cls.get_entity(obj)
-            style = tool.Style.get_style(obj)
-            if material:
-                IfcStore.id_map[material.id()] = obj
-            if style:
-                IfcStore.id_map[style.id()] = obj
+            style = cls.get_entity(obj)
+            if not style:
+                continue
 
-            bonsai.bim.handler.subscribe_to(obj, "name", bonsai.bim.handler.name_callback)
+            IfcStore.id_map[style.id()] = obj
+            cls.setup_listeners(obj)
+
+        IfcStore.edited_objs = set()
+        edited_objs = bpy.context.scene.BIMProjectProperties.edited_objs
+        for i in range(len(edited_objs))[::-1]:
+            obj = edited_objs[i].obj
+            if obj:
+                IfcStore.edited_objs.add(obj)
+            else:
+                # Object was removed.
+                edited_objs.remove(i)
+
+    @classmethod
+    def setup_listeners(cls, obj: IFC_CONNECTED_TYPE) -> None:
+        if isinstance(obj, bpy.types.Object):
+            bonsai.bim.handler.subscribe_to(
+                obj, "active_material_index", bonsai.bim.handler.active_material_index_callback
+            )
+        bonsai.bim.handler.subscribe_to(obj, "name", bonsai.bim.handler.name_callback)
 
     @classmethod
     def link(
@@ -191,8 +204,23 @@ class Ifc(bonsai.core.tool.Ifc):
 
     @classmethod
     def edit(cls, obj: bpy.types.Object) -> None:
-        """Mark object as edited."""
+        """Mark object as edited.
+
+        Marking object as edited is an optimization mechanism - instead of saving
+        changed geometry to IFC, we mark it as changed and then it's saved later
+        (typically during project save or switch_representation(should_sync_changes_first=True)).
+
+        Other caveat of using edited objects is that it won't have an effect for objects with openings,
+        since we can't deduce non-openings representation from edited representation with openings.
+
+        So, it's preferable not to use edited objects if object can have an opening. It's still can be used for spaces.
+        """
+        if obj in IfcStore.edited_objs:
+            return
+        edited_objs = bpy.context.scene.BIMProjectProperties.edited_objs
+        edited_objs.add().obj = obj
         IfcStore.edited_objs.add(obj)
+        IfcStore.history_edit_object(obj, finish_editing=False)
 
     @classmethod
     def finish_edit(cls, obj: bpy.types.Object) -> None:
@@ -200,7 +228,12 @@ class Ifc(bonsai.core.tool.Ifc):
 
         Method is safe to use on an object that wasn't marked as edited before.
         """
+        if obj not in IfcStore.edited_objs:
+            return
+        edited_objs = bpy.context.scene.BIMProjectProperties.edited_objs
+        edited_objs.remove(next(i for i, o in enumerate(edited_objs) if o.obj == obj))
         IfcStore.edited_objs.discard(obj)
+        IfcStore.history_edit_object(obj, finish_editing=True)
 
     @classmethod
     def resolve_uri(cls, uri: str) -> str:
@@ -250,10 +283,12 @@ class Ifc(bonsai.core.tool.Ifc):
         IFC changes for Undo system.
         """
 
+        transaction_key = ""
+        transaction_data: Union[Any, None] = None
+
         @final
         def execute(self, context):
             IfcStore.execute_ifc_operator(self, context)
-            bonsai.bim.handler.refresh_ui_data()
             return {"FINISHED"}
 
         # NOTE: this class can't inherit from abc.ABC to use abc.abstractmethod

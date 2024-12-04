@@ -32,7 +32,9 @@ import bonsai.core.root
 import bonsai.tool as tool
 from mathutils import Vector, Matrix
 from bonsai.bim.module.geometry.helper import Helper
-from bonsai.bim.module.model.decorator import ProfileDecorator
+from bonsai.bim.module.model.decorator import ProfileDecorator, PolylineDecorator, ProductDecorator
+from bonsai.bim.module.model.polyline import PolylineOperator
+from bonsai.bim.module.model.wall import DumbWallRecalculator
 from typing import Optional
 
 
@@ -40,7 +42,7 @@ class DumbSlabGenerator:
     def __init__(self, relating_type: ifcopenshell.entity_instance):
         self.relating_type = relating_type
 
-    def generate(self):
+    def generate(self, draw_from_polyline=False):
         self.file = tool.Ifc.get()
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         thicknesses = []
@@ -60,6 +62,7 @@ class DumbSlabGenerator:
 
         props = bpy.context.scene.BIMModelProperties
 
+        self.polyline = None
         self.container = None
         self.container_obj = None
         if container := tool.Root.get_default_container():
@@ -72,7 +75,26 @@ class DumbSlabGenerator:
         self.rotation = 0
         self.location = Vector((0, 0, 0))
         self.x_angle = 0 if tool.Cad.is_x(props.x_angle, 0, tolerance=0.001) else props.x_angle
-        return self.derive_from_cursor()
+
+        if draw_from_polyline:
+            return self.derive_from_polyline()
+        else:
+            return self.derive_from_cursor()
+
+    def derive_from_polyline(self):
+        polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline
+        polyline_points = polyline_data[0].polyline_points if polyline_data else []
+        self.location = Vector((polyline_points[0].x, polyline_points[0].y, self.container_obj.location.z))
+        self.polyline = [tuple(Vector((p.x, p.y, 0.0)) - self.location) for p in polyline_points]
+
+        if len(self.polyline) <= 2:
+            return
+
+        # Always assume a closed polyline
+        if self.polyline[0] != self.polyline[-1]:
+            self.polyline.append(self.polyline[0])
+
+        return self.create_slab()
 
     def derive_from_cursor(self):
         self.location = bpy.context.scene.cursor.location
@@ -112,6 +134,7 @@ class DumbSlabGenerator:
             context=self.body_context,
             depth=self.depth,
             x_angle=self.x_angle,
+            polyline=self.polyline,
         )
         ifcopenshell.api.run(
             "geometry.assign_representation", tool.Ifc.get(), product=element, representation=representation
@@ -696,10 +719,128 @@ class SetArcIndex(bpy.types.Operator):
             return self.cancel_message("Select 3 vertices.")
 
         bpy.ops.object.mode_set(mode="OBJECT")
-        in_group = any([bool(obj.data.vertices[v].groups) for v in selected_vertices])
-        for group in obj.vertex_groups:
-            group.remove(selected_vertices)
         group = obj.vertex_groups.new(name="IFCARCINDEX")
         group.add(selected_vertices, 1, "REPLACE")
         bpy.ops.object.mode_set(mode="EDIT")
+        return {"FINISHED"}
+
+
+class DrawPolylineSlab(bpy.types.Operator, PolylineOperator):
+    bl_idname = "bim.draw_polyline_slab"
+    bl_label = "Draw Polyline Slab"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.space_data.type == "VIEW_3D"
+
+    def __init__(self):
+        super().__init__()
+        self.relating_type = None
+        props = bpy.context.scene.BIMModelProperties
+        relating_type_id = props.relating_type_id
+        if relating_type_id:
+            self.relating_type = tool.Ifc.get().by_id(int(relating_type_id))
+
+    def create_slab_from_polyline(self, context):
+        if not self.relating_type:
+            return {"FINISHED"}
+
+        DumbSlabGenerator(self.relating_type).generate(True)
+
+    def modal(self, context, event):
+        if not self.relating_type:
+            self.report({"WARNING"}, "You need to select a slab type.")
+            PolylineDecorator.uninstall()
+            tool.Blender.update_viewport()
+            return {"FINISHED"}
+
+        PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
+        tool.Blender.update_viewport()
+
+        self.handle_lock_axis(context, event)
+
+        if event.type in {"MIDDLEMOUSE", "WHEELUPMOUSE", "WHEELDOWNMOUSE"}:
+            self.handle_mouse_move(context, event)
+            return {"PASS_THROUGH"}
+
+        # TODO Slab settings
+        # if event.value == "RELEASE" and event.type == "F":
+        #     direction_sense = context.scene.BIMModelProperties.direction_sense
+        #     context.scene.BIMModelProperties.direction_sense = (
+        #         "NEGATIVE" if direction_sense == "POSITIVE" else "POSITIVE"
+        #     )
+
+        # if event.value == "RELEASE" and event.type == "O":
+        #     offset_type = context.scene.BIMModelProperties.offset_type
+        #     items = ["EXTERIOR", "CENTER", "INTERIOR"]
+        #     index = items.index(offset_type)
+        #     size = len(items)
+        #     context.scene.BIMModelProperties.offset_type = items[((index + 1) % size)]
+
+        # props = bpy.context.scene.BIMModelProperties
+        # slab_config = f"""Direction: {props.direction_sense}
+        # Offset Type: {props.offset_type}
+        # Offset Value: {props.offset}
+        # """
+
+        self.handle_instructions(context)
+
+        self.handle_mouse_move(context, event, should_round=True)
+
+        self.choose_axis(event)
+
+        self.handle_snap_selection(context, event)
+
+        if (
+            not self.tool_state.is_input_on
+            and event.value == "RELEASE"
+            and event.type in {"RET", "NUMPAD_ENTER", "RIGHTMOUSE"}
+        ):
+            self.create_slab_from_polyline(context)
+            context.workspace.status_text_set(text=None)
+            ProductDecorator.uninstall()
+            PolylineDecorator.uninstall()
+            tool.Polyline.clear_polyline()
+            tool.Blender.update_viewport()
+            return {"FINISHED"}
+
+        self.handle_keyboard_input(context, event)
+
+        self.handle_inserting_polyline(context, event)
+
+        cancel = self.handle_cancelation(context, event)
+        if cancel is not None:
+            ProductDecorator.uninstall()
+            return cancel
+
+        return {"RUNNING_MODAL"}
+
+    def invoke(self, context, event):
+        super().invoke(context, event)
+        ProductDecorator.install(context)
+        self.tool_state.use_default_container = True
+        self.tool_state.plane_method = "XY"
+        return {"RUNNING_MODAL"}
+
+
+class RecalculateSlab(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.recalculate_slab"
+    bl_label = "Recalculate Slab"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.selected_objects
+
+    def _execute(self, context):
+        walls = []
+        for obj in context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if element.is_a("IfcSlab"):
+                for rel in element.ConnectedTo:
+                    if rel.is_a() == "IfcRelConnectsElements" and rel.RelatedElement.is_a("IfcWall"):
+                        walls.append(tool.Ifc.get_object(rel.RelatedElement))
+
+        DumbWallRecalculator().recalculate(walls)
         return {"FINISHED"}

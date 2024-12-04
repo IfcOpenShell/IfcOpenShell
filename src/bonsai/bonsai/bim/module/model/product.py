@@ -15,6 +15,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
+#
+# pyright: reportUnnecessaryTypeIgnoreComment=error
 
 import bpy
 import bmesh
@@ -39,11 +41,11 @@ from bonsai.bim.ifc import IfcStore
 from bonsai.bim.helper import get_enum_items
 from bonsai.bim.module.model.data import AuthoringData
 from bonsai.bim.module.model.polyline import PolylineOperator
-from bonsai.bim.module.model.decorator import PolylineDecorator
+from bonsai.bim.module.model.decorator import PolylineDecorator, ProductDecorator
 from mathutils import Vector, Matrix
 from bpy_extras.object_utils import AddObjectHelper
 import json
-from typing import Any, Union, Optional
+from typing import Any, Union, Optional, Literal, get_args, assert_never, TYPE_CHECKING
 
 
 class AddEmptyType(bpy.types.Operator, AddObjectHelper):
@@ -116,30 +118,28 @@ class AddOccurrence(bpy.types.Operator, PolylineOperator):
         if not self.relating_type:
             return {"FINISHED"}
 
-        result = tool.Snap.insert_polyline_point(self.input_ui)
+        result = tool.Polyline.insert_polyline_point(self.input_ui, self.tool_state)
         if result:
             self.report({"WARNING"}, result)
 
         # TODO: when this workflow matures a bit, recode it so it doesn't rely on selection and cursor
         # Select snapped object so we can insert doors and windows
-        detected_snaps = tool.Snap.detect_snapping_points(context, event, self.objs_2d_bbox, self.tool_state)
-        snap_obj = None
-        for snap in detected_snaps:
-            if snap_obj := snap.get("Object", None):
-                try:
-                    # During undo, sometimes objects get invalidated.
-                    # This is a safe way to check for invalid objects.
-                    snap_obj[0].name
-                    snap_obj = bpy.data.objects.get(snap_obj[0].name)
-                    snap_obj.name
-                    tool.Blender.select_and_activate_single_object(context, snap_obj)
-                    break
-                except:
-                    pass
+        snap_prop = context.scene.BIMPolylineProperties.snap_mouse_point[0]
+        snap_obj = bpy.data.objects.get(snap_prop.snap_object)
+        if snap_obj:
+            try:
+                # During undo, sometimes objects get invalidated.
+                # This is a safe way to check for invalid objects.
+                snap_obj.name
+                snap_obj = bpy.data.objects.get(snap_obj.name)
+                snap_obj.name
+                tool.Blender.select_and_activate_single_object(context, snap_obj)
+            except:
+                pass
 
-        point = context.scene.BIMPolylineProperties.polyline_point[0]
+        point = context.scene.BIMPolylineProperties.insertion_polyline[0].polyline_points[0]
         context.scene.cursor.location = Vector((point.x, point.y, point.z))
-        tool.Snap.clear_polyline()
+        tool.Polyline.clear_polyline()
 
         bpy.ops.bim.add_constr_type_instance("INVOKE_DEFAULT")
 
@@ -178,10 +178,11 @@ class AddOccurrence(bpy.types.Operator, PolylineOperator):
         self.handle_snap_selection(context, event)
 
         if not self.tool_state.is_input_on and event.value == "RELEASE" and event.type in {"RIGHTMOUSE"}:
+            self.tool_state.axis_method = None
             context.workspace.status_text_set(text=None)
+            ProductDecorator.uninstall()
             PolylineDecorator.uninstall()
-            context.scene.BIMPolylineProperties.product_preview.clear()
-            tool.Snap.clear_polyline()
+            tool.Polyline.clear_polyline()
             tool.Blender.update_viewport()
             return {"FINISHED"}
 
@@ -190,13 +191,14 @@ class AddOccurrence(bpy.types.Operator, PolylineOperator):
 
         cancel = self.handle_cancelation(context, event)
         if cancel is not None:
-            context.scene.BIMPolylineProperties.product_preview.clear()
+            ProductDecorator.uninstall()
             return cancel
 
         return {"RUNNING_MODAL"}
 
     def invoke(self, context, event):
         super().invoke(context, event)
+        ProductDecorator.install(context)
         self.tool_state.use_default_container = True
         self.tool_state.plane_method = "XY"
         return {"RUNNING_MODAL"}
@@ -491,12 +493,21 @@ class SetActiveType(bpy.types.Operator, tool.Ifc.Operator):
 class AlignProduct(bpy.types.Operator):
     bl_idname = "bim.align_product"
     bl_label = "Align Product"
+    bl_description = "Align the selected objects to the active object"
     bl_options = {"REGISTER", "UNDO"}
-    align_type: bpy.props.StringProperty()
+
+    AlignType = Literal["CENTERLINE", "POSITIVE", "NEGATIVE"]
+    align_type: bpy.props.EnumProperty(  # type: ignore [reportRedeclaration]
+        items=[(i, i, "") for i in get_args(AlignType)]
+    )
+
+    if TYPE_CHECKING:
+        align_type: AlignType
 
     def execute(self, context):
         selected_objs = context.selected_objects
         if len(selected_objs) < 2 or not context.active_object:
+            self.report({"ERROR"}, "Please select atleast 2 objects.")
             return {"FINISHED"}
         if self.align_type == "CENTERLINE":
             point = context.active_object.matrix_world @ (
@@ -506,6 +517,8 @@ class AlignProduct(bpy.types.Operator):
             point = context.active_object.matrix_world @ Vector(context.active_object.bound_box[6])
         elif self.align_type == "NEGATIVE":
             point = context.active_object.matrix_world @ Vector(context.active_object.bound_box[0])
+        else:
+            assert_never(self.align_type)
 
         active_x_axis = context.active_object.matrix_world.to_quaternion() @ Vector((1, 0, 0))
         active_y_axis = context.active_object.matrix_world.to_quaternion() @ Vector((0, 1, 0))
@@ -521,7 +534,7 @@ class AlignProduct(bpy.types.Operator):
                 obj.matrix_world = Matrix.Translation(active_y_axis * -y_distances[i]) @ obj.matrix_world
         return {"FINISHED"}
 
-    def get_axis_distances(self, point, axis, context):
+    def get_axis_distances(self, point: Vector, axis: Vector, context: bpy.types.Context) -> list[float]:
         results = []
         for obj in context.selected_objects:
             if self.align_type == "CENTERLINE":
@@ -530,6 +543,8 @@ class AlignProduct(bpy.types.Operator):
                 obj_point = obj.matrix_world @ Vector(obj.bound_box[6])
             elif self.align_type == "NEGATIVE":
                 obj_point = obj.matrix_world @ Vector(obj.bound_box[0])
+            else:
+                assert_never(self.align_type)
             results.append(mathutils.geometry.distance_point_to_plane(obj_point, point, axis))
         return results
 

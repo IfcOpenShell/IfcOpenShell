@@ -18,12 +18,13 @@
 
 import bpy
 import ifcopenshell
+import ifcopenshell.util.element
 import bonsai.tool as tool
 import math
 from bonsai.bim.prop import ObjProperty
 from bonsai.bim.module.model.data import AuthoringData
 from bpy.types import PropertyGroup, NodeTree
-from math import pi
+from math import pi, radians
 
 
 def get_ifc_class(self, context):
@@ -149,6 +150,18 @@ class BIMModelProperties(PropertyGroup):
     type_page: bpy.props.IntProperty(name="Type Page", default=1, update=update_type_page)
     type_name: bpy.props.StringProperty(name="Name", default="TYPEX")
     boundary_class: bpy.props.EnumProperty(items=get_boundary_class, name="Boundary Class")
+    direction_sense: bpy.props.EnumProperty(
+        items=[("POSITIVE", "Positive", ""), ("NEGATIVE", "Negative", "")],
+        name="Material Usage Direction Sense",
+        default="POSITIVE",
+    )
+    offset_type: bpy.props.EnumProperty(
+        items=[("EXTERIOR", "Exterior", ""), ("CENTER", "Center", ""), ("INTERIOR", "Interior", "")],
+        name="Layer Offset Type",
+        default="EXTERIOR",
+        description="It's a convention that affects the offset to reference line",
+    )
+    offset: bpy.props.FloatProperty(name="Offset", default=0.0, description="Material usage offset from reference line")
 
 
 class BIMArrayProperties(PropertyGroup):
@@ -665,7 +678,21 @@ class BIMRailingProperties(PropertyGroup):
             setattr(self, prop_name, kwargs[prop_name])
 
 
+def to_angle(percentage: float) -> float:
+    return math.atan(percentage / 100)
+
+
+def to_percentage(angle: float) -> float:
+    return math.tan(angle) * 100
+
+
 class BIMRoofProperties(PropertyGroup):
+    def update_angle(self, context) -> None:
+        self["angle"] = to_angle(self.percentage)
+
+    def update_percentage(self, context) -> None:
+        self["percentage"] = to_percentage(self.angle)
+
     non_si_units_props = (
         "is_editing",
         "path_data",
@@ -692,13 +719,24 @@ class BIMRoofProperties(PropertyGroup):
         name="Height", default=1.0, description="Maximum height of the roof to be generated.", subtype="DISTANCE"
     )
     angle: bpy.props.FloatProperty(
-        name="Slope Angle", default=pi / 18, subtype="ANGLE", update=lambda self, context: self.update_percentage()
+        name="Slope Angle",
+        default=pi / 18,
+        subtype="ANGLE",
+        update=update_percentage,
+        min=0.0,
+        max=pi / 2,
+        soft_min=radians(5.0),
+        soft_max=radians(60.0),
     )
     percentage: bpy.props.FloatProperty(
         name="Slope %",
-        default=math.tan(pi / 18) * 100,
+        default=to_percentage(pi / 18),
         subtype="PERCENTAGE",
-        update=lambda self, context: self.update_angle(),
+        update=update_angle,
+        min=0.0,
+        max=to_percentage(pi / 2),
+        soft_min=to_percentage(radians(5.0)),
+        soft_max=to_percentage(radians(60.0)),
     )
     roof_thickness: bpy.props.FloatProperty(name="Roof Thickness", default=0.1, subtype="DISTANCE")
     rafter_edge_angle: bpy.props.FloatProperty(name="Rafter Edge Angle", min=0, max=pi, default=pi / 2, subtype="ANGLE")
@@ -727,18 +765,13 @@ class BIMRoofProperties(PropertyGroup):
         for prop_name in kwargs:
             setattr(self, prop_name, kwargs[prop_name])
 
-    def update_angle(self):
-        self.angle = math.atan(self.percentage / 100)
-
-    def update_percentage(self):
-        self.percentage = math.tan(self.angle) * 100
-
 
 class SnapMousePoint(PropertyGroup):
     x: bpy.props.FloatProperty(name="X")
     y: bpy.props.FloatProperty(name="Y")
     z: bpy.props.FloatProperty(name="Z")
     snap_type: bpy.props.StringProperty(name="Snap Type")
+    snap_object: bpy.props.StringProperty(name="Object Name")
 
 
 class PolylinePoint(PropertyGroup):
@@ -750,13 +783,15 @@ class PolylinePoint(PropertyGroup):
     position: bpy.props.FloatVectorProperty(name="Decorator Position", size=3)
 
 
-class MeasurePolyline(PropertyGroup):
-    polyline_point: bpy.props.CollectionProperty(type=PolylinePoint)
+class Polyline(PropertyGroup):
+    polyline_points: bpy.props.CollectionProperty(type=PolylinePoint)
+    measurement_type: bpy.props.StringProperty(name="Measurement Type")
+    area: bpy.props.StringProperty(name="Measured Area")
+    total_length: bpy.props.StringProperty(name="Total Length")
 
 
 class BIMPolylineProperties(PropertyGroup):
     snap_mouse_point: bpy.props.CollectionProperty(type=SnapMousePoint)
     snap_mouse_ref: bpy.props.CollectionProperty(type=SnapMousePoint)
-    polyline_point: bpy.props.CollectionProperty(type=PolylinePoint)
-    product_preview: bpy.props.CollectionProperty(type=PolylinePoint)
-    measure_polyline: bpy.props.CollectionProperty(type=MeasurePolyline)
+    insertion_polyline: bpy.props.CollectionProperty(type=Polyline)
+    measurement_polyline: bpy.props.CollectionProperty(type=Polyline)

@@ -17,6 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+import importlib
 import bpy
 import json
 import math
@@ -39,7 +40,7 @@ if TYPE_CHECKING:
     # - None  - property should be imported by default workflow
     # - True  - setting value for imported attribute should be skipped
     # - False - property should be skipped entirely from import
-    ImportCallback = Callable[[str, Optional[bonsai.bim.prop.Attribute], dict[str, Any], Union[bool, None]]]
+    ImportCallback = Callable[[str, Optional[bonsai.bim.prop.Attribute], dict[str, Any]], Union[bool, None]]
     # ExportCallback return values:
     # - True  - property should be skipped entirely from export
     # - False - property should be exproted by default workflow
@@ -66,15 +67,12 @@ def draw_attributes(
 def draw_attribute(
     attribute: bonsai.bim.prop.Attribute, layout: bpy.types.UILayout, copy_operator: Optional[str] = None
 ) -> None:
-    value_name = attribute.get_value_name()
-    if not value_name:
-        layout.label(text=attribute.name)
-        return
+    value_name = attribute.get_value_name(display_only=True)
     if value_name == "enum_value":
         prop_with_search(layout, attribute, "enum_value", text=attribute.name)
     elif value_name == "filepath_value":
         attribute.filepath_value.layout_file_select(layout, filter_glob=attribute.filter_glob, text=attribute.name)
-    elif attribute.name in ["ScheduleDuration", "ActualDuration", "FreeFloat", "TotalFloat"]:
+    elif attribute.name in ("ScheduleDuration", "ActualDuration", "FreeFloat", "TotalFloat"):
         propis = bpy.context.scene.BIMWorkScheduleProperties
         for item in propis.durations_attributes:
             if item.name == attribute.name:
@@ -97,6 +95,10 @@ def draw_attribute(
     if attribute.is_uri:
         op = layout.operator("bim.select_uri_attribute", text="", icon="FILE_FOLDER")
         op.data_path = attribute.path_from_id("string_value")
+    elif attribute.special_type == "DATE":
+        op = layout.operator("bim.datepicker", text="", icon="TIME")
+        op.target_prop = attribute.path_from_id("string_value")
+
     if attribute.is_optional:
         layout.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
 
@@ -163,11 +165,15 @@ def import_attribute(
         new.string_value = "" if new.is_null else str(data[attribute.name()]).replace("\n", "\\n")
         if attribute.type_of_attribute().declared_type().name() == "IfcURIReference":
             new.is_uri = True
+        elif attribute.type_of_attribute()._is("IfcDate"):
+            new.special_type = "DATE"
     elif data_type == "boolean":
         new.bool_value = False if new.is_null else bool(data[attribute.name()])
     elif data_type == "integer":
         new.int_value = 0 if new.is_null else int(data[attribute.name()])
     elif data_type == "float":
+        if attribute.type_of_attribute()._is("IfcLengthMeasure"):
+            new.special_type = "LENGTH"
         new.float_value = 0.0 if new.is_null else float(data[attribute.name()])
     elif data_type == "enum":
         enum_items = ifcopenshell.util.attribute.get_enum_items(attribute)
@@ -176,18 +182,23 @@ def import_attribute(
         if data[new.name]:
             new.enum_value = data[new.name]
     add_attribute_description(new, data)
-    add_attribute_min_max(new)
+    add_attribute_min_max(attribute, new)
 
 
 ATTRIBUTE_MIN_MAX_CONSTRAINTS = {"IfcMaterialLayer": {"Priority": {"value_min": 0, "value_max": 100}}}
 
 
-def add_attribute_min_max(attribute_blender: bonsai.bim.prop.Attribute) -> None:
+def add_attribute_min_max(attribute: W.attribute, attribute_blender: bonsai.bim.prop.Attribute) -> None:
     if attribute_blender.ifc_class in ATTRIBUTE_MIN_MAX_CONSTRAINTS:
         constraints = ATTRIBUTE_MIN_MAX_CONSTRAINTS[attribute_blender.ifc_class].get(attribute_blender.name, {})
         for constraint, value in constraints.items():
             setattr(attribute_blender, constraint, value)
             setattr(attribute_blender, constraint + "_constraint", True)
+    attribute_type = attribute.type_of_attribute()
+
+    if attribute_type._is("IfcPositiveLengthMeasure") or attribute_type._is("IfcNonNegativeLengthMeasure"):
+        attribute_blender.value_min = 0.0
+        attribute_blender.value_min_constraint = True
 
 
 def add_attribute_enum_items_descriptions(
@@ -237,36 +248,61 @@ def export_attributes(
     return attributes
 
 
+ENUM_ITEMS_DATA = Union[bpy.types.PropertyGroup, bpy.types.ID, bpy.types.Operator, bpy.types.OperatorProperties]
+
+
 def prop_with_search(
     layout: bpy.types.UILayout,
-    data: Union[bpy.types.PropertyGroup, bpy.types.ID],
+    data: ENUM_ITEMS_DATA,
     prop_name: str,
     should_click_ok_to_validate: bool = False,
+    original_operator_path: Optional[str] = None,
     **kwargs: Any,
 ):
     # kwargs are layout.prop arguments (text, icon, etc.)
     row = layout.row(align=True)
     row.prop(data, prop_name, **kwargs)
     try:
-        if len(get_enum_items(data, prop_name)) > 10:
+        if len(get_enum_items(data, prop_name, original_operator_path=original_operator_path)) > 10:
             # Magick courtesy of https://blender.stackexchange.com/a/203443/86891
             row.context_pointer_set(name="data", data=data)
             op = row.operator("bim.enum_property_search", text="", icon="VIEWZOOM")
             op.prop_name = prop_name
             op.should_click_ok_to_validate = should_click_ok_to_validate
+            op.original_operator_path = original_operator_path or ""
     except TypeError:  # Prop is not iterable
         pass
 
 
 def get_enum_items(
-    data: Union[bpy.types.PropertyGroup, bpy.types.ID], prop_name: str, context: Optional[bpy.types.Context] = None
+    data: ENUM_ITEMS_DATA,
+    prop_name: str,
+    context: Optional[bpy.types.Context] = None,
+    original_operator_path: Optional[str] = None,
 ) -> Union[
     Iterable[Union[tuple[str, str, str], tuple[str, str, str, int], tuple[str, str, str, str, int], None]], None
 ]:
-    # Retrieve items from a dynamic EnumProperty, which is otherwise not supported
-    # Or throws an error in the console when the items callback returns an empty list
-    # See https://blender.stackexchange.com/q/215781/86891
-    prop = data.__annotations__[prop_name]
+    """Retrieve items from a dynamic EnumProperty.
+
+    Otherwise it's not supported or throws an error in the console when the items callback returns an empty list.
+    See https://blender.stackexchange.com/q/215781/86891
+
+    :param original_operator_path: python path to the original operator class. Needed only if `data` is `bpy.types.Operator`.
+    """
+
+    # OperatorProperties is missing __annotations__, so need to somehow provide original Operator.
+    # Couldn't find any way to get Operator from OperatorProperties, so we provide the path explicitly.
+    # E.g. OperatorProperties occur when Operator is passed with context_pointer_set.
+    if isinstance(data, bpy.types.OperatorProperties):
+        if not original_operator_path:
+            raise Exception("For OperatorProperties providing the original operator path is required.")
+        operator_module_path, operator_class = original_operator_path.rsplit(".", 1)
+        operator_module = importlib.import_module(operator_module_path)
+        annotations_data = getattr(operator_module, operator_class)
+    else:
+        annotations_data = data
+
+    prop = annotations_data.__annotations__[prop_name]
     items = prop.keywords.get("items")
     if items is None:
         return

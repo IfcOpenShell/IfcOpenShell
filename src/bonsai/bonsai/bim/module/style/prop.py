@@ -33,7 +33,7 @@ from bpy.props import (
 )
 
 import gettext
-from typing import Literal
+from typing import Literal, Union
 
 
 _ = gettext.gettext
@@ -69,6 +69,13 @@ class Style(PropertyGroup):
     diffuse_colour: bpy.props.FloatVectorProperty(
         name="Diffuse Colour", subtype="COLOR", default=(1, 1, 1), min=0.0, max=1.0, size=3
     )
+    blender_material: PointerProperty(
+        description=(
+            "Needed for UI to have style->blender material link that won't break on undo. "
+            "Can be None if it's not a surface style"
+        ),
+        type=bpy.types.Material,
+    )
 
 
 STYLE_TYPES = [
@@ -77,14 +84,14 @@ STYLE_TYPES = [
 ]
 
 
-def update_shading_styles(self, context):
+def update_shading_styles(self: "BIMStylesProperties", context: bpy.types.Context) -> None:
     for mat in bpy.data.materials:
         if mat.BIMStyleProperties.ifc_definition_id == 0:
             continue
         tool.Style.change_current_style_type(mat, self.active_style_type)
 
 
-def update_shader_graph(self, context):
+def update_shader_graph(self: Union["Texture", "BIMStylesProperties"], context: bpy.types.Context) -> None:
     props = self.id_data.BIMStylesProperties if isinstance(self, Texture) else self
 
     if not props.update_graph:
@@ -258,7 +265,7 @@ class BIMStylesProperties(PropertyGroup):
     )
 
 
-def update_shading_style(self, context):
+def update_shading_style(self: "BIMStyleProperties", context: bpy.types.Context) -> None:
     blender_material = self.id_data
     style_elements = tool.Style.get_style_elements(blender_material)
     if self.active_style_type == "External":

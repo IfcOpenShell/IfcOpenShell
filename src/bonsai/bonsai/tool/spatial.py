@@ -35,6 +35,7 @@ import bonsai.core.tool
 import bonsai.core.root
 import bonsai.core.spatial
 import bonsai.core.geometry
+import bonsai.core.unit
 import bonsai.tool as tool
 import json
 from math import pi
@@ -452,7 +453,8 @@ class Spatial(bonsai.core.tool.Spatial):
         new.description = element.Description or ""
         new.long_name = element.LongName or ""
         if not element.is_a("IfcProject"):
-            new["elevation"] = str(ifcopenshell.util.placement.get_storey_elevation(element))
+            elevation = ifcopenshell.util.placement.get_storey_elevation(element)
+            new["elevation"] = tool.Unit.format_value(elevation)
         new.is_expanded = element.id() not in cls.contracted_containers
         new.level_index = level_index
         children = ifcopenshell.util.element.get_parts(element)
@@ -628,14 +630,20 @@ class Spatial(bonsai.core.tool.Spatial):
         return False
 
     @classmethod
-    def get_space_polygon_from_context_visible_objects(cls, x: float, y: float) -> Union[shapely.Polygon, None]:
+    def get_space_polygon_from_context_visible_objects(
+        cls, x: float, y: float
+    ) -> Union[shapely.Polygon, Literal["NO POLYGONS FOUND", "NO POLYGON FOR POINT"]]:
         boundary_lines = cls.get_boundary_lines_from_context_visible_objects()
         unioned_boundaries = shapely.union_all(shapely.GeometryCollection(boundary_lines))
         closed_polygons = shapely.polygonize(unioned_boundaries.geoms)
+        if not closed_polygons:
+            return "NO POLYGONS FOUND"
         space_polygon = None
         for polygon in closed_polygons.geoms:
             if shapely.contains_xy(polygon, x, y):
                 space_polygon = shapely.force_3d(polygon)
+        if space_polygon is None:
+            return "NO POLYGON FOR POINT"
         return space_polygon
 
     @classmethod
@@ -762,6 +770,12 @@ class Spatial(bonsai.core.tool.Spatial):
 
     @classmethod
     def get_x_y_z_h_mat_from_obj(cls, obj: bpy.types.Object) -> tuple[float, float, float, float, Matrix]:
+        """
+        `x`, `y` - object's center XY in world space;\n
+        `z` - object's local Z- in world space;\n
+        `h` - object's Z dimension;\n
+        `mat` - object's matrix
+        """
         mat = obj.matrix_world
         local_bbox_center = 0.125 * sum((Vector(b) for b in obj.bound_box), Vector())
         global_bbox_center = mat @ local_bbox_center
@@ -774,6 +788,12 @@ class Spatial(bonsai.core.tool.Spatial):
 
     @classmethod
     def get_x_y_z_h_mat_from_cursor(cls) -> tuple[float, float, float, float, Matrix]:
+        """
+        `x`, `y` - from cursor;\n
+        `z` - from default container Z location (if set);\n
+        `h` - default value of 3;\n
+        `mat` - identity matrix
+        """
         x, y, z = bpy.context.scene.cursor.location.xyz
         if container := tool.Root.get_default_container():
             if container_obj := tool.Ifc.get_object(container):
@@ -881,14 +901,18 @@ class Spatial(bonsai.core.tool.Spatial):
         return poly
 
     @classmethod
-    def get_bmesh_from_polygon(cls, poly: Polygon, h: float) -> bmesh.types.BMesh:
+    def get_bmesh_from_polygon(cls, poly: Polygon, h: float, polygon_is_si: bool = False) -> bmesh.types.BMesh:
+        """
+        :param h: Height, in meters.
+        :param polygon_is_si: Should be True if `poly` is defined in meters.
+        """
         mat = Matrix()
         bm = bmesh.new()
         bm.verts.index_update()
         bm.edges.index_update()
 
         mat_invert = mat.inverted()
-        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        si_conversion = 1.0 if polygon_is_si else ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         new_verts = [
             bm.verts.new(mat_invert @ (Vector([v[0], v[1], 0]) * si_conversion)) for v in poly.exterior.coords[0:-1]
         ]
@@ -940,10 +964,15 @@ class Spatial(bonsai.core.tool.Spatial):
     @classmethod
     def edit_active_space_obj_from_mesh(cls, mesh: bpy.types.Mesh) -> None:
         active_obj = bpy.context.active_object
-        mesh.name = active_obj.data.name
-        mesh.BIMMeshProperties.ifc_definition_id = active_obj.data.BIMMeshProperties.ifc_definition_id
+        old_mesh = active_obj.data
+        old_mesh_name = old_mesh.name
+        assert active_obj and isinstance(old_mesh, bpy.types.Mesh)
+        mesh.BIMMeshProperties.ifc_definition_id = old_mesh.BIMMeshProperties.ifc_definition_id
         tool.Geometry.change_object_data(active_obj, mesh, is_global=True)
         tool.Ifc.edit(active_obj)
+        tool.Blender.remove_data_block(old_mesh)
+        # Rename after old mesh is removed to avoid .001 suffix.
+        mesh.name = old_mesh_name
 
     @classmethod
     def set_obj_origin_to_bboxcenter(cls, obj: bpy.types.Object) -> None:

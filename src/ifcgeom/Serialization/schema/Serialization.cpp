@@ -20,6 +20,7 @@
 #include <TopoDS.hxx>
 #include <TopoDS_Wire.hxx>
 #include <BRepMesh_IncrementalMesh.hxx>
+#include <BRepTools.hxx>
 
 #include "../../../ifcparse/macros.h"
 #include "../../../ifcparse/IfcParse.h"
@@ -529,13 +530,14 @@ int convert_to_ifc(const TopoDS_Face& f, IfcSchema::IfcFace*& face, bool advance
 	TopExp_Explorer exp(f, TopAbs_WIRE);
 	IfcSchema::IfcFaceBound::list::ptr bounds(new IfcSchema::IfcFaceBound::list);
 	int index = 0;
+	auto outer = BRepTools::OuterWire(f);
 	for (; exp.More(); exp.Next(), ++index) {
 		IfcSchema::IfcLoop* loop;
 		if (!convert_to_ifc(TopoDS::Wire(exp.Current()), loop, advanced)) {
 			return 0;
 		}
 		IfcSchema::IfcFaceBound* bnd;
-		if (index == 0) {
+		if (outer == f) {
 			bnd = new IfcSchema::IfcFaceOuterBound(loop, true);
 		} else {
 			bnd = new IfcSchema::IfcFaceBound(loop, true);

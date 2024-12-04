@@ -41,6 +41,7 @@ classes = (
     operator.RemoveStyle,
     operator.SaveUVToStyle,
     operator.SelectByStyle,
+    operator.SelectStyleInStylesUI,
     operator.UnlinkStyle,
     operator.UpdateCurrentStyle,
     operator.UpdateStyleColours,

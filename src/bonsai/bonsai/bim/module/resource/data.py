@@ -23,6 +23,7 @@ import ifcopenshell.util.constraint
 import ifcopenshell.util.cost
 import ifcopenshell.util.date
 import ifcopenshell.util.resource
+from typing import Any
 
 
 def refresh():
@@ -44,11 +45,11 @@ class ResourceData:
         cls.is_loaded = True
 
     @classmethod
-    def total_resources(cls):
+    def total_resources(cls) -> int:
         return len(tool.Ifc.get().by_type("IfcResource"))
 
     @classmethod
-    def resources(cls):
+    def resources(cls) -> dict[int, dict[str, Any]]:
         results = {}
         for resource in tool.Ifc.get().by_type("IfcResource"):
             base_quantity = None
@@ -63,7 +64,7 @@ class ResourceData:
             if resource.is_a() in ["IfcLaborResource", "IfcConstructionEquipmentResource"]:
                 results[resource.id()]["Productivity"] = {}
                 results[resource.id()]["InheritedProductivity"] = {}
-                productivity = cls.get_productivity(resource)
+                productivity = ifcopenshell.util.resource.get_productivity(resource, should_inherit=False)
                 if productivity:
                     results[resource.id()]["Productivity"] = {
                         "id": productivity.get("id"),
@@ -71,7 +72,7 @@ class ResourceData:
                         "TimeConsumed": ifcopenshell.util.resource.get_unit_consumed(productivity),
                         "QuantityProducedName": ifcopenshell.util.resource.get_quantity_produced_name(productivity),
                     }
-                inherited_productivity = cls.get_parent_productivity(resource)
+                inherited_productivity = ifcopenshell.util.resource.get_parent_productivity(resource)
                 if inherited_productivity:
                     results[resource.id()]["InheritedProductivity"] = {
                         "QuantityProduced": ifcopenshell.util.resource.get_quantity_produced(inherited_productivity),
@@ -94,7 +95,7 @@ class ResourceData:
         return results
 
     @classmethod
-    def sum_person_hours(cls, resource):
+    def sum_person_hours(cls, resource: ifcopenshell.entity_instance) -> float:
         sum = 0
         nested_resources = ifcopenshell.util.resource.get_nested_resources(resource)
         for nested_resource in nested_resources or []:
@@ -105,7 +106,7 @@ class ResourceData:
         return round(float(sum), 2) if sum else 0
 
     @classmethod
-    def get_resource_benchmarks(cls, resource):
+    def get_resource_benchmarks(cls, resource: ifcopenshell.entity_instance) -> list[dict[str, Any]]:
         constraints = []
         for constraint in ifcopenshell.util.constraint.get_constraints(resource) or []:
             metrics = []
@@ -121,15 +122,7 @@ class ResourceData:
         return constraints
 
     @classmethod
-    def get_productivity(cls, resource):
-        return ifcopenshell.util.resource.get_productivity(resource, should_inherit=False)
-
-    @classmethod
-    def get_parent_productivity(cls, resource):
-        return ifcopenshell.util.resource.get_parent_productivity(resource)
-
-    @classmethod
-    def cost_values(cls):
+    def cost_values(cls) -> list[dict[str, Any]]:
         results = []
         ifc_id = bpy.context.scene.BIMResourceProperties.active_resource_id
         if not ifc_id:

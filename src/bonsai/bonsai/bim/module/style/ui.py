@@ -52,7 +52,7 @@ class BIM_PT_styles(Panel):
             row.operator("bim.load_styles", text="", icon="IMPORT").style_type = style_type
             return
 
-        active_style = self.props.styles and self.props.active_style_index < len(self.props.styles)
+        active_style = bool(self.props.styles and self.props.active_style_index < len(self.props.styles))
         row = self.layout.row(align=True)
         row.label(text="{} {}s".format(len(self.props.styles), self.props.style_type), icon="SHADING_RENDERED")
         row.operator("bim.disable_editing_styles", text="", icon="CANCEL")
@@ -95,9 +95,7 @@ class BIM_PT_styles(Panel):
         # style ui tools
         if active_style:
             row = self.layout.row(align=True)
-            material_name = StylesData.data["styles_to_blender_material_names"][style]
-            if material_name:  # The user may have unlinked the style, so the material may not exist
-                material = bpy.data.materials[material_name]
+            if material := style.blender_material:
                 row.prop(material.BIMStyleProperties, "active_style_type", icon="SHADING_RENDERED", text="")
                 op = row.operator("bim.update_current_style", icon="FILE_REFRESH", text="")
                 op.style_id = style.ifc_definition_id
@@ -265,12 +263,11 @@ class BIM_PT_styles(Panel):
 
 
 class BIM_UL_styles(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         if item:
             row = layout.row(align=True)
-            material_name: Union[str, None] = StylesData.data["styles_to_blender_material_names"][item]
             material_icon = 0
-            if material_name and (material := bpy.data.materials.get(material_name)):
+            if material := item.blender_material:
                 preview = material.preview_ensure()
                 material_icon = preview.icon_id
             row.prop(item, "name", text="", emboss=False, icon_value=material_icon)

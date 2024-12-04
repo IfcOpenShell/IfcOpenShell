@@ -18,17 +18,8 @@
 
 import bpy
 import ifcopenshell
+import ifcpatch
 import bonsai.core.tool
-from typing import TYPE_CHECKING
-
-
-try:
-    import ifcpatch
-except ImportError:
-    print("IfcPatch not available")
-
-if TYPE_CHECKING:
-    import ifcpatch
 
 
 class Patch(bonsai.core.tool.Patch):

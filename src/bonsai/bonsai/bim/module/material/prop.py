@@ -20,6 +20,7 @@ import bpy
 from ifcopenshell.util.doc import get_entity_doc
 import bonsai.tool as tool
 from bonsai.bim.module.material.data import MaterialsData, ObjectMaterialData
+from bonsai.bim.module.profile.data import ProfileData
 from bonsai.bim.ifc import IfcStore
 from bonsai.bim.prop import StrProperty, Attribute
 from bpy.types import PropertyGroup
@@ -34,49 +35,17 @@ from bpy.props import (
     CollectionProperty,
 )
 
-materialtypes_enum = []
-profileclasses_enum = []
-parameterizedprofileclasses_enum = []
-
-
-def purge():
-    global materialtypes_enum
-    global profileclasses_enum
-    global parameterizedprofileclasses_enum
-    materialtypes_enum = []
-    profileclasses_enum = []
-    parameterizedprofileclasses_enum = []
-
 
 def get_profile_classes(self, context):
-    global profileclasses_enum
-    if len(profileclasses_enum) == 0 and IfcStore.get_schema():
-        version = tool.Ifc.get_schema()
-        profileclasses_enum.clear()
-        profileclasses_enum = [
-            (t.name(), t.name(), get_entity_doc(version, t.name()).get("description", ""))
-            for t in IfcStore.get_schema().declaration_by_name("IfcProfileDef").subtypes()
-        ]
-    return profileclasses_enum
+    if not ProfileData.is_loaded:
+        ProfileData.load()
+    return ProfileData.data["profile_def_classes_enum"]
 
 
 def get_parameterized_profile_classes(self, context):
-    global parameterizedprofileclasses_enum
-    if len(parameterizedprofileclasses_enum) == 0 and IfcStore.get_schema():
-        version = tool.Ifc.get_schema()
-        parameterizedprofileclasses_enum.clear()
-        parameterizedprofileclasses_enum = [
-            (t.name(), t.name(), get_entity_doc(version, t.name()).get("description", ""))
-            for t in IfcStore.get_schema().declaration_by_name("IfcParameterizedProfileDef").subtypes()
-        ]
-        for ifc_class in parameterizedprofileclasses_enum:
-            parameterizedprofileclasses_enum.extend(
-                [
-                    (t.name(), t.name(), get_entity_doc(version, t.name()).get("description", ""))
-                    for t in IfcStore.get_schema().declaration_by_name(ifc_class[0]).subtypes() or []
-                ]
-            )
-    return parameterizedprofileclasses_enum
+    if not ProfileData.is_loaded:
+        ProfileData.load()
+    return ProfileData.data["profile_classes"]
 
 
 def get_materials(self, context):

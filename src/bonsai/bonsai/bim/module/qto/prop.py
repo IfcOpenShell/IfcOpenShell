@@ -47,16 +47,17 @@ def get_calculator(self, context):
 
 
 def get_calculator_function(self, context):
+    global CALCULATOR_FUNCTION_ENUM_ITEMS
     calculator = ifc5d.qto.calculators[self.calculator]
-    results = []
+    CALCULATOR_FUNCTION_ENUM_ITEMS = []
     previous_measure = None
     for function_id, function in calculator.functions.items():
         measure = function.measure.split("Measure")[0][3:]
         if previous_measure is not None and measure != previous_measure:
-            results.append(None)
-        results.append((function_id, f"{measure}: {function.name}", function.description))
+            CALCULATOR_FUNCTION_ENUM_ITEMS.append(None)
+        CALCULATOR_FUNCTION_ENUM_ITEMS.append((function_id, f"{measure}: {function.name}", function.description))
         previous_measure = measure
-    return results
+    return CALCULATOR_FUNCTION_ENUM_ITEMS
 
 
 class BIMQtoProperties(PropertyGroup):

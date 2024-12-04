@@ -46,7 +46,7 @@ def add_instance_flooring_covering_from_cursor(ifc: tool.Ifc, root: tool.Root, s
 
     space_polygon = spatial.get_space_polygon_from_context_visible_objects(x, y)
 
-    if not space_polygon:
+    if isinstance(space_polygon, str):
         return
 
     bm = spatial.get_bmesh_from_polygon(space_polygon, h=0)
@@ -91,7 +91,7 @@ def add_instance_ceiling_covering_from_cursor(
 
     space_polygon = spatial.get_space_polygon_from_context_visible_objects(x, y)
 
-    if not space_polygon:
+    if isinstance(space_polygon, str):
         return
 
     bm = spatial.get_bmesh_from_polygon(space_polygon, h=0)
@@ -123,7 +123,7 @@ def regen_selected_covering_object(root: tool.Root, spatial: tool.Spatial) -> No
 
     space_polygon = spatial.get_space_polygon_from_context_visible_objects(x, y)
 
-    if not space_polygon:
+    if isinstance(space_polygon, str):
         return
 
     bm = spatial.get_bmesh_from_polygon(space_polygon, h=0)

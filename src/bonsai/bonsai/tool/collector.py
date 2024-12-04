@@ -39,6 +39,7 @@ class Collector(bonsai.core.tool.Collector):
                     users_collection.objects.unlink(obj)
 
         element = tool.Ifc.get_entity(obj)
+        assert element
 
         # Note that tool.Geometry.is_locked is only checked within the if
         # statements for efficiency as it is a slow check.
@@ -62,6 +63,9 @@ class Collector(bonsai.core.tool.Collector):
             cls.link_collection_object_safe(collection, obj)
         elif element.is_a("IfcOpeningElement"):
             collection = cls._create_project_child_collection("IfcOpeningElement")
+            cls.link_collection_object_safe(collection, obj)
+        elif element.is_a("IfcSpace"):
+            collection = cls._create_project_child_collection("IfcSpace")
             cls.link_collection_object_safe(collection, obj)
         elif element.is_a("IfcStructuralItem"):
             collection = cls._create_project_child_collection("IfcStructuralItem")
@@ -102,6 +106,8 @@ class Collector(bonsai.core.tool.Collector):
         elif element.is_a("IfcAnnotation") and (drawing_obj := cls.get_annotation_drawing_obj(element)):
             cls.link_collection_object_safe(drawing_obj.BIMObjectProperties.collection, obj)
         elif container := ifcopenshell.util.element.get_container(element):
+            while container.is_a("IfcSpace"):
+                container = ifcopenshell.util.element.get_aggregate(container)
             container_obj = tool.Ifc.get_object(container)
             if not (collection := container_obj.BIMObjectProperties.collection):
                 cls.assign(container_obj)
@@ -158,7 +164,7 @@ class Collector(bonsai.core.tool.Collector):
             pass
 
     @classmethod
-    def set_layer_collection_visibility(cls, layer_collection):
+    def set_layer_collection_visibility(cls, layer_collection: bpy.types.LayerCollection) -> None:
         name = layer_collection.collection.name
         if name in (
             "IfcTypeProduct",
@@ -172,7 +178,7 @@ class Collector(bonsai.core.tool.Collector):
             layer_collection.hide_viewport = False
 
     @classmethod
-    def reset_default_visibility(cls):
+    def reset_default_visibility(cls) -> None:
         project = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
         project_collection = project.BIMObjectProperties.collection
         for layer_collection in bpy.context.view_layer.layer_collection.children:

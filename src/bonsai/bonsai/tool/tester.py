@@ -16,7 +16,11 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifctester.ids
+import ifctester.reporter
+from typing import Union
+
 
 class Tester:
-    specs = None
-    report = {}
+    specs: Union[ifctester.ids.Ids, None] = None
+    report: list[ifctester.reporter.ResultsSpecification] = []

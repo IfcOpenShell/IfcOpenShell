@@ -66,6 +66,21 @@ class BIMProfileProperties(PropertyGroup):
     active_arbitrary_profile_id: IntProperty(name="Active Arbitrary Profile Id")
     profile_attributes: CollectionProperty(name="Profile Attributes", type=Attribute)
     profile_classes: EnumProperty(items=get_profile_classes, name="Profile Classes")
+    is_filtering_material_profiles: bpy.props.BoolProperty(
+        name="Filter Material Profiles",
+        default=False,
+        description="Check to only show IfcProfileDefs attached to IfcMaterialProfiles",
+        update=lambda self, context: bpy.ops.bim.load_profiles(),
+    )
+    object_to_profile: PointerProperty(
+        name="Object to profile",
+        type=bpy.types.Object,
+        description=(
+            "Optional mesh object to use as a source for a new arbitrary profile.\n"
+            "Object must be a closed mesh and have at least 1 face"
+        ),
+        poll=lambda self, obj: obj.type == "MESH",
+    )
 
 
 def generate_thumbnail_for_active_profile():

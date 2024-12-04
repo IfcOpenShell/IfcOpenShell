@@ -16,8 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import numpy as np
 import bpy
 import ifcopenshell
+import ifcopenshell.api
 import bonsai.core.tool
 import bonsai.tool as tool
 from bonsai.tool.spatial import Spatial as subject
@@ -229,3 +231,33 @@ class TestSelectProducts(NewFile):
         tool.Ifc.link(product, obj)
         subject.select_products([product])
         assert obj in bpy.context.selected_objects
+
+
+class TestGenerateSpace(NewFile):
+    def test_generate_space_at_cursor(self):
+        bpy.ops.bim.create_project()
+        ifc = tool.Ifc.get()
+        scene = bpy.context.scene
+        product = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        bpy.ops.mesh.primitive_cube_add(size=10, location=(0, 0, 4))
+        obj = bpy.data.objects["Cube"]
+        scene.collection.objects.link(obj)
+        tool.Ifc.link(product, obj)
+        scene.cursor.location = (0, 0, 0)
+
+        bpy.ops.bim.generate_space()
+        space = bpy.data.objects["IfcSpace/Space"]
+        mesh = space.data
+        assert isinstance(mesh, bpy.types.Mesh)
+        assert len(mesh.vertices) == 8
+        TEST_VERTS = (
+            ((5.0, 5.0, 10.0)),
+            ((-5.0, 5.0, 10.0)),
+            ((-5.0, -5.0, 10.0)),
+            ((5.0, -5.0, 10.0)),
+            ((-5.0, 5.0, 0.0)),
+            ((-5.0, -5.0, 0.0)),
+            ((5.0, 5.0, 0.0)),
+            ((5.0, -5.0, 0.0)),
+        )
+        assert np.allclose(TEST_VERTS, [tuple(v.co) for v in mesh.vertices])

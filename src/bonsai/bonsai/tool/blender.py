@@ -31,7 +31,7 @@ import importlib
 from mathutils import Vector
 from pathlib import Path
 from bonsai.bim.ifc import IFC_CONNECTED_TYPE
-from typing import Any, Optional, Union, Literal, Iterable, Callable
+from typing import Any, Optional, Union, Literal, Iterable, Callable, TypeVar
 from typing_extensions import assert_never
 
 
@@ -86,16 +86,17 @@ class Blender(bonsai.core.tool.Blender):
         area.spaces[0].region_3d.view_perspective = "CAMERA"
 
     @classmethod
-    def get_area_props(cls, context: bpy.types.Context) -> Any:
+    def get_area_props(cls, context: bpy.types.Context) -> bpy.types.PropertyGroup:
         try:
             if context.screen.name.endswith("-nonnormal"):  # Ctrl-space temporary fullscreen
-                screen = bpy.data.screens[context.screen.name[0 : -len("-nonnormal")]]
+                screen = bpy.data.screens[context.screen.name.removesuffix("-nonnormal")]
                 # The original area object has its type changed to "EMPTY" apparently
                 index = [a.type for a in screen.areas].index("EMPTY")
                 return screen.BIMAreaProperties[index]
             return context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
-        except:
-            return
+        except IndexError:
+            # Fallback in case areas aren't setup yet.
+            return context.screen.BIMTabProperties
 
     @classmethod
     def set_active_object(cls, obj: bpy.types.Object) -> None:
@@ -119,9 +120,7 @@ class Blender(bonsai.core.tool.Blender):
     @classmethod
     def is_tab(cls, context: bpy.types.Context, tab: str) -> bool:
         aprops = cls.get_area_props(context)
-        if not aprops:
-            return context.screen.BIMTabProperties.tab == tab
-        if context.area.spaces.active.search_filter:
+        if aprops.path_from_id() == "BIMAreaProperties" and context.area.spaces.active.search_filter:
             return True
         return aprops.tab == tab
 
@@ -148,6 +147,7 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     def get_selected_objects(cls) -> set[bpy.types.Object]:
+        """Get selected objects including active object."""
         if selected_objects := getattr(bpy.context, "selected_objects", None):
             if active_obj := cls.get_active_object():
                 return set(selected_objects + [active_obj])
@@ -260,11 +260,9 @@ class Blender(bonsai.core.tool.Blender):
                     return area
 
     @classmethod
-    def get_view3d_space(cls):
+    def get_view3d_space(cls) -> Union[bpy.types.SpaceView3D, None]:
         if area := cls.get_view3d_area():
-            for space in area.spaces:
-                if space.type == "VIEW_3D":
-                    return space
+            return area.spaces.active
 
     @classmethod
     def get_blender_prop_default_value(cls, props, prop_name: str) -> Any:
@@ -285,9 +283,19 @@ class Blender(bonsai.core.tool.Blender):
         when in real life you can have a couple of those but should work for the most cases.
         """
         area = cls.get_view3d_area()
+        assert area
         region = next(region for region in area.regions if region.type == "WINDOW")
         space = next(space for space in area.spaces if space.type == "VIEW_3D")
         context_override = {"area": area, "region": region, "space_data": space}
+
+        # Need to override screen and window if area is from a different window.
+        screen: bpy.types.Scene = area.id_data
+        context = bpy.context
+        assert context
+        if context.screen != screen:
+            context_override["screen"] = screen
+            window = next(window for window in context.window_manager.windows if window.screen == screen)
+            context_override["window"] = window
         return context_override
 
     @classmethod
@@ -313,10 +321,11 @@ class Blender(bonsai.core.tool.Blender):
         for screen in bpy.data.screens:
             for area in screen.areas:
                 if area.type == "NODE_EDITOR":
-                    for space in area.spaces:
-                        if space.tree_type == "ShaderNodeTree":
-                            context_override = {"area": area, "space": space, "screen": screen}
-                            return context_override
+                    space = area.spaces.active
+                    assert isinstance(space, bpy.types.SpaceNodeEditor)
+                    if space.tree_type == "ShaderNodeTree":
+                        context_override = {"area": area, "space": space, "screen": screen}
+                        return context_override
 
     @classmethod
     def copy_node_graph(cls, material_to: bpy.types.Material, material_from: bpy.types.Material) -> None:
@@ -539,6 +548,13 @@ class Blender(bonsai.core.tool.Blender):
                 cls.clear_active_object()
 
     @classmethod
+    def get_objects_selection(
+        cls, context: bpy.types.Context
+    ) -> tuple[bpy.types.Context, Union[bpy.types.Object, None], list[bpy.types.Object]]:
+        """Get objects selection to later pass to `set_objects_selection`."""
+        return context, context.view_layer.objects.active, context.selected_objects
+
+    @classmethod
     def set_objects_selection(
         cls,
         context: bpy.types.Context,
@@ -559,6 +575,8 @@ class Blender(bonsai.core.tool.Blender):
     def get_enum_safe(cls, props: bpy.types.PropertyGroup, prop_name: str) -> Union[str, None]:
         """method created for readibility and to avoid console warnings like
         `pyrna_enum_to_py: current value '17' matches no enum in 'BIMModelProperties', '', 'relating_type_id'`
+
+        :return: Enum property value as a string or None if current enum value is invalid.
         """
         # Yes, accessing items through annotations is a bit hacky
         # but it's the only way to get the dynamic enum items
@@ -591,6 +609,33 @@ class Blender(bonsai.core.tool.Blender):
         if items_amount > index >= 0:
             return items[index][0]
         return None
+
+    @classmethod
+    def ensure_enum_is_valid(cls, props: bpy.types.PropertyGroup, prop_name: str) -> bool:
+        """Ensure that enum is valid after current enum item was deleted.
+
+        :return: True if enum is valid and update callback was triggered,
+            False if enum is still invalid (as there no enum items)
+            and update callback was not triggered (may need to trigger it manually).
+        """
+        current_value = tool.Blender.get_enum_safe(props, prop_name)
+        if current_value is not None:
+            # Value is valid, just trigger the update callback.
+            setattr(props, prop_name, current_value)
+            return True
+
+        # If enum was never changed prop_name won't be present in props
+        # and implicit 0 index is assumed.
+        current_index = props.get(prop_name, 0)
+        # Index is still invalid and triggering update callback directly
+        # will cause an error, so we just stop here.
+        if current_index == 0:
+            return False
+
+        props[prop_name] = current_index - 1
+        # Trigger update callback.
+        setattr(props, prop_name, getattr(props, prop_name))
+        return True
 
     @classmethod
     def append_data_block(cls, filepath: str, data_block_type: str, name: str, link=False, relative=False) -> dict:
@@ -711,6 +756,16 @@ class Blender(bonsai.core.tool.Blender):
             if group_index in groups and vertex[deform_layer][group_index] == 1.0:
                 return True, group_index
         return False, None
+
+    @classmethod
+    def bmesh_get_vertex_groups(cls, vertex: bmesh.types.BMVert, deform_layer: bmesh.types.BMLayerItem) -> list[int]:
+        results = []
+        for group_index in vertex[deform_layer].keys():
+            # Ignore vertex groups assignments produced by edge subdivision near arcs
+            # They usually have weight = 0.5
+            if vertex[deform_layer][group_index] == 1.0:
+                results.append(group_index)
+        return results
 
     @classmethod
     def toggle_edit_mode(cls, context: bpy.types.Context) -> set[str]:
@@ -1042,7 +1097,7 @@ class Blender(bonsai.core.tool.Blender):
         for item_name in dir(bpy.types):
             item = getattr(bpy.types, item_name)
             # filter only panels
-            if not hasattr(item, "bl_rna") or not isinstance(item.bl_rna, bpy.types.Panel):
+            if not hasattr(item, "bl_rna") or not isinstance(item.bl_rna.base, bpy.types.Panel):
                 continue
             # ignore bbim panels
             if item.__module__.startswith("bonsai"):
@@ -1187,3 +1242,56 @@ class Blender(bonsai.core.tool.Blender):
         system = bpy.context.preferences.system
         system_scale = system.dpi * system.pixel_size
         return (system_scale / default_scale) * size
+
+    @classmethod
+    def apply_transform_as_local(cls, obj: bpy.types.Object) -> bool:
+        """Apply object transforms as local matrix, if possible.
+
+        Clear parent and constraints.
+
+        :return: `True` if transform was applied and `False`
+            if transform wasn't applied it's not possible due to a shear.
+        """
+
+        if not obj.parent and not obj.constraints:
+            return True
+
+        matrix = obj.matrix_world.copy()
+        # Matrix has a shear, it cannot be represented as a local matrix
+        # based on rotation+translation+scale.
+        if not matrix.to_3x3().is_orthogonal_axis_vectors:
+            return False
+
+        obj.parent = None
+        obj.constraints.clear()
+        obj.matrix_world = matrix
+        return True
+
+    @classmethod
+    def set_prop_from_path(cls, bpy_object: bpy.types.bpy_struct, prop_path: str, value: Any) -> None:
+        """Set `data_block` property value using path from `path_from_id`."""
+
+        T = TypeVar("T", bound=bpy.types.bpy_struct)
+
+        def path_resolve(obj: T, prop_path: str) -> tuple[T, str]:
+            if "." in prop_path:
+                extra_path, prop_path = prop_path.rsplit(".", 1)
+                obj = obj.path_resolve(extra_path)
+            return obj, prop_path
+
+        obj, path = path_resolve(bpy_object, prop_path)
+        setattr(obj, path, value)
+
+    @classmethod
+    def get_microsoft_store_app_id(cls) -> Union[str, None]:
+        """Get Microsoft Store app ID for current Blender instance.
+
+        :return: `None` if Blender is installed not from Microsoft Store (possibly using non-Windows platform).
+            Otherwise return app ID string (e.g. 'ppwjx1n5r4v9t').
+        """
+        if os.name != "nt":
+            return None
+        blender_binary_path = Path(bpy.app.binary_path)
+        if len(blender_binary_path.parents) > 3 and blender_binary_path.parents[2].name == "WindowsApps":
+            return blender_binary_path.parents[1].name.rsplit("__", 1)[-1]
+        return None

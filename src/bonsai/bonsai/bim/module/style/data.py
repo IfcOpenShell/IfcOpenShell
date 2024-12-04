@@ -36,23 +36,11 @@ class StylesData:
     @classmethod
     def load(cls):
         cls.data = {
-            "styles_to_blender_material_names": cls.styles_to_blender_material_names(),
             "style_types": cls.style_types(),
             "total_styles": cls.total_styles(),
             "reflectance_methods": cls.reflectance_methods(),
         }
         cls.is_loaded = True
-
-    @classmethod
-    def styles_to_blender_material_names(cls) -> dict[bpy.types.PropertyGroup, Union[str, None]]:
-        ifc_file = tool.Ifc.get()
-        props = bpy.context.scene.BIMStylesProperties
-        materials: dict[bpy.types.PropertyGroup, Union[str, None]] = {}
-        for style in props.styles:
-            material = tool.Ifc.get_object(ifc_file.by_id(style.ifc_definition_id))
-            # Material will be None if it's not IfcSurfaceStyle.
-            materials[style] = material.name if material is not None else None
-        return materials
 
     @classmethod
     def reflectance_methods(cls):

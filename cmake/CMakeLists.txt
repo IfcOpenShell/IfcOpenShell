@@ -27,6 +27,8 @@ if(CCACHE_FOUND)
     set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
 endif()
 
+add_definitions(-D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
+
 cmake_policy(SET CMP0048 NEW)
 cmake_policy(SET CMP0074 NEW)
 cmake_policy(SET CMP0078 NEW)
@@ -1049,10 +1051,19 @@ if(BUILD_CONVERT)
         target_include_directories(cityjson_converter PRIVATE ../src)
         set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} cityjson_converter)
 
+        install(TARGETS cityjson_converter
+            ARCHIVE DESTINATION ${LIBDIR}
+            LIBRARY DESTINATION ${LIBDIR}
+        )
+
         add_executable(cityjson_converter_exe ${CITYJSON_CONVERT_FILES})
         set_target_properties(cityjson_converter_exe PROPERTIES COMPILE_FLAGS "-DCITYJSON_EXECUTABLE")
         target_include_directories(cityjson_converter_exe PRIVATE ../src)
         target_link_libraries(cityjson_converter_exe ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${HDF5_LIBRARIES} ${USD_LIBRARIES})
+
+        install(TARGETS cityjson_converter_exe
+            RUNTIME DESTINATION ${BINDIR}
+        )
     endif()
 
     # IfcConvert
@@ -1190,13 +1201,20 @@ install(TARGETS IfcParse
 )
 
 if(BUILD_IFCGEOM)
-    install(FILES ${IFCGEOM_H_FILES}
+    # install(FILES ${IFCGEOM_H_FILES}
+    #     DESTINATION ${INCLUDEDIR}/ifcgeom
+    # )
+
+    install(FILES ${SCHEMA_AGNOSTIC_H_FILES}
         DESTINATION ${INCLUDEDIR}/ifcgeom
     )
 
-    install(FILES ${SCHEMA_AGNOSTIC_H_FILES}
-        DESTINATION ${INCLUDEDIR}/ifcgeom_schema_agnostic
-    )
+    foreach(kernel ${GEOMETRY_KERNELS})
+        file(GLOB IFCGEOM_H_FILES ../src/ifcgeom/kernels/${kernel}/*.h)
+         install(FILES ${IFCGEOM_H_FILES}
+            DESTINATION ${INCLUDEDIR}/ifcgeom/kernels/${kernel}
+        )
+    endforeach()
 
     install(TARGETS ${IFCGEOM_SCHEMA_LIBRARIES} ${kernel_libraries} IfcGeom
         ARCHIVE DESTINATION ${LIBDIR}
@@ -1212,14 +1230,22 @@ if(BUILD_CONVERT)
         RUNTIME DESTINATION ${BINDIR}
     )
 
-    install(FILES ${SERIALIZERS_FILES}
+    install(FILES ${SERIALIZERS_H_FILES}
         DESTINATION ${INCLUDEDIR}/serializers/
     )
 
-    install(FILES ${SERIALIZERS_S_FILES}
+    install(FILES ${SERIALIZERS_S_H_FILES}
         DESTINATION ${INCLUDEDIR}/serializers/schema_dependent
     )
 endif(BUILD_CONVERT)
+
+if(BUILD_CONVERT OR BUILD_IFCPYTHON)
+    install(TARGETS geometry_serializer ${geometry_serializer_libraries}
+        ARCHIVE DESTINATION ${LIBDIR}
+        LIBRARY DESTINATION ${LIBDIR}
+        RUNTIME DESTINATION ${BINDIR}
+    )
+endif(BUILD_CONVERT OR BUILD_IFCPYTHON)
 
 # Cmake uninstall target
 if(NOT TARGET uninstall)

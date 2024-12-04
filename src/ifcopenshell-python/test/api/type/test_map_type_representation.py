@@ -32,8 +32,9 @@ class TestMapTypeRepresentations(test.bootstrap.IFC4):
     def test_removing_existing_element_representations_and_mapping_type_representations(self):
         context = self.file.createIfcGeometricRepresentationSubContext()
         element = self.file.createIfcWall(
-            Representation=self.file.createIfcProductRepresentation(
-                Representations=[self.file.createIfcShapeRepresentation(ContextOfItems=context)]
+            Representation=self.file.create_entity(
+                "IfcProductDefinitionShape",
+                Representations=[self.file.createIfcShapeRepresentation(ContextOfItems=context)],
             )
         )
         type = self.file.createIfcWallType(

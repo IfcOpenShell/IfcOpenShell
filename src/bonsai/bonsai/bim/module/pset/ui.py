@@ -35,6 +35,7 @@ from bonsai.bim.module.pset.data import (
     ProfilePsetsData,
     WorkSchedulePsetsData,
 )
+from bonsai.bim.module.material.data import ObjectMaterialData
 from typing import Any, Optional
 
 
@@ -102,6 +103,9 @@ def draw_psetqto_ui(
     allow_removing: bool = True,
     filter_keyword: str = "",
 ) -> None:
+
+    active_operator = context.active_operator
+
     filter_keyword = filter_keyword.lower()
     box = layout.box()
     row = box.row(align=True)
@@ -135,6 +139,11 @@ def draw_psetqto_ui(
         op.pset_id = pset_id
         op.obj = obj_name
         op.obj_type = obj_type
+        if pset["has_template"]:
+            row.label(text="", icon="ASSET_MANAGER")
+        else:
+            op = row.operator("bim.save_pset_as_template", icon="ASSET_MANAGER", text="")
+            op.pset_id = pset_id
         remove_pset_row = row.row(align=True)
         op = remove_pset_row.operator("bim.remove_pset", icon="X", text="")
         op.pset_id = pset_id
@@ -190,7 +199,16 @@ def draw_psetqto_ui(
                 row.label(text=prop["Name"])
                 op = row.operator("bim.select_similar", text=nominal_value, icon="NONE", emboss=False)
                 op.key = '"' + pset["Name"].replace('"', '\\"') + '"."' + prop["Name"].replace('"', '\\"') + '"'
-
+                # calculate sum of all selected objects
+                if active_operator:
+                    if active_operator.bl_idname == "BIM_OT_select_similar":
+                        calculated_sum = getattr(active_operator, "calculated_sum", 0.0)
+                        if (
+                            op.key == active_operator.key
+                            and calculated_sum != 0
+                            and isinstance(float(nominal_value), (int, float))
+                        ):
+                            row.label(text=f"(Sum: {calculated_sum})")
             if not has_props_displayed:
                 row = box.row()
                 row.scale_y = 0.8
@@ -421,7 +439,10 @@ class BIM_PT_material_set_psets(Panel):
             return False  # We don't support material psets in IFC2X3 because they suck
         if not tool.Ifc.get_entity(context.active_object):
             return False
-        return True
+        if not ObjectMaterialData.is_loaded:
+            ObjectMaterialData.load()
+        ifc_class = ObjectMaterialData.data["material_class"]
+        return bool(ifc_class and "Set" in ifc_class)
 
     def draw(self, context):
         if not MaterialSetPsetsData.is_loaded:
@@ -458,17 +479,26 @@ class BIM_PT_material_set_item_psets(Panel):
             return False  # We don't support material psets in IFC2X3 because they suck
         if not tool.Ifc.get_entity(context.active_object):
             return False
-        return True
+        if not ObjectMaterialData.is_loaded:
+            ObjectMaterialData.load()
+        ifc_class = ObjectMaterialData.data["material_class"]
+        return bool(ifc_class and "Set" in ifc_class)
 
     def draw(self, context):
         if not MaterialSetItemPsetsData.is_loaded:
             MaterialSetItemPsetsData.load()
 
-        props = context.active_object.MaterialSetItemPsetProperties
+        obj = context.active_object
+        assert obj
+        if not obj.BIMObjectMaterialProperties.active_material_set_item_id:
+            self.layout.label(text="No Material Set Item Edited.")
+            return
+
+        props = obj.MaterialSetItemPsetProperties
         row = self.layout.row(align=True)
         prop_with_search(row, props, "pset_name", text="")
         op = row.operator("bim.add_pset", icon="ADD", text="")
-        op.obj = context.active_object.name
+        op.obj = obj.name
         op.obj_type = "MaterialSetItem"
 
         if not props.active_pset_id and props.active_pset_name and props.active_pset_type == "PSET":

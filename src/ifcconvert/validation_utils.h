@@ -8,12 +8,22 @@
 #include <CGAL/minkowski_sum_3.h>
 
 #include <CGAL/AABB_tree.h>
+#if CGAL_VERSION_NR >= 1060000000
+#include <CGAL/AABB_traits_3.h>
+#else
 #include <CGAL/AABB_traits.h>
+#endif
 #include <CGAL/Polyhedron_3.h>
 #include <CGAL/AABB_face_graph_triangle_primitive.h>
 
 #include <fstream>
 #include <iostream>
+
+#if CGAL_VERSION_NR >= 1060000000
+#define variant_get std::get_if
+#else
+#define variant_get boost::get
+#endif
 
 template <typename T>
 T enlarge(const T& t, double d = 1.e-5) {
@@ -163,8 +173,12 @@ struct remove_thickness {
 
 	typedef CGAL::Polyhedron_3<Kernel_> Polyhedron;
 	typedef CGAL::AABB_face_graph_triangle_primitive<Polyhedron> Primitive;
-	typedef CGAL::AABB_traits<Kernel_, Primitive> Traits;
-	typedef CGAL::AABB_tree<Traits> Tree;
+#if CGAL_VERSION_NR >= 1060000000
+	typedef CGAL::AABB_traits_3<Kernel_, Primitive> AAbbTraits;
+#else
+	typedef CGAL::AABB_traits<Kernel_, Primitive> AAbbTraits;
+#endif
+	typedef CGAL::AABB_tree<AAbbTraits> Tree;
 	typedef boost::optional<Tree::Intersection_and_primitive_id<Ray>::Type> Ray_intersection;
 
 	cgal_shape_t polyhedron, polyhedron2, flattened;
@@ -223,8 +237,8 @@ struct remove_thickness {
 			double N = std::numeric_limits<double>::infinity();
 			Point P;
 			for (auto& intersection : intersections) {
-				if (boost::get<Point>(&(intersection->first))) {
-					const Point* p = boost::get<Point>(&(intersection->first));
+				if (variant_get<Point>(&(intersection->first))) {
+					const Point* p = variant_get<Point>(&(intersection->first));
 					const double d = std::sqrt(CGAL::to_double((*p - O).squared_length()));
 					if (d > 1.e-20 && d < N) {
 						N = d;
@@ -354,8 +368,8 @@ struct remove_thickness {
 
 			if (intersections.size()) {
 				for (auto& intersection : intersections) {
-					if (boost::get<Point>(&(intersection->first))) {
-						const Point* p = boost::get<Point>(&(intersection->first));
+					if (variant_get<Point>(&(intersection->first))) {
+						const Point* p = variant_get<Point>(&(intersection->first));
 						const double d = std::sqrt(CGAL::to_double((*p - O).squared_length()));
 						if (d < N && d > 1.e-20) {
 							N = d;

@@ -73,3 +73,13 @@ class Aggregate(bonsai.core.tool.Aggregate):
         for rel in related_element.Decomposes:
             if rel.is_a("IfcRelAggregates"):
                 return rel.RelatingObject
+
+    @classmethod
+    def get_parts_recursively(cls, element: ifcopenshell.entity_instance) -> set[ifcopenshell.entity_instance]:
+        parts = set()
+        queue = {element}
+        while queue:
+            element = queue.pop()
+            queue.update(new_parts := set(ifcopenshell.util.element.get_parts(element)))
+            parts.update(new_parts)
+        return parts

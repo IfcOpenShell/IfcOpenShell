@@ -68,6 +68,10 @@ def update_representation_obj(self, context):
             if data and not data.users:
                 bpy.data.meshes.remove(data)
     self.item_objs.clear()
+    if not self.representation_obj and self.mode != "OBJECT":
+        self.is_changing_mode = True
+        self.mode = "OBJECT"
+        self.is_changing_mode = False
 
 
 def get_mode(self, context):
@@ -115,6 +119,7 @@ def update_shape_aspect(self, context):
 class RepresentationItem(PropertyGroup):
     name: StringProperty(name="Name")
     surface_style: StringProperty(name="Surface Style")
+    surface_style_id: IntProperty(name="Surface Style ID")
     layer: StringProperty(name="Layer")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     shape_aspect: StringProperty(name="Shape Aspect")
