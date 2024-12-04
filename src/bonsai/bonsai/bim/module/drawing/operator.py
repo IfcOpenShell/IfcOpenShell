@@ -1396,10 +1396,7 @@ class CreateDrawing(bpy.types.Operator):
         for area in areas:
             if area.type != "VIEW_3D":
                 continue
-            for space in area.spaces:
-                if space.type != "VIEW_3D":
-                    continue
-                return space
+            return area.spaces.active
 
     def get_material_name(self, element: ifcopenshell.entity_instance) -> str:
         if hasattr(element, "Name") and element.Name:
@@ -2298,10 +2295,7 @@ class SaveDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
         for area in context.screen.areas:
             if area.type != "VIEW_3D":
                 continue
-            for space in area.spaces:
-                if space.type != "VIEW_3D":
-                    continue
-                return space
+            return area.spaces.active
 
 
 class SaveDrawingStylesData(bpy.types.Operator, tool.Ifc.Operator):
@@ -2436,14 +2430,11 @@ class ActivateDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
                 if global_id in self.exclude_global_ids:
                     obj.hide_viewport = True  # Note: this breaks alt-H
 
-    def get_view_3d(self, context: bpy.types.Context) -> bpy.types.Space:
+    def get_view_3d(self, context: bpy.types.Context) -> bpy.types.SpaceView3D:
         for area in context.screen.areas:
             if area.type != "VIEW_3D":
                 continue
-            for space in area.spaces:
-                if space.type != "VIEW_3D":
-                    continue
-                return space
+            return area.spaces.active
         assert False, "Space is not found."
 
 
