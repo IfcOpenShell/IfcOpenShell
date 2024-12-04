@@ -323,10 +323,11 @@ class Blender(bonsai.core.tool.Blender):
         for screen in bpy.data.screens:
             for area in screen.areas:
                 if area.type == "NODE_EDITOR":
-                    for space in area.spaces:
-                        if space.tree_type == "ShaderNodeTree":
-                            context_override = {"area": area, "space": space, "screen": screen}
-                            return context_override
+                    space = area.spaces.active
+                    assert isinstance(space, bpy.types.SpaceNodeEditor)
+                    if space.tree_type == "ShaderNodeTree":
+                        context_override = {"area": area, "space": space, "screen": screen}
+                        return context_override
 
     @classmethod
     def copy_node_graph(cls, material_to: bpy.types.Material, material_from: bpy.types.Material) -> None:
