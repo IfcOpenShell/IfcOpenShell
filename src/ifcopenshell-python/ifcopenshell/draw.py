@@ -215,7 +215,7 @@ def main(
     if not settings.cells:
         return svg_data_1.encode("ascii", "xmlcharrefreplace")
 
-    def yield_groups(n, tag='g'):
+    def yield_groups(n, tag="g"):
         if n.nodeType == n.ELEMENT_NODE and n.tagName == tag:
             yield n
         for c in n.childNodes:
@@ -433,14 +433,20 @@ def main(
             # wasteful and looses data for unknown reasons
             # svg_contents = svg1.toxml()
             # polies = W.svg_to_polygons(svg_contents, "IfcSpace")
-            
-            polies = [p.getAttribute('d') for p in yield_groups(svg1, "path") if 'IfcSpace' in p.parentNode.getAttribute('class')]
-            assert(all(s.count('M') == 1 for s in polies))
-            polies = [[[*map(float, s[1:].split(','))] for s in d.split(' ')[:-1]] for d in polies]
+
+            polies = [
+                p.getAttribute("d")
+                for p in yield_groups(svg1, "path")
+                if "IfcSpace" in p.parentNode.getAttribute("class")
+            ]
+            assert all(s.count("M") == 1 for s in polies)
+            polies = [[[*map(float, s[1:].split(","))] for s in d.split(" ")[:-1]] for d in polies]
+
             def create_poly(b):
                 p = ifcopenshell.ifcopenshell_wrapper.polygon_2()
                 p.boundary = b
                 return p
+
             polies = [create_poly(p) for p in polies]
 
             def min_bound_extent(p):

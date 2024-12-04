@@ -235,7 +235,7 @@ class BIM_PT_object_material(Panel):
         total_items = len(ObjectMaterialData.data["set_items"])
         row = self.layout.row(align=True)
         layer_set_direction = self.props.material_set_usage_attributes["LayerSetDirection"].enum_value
-        if layer_set_direction == 'AXIS3':
+        if layer_set_direction == "AXIS3":
             row.label(text="----- Top -----")
         else:
             row.label(text="----- Exterior -----")
@@ -250,7 +250,7 @@ class BIM_PT_object_material(Panel):
             else:
                 self.draw_read_only_set_item_ui(set_item, index, is_first=index == 0, is_last=index == total_items - 1)
         row = self.layout.row(align=True)
-        if layer_set_direction == 'AXIS3':
+        if layer_set_direction == "AXIS3":
             row.label(text="----- Bottom -----")
         else:
             row.label(text="----- Interior -----")
