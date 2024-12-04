@@ -350,6 +350,7 @@ def git_clone_or_pull_repository(clone_url, target_dir, revision=None):
         run([git, "clone", "--recursive", clone_url, target_dir])
     else:
         logger.info(f"directory '{target_dir}' already cloned. Pulling latest changes.")
+        run([git, "-C", target_dir, "fetch", "--all", "--tags"])
 
     # detect whether we are on a branch and pull
     if run([git, "rev-parse", "--abbrev-ref", "HEAD"], cwd=target_dir) != "HEAD":
