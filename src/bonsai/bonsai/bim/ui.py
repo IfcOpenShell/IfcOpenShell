@@ -68,7 +68,8 @@ class IFCFileSelector:
             filepath = filepath.relative_to(bpy.path.abspath("//"))
         return filepath.as_posix()
 
-    def draw(self, context):
+    def draw(self, context: bpy.types.Context) -> None:
+        assert isinstance(context.space_data, bpy.types.SpaceFileBrowser)
         # Access filepath & Directory https://blender.stackexchange.com/a/207665
         params = context.space_data.params
         # Decode byte string https://stackoverflow.com/a/47737082/
