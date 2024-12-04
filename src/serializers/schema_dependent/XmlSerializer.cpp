@@ -130,12 +130,11 @@ boost::optional<std::string> format_attribute(ifcopenshell::geometry::abstract_m
 				auto matrix = ifcopenshell::geometry::taxonomy::cast< ifcopenshell::geometry::taxonomy::matrix4>(item);
 				
 				std::stringstream stream;
-				for (int i = 1; i < 5; ++i) {
-					for (int j = 1; j < 4; ++j) {
+				for (int i = 0; i < 4; ++i) {
+					for (int j = 0; j < 4; ++j) {
 						const double trsf_value = matrix->ccomponents()(j, i);
 						stream << std::setprecision (std::numeric_limits< double >::max_digits10) << trsf_value << " ";
 					}
-					stream << ((i == 4) ? "1" : "0 ");
 				}
 				value = stream.str();
 
