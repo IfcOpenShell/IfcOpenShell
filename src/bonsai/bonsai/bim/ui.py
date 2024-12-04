@@ -50,7 +50,7 @@ class IFCFileSelector:
             path = self.get_filepath_abs()
         else:
             path = Path(filepath)
-        return path.exists() and "ifc" in path.suffix.lower()
+        return path.exists() and path.is_file() and "ifc" in path.suffix.lower()
 
     def get_filepath_abs(self) -> Path:
         # self.filepath filled by fileselect_add is absolute
