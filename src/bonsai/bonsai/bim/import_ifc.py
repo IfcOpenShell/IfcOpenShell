@@ -1227,7 +1227,7 @@ class IfcImportSettings:
         self.has_filter = None
         self.should_filter_spatial_elements = True
         self.should_setup_viewport_camera = True
-        self.contexts = []
+        self.contexts: list[ifcopenshell.entity_instance] = []
         self.context_settings: list[ifcopenshell.geom.main.settings] = []
         self.gross_context_settings: list[ifcopenshell.geom.main.settings] = []
         self.elements: set[ifcopenshell.entity_instance] = set()
