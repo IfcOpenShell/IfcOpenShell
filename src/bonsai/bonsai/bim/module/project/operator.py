@@ -593,7 +593,7 @@ class EnableEditingHeader(bpy.types.Operator):
             if len(organisation) > 1:
                 props.organisation_email = organisation[1]
 
-        props.authorisation = self.file.wrapped_data.header.file_name.authorization
+        props.authorisation = self.file.wrapped_data.header.file_name.authorization or ""
         return {"FINISHED"}
 
 
