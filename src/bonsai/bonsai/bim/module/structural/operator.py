@@ -51,8 +51,9 @@ class ShowLoads(bpy.types.Operator):
     def invoke(self, context, event):
         collection = bpy.data.collections["IfcStructuralItem"]
         collection.hide_viewport = False
+        context.window.cursor_modal_set("WAIT")
         LoadsDecorator.install(context)
-        LoadsDecorator.update(context)
+        context.window.cursor_modal_restore()
         context.window_manager.modal_handler_add(self)
         for area in context.screen.areas:
             if area.type == 'VIEW_3D':

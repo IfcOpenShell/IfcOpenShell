@@ -465,8 +465,14 @@ class BIM_PT_show_structural_activities(Panel):
         row.operator(
                 "bim.show_loads",
                 text="Show loads" ,
-                icon="FILTER",
+                icon="HIDE_OFF",
             )
+        row = self.layout.row(align=True)
+        row.prop(self.props,"reference_frame")
+        row = self.layout.row(align=True)
+        row.prop(self.props,"activity_type")
+        row = self.layout.row(align=True)
+        row.prop(self.props,"load_group_to_show")
 
 
 class BIM_PT_structural_loads(Panel):
