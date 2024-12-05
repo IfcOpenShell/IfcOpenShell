@@ -23,7 +23,9 @@ import ifcopenshell.api
 import ifcopenshell.api.geometry
 import ifcopenshell.util.schema
 import ifcopenshell.util.element
+import ifcopenshell.util.shape_builder
 import ifcopenshell.util.type
+import ifcopenshell.util.unit
 import bonsai.bim.handler
 import bonsai.core.root as core
 import bonsai.core.geometry
