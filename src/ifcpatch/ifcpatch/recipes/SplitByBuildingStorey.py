@@ -94,6 +94,7 @@ class Patcher:
             new_ifc.write(dest)
 
         if temp_file is not None:
+            temp_file.close()
             os.unlink(temp_file.name)
 
     def is_in_storey(self, element: ifcopenshell.entity_instance, storey: ifcopenshell.entity_instance) -> bool:
