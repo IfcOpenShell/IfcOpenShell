@@ -70,15 +70,20 @@ class Loader(bonsai.core.tool.Loader):
         cls.settings = settings
 
     @classmethod
-    def get_mesh_name_from_shape(cls, geometry: ifcopenshell.geom.ShapeType) -> str:
-        representation_id = geometry.id
+    def get_representation_id_from_shape(cls, geometry: ifcopenshell.geom.ShapeType) -> int:
+        representation_id: str = geometry.id
         if "-" in representation_id:
             # Example: 2432-openings-2468, where
             # 2432 is mapped representation id
             # and 2468 is IFCRELVOIDSELEMENT
-            representation_id = int(re.sub(r"\D", "", representation_id.split("-")[0]))
+            representation_id = re.sub(r"\D", "", representation_id.split("-")[0])
         else:
-            representation_id = int(re.sub(r"\D", "", representation_id))
+            representation_id = re.sub(r"\D", "", representation_id)
+        return int(representation_id)
+
+    @classmethod
+    def get_mesh_name_from_shape(cls, geometry: ifcopenshell.geom.ShapeType) -> str:
+        representation_id = cls.get_representation_id_from_shape(geometry)
         representation = tool.Ifc.get().by_id(representation_id)
         context_id = representation.ContextOfItems.id() if hasattr(representation, "ContextOfItems") else 0
         return cls.get_mesh_name(context_id, representation_id)
