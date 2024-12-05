@@ -105,7 +105,8 @@ class ExecuteIfcPatch(bpy.types.Operator):
                 "log": os.path.join(context.scene.BIMProperties.data_dir, "process.log"),
             }
         )
-        ifcpatch.write(output, ifc_patch_output)
+        if tool.Patch.does_patch_has_output(props.ifc_patch_recipes):
+            ifcpatch.write(output, ifc_patch_output)
         self.report({"INFO"}, f"{props.ifc_patch_recipes} patch executed successfully")
         return {"FINISHED"}
 

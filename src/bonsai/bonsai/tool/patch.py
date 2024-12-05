@@ -36,3 +36,7 @@ class Patch(bonsai.core.tool.Patch):
         # Should mark them as such in the patches documentation
         # and process it later.
         return recipe == "SplitByBuildingStorey" and arg_name == "output_dir"
+
+    @classmethod
+    def does_patch_has_output(cls, recipe: str) -> bool:
+        return recipe != "SplitByBuildingStorey"
