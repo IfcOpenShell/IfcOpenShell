@@ -134,10 +134,11 @@ get_element_grammar = lark.Lark(
 format_grammar = lark.Lark(
     """start: function
 
-    function: round | number | format_length | lower | upper | title | concat | substr | ESCAPED_STRING | NUMBER
+    function: round | number | int | format_length | lower | upper | title | concat | substr | ESCAPED_STRING | NUMBER
 
     round: "round(" function "," NUMBER ")"
     number: "number(" function ["," ESCAPED_STRING ["," ESCAPED_STRING]] ")"
+    int: "int(" function ")"
     format_length: metric_length | imperial_length
     metric_length: "metric_length(" function "," NUMBER "," NUMBER ")"
     imperial_length: "imperial_length(" function "," NUMBER ["," ESCAPED_STRING "," ESCAPED_STRING] ")"
@@ -248,6 +249,9 @@ class FormatTransformer(lark.Transformer):
         return ifcopenshell.util.unit.format_length(
             float(value), int(precision), unit_system="imperial", input_unit=input_unit, output_unit=output_unit
         )
+
+    def int(self, args: list[str]) -> str:
+        return str(int(float(args[0])))
 
 
 class GetElementTransformer(lark.Transformer):
