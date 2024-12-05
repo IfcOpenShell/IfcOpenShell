@@ -54,6 +54,8 @@ class TestFormat:
     def test_number_formatting(self):
         assert subject.format("round(123, 5)") == "125"
         assert subject.format('round("123", 5)') == "125"
+        assert subject.format("int(123.123)") == "123"
+        assert subject.format("int(123)") == "123"
         assert subject.format("number(123)") == "123"
         assert subject.format("number(1234.56)") == "1,234.56"
         assert subject.format('number(123, ".")') == "123"
