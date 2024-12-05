@@ -29,3 +29,10 @@ class Patch(bonsai.core.tool.Patch):
             {"input": infile, "file": ifcopenshell.open(infile), "recipe": "Migrate", "arguments": [schema]}
         )
         ifcpatch.write(output, outfile)
+
+    @classmethod
+    def is_filepath_argument(cls, recipe: str, arg_name: str) -> bool:
+        # TODO: Temporary hack to identify filepath arguments.
+        # Should mark them as such in the patches documentation
+        # and process it later.
+        return recipe == "SplitByBuildingStorey" and arg_name == "output_dir"

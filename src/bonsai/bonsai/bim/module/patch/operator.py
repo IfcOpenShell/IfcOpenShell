@@ -79,7 +79,12 @@ class ExecuteIfcPatch(bpy.types.Operator):
         props = context.scene.BIMPatchProperties
         arguments = []
         if props.ifc_patch_args_attr:
-            arguments = [arg.get_value() for arg in props.ifc_patch_args_attr]
+            arguments = []
+            for arg in props.ifc_patch_args_attr:
+                value = arg.get_value()
+                if arg.data_type == "file" and arg.metadata == "single_file":
+                    value = value[0]
+                arguments.append(value)
 
         if props.should_load_from_memory and tool.Ifc.get():
             input_file = props.ifc_patch_input
@@ -123,8 +128,13 @@ class UpdateIfcPatchArguments(bpy.types.Operator):
                 arg_info = inputs[arg_name]
                 new_attr = patch_args.add()
                 data_type = arg_info.get("type", "str")
+
+                if tool.Patch.is_filepath_argument(self.recipe, arg_name):
+                    data_type = "file"
+                    new_attr.metadata = "single_file"
+
                 if isinstance(data_type, list):
-                    if "file" in data_type:
+                    if "file" in data_type or tool.Patch.is_filepath_argument(self.recipe, arg_name):
                         data_type = ["file"]
 
                     data_type = [dt for dt in data_type if dt != "NoneType"][0]
