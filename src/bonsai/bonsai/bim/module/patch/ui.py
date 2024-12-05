@@ -50,9 +50,10 @@ class BIM_PT_patch(bpy.types.Panel):
             row.prop(props, "ifc_patch_input")
             row.operator("bim.select_ifc_patch_input", icon="FILE_FOLDER", text="")
 
-        row = layout.row(align=True)
-        row.prop(props, "ifc_patch_output")
-        row.operator("bim.select_ifc_patch_output", icon="FILE_FOLDER", text="")
+        if tool.Patch.does_patch_has_output(props.ifc_patch_recipes):
+            row = layout.row(align=True)
+            row.prop(props, "ifc_patch_output")
+            row.operator("bim.select_ifc_patch_output", icon="FILE_FOLDER", text="")
 
         if props.ifc_patch_args_attr:
             draw_attributes(props.ifc_patch_args_attr, layout)
