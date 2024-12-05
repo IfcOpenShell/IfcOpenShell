@@ -51,6 +51,7 @@ class IfcClassData:
         cls.data["ifc_class"] = cls.ifc_class()
         cls.data["ifc_predefined_types"] = cls.ifc_predefined_types()
         cls.data["can_reassign_class"] = cls.can_reassign_class()
+        cls.data["profile"] = cls.profile()
 
     @classmethod
     def ifc_products(cls):
@@ -289,3 +290,13 @@ class IfcClassData:
                 if element.is_a(product[0]):
                     return True
         return False
+
+    @classmethod
+    def profile(cls) -> list[tuple[str, str, str]]:
+        items = [("-", "-", "")]
+        ifc_file = tool.Ifc.get()
+        for profile in ifc_file.by_type("IfcProfileDef"):
+            if not (profile_name := profile.ProfileName):
+                continue
+            items.append((str(profile.id()), profile_name, profile.is_a()))
+        return items
