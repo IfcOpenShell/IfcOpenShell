@@ -678,6 +678,7 @@ class Geometry(bonsai.core.tool.Geometry):
         element = tool.Ifc.get_entity(obj)
         assert element
 
+        ifc_file = tool.Ifc.get()
         elements = set()
         element_types = set()
         representation = ifcopenshell.util.representation.resolve_representation(representation)
@@ -716,16 +717,26 @@ class Geometry(bonsai.core.tool.Geometry):
         else:
             iterator = None  # For example, when switching representation of a type with no occurrences
         meshes = {}
+        base_representation = representation
         if iterator and iterator.initialize():
             while True:
                 shape = iterator.get()
                 element = tool.Ifc.get().by_id(shape.id)
                 if obj := tool.Ifc.get_object(element):
+                    # It's possible that there will be multiple shapes for the same context,
+                    # Unfortunately, iterator still processes them all and
+                    # we need to ensure we pick the one that was requested for reimport.
+                    representation_id = tool.Loader.get_representation_id_from_shape(shape.geometry)
+                    representation = ifc_file.by_id(representation_id)
+                    resolved_representation = ifcopenshell.util.representation.resolve_representation(representation)
+                    if resolved_representation != base_representation:
+                        if not iterator.next():
+                            break
+                        continue
+
                     mesh_name = tool.Loader.get_mesh_name_from_shape(shape.geometry)
                     mesh = meshes.get(mesh_name)
                     if mesh is None:
-                        # Duplicate code
-                        representation = tool.Ifc.get().by_id(int(shape.geometry.id.split("-")[0]))
                         if element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
                             mesh = tool.Loader.create_camera(element, representation, shape)
                         elif element.is_a("IfcAnnotation") and ifc_importer.is_curve_annotation(element):
