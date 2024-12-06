@@ -115,7 +115,7 @@ def write(output: Union[ifcopenshell.file, str], filepath: str) -> None:
 
 def extract_docs(
     submodule_name: str, cls_name: str, method_name: str = "__init__", boilerplate_args: Optional[Iterable[str]] = None
-):
+) -> Union[dict[str, Any], None]:
     """Extract class docstrings and method arguments
 
     :param submodule_name: Submodule from which to extract the class
@@ -137,7 +137,7 @@ def extract_docs(
         print(f"Error : IFCPatch {str(submodule)} could not load because : {str(e)}")
 
 
-def _extract_docs(cls: type, method_name: str, boilerplate_args: Union[Iterable[str], None]):
+def _extract_docs(cls: type, method_name: str, boilerplate_args: Union[Iterable[str], None]) -> dict[str, Any]:
     inputs = collections.OrderedDict()
     method = getattr(cls, method_name)
     docs: dict[str, Any] = {"class": cls}
