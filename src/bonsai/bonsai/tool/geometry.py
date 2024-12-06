@@ -679,8 +679,8 @@ class Geometry(bonsai.core.tool.Geometry):
         assert element
 
         ifc_file = tool.Ifc.get()
-        elements = set()
-        element_types = set()
+        elements: set[ifcopenshell.entity_instance] = set()
+        element_types: set[ifcopenshell.entity_instance] = set()
         representation = ifcopenshell.util.representation.resolve_representation(representation)
         context = representation.ContextOfItems
         for mapped_element in ifcopenshell.util.element.get_elements_by_representation(tool.Ifc.get(), representation):
@@ -690,6 +690,30 @@ class Geometry(bonsai.core.tool.Geometry):
                 elements.add(mapped_element)
                 if element_type := ifcopenshell.util.element.get_type(mapped_element):
                     element_types.add(element_type)
+
+        def change_data(obj: bpy.types.Object, element: ifcopenshell.entity_instance, data: bpy.types.ID) -> None:
+            old_data = obj.data
+            if type(old_data) == type(data):
+                cls.change_object_data(obj, data, is_global=False)
+            else:
+                obj = cls.recreate_object_with_data(obj, data, is_global=False)
+            cls.record_object_materials(obj)
+            if not cls.has_data_users(old_data):
+                cls.delete_data(old_data)
+            cls.clear_modifiers(obj)
+            cls.clear_cache(element)
+
+        # Fallback to custom methods as IOS doesn't process points, see #5218.
+        if representation.RepresentationType in ("PointCloud", "Point"):
+            mesh = tool.Loader.create_point_cloud_mesh(representation)
+            if mesh is None:
+                raise Exception(f"Failed to process point cloud representation: {representation}.")
+
+            tool.Ifc.link(representation, mesh)
+            for element in elements | element_types:
+                obj = tool.Ifc.get_object(element)
+                change_data(obj, element, mesh)
+            return
 
         logger = logging.getLogger("ImportIFC")
         ifc_import_settings = bonsai.bim.import_ifc.IfcImportSettings.factory(bpy.context, None, logger)
@@ -702,8 +726,6 @@ class Geometry(bonsai.core.tool.Geometry):
 
         ifc_importer = bonsai.bim.import_ifc.IfcImporter(ifc_import_settings)
         ifc_importer.file = tool.Ifc.get()
-
-        # TODO support fallbacks like for point clouds
 
         settings.set("context-ids", [context.id()])
         if not apply_openings:
@@ -757,16 +779,7 @@ class Geometry(bonsai.core.tool.Geometry):
                         tool.Loader.link_mesh(shape, mesh)
                         meshes[mesh_name] = mesh
 
-                    old_mesh = obj.data
-                    if type(old_mesh) == type(mesh):
-                        cls.change_object_data(obj, mesh, is_global=False)
-                    else:
-                        obj = cls.recreate_object_with_data(obj, mesh, is_global=False)
-                    cls.record_object_materials(obj)
-                    if not cls.has_data_users(old_mesh):
-                        cls.delete_data(old_mesh)
-                    cls.clear_modifiers(obj)
-                    cls.clear_cache(element)
+                    change_data(obj, element, mesh)
 
                 if not iterator.next():
                     break
@@ -791,16 +804,7 @@ class Geometry(bonsai.core.tool.Geometry):
                         tool.Loader.link_mesh(geometry, mesh)
                         meshes[mesh_name] = mesh
 
-                    old_mesh = obj.data
-                    if type(old_mesh) == type(mesh):
-                        cls.change_object_data(obj, mesh, is_global=False)
-                    else:
-                        obj = cls.recreate_object_with_data(obj, mesh, is_global=False)
-                    cls.record_object_materials(obj)
-                    if not cls.has_data_users(old_mesh):
-                        cls.delete_data(old_mesh)
-                    cls.clear_modifiers(obj)
-                    cls.clear_cache(element)
+                    change_data(obj, element, mesh)
 
     @classmethod
     def does_shape_has_openings(
