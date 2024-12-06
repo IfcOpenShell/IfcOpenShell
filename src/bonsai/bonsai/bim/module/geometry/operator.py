@@ -211,6 +211,7 @@ class AddRepresentation(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         obj = context.active_object
+        assert obj
         props = context.scene.BIMGeometryProperties
         oprops = obj.BIMGeometryProperties
         ifc_context = int(oprops.contexts or "0") or None
