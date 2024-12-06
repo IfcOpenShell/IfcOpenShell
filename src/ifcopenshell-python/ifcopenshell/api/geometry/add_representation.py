@@ -955,6 +955,20 @@ class Usecase:
             [bounding_box],
         )
 
+    def create_cog_representation(self) -> Union[ifcopenshell.entity_instance, None]:
+        mesh = self.settings["geometry"]
+        if not isinstance(mesh, bpy.types.Mesh) or len(verts := mesh.vertices) == 0:
+            return
+        vert = verts[0].co
+        cog = self.create_cartesian_point(vert.x, vert.y, vert.z)
+        return self.file.create_entity(
+            "IfcShapeRepresentation",
+            self.settings["context"],
+            self.settings["context"].ContextIdentifier,
+            "Point",
+            (cog,),
+        )
+
     def create_structural_reference_representation(self) -> ifcopenshell.entity_instance:
         if len(self.settings["geometry"].vertices) == 1:
             return self.file.createIfcTopologyRepresentation(
