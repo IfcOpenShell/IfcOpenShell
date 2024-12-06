@@ -871,7 +871,7 @@ class Usecase:
         if is_model_coords and self.settings["coordinate_offset"]:
             x += self.settings["coordinate_offset"][0]
             y += self.settings["coordinate_offset"][1]
-            if z:
+            if z is not None:
                 z += self.settings["coordinate_offset"][2]
         x = self.convert_si_to_unit(x)
         y = self.convert_si_to_unit(y)
