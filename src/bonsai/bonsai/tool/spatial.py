@@ -1163,7 +1163,12 @@ class Spatial(bonsai.core.tool.Spatial):
 
     @classmethod
     def set_default_container(cls, container: ifcopenshell.entity_instance) -> None:
+        from bonsai.bim.module.spatial.data import SpatialDecompositionData
+
+        assert bpy.context
         bpy.context.scene.BIMSpatialDecompositionProperties.default_container = container.id()
+        SpatialDecompositionData.data["default_container"] = SpatialDecompositionData.default_container()
+
         project = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
         project_collection = project.BIMObjectProperties.collection
         obj = tool.Ifc.get_object(container)
