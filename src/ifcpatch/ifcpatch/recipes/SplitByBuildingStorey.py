@@ -24,12 +24,17 @@ from typing import Union
 
 
 class Patcher:
+    input_argument = "SUPPORTED"
+
     def __init__(self, src: str, file: ifcopenshell.file, logger: logging.Logger, output_dir: Union[str, None] = None):
         """Split an IFC model into multiple models based on building storey
 
         The new IFC model names will be named after the storey name in the
         format of {i}-{name}.ifc, where {i} is an ascending number starting from
         0 and {name} is the name of the storey.
+
+        `input` argument might be provided to ifcpatch - it will be used load file from disk
+        (otherwise `file` will be saved to a temporary file).
 
         :param output_dir: Specifies an output directory where the new IFC models will be saved.
 
