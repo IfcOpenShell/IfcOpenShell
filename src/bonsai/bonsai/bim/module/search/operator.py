@@ -101,20 +101,10 @@ class SelectFilterElements(bpy.types.Operator):
 
     def execute(self, context):
         filter_groups = tool.Search.get_filter_groups(self.module)
-        global_ids = []
-        for obj in context.selected_objects:
-            if element := tool.Ifc.get_entity(obj):
-                if global_id := getattr(element, "GlobalId", None):
-                    global_ids.append(global_id)
-        if len(global_ids) > 50:
-            # Too much to store in a string property
-            name = f"globalid-filter-{ifcopenshell.guid.new()}"
-            text_data = bpy.data.texts.new(name)
-            text_data.from_string(",".join(global_ids))
-            filter_groups[self.group_index].filters[self.index].value = f"bpy.data.texts['{name}']"
+        query = tool.Search.get_query_for_selected_elements()
+        filter_groups[self.group_index].filters[self.index].value = query
+        if query.startswith("bpy.data.texts['"):
             self.report({"INFO"}, f'List of Global Ids was saved to the text file "{name}" in the current .blend file')
-        else:
-            filter_groups[self.group_index].filters[self.index].value = ",".join(global_ids)
         return {"FINISHED"}
 
 
