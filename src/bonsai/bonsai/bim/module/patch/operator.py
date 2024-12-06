@@ -89,6 +89,7 @@ class ExecuteIfcPatch(bpy.types.Operator):
                     value = value[0]
                 arguments.append(value)
 
+        arguments = tool.Patch.post_process_patch_arguments(recipe_name, arguments)
         args = ifcpatch.ArgumentsDict(
             recipe=props.ifc_patch_recipes,
             arguments=arguments,
@@ -207,4 +208,22 @@ class RunMigratePatch(bpy.types.Operator):
         except:
             pass  # Probably running in headless mode
         bonsai.bim.handler.refresh_ui_data()
+        return {"FINISHED"}
+
+
+class ExtractSelectedElements(bpy.types.Operator):
+    bl_idname = "bim.patch_query_from_selected"
+    bl_label = "Fill patch query based on the selected elements"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        props = context.scene.BIMPatchProperties
+        recipe_name = props.ifc_patch_recipes
+
+        if recipe_name != "ExtractElements":
+            self.report({"ERROR"}, "Only supported for the 'ExtractElements' recipe.")
+            return {"CANCELLED"}
+
+        query = tool.Search.get_query_for_selected_elements()
+        props.ifc_patch_args_attr[0].string_value = query
         return {"FINISHED"}

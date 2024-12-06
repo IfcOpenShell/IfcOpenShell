@@ -20,6 +20,7 @@ import bpy
 import ifcopenshell
 import ifcpatch
 import bonsai.core.tool
+from typing import Any
 
 
 class Patch(bonsai.core.tool.Patch):
@@ -40,3 +41,13 @@ class Patch(bonsai.core.tool.Patch):
     @classmethod
     def does_patch_has_output(cls, recipe: str) -> bool:
         return recipe != "SplitByBuildingStorey"
+
+    @classmethod
+    def post_process_patch_arguments(cls, recipe: str, args: list[Any]) -> list[Any]:
+        if recipe == "ExtractElements":
+            query = args[0]
+            assert isinstance(query, str)
+            if "bpy.data.texts" in query:
+                text_name = query.split("bpy.data.texts")[1][2:-2]
+                args[0] = bpy.data.texts[text_name].as_string()
+        return args
