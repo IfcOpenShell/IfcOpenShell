@@ -215,6 +215,7 @@ namespace {
     template <typename Fn, typename... Ts>
     std::string capture_output(Fn fn, Ts... ts) {
         std::ostringstream oss;
+        oss << std::setprecision(std::numeric_limits<double>::digits10 + 1);
         fn(oss, ts...);
         return oss.str();
     }

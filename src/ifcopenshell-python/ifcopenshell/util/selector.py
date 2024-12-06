@@ -17,21 +17,23 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import re
+import types
 import lark
 import numpy as np
 import ifcopenshell.api.pset
 import ifcopenshell.api.geometry
 import ifcopenshell.util
 import ifcopenshell.util.attribute
-import ifcopenshell.util.fm
-import ifcopenshell.util.unit
-import ifcopenshell.util.element
-import ifcopenshell.util.placement
-import ifcopenshell.util.geolocation
 import ifcopenshell.util.classification
+import ifcopenshell.util.element
+import ifcopenshell.util.fm
+import ifcopenshell.util.geolocation
+import ifcopenshell.util.placement
+import ifcopenshell.util.pset
 import ifcopenshell.util.schema
 import ifcopenshell.util.shape
 import ifcopenshell.util.system
+import ifcopenshell.util.unit
 from decimal import Decimal
 from typing import Optional, Any, Union, Iterable
 
@@ -133,10 +135,11 @@ get_element_grammar = lark.Lark(
 format_grammar = lark.Lark(
     """start: function
 
-    function: round | number | format_length | lower | upper | title | concat | substr | ESCAPED_STRING | NUMBER
+    function: round | number | int | format_length | lower | upper | title | concat | substr | ESCAPED_STRING | NUMBER
 
     round: "round(" function "," NUMBER ")"
     number: "number(" function ["," ESCAPED_STRING ["," ESCAPED_STRING]] ")"
+    int: "int(" function ")"
     format_length: metric_length | imperial_length
     metric_length: "metric_length(" function "," NUMBER "," NUMBER ")"
     imperial_length: "imperial_length(" function "," NUMBER ["," ESCAPED_STRING "," ESCAPED_STRING] ")"
@@ -247,6 +250,9 @@ class FormatTransformer(lark.Transformer):
         return ifcopenshell.util.unit.format_length(
             float(value), int(precision), unit_system="imperial", input_unit=input_unit, output_unit=output_unit
         )
+
+    def int(self, args: list[str]) -> str:
+        return str(int(float(args[0])))
 
 
 class GetElementTransformer(lark.Transformer):
@@ -461,10 +467,25 @@ class SetElementValueException(Exception): ...
 
 def set_element_value(
     ifc_file: ifcopenshell.file,
-    element: Union[ifcopenshell.entity_instance, Iterable[ifcopenshell.entity_instance], None],
+    element: Union[
+        ifcopenshell.entity_instance,
+        dict[str, Any],
+        Iterable[ifcopenshell.entity_instance],
+        None,
+    ],
     query: Union[str, list[str]],
     value: Any,
+    *,
+    concat: str = ", ",
 ) -> None:
+    """Set element value based on the provided query.
+
+    :param element: IFC element to change.
+    :param query: String query to identify the attribute to change.
+    :param value: Value to set.
+    :param concat: Concatenation symbol, used only to deserialize property
+        set enum values from string values.
+    """
     original_element = element
     if isinstance(query, (list, tuple)):
         keys = query
@@ -640,6 +661,73 @@ def set_element_value(
                         elif pset.is_a("IfcElementQuantity") and prop_value != float(value):
                             ifcopenshell.api.pset.edit_qto(ifc_file, qto=pset, properties={prop: float(value)})
             elif pset.is_a("IfcPropertySet") and element.get(key, None) != value:
+
+                def process_pset_prop_value(
+                    pset: ifcopenshell.entity_instance, prop: str, value: Any
+                ) -> Union[Any, types.EllipsisType]:
+                    """Try to process value for edit_pset.
+
+                    `edit_pset` is expecting a sequence of values
+                    for enum properties, not just a string of some-symbol-separated values.
+
+                    Return `...` if property can be skipped as it has the same value.
+                    """
+                    if not isinstance(value, str):
+                        return value
+
+                    current_value = element.get(key, ...)
+                    # Check if previous value is a list as a fast way to identify enum properties.
+                    if not isinstance(current_value, (types.EllipsisType, list)):
+                        return value
+
+                    if isinstance(current_value, list):
+                        # Value won't change, safe to skip editing IFC.
+                        enum_values = value.split(concat)
+                        if len(enum_values) == len(current_value) and set(enum_values) == set(current_value):
+                            return ...
+
+                    template = ifcopenshell.util.pset.get_template(ifc_file.schema)
+                    pset_template = template.get_by_name(pset.Name)
+                    if pset_template is None:
+                        return value
+                    for prop_template in pset_template.HasPropertyTemplates:
+                        # 2 IfcSimplePropertyTemplate.Name
+                        if prop_template[2] != prop:
+                            continue
+
+                        # 4 IfcSimplePropertyTemplate.TemplateType
+                        if prop_template[4] != "P_ENUMERATEDVALUE":
+                            # Not a enum property.
+                            return value
+
+                        # 7 IfcSimplePropertyTemplate.Enumerators
+                        if (enumeration := prop_template[7]) is None:
+                            # Enum property but without enumerators,
+                            # make it a sequence to keep it assignable as a enum.
+                            return (value,)
+
+                        # 1 IfcPropertyEnumeration.EnumerationValues
+                        available_enum_values = {v.wrappedValue for v in enumeration[1]}
+                        if value in available_enum_values:
+                            # Valid enum item, just keep it a sequence.
+                            return (value,)
+
+                        # Taking a wild guess that it's `concat` separated list.
+                        enum_values = value.split(concat)
+                        if not all(v in available_enum_values for v in enum_values):
+                            raise Exception(
+                                "Error setting pset enum property.\n"
+                                f"Invalid enum values for property '{prop} in pset '{pset}': '{', '.join(enum_values)}'.\n"
+                                f"Possible enum values for this property: {', '.join(available_enum_values)}."
+                            )
+                        return enum_values
+
+                    # Couldn't find property template for this prop - delegate decision to edit_pset.
+                    return value
+
+                value = process_pset_prop_value(pset, key, value)
+                if value == ...:
+                    return
                 ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties={key: value})
             elif pset.is_a("IfcElementQuantity"):
                 try:
@@ -661,7 +749,7 @@ def set_element_value(
                 return
 
     raise SetElementValueException(
-        f"Failed to set value for element '{original_element}' with query '{query}' (invalid or unsupported query)."
+        f"Failed to set value '{value}' for element '{original_element}' with query '{query}' (invalid or unsupported query)."
     )
 
 

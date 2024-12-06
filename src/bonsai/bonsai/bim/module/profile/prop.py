@@ -73,7 +73,13 @@ class BIMProfileProperties(PropertyGroup):
         update=lambda self, context: bpy.ops.bim.load_profiles(),
     )
     object_to_profile: PointerProperty(
-        name="Object to profile", type=bpy.types.Object, description="Object to copy the mesh to a profile"
+        name="Object to profile",
+        type=bpy.types.Object,
+        description=(
+            "Optional mesh object to use as a source for a new arbitrary profile.\n"
+            "Object must be a closed mesh and have at least 1 face"
+        ),
+        poll=lambda self, obj: obj.type == "MESH",
     )
 
 

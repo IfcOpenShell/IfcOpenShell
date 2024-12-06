@@ -36,6 +36,7 @@ import os
 import sys
 import json
 import functools
+import types
 
 from collections import namedtuple
 from typing import Union, Iterator, Any, Optional
@@ -242,7 +243,7 @@ def assert_valid(
     elif isinstance(attr_type, aggregation_type):
         b1, b2 = attr_type.bound1(), attr_type.bound2()
         ty = attr_type.type_of_element()
-        invalid = (
+        invalid = type(val) != tuple or (
             len(val) < b1
             or (b2 != -1 and len(val) > b2)
             or not all(assert_valid(ty, v, schema, attr=attr) for v in val)
@@ -392,6 +393,7 @@ def validate(f: Union[ifcopenshell.file, str], logger: Logger, express_rules=Fal
                 logger.error(f"Unsupported schema: {schema_name}")
                 return
 
+        assert isinstance(f, ifcopenshell.file)
         log_internal_cpp_errors(f, filename, logger)
 
     validate_ifc_header(f, logger)
@@ -403,8 +405,8 @@ def validate(f: Union[ifcopenshell.file, str], logger: Logger, express_rules=Fal
         if hasattr(logger, "set_state"):
             logger.set_state("instance", inst)
 
-        if hasattr(inst, "GlobalId"):
-            guid = inst.GlobalId
+        guid: Union[str, None, types.EllipsisType]
+        if (guid := getattr(inst, "GlobalId", ...)) is not ...:
             if guid is not None and guid in used_guids:
                 rule = "Rule IfcRoot.UR1:\n    The attribute GlobalId should be unique"
                 previous_element = used_guids[guid]
@@ -417,7 +419,19 @@ def validate(f: Union[ifcopenshell.file, str], logger: Logger, express_rules=Fal
                     annotate_inst_attr_pos(previous_element, 0),
                 )
             else:
-                used_guids[guid] = inst
+                if guid is not None:
+                    if (validation_error := validate_guid(guid)) is None:
+                        used_guids[guid] = inst
+                    else:
+                        rule = "IfcGloballyUniqueId base64 validation:\n    The attribute GlobalId should be valid base64 encoded 128-bit number."
+                        previous_element = None
+                        logger.error(
+                            "On instance:\n    %s\n    %s\n%s\nViolated by:\n    %s\n",
+                            inst,
+                            annotate_inst_attr_pos(inst, 0),
+                            rule,
+                            validation_error,
+                        )
 
         entity, attrs = get_entity_attributes(schema, inst.is_a())
 
@@ -526,6 +540,28 @@ def validate(f: Union[ifcopenshell.file, str], logger: Logger, express_rules=Fal
             logger.set_state("instance", None)
             logger.set_state("attribute", None)
         ifcopenshell.express.rule_executor.run(f, logger)
+
+
+def validate_guid(guid: str) -> Union[str, None]:
+    """Check if a given guid is valid.
+
+    Don't check for `None` as `None` guid will trigger "non-optional" validation error either way.
+
+    :return: `None` if guid is valid, otherwise a string with an error message.
+    """
+    if len(guid) != 22:
+        return "Guid length should be 22 characters."
+    if guid[0] not in "0123":
+        return "Guid first character must be either a 0, 1, 2, or 3."
+    try:
+        ifcopenshell.guid.expand(guid)
+    except:
+        allowed_characters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_$"
+        if any(c for c in guid if c not in allowed_characters):
+            return "Guid contains invalid characters, allowed characters: '%s'." % allowed_characters
+        # NOTE: are there actually cases where guid won't expand, besides invalid characters?
+        return "Couldn't decompress guid, it's not base64 encoded."
+    return None
 
 
 def validate_ifc_header(f: ifcopenshell.file, logger: Logger) -> None:

@@ -130,12 +130,11 @@ boost::optional<std::string> format_attribute(ifcopenshell::geometry::abstract_m
 				auto matrix = ifcopenshell::geometry::taxonomy::cast< ifcopenshell::geometry::taxonomy::matrix4>(item);
 				
 				std::stringstream stream;
-				for (int i = 1; i < 5; ++i) {
-					for (int j = 1; j < 4; ++j) {
+				for (int i = 0; i < 4; ++i) {
+					for (int j = 0; j < 4; ++j) {
 						const double trsf_value = matrix->ccomponents()(j, i);
 						stream << std::setprecision (std::numeric_limits< double >::max_digits10) << trsf_value << " ";
 					}
-					stream << ((i == 4) ? "1" : "0 ");
 				}
 				value = stream.str();
 
@@ -152,7 +151,7 @@ boost::optional<std::string> format_attribute(ifcopenshell::geometry::abstract_m
 
 // Appends to a node with possibly existing attributes
 ptree* format_entity_instance(ifcopenshell::geometry::abstract_mapping* mapping, IfcUtil::IfcBaseEntity* instance, ptree& child, ptree& tree, bool as_link = false) {
-	const unsigned n = instance->declaration().attribute_count();
+	const unsigned n = instance->declaration().as_entity()->attribute_count();
 	for (unsigned i = 0; i < n; ++i) {
 		try {
 		    instance->data().get_attribute_value(i);
@@ -163,7 +162,7 @@ ptree* format_entity_instance(ifcopenshell::geometry::abstract_mapping* mapping,
 		auto argument = instance->data().get_attribute_value(i);
 		if (argument.isNull()) continue;
 
-		std::string argument_name = instance->declaration().attribute_by_index(i)->name();
+		std::string argument_name = instance->declaration().as_entity()->attribute_by_index(i)->name();
 		std::map<std::string, std::string>::const_iterator argument_name_it;
 		argument_name_it = POSTFIX_SCHEMA(argument_name_map).find(argument_name);
 		if (argument_name_it != POSTFIX_SCHEMA(argument_name_map).end()) {

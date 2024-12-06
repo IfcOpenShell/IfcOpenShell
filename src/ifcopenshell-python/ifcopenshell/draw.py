@@ -21,6 +21,8 @@
 import math
 import json
 import functools
+import re
+import warnings
 
 import ifcopenshell
 import ifcopenshell.geom
@@ -86,6 +88,8 @@ def main(
     geom_settings = ifcopenshell.geom.settings(
         # when not doing booleans, proper solids from shells isn't a requirement
         REORIENT_SHELLS=settings.subtract_before_hlr,
+        # SVG serialiazation depends on element hierarchy now to look up the parent
+        ELEMENT_HIERARCHY=True,
     )
 
     # this is required for serialization
@@ -211,11 +215,11 @@ def main(
     if not settings.cells:
         return svg_data_1.encode("ascii", "xmlcharrefreplace")
 
-    def yield_groups(n):
-        if n.nodeType == n.ELEMENT_NODE and n.tagName == "g":
+    def yield_groups(n, tag="g"):
+        if n.nodeType == n.ELEMENT_NODE and n.tagName == tag:
             yield n
         for c in n.childNodes:
-            yield from yield_groups(c)
+            yield from yield_groups(c, tag=tag)
 
     dom1 = parseString(svg_data_1)
     svg1 = dom1.childNodes[0]
@@ -425,7 +429,25 @@ def main(
             for j in range(len(root_groups)):
                 if i != j:
                     parent.removeChild(root_groups[j])
-            polies = W.svg_to_polygons(svg1.toxml(), "IfcSpace")
+
+            # wasteful and looses data for unknown reasons
+            # svg_contents = svg1.toxml()
+            # polies = W.svg_to_polygons(svg_contents, "IfcSpace")
+
+            polies = [
+                p.getAttribute("d")
+                for p in yield_groups(svg1, "path")
+                if "IfcSpace" in p.parentNode.getAttribute("class")
+            ]
+            assert all(s.count("M") == 1 for s in polies)
+            polies = [[[*map(float, s[1:].split(","))] for s in d.split(" ")[:-1]] for d in polies]
+
+            def create_poly(b):
+                p = ifcopenshell.ifcopenshell_wrapper.polygon_2()
+                p.boundary = b
+                return p
+
+            polies = [create_poly(p) for p in polies]
 
             def min_bound_extent(p):
                 arr = numpy.array(p.boundary)

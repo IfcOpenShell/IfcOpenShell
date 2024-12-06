@@ -678,8 +678,9 @@ class Geometry(bonsai.core.tool.Geometry):
         element = tool.Ifc.get_entity(obj)
         assert element
 
-        elements = set()
-        element_types = set()
+        ifc_file = tool.Ifc.get()
+        elements: set[ifcopenshell.entity_instance] = set()
+        element_types: set[ifcopenshell.entity_instance] = set()
         representation = ifcopenshell.util.representation.resolve_representation(representation)
         context = representation.ContextOfItems
         for mapped_element in ifcopenshell.util.element.get_elements_by_representation(tool.Ifc.get(), representation):
@@ -689,6 +690,30 @@ class Geometry(bonsai.core.tool.Geometry):
                 elements.add(mapped_element)
                 if element_type := ifcopenshell.util.element.get_type(mapped_element):
                     element_types.add(element_type)
+
+        def change_data(obj: bpy.types.Object, element: ifcopenshell.entity_instance, data: bpy.types.ID) -> None:
+            old_data = obj.data
+            if type(old_data) == type(data):
+                cls.change_object_data(obj, data, is_global=False)
+            else:
+                obj = cls.recreate_object_with_data(obj, data, is_global=False)
+            cls.record_object_materials(obj)
+            if not cls.has_data_users(old_data):
+                cls.delete_data(old_data)
+            cls.clear_modifiers(obj)
+            cls.clear_cache(element)
+
+        # Fallback to custom methods as IOS doesn't process points, see #5218.
+        if representation.RepresentationType in ("PointCloud", "Point"):
+            mesh = tool.Loader.create_point_cloud_mesh(representation)
+            if mesh is None:
+                raise Exception(f"Failed to process point cloud representation: {representation}.")
+
+            tool.Ifc.link(representation, mesh)
+            for element in elements | element_types:
+                obj = tool.Ifc.get_object(element)
+                change_data(obj, element, mesh)
+            return
 
         logger = logging.getLogger("ImportIFC")
         ifc_import_settings = bonsai.bim.import_ifc.IfcImportSettings.factory(bpy.context, None, logger)
@@ -702,8 +727,6 @@ class Geometry(bonsai.core.tool.Geometry):
         ifc_importer = bonsai.bim.import_ifc.IfcImporter(ifc_import_settings)
         ifc_importer.file = tool.Ifc.get()
 
-        # TODO support fallbacks like for point clouds
-
         settings.set("context-ids", [context.id()])
         if not apply_openings:
             settings.set("disable-opening-subtractions", True)
@@ -716,16 +739,26 @@ class Geometry(bonsai.core.tool.Geometry):
         else:
             iterator = None  # For example, when switching representation of a type with no occurrences
         meshes = {}
+        base_representation = representation
         if iterator and iterator.initialize():
             while True:
                 shape = iterator.get()
                 element = tool.Ifc.get().by_id(shape.id)
                 if obj := tool.Ifc.get_object(element):
+                    # It's possible that there will be multiple shapes for the same context,
+                    # Unfortunately, iterator still processes them all and
+                    # we need to ensure we pick the one that was requested for reimport.
+                    representation_id = tool.Loader.get_representation_id_from_shape(shape.geometry)
+                    representation = ifc_file.by_id(representation_id)
+                    resolved_representation = ifcopenshell.util.representation.resolve_representation(representation)
+                    if resolved_representation != base_representation:
+                        if not iterator.next():
+                            break
+                        continue
+
                     mesh_name = tool.Loader.get_mesh_name_from_shape(shape.geometry)
                     mesh = meshes.get(mesh_name)
                     if mesh is None:
-                        # Duplicate code
-                        representation = tool.Ifc.get().by_id(int(shape.geometry.id.split("-")[0]))
                         if element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
                             mesh = tool.Loader.create_camera(element, representation, shape)
                         elif element.is_a("IfcAnnotation") and ifc_importer.is_curve_annotation(element):
@@ -746,16 +779,7 @@ class Geometry(bonsai.core.tool.Geometry):
                         tool.Loader.link_mesh(shape, mesh)
                         meshes[mesh_name] = mesh
 
-                    old_mesh = obj.data
-                    if type(old_mesh) == type(mesh):
-                        cls.change_object_data(obj, mesh, is_global=False)
-                    else:
-                        obj = cls.recreate_object_with_data(obj, mesh, is_global=False)
-                    cls.record_object_materials(obj)
-                    if not cls.has_data_users(old_mesh):
-                        cls.delete_data(old_mesh)
-                    cls.clear_modifiers(obj)
-                    cls.clear_cache(element)
+                    change_data(obj, element, mesh)
 
                 if not iterator.next():
                     break
@@ -780,16 +804,7 @@ class Geometry(bonsai.core.tool.Geometry):
                         tool.Loader.link_mesh(geometry, mesh)
                         meshes[mesh_name] = mesh
 
-                    old_mesh = obj.data
-                    if type(old_mesh) == type(mesh):
-                        cls.change_object_data(obj, mesh, is_global=False)
-                    else:
-                        obj = cls.recreate_object_with_data(obj, mesh, is_global=False)
-                    cls.record_object_materials(obj)
-                    if not cls.has_data_users(old_mesh):
-                        cls.delete_data(old_mesh)
-                    cls.clear_modifiers(obj)
-                    cls.clear_cache(element)
+                    change_data(obj, element, mesh)
 
     @classmethod
     def does_shape_has_openings(

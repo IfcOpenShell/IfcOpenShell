@@ -421,6 +421,14 @@ def add_newline_between_words(text, newline_at):
     start = 0
 
     while start < len(text):
+        # Find the next newline character if present
+        newline_index = text.find("\n", start)
+        if newline_index != -1 and newline_index < start + newline_at:
+            # If a newline is found within the current range
+            result.append(text[start:newline_index])  # Add text up to the newline
+            start = newline_index + 1  # Move past the newline
+            continue
+
         # Find the end index considering the limit newline_at
         end = start + newline_at
         if end >= len(text):  # If we're at the end of the string

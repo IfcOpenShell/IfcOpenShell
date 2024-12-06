@@ -401,6 +401,7 @@ class DocProperties(PropertyGroup):
     drawing_font: StringProperty(default="OpenGost Type B TT.ttf", name="Drawing Font")
     magic_font_scale: bpy.props.FloatProperty(default=0.004118616, name="Font Scale Factor")
     imperial_precision: StringProperty(default="1/32", name="Imperial Precision")
+    tolerance: bpy.props.FloatProperty(default=0.00001, name="A tolerance used when selecting objects")
 
 
 class BIMCameraProperties(PropertyGroup):
@@ -509,7 +510,7 @@ class Literal(PropertyGroup):
         return self.get("box_alignment", DEFAULT_BOX_ALIGNMENT)
 
     attributes: CollectionProperty(name="Attributes", type=Attribute)
-    # Current text value with evaluated experessions stored in `value`.
+    # Current text value with evaluated expressions stored in `value`.
     # The original (Literal) value stored in `attributes['Literal']`
     # and can be accessed with `get_text()`
     value: StringProperty(name="Value", default="TEXT")

@@ -52,6 +52,7 @@ def draw_attributes(
     layout: bpy.types.UILayout,
     copy_operator: Optional[str] = None,
     popup_active_attribute: Optional[bonsai.bim.prop.Attribute] = None,
+    callback: Optional[Callable[[bonsai.bim.prop.Attribute, bpy.types.UILayout], None]] = None,
 ) -> None:
     """you can set attribute active in popup with `active_attribute`
     meaning you will be able to type into attribute's field without having to click
@@ -62,6 +63,8 @@ def draw_attributes(
         if attribute == popup_active_attribute:
             row.activate_init = True
         draw_attribute(attribute, row, copy_operator)
+        if callback:
+            callback(attribute, row)
 
 
 def draw_attribute(

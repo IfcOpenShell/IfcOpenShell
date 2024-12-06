@@ -211,6 +211,7 @@ class AddRepresentation(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         obj = context.active_object
+        assert obj
         props = context.scene.BIMGeometryProperties
         oprops = obj.BIMGeometryProperties
         ifc_context = int(oprops.contexts or "0") or None
@@ -338,22 +339,36 @@ class SwitchRepresentation(bpy.types.Operator, tool.Ifc.Operator):
         return False
 
     def _execute(self, context):
-        context = tool.Ifc.get().by_id(self.ifc_definition_id).ContextOfItems
+        provided_representation = tool.Ifc.get().by_id(self.ifc_definition_id)
+        ifc_context = provided_representation.ContextOfItems
         for obj in tool.Blender.get_selected_objects():
-            if (
-                (element := tool.Ifc.get_entity(obj))
-                and obj.mode == "OBJECT"
-                and (representation := ifcopenshell.util.representation.get_representation(element, context))
-            ):
-                core.switch_representation(
-                    tool.Ifc,
-                    tool.Geometry,
-                    obj=obj,
-                    representation=representation,
-                    should_reload=self.should_reload,
-                    is_global=self.should_switch_all_meshes,
-                    should_sync_changes_first=True,
-                )
+            if not (element := tool.Ifc.get_entity(obj)) or obj.mode != "OBJECT":
+                continue
+
+            # Find representation to switch to.
+            if (active_representation := tool.Geometry.get_active_representation(obj)) is None:
+                # No active representation => probably has no representations.
+                continue
+            elif obj == context.active_object:
+                # Prioritize provided representation.
+                representation = provided_representation
+            elif active_representation.ContextOfItems == ifc_context:
+                # Prioritize already active representation if context matches.
+                representation = active_representation
+            else:
+                representation = ifcopenshell.util.representation.get_representation(element, ifc_context)
+                if not representation:
+                    continue
+
+            core.switch_representation(
+                tool.Ifc,
+                tool.Geometry,
+                obj=obj,
+                representation=representation,
+                should_reload=self.should_reload,
+                is_global=self.should_switch_all_meshes,
+                should_sync_changes_first=True,
+            )
 
 
 class RemoveRepresentation(bpy.types.Operator, tool.Ifc.Operator):
@@ -1693,20 +1708,66 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
                 obj_rep = ifc_file.by_id(obj.data.BIMMeshProperties.ifc_definition_id)
                 if obj_rep.RepresentationType != representation_type:
                     obj.select_set(False)
-                    continue
+                    self.report(
+                        {"ERROR"},
+                        f"IFC join failed - object '{obj}' has a different representation type "
+                        f"({obj_rep.RepresentationType}) than target '{self.target}' ({representation_type}).",
+                    )
+                    return
 
                 placement = np.array(obj.matrix_world)
                 placement[:, 3][:3] /= si_conversion
 
-                supported_item_types = ("IfcSweptAreaSolid", "IfcIndexedPolyCurve")
-                rep_items = obj_rep.Items
-                for item in rep_items:
-                    if not any(item.is_a(ifc_class) for ifc_class in supported_item_types):
-                        self.report({"ERROR"}, f"Unsupported representation item type for joining: {item.is_a()}.")
-                        return
+                rep_items = list(obj_rep.Items)
+                curve_set_items = {}
+                curve_set_mapping = {}
 
+                supported_item_types = ("IfcSweptAreaSolid", "IfcIndexedPolyCurve", "IfcGeometricCurveSet")
+
+                def validate_item(item: ifcopenshell.entity_instance) -> bool:
+                    return any(item.is_a(ifc_class) for ifc_class in supported_item_types)
+
+                error_msg = "Unsupported representation item type for joining: {}."
                 for item in rep_items:
-                    copied_item = ifcopenshell.util.element.copy_deep(ifc_file, item)
+                    item_class = item.is_a()
+                    if not validate_item(item):
+                        self.report({"ERROR"}, error_msg.format(item_class))
+                        return
+                    if item_class == "IfcGeometricCurveSet":
+                        sub_items = item.Elements
+                        for sub_item in item.Elements:
+                            if not validate_item(sub_item):
+                                self.report({"ERROR"}, error_msg.format(sub_item.is_a()))
+                                return
+                        rep_items.extend(sub_items)
+                        for sub_item in sub_items:
+                            curve_set_items[sub_item] = item
+
+                processed_point_lists = {}
+                for item in rep_items:
+                    item_class = item.is_a()
+
+                    if item_class == "IfcGeometricCurveSet":
+                        copied_item = ifc_file.create_entity("IfcGeometricCurveSet", Elements=())
+                    elif item_class == "IfcIndexedPolyCurve":
+                        # Process points lists separately as they tend to be reused.
+                        copied_item = ifcopenshell.util.element.copy_deep(
+                            ifc_file, item, exclude=("IfcCartesianPointList",)
+                        )
+                        new_points = processed_point_lists.get((points := item.Points))
+                        if new_points is None:
+                            new_points = ifcopenshell.util.element.copy_deep(ifc_file, points)
+                            dim = item.Dim
+                            append_coord = (1.0,) if dim == 3 else (0.0, 1.0)
+                            coords = points.CoordList
+                            points.CoordList = [
+                                apply_placement(np.append(c, append_coord), placement).tolist()[:3] for c in coords
+                            ]
+                            processed_point_lists[points] = new_points
+                        item.Points = new_points
+                    else:
+                        copied_item = ifcopenshell.util.element.copy_deep(ifc_file, item)
+
                     for style in item.StyledByItem:
                         copied_style = ifcopenshell.util.element.copy(ifc_file, style)
                         copied_style.Item = copied_item
@@ -1719,10 +1780,14 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
                         position = apply_placement(position, placement)
                         copied_item.Position = builder.create_axis2_placement_3d_from_matrix(position)
                     elif item.is_a("IfcIndexedPolyCurve"):
-                        points = copied_item.Points
-                        coords = points.CoordList
-                        # We're assuming those are 3D coordinates, since we do not support Curve2D.
-                        points.CoordList = [apply_placement(np.append(c, 1.0), placement).tolist()[:3] for c in coords]
+                        curve_set = curve_set_items.get(item)
+                        if curve_set:
+                            new_curve_set = curve_set_mapping[curve_set]
+                            new_curve_set.Elements = new_curve_set.Elements + (copied_item,)
+                            continue  # Item is added to curve set items instead of representation items.
+
+                    elif item_class == "IfcGeometricCurveSet":
+                        curve_set_mapping[item] = copied_item
                     else:
                         assert False, f"Unexpected item type: {item.is_a()}. This is a bug."
 

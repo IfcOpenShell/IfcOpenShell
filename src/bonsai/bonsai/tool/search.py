@@ -1,6 +1,26 @@
+# Bonsai - OpenBIM Blender Add-on
+# Copyright (C) 2022 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of Bonsai.
+#
+# Bonsai is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Bonsai is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
+
+
 import bpy
 import json
 import lark
+import bonsai.tool as tool
 import bonsai.core.tool
 import ifcopenshell.guid
 import ifcopenshell.util.selector
@@ -266,6 +286,23 @@ class Search(bonsai.core.tool.Search):
         if index >= len(palette) - 1:
             return palette[-1]
         return cls.interpolate_color(palette[index], palette[index + 1], fraction)
+
+    @classmethod
+    def get_query_for_selected_elements(cls) -> str:
+        global_ids = []
+        for obj in tool.Blender.get_selected_objects():
+            if element := tool.Ifc.get_entity(obj):
+                if global_id := getattr(element, "GlobalId", None):
+                    global_ids.append(global_id)
+
+        query = ",".join(global_ids)
+        if len(global_ids) > 50:
+            # Too much to store in a string property.
+            name = f"globalid-filter-{ifcopenshell.guid.new()}"
+            text_data = bpy.data.texts.new(name)
+            text_data.from_string(query)
+            query = f"bpy.data.texts['{name}']"
+        return query
 
 
 class ImportFilterQueryTransformer(lark.Transformer):

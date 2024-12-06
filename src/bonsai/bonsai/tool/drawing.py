@@ -890,6 +890,23 @@ class Drawing(bonsai.core.tool.Drawing):
                 return item
 
     @classmethod
+    def get_active_sheet_item(
+        cls, *, is_sheet: bool = False, reference_type: str = ""
+    ) -> Union[bpy.types.PropertyGroup, None]:
+        props = bpy.context.scene.DocProperties
+        sheet_index = props.active_sheet_index
+        if len(props.sheets) > sheet_index >= 0:
+            item = props.sheets[sheet_index]
+            if not is_sheet and not reference_type:
+                return item
+            if is_sheet:
+                if item.is_sheet:
+                    return item
+            elif reference_type:
+                if item.reference_type == reference_type:
+                    return item
+
+    @classmethod
     def import_text_attributes(cls, obj: bpy.types.Object) -> None:
         from bonsai.bim.module.drawing.prop import BOX_ALIGNMENT_POSITIONS
 
@@ -910,6 +927,7 @@ class Drawing(bonsai.core.tool.Drawing):
 
         text_data = DecoratorData.get_ifc_text_data(obj)
         props.font_size = str(text_data["FontSize"])
+        props.newline_at = text_data["Newline_At"]
 
     @classmethod
     def import_assigned_product(cls, obj: bpy.types.Object) -> None:
@@ -1693,6 +1711,11 @@ class Drawing(bonsai.core.tool.Drawing):
         return symbol
 
     @classmethod
+    def get_newline_at(cls, element: ifcopenshell.entity_instance) -> Union[int, 0]:
+        newline_at = ifcopenshell.util.element.get_pset(element, "EPset_Annotation", "Newline_At")
+        return newline_at
+
+    @classmethod
     def has_linework(cls, drawing: ifcopenshell.entity_instance) -> bool:
         return ifcopenshell.util.element.get_psets(drawing).get("EPset_Drawing", {}).get("HasLinework", False)
 
@@ -1882,7 +1905,7 @@ class Drawing(bonsai.core.tool.Drawing):
                 subcontexts.append(context_filter)
 
         # Hide everything first, then selectively show. This is significantly faster.
-        with bpy.context.temp_override(area=next(a for a in bpy.context.screen.areas if a.type == "VIEW_3D")):
+        with bpy.context.temp_override(**tool.Blender.get_viewport_context()):
             bpy.ops.object.hide_view_set(unselected=False)
             bpy.ops.object.hide_view_set(unselected=True)
 

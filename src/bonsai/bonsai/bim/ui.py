@@ -50,7 +50,7 @@ class IFCFileSelector:
             path = self.get_filepath_abs()
         else:
             path = Path(filepath)
-        return path.exists() and "ifc" in path.suffix.lower()
+        return path.exists() and path.is_file() and "ifc" in path.suffix.lower()
 
     def get_filepath_abs(self) -> Path:
         # self.filepath filled by fileselect_add is absolute
@@ -68,7 +68,8 @@ class IFCFileSelector:
             filepath = filepath.relative_to(bpy.path.abspath("//"))
         return filepath.as_posix()
 
-    def draw(self, context):
+    def draw(self, context: bpy.types.Context) -> None:
+        assert isinstance(context.space_data, bpy.types.SpaceFileBrowser)
         # Access filepath & Directory https://blender.stackexchange.com/a/207665
         params = context.space_data.params
         # Decode byte string https://stackoverflow.com/a/47737082/
@@ -380,6 +381,8 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row.prop(context.scene.DocProperties, "magic_font_scale")
         row = self.layout.row()
         row.prop(context.scene.DocProperties, "imperial_precision")
+        row = self.layout.row()
+        row.prop(context.scene.DocProperties, "tolerance")
 
 
 # Scene panel groups

@@ -193,6 +193,8 @@ class Usecase:
                 "IfcRamp",
                 "IfcPlate",
                 "IfcPlateStandardCase",
+                "IfcCovering",
+                "IfcFurniture",
             ]
             for product in self.products:
                 element_type = ifcopenshell.util.element.get_type(product)

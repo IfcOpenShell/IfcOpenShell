@@ -29,6 +29,7 @@ import ifcopenshell
 import bonsai.tool as tool
 import bonsai.bim.handler
 from pathlib import Path
+from typing import Union
 
 
 class ExecuteIfcTester(bpy.types.Operator):
@@ -66,12 +67,14 @@ class ExecuteIfcTester(bpy.types.Operator):
         bonsai.bim.handler.refresh_ui_data()
         return {"FINISHED"}
 
-    def execute_tester(self, ifc_data, ifc_path, specs_path):
+    def execute_tester(self, ifc_data: ifcopenshell.file, ifc_path: str, specs_path: str) -> Union[set[str], None]:
         props = bpy.context.scene.IfcTesterProperties
 
-        with tempfile.TemporaryDirectory() as dirpath:
+        # No need for if-statement, just postponing lots of diffs.
+        if True:
+            dirpath = tempfile.mkdtemp()
             start = time.time()
-            output = Path(os.path.join(dirpath, "{}_{}.html".format(ifc_path, os.path.basename(specs_path))))
+            output = Path(os.path.join(dirpath, "{}_{}.html".format(Path(ifc_path).name, Path(specs_path).name)))
 
             try:
                 specs = ifctester.ids.open(specs_path)
@@ -113,7 +116,6 @@ class ExecuteIfcTester(bpy.types.Operator):
                 tool.Tester.report = report
 
             for spec in report:
-                print(spec)
                 new_spec = props.specifications.add()
                 new_spec.name = spec["name"]
                 new_spec.description = spec["description"]
@@ -178,6 +180,7 @@ class SelectFailedEntities(bpy.types.Operator):
             else:
                 obj.select_set(False)
 
+        self.report({"INFO"}, f"{len(failed_ids)} failed entities found, {len(context.selected_objects)} selected.")
         return {"FINISHED"}
 
 

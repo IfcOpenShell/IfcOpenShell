@@ -23,7 +23,9 @@ import ifcopenshell.api
 import ifcopenshell.api.geometry
 import ifcopenshell.util.schema
 import ifcopenshell.util.element
+import ifcopenshell.util.shape_builder
 import ifcopenshell.util.type
+import ifcopenshell.util.unit
 import bonsai.bim.handler
 import bonsai.core.root as core
 import bonsai.core.geometry
@@ -344,6 +346,7 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
             props.userdefined_type if props.ifc_predefined_type == "USERDEFINED" else props.ifc_predefined_type
         )
         representation_template = props.representation_template
+        ifc_file = tool.Ifc.get()
 
         ifc_context = None
         if get_enum_items(props, "contexts", context):
@@ -456,14 +459,20 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
             else:
                 material = ifcopenshell.api.run("material.add_material", tool.Ifc.get(), name="Unknown")
             if representation_template == "PROFILESET":
-                named_profiles = [p for p in tool.Ifc.get().by_type("IfcProfileDef") if p.ProfileName]
-                if named_profiles:
-                    profile = named_profiles[0]
+                profile_id = tool.Blender.get_enum_safe(context.scene.BIMRootProperties, "profile")
+                if profile_id in ("-", None):
+                    profile = next((p for p in ifc_file.by_type("IfcProfileDef") if p.ProfileName), None)
+                    if profile is None:
+                        size = 0.5 / unit_scale
+                        profile = ifc_file.create_entity(
+                            "IfcRectangleProfileDef",
+                            ProfileName="New Profile",
+                            ProfileType="AREA",
+                            XDim=size,
+                            YDim=size,
+                        )
                 else:
-                    size = 0.5 / unit_scale
-                    profile = tool.Ifc.get().create_entity(
-                        "IfcRectangleProfileDef", ProfileName="New Profile", ProfileType="AREA", XDim=size, YDim=size
-                    )
+                    profile = ifc_file.by_id(int(profile_id))
             else:
                 # NOTE: defaults dims are in meters / mm
                 # for now default names are hardcoded to mm
@@ -541,6 +550,9 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
         if props.representation_template == "OBJ":
             row = self.layout.row()
             row.prop(props, "representation_obj", text="Object")
+        elif props.representation_template == "PROFILESET":
+            row = self.layout.row()
+            row.prop(props, "profile", text="Profile")
         if props.representation_template != "EMPTY":
             prop_with_search(self.layout, props, "contexts")
 

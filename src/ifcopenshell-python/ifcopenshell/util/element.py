@@ -20,7 +20,7 @@ import ifcopenshell
 import ifcopenshell.guid
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
-from typing import Any, Callable, Optional, Union, Literal, overload
+from typing import Any, Callable, Optional, Union, Literal, overload, Sequence
 from collections import namedtuple
 
 
@@ -1518,7 +1518,7 @@ def copy(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_instance) -> 
 def copy_deep(
     ifc_file: ifcopenshell.file,
     element: ifcopenshell.entity_instance,
-    exclude: Optional[list[str]] = None,
+    exclude: Optional[Sequence[str]] = None,
     exclude_callback: Optional[Callable[[ifcopenshell.entity_instance], bool]] = None,
     copied_entities: Optional[dict[int, ifcopenshell.entity_instance]] = None,
 ) -> ifcopenshell.entity_instance:

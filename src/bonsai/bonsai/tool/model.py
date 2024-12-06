@@ -490,6 +490,7 @@ class Model(bonsai.core.tool.Model):
 
     @classmethod
     def clear_scene_openings(cls) -> None:
+        """Clear removed scene openings."""
         props = bpy.context.scene.BIMModelProperties
         has_deleted_opening = True
         while has_deleted_opening:
@@ -617,7 +618,14 @@ class Model(bonsai.core.tool.Model):
             elif material.is_a("IfcMaterialLayerSet"):
                 axis = ifcopenshell.util.element.get_pset(element, "EPset_Parametric", "LayerSetDirection")
                 if axis is None:
-                    if element.is_a() in ["IfcSlabType", "IfcRoofType", "IfcRampType", "IfcPlateType"]:
+                    if element.is_a() in [
+                        "IfcSlabType",
+                        "IfcRoofType",
+                        "IfcRampType",
+                        "IfcPlateType",
+                        "IfcCovering",
+                        "IfcFurniture",
+                    ]:
                         axis = "AXIS3"
                     else:
                         axis = "AXIS2"
@@ -1890,3 +1898,7 @@ class Model(bonsai.core.tool.Model):
                     curves.append(tmp.createIfcIndexedPolyCurve(points))
 
         return {"ifc_file": tmp, "curves": curves}
+
+    @classmethod
+    def is_boolean_obj(cls, obj: bpy.types.Object) -> bool:
+        return obj.type == "MESH" and obj.data.BIMMeshProperties.ifc_boolean_id

@@ -260,11 +260,9 @@ class Blender(bonsai.core.tool.Blender):
                     return area
 
     @classmethod
-    def get_view3d_space(cls):
+    def get_view3d_space(cls) -> Union[bpy.types.SpaceView3D, None]:
         if area := cls.get_view3d_area():
-            for space in area.spaces:
-                if space.type == "VIEW_3D":
-                    return space
+            return area.spaces.active
 
     @classmethod
     def get_blender_prop_default_value(cls, props, prop_name: str) -> Any:
@@ -285,9 +283,19 @@ class Blender(bonsai.core.tool.Blender):
         when in real life you can have a couple of those but should work for the most cases.
         """
         area = cls.get_view3d_area()
+        assert area
         region = next(region for region in area.regions if region.type == "WINDOW")
         space = next(space for space in area.spaces if space.type == "VIEW_3D")
         context_override = {"area": area, "region": region, "space_data": space}
+
+        # Need to override screen and window if area is from a different window.
+        screen: bpy.types.Scene = area.id_data
+        context = bpy.context
+        assert context
+        if context.screen != screen:
+            context_override["screen"] = screen
+            window = next(window for window in context.window_manager.windows if window.screen == screen)
+            context_override["window"] = window
         return context_override
 
     @classmethod
@@ -313,10 +321,11 @@ class Blender(bonsai.core.tool.Blender):
         for screen in bpy.data.screens:
             for area in screen.areas:
                 if area.type == "NODE_EDITOR":
-                    for space in area.spaces:
-                        if space.tree_type == "ShaderNodeTree":
-                            context_override = {"area": area, "space": space, "screen": screen}
-                            return context_override
+                    space = area.spaces.active
+                    assert isinstance(space, bpy.types.SpaceNodeEditor)
+                    if space.tree_type == "ShaderNodeTree":
+                        context_override = {"area": area, "space": space, "screen": screen}
+                        return context_override
 
     @classmethod
     def copy_node_graph(cls, material_to: bpy.types.Material, material_from: bpy.types.Material) -> None:
