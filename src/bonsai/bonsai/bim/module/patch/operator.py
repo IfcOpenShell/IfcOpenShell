@@ -25,6 +25,7 @@ import bonsai.tool as tool
 import bonsai.core.patch as core
 import bonsai.bim.handler
 from pathlib import Path
+from typing import cast
 
 
 class SelectIfcPatchInput(bpy.types.Operator):
@@ -77,6 +78,8 @@ class ExecuteIfcPatch(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMPatchProperties
+        recipe_name = props.ifc_patch_recipes
+
         arguments = []
         if props.ifc_patch_args_attr:
             arguments = []
@@ -86,25 +89,28 @@ class ExecuteIfcPatch(bpy.types.Operator):
                     value = value[0]
                 arguments.append(value)
 
+        args = ifcpatch.ArgumentsDict(
+            recipe=props.ifc_patch_recipes,
+            arguments=arguments,
+            log=os.path.join(context.scene.BIMProperties.data_dir, "process.log"),
+        )
+
         if props.should_load_from_memory and tool.Ifc.get():
-            input_file = props.ifc_patch_input
-            file = tool.Ifc.get()
+            args["file"] = tool.Ifc.get()
+            if ifcpatch.get_patch_input_argument_use(recipe_name) == "REQUIRED":
+                self.report(
+                    {"ERROR"},
+                    f"The recipe '{recipe_name}' is not currently supported if file is loaded from memory.",
+                )
+                return {"CANCELLED"}
         else:
-            input_file = props.ifc_patch_input
-            file = ifcopenshell.open(props.ifc_patch_input)
+            args["input"] = cast(str, props.ifc_patch_input)
+            args["file"] = cast(ifcopenshell.file, ifcopenshell.open(props.ifc_patch_input))
 
         # Store this in case the patch recipe resets the Blender session, such as by loading a new project.
         ifc_patch_output = props.ifc_patch_output or props.ifc_patch_input
 
-        output = ifcpatch.execute(
-            {
-                "input": input_file,
-                "file": file,
-                "recipe": props.ifc_patch_recipes,
-                "arguments": arguments,
-                "log": os.path.join(context.scene.BIMProperties.data_dir, "process.log"),
-            }
-        )
+        output = ifcpatch.execute(args)
         if tool.Patch.does_patch_has_output(props.ifc_patch_recipes):
             ifcpatch.write(output, ifc_patch_output)
         self.report({"INFO"}, f"{props.ifc_patch_recipes} patch executed successfully")
