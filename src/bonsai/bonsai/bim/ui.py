@@ -383,6 +383,8 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row.prop(context.scene.DocProperties, "imperial_precision")
         row = self.layout.row()
         row.prop(context.scene.DocProperties, "tolerance")
+        row = self.layout.row()
+        row.prop(context.scene.DocProperties, "classes_to_wireframe")       
 
 
 # Scene panel groups
