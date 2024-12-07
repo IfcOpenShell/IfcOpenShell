@@ -203,6 +203,8 @@ class IfcImporter:
         self.progress = 0
 
         self.material_creator = MaterialCreator(ifc_import_settings, self)
+        classes_to_wireframe_str = bpy.context.scene.DocProperties.classes_to_wireframe
+        self.classes_to_wireframe_list = [word.strip() for word in classes_to_wireframe_str.split(",")]
 
     def profile_code(self, message: str) -> None:
         if not self.time:
@@ -814,6 +816,10 @@ class IfcImporter:
 
         obj = bpy.data.objects.new(tool.Loader.get_name(element), mesh)
         self.link_element(element, obj)
+
+        for ifcclass in self.classes_to_wireframe_list:
+            if element.is_a(ifcclass):
+                obj.display_type = 'WIRE'
 
         if shape:
             # We use numpy here because Blender mathutils.Matrix is not accurate enough
