@@ -105,54 +105,35 @@ ifcopenshell::geometry::CgalShape::CgalShape(const cgal_shape_t& shape, bool con
 	std::set<cgal_shape_t::Facet_handle> faces_to_remove;
 
 	for (const auto& face : CGAL::faces(*shape_)) {
-		// @todo O^2 alert! Use aabb tree or box intersections
-
 		auto V = newell(*face).to_vector();
+		CGAL::Plane_3<Kernel_> plane(CGAL::Point_3<Kernel_>(), V);
+		auto b1 = plane.base1();
+		auto b2 = plane.base2();
+
 		if (V.squared_length() == 0) {
 			Logger::Warning("Removed face due to self-intersections");
 			faces_to_remove.insert(face);
 			continue;
 		}
 		auto C = face->halfedge()->vertex()->point();
-		auto transform_point = [&V, &C](const auto& p) {
+		auto transform_point = [&V, &C, &b1, &b2](const auto& p) {
 			auto dv = p - C;
-			return C + (dv - (dv * V) * V);
+			return CGAL::Point_2<Kernel_>(
+				dv * b1,
+				dv * b2
+			);
 		};
+
+		std::vector<CGAL::Point_2<Kernel_>> ps;
 			
 		for (auto& he1 : CGAL::halfedges_around_face(face->halfedge(), *shape_)) {
-			CGAL::Segment_3<Kernel_> s1;
-			{
-				const auto& source = he1->vertex()->point();
-				const auto& target = he1->next()->vertex()->point();
-				s1 = { 
-					transform_point(source),
-					transform_point(target)
-				};
-			}
-			for (auto& he2 : CGAL::halfedges_around_face(face->halfedge(), *shape_)) {
-				if (he1 == he2 || he1->next() == he2 || he2->next() == he1) {
-					// skip topologically connected edges
-					continue;
-				}
-				CGAL::Segment_3<Kernel_> s2;
-				{
-					const auto& source = he2->vertex()->point();
-					const auto& target = he2->next()->vertex()->point();
-					s2 = {
-						transform_point(source),
-						transform_point(target)
-					};
-				}
-				if (CGAL::to_double((s1.start() - s2.end()).squared_length()) < 1.e-12 ||
-					CGAL::to_double((s1.end() - s2.end()).squared_length()) < 1.e-12 ||
-					CGAL::to_double((s1.start() - s2.start()).squared_length()) < 1.e-12 ||
-					CGAL::to_double((s1.end() - s2.start()).squared_length()) < 1.e-12 ||
-					CGAL::do_intersect(s1, s2))
-				{
-					Logger::Warning("Removed face due to self-intersections");
-					faces_to_remove.insert(face);
-				}
-			}
+			const auto& source = he1->vertex()->point();
+			ps.push_back(transform_point(source));
+		}
+
+		if (!CGAL::Polygon_2<Kernel_>(ps.begin(), ps.end()).is_simple()) {
+			Logger::Warning("Removed face due to self-intersections");
+			faces_to_remove.insert(face);
 		}
 	}
 
