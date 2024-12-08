@@ -55,7 +55,7 @@ class TestLoadExpress(NewFile):
 
 class TestPurgeHdf5Cache(NewFile):
     def test_run(self):
-        cache_dir = Path(bpy.context.scene.BIMProperties.data_dir) / "cache"
+        cache_dir = Path(bpy.context.scene.BIMProperties.cache_dir)
         test_file = cache_dir / "test.h5"
         test_file.parent.mkdir(parents=True, exist_ok=True)
         test_file.touch()

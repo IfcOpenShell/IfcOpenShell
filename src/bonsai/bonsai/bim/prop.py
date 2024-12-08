@@ -21,6 +21,7 @@ import os
 import bpy
 import json
 import importlib
+import platformdirs
 import ifcopenshell
 import ifcopenshell.util.pset
 import ifcopenshell.util.unit
@@ -128,6 +129,12 @@ def update_data_dir(self: "BIMProperties", context: bpy.types.Context) -> None:
     import bonsai.bim.schema
 
     bonsai.bim.schema.ifc.data_dir = context.scene.BIMProperties.data_dir
+
+
+def update_cache_dir(self: "BIMProperties", context: bpy.types.Context) -> None:
+    import bonsai.bim.schema
+
+    bonsai.bim.schema.ifc.cache_dir = context.scene.BIMProperties.cache_dir
 
 
 def update_ifc_file(self: "BIMProperties", context: bpy.types.Context) -> None:
@@ -430,6 +437,9 @@ class BIMProperties(PropertyGroup):
     )
     data_dir: StringProperty(
         default=os.path.join(cwd, "data") + os.path.sep, name="Data Directory", update=update_data_dir
+    )
+    cache_dir: StringProperty(
+        default=platformdirs.user_cache_dir("bonsai"), name="Cache Directory", update=update_cache_dir
     )
     has_blend_warning: BoolProperty(name="Has Blend Warning", default=False)
     pset_dir: StringProperty(default=os.path.join("psets") + os.path.sep, name="Default Psets Directory")

@@ -352,6 +352,10 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row.prop(context.scene.BIMProperties, "data_dir")
         row.operator("bim.select_data_dir", icon="FILE_FOLDER", text="")
 
+        row = self.layout.row(align=True)
+        row.prop(context.scene.BIMProperties, "cache_dir")
+        row.operator("bim.select_cache_dir", icon="FILE_FOLDER", text="")
+
         row = self.layout.row()
         row.prop(context.scene.BIMProperties, "pset_dir")
         row = self.layout.row()
