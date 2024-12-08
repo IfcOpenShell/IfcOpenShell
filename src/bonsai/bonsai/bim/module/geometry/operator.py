@@ -1869,9 +1869,17 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         selected_objs = context.selected_objects  # Purposely exclude active object
 
+        if self.has_aggregates(selected_objs):
+            if not context.scene.BIMAggregateProperties.in_aggregate_mode:
+                bonsai.core.aggregate.enable_aggregate_mode(tool.Aggregate, context.active_object)
+                return {"FINISHED"}
+
         if len(selected_objs) == 1 and context.active_object == selected_objs[0]:
             self.handle_single_object(context, context.active_object)
         elif len(selected_objs) == 0:
+            if context.scene.BIMAggregateProperties.in_aggregate_mode:
+                bonsai.core.aggregate.disable_aggregate_mode(tool.Aggregate)
+                return {"FINISHED"}
             tool.Geometry.disable_item_mode()
         elif len(selected_objs) > 1:
             self.handle_multiple_selected_objects(context)
@@ -1880,6 +1888,9 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
         element = tool.Ifc.get_entity(obj)
         if obj == context.scene.BIMGeometryProperties.representation_obj:
             self.report({"ERROR"}, f"Element '{obj.name}' is in item mode and cannot be edited directly")
+        elif obj in [o.obj for o in context.scene.BIMAggregateProperties.not_editing_objects]:
+            obj.select_set(False)
+            self.report({"ERROR"}, f"Element '{obj.name}' does not belong to this aggregate and cannot be edited directly")
         elif obj in bpy.context.scene.BIMProjectProperties.clipping_planes_objs:
             self.report({"ERROR"}, "Clipping planes cannot be edited")
         elif element:
@@ -1970,6 +1981,18 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
         if context.scene.BIMGeometryProperties.mode != "EDIT":
             context.scene.BIMGeometryProperties.mode = "EDIT"
         context.scene.BIMGeometryProperties.is_changing_mode = False
+
+    def has_aggregates(self, objs):
+        for obj in objs:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            aggregate = ifcopenshell.util.element.get_aggregate(element)
+            parts = ifcopenshell.util.element.get_parts(element)
+            if (aggregate or parts) and not bpy.context.scene.BIMAggregateProperties.in_aggregate_mode:
+                return True
+            else:
+                return False
 
 
 class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
@@ -2857,3 +2880,55 @@ class AddCurvelikeItem(bpy.types.Operator, tool.Ifc.Operator):
         obj.data.BIMMeshProperties.ifc_definition_id = item.id()
         tool.Geometry.import_item(obj)
         tool.Geometry.import_item_attributes(obj)
+
+
+class OverrideMoveAggregateMacro(bpy.types.Macro):
+    bl_idname = "bim.override_move_aggregate_macro"
+    bl_label = "IFC Move Aggregate"
+    bl_options = {"REGISTER", "UNDO"}
+
+
+class OverrideMoveAggregate(bpy.types.Operator):
+    bl_idname = "bim.override_move_aggregate"
+    bl_label = "IFC Move Aggregate"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return len(context.selected_objects) > 0
+
+    def execute(self, context):
+        # Deep magick from the dawn of time
+        if IfcStore.get_file():
+            IfcStore.execute_ifc_operator(self, context)
+            if self.new_active_obj:
+                context.view_layer.objects.active = self.new_active_obj
+            return {"FINISHED"}
+
+        return {"FINISHED"}
+
+    def _execute(self, context):
+        props = context.scene.BIMAggregateProperties
+        not_editing_objs = [o.obj for o in props.not_editing_objects]
+        aggregates_to_move = []
+        for obj in context.selected_objects:
+            self.new_active_obj = None
+            if obj in not_editing_objs:
+                obj.select_set(False)
+                continue
+            element = tool.Ifc.get_entity(obj)
+            if not element or props.in_aggregate_mode:
+                continue
+            parts = ifcopenshell.util.element.get_parts(element)
+            if parts:
+                aggregates_to_move.append(tool.Ifc.get_object(element))
+                continue
+            aggregate = ifcopenshell.util.element.get_aggregate(element)
+            if aggregate:
+                aggregates_to_move.append(tool.Ifc.get_object(aggregate))
+                obj.select_set(False)
+        aggregates_to_move = set(aggregates_to_move)
+        for obj in aggregates_to_move:
+            obj.select_set(True)
+            self.new_active_obj = obj
+        return {"FINISHED"}

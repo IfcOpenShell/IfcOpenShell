@@ -83,3 +83,85 @@ class Aggregate(bonsai.core.tool.Aggregate):
             queue.update(new_parts := set(ifcopenshell.util.element.get_parts(element)))
             parts.update(new_parts)
         return parts
+
+    @classmethod
+    def constrain_parts_to_aggregate(cls, aggregate: bpy.types.Object):
+        agg_element = tool.Ifc.get_entity(aggregate)
+        parts = ifcopenshell.util.element.get_parts(agg_element)
+        parts_objs = [tool.Ifc.get_object(p) for p in parts]
+        for obj in parts_objs:
+            constraint = next((c for c in obj.constraints if c.type == "CHILD_OF"), None)
+            if constraint:
+                try:
+                    bpy.context.view_layer.objects.active = obj
+                    bpy.ops.constraint.apply(constraint="Child Of")
+                except:
+                    pass
+            constraint = obj.constraints.new("CHILD_OF")
+            constraint.target = aggregate
+
+    @classmethod
+    def apply_constraints(cls, part: bpy.types.Object):
+        constraint = next((c for c in part.constraints if c.type == "CHILD_OF"), None)
+        if constraint:
+            bpy.context.view_layer.objects.active = part
+            bpy.ops.constraint.apply(constraint=constraint.name)
+            
+    @classmethod
+    def get_aggregate_mode(cls):
+        return bpy.context.scene.BIMAggregateProperties.in_aggregate_mode
+
+    @classmethod
+    def enable_aggregate_mode(cls, active_object: bpy.types.Object):
+        context = bpy.context
+        props = context.scene.BIMAggregateProperties
+
+        element = tool.Ifc.get_entity(active_object)
+        if not element:
+            return {"FINISHED"}
+        aggregate = ifcopenshell.util.element.get_aggregate(element)
+        parts = ifcopenshell.util.element.get_parts(element)
+        if not aggregate and not parts:
+            return {"FINISHED"}
+        if not parts:
+            parts = ifcopenshell.util.element.get_parts(aggregate)
+        if parts:
+            props.editing_aggregate = tool.Ifc.get_object(aggregate) if aggregate else tool.Ifc.get_object(element)
+            parts_objs = [tool.Ifc.get_object(part) for part in parts]
+            objs = []
+            visible_objects = tool.Raycast.get_visible_objects(context)
+            for obj in visible_objects:
+                if obj.visible_in_viewport_get(context.space_data):
+                    objs.append(obj.original)
+            for obj in objs:
+                if obj.original not in parts_objs:
+                    try:
+                        is_element_assembly = tool.Ifc.get_entity(obj.original).is_a("IfcElementAssembly")
+                    except:
+                        is_element_assembly = False
+                    if not obj.data and not is_element_assembly:
+                        continue
+                    obj.original.display_type = "WIRE"
+                    not_editing_obj = props.not_editing_objects.add()
+                    not_editing_obj.obj = obj.original
+                else:
+                    editing_obj = props.editing_objects.add()
+                    editing_obj.obj = obj.original
+
+        props.in_aggregate_mode = True
+        return {"FINISHED"}
+
+    @classmethod
+    def disable_aggregate_mode(cls):
+        context = bpy.context
+        props = context.scene.BIMAggregateProperties
+        objs = [o.obj for o in props.not_editing_objects]
+        for obj in objs:
+            obj.original.display_type = "TEXTURED"
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+
+        props.in_aggregate_mode = False
+        props.not_editing_objects.clear()
+        props.editing_objects.clear()
