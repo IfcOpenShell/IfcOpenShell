@@ -384,7 +384,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row = self.layout.row()
         row.prop(context.scene.DocProperties, "tolerance")
         row = self.layout.row()
-        row.prop(context.scene.DocProperties, "classes_to_wireframe")       
+        row.prop(context.scene.DocProperties, "classes_to_wireframe")
 
 
 # Scene panel groups
