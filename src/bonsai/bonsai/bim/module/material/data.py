@@ -294,20 +294,20 @@ class ObjectMaterialData:
             return sum([l.LayerThickness for l in layers or []])
 
     @classmethod
-    def set_item_name(cls):
-        results = []
+    def set_item_name(cls) -> Union[str, None]:
         if cls.material:
-            if "Constituent" in cls.material.is_a():
+            material_class = cls.material.is_a()
+            if "Constituent" in material_class:
                 return "constituent"
-            elif "Layer" in cls.material.is_a():
+            elif "Layer" in material_class:
                 return "layer"
-            elif "Profile" in cls.material.is_a():
+            elif "Profile" in material_class:
                 return "profile"
-            elif "List" in cls.material.is_a():
+            elif "List" in material_class:
                 return "list_item"
 
     @classmethod
-    def material_name(cls):
+    def material_name(cls) -> Union[str, None]:
         material = cls.material
         if material:
             return getattr(material, "Name", None) or "Unnamed"

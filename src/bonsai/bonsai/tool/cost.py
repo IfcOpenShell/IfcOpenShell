@@ -577,7 +577,11 @@ class Cost(bonsai.core.tool.Cost):
 
     @classmethod
     def create_new_cost_item_li(
-        cls, props_collection, cost_item: ifcopenshell.entity_instance, level_index: int, type: str = "cost_rate"
+        cls,
+        props_collection,
+        cost_item: ifcopenshell.entity_instance,
+        level_index: int,
+        type: Literal["cost", "cost_rate"] = "cost_rate",
     ) -> None:
         new = props_collection.add()
         new.ifc_definition_id = cost_item.id()
