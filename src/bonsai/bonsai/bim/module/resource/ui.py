@@ -60,6 +60,7 @@ class BIM_PT_resources(Panel):
 
         self.draw_resource_operators()
 
+        BIM_UL_resources.draw_header(self.layout)
         self.layout.template_list(
             "BIM_UL_resources",
             "",
@@ -336,6 +337,26 @@ class BIM_PT_resources(Panel):
 
 
 class BIM_UL_resources(UIList):
+    @classmethod
+    def draw_header(cls, layout: bpy.types.UILayout) -> None:
+        # TODO: less hacky way to just keep two labels centered.
+        row = layout.row(align=True)
+        col = row.column()
+        col.label(text="")
+        col = row.column()
+        col.alignment = "CENTER"
+        col.label(text="Name")
+        col = row.column()
+        col.label(text="")
+
+        col = row.column()
+        col.label(text="")
+        col = row.column()
+        col.alignment = "CENTER"
+        col.label(text="Schedule Usage")
+        col = row.column()
+        col.label(text="")
+
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         icon_map = {
             "IfcSubContractResource": "TEXT",
