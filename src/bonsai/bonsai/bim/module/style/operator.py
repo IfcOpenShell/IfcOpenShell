@@ -493,6 +493,7 @@ class LoadStyles(bpy.types.Operator):
 class SelectByStyle(bpy.types.Operator):
     bl_idname = "bim.select_by_style"
     bl_label = "Select By Style"
+    bl_description = "Select objects using the provided style"
     bl_options = {"REGISTER", "UNDO"}
     style: bpy.props.IntProperty()
 
