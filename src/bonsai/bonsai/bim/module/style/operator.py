@@ -695,6 +695,7 @@ class EnableEditingSurfaceStyle(bpy.types.Operator):
 
         props.is_editing_style = self.style
         props.is_editing_class = self.ifc_class
+        props.is_editing_existing_style = self.ifc_class in style_elements
         tool.Style.set_surface_style_props()
 
         surface_style = style_elements.get(self.ifc_class, None)
@@ -788,7 +789,11 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
         elif self.props.is_editing_class == "IfcSurfaceStyleWithTextures":
             # TODO: fix same issues as with creating new IfcSurfaceStyleWithTextures
             material = tool.Ifc.get_object(self.style)
-            textures = tool.Ifc.run("style.add_surface_textures", textures=self.get_texture_attributes(), uv_maps=[])
+            textures = self.get_texture_attributes()
+            if not textures:
+                self.report({"ERROR"}, "Cannot save texture style without any textures.")
+                return {"CANCELLED"}
+            textures = tool.Ifc.run("style.add_surface_textures", textures=textures, uv_maps=[])
             texture_style = tool.Ifc.run(
                 "style.add_surface_style",
                 style=self.style,
@@ -1150,4 +1155,20 @@ class SelectStyleInStylesUI(bpy.types.Operator):
             {"INFO"},
             f"Style '{style.Name or 'Unnamed'}' is selected in Styles UI.",
         )
+        return {"FINISHED"}
+
+
+class RemoveSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.remove_surface_style"
+    bl_label = "Remove Surface Style"
+    bl_description = "Remove the currently edited surface style from the active style"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        ifc_file = tool.Ifc.get()
+        props = context.scene.BIMStylesProperties
+        style = ifc_file.by_id(props.is_editing_style)
+        surface_style = tool.Style.get_style_elements(style)[props.is_editing_class]
+        ifcopenshell.api.style.remove_surface_style(ifc_file, surface_style)
+        core.disable_editing_style(tool.Style)
         return {"FINISHED"}
