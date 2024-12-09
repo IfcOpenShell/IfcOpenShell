@@ -2008,7 +2008,7 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
             elif tool.Geometry.is_representation_item(context.active_object):
                 self.edit_representation_item(context.active_object)
                 tool.Root.reload_item_decorator()
-                #So you can keep hitting tab to cycle out of edit mode
+                # So you can keep hitting tab to cycle out of edit mode
                 context.active_object.select_set(False)
                 bpy.context.view_layer.objects.active = None
                 return {"FINISHED"}
@@ -2649,9 +2649,9 @@ class ImportRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
                 tool.Geometry.lock_object(item_obj)
 
             if "IfcOpeningElement" in obj.name:
-                item_obj.display_type = 'WIRE'
+                item_obj.display_type = "WIRE"
 
-            item_obj.select_set(True)#so you can quickly hit tab again, for edit mode
+            item_obj.select_set(True)  # so you can quickly hit tab again, for edit mode
             context.view_layer.objects.active = item_obj
 
         tool.Root.reload_item_decorator()

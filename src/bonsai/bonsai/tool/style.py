@@ -72,6 +72,7 @@ class Style(bonsai.core.tool.Style):
     def disable_editing(cls) -> None:
         props = bpy.context.scene.BIMStylesProperties
         props.is_editing_style = 0
+        props.is_editing_class = ""
         props.attributes.clear()
         props.external_style_attributes.clear()
         props.refraction_style_attributes.clear()

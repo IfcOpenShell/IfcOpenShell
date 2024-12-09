@@ -39,6 +39,7 @@ classes = (
     operator.EnableEditingSurfaceStyle,
     operator.LoadStyles,
     operator.RemoveStyle,
+    operator.RemoveSurfaceStyle,
     operator.SaveUVToStyle,
     operator.SelectByStyle,
     operator.SelectStyleInStylesUI,
