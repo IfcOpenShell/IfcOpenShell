@@ -155,10 +155,14 @@ class ColourRgb(PropertyGroup):
 
 
 class BIMStylesProperties(PropertyGroup):
-    is_adding: BoolProperty(name="Is Adding")
-    is_editing: BoolProperty(name="Is Editing")
-    is_editing_style: IntProperty(name="Is Editing Style")
-    is_editing_class: StringProperty(name="Is Editing Class")
+    is_adding: BoolProperty(name="Is Adding", description="Is adding new IfcPresentationStyle")
+    is_editing: BoolProperty(name="Is Editing", description="Is editing IfcPresentationStyle")
+    is_editing_style: IntProperty(name="Is Editing Style", description="Is editing new presentation item surface style")
+    is_editing_class: StringProperty(
+        name="Is Editing Class",
+        description="Presentation item surface style class currently edited",
+    )
+    is_editing_existing_style: BoolProperty(name="Is Editing Existing", description="Is editing existing surface style")
     attributes: CollectionProperty(name="Attributes", type=Attribute)
     external_style_attributes: CollectionProperty(name="External Style Attributes", type=Attribute)
     refraction_style_attributes: CollectionProperty(name="Refraction Style Attributes", type=Attribute)
