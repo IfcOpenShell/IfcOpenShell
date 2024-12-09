@@ -27,6 +27,7 @@ import ifcopenshell.util.representation
 import ifcopenshell.util.unit
 from pathlib import Path
 from mathutils import Vector
+from typing import Any, Union
 
 
 # TODO: is this still relevant or can it be deleted?
@@ -717,6 +718,8 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Edit Surface Style"
     bl_options = {"REGISTER", "UNDO"}
 
+    surface_style: Union[ifcopenshell.entity_instance, None]
+
     def _execute(self, context):
         self.props = bpy.context.scene.BIMStylesProperties
         self.style = tool.Ifc.get().by_id(self.props.is_editing_style)
@@ -741,6 +744,8 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
 
     def edit_existing_style(self):
         material = tool.Ifc.get_object(self.style)
+        assert self.surface_style
+
         if self.surface_style.is_a() == "IfcSurfaceStyleShading":
             ifcopenshell.api.run(
                 "style.edit_surface_style",
@@ -876,7 +881,7 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
 
     # TODO: support RepeatS/RepeatT params in UI:
     # add it to prop.Texture and Style.get_texture_style_data_from_props
-    def get_texture_attributes(self):
+    def get_texture_attributes(self) -> list[dict[str, Any]]:
         textures = []
         for texture in self.props.textures:
             texture_data = {

@@ -108,7 +108,10 @@ class Loader(bonsai.core.tool.Loader):
         mesh.BIMMeshProperties.ifc_definition_id = int(geometry.id.split("-")[0])
 
     @classmethod
-    def create_surface_style_shading(cls, blender_material, surface_style):
+    def create_surface_style_shading(
+        cls, blender_material: bpy.types.Material, surface_style: ifcopenshell.entity_instance
+    ) -> None:
+        # Shading style is simple and use no node graph.
         surface_style = cls.surface_style_to_dict(surface_style)
         alpha = 1.0
         # Transparency was added in IFC4
@@ -118,7 +121,7 @@ class Loader(bonsai.core.tool.Loader):
         blender_material.use_nodes = False
 
     @classmethod
-    def restart_material_node_tree(cls, blender_material):
+    def restart_material_node_tree(cls, blender_material: bpy.types.Material) -> None:
         nodes = blender_material.node_tree.nodes
         links = blender_material.node_tree.links
         for n in nodes[:]:
@@ -286,7 +289,7 @@ class Loader(bonsai.core.tool.Loader):
 
             image_url = None
 
-            def get_image():
+            def get_image() -> Union[bpy.types.Image, None]:
                 # TODO: orphaned textures after shader recreated?
                 if texture["type"] == "IfcImageTexture":
                     original_image_url = texture["URLReference"]

@@ -21,6 +21,7 @@ import ifcopenshell.api.cost
 import ifcopenshell.util.cost
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
+from typing import Any
 
 
 def edit_cost_value_formula(file: ifcopenshell.file, cost_value: ifcopenshell.entity_instance, formula: str) -> None:
@@ -57,6 +58,9 @@ def edit_cost_value_formula(file: ifcopenshell.file, cost_value: ifcopenshell.en
 
 
 class Usecase:
+    file: ifcopenshell.file
+    settings: dict[str, Any]
+
     def execute(self):
         try:
             data = ifcopenshell.util.cost.unserialise_cost_value(self.settings["formula"], self.settings["cost_value"])
