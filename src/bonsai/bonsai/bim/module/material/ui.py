@@ -401,7 +401,7 @@ class BIM_PT_object_material(Panel):
                 else:
                     box.label(text="----- Exterior -----")
             if location == "Bottom_Interior":
-                if layer_set_direction == "AXIS2":
+                if layer_set_direction == "AXIS3":
                     box.label(text="----- Bottom -----")
                 else:
                     box.label(text="----- Interior -----")
