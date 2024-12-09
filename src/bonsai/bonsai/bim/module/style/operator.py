@@ -538,7 +538,12 @@ class ChooseTextureMapPath(bpy.types.Operator):
 
         abs_path = Path(self.filepath)
         if self.use_relative_path:
-            image_filepath = abs_path.relative_to(Path(tool.Ifc.get_path()).parent)
+            parent = Path(tool.Ifc.get_path()).parent
+            if abs_path.is_relative_to(parent):
+                image_filepath = abs_path.relative_to(parent)
+            else:
+                self.report({"INFO"}, "Path is not relative to the .ifc file, it will be saved as absolute.")
+                image_filepath = abs_path
         else:
             image_filepath = abs_path
 
