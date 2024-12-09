@@ -819,7 +819,7 @@ class IfcImporter:
 
         for ifcclass in self.classes_to_wireframe_list:
             if element.is_a(ifcclass):
-                obj.display_type = 'WIRE'
+                obj.display_type = "WIRE"
 
         if shape:
             # We use numpy here because Blender mathutils.Matrix is not accurate enough

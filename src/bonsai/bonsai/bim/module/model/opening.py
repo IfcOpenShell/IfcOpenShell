@@ -821,7 +821,7 @@ class ShowOpenings(Operator, tool.Ifc.Operator):
             for opening in openings:
                 new = props.openings.add()
                 new.obj = opening
-                opening.display_type = 'WIRE'
+                opening.display_type = "WIRE"
         DecorationsHandler.install(bpy.context)
         return {"FINISHED"}
 
