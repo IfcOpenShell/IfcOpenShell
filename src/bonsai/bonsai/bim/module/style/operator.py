@@ -680,11 +680,23 @@ class EnableEditingSurfaceStyle(bpy.types.Operator):
     def execute(self, context):
         props = bpy.context.scene.BIMStylesProperties
         style = tool.Ifc.get().by_id(self.style)
+        style_elements = tool.Style.get_style_elements(style)
+
+        if self.ifc_class == "IfcSurfaceStyleWithTextures":
+            rendering_style = style_elements.get("IfcSurfaceStyleRendering", None)
+            # TODO: support creating texture styles without defining rendering style first.
+            if rendering_style is None:
+                self.report(
+                    {"ERROR"},
+                    "Editing texture style without defining rendering style is not yet supported. "
+                    "Define render style first",
+                )
+                return {"CANCELLED"}
+
         props.is_editing_style = self.style
         props.is_editing_class = self.ifc_class
         tool.Style.set_surface_style_props()
 
-        style_elements = tool.Style.get_style_elements(style)
         surface_style = style_elements.get(self.ifc_class, None)
         attributes = tool.Style.get_style_ui_props_attributes(self.ifc_class)
 
@@ -736,9 +748,12 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
         self.texture_style = style_elements.get("IfcSurfaceStyleWithTextures", None)
 
         if self.surface_style:
-            self.edit_existing_style()
+            result = self.edit_existing_style()
         else:
-            self.add_new_style()
+            result = self.add_new_style()
+
+        if result:
+            return result
 
         self.props.is_editing_style = 0
         core.load_styles(tool.Style, style_type=self.props.style_type)
@@ -773,14 +788,6 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
         elif self.props.is_editing_class == "IfcSurfaceStyleWithTextures":
             # TODO: fix same issues as with creating new IfcSurfaceStyleWithTextures
             material = tool.Ifc.get_object(self.style)
-            shading_style = self.rendering_style or self.shading_style
-            if self.rendering_style is None:
-                self.report(
-                    {"ERROR"},
-                    "Editing texture styles without defining shading/rendering style is not yet supported. "
-                    "Define shading/render style first",
-                )
-                return {"CANCELLED"}
             textures = tool.Ifc.run("style.add_surface_textures", textures=self.get_texture_attributes(), uv_maps=[])
             texture_style = tool.Ifc.run(
                 "style.add_surface_style",
@@ -788,7 +795,7 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
                 ifc_class="IfcSurfaceStyleWithTextures",
                 attributes={"Textures": textures},
             )
-            tool.Loader.create_surface_style_with_textures(material, shading_style, texture_style)
+            tool.Loader.create_surface_style_with_textures(material, self.rendering_style, texture_style)
         else:
             attributes = tool.Style.get_style_ui_props_attributes(self.surface_style.is_a())
             ifcopenshell.api.run(
@@ -821,15 +828,6 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
         elif self.props.is_editing_class == "IfcSurfaceStyleWithTextures":
             # TODO: provide `uv_maps` - need to rework .get_uv_maps not to depend on a single representation
             material = tool.Ifc.get_object(self.style)
-            shading_style = self.rendering_style or self.shading_style
-            # TODO: support creating texture styles without defining rendering style first
-            if self.rendering_style is None:
-                self.report(
-                    {"ERROR"},
-                    "Creating texture styles without defining shading/rendering style is not yet supported. "
-                    "Define shading/render style first",
-                )
-                return {"CANCELLED"}
             textures = self.get_texture_attributes()
             if not textures:
                 self.report({"ERROR"}, "Cannot create texture style without any textures.")
@@ -841,7 +839,7 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
                 ifc_class="IfcSurfaceStyleWithTextures",
                 attributes={"Textures": textures},
             )
-            tool.Loader.create_surface_style_with_textures(material, shading_style, texture_style)
+            tool.Loader.create_surface_style_with_textures(material, self.rendering_style, texture_style)
         else:
             attributes = tool.Style.get_style_ui_props_attributes(self.props.is_editing_class)
             surface_style = ifcopenshell.api.run(
