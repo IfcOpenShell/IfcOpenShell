@@ -825,14 +825,17 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
                     "Define shading/render style first",
                 )
                 return {"CANCELLED"}
-            textures = tool.Ifc.run("style.add_surface_textures", textures=self.get_texture_attributes(), uv_maps=[])
-            if textures:
-                texture_style = tool.Ifc.run(
-                    "style.add_surface_style",
-                    style=self.style,
-                    ifc_class="IfcSurfaceStyleWithTextures",
-                    attributes={"Textures": textures},
-                )
+            textures = self.get_texture_attributes()
+            if not textures:
+                self.report({"ERROR"}, "Cannot create texture style without any textures.")
+                return {"CANCELLED"}
+            textures = tool.Ifc.run("style.add_surface_textures", textures=textures, uv_maps=[])
+            texture_style = tool.Ifc.run(
+                "style.add_surface_style",
+                style=self.style,
+                ifc_class="IfcSurfaceStyleWithTextures",
+                attributes={"Textures": textures},
+            )
             tool.Loader.create_surface_style_with_textures(material, shading_style, texture_style)
         else:
             attributes = tool.Style.get_style_ui_props_attributes(self.props.is_editing_class)
