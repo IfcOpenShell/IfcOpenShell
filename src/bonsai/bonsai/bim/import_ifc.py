@@ -37,7 +37,7 @@ import bonsai.tool as tool
 from itertools import chain, accumulate
 from bonsai.bim.ifc import IfcStore, IFC_CONNECTED_TYPE
 from bonsai.tool.loader import OBJECT_DATA_TYPE
-from typing import Dict, Union, Optional, Any
+from typing import Dict, Union, Optional, Any, cast
 
 
 class MaterialCreator:
@@ -195,11 +195,11 @@ class IfcImporter:
         self.meshes: dict[str, OBJECT_DATA_TYPE] = {}
         self.mesh_shapes = {}
         self.time = 0
-        self.unit_scale = 1
+        self.unit_scale = 1.0
         # ifc definition ids to blender elements mapping
         self.added_data: dict[int, IFC_CONNECTED_TYPE] = {}
-        self.native_elements = set()
-        self.native_data = {}
+        self.native_elements: set[ifcopenshell.entity_instance] = set()
+        self.native_data: dict[str, Any] = {}
         self.progress = 0
 
         self.material_creator = MaterialCreator(ifc_import_settings, self)
@@ -416,6 +416,7 @@ class IfcImporter:
                 "type": "IfcSweptDiskSolid",
             }
             return True
+        return False
 
     def is_native_swept_disk_solid(
         self, element: ifcopenshell.entity_instance, representation: ifcopenshell.entity_instance
@@ -538,13 +539,20 @@ class IfcImporter:
             native_data = self.native_data[element.GlobalId]
             mesh_name = f"{native_data['context'].id()}/{native_data['geometry_id']}"
             mesh = self.meshes.get(mesh_name)
+
+            curve_thickness = None
             if mesh is None:
                 if native_data["type"] == "IfcSweptDiskSolid":
-                    mesh = self.create_native_swept_disk_solid(element, mesh_name, native_data)
+                    mesh, curve_thickness = self.create_native_swept_disk_solid(element, mesh_name, native_data)
                 tool.Ifc.link(tool.Ifc.get().by_id(native_data["geometry_id"]), mesh)
                 mesh.name = mesh_name
                 self.meshes[mesh_name] = mesh
-            self.create_product(element, mesh=mesh)
+            obj = self.create_product(element, mesh=mesh)
+            if curve_thickness:
+                modifier = obj.modifiers.new("Curve Thickness", type="SOLIDIFY")
+                assert isinstance(modifier, bpy.types.SolidifyModifier)
+                modifier.thickness = curve_thickness
+
         print("Done creating geometry")
 
     def create_spatial_elements(self) -> None:
@@ -845,7 +853,13 @@ class IfcImporter:
 
     def create_native_swept_disk_solid(
         self, element: ifcopenshell.entity_instance, mesh_name: str, native_data: dict[str, Any]
-    ) -> bpy.types.Curve:
+    ) -> tuple[bpy.types.Curve, Union[float, None]]:
+        """Create Blender curve based on element using IfcSweptDiskAreaSolid.
+
+        :return: created curve and it's thickness (suppose to add the thickness to the object
+            using solidify modifier). Returns `None` instead of thickness if disk has no inner radius
+            or if it's invalid.
+        """
         # TODO: georeferencing?
         curve = bpy.data.curves.new(mesh_name, type="CURVE")
         curve.dimensions = "3D"
@@ -890,7 +904,7 @@ class IfcImporter:
             matrix[1][3] *= self.unit_scale
             matrix[2][3] *= self.unit_scale
 
-            # TODO: support inner radius, start param, and end param
+            # TODO: start param, and end param
             geometry = tool.Loader.create_generic_shape(item.Directrix)
             if not geometry:
                 continue
@@ -909,8 +923,16 @@ class IfcImporter:
                 polyline.points[-1].co = native_data["matrix"] @ mathutils.Vector(v2)
 
         curve.bevel_depth = self.unit_scale * item.Radius
-        curve.use_fill_caps = True
-        return curve
+        thickness = None
+        if (inner_radius := item.InnerRadius) and (thickness := max(item.Radius - inner_radius, 0)):
+            thickness *= self.unit_scale
+            curve.use_fill_caps = False
+            # Shade flat.
+            for spline in curve.splines:
+                spline.use_smooth = False
+        else:
+            curve.use_fill_caps = True
+        return curve, thickness
 
     def merge_materials_by_colour(self):
         cleaned_materials = {}
