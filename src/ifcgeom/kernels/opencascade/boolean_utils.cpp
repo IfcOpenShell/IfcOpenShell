@@ -1029,6 +1029,9 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 
 	Logger::Notice("Used fuzziness: " + std::to_string(fuzz));
 
+	const double new_fuzziness = fuzziness * 10.;
+	const bool allow_retry = new_fuzziness - 1e-15 <= settings.precision * 10000. && new_fuzziness < min_length_orig;
+
 	TopTools_ListOfShape s1s;
 	s1s.Append(copy_operand(a));
 
@@ -1152,9 +1155,20 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 		builder->Build();
 	}
 	if (builder->IsDone()) {
-		if (builder->DSFiller()->HasWarning(STANDARD_TYPE(BOPAlgo_AlertAcquiredSelfIntersection))) {
+		if (allow_retry && builder->DSFiller()->HasWarning(STANDARD_TYPE(BOPAlgo_AlertAcquiredSelfIntersection))) {
 			Logger::Notice("Builder reports self-intersection in output");
 			success = false;
+
+			/*
+			const auto& ws = builder->DSFiller()->GetReport()->GetAlerts(Message_Warning);
+			for (const auto& w : ws) {
+				if (w->DynamicType() == STANDARD_TYPE(BOPAlgo_AlertAcquiredSelfIntersection)) {
+					const auto& x = Handle(BOPAlgo_AlertAcquiredSelfIntersection)::DownCast(w)->GetShape();
+					BRepTools::Write(x, "debug_x.brep");
+					BRepTools::Write(*builder, "debug_r.brep");
+				}
+			}
+			*/
 		} else if(builder->DSFiller()->HasWarning(STANDARD_TYPE(BOPAlgo_AlertBadPositioning)) && !TopoDS_Iterator(*builder).More()) {
 			Logger::Notice("Builder reports bad positioning and result is empty");
 			success = false;
@@ -1414,8 +1428,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 	}
 	delete builder;
 	if (!success) {
-		const double new_fuzziness = fuzziness * 10.;
-		if (new_fuzziness - 1e-15 <= settings.precision * 10000. && new_fuzziness < min_length_orig) {
+		if (allow_retry) {
 			return boolean_operation(settings, a, b, op, result, new_fuzziness);
 		} else {
 			Logger::Notice("No longer attempting boolean operation with higher fuzziness");
