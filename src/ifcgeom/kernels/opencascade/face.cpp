@@ -429,7 +429,38 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 					mf.Add(*it);
 				}
 
-				face_list.Append(mf.Face());
+				ShapeFix_Shape sfs(mf.Face());
+				Handle(ShapeExtend_MsgRegistrator) msg;
+				msg = new ShapeExtend_MsgRegistrator;
+				sfs.SetMsgRegistrator(msg);
+				sfs.Perform();
+
+				ShapeExtend_DataMapIteratorOfDataMapOfShapeListOfMsg jt(msg->MapShape());
+				for (; jt.More(); jt.Next()) {
+					Message_ListIteratorOfListOfMsg kt(jt.Value());
+					for (; kt.More(); kt.Next()) {
+						char* c = new char[kt.Value().Original().LengthOfCString() + 1];
+						kt.Value().Original().ToUTF8CString(c);
+						std::string message = c;
+						delete[] c;
+						Logger::Warning(message, face->instance);
+					}
+				}
+
+				if (sfs.Shape().ShapeType() == TopAbs_FACE) {
+					face_list.Append(sfs.Shape());
+				} else if (sfs.Shape().ShapeType() == TopAbs_COMPOUND) {
+					TopoDS_Iterator it(sfs.Shape());
+					for (; it.More(); it.Next()) {
+						if (it.Value().ShapeType() == TopAbs_FACE) {
+							face_list.Append(it.Value());
+						} else {
+							Logger::Error("Unsupported output from face healing");
+						}
+					}
+				} else {
+					Logger::Error("Unsupported output from face healing");
+				}
 			} else {
 				face_list.Append(f);
 			}
