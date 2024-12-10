@@ -268,11 +268,11 @@ class ObjectMaterialData:
                 else:
                     material_id = item.Material.id()
                 data = {
-                    "id": item.id(), 
-                    "name": getattr(item, "Name", None) or "Unnamed", 
+                    "id": item.id(),
+                    "name": getattr(item, "Name", None) or "Unnamed",
                     "icon": icon,
-                    "material_id": material_id
-                    }
+                    "material_id": material_id,
+                }
                 if item.is_a("IfcMaterialProfile") and not item.Name:
                     if item.Profile:
                         data["name"] = item.Profile.ProfileName or "Unnamed"
