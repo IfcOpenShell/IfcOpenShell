@@ -954,6 +954,9 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
     def hotkey_S_A(self):
         props = bpy.context.scene.BIMModelProperties
         relating_type_id = AuthoringData.data["relating_type_id_current"]
+        if relating_type_id is None:
+            self.report({"ERROR"}, "No relating type selected")
+            return
         props.relating_type_id = relating_type_id
         if bpy.context.scene.BIMGeometryProperties.mode == "ITEM":
             bpy.ops.wm.call_menu(name="BIM_MT_add_representation_item")
