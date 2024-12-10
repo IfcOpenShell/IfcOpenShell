@@ -33,18 +33,28 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcPolyline* inst) {
 		return taxonomy::cast<taxonomy::point3>(map(p));
 	});
 
-	const bool closed_by_proximity = polygon.size() >= 3 && (*polygon.front()->components_ - *polygon.back()->components_).norm() < settings_.get<settings::Precision>().get();
+	auto eps = this->settings_.get<settings::Precision>().get();
+
+	const bool closed_by_proximity = polygon.size() >= 3 && (polygon.front()->ccomponents() - polygon.back()->ccomponents()).norm() < eps;
 	if (closed_by_proximity) {
 		polygon.resize(polygon.size() - 1);
-		polygon.push_back(polygon.front());
 	}
 
-	// @todo Remove points that are too close to one another
-	// util::remove_duplicate_points_from_loop(polygon, closed_by_proximity, eps);
+	// Remove points that are too close to one another
+	auto previous_size = polygon.size();
+	remove_duplicate_points_from_loop(polygon, closed_by_proximity, eps);
+	if (polygon.size() != previous_size) {
+		Logger::Warning("Removed " + std::to_string(previous_size - polygon.size()) + " (near) duplicate points from:", inst);
+	}
 
 	if (polygon.size() < 2) {
 		// We somehow need to signal we fail this curve on purpose not to trigger an error.
+		Logger::Warning("Invalid polyline with " + std::to_string(polygon.size()) + " points:", inst);
 		return nullptr;
+	}
+
+	if (closed_by_proximity) {
+		polygon.push_back(polygon.front());
 	}
 
 	return polygon_from_points(polygon);
