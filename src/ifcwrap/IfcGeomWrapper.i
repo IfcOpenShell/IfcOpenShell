@@ -848,10 +848,10 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 	}
 
 	template <typename Schema>
-	static boost::variant<IfcGeom::Element*, IfcGeom::Representation::Representation*, IfcGeom::Transformation*> helper_fn_create_shape(const std::string& geometry_library, ifcopenshell::geometry::Settings& settings, IfcUtil::IfcBaseClass* instance, IfcUtil::IfcBaseClass* representation = 0) {
+	static boost::variant<IfcGeom::Element*, IfcGeom::Representation::Representation*, IfcGeom::Transformation*> helper_fn_create_shape(const std::string& geometry_library, ifcopenshell::geometry::Settings& st, IfcUtil::IfcBaseClass* instance, IfcUtil::IfcBaseClass* representation = 0) {
 		IfcParse::IfcFile* file = instance->file_;
 			
-		ifcopenshell::geometry::Converter kernel(geometry_library, file, settings);
+		ifcopenshell::geometry::Converter kernel(geometry_library, file, st);
 			
 		if (typename Schema::IfcProduct* product = instance->as<typename Schema::IfcProduct>()) {
 			if (representation) {
@@ -875,7 +875,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 					if (!rep->RepresentationIdentifier()) {
 						continue;
 					}
-					if (settings.get<ifcopenshell::geometry::settings::OutputDimensionality>().get() != ifcopenshell::geometry::settings::CURVES) {
+					if (st.get<ifcopenshell::geometry::settings::OutputDimensionality>().get() != ifcopenshell::geometry::settings::CURVES) {
 						if (*rep->RepresentationIdentifier() == "Body" || *rep->RepresentationIdentifier() == "Facetation") {
 							ifc_representation = rep;
 							break;
@@ -898,7 +898,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 					// TODO: Remove redundancy with IfcGeomIterator.h
 					if (context->ContextType()) {
 						std::set<std::string> context_types;
-						if (settings.get<ifcopenshell::geometry::settings::OutputDimensionality>().get() != ifcopenshell::geometry::settings::CURVES) {
+						if (st.get<ifcopenshell::geometry::settings::OutputDimensionality>().get() != ifcopenshell::geometry::settings::CURVES) {
 							context_types.insert("model");
 							context_types.insert("design");
 							context_types.insert("model view");
@@ -934,11 +934,11 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 				product->toString(oss_product);
 				throw IfcParse::IfcException("Failed to process shape. Product: " + oss_product.str() + ", representation: " + oss_repr.str());
 			}
-			if (settings.get<ifcopenshell::geometry::settings::IteratorOutput>().get() == ifcopenshell::geometry::settings::SERIALIZED) {
+			if (st.get<ifcopenshell::geometry::settings::IteratorOutput>().get() == ifcopenshell::geometry::settings::SERIALIZED) {
 				IfcGeom::SerializedElement* serialization = new IfcGeom::SerializedElement(*brep);
 				delete brep;
 				return serialization;
-			} else if (settings.get<ifcopenshell::geometry::settings::IteratorOutput>().get() == ifcopenshell::geometry::settings::TRIANGULATED) {
+			} else if (st.get<ifcopenshell::geometry::settings::IteratorOutput>().get() == ifcopenshell::geometry::settings::TRIANGULATED) {
 				IfcGeom::TriangulationElement* triangulation = new IfcGeom::TriangulationElement(*brep);
 				delete brep;
 				return triangulation;
@@ -950,7 +950,13 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 			if (item == nullptr) {
 				throw IfcParse::IfcException("Failed to convert placement");
 			}
-			return new IfcGeom::Transformation(settings, item);
+            if (st.get<ifcopenshell::geometry::settings::ConvertBackUnits>().get()) {
+                // we pass the settings to the Transformation object, but access the data just offloads to the
+                // generic cartesian_base<Matrix4> so there's no time to apply the settings to the translation part.
+                item = ifcopenshell::geometry::taxonomy::matrix4::ptr(item->clone_());
+                item->components().col(3).head<3>() /= kernel.settings().get<ifcopenshell::geometry::settings::LengthUnit>().get();
+            }
+			return new IfcGeom::Transformation(kernel.settings(), item);
 		} else {
 			if (!representation) {
 				if (instance->declaration().is(Schema::IfcRepresentationItem::Class()) || 
@@ -967,11 +973,11 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 						throw IfcParse::IfcException("Failed to process shape. Instance: " + oss.str());
 					}
 
-					IfcGeom::Representation::BRep brep(settings, instance->declaration().name(), to_locale_invariant_string(instance->as<IfcUtil::IfcBaseEntity>()->id()), shapes);
+					IfcGeom::Representation::BRep brep(kernel.settings(), instance->declaration().name(), to_locale_invariant_string(instance->as<IfcUtil::IfcBaseEntity>()->id()), shapes);
 					try {
-						if (settings.get<ifcopenshell::geometry::settings::IteratorOutput>().get() == ifcopenshell::geometry::settings::SERIALIZED) {
+						if (st.get<ifcopenshell::geometry::settings::IteratorOutput>().get() == ifcopenshell::geometry::settings::SERIALIZED) {
 							return new IfcGeom::Representation::Serialization(brep);
-						} else if (settings.get<ifcopenshell::geometry::settings::IteratorOutput>().get() == ifcopenshell::geometry::settings::TRIANGULATED) {
+						} else if (st.get<ifcopenshell::geometry::settings::IteratorOutput>().get() == ifcopenshell::geometry::settings::TRIANGULATED) {
 							return new IfcGeom::Representation::Triangulation(brep);
 						}
 					} catch (...) {
