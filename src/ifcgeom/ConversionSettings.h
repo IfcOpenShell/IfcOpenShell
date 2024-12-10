@@ -169,13 +169,13 @@ namespace ifcopenshell {
 				static constexpr double defaultvalue = 1.0;
 			};
 
-			struct DebugBooleanOperations : public SettingBase<DebugBooleanOperations, double> {
-				static constexpr const char* const name = "debug-boolean";
-				static constexpr const char* const description = "";
+			struct DebugBooleanOperations : public SettingBase<DebugBooleanOperations, bool> {
+				static constexpr const char* const name = "debug";
+				static constexpr const char* const description = "write boolean operands to file in current directory for debugging purposes";
 				static constexpr bool defaultvalue = false;
 			};
 
-			struct BooleanAttempt2d : public SettingBase<BooleanAttempt2d, double> {
+			struct BooleanAttempt2d : public SettingBase<BooleanAttempt2d, bool> {
 				static constexpr const char* const name = "boolean-attempt-2d";
 				static constexpr const char* const description = "Do not attempt to process boolean subtractions in 2D.";
 				static constexpr bool defaultvalue = true;
