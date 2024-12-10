@@ -326,6 +326,19 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 				wire.Reverse();
 			}
 
+			// @todo does wire intersection handling respect/preserve orientation?
+			wire_tolerance_settings settings{
+				!settings_.get<settings::NoWireIntersectionCheck>().get(),
+				!settings_.get<settings::NoWireIntersectionTolerance>().get(),
+				0.,
+				settings_.get<settings::Precision>().get()
+			};
+			TopTools_ListOfShape results;
+			if (settings.use_wire_intersection_check && util::wire_intersections(wire, results, settings)) {
+				Logger::Warning("Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected");
+				util::select_largest(results, wire);
+			}
+
 			wire_senses.Bind(wire.Oriented(TopAbs_FORWARD), same_sense ? TopAbs_FORWARD : TopAbs_REVERSED);
 
 			fd.wires().emplace_back(wire);
