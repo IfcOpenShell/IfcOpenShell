@@ -764,6 +764,7 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
         material.BIMStyleProperties.active_style_type = material.BIMStyleProperties.active_style_type
 
     def edit_existing_style(self):
+        ifc_file = tool.Ifc.get()
         material = tool.Ifc.get_object(self.style)
         assert self.surface_style
 
@@ -791,8 +792,9 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
             material = tool.Ifc.get_object(self.style)
             textures = self.get_texture_attributes()
             if not textures:
-                self.report({"ERROR"}, "Cannot save texture style without any textures.")
-                return {"CANCELLED"}
+                assert self.texture_style
+                ifcopenshell.api.style.remove_surface_style(ifc_file, self.texture_style)
+                return
             textures = tool.Ifc.run("style.add_surface_textures", textures=textures, uv_maps=[])
             texture_style = tool.Ifc.run(
                 "style.add_surface_style",
@@ -835,8 +837,7 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
             material = tool.Ifc.get_object(self.style)
             textures = self.get_texture_attributes()
             if not textures:
-                self.report({"ERROR"}, "Cannot create texture style without any textures.")
-                return {"CANCELLED"}
+                return
             textures = tool.Ifc.run("style.add_surface_textures", textures=textures, uv_maps=[])
             texture_style = tool.Ifc.run(
                 "style.add_surface_style",
