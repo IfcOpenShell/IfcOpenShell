@@ -1155,7 +1155,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 		builder->Build();
 	}
 	if (builder->IsDone()) {
-		if (allow_retry && builder->DSFiller()->HasWarning(STANDARD_TYPE(BOPAlgo_AlertAcquiredSelfIntersection))) {
+		if (false && builder->DSFiller()->HasWarning(STANDARD_TYPE(BOPAlgo_AlertAcquiredSelfIntersection))) {
 			Logger::Notice("Builder reports self-intersection in output");
 			success = false;
 
