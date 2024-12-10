@@ -343,10 +343,6 @@ class AddLayer(bpy.types.Operator, tool.Ifc.Operator):
             },
         )
 
-        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        thickness = 0.1  # Arbitrary metric thickness for now
-        layer.LayerThickness = thickness / unit_scale
-
 
 class ReorderMaterialSetItem(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.reorder_material_set_item"
