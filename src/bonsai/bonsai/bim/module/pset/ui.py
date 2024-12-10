@@ -383,6 +383,7 @@ class BIM_PT_object_qtos(Panel):
         row = layout.row()
         row.operator("bim.perform_quantity_take_off")
 
+
 class BIM_PT_material_psets(Panel):
     bl_label = "Material Property Sets"
     bl_idname = "BIM_PT_material_psets"
