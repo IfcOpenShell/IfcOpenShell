@@ -703,6 +703,30 @@ class Geometry(bonsai.core.tool.Geometry):
             cls.clear_modifiers(obj)
             cls.clear_cache(element)
 
+        # Import swept disk solids as Blender curves if possible.
+        elements_without_openings = {e for e in elements if not getattr(e, "HasOpenings", False)}
+        curve, curve_thickness = None, None
+        for element_ in elements_without_openings | element_types:
+            if not tool.Loader.is_native_swept_disk_solid(element, representation):
+                continue
+            if curve is None:
+                mesh_name = tool.Loader.get_mesh_name(context.id(), representation.id())
+                native_data = {
+                    "representation": representation,
+                    # TODO: calculate mapped item matrix.
+                    "matrix": np.eye(4),
+                }
+                curve, curve_thickness = tool.Loader.create_native_swept_disk_solid(element, mesh_name, native_data)
+                tool.Ifc.link(representation, curve)
+            obj = tool.Ifc.get_object(element)
+            change_data(obj, element, curve)
+            tool.Loader.setup_native_swept_disk_solid_thickness(obj, curve_thickness)
+            elements.discard(element_)
+            element_types.discard(element_)
+
+        if not elements and not element_types:
+            return
+
         # Fallback to custom methods as IOS doesn't process points, see #5218.
         if representation.RepresentationType in ("PointCloud", "Point"):
             mesh = tool.Loader.create_point_cloud_mesh(representation)
