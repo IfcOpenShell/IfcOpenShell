@@ -407,7 +407,7 @@ class IfcImporter:
         matrix[2][3] *= self.unit_scale
 
         # Single swept disk solids (e.g. rebar) are better natively represented as beveled curves
-        if self.is_native_swept_disk_solid(element, resolved_representation):
+        if tool.Loader.is_native_swept_disk_solid(element, resolved_representation):
             self.native_data[element.GlobalId] = {
                 "matrix": matrix,
                 "context": context,
@@ -415,24 +415,6 @@ class IfcImporter:
                 "representation": resolved_representation,
                 "type": "IfcSweptDiskSolid",
             }
-            return True
-        return False
-
-    def is_native_swept_disk_solid(
-        self, element: ifcopenshell.entity_instance, representation: ifcopenshell.entity_instance
-    ) -> bool:
-        items = [i["item"] for i in ifcopenshell.util.representation.resolve_items(representation)]
-        if len(items) == 1 and items[0].is_a("IfcSweptDiskSolid"):
-            if tool.Blender.Modifier.is_railing(element):
-                return False
-            return True
-        elif len(items) and (  # See #2508 why we accommodate for invalid IFCs here
-            items[0].is_a("IfcSweptDiskSolid")
-            and len({i.is_a() for i in items}) == 1
-            and len({i.Radius for i in items}) == 1
-        ):
-            if tool.Blender.Modifier.is_railing(element):
-                return False
             return True
         return False
 
@@ -543,15 +525,12 @@ class IfcImporter:
             curve_thickness = None
             if mesh is None:
                 if native_data["type"] == "IfcSweptDiskSolid":
-                    mesh, curve_thickness = self.create_native_swept_disk_solid(element, mesh_name, native_data)
+                    mesh, curve_thickness = tool.Loader.create_native_swept_disk_solid(element, mesh_name, native_data)
                 tool.Ifc.link(tool.Ifc.get().by_id(native_data["geometry_id"]), mesh)
                 mesh.name = mesh_name
                 self.meshes[mesh_name] = mesh
             obj = self.create_product(element, mesh=mesh)
-            if curve_thickness:
-                modifier = obj.modifiers.new("Curve Thickness", type="SOLIDIFY")
-                assert isinstance(modifier, bpy.types.SolidifyModifier)
-                modifier.thickness = curve_thickness
+            tool.Loader.setup_native_swept_disk_solid_thickness(obj, curve_thickness)
 
         print("Done creating geometry")
 
@@ -850,89 +829,6 @@ class IfcImporter:
 
     def load_existing_meshes(self) -> None:
         self.meshes.update({m.name: m for m in bpy.data.meshes})
-
-    def create_native_swept_disk_solid(
-        self, element: ifcopenshell.entity_instance, mesh_name: str, native_data: dict[str, Any]
-    ) -> tuple[bpy.types.Curve, Union[float, None]]:
-        """Create Blender curve based on element using IfcSweptDiskAreaSolid.
-
-        :return: created curve and it's thickness (suppose to add the thickness to the object
-            using solidify modifier). Returns `None` instead of thickness if disk has no inner radius
-            or if it's invalid.
-        """
-        # TODO: georeferencing?
-        curve = bpy.data.curves.new(mesh_name, type="CURVE")
-        curve.dimensions = "3D"
-        curve.resolution_u = 2
-
-        rep_items = ifcopenshell.util.representation.resolve_items(native_data["representation"])
-
-        # Find item styles and add them to the curve.
-        material_style = None
-        material = ifcopenshell.util.element.get_material(element)
-        if material:
-            material_style = tool.Material.get_style(material)
-        item_styles: list[Union[bpy.types.Material, None]] = []
-        for item_data in rep_items:
-            item = item_data["item"]
-            item_style = tool.Style.get_representation_item_style(item) or material_style
-            if item_style is not None:
-                item_style = tool.Ifc.get_object(item_style)
-                assert isinstance(item_style, bpy.types.Material)
-            item_styles.append(item_style)
-        item_styles_unique = list(set(item_styles))
-        for item_style in item_styles_unique:
-            curve.materials.append(item_style)
-        use_same_material_index = len(item_styles_unique) < 2
-
-        def new_polyline(item_style: Union[bpy.types.Material, None]) -> bpy.types.Spline:
-            if use_same_material_index:
-                material_index = 0
-            else:
-                material_index = item_styles_unique.index(item_style)
-
-            polyline = curve.splines.new("POLY")
-            polyline.material_index = material_index
-            return polyline
-
-        for item_data, item_style in zip(rep_items, item_styles):
-            item = item_data["item"]
-
-            polyline = new_polyline(item_style)
-            matrix = item_data["matrix"]
-            matrix[0][3] *= self.unit_scale
-            matrix[1][3] *= self.unit_scale
-            matrix[2][3] *= self.unit_scale
-
-            # TODO: start param, and end param
-            geometry = tool.Loader.create_generic_shape(item.Directrix)
-            if not geometry:
-                continue
-            e = geometry.edges
-            v = geometry.verts
-            vertices = [list(matrix @ [v[i], v[i + 1], v[i + 2], 1]) for i in range(0, len(v), 3)]
-            edges = [[e[i], e[i + 1]] for i in range(0, len(e), 2)]
-            v2 = None
-            for edge in edges:
-                v1 = vertices[edge[0]]
-                if v1 != v2:
-                    polyline = new_polyline(item_style)
-                    polyline.points[-1].co = native_data["matrix"] @ mathutils.Vector(v1)
-                v2 = vertices[edge[1]]
-                polyline.points.add(1)
-                polyline.points[-1].co = native_data["matrix"] @ mathutils.Vector(v2)
-
-        curve.bevel_depth = self.unit_scale * item.Radius
-        thickness = None
-        if (inner_radius := item.InnerRadius) and (thickness := max(item.Radius - inner_radius, 0)):
-            thickness *= self.unit_scale
-            curve.use_fill_caps = False
-            # Shade flat.
-            for spline in curve.splines:
-                spline.use_smooth = False
-        else:
-            curve.use_fill_caps = True
-        return curve, thickness
 
     def merge_materials_by_colour(self):
         cleaned_materials = {}
