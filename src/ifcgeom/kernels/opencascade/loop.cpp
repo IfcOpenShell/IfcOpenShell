@@ -229,6 +229,8 @@ OpenCascadeKernel::curve_creation_visitor_result_type OpenCascadeKernel::convert
 	}
 }
 
+#include "../../../ifcparse/IfcFile.h"
+
 bool OpenCascadeKernel::convert(const taxonomy::loop::ptr loop, TopoDS_Wire& wire) {
 	TopTools_ListOfShape converted_segments;
 
@@ -272,12 +274,13 @@ bool OpenCascadeKernel::convert(const taxonomy::loop::ptr loop, TopoDS_Wire& wir
 
 	TopTools_ListIteratorOfListOfShape it(converted_segments);
 
-	/*
-	@todo
-	IfcEntityList::ptr profile = l->data().getInverse(&IfcSchema::IfcProfileDef::Class(), -1);
-	const bool force_close = profile && profile->size() > 0;
-	*/
-	const bool force_close = false;
+	bool force_close = false;
+	if (loop->instance && loop->instance->as<IfcUtil::IfcBaseEntity>() && loop->instance->as<IfcUtil::IfcBaseEntity>()->file_) {
+		auto* inst = loop->instance->as<IfcUtil::IfcBaseEntity>();
+		auto* file = loop->instance->as<IfcUtil::IfcBaseEntity>()->file_;
+		auto profile = file->getInverse(inst->id(), file->schema()->declaration_by_name("IfcProfileDef"), -1);
+		force_close = profile && profile->size() > 0;
+	}
 
 	wire_builder bld(precision_, loop->instance ? loop->instance->as<IfcUtil::IfcBaseEntity>() : nullptr);
 	shape_pair_enumerate(it, bld, force_close);
