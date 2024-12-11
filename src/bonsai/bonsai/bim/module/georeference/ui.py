@@ -88,11 +88,9 @@ class BIM_PT_gis(Panel):
             row = self.layout.row(align=True)
             row.label(text="Not Georeferenced", icon="ERROR")
             row = self.layout.row(align=True)
-            row.label(text="Visualise")
-            row.prop(props, "should_visualise", icon="HIDE_OFF", text="")
-            row.prop(props, "visualization_scale", text="Size")
+            row.prop(props, "should_visualise", icon="HIDE_OFF")
+            row.prop(props, "visualization_scale", text="Size", slider=True)
             if tool.Ifc.get_schema() != "IFC2X3":
-                row = self.layout.row(align=True)
                 row.prop(props, "coordinate_operation_class", text="")
                 row.operator("bim.add_georeferencing", icon="ADD", text="")
 
@@ -100,9 +98,8 @@ class BIM_PT_gis(Panel):
             row = self.layout.row(align=True)
             row.label(text="Projected CRS", icon="WORLD")
             row = self.layout.row(align=True)
-            row.label(text="Visualise")
-            row.prop(props, "should_visualise", icon="HIDE_OFF", text="")
-            row.prop(props, "visualization_scale", text="Visualization Scale")
+            row.prop(props, "should_visualise", icon="HIDE_OFF")
+            row.prop(props, "visualization_scale", text="Size", slider=True)
             if tool.Ifc.get_schema() != "IFC2X3":
                 row.operator("bim.enable_editing_georeferencing", icon="GREASEPENCIL", text="")
                 row.operator("bim.remove_georeferencing", icon="X", text="")

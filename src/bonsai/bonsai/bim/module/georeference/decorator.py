@@ -75,7 +75,7 @@ class GeoreferenceDecorator:
         self.addon_prefs = tool.Blender.get_addon_preferences()
 
         self.font_id = 0
-        font_size = tool.Blender.scale_font_size(12 + (self.scale / 8))
+        font_size = tool.Blender.scale_font_size(12 + (self.scale / 20))
         blf.size(self.font_id, font_size)
         color = self.addon_prefs.decorations_colour
         blf.color(self.font_id, *color)
