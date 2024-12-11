@@ -216,8 +216,8 @@ class BIM_PT_solar(bpy.types.Panel):
 
         box = row.box()
 
-        sunrise = sun_position.sun_calc.format_hms(sun_position.sun_calc.sun.sunrise)
-        sunset = sun_position.sun_calc.format_hms(sun_position.sun_calc.sun.sunset)
+        sunrise = sun_position.sun_calc.format_hms(sun_props.sunrise_time)
+        sunset = sun_position.sun_calc.format_hms(sun_props.sunset_time)
 
         row2 = box.row()
         row2.label(text=f"Sunrise: {sunrise}")
