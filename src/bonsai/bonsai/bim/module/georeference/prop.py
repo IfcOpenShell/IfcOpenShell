@@ -200,13 +200,13 @@ class BIMGeoreferenceProperties(PropertyGroup):
         update=update_map_coordinates,
     )
     should_visualise: BoolProperty(
-        name="Should Visualise",
+        name="Visualise",
         description="Displays a visualisation of all georeferencing data at the origin",
         default=False,
         update=update_should_visualise,
     )
-    visualization_scale: IntProperty(
-        name="Visualization Scale", description="Affects the georeference decorator size", default=1, min=1, max=20
+    visualization_scale: FloatProperty(
+        name="Visualization Scale", description="Affects the georeference decorator size", default=1, min=0.1, max=50
     )
     grid_north_angle: StringProperty(name="Grid North Angle", update=update_grid_north_angle)
     x_axis_abscissa: StringProperty(name="X Axis Abscissa", update=update_grid_north_vector)
