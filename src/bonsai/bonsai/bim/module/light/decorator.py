@@ -144,16 +144,9 @@ class SolarDecorator:
         self.draw_batch("LINES", [location, origin @ Vector((0, 0, 0))], decorator_color_background, [[0, 1]])
 
         coords = []
-        indices = []
-        coord_offset = 0
-        for h in range(24):
-            analemma_verts = SolarData.data["sun_position"].sun_calc.calc_analemma(context, h)
-            coords.extend([origin @ v for v in analemma_verts])
-            for i in range(len(analemma_verts) - 1):
-                indices.append((coord_offset + i, coord_offset + i + 1))
-            coord_offset += len(analemma_verts)
-
-        self.draw_batch("LINES", coords, decorator_color_special, indices)
+        analemma_verts, analemma_edges = SolarData.data["sun_position"].sun_calc.calc_analemma(context.scene)
+        coords.extend([origin @ v for v in analemma_verts])
+        self.draw_batch("LINES", coords, decorator_color_special, analemma_edges)
 
         # True north
         self.tn_angle = props.true_north
