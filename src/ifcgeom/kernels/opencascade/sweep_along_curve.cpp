@@ -19,6 +19,7 @@
 
 #include "OpenCascadeKernel.h"
 #include "base_utils.h"
+#include "wire_utils.h"
 
 #include <BRepOffsetAPI_MakePipeShell.hxx>
 #include <Geom_Plane.hxx>
@@ -28,6 +29,7 @@
 #include <BRepBuilderAPI_MakeFace.hxx>
 #include <TopExp.hxx>
 #include <Geom_Circle.hxx>
+#include <BRepBuilderAPI_MakeSolid.hxx>
 
 using namespace ifcopenshell::geometry;
 using namespace ifcopenshell::geometry::kernels;
@@ -87,8 +89,24 @@ bool OpenCascadeKernel::convert(const taxonomy::sweep_along_curve::ptr scs, Topo
 		Logger::Error("Unsupported directrix");
 		return false;
 	}
-	TopoDS_Shape face;
-	convert(taxonomy::cast<taxonomy::face>(scs->basis), face);
+	TopoDS_Shape face_;
+	convert(taxonomy::cast<taxonomy::face>(scs->basis), face_);
+	TopoDS_Face face;
+	if (face_.ShapeType() == TopAbs_FACE) {
+		face = TopoDS::Face(face_);
+	} else if (face_.ShapeType() == TopAbs_WIRE) {
+		wire_tolerance_settings settings{
+			!settings_.get<settings::NoWireIntersectionCheck>().get(),
+			!settings_.get<settings::NoWireIntersectionTolerance>().get(),
+			0.,
+			settings_.get<settings::Precision>().get()
+		};
+		if (!IfcGeom::util::convert_wire_to_face(TopoDS::Wire(face_), face, settings)) {
+			return false;
+		}
+	} else {
+		return false;
+	}
 	
 	Handle(Geom_Surface) surface;
 	if (scs->surface) {
@@ -97,7 +115,6 @@ bool OpenCascadeKernel::convert(const taxonomy::sweep_along_curve::ptr scs, Topo
 
 	gp_Trsf directrix;
 	TopoDS_Wire wire = boost::get<TopoDS_Wire>(w);
-	TopoDS_Wire section;
 
 	const bool is_plane = surface && surface->DynamicType() == STANDARD_TYPE(Geom_Plane);
 
@@ -156,7 +173,7 @@ bool OpenCascadeKernel::convert(const taxonomy::sweep_along_curve::ptr scs, Topo
 	} else {
 		directrix.SetTransformation(gp_Ax3(directrix_origin, directrix_tangent), gp::XOY());
 	}
-	face = BRepBuilderAPI_Transform(face, directrix);
+	face = TopoDS::Face(BRepBuilderAPI_Transform(face, directrix));
 
 	TopoDS_Face surface_face;
 	if (surface) {
@@ -171,29 +188,68 @@ bool OpenCascadeKernel::convert(const taxonomy::sweep_along_curve::ptr scs, Topo
 		}
 	}
 
+	BRep_Builder BB;
+	TopoDS_Shell comp;
+	BB.MakeShell(comp);
+
 	// NB: Note that StartParam and EndParam param are ignored and the assumption is
 	// made that the parametric range over which to be swept matches the IfcCurve in
 	// its entirety.
-	BRepOffsetAPI_MakePipeShell builder(wire);
 
-	{
-		TopExp_Explorer exp(face, TopAbs_WIRE);
-		section = TopoDS::Wire(exp.Current());
+	// BRepOffsetAPI_MakePipeShell does not support FACE, so we need to manually iterate
+	// over the wires, first processing the outer, then inner. Where the cap face is
+	// constructed using MakeFace.
+
+	auto outer = BRepTools::OuterWire(face);
+	std::unique_ptr<BRepBuilderAPI_MakeFace> mf0, mf1;
+	TopoDS_Face f0, f1;
+
+	for (int i = 0; i < 2; ++i) {
+		for (TopExp_Explorer exp(face, TopAbs_WIRE); exp.More(); exp.Next()) {
+			const auto& section = TopoDS::Wire(exp.Current());
+			if (section.IsSame(outer) != i == 0) {
+				continue;
+			}
+
+			BRepOffsetAPI_MakePipeShell builder(wire);
+			builder.Add(section);
+			builder.SetTransitionMode(contains_circular_segments(wire) && wire_is_c1_continuous(wire, 1.e-2) ? BRepBuilderAPI_Transformed : BRepBuilderAPI_RightCorner);
+			if (directrix_on_plane) {
+				builder.SetMode(pln.Axis().Direction());
+			} else if (!is_plane) {
+				builder.SetMode(surface_face);
+			}
+			builder.Build();
+			if (!builder.IsDone()) {
+				return false;
+			}
+			auto w0 = TopoDS::Wire(builder.FirstShape());
+			auto w1 = TopoDS::Wire(builder.LastShape());
+			if (mf0) {
+				mf0->Add(w0);
+				mf1->Add(w1);
+			} else {
+				f0 = BRepBuilderAPI_MakeFace(w0).Face();
+				f1 = BRepBuilderAPI_MakeFace(w1).Face();
+				mf0.reset(new BRepBuilderAPI_MakeFace(f0));
+				mf1.reset(new BRepBuilderAPI_MakeFace(f1));
+			}
+
+			for (TopExp_Explorer exp(builder.Shape(), TopAbs_FACE); exp.More(); exp.Next()) {
+				BB.Add(comp, exp.Current());
+			}
+		}
 	}
 
-	builder.Add(section);
-	builder.SetTransitionMode(contains_circular_segments(wire) && wire_is_c1_continuous(wire, 1.e-2) ? BRepBuilderAPI_Transformed : BRepBuilderAPI_RightCorner);
-	if (directrix_on_plane) {
-		builder.SetMode(pln.Axis().Direction());
-	} else if (!is_plane) {
-		builder.SetMode(surface_face);
+	if (mf0->IsDone() && mf1->IsDone()) {
+		BB.Add(comp, mf0->Face());
+		BB.Add(comp, mf1->Face());
+	} else {
+		BB.Add(comp, f0);
+		BB.Add(comp, f1);
 	}
-	builder.Build();
-	if (!builder.IsDone()) {
-		return false;
-	}
-	builder.MakeSolid();
-	result = builder.Shape();
+
+	result = BRepBuilderAPI_MakeSolid(comp).Solid();
 
 	return true;
 }
