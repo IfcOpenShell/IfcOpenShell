@@ -25,6 +25,7 @@ from bpy.types import SpaceView3D
 from bpy_extras import view3d_utils
 from gpu_extras.batch import batch_for_shader
 from mathutils import Vector
+from bonsai.bim.module.geometry.decorator import ItemDecorator
 
 
 def transparent_color(color, alpha=0.1):
@@ -85,7 +86,6 @@ class AggregateDecorator:
             cls.uninstall()
         handler = cls()
         cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_aggregate, (context,), "WINDOW", "POST_VIEW"))
-        cls.handlers.append(SpaceView3D.draw_handler_add(handler.lock_objects, (context,), "WINDOW", "POST_VIEW"))
         cls.is_installed = True
 
     @classmethod
@@ -227,6 +227,9 @@ class AggregateModeDecorator:
         cls.handlers.append(
             SpaceView3D.draw_handler_add(handler.draw_aggregate_empty, (context,), "WINDOW", "POST_VIEW")
         )
+        cls.handlers.append(
+            SpaceView3D.draw_handler_add(handler.draw_new_objects, (context,), "WINDOW", "POST_VIEW")
+        )
         cls.is_installed = True
 
     @classmethod
@@ -248,7 +251,9 @@ class AggregateModeDecorator:
         region = context.region
         rv3d = region.data
         props = context.scene.BIMAggregateProperties
-        if aggregate_obj := props.editing_aggregate:
+
+        aggregate_obj = props.editing_aggregate
+        if not aggregate_obj:
             return
         self.addon_prefs = tool.Blender.get_addon_preferences()
         self.font_id = 0
@@ -273,7 +278,8 @@ class AggregateModeDecorator:
 
     def draw_aggregate_empty(self, context):
         props = context.scene.BIMAggregateProperties
-        if aggregate_obj := props.editing_aggregate:
+        aggregate_obj = props.editing_aggregate
+        if not aggregate_obj:
             return
         self.addon_prefs = tool.Blender.get_addon_preferences()
         self.line_shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
@@ -294,8 +300,8 @@ class AggregateModeDecorator:
         parts = ifcopenshell.util.element.get_parts(tool.Ifc.get_entity(aggregate_obj))
         if parts:
             for part in parts:
+                part_obj = tool.Ifc.get_object(part)
                 if part.is_a("IfcElementAssembly"):
-                    part_obj = tool.Ifc.get_object(part)
                     self.line_shader.uniform_float("lineWidth", 1.0)
                     size = part_obj.empty_display_size
                     location = part_obj.location
@@ -315,3 +321,30 @@ class AggregateModeDecorator:
         indices, edges = create_bounding_box(parts_objs)
         self.line_shader.uniform_float("lineWidth", 0.5)
         self.draw_batch("LINES", indices, color, edges)
+
+    def draw_new_objects(self, context):
+        self.addon_prefs = tool.Blender.get_addon_preferences()
+        self.line_shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
+        self.line_shader.bind()
+        self.line_shader.uniform_float("viewportSize", (context.region.width, context.region.height))
+        self.line_shader.uniform_float("lineWidth", 2.0)
+        color = self.addon_prefs.decorator_color_unselected
+        props = context.scene.BIMAggregateProperties
+        editing_objects = set([o.obj for o in props.editing_objects])
+        not_editing_objects = set([o.obj for o in props.not_editing_objects])
+        objs = []
+        visible_objects = tool.Raycast.get_visible_objects(context)
+        for obj in visible_objects:
+            if obj.visible_in_viewport_get(context.space_data):
+                objs.append(obj.original)
+        new_objs = set(objs) - not_editing_objects - editing_objects
+        new_objs = [o for o in new_objs if o.data]
+        for obj in new_objs:
+            element = tool.Ifc.get_entity(obj)
+            if element and element.is_a("IfcElement"):
+                data = ItemDecorator.get_obj_data(obj)
+                if data:
+                    self.draw_batch(
+                        "TRIS", data["verts"], transparent_color((1, 0, 0, 1)), data["tris"]
+                    )
+

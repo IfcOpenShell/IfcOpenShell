@@ -571,6 +571,7 @@ class EditObjectUI:
                 row = cls.layout.row(align=True)
                 op = row.operator("bim.disable_aggregate_mode", text="", icon="X")
                 op = row.operator("bim.toggle_aggregate_mode_local_view", text="", icon="ZOOM_SELECTED")
+                op = row.operator("bim.aggregate_assing_new_objects_in_aggregate_mode", text="", icon="CUBE")
                 
             text = format_ifc_camel_case(AuthoringData.data["active_class"])
             layout.label(text=f"{text} Edit Tools:", icon="RESTRICT_SELECT_OFF")
