@@ -1719,7 +1719,9 @@ class Geometry(bonsai.core.tool.Geometry):
         data["ios_item_ids"] = [i["item"].id() for i in ifcopenshell.util.representation.resolve_items(representation)]
 
     @classmethod
-    def export_mesh_to_tessellation(cls, obj: bpy.types.Object, ifc_context) -> ifcopenshell.entity_instance:
+    def export_mesh_to_tessellation(
+        cls, obj: bpy.types.Object, ifc_context: ifcopenshell.entity_instance
+    ) -> ifcopenshell.entity_instance:
         builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         items = []
