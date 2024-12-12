@@ -37,7 +37,7 @@ import numpy as np
 import numpy.typing as npt
 from mathutils import Vector, Matrix
 from pathlib import Path
-from typing import Union, Any
+from typing import Union, Any, Optional
 
 
 # Progressively we'll refactor loading elements into Blender objects into this
@@ -921,7 +921,12 @@ class Loader(bonsai.core.tool.Loader):
 
     @classmethod
     def convert_geometry_to_mesh(
-        cls, geometry: ifcopenshell.geom.ShapeType, mesh: bpy.types.Mesh, verts=None
+        cls,
+        geometry: ifcopenshell.geom.ShapeType,
+        mesh: bpy.types.Mesh,
+        verts: Optional[list[float]] = None,
+        *,
+        load_indexed_maps=True,
     ) -> bpy.types.Mesh:
         if verts is None:
             verts = geometry.verts
@@ -968,7 +973,7 @@ class Loader(bonsai.core.tool.Loader):
             mesh.update()
 
             rep_str: str = geometry.id
-            if "openings" not in rep_str:
+            if load_indexed_maps and "openings" not in rep_str:
                 rep_id = rep_str.split("-", 1)[0]
                 rep = tool.Ifc.get().by_id(int(rep_id))
                 # For now, not necessary to load maps in Item mode
