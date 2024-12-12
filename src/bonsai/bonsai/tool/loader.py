@@ -555,13 +555,12 @@ class Loader(bonsai.core.tool.Loader):
             layer = bm.loops.layers.float_color.new("Color")
 
         # remap the faceset CoordList index to the vertices in blender mesh
-        coordinates_remap = []
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         faceset = index_map.MappedTo
-        for co in faceset.Coordinates.CoordList:
-            co = Vector(co) * si_conversion
-            index = min(bm.verts, key=lambda v: (v.co - co).length_squared).index
-            coordinates_remap.append(index)
+
+        bm_verts = np.array([v.co for v in bm.verts])
+        coords_scaled = np.array(faceset.Coordinates.CoordList) * si_conversion
+        coordinates_remap = [np.argmin(np.sum((bm_verts - co) ** 2, axis=1)) for co in coords_scaled]
 
         # ifc indices start with 1
         remap_verts_to_blender = lambda ifc_verts: [coordinates_remap[i - 1] for i in ifc_verts]
