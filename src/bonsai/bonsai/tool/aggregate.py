@@ -135,11 +135,7 @@ class Aggregate(bonsai.core.tool.Aggregate):
                     objs.append(obj.original)
             for obj in objs:
                 if obj.original not in parts_objs:
-                    try:
-                        is_element_assembly = tool.Ifc.get_entity(obj.original).is_a("IfcElementAssembly")
-                    except:
-                        is_element_assembly = False
-                    if not obj.data and not is_element_assembly:
+                    if obj == props.editing_aggregate:
                         continue
                     obj.original.display_type = "WIRE"
                     not_editing_obj = props.not_editing_objects.add()
@@ -147,6 +143,7 @@ class Aggregate(bonsai.core.tool.Aggregate):
                 else:
                     editing_obj = props.editing_objects.add()
                     editing_obj.obj = obj.original
+                    tool.Aggregate.apply_constraints(obj.original)
 
         props.in_aggregate_mode = True
         return {"FINISHED"}
@@ -162,6 +159,7 @@ class Aggregate(bonsai.core.tool.Aggregate):
             if not element:
                 continue
 
+        tool.Aggregate.constrain_parts_to_aggregate(props.editing_aggregate)
         props.in_aggregate_mode = False
         props.not_editing_objects.clear()
         props.editing_objects.clear()
