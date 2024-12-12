@@ -32,6 +32,7 @@ classes = (
     operator.BIM_OT_select_linked_aggregates,
     operator.BIM_OT_disable_aggregate_mode,
     operator.BIM_OT_toggle_aggregate_mode_local_view,
+    operator.BIM_OT_aggregate_assing_new_objects_in_aggregate_mode,
     prop.BIMObjectAggregateProperties,
     prop.Objects,
     prop.BIMAggregateProperties,
