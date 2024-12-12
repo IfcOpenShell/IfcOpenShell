@@ -72,7 +72,8 @@ class MaterialCreator:
         self.mesh = mesh
         self.obj = obj
         self.parsed_meshes.add(self.mesh.name)
-        self.load_texture_maps(shape_has_openings)
+        if not self.ifc_import_settings.load_indexed_maps:
+            self.load_texture_maps(shape_has_openings)
         self.assign_material_slots_to_faces()
         tool.Geometry.record_object_materials(obj)
         del self.mesh["ios_materials"]
@@ -1069,7 +1070,12 @@ class IfcImporter:
                 verts = geometry.verts
                 mesh["has_cartesian_point_offset"] = False
 
-            return tool.Loader.convert_geometry_to_mesh(geometry, mesh, verts=verts)
+            return tool.Loader.convert_geometry_to_mesh(
+                geometry,
+                mesh,
+                verts=verts,
+                load_indexed_maps=self.ifc_import_settings.load_indexed_maps,
+            )
         except:
             self.ifc_import_settings.logger.error("Could not create mesh for %s", element)
             import traceback
@@ -1155,6 +1161,7 @@ class IfcImportSettings:
         self.context_settings: list[ifcopenshell.geom.main.settings] = []
         self.gross_context_settings: list[ifcopenshell.geom.main.settings] = []
         self.elements: set[ifcopenshell.entity_instance] = set()
+        self.load_indexed_maps = False
 
     @staticmethod
     def factory(context=None, input_file=None, logger=None):
@@ -1196,4 +1203,5 @@ class IfcImportSettings:
         settings.element_limit_mode = props.element_limit_mode
         settings.element_offset = props.element_offset
         settings.element_limit = props.element_limit
+        settings.load_indexed_maps = props.load_indexed_maps
         return settings
