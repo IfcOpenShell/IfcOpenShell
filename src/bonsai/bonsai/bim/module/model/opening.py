@@ -707,7 +707,7 @@ class HideBooleans(Operator, tool.Ifc.Operator):
     bl_label = "Hide Booleans"
     bl_description = (
         "Hide boolean objects and apply their changed transforms.\n"
-        "If boolean object is active, hide it, otherwise hide all boolean objects"
+        "If boolean object is selected, hide it, otherwise hide all boolean objects"
     )
     bl_options = {"REGISTER", "UNDO"}
 
@@ -716,12 +716,18 @@ class HideBooleans(Operator, tool.Ifc.Operator):
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
         builder = ifcopenshell.util.shape_builder.ShapeBuilder(ifc_file)
 
-        set_active_obj = None
+        set_active_obj, set_selected_objs = None, None
         boolean_objs: list[bpy.types.Object]
-        active_boolean_obj = (obj := context.active_object) and tool.Model.is_boolean_obj(obj)
-        if active_boolean_obj:
-            boolean_objs = [obj]
-            set_active_obj = obj.data.BIMMeshProperties.obj
+        selected_objects = tool.Blender.get_selected_objects()
+        selected_booleans_objs = [obj for obj in selected_objects if tool.Model.is_boolean_obj(obj)]
+        if selected_booleans_objs:
+            boolean_objs = selected_booleans_objs
+            if (active_object := context.active_object) in selected_booleans_objs:
+                active_obj_source = active_object
+            else:
+                active_obj_source = selected_booleans_objs[0]
+            set_active_obj = active_obj_source.data.BIMMeshProperties.obj
+            set_selected_objs = [tool.Model.get_booleaned_obj(obj) for obj in boolean_objs]
         else:
             props = bpy.context.scene.BIMModelProperties
             boolean_objs = [obj for o in props.openings if (obj := o.obj)]
@@ -754,8 +760,8 @@ class HideBooleans(Operator, tool.Ifc.Operator):
             bpy.data.objects.remove(obj)
         tool.Model.clear_scene_openings()
 
-        if set_active_obj:
-            tool.Blender.set_active_object(set_active_obj)
+        if set_active_obj and set_selected_objs is not None:
+            tool.Blender.set_objects_selection(context, set_active_obj, set_selected_objs)
         return {"FINISHED"}
 
 

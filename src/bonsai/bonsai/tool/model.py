@@ -1902,3 +1902,7 @@ class Model(bonsai.core.tool.Model):
     @classmethod
     def is_boolean_obj(cls, obj: bpy.types.Object) -> bool:
         return obj.type == "MESH" and obj.data.BIMMeshProperties.ifc_boolean_id
+
+    @classmethod
+    def get_booleaned_obj(cls, boolean_obj: bpy.types.Object) -> bpy.types.Object:
+        return boolean_obj.data.BIMMeshProperties.obj
