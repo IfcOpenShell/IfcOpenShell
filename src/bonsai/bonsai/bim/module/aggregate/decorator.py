@@ -286,9 +286,11 @@ class AggregateModeDecorator:
         self.line_shader.bind()
         self.line_shader.uniform_float("viewportSize", (context.region.width, context.region.height))
         self.line_shader.uniform_float("lineWidth", 2.0)
-        color = self.addon_prefs.decorator_color_selected
         theme = context.preferences.themes.items()[0][1]
         selected_object_color = (*theme.view_3d.object_active, 1)
+        color = self.addon_prefs.decorator_color_selected
+        if aggregate_obj in context.selected_objects:
+            color = selected_object_color
         size = aggregate_obj.empty_display_size
         location = aggregate_obj.location
         line_x = (location - Vector((size, 0.0, 0.0)), location + Vector((size, 0.0, 0.0)))
