@@ -593,7 +593,7 @@ class AddBoolean(Operator, tool.Ifc.Operator):
 class ShowBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
     bl_idname = "bim.show_booleans"
     bl_label = "Show Booleans"
-    bl_description = "Show active object booleans.\nCan be used to reset booleans positions"
+    bl_description = "Show booleans for the selected objects.\nCan be used to reset booleans positions"
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -607,7 +607,20 @@ class ShowBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
         )
 
     def _execute(self, context):
-        obj = context.active_object
+        selected_objects = tool.Blender.get_selected_objects()
+        boolean_objs = []
+        for obj in selected_objects:
+            if not isinstance(mesh := obj.data, bpy.types.Mesh) or not mesh.BIMMeshProperties.ifc_definition_id:
+                continue
+            boolean_objs.extend(self.show_booleans(obj))
+
+        if boolean_objs:
+            DecorationsHandler.install(context)
+            tool.Blender.set_objects_selection(context, boolean_objs[0], boolean_objs)
+
+        return {"FINISHED"}
+
+    def show_booleans(self, obj: bpy.types.Object) -> list[bpy.types.Object]:
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
         booleans: list[ifcopenshell.entity_instance] = []
@@ -623,6 +636,7 @@ class ShowBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
             if (boolean_obj := opening.obj).data.BIMMeshProperties.obj == obj
         }
 
+        booleans_objs: list[bpy.types.Object] = []
         for boolean in booleans:
             boolean_obj = None
 
@@ -663,10 +677,9 @@ class ShowBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
                 boolean_obj.data.BIMMeshProperties.obj = obj
                 new = props.openings.add()
                 new.obj = boolean_obj
+                booleans_objs.append(boolean_obj)
 
-        if booleans:
-            DecorationsHandler.install(bpy.context)
-        return {"FINISHED"}
+        return booleans_objs
 
     def get_booleans(self, item: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
         results = []
