@@ -1562,7 +1562,7 @@ class Model(bonsai.core.tool.Model):
                     if group_count != 2:  # Each circle needs 2 verts
                         return (False, "CIRCLE")
 
-        loop_edges = set(bm.edges)
+        loop_edges = list(bm.edges)
 
         # Create loops from edges
         loops = []
@@ -1779,7 +1779,7 @@ class Model(bonsai.core.tool.Model):
                     if group_count != 2:  # Each circle needs 2 verts
                         return (False, "CIRCLE")
 
-        loop_edges = set(bm.edges)
+        loop_edges = list(bm.edges)
 
         # Create loops from edges
         loops = []
