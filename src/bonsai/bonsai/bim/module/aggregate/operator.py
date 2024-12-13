@@ -67,7 +67,7 @@ class BIM_OT_aggregate_assign_object(bpy.types.Operator, tool.Ifc.Operator):
                     relating_obj=relating_obj,
                     related_obj=obj,
                 )
-                tool.Aggregate.constrain_parts_to_aggregate(relating_obj)
+                tool.Aggregate.constrain_part_to_aggregate(obj, relating_obj)
                 props = context.scene.BIMAggregateProperties
                 if relating_obj == props.editing_aggregate and props.in_aggregate_mode:
                     new_editing_obj = props.editing_objects.add()
@@ -185,7 +185,7 @@ class BIM_OT_add_aggregate(bpy.types.Operator, tool.Ifc.Operator):
                     element_obj=aggregate,
                 )
             core.assign_object(tool.Ifc, tool.Aggregate, tool.Collector, relating_obj=aggregate, related_obj=obj)
-            tool.Aggregate.constrain_parts_to_aggregate(aggregate)
+            tool.Aggregate.constrain_all_parts_to_aggregate(aggregate)
 
     def create_aggregate(self, context, ifc_class, aggregate_name):
         aggregate = bpy.data.objects.new(aggregate_name, None)
@@ -424,13 +424,17 @@ class BIM_OT_aggregate_assing_new_objects_in_aggregate_mode(bpy.types.Operator):
         new_objs = [o for o in new_objs if o.data]
         for obj in new_objs:
             element = tool.Ifc.get_entity(obj)
+            if (aggregate := ifcopenshell.util.element.get_aggregate(element)) == tool.Ifc.get_entity(props.editing_aggregate):
+                continue
             if element and element.is_a("IfcElement"):
                 obj.select_set(True)
                 editing_obj = props.editing_objects.add()
                 editing_obj.obj = obj
                 props.editing_aggregate.select_set(True)
+        context.view_layer.objects.active = new_objs[0]
         self.relating_object = tool.Ifc.get_entity(props.editing_aggregate).id()
         self.related_object = tool.Ifc.get_entity(obj).id()
+
         BIM_OT_aggregate_assign_object._execute(self, context)
 
         return {"FINISHED"}

@@ -1126,7 +1126,7 @@ class IfcImporter:
             if parts:
                 relating_obj = tool.Ifc.get_object(element)
                 if relating_obj:
-                    tool.Aggregate.constrain_parts_to_aggregate(relating_obj)
+                    tool.Aggregate.constrain_all_parts_to_aggregate(relating_obj)
         bpy.context.scene.BIMAggregateProperties.aggregate_decorator = True
 
 

@@ -343,6 +343,8 @@ class AggregateModeDecorator:
         new_objs = [o for o in new_objs if o.data]
         for obj in new_objs:
             element = tool.Ifc.get_entity(obj)
+            if (aggregate := ifcopenshell.util.element.get_aggregate(element)) == tool.Ifc.get_entity(props.editing_aggregate):
+                continue
             if element and element.is_a("IfcElement"):
                 data = ItemDecorator.get_obj_data(obj)
                 if data:
