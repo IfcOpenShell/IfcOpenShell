@@ -18,8 +18,8 @@ class ShaderInfo:
         #self.shader_type = shader_type
         #self.args = {}
         #self.indices = []
-        self.curve_members = []
-        self.point_members = []
+        self.curve_members = {}
+        self.point_members = {}
         self.surface_members = {}
         self.text_info = []
         self.info = []
@@ -29,6 +29,10 @@ class ShaderInfo:
     
     def update(self):
         self.info = []
+        self.text_info = []
+        self.curve_members = {}
+        self.point_members = {}
+        self.surface_members = {}
         self.get_force_units()
         self.get_strucutural_elements_and_activities()
         self.get_linear_loads()
@@ -160,14 +164,15 @@ class ShaderInfo:
             else:
                 member["activities"].append((activity,factor))
 
-        def recursive_subgroups(groups, rec_limit, factor = 1):
+        def recursive_subgroups(groups, rec_limit, activity_type, factor = 1):
             if len(groups) == 0 or rec_limit == 0:
                 return None
             for group in groups:
                 subgorups = []
                 activities = []
                 relationship = [rel for rel in group.IsGroupedBy]
-                group_coef = group.Coefficient if group.Coefficient is not None else 1.0
+                coef = getattr(group, 'Coefficient', 1.0)
+                group_coef =  coef if coef is not None else 1.0
                 rel_factor = 1.0
 
                 for rel in relationship:
@@ -181,19 +186,28 @@ class ShaderInfo:
                         if len(activity.AssignedToStructuralItem):
                             element = activity.AssignedToStructuralItem[0].RelatingElement
                             if element is not None:
-                                if element.is_a("IfcStructuralCurveMember"):
-                                    self.curve_members.append(element)
-                                elif element.is_a("IfcStructuralPoinConnection"):
-                                    self.point_members.append(element)
-                                elif element.is_a("IfcStructuralSurfaceMember"):
-                                    populate_members_dict("surface_members",element,activity,factor)
-                    recursive_subgroups(subgorups,rec_limit-1,factor=factor)
+                                if activity_type == "Action":
+                                    if element.is_a("IfcStructuralCurveMember"):
+                                        populate_members_dict("curve_members",element,activity,factor)
+                                    elif element.is_a("IfcStructuralPointConnection"):
+                                        populate_members_dict("point_members",element,activity,factor)
+                                    elif element.is_a("IfcStructuralSurfaceMember"):
+                                        populate_members_dict("surface_members",element,activity,factor)
+
+                                elif activity_type == "External Reaction" and getattr(element,"AppliedCondition",None) is not None:
+                                    if element.is_a("IfcStructuralCurveMember"):
+                                        populate_members_dict("curve_members",element,activity,factor)
+                                    elif element.is_a("IfcStructuralPointConnection"):
+                                        populate_members_dict("point_members",element,activity,factor)
+                                    elif element.is_a("IfcStructuralSurfaceMember"):
+                                        populate_members_dict("surface_members",element,activity,factor)
+                    recursive_subgroups(subgorups,rec_limit-1,activity_type,factor=factor)
         
         props = bpy.context.scene.BIMStructuralProperties
         group_definition_id = int(props.load_group_to_show)
         file = IfcStore.get_file()
         groups = [file.by_id(group_definition_id)]
-        recursive_subgroups(groups,10)
+        recursive_subgroups(groups,10,props.activity_type)
 
         
     def get_shader(self, pattern):
@@ -431,56 +445,6 @@ class ShaderInfo:
         del vert_out
         del shader_info
         return shader
-    
-    def get_planar_loads(self):
-        list_of_surfaces = self.surface_members
-        shader = self.get_planar_shader()
-        for value in list_of_surfaces.values():
-            surf = value["element"]
-            activity_list = [getattr(a, 'RelatedStructuralActivity', None) for a in getattr(surf, 'AssignedStructuralActivity', None)
-                             if getattr(a, 'RelatedStructuralActivity', None).is_a() in ['IfcStructuralPlanarAction','IfcStructuralSurfaceAction']]
-            if len(activity_list) == 0:
-                continue
-            blender_object: bpy.types.Object = IfcStore.get_element(getattr(surf, 'GlobalId', None))
-            mat = blender_object.matrix_world
-            mesh: bpy.types.Mesh = blender_object.data
-            z = Vector((0,0,1))
-            positions = []
-            indices = []
-            coord = []
-            for p in mesh.polygons:
-                add_index = len(positions)
-                for i, v in enumerate(p.vertices):
-                    p1 = mesh.vertices[v].co
-                    positions.append(p1)
-                    p2 = p1 + z
-                    positions.append(p2)
-                    if i == 0:
-                        coord.append((0,0,1))
-                        coord.append((0,1,1))
-                    else:
-                        vec = positions[-1] - positions [-3]
-                        l = vec.length
-                        coord.append((l,0,1))
-                        coord.append((l,1,1))
-                        add = add_index+2*i
-                        indices.append((0+add,2+add,1+add))
-                        indices.append((1+add,2+add,3+add))
-                length = len(p.vertices)-1
-                indices.append((length+add_index-1,length+add_index,0+add_index))
-                indices.append((length+add_index,0+add_index,1+add_index))
-                indices.append((1+add_index,3+add_index,5+add_index))
-                if len(p.vertices) > 3:
-                    indices.append((1+add_index,5+add_index,7+add_index))
-            
-            self.info.append(
-                    {
-                        "shader": shader,
-                        "args": {"position": positions, "coord": coord},
-                        "indices": indices,
-                        "uniforms": [["color", (0.2,0,1,1)],["spacing", 0.2]]
-                    }
-            )
 
     def get_planar_loads_2(self):
         list_of_surfaces = self.surface_members
@@ -493,19 +457,21 @@ class ShaderInfo:
             activity_list = value["activities"]
             if len(activity_list) == 0:
                 continue
-            values = self.get_planar_loads_values(activity_list)
+            rotation = self.get_surface_member_rotation(surf)
+            values = self.get_planar_loads_values(activity_list,rotation)
             if maximum == 0:
                 maximum = max([abs(float(i)) for i in values])
                 if maximum == 0:
                     continue
+            props = bpy.context.scene.BIMStructuralProperties
+            reference_frame = props.reference_frame
+            orientation = np.eye(3)
+            if reference_frame == "LOCAL_COORDS":
+                orientation = rotation
             blender_object: bpy.types.Object = IfcStore.get_element(getattr(surf, 'GlobalId', None))
             mat = blender_object.matrix_world
             mesh: bpy.types.Mesh = blender_object.data
-            rotation = self.get_surface_member_rotation(surf)
-            x = rotation @ (np.array((1,0,0))*0.2)
-            y = rotation @ (np.array((0,1,0))*0.2)
-            z = rotation @ (np.array((0,0,1))*0.2)
-
+            
             positions = []
             indices = []
             coord = []
@@ -520,7 +486,7 @@ class ShaderInfo:
             for v in bm.verts:
                 p1 = np.array(mat @ v.co)
                 positions.append(p1)
-                p2 = p1 - (rotation@values)*0.2/maximum
+                p2 = p1 - (orientation@values)*0.2/maximum
                 positions.append(p2)
                 coord.append((float(p1[0]+p1[1]),0,1))
                 coord.append((float(p1[0]+p1[1]),1,1))
@@ -542,7 +508,7 @@ class ShaderInfo:
             center = bm.faces[0].calc_center_bounds()
 
             self.text_info.append(
-                {"position": mat @ center - Vector((rotation@values)*0.2/maximum),
+                {"position": mat @ center - Vector((orientation@values)*0.2/maximum),
                 "normal": Vector(mesh.polygons[0].normal),
                 "text": f'{values[2]:.5f} {self.planar_force_unit}'}
                 )
@@ -555,7 +521,7 @@ class ShaderInfo:
                         "uniforms": [["color", (0.2,0,1,1)],["spacing", 0.2]]
                     }
             )
-    def get_planar_loads_values(self, activity_list):
+    def get_planar_loads_values(self, activity_list,element_rotation_matrix):
         values = np.zeros((3))
         for item in activity_list:
             activity = item[0]
@@ -567,7 +533,8 @@ class ShaderInfo:
                 temp[1] = load.PlanarForceY if load.PlanarForceY is not None else 0
                 temp[2] = load.PlanarForceZ if load.PlanarForceZ is not None else 0
             temp = temp*factor
-            values = values + temp
+            transform = self.get_activity_transform_matrix(activity,element_rotation_matrix)
+            values += transform@temp
         return values
 
     def get_surface_member_rotation(self,surface_member):
@@ -594,33 +561,60 @@ class ShaderInfo:
         placement = ifcopenshell.util.placement.a2p(origin,z,x)
         rotation = placement[0:3,0:3]
         return rotation
+    
+    def get_activity_transform_matrix(self, activity, element_rotation_matrix):
+        "provides the transformation matrix to convert between reference frames"
+        global_or_local = activity.GlobalOrLocal
+        props = bpy.context.scene.BIMStructuralProperties
+        reference_frame = props.reference_frame
+        transform_matrix = np.eye(3)
+        if reference_frame == 'LOCAL_COORDS' and global_or_local != reference_frame:
+            transform_matrix = np.linalg.inv(element_rotation_matrix)
+        elif reference_frame == 'GLOBAL_COORDS' and global_or_local != reference_frame:
+            transform_matrix = element_rotation_matrix
+        return transform_matrix
 
     def get_point_loads(self):
         list_of_point_connections = tool.Ifc.get().by_type("IfcStructuralPointConnection")
-        for conn in list_of_point_connections:
+        list_of_point_connections = self.point_members
+        for value in list_of_point_connections.values():
+            conn = value["member"]
             activity_list = [getattr(a, 'RelatedStructuralActivity', None) for a in getattr(conn, 'AssignedStructuralActivity', None)
                              if getattr(a, 'RelatedStructuralActivity', None).is_a() in ['IfcStructuralPointAction']]
+            activity_list = value["activities"]
             if len(activity_list) == 0:
                 continue
             blender_object = IfcStore.get_element(getattr(conn, 'GlobalId', None))
             if blender_object.type == 'MESH':
                 conn_location = blender_object.matrix_world @ blender_object.data.vertices[0].co
                 #get local coordinates of the connection
-                loads = self.get_point_loads_list(activity_list)
-                self.get_point_shader_args(loads, conn_location)
+                rotation = self.get_point_connection_rotation(conn)
+                loads = self.get_point_loads_values(activity_list, rotation)
+                self.get_point_shader_args(loads, conn_location, rotation)
 
-    def get_point_shader_args(self,loads, location):
+    def get_point_shader_args(self,loads, location, rotation):
+        location = np.array(location)
         indices = []
         text_info = []
         direction_dict = {
-                "fx": (Vector((1,0,0)),Vector((0,1,0)),Vector((0,0,1))),
-                "fy": (Vector((0,1,0)),Vector((1,0,0)),Vector((0,0,1))),
-                "fz": (Vector((0,0,1)),Vector((0,1,0)),Vector((1,0,0))),
-                "mx": (Vector((0,1,0)),Vector((0,0,1))),
-                "my": (Vector((1,0,0)),Vector((0,0,1))),
-                "mz": (Vector((1,0,0)),Vector((0,1,0))),
+                "fx": (np.array((1,0,0)),np.array((0,1,0)),np.array((0,0,1))),
+                "fy": (np.array((0,1,0)),np.array((1,0,0)),np.array((0,0,1))),
+                "fz": (np.array((0,0,1)),np.array((0,1,0)),np.array((1,0,0))),
+                "mx": (np.array((0,1,0)),np.array((0,0,1))),
+                "my": (np.array((1,0,0)),np.array((0,0,1))),
+                "mz": (np.array((1,0,0)),np.array((0,1,0))),
             }
         keys = ["fx","fy","fz","mx","my","mz"]
+        props = bpy.context.scene.BIMStructuralProperties
+        reference_frame = props.reference_frame
+        if reference_frame == "LOCAL_COORDS":
+            for key in keys:
+                tup = direction_dict[key]
+                li = []
+                for item in tup:
+                    li.append(rotation@item)
+                direction_dict[key] = li
+        
         for i, key in enumerate(keys):
             if loads[i] == 0:
                 continue
@@ -629,7 +623,8 @@ class ShaderInfo:
                 color = (0,1,0,1)
             elif i in [2,5]:
                 color = (0,0,1,1)
-            d1 = -(direction_dict[key][0]*loads[i]).normalized()
+            d1 = -(direction_dict[key][0]*loads[i])
+            d1 = d1/np.linalg.norm(d1)
             if i < 3:
                 d2 = direction_dict[key][1]
                 d3 = direction_dict[key][2]
@@ -653,6 +648,11 @@ class ShaderInfo:
                         "uniforms": [["color", color],["spacing", 0.2]]
                     }
                 )
+                self.text_info.append(
+                                {"position": location + d1,
+                                "normal": d2/np.linalg.norm(d2),
+                                "text": f'{loads[i]:.2f} {self.force_unit}'}
+                                )
             else:
                 d2 = d2 = direction_dict[key][1]
                 p1 = location - d2
@@ -673,17 +673,29 @@ class ShaderInfo:
                         "uniforms": [["color", color]]
                     }
                 )
+                self.text_info.append(
+                                {"position": location +0.25*(d1 + d2),
+                                "normal": d2/np.linalg.norm(d2),
+                                "text": f'{loads[i]:.2f} {self.force_unit}'}#change to moment unit
+                                )
 
-
-    
-    def get_point_loads_list(self,activity_list):
-        result_list = [0,0,0,0,0,0]
+    def get_point_loads_values(self,activity_list,element_rotation_matrix):
+        result_list = np.zeros(6)
         attr_list = ['ForceX','ForceY','ForceZ','MomentX','MomentY','MomentZ']
-        for activity in activity_list:
+        for item in activity_list:
+            activity = item[0]
+            factor = item[1]
             load = activity.AppliedLoad
+            temp = np.zeros(6)
             for i, attr in enumerate(attr_list):
                 value = 0 if getattr(load, attr, 0) is None else getattr(load, attr, 0)
-                result_list[i] += value
+                temp[i] += value*factor
+            transform_3 = self.get_activity_transform_matrix(activity,element_rotation_matrix)
+            transform_6 = np.zeros((6,6))
+            transform_6[0:3,0:3] = transform_3
+            transform_6[3:6,3:6] = transform_3
+            result_list += transform_6@temp
+
         return result_list
 
 
@@ -699,9 +711,11 @@ class ShaderInfo:
     
         list_of_curve_members = tool.Ifc.get().by_type("IfcStructuralCurveMember")
         list_of_curve_members = self.curve_members
-        for member in list_of_curve_members:
+        for value in list_of_curve_members.values():
+            member = value["member"]
             activity_list = [getattr(a, 'RelatedStructuralActivity', None) for a in getattr(member, 'AssignedStructuralActivity', None)
                              if getattr(a, 'RelatedStructuralActivity', None).is_a() in ['IfcStructuralCurveAction','IfcStructuralLinearAction']]
+            activity_list = value["activities"]
             if len(activity_list) == 0:
                 continue
             # member is a structural curve member
@@ -714,22 +728,25 @@ class ShaderInfo:
             # using blender just get the global coordinates of the first and second vertex in the mesh
     
             blender_object = IfcStore.get_element(getattr(member, 'GlobalId', None))
-            if blender_object.type == 'MESH':
-                start_co = blender_object.matrix_world @ blender_object.data.vertices[0].co
-                end_co = blender_object.matrix_world @ blender_object.data.vertices[1].co
+            
+            start_co = blender_object.matrix_world @ blender_object.data.vertices[0].co
+            end_co = blender_object.matrix_world @ blender_object.data.vertices[1].co
             x_axis = Vector(end_co-start_co).normalized()
             z_direction = getattr(member, 'Axis')
             #local coordinates
             z_axis = Vector(getattr(z_direction, 'DirectionRatios', None)).normalized()
             y_axis = z_axis.cross(x_axis).normalized()
             z_axis = x_axis.cross(y_axis).normalized()
-            global_to_local = Matrix(((x_axis.x,y_axis.x,z_axis.x,0),
-                                      (x_axis.y,y_axis.y,z_axis.y,0),
-                                      (x_axis.z,y_axis.z,z_axis.z,0),
-                                      (0,0,0,1)))
+            rot = self.get_curve_member_rotation(member)
+            global_to_local = Matrix(((x_axis.x,y_axis.x,z_axis.x),
+                                      (x_axis.y,y_axis.y,z_axis.y),
+                                      (x_axis.z,y_axis.z,z_axis.z),
+                                      ))
+            global_to_local = Matrix(rot)
     
             #get shader args for each direction
-            reference_frame = 'GLOBAL_COORDS' #make it a scene property so it can be changed in a panel
+            props = bpy.context.scene.BIMStructuralProperties
+            reference_frame = props.reference_frame #make it a scene property so it can be changed in a panel
             is_local =  reference_frame == 'LOCAL_COORDS'
             x_match = abs(Vector((1,0,0)).dot(x_axis)) > 0.99
             y_match = abs(Vector((0,1,0)).dot(x_axis)) > 0.99
@@ -742,9 +759,18 @@ class ShaderInfo:
                 "my": z_axis if is_local else Vector((-1,0,1)) if y_match else Vector((0,1,0)).cross(x_axis).normalized(),
                 "mz": y_axis if is_local else Vector((-1,1,0)) if z_match else Vector((0,0,1)).cross(x_axis).normalized()
             }
-            match_dict = {'fx': x_match, 'fy': y_match, 'fz': z_match}
+            match_dict = {'fx': x_match or is_local, 'fy': y_match, 'fz': z_match}
             member_length =  Vector(end_co-start_co).length
-            loads_dict, maxforce = get_loads_per_direction(activity_list,global_to_local,member_length)
+            loads_dict, maxforce, point_loads = self.get_loads_per_direction(activity_list,global_to_local,member_length)
+            if len(point_loads):
+                for item in point_loads:
+                    for sub_item in item:
+                        pos = sub_item["pos"]
+                        values = sub_item["values"]
+                        pos_vector = start_co + x_axis*pos
+                        self.get_point_shader_args(values,pos_vector)
+            if loads_dict is None:
+                continue
             keys = ["fx","fy","fz","mx","my","mz"]
 
             for key in keys:
@@ -843,280 +869,305 @@ class ShaderInfo:
         self.text_info = text_info
 
 
-def get_loads_per_direction(activity_list,global_to_local,member_length):
-    """ returns a dict with values for applied loads in each direction
-     return = {
-                 "fx": values_in_this_direction
-                 "fy": values_in_this_direction
-                 "fz": values_in_this_direction
-                 "mx": values_in_this_direction
-                  "my": values_in_this_direction
-                  "mz": values_in_this_direction
-                 }
-     values_in_this_direction = {
-                                "constant": float,
-                                "quadratic": float,
-                                "sinus": float,
-                                "polyline": list[(position: float, load: float),...]
-                                   }
-    """
-    loads_dict = get_loads_dict(activity_list,global_to_local)
-    const = loads_dict["constant force"]
-    quad = loads_dict["quadratic force"]
-    sinus = loads_dict["sinus force"]
-    loads = loads_dict["load configuration"]
-    unique_list = getuniquepositionlist(loads)
-    final_list = []
-    for pos in unique_list:
-        value = get_before_and_after(pos,loads)
-        if value["before"] == value["after"]:
-            final_list.append([pos]+value["before"])
-        else:
-            final_list.append([pos]+value["before"])
-            final_list.append([pos]+value["after"])
-    
-    if not len(final_list) and any(const+quad+sinus):
-        final_list.append([0.0,0.0,0.0,0.0,0.0,0.0,0.0])
-        final_list.append([member_length,0.0,0.0,0.0,0.0,0.0,0.0])
-        
-    elif len(final_list):
-        if final_list[0][0] and any(const+quad+sinus): #if first item location is not 0 append an item at the zero
-            final_list = [[0.0,0.0,0.0,0.0,0.0,0.0,0.0]]+final_list
-        else:
-            del final_list[0]
-        if abs(final_list[-1][0] - member_length) > 0.01  and any(const+quad+sinus):
-            final_list.append([member_length,0.0,0.0,0.0,0.0,0.0,0.0])
-        else:
-            del final_list[-1]
-        
-    array = np.array(final_list) #7xn -> ["pos","fx","fy","fz","mx","my","mz"]
-    keys = ["fx","fy","fz","mx","my","mz"]
-    polyline = {
-                 "fx": [],
-                 "fy": [],
-                 "fz": [],
-                 "mx": [],
-                  "my": [],
-                  "mz": [],
-                 }
-    return_value = {
-                 "fx": {"constant": 0, "quadratic": 0,"sinus": 0,"polyline": []},
-                 "fy": {"constant": 0, "quadratic": 0,"sinus": 0,"polyline": []},
-                 "fz": {"constant": 0, "quadratic": 0,"sinus": 0,"polyline": []},
-                 "mx": {"constant": 0, "quadratic": 0,"sinus": 0,"polyline": []},
-                  "my": {"constant": 0, "quadratic": 0,"sinus": 0,"polyline": []},
-                  "mz": {"constant": 0, "quadratic": 0,"sinus": 0,"polyline": []},
-                 }
-    max_load = 0
-    for component, key in enumerate(keys):
-        if(any([sinus[component], quad[component], const[component]]) or
-            any(item for item in array[:,component+1])):
-
-            for currentitem in final_list:
-                polyline[key].append([currentitem[0],currentitem[component+1]])
-                x = currentitem[0]/member_length
-                func = sin(x*3.1416)*sinus[component] + (-4.*x*x+4.*x)*quad[component]+const[component]+currentitem[component+1]
-                max_load = max(max_load,abs(func))
-            inner_dict = return_value[key]
-            inner_dict["constant"] = const[component]
-            inner_dict["quadratic"] = quad[component]
-            inner_dict["sinus"] = sinus[component]
-            inner_dict["polyline"] = polyline[key]
-            return_value[key] = inner_dict
-
-    return return_value, max_load+abs(sinus[component]+quad[component])
-
-
-def getuniquepositionlist(load_config_list):
-    """return an ordereded list of unique locations based on the load configuration list
- ex: load_config_list = [[{"pos":1.0,...},{"pos":3.0,...}],
-                          [{"pos":2.0,...},{"pos":3.0,...}],
-                         [{"pos":1.5,...},{"pos":2.5,...}]]
-        return = [1.0, 1.5, 2.0, 2.5, 3.0]
- """
-    unique = []
-    for config in load_config_list:
-        for info in config:
-            if info["pos"] in unique:
-                continue
-            unique.append(info["pos"])
-    unique.sort()
-    return unique
-
-def interp1d(l1,l2, pos):
-    """ 1d linear interpolation for the vector components"""
-    fac = (l2[1]-l1[1])/(l2[0]-l1[0])
-    v = l1[1] + fac*(pos-l1[0])
-    return v
-
-def interpolate(pos,loadinfo,start,end,key):
-    """ interpolate the result vectors between load poits"""
-    result = Vector((0,0,0))
-    for i in range(3):
-        value1 = [loadinfo[start]["pos"], loadinfo[start][key][i]] #[position, force_component]
-        value2= [loadinfo[end]["pos"], loadinfo[end][key][i]] #      [position, force_component]
-        result[i] = interp1d(value1,value2, pos) #             interpolated [position, force_component]
-    return result
-
-def get_before_and_after(pos,load_config_list):
-    """ get total values for forces and moments with polilyne distribution
-         before and after the position
- ex: load_config_list = [[{"pos":1.0,...,"forces":(1,0,0),...},{"pos":3.0,...,"forces":(3,0,0),...}],
-                          [{"pos":2.0,...,"forces":(1,0,0),...},{"pos":3.0,...,"forces":(1,0,0),...}],
-                         [{"pos":1.5,...,"forces":(1,0,0),...},{"pos":2.5,...,"forces":(1,0,0),...}]]
-           pos = 2.0
+    def get_loads_per_direction(self,activity_list,global_to_local,member_length):
+        """ returns a dict with values for applied loads in each direction
         return = {
-                      "before": (3,0,0,0,0,0),  ->(fx, fy, fz, mx, my, mz)
-                       " after": (4,0,0,0,0,0)   ->(fx, fy, fz, mx, my, mz)
-                  }
- """
-    force_before = Vector((0,0,0))
-    force_after = Vector((0,0,0))
-    moment_before = Vector((0,0,0))
-    moment_after = Vector((0,0,0))
+                    "fx": values_in_this_direction
+                    "fy": values_in_this_direction
+                    "fz": values_in_this_direction
+                    "mx": values_in_this_direction
+                    "my": values_in_this_direction
+                    "mz": values_in_this_direction
+                    }
+        values_in_this_direction = {
+                                    "constant": float,
+                                    "quadratic": float,
+                                    "sinus": float,
+                                    "polyline": list[(position: float, load: float),...]
+                                    }
+        """
+        loads_dict = self.get_loads_dict(activity_list,global_to_local)
+        const = loads_dict["constant force"]
+        quad = loads_dict["quadratic force"]
+        sinus = loads_dict["sinus force"]
+        loads = loads_dict["linear load configuration"]
+        unique_list = self.getuniquepositionlist(loads)
+        final_list = []
+        return_value = None
+        max_load = 0
+        for pos in unique_list:
+            value = self.get_before_and_after(pos,loads)
+            if value["before"] == value["after"]:
+                final_list.append([pos]+value["before"])
+            else:
+                final_list.append([pos]+value["before"])
+                final_list.append([pos]+value["after"])
+        
+        if not len(final_list) and any(const+quad+sinus):
+            final_list.append([0.0,0.0,0.0,0.0,0.0,0.0,0.0])
+            final_list.append([member_length,0.0,0.0,0.0,0.0,0.0,0.0])
+        
+        elif len(final_list):
+            if final_list[0][0] and any(const+quad+sinus): #if first item location is not 0 append an item at the zero
+                final_list = [[0.0,0.0,0.0,0.0,0.0,0.0,0.0]]+final_list
+            else:
+                del final_list[0]
+            if abs(final_list[-1][0] - member_length) > 0.01  and any(const+quad+sinus):
+                final_list.append([member_length,0.0,0.0,0.0,0.0,0.0,0.0])
+            else:
+                del final_list[-1]
+        if len(final_list):
+            array = np.array(final_list) #7xn -> ["pos","fx","fy","fz","mx","my","mz"]
+            keys = ["fx","fy","fz","mx","my","mz"]
+            polyline = {
+                        "fx": [],
+                        "fy": [],
+                        "fz": [],
+                        "mx": [],
+                        "my": [],
+                        "mz": [],
+                        }
+            return_value = {
+                        "fx": {"constant": 0, "quadratic": 0,"sinus": 0,"polyline": []},
+                        "fy": {"constant": 0, "quadratic": 0,"sinus": 0,"polyline": []},
+                        "fz": {"constant": 0, "quadratic": 0,"sinus": 0,"polyline": []},
+                        "mx": {"constant": 0, "quadratic": 0,"sinus": 0,"polyline": []},
+                        "my": {"constant": 0, "quadratic": 0,"sinus": 0,"polyline": []},
+                        "mz": {"constant": 0, "quadratic": 0,"sinus": 0,"polyline": []},
+                        }
+            max_load = 0
+            for component, key in enumerate(keys):
+                if(any([sinus[component], quad[component], const[component]]) or
+                    any(item for item in array[:,component+1])):
 
-    for config in load_config_list:
-        if pos < config[0]["pos"] or pos > config[-1]["pos"]:
-            continue
-        start = 0
-        end = len(config)-1
-        while end-start > 0:
-            if pos < config[start]["pos"] or pos > config[end]["pos"]:
-                break
-            if config[start]["pos"] == pos:
-                if config[start]["descr"] in ['start','middle']:
-                    force_after += config[start]["forces"]
-                    moment_after += config[start]["moments"]
-                elif config[start]["descr"] in ['end','middle']:
-                    force_before += config[start]["forces"]
-                    moment_before += config[start]["moments"]
+                    for currentitem in final_list:
+                        polyline[key].append([currentitem[0],currentitem[component+1]])
+                        x = currentitem[0]/member_length
+                        func = sin(x*3.1416)*sinus[component] + (-4.*x*x+4.*x)*quad[component]+const[component]+currentitem[component+1]
+                        max_load = max(max_load,abs(sinus[component]+quad[component]+const[component]+currentitem[component+1]))
+                    inner_dict = return_value[key]
+                    inner_dict["constant"] = const[component]
+                    inner_dict["quadratic"] = quad[component]
+                    inner_dict["sinus"] = sinus[component]
+                    inner_dict["polyline"] = polyline[key]
+                    return_value[key] = inner_dict
 
-            elif config[end]["pos"] == pos:
-                if config[end]["descr"] in ['start','middle']:
-                    force_after += config[end]["forces"]
-                    moment_after += config[end]["moments"]
-                elif config[end]["descr"] in ['end','middle']:
-                    force_before += config[end]["forces"]
-                    moment_before += config[end]["moments"]
+        return return_value, max_load, loads_dict["point load configuration"]
 
-            elif end-start == 1:
-                force_before += interpolate(pos,config,start,end,"forces")
-                force_after += interpolate(pos,config,start,end,"forces")
-                moment_before += interpolate(pos,config,start,end,"moments")
-                moment_after += interpolate(pos,config,start,end,"moments")
-            start += 1
-            end -=1
-    return_value = {
-        "before": [force_before.x,force_before.y,force_before.z,
-                   moment_before.x,moment_before.y,moment_before.z],
-           "after": [force_after.x, force_after.y, force_after.z,
-                  moment_after.x, moment_after.y, moment_after.z]
-                  }
-    return return_value
 
-def get_loads_dict(activity_list,global_to_local):
+    def getuniquepositionlist(self, load_config_list):
+        """return an ordereded list of unique locations based on the load configuration list
+    ex: load_config_list = [[{"pos":1.0,...},{"pos":3.0,...}],
+                            [{"pos":2.0,...},{"pos":3.0,...}],
+                            [{"pos":1.5,...},{"pos":2.5,...}]]
+            return = [1.0, 1.5, 2.0, 2.5, 3.0]
     """
-    get load list
-     activity_list: list of IfcStructuralCurveAction or IfcStructuralCurveReaction 
-                    applied in the structural curve member
-    global_to_local: transformation matrix from global coordinates to local coordinetes
-     return: dict{
-                  "constant force": (fx,fy,fz,mx,my,mz),	-> sum of linear loads applied with 
-                                                            constant distribution
-                   "quadratic force": (fx,fy,fz,mx,my,mz),	-> sum of linear loads applied with
-                                                            quadratic distribution
-                   "sinus force": (fx,fy,fz,mx,my,mz),		-> sum of linear loads applied with 
-                                                            sinus distribution
-                   "load configuration": list				-> list of load configurations for linear
-                                                            and polyline distributions of linear loads
-                   }
-       description of "load configuration":
-    list[							-> one item (list)for each IfcStructuralCurveAction applied in the member
-                                        with IfcStructuralLoadConfiguration as the applied load
-         list[						-> one item (dict) for each item found in the 
-                                        Locations attribute of IfcLoadConfiguration
-               dict{
-                  "pos": float,		-> local position along curve length
-                  "descr": string,	-> describe if the item is at the start, middle or end of the list
-                  "forces": Vector,	-> linear force applied at that point
-                  "moments": Vector	-> linear moment applied at that point
-                  }
-              ]
-         ]
-          """
-    constant_force = Vector((0,0,0))
-    constant_moment = Vector((0,0,0))
-    quadratic_force = Vector((0,0,0))
-    quadratic_moment = Vector((0,0,0))
-    sinus_force = Vector((0,0,0))
-    sinus_moment = Vector((0,0,0))
-    load_configurations = []
+        unique = []
+        for config in load_config_list:
+            for info in config:
+                if info["pos"] in unique:
+                    continue
+                unique.append(info["pos"])
+        unique.sort()
+        return unique
 
-    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get(),"LENGTHUNIT")
+    def interp1d(self,l1,l2, pos):
+        """ 1d linear interpolation for the vector components"""
+        fac = (l2[1]-l1[1])/(l2[0]-l1[0])
+        v = l1[1] + fac*(pos-l1[0])
+        return v
 
-    def get_force_vector(load,transform_matrix):
-        x = 0 if getattr(load, 'LinearForceX', 0) is None else getattr(load, 'LinearForceX', 0)
-        y = 0 if getattr(load, 'LinearForceY', 0) is None else getattr(load, 'LinearForceY', 0)
-        z = 0 if getattr(load, 'LinearForceZ', 0) is None else getattr(load, 'LinearForceZ', 0)
-        return transform_matrix @ Vector((x,y,z))
+    def interpolate(self,pos,loadinfo,start,end,key):
+        """ interpolate the result vectors between load poits"""
+        result = Vector((0,0,0))
+        for i in range(3):
+            value1 = [loadinfo[start]["pos"], loadinfo[start][key][i]] #[position, force_component]
+            value2= [loadinfo[end]["pos"], loadinfo[end][key][i]] #      [position, force_component]
+            result[i] = self.interp1d(value1,value2, pos) #             interpolated [position, force_component]
+        return result
 
-    def get_moment_vector(load,transform_matrix):
-        x = 0 if getattr(load, 'LinearMomentX', 0) is None else getattr(load, 'LinearMomentX', 0)
-        y = 0 if getattr(load, 'LinearMomentY', 0) is None else getattr(load, 'LinearMomentY', 0)
-        z = 0 if getattr(load, 'LinearMomentZ', 0) is None else getattr(load, 'LinearMomentZ', 0)
-        return transform_matrix @ Vector((x,y,z))
+    def get_before_and_after(self,pos,load_config_list):
+        """ get total values for forces and moments with polilyne distribution
+            before and after the position
+    ex: load_config_list = [[{"pos":1.0,...,"forces":(1,0,0),...},{"pos":3.0,...,"forces":(3,0,0),...}],
+                            [{"pos":2.0,...,"forces":(1,0,0),...},{"pos":3.0,...,"forces":(1,0,0),...}],
+                            [{"pos":1.5,...,"forces":(1,0,0),...},{"pos":2.5,...,"forces":(1,0,0),...}]]
+            pos = 2.0
+            return = {
+                        "before": (3,0,0,0,0,0),  ->(fx, fy, fz, mx, my, mz)
+                        " after": (4,0,0,0,0,0)   ->(fx, fy, fz, mx, my, mz)
+                    }
+    """
+        force_before = Vector((0,0,0))
+        force_after = Vector((0,0,0))
+        moment_before = Vector((0,0,0))
+        moment_after = Vector((0,0,0))
 
-    for activity in activity_list:
-        load = activity.AppliedLoad
-        global_or_local = activity.GlobalOrLocal
-        reference_frame = 'GLOBAL_COORDS' #make it a scene property so it can be changed in a panel
-        transform_matrix = Matrix()
-        if reference_frame == 'LOCAL_COORDS' and global_or_local != reference_frame:
-            transform_matrix = global_to_local
-        elif reference_frame == 'GLOBAL_COORDS' and global_or_local != reference_frame:
-            transform_matrix = global_to_local.invert()
-        #values for linear loads
-        if load.is_a('IfcStructuralLoadConfiguration'):
-            locations = getattr(load, 'Locations', [])
-            values = [l for l in getattr(load, 'Values', None)
-                    if l.is_a() == "IfcStructuralLoadLinearForce"
-                    ]
-            config_list = []
-            for i,l in enumerate(values):
-                forcevalues = get_force_vector(l,transform_matrix)
-                momentvalues = get_moment_vector(l,transform_matrix)
-                if i == 0:
-                    descr = 'start'
-                elif i == len(values)-1:
-                    descr = 'end'
-                else:
-                    descr = 'middle'
-                config_list.append(
-                    {"pos": locations[i][0]*unit_scale,
-                     "descr": descr,
-                     "forces":forcevalues,
-                     "moments":momentvalues}
-                )
-            load_configurations.append(config_list)
-        else:
-            forcevalues = get_force_vector(load,transform_matrix)
-            momentvalues = get_moment_vector(load,transform_matrix)
-            if 'CONST' == getattr(activity, 'PredefinedType', None) or activity.is_a('IfcStructuralLinearAction'):
-                constant_force += forcevalues
-                constant_moment += momentvalues
-            elif 'PARABOLA' == getattr(activity, 'PredefinedType', None):
-                quadratic_force += forcevalues
-                quadratic_moment += momentvalues
-            elif 'SINUS' == getattr(activity, 'PredefinedType', None):
-                sinus_force += forcevalues
-                sinus_moment += momentvalues
-    return_value = {
-                  "constant force": [constant_force.x,constant_force.y,constant_force.z,
-                                    constant_moment.x,constant_moment.y,constant_moment.z],
-                   "quadratic force": [quadratic_force.x,quadratic_force.y,quadratic_force.z,
-                                       quadratic_moment.x,quadratic_moment.y,quadratic_moment.z],
-                   "sinus force": [sinus_force.x,sinus_force.y,sinus_force.z,
-                                   sinus_moment.x,sinus_moment.y,sinus_moment.z],
-                   "load configuration": load_configurations
-                   }
-    return return_value
+        for config in load_config_list:
+            if pos < config[0]["pos"] or pos > config[-1]["pos"]:
+                continue
+            start = 0
+            end = len(config)-1
+            while end-start > 0:
+                if pos < config[start]["pos"] or pos > config[end]["pos"]:
+                    break
+                if config[start]["pos"] == pos:
+                    if config[start]["descr"] in ['start','middle']:
+                        force_after += config[start]["forces"]
+                        moment_after += config[start]["moments"]
+                    elif config[start]["descr"] in ['end','middle']:
+                        force_before += config[start]["forces"]
+                        moment_before += config[start]["moments"]
+
+                elif config[end]["pos"] == pos:
+                    if config[end]["descr"] in ['start','middle']:
+                        force_after += config[end]["forces"]
+                        moment_after += config[end]["moments"]
+                    elif config[end]["descr"] in ['end','middle']:
+                        force_before += config[end]["forces"]
+                        moment_before += config[end]["moments"]
+
+                elif end-start == 1:
+                    force_before += self.interpolate(pos,config,start,end,"forces")
+                    force_after += self.interpolate(pos,config,start,end,"forces")
+                    moment_before += self.interpolate(pos,config,start,end,"moments")
+                    moment_after += self.interpolate(pos,config,start,end,"moments")
+                start += 1
+                end -=1
+        return_value = {
+            "before": [force_before.x,force_before.y,force_before.z,
+                    moment_before.x,moment_before.y,moment_before.z],
+            "after": [force_after.x, force_after.y, force_after.z,
+                    moment_after.x, moment_after.y, moment_after.z]
+                    }
+        return return_value
+
+    def get_loads_dict(self,activity_list,element_rotation_matrix):
+        """
+        get load list
+        activity_list: list of IfcStructuralCurveAction or IfcStructuralCurveReaction 
+                        applied in the structural curve member
+        global_to_local: transformation matrix from global coordinates to local coordinetes
+        return: dict{
+                    "constant force": (fx,fy,fz,mx,my,mz),	-> sum of linear loads applied with 
+                                                                constant distribution
+                    "quadratic force": (fx,fy,fz,mx,my,mz),	-> sum of linear loads applied with
+                                                                quadratic distribution
+                    "sinus force": (fx,fy,fz,mx,my,mz),		-> sum of linear loads applied with 
+                                                                sinus distribution
+                    "lienar load configuration": list				-> list of load configurations for linear
+                                                                and polyline distributions of linear loads
+                    }
+        description of "linear load configuration":
+        list[							-> one item (list)for each IfcStructuralCurveAction applied in the member
+                                            with IfcStructuralLoadConfiguration as the applied load
+            list[						-> one item (dict) for each item found in the 
+                                            Locations attribute of IfcLoadConfiguration
+                dict{
+                    "pos": float,		-> local position along curve length
+                    "descr": string,	-> describe if the item is at the start, middle or end of the list
+                    "forces": Vector,	-> linear force applied at that point
+                    "moments": Vector	-> linear moment applied at that point
+                    }
+                ]
+            ]
+            """
+        constant_force = Vector((0,0,0))
+        constant_moment = Vector((0,0,0))
+        quadratic_force = Vector((0,0,0))
+        quadratic_moment = Vector((0,0,0))
+        sinus_force = Vector((0,0,0))
+        sinus_moment = Vector((0,0,0))
+        linear_load_configurations = []
+        point_load_configurations = []
+
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get(),"LENGTHUNIT")
+
+        def get_force_vector(load,transform_matrix,factor = 1.0):
+            x = 0 if getattr(load, 'LinearForceX', 0) is None else getattr(load, 'LinearForceX', 0)
+            y = 0 if getattr(load, 'LinearForceY', 0) is None else getattr(load, 'LinearForceY', 0)
+            z = 0 if getattr(load, 'LinearForceZ', 0) is None else getattr(load, 'LinearForceZ', 0)
+            return transform_matrix @ (Vector((x,y,z))*factor)
+
+        def get_moment_vector(load,transform_matrix,factor = 1.0):
+            x = 0 if getattr(load, 'LinearMomentX', 0) is None else getattr(load, 'LinearMomentX', 0)
+            y = 0 if getattr(load, 'LinearMomentY', 0) is None else getattr(load, 'LinearMomentY', 0)
+            z = 0 if getattr(load, 'LinearMomentZ', 0) is None else getattr(load, 'LinearMomentZ', 0)
+            return transform_matrix @ (Vector((x,y,z))*factor)
+
+        for item in activity_list:
+            activity = item[0]
+            factor = item[1]
+            load = activity.AppliedLoad
+            global_or_local = activity.GlobalOrLocal
+            props = bpy.context.scene.BIMStructuralProperties
+            reference_frame = props.reference_frame #make it a scene property so it can be changed in a panel
+            transform_matrix = Matrix()
+            if reference_frame == 'LOCAL_COORDS' and global_or_local != reference_frame:
+                transform_matrix = element_rotation_matrix
+                transform_matrix.invert()
+            elif reference_frame == 'GLOBAL_COORDS' and global_or_local != reference_frame:
+                transform_matrix = element_rotation_matrix
+            #values for linear loads
+            if load.is_a('IfcStructuralLoadConfiguration'):
+                locations = getattr(load, 'Locations', [])
+                values = [l for l in getattr(load, 'Values', None)
+                        if l.is_a() == "IfcStructuralLoadLinearForce"
+                        ]
+                config_list = []
+                for i,l in enumerate(values):
+                    forcevalues = get_force_vector(l,transform_matrix,factor)
+                    momentvalues = get_moment_vector(l,transform_matrix,factor)
+                    if i == 0:
+                        descr = 'start'
+                    elif i == len(values)-1:
+                        descr = 'end'
+                    else:
+                        descr = 'middle'
+                    config_list.append(
+                        {"pos": locations[i][0]*unit_scale,
+                        "descr": descr,
+                        "forces":forcevalues,
+                        "moments":momentvalues}
+                    )
+                linear_load_configurations.append(config_list)
+                #load configurations with point loads
+                values = [l for l in getattr(load, 'Values', None)
+                        if l.is_a() == "IfcStructuralLoadSingleForce"
+                        ]
+                attr_list = ['ForceX','ForceY','ForceZ','MomentX','MomentY','MomentZ']
+                config_list = []
+                for i,load in enumerate(values):
+                    result_list = [0,0,0,0,0,0]
+                    for j, attr in enumerate(attr_list):
+                        value = 0 if getattr(load, attr, 0) is None else getattr(load, attr, 0)
+                        result_list[j] += value*factor
+                    config_list.append(
+                        {"pos": locations[i][0]*unit_scale,
+                         "values": result_list}
+                    )
+                point_load_configurations.append(config_list)
+
+            else:
+                forcevalues = get_force_vector(load,transform_matrix,factor)
+                momentvalues = get_moment_vector(load,transform_matrix,factor)
+                if 'CONST' == getattr(activity, 'PredefinedType', None) or activity.is_a('IfcStructuralLinearAction'):
+                    constant_force += forcevalues
+                    constant_moment += momentvalues
+                elif 'PARABOLA' == getattr(activity, 'PredefinedType', None):
+                    quadratic_force += forcevalues
+                    quadratic_moment += momentvalues
+                elif 'SINUS' == getattr(activity, 'PredefinedType', None):
+                    sinus_force += forcevalues
+                    sinus_moment += momentvalues
+        return_value = {
+                    "constant force": [constant_force.x,constant_force.y,constant_force.z,
+                                        constant_moment.x,constant_moment.y,constant_moment.z],
+                    "quadratic force": [quadratic_force.x,quadratic_force.y,quadratic_force.z,
+                                        quadratic_moment.x,quadratic_moment.y,quadratic_moment.z],
+                    "sinus force": [sinus_force.x,sinus_force.y,sinus_force.z,
+                                    sinus_moment.x,sinus_moment.y,sinus_moment.z],
+                    "linear load configuration": linear_load_configurations,
+                    "point load configuration": point_load_configurations
+                    }
+        return return_value

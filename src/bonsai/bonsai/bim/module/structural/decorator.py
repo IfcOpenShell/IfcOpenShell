@@ -108,6 +108,8 @@ class LoadsDecorator:
 
     def location_3d_to_region_2d(self, coord, normal, context):
         """Convert from 3D space to 2D screen space"""
+        coord = Vector(coord)
+        normal = Vector(normal)
         rv3d = context.region_data
         perspective = rv3d.view_perspective
         view_matrix = rv3d.view_matrix
