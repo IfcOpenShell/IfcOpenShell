@@ -260,10 +260,10 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
                     # The extrusion direction calculated previously default to the positive direction
                     # Here we set the extrusion direction to negative it that's the case
                     x, y, z = extrusion.ExtrudedDirection.DirectionRatios
-                    existing_x_angle = Vector((0, 1)).angle_signed(Vector((y, z)))
+                    extrusion_x_angle = Vector((0, 1)).angle_signed(Vector((y, z)))
                     layer_params = tool.Model.get_material_layer_parameters(element)
                     if layer_params["direction_sense"] == "NEGATIVE":
-                        y = -abs(y) if existing_x_angle > 0 else abs(y)
+                        y = -abs(y) if extrusion_x_angle > 0 else abs(y)
                         z = -abs(z)
                     extrusion.ExtrudedDirection.DirectionRatios = (x, y, z)
 
@@ -284,7 +284,11 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
                 )
 
                 # Object rotation
-                obj.rotation_euler.x = x_angle
+                local_rot_mat = obj.rotation_euler.to_matrix()
+                rot_mat = mathutils.Matrix.Rotation(x_angle - existing_x_angle, 4, 'X')
+                new_rot_mat = local_rot_mat.to_4x4() @ rot_mat
+                new_rot_euler = new_rot_mat.to_euler()
+                obj.rotation_euler = new_rot_euler
 
         if layer2_objs:
             DumbWallRecalculator().recalculate(layer2_objs)
