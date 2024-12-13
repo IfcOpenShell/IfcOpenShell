@@ -7,35 +7,33 @@ import blf
 from bpy_extras import view3d_utils
 from bpy.types import SpaceView3D
 from gpu_extras.batch import batch_for_shader
+from typing import Iterable, Union
 from bonsai.bim.module.structural.shader import ShaderInfo
 
 class LoadsDecorator:
+    """Decorator to show strucutural loads in 3D"""
     is_installed = False
     handlers = []
-    linear_load_shader = None
+    decoration_data = None
     text_info = []
     shader_info = []
     depth_array = None
 
     @classmethod
-    def install(cls, context):
+    def install(cls, context: bpy.types.Context)-> None:
         if cls.is_installed:
             cls.uninstall()
         handler = cls()
         cls.handlers.append(
             SpaceView3D.draw_handler_add(handler.draw_load_values, ((context,)), "WINDOW", "POST_PIXEL")
             )
-        #self.handlers.append(SpaceView3D.draw_handler_add(handler.draw_extra_info, (context,), "WINDOW", "POST_PIXEL"))
-        #self.handlers.append(
-        #	SpaceView3D.draw_handler_add(handler.draw_curve_loads, (context,), "WINDOW", "POST_VIEW")
-        #)
         cls.handlers.append(SpaceView3D.draw_handler_add(handler, (), "WINDOW", "POST_VIEW"))
-        cls.linear_load_shader = ShaderInfo()
+        cls.decoration_data = ShaderInfo()
         cls.update(context)
         cls.is_installed = True
 
     @classmethod
-    def uninstall(cls):
+    def uninstall(cls)-> None:
         for handler in cls.handlers:
             try:
                 SpaceView3D.draw_handler_remove(handler, "WINDOW")
@@ -44,31 +42,28 @@ class LoadsDecorator:
         cls.is_installed = False
 
     @classmethod
-    def update(cls, context):
-        cls.linear_load_shader.update()
-        cls.text_info = cls.linear_load_shader.text_info
-        cls.shader_info = cls.linear_load_shader.info
+    def update(cls, context:bpy.types.Context) -> None:
+        cls.decoration_data.update()
+        cls.text_info = cls.decoration_data.text_info
+        cls.shader_info = cls.decoration_data.info
 
-    def __call__(self):
+    def __call__(self) -> None:
+        """set gpu configurations to draw 3D representations"""
         # set open gl configurations
         original_blend = gpu.state.blend_get()
-        gpu.state.blend_set('ALPHA')
-        original_depth_mask = gpu.state.depth_mask_get()
-        #gpu.state.depth_mask_set(True)
         original_depth_test = gpu.state.depth_test_get()
+        gpu.state.blend_set('ALPHA')
         gpu.state.depth_test_set('LESS_EQUAL')
 
-        self.draw_batch("DistributedLoad")
+        self.draw_batch()
 
         # restore opengl configurations
         gpu.state.blend_set(original_blend)
-        gpu.state.depth_mask_set(original_depth_mask)
         gpu.state.depth_test_set(original_depth_test)
 
-    def draw_batch(self,shader_type: str):
-        """ param: shader_type: type of shader in ["DistributedLoad", "PointLoad"]"""
-
-        if not self.linear_load_shader.is_empty:
+    def draw_batch(self) -> None:
+        """draw the 3D representation of loads"""
+        if not self.decoration_data.is_empty:
             for info in self.shader_info: 
                 shader = info["shader"]
                 args = info["args"]
@@ -83,7 +78,10 @@ class LoadsDecorator:
 
                 batch.draw(shader)
 
-    def draw_load_values(self, context):
+    def draw_load_values(self, context: bpy.types.Context) -> None:
+        """draw text representing the load values"""
+        #getting depth buffer info, code adapted from:
+        #https://blender.stackexchange.com/questions/177185/is-there-a-way-to-render-depth-buffer-into-a-texture-with-gpu-bgl-python-modules
         framebuffer = gpu.state.active_framebuffer_get()
         viewport_info = gpu.state.viewport_get()
         width = viewport_info[2]
@@ -99,15 +97,17 @@ class LoadsDecorator:
         for info in self.text_info:
             text_position = self.location_3d_to_region_2d(info["position"],info["normal"],context)
             if text_position is not None:
-                font_id = 0  # , need to find out how best to get this.
-                # draw some text
+                font_id = 0
                 blf.position(font_id, text_position[0], text_position[1], text_position[2])
                 blf.size(font_id, 20.0)
                 blf.color(font_id, 0.9, 0.9, 0.9, 1.0)
                 blf.draw(font_id, info["text"])
 
-    def location_3d_to_region_2d(self, coord, normal, context):
-        """Convert from 3D space to 2D screen space"""
+    def location_3d_to_region_2d(self, coord: Iterable, normal: Iterable, context: bpy.types.Context) -> Union[Vector,None]:
+        """Convert from 3D space to 2D screen space.
+        Filter out the text supposed to be hidden by 3D elements, using the depth array.
+        It also hides text that are distant from the camera view to avoid clutter"""
+
         coord = Vector(coord)
         normal = Vector(normal)
         rv3d = context.region_data
@@ -120,18 +120,13 @@ class LoadsDecorator:
             prj = rv3d.perspective_matrix @ Vector((coord[0], coord[1], coord[2], 1.0))
             width_half = context.region.width / 2.0
             height_half = context.region.height / 2.0
-            co = Vector((width_half + width_half * (prj.x / prj.w),
+            coord_2d = Vector((width_half + width_half * (prj.x / prj.w),
                         height_half + height_half * (prj.y / prj.w),
                         point_view_space.z))
-            if co[0]> context.region.width or co[1] > context.region.height or co[0] < 0 or co[1] < 0:
+            if coord_2d[0] < 0 or coord_2d[0]> context.region.width or coord_2d[1] > context.region.height or coord_2d[1] < 0:
                 return None
-            depth = self.depth_array[int(co[1])][int(co[0])]
+            depth = self.depth_array[int(coord_2d[1])][int(coord_2d[0])]
             if -0.98*point_view_space.z > depth:
                 return None
-            view_vector = view3d_utils.region_2d_to_vector_3d(context.region, rv3d, co)
-            angle = abs(0.5*pi-normal.angle(view_vector))
-            #if small view angle betwen the load and viewport
-            if angle<0.05:
-                return None
-            return co
+            return coord_2d
         return None
