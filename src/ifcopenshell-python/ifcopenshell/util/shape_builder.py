@@ -37,6 +37,10 @@ PRECISION = 1.0e-5
 VectorTuple = type[tuple[float, float, float]]
 "tuple of 3 `float` values"
 
+# Support both numpy arrays and python sequences as inputs.
+VectorType = Union[Sequence[float], Vector, np.ndarray]
+SequenceOfVectors = Union[Sequence[VectorType], np.ndarray]
+
 
 def is_x(value, x, si_conversion=None):
     if si_conversion:
@@ -60,27 +64,22 @@ class ShapeBuilder:
 
     def polyline(
         self,
-        points: list[Vector],
+        points: SequenceOfVectors,
         closed: bool = False,
-        position_offset: Optional[Vector] = None,
-        arc_points: list[int] = [],
+        position_offset: Optional[VectorType] = None,
+        arc_points: Sequence[int] = (),
     ) -> ifcopenshell.entity_instance:
         """
         Generate an IfcIndexedPolyCurve based on the provided points.
 
         :param points: List of 2d or 3d points
-        :type points: list[Vector]
         :param closed: Whether polyline should be closed. Default is `False`
-        :type closed: bool, optional
         :param position_offset: offset to be applied to all points
-        :type position_offset: Vector, optional
         :param arc_points: Indices of the middle points for arcs. For creating an arc segment,
             provide 3 points: `arc_start`, `arc_middle` and `arc_end` to `points` and add the `arc_middle`
             point's index to `arc_points`
-        :type arc_points: list[int], optional
 
         :return: IfcIndexedPolyCurve
-        :rtype: ifcopenshell.entity_instance
 
         Example:
 
@@ -102,21 +101,25 @@ class ShapeBuilder:
         if arc_points and self.file.schema == "IFC2X3":
             raise Exception("Arcs are not supported for IFC2X3.")
 
-        if position_offset:
-            points = [Vector(p) + position_offset for p in points]
+        points: np.ndarray
+        points = np.array(points)
+        if position_offset is not None:
+            points = points + position_offset
 
         if self.file.schema == "IFC2X3":
-            points = [self.file.createIfcCartesianPoint(p) for p in points]
+            ifc_points = [self.file.create_entity("IfcCartesianPoint", p) for p in points.tolist()]
             if closed:
-                points.append(points[0])
+                ifc_points.append(ifc_points[0])
             ifc_curve = self.file.createIfcPolyline(Points=points)
             return ifc_curve
 
         dimensions = len(points[0])
         if dimensions == 2:
-            ifc_points = self.file.createIfcCartesianPointList2D(points)
+            ifc_points = self.file.create_entity("IfcCartesianPointList2D", points.tolist())
         elif dimensions == 3:
-            ifc_points = self.file.createIfcCartesianPointList3D(points)
+            ifc_points = self.file.create_entity("IfcCartesianPointList3D", points.tolist())
+        else:
+            raise Exception(f"Point has unexpected number of dimensions - {dimensions}.")
 
         if not closed and not arc_points:
             ifc_curve = self.file.createIfcIndexedPolyCurve(Points=ifc_points)
@@ -164,9 +167,7 @@ class ShapeBuilder:
         ifc_curve = self.file.createIfcIndexedPolyCurve(Points=ifc_points, Segments=ifc_segments)
         return ifc_curve
 
-    def get_rectangle_coords(
-        self, size: Vector = Vector((1.0, 1.0)).freeze(), position: Optional[Vector] = None
-    ) -> list[Vector]:
+    def get_rectangle_coords(self, size: VectorType = (1.0, 1.0), position: Optional[VectorType] = None) -> np.ndarray:
         """
         Get rectangle coords arranged as below:
 
@@ -176,45 +177,37 @@ class ShapeBuilder:
             0 1
 
         :param size: rectangle size, could be either 2d or 3d, defaults to `(1,1)`
-        :type size: Vector, optional
         :param position: rectangle position, default to `None`.
             if `position` not specified zero-vector will be used
-        :type position: Vector, optional
 
         :return: list of rectangle coords
-        :rtype: List[Vector]
         """
-        dimensions = len(size)
+        size_np = np.array(size)
 
-        if not position:
-            position = Vector([0] * dimensions)
+        if position is None:
+            dimensions = len(size_np)
+            points = np.full((4, dimensions), 0.0)
+        else:
+            points = np.tile(position, (4, 1))
 
-        # adds support both 2d and 3d sizes
-        non_empty_coords = [i for i, v in enumerate(size) if v]
-        id_matrix = Matrix.Identity(dimensions)
-
-        points = [
-            position,
-            position + size * id_matrix[non_empty_coords[0]],
-            position + size,
-            position + size * id_matrix[non_empty_coords[1]],
-        ]
+        # Support both 2d and 3d sizes defined in different dimensions.
+        non_empty_coords = np.nonzero(size_np)[0]
+        points[1, non_empty_coords[0]] += size_np[non_empty_coords[0]]
+        points[2] += size_np
+        points[3, non_empty_coords[1]] += size_np[non_empty_coords[1]]
         return points
 
     def rectangle(
-        self, size: Vector = Vector((1.0, 1.0)).freeze(), position: Vector = None
+        self, size: VectorType = (1.0, 1.0), position: Optional[VectorType] = None
     ) -> ifcopenshell.entity_instance:
         """
         Generate a rectangle polyline.
 
         :param size: rectangle size, could be either 2d or 3d, defaults to `(1,1)`
-        :type size: Vector, optional
         :param position: rectangle position, default to `None`.
             if `position` not specified zero-vector will be used
-        :type position: Vector, optional
 
         :return: IfcIndexedPolyCurve
-        :rtype: ifcopenshell.entity_instance
         """
         return self.polyline(self.get_rectangle_coords(size, position), closed=True)
 
@@ -888,43 +881,44 @@ class ShapeBuilder:
 
     def get_simple_2dcurve_data(
         self,
-        coords: list[Vector],
+        coords: SequenceOfVectors,
         fillets: Sequence[int] = (),
-        fillet_radius: Sequence[float] = (),
+        fillet_radius: Union[float, Sequence[float]] = (),
         closed: bool = True,
         create_ifc_curve: bool = False,
-    ) -> tuple[list[Vector], list[tuple[int, int], Union[ifcopenshell.entity_instance, None]]]:
+    ) -> tuple[list[VectorType], list[list[int]], Union[ifcopenshell.entity_instance, None]]:
         """
         Creates simple 2D curve from set of 2d coords and list of points with fillets.
         Simple curve means that all fillets are based on 90 degree angle.
 
-        > coords:        list of 2d coords. Example: ((x0,y0), (x1,y1), (x2, y2))
-        > fillets:       list of points from `coords` to base fillet on. Example: (1,)
-        > fillet_radius: list of fillet radius for each of corresponding point form `fillets`. Example: (5.,)
-        Note: filler_radius could be just 1 float value if it's the same for all fillets.
+        :param coords:           list of 2d coords. Example: ((x0,y0), (x1,y1), (x2, y2))
+        :param fillets:          list of points from `coords` to base fillet on. Example: (1,)
+        :param fillet_radius:    list of fillet radius for each of corresponding point form `fillets`.
+            Example: (5.,) Note: `fillet_radius` could be just 1 float value if it's the same for all fillets.
+        :param closed:           boolean whether curve should be closed (whether last point connected to first one). Default: True
+        :param create_ifc_curve: create IfcIndexedPolyCurve or just return the data. Default: False
 
-        Optional arguments:
-        > closed:           boolean whether curve should be closed (whether last point connected to first one). Default: True
-        > create_ifc_curve: create IfcIndexedPolyCurve or just return the data. Default: False
+        :return: (points, segments, ifc_curve) for the created simple curve
+            if both points in e are equally far from pt, then v1 is returned.
+        """
 
-        < returns (points, segments, ifc_curve) for the created simple curve
-        if both points in e are equally far from pt, then v1 is returned."""
-
-        def remove_redundant_points(points, segments):
+        def remove_redundant_points(
+            points: list[VectorType], segments: list[list[int]]
+        ) -> tuple[list[VectorType], list[list[int]]]:
             # prevent mutating
             points = [tuple(p) for p in points]
             segments = segments.copy()
 
             # find duplicate points, reindex them in segments
             # and mark them to delete later
-            points_to_remove = []
+            points_to_remove: list[int] = []
             prev_point = 0
             for i, p in enumerate(points[1:], 1):
                 if p != points[prev_point]:
                     prev_point = i
                     continue
 
-                valid_segments = []
+                valid_segments: list[list[int]] = []
                 for s in segments:
                     s = [ps if ps != i else prev_point for ps in s]
                     valid_segments.append(s)
@@ -942,12 +936,13 @@ class ShapeBuilder:
             return points, valid_segments
 
         # option to use same fillet radius for all fillets
-        if isinstance(fillet_radius, float):
+        if isinstance(fillet_radius, (float, int)):
             fillet_radius = [fillet_radius] * len(fillets)
 
-        fillets = dict(zip(fillets, fillet_radius))
-        segments = []
-        points = []
+        fillets: dict[int, float] = dict(zip(fillets, fillet_radius))
+        segments: list[list[int]] = []
+        points: list[VectorType] = []
+
         for co_i, co in enumerate(coords, 0):
             current_point = len(points)
             if co_i in fillets:
@@ -991,7 +986,7 @@ class ShapeBuilder:
         points, segments = remove_redundant_points(points, segments)
         ifc_curve = None
         if create_ifc_curve:
-            ifc_points = self.file.createIfcCartesianPointList2D(points)
+            ifc_points = self.file.createIfcCartesianPointList2D(ifc_safe_vector_type(points))
             ifc_segments = []
             for segment in segments:
                 segment = [i + 1 for i in segment]
@@ -1046,6 +1041,7 @@ class ShapeBuilder:
             fillet_radius=(r+t, r+t, r, r, r+t, r+t, r, r),
             closed=True, create_ifc_curve=True)
         # fmt: on
+        assert ifc_curve
 
         return ifc_curve
 
