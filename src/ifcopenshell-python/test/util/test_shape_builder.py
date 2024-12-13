@@ -25,6 +25,23 @@ from math import degrees, radians, tan
 from mathutils import Vector
 
 
+class TestRectangle(test.bootstrap.IFC4):
+    def test_get_rectangle_coords(self):
+        builder = ShapeBuilder(self.file)
+
+        # 2D.
+        coords = builder.get_rectangle_coords((1, 2), (3, 4))
+        assert np.allclose(coords, [[3.0, 4.0], [4.0, 4.0], [4.0, 6.0], [3.0, 6.0]])
+
+        # 3D, XY plane.
+        coords = builder.get_rectangle_coords((1, 2, 0), (3, 4, 0))
+        assert np.allclose(coords, [[3.0, 4.0, 0.0], [4.0, 4.0, 0.0], [4.0, 6.0, 0.0], [3.0, 6.0, 0.0]])
+
+        # 3D, XZ plane.
+        coords = builder.get_rectangle_coords((1, 0, 2), (3, 0, 4))
+        assert np.allclose(coords, [[3.0, 0.0, 4.0], [4.0, 0.0, 4.0], [4.0, 0.0, 6.0], [3.0, 0.0, 6.0]])
+
+
 class TestCreatePolyline(test.bootstrap.IFC4):
     def test_simple_polyline(self):
         builder = ShapeBuilder(self.file)
