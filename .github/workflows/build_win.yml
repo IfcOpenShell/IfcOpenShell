@@ -1,0 +1,125 @@
+name: Build IfcOpenShell Windows
+
+on:
+  push:
+    branches:
+      - v0.8.0
+  workflow_dispatch:
+
+jobs:
+  build_ifcopenshell:
+    runs-on: windows-2019
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.9.11', '3.10.3', '3.11.8', '3.12.1', '3.13.0']
+        arch: ['x64']
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Checkout Build Repository
+        uses: actions/checkout@v3
+        with:
+          repository: IfcOpenShell/build-outputs
+          path: _deps-vs2019-x64-installed
+          ref: windows-${{ matrix.arch }}
+          lfs: true
+          token: ${{ secrets.BUILD_REPO_TOKEN }}
+
+      - name: Install Dependencies
+        run: |
+          choco install -y sed 7zip.install awscli
+
+      - name: Install Python
+        run: |
+          $installer = "python-${{ matrix.python }}-amd64.exe"
+          $url = "https://www.python.org/ftp/python/${{ matrix.python }}/$installer"
+          Invoke-WebRequest -Uri $url -OutFile $installer
+          Start-Process -Wait -FilePath .\$installer -ArgumentList '/quiet InstallAllUsers=0 PrependPath=0 Include_test=0 TargetDir=C:\Python\${{ matrix.python }}'
+          Remove-Item .\$installer
+
+      - name: Unpack Dependencies
+        run: |
+          cd _deps-vs2019-x64-installed
+          Get-ChildItem -Path . -Filter 'cache-*.zip' | ForEach-Object {
+            7z x $_.FullName
+          }
+
+      - name: Run Build Script
+        shell: cmd
+        run: |
+          setlocal EnableDelayedExpansion
+          SET PYTHON_VERSION=${{ matrix.python }}
+          for /f "tokens=1,2,3 delims=." %%a in ("%PYTHON_VERSION%") do ( 
+              set PY_VER_MAJOR_MINOR=%%a%%b
+          )
+          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          SET IFCOS_INSTALL_PYTHON=FALSE
+          cd win
+          echo y | call build-deps.cmd vs2019-x64 Release
+          SET PYTHONHOME=C:\Python\${{ matrix.python }}
+          call run-cmake.bat vs2019-x64 -DENABLE_BUILD_OPTIMIZATIONS=On -DGLTF_SUPPORT=ON -DADD_COMMIT_SHA=ON -DVERSION_OVERRIDE=ON
+          call install-ifcopenshell.bat vs2019-x64 Release
+
+      - name: Pack Dependencies
+        run: |
+          cd _deps-vs2019-x64-installed
+          Get-ChildItem -Path . -Directory | ForEach-Object {
+            $cacheFile = "cache-$($_.Name).zip"
+            echo $cacheFile
+            if (!(Test-Path $cacheFile)) {
+              7z a $cacheFile $_.FullName
+            }
+          }
+
+      - name: Commit and Push Changes to Build Repository
+        run: |
+          cd _deps-vs2019-x64-installed
+          git config user.name "IfcOpenBot"
+          git config user.email "ifcopenbot@ifcopenshell.org"
+          git add *.zip
+          git commit -m "Update build artifacts [skip ci]" || echo "No changes to commit"
+          git push || echo "Push failed"
+
+      - name: Package .zip Archives
+        run: |
+          $VERSION = 'v' + ((Get-Content VERSION).Trim())
+          $SHA = ${env:GITHUB_SHA}.Substring(0, 7)
+          $OUTPUT_DIR = "$env:USERPROFILE\output"
+          New-Item -ItemType Directory -Force -Path $OUTPUT_DIR
+
+          if ("${{ matrix.python }}" -eq "3.9.11") {
+            # only for the first python version the executables are assembled for upload
+            cd _installed-vs2019-x64/bin
+            Get-ChildItem -Path . | ForEach-Object {
+              echo $_
+              $exe = $_.Name
+              $baseName = $exe.Substring(0, $exe.Length - 4)
+              $zipName = "${baseName}-$VERSION-$SHA-win64.zip"
+              7z a $zipName $exe
+            }
+            mv *.zip $OUTPUT_DIR
+          }
+
+          $pyVersion = "${{ matrix.python }}"
+          $pyVersionMajor = ($pyVersion -split '\.')[0..1] -join ''
+          cd C:\Python\${{ matrix.python }}\Lib\site-packages
+          Remove-Item -Recurse -Force ifcopenshell\__pycache__ -ErrorAction SilentlyContinue
+          Get-ChildItem -Path ifcopenshell -Filter "*.pyc" -Recurse | Remove-Item -Force
+          $zipName = "ifcopenshell-python-$pyVersionMajor-$VERSION-$SHA-win64.zip"
+          7z a $zipName ifcopenshell
+          mv $zipName $OUTPUT_DIR
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_UPLOAD_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_UPLOAD_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Upload .zip Archives to S3
+        run: |
+          aws s3 cp $env:USERPROFILE\output s3://ifcopenshell-builds/ --recursive

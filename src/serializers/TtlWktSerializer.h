@@ -37,11 +37,12 @@ public:
 	bool ready();
 	void writeHeader();
 	void write(const IfcGeom::TriangulationElement* o);
-	void write(const IfcGeom::BRepElement* /*o*/) {}
+	void write(const IfcGeom::BRepElement* /*o*/);
 	void finalize() {}
-	bool isTesselated() const { return true; }
+	bool isTesselated() const;
 	void setUnitNameAndMagnitude(const std::string& /*name*/, float /*magnitude*/) {}
 	void setFile(IfcParse::IfcFile*) {}
+	std::string ttl_object_id(const IfcGeom::Element* o, const char* const postfix = nullptr);
 };
 
 #endif

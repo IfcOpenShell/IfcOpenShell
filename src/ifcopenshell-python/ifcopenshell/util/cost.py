@@ -56,7 +56,9 @@ def get_total_quantity(root_element: ifcopenshell.entity_instance) -> Union[floa
 
 
 def calculate_applied_value(
-    root_element: ifcopenshell.entity_instance, cost_value: ifcopenshell.entity_instance, category_filter=None
+    root_element: ifcopenshell.entity_instance,
+    cost_value: ifcopenshell.entity_instance,
+    category_filter: Optional[str] = None,
 ) -> float:
     if cost_value.ArithmeticOperator and cost_value.Components:
         component_values = []

@@ -1377,7 +1377,7 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
             Logger::Message(Logger::LOG_ERROR, "Parsing terminated");
         }
 
-        if (next_token.type == Token_NONE) {
+        if (!stream->eof && next_token.type == Token_NONE) {
             good_ = file_open_status::INVALID_SYNTAX;
             break;
         }

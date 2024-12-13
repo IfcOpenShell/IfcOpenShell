@@ -89,12 +89,11 @@ class PolylineOperator:
         self.snapping_points = []
         self.instructions = """TAB: Cycle Input
         D: Distance Input
-        A: Angle Input
+        A: Angle Lock
         M: Modify Snap Point
         C: Close Polyline
         BACKSPACE: Remove Point
         X, Y: Choose Axis
-        SHIFT: Lock axis
         """
         self.snap_info = """
         Snap: 
@@ -124,19 +123,22 @@ class PolylineOperator:
 
     def choose_axis(self, event, x=True, y=True, z=False):
         if x:
-            if event.value == "PRESS" and event.type == "X":
+            if not event.shift and event.value == "PRESS" and event.type == "X":
                 self.tool_state.axis_method = "X" if self.tool_state.axis_method != event.type else None
+                self.tool_state.lock_axis = False if self.tool_state.lock_axis else True
                 PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
                 tool.Blender.update_viewport()
 
         if y:
-            if event.value == "PRESS" and event.type == "Y":
+            if not event.shift and event.value == "PRESS" and event.type == "Y":
                 self.tool_state.axis_method = "Y" if self.tool_state.axis_method != event.type else None
+                self.tool_state.lock_axis = False if self.tool_state.lock_axis else True
                 PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
                 tool.Blender.update_viewport()
         if z:
-            if event.value == "PRESS" and event.type == "Z":
+            if not event.shift and event.value == "PRESS" and event.type == "Z":
                 self.tool_state.axis_method = "Z" if self.tool_state.axis_method != event.type else None
+                self.tool_state.lock_axis = False if self.tool_state.lock_axis else True
                 PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
                 tool.Blender.update_viewport()
 
@@ -162,13 +164,32 @@ class PolylineOperator:
                 self.tool_state.axis_method = None
                 tool.Blender.update_viewport()
 
-    def handle_instructions(self, context):
+    def handle_instructions(self, context, custom_instructions=""):
         self.snap_info = f"""|
         Axis: {self.tool_state.axis_method}
         Plane: {self.tool_state.plane_method}
         Snap: {self.snapping_points[0][1]}
         """
-        context.workspace.status_text_set(self.instructions + self.snap_info)
+        context.workspace.status_text_set(self.instructions + custom_instructions + self.snap_info)
+
+    def handle_lock_axis(self, context, event):
+        if event.value == "PRESS" and event.type == "A":
+            self.tool_state.lock_axis = False if self.tool_state.lock_axis else True
+            self.tool_state.snap_angle = self.input_ui.get_number_value("WORLD_ANGLE")
+            # Round to the closest 5
+            self.tool_state.snap_angle = round(self.tool_state.snap_angle / 5) * 5
+
+        if self.tool_state.lock_axis and event.shift and event.type in {"WHEELUPMOUSE", "WHEELDOWNMOUSE"}:
+            if event.type in {"WHEELUPMOUSE"}:
+                self.tool_state.snap_angle += 5
+            else:
+                self.tool_state.snap_angle -= 5
+            self.handle_mouse_move(context, event)
+            detected_snaps = tool.Snap.detect_snapping_points(context, event, self.objs_2d_bbox, self.tool_state)
+            self.snapping_points = tool.Snap.select_snapping_points(context, event, self.tool_state, detected_snaps)
+            tool.Polyline.calculate_distance_and_angle(context, self.input_ui, self.tool_state)
+            PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
+            tool.Blender.update_viewport()
 
     def handle_keyboard_input(self, context, event):
 
@@ -250,13 +271,13 @@ class PolylineOperator:
 
     def handle_inserting_polyline(self, context, event):
         if event.value == "RELEASE" and event.type == "LEFTMOUSE":
-            result = tool.Snap.insert_polyline_point(self.input_ui)
+            result = tool.Polyline.insert_polyline_point(self.input_ui, self.tool_state)
             if result:
                 self.report({"WARNING"}, result)
             tool.Blender.update_viewport()
 
         if event.value == "PRESS" and event.type == "C":
-            tool.Snap.close_polyline()
+            tool.Polyline.close_polyline()
             PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
             tool.Blender.update_viewport()
 
@@ -267,7 +288,7 @@ class PolylineOperator:
         ):
             is_valid = self.recalculate_inputs(context)
             if is_valid:
-                result = tool.Snap.insert_polyline_point(self.input_ui)
+                result = tool.Polyline.insert_polyline_point(self.input_ui, self.tool_state)
                 if result:
                     self.report({"WARNING"}, result)
 
@@ -282,7 +303,9 @@ class PolylineOperator:
 
     def handle_snap_selection(self, context, event):
         if event.value == "PRESS" and event.type == "M":
-            self.snapping_points = tool.Snap.modify_snapping_point_selection(self.snapping_points)
+            self.snapping_points = tool.Snap.modify_snapping_point_selection(
+                self.snapping_points, lock_axis=self.tool_state.lock_axis
+            )
             tool.Polyline.calculate_distance_and_angle(context, self.input_ui, self.tool_state)
             PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
             tool.Blender.update_viewport()
@@ -302,11 +325,11 @@ class PolylineOperator:
                 self.tool_state.axis_method = None
                 context.workspace.status_text_set(text=None)
                 PolylineDecorator.uninstall()
-                tool.Snap.clear_polyline()
+                tool.Polyline.clear_polyline()
                 tool.Blender.update_viewport()
                 return {"CANCELLED"}
 
-    def handle_mouse_move(self, context, event):
+    def handle_mouse_move(self, context, event, should_round=False):
         if not self.tool_state.is_input_on:
             if event.type == "MOUSEMOVE" or event.type == "INBETWEEN_MOUSEMOVE":
                 self.mousemove_count += 1
@@ -328,12 +351,21 @@ class PolylineOperator:
             if self.mousemove_count > 3:
                 detected_snaps = tool.Snap.detect_snapping_points(context, event, self.objs_2d_bbox, self.tool_state)
                 self.snapping_points = tool.Snap.select_snapping_points(context, event, self.tool_state, detected_snaps)
-                tool.Polyline.calculate_distance_and_angle(context, self.input_ui, self.tool_state)
+
+                if self.snapping_points[0][1] not in {"Plane", "Axis"}:
+                    should_round = False
+
+                tool.Polyline.calculate_distance_and_angle(
+                    context, self.input_ui, self.tool_state, should_round=should_round
+                )
+                if should_round:
+                    tool.Polyline.calculate_x_y_and_z(context, self.input_ui, self.tool_state)
+
                 tool.Blender.update_viewport()
                 return {"RUNNING_MODAL"}
 
             if event.value == "RELEASE" and event.type == "BACK_SPACE":
-                tool.Snap.remove_last_polyline_point()
+                tool.Polyline.remove_last_polyline_point()
                 tool.Blender.update_viewport()
 
     def modal(self, context, event):
@@ -350,7 +382,6 @@ class PolylineOperator:
         self.tool_state.axis_method = None
         self.tool_state.plane_method = None
         self.tool_state.mode = "Mouse"
-        tool.Snap.set_tool_state(self.tool_state)
         self.visible_objs = tool.Raycast.get_visible_objects(context)
         for obj in self.visible_objs:
             self.objs_2d_bbox.append(tool.Raycast.get_on_screen_2d_bounding_boxes(context, obj))

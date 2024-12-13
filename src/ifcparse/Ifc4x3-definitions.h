@@ -56,6 +56,7 @@
 #define SCHEMA_HAS_IfcBSplineCurveForm
 #define SCHEMA_HAS_IfcBSplineSurfaceForm
 #define SCHEMA_HAS_IfcBeamTypeEnum
+#define SCHEMA_HAS_IfcBearingTypeDisplacementEnum
 #define SCHEMA_HAS_IfcBearingTypeEnum
 #define SCHEMA_HAS_IfcBenchmarkEnum
 #define SCHEMA_HAS_IfcBendingParameterSelect
@@ -141,6 +142,8 @@
 #define SCHEMA_HAS_IfcDocumentStatusEnum
 #define SCHEMA_HAS_IfcDoorPanelOperationEnum
 #define SCHEMA_HAS_IfcDoorPanelPositionEnum
+#define SCHEMA_HAS_IfcDoorStyleConstructionEnum
+#define SCHEMA_HAS_IfcDoorStyleOperationEnum
 #define SCHEMA_HAS_IfcDoorTypeEnum
 #define SCHEMA_HAS_IfcDoorTypeOperationEnum
 #define SCHEMA_HAS_IfcDoseEquivalentMeasure
@@ -216,7 +219,6 @@
 #define SCHEMA_HAS_IfcIonConcentrationMeasure
 #define SCHEMA_HAS_IfcIsothermalMoistureCapacityMeasure
 #define SCHEMA_HAS_IfcJunctionBoxTypeEnum
-#define SCHEMA_HAS_IfcKerbTypeEnum
 #define SCHEMA_HAS_IfcKinematicViscosityMeasure
 #define SCHEMA_HAS_IfcKnotType
 #define SCHEMA_HAS_IfcLabel
@@ -277,6 +279,7 @@
 #define SCHEMA_HAS_IfcNormalisedRatioMeasure
 #define SCHEMA_HAS_IfcNumericMeasure
 #define SCHEMA_HAS_IfcObjectReferenceSelect
+#define SCHEMA_HAS_IfcObjectTypeEnum
 #define SCHEMA_HAS_IfcObjectiveEnum
 #define SCHEMA_HAS_IfcOccupantTypeEnum
 #define SCHEMA_HAS_IfcOpeningElementTypeEnum
@@ -383,7 +386,6 @@
 #define SCHEMA_HAS_IfcStairFlightTypeEnum
 #define SCHEMA_HAS_IfcStairTypeEnum
 #define SCHEMA_HAS_IfcStateEnum
-#define SCHEMA_HAS_IfcStrippedOptional
 #define SCHEMA_HAS_IfcStructuralActivityAssignmentSelect
 #define SCHEMA_HAS_IfcStructuralCurveActivityTypeEnum
 #define SCHEMA_HAS_IfcStructuralCurveMemberTypeEnum
@@ -454,6 +456,8 @@
 #define SCHEMA_HAS_IfcWasteTerminalTypeEnum
 #define SCHEMA_HAS_IfcWindowPanelOperationEnum
 #define SCHEMA_HAS_IfcWindowPanelPositionEnum
+#define SCHEMA_HAS_IfcWindowStyleConstructionEnum
+#define SCHEMA_HAS_IfcWindowStyleOperationEnum
 #define SCHEMA_HAS_IfcWindowTypeEnum
 #define SCHEMA_HAS_IfcWindowTypePartitioningEnum
 #define SCHEMA_HAS_IfcWorkCalendarTypeEnum
@@ -1785,7 +1789,6 @@
 #define SCHEMA_IfcIndexedPolyCurve_HAS_Segments
 #define SCHEMA_IfcIndexedPolyCurve_Segments_IS_OPTIONAL
 #define SCHEMA_IfcIndexedPolyCurve_HAS_SelfIntersect
-#define SCHEMA_IfcIndexedPolyCurve_SelfIntersect_IS_OPTIONAL
 #define SCHEMA_HAS_IfcIndexedPolygonalFace
 #define SCHEMA_IfcIndexedPolygonalFace_HAS_CoordIndex
 #define SCHEMA_IfcIndexedPolygonalFace_HAS_ToFaceSet
@@ -1830,10 +1833,9 @@
 #define SCHEMA_HAS_IfcJunctionBoxType
 #define SCHEMA_IfcJunctionBoxType_HAS_PredefinedType
 #define SCHEMA_HAS_IfcKerb
-#define SCHEMA_IfcKerb_HAS_PredefinedType
-#define SCHEMA_IfcKerb_PredefinedType_IS_OPTIONAL
+#define SCHEMA_IfcKerb_HAS_Mountable
 #define SCHEMA_HAS_IfcKerbType
-#define SCHEMA_IfcKerbType_HAS_PredefinedType
+#define SCHEMA_IfcKerbType_HAS_Mountable
 #define SCHEMA_HAS_IfcLShapeProfileDef
 #define SCHEMA_IfcLShapeProfileDef_HAS_Depth
 #define SCHEMA_IfcLShapeProfileDef_HAS_Width
@@ -2362,8 +2364,6 @@
 #define SCHEMA_IfcPolygonalBoundedHalfSpace_HAS_Position
 #define SCHEMA_IfcPolygonalBoundedHalfSpace_HAS_PolygonalBoundary
 #define SCHEMA_HAS_IfcPolygonalFaceSet
-#define SCHEMA_IfcPolygonalFaceSet_HAS_Closed
-#define SCHEMA_IfcPolygonalFaceSet_Closed_IS_OPTIONAL
 #define SCHEMA_IfcPolygonalFaceSet_HAS_Faces
 #define SCHEMA_IfcPolygonalFaceSet_HAS_PnIndex
 #define SCHEMA_IfcPolygonalFaceSet_PnIndex_IS_OPTIONAL
@@ -2901,11 +2901,11 @@
 #define SCHEMA_IfcRelInterferesElements_HAS_RelatedElement
 #define SCHEMA_IfcRelInterferesElements_HAS_InterferenceGeometry
 #define SCHEMA_IfcRelInterferesElements_InterferenceGeometry_IS_OPTIONAL
+#define SCHEMA_IfcRelInterferesElements_HAS_InterferenceSpace
+#define SCHEMA_IfcRelInterferesElements_InterferenceSpace_IS_OPTIONAL
 #define SCHEMA_IfcRelInterferesElements_HAS_InterferenceType
 #define SCHEMA_IfcRelInterferesElements_InterferenceType_IS_OPTIONAL
 #define SCHEMA_IfcRelInterferesElements_HAS_ImpliedOrder
-#define SCHEMA_IfcRelInterferesElements_HAS_InterferenceSpace
-#define SCHEMA_IfcRelInterferesElements_InterferenceSpace_IS_OPTIONAL
 #define SCHEMA_HAS_IfcRelNests
 #define SCHEMA_IfcRelNests_HAS_RelatingObject
 #define SCHEMA_IfcRelNests_HAS_RelatedObjects
@@ -3691,6 +3691,8 @@
 #define SCHEMA_IfcTendonType_SheathDiameter_IS_OPTIONAL
 #define SCHEMA_HAS_IfcTessellatedFaceSet
 #define SCHEMA_IfcTessellatedFaceSet_HAS_Coordinates
+#define SCHEMA_IfcTessellatedFaceSet_HAS_Closed
+#define SCHEMA_IfcTessellatedFaceSet_Closed_IS_OPTIONAL
 #define SCHEMA_IfcTessellatedFaceSet_HAS_HasColours
 #define SCHEMA_IfcTessellatedFaceSet_HAS_HasTextures
 #define SCHEMA_HAS_IfcTessellatedItem
@@ -3812,8 +3814,6 @@
 #define SCHEMA_HAS_IfcTriangulatedFaceSet
 #define SCHEMA_IfcTriangulatedFaceSet_HAS_Normals
 #define SCHEMA_IfcTriangulatedFaceSet_Normals_IS_OPTIONAL
-#define SCHEMA_IfcTriangulatedFaceSet_HAS_Closed
-#define SCHEMA_IfcTriangulatedFaceSet_Closed_IS_OPTIONAL
 #define SCHEMA_IfcTriangulatedFaceSet_HAS_CoordIndex
 #define SCHEMA_IfcTriangulatedFaceSet_HAS_PnIndex
 #define SCHEMA_IfcTriangulatedFaceSet_PnIndex_IS_OPTIONAL
@@ -4039,6 +4039,7 @@
 #define SCHEMA_HAS_IfcCorrectDimensions
 #define SCHEMA_HAS_IfcCorrectFillAreaStyle
 #define SCHEMA_HAS_IfcCorrectLocalPlacement
+#define SCHEMA_HAS_IfcCorrectObjectAssignment
 #define SCHEMA_HAS_IfcCorrectUnitAssignment
 #define SCHEMA_HAS_IfcCrossProduct
 #define SCHEMA_HAS_IfcCurveDim
@@ -4048,6 +4049,7 @@
 #define SCHEMA_HAS_IfcDotProduct
 #define SCHEMA_HAS_IfcFirstProjAxis
 #define SCHEMA_HAS_IfcGetBasisSurface
+#define SCHEMA_HAS_IfcGradient
 #define SCHEMA_HAS_IfcListToArray
 #define SCHEMA_HAS_IfcLoopHeadToTail
 #define SCHEMA_HAS_IfcMakeArrayOfArray
@@ -4055,7 +4057,6 @@
 #define SCHEMA_HAS_IfcNormalise
 #define SCHEMA_HAS_IfcOrthogonalComplement
 #define SCHEMA_HAS_IfcPathHeadToTail
-#define SCHEMA_HAS_IfcPointDim
 #define SCHEMA_HAS_IfcPointListDim
 #define SCHEMA_HAS_IfcSameAxis2Placement
 #define SCHEMA_HAS_IfcSameCartesianPoint
@@ -4064,7 +4065,6 @@
 #define SCHEMA_HAS_IfcSameValue
 #define SCHEMA_HAS_IfcScalarTimesVector
 #define SCHEMA_HAS_IfcSecondProjAxis
-#define SCHEMA_HAS_IfcSegmentDim
 #define SCHEMA_HAS_IfcShapeRepresentationTypes
 #define SCHEMA_HAS_IfcSurfaceWeightsPositive
 #define SCHEMA_HAS_IfcTaperedSweptAreaProfiles

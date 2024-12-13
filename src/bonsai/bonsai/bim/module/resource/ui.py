@@ -16,10 +16,12 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import bpy
 import bonsai.bim.helper
 from bpy.types import Panel, UIList
 from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.resource.data import ResourceData
+from typing import Any
 
 
 class BIM_PT_resources(Panel):
@@ -52,6 +54,7 @@ class BIM_PT_resources(Panel):
         else:
             row.operator("bim.load_resources", text="", icon="GREASEPENCIL")
             row.operator("bim.import_resources", text="", icon="IMPORT")
+            row.operator("bim.export_resources", text="", icon="EXPORT")
         if not self.props.is_editing:
             return
 
@@ -119,10 +122,11 @@ class BIM_PT_resources(Panel):
                 col3.ui_units_x = 2
 
                 row1_col1 = col1.row()
-                row1_col1.label(text="Schedule Work")
-                row1col2 = col2.row()
                 schedule_work = resource.get("ScheduleWork", None)
                 derived_schedule_work = resource.get("DerivedScheduleWork", None)
+                derived_str = "" if schedule_work else " (Derived)"
+                row1_col1.label(text=f"Schedule Work {derived_str}")
+                row1col2 = col2.row()
                 row1col2.label(
                     text="{}".format(schedule_work) if schedule_work else "{} h*".format(derived_schedule_work),
                     icon="TIME",
@@ -256,6 +260,9 @@ class BIM_PT_resources(Panel):
             else:
                 op = row.operator("bim.enable_editing_resource_quantity", text="", icon="GREASEPENCIL")
                 op.resource = self.props.active_resource_id
+                if resource["type"] == "IfcConstructionMaterialResource":
+                    op = row.operator("bim.calculate_resource_quantity", text="", icon="FILE_REFRESH")
+                    op.resource = self.props.active_resource_id
                 op = row.operator("bim.remove_resource_quantity", text="", icon="X")
                 op.resource = self.props.active_resource_id
 
@@ -287,7 +294,7 @@ class BIM_PT_resources(Panel):
         if self.props.cost_value_editing_type == "ATTRIBUTES":
             bonsai.bim.helper.draw_attributes(self.props.cost_value_attributes, self.layout.box())
 
-    def draw_readonly_cost_value_ui(self, layout, cost_value):
+    def draw_readonly_cost_value_ui(self, layout: bpy.types.UILayout, cost_value: dict[str, Any]) -> None:
         if self.props.active_cost_value_id == cost_value["id"] and self.props.cost_value_editing_type == "FORMULA":
             layout.prop(self.props, "cost_value_formula", text="")
         else:
@@ -295,7 +302,7 @@ class BIM_PT_resources(Panel):
 
         self.draw_cost_value_operator_ui(layout, cost_value["id"], self.props.active_resource_id)
 
-    def draw_cost_value_operator_ui(self, layout, cost_value_id, parent_id):
+    def draw_cost_value_operator_ui(self, layout: bpy.types.UILayout, cost_value_id: int, parent_id: int) -> None:
         if self.props.active_cost_value_id and self.props.active_cost_value_id == cost_value_id:
             if self.props.cost_value_editing_type == "ATTRIBUTES":
                 op = layout.operator("bim.edit_resource_cost_value", text="", icon="CHECKMARK")

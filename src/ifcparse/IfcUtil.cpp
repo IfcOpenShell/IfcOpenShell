@@ -202,11 +202,20 @@ void IfcUtil::unescape_xml(std::string& str) {
     boost::replace_all(str, "&gt;", ">");
 }
 
-/*
-Argument* IfcUtil::IfcBaseEntity::get(const std::string& name) const {
-    return data().getArgument(declaration().attribute_index(name));
+IfcUtil::IfcBaseEntity::IfcBaseEntity(IfcEntityInstanceData&& data)
+    : IfcBaseClass(std::move(data))
+{}
+
+void IfcUtil::IfcBaseEntity::populate_derived() {
+    for (auto it = declaration().as_entity()->derived().begin(); it != declaration().as_entity()->derived().end(); ++it) {
+        if (*it) {
+            this->data().storage_.set(
+                std::distance(declaration().as_entity()->derived().begin(), it),
+                Derived{}
+            );
+        }
+    }
 }
-*/
 
 AttributeValue IfcUtil::IfcBaseEntity::get(const std::string& name) const
 {

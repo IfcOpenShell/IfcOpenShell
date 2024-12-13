@@ -28,8 +28,8 @@ import bonsai.tool as tool
 import bonsai.core.style
 import bonsai.core.material as core
 import bonsai.bim.module.model.profile as model_profile
-from bonsai.bim.module.material.prop import purge as material_prop_purge
 from bonsai.bim.ifc import IfcStore
+from typing import Any, Union
 
 
 class LoadMaterials(bpy.types.Operator):
@@ -142,7 +142,6 @@ class AddMaterial(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         core.add_material(tool.Ifc, tool.Material, name=self.name, category=self.category, description=self.description)
-        material_prop_purge()
 
 
 class DuplicateMaterial(bpy.types.Operator, tool.Ifc.Operator):
@@ -154,7 +153,6 @@ class DuplicateMaterial(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         material = tool.Ifc.get().by_id(self.material)
         tool.Material.duplicate_material(material)
-        material_prop_purge()
         bpy.ops.bim.load_materials()
 
 
@@ -167,7 +165,6 @@ class AddMaterialSet(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         core.add_material_set(tool.Ifc, tool.Material, set_type=self.set_type)
-        material_prop_purge()
 
 
 class RemoveMaterial(bpy.types.Operator, tool.Ifc.Operator):
@@ -740,11 +737,11 @@ class ExpandMaterialCategory(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMMaterialProperties
-        for index, category in [
+        for index, category in (
             (i, c)
             for i, c in enumerate(props.materials)
             if c.is_category and (self.expand_all or c.name == self.category)
-        ]:
+        ):
             category.is_expanded = True
             if category.name == self.category:
                 props.active_material_index = index
@@ -769,11 +766,11 @@ class ContractMaterialCategory(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMMaterialProperties
-        for index, category in [
+        for index, category in (
             (i, c)
             for i, c in enumerate(props.materials)
             if c.is_category and (self.contract_all or c.name == self.category)
-        ]:
+        ):
             category.is_expanded = False
             if category.name == self.category:
                 props.active_material_index = index
@@ -796,8 +793,13 @@ class EnableEditingMaterialStyle(bpy.types.Operator):
         if not 0 <= props.active_material_index < len(props.materials):
             return {"FINISHED"}
 
-        material = tool.Ifc.get().by_id(props.materials[props.active_material_index].ifc_definition_id)
+        ifc_file = tool.Ifc.get()
+        material = ifc_file.by_id(props.materials[props.active_material_index].ifc_definition_id)
         if not material.HasRepresentation:
+            # MODEL_VIEW is probably the one that's used with the styles most frequently.
+            context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
+            if context:
+                props.contexts = str(context.id())
             return {"FINISHED"}
 
         rep = material.HasRepresentation[0].Representations[0]  # IfcStyledRepresentation
@@ -847,3 +849,39 @@ class UnassignMaterialStyle(bpy.types.Operator, tool.Ifc.Operator):
         )
         core.load_materials(tool.Material, props.material_type)
         tool.Material.update_elements_using_material(material)
+
+
+class SelectMaterialInMaterialsUI(bpy.types.Operator):
+    bl_idname = "bim.material_ui_select"
+    bl_label = "Select Material In Materials UI"
+    bl_options = {"REGISTER", "UNDO"}
+    material_id: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = bpy.context.scene.BIMMaterialProperties
+        ifc_file = tool.Ifc.get()
+        material = ifc_file.by_id(self.material_id)
+        core.load_materials(tool.Material, material.is_a())
+
+        def get_material_item() -> Union[tuple[int, bpy.types.PropertyGroup], None]:
+            return next(
+                ((i, m) for i, m in enumerate(props.materials) if m.ifc_definition_id == self.material_id), None
+            )
+
+        material_item = get_material_item()
+
+        # Material category is contracted, won't occur for non-IfcMaterials.
+        if material_item is None:
+            material_category = tool.Material.get_material_category(material)
+            bpy.ops.bim.expand_material_category(category=material_category)
+            material_item = get_material_item()
+            assert material_item
+
+        item_index, _ = material_item
+        props.active_material_index = item_index
+
+        self.report(
+            {"INFO"},
+            f"Material '{tool.Material.get_material_name(material) or 'Unnamed'}' is selected in Materials UI.",
+        )
+        return {"FINISHED"}

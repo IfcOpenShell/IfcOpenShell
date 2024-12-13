@@ -124,28 +124,15 @@ public:
     void toString(std::ostream&, bool upper = false) const;
 };
 
-class IFC_PARSE_API IfcLateBoundEntity : public IfcBaseClass {
-  private:
-    const IfcParse::declaration* decl_;
-
-  public:
-    IfcLateBoundEntity(const IfcParse::declaration* decl, IfcEntityInstanceData&& data) : IfcBaseClass(std::move(data)),
-                                                                                         decl_(decl) {}
-
-    virtual const IfcParse::declaration& declaration() const {
-        return *decl_;
-    }
-};
-
 class IFC_PARSE_API IfcBaseEntity : public IfcBaseClass {
   public:
-    IfcBaseEntity(IfcEntityInstanceData&& data) : IfcBaseClass(std::move(data)) {}
+    IfcBaseEntity(IfcEntityInstanceData&& data);
 
     IfcBaseEntity(size_t n)
         : IfcBaseClass(IfcEntityInstanceData(storage_t(n)))
     {}
 
-    virtual const IfcParse::entity& declaration() const = 0;
+    virtual const IfcParse::declaration& declaration() const = 0;
 
     AttributeValue get(const std::string& name) const;
 
@@ -158,6 +145,21 @@ class IFC_PARSE_API IfcBaseEntity : public IfcBaseClass {
     boost::shared_ptr<aggregate_of_instance> get_inverse(const std::string& name) const;
 
     unsigned set_id(const boost::optional<unsigned>& i);
+
+    void populate_derived();
+};
+
+class IFC_PARSE_API IfcLateBoundEntity : public IfcBaseEntity {
+private:
+    const IfcParse::declaration* decl_;
+
+public:
+    IfcLateBoundEntity(const IfcParse::declaration* decl, IfcEntityInstanceData&& data) : IfcBaseEntity(std::move(data)),
+        decl_(decl) {}
+
+    virtual const IfcParse::declaration& declaration() const {
+        return *decl_;
+    }
 };
 
 // TODO: Investigate whether these should be template classes instead

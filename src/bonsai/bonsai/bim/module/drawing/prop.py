@@ -47,14 +47,11 @@ from bpy.props import (
 
 
 diagram_scales_enum = []
-sheets_enum = []
 
 
 def purge():
     global diagram_scales_enum
-    global sheets_enum
     diagram_scales_enum = []
-    sheets_enum = []
 
 
 def update_target_view(self, context):
@@ -181,18 +178,18 @@ def get_diagram_scales(self, context):
     return diagram_scales_enum
 
 
-def update_drawing_name(self, context):
+def update_drawing_name(self: "Drawing", context: bpy.types.Context) -> None:
     if self.ifc_definition_id:
         drawing = tool.Ifc.get().by_id(self.ifc_definition_id)
         core.update_drawing_name(tool.Ifc, tool.Drawing, drawing=drawing, name=self.name)
 
 
-def get_drawing_style_name(self):
+def get_drawing_style_name(self: "DrawingStyle"):
     """needed to make `set_drawing_style_name` work"""
     return self.get("name", "")
 
 
-def set_drawing_style_name(self, new_value):
+def set_drawing_style_name(self: "DrawingStyle", new_value: str) -> None:
     """ensure the name is unique"""
     scene = bpy.context.scene
     drawing_styles = [s.name for s in scene.DocProperties.drawing_styles if s.name != self.name]
@@ -223,6 +220,22 @@ def update_has_annotation(self, context):
     update_layer(self, context, "HasAnnotation", self.has_annotation)
 
 
+def update_dpi(self, context):
+    update_layer(self, context, "DPI", self.dpi)
+
+
+def update_linework_mode(self, context):
+    update_layer(self, context, "LineworkMode", self.linework_mode)
+
+
+def update_fill_mode(self, context):
+    update_layer(self, context, "FillMode", self.fill_mode)
+
+
+def update_cut_mode(self, context):
+    update_layer(self, context, "CutMode", self.cut_mode)
+
+
 def update_layer(self, context, name, value):
     if not self.update_props:
         return
@@ -249,7 +262,7 @@ def update_titleblocks(self, context):
     SheetsData.data["titleblocks"] = SheetsData.titleblocks()
 
 
-def update_should_draw_decorations(self, context):
+def update_should_draw_decorations(self, context: bpy.types.Context) -> None:
     if self.should_draw_decorations:
         # TODO: design a proper text variable templating renderer
         collection = context.scene.camera.BIMObjectProperties.collection
@@ -293,6 +306,7 @@ class Sheet(PropertyGroup):
     identification: StringProperty(name="Identification")
     name: StringProperty(name="Name")
     is_sheet: BoolProperty(name="Is Sheet", default=False)
+    is_selected: BoolProperty(name="Is Selected", default=True)
     reference_type: StringProperty(name="Reference Type")
     is_expanded: BoolProperty(name="Is Expanded", default=False)
 
@@ -387,6 +401,7 @@ class DocProperties(PropertyGroup):
     drawing_font: StringProperty(default="OpenGost Type B TT.ttf", name="Drawing Font")
     magic_font_scale: bpy.props.FloatProperty(default=0.004118616, name="Font Scale Factor")
     imperial_precision: StringProperty(default="1/32", name="Imperial Precision")
+    tolerance: bpy.props.FloatProperty(default=0.00001, name="A tolerance used when selecting objects")
 
 
 class BIMCameraProperties(PropertyGroup):
@@ -397,6 +412,7 @@ class BIMCameraProperties(PropertyGroup):
         ],
         default="OPENCASCADE",
         name="Linework Mode",
+        update=update_linework_mode,
     )
     fill_mode: EnumProperty(
         items=[
@@ -406,6 +422,7 @@ class BIMCameraProperties(PropertyGroup):
         ],
         default="NONE",
         name="Fill Mode",
+        update=update_fill_mode,
     )
     cut_mode: EnumProperty(
         items=[
@@ -414,6 +431,7 @@ class BIMCameraProperties(PropertyGroup):
         ],
         default="BISECT",
         name="Cut Mode",
+        update=update_cut_mode,
     )
     has_underlay: BoolProperty(name="Underlay", default=False, update=update_has_underlay)
     has_linework: BoolProperty(name="Linework", default=True, update=update_has_linework)
@@ -425,7 +443,7 @@ class BIMCameraProperties(PropertyGroup):
     custom_scale_denominator: bpy.props.StringProperty(default="100", update=update_diagram_scale)
     raster_x: IntProperty(name="Raster X", default=1000)
     raster_y: IntProperty(name="Raster Y", default=1000)
-    dpi: IntProperty(name="DPI", default=75)
+    dpi: IntProperty(name="DPI", default=75, update=update_dpi)
     width: FloatProperty(name="Width", default=50, subtype="DISTANCE")
     height: FloatProperty(name="Height", default=50, subtype="DISTANCE")
     is_nts: BoolProperty(name="Is NTS", update=update_is_nts)
@@ -492,7 +510,7 @@ class Literal(PropertyGroup):
         return self.get("box_alignment", DEFAULT_BOX_ALIGNMENT)
 
     attributes: CollectionProperty(name="Attributes", type=Attribute)
-    # Current text value with evaluated experessions stored in `value`.
+    # Current text value with evaluated expressions stored in `value`.
     # The original (Literal) value stored in `attributes['Literal']`
     # and can be accessed with `get_text()`
     value: StringProperty(name="Value", default="TEXT")
@@ -524,6 +542,7 @@ class BIMTextProperties(PropertyGroup):
         default="2.5",
         name="Font Size",
     )
+    newline_at: IntProperty(name="Newline At")
 
     def get_text_edited_data(self):
         """should be called only if `is_editing`
@@ -537,13 +556,20 @@ class BIMTextProperties(PropertyGroup):
         text_data = {
             "Literals": literals_data,
             "FontSize": float(self.font_size),
+            "Newline_At": int(self.newline_at),
         }
         return text_data
 
 
+def relating_product_poll(self: "BIMAssignedProductProperties", obj: bpy.types.Object) -> bool:
+    if not tool.Ifc.get_entity(obj):
+        return False
+    return True
+
+
 class BIMAssignedProductProperties(PropertyGroup):
     is_editing_product: BoolProperty(name="Is Editing Product", default=False)
-    relating_product: PointerProperty(name="Relating Product", type=bpy.types.Object)
+    relating_product: PointerProperty(name="Relating Product", type=bpy.types.Object, poll=relating_product_poll)
 
 
 annotation_classes = [

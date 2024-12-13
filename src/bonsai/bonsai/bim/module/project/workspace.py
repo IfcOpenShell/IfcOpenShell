@@ -58,9 +58,18 @@ class ExploreTool(bpy.types.WorkSpaceTool):
         row = layout.row(align=True)
         row.label(text="", icon="EVENT_ALT")
         row.label(text="Disable Culling" if LinksData.enable_culling else "Enable Culling", icon="EVENT_C")
+
+        prop = context.scene.MeasureToolSettings
         row = layout.row(align=True)
         row.label(text="", icon="EVENT_SHIFT")
-        row.label(text="Measure Tool", icon="EVENT_M")
+        row.label(text="", icon="EVENT_M")
+        row = layout.row(align=True)
+        op = row.operator("bim.explore_hotkey", text="Measure Tool", icon="CON_DISTLIMIT")
+        op.hotkey = "S_M"
+        row = layout.row(align=True)
+        row.prop(prop, "measurement_type", text="Measure Type", expand=True, icon_only=True, emboss=True)
+        row = layout.row(align=True)
+        op = row.operator("bim.clear_measurement", text="", icon="X")
 
 
 class ExploreHotkey(bpy.types.Operator):
@@ -94,4 +103,7 @@ class ExploreHotkey(bpy.types.Operator):
             bpy.ops.bim.enable_culling("INVOKE_DEFAULT")
 
     def hotkey_S_M(self):
-        bpy.ops.bim.measure_tool("INVOKE_DEFAULT")
+        for obj in tool.Blender.get_selected_objects():
+            obj.select_set(False)
+        measure_type = bpy.context.scene.MeasureToolSettings.measurement_type
+        bpy.ops.bim.measure_tool("INVOKE_DEFAULT", measure_type=measure_type)

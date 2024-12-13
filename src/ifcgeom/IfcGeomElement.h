@@ -72,7 +72,7 @@ namespace IfcGeom {
 		// Use the id to compare, or the elevation is the elements are IfcBuildingStoreys and the elevation is set
 		friend bool operator < (const Element& element1, const Element& element2) {
 			if (element1.type() == "IfcBuildingStorey" && element2.type() == "IfcBuildingStorey") {
-				size_t attr_index = element1.product()->declaration().attribute_index("Elevation");
+				size_t attr_index = element1.product()->declaration().as_entity()->attribute_index("Elevation");
 				auto elev_attr1 = element1.product()->data().get_attribute_value(attr_index);
 				auto elev_attr2 = element2.product()->data().get_attribute_value(attr_index);
 

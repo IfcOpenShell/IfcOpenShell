@@ -20,6 +20,7 @@ import shapely
 import shapely.ops
 import numpy as np
 import numpy.typing as npt
+import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
@@ -298,6 +299,30 @@ def get_normals(geometry: ShapeType) -> npt.NDArray[np.float64]:
     :return: A numpy array listing normal for each shape vertex.
     """
     return np.frombuffer(geometry.normals_buffer, dtype="d").reshape(-1, 3)
+
+
+def get_shape_material_styles(geometry: ShapeType) -> tuple[W.style, ...]:
+    """Get list of material styles.
+
+    Possible values for `style.instance_id()`:
+    - IFC style id if style assigned to the representation items directly
+    or through material with a style;
+    - IFC material id if both true:
+      - element has a material without a style;
+      - there are parts of the geometry that has no other style assigned to them;
+    - -1 in case if there is no material;
+    - 0 in case if there are default materials used.
+    """
+    return geometry.materials
+
+
+def get_faces_material_style_ids(geometry: ShapeType) -> npt.NDArray[np.int32]:
+    """Get material styles ids for the geometry faces.
+
+    Return a list of corresponding indices of styles from get_shape_material_styles for each face.
+    If face has no style assigned, index -1 is used.
+    """
+    return np.frombuffer(geometry.material_ids_buffer, dtype="i")
 
 
 def get_faces_representation_item_ids(geometry: ShapeType) -> npt.NDArray[np.int32]:

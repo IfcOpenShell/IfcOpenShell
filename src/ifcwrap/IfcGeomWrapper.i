@@ -703,6 +703,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
         verts = property(verts)
         normals = property(normals)
         item_ids = property(item_ids)
+        uvs = property(uvs)
 
         faces_buffer = property(faces_buffer)
         edges_buffer = property(edges_buffer)
@@ -942,7 +943,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 				delete brep;
 				return triangulation;
 			} else {
-				throw IfcParse::IfcException("No element to return based on provided settings");
+				return brep;
 			}
 		} else if (instance->as<typename Schema::IfcPlacement>() != nullptr || instance->as<typename Schema::IfcObjectPlacement>()) {
 			auto item = ifcopenshell::geometry::taxonomy::cast<ifcopenshell::geometry::taxonomy::matrix4>(kernel.mapping()->map(instance));
@@ -1120,6 +1121,8 @@ ifcopenshell::geometry::taxonomy::item::ptr try_upcast(PyObject* obj0, swig_type
 %ignore prefiltered_hlr;
 %ignore svgfill::svg_to_line_segments;
 %ignore svgfill::line_segments_to_polygons;
+%ignore svgfill::svg_to_polygons;
+%ignore svgfill::arrange_polygons;
 
 %template(svg_line_segments) std::vector<std::array<svgfill::point_2, 2>>;
 %template(svg_groups_of_line_segments) std::vector<std::vector<std::array<svgfill::point_2, 2>>>;
@@ -1228,7 +1231,25 @@ ifcopenshell::geometry::taxonomy::item::ptr try_upcast(PyObject* obj0, swig_type
 		if (svgfill::line_segments_to_polygons(s, eps, segments, r)) {
 			return r;
 		} else {
+			throw std::runtime_error("Failed process line segments");
+		}
+	}
+
+	std::vector<svgfill::polygon_2> svg_to_polygons(const std::string& data, const boost::optional<std::string>& class_name) {
+		std::vector<svgfill::polygon_2> r;
+		if (svgfill::svg_to_polygons(data, class_name, r)) {
+			return r;
+		} else {
 			throw std::runtime_error("Failed to read SVG");
+		}	
+	}
+
+	std::vector<svgfill::polygon_2> arrange_polygons(const std::vector<svgfill::polygon_2>& polygons) {
+		std::vector<svgfill::polygon_2> r;
+		if (svgfill::arrange_polygons(polygons, r)) {
+			return r;
+		} else {
+			throw std::runtime_error("Failed to arrange polygons");
 		}
 	}
 %}

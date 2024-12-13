@@ -691,6 +691,7 @@ class PurgeUnusedObjects(bpy.types.Operator, tool.Ifc.Operator):
 class MergeIdenticalObjects(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.merge_identical_objects"
     bl_label = "Merge Identical Objects"
+    bl_description = "For materials currently only IfcMaterials are supported"
     bl_options = {"REGISTER", "UNDO"}
 
     object_type: bpy.props.EnumProperty(
@@ -704,20 +705,21 @@ class MergeIdenticalObjects(bpy.types.Operator, tool.Ifc.Operator):
     )
 
     def _execute(self, context):
-        object_type = self.object_type
-        if object_type == "STYLE":
-            merged_data = tool.Debug.merge_identical_objects("style")
-            if merged_data:
-                print("Merged styles:")
-                for style_type, style_names in merged_data.items():
-                    print(f"- {style_type}: {', '.join(style_names)}")
-            merged = sum(len(v) for v in merged_data.values())
+        object_type: str = self.object_type
+        if object_type in ("STYLE", "MATERIAL"):
+            merged_data = tool.Debug.merge_identical_objects(object_type)
         else:
             self.report({"ERROR"}, f"Invalid object type {object_type}.")
             return {"CANCELLED"}
+        plural_object_type = f"{object_type.lower()}s"
+        if merged_data:
+            print(f"Merged {plural_object_type}:")
+            for element_type, element_names in merged_data.items():
+                print(f"- {element_type}: {', '.join(element_names)}")
+        merged = sum(len(v) for v in merged_data.values())
 
         msg = " See system console for details." if merged else ""
-        self.report({"INFO"}, f"{merged} identical {object_type.lower()}s were merged.{msg}")
+        self.report({"INFO"}, f"{merged} identical {plural_object_type} were merged.{msg}")
 
         if merged == 0:
             return
@@ -921,7 +923,14 @@ class RestartBlender(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        import os
-
-        path = bpy.app.binary_path
-        os.execv(path, sys.argv)
+        ms_store_app_id = tool.Blender.get_microsoft_store_app_id()
+        if not ms_store_app_id:
+            path = bpy.app.binary_path
+            os.execv(path, sys.argv)
+        else:
+            # Microsoft apps do not allow launching blender.exe directly
+            # since Blender folder is kind of private.
+            cmd_exe = Path(os.environ["SystemRoot"]) / "system32" / "cmd.exe"
+            blender_app = f"shell:AppsFolder\\BlenderFoundation.Blender_{ms_store_app_id}!BLENDER"
+            cmd_args = ["/c", "start", blender_app] + sys.argv[1:]
+            os.execv(cmd_exe, cmd_args)

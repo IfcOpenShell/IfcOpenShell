@@ -39,7 +39,7 @@ def add_style(ifc: tool.Ifc, style: tool.Style, obj: bpy.types.Material) -> ifco
 
 # TODO: outdated.
 def add_external_style(ifc: tool.Ifc, style: tool.Style, obj: bpy.types.Material, attributes: dict[str, Any]) -> None:
-    element = style.get_style(obj)
+    element = ifc.get_entity(obj)
     ifc.run(
         "style.add_surface_style", style=element, ifc_class="IfcExternallyDefinedSurfaceStyle", attributes=attributes
     )
@@ -77,7 +77,7 @@ def remove_style(
 
 
 def update_style_colours(ifc: tool.Ifc, style: tool.Style, obj: bpy.types.Material, verbose: bool = False) -> None:
-    element = style.get_style(obj)
+    element = ifc.get_entity(obj)
 
     if style.can_support_rendering_style(obj):
         rendering_style = style.get_surface_rendering_style(obj)
@@ -114,7 +114,7 @@ def update_style_colours(ifc: tool.Ifc, style: tool.Style, obj: bpy.types.Materi
 def update_style_textures(
     ifc: tool.Ifc, style: tool.Style, obj: ifcopenshell.entity_instance, representation: ifcopenshell.entity_instance
 ) -> None:
-    element = style.get_style(obj)
+    element = ifc.get_entity(obj)
 
     uv_maps = style.get_uv_maps(representation)
     textures = ifc.run("style.add_surface_textures", material=obj, uv_maps=uv_maps)
@@ -145,19 +145,21 @@ def enable_editing_style(style_tool: tool.Style, style: ifcopenshell.entity_inst
 
 def disable_editing_style(style: tool.Style) -> None:
     obj = style.get_currently_edited_material()
-    # TODO: is reloading twice necessary?
-    style.reload_material_from_ifc(obj)
     style.disable_editing()
     style.reload_material_from_ifc(obj)
 
 
 def edit_style(ifc: tool.Ifc, style: tool.Style) -> None:
     obj = style.get_currently_edited_material()
-    style_element = style.get_style(obj)
+    style_element = ifc.get_entity(obj)
+    assert style_element
     attributes = style.export_surface_attributes()
+    is_style_side_attribute_edited = style.is_style_side_attribute_edited(style_element, attributes)
     ifc.run("style.edit_presentation_style", style=style_element, attributes=attributes)
     style.disable_editing()
     load_styles(style, style.get_active_style_type())
+    if is_style_side_attribute_edited:
+        style.reload_repersentations(style_element)
 
 
 def load_styles(style: tool.Style, style_type: str) -> None:

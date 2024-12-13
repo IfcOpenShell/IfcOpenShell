@@ -19,6 +19,21 @@
 
 #include "TtlWktSerializer.h"
 
+#ifdef IFOPSH_WITH_OPENCASCADE
+#include "../ifcgeom/kernels/opencascade/OpenCascadeConversionResult.h"
+
+#include <TopTools_HSequenceOfShape.hxx>
+#include <BRepBuilderAPI_Transform.hxx>
+#include <BRepBndLib.hxx>
+#include <BRepAlgoAPI_Section.hxx>
+#include <ShapeAnalysis_FreeBounds.hxx>
+#include <BRepTools_WireExplorer.hxx>
+#include <TopoDS.hxx>
+#include <Bnd_Box.hxx>
+#include <gp_Pln.hxx>
+
+#endif
+
 #include <iomanip>
 #include <iostream>
 #include <vector>
@@ -200,6 +215,7 @@ namespace {
     template <typename Fn, typename... Ts>
     std::string capture_output(Fn fn, Ts... ts) {
         std::ostringstream oss;
+        oss << std::setprecision(std::numeric_limits<double>::digits10 + 1);
         fn(oss, ts...);
         return oss.str();
     }
@@ -210,8 +226,15 @@ TtlWktSerializer::TtlWktSerializer(const stream_or_filename& filename, const ifc
     , filename_(filename)
 {
     const auto& tri_setting = geometry_settings.get<ifcopenshell::geometry::settings::TriangulationType>().get();
-    if (tri_setting != ifcopenshell::geometry::settings::POLYHEDRON_WITH_HOLES) {
-        throw std::runtime_error("The RDF Turtle WKT serializer needs POLYHEDRON_WITH_HOLES triangulation output");
+    if (settings_.get<ifcopenshell::geometry::settings::WktUseSection>().get()) {
+        const auto& it_output = geometry_settings.get<ifcopenshell::geometry::settings::IteratorOutput>().get();
+        if (it_output != ifcopenshell::geometry::settings::NATIVE) {
+            throw std::runtime_error("The RDF Turtle WKT serializer needs native geometry when section mode is enabled");
+        }
+    } else {
+        if (tri_setting != ifcopenshell::geometry::settings::POLYHEDRON_WITH_HOLES) {
+            throw std::runtime_error("The RDF Turtle WKT serializer needs POLYHEDRON_WITH_HOLES triangulation output");
+        }
     }
     filename_.stream << std::setprecision(settings.get<ifcopenshell::geometry::settings::FloatingPointDigits>().get());
 }
@@ -237,32 +260,16 @@ void TtlWktSerializer::writeHeader()
 
 void TtlWktSerializer::write(const IfcGeom::TriangulationElement* o)
 {
-    auto ttl_object_id = [&](const char* const postfix = nullptr) {
-        using namespace ifcopenshell::geometry::settings;
-        auto oid = boost::replace_all_copy(object_id(o), "-", "_");
-        if (oid.find('$') == std::string::npos) {
-            return "base:" + oid + (postfix ? postfix : (const char* const)"");
-        } else {
-            std::string base;
-            if (settings_.get<BaseUri>().has()) {
-                base = settings_.get<BaseUri>().get();
-            } else {
-                base = "http://example.org/";
-            }
-            return "<" + base + oid + (postfix ? postfix : (const char* const) "") + ">";
-        }
-    };
-
-    filename_.stream << ttl_object_id() << " a geo:Feature ;\n";
+    filename_.stream << ttl_object_id(o) << " a geo:Feature ;\n";
     filename_.stream << "    dcterms:identifier " << escape_for_turtle(
         IfcUtil::convert_utf8_to_utf32(o->guid())) << " ;\n";
     filename_.stream << "    rdfs:label " << escape_for_turtle(
         IfcUtil::convert_utf8_to_utf32(o->name())
     ) << " ;\n";
-    filename_.stream << "    geo:hasGeometry " << ttl_object_id("_geometry") << " .\n\n";
+    filename_.stream << "    geo:hasGeometry " << ttl_object_id(o, "_geometry") << " .\n\n";
 
     if (!o->geometry().polyhedral_faces_with_holes().empty()) {
-        filename_.stream << ttl_object_id("_geometry") << " a geo:Geometry ;\n";
+        filename_.stream << ttl_object_id(o, "_geometry") << " a geo:Geometry ;\n";
         filename_.stream << "    geo:asWKT " << escape_for_turtle(
             IfcUtil::convert_utf8_to_utf32(
                 capture_output(
@@ -299,12 +306,13 @@ void TtlWktSerializer::write(const IfcGeom::TriangulationElement* o)
             // @nb we take abs because so that we can ignore face orientation and potential convatities rquire
             if ((std::abs(cross_product.z()) + 1.e-9) >= 1.0 && v0.z() < lowest_z) {
                 lowest_face = f.begin();
+                lowest_z = v0.z();
             }
         }
 
         if (lowest_face) {
-            filename_.stream << ttl_object_id() << " geo:hasGeometry " << ttl_object_id("_footprint_geometry") << " .\n\n";
-            filename_.stream << ttl_object_id("_footprint_geometry") << " a geo:Geometry ;\n";
+            filename_.stream << ttl_object_id(o) << " geo:hasGeometry " << ttl_object_id(o, "_footprint_geometry") << " .\n\n";
+            filename_.stream << ttl_object_id(o, "_footprint_geometry") << " a geo:Geometry ;\n";
             filename_.stream << "    geo:asWKT " << escape_for_turtle(
                 IfcUtil::convert_utf8_to_utf32(
                     capture_output(
@@ -318,7 +326,7 @@ void TtlWktSerializer::write(const IfcGeom::TriangulationElement* o)
             ) << "^^geo:wktLiteral .\n\n";
         }
     } else {
-        filename_.stream << ttl_object_id("_geometry") << " a geo:Geometry ;\n";
+        filename_.stream << ttl_object_id(o, "_geometry") << " a geo:Geometry ;\n";
         bool force_2d = true;
         double z_value;
         for (size_t i = 2; i < o->geometry().verts().size(); i += 3) {
@@ -341,4 +349,119 @@ void TtlWktSerializer::write(const IfcGeom::TriangulationElement* o)
                     force_2d))
         ) << "^^geo:wktLiteral .\n\n";
     }
+}
+
+void TtlWktSerializer::write(const IfcGeom::BRepElement* brep_obj) {
+#ifdef IFOPSH_WITH_OPENCASCADE
+	filename_.stream << ttl_object_id(brep_obj) << " a geo:Feature ;\n";
+	filename_.stream << "    dcterms:identifier " << escape_for_turtle(
+		IfcUtil::convert_utf8_to_utf32(brep_obj->guid())) << " ;\n";
+	filename_.stream << "    rdfs:label " << escape_for_turtle(
+		IfcUtil::convert_utf8_to_utf32(brep_obj->name())
+	) << " .\n";
+
+    // @todo unify logic with SVG serializer
+
+	auto itm = brep_obj->geometry().as_compound();
+	TopoDS_Shape compound_local = ((ifcopenshell::geometry::OpenCascadeShape*)itm)->shape();
+	delete itm;
+
+	gp_Trsf trsf;
+	const auto& m = brep_obj->transformation().data()->ccomponents();
+	trsf.SetValues(
+		m(0, 0), m(0, 1), m(0, 2), m(0, 3),
+		m(1, 0), m(1, 1), m(1, 2), m(1, 3),
+		m(2, 0), m(2, 1), m(2, 2), m(2, 3)
+	);
+
+	BRepBuilderAPI_Transform make_transform_global(compound_local, trsf, true);
+	make_transform_global.Build();
+	auto compound = make_transform_global.Shape();
+
+	Bnd_Box bb;
+	try {
+		BRepBndLib::Add(compound, bb);
+	} catch (const Standard_Failure&) {}
+
+	// Empty geometry
+	if (bb.IsVoid()) {
+		return;
+	}
+
+	double x1, y1, zmin, x2, y2, zmax;
+	bb.Get(x1, y1, zmin, x2, y2, zmax);
+
+	gp_Pln pln(gp_Pnt(0, 0, zmin + 1.), gp::DZ());
+
+	Handle(TopTools_HSequenceOfShape) wires = new TopTools_HSequenceOfShape();
+
+	size_t N = 0;
+	TopoDS_Iterator it(compound);
+	// Iterate over components of compound to have better chance of matching section edges to closed wires
+	for (; it.More(); it.Next()) {
+		Handle(TopTools_HSequenceOfShape) edges = new TopTools_HSequenceOfShape();
+		TopoDS_Shape result = BRepAlgoAPI_Section(it.Value(), pln);
+
+		{
+			TopExp_Explorer exp(result, TopAbs_EDGE);
+			for (; exp.More(); exp.Next()) {
+				edges->Append(exp.Current());
+			}
+		}
+
+		ShapeAnalysis_FreeBounds::ConnectEdgesToWires(edges, 1e-4, false, wires);
+		for (int i = 1; i <= wires->Length(); ++i) {
+			const TopoDS_Wire& wire = TopoDS::Wire(wires->Value(i));
+			BRepTools_WireExplorer it(wire);
+			std::vector<double> loop_coords;
+			for (; it.More(); it.Next()) {
+				const auto& v = it.CurrentVertex();
+				auto pnt = BRep_Tool::Pnt(v);
+				loop_coords.push_back(pnt.X());
+				loop_coords.push_back(pnt.Y());
+				loop_coords.push_back(pnt.Z());
+			}
+			std::vector<int> loop_idxs(loop_coords.size() / 3);
+			for (int i = 0; i < loop_idxs.size(); ++i) {
+				loop_idxs[i] = i;
+			}
+
+			std::string postfix = "_section_geometry_" + std::to_string(N++);
+
+			filename_.stream << ttl_object_id(brep_obj) << " geo:hasGeometry " << ttl_object_id(brep_obj, postfix.c_str()) << " .\n\n";
+			filename_.stream << ttl_object_id(brep_obj, postfix.c_str()) << " a geo:Geometry ;\n";
+			filename_.stream << "    geo:asWKT " << escape_for_turtle(
+				IfcUtil::convert_utf8_to_utf32(
+					capture_output(
+						emit_line_component,
+						loop_coords,
+						loop_idxs,
+						true,
+						POLYGON))
+			) << "^^geo:wktLiteral .\n\n";
+		}
+	}
+#endif
+}
+
+std::string TtlWktSerializer::ttl_object_id(const IfcGeom::Element* o, const char* const postfix)
+{
+	using namespace ifcopenshell::geometry::settings;
+	auto oid = boost::replace_all_copy(object_id(o), "-", "_");
+	if (oid.find('$') == std::string::npos) {
+		return "base:" + oid + (postfix ? postfix : (const char* const)"");
+	} else {
+		std::string base;
+		if (settings_.get<BaseUri>().has()) {
+			base = settings_.get<BaseUri>().get();
+		} else {
+			base = "http://example.org/";
+		}
+		return "<" + base + oid + (postfix ? postfix : (const char* const)"") + ">";
+	}
+}
+
+bool TtlWktSerializer::isTesselated() const {
+    using namespace ifcopenshell::geometry::settings;
+    return !settings_.get<WktUseSection>().get();
 }

@@ -368,9 +368,6 @@ class ShapeBuilder:
             "OuterCurve": outer_curve,
         }
 
-        if self.file.schema == "IFC2X3":
-            kwargs["Position"] = self.create_axis2_placement_2d()
-
         if inner_curves:
             if not isinstance(inner_curves, collections.abc.Iterable):
                 inner_curves = [inner_curves]

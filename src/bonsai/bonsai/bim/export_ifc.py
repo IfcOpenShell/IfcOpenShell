@@ -40,11 +40,11 @@ from logging import Logger
 
 
 class IfcExporter:
-    def __init__(self, ifc_export_settings):
+    def __init__(self, ifc_export_settings: IfcExportSettings):
         self.ifc_export_settings = ifc_export_settings
 
     def export(self):
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         self.set_header()
         IfcStore.update_cache()
         self.sync_all_objects()
@@ -115,17 +115,12 @@ class IfcExporter:
         for obj in IfcStore.edited_objs.copy():
             if not obj:
                 continue
-            try:
-                if isinstance(obj, bpy.types.Material):
-                    # TODO: do we add materials to edited_objs?
-                    continue
-                else:
-                    element = tool.Ifc.get_entity(obj)
-                    if element:
-                        results.append(element)
-                    bpy.ops.bim.update_representation(obj=obj.name)
-            except ReferenceError:
-                pass  # The object is likely deleted
+            if not tool.Blender.is_valid_data_block(obj):
+                continue
+            element = tool.Ifc.get_entity(obj)
+            if element:
+                results.append(element)
+            bpy.ops.bim.update_representation(obj=obj.name)
         IfcStore.edited_objs.clear()
         return results
 
@@ -142,11 +137,20 @@ class IfcExporter:
 
     def sync_object_placement(self, obj: bpy.types.Object) -> Union[ifcopenshell.entity_instance, None]:
         element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+        if tool.Geometry.is_scaled(obj):
+            bpy.ops.bim.update_representation(obj=obj.name)
+            # update_representation might not apply scale if the object has openings
+            # reset it, so let user know that the scale wasn't saved.
+            if tool.Geometry.is_scaled(obj):
+                print(f"WARNING. Object '{obj.name}' scales ({obj.scale[:]}) are reset during project save.")
+                obj.scale = (1.0, 1.0, 1.0)
+            else:
+                # Return and don't handle is_moved as
+                # updata_representation will run edit_object_placement if object is scaled
+                # and had no openings.
+                return element
         if not tool.Ifc.is_moved(obj):
             return
-        if (obj.scale - Vector((1.0, 1.0, 1.0))).length > 1e-4:
-            bpy.ops.bim.update_representation(obj=obj.name)
-            return element
         if element.is_a("IfcGridAxis"):
             return self.sync_grid_axis_object_placement(obj, element)
         if not hasattr(element, "ObjectPlacement"):

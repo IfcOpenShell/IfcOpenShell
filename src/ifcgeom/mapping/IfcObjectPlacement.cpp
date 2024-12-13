@@ -79,7 +79,12 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcObjectPlacement* inst) {
 	} else {
 		// The parent placement of the current is a placement for a type that is
 		// being ignored (Site or Building) or it is the host element of an opening.
-		result = taxonomy::cast<taxonomy::matrix4>(map(transform));
+		
+		// Create a new copy around `result` so that it's cached copy is not altered
+		// @todo immutability
+		result = taxonomy::make<taxonomy::matrix4>(
+			taxonomy::cast<taxonomy::matrix4>(map(transform))->ccomponents()
+		);
 	}
 
 	if (fallback) {

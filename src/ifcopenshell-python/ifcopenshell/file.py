@@ -50,8 +50,8 @@ HEADER_FIELDS = {
 
 
 class Transaction:
-    def __init__(self, ifc_file):
-        self.file = ifc_file
+    def __init__(self, ifc_file: file):
+        self.file: file = ifc_file
         self.operations = []
         self.is_batched = False
         self.batch_delete_index = 0
@@ -197,6 +197,7 @@ file_dict = {}
 READ_ERROR = ifcopenshell_wrapper.file_open_status.READ_ERROR
 NO_HEADER = ifcopenshell_wrapper.file_open_status.NO_HEADER
 UNSUPPORTED_SCHEMA = ifcopenshell_wrapper.file_open_status.UNSUPPORTED_SCHEMA
+INVALID_SYNTAX = ifcopenshell_wrapper.file_open_status.INVALID_SYNTAX
 
 
 class file:
@@ -216,6 +217,7 @@ class file:
     """
 
     wrapped_data: ifcopenshell_wrapper.file
+    history_size: int = 64
 
     def __init__(
         self,
@@ -279,6 +281,7 @@ class file:
                         SchemaError,
                         "Unsupported schema: %s" % ",".join(f.header.file_schema.schema_identifiers),
                     ),
+                    INVALID_SYNTAX: (Error, "Syntax error during parse, check logs"),
                 }[f.good().value()]
                 raise exc(msg)
             self.wrapped_data = f
@@ -286,7 +289,6 @@ class file:
             args = filter(None, [schema])
             args = map(ifcopenshell_wrapper.schema_by_name, args)
             self.wrapped_data = ifcopenshell_wrapper.file(*args)
-        self.history_size = 64
         self.history = []
         self.future = []
         self.transaction: Optional[Transaction] = None
@@ -671,6 +673,8 @@ class file:
         if format == ".ifcZIP":
             return self.write(path, ".ifc", zipped=True)
         self.wrapped_data.write(str(path))
+        if not path.exists():
+            raise PermissionError(f"Failed to write to '{path}', check folder permissions.")
         if zipped:
             unzipped_path = path.with_suffix(format)
             path.rename(unzipped_path)

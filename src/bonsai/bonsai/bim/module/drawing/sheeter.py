@@ -397,7 +397,19 @@ class SheetBuilder:
                 data.update({"Sheet" + k: v for k, v in sheet.get_info().items()})
                 if not data["Name"]:
                     data["Name"] = ntpath.basename(foreground_path)[0:-4]
-                data["Scale"] = tool.Drawing.get_drawing_human_scale(drawing)
+
+                # If a perspective drawing, don't add scale to view title
+                try:
+                    is_perspective = (
+                        drawing.Representation.Representations[0]
+                        .Items[0]
+                        .TreeRootExpression.FirstOperand.is_a("IfcRectangularPyramid")
+                    )
+                except AttributeError:
+                    is_perspective = False
+
+                if not is_perspective:
+                    data["Scale"] = tool.Drawing.get_drawing_human_scale(drawing)
                 view.append(self.parse_embedded_svg(view_title, data))
 
             for image in images:
@@ -481,7 +493,7 @@ class SheetBuilder:
 
     def change_titleblock(self, sheet: ifcopenshell.entity_instance, titleblock_name: str) -> None:
         ootb_titleblock_path = os.path.join(self.data_dir, "templates", "titleblocks", titleblock_name + ".svg")
-        titleblock_path = tool.Drawing.get_default_titleblock_path(titleblock_name)
+        titleblock_path = tool.Ifc.resolve_uri(tool.Drawing.get_default_titleblock_path(titleblock_name))
         sheet_path = tool.Drawing.get_document_uri(sheet, "LAYOUT")
         sheet_dir = os.path.dirname(sheet_path)
 

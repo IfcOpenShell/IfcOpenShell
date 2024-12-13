@@ -26,13 +26,24 @@ if TYPE_CHECKING:
 
 
 def edit_object_placement(
-    ifc: tool.Ifc, geometry: tool.Geometry, surveyor: tool.Surveyor, obj: Optional[bpy.types.Object] = None
+    ifc: tool.Ifc,
+    geometry: tool.Geometry,
+    surveyor: tool.Surveyor,
+    obj: Optional[bpy.types.Object] = None,
+    apply_scale: bool = True,
 ) -> None:
+    """Sync current object placement.
+
+    - apply and clear object scale;
+    - write current object position to IFC;
+    - update position checksums;
+    """
     element = ifc.get_entity(obj)
     if not element:
         return
     geometry.clear_cache(element)
-    geometry.clear_scale(obj)
+    if apply_scale:
+        geometry.clear_scale(obj)
     geometry.get_blender_offset_type(obj)
     ifc.run("geometry.edit_object_placement", product=element, matrix=surveyor.get_absolute_matrix(obj))
     geometry.record_object_position(obj)
@@ -115,7 +126,7 @@ def switch_representation(
     :param is_global: replace mesh data for all users of `obj.data`, not just `obj`
 
     """
-    if should_sync_changes_first and geometry.is_edited(obj) and not geometry.is_box_representation(representation):
+    if should_sync_changes_first and ifc.is_edited(obj) and not geometry.is_box_representation(representation):
         representation_id = geometry.get_representation_id(representation)
         geometry.run_geometry_update_representation(obj=obj)
         if not geometry.does_representation_id_exist(representation_id):

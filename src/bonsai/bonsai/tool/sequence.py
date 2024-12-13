@@ -32,15 +32,19 @@ import ifcopenshell.util.unit
 import bonsai.core.tool
 import bonsai.tool as tool
 import bonsai.bim.helper
-import bonsai.bim.module.sequence.helper as helper
 from dateutil import parser
 from datetime import datetime
-from typing import Optional, Any, Union
+from typing import Optional, Any, Union, Literal
 
 
 class Sequence(bonsai.core.tool.Sequence):
+
+    RELATED_OBJECT_TYPE = Literal["RESOURCE", "PRODUCT", "CONTROL"]
+
     @classmethod
     def get_work_plan_attributes(cls) -> dict[str, Any]:
+        import bonsai.bim.module.sequence.helper as helper
+
         def callback(attributes, prop):
             if "Date" in prop.name or "Time" in prop.name:
                 if prop.is_null:
@@ -87,6 +91,8 @@ class Sequence(bonsai.core.tool.Sequence):
 
     @classmethod
     def get_work_schedule_attributes(cls) -> dict[str, Any]:
+        import bonsai.bim.module.sequence.helper as helper
+
         def callback(attributes, prop):
             if "Date" in prop.name or "Time" in prop.name:
                 if prop.is_null:
@@ -336,6 +342,8 @@ class Sequence(bonsai.core.tool.Sequence):
 
     @classmethod
     def load_task_time_attributes(cls, task_time: ifcopenshell.entity_instance) -> None:
+        import bonsai.bim.module.sequence.helper as helper
+
         def callback(name, prop, data):
             if prop and prop.data_type == "string":
                 duration_props = bpy.context.scene.BIMWorkScheduleProperties.durations_attributes.add()
@@ -373,6 +381,8 @@ class Sequence(bonsai.core.tool.Sequence):
 
     @classmethod
     def get_task_time_attributes(cls) -> dict[str, Any]:
+        import bonsai.bim.module.sequence.helper as helper
+
         def callback(attributes, prop):
             if "Start" in prop.name or "Finish" in prop.name or prop.name == "StatusTime":
                 if prop.is_null:
@@ -506,15 +516,10 @@ class Sequence(bonsai.core.tool.Sequence):
 
     @classmethod
     def load_work_time_attributes(cls, work_time: ifcopenshell.entity_instance) -> None:
-        def callback(name, prop, data):
-            if name in ["Start", "Finish"]:
-                prop.string_value = "" if prop.is_null else data[name]
-                return True
-
         props = bpy.context.scene.BIMWorkCalendarProperties
         props.work_time_attributes.clear()
 
-        bonsai.bim.helper.import_attributes2(work_time, props.work_time_attributes, callback)
+        bonsai.bim.helper.import_attributes2(work_time, props.work_time_attributes)
 
     @classmethod
     def enable_editing_work_time(cls, work_time: ifcopenshell.entity_instance) -> None:
@@ -565,6 +570,8 @@ class Sequence(bonsai.core.tool.Sequence):
 
     @classmethod
     def get_work_time_attributes(cls) -> dict[str, Any]:
+        import bonsai.bim.module.sequence.helper as helper
+
         def callback(attributes, prop):
             if "Start" in prop.name or "Finish" in prop.name:
                 if prop.is_null:

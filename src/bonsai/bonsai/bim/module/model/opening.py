@@ -43,7 +43,7 @@ from bpy.types import SpaceView3D
 from bpy.props import FloatProperty
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
 from gpu_extras.batch import batch_for_shader
-from typing import Union, Optional, Any
+from typing import Union, Optional, Any, cast
 
 
 class AddFilledOpening(bpy.types.Operator, tool.Ifc.Operator):
@@ -593,6 +593,7 @@ class AddBoolean(Operator, tool.Ifc.Operator):
 class ShowBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
     bl_idname = "bim.show_booleans"
     bl_label = "Show Booleans"
+    bl_description = "Show active object booleans.\nCan be used to reset booleans positions"
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -609,23 +610,35 @@ class ShowBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
         obj = context.active_object
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
-        booleans = []
+        booleans: list[ifcopenshell.entity_instance] = []
         for item in representation.Items:
             booleans.extend(self.get_booleans(item))
 
         props = bpy.context.scene.BIMModelProperties
         tool.Model.clear_scene_openings()
 
+        existing_booleans = {
+            boolean_obj.data.BIMMeshProperties.ifc_boolean_id: boolean_obj
+            for opening in props.openings
+            if (boolean_obj := opening.obj).data.BIMMeshProperties.obj == obj
+        }
+
         for boolean in booleans:
             boolean_obj = None
 
             if boolean.is_a() == "IfcHalfSpaceSolid":
-                if boolean.BaseSurface.is_a("IfcPlane"):
+                surface = boolean.BaseSurface
+                if surface.is_a("IfcPlane"):
                     boolean_obj = self.create_half_space_solid()
-                    position = boolean.BaseSurface.Position
+                    position = surface.Position
                     position = Matrix(ifcopenshell.util.placement.get_axis2placement(position).tolist())
                     position.translation *= unit_scale
                     boolean_obj.matrix_world = obj.matrix_world @ position
+                else:
+                    self.report(
+                        {"INFO"},
+                        f"Showing boolean using non-IfcPlane IfcSurface ({surface.is_a()}) is not supported.",
+                    )
             else:
                 settings = ifcopenshell.geom.settings()
                 logger = logging.getLogger("ImportIFC")
@@ -642,7 +655,11 @@ class ShowBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
                 boolean_obj.matrix_world = obj.matrix_world
 
             if boolean_obj:
-                boolean_obj.data.BIMMeshProperties.ifc_boolean_id = boolean.id()
+                boolean_id = boolean.id()
+                # Remove existing boolean as it will be reloaded.
+                if boolean_id in existing_booleans:
+                    bpy.data.objects.remove(existing_booleans[boolean_id])
+                boolean_obj.data.BIMMeshProperties.ifc_boolean_id = boolean_id
                 boolean_obj.data.BIMMeshProperties.obj = obj
                 new = props.openings.add()
                 new.obj = boolean_obj
@@ -651,14 +668,14 @@ class ShowBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
             DecorationsHandler.install(bpy.context)
         return {"FINISHED"}
 
-    def get_booleans(self, item):
+    def get_booleans(self, item: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
         results = []
         if item.is_a("IfcBooleanResult"):
             results.extend(self.get_booleans(item.FirstOperand))
             results.append(item.SecondOperand)
         return results
 
-    def create_half_space_solid(self):
+    def create_half_space_solid(self) -> bpy.types.Object:
         bm = bmesh.new()
         bmesh.ops.create_grid(bm, size=0.5)
         bm.verts.ensure_lookup_table()
@@ -675,14 +692,57 @@ class ShowBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
 class HideBooleans(Operator, tool.Ifc.Operator):
     bl_idname = "bim.hide_booleans"
     bl_label = "Hide Booleans"
+    bl_description = (
+        "Hide boolean objects and apply their changed transforms.\n"
+        "If boolean object is active, hide it, otherwise hide all boolean objects"
+    )
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        props = bpy.context.scene.BIMModelProperties
-        for opening in props.openings:
-            obj = opening.obj
-            if obj and obj.data.BIMMeshProperties.ifc_boolean_id:
-                bpy.data.objects.remove(obj)
+        ifc_file = tool.Ifc.get()
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+        builder = ifcopenshell.util.shape_builder.ShapeBuilder(ifc_file)
+
+        set_active_obj = None
+        boolean_objs: list[bpy.types.Object]
+        active_boolean_obj = (obj := context.active_object) and tool.Model.is_boolean_obj(obj)
+        if active_boolean_obj:
+            boolean_objs = [obj]
+            set_active_obj = obj.data.BIMMeshProperties.obj
+        else:
+            props = bpy.context.scene.BIMModelProperties
+            boolean_objs = [obj for o in props.openings if (obj := o.obj)]
+
+        for obj in boolean_objs:
+            ifc_boolean_id = obj.data.BIMMeshProperties.ifc_boolean_id
+            boolean = tool.Ifc.get_entity_by_id(ifc_boolean_id)
+
+            # Update boolean transform.
+            if boolean:
+                main_obj = cast(bpy.types.Object, obj.data.BIMMeshProperties.obj)
+                if boolean.is_a("IfcHalfSpaceSolid"):
+                    surface = boolean.BaseSurface
+
+                    # Only IfcPlane is supported currently.
+                    position = surface.Position
+                    m = Matrix(ifcopenshell.util.placement.get_axis2placement(position).tolist())
+                    m.translation *= unit_scale
+
+                    # Only update if transform was changed.
+                    if not np.allclose(m, obj.matrix_world):
+                        new_m = main_obj.matrix_world.inverted() @ obj.matrix_world
+                        new_m.normalize()
+                        new_m.translation /= unit_scale
+                        new_m = np.array(new_m)
+                        ifcopenshell.util.element.remove_deep2(ifc_file, position)
+                        surface.Position = builder.create_axis2_placement_3d_from_matrix(new_m)
+                        tool.Geometry.reload_representation(main_obj)
+
+            bpy.data.objects.remove(obj)
+        tool.Model.clear_scene_openings()
+
+        if set_active_obj:
+            tool.Blender.set_active_object(set_active_obj)
         return {"FINISHED"}
 
 
@@ -834,6 +894,8 @@ class EditOpenings(Operator, tool.Ifc.Operator):
                         self.get_all_building_objects_of_similar_openings(opening)
                     )  # NB this has nothing to do with clone similar_opening
                     tool.Ifc.unlink(element=opening)
+                    if bpy.context.scene.BIMGeometryProperties.representation_obj == opening_obj:
+                        bpy.context.scene.BIMGeometryProperties.representation_obj = None
                     bpy.data.objects.remove(opening_obj)
 
         tool.Model.reload_body_representation(building_objs)

@@ -101,6 +101,11 @@ class BIMClashProperties(PropertyGroup):
     p1: FloatVectorProperty(name="P1", default=(0.0, 0.0, 0.0), subtype="XYZ")
     p2: FloatVectorProperty(name="P2", default=(0.0, 0.0, 0.0), subtype="XYZ")
     active_clash_text: StringProperty(name="Active Clash Text")
+    export_path: StringProperty(
+        name="Export Path",
+        description=".bcf or .json file to export the clash results to",
+        subtype="FILE_PATH",
+    )
 
     @property
     def active_clash_set(self):

@@ -78,6 +78,7 @@ class ExecuteIfcFM(bpy.types.Operator):
                 writer.write_ods(filepath)
             elif props.format == "xlsx":
                 writer.write_xlsx(filepath)
+            self.report({"INFO"}, "IfcFM spreadsheet is saved.")
         return {"FINISHED"}
 
 
@@ -105,15 +106,17 @@ class SelectFMSpreadsheetFiles(bpy.types.Operator):
 
 class ExecuteIfcFMFederate(bpy.types.Operator):
     bl_idname = "bim.execute_ifcfm_federate"
-    bl_label = "Execute IfcFM"
-    file_format: bpy.props.StringProperty()
+    bl_label = "Merge IfcFM SpreadSheets"
     filter_glob: bpy.props.StringProperty(default="*.ods;*.xlsx", options={"HIDDEN"})
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     @classmethod
     def poll(cls, context):
         props = context.scene.BIMFMProperties
-        return props.spreadsheet_files
+        if not props.spreadsheet_files:
+            cls.poll_message_set("No spreadsheet files selected.")
+            return False
+        return True
 
     def invoke(self, context, event):
         props = context.scene.BIMFMProperties
@@ -132,4 +135,5 @@ class ExecuteIfcFMFederate(bpy.types.Operator):
             writer.write_ods(self.filepath)
         elif props.format == "xlsx":
             writer.write_xlsx(self.filepath)
+        self.report({"INFO"}, "IfcFM spreadsheets is saved.")
         return {"FINISHED"}

@@ -17,7 +17,6 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from ifcopenshell.util.doc import get_entity_doc
 import bonsai.tool as tool
 from bonsai.bim.prop import StrProperty, Attribute
 from bonsai.bim.module.owner.data import OwnerData, ActorData, ObjectActorData
@@ -67,24 +66,15 @@ def update_actor_class(self, context):
 
 
 def get_actor_class_enum(self, context):
-    version = tool.Ifc.get_schema()
-    return [
-        ("IfcActor", "Actor", get_entity_doc(version, "IfcActor").get("description", "")),
-        ("IfcOccupant", "Occupant", get_entity_doc(version, "IfcOccupant").get("description", "")),
-    ]
+    if not ActorData.is_loaded:
+        ActorData.load()
+    return ActorData.data["actor_class_enum"]
 
 
 def get_actor_type_enum(self, context):
-    version = tool.Ifc.get_schema()
-    return [
-        ("IfcPerson", "Person", get_entity_doc(version, "IfcPerson").get("description", "")),
-        ("IfcOrganization", "Organisation", get_entity_doc(version, "IfcOrganization").get("description", "")),
-        (
-            "IfcPersonAndOrganization",
-            "User",
-            get_entity_doc(version, "IfcPersonAndOrganization").get("description", ""),
-        ),
-    ]
+    if not ActorData.is_loaded:
+        ActorData.load()
+    return ActorData.data["actor_type_enum"]
 
 
 class BIMOwnerProperties(PropertyGroup):

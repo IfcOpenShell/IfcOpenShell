@@ -131,6 +131,7 @@ class AddDrawing(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_drawing"
     bl_label = "Add Drawing"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Add a drawing view to the IFC project"
 
     def _execute(self, context):
         self.props = context.scene.DocProperties
@@ -154,9 +155,18 @@ class AddDrawing(bpy.types.Operator, tool.Ifc.Operator):
 class DuplicateDrawing(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.duplicate_drawing"
     bl_label = "Duplicate Drawing"
+    bl_description = "Make a copy of currently selected drawing"
     bl_options = {"REGISTER", "UNDO"}
     drawing: bpy.props.IntProperty()
     should_duplicate_annotations: bpy.props.BoolProperty(name="Should Duplicate Annotations", default=False)
+
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.DocProperties
+        if not tool.Drawing.get_active_drawing_item():
+            cls.poll_message_set("No drawing selected.")
+            return False
+        return True
 
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self)
@@ -190,15 +200,23 @@ class CreateDrawing(bpy.types.Operator):
     bl_idname = "bim.create_drawing"
     bl_label = "Create Drawing"
     bl_description = (
-        "Creates/refreshes a .svg drawing based on currently active camera.\n\n"
-        + "SHIFT+CLICK to print all selected drawings"
+        "Creates/refreshes a .svg drawing based on currently active camera\n"
+        + 'and open with default system viewer or using "svg_command" or\n'
+        + '"pdf_command" from the Bonsai preferences (if provided).\n\n'
+        + "SHIFT+CLICK to create/refresh all shown checked drawings, but doesn't\n"
+        + "open them for viewing.\n\n"
+        + "Add the CTRL modifier to optionally open drawings to view them as\n"
+        + "they are created"
     )
     print_all: bpy.props.BoolProperty(name="Print All", default=False, options={"SKIP_SAVE"})
+    open_viewer: bpy.props.BoolProperty(name="Open in Viewer", default=False, options={"SKIP_SAVE"})
     sync: bpy.props.BoolProperty(
         name="Sync Before Creating Drawing",
         description="Could save some time if you're sure IFC and current Blender session are already in sync",
         default=True,
     )
+
+    drawing_name: str
 
     @classmethod
     def poll(cls, context):
@@ -221,6 +239,8 @@ class CreateDrawing(bpy.types.Operator):
         # make sure to use SKIP_SAVE on property, otherwise it might get stuck
         if event.type == "LEFTMOUSE" and event.shift:
             self.print_all = True
+        if event.type == "LEFTMOUSE" and event.ctrl:
+            self.open_viewer = True
         return self.execute(context)
 
     def execute(self, context):
@@ -289,8 +309,11 @@ class CreateDrawing(bpy.types.Operator):
                 with profile("Combine SVG layers"):
                     svg_path = self.combine_svgs(context, underlay_svg, linework_svg, annotation_svg)
 
-            tool.Drawing.open_with_user_command(tool.Blender.get_addon_preferences().svg_command, svg_path)
-
+            if self.open_viewer:
+                drawing_uri = tool.Drawing.get_document_uri(tool.Drawing.get_drawing_document(self.drawing))
+                tool.Drawing.open_with_user_command(tool.Blender.get_addon_preferences().svg_command, drawing_uri)
+        if not self.open_viewer:
+            self.report({"INFO"}, f"{len(drawings_to_print)} drawings created...")
         if self.print_all:
             bpy.ops.bim.activate_drawing(drawing=original_drawing_id, should_view_from_camera=False)
         return {"FINISHED"}
@@ -305,7 +328,9 @@ class CreateDrawing(bpy.types.Operator):
             width = height / render.resolution_y * render.resolution_x
         return width, height
 
-    def combine_svgs(self, context, underlay, linework, annotation):
+    def combine_svgs(
+        self, context: bpy.types.Context, underlay: Optional[str], linework: Optional[str], annotation: Optional[str]
+    ) -> str:
         # Hacky :)
         svg_path = self.get_svg_path()
         with open(svg_path, "w") as outfile:
@@ -349,7 +374,7 @@ class CreateDrawing(bpy.types.Operator):
             outfile.write("</svg>")
         return svg_path
 
-    def generate_underlay(self, context):
+    def generate_underlay(self, context: bpy.types.Context) -> Union[str, None]:
         if not ifcopenshell.util.element.get_pset(self.drawing, "EPset_Drawing", "HasUnderlay"):
             return
         svg_path = self.get_svg_path(cache_type="underlay")
@@ -360,7 +385,7 @@ class CreateDrawing(bpy.types.Operator):
         for obj in bpy.context.view_layer.objects:
             obj.hide_render = obj.name not in visible_object_names
 
-        context.scene.render.filepath = svg_path[0:-4] + ".png"
+        context.scene.render.filepath = str(Path(svg_path).with_suffix(".png"))
         drawing_style = context.scene.DocProperties.drawing_styles[self.cprops.active_drawing_style_index]
 
         if drawing_style.render_type == "DEFAULT":
@@ -487,35 +512,11 @@ class CreateDrawing(bpy.types.Operator):
                 geom_settings = ifcopenshell.geom.settings()
                 geom_settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
                 geom_settings.set("iterator-output", ifcopenshell.ifcopenshell_wrapper.NATIVE)
-                # See bug 5231 - offset no longer available in v0.8.0
-                absolute_placements = set()
-                placement_replacements = {}
+
                 if ifc.by_id(context[0]).ContextType == "Plan" and "PLAN_VIEW" in target_view:
                     # A 2mm Z offset to combat Z-fighting in plan or RCPs
-                    offset_z = 0.002 if target_view == "PLAN_VIEW" else -0.002
+                    geom_settings.set("model-offset", (0.0, 0.0, 0.002 if target_view == "PLAN_VIEW" else -0.002))
 
-                    for product in self.file.by_type("IfcProduct"):
-                        if not product.ObjectPlacement:
-                            continue
-                        absolute_placement = self.get_absolute_placement(product.ObjectPlacement)
-                        if absolute_placement.is_a("IfcLocalPlacement"):
-                            absolute_placements.add(absolute_placement)
-
-                    transformation = np.eye(4)
-                    transformation[2][3] = offset_z
-
-                    # Don't use undo system in case we bork up a parent caller
-                    for placement in absolute_placements:
-                        old = placement.RelativePlacement
-                        new = self.get_relative_placement(
-                            ifc, transformation @ ifcopenshell.util.placement.get_local_placement(placement)
-                        )
-                        placement.RelativePlacement = new
-                        placement_replacements[placement] = (old, new)
-
-                    # offset = ifcopenshell.ifcopenshell_wrapper.float_array_3()
-                    # offset[2] = 0.002 if target_view == "PLAN_VIEW" else -0.002
-                    # geom_settings.offset = offset
                 geom_settings.set("context-ids", context)
                 it = ifcopenshell.geom.iterator(
                     geom_settings, ifc, multiprocessing.cpu_count(), include=drawing_elements
@@ -526,36 +527,6 @@ class CreateDrawing(bpy.types.Operator):
                     self.serialiser.write(elem)
                     tree.add_element(elem)
                 drawing_elements -= processed
-
-                for placement, oldnew in placement_replacements.items():
-                    old, new = oldnew
-                    placement.RelativePlacement = old
-                    ifcopenshell.util.element.remove_deep2(ifc, new)
-                placement_replacements = {}
-
-    def get_absolute_placement(self, object_placement):
-        if object_placement.PlacementRelTo:
-            return self.get_absolute_placement(object_placement.PlacementRelTo)
-        return object_placement
-
-    def get_relative_placement(self, ifc, m):
-        x = np.array((m[0][0], m[1][0], m[2][0]))
-        z = np.array((m[0][2], m[1][2], m[2][2]))
-        o = np.array((m[0][3], m[1][3], m[2][3]))
-        object_matrix = ifcopenshell.util.placement.a2p(o, z, x)
-        return self.create_ifc_axis_2_placement_3d(
-            ifc,
-            object_matrix[:, 3][0:3],
-            object_matrix[:, 2][0:3],
-            object_matrix[:, 0][0:3],
-        )
-
-    def create_ifc_axis_2_placement_3d(self, ifc, point, up, forward):
-        return self.file.createIfcAxis2Placement3D(
-            self.file.createIfcCartesianPoint(point.tolist()),
-            self.file.createIfcDirection(up.tolist()),
-            self.file.createIfcDirection(forward.tolist()),
-        )
 
     def generate_bisect_linework(self, context: bpy.types.Context, root):
         camera_matrix_i = context.scene.camera.matrix_world.inverted()
@@ -599,7 +570,6 @@ class CreateDrawing(bpy.types.Operator):
         if os.path.isfile(svg_path) and self.props.should_use_linework_cache:
             return svg_path
 
-        context.scene.render.engine = "BLENDER_WORKBENCH"
         context.scene.render.use_freestyle = True
         context.scene.svg_export.use_svg_export = True
 
@@ -702,6 +672,7 @@ class CreateDrawing(bpy.types.Operator):
         if tool.Drawing.is_camera_orthographic():
             self.generate_bisect_linework(context, root)
             self.merge_linework_and_add_metadata(root)
+            self.move_elements_to_top(root)
 
         with open(svg_path, "wb") as svg:
             svg.write(etree.tostring(root))
@@ -798,9 +769,11 @@ class CreateDrawing(bpy.types.Operator):
             self.remove_cut_linework(root)
             self.generate_bisect_linework(context, root)
             self.merge_linework_and_add_metadata(root)
+            self.move_elements_to_top(root)
         elif self.camera.data.BIMCameraProperties.cut_mode == "OPENCASCADE":
             self.move_projection_to_bottom(root)
             self.merge_linework_and_add_metadata(root)
+            self.move_elements_to_top(root)
 
         if self.camera.data.BIMCameraProperties.fill_mode == "SHAPELY":
             # shapely variant
@@ -1365,7 +1338,23 @@ class CreateDrawing(bpy.types.Operator):
             projection.getparent().remove(projection)
             group.insert(0, projection)
 
-    def generate_annotation(self, context):
+    def move_elements_to_top(self, root):
+        group = root.find("{http://www.w3.org/2000/svg}g")
+
+        # TODO: Make this an assignable preference
+        classes_to_move = ["IfcColumn", "IfcBeam", "EPsetStatusStatus-NEW"]
+
+        # Iterate through classes in order of preference
+        for class_name in classes_to_move:
+            xpath_query = f".//svg:g[contains(@class, '{class_name}')]"
+            elements_to_move = root.xpath(xpath_query, namespaces={"svg": "http://www.w3.org/2000/svg"})
+
+            # Move each element to the end of the group (effectively placing them at the top visually)
+            for element in elements_to_move:
+                element.getparent().remove(element)
+                group.append(element)
+
+    def generate_annotation(self, context: bpy.types.Context) -> Union[str, None]:
         if not ifcopenshell.util.element.get_pset(self.drawing, "EPset_Drawing", "HasAnnotation"):
             return
         svg_path = self.get_svg_path(cache_type="annotation")
@@ -1407,10 +1396,7 @@ class CreateDrawing(bpy.types.Operator):
         for area in areas:
             if area.type != "VIEW_3D":
                 continue
-            for space in area.spaces:
-                if space.type != "VIEW_3D":
-                    continue
-                return space
+            return area.spaces.active
 
     def get_material_name(self, element: ifcopenshell.entity_instance) -> str:
         if hasattr(element, "Name") and element.Name:
@@ -1421,12 +1407,14 @@ class CreateDrawing(bpy.types.Operator):
 
     def get_svg_path(self, cache_type: Optional[str] = None) -> str:
         drawing_path = tool.Drawing.get_document_uri(self.camera_document)
+        assert drawing_path
         drawings_dir = os.path.dirname(drawing_path)
 
         if cache_type:
             drawings_dir = os.path.join(drawings_dir, "cache")
             os.makedirs(drawings_dir, exist_ok=True)
-            return os.path.join(drawings_dir, f"{self.drawing_name}-{cache_type}.svg")
+            filename = tool.Drawing.sanitise_filename(f"{self.drawing_name}-{cache_type}.svg")
+            return os.path.join(drawings_dir, filename)
         os.makedirs(drawings_dir, exist_ok=True)
         return drawing_path
 
@@ -1462,14 +1450,56 @@ class AddSheet(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_sheet"
     bl_label = "Add Sheet"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Add a sheet to the project"
 
     def _execute(self, context):
         core.add_sheet(tool.Ifc, tool.Drawing, titleblock=context.scene.DocProperties.titleblock)
 
 
-class OpenSheet(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.open_sheet"
+class DuplicateSheet(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.duplicate_sheet"
+    bl_label = "Duplicate Sheet"
+    bl_description = "Make a copy of currently selected sheet"
+    bl_options = {"REGISTER", "UNDO"}
+    drawing: bpy.props.IntProperty()
+
+    @classmethod
+    def poll(cls, context):
+        # Unconditionally disable until implemented
+        cls.poll_message_set("Not implemented yet.")
+        return False
+
+        props = context.scene.DocProperties
+        if not tool.Drawing.get_active_drawing_item():
+            cls.poll_message_set("No drawing selected.")
+            return False
+        return True
+
+    def _execute(self, context):
+        pass
+        """
+        self.props = context.scene.DocProperties
+        core.duplicate_sheet(
+            tool.Ifc,
+            tool.Drawing,
+            sheet=tool.Ifc.get().by_id(self.sheet),
+        )
+        try:
+            sheet = tool.Ifc.get().by_id(self.props.active_sheet_id)
+            core.sync_references(tool.Ifc, tool.Collector, tool.Sheet, drawing=sheet)
+        except:
+            pass
+        """
+
+
+class OpenLayout(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.open_layout"
     bl_label = "Open Sheet Layout"
+    bl_description = (
+        "Opens selected .svg layout with default system viewer\n"
+        + 'or using "layout_svg_command" from the Bonsai preferences\n'
+        + "(if provided)"
+    )
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
@@ -1477,12 +1507,102 @@ class OpenSheet(bpy.types.Operator, tool.Ifc.Operator):
         sheet = tool.Ifc.get().by_id(self.props.sheets[self.props.active_sheet_index].ifc_definition_id)
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.update_sheet_drawing_sizes(sheet)
-        core.open_sheet(tool.Drawing, sheet=sheet)
+        core.open_layout(tool.Drawing, sheet=sheet)
+
+
+class SelectAllSheets(bpy.types.Operator):
+    bl_idname = "bim.select_all_sheets"
+    bl_label = "Select All Sheetss"
+    view: bpy.props.StringProperty()
+    bl_description = "Select all sheets in the sheet list.\n\n" + "SHIFT+CLICK to deselect all sheets"
+    select_all: bpy.props.BoolProperty(name="Open All", default=True, options={"SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        # deselect all sheets on shift+click
+        # make sure to use SKIP_SAVE on property, otherwise it might get stuck
+        if event.type == "LEFTMOUSE" and event.shift:
+            self.select_all = False
+        return self.execute(context)
+
+    def execute(self, context):
+        for sheet in context.scene.DocProperties.sheets:
+            if sheet.is_selected != self.select_all:
+                sheet.is_selected = self.select_all
+        return {"FINISHED"}
+
+
+class OpenSheet(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.open_sheet"
+    bl_label = "Open Sheet"
+    bl_description = (
+        "Opens selected sheet with default system viewer\n"
+        + 'or using "svg_command" or "pdf_command" from\n'
+        + "the Bonsai preferences (if provided).\n\n"
+        + "SHIFT+CLICK to open all shown checked sheets"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+    open_all: bpy.props.BoolProperty(name="Open All", default=False, options={"SKIP_SAVE"})
+
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.DocProperties
+        if not tool.Drawing.get_active_sheet_item(is_sheet=True):
+            cls.poll_message_set("No sheet selected.")
+            return False
+        return True
+
+    def invoke(self, context, event):
+        # opening all sheets on shift+click
+        # make sure to use SKIP_SAVE on property, otherwise it might get stuck
+        if event.type == "LEFTMOUSE" and event.shift:
+            self.open_all = True
+        return self.execute(context)
+
+    def execute(self, context):
+        self.props = context.scene.DocProperties
+        svg2pdf_command = tool.Blender.get_addon_preferences().svg2pdf_command
+
+        if self.open_all:
+            sheets = [
+                tool.Ifc.get().by_id(s.ifc_definition_id) for s in self.props.sheets if s.is_sheet and s.is_selected
+            ]
+        else:
+            sheets = [tool.Ifc.get().by_id(self.props.sheets[self.props.active_sheet_index].ifc_definition_id)]
+
+        sheet_uris = []
+        sheets_not_found = []
+
+        for sheet in sheets:
+            if not sheet.is_a("IfcDocumentInformation"):
+                continue
+            sheet_builder = sheeter.SheetBuilder()
+            references = sheet_builder.build(sheet)
+            sheet_uri = references["SHEET"]
+            if svg2pdf_command:
+                sheet_uri = os.path.splitext(sheet_uri)[0] + ".pdf"
+            sheet_uris.append(sheet_uri)
+            if not os.path.exists(sheet_uri):
+                sheets_not_found.append(sheet.Name)
+
+        if sheets_not_found:
+            msg = "Some sheets .svg/.pdf files were not found, need to create them first: \n{}.".format(
+                "\n".join(sheets_not_found)
+            )
+            self.report({"ERROR"}, msg)
+            return {"CANCELLED"}
+
+        for sheet_uri in sheet_uris:
+            if svg2pdf_command:
+                tool.Drawing.open_with_user_command(tool.Blender.get_addon_preferences().pdf_command, sheet_uri)
+            else:
+                tool.Drawing.open_with_user_command(tool.Blender.get_addon_preferences().svg_command, sheet_uri)
+        return {"FINISHED"}
 
 
 class AddDrawingToSheet(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_drawing_to_sheet"
-    bl_label = "Add Drawing To Sheet"
+    bl_label = "Add Selected Drawing To Sheet"
+    bl_description = "Add the drawing selected in the\nDrawings list below to the sheet"
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -1527,7 +1647,14 @@ class AddDrawingToSheet(bpy.types.Operator, tool.Ifc.Operator):
         attributes = tool.Drawing.generate_reference_attributes(
             reference,
             Identification=str(
-                len([r for r in references if tool.Drawing.get_reference_description(r) in ("DRAWING", "SCHEDULE")]) + 1
+                len(
+                    [
+                        r
+                        for r in references
+                        if tool.Drawing.get_reference_description(r) in ("DRAWING", "SCHEDULE", "REFERENCE")
+                    ]
+                )
+                + 1
             ),
             Location=drawing_reference.Location,
             Description="DRAWING",
@@ -1543,8 +1670,21 @@ class AddDrawingToSheet(bpy.types.Operator, tool.Ifc.Operator):
 class RemoveDrawingFromSheet(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_drawing_from_sheet"
     bl_label = "Remove Drawing From Sheet"
+    bl_description = "Remove currently selected drawing from sheet"
     bl_options = {"REGISTER", "UNDO"}
     reference: bpy.props.IntProperty()
+
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.DocProperties
+        active_item = tool.Drawing.get_active_sheet_item()
+        if active_item is None:
+            return False
+
+        if active_item.reference_type == "TITLEBLOCK":
+            cls.poll_message_set("No effect deleting this.")
+            return False
+        return True
 
     def _execute(self, context):
         reference = tool.Ifc.get().by_id(self.reference)
@@ -1562,98 +1702,128 @@ class RemoveDrawingFromSheet(bpy.types.Operator, tool.Ifc.Operator):
 class CreateSheets(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.create_sheets"
     bl_label = "Create Sheets"
-    bl_description = "Build a sheet from the sheet layout"
+    bl_description = (
+        "Build and open selected sheet from the sheet layout and\n"
+        + "optionally create .pdf and .dxf from commands in\n"
+        + "the Bonsai preferences (if provided).\n\n"
+        + "SHIFT+CLICK to create all shown checked sheets, but doesn't\n"
+        + "open them for viewing\n\n"
+        + "Add the CTRL modifier to optionally open sheets to view them as\n"
+        + "they are created"
+    )
     bl_options = {"REGISTER", "UNDO"}
+
+    create_all: bpy.props.BoolProperty(name="Create All", default=False, options={"SKIP_SAVE"})
+    open_viewer: bpy.props.BoolProperty(name="Open in Viewer", default=False, options={"SKIP_SAVE"})
 
     @classmethod
     def poll(cls, context):
-        return context.scene.DocProperties.sheets and context.scene.BIMProperties.data_dir
+        props = context.scene.DocProperties
+        if not tool.Drawing.get_active_sheet_item(is_sheet=True):
+            cls.poll_message_set("No sheet selected.")
+            return False
+        return props.sheets and context.scene.BIMProperties.data_dir
+
+    def invoke(self, context, event):
+        # opening all sheets on shift+click
+        # make sure to use SKIP_SAVE on property, otherwise it might get stuck
+        if event.type == "LEFTMOUSE" and event.shift:
+            self.create_all = True
+        if event.type == "LEFTMOUSE" and event.ctrl:
+            self.open_viewer = True
+        return self.execute(context)
 
     def _execute(self, context):
         scene = context.scene
         props = scene.DocProperties
-        active_sheet = props.sheets[props.active_sheet_index]
-        sheet = tool.Ifc.get().by_id(active_sheet.ifc_definition_id)
-
-        # Update any drawing boundary changes
-        sheet_builder = sheeter.SheetBuilder()
-        sheet_builder.update_sheet_drawing_sizes(sheet)
-
-        if not sheet.is_a("IfcDocumentInformation"):
-            return
-
-        name = os.path.splitext(os.path.basename(tool.Drawing.get_document_uri(sheet)))[0]
-        sheet_builder = sheeter.SheetBuilder()
-        sheet_builder.data_dir = scene.BIMProperties.data_dir
-
-        references = sheet_builder.build(sheet)
-        raster_references = [tool.Ifc.get_relative_uri(r) for r in references["RASTER"]]
-
-        # These variables will be made available to the evaluated commands
-        svg = references["SHEET"]
-        pdf = os.path.splitext(svg)[0] + ".pdf"
-        replacements = {
-            "svg": svg,
-            "basename": os.path.basename(svg),
-            "path": os.path.dirname(svg),
-            "pdf": pdf,
-            "eps": os.path.splitext(svg)[0] + ".eps",
-            "dxf": os.path.splitext(svg)[0] + ".dxf",
-        }
-
-        has_sheet_reference = False
-        for reference in tool.Drawing.get_document_references(sheet):
-            reference_description = tool.Drawing.get_reference_description(reference)
-            if reference_description == "SHEET":
-                has_sheet_reference = True
-            elif reference_description == "RASTER":
-                if reference.Location in raster_references:
-                    raster_references.remove(reference.Location)
-                else:
-                    tool.Ifc.run("document.remove_reference", reference=reference)
-
-        if not has_sheet_reference:
-            reference = tool.Ifc.run("document.add_reference", information=sheet)
-            tool.Ifc.run(
-                "document.edit_reference",
-                reference=reference,
-                attributes=tool.Drawing.generate_reference_attributes(
-                    reference, Location=tool.Ifc.get_relative_uri(svg), Description="SHEET"
-                ),
-            )
-
-        for raster_reference in raster_references:
-            reference = tool.Ifc.run("document.add_reference", information=sheet)
-            tool.Ifc.run(
-                "document.edit_reference",
-                reference=reference,
-                attributes=tool.Drawing.generate_reference_attributes(
-                    reference, Location=tool.Ifc.get_relative_uri(raster_reference), Description="RASTER"
-                ),
-            )
-
         svg2pdf_command = tool.Blender.get_addon_preferences().svg2pdf_command
         svg2dxf_command = tool.Blender.get_addon_preferences().svg2dxf_command
 
-        if svg2pdf_command:
-            # With great power comes great responsibility. Example:
-            # [["inkscape", "svg", "-o", "pdf"]]
-            commands = json.loads(svg2pdf_command)
-            for command in commands:
-                subprocess.run([replacements.get(c, c) for c in command])
-
-        if svg2dxf_command:
-            # With great power comes great responsibility. Example:
-            # [["inkscape", "svg", "-o", "eps"], ["pstoedit", "-dt", "-f", "dxf:-polyaslines -mm", "eps", "dxf", "-psarg", "-dNOSAFER"]]
-            commands = json.loads(svg2dxf_command)
-            for command in commands:
-                command[0] = shutil.which(command[0]) or command[0]
-                subprocess.run([replacements.get(c, c) for c in command])
-
-        if svg2pdf_command:
-            tool.Drawing.open_with_user_command(tool.Blender.get_addon_preferences().pdf_command, pdf)
+        if self.create_all:
+            sheets = [tool.Ifc.get().by_id(s.ifc_definition_id) for s in props.sheets if s.is_sheet and s.is_selected]
         else:
-            tool.Drawing.open_with_user_command(tool.Blender.get_addon_preferences().svg_command, svg)
+            sheets = [tool.Ifc.get().by_id(props.sheets[props.active_sheet_index].ifc_definition_id)]
+
+        for sheet in sheets:
+            # Update any drawing boundary changes
+            sheet_builder = sheeter.SheetBuilder()
+            sheet_builder.update_sheet_drawing_sizes(sheet)
+
+            if not sheet.is_a("IfcDocumentInformation"):
+                return
+
+            name = os.path.splitext(os.path.basename(tool.Drawing.get_document_uri(sheet)))[0]
+            sheet_builder = sheeter.SheetBuilder()
+            sheet_builder.data_dir = scene.BIMProperties.data_dir
+
+            references = sheet_builder.build(sheet)
+            raster_references = [tool.Ifc.get_relative_uri(r) for r in references["RASTER"]]
+
+            # These variables will be made available to the evaluated commands
+            svg = references["SHEET"]
+            pdf = os.path.splitext(svg)[0] + ".pdf"
+            replacements = {
+                "svg": svg,
+                "basename": os.path.basename(svg),
+                "path": os.path.dirname(svg),
+                "pdf": pdf,
+                "eps": os.path.splitext(svg)[0] + ".eps",
+                "dxf": os.path.splitext(svg)[0] + ".dxf",
+            }
+
+            has_sheet_reference = False
+            for reference in tool.Drawing.get_document_references(sheet):
+                reference_description = tool.Drawing.get_reference_description(reference)
+                if reference_description == "SHEET":
+                    has_sheet_reference = True
+                elif reference_description == "RASTER":
+                    if reference.Location in raster_references:
+                        raster_references.remove(reference.Location)
+                    else:
+                        tool.Ifc.run("document.remove_reference", reference=reference)
+
+            if not has_sheet_reference:
+                reference = tool.Ifc.run("document.add_reference", information=sheet)
+                tool.Ifc.run(
+                    "document.edit_reference",
+                    reference=reference,
+                    attributes=tool.Drawing.generate_reference_attributes(
+                        reference, Location=tool.Ifc.get_relative_uri(svg), Description="SHEET"
+                    ),
+                )
+
+            for raster_reference in raster_references:
+                reference = tool.Ifc.run("document.add_reference", information=sheet)
+                tool.Ifc.run(
+                    "document.edit_reference",
+                    reference=reference,
+                    attributes=tool.Drawing.generate_reference_attributes(
+                        reference, Location=tool.Ifc.get_relative_uri(raster_reference), Description="RASTER"
+                    ),
+                )
+
+            if svg2pdf_command:
+                # With great power comes great responsibility. Example:
+                # [["inkscape", "svg", "-o", "pdf"]]
+                commands = json.loads(svg2pdf_command)
+                for command in commands:
+                    subprocess.run([replacements.get(c, c) for c in command])
+
+            if svg2dxf_command:
+                # With great power comes great responsibility. Example:
+                # [["inkscape", "svg", "-o", "eps"], ["pstoedit", "-dt", "-f", "dxf:-polyaslines -mm", "eps", "dxf", "-psarg", "-dNOSAFER"]]
+                commands = json.loads(svg2dxf_command)
+                for command in commands:
+                    command[0] = shutil.which(command[0]) or command[0]
+                    subprocess.run([replacements.get(c, c) for c in command])
+
+            if self.open_viewer:
+                if svg2pdf_command:
+                    tool.Drawing.open_with_user_command(tool.Blender.get_addon_preferences().pdf_command, pdf)
+                else:
+                    tool.Drawing.open_with_user_command(tool.Blender.get_addon_preferences().svg_command, svg)
+        if not self.open_viewer:
+            self.report({"INFO"}, f"{len(sheets)} sheets created...")
 
 
 class SelectAllDrawings(bpy.types.Operator):
@@ -1682,11 +1852,19 @@ class OpenDrawing(bpy.types.Operator):
     bl_label = "Open Drawing"
     view: bpy.props.StringProperty()
     bl_description = (
-        "Opens a .svg drawing based on currently active camera with default system viewer\n"
+        "Opens selected .svg drawing with default system viewer\n"
         + 'or using "svg_command" from the Bonsai preferences (if provided).\n\n'
-        + "SHIFT+CLICK to open all selected drawings"
+        + "SHIFT+CLICK to open all shown checked drawings"
     )
     open_all: bpy.props.BoolProperty(name="Open All", default=False, options={"SKIP_SAVE"})
+
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.DocProperties
+        if not tool.Drawing.get_active_drawing_item():
+            cls.poll_message_set("No drawing selected.")
+            return False
+        return True
 
     def invoke(self, context, event):
         # opening all drawings on shift+click
@@ -1696,12 +1874,13 @@ class OpenDrawing(bpy.types.Operator):
         return self.execute(context)
 
     def execute(self, context):
+        self.props = context.scene.DocProperties
         if self.open_all:
             drawings = [
-                tool.Ifc.get().by_id(d.ifc_definition_id) for d in context.scene.DocProperties.drawings if d.is_selected
+                tool.Ifc.get().by_id(d.ifc_definition_id) for d in self.props.drawings if d.is_drawing and d.is_selected
             ]
         else:
-            drawings = [tool.Ifc.get().by_id(context.scene.DocProperties.drawings.get(self.view).ifc_definition_id)]
+            drawings = [tool.Ifc.get().by_id(self.props.drawings.get(self.view).ifc_definition_id)]
 
         drawing_uris = []
         drawings_not_found = []
@@ -1713,7 +1892,7 @@ class OpenDrawing(bpy.types.Operator):
                 drawings_not_found.append(drawing.Name)
 
         if drawings_not_found:
-            msg = "Some drawings .svg files were not found, need to print them first: \n{}.".format(
+            msg = "Some drawings .svg files were not found, need to create them first: \n{}.".format(
                 "\n".join(drawings_not_found)
             )
             self.report({"ERROR"}, msg)
@@ -1786,20 +1965,7 @@ class ActivateModel(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class ActivateDrawing(bpy.types.Operator):
-    bl_idname = "bim.activate_drawing"
-    bl_label = "Activate Drawing"
-    bl_options = {"REGISTER", "UNDO"}
-    bl_description = (
-        "Activates the selected drawing view.\n\n"
-        + "ALT+CLICK to keep the viewport position.\n\n"
-        + "SHIFT+CLICK to load a quick preview of the drawing view."
-    )
-
-    drawing: bpy.props.IntProperty()
-    should_view_from_camera: bpy.props.BoolProperty(name="Should View From Camera", default=True, options={"SKIP_SAVE"})
-    use_quick_preview: bpy.props.BoolProperty(name="Use Quick Preview", default=False, options={"SKIP_SAVE"})
-
+class ActivateDrawingBase:
     def invoke(self, context, event):
         if event.type == "LEFTMOUSE" and event.alt:
             self.should_view_from_camera = False
@@ -1848,6 +2014,52 @@ class ActivateDrawing(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class ActivateDrawing(bpy.types.Operator, ActivateDrawingBase):
+    bl_idname = "bim.activate_drawing"
+    bl_label = "Activate Drawing"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = (
+        "Activates the selected drawing view.\n\n"
+        + "ALT+CLICK to keep the viewport position.\n\n"
+        + "SHIFT+CLICK to load a quick preview of the drawing view"
+    )
+
+    drawing: bpy.props.IntProperty()
+    should_view_from_camera: bpy.props.BoolProperty(name="Should View From Camera", default=True, options={"SKIP_SAVE"})
+    use_quick_preview: bpy.props.BoolProperty(name="Use Quick Preview", default=False, options={"SKIP_SAVE"})
+
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.DocProperties
+        if not tool.Drawing.get_active_drawing_item():
+            cls.poll_message_set("No drawing selected.")
+            return False
+        return True
+
+
+class ActivateDrawingFromSheet(bpy.types.Operator, ActivateDrawingBase):
+    bl_idname = "bim.activate_drawing_from_sheet"
+    bl_label = "Activate Drawing"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = (
+        "Activates the selected drawing view.\n\n"
+        + "ALT+CLICK to keep the viewport position.\n\n"
+        + "SHIFT+CLICK to load a quick preview of the drawing view"
+    )
+
+    drawing: bpy.props.IntProperty()
+    should_view_from_camera: bpy.props.BoolProperty(name="Should View From Camera", default=True, options={"SKIP_SAVE"})
+    use_quick_preview: bpy.props.BoolProperty(name="Use Quick Preview", default=False, options={"SKIP_SAVE"})
+
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.DocProperties
+        if not tool.Drawing.get_active_sheet_item(reference_type="DRAWING"):
+            cls.poll_message_set("No drawing selected.")
+            return False
+        return True
+
+
 class SelectDocIfcFile(bpy.types.Operator):
     bl_idname = "bim.select_doc_ifc_file"
     bl_label = "Select Documentation IFC File"
@@ -1887,6 +2099,14 @@ class RemoveDrawing(bpy.types.Operator, tool.Ifc.Operator):
     drawing: bpy.props.IntProperty()
     remove_all: bpy.props.BoolProperty(name="Remove All", default=False, options={"SKIP_SAVE"})
 
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.DocProperties
+        if not tool.Drawing.get_active_drawing_item():
+            cls.poll_message_set("No drawing selected.")
+            return False
+        return True
+
     def invoke(self, context, event):
         # removing all selected drawings on shift+click
         # make sure to use SKIP_SAVE on property, otherwise it might get stuck
@@ -1895,9 +2115,12 @@ class RemoveDrawing(bpy.types.Operator, tool.Ifc.Operator):
         return self.execute(context)
 
     def _execute(self, context):
+        props = context.scene.DocProperties
         if self.remove_all:
             drawings = [
-                tool.Ifc.get().by_id(d.ifc_definition_id) for d in context.scene.DocProperties.drawings if d.is_selected
+                tool.Ifc.get().by_id(d.ifc_definition_id)
+                for d in context.scene.DocProperties.drawings
+                if d.is_drawing and d.is_selected
             ]
         else:
             if not self.drawing:
@@ -1905,13 +2128,15 @@ class RemoveDrawing(bpy.types.Operator, tool.Ifc.Operator):
                 return {"CANCELLED"}
             drawings = [tool.Ifc.get().by_id(self.drawing)]
 
-        removed_drawings = [drawing.id() for drawing in drawings]
-
         for drawing in drawings:
             sheet_references = tool.Drawing.get_sheet_references(drawing)
             for reference in sheet_references:
                 bpy.ops.bim.remove_drawing_from_sheet(reference=reference.id())
             core.remove_drawing(tool.Ifc, tool.Drawing, drawing=drawing)
+
+        # In case we removed the active drawing.
+        if not context.scene.camera and props.should_draw_decorations:
+            props.should_draw_decorations = False
 
 
 class ReloadDrawingStyles(bpy.types.Operator):
@@ -2070,10 +2295,7 @@ class SaveDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
         for area in context.screen.areas:
             if area.type != "VIEW_3D":
                 continue
-            for space in area.spaces:
-                if space.type != "VIEW_3D":
-                    continue
-                return space
+            return area.spaces.active
 
 
 class SaveDrawingStylesData(bpy.types.Operator, tool.Ifc.Operator):
@@ -2208,14 +2430,11 @@ class ActivateDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
                 if global_id in self.exclude_global_ids:
                     obj.hide_viewport = True  # Note: this breaks alt-H
 
-    def get_view_3d(self, context: bpy.types.Context) -> bpy.types.Space:
+    def get_view_3d(self, context: bpy.types.Context) -> bpy.types.SpaceView3D:
         for area in context.screen.areas:
             if area.type != "VIEW_3D":
                 continue
-            for space in area.spaces:
-                if space.type != "VIEW_3D":
-                    continue
-                return space
+            return area.spaces.active
         assert False, "Space is not found."
 
 
@@ -2223,6 +2442,7 @@ class RemoveSheet(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_sheet"
     bl_label = "Remove Sheet"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Remove currently selected sheet"
     sheet: bpy.props.IntProperty()
 
     def _execute(self, context):
@@ -2233,6 +2453,8 @@ class AddSchedule(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_schedule"
     bl_label = "Add Schedule"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Add an .ods, .xls or .xlsx file as a schedule"
+
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.ods;*.xls;*.xlsx", options={"HIDDEN"})
     use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=True)
@@ -2263,6 +2485,8 @@ class RemoveSchedule(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_schedule"
     bl_label = "Remove Schedule"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Remove the currently selected schedule"
+
     schedule: bpy.props.IntProperty()
 
     def _execute(self, context):
@@ -2273,6 +2497,8 @@ class OpenSchedule(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.open_schedule"
     bl_label = "Open Schedule"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Open the currently selected schedule \nin the default system viewer"
+
     schedule: bpy.props.IntProperty()
 
     def _execute(self, context):
@@ -2282,6 +2508,7 @@ class OpenSchedule(bpy.types.Operator, tool.Ifc.Operator):
 class BuildSchedule(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.build_schedule"
     bl_label = "Build Schedule"
+    bl_description = "Create a .svg file of the selected schedule\nand open it with default system viewer"
     schedule: bpy.props.IntProperty()
 
     def _execute(self, context):
@@ -2291,11 +2518,15 @@ class BuildSchedule(bpy.types.Operator, tool.Ifc.Operator):
 class AddScheduleToSheet(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_schedule_to_sheet"
     bl_label = "Add Schedule To Sheet"
+    bl_description = "Add the schedule selected in the\nSchedules list below to the sheet"
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
     def poll(cls, context):
         props = context.scene.DocProperties
+        if not props.schedules:
+            cls.poll_message_set("No schedule selected.")
+            return False
         return props.schedules and props.sheets and context.scene.BIMProperties.data_dir
 
     def _execute(self, context):
@@ -2330,7 +2561,14 @@ class AddScheduleToSheet(bpy.types.Operator, tool.Ifc.Operator):
         attributes = tool.Drawing.generate_reference_attributes(
             reference,
             Identification=str(
-                len([r for r in references if tool.Drawing.get_reference_description(r) in ("DRAWING", "SCHEDULE")]) + 1
+                len(
+                    [
+                        r
+                        for r in references
+                        if tool.Drawing.get_reference_description(r) in ("DRAWING", "SCHEDULE", "REFERENCE")
+                    ]
+                )
+                + 1
             ),
             Location=schedule_location,
             Description="SCHEDULE",
@@ -2347,11 +2585,15 @@ class AddScheduleToSheet(bpy.types.Operator, tool.Ifc.Operator):
 class AddReferenceToSheet(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_reference_to_sheet"
     bl_label = "Add Reference To Sheet"
+    bl_description = "Add the reference selected in the\nReferences list below to the sheet"
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
     def poll(cls, context):
         props = context.scene.DocProperties
+        if not props.references:
+            cls.poll_message_set("No reference selected.")
+            return False
         return props.references and props.sheets and context.scene.BIMProperties.data_dir
 
     def _execute(self, context):
@@ -2386,7 +2628,13 @@ class AddReferenceToSheet(bpy.types.Operator, tool.Ifc.Operator):
         attributes = tool.Drawing.generate_reference_attributes(
             reference,
             Identification=str(
-                len([r for r in references if tool.Drawing.get_reference_description(r) in ("DRAWING", "REFERENCE")])
+                len(
+                    [
+                        r
+                        for r in references
+                        if tool.Drawing.get_reference_description(r) in ("DRAWING", "SCHEDULE", "REFERENCE")
+                    ]
+                )
                 + 1
             ),
             Location=extref_location,
@@ -2404,6 +2652,8 @@ class AddReferenceToSheet(bpy.types.Operator, tool.Ifc.Operator):
 class AddReference(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_reference"
     bl_label = "Add Reference"
+    bl_description = "Import a .svg file to the project as a reference"
+
     bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.svg", options={"HIDDEN"})
@@ -2435,6 +2685,8 @@ class RemoveReference(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_reference"
     bl_label = "Remove Reference"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Remove the currently selected reference\nfrom the project"
+
     reference: bpy.props.IntProperty()
 
     def _execute(self, context):
@@ -2445,6 +2697,8 @@ class OpenReference(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.open_reference"
     bl_label = "Open Reference"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Open the reference into default system viewer"
+
     reference: bpy.props.IntProperty()
 
     def _execute(self, context):
@@ -2557,6 +2811,8 @@ class EditTextPopup(bpy.types.Operator):
 class EditText(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_text"
     bl_label = "Edit Text"
+    bl_description = "Save changes to the text annotation and\ndisable the text editing options"
+
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
@@ -2567,6 +2823,8 @@ class EditText(bpy.types.Operator, tool.Ifc.Operator):
 class EnableEditingText(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_text"
     bl_label = "Enable Editing Text"
+    bl_description = "Enable the text editing options for this\ntext annotation"
+
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
@@ -2576,6 +2834,8 @@ class EnableEditingText(bpy.types.Operator, tool.Ifc.Operator):
 class DisableEditingText(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.disable_editing_text"
     bl_label = "Disable Editing Text"
+    bl_description = "Discard changes to the text annotation\nand disable the text editing options"
+
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
@@ -2591,6 +2851,8 @@ class DisableEditingText(bpy.types.Operator, tool.Ifc.Operator):
 class AddTextLiteral(bpy.types.Operator):
     bl_idname = "bim.add_text_literal"
     bl_label = "Add Text Literal"
+    bl_description = "Add another text literal to the\ntext annotation"
+
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -2626,6 +2888,8 @@ class AddTextLiteral(bpy.types.Operator):
 class RemoveTextLiteral(bpy.types.Operator):
     bl_idname = "bim.remove_text_literal"
     bl_label = "Remove Text Literal"
+    bl_description = "Delete the text literal from the\ntext annotation"
+
     bl_options = {"REGISTER", "UNDO"}
 
     literal_prop_id: bpy.props.IntProperty()
@@ -2639,6 +2903,8 @@ class RemoveTextLiteral(bpy.types.Operator):
 class OrderTextLiteralUp(bpy.types.Operator):
     bl_idname = "bim.order_text_literal_up"
     bl_label = "Move Text Literal Up"
+    bl_description = "Move the text literal up in the\norder of literals"
+
     bl_options = {"REGISTER", "UNDO"}
 
     literal_prop_id: bpy.props.IntProperty()
@@ -2652,6 +2918,8 @@ class OrderTextLiteralUp(bpy.types.Operator):
 class OrderTextLiteralDown(bpy.types.Operator):
     bl_idname = "bim.order_text_literal_down"
     bl_label = "Move Text Literal Down"
+    bl_description = "Move the text literal down in the\norder of literals"
+
     bl_options = {"REGISTER", "UNDO"}
 
     literal_prop_id: bpy.props.IntProperty()
@@ -2725,6 +2993,8 @@ class DisableEditingAssignedProduct(bpy.types.Operator, tool.Ifc.Operator):
 class LoadSheets(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.load_sheets"
     bl_label = "Load Sheets"
+    bl_description = "Load the saved sheets in this IFC project"
+
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
@@ -2751,10 +3021,13 @@ class LoadSheets(bpy.types.Operator, tool.Ifc.Operator):
 
 class EditSheet(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_sheet"
-    bl_label = "Edit Sheet"
+    bl_label = "Edit Sheet / Drawing"
+    bl_description = "Edit details of sheet or drawing"
     bl_options = {"REGISTER", "UNDO"}
     identification: bpy.props.StringProperty()
     name: bpy.props.StringProperty()
+
+    document_type: Literal["SHEET", "TITLEBLOCK", "EMBEDDED"]
 
     def invoke(self, context, event):
         self.props = context.scene.DocProperties
@@ -2817,6 +3090,8 @@ class DisableEditingSheets(bpy.types.Operator, tool.Ifc.Operator):
 class LoadSchedules(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.load_schedules"
     bl_label = "Load Schedules"
+    bl_description = "Load the saved schedules in this IFC project"
+
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
@@ -2835,6 +3110,8 @@ class DisableEditingSchedules(bpy.types.Operator, tool.Ifc.Operator):
 class LoadReferences(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.load_references"
     bl_label = "Load References"
+    bl_description = "Load the saved references in this IFC project"
+
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
@@ -2853,6 +3130,8 @@ class DisableEditingReferences(bpy.types.Operator, tool.Ifc.Operator):
 class LoadDrawings(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.load_drawings"
     bl_label = "Load Drawings"
+    bl_description = "Load the saved drawings in this IFC project"
+
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
@@ -2871,6 +3150,8 @@ class DisableEditingDrawings(bpy.types.Operator, tool.Ifc.Operator):
 class ExpandTargetView(bpy.types.Operator):
     bl_idname = "bim.expand_target_view"
     bl_label = "Expand Target View"
+    bl_description = "Show views in this category"
+
     bl_options = {"REGISTER", "UNDO"}
     target_view: bpy.props.StringProperty()
 
@@ -2885,6 +3166,8 @@ class ExpandTargetView(bpy.types.Operator):
 class ContractTargetView(bpy.types.Operator):
     bl_idname = "bim.contract_target_view"
     bl_label = "Contract Target View"
+    bl_description = "Hide views in this category"
+
     bl_options = {"REGISTER", "UNDO"}
     target_view: bpy.props.StringProperty()
 
@@ -2899,6 +3182,8 @@ class ContractTargetView(bpy.types.Operator):
 class ExpandSheet(bpy.types.Operator):
     bl_idname = "bim.expand_sheet"
     bl_label = "Expand Sheet"
+    bl_description = "Show views, schedules, references etc\nplaced on this sheet"
+
     bl_options = {"REGISTER", "UNDO"}
     sheet: bpy.props.IntProperty()
 
@@ -2913,6 +3198,8 @@ class ExpandSheet(bpy.types.Operator):
 class ContractSheet(bpy.types.Operator):
     bl_idname = "bim.contract_sheet"
     bl_label = "Contract Sheet"
+    bl_description = "Hide views, schedules, references etc\nplaced on this sheet"
+
     bl_options = {"REGISTER", "UNDO"}
     sheet: bpy.props.IntProperty()
 
@@ -2927,6 +3214,8 @@ class ContractSheet(bpy.types.Operator):
 class SelectAssignedProduct(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.select_assigned_product"
     bl_label = "Select Assigned Product"
+    bl_description = "Select the product this element is assigned to"
+
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
@@ -2936,6 +3225,8 @@ class SelectAssignedProduct(bpy.types.Operator, tool.Ifc.Operator):
 class EnableEditingElementFilter(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_element_filter"
     bl_label = "Enable Editing Element Filter"
+    bl_description = "Enable editing options for the include or exclude filter"
+
     bl_options = {"REGISTER", "UNDO"}
     filter_mode: bpy.props.StringProperty()
 
@@ -2978,6 +3269,8 @@ class EditElementFilter(bpy.types.Operator, tool.Ifc.Operator):
 class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_reference_image"
     bl_label = "Add Reference Image"
+    bl_description = "Add or import reference image to the IFC project"
+
     bl_options = {"REGISTER", "UNDO"}
 
     use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=True)
@@ -3100,20 +3393,30 @@ class ConvertSVGToDXF(bpy.types.Operator):
     bl_label = "Convert SVG to DXF"
     bl_options = {"REGISTER", "UNDO"}
     view: bpy.props.StringProperty()
-    bl_description = "Convert current drawing's .svg to .dxf.\n\nSHIFT+CLICK to convert all selected drawings"
+    bl_description = "Convert selected drawing's .svg to .dxf.\n\nSHIFT+CLICK to convert all shown checked drawings"
     convert_all: bpy.props.BoolProperty(name="Convert All", default=False, options={"SKIP_SAVE"})
+
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.DocProperties
+        if not tool.Drawing.get_active_drawing_item():
+            cls.poll_message_set("No drawing selected.")
+            return False
+        return True
 
     def invoke(self, context, event):
         # convert all drawings on shift+click
         # make sure to use SKIP_SAVE on property, otherwise it might get stuck
         if event.type == "LEFTMOUSE" and event.shift:
-            self.open_all = True
+            self.convert_all = True
         return self.execute(context)
 
     def execute(self, context):
         if self.convert_all:
             drawings = [
-                tool.Ifc.get().by_id(d.ifc_definition_id) for d in context.scene.DocProperties.drawings if d.is_selected
+                tool.Ifc.get().by_id(d.ifc_definition_id)
+                for d in context.scene.DocProperties.drawings
+                if d.is_drawing and d.is_selected
             ]
         else:
             drawings = [tool.Ifc.get().by_id(context.scene.DocProperties.drawings.get(self.view).ifc_definition_id)]

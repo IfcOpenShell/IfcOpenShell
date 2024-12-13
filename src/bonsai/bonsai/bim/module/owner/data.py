@@ -18,6 +18,7 @@
 
 import bpy
 import bonsai.tool as tool
+from ifcopenshell.util.doc import get_entity_doc
 
 
 def refresh():
@@ -219,6 +220,8 @@ class ActorData:
         cls.data = {
             "the_actor": cls.the_actor(),
             "actors": cls.actors(),
+            "actor_class_enum": cls.actor_class_enum(),
+            "get_actor_type_enum": cls.get_actor_type_enum(),
         }
         cls.is_loaded = True
 
@@ -244,6 +247,27 @@ class ActorData:
                 {"id": actor.id(), "name": actor.Name or "Unnamed", "the_actor": the_actor, "is_editing": is_editing}
             )
         return actors
+
+    @classmethod
+    def actor_class_enum(cls) -> list[tuple[str, str, str]]:
+        version = tool.Ifc.get_schema()
+        return [
+            ("IfcActor", "Actor", get_entity_doc(version, "IfcActor").get("description", "")),
+            ("IfcOccupant", "Occupant", get_entity_doc(version, "IfcOccupant").get("description", "")),
+        ]
+
+    @classmethod
+    def get_actor_type_enum(cls) -> list[tuple[str, str, str]]:
+        version = tool.Ifc.get_schema()
+        return [
+            ("IfcPerson", "Person", get_entity_doc(version, "IfcPerson").get("description", "")),
+            ("IfcOrganization", "Organisation", get_entity_doc(version, "IfcOrganization").get("description", "")),
+            (
+                "IfcPersonAndOrganization",
+                "User",
+                get_entity_doc(version, "IfcPersonAndOrganization").get("description", ""),
+            ),
+        ]
 
 
 class ObjectActorData:

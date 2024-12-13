@@ -18,6 +18,7 @@
 
 import bmesh
 import bpy
+import copy
 from bpy_extras import view3d_utils
 import bonsai.core.tool
 import bonsai.tool as tool
@@ -141,7 +142,8 @@ class Raycast(bonsai.core.tool.Raycast):
         points = []
 
         # Makes the snapping point more or less sticky then others
-        # It changes the distance and affects how the snapping point is sorted
+        # It changes the distance and affects how the snapping point are sorted
+        reference = 0.2
         stick_factor = 0.02
 
         try:
@@ -186,14 +188,15 @@ class Raycast(bonsai.core.tool.Raycast):
             if intersection[0]:
                 if tool.Cad.is_point_on_edge(intersection[1], (v1, v2)):
                     distance = (intersection[1] - intersection[0]).length
-                    if distance < 0.8:
-                        points.append([distance + 4 * stick_factor, (intersection[1], "Edge")])
+                    if distance < 0.2:
+                        points.append([distance + 2 * stick_factor, (intersection[1], "Edge")])
 
         bm.free()
         snapping_points = []
         sorted_points = sorted(points)
         for p in sorted_points:
-            snapping_points.append(p[1])
+            point = copy.deepcopy(p)
+            snapping_points.append(point[1])
 
         return snapping_points
 
@@ -209,20 +212,21 @@ class Raycast(bonsai.core.tool.Raycast):
         except:
             loc = Vector((0, 0, 0))
 
-        polyline_data = bpy.context.scene.BIMPolylineProperties.polyline_point
-        polyline_data = polyline_data[
-            : len(polyline_data) - 1
+        polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline[0]
+        polyline_points = polyline_data.polyline_points
+        polyline_points = polyline_points[
+            : len(polyline_points) - 1
         ]  # It doesn't make sense to snap to the last point created
-        polyline_points = []
-        for point_data in polyline_data:
-            point = Vector((point_data.x, point_data.y, point_data.z))
+        polyline_verts = []
+        for point_data in polyline_points:
+            vertex = Vector((point_data.x, point_data.y, point_data.z))
 
-            intersection, _ = mathutils.geometry.intersect_point_line(point, ray_target, loc)
-            distance = (point - intersection).length
+            intersection, _ = mathutils.geometry.intersect_point_line(vertex, ray_target, loc)
+            distance = (vertex - intersection).length
             if distance < 0.2:
-                polyline_points.append((point, "Vertex"))
+                polyline_verts.append((vertex, "Vertex"))
 
-        return polyline_points
+        return polyline_verts
 
     @classmethod
     def ray_cast_to_measure(cls, context, event, points):

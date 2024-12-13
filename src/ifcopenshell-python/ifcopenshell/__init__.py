@@ -86,6 +86,7 @@ except Exception:
     raise ImportError("IfcOpenShell not built for '%s'" % python_distribution)
 
 from .file import file
+from . import guid
 from .entity_instance import entity_instance, register_schema_attributes
 from .sql import sqlite, sqlite_entity
 
@@ -94,6 +95,7 @@ from .sql import sqlite, sqlite_entity
 __all__ = [
     "ifcopenshell_wrapper",
     "file",
+    "guid",
     "entity_instance",
     "sqlite",
     "sqlite_entity",
@@ -156,6 +158,8 @@ def open(
         print(products[0] == model[122] == model["2XQ$n5SLP5MBLyL442paFx"]) # True
     """
     path = Path(path)
+    if not path.exists():
+        raise FileNotFoundError(f"File does not exist: '{path}'.")
     if format is None:
         format = guess_format(path)
     if format == ".ifcXML":

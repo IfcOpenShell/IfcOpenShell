@@ -17,7 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from bpy_extras.io_utils import ImportHelper
+from bpy_extras.io_utils import ImportHelper, ExportHelper
 from bonsai.bim.module.resource.ui import draw_productivity_ui
 import bonsai.core.resource as core
 import bonsai.tool as tool
@@ -189,9 +189,13 @@ class CalculateResourceWork(bpy.types.Operator, tool.Ifc.Operator):
     @classmethod
     def poll(cls, context):
         active_resource = tool.Resource.get_highlighted_resource()
-        if active_resource:
-            if tool.Resource.get_productivity(active_resource, should_inherit=True):
-                return True
+        if not active_resource:
+            cls.poll_message_set("No resource is active.")
+            return False
+        if not tool.Resource.get_productivity(active_resource, should_inherit=True):
+            cls.poll_message_set("No productivity data for active resource.")
+            return False
+        return True
 
     def _execute(self, context):
         core.calculate_resource_work(tool.Ifc, tool.Resource, resource=tool.Ifc.get().by_id(self.resource))
@@ -330,6 +334,7 @@ class EditResourceQuantity(bpy.types.Operator, tool.Ifc.Operator):
 class ImportResources(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     bl_idname = "bim.import_resources"
     bl_label = "Import Resources"
+    bl_description = "Import resources from a .csv file"
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".csv"
     filter_glob: bpy.props.StringProperty(default="*.csv", options={"HIDDEN"})
@@ -340,12 +345,33 @@ class ImportResources(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
         return ifc_file is not None
 
     def _execute(self, context):
+        ifc_file = tool.Ifc.get()
+        resources_before = len(ifc_file.by_type("IfcConstructionResource"))
         core.import_resources(tool.Resource, file_path=self.filepath)
+        resources_after = len(ifc_file.by_type("IfcConstructionResource"))
+        self.report({"INFO"}, f"{resources_after - resources_before} resources are imported.")
+
+
+class ExportResources(bpy.types.Operator, tool.Ifc.Operator, ExportHelper):
+    bl_idname = "bim.export_resources"
+    bl_label = "Export Resources"
+    bl_description = "Export resources to a .csv file"
+    bl_options = {"REGISTER", "UNDO"}
+    filename_ext = ".csv"
+    filter_glob: bpy.props.StringProperty(default="*.csv", options={"HIDDEN"})
+
+    @classmethod
+    def poll(cls, context):
+        ifc_file = tool.Ifc.get()
+        return ifc_file is not None
+
+    def _execute(self, context):
+        core.export_resources(tool.Resource, file_path=self.filepath)
+        self.report({"INFO"}, f"Resources are exported to {self.filepath}")
 
 
 class AddProductivityData(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_productivity_data"
-    bl_description = "Apply"
     bl_label = "Add Productivity"
     bl_options = {"REGISTER", "UNDO"}
 
@@ -355,7 +381,6 @@ class AddProductivityData(bpy.types.Operator, tool.Ifc.Operator):
 
 class EditProductivityData(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_productivity_data"
-    bl_description = "Apply"
     bl_label = "Edit Productivity"
     bl_options = {"REGISTER", "UNDO"}
 
@@ -415,13 +440,27 @@ class CalculateResourceUsage(bpy.types.Operator, tool.Ifc.Operator):
     @classmethod
     def poll(cls, context):
         active_resource = tool.Resource.get_highlighted_resource()
-        if active_resource:
-            if active_resource.Usage and active_resource.Usage.ScheduleWork:
-                task = tool.Resource.get_task_assignments(active_resource)
-                if task and tool.Sequence.has_duration(task):
-                    return True
-
+        if not active_resource:
+            cls.poll_message_set("No resource is active.")
+            return False
+        if active_resource.Usage and active_resource.Usage.ScheduleWork:
+            task = tool.Resource.get_task_assignments(active_resource)
+            if task and tool.Sequence.has_duration(task):
+                return True
+        cls.poll_message_set("No usage data for active resource.")
         return False
 
     def _execute(self, context):
         core.calculate_resource_usage(tool.Ifc, tool.Resource, resource=tool.Resource.get_highlighted_resource())
+
+
+class CalculateResourceQuantity(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.calculate_resource_quantity"
+    bl_label = "Calculate Resource Quantity"
+    bl_description = "Calcule resource quantity based on the same name quantities from the output products"
+    bl_options = {"REGISTER", "UNDO"}
+    resource: bpy.props.IntProperty(name="Resource ID")
+
+    def _execute(self, context):
+        core.calculate_resource_quantity(tool.Resource, resource=tool.Ifc.get().by_id(self.resource))
+        return {"FINISHED"}

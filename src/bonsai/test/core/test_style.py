@@ -58,19 +58,18 @@ class TestRemoveStyle:
 
     def test_removing_a_style(self, ifc, style):
         self.remove_a_style_common(ifc, style)
-        style.is_editing_styles().should_be_called().will_return(False)
         subject.remove_style(ifc, style, style="style")
 
     def test_removing_a_style_and_reloading_imported_styles(self, ifc, style):
         self.remove_a_style_common(ifc, style)
         style.is_editing_styles().should_be_called().will_return(True)
         style.import_presentation_styles("style_type").should_be_called()
-        subject.remove_style(ifc, style, style="style")
+        subject.remove_style(ifc, style, style="style", reload_styles_ui=True)
 
 
 class TestUpdateStyleColours:
     def test_updating_rendering_style_if_available(self, ifc, style):
-        style.get_style("obj").should_be_called().will_return("element")
+        ifc.get_entity("obj").should_be_called().will_return("element")
         style.can_support_rendering_style("obj").should_be_called().will_return(True)
 
         style.get_surface_rendering_style("obj").should_be_called().will_return("rendering_style")
@@ -86,7 +85,7 @@ class TestUpdateStyleColours:
         subject.update_style_colours(ifc, style, obj="obj", verbose="verbose")
 
     def test_adding_a_rendering_style_if_not_available(self, ifc, style):
-        style.get_style("obj").should_be_called().will_return("element")
+        ifc.get_entity("obj").should_be_called().will_return("element")
         style.can_support_rendering_style("obj").should_be_called().will_return(True)
 
         style.get_surface_rendering_style("obj").should_be_called().will_return(None)
@@ -107,7 +106,7 @@ class TestUpdateStyleColours:
         subject.update_style_colours(ifc, style, obj="obj", verbose="verbose")
 
     def test_updating_shading_style_as_a_fallback_if_available(self, ifc, style):
-        style.get_style("obj").should_be_called().will_return("element")
+        ifc.get_entity("obj").should_be_called().will_return("element")
         style.can_support_rendering_style("obj").should_be_called().will_return(False)
         style.get_surface_shading_style("obj").should_be_called().will_return("style")
         style.get_surface_shading_attributes("obj").should_be_called().will_return("attributes")
@@ -115,7 +114,7 @@ class TestUpdateStyleColours:
         subject.update_style_colours(ifc, style, obj="obj")
 
     def test_adding_a_shading_style_as_a_fallback_if_not_available(self, ifc, style):
-        style.get_style("obj").should_be_called().will_return("element")
+        ifc.get_entity("obj").should_be_called().will_return("element")
         style.can_support_rendering_style("obj").should_be_called().will_return(False)
         style.get_surface_shading_style("obj").should_be_called().will_return(None)
         style.get_surface_shading_attributes("obj").should_be_called().will_return("attributes")
@@ -127,7 +126,7 @@ class TestUpdateStyleColours:
 
 class TestUpdateStyleTextures:
     def test_updating_an_existing_texture_style(self, ifc, style):
-        style.get_style("obj").should_be_called().will_return("element")
+        ifc.get_entity("obj").should_be_called().will_return("element")
         style.get_uv_maps("representation").should_be_called().will_return("uv_maps")
         ifc.run("style.add_surface_textures", material="obj", uv_maps="uv_maps").should_be_called().will_return(
             "textures"
@@ -143,7 +142,7 @@ class TestUpdateStyleTextures:
         subject.update_style_textures(ifc, style, obj="obj", representation="representation")
 
     def test_adding_a_fresh_texture_style(self, ifc, style):
-        style.get_style("obj").should_be_called().will_return("element")
+        ifc.get_entity("obj").should_be_called().will_return("element")
         style.get_uv_maps("representation").should_be_called().will_return("uv_maps")
         ifc.run("style.add_surface_textures", material="obj", uv_maps="uv_maps").should_be_called().will_return(
             "textures"
@@ -158,7 +157,7 @@ class TestUpdateStyleTextures:
         subject.update_style_textures(ifc, style, obj="obj", representation="representation")
 
     def test_removing_an_texture_if_no_textures_can_be_added(self, ifc, style):
-        style.get_style("obj").should_be_called().will_return("element")
+        ifc.get_entity("obj").should_be_called().will_return("element")
         style.get_uv_maps("representation").should_be_called().will_return("uv_maps")
         ifc.run("style.add_surface_textures", material="obj", uv_maps="uv_maps").should_be_called().will_return(None)
         style.get_surface_texture_style("obj").should_be_called().will_return("style")
@@ -166,7 +165,7 @@ class TestUpdateStyleTextures:
         subject.update_style_textures(ifc, style, obj="obj", representation="representation")
 
     def test_doing_nothing_if_no_existing_texture_and_we_cannot_add_a_new_texture(self, ifc, style):
-        style.get_style("obj").should_be_called().will_return("element")
+        ifc.get_entity("obj").should_be_called().will_return("element")
         style.get_uv_maps("representation").should_be_called().will_return("uv_maps")
         ifc.run("style.add_surface_textures", material="obj", uv_maps="uv_maps").should_be_called().will_return(None)
         style.get_surface_texture_style("obj").should_be_called().will_return(None)
@@ -196,10 +195,28 @@ class TestDisableEditingStyle:
 
 
 class TestEditStyle:
-    def test_run(self, ifc, style):
+    def test_run_side_attr_updated(self, ifc, style):
         style.get_currently_edited_material().should_be_called().will_return("obj")
-        style.get_style("obj").should_be_called().will_return("style_element")
+        ifc.get_entity("obj").should_be_called().will_return("style_element")
         style.export_surface_attributes().should_be_called().will_return("attributes")
+        style.is_style_side_attribute_edited("style_element", "attributes").should_be_called().will_return(True)
+        ifc.run("style.edit_presentation_style", style="style_element", attributes="attributes").should_be_called()
+        style.disable_editing().should_be_called()
+        style.get_active_style_type().should_be_called().will_return("style_type")
+
+        # Calling core.load_styles.
+        style.import_presentation_styles("style_type").should_be_called()
+        style.enable_editing_styles().should_be_called()
+
+        style.reload_repersentations("style_element").should_be_called()
+
+        subject.edit_style(ifc, style)
+
+    def test_run_side_attr_unchanged(self, ifc, style):
+        style.get_currently_edited_material().should_be_called().will_return("obj")
+        ifc.get_entity("obj").should_be_called().will_return("style_element")
+        style.export_surface_attributes().should_be_called().will_return("attributes")
+        style.is_style_side_attribute_edited("style_element", "attributes").should_be_called().will_return(False)
         ifc.run("style.edit_presentation_style", style="style_element", attributes="attributes").should_be_called()
         style.disable_editing().should_be_called()
         style.get_active_style_type().should_be_called().will_return("style_type")

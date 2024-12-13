@@ -594,6 +594,7 @@ class BaseDecorator:
             text_data = text_data | props.get_text_edited_data()
         literals_data = text_data["Literals"]
         symbol = text_data["Symbol"]
+        newline_at = text_data["Newline_At"]
         text_scale = 1.0
 
         # draw asterisk symbol to indicate that there is some symbol that's not shown in viewport
@@ -605,8 +606,14 @@ class BaseDecorator:
         font_size_mm = text_data["FontSize"] * text_scale
         for literal_data in literals_data:
             box_alignment = literal_data["BoxAlignment"]
+            text = literal_data["CurrentValue"]
 
-            for line in literal_data["CurrentValue"].split("\n"):
+            if newline_at != 0:
+                text = helper.add_newline_between_words(text, newline_at)
+
+            multiple_lines = text.split("\n")
+
+            for line in multiple_lines:
                 self.draw_label(
                     context,
                     line,

@@ -37,7 +37,7 @@ import numpy as np
 import numpy.typing as npt
 from mathutils import Vector, Matrix
 from pathlib import Path
-from typing import Union
+from typing import Union, Any
 
 
 # Progressively we'll refactor loading elements into Blender objects into this
@@ -125,7 +125,9 @@ class Loader(bonsai.core.tool.Loader):
         links.new(bsdf.outputs["BSDF"], output.inputs["Surface"])
 
     @classmethod
-    def surface_style_to_dict(cls, surface_style):
+    def surface_style_to_dict(
+        cls, surface_style: Union[ifcopenshell.entity_instance, dict[str, Any]]
+    ) -> dict[str, Any]:
         if isinstance(surface_style, dict):
             return surface_style
         surface_style = surface_style.get_info()
@@ -181,8 +183,12 @@ class Loader(bonsai.core.tool.Loader):
         return surface_texture
 
     @classmethod
-    def create_surface_style_rendering(cls, blender_material, surface_style):
+    def create_surface_style_rendering(
+        cls, blender_material: bpy.types.Material, surface_style: ifcopenshell.entity_instance
+    ) -> None:
         surface_style = cls.surface_style_to_dict(surface_style)
+        surface_style: dict[str, Any]
+
         cls.create_surface_style_shading(blender_material, surface_style)
 
         reflectance_method = surface_style["ReflectanceMethod"]
@@ -195,6 +201,7 @@ class Loader(bonsai.core.tool.Loader):
             blender_material.use_nodes = True
             cls.restart_material_node_tree(blender_material)
             bsdf = tool.Blender.get_material_node(blender_material, "BSDF_PRINCIPLED")
+            assert bsdf
 
             if surface_style["DiffuseColour"]:
                 color_type, color_value = surface_style["DiffuseColour"]
@@ -223,7 +230,10 @@ class Loader(bonsai.core.tool.Loader):
 
             output = tool.Blender.get_material_node(blender_material, "OUTPUT_MATERIAL")
             bsdf = tool.Blender.get_material_node(blender_material, "BSDF_PRINCIPLED")
+            assert bsdf
+            assert output
 
+            assert blender_material.node_tree
             mix = blender_material.node_tree.nodes.new(type="ShaderNodeMixShader")
             mix.location = bsdf.location
             blender_material.node_tree.links.new(mix.outputs[0], output.inputs["Surface"])
@@ -717,9 +727,10 @@ class Loader(bonsai.core.tool.Loader):
         cls, element: ifcopenshell.entity_instance, is_gross: bool = False
     ) -> Union[ifcopenshell.geom.ShapeElementType, None]:
         context_settings = cls.settings.gross_context_settings if is_gross else cls.settings.context_settings
+        geometry_library = bpy.context.scene.BIMProjectProperties.geometry_library
         for settings in context_settings:
             try:
-                result = ifcopenshell.geom.create_shape(settings, element)
+                result = ifcopenshell.geom.create_shape(settings, element, geometry_library=geometry_library)
                 if result:
                     return result
             except:

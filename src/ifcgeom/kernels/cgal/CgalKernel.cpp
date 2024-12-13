@@ -156,13 +156,13 @@ bool CgalKernel::convert(const taxonomy::shell::ptr l, cgal_shape_t& shape) {
 	for (auto& f : l->children) {
 		if (f->basis && f->basis->kind() != taxonomy::PLANE) {
 			Logger::Error("CGAL Kernel: Non-planar faces not supported at the moment");
-			return false;
+			throw not_supported_error();
 		}
 		for (auto& w : f->children) {
 			for (auto& e : w->children) {
 				if (e->basis && e->basis->kind() == taxonomy::BSPLINE_CURVE) {
 					Logger::Error("CGAL Kernel: B-spline edge curves not supported at the moment");
-					return false;
+					throw not_supported_error();
 				}
 			}
 		}
@@ -1315,7 +1315,11 @@ bool CgalKernel::preprocess_boolean_operand(const IfcUtil::IfcBaseClass* log_ref
 	if (proc == PP_SNAP_POINTS_TO_FIRST_OPERAND) {
 		static int NN = 0;
 		typedef CGAL::AABB_face_graph_triangle_primitive<cgal_shape_t>                AABB_face_graph_primitive;
-		typedef CGAL::AABB_traits<Kernel_, AABB_face_graph_primitive>               AABB_face_graph_traits;
+#if CGAL_VERSION_NR >= 1060000000
+	    typedef CGAL::AABB_traits_3<Kernel_, AABB_face_graph_primitive>               AABB_face_graph_traits;
+#else
+	    typedef CGAL::AABB_traits<Kernel_, AABB_face_graph_primitive>               AABB_face_graph_traits;
+#endif
 
 		CGAL::AABB_tree<AABB_face_graph_traits> tree;
 
@@ -1926,6 +1930,17 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result::ptr br, Conversion
 				if (!convert(face, fs) || fs.size() != 1) {
 					return false;
 				}
+				
+				auto& w = fs.front().outer;
+				CGAL::Polygon_2<Kernel_> ps;
+				for (auto& p : w) {
+					ps.push_back({ p.x(), p.y() });
+				}
+				if (!ps.is_simple()) {
+					Logger::Warning("Polygonal boundary not simple", face->children[0]->instance);
+					continue;
+				}
+
 				// static 
 				auto z = taxonomy::make<taxonomy::direction3>(0, 0, 1);
 				cgal_shape_t poly;

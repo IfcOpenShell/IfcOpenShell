@@ -56,7 +56,9 @@ class AuthoringData:
         cls.data["default_container"] = cls.default_container()
         cls.data["ifc_element_type"] = cls.ifc_element_type
         cls.data["ifc_classes"] = cls.ifc_classes()
+        cls.data["ifc_class_current"] = cls.ifc_class_current()
         cls.data["relating_type_id"] = cls.relating_type_id()  # only after .ifc_classes()
+        cls.data["relating_type_id_current"] = cls.relating_type_id_current()  # only after .ifc_classes()
         cls.data["relating_type_name"] = cls.relating_type_name()  # only after .relating_type_id()
         cls.data["relating_type_description"] = cls.relating_type_description()  # only after .relating_type_id()
         cls.data["predefined_type"] = cls.predefined_type()  # only after .relating_type_id()
@@ -74,6 +76,7 @@ class AuthoringData:
         cls.data["has_visible_boundaries"] = cls.has_visible_boundaries()
         cls.data["active_class"] = cls.active_class()
         cls.data["active_material_usage"] = cls.active_material_usage()
+        cls.data["is_representation_item_active"] = cls.is_representation_item_active()
         cls.data["active_representation_type"] = cls.active_representation_type()
         cls.data["boundary_class"] = cls.boundary_class()
         cls.data["selected_material_usages"] = cls.selected_material_usages()
@@ -107,12 +110,12 @@ class AuthoringData:
 
     @classmethod
     def total_types(cls):
-        ifc_class = cls.props.ifc_class
+        ifc_class = cls.data["ifc_class_current"]
         return len(tool.Ifc.get().by_type(ifc_class)) if ifc_class else 0
 
     @classmethod
     def total_pages(cls):
-        ifc_class = cls.props.ifc_class
+        ifc_class = cls.data["ifc_class_current"]
         total_types = len(tool.Ifc.get().by_type(ifc_class)) if ifc_class else 0
         return math.ceil(total_types / cls.types_per_page)
 
@@ -128,7 +131,7 @@ class AuthoringData:
 
     @classmethod
     def paginated_relating_types(cls):
-        ifc_class = cls.props.ifc_class
+        ifc_class = cls.data["ifc_class_current"]
         if not ifc_class:
             return []
         results = []
@@ -193,6 +196,13 @@ class AuthoringData:
                 return tool.Model.get_usage_type(element)
 
     @classmethod
+    def is_representation_item_active(cls) -> bool:
+        object = bpy.context.active_object
+        if not object:
+            return False
+        return tool.Geometry.is_representation_item(object)
+
+    @classmethod
     def active_representation_type(cls):
         if active_object := tool.Blender.get_active_object():
             representation = tool.Geometry.get_active_representation(active_object)
@@ -219,14 +229,19 @@ class AuthoringData:
         return results
 
     @classmethod
-    def relating_type_id(cls):
+    def ifc_class_current(cls):
         ifc_classes = cls.data["ifc_classes"]
         if not ifc_classes:
             return []
-        results = []
         ifc_class = tool.Blender.get_enum_safe(cls.props, "ifc_class")
         if not ifc_class and ifc_classes:
             ifc_class = ifc_classes[0][0]
+        return ifc_class
+
+    @classmethod
+    def relating_type_id(cls):
+        results = []
+        ifc_class = cls.data["ifc_class_current"]
         if ifc_class:
             elements = natsorted(tool.Ifc.get().by_type(ifc_class), key=lambda s: (s.Name or "Unnamed").lower())
             results.extend(elements)
@@ -234,17 +249,21 @@ class AuthoringData:
         return []
 
     @classmethod
-    def relating_type_name(cls):
+    def relating_type_id_current(cls):
         relating_type_id = tool.Blender.get_enum_safe(cls.props, "relating_type_id")
         relating_type_id_data = cls.data["relating_type_id"]
         if not relating_type_id and relating_type_id_data:
             relating_type_id = relating_type_id_data[0][0]
-        if relating_type_id:
+        return relating_type_id
+
+    @classmethod
+    def relating_type_name(cls):
+        if relating_type_id := cls.data["relating_type_id_current"]:
             return tool.Ifc.get().by_id(int(relating_type_id)).Name or "Unnamed"
-        
+
     @classmethod
     def relating_type_description(cls):
-        if relating_type_id := cls.props.relating_type_id:
+        if relating_type_id := cls.data["relating_type_id_current"]:
             return tool.Ifc.get().by_id(int(relating_type_id)).Description or "No description"
 
     @classmethod

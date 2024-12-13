@@ -28,6 +28,7 @@
 
 #include "IfcException.h"
 #include "IfcSpfStream.h"
+#include "IfcLogger.h"
 
 #include <codecvt>
 #include <iomanip>
@@ -65,8 +66,10 @@
 #define EXPECTS_ENDEXTENDED_0(S) ((S) & ENDEXTENDED_X)
 
 #define IS_VALID_ALPHABET_DEFINITION(C) ((C) >= 0x41 && (C) <= 0x49)
-#define IS_HEXADECIMAL(C) (((C) >= 0x30 && (C) <= 0x39) || ((C) >= 0x41 && (C) <= 0x46))
-#define HEX_TO_INT(C) (((C) >= 0x30 && (C) <= 0x39) ? (C) - 0x30 : ((C) + 10) - 0x41)
+#define IS_LOWERCASE_HEX(C) (((C) >= 0x61 && (C) <= 0x66))
+#define IS_HEXADECIMAL(C) (((C) >= 0x30 && (C) <= 0x39) || ((C) >= 0x41 && (C) <= 0x46) || IS_LOWERCASE_HEX(C))
+#define HEX_TO_INT(C) (((C) >= 0x30 && (C) <= 0x39) ? (C)-0x30 : ((C) >= 0x41 && (C) <= 0x46) ? ((C)-0x41 + 10) \
+                                                                                              : ((C)-0x61 + 10))
 #define CLEAR_HEX(C) ((C) &= ~(HEX(1) | HEX(2) | HEX(3) | HEX(4) | HEX(5) | HEX(6) | HEX(7) | HEX(8)))
 
 using namespace IfcParse;
@@ -170,6 +173,11 @@ class pure_impure_helper {
             } else if (current_char == 'S' && EXPECTS_PAGE(parse_state)) {
                 parse_state += PAGE;
             } else if (IS_HEXADECIMAL(current_char) && EXPECTS_HEX(parse_state)) {
+                if (IS_LOWERCASE_HEX(current_char)) {
+                    Logger::Warning("Lowercase hexadecimal character '" + std::string(1, current_char) +
+                                    "' found at offset " + std::to_string(pointer_) +
+                                    ". It is recommended to use uppercase for hexadecimal.");
+                }
                 hex <<= 4;
                 parse_state += HEX((++hex_count));
                 hex += HEX_TO_INT(current_char);

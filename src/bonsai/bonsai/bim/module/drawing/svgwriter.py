@@ -25,6 +25,7 @@ import shutil
 import mathutils
 import xml.etree.ElementTree as ET
 import svgwrite
+import svgwrite.text
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
@@ -32,16 +33,11 @@ import ifcopenshell.util.selector
 import ifcopenshell.util.unit
 import bonsai.tool as tool
 import bonsai.bim.module.drawing.helper as helper
-import bonsai.bim.module.drawing.annotation as annotation
 from bonsai.bim.module.drawing.data import DrawingsData
-
 from bonsai.bim.module.drawing.data import DecoratorData
-from bonsai.bim.ifc import IfcStore
-
 from math import pi, ceil, atan, degrees, acos
 from mathutils import geometry, Vector
-from bpy_extras import view3d_utils
-from typing import Optional
+from typing import Optional, Self
 
 
 class External(svgwrite.container.Group):
@@ -71,7 +67,7 @@ class SvgWriter:
         self.camera_height = None
         self.resource_paths = {}
 
-    def create_blank_svg(self, output_path):
+    def create_blank_svg(self, output_path: str) -> Self:
         self.calculate_scale()
         self.svg = svgwrite.Drawing(
             output_path,
@@ -84,14 +80,14 @@ class SvgWriter:
         self.svg.attribs["xmlns:ifc"] = "http://www.ifcopenshell.org/ns"
         return self
 
-    def save(self):
+    def save(self) -> None:
         self.svg.save(pretty=True)
 
-    def draw_underlay(self, image):
+    def draw_underlay(self, image: str) -> Self:
         self.svg.add(self.svg.image(os.path.basename(image), width=self.width, height=self.height))
         return self
 
-    def setup_drawing_resource_paths(self, element):
+    def setup_drawing_resource_paths(self, element: ifcopenshell.entity_instance) -> None:
         pset = ifcopenshell.util.element.get_pset(element, "EPset_Drawing")
         for resource in ("Stylesheet", "Markers", "Symbols", "Patterns", "ShadingStyles"):
             resource_path = pset.get(resource)
@@ -779,7 +775,9 @@ class SvgWriter:
             "text-anchor": text_anchor,
         }
 
-    def add_fill_bg(self, element, copy=True):
+    def add_fill_bg(self, element: svgwrite.text.Text, copy: bool = True) -> svgwrite.text.Text:
+        # Useful since tspans and texts do not support "background-color"
+        # so we just add a filter. Have to do it in a separate tag to avoid blurry image.
         if copy:
             element = element.copy()
         if hasattr(element, "xml"):
@@ -809,6 +807,7 @@ class SvgWriter:
         fill_bg = "fill-bg" in classes
 
         symbol = tool.Drawing.get_annotation_symbol(element)
+        newline_at = tool.Drawing.get_newline_at(element)
         template_text_fields = []
         if symbol:
             symbol_transform = self.get_symbol_transform(text_position_svg_str, angle, text_obj)
@@ -843,6 +842,7 @@ class SvgWriter:
                 self.draw_symbol(symbol, symbol_transform)
 
         line_number = 0
+
         for text_literal in text_literals:
             text = tool.Drawing.replace_text_literal_variables(text_literal.Literal, product or element)
             text_tags = self.create_text_tag(
@@ -853,6 +853,7 @@ class SvgWriter:
                 classes_str,
                 fill_bg=fill_bg,
                 line_number_start=line_number,
+                newline_at=newline_at,
             )
             for tag in text_tags:
                 self.svg.add(tag)
@@ -1375,6 +1376,7 @@ class SvgWriter:
         multiline_to_bottom=True,
         fill_bg=False,
         line_number_start=0,
+        newline_at=0,
     ):
         """returns list of created text tags"""
         text_tags = []
@@ -1404,6 +1406,8 @@ class SvgWriter:
 
         text_tag = self.svg.text("", **text_kwargs, **base_text_attrs)
         text_tags.append(text_tag)
+        if isinstance(newline_at, int) and newline_at > 0:
+            text = helper.add_newline_between_words(text, newline_at)
         text_lines = text.replace("\\n", "\n").split("\n")
         text_lines = text_lines if multiline_to_bottom else text_lines[::-1]
 

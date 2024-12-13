@@ -23,7 +23,7 @@ import ifcopenshell.util.schema
 import ifcopenshell.util.type
 from ifcopenshell.entity_instance import entity_instance
 from functools import lru_cache
-from typing import List, Optional
+from typing import List, Optional, Literal
 
 templates: dict[str, "PsetQto"] = {}
 
@@ -45,6 +45,8 @@ class PsetQto:
     # fmt: on
 
     def __init__(self, schema_identifier: str, templates=None) -> None:
+        if schema_identifier == "IFC4X3":
+            schema_identifier = "IFC4X3_ADD2"
         self.schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(schema_identifier)
         if not templates:
             folder_path = pathlib.Path(__file__).parent.absolute()
@@ -145,3 +147,29 @@ class PsetQto:
 
     def is_templated(self, name: str) -> bool:
         return bool(self.get_by_name(name))
+
+
+def get_pset_template_type(pset_template: entity_instance) -> Literal["PSET", "QTO", None]:
+    """Get the type of the pset template.
+    If type is mixed or not defined, return None."""
+
+    # Try to identify whether it's pset or qto from the template type.
+    template_type = pset_template.TemplateType
+    if template_type:
+        if template_type.startswith("PSET_"):
+            return "PSET"
+        elif template_type.startswith("QTO_"):
+            return "QTO"
+        # Can also be 'NOTDEFINED'.
+
+    pset_types = set()
+    for prop in pset_template.HasPropertyTemplates:
+        prop_template_type = prop.TemplateType
+        if prop_template_type:
+            if prop_template_type.startswith("P_"):
+                pset_types.add("PSET")
+            else:  # All other values are Q_.
+                pset_types.add("QTO")
+
+    pset_type = next(iter(pset_types)) if len(pset_types) == 1 else None
+    return pset_type

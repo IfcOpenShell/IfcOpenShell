@@ -26,6 +26,7 @@ import bonsai.core.profile as core
 from bonsai.bim.module.model.decorator import ProfileDecorator
 from bonsai.bim.module.profile.prop import generate_thumbnail_for_active_profile
 from bonsai.bim.module.profile.data import refresh
+from bonsai.bim.module.geometry.helper import Helper
 
 
 class LoadProfiles(bpy.types.Operator):
@@ -37,7 +38,14 @@ class LoadProfiles(bpy.types.Operator):
         props = context.scene.BIMProfileProperties
         props.profiles.clear()
 
+        filter_material_profiles = props.is_filtering_material_profiles
+
         for profile in tool.Ifc.get().by_type("IfcProfileDef"):
+            if filter_material_profiles:
+                inverse_references = tool.Ifc.get().get_inverse(profile)
+                related_material_profiles = [ref for ref in inverse_references if ref.is_a("IfcMaterialProfile")]
+                if not related_material_profiles:
+                    continue
             if not profile.ProfileName:
                 continue
             new = props.profiles.add()
@@ -147,8 +155,45 @@ class AddProfileDef(bpy.types.Operator, tool.Ifc.Operator):
         props = context.scene.BIMProfileProperties
         profile_class = props.profile_classes
         if profile_class == "IfcArbitraryClosedProfileDef":
-            points = [(0, 0), (0.1, 0), (0.1, 0.1), (0, 0.1), (0, 0)]
-            profile = ifcopenshell.api.run("profile.add_arbitrary_profile", tool.Ifc.get(), profile=points)
+            obj = props.object_to_profile
+            indices = []
+            if obj:
+                if len(obj.data.polygons) == 0:
+                    self.report(
+                        {"WARNING"},
+                        "This mesh is invalid to create a profile. Select a flat mesh with at least one face.",
+                    )
+                    props.object_to_profile = None
+                    return
+                helper = Helper(tool.Ifc.get())
+                indices = helper.auto_detect_arbitrary_profile_with_voids_extruded_area_solid(obj.data)
+                if not indices["inner_curves"]:
+                    indices = helper.auto_detect_arbitrary_closed_profile_extruded_area_solid(obj.data)
+            props.object_to_profile = None
+            if not indices:
+                points = [(0, 0), (0.1, 0), (0.1, 0.1), (0, 0.1), (0, 0)]
+                profile = ifcopenshell.api.run("profile.add_arbitrary_profile", tool.Ifc.get(), profile=points)
+            else:
+                if "inner_curves" not in indices:
+                    points = [(obj.data.vertices[i].co.x, obj.data.vertices[i].co.y) for i in indices["profile"]]
+                    points.append(points[0])
+                    profile = ifcopenshell.api.run("profile.add_arbitrary_profile", tool.Ifc.get(), profile=points)
+                else:
+                    outer_points = [(obj.data.vertices[i].co.x, obj.data.vertices[i].co.y) for i in indices["profile"]]
+                    outer_points.append(outer_points[0])
+                    inner_points = [
+                        [(obj.data.vertices[i].co.x, obj.data.vertices[i].co.y) for i in curve]
+                        for curve in indices["inner_curves"]
+                    ]
+                    for curve in inner_points:
+                        curve.append(curve[0])
+                    profile = ifcopenshell.api.run(
+                        "profile.add_arbitrary_profile_with_voids",
+                        tool.Ifc.get(),
+                        outer_profile=outer_points,
+                        inner_profiles=inner_points,
+                    )
+
         else:
             profile = ifcopenshell.api.run("profile.add_parameterized_profile", tool.Ifc.get(), ifc_class=profile_class)
             tool.Profile.set_default_profile_attrs(profile)
@@ -267,3 +312,28 @@ class EditArbitraryProfile(bpy.types.Operator, tool.Ifc.Operator):
         props.active_arbitrary_profile_id = 0
 
         model_profile.DumbProfileRegenerator().regenerate_from_profile_def(profile)
+
+
+class SelectProfileInProfilesUI(bpy.types.Operator):
+    bl_idname = "bim.profiles_ui_select"
+    bl_label = "Select Profile In Profiles UI"
+    bl_options = {"REGISTER", "UNDO"}
+    profile_id: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = bpy.context.scene.BIMProfileProperties
+        ifc_file = tool.Ifc.get()
+        profile = ifc_file.by_id(self.profile_id)
+        bpy.ops.bim.load_profiles()
+
+        profile_index = next((i for i, m in enumerate(props.profiles) if m.ifc_definition_id == self.profile_id), None)
+        if profile_index is None:
+            self.report({"INFO"}, "Profile not found in Profiles UI. Perhaps it's unnamed?")
+            return {"CANCELLED"}
+
+        props.active_profile_index = profile_index
+        self.report(
+            {"INFO"},
+            f"Profile '{profile.Name or 'Unnamed'}' is selected in Profiles UI.",
+        )
+        return {"FINISHED"}

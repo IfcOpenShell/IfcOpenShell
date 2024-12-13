@@ -85,7 +85,7 @@ BLENDER_PLATFORM:=windows-x64
 endif
 
 # Current build commit hash.
-OLD:=a51ed6e
+OLD:=a2538fd
 .PHONY: bump
 bump:
 ifndef NEW
@@ -275,11 +275,6 @@ endif
 
 ifeq ($(PLATFORM), macosm1)
 	# Has universal and x86_64 builds.
-	prev_whl_name=$$(find build/bonsai/wheels/MarkupSafe-*.whl); \
-	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/_arm64/"); \
-	mv "$$prev_whl_name" "$$whl_name";
-
-	# Has universal and x86_64 builds.
 	prev_whl_name=$$(find build/bonsai/wheels/lxml-*.whl); \
 	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/_arm64/"); \
 	mv "$$prev_whl_name" "$$whl_name";
@@ -292,18 +287,23 @@ ifeq ($(PLATFORM), macosm1)
 	prev_whl_name=$$(find build/bonsai/wheels/greenlet-*.whl); \
 	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/_arm64/"); \
 	mv "$$prev_whl_name" "$$whl_name";
+
+	# has universal and x86_64 builds.
+	prev_whl_name=$$(find build/bonsai/wheels/fonttools-*.whl); \
+	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/arm64/"); \
+	mv "$$prev_whl_name" "$$whl_name";
 endif
 ifeq ($(PLATFORM), macos)
+	# Has universal and arm64 builds.
+	prev_whl_name=$$(find build/bonsai/wheels/MarkupSafe-*.whl); \
+	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/_x86_64/"); \
+	mv "$$prev_whl_name" "$$whl_name";
+
 	prev_whl_name=$$(find build/bonsai/wheels/tzfpy-*.whl); \
 	whl_name=$$(echo $$prev_whl_name | sed -E "s/macosx_10_([0-9]+)_x86_64\.macosx_11_0_arm64\.macosx_10_\1_universal2/macosx_10_\1_x86_64/"); \
 	mv "$$prev_whl_name" "$$whl_name";
 
 	prev_whl_name=$$(find build/bonsai/wheels/greenlet-*.whl); \
-	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/_x86_64/"); \
-	mv "$$prev_whl_name" "$$whl_name";
-
-	# has universal and amr64 builds.
-	prev_whl_name=$$(find build/bonsai/wheels/fonttools-*.whl); \
 	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/_x86_64/"); \
 	mv "$$prev_whl_name" "$$whl_name";
 endif
@@ -316,6 +316,12 @@ endif
 		echo "Error: universal2 wheel files are not supported by Blender!"; \
 		exit 1; \
 	fi
+
+	# Temporary workaround for Blender not handling non-3.11 wheels #5743.
+	# Use '-n' as on macos x86-64 doesn't have a binary wheel and it autoincludes 'cp311'.
+	prev_whl_name=$$(find build/bonsai/wheels/tzfpy-*.whl); \
+	whl_name=$$(echo $$prev_whl_name | sed "s/-cp39-/-cp$(PYNUMBER)-/"); \
+	mv -n "$$prev_whl_name" "$$whl_name";
 
 ifneq ($(PLATFORM), linux)
 	# Safeguard: in case one of `pip download` will break,

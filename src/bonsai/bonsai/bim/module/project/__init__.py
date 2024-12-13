@@ -44,6 +44,7 @@ classes = (
     operator.LoadProject,
     operator.LoadProjectElements,
     operator.MeasureTool,
+    operator.ClearMeasurement,
     operator.NewProject,
     operator.QueryLinkedElement,
     operator.RefreshClippingPlanes,
@@ -64,7 +65,9 @@ classes = (
     prop.LibraryElement,
     prop.FilterCategory,
     prop.Link,
+    prop.EditedObj,
     prop.BIMProjectProperties,
+    prop.MeasureToolSettings,
     ui.BIM_MT_new_project,
     ui.BIM_MT_project,
     ui.BIM_PT_new_project_wizard,
@@ -92,6 +95,7 @@ def register():
     if not bpy.app.background:
         bpy.utils.register_tool(workspace.ExploreTool, after={"builtin.transform"}, separator=True, group=False)
     bpy.types.Scene.BIMProjectProperties = bpy.props.PointerProperty(type=prop.BIMProjectProperties)
+    bpy.types.Scene.MeasureToolSettings = bpy.props.PointerProperty(type=prop.MeasureToolSettings)
     bpy.app.handlers.load_post.append(decorator.toggle_decorations_on_load)
     bpy.types.TOPBAR_MT_file_import.append(ui.file_import_menu)
     bpy.types.TOPBAR_MT_file.prepend(ui.file_menu)
@@ -115,6 +119,7 @@ def unregister():
     if not bpy.app.background:
         bpy.utils.unregister_tool(workspace.ExploreTool)
     del bpy.types.Scene.BIMProjectProperties
+    del bpy.types.Scene.MeasureToolSettings
     bpy.app.handlers.load_post.remove(decorator.toggle_decorations_on_load)
     bpy.types.TOPBAR_MT_file.remove(ui.file_menu)
     bpy.types.TOPBAR_MT_file_context_menu.remove(ui.file_menu)

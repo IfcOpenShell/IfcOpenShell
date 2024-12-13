@@ -64,7 +64,10 @@ jobs:
         run: echo "version=$(cat VERSION)" >> $GITHUB_OUTPUT
       - name: Get current date
         id: date
-        run: echo "date=$(date +'%y%m%d')" >> $GITHUB_OUTPUT
+        # Include hours and minutes to release tag
+        # to avoid possibility of unstable repo's index.json
+        # pointing to the new file when index.json itself wasn't yet updated.
+        run: echo "date=$(date +'%y%m%d%H%M')" >> $GITHUB_OUTPUT
       - name: Compile
         run: |
           cd src/bonsai && make dist PLATFORM=${{ matrix.config.short_name }} PYVERSION=${{ matrix.pyver }}
@@ -101,7 +104,7 @@ jobs:
           set -x -e
 
           # Download Blender.
-          wget -q -O blender.tar.xz https://ftp.nluug.nl/pub/graphics/blender/release/Blender4.2/blender-4.2.0-linux-x64.tar.xz
+          wget -q -O blender.tar.xz https://ftp.nluug.nl/pub/graphics/blender/release/Blender4.3/blender-4.3.0-linux-x64.tar.xz
           tar -xf blender.tar.xz
 
           # Setup Blender.
@@ -144,9 +147,7 @@ jobs:
 
           # Install Sun Position extension.
           blender --online-mode --command extension sync
-          blender --online-mode --background --python-expr "import bpy; \
-          bpy.ops.extensions.package_install(repo_index=0, pkg_id='sun_position'); \
-          bpy.ops.preferences.addon_enable(module='bl_ext.blender_org.sun_position'); bpy.ops.wm.save_userpref()"
+          blender --online-mode --command extension install --enable --sync sun_position
 
           cd ../bonsai
           pip install pytest-blender

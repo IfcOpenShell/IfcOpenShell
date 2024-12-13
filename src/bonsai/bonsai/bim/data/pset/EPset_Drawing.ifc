@@ -5,7 +5,7 @@ FILE_NAME('EPset_Drawing.ifc','2020-01-01T00:00:00',(),(),'EPset_Drawing','EPset
 FILE_SCHEMA(('IFC4'));
 ENDSEC;
 DATA;
-#1=IFCPROPERTYSETTEMPLATE('2JhNIvqZrFnAgxfhK0XVQX',$,'EPset_Drawing','',.PSET_OCCURRENCEDRIVEN.,'IfcAnnotation/DRAWING',(#2,#3,#4,#5,#6,#7,#8,#9,#10,#11,#12,#13,#14,#15,#16,#17,#18,#19,#20,#21,#22,#23));
+#1=IFCPROPERTYSETTEMPLATE('2JhNIvqZrFnAgxfhK0XVQX',$,'EPset_Drawing','',.PSET_OCCURRENCEDRIVEN.,'IfcAnnotation/DRAWING',(#2,#3,#4,#5,#6,#7,#8,#9,#10,#11,#12,#13,#14,#15,#16,#17,#18,#19,#20,#21,#22,#23,#24,#25,#26,#27));
 #2=IFCSIMPLEPROPERTYTEMPLATE('23JavTMk98ZxXhrUEnjAcf',$,'TargetView','',.P_SINGLEVALUE.,'IfcLabel',$,$,$,$,$,.READWRITE.);
 #3=IFCSIMPLEPROPERTYTEMPLATE('1yVWUt5H9DAOuu0OaMMLpe',$,'Scale','The scale of this drawing represented as a numerator and denominator, such as 1/100',.P_SINGLEVALUE.,'IfcLabel',$,$,$,$,$,.READWRITE.);
 #4=IFCSIMPLEPROPERTYTEMPLATE('3gsuPBtU93b8f0gg1pjkq6',$,'HumanScale','The scale of this drawing in human readable format, such as 1:100',.P_SINGLEVALUE.,'IfcLabel',$,$,$,$,$,.READWRITE.);
@@ -28,5 +28,9 @@ DATA;
 #21=IFCSIMPLEPROPERTYTEMPLATE('0nYMT3OSj5gArVniCWZRtv',$,'ShadingStyles','',.P_SINGLEVALUE.,'IfcText',$,$,$,$,$,.READWRITE.);
 #22=IFCSIMPLEPROPERTYTEMPLATE('3VWG22eZXBdQwdKlzMeVQH',$,'CurrentShadingStyle','',.P_SINGLEVALUE.,'IfcLabel',$,$,$,$,$,.READWRITE.);
 #23=IFCSIMPLEPROPERTYTEMPLATE('28mJ$GDxb7kBbKFH_rACMQ',$,'AngleDecimalPlaces','',.P_SINGLEVALUE.,'IfcInteger',$,$,$,$,$,.READWRITE.);
+#24=IFCSIMPLEPROPERTYTEMPLATE('0EP4WR7eb1IR$rqEJ_XRVX',$,'DPI','DPI of rasterized underlays',.P_SINGLEVALUE.,'IfcInteger',$,$,$,$,$,.READWRITE.);
+#25=IFCSIMPLEPROPERTYTEMPLATE('3LHwCrOcb6Y8ozfJZ7Ay$c',$,'LineworkMode','Method to use for line work',.P_SINGLEVALUE.,'IfcLabel',$,$,$,$,$,.READWRITE.);
+#26=IFCSIMPLEPROPERTYTEMPLATE('2iwERDOW55Pf4hCbuFRe1Q',$,'FillMode','Method to fill areas seen in projection',.P_SINGLEVALUE.,'IfcLabel',$,$,$,$,$,.READWRITE.);
+#27=IFCSIMPLEPROPERTYTEMPLATE('1YF$qLzBzF19Io8aB2N8cE',$,'CutMode','Method for cutting geometry',.P_SINGLEVALUE.,'IfcLabel',$,$,$,$,$,.READWRITE.);
 ENDSEC;
 END-ISO-10303-21;

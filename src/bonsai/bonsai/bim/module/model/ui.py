@@ -94,7 +94,7 @@ class LaunchTypeManager(bpy.types.Operator):
         props = context.scene.BIMModelProperties
         props.type_page = 1
         if get_ifc_class(None, context):
-            ifc_class = props.ifc_class or AuthoringData.data["ifc_element_type"]
+            ifc_class = AuthoringData.data["ifc_class_current"] or AuthoringData.data["ifc_element_type"]
         else:
             ifc_class = AuthoringData.data["ifc_element_type"]
 
@@ -107,20 +107,23 @@ class LaunchTypeManager(bpy.types.Operator):
 
     def draw(self, context):
         props = context.scene.BIMModelProperties
-
         row = self.layout.row(align=True)
-        prop_with_search(row, props, "ifc_class", text="", should_click_ok_to_validate=True)
-        row.operator("bim.launch_add_element", icon="ADD", text="")
+        if AuthoringData.data["total_types"] > 1:
+            text = f"{AuthoringData.data['total_types']} {AuthoringData.data['ifc_element_type']}s"
+        else:
+            text = f"{AuthoringData.data['total_types']} {AuthoringData.data['ifc_element_type']}"
+        row.label(text=text, icon="FILE_VOLUME")
+        # prop_with_search(row, props, "ifc_class", text="", should_click_ok_to_validate=True)
         row.menu("BIM_MT_type_manager_menu", text="", icon="PREFERENCES")
+        row = self.layout.row(align=True)
+        row.operator("bim.launch_add_element", text=f"Create New {AuthoringData.data['ifc_element_type']}", icon="ADD")
 
         columns = self.layout.column_flow(columns=3)
-        row = columns.row()
-        row.alignment = "LEFT"
-        row.label(text=f"{AuthoringData.data['total_types']} Types", icon="FILE_VOLUME")
-
         row = columns.row(align=True)
         row.alignment = "CENTER"
-        # In case you want something here in the future
+        ### In case you want something here in the future
+
+        ###
 
         row = columns.row(align=True)
         row.alignment = "RIGHT"
@@ -140,10 +143,10 @@ class LaunchTypeManager(bpy.types.Operator):
             box = outer_col.box()
 
             row = box.row(align=True)
-            op = row.operator("bim.set_active_type", text=relating_type["name"], icon="FILE_3D")
+            op = row.operator("bim.set_active_type", text=relating_type["name"], icon="BLANK1", emboss=False)
             op.relating_type = relating_type["id"]
 
-            op = row.operator("bim.launch_type_menu", icon="DOWNARROW_HLT", text="")
+            op = row.operator("bim.launch_type_menu", icon="DOWNARROW_HLT", text="", emboss=False)
             op.relating_type_id = relating_type["id"]
 
             row = box.row()
@@ -163,8 +166,13 @@ class LaunchTypeManager(bpy.types.Operator):
                 row2.operator("bim.set_active_type", text="", emboss=False).relating_type = relating_type["id"]
             else:
                 row = box.row()
-                op = box.operator("bim.load_type_thumbnails", text="Load Thumbnails", icon="FILE_REFRESH")
-                op.ifc_class = props.ifc_class
+                op = box.operator("bim.load_type_thumbnails", text="", icon="FILE_REFRESH", emboss=False)
+                op.ifc_class = AuthoringData.data["ifc_class_current"]
+
+            row = box.row()
+            row.alignment = "CENTER"
+            op = row.operator("bim.set_active_type", text=relating_type["predefined_type"], emboss=False)
+            op.relating_type = relating_type["id"]
 
 
 class BIM_PT_authoring(Panel):
@@ -272,7 +280,9 @@ class BIM_PT_stair(bpy.types.Panel):
         if not StairData.is_loaded:
             StairData.load()
 
-        props = context.active_object.BIMStairProperties
+        obj = context.active_object
+        assert obj
+        props = obj.BIMStairProperties
 
         if StairData.data["pset_data"]:
             row = self.layout.row(align=True)
@@ -292,7 +302,7 @@ class BIM_PT_stair(bpy.types.Panel):
                         self.layout.prop(props, prop_name, text="")
                     else:
                         self.layout.prop(props, prop_name)
-                regenerate_stair_mesh(context)
+                regenerate_stair_mesh(obj)
             else:
                 calculated_params = StairData.data["calculated_params"]
                 row.operator("bim.enable_editing_stair", icon="GREASEPENCIL", text="")
@@ -620,7 +630,9 @@ class BIM_PT_roof(bpy.types.Panel):
         if not RoofData.is_loaded:
             RoofData.load()
 
-        props = context.active_object.BIMRoofProperties
+        obj = context.active_object
+        assert obj
+        props = obj.BIMRoofProperties
 
         if RoofData.data["pset_data"]:
             row = self.layout.row(align=True)
@@ -635,7 +647,7 @@ class BIM_PT_roof(bpy.types.Panel):
                 for prop in general_props:
                     self.layout.prop(props, prop)
 
-                update_roof_modifier_bmesh(context)
+                update_roof_modifier_bmesh(obj)
 
             elif props.is_editing_path:
                 row.operator("bim.finish_editing_roof_path", icon="CHECKMARK", text="")
@@ -669,4 +681,5 @@ class BIM_MT_elements(Menu):
 
 def add_menu(self, context):
     self.layout.operator("bim.launch_add_element", icon_value=bonsai.bim.icons["IFC"].icon_id, text="IFC Element")
+    self.layout.menu("BIM_MT_elements", icon_value=bonsai.bim.icons["IFC"].icon_id)
     self.layout.separator()

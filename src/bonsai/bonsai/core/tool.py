@@ -357,6 +357,7 @@ class Drawing:
     def import_sheets(cls): pass
     def import_text_attributes(cls, obj): pass
     def is_active_drawing(cls, drawing): pass
+    def is_annotation_object_type(cls, element, object_types): pass
     def is_camera_orthographic(cls): pass
     def is_drawing_active(cls): pass
     def is_editing_sheets(cls): pass
@@ -388,8 +389,10 @@ class Geometry:
     def clear_scale(cls, obj): pass
     def delete_data(cls, data): pass
     def delete_ifc_object(cls, obj): pass
+    def delete_opening_object_placement(cls, opening): pass
     def does_representation_id_exist(cls, representation_id): pass
     def duplicate_object_data(cls, obj): pass
+    def get_blender_offset_type(cls, obj): pass
     def get_cartesian_point_offset(cls, obj): pass
     def get_element_type(cls, element): pass
     def get_elements_of_type(cls, type): pass
@@ -403,6 +406,7 @@ class Geometry:
     def get_styles(cls, obj): pass
     def get_total_representation_items(cls, obj): pass
     def has_data_users(cls, data): pass
+    def has_material_style_override(cls, obj): pass
     def import_representation(cls, obj, representation, apply_openings=True): pass
     def import_representation_parameters(cls, data): pass
     def is_body_representation(cls, representation): pass
@@ -414,9 +418,11 @@ class Geometry:
     def link(cls, element, obj): pass
     def record_object_materials(cls, obj): pass
     def record_object_position(cls, obj): pass
+    def recreate_object_with_data(cls, obj, data): pass
+    def reimport_element_representations(cls, obj, representation, apply_openings=True): pass
+    def reload_representation_item_ids(cls, representation, data) -> None: pass
     def remove_connection(cls, connection): pass
     def rename_object(cls, obj, name): pass
-    def recreate_object_with_data(cls, obj, data): pass
     def replace_object_data_globally(cls, old_data, new_data): pass
     def resolve_mapped_representation(cls, representation): pass
     def run_geometry_update_representation(cls, obj=None): pass
@@ -425,13 +431,10 @@ class Geometry:
     def should_force_faceted_brep(cls): pass
     def should_force_triangulation(cls): pass
     def should_generate_uvs(cls, obj): pass
-    def should_use_presentation_style_assignment(cls): pass
-    def unresolve_type_representation(cls, representation, element): pass
-    def delete_opening_object_placement(cls, opening): pass
-    def switch_from_representation(cls, obj, representation): pass
-    def get_blender_offset_type(cls, obj): pass
-    def has_material_style_override(cls, obj): pass
     def should_use_immediate_representation(cls, entity, apply_openings): pass
+    def should_use_presentation_style_assignment(cls): pass
+    def switch_from_representation(cls, obj, representation): pass
+    def unresolve_type_representation(cls, representation, element): pass
 
 
 @interface
@@ -538,7 +541,6 @@ class Misc:
     def get_object_storey(cls, obj): pass
     def get_storey_elevation_in_si(cls, storey): pass
     def get_storey_height_in_si(cls, storey, total_storeys): pass
-    def mark_object_as_edited(cls, obj): pass
     def move_object_to_elevation(cls, obj, elevation): pass
     def run_root_copy_class(cls, obj=None): pass
     def scale_object_to_height(cls, obj, height): pass
@@ -550,13 +552,12 @@ class Misc:
 class Model:
     def convert_si_to_unit(cls, value): pass
     def convert_unit_to_si(cls, value): pass
-    def export_curve(cls, position, edge_indices): pass
     def export_points(cls, position, indices): pass
     def export_profile(cls, obj, position=None): pass
     def generate_occurrence_name(cls, element_type, ifc_class): pass
     def get_extrusion(cls, representation): pass
     def import_profile(cls, profile, obj=None, position=None): pass
-    def import_curve(cls, obj, position, curve): pass
+    def import_curve(cls, curve, obj=None, position=None): pass
     def import_rectangle(cls, obj, position, profile): pass
     def load_openings(cls, openings): pass
     def clear_scene_openings(cls): pass
@@ -639,6 +640,7 @@ class Project:
     def run_owner_add_person_and_organisation(cls, person=None, organisation=None): pass
     def run_owner_set_user(cls, user=None): pass
     def run_root_assign_class(cls, obj=None, ifc_class=None, predefined_type=None, should_add_representation=True, context=None, ifc_representation_class=None): pass
+    def run_root_reload_grid_decorator(cls): pass
     def run_unit_assign_scene_units(cls): pass
     def set_context(cls, context): pass
     def set_default_context(cls): pass
@@ -669,6 +671,11 @@ class Pset:
     def import_single_value_from_template(cls, pset_template, prop_template, data, props): pass
     def is_pset_applicable(cls,element, pset_name): pass
     def set_active_pset(cls, props, pset, has_template): pass
+
+
+@interface
+class PsetTemplate:
+    pass
 
 
 @interface
@@ -901,7 +908,7 @@ class Spatial:
     def run_spatial_import_spatial_decomposition(cls): pass
     def select_object(cls, obj): pass
     def select_products(cls, products, unhide=False): pass
-    def set_active_object(cls, obj): pass
+    def set_active_object(cls, obj, selection_mode=None): pass
     def set_relative_object_matrix(cls, target_obj, relative_to_obj, matrix): pass
     def set_target_container_as_default(cls): pass
     def show_scene_objects(cls): pass
@@ -924,7 +931,7 @@ class Spatial:
     def get_purged_inner_holes_poly(cls, union_geom, min_area): pass
     def get_poly_valid_interior_list(cls, poly, min_area, interiors_list): pass
     def get_buffered_poly_from_linear_ring(cls, linear_ring): pass
-    def get_bmesh_from_polygon(cls, poly, h): pass
+    def get_bmesh_from_polygon(cls, poly, h, polygon_is_si=False): pass
     def get_named_obj_from_bmesh(cls, name, bmesh): pass
     def get_named_obj_from_mesh(cls, name, mesh): pass
     def get_named_mesh_from_bmesh(cls, name, bmesh): pass
@@ -1008,6 +1015,8 @@ class Style:
     def import_surface_attributes(cls, style): pass
     def is_editing_styles(cls): pass
     def reload_material_from_ifc(cls, obj): pass
+    def is_style_side_attribute_edited(cls, style, new_attributes): pass
+    def reload_repersentations(cls, style): pass
 
 
 @interface
