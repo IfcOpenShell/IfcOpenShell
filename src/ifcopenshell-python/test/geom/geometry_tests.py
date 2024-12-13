@@ -76,3 +76,24 @@ class TestCreatingShapesIfcCurve(test.bootstrap.IFC4):
         settings = ifcopenshell.geom.settings()
         shape = ifcopenshell.geom.create_shape(settings, item)
         assert shape.verts
+
+
+class TestCreatingShapes(test.bootstrap.IFC4):
+    def test_create_IfcSweptDiskSolid(self):
+        builder = ShapeBuilder(self.file)
+        curve = builder.polyline([V(0.0, 0.0), V(3.0, 0.0)])
+        item = self.file.create_entity("IfcSweptDiskSolid", Directrix=curve, Radius=0.5, InnerRadius=0.4)
+        settings = ifcopenshell.geom.settings()
+        shape = ifcopenshell.geom.create_shape(settings, item)
+        verts = ifcopenshell.util.shape.get_vertices(shape)
+
+        unique_values = np.unique(verts[:, 0])
+        assert unique_values.tolist() == [0.0, 3.0]
+
+        modified_verts = verts.copy()
+        modified_verts[:, 0] = 0
+        distances = np.linalg.norm(modified_verts, axis=1)
+        tolerance = 1e-5
+        rounded_distances = np.round(distances / tolerance) * tolerance
+        unique_values = np.unique(rounded_distances)
+        assert unique_values.tolist() == [0.4, 0.5]
