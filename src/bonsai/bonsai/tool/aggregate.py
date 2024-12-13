@@ -101,12 +101,47 @@ class Aggregate(bonsai.core.tool.Aggregate):
             constraint.target = aggregate
 
     @classmethod
+    def constrain_part_to_aggregate(cls, part: bpy.types.Object, aggregate: bpy.types.Object):
+        constraint = next((c for c in part.constraints if c.type == "CHILD_OF"), None)
+        if constraint:
+            try:
+                bpy.context.view_layer.objects.active = obj
+                bpy.ops.constraint.apply(constraint="Child Of")
+            except:
+                pass
+        constraint = part.constraints.new("CHILD_OF")
+        constraint.target = aggregate
+
+        if bpy.context.scene.BIMAggregateProperties.in_aggregate_mode:
+            constraint.enabled = False
+
+    @classmethod
     def apply_constraints(cls, part: bpy.types.Object):
         constraint = next((c for c in part.constraints if c.type == "CHILD_OF"), None)
         if constraint:
             bpy.context.view_layer.objects.active = part
             bpy.ops.constraint.apply(constraint=constraint.name)
-            
+
+    @classmethod
+    def disable_constraints(cls, part: bpy.types.Object):
+        # Disable constraints while keeping parts in the same location
+        matrix = part.matrix_world.copy()
+        constraint = next((c for c in part.constraints if c.type == "CHILD_OF"), None)
+        if constraint:
+            constraint.enabled = False
+        part.matrix_world = matrix
+
+    @classmethod
+    def enable_constraints(cls, part: bpy.types.Object):
+        # Enable constraints while keeping parts in the same location
+        constraint = next((c for c in part.constraints if c.type == "CHILD_OF"), None)
+        if constraint:
+            constraint.enabled = True
+        bpy.context.view_layer.update()
+        diff = part.matrix_world.translation - part.location
+        part.location -= diff
+
+                    
     @classmethod
     def get_aggregate_mode(cls):
         return bpy.context.scene.BIMAggregateProperties.in_aggregate_mode
@@ -143,7 +178,7 @@ class Aggregate(bonsai.core.tool.Aggregate):
                 else:
                     editing_obj = props.editing_objects.add()
                     editing_obj.obj = obj.original
-                    tool.Aggregate.apply_constraints(obj.original)
+                    tool.Aggregate.disable_constraints(obj.original)
 
         props.in_aggregate_mode = True
         return {"FINISHED"}
@@ -159,7 +194,10 @@ class Aggregate(bonsai.core.tool.Aggregate):
             if not element:
                 continue
 
-        tool.Aggregate.constrain_parts_to_aggregate(props.editing_aggregate)
+        objs = [o.obj for o in props.editing_objects]
+        for obj in objs:
+            tool.Aggregate.enable_constraints(obj)
+
         props.in_aggregate_mode = False
         props.not_editing_objects.clear()
         props.editing_objects.clear()
