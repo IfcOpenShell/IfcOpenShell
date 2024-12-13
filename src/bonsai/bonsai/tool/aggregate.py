@@ -85,7 +85,7 @@ class Aggregate(bonsai.core.tool.Aggregate):
         return parts
 
     @classmethod
-    def constrain_parts_to_aggregate(cls, aggregate: bpy.types.Object):
+    def constrain_all_parts_to_aggregate(cls, aggregate: bpy.types.Object):
         agg_element = tool.Ifc.get_entity(aggregate)
         parts = ifcopenshell.util.element.get_parts(agg_element)
         parts_objs = [tool.Ifc.get_object(p) for p in parts]
