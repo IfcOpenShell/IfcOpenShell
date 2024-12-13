@@ -297,8 +297,6 @@ class Model(bonsai.core.tool.Model):
                 cls.import_rectangle(obj, position, profile)
 
         mesh = bpy.data.meshes.new("Profile")
-        cls.vertices = [Vector(v) @ obj.matrix_world for v in cls.vertices]
-
         mesh.from_pydata(cls.vertices, cls.edges, [])
         mesh.BIMMeshProperties.subshape_type = "PROFILE"
 
@@ -424,7 +422,8 @@ class Model(bonsai.core.tool.Model):
             for local_point in curve.Points.CoordList:
                 global_point = position @ Vector(cls.convert_unit_to_si(local_point)).to_3d()
                 if angle:
-                    global_point = Vector((global_point[0], global_point[1] * cos(angle), global_point[2]))
+                    rot_matrix = Matrix.Rotation(angle, 4, "X")
+                    global_point = Vector((global_point[0], global_point[1] * cos(angle), global_point[2])) @ rot_matrix
                 cls.vertices.append(global_point)
             if curve.Segments:
                 for segment in curve.Segments:
