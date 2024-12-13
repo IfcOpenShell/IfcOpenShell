@@ -18,17 +18,23 @@
 
 import ifcopenshell
 import ifcopenshell.geom
+import ifcopenshell.util.shape
 import test.bootstrap
+import numpy as np
 from ifcopenshell.util.shape_builder import ShapeBuilder, V
 
 
-class TestCreatingShapes(test.bootstrap.IFC4):
+class TestCreatingShapesIfcCurve(test.bootstrap.IFC4):
     def test_create_IfcCirle(self):
         builder = ShapeBuilder(self.file)
-        item = builder.circle(radius=1.0)
+        radius = 1.0
+        item = builder.circle(radius=radius)
         settings = ifcopenshell.geom.settings()
         shape = ifcopenshell.geom.create_shape(settings, item)
-        assert shape.verts
+        verts = ifcopenshell.util.shape.get_vertices(shape)
+        assert len(verts) == 72
+        distances = np.linalg.norm(verts, axis=1)
+        assert np.allclose(distances, np.full(len(verts), radius))
 
     def test_create_IfcEllipse(self):
         builder = ShapeBuilder(self.file)
