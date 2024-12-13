@@ -1727,6 +1727,10 @@ class Geometry(bonsai.core.tool.Geometry):
         items = []
         meshes = cls.split_by_loose_parts(obj)
         for mesh in meshes:
+            # Skip parts that won't work for tessellation.
+            if not mesh.polygons:
+                bpy.data.meshes.remove(mesh)
+                continue
             verts = [v.co / unit_scale for v in mesh.vertices]
             faces = [p.vertices[:] for p in mesh.polygons]
             item = builder.mesh(verts, faces)
@@ -1750,3 +1754,28 @@ class Geometry(bonsai.core.tool.Geometry):
                 ifcopenshell.api.style.assign_item_style(tool.Ifc.get(), item=item, style=style)
             bpy.data.meshes.remove(mesh)
         return builder.get_representation(ifc_context, items)
+
+    @classmethod
+    def mesh_has_loose_geometry(cls, mesh: bpy.types.Mesh) -> bool:
+        """Check if mesh has loose geometry (edges without faces, verts without edges)."""
+        bm = tool.Blender.get_bmesh_for_mesh(mesh)
+
+        # Most of the time it will return `False`,
+        # so checking verts for being manifold
+        # should be the fastest way to proceed in those cases.
+        non_manifold_edges = set()
+        for vert in bm.verts:
+            if not vert.is_manifold:
+                # Not all non-manifold verts mean loose geometry
+                # e.g. a vert shared by 2 planes.
+                if not vert.link_faces:
+                    return True
+                non_manifold_edges.update(vert.link_edges)
+
+        if not non_manifold_edges:
+            return False
+
+        for edge in non_manifold_edges:
+            if not edge.link_faces:
+                return True
+        return False
