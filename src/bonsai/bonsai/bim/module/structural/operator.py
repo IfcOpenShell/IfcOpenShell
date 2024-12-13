@@ -52,7 +52,11 @@ class ShowLoads(bpy.types.Operator):
         collection = bpy.data.collections["IfcStructuralItem"]
         collection.hide_viewport = False
         context.window.cursor_modal_set("WAIT")
-        LoadsDecorator.install(context)
+        try:
+            LoadsDecorator.install(context)
+        except Exception as exc:
+            context.window.cursor_modal_restore()
+            raise exc
         context.window.cursor_modal_restore()
         context.window_manager.modal_handler_add(self)
         for area in context.screen.areas:

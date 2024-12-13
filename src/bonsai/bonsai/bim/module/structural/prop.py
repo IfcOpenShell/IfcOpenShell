@@ -39,6 +39,9 @@ def get_load_groups_to_show(self, context):
         LoadGroupDecorationData.load()
     return LoadGroupDecorationData.data["load groups to show"]
 
+def update_activity_type(self, context):
+    LoadGroupDecorationData.is_loaded = False
+
 def get_applicable_structural_load_types(self, context):
     if not StructuralLoadCasesData.is_loaded:
         StructuralLoadCasesData.load()
@@ -164,7 +167,8 @@ class BIMStructuralProperties(PropertyGroup):
     activity_type: EnumProperty(items=[("Action","Actions","Show actions loads"),
                                  ("External Reaction","External Reactions","Show reactions on boundary conditions"),
                                  ("Internal Reactions","Internal Reactions","Show internal reactions on members")],
-                                 name="Activity Type")
+                                 name="Activity Type",
+                                 update=update_activity_type)
     load_group_to_show: EnumProperty(items=get_load_groups_to_show, name="Load Groups")
 
 
