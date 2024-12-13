@@ -8,7 +8,7 @@ from bpy_extras import view3d_utils
 from bpy.types import SpaceView3D
 from gpu_extras.batch import batch_for_shader
 from typing import Iterable, Union
-from bonsai.bim.module.structural.shader import ShaderInfo
+from bonsai.bim.module.structural.load_decoration_data import ShaderInfo
 
 class LoadsDecorator:
     """Decorator to show strucutural loads in 3D"""
