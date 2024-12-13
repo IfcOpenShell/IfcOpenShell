@@ -651,7 +651,8 @@ class EnableEditingExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
             rot_matrix = Matrix.Rotation(existing_x_angle, 4, "X")
             offset = Vector((0, 0.0, layer_params["offset"]))
             rot_offset = offset @ rot_matrix
-            translation_matrix = Matrix.Translation(-rot_offset)
+            rot_offset = -rot_offset if layer_params["direction_sense"] == "POSITIVE" else rot_offset
+            translation_matrix = Matrix.Translation(rot_offset)
             position = position @ translation_matrix
 
         else:
