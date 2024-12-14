@@ -36,7 +36,7 @@ import bonsai.core.geometry
 import bonsai.core.model as core
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
-from math import pi, sin, cos, degrees
+from math import pi, sin, cos, degrees, radians
 from mathutils import Vector, Matrix
 from bonsai.bim.module.model.opening import FilledOpeningGenerator
 from bonsai.bim.module.model.decorator import PolylineDecorator, ProductDecorator
@@ -236,12 +236,43 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
                 return
             x, y, z = extrusion.ExtrudedDirection.DirectionRatios
             existing_x_angle = Vector((0, 1)).angle_signed(Vector((y, z)))
+            # The existing angle result can change when the direction sense in Negative because the DirectionRatios may have negative y and z.
+            # For instance, a 30 degree angled slab, with negative direction will show as -150 degrees. To prevent that we do the following transformations
+            existing_x_angle = (
+                existing_x_angle + radians(180) if existing_x_angle < -radians(90) else existing_x_angle
+            )
+            existing_x_angle = (
+                existing_x_angle - radians(180) if existing_x_angle > radians(90) else existing_x_angle
+            )
             perpendicular_depth = extrusion.Depth / (1 / cos(existing_x_angle))
             extrusion.Depth = perpendicular_depth * (1 / cos(x_angle))
             extrusion.ExtrudedDirection.DirectionRatios = (0.0, sin(x_angle), cos(x_angle))
             if tool.Model.get_usage_type(element) == "LAYER2":
                 layer2_objs.append(obj)
             else:
+                if tool.Model.get_usage_type(element) == "LAYER3":
+                    # Reset the transformation and returns to the original points with 0 degrees
+                    extrusion.SweptArea.OuterCurve.Points.CoordList = [(p[0], p[1] * (cos(existing_x_angle))) for p in extrusion.SweptArea.OuterCurve.Points.CoordList]
+                
+                    # Apply the transformation for the new x_angle
+                    extrusion.SweptArea.OuterCurve.Points.CoordList = [(p[0], p[1] * (1 / cos(x_angle))) for p in extrusion.SweptArea.OuterCurve.Points.CoordList]
+
+                    # The extrusion direction calculated previously default to the positive direction
+                    # Here we set the extrusion direction to negative it that's the case
+                    x, y, z = extrusion.ExtrudedDirection.DirectionRatios
+                    extrusion_x_angle = Vector((0, 1)).angle_signed(Vector((y, z)))
+                    layer_params = tool.Model.get_material_layer_parameters(element)
+                    if layer_params["direction_sense"] == "NEGATIVE":
+                        y = -abs(y) if extrusion_x_angle > 0 else abs(y)
+                        z = -abs(z)
+                    extrusion.ExtrudedDirection.DirectionRatios = (x, y, z)
+
+                    # Update the extrusion's location based on its current rotation angle
+                    rot_matrix = Matrix.Rotation(x_angle, 4, "X")
+                    offset = Vector((0.0, 0.0, layer_params["offset"] / unit_scale))
+                    rot_offset = offset @ rot_matrix
+                    extrusion.Position.Location.Coordinates = tuple(rot_offset)
+
                 bonsai.core.geometry.switch_representation(
                     tool.Ifc,
                     tool.Geometry,
@@ -252,11 +283,13 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
                     should_sync_changes_first=False,
                 )
 
-                euler = obj.matrix_world.to_euler()
-                euler.x = x_angle
-                new_matrix = euler.to_matrix().to_4x4()
-                new_matrix.translation = obj.matrix_world.translation
-                obj.matrix_world = new_matrix
+                # Object rotation
+                local_rot_mat = obj.rotation_euler.to_matrix()
+                rot_mat = mathutils.Matrix.Rotation(x_angle - existing_x_angle, 4, 'X')
+                new_rot_mat = local_rot_mat.to_4x4() @ rot_mat
+                new_rot_euler = new_rot_mat.to_euler()
+                obj.rotation_euler = new_rot_euler
+
         if layer2_objs:
             DumbWallRecalculator().recalculate(layer2_objs)
         return {"FINISHED"}
