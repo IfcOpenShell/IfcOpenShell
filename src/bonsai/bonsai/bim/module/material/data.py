@@ -230,6 +230,10 @@ class ObjectMaterialData:
             if cls.material.is_a("IfcMaterialProfileSetUsage"):
                 if cls.material.CardinalPoint:
                     results["cardinal_point"] = cardinal_point_map[cls.material.CardinalPoint]
+            if cls.material.is_a("IfcMaterialLayerSetUsage"):
+                if cls.material.LayerSetDirection:
+                    results["layer_set_direction"] = cls.material.LayerSetDirection
+
         return results
 
     @classmethod
@@ -259,7 +263,16 @@ class ObjectMaterialData:
                 icon = "POINTCLOUD_DATA"
 
             for item in items or []:
-                data = {"id": item.id(), "name": getattr(item, "Name", None) or "Unnamed", "icon": icon}
+                if item.is_a("IfcMaterial"):
+                    material_id = item.id()
+                else:
+                    material_id = item.Material.id()
+                data = {
+                    "id": item.id(), 
+                    "name": getattr(item, "Name", None) or "Unnamed", 
+                    "icon": icon,
+                    "material_id": material_id
+                    }
                 if item.is_a("IfcMaterialProfile") and not item.Name:
                     if item.Profile:
                         data["name"] = item.Profile.ProfileName or "Unnamed"
