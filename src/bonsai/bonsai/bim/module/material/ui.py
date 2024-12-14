@@ -253,9 +253,9 @@ class BIM_PT_object_material(Panel):
                 len(self.props.material_set_item_profile_attributes)
                 and self.props.active_material_set_item_id == set_item["id"]
             ):
-                self.draw_editable_set_item_profile_ui(set_item)
+                self.draw_editable_set_item_profile_ui(box, set_item)
             elif self.props.active_material_set_item_id == set_item["id"]:
-                self.draw_editable_set_item_ui(set_item)
+                self.draw_editable_set_item_ui(box, set_item)
             else:
                 self.draw_read_only_set_item_ui(
                     box, set_item, index, is_first=index == 0, is_last=index == total_items - 1
@@ -263,16 +263,15 @@ class BIM_PT_object_material(Panel):
 
         self.layerset_bounds(box, active_object, location="Bottom_Interior")
 
-    def draw_editable_set_item_profile_ui(self, set_item):
-        box = self.layout.box()
+    def draw_editable_set_item_profile_ui(self, box, set_item):
+        # box = self.layout.box()
         row = box.row(align=True)
         op = row.operator("bim.edit_material_set_item_profile", icon="CHECKMARK", text="Save Changes")
         op.material_set_item = set_item["id"]
         row.operator("bim.disable_editing_material_set_item_profile", icon="CANCEL", text="")
         draw_attributes(self.props.material_set_item_profile_attributes, box)
 
-    def draw_editable_set_item_ui(self, set_item):
-        box = self.layout.box()
+    def draw_editable_set_item_ui(self, box, set_item):
         row = box.row(align=True)
         op = row.operator("bim.edit_material_set_item", icon="CHECKMARK", text="Save Changes")
         op.material_set_item = set_item["id"]
@@ -365,7 +364,7 @@ class BIM_PT_object_material(Panel):
 
         for set_item in ObjectMaterialData.data["set_items"]:
             material_name = set_item["material"]
-            material_id = self.get_material_id_from_name(material_name)
+            material_id = set_item['material_id']
             if ObjectMaterialData.data["material_class"] == "IfcMaterialList":
                 row = box.row()
                 row.label(text="IfcMaterial", icon="LAYER_ACTIVE")
@@ -379,17 +378,10 @@ class BIM_PT_object_material(Panel):
 
         self.layerset_bounds(box, active_object, location="Bottom_Interior")
 
-    def get_material_id_from_name(self, material_name):
-        for index, set_item in enumerate(ObjectMaterialData.data["materials"]):
-            if material_name == ObjectMaterialData.data["materials"][index][1]:
-                material_id = int(ObjectMaterialData.data["materials"][index][0])
-                return material_id
-
     def layerset_bounds(self, box, obj, location="Top_Exterior"):
-        element = tool.Ifc.get_entity(obj)
-        has_layersetdirection = hasattr(element.HasAssociations[0].RelatingMaterial, "LayerSetDirection")
-        if has_layersetdirection:
-            layer_set_direction = element.HasAssociations[0].RelatingMaterial.LayerSetDirection
+        set_usage = ObjectMaterialData.data.get('set_usage', {})
+        layer_set_direction = set_usage.get('layer_set_direction')
+        if layer_set_direction:
             if location == "Top_Exterior":
                 if layer_set_direction == "AXIS3":
                     box.label(text="----- Top -----")
