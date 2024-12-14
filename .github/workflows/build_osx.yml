@@ -119,6 +119,17 @@ jobs:
 
       - name: Overwrite aws cli
         run: |
+          # Error: The `brew link` step did not complete successfully
+          # The formula built, but is not symlinked into /usr/local
+          # Could not symlink bin/idle3
+          # Target /usr/local/bin/idle3
+          # already exists. You may want to remove it:
+          #   rm '/usr/local/bin/idle3'
+          #
+          # To force the link and overwrite all conflicting files:
+          #   brew link --overwrite python@3.13
+          brew link --overwrite python@3.12
+          brew link --overwrite python@3.13
           # https://github.com/rust-lang/rustup/pull/3989/files
           brew install --overwrite awscli
 
