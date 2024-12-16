@@ -393,41 +393,47 @@ class ShapeBuilder:
 
     def translate(
         self,
-        curve_or_item: Union[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]],
-        translation: Vector,
+        curve_or_item: Union[ifcopenshell.entity_instance, Sequence[ifcopenshell.entity_instance]],
+        translation: VectorType,
         create_copy: bool = False,
     ) -> Union[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]]:
-        # > curve_or_item - could be a list of curves or items or representations
-        # < returns translated object
+        """
+        Translate curve/representaiton item/representation.
+
+        :param curve_or_item: A single item to translate or a sequence of them.
+        :param translation: Translation vector.
+        :param create_copy: Whether to translate the provided item or it's copy.
+        :return: Translated curve/item/representation or a sequence of them.
+        """
 
         multiple_objects = isinstance(curve_or_item, collections.abc.Iterable)
         if not multiple_objects:
             curve_or_item = [curve_or_item]
 
-        processed_objects = []
+        processed_objects: list[ifcopenshell.entity_instance] = []
         for c in curve_or_item:
             if create_copy:
                 c = ifcopenshell.util.element.copy_deep(self.file, c)
 
             if c.is_a() in ("IfcIndexedPolyCurve", "IfcPolyline"):
                 coords = self.get_polyline_coords(c)
-                coords = [Vector(co) + translation for co in coords]
+                coords += translation
                 self.set_polyline_coords(c, coords)
 
             elif c.is_a("IfcCircle") or c.is_a("IfcExtrudedAreaSolid") or c.is_a("IfcEllipse"):
-                base_position = Vector(c.Position.Location.Coordinates)
-                c.Position.Location.Coordinates = base_position + translation
+                base_position = np.array(c.Position.Location.Coordinates)
+                c.Position.Location.Coordinates = ifc_safe_vector_type(base_position + translation)
 
             elif c.is_a("IfcShapeRepresentation"):
                 for item in c.Items:
                     self.translate(item, translation)
 
             elif c.is_a("IfcTrimmedCurve"):
-                base_position = Vector(c.Trim1[0].Coordinates)
-                c.Trim1[0].Coordinates = base_position + translation
+                base_position = np.array(c.Trim1[0].Coordinates)
+                c.Trim1[0].Coordinates = ifc_safe_vector_type(base_position + translation)
 
-                base_position = Vector(c.Trim2[0].Coordinates)
-                c.Trim2[0].Coordinates = base_position + translation
+                base_position = np.array(c.Trim2[0].Coordinates)
+                c.Trim2[0].Coordinates = ifc_safe_vector_type(base_position + translation)
 
                 self.translate(c.BasisCurve, translation)
 
@@ -874,22 +880,28 @@ class ShapeBuilder:
         kwargs["position_z_axis"].rotate(rot)
         return kwargs
 
-    def get_polyline_coords(self, polyline: ifcopenshell.entity_instance) -> list[Vector]:
+    def get_polyline_coords(self, polyline: ifcopenshell.entity_instance) -> np.ndarray:
         """polyline should be either `IfcIndexedPolyCurve` or `IfcPolyline`"""
         coords = None
         if polyline.is_a("IfcIndexedPolyCurve"):
-            coords = polyline.Points.CoordList
+            coords = np.array(polyline.Points.CoordList)
         elif polyline.is_a("IfcPolyline"):
-            coords = [p.Coordinates for p in polyline.Points]
+            coords = np.array(p.Coordinates for p in polyline.Points)
+        else:
+            raise Exception(f"Unsupported polyline type: {polyline.is_a()}")
         return coords
 
-    def set_polyline_coords(self, polyline: ifcopenshell.entity_instance, coords: list[Vector]) -> None:
+    def set_polyline_coords(self, polyline: ifcopenshell.entity_instance, coords: SequenceOfVectors) -> None:
         """polyline should be either `IfcIndexedPolyCurve` or `IfcPolyline`"""
         if polyline.is_a("IfcIndexedPolyCurve"):
-            polyline.Points.CoordList = coords
+            polyline.Points.CoordList = ifc_safe_vector_type(coords)
         elif polyline.is_a("IfcPolyline"):
-            for i, co in enumerate(coords):
-                polyline.Points[i].Coordinates = co
+            ifc_points: list[ifcopenshell.entity_instance] = polyline.Points
+            assert len(ifc_points) == len(coords)
+            for point, co in zip(ifc_points, ifc_safe_vector_type(coords)):
+                point.Coordinates = co
+        else:
+            raise Exception(f"Unsupported polyline type: {polyline.is_a()}")
 
     def get_simple_2dcurve_data(
         self,
