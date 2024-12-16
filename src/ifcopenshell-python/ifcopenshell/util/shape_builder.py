@@ -23,6 +23,7 @@ import collections.abc
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.element
+import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
 from math import cos, sin, pi, tan, radians, degrees, atan, sqrt
@@ -65,9 +66,24 @@ def np_normalized(v: VectorType) -> np.ndarray:
     return np.divide(v, np.linalg.norm(v))
 
 
-def np_to_3d(v: VectorType) -> np.ndarray:
-    """Convert 2D vector to 3D."""
-    return np.hstack((v, (0.0,)))
+def np_to_3d(v: VectorType, z: float = 0.0) -> np.ndarray:
+    """Convert 2D/4D vector to 3D."""
+    l = len(v)
+    if l == 2:
+        return np.append(v, z)
+    elif l == 4:
+        return v[:3]
+    assert False, f"Unexpected vector length: {l} ({v})."
+
+
+def np_to_4d(v: VectorType, z: float = 0.0, w: float = 1.0) -> np.ndarray:
+    """Convert 2D/3D vector to 4D (e.g. for multiplying with 4x4 matrix)."""
+    l = len(v)
+    if l == 2:
+        return np.append(v, (z, w))
+    elif l == 3:
+        return np.append(v, w)
+    assert False, f"Unexpected vector length: {l} ({v})."
 
 
 def np_to_4x4(matrix_3x3: np.ndarray) -> np.ndarray:
@@ -75,6 +91,13 @@ def np_to_4x4(matrix_3x3: np.ndarray) -> np.ndarray:
     matrix_4x4 = np.pad(matrix_3x3, ((0, 1), (0, 1)))
     matrix_4x4[3, 3] = 1
     return matrix_4x4
+
+
+def np_angle(a: VectorType, b: VectorType) -> float:
+    """Get angle between vectors in radians.
+    Designed to work similar to `Vector.angle`.
+    """
+    return np.arccos(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)))
 
 
 def np_rotation_matrix(
@@ -566,43 +589,17 @@ class ShapeBuilder:
 
     def mirror_2d_point(
         self,
-        point_2d: Vector,
-        mirror_axes: Vector = Vector((1.0, 1.0)).freeze(),
-        mirror_point: Vector = Vector((0.0, 0.0)).freeze(),
-    ) -> Vector:
+        point_2d: VectorType,
+        mirror_axes: VectorType = (1.0, 1.0),
+        mirror_point: VectorType = (0.0, 0.0),
+    ) -> np.ndarray:
         """mirror_axes - along which axes mirror will be applied"""
-        base = point_2d  # prevent mutating the argument
-        mirror_axes = Vector([-1 if i > 0 else 1 for i in mirror_axes])
-        relative_point = base - mirror_point
+        mirror_axes: np.ndarray = np.where(np.array(mirror_axes) > 0, -1, 1)
+        mirror_point: np.ndarray = np.array(mirror_point)
+        relative_point = point_2d - mirror_point
         relative_point = relative_point * mirror_axes
-        point_2d = relative_point + mirror_point
-        return point_2d
-
-    def get_axis2_placement_3d_matrix(self, axis2_placement_3d: ifcopenshell.entity_instance) -> Matrix:
-        """
-        Generate a Matrix from IfcAxis2Placement3D.
-
-        :param axis2_placement_3d: IfcAxis2Placement3D
-        :type axis2_placement_3d: ifcopenshell.entity_instance
-        :return: generated matrix
-        :rtype: Matrix
-        """
-        p = axis2_placement_3d
-
-        M = Matrix.Identity(3)
-        x_axis = Vector(p.RefDirection.DirectionRatios)
-        z_axis = Vector(p.Axis.DirectionRatios)
-
-        x_angle = -x_axis.angle(M[0])
-        rotation_vector = x_axis.cross(M[0])
-        M_X_rotation = Matrix.Rotation(x_angle, 3, rotation_vector)
-
-        z_angle = -z_axis.angle(M[2])
-        rotation_vector = z_axis.cross(M[2])
-        M_Z_rotation = Matrix.Rotation(z_angle, 3, rotation_vector)
-        rotation_matrix = M_X_rotation @ M_Z_rotation
-
-        return rotation_matrix
+        point_2d_res = relative_point + mirror_point
+        return point_2d_res
 
     def create_axis2_placement_3d(
         self,
@@ -657,29 +654,37 @@ class ShapeBuilder:
     def mirror(
         self,
         curve_or_item: Union[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]],
-        mirror_axes: Vector = Vector((1.0, 1.0)).freeze(),
-        mirror_point: Vector = Vector((0.0, 0.0)).freeze(),
+        mirror_axes: Union[VectorType, SequenceOfVectors] = (1.0, 1.0),
+        mirror_point: VectorType = (0.0, 0.0),
         create_copy: bool = False,
-        placement_matrix: Optional[Matrix] = None,
+        placement_matrix: Optional[np.ndarray] = None,
     ) -> Union[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]]:
-        """mirror_axes - along which axes mirror will be applied
+        """Mirror curve/representaiton item/representation.
 
-        For example, mirroring `A(1,0)` by axis `(1,0)` will result in `A'(-1,0)`
+        :param curve_or_item: A single item to mirror or a sequence of them.
+        :param mirror_axes: A vector of values, should have value > 0 for axes where mirror should be applied.
+            Example: mirroring `A(1,0)` by axis `(1,0)` will result in `A'(-1,0)`
+
+            Also could be a list of mirrors to apply to `curve_or_item`
+            multiple mirror_axes will result in multiple resulting curves
+            Example: curve_or_item = [a, b], mirror_axes=[v1, v2], result = [av1, av2, bv1, bv2]
+        :param mirror_point: Point relative to which mirror should be applied.
+        :param create_copy: Whether to mirror the provided item or it's copy.
+        :param placement_matrix: Optional placement matrix to use for polylines.
+        :return: Mirrored curve/item/representation or a sequence of them.
         """
-        # > curve_or_item - could be a list of curves or items
-        # > mirror_axes - could be a list of mirrors to apply to curve_or_item
-        # multiple mirror_axes will result in multiple resulting curves
-        # example: curve_or_item = [a, b], mirror_axes=[v1, v2], result = [av1, av2, bv1, bv2]
-        # < returns mirrored object
 
         # TODO: need to add placement_matrix for other types besides polycurve?
 
+        np_XY = slice(2)
+        np_X, np_Y, np_Z = 0, 1, 2
+
         multiple_objects = isinstance(curve_or_item, collections.abc.Iterable)
         curve_or_item = [curve_or_item] if not multiple_objects else curve_or_item
-        multiple_transformations = isinstance(mirror_axes, collections.abc.Iterable)
+        multiple_transformations = not isinstance(mirror_axes[0], (float, int))
         mirror_axes_data = [mirror_axes] if not multiple_transformations else mirror_axes
 
-        processed_objects = []
+        processed_objects: list[ifcopenshell.entity_instance] = []
         for curve_or_item_el in curve_or_item:
             for mirror_axes in mirror_axes_data:
                 c = (
@@ -690,16 +695,18 @@ class ShapeBuilder:
 
                 if c.is_a() in ("IfcIndexedPolyCurve", "IfcPolyline"):
                     original_coords = self.get_polyline_coords(c)
-                    inverted_placement_matrix = placement_matrix.inverted() if placement_matrix else None
+                    inverted_placement_matrix = (
+                        np.linalg.inv(placement_matrix) if placement_matrix is not None else None
+                    )
                     coords = []
                     for co in original_coords:
-                        co_base = Vector(co)
-                        if placement_matrix:
+                        co_base = co.copy()
+                        if placement_matrix is not None:
                             # TODO: add support for Z-axis too
-                            co_base = placement_matrix @ co_base.to_3d()
-                            co = self.mirror_2d_point(co_base.to_2d(), mirror_axes, mirror_point).to_3d()
-                            co.z = co_base.z
-                            co = (inverted_placement_matrix @ co).to_2d()
+                            co_base = placement_matrix @ np_to_3d(co_base)
+                            co = self.mirror_2d_point(co_base[np_XY], mirror_axes, mirror_point)
+                            co = np_to_3d(co, z=co_base[2])
+                            co = (inverted_placement_matrix @ co)[np_XY]
                         else:
                             co = self.mirror_2d_point(co_base, mirror_axes, mirror_point)
 
@@ -708,47 +715,46 @@ class ShapeBuilder:
                     self.set_polyline_coords(c, coords)
 
                 elif c.is_a("IfcCircle") or c.is_a("IfcEllipse"):
-                    base_position = Vector(c.Position.Location.Coordinates)
+                    base_position = c.Position.Location.Coordinates
                     new_position = self.mirror_2d_point(base_position, mirror_axes, mirror_point)
-                    c.Position.Location.Coordinates = new_position
+                    c.Position.Location.Coordinates = ifc_safe_vector_type(new_position)
 
                 elif c.is_a("IfcExtrudedAreaSolid"):
-                    placement_matrix = self.get_axis2_placement_3d_matrix(c.Position)
-                    base_position = Vector(c.Position.Location.Coordinates)
+                    placement_matrix_ = ifcopenshell.util.placement.get_axis2placement(c.Position)[:3, :3]
+                    base_position = c.Position.Location.Coordinates
                     # TODO: add support for Z-axis too
-                    new_position = self.mirror_2d_point(base_position.to_2d(), mirror_axes, mirror_point)
-                    new_position = new_position.to_3d()
-                    new_position.z = base_position.z
-                    c.Position.Location.Coordinates = new_position
+                    new_position = self.mirror_2d_point(base_position[np_XY], mirror_axes, mirror_point)
+                    new_position = np_to_3d(new_position, base_position[np_Z])
+                    c.Position.Location.Coordinates = ifc_safe_vector_type(new_position)
 
                     # TODO: add support for Z-axis too
-                    self.translate(c.SweptArea.OuterCurve, base_position.to_2d())
-                    self.mirror(c.SweptArea.OuterCurve, mirror_axes, mirror_point, placement_matrix=placement_matrix)
-                    self.translate(c.SweptArea.OuterCurve, -new_position.to_2d())
+                    self.translate(c.SweptArea.OuterCurve, base_position[np_XY])
+                    self.mirror(c.SweptArea.OuterCurve, mirror_axes, mirror_point, placement_matrix=placement_matrix_)
+                    self.translate(c.SweptArea.OuterCurve, -new_position[np_XY])
 
                     if hasattr(c.SweptArea, "InnerCurves"):
                         for inner_curve in c.SweptArea.InnerCurves:
-                            self.translate(inner_curve, base_position.to_2d())
-                            self.mirror(inner_curve, mirror_axes, mirror_point, placement_matrix=placement_matrix)
-                            self.translate(inner_curve, -new_position.to_2d())
+                            self.translate(inner_curve, base_position[np_XY])
+                            self.mirror(inner_curve, mirror_axes, mirror_point, placement_matrix=placement_matrix_)
+                            self.translate(inner_curve, -new_position[np_XY])
 
                     # extrusion converted to world space
-                    base_extruded_direction = Vector(c.ExtrudedDirection.DirectionRatios)
-                    extruded_direction = placement_matrix @ base_extruded_direction
+                    base_extruded_direction = c.ExtrudedDirection.DirectionRatios
+                    extruded_direction = placement_matrix_ @ base_extruded_direction
 
                     # TODO: add support for Z-axis too
                     # mirror point is ignored for extrusion direction
-                    new_direction = self.mirror_2d_point(extruded_direction.to_2d(), mirror_axes, mirror_point=V(0, 0))
-                    new_direction = new_direction.to_3d()
-                    new_direction.z = extruded_direction.z
+                    new_direction = self.mirror_2d_point(
+                        extruded_direction[np_XY], mirror_axes, mirror_point=(0.0, 0.0)
+                    )
+                    new_direction = np_to_3d(new_direction, extruded_direction[np_Z])
 
                     # extrusion direction converted back to placement space
-                    new_direction = placement_matrix.inverted() @ new_direction
+                    new_direction = np.linalg.inv(placement_matrix_) @ new_direction
                     c.ExtrudedDirection.DirectionRatios = new_direction
 
                 elif c.is_a("IfcTrimmedCurve"):
                     trim_coords = [c.Trim1[0].Coordinates, c.Trim2[0].Coordinates]
-                    trim_coords = [Vector(coords) for coords in trim_coords]
                     trim_coords = [
                         self.mirror_2d_point(base_position, mirror_axes, mirror_point) for base_position in trim_coords
                     ]
@@ -758,7 +764,7 @@ class ShapeBuilder:
                     if 0 in mirror_axes:
                         trim_coords = [trim_coords[1], trim_coords[0]]
 
-                    base_position = Vector(c.Trim1[0].Coordinates)
+                    trim_coords = ifc_safe_vector_type(np.array(trim_coords))
                     c.Trim1[0].Coordinates, c.Trim2[0].Coordinates = trim_coords
 
                     self.mirror(c.BasisCurve, mirror_axes, mirror_point)
