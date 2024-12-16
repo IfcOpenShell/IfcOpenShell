@@ -20,9 +20,30 @@ import pytest
 import test.bootstrap
 import ifcopenshell.api
 import numpy as np
-from ifcopenshell.util.shape_builder import ShapeBuilder, V, is_x
+from ifcopenshell.util.shape_builder import ShapeBuilder, V, is_x, np_rotation_matrix
 from math import degrees, radians, tan
-from mathutils import Vector
+from mathutils import Vector, Matrix
+
+
+class TestNumpyRotationMatrix(test.bootstrap.IFC4):
+    def test_run(self):
+        # 2D.
+        assert np.allclose(Matrix.Rotation(radians(45), 2), np_rotation_matrix(radians(45), 2))
+        assert np.allclose(Matrix.Rotation(radians(45), 2, "Z"), np_rotation_matrix(radians(45), 2, "Z"))
+
+        # 3D.
+        assert np.allclose(Matrix.Rotation(radians(45), 3, "X"), np_rotation_matrix(radians(45), 3, "X"))
+        assert np.allclose(Matrix.Rotation(radians(45), 3, "Y"), np_rotation_matrix(radians(45), 3, "Y"))
+        assert np.allclose(Matrix.Rotation(radians(45), 3, "Z"), np_rotation_matrix(radians(45), 3, "Z"))
+        rotation_vector_args = radians(45), 3, Vector((1, 1, 1)).normalized()
+        assert np.allclose(Matrix.Rotation(*rotation_vector_args), np_rotation_matrix(*rotation_vector_args))
+
+        # Size 4.
+        assert np.allclose(Matrix.Rotation(radians(45), 4, "X"), np_rotation_matrix(radians(45), 4, "X"))
+        assert np.allclose(Matrix.Rotation(radians(45), 4, "Y"), np_rotation_matrix(radians(45), 4, "Y"))
+        assert np.allclose(Matrix.Rotation(radians(45), 4, "Z"), np_rotation_matrix(radians(45), 4, "Z"))
+        rotation_vector_args = radians(45), 4, Vector((1, 1, 1)).normalized()
+        assert np.allclose(Matrix.Rotation(*rotation_vector_args), np_rotation_matrix(*rotation_vector_args))
 
 
 class TestRectangle(test.bootstrap.IFC4):
