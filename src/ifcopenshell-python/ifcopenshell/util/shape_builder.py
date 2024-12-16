@@ -1125,12 +1125,13 @@ class ShapeBuilder:
         return ifc_curve
 
     def create_transition_arc_ifc(
-        self, width: str, height: str, create_ifc_curve: bool = False
-    ) -> tuple[list[Vector], list[tuple[int, int], Union[ifcopenshell.entity_instance, None]]]:
-        # create an arc in the rectangle with specified width and height
-        # if it's not possible to make a complete arc
-        # it will create arc with longest radius possible
-        # and straight segment in the middle
+        self, width: float, height: float, create_ifc_curve: bool = False
+    ) -> tuple[SequenceOfVectors, list[list[int]], Union[ifcopenshell.entity_instance, None]]:
+        """Create an arc in the rectangle with specified width and height.
+
+        If it's not possible to make a complete arc, create an arc with longest radius possible
+        and straight segment in the middle.
+        """
         fillet_size = (width / 2) / height
         if fillet_size <= 1:
             fillet_radius = height * fillet_size
@@ -1163,7 +1164,7 @@ class ShapeBuilder:
             return self.faceted_brep(points, faces)
         return self.polygonal_face_set(points, faces)
 
-    def faceted_brep(self, points: list[list[float]], faces: list[list[int]]) -> ifcopenshell.entity_instance:
+    def faceted_brep(self, points: SequenceOfVectors, faces: Sequence[Sequence[int]]) -> ifcopenshell.entity_instance:
         """Generate an IfcFacetedBrep with a closed shell
 
         Note that :func:`polygonal_face_set` is recommended in IFC4.
@@ -1172,8 +1173,8 @@ class ShapeBuilder:
         :param faces: list of faces consisted of point indices (points indices starting from 0)
         :return: IfcFacetedBrep
         """
-        verts = [self.file.createIfcCartesianPoint(p) for p in points]
-        faces = [
+        verts = [self.file.createIfcCartesianPoint(p) for p in ifc_safe_vector_type(points)]
+        faces: list[ifcopenshell.entity_instance] = [
             self.file.createIfcFace(
                 [self.file.createIfcFaceOuterBound(self.file.createIfcPolyLoop([verts[v] for v in f]), True)]
             )
@@ -1181,7 +1182,9 @@ class ShapeBuilder:
         ]
         return self.file.createIfcFacetedBrep(self.file.createIfcClosedShell(faces))
 
-    def polygonal_face_set(self, points: list[list[float]], faces: list[list[int]]) -> ifcopenshell.entity_instance:
+    def polygonal_face_set(
+        self, points: SequenceOfVectors, faces: Sequence[Sequence[int]]
+    ) -> ifcopenshell.entity_instance:
         """
         Generate an IfcPolygonalFaceSet
 
@@ -1191,16 +1194,16 @@ class ShapeBuilder:
         :param faces: list of faces consisted of point indices (points indices starting from 0)
         :return: IfcPolygonalFaceSet
         """
-        ifc_points = self.file.createIfcCartesianPointList3D(points)
+        ifc_points = self.file.createIfcCartesianPointList3D(ifc_safe_vector_type(points))
         ifc_faces = [self.file.createIfcIndexedPolygonalFace([i + 1 for i in face]) for face in faces]
         return self.file.createIfcPolygonalFaceSet(Coordinates=ifc_points, Faces=ifc_faces)
 
     def extrude_face_set(
         self,
-        points: list[Vector],
+        points: SequenceOfVectors,
         magnitude: float,
-        extrusion_vector: Vector = V(0, 0, 1).freeze(),
-        offset: Optional[Vector] = None,
+        extrusion_vector: VectorType = (0, 0, 1),
+        offset: Optional[VectorType] = None,
         start_cap: bool = True,
         end_cap: bool = True,
     ) -> ifcopenshell.entity_instance:
@@ -1211,28 +1214,22 @@ class ShapeBuilder:
         to assure CorrectItemsForType.
 
         :param points: list of points, assuming they form consecutive closed polyline.
-        :type points: list[Vector]
         :param magnitude: extrusion magnitude
-        :type magnitude: float
         :param extrusion_vector: extrusion direction, by default it's extruding by Z+ axis
-        :type extrusion_vector: Vector, optional
         :param offset: offset from the points
-        :type offset: Vector, optional
         :param start_cap: if True, create start cap, by default it's True
-        :type start_cap: bool, optional
         :param end_cap: if True, create end cap, by default it's True
-        :type end_cap: bool, optional
-
         :return: IfcPolygonalFaceSet
-        :rtype: ifcopenshell.entity_instance
         """
 
         # prevent mutating arguments, deepcopy doesn't work
-        start_points = [p.copy() if not offset else (p + offset) for p in points]
-        extrusion_offset = magnitude * extrusion_vector
-        end_points = [p + extrusion_offset for p in start_points]
+        start_points = np.array(points)
+        if offset:
+            start_points += offset
+        extrusion_offset = np.multiply(extrusion_vector, magnitude)
+        end_points = start_points + extrusion_offset
 
-        points = start_points + end_points
+        all_points = np.vstack((start_points, end_points))
         faces = []
         n_verts = len(start_points)
         last_vert_i = n_verts - 1
@@ -1246,7 +1243,7 @@ class ShapeBuilder:
         if start_cap:
             faces.append(tuple(reversed(range(n_verts))))
 
-        face_set = self.polygonal_face_set(points, faces)
+        face_set = self.polygonal_face_set(all_points, faces)
         return face_set
 
     # TODO: move MEP to separate shape builder sub module
