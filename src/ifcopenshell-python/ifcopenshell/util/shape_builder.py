@@ -750,8 +750,8 @@ class ShapeBuilder:
                     new_direction = np_to_3d(new_direction, extruded_direction[np_Z])
 
                     # extrusion direction converted back to placement space
-                    new_direction = np.linalg.inv(placement_matrix_) @ new_direction
-                    c.ExtrudedDirection.DirectionRatios = new_direction
+                    new_direction = np.linalg.inv(placement_matrix_) @ (new_direction)
+                    c.ExtrudedDirection.DirectionRatios = ifc_safe_vector_type(new_direction)
 
                 elif c.is_a("IfcTrimmedCurve"):
                     trim_coords = [c.Trim1[0].Coordinates, c.Trim2[0].Coordinates]
@@ -775,12 +775,10 @@ class ShapeBuilder:
 
         return processed_objects if (multiple_objects or multiple_transformations) else processed_objects[0]
 
-    def sphere(self, radius: float = 1.0, center: VectorTuple = (0.0, 0.0, 0.0)) -> ifcopenshell.entity_instance:
+    def sphere(self, radius: float = 1.0, center: VectorType = (0.0, 0.0, 0.0)) -> ifcopenshell.entity_instance:
         """
         :param radius: radius of the sphere, defaults to 1.0
-        :type radius: float, optional
         :param center: sphere position, defaults to `(0.0, 0.0, 0.0)`
-        :type center: VectorTuple, optional
 
         :return: IfcSphere
         :rtype: ifcopenshell.entity_instance
@@ -793,11 +791,11 @@ class ShapeBuilder:
         self,
         profile_or_curve: ifcopenshell.entity_instance,
         magnitude: float = 1.0,
-        position: Vector = Vector([0.0, 0.0, 0.0]).freeze(),
-        extrusion_vector: Vector = Vector((0.0, 0.0, 1.0)).freeze(),
-        position_z_axis: Vector = Vector((0.0, 0.0, 1.0)).freeze(),
-        position_x_axis: Vector = Vector((1.0, 0.0, 0.0)).freeze(),
-        position_y_axis: Optional[Vector] = None,
+        position: VectorType = (0.0, 0.0, 0.0),
+        extrusion_vector: VectorType = (0.0, 0.0, 1.0),
+        position_z_axis: VectorType = (0.0, 0.0, 1.0),
+        position_x_axis: VectorType = (1.0, 0.0, 0.0),
+        position_y_axis: Optional[VectorType] = None,
     ) -> ifcopenshell.entity_instance:
         """Extrude profile or curve to get IfcExtrudedAreaSolid.
 
@@ -808,12 +806,12 @@ class ShapeBuilder:
 
         NOTE: changing position also changes the resulting geometry origin.
 
+        :param profile_or_curve: Profile or a curve to extrude (curve will automatically converted to a profile).
+        :param extrusion_vector: as defined in coordinate system position_x_axis+position_z_axis
+        :param position: as defined in default IFC coordinate system, not in position_x_axis+position_z_axis
+        :param position_y_axis: optional, could be used to calculate Z-axis based on Y-axis
+        :return: IfcExtrudedAreaSolid
         """
-        # > profile_or_curve
-        # > extrusion vector - as defined in coordinate system position_x_axis+position_z_axis
-        # > position - as defined in default IFC coordinate system, not in position_x_axis+position_z_axis
-        # > position_y_axis - optional, could be used to calculate Z-axis based on Y-axis
-        # < IfcExtrudedAreaSolid
 
         if not magnitude:
             raise Exception(
@@ -825,10 +823,10 @@ class ShapeBuilder:
             profile_or_curve = self.profile(profile_or_curve)
 
         if position_y_axis:
-            position_z_axis = position_x_axis.cross(position_y_axis)
+            position_z_axis = np.cross(position_x_axis, position_y_axis)
 
         ifc_position = self.create_axis2_placement_3d(position, position_z_axis, position_x_axis)
-        ifc_direction = self.file.createIfcDirection(extrusion_vector)
+        ifc_direction = self.file.create_entity("IfcDirection", ifc_safe_vector_type(extrusion_vector))
         extruded_area = self.file.createIfcExtrudedAreaSolid(
             SweptArea=profile_or_curve, Position=ifc_position, ExtrudedDirection=ifc_direction, Depth=magnitude
         )
@@ -850,20 +848,16 @@ class ShapeBuilder:
     def get_representation(
         self,
         context: ifcopenshell.entity_instance,
-        items: Union[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]],
+        items: Union[ifcopenshell.entity_instance, Sequence[ifcopenshell.entity_instance]],
         representation_type: Optional[str] = None,
     ) -> ifcopenshell.entity_instance:
         """Create IFC representation for the specified context and items.
 
         :param context: IfcGeometricRepresentationSubContext
-        :type context: ifcopenshell.entity_instance
         :param items: could be a list or single curve/IfcExtrudedAreaSolid
         :param representation_type: Explicitly specified RepresentationType, defaults to `None`.
             If not provided it will be guessed from the items types
-        :type representation_type: str, optional
-
         :return: IfcShapeRepresentation
-        :rtype: ifcopenshell.entity_instance
         """
         if not isinstance(items, collections.abc.Iterable):
             items = [items]
@@ -895,7 +889,7 @@ class ShapeBuilder:
         return ifcopenshell.util.element.copy_deep(self.file, element)
 
     # UTILITIES
-    def extrude_kwargs(self, axis: Literal["Y", "X", "Z"]) -> dict[str, Vector]:
+    def extrude_kwargs(self, axis: Literal["Y", "X", "Z"]) -> dict[str, tuple[float, float, float]]:
         """Shortcut to get kwargs for `ShapeBuilder.extrude` to extrude by some axis.
 
         It assumes you have 2D profile in:
@@ -905,30 +899,28 @@ class ShapeBuilder:
 
         Extruding by X/Y using other kwargs might break ValidExtrusionDirection."""
 
-        axis = axis.upper()
-
         if axis == "Y":
             return {
-                "position_x_axis": Vector((1, 0, 0)),
-                "position_z_axis": Vector((0, -1, 0)),
-                "extrusion_vector": Vector((0, 0, -1)),
+                "position_x_axis": (1, 0, 0),
+                "position_z_axis": (0, -1, 0),
+                "extrusion_vector": (0, 0, -1),
             }
         elif axis == "X":
             return {
-                "position_x_axis": Vector((0, 1, 0)),
-                "position_z_axis": Vector((1, 0, 0)),
-                "extrusion_vector": Vector((0, 0, 1)),
+                "position_x_axis": (0, 1, 0),
+                "position_z_axis": (1, 0, 0),
+                "extrusion_vector": (0, 0, 1),
             }
         elif axis == "Z":
             return {
-                "position_x_axis": Vector((1, 0, 0)),
-                "position_z_axis": Vector((0, 0, 1)),
-                "extrusion_vector": Vector((0, 0, 1)),
+                "position_x_axis": (1, 0, 0),
+                "position_z_axis": (0, 0, 1),
+                "extrusion_vector": (0, 0, 1),
             }
 
     def rotate_extrusion_kwargs_by_z(
         self, kwargs: dict[str, Any], angle: float, counter_clockwise: bool = False
-    ) -> dict[str, Vector]:
+    ) -> dict[str, VectorType]:
         """shortcut to rotate extrusion kwargs by z axis
 
         `kwargs` expected to have `position_x_axis` and `position_z_axis` keys
@@ -937,10 +929,10 @@ class ShapeBuilder:
 
         by default rotation is clockwise, to make it counter clockwise use `counter_clockwise` flag
         """
-        rot = Matrix.Rotation(-angle, 3, "Z")
+        rot = np_rotation_matrix(-angle, 3, "Z")
         kwargs = kwargs.copy()  # prevent mutation of original kwargs
-        kwargs["position_x_axis"].rotate(rot)
-        kwargs["position_z_axis"].rotate(rot)
+        kwargs["position_x_axis"] = rot @ kwargs["position_x_axis"]
+        kwargs["position_z_axis"] = rot @ kwargs["position_z_axis"]
         return kwargs
 
     def get_polyline_coords(self, polyline: ifcopenshell.entity_instance) -> np.ndarray:
