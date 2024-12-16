@@ -42,6 +42,15 @@ VectorType = Union[Sequence[float], Vector, np.ndarray]
 SequenceOfVectors = Union[Sequence[VectorType], np.ndarray]
 
 
+def ifc_safe_vector_type(v: Union[VectorType, SequenceOfVectors]) -> Any:
+    """Convert vector / sequence of vectors to a list of floats
+    that's safe to save IFC attribute.
+
+    Basically converting all numbers in sequences to Python floats.
+    """
+    return np.array(v, dtype="d").tolist()
+
+
 def is_x(value, x, si_conversion=None):
     if si_conversion:
         value = value * si_conversion
@@ -50,6 +59,10 @@ def is_x(value, x, si_conversion=None):
 
 round_to_precision = lambda x, si_conversion: round(x * si_conversion, 5) / si_conversion
 round_vector_to_precision = lambda v, si_conversion: Vector([round_to_precision(i, si_conversion) for i in v])
+
+
+def np_normalized(v: VectorType) -> np.ndarray:
+    return np.divide(v, np.linalg.norm(v))
 
 
 # Note: using ShapeBuilder try not to reuse IFC elements in the process
@@ -78,7 +91,6 @@ class ShapeBuilder:
         :param arc_points: Indices of the middle points for arcs. For creating an arc segment,
             provide 3 points: `arc_start`, `arc_middle` and `arc_end` to `points` and add the `arc_middle`
             point's index to `arc_points`
-
         :return: IfcIndexedPolyCurve
 
         Example:
@@ -179,7 +191,6 @@ class ShapeBuilder:
         :param size: rectangle size, could be either 2d or 3d, defaults to `(1,1)`
         :param position: rectangle position, default to `None`.
             if `position` not specified zero-vector will be used
-
         :return: list of rectangle coords
         """
         size_np = np.array(size)
@@ -206,65 +217,63 @@ class ShapeBuilder:
         :param size: rectangle size, could be either 2d or 3d, defaults to `(1,1)`
         :param position: rectangle position, default to `None`.
             if `position` not specified zero-vector will be used
-
         :return: IfcIndexedPolyCurve
         """
         return self.polyline(self.get_rectangle_coords(size, position), closed=True)
 
-    def circle(self, center: Vector = Vector((0.0, 0.0)).freeze(), radius: float = 1.0) -> ifcopenshell.entity_instance:
+    def circle(self, center: VectorType = (0.0, 0.0), radius: float = 1.0) -> ifcopenshell.entity_instance:
         """
-        :param center: circle 2D position, defaults to zero-vector
-        :type center: Vector, optional
-        :param radius: radius of the circle, defaults to 1.0
-        :type radius: float, optional
-
+        :param center: circle 2D position
+        :param radius: radius of the circle
         :return: IfcCircle
-        :rtype: ifcopenshell.entity_instance
         """
         ifc_center = self.create_axis2_placement_2d(center)
-        ifc_curve = self.file.createIfcCircle(ifc_center, radius)
+        ifc_curve = self.file.create_entity("IfcCircle", ifc_center, radius)
         return ifc_curve
 
     def plane(
-        self, location: Vector = Vector((0.0, 0.0, 0.0)).freeze(), normal: Vector = Vector((0.0, 0.0, 1.0)).freeze()
+        self, location: VectorType = (0.0, 0.0, 0.0), normal: VectorType = (0.0, 0.0, 1.0)
     ) -> ifcopenshell.entity_instance:
         """
         Create IfcPlane.
 
-        :param location: plane position, defaults to `(0.0, 0.0, 0.0)`
-        :type location: Vector, optional
-        :param normal: plane normal direction, defaults to `(0.0, 0.0, 1.0)`
-        :type normal: Vector, optional
+        :param location: plane position.
+        :param normal: plane normal direction.
         :return: IfcPlane
-        :rtype: ifcopenshell.entity_instance
         """
 
-        if normal.to_tuple(2) == Vector((0.0, 0.0, 1.0)):
-            arbitrary_vector = Vector((0.0, 1.0, 0.0))
+        if np.allclose(np.round(normal, 2), (0.0, 0.0, 1.0)):
+            arbitrary_vector = (0.0, 1.0, 0.0)
         else:
-            arbitrary_vector = Vector((0.0, 0.0, 1.0))
-        x_axis = normal.cross(arbitrary_vector).normalized()
+            arbitrary_vector = (0.0, 0.0, 1.0)
+        x_axis = np_normalized(np.cross(normal, arbitrary_vector))
         axis_placement = self.create_axis2_placement_3d(location, normal, x_axis)
         return self.file.createIfcPlane(axis_placement)
 
     # TODO: explain points order for the curve_between_two_points
     # because the order is important and defines the center of the curve
     # currently it seems like the first point shifted by x-axis defines the center
-    def curve_between_two_points(self, points: tuple[Vector, Vector]) -> ifcopenshell.entity_instance:
-        # > points - list of 2 Vectors
+    def curve_between_two_points(self, points: tuple[VectorType, VectorType]) -> ifcopenshell.entity_instance:
         """Simple circle based curve between two points
         Good for creating curves and fillets, won't work for continuous ellipse shapes.
+
+        :param points: tuple of 2 points.
+        :return: IfcIndexePolyCurve
         """
-        diff = points[1] - points[0]
-        max_diff_i = list(diff).index(max(diff, key=lambda x: abs(x)))
-        diff_sign = V(*[(sign(e) if i == max_diff_i else 0) for i, e in enumerate(diff)])
+        diff = np.subtract(points[1], points[0])
+        max_diff_i = np.argmax(np.abs(diff))
+        diff_sign = np.zeros_like(diff)
+        diff_sign[max_diff_i] = np.sign(diff[max_diff_i])
 
         # diff should be applied only to one axis
         # if it's applied to two (like in a case of circle) it will create
         # a straight line instead of a curve
-        diff = V(0.01, 0.01) * diff_sign
+        diff = (0.01, 0.01) * diff_sign
         middle_point = points[0] + diff
+
+        points: list[VectorType]
         points = [points[0], middle_point, points[1]]
+        points = [ifc_safe_vector_type(p) for p in points]
         seg = self.file.createIfcArcIndex((1, 2, 3))
         ifc_points = self.file.createIfcCartesianPointList2D(points)
         curve = self.file.createIfcIndexedPolyCurve(Points=ifc_points, Segments=[seg])
@@ -274,34 +283,36 @@ class ShapeBuilder:
         self,
         x_axis_radius: float,
         y_axis_radius: float,
-        trim_points_mask: list[int],
-        position_offset: Optional[Vector] = None,
-    ) -> list[Vector]:
+        trim_points_mask: Sequence[int],
+        position_offset: Optional[VectorType] = None,
+    ) -> np.ndarray:
         """Handy way to get edge points of the ellipse like shape of a given radiuses.
 
         Mask points are numerated from 0 to 3 ccw starting from (x_axis_radius/2; 0).
 
         Example: mask (0, 1, 2, 3) will return points (x, 0), (0, y), (-x, 0), (0, -y)
         """
-        points = (
-            V(x_axis_radius, 0),
-            V(0, y_axis_radius),
-            V(-x_axis_radius, 0),
-            V(0, -y_axis_radius),
+        points = np.array(
+            (
+                (x_axis_radius, 0),
+                (0, y_axis_radius),
+                (-x_axis_radius, 0),
+                (0, -y_axis_radius),
+            )
         )
-        if position_offset:
-            trim_points = [points[i] + position_offset for i in trim_points_mask]
-        else:
-            trim_points = [points[i] for i in trim_points_mask]
-        return trim_points
+        # list type is important for selecting items by the indices.
+        trim_points = points[list(trim_points_mask)]
+        if position_offset is None:
+            return trim_points
+        return trim_points + position_offset
 
     def create_ellipse_curve(
         self,
         x_axis_radius: float,
         y_axis_radius: float,
-        position=Vector((0.0, 0.0)).freeze(),
-        trim_points: Sequence[Vector] = (),
-        ref_x_direction: Vector = Vector((1.0, 0.0)),
+        position: VectorType = (0.0, 0.0),
+        trim_points: SequenceOfVectors = (),
+        ref_x_direction: VectorType = (1.0, 0.0),
         trim_points_mask: Sequence[int] = (),
     ) -> ifcopenshell.entity_instance:
         """
@@ -326,8 +337,8 @@ class ShapeBuilder:
                 x_axis_radius, y_axis_radius, trim_points_mask, position_offset=position
             )
 
-        trim1 = [self.file.createIfcCartesianPoint(trim_points[0])]
-        trim2 = [self.file.createIfcCartesianPoint(trim_points[1])]
+        trim1 = [self.file.create_entity("IfcCartesianPoint", ifc_safe_vector_type(trim_points[0]))]
+        trim2 = [self.file.create_entity("IfcCartesianPoint", ifc_safe_vector_type(trim_points[1]))]
 
         trim_ellipse = self.file.createIfcTrimmedCurve(
             BasisCurve=ifc_ellipse, Trim1=trim1, Trim2=trim2, SenseAgreement=True, MasterRepresentation="CARTESIAN"
@@ -341,13 +352,17 @@ class ShapeBuilder:
         inner_curves: Sequence[ifcopenshell.entity_instance] = (),
         profile_type: str = "AREA",
     ) -> ifcopenshell.entity_instance:
-        # > inner_curves - list of IfcCurve;
+        """Create a profile.
+
+        :param outer_curve: Profile IfcCurve.
+        :param inner_curves: a sequence of IfcCurves.
+
+        :return: IfcArbitraryClosedProfileDef or IfcArbitraryProfileDefWithVoids.
+        """
         # inner_curves could be used as a tool for boolean operation
         # but if any point of inner curve will go outside the outer curve
         # it will just add shape on top instead of "boolean" it
         # because of that you can't create bool edges of outer_curve this way
-
-        # < returns IfcArbitraryClosedProfileDef or IfcArbitraryProfileDefWithVoids
 
         if outer_curve.Dim != 2:
             raise Exception(
@@ -528,26 +543,23 @@ class ShapeBuilder:
 
     def create_axis2_placement_3d(
         self,
-        position: VectorTuple = (0.0, 0.0, 0.0),
-        z_axis: VectorTuple = (0.0, 0.0, 1.0),
-        x_axis: VectorTuple = (1.0, 0.0, 0.0),
+        position: VectorType = (0.0, 0.0, 0.0),
+        z_axis: VectorType = (0.0, 0.0, 1.0),
+        x_axis: VectorType = (1.0, 0.0, 0.0),
     ) -> ifcopenshell.entity_instance:
         """
         Create IfcAxis2Placement3D.
 
-        :param position: placement position (Axis), defaults to `(0.0, 0.0, 0.0)`
-        :type position: VectorTuple, optional
-        :param z_axis: local Z axis direction, defaults to `(0.0, 0.0, 1.0)`
-        :type z_axis: VectorTuple, optional
-        :param x_axis: local X axis direction (RefDirection), defaults to `(1.0, 0.0, 0.0)`
-        :type x_axis: VectorTuple, optional
+        :param position: placement position (Axis).
+        :param z_axis: local Z axis direction.
+        :param x_axis: local X axis direction (RefDirection).
         :return: IfcAxis2Placement3D
-        :rtype: ifcopenshell.entity_instance
         """
-        return self.file.createIfcAxis2Placement3D(
-            self.file.createIfcCartesianPoint(position),
-            Axis=self.file.createIfcDirection(z_axis),
-            RefDirection=self.file.createIfcDirection(x_axis),
+        return self.file.create_entity(
+            "IfcAxis2Placement3D",
+            self.file.create_entity("IfcCartesianPoint", ifc_safe_vector_type(position)),
+            Axis=self.file.create_entity("IfcDirection", ifc_safe_vector_type(z_axis)),
+            RefDirection=self.file.create_entity("IfcDirection", ifc_safe_vector_type(x_axis)),
         )
 
     def create_axis2_placement_3d_from_matrix(
@@ -558,9 +570,7 @@ class ShapeBuilder:
         Create IfcAxis2Placement3D from numpy matrix.
 
         :param matrix: 4x4 transformation matrix, defaults to `np.eye(4)`
-        :type matrix: npt.NDArray[np.float64], optional
         :return: IfcAxis2Placement3D
-        :rtype: ifcopenshell.entity_instance
         """
         if matrix is None:
             matrix = np.eye(4, dtype=float)
@@ -569,13 +579,15 @@ class ShapeBuilder:
         )
 
     def create_axis2_placement_2d(
-        self, position: VectorTuple = (0.0, 0.0), x_direction: Optional[VectorTuple] = None
+        self, position: VectorType = (0.0, 0.0), x_direction: Optional[VectorType] = None
     ) -> ifcopenshell.entity_instance:
         """Create IfcAxis2Placement2D."""
-        ref_direction = self.file.create_entity("IfcDirection", x_direction) if x_direction else None
+        ref_direction = (
+            self.file.create_entity("IfcDirection", ifc_safe_vector_type(x_direction)) if x_direction else None
+        )
         return self.file.create_entity(
             "IfcAxis2Placement2D",
-            Location=self.file.create_entity("IfcCartesianPoint", position),
+            Location=self.file.create_entity("IfcCartesianPoint", ifc_safe_vector_type(position)),
             RefDirection=ref_direction,
         )
 
