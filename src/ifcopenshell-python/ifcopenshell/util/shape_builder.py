@@ -65,6 +65,58 @@ def np_normalized(v: VectorType) -> np.ndarray:
     return np.divide(v, np.linalg.norm(v))
 
 
+def np_to_3d(v: VectorType) -> np.ndarray:
+    """Convert 2D vector to 3D."""
+    return np.hstack((v, (0.0,)))
+
+
+def np_to_4x4(matrix_3x3: np.ndarray) -> np.ndarray:
+    """Convert 3x3 matrix to 4x4."""
+    matrix_4x4 = np.pad(matrix_3x3, ((0, 1), (0, 1)))
+    matrix_4x4[3, 3] = 1
+    return matrix_4x4
+
+
+def np_rotation_matrix(
+    angle: float, size: int, axis: Optional[Union[Literal["X", "Y", "Z"], VectorType]] = None
+) -> np.ndarray:
+    """Get rotation matrix. Designed to be similar to mathutils Matrix.Rotation but to use numpy.
+
+    :param float: Rotation angle, in radians.
+    :param size: Matrix size ([2;4]).
+    :param axis: Rotation axis.
+        For 2x2 matrices Z assumed by default and argument can be omitted,
+        for 3x3/4x4 matrices could be either axis literal
+        or a rotation axis presented as a vector.
+    :return: Rotation matrix.
+    """
+    if not (2 <= size <= 4):
+        raise ValueError(f"Size must be [2;4], got {size}.")
+
+    cos_theta: float = np.cos(angle)
+    sin_theta: float = np.sin(angle)
+    if size == 2:
+        return np.array([[cos_theta, -sin_theta], [sin_theta, cos_theta]])
+
+    assert axis, "For non-2D matrices 'axis' argument is not optional."
+    if isinstance(axis, str):
+        if axis == "X":
+            matrix = np.array([[1, 0, 0], [0, cos_theta, -sin_theta], [0, sin_theta, cos_theta]])
+        elif axis == "Y":
+            matrix = np.array([[cos_theta, 0, sin_theta], [0, 1, 0], [-sin_theta, 0, cos_theta]])
+        elif axis == "Z":
+            matrix = np.array([[cos_theta, -sin_theta, 0], [sin_theta, cos_theta, 0], [0, 0, 1]])
+    else:
+        # Assume axis is a vector.
+        axis = axis / np.linalg.norm(axis)
+        # Rodrigues' rotation formula.
+        K = np.array([[0, -axis[2], axis[1]], [axis[2], 0, -axis[0]], [-axis[1], axis[0], 0]])
+        matrix = cos_theta * np.eye(3) + (1 - cos_theta) * np.outer(axis, axis) + sin_theta * K
+    if size == 4:
+        return np_to_4x4(matrix)
+    return matrix
+
+
 # Note: using ShapeBuilder try not to reuse IFC elements in the process
 # otherwise you might run into situation where builder.mirror or other operation
 # is applied twice during one run to the same element
@@ -445,57 +497,62 @@ class ShapeBuilder:
         return processed_objects if multiple_objects else processed_objects[0]
 
     def rotate_2d_point(
-        self, point_2d: Vector, angle=90, pivot_point: Vector = Vector((0.0, 0.0)).freeze(), counter_clockwise=False
-    ) -> Vector:
-        # > angle - in degrees
-        # < rotated Vector
-
-        angle_rad = angle / 180 * pi * (1 if counter_clockwise else -1)
-        relative_point = point_2d - pivot_point
-        relative_point = Matrix.Rotation(angle_rad, 2, "Z") @ relative_point
-        point_2d = relative_point + pivot_point
-        return point_2d
+        self,
+        point_2d: VectorType,
+        angle: float = 90.0,
+        pivot_point: VectorType = (0.0, 0.0),
+        counter_clockwise: bool = False,
+    ) -> np.ndarray:
+        angle_rad = radians(angle) * (1 if counter_clockwise else -1)
+        relative_point = np.array(point_2d) - pivot_point
+        relative_point = np_rotation_matrix(angle_rad, 2) @ relative_point
+        final_point = relative_point + pivot_point
+        return final_point
 
     def rotate(
         self,
-        curve_or_item: Union[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]],
-        angle: float = 90,
-        pivot_point: Vector = Vector((0.0, 0.0)).freeze(),
+        curve_or_item: Union[ifcopenshell.entity_instance, Sequence[ifcopenshell.entity_instance]],
+        angle: float = 90.0,
+        pivot_point: VectorType = (0.0, 0.0),
         counter_clockwise: bool = False,
         create_copy: bool = False,
     ) -> Union[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]]:
-        # > curve_or_item - could be a list of curves or items
-        # > angle - in degrees
-        # < returns rotated object
+        """Rotate curve/representaiton item/representation.
+
+        :param curve_or_item: A single item to rotate or a sequence of them.
+        :param angle: Rotation angle, in degrees.
+        :param pivot_point: Rotation pivot point.
+        :param counter_clockwise: Whether rotation is counter-clockwise.
+        :param create_copy: Whether to rotate the provided item or it's copy.
+        :return: Rotated curve/representaiton item/representation or a sequence of them.
+        """
 
         multiple_objects = isinstance(curve_or_item, collections.abc.Iterable)
         if not multiple_objects:
             curve_or_item = [curve_or_item]
 
-        processed_objects = []
+        processed_objects: list[ifcopenshell.entity_instance] = []
         for c in curve_or_item:
             if create_copy:
                 c = ifcopenshell.util.element.copy_deep(self.file, c)
 
             if c.is_a() in ("IfcIndexedPolyCurve", "IfcPolyline"):
                 original_coords = self.get_polyline_coords(c)
-                coords = [
-                    self.rotate_2d_point(Vector(co), angle, pivot_point, counter_clockwise) for co in original_coords
-                ]
+                coords = [self.rotate_2d_point(co, angle, pivot_point, counter_clockwise) for co in original_coords]
                 self.set_polyline_coords(c, coords)
 
             elif c.is_a("IfcCircle"):
-                base_position = Vector(c.Position.Location.Coordinates)
+                base_position = c.Position.Location.Coordinates
                 new_position = self.rotate_2d_point(base_position, angle, pivot_point, counter_clockwise)
-                c.Position.Location.Coordinates = new_position
+                c.Position.Location.Coordinates = ifc_safe_vector_type(new_position)
 
             elif c.is_a("IfcExtrudedAreaSolid"):
                 # TODO: add support for Z-axis too
-                base_position = Vector(c.Position.Location.Coordinates)
-                new_position = self.rotate_2d_point(base_position.to_2d(), angle, pivot_point, counter_clockwise)
-                new_position = new_position.to_3d()
-                new_position.z = base_position.z
-                c.Position.Location.Coordinates = new_position
+                base_position = c.Position.Location.Coordinates
+                new_position = self.rotate_2d_point(base_position[:2], angle, pivot_point, counter_clockwise)
+                new_position = np_to_3d(new_position)
+                new_position[2] = base_position[2]
+                c.Position.Location.Coordinates = ifc_safe_vector_type(new_position)
 
                 # TODO: add inner axis too and test it
                 self.rotate(c.SweptArea.OuterCurve, angle, pivot_point, counter_clockwise)
