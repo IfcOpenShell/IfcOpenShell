@@ -88,6 +88,12 @@ def get_contexts(self, context):
     return IfcClassData.data["contexts"]
 
 
+def get_profile(self, context):
+    if not IfcClassData.is_loaded:
+        IfcClassData.load()
+    return IfcClassData.data["profile"]
+
+
 def update_relating_class_from_object(self, context):
     if self.relating_class_object is None:
         return
@@ -134,6 +140,7 @@ class BIMRootProperties(PropertyGroup):
         poll=poll_representation_obj,
         description="The representation will be a tessellation of the selected object",
     )
+    profile: EnumProperty(name="Profile for profile type object", items=get_profile)
     relating_class_object: PointerProperty(
         type=bpy.types.Object,
         name="Copy Class",

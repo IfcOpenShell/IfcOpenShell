@@ -42,7 +42,11 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcPolyLoop* inst) {
 
 	// @todo Remove points that are too close to one another
 	const double eps = settings_.get<settings::Precision>().get();
-	// util::remove_duplicate_points_from_loop(polygon, true, eps);
+	auto previous_size = polygon.size();
+	remove_duplicate_points_from_loop(polygon, true, eps);
+	if (polygon.size() != previous_size) {
+		Logger::Warning("Removed " + std::to_string(previous_size - polygon.size()) + " (near) duplicate points from:", inst);
+	}
 
 	int count = polygon.size();
 	if (original_count - count != 0) {
@@ -59,24 +63,4 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcPolyLoop* inst) {
 	polygon.push_back(polygon.front());
 
 	return polygon_from_points(polygon);
-
-	// @todo make sure wire intersection check happens
-
-	/*
-	BRepBuilderAPI_MakePolygon w;
-	for (int i = 1; i <= polygon.Length(); ++i) {
-		w.Add(polygon.Value(i));
-	}
-	w.Close();
-
-	result = w.Wire();
-
-	TopTools_ListOfShape results;
-	if (getValue(GV_NO_WIRE_INTERSECTION_CHECK) < 0. && util::wire_intersections(result, results, {getValue(GV_NO_WIRE_INTERSECTION_CHECK) < 0., getValue(GV_NO_WIRE_INTERSECTION_TOLERANCE) < 0., 0., getValue(GV_PRECISION)})) {
-		Logger::Error("Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected", l);
-		util::select_largest(results, result);
-	}
-
-	return true;
-	*/
 }

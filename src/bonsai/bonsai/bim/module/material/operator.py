@@ -56,6 +56,7 @@ class DisableEditingMaterials(bpy.types.Operator):
 class SelectByMaterial(bpy.types.Operator):
     bl_idname = "bim.select_by_material"
     bl_label = "Select By Material"
+    bl_description = "Select objects using the provided material"
     bl_options = {"REGISTER", "UNDO"}
     material: bpy.props.IntProperty()
 

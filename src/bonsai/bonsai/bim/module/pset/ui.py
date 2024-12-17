@@ -376,7 +376,12 @@ class BIM_PT_object_qtos(Panel):
                     allow_removing=False,
                     filter_keyword=context.scene.GlobalPsetProperties.qto_filter,
                 )
-
+        layout = self.layout
+        qtoprops = context.scene.BIMQtoProperties
+        row = layout.row()
+        row.prop(qtoprops, "qto_rule", text="")
+        row = layout.row()
+        row.operator("bim.perform_quantity_take_off")
 
 class BIM_PT_material_psets(Panel):
     bl_label = "Material Property Sets"

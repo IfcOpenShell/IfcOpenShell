@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import re
+import types
 import lark
 import numpy as np
 import ifcopenshell.api.pset
@@ -134,10 +135,11 @@ get_element_grammar = lark.Lark(
 format_grammar = lark.Lark(
     """start: function
 
-    function: round | number | format_length | lower | upper | title | concat | substr | ESCAPED_STRING | NUMBER
+    function: round | number | int | format_length | lower | upper | title | concat | substr | ESCAPED_STRING | NUMBER
 
     round: "round(" function "," NUMBER ")"
     number: "number(" function ["," ESCAPED_STRING ["," ESCAPED_STRING]] ")"
+    int: "int(" function ")"
     format_length: metric_length | imperial_length
     metric_length: "metric_length(" function "," NUMBER "," NUMBER ")"
     imperial_length: "imperial_length(" function "," NUMBER ["," ESCAPED_STRING "," ESCAPED_STRING] ")"
@@ -248,6 +250,9 @@ class FormatTransformer(lark.Transformer):
         return ifcopenshell.util.unit.format_length(
             float(value), int(precision), unit_system="imperial", input_unit=input_unit, output_unit=output_unit
         )
+
+    def int(self, args: list[str]) -> str:
+        return str(int(float(args[0])))
 
 
 class GetElementTransformer(lark.Transformer):
@@ -462,7 +467,12 @@ class SetElementValueException(Exception): ...
 
 def set_element_value(
     ifc_file: ifcopenshell.file,
-    element: Union[ifcopenshell.entity_instance, Iterable[ifcopenshell.entity_instance], None],
+    element: Union[
+        ifcopenshell.entity_instance,
+        dict[str, Any],
+        Iterable[ifcopenshell.entity_instance],
+        None,
+    ],
     query: Union[str, list[str]],
     value: Any,
     *,
@@ -652,14 +662,30 @@ def set_element_value(
                             ifcopenshell.api.pset.edit_qto(ifc_file, qto=pset, properties={prop: float(value)})
             elif pset.is_a("IfcPropertySet") and element.get(key, None) != value:
 
-                def process_pset_prop_value(pset: ifcopenshell.entity_instance, prop: str, value: Any) -> Any:
+                def process_pset_prop_value(
+                    pset: ifcopenshell.entity_instance, prop: str, value: Any
+                ) -> Union[Any, types.EllipsisType]:
                     """Try to process value for edit_pset.
 
                     `edit_pset` is expecting a sequence of values
                     for enum properties, not just a string of some-symbol-separated values.
+
+                    Return `...` if property can be skipped as it has the same value.
                     """
                     if not isinstance(value, str):
                         return value
+
+                    current_value = element.get(key, ...)
+                    # Check if previous value is a list as a fast way to identify enum properties.
+                    if not isinstance(current_value, (types.EllipsisType, list)):
+                        return value
+
+                    if isinstance(current_value, list):
+                        # Value won't change, safe to skip editing IFC.
+                        enum_values = value.split(concat)
+                        if len(enum_values) == len(current_value) and set(enum_values) == set(current_value):
+                            return ...
+
                     template = ifcopenshell.util.pset.get_template(ifc_file.schema)
                     pset_template = template.get_by_name(pset.Name)
                     if pset_template is None:
@@ -700,6 +726,8 @@ def set_element_value(
                     return value
 
                 value = process_pset_prop_value(pset, key, value)
+                if value == ...:
+                    return
                 ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties={key: value})
             elif pset.is_a("IfcElementQuantity"):
                 try:

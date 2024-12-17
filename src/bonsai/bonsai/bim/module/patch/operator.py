@@ -25,6 +25,7 @@ import bonsai.tool as tool
 import bonsai.core.patch as core
 import bonsai.bim.handler
 from pathlib import Path
+from typing import cast
 
 
 class SelectIfcPatchInput(bpy.types.Operator):
@@ -77,30 +78,42 @@ class ExecuteIfcPatch(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMPatchProperties
+        recipe_name = props.ifc_patch_recipes
+
         arguments = []
         if props.ifc_patch_args_attr:
-            arguments = [arg.get_value() for arg in props.ifc_patch_args_attr]
+            arguments = []
+            for arg in props.ifc_patch_args_attr:
+                value = arg.get_value()
+                if arg.data_type == "file" and arg.metadata == "single_file":
+                    value = value[0]
+                arguments.append(value)
+
+        arguments = tool.Patch.post_process_patch_arguments(recipe_name, arguments)
+        args = ifcpatch.ArgumentsDict(
+            recipe=props.ifc_patch_recipes,
+            arguments=arguments,
+            log=os.path.join(context.scene.BIMProperties.data_dir, "process.log"),
+        )
 
         if props.should_load_from_memory and tool.Ifc.get():
-            input_file = props.ifc_patch_input
-            file = tool.Ifc.get()
+            args["file"] = tool.Ifc.get()
+            if ifcpatch.get_patch_input_argument_use(recipe_name) == "REQUIRED":
+                self.report(
+                    {"ERROR"},
+                    f"The recipe '{recipe_name}' is not currently supported if file is loaded from memory.",
+                )
+                return {"CANCELLED"}
         else:
-            input_file = props.ifc_patch_input
-            file = ifcopenshell.open(props.ifc_patch_input)
+            args["input"] = cast(str, props.ifc_patch_input)
+            args["file"] = cast(ifcopenshell.file, ifcopenshell.open(props.ifc_patch_input))
 
         # Store this in case the patch recipe resets the Blender session, such as by loading a new project.
         ifc_patch_output = props.ifc_patch_output or props.ifc_patch_input
 
-        output = ifcpatch.execute(
-            {
-                "input": input_file,
-                "file": file,
-                "recipe": props.ifc_patch_recipes,
-                "arguments": arguments,
-                "log": os.path.join(context.scene.BIMProperties.data_dir, "process.log"),
-            }
-        )
-        ifcpatch.write(output, ifc_patch_output)
+        output = ifcpatch.execute(args)
+        if tool.Patch.does_patch_has_output(props.ifc_patch_recipes):
+            ifcpatch.write(output, ifc_patch_output)
         self.report({"INFO"}, f"{props.ifc_patch_recipes} patch executed successfully")
         return {"FINISHED"}
 
@@ -123,8 +136,13 @@ class UpdateIfcPatchArguments(bpy.types.Operator):
                 arg_info = inputs[arg_name]
                 new_attr = patch_args.add()
                 data_type = arg_info.get("type", "str")
+
+                if tool.Patch.is_filepath_argument(self.recipe, arg_name):
+                    data_type = "file"
+                    new_attr.metadata = "single_file"
+
                 if isinstance(data_type, list):
-                    if "file" in data_type:
+                    if "file" in data_type or tool.Patch.is_filepath_argument(self.recipe, arg_name):
                         data_type = ["file"]
 
                     data_type = [dt for dt in data_type if dt != "NoneType"][0]
@@ -190,4 +208,22 @@ class RunMigratePatch(bpy.types.Operator):
         except:
             pass  # Probably running in headless mode
         bonsai.bim.handler.refresh_ui_data()
+        return {"FINISHED"}
+
+
+class ExtractSelectedElements(bpy.types.Operator):
+    bl_idname = "bim.patch_query_from_selected"
+    bl_label = "Fill patch query based on the selected elements"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        props = context.scene.BIMPatchProperties
+        recipe_name = props.ifc_patch_recipes
+
+        if recipe_name != "ExtractElements":
+            self.report({"ERROR"}, "Only supported for the 'ExtractElements' recipe.")
+            return {"CANCELLED"}
+
+        query = tool.Search.get_query_for_selected_elements()
+        props.ifc_patch_args_attr[0].string_value = query
         return {"FINISHED"}
