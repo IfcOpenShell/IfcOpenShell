@@ -267,11 +267,16 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
                         z = -abs(z)
                     extrusion.ExtrudedDirection.DirectionRatios = (x, y, z)
 
+                    offset = layer_params["offset"]
+                    if offset != 0.0 and not extrusion.Position:
+                        tool.Model.add_extrusion_position(extrusion, offset)
+
                     # Update the extrusion's location based on its current rotation angle
-                    rot_matrix = Matrix.Rotation(x_angle, 4, "X")
-                    offset = Vector((0.0, 0.0, layer_params["offset"] / unit_scale))
-                    rot_offset = offset @ rot_matrix
-                    extrusion.Position.Location.Coordinates = tuple(rot_offset)
+                    if extrusion.Position:
+                        rot_matrix = Matrix.Rotation(x_angle, 4, "X")
+                        offset_vector = Vector((0.0, 0.0, offset / unit_scale))
+                        rot_offset = offset_vector @ rot_matrix
+                        extrusion.Position.Location.Coordinates = tuple(rot_offset)
 
                 bonsai.core.geometry.switch_representation(
                     tool.Ifc,

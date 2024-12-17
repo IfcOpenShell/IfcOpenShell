@@ -113,12 +113,6 @@ class Usecase:
                 self.file.createIfcDirection((1.0, 0.0, 0.0)),
             )
 
-        position = self.file.createIfcAxis2Placement3D(
-            self.file.createIfcCartesianPoint((0.0, 0.0, self.convert_si_to_unit(self.settings["offset"]))),
-            self.file.createIfcDirection((0.0, 0.0, 1.0)),
-            self.file.createIfcDirection((1.0, 0.0, 0.0)),
-        )
-
         extrusion = self.file.createIfcExtrudedAreaSolid(
             self.file.createIfcArbitraryClosedProfileDef("AREA", None, curve),
             position,
