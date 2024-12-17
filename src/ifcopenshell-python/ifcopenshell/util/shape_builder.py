@@ -32,7 +32,6 @@ from itertools import chain
 from mathutils import Vector, Matrix
 
 V = lambda *x: Vector([float(i) for i in x])
-sign = lambda x: x and (1, -1)[x < 0]
 PRECISION = 1.0e-5
 
 VectorTuple = type[tuple[float, float, float]]
@@ -1649,110 +1648,117 @@ class ShapeBuilder:
 
     def mep_bend_shape(
         self,
-        segment,
+        segment: ifcopenshell.entity_instance,
         start_length: float,
         end_length: float,
         angle: float,
         radius: float,
-        bend_vector: Vector,
+        bend_vector: VectorType,
         flip_z_axis: bool,
-    ) -> ifcopenshell.entity_instance:
+    ) -> tuple[ifcopenshell.entity_instance, dict[str, Any]]:
         """
+        Generate a MEP bend shape for the provided segments.
 
         :param segment: IfcFlowSegment for a bend.
             Note that for a bend start and end segments types should match.
-        :type segment: ifcopenshell.entity_instance
         :param angle: bend angle, in radians
-        :type angle: float
         :param radius: bend radius
-        :type radius: float
         :param bend_vector: offset between start and end segments in local space of start segment
             used mainly to determine the second bend axis and it's direction (positive or negative),
             the actual magnitude of the vector is not important (though near zero values will be ignored).
-        :type bend_vector: Vector
         :param flip_z_axis: since we cannot determine z axis direction from the profile offset,
             there is an option to flip it if bend is going by start segment Z- axis.
-        :type flip_z_axis: bool
-
-        :return: tuple of Model/Body/MODEL_VIEW IfcRepresentation and transition shape data
+        :return: tuple of Model/Body/MODEL_VIEW IfcRepresentation and dictionary of transition shape data
         """
 
-        def get_profile(element):
+        def get_profile(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
             material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
             if material and material.is_a("IfcMaterialProfileSet") and len(material.MaterialProfiles) == 1:
                 return material.MaterialProfiles[0].Profile
 
-        def get_dim(profile, depth):
+        def get_dim(profile: ifcopenshell.entity_instance, depth: float) -> Union[np.ndarray, None]:
             if profile.is_a("IfcRectangleProfileDef"):
-                return V(profile.XDim / 2, profile.YDim / 2, depth)
+                return np.array([profile.XDim / 2, profile.YDim / 2, depth])
             elif profile.is_a("IfcCircleProfileDef"):
-                return V(profile.Radius, profile.Radius, depth)
+                return np.array([profile.Radius, profile.Radius, depth])
             return None
+
+        np_Z = 2
 
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(self.file)
         profile = get_profile(segment)
+        assert profile
         is_circular_profile = profile.is_a("IfcCircleProfileDef")
         profile_dim = get_dim(profile, start_length)
+        assert profile_dim is not None
 
-        rounded_bend_vector = round_vector_to_precision(bend_vector, si_conversion)
+        rounded_bend_vector = np_round_to_precision(bend_vector, si_conversion)
         lateral_axis = next(i for i in range(2) if not is_x(rounded_bend_vector[i], 0))
         non_lateral_axis = 1 if lateral_axis == 0 else 0
-        lateral_sign = sign(bend_vector[lateral_axis])
+        lateral_sign = np.sign(bend_vector[lateral_axis])
         z_sign = -1 if flip_z_axis else 1
 
-        rep_items = []
+        rep_items: list[ifcopenshell.entity_instance] = []
 
         # bend circle center
-        O = V(0, 0, 0)
+        O = np.zeros(3)
         O[lateral_axis] = (radius + profile_dim[lateral_axis]) * lateral_sign
         theta = angle
 
-        def get_circle_point(angle, radius):
-            point = V(0, 0, 0)
-            angle -= pi / 2
+        def get_circle_points(angles: np.ndarray, radius: float) -> np.ndarray:
+            """
+            :param angles: Angles, in radians.
+            """
+            angles = angles - pi / 2
+            points = np.zeros((len(angles), 3))
             # fmt: off
-            point.z             = z_sign       * cos(angle) * radius
-            point[lateral_axis] = lateral_sign * sin(angle) * radius
+            points[:, np_Z]         = z_sign * np.cos(angles) * radius
+            points[:, lateral_axis] = lateral_sign * np.sin(angles) * radius
             # fmt: on
-            return point
+            return points
 
-        def get_circle_tangent(angle):
-            tangent = V(0, 0, 0)
-            tangent.z = cos(angle) * z_sign
+        def get_circle_tangent(angle: float) -> np.ndarray:
+            """
+            :param angle: Angle, in radians.
+            :return: Tangent vector.
+            """
+            tangent = np.zeros(3)
+            tangent[np_Z] = cos(angle) * z_sign
             tangent[lateral_axis] = sin(angle) * lateral_sign
             return tangent
 
-        def get_bend_representation_item():
+        def get_bend_representation_item() -> ifcopenshell.entity_instance:
             r = radius
-            theta_segments = [0, theta / 2, theta]
+            theta_segments = np.array([0.0, theta / 2, theta])
+            points: np.ndarray
             if is_circular_profile:
                 r += profile_dim[lateral_axis]
-                points = [get_circle_point(cur_theta, r) for cur_theta in theta_segments]
+                points = get_circle_points(theta_segments, r)
                 arc_points = (1,)
             else:
                 outer_r = r + 2 * profile_dim[lateral_axis]
-                outer_points = [get_circle_point(cur_theta, outer_r) for cur_theta in theta_segments[::-1]]
+                outer_points = get_circle_points(theta_segments[::-1], outer_r)
                 if is_x(r, 0):
-                    points = [get_circle_point(theta, r)] + outer_points
+                    points = get_circle_points(np.full(1, theta), r)
+                    points = np.vstack((points, outer_points))
                     arc_points = (2,)
                 else:
-                    inner_points = [get_circle_point(cur_theta, r) for cur_theta in theta_segments]
-                    points = inner_points + outer_points
+                    inner_points = get_circle_points(theta_segments, r)
+                    points = np.vstack((inner_points, outer_points))
                     arc_points = (1, 4)
 
-            points = [p + O for p in points]
-            offset = V(0, 0, 0)
-            offset.z = z_sign * start_length
+            points += O
+            offset = np.zeros(3)
+            offset[np_Z] = z_sign * start_length
 
             if is_circular_profile:
                 bend_path = self.polyline(points, closed=False, arc_points=arc_points, position_offset=offset)
                 bend = self.create_swept_disk_solid(bend_path, profile_dim[lateral_axis])
             else:
-                main_axes = lambda v: getattr(v, "xy"[lateral_axis] + "z")
                 offset[non_lateral_axis] = -profile_dim[non_lateral_axis]
-
                 extrusion_kwargs = self.extrude_kwargs("XY"[non_lateral_axis])
-                profile_curve = self.polyline([main_axes(p) for p in points], arc_points=arc_points, closed=True)
+                polyline_points = points[:, [lateral_axis, np_Z]]
+                profile_curve = self.polyline(polyline_points, arc_points=arc_points, closed=True)
                 bend = self.extrude(
                     self.profile(profile_curve), profile_dim[non_lateral_axis] * 2, position=offset, **extrusion_kwargs
                 )
@@ -1760,28 +1766,29 @@ class ShapeBuilder:
 
         rep_items.append(get_bend_representation_item())
         if start_length:
-            rep_items.append(self.extrude(profile, start_length, extrusion_vector=V(0, 0, z_sign)))
+            rep_items.append(self.extrude(profile, start_length, extrusion_vector=(0, 0, z_sign)))
         if end_length:
-            end_position = O + get_circle_point(theta, radius + profile_dim[lateral_axis])
-            end_position.z += start_length * z_sign
+            end_position = O + get_circle_points(np.full(1, theta), radius + profile_dim[lateral_axis])[0]
+            end_position[np_Z] += start_length * z_sign
 
             # define extrusion space for the segment after the bend
             z_axis = get_circle_tangent(theta)
             extrude_kwargs = {
                 "position_z_axis": z_axis,
-                "extrusion_vector": Vector((0, 0, 1)),
+                "extrusion_vector": (0, 0, 1),
             }
             # since we are sure that tangent involves only two axis
             # it's safe to assume that non lateral axis is untouched
             if lateral_axis == 0:
-                x_axis = z_axis.cross(Vector((0, 1, 0)))
+                x_axis = np.cross(z_axis, (0, 1, 0))
             else:
-                x_axis = Vector((1, 0, 0))
+                x_axis = (1, 0, 0)
             extrude_kwargs["position_x_axis"] = x_axis
 
             rep_items.append(self.extrude(profile, end_length, end_position, **extrude_kwargs))
 
         body = ifcopenshell.util.representation.get_context(self.file, "Model", "Body", "MODEL_VIEW")
+        assert body
         rep = self.get_representation(body, rep_items)
 
         bend_data = {
