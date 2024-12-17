@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import numpy as np
 import numpy.typing as npt
 import collections
@@ -27,19 +28,40 @@ import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
 from math import cos, sin, pi, tan, radians, degrees, atan, sqrt
-from typing import Union, Optional, Literal, Any, Sequence
+from typing import Union, Optional, Literal, Any, Sequence, TYPE_CHECKING
 from itertools import chain
-from mathutils import Vector, Matrix
+from mathutils import Vector
 
-V = lambda *x: Vector([float(i) for i in x])
 PRECISION = 1.0e-5
 
-VectorTuple = type[tuple[float, float, float]]
-"tuple of 3 `float` values"
 
-# Support both numpy arrays and python sequences as inputs.
-VectorType = Union[Sequence[float], Vector, np.ndarray]
+if TYPE_CHECKING:
+    # NOTE: mathutils is never used at runtime in ifcopenshell,
+    # only for type checking to ensure methods are compatible with
+    # Blender vectors.
+    from mathutils import Vector
+
+    # Support both numpy arrays and python sequences as inputs.
+    VectorType = Union[Sequence[float], Vector, np.ndarray]
+else:
+    # Ensure it's exportable, so other modules can reuse it for typing.
+    VectorType = ...
+
 SequenceOfVectors = Union[Sequence[VectorType], np.ndarray]
+
+
+def V(*args: Union[float, VectorType, SequenceOfVectors]) -> npt.NDArray[np.float64]:
+    """Convert floats / vector / sequence of vectors to numpy array.
+
+    Note that `float` argument type also allows passing ints,
+    which will be converted to floats (a double type) as IfcOpenShell is strict
+    about setting int/float attributes.
+    """
+    if isinstance(args[0], (float, int)):
+        return np.array(args, dtype="d")
+
+    assert len(args) == 1, "Only single argument is supported if providing a vector or a sequence of them."
+    return np.array(args[0], dtype="d")
 
 
 def ifc_safe_vector_type(v: Union[VectorType, SequenceOfVectors]) -> Any:

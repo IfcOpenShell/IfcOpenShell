@@ -23,7 +23,6 @@ import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
-from ifcopenshell.util.shape_builder import V
 import bonsai.core.root
 import bonsai.core.geometry
 import bonsai.tool as tool
@@ -125,6 +124,7 @@ def update_railing_modifier_bmesh(context: bpy.types.Context) -> None:
     """
     obj = context.active_object
     props = obj.BIMRailingProperties
+    V_ = tool.Blender.V_
 
     # NOTE: using Data since bmesh update will hapen very often
     if not RailingData.is_loaded:
@@ -171,8 +171,8 @@ def update_railing_modifier_bmesh(context: bpy.types.Context) -> None:
             v0, v1 = main_edge.verts
             edge_dissolving_verts.extend([v0, v1])
 
-            edge_dir = ((v1.co - v0.co) * V(1, 1, 0)).normalized()
-            ortho_vector = edge_dir.cross(V(0, 0, 1))
+            edge_dir = ((v1.co - v0.co) * V_(1, 1, 0)).normalized()
+            ortho_vector = edge_dir.cross(V_(0, 0, 1))
 
             extruded_geom = bmesh.ops.extrude_edge_only(bm, edges=[main_edge])["geom"]
             extruded_verts = bm_sort_out_geom(extruded_geom)["verts"]

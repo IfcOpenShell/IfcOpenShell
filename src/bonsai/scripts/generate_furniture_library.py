@@ -16,18 +16,24 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import numpy as np
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.util.element
 from math import cos, tan, pi
 from pathlib import Path
 from itertools import chain
-from ifcopenshell.util.shape_builder import ShapeBuilder, V
+from ifcopenshell.util.shape_builder import ShapeBuilder, V, np_to_3d, np_normalized
+from typing import Optional, Union
+
+GeneratorOutput = Union[list[ifcopenshell.entity_instance], list[list[ifcopenshell.entity_instance]]]
 
 
 class LibraryGenerator:
     def generate(self, library_name, output_filename="IFC4 EU Steel.ifc"):
         ifcopenshell.api.pre_listeners = {}
         ifcopenshell.api.post_listeners = {}
+        np_X, np_Y, np_Z = 0, 1, 2
 
         self.materials = {}
 
@@ -65,10 +71,16 @@ class LibraryGenerator:
 
         builder = ShapeBuilder(self.file)
 
-        def create_box_objects(width, depth, height, shift_to_center=False, return_representations=False):
+        def create_box_objects(
+            width: float,
+            depth: float,
+            height: float,
+            shift_to_center: bool = False,
+            return_representations: bool = False,
+        ) -> Union[list[ifcopenshell.entity_instance], list[list[ifcopenshell.entity_instance]]]:
             output = []
 
-            rectangle = builder.rectangle(size=V(width, depth))
+            rectangle = builder.rectangle(size=(width, depth))
             box = builder.extrude(builder.profile(rectangle), height)
 
             if return_representations:
@@ -86,18 +98,20 @@ class LibraryGenerator:
 
             if shift_to_center:
                 shift_to_center = V(-width / 2, -depth / 2)
-                builder.translate(output[0], shift_to_center.to_3d())
+                builder.translate(output[0], np_to_3d(shift_to_center))
                 builder.translate(output[1], shift_to_center)
 
             return output
 
-        def create_fillet_rectangle(size=None, position=None, fillet_radius=50.0):
+        def create_fillet_rectangle(
+            size: Optional[np.ndarray] = None, position: Optional[np.ndarray] = None, fillet_radius: float = 50.0
+        ) -> ifcopenshell.entity_instance:
             """`fillet_radius` is either float or list of floats for each corner
             in counter-clockwise order starting from bottom left"""
             kwargs = dict()
-            if size:
+            if size is not None:
                 kwargs["size"] = size
-            if position:
+            if position is not None:
                 kwargs["position"] = position
 
             _, _, rectangle = builder.get_simple_2dcurve_data(
@@ -191,11 +205,13 @@ class LibraryGenerator:
         )
 
         # chairs
-        def create_fancy_chair(width, depth, height, seat_level, return_representations=False):
+        def create_fancy_chair(
+            width: float, depth: float, height: float, seat_level: float, return_representations: bool = False
+        ) -> GeneratorOutput:
             thickness = 50.0
             shift_to_center = V(-width / 2, 0)
             mirror_axis = V(0, 1)
-            output = []
+            output: GeneratorOutput = []
 
             items_to_adjust = []
             items_3d = []
@@ -292,7 +308,9 @@ class LibraryGenerator:
             "IfcFurnitureType", "Generic Small Bedside Table", representation_3d, representation_2d
         )
 
-        def create_fancy_rectangle_table(width, depth, height, return_representations=False):
+        def create_fancy_rectangle_table(
+            width: float, depth: float, height: float, return_representations=False
+        ) -> GeneratorOutput:
             output = []
             leg_size = 50.0
             countertop_thickness = 50.0
@@ -312,7 +330,7 @@ class LibraryGenerator:
             legs_profiles = [builder.profile(leg) for leg in legs_curves]
             legs = [builder.extrude(leg, height - countertop_thickness) for leg in legs_profiles]
             items = [countertop] + legs
-            builder.translate(items, shift_to_center.to_3d())
+            builder.translate(items, np_to_3d(shift_to_center))
 
             if return_representations:
                 representation_3d = builder.get_representation(context=self.representations["model_body"], items=items)
@@ -336,17 +354,17 @@ class LibraryGenerator:
 
         # tables
         def create_rectangle_table_with_chairs(
-            table_width,
-            table_depth,
-            table_height,
-            chair_width,
-            chair_depth,
-            chair_height,
-            seat_level,
-            table_chair_gap,
-            number_of_seats,
-            side_seats=False,
-        ):
+            table_width: float,
+            table_depth: float,
+            table_height: float,
+            chair_width: float,
+            chair_depth: float,
+            chair_height: float,
+            seat_level: float,
+            table_chair_gap: float,
+            number_of_seats: int,
+            side_seats: bool = False,
+        ) -> tuple[ifcopenshell.entity_instance, ifcopenshell.entity_instance]:
             items_table_3d, items_table_2d = create_fancy_rectangle_table(table_width, table_depth, table_height)
             items_chair_3d, items_chair_2d = create_fancy_chair(chair_width, chair_depth, chair_height, seat_level)
 
@@ -860,7 +878,7 @@ class LibraryGenerator:
             seat_back = builder.extrude(seat_back, height)
 
             items = armrests + seats + [seat_back]
-            builder.translate(items, shift_to_center.to_3d())
+            builder.translate(items, np_to_3d(shift_to_center))
             # builder.mirror(items, mirror_axis)
             representation_3d = builder.get_representation(self.representations["model_body"], items=items)
 
@@ -1103,7 +1121,7 @@ class LibraryGenerator:
                 )
                 items_3d_to_mirror.append(cistern_3d)
 
-            builder.translate(items_3d, shift_to_center.to_3d())
+            builder.translate(items_3d, np_to_3d(shift_to_center))
 
             builder.mirror(items_3d_to_mirror, mirror_axes=mirror_axis)
             items_3d += items_3d_to_mirror
@@ -1167,7 +1185,7 @@ class LibraryGenerator:
                 mask_curve_profile, bottom_mask_height, position=V(0, 0, bottom_height)
             )
 
-            builder.translate(items_3d_to_center, shift_to_center.to_3d())
+            builder.translate(items_3d_to_center, np_to_3d(shift_to_center))
             items_3d = items_3d_to_center + [triangle_bottom_extruded, triangle_bottom_wall_mask]
             builder.mirror(items_3d, mirror_axis)
 
@@ -1263,7 +1281,7 @@ class LibraryGenerator:
             basin_downside = builder.extrude(rectangle_second_3d, basin_downside_thickness)
 
             items_3d = [main_basin, basin_downside]
-            builder.translate(items_3d, shift_to_center.to_3d())
+            builder.translate(items_3d, np_to_3d(shift_to_center))
             representation_3d = builder.get_representation(self.representations["model_body"], items_3d)
             return representation_3d, representation_2d
 
@@ -1424,19 +1442,21 @@ class LibraryGenerator:
             "IfcFurnitureType", "Neufert Commercial Office Desk and Chair", representation_3d, representation_2d
         )
 
-        def create_dishwasher(width, depth, height):
+        def create_dishwasher(
+            width: float, depth: float, height: float
+        ) -> tuple[ifcopenshell.entity_instance, ifcopenshell.entity_instance]:
             items_3d, items_2d = create_box_objects(width, depth, height)
             circle_first_r = width * 0.1
             circle_second_r = width * 0.3
             center = V(width / 2, depth / 2)
-            k = center.y / center.x
+            k = center[np_Y] / center[np_X]
 
             circle_first = builder.circle(center=center, radius=circle_second_r)
             circle_second = builder.circle(center=center, radius=circle_first_r)
 
-            polyline = builder.polyline([(0.0, 0.0), center - center.normalized() * circle_second_r])
+            polyline = builder.polyline([(0.0, 0.0), center - np_normalized(center) * circle_second_r])
             mirrored_polylines = builder.mirror(
-                polyline, mirror_axes=[V(1, 0), V(0, 1), V(1, 1)], mirror_point=center, create_copy=True
+                polyline, mirror_axes=[(1, 0), (0, 1), (1, 1)], mirror_point=center, create_copy=True
             )
             items_2d.extend([circle_first, circle_second, polyline] + mirrored_polylines)
 
@@ -1591,13 +1611,13 @@ class LibraryGenerator:
                 position=V(rect_offset / 2, rect_offset / 2) + sink_offset,
             )
 
-            circle_position = sink_offset + V((width - sink_offset.x) / 2, depth - rect_offset * 2 - sink_radius)
+            circle_position = sink_offset + V((width - sink_offset[np_X]) / 2, depth - rect_offset * 2 - sink_radius)
             sink_circle = builder.circle(circle_position, radius=sink_radius)
 
             faucet = builder.polyline(
                 (
-                    ((width - sink_offset.x) / 2, faucet_depth),
-                    ((width - sink_offset.x) / 2, faucet_depth - faucet_length),
+                    ((width - sink_offset[np_X]) / 2, faucet_depth),
+                    ((width - sink_offset[np_X]) / 2, faucet_depth - faucet_length),
                 )
             )
             builder.translate(faucet, sink_offset)
@@ -1626,7 +1646,7 @@ class LibraryGenerator:
 
             sink_table_bottom = builder.extrude(sink_table, height - sink_height)
             items_3d.append(sink_table_bottom)
-            builder.translate(items_3d, shift_to_center.to_3d())
+            builder.translate(items_3d, np_to_3d(shift_to_center))
 
             representation_2d = builder.get_representation(self.representations["plan_body"], items=items_2d)
             representation_3d = builder.get_representation(self.representations["model_body"], items=items_3d)
