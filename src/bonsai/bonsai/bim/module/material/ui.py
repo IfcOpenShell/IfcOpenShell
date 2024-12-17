@@ -207,9 +207,15 @@ class BIM_PT_object_material(Panel):
         prop_with_search(self.layout, self.props, "material", text="")
 
     def draw_read_only_single_ui(self):
-        row = self.layout.row(align=True)
+        material_id = ObjectMaterialData.data["material_id"]
+        layout = self.layout
+        box = layout.box()
+        row = box.row()
         row.label(text="Name")
-        row.label(text=ObjectMaterialData.data["material_name"])
+        op = row.operator(
+            "bim.select_by_material", text=ObjectMaterialData.data["material_name"], icon="NONE", emboss=False
+        )
+        op.material = material_id
 
     def draw_set_ui(self):
         if self.props.is_editing:
@@ -225,6 +231,9 @@ class BIM_PT_object_material(Panel):
             row.label(text="No Profiles Available")
             row.operator("bim.add_profile_def", icon="ADD", text="")
         else:
+            layout = self.layout
+            layout.separator()
+            layout.separator()
             row = self.layout.row(align=True)
             if ObjectMaterialData.data["set_item_name"] == "profile":
                 prop_with_search(row, self.mprops, "profiles", icon="ITALIC", text="")
@@ -233,38 +242,36 @@ class BIM_PT_object_material(Panel):
             setattr(op, f"{ObjectMaterialData.data['set_item_name']}_set", ObjectMaterialData.data["set"]["id"])
 
         total_items = len(ObjectMaterialData.data["set_items"])
-        row = self.layout.row(align=True)
-        layer_set_direction = self.props.material_set_usage_attributes["LayerSetDirection"].enum_value
-        if layer_set_direction == "AXIS3":
-            row.label(text="----- Top -----")
-        else:
-            row.label(text="----- Exterior -----")
+
+        layout = self.layout
+        box = layout.box()
+        active_object = bpy.context.active_object
+        self.layerset_bounds(box, active_object, location="Top_Exterior")
+
         for index, set_item in enumerate(ObjectMaterialData.data["set_items"]):
             if (
                 len(self.props.material_set_item_profile_attributes)
                 and self.props.active_material_set_item_id == set_item["id"]
             ):
-                self.draw_editable_set_item_profile_ui(set_item)
+                self.draw_editable_set_item_profile_ui(box, set_item)
             elif self.props.active_material_set_item_id == set_item["id"]:
-                self.draw_editable_set_item_ui(set_item)
+                self.draw_editable_set_item_ui(box, set_item)
             else:
-                self.draw_read_only_set_item_ui(set_item, index, is_first=index == 0, is_last=index == total_items - 1)
-        row = self.layout.row(align=True)
-        if layer_set_direction == "AXIS3":
-            row.label(text="----- Bottom -----")
-        else:
-            row.label(text="----- Interior -----")
+                self.draw_read_only_set_item_ui(
+                    box, set_item, index, is_first=index == 0, is_last=index == total_items - 1
+                )
 
-    def draw_editable_set_item_profile_ui(self, set_item):
-        box = self.layout.box()
+        self.layerset_bounds(box, active_object, location="Bottom_Interior")
+
+    def draw_editable_set_item_profile_ui(self, box, set_item):
+        # box = self.layout.box()
         row = box.row(align=True)
         op = row.operator("bim.edit_material_set_item_profile", icon="CHECKMARK", text="Save Changes")
         op.material_set_item = set_item["id"]
         row.operator("bim.disable_editing_material_set_item_profile", icon="CANCEL", text="")
         draw_attributes(self.props.material_set_item_profile_attributes, box)
 
-    def draw_editable_set_item_ui(self, set_item):
-        box = self.layout.box()
+    def draw_editable_set_item_ui(self, box, set_item):
         row = box.row(align=True)
         op = row.operator("bim.edit_material_set_item", icon="CHECKMARK", text="Save Changes")
         op.material_set_item = set_item["id"]
@@ -279,13 +286,13 @@ class BIM_PT_object_material(Panel):
             row = box.row()
             prop_with_search(row, self.mprops, "profiles", icon="ITALIC", text="Profile")
 
-    def draw_read_only_set_item_ui(self, set_item, index, is_first=False, is_last=False):
+    def draw_read_only_set_item_ui(self, box, set_item, index, is_first=False, is_last=False):
         if ObjectMaterialData.data["material_class"] == "IfcMaterialList":
-            row = self.layout.row(align=True)
+            row = box.row(align=True)
             row.label(text="IfcMaterial", icon="LAYER_ACTIVE")
             row.label(text=set_item["name"], icon="MATERIAL")
         else:
-            row = self.layout.row(align=True)
+            row = box.row(align=True)
             row.label(text=set_item["name"], icon=set_item["icon"])
             row.label(text=set_item["material"], icon="MATERIAL")
 
@@ -322,29 +329,19 @@ class BIM_PT_object_material(Panel):
     def draw_read_only_set_ui(self):
         if ObjectMaterialData.data["material_class"] != "IfcMaterialList":
             row = self.layout.row(align=True)
-            row.label(text="Name")
-            row.label(text=ObjectMaterialData.data["set"]["name"])
+            set_name = ObjectMaterialData.data["set"]["name"]
+            row.label(text=f"     Name: {set_name}")
 
         if ObjectMaterialData.data["set"]["description"]:
+            set_description = ObjectMaterialData.data["set"]["description"]
             row = self.layout.row(align=True)
-            row.label(text="Description")
-            row.label(text=ObjectMaterialData.data["set"]["description"])
+            row.label(text=f"     Description: {set_description}")
 
         if ObjectMaterialData.data["material_class"] == "IfcMaterialProfileSetUsage":
             if ObjectMaterialData.data["set_usage"].get("cardinal_point"):
+                cardinal_point = ObjectMaterialData.data["set_usage"]["cardinal_point"]
                 row = self.layout.row(align=True)
-                row.label(text="CardinalPoint")
-                row.label(text=ObjectMaterialData.data["set_usage"]["cardinal_point"])
-
-        for set_item in ObjectMaterialData.data["set_items"]:
-            if ObjectMaterialData.data["material_class"] == "IfcMaterialList":
-                row = self.layout.row(align=True)
-                row.label(text="IfcMaterial", icon="LAYER_ACTIVE")
-                row.label(text=set_item["name"], icon="MATERIAL")
-            else:
-                row = self.layout.row(align=True)
-                row.label(text=set_item["name"], icon=set_item["icon"])
-                row.label(text=set_item["material"], icon="MATERIAL")
+                row.label(text=f"     Cardinal Point: {cardinal_point}")
 
         if ObjectMaterialData.data["total_thickness"]:
             total_thickness = ObjectMaterialData.data["total_thickness"]
@@ -358,7 +355,43 @@ class BIM_PT_object_material(Panel):
                 total_thickness, precision=precision, suppress_zero_inches=True, in_unit_length=True
             )
             row = self.layout.row(align=True)
-            row.label(text=f"Total Thickness: {formatted_thickness}")
+            row.label(text=f"     Total Thickness: {formatted_thickness}")
+
+        layout = self.layout
+        box = layout.box()
+        active_object = bpy.context.active_object
+        self.layerset_bounds(box, active_object, location="Top_Exterior")
+
+        for set_item in ObjectMaterialData.data["set_items"]:
+            material_name = set_item["material"]
+            material_id = set_item['material_id']
+            if ObjectMaterialData.data["material_class"] == "IfcMaterialList":
+                row = box.row()
+                row.label(text="IfcMaterial", icon="LAYER_ACTIVE")
+                op = row.operator("bim.select_by_material", text=material_name, emboss=False)
+                op.material = material_id
+            else:
+                row = box.row()
+                row.label(text=set_item["name"], icon=set_item["icon"])
+                op = row.operator("bim.select_by_material", text=material_name, emboss=False)
+                op.material = material_id
+
+        self.layerset_bounds(box, active_object, location="Bottom_Interior")
+
+    def layerset_bounds(self, box, obj, location="Top_Exterior"):
+        set_usage = ObjectMaterialData.data.get('set_usage', {})
+        layer_set_direction = set_usage.get('layer_set_direction')
+        if layer_set_direction:
+            if location == "Top_Exterior":
+                if layer_set_direction == "AXIS3":
+                    box.label(text="----- Top -----")
+                else:
+                    box.label(text="----- Exterior -----")
+            if location == "Bottom_Interior":
+                if layer_set_direction == "AXIS3":
+                    box.label(text="----- Bottom -----")
+                else:
+                    box.label(text="----- Interior -----")
 
 
 class BIM_UL_materials(UIList):

@@ -50,10 +50,17 @@ class BIM_PT_patch(bpy.types.Panel):
             row.prop(props, "ifc_patch_input")
             row.operator("bim.select_ifc_patch_input", icon="FILE_FOLDER", text="")
 
-        row = layout.row(align=True)
-        row.prop(props, "ifc_patch_output")
-        row.operator("bim.select_ifc_patch_output", icon="FILE_FOLDER", text="")
+        if tool.Patch.does_patch_has_output(props.ifc_patch_recipes):
+            row = layout.row(align=True)
+            row.prop(props, "ifc_patch_output")
+            row.operator("bim.select_ifc_patch_output", icon="FILE_FOLDER", text="")
+
+        def draw_callback_(_, row: bpy.types.UILayout) -> None:
+            if props.ifc_patch_recipes == "ExtractElements":
+                row.operator("bim.patch_query_from_selected", text="", icon="EYEDROPPER")
 
         if props.ifc_patch_args_attr:
-            draw_attributes(props.ifc_patch_args_attr, layout)
+            draw_callback = draw_callback_ if props.ifc_patch_recipes == "ExtractElements" else None
+            draw_attributes(props.ifc_patch_args_attr, layout, callback=draw_callback)
+
         op = layout.operator("bim.execute_ifc_patch")

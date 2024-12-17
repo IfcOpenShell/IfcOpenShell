@@ -402,6 +402,11 @@ class DocProperties(PropertyGroup):
     magic_font_scale: bpy.props.FloatProperty(default=0.004118616, name="Font Scale Factor")
     imperial_precision: StringProperty(default="1/32", name="Imperial Precision")
     tolerance: bpy.props.FloatProperty(default=0.00001, name="A tolerance used when selecting objects")
+    classes_to_wireframe: StringProperty(
+        default="IfcVirtualelement",
+        name="Classes to Wireframe",
+        description="Upon import, these classes will display as wireframe.\nEx: IfcVirtualelement, IfcSpace",
+    )
 
 
 class BIMCameraProperties(PropertyGroup):

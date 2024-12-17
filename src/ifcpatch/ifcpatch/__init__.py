@@ -27,13 +27,22 @@ import inspect
 import collections
 import importlib
 import importlib.util
-from typing import Union, Iterable, Optional, Any
+from typing import Union, Iterable, Optional, Any, TypedDict, Literal
+from typing_extensions import NotRequired
 
 
 __version__ = version = "0.0.0"
 
 
-def execute(args: dict) -> Union[ifcopenshell.file, str]:
+class ArgumentsDict(TypedDict):
+    recipe: str
+    file: NotRequired[ifcopenshell.file]
+    input: NotRequired[str]
+    log: NotRequired[str]
+    arguments: NotRequired[list]
+
+
+def execute(args: ArgumentsDict) -> Union[ifcopenshell.file, str]:
     """Execute a patch recipe
 
     The details of how the patch recipe is executed depends on the definition of
@@ -43,10 +52,13 @@ def execute(args: dict) -> Union[ifcopenshell.file, str]:
     :param args: A dictionary of arguments, corresponding to the parameters
         listed subsequent to this in this docstring.
     :type args: dict
-    :param input: A filepath to the incoming IFC file.
-    :type input: str
     :param file: An IFC model to apply the patch recipe to.
-    :type file: ifcopenshell.file.file
+        Required for most recipes except the ones that require `input`.
+    :type file: ifcopenshell.file, optional
+    :param input: A filepath to the incoming IFC file.
+        Required/supported only for some recipes, see specific recipes descriptions,
+        in other cases will be ignored.
+    :type input: str, optional
     :param recipe: The name of the recipe. This is the same as the filename of
         the recipe. E.g. "ExtractElements".
     :type recipe: str
@@ -58,7 +70,6 @@ def execute(args: dict) -> Union[ifcopenshell.file, str]:
     :type arguments: list
     :return: The result of the patch. This is typically a patched model, either
         as an object or as a string.
-    :rtype: ifcopenshell.file.file,str
 
     Example:
 
@@ -77,14 +88,30 @@ def execute(args: dict) -> Union[ifcopenshell.file, str]:
     logger = logging.getLogger("IFCPatch")
     recipes = getattr(__import__("ifcpatch.recipes.{}".format(args["recipe"])), "recipes")
     recipe = getattr(recipes, args["recipe"])
+
+    # Ensure file or input is provided.
+    input_argument = get_patch_input_argument_use(args["recipe"])
+    if input_argument == "REQUIRED":
+        if not args.get("input"):
+            raise ValueError(f"Recipe {args['recipe']} is requiring 'input' argument to be provided.")
+    elif "file" not in args:  # SUPPORTED, IGNORED.
+        raise ValueError(f"Recipe {args['recipe']} is requiring 'file' argument to be provided.")
+
     arguments = args.get("arguments", [])
     if recipe.Patcher.__init__.__doc__ is not None:
-        patcher = recipe.Patcher(args.get("input"), args["file"], logger, *arguments)
+        patcher = recipe.Patcher(args.get("input"), args.get("file"), logger, *arguments)
     else:
-        patcher = recipe.Patcher(args.get("input"), args["file"], logger, arguments)
+        patcher = recipe.Patcher(args.get("input"), args.get("file"), logger, arguments)
     patcher.patch()
     output = getattr(patcher, "file_patched", patcher.file)
     return output
+
+
+def get_patch_input_argument_use(recipe: str) -> Literal["REQUIRED", "SUPPORTED", "IGNORED"]:
+    import importlib
+
+    recipe_module = importlib.import_module(f"ifcpatch.recipes.{recipe}")
+    return getattr(recipe_module.Patcher, "input_argument", "IGNORED")
 
 
 def write(output: Union[ifcopenshell.file, str], filepath: str) -> None:
@@ -115,7 +142,7 @@ def write(output: Union[ifcopenshell.file, str], filepath: str) -> None:
 
 def extract_docs(
     submodule_name: str, cls_name: str, method_name: str = "__init__", boilerplate_args: Optional[Iterable[str]] = None
-):
+) -> Union[dict[str, Any], None]:
     """Extract class docstrings and method arguments
 
     :param submodule_name: Submodule from which to extract the class
@@ -137,7 +164,7 @@ def extract_docs(
         print(f"Error : IFCPatch {str(submodule)} could not load because : {str(e)}")
 
 
-def _extract_docs(cls: type, method_name: str, boilerplate_args: Union[Iterable[str], None]):
+def _extract_docs(cls: type, method_name: str, boilerplate_args: Union[Iterable[str], None]) -> dict[str, Any]:
     inputs = collections.OrderedDict()
     method = getattr(cls, method_name)
     docs: dict[str, Any] = {"class": cls}

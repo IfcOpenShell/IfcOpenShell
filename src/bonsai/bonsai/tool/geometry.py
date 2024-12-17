@@ -678,8 +678,9 @@ class Geometry(bonsai.core.tool.Geometry):
         element = tool.Ifc.get_entity(obj)
         assert element
 
-        elements = set()
-        element_types = set()
+        ifc_file = tool.Ifc.get()
+        elements: set[ifcopenshell.entity_instance] = set()
+        element_types: set[ifcopenshell.entity_instance] = set()
         representation = ifcopenshell.util.representation.resolve_representation(representation)
         context = representation.ContextOfItems
         for mapped_element in ifcopenshell.util.element.get_elements_by_representation(tool.Ifc.get(), representation):
@@ -689,6 +690,54 @@ class Geometry(bonsai.core.tool.Geometry):
                 elements.add(mapped_element)
                 if element_type := ifcopenshell.util.element.get_type(mapped_element):
                     element_types.add(element_type)
+
+        def change_data(obj: bpy.types.Object, element: ifcopenshell.entity_instance, data: bpy.types.ID) -> None:
+            old_data = obj.data
+            if type(old_data) == type(data):
+                cls.change_object_data(obj, data, is_global=False)
+            else:
+                obj = cls.recreate_object_with_data(obj, data, is_global=False)
+            cls.record_object_materials(obj)
+            if not cls.has_data_users(old_data):
+                cls.delete_data(old_data)
+            cls.clear_modifiers(obj)
+            cls.clear_cache(element)
+
+        # Import swept disk solids as Blender curves if possible.
+        elements_without_openings = {e for e in elements if not getattr(e, "HasOpenings", False)}
+        curve, curve_thickness = None, None
+        for element_ in elements_without_openings | element_types:
+            if not tool.Loader.is_native_swept_disk_solid(element, representation):
+                continue
+            if curve is None:
+                mesh_name = tool.Loader.get_mesh_name(context.id(), representation.id())
+                native_data = {
+                    "representation": representation,
+                    # TODO: calculate mapped item matrix.
+                    "matrix": np.eye(4),
+                }
+                curve, curve_thickness = tool.Loader.create_native_swept_disk_solid(element, mesh_name, native_data)
+                tool.Ifc.link(representation, curve)
+            obj = tool.Ifc.get_object(element)
+            change_data(obj, element, curve)
+            tool.Loader.setup_native_swept_disk_solid_thickness(obj, curve_thickness)
+            elements.discard(element_)
+            element_types.discard(element_)
+
+        if not elements and not element_types:
+            return
+
+        # Fallback to custom methods as IOS doesn't process points, see #5218.
+        if representation.RepresentationType in ("PointCloud", "Point"):
+            mesh = tool.Loader.create_point_cloud_mesh(representation)
+            if mesh is None:
+                raise Exception(f"Failed to process point cloud representation: {representation}.")
+
+            tool.Ifc.link(representation, mesh)
+            for element in elements | element_types:
+                obj = tool.Ifc.get_object(element)
+                change_data(obj, element, mesh)
+            return
 
         logger = logging.getLogger("ImportIFC")
         ifc_import_settings = bonsai.bim.import_ifc.IfcImportSettings.factory(bpy.context, None, logger)
@@ -702,8 +751,6 @@ class Geometry(bonsai.core.tool.Geometry):
         ifc_importer = bonsai.bim.import_ifc.IfcImporter(ifc_import_settings)
         ifc_importer.file = tool.Ifc.get()
 
-        # TODO support fallbacks like for point clouds
-
         settings.set("context-ids", [context.id()])
         if not apply_openings:
             settings.set("disable-opening-subtractions", True)
@@ -716,16 +763,26 @@ class Geometry(bonsai.core.tool.Geometry):
         else:
             iterator = None  # For example, when switching representation of a type with no occurrences
         meshes = {}
+        base_representation = representation
         if iterator and iterator.initialize():
             while True:
                 shape = iterator.get()
                 element = tool.Ifc.get().by_id(shape.id)
                 if obj := tool.Ifc.get_object(element):
+                    # It's possible that there will be multiple shapes for the same context,
+                    # Unfortunately, iterator still processes them all and
+                    # we need to ensure we pick the one that was requested for reimport.
+                    representation_id = tool.Loader.get_representation_id_from_shape(shape.geometry)
+                    representation = ifc_file.by_id(representation_id)
+                    resolved_representation = ifcopenshell.util.representation.resolve_representation(representation)
+                    if resolved_representation != base_representation:
+                        if not iterator.next():
+                            break
+                        continue
+
                     mesh_name = tool.Loader.get_mesh_name_from_shape(shape.geometry)
                     mesh = meshes.get(mesh_name)
                     if mesh is None:
-                        # Duplicate code
-                        representation = tool.Ifc.get().by_id(int(shape.geometry.id.split("-")[0]))
                         if element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
                             mesh = tool.Loader.create_camera(element, representation, shape)
                         elif element.is_a("IfcAnnotation") and ifc_importer.is_curve_annotation(element):
@@ -746,16 +803,7 @@ class Geometry(bonsai.core.tool.Geometry):
                         tool.Loader.link_mesh(shape, mesh)
                         meshes[mesh_name] = mesh
 
-                    old_mesh = obj.data
-                    if type(old_mesh) == type(mesh):
-                        cls.change_object_data(obj, mesh, is_global=False)
-                    else:
-                        obj = cls.recreate_object_with_data(obj, mesh, is_global=False)
-                    cls.record_object_materials(obj)
-                    if not cls.has_data_users(old_mesh):
-                        cls.delete_data(old_mesh)
-                    cls.clear_modifiers(obj)
-                    cls.clear_cache(element)
+                    change_data(obj, element, mesh)
 
                 if not iterator.next():
                     break
@@ -780,16 +828,7 @@ class Geometry(bonsai.core.tool.Geometry):
                         tool.Loader.link_mesh(geometry, mesh)
                         meshes[mesh_name] = mesh
 
-                    old_mesh = obj.data
-                    if type(old_mesh) == type(mesh):
-                        cls.change_object_data(obj, mesh, is_global=False)
-                    else:
-                        obj = cls.recreate_object_with_data(obj, mesh, is_global=False)
-                    cls.record_object_materials(obj)
-                    if not cls.has_data_users(old_mesh):
-                        cls.delete_data(old_mesh)
-                    cls.clear_modifiers(obj)
-                    cls.clear_cache(element)
+                    change_data(obj, element, mesh)
 
     @classmethod
     def does_shape_has_openings(
@@ -1680,12 +1719,18 @@ class Geometry(bonsai.core.tool.Geometry):
         data["ios_item_ids"] = [i["item"].id() for i in ifcopenshell.util.representation.resolve_items(representation)]
 
     @classmethod
-    def export_mesh_to_tessellation(cls, obj: bpy.types.Object, ifc_context) -> ifcopenshell.entity_instance:
+    def export_mesh_to_tessellation(
+        cls, obj: bpy.types.Object, ifc_context: ifcopenshell.entity_instance
+    ) -> ifcopenshell.entity_instance:
         builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         items = []
         meshes = cls.split_by_loose_parts(obj)
         for mesh in meshes:
+            # Skip parts that won't work for tessellation.
+            if not mesh.polygons:
+                bpy.data.meshes.remove(mesh)
+                continue
             verts = [v.co / unit_scale for v in mesh.vertices]
             faces = [p.vertices[:] for p in mesh.polygons]
             item = builder.mesh(verts, faces)
@@ -1709,3 +1754,28 @@ class Geometry(bonsai.core.tool.Geometry):
                 ifcopenshell.api.style.assign_item_style(tool.Ifc.get(), item=item, style=style)
             bpy.data.meshes.remove(mesh)
         return builder.get_representation(ifc_context, items)
+
+    @classmethod
+    def mesh_has_loose_geometry(cls, mesh: bpy.types.Mesh) -> bool:
+        """Check if mesh has loose geometry (edges without faces, verts without edges)."""
+        bm = tool.Blender.get_bmesh_for_mesh(mesh)
+
+        # Most of the time it will return `False`,
+        # so checking verts for being manifold
+        # should be the fastest way to proceed in those cases.
+        non_manifold_edges = set()
+        for vert in bm.verts:
+            if not vert.is_manifold:
+                # Not all non-manifold verts mean loose geometry
+                # e.g. a vert shared by 2 planes.
+                if not vert.link_faces:
+                    return True
+                non_manifold_edges.update(vert.link_edges)
+
+        if not non_manifold_edges:
+            return False
+
+        for edge in non_manifold_edges:
+            if not edge.link_faces:
+                return True
+        return False

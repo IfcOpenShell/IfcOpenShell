@@ -21,6 +21,7 @@ from . import ui, prop, operator
 
 classes = (
     operator.ExecuteIfcPatch,
+    operator.ExtractSelectedElements,
     operator.RunMigratePatch,
     operator.SelectIfcPatchInput,
     operator.SelectIfcPatchOutput,
