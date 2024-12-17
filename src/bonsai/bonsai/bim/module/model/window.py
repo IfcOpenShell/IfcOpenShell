@@ -31,10 +31,11 @@ import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.shape_builder
 import ifcopenshell.util.unit
-from ifcopenshell.util.shape_builder import V
 from bmesh.types import BMVert
 from mathutils import Vector
 from typing import Optional
+
+V_ = tool.Blender.V_
 
 
 def update_window_modifier_representation(context: bpy.types.Context) -> None:
@@ -131,7 +132,7 @@ def update_window_modifier_representation(context: bpy.types.Context) -> None:
 
 
 def create_bm_window_frame(
-    bm: bmesh.types.BMesh, size: Vector, thickness: list, position: Vector = V(0, 0, 0).freeze()
+    bm: bmesh.types.BMesh, size: Vector, thickness: list, position: Vector = V_(0, 0, 0).freeze()
 ) -> list[bmesh.types.BMVert]:
     """`thickness` of the profile is defined as list in the following order:
     `(LEFT, TOP, RIGHT, BOTTOM)`
@@ -198,7 +199,7 @@ def create_bm_window_frame(
 
 
 def create_bm_box(
-    bm: bmesh.types.BMesh, size: Vector = V(1, 1, 1).freeze(), position: Vector = V(0, 0, 0).freeze()
+    bm: bmesh.types.BMesh, size: Vector = V_(1, 1, 1).freeze(), position: Vector = V_(0, 0, 0).freeze()
 ) -> list[bmesh.types.BMVert]:
     """create a box of `size`, position box first vertex at `position`"""
     box_verts = bmesh.ops.create_cube(bm, size=1)["verts"]
@@ -230,13 +231,13 @@ def create_bm_window(
     window_lining_verts = create_bm_window_frame(bm, lining_size, lining_thickness)
 
     # window frame
-    frame_position = V(x_offsets[0], lining_to_panel_offset_y_full, x_offsets[3])
+    frame_position = V_(x_offsets[0], lining_to_panel_offset_y_full, x_offsets[3])
     frame_verts = create_bm_window_frame(bm, frame_size, frame_thickness, frame_position)
 
     # window glass
-    glass_size = frame_size - V(frame_thickness * 2, 0, frame_thickness * 2)
+    glass_size = frame_size - V_(frame_thickness * 2, 0, frame_thickness * 2)
     glass_size.y = glass_thickness
-    glass_position = frame_position + V(frame_thickness, frame_size.y / 2 - glass_thickness / 2, frame_thickness)
+    glass_position = frame_position + V_(frame_thickness, frame_size.y / 2 - glass_thickness / 2, frame_thickness)
 
     glass_verts = create_bm_box(bm, glass_size, glass_position)
 
@@ -324,7 +325,7 @@ def update_window_modifier_bmesh(context: bpy.types.Context) -> None:
             frame_thickness = props.frame_thickness[panel_i]
             lining_to_panel_offset_y_full = (lining_depth - frame_depth) + lining_to_panel_offset_y
             # add window
-            window_lining_size = V(
+            window_lining_size = V_(
                 panel_width,
                 lining_depth,
                 panel_height,
@@ -358,7 +359,7 @@ def update_window_modifier_bmesh(context: bpy.types.Context) -> None:
             frame_size.x -= x_offsets[0] + x_offsets[2]
             frame_size.z -= x_offsets[1] + x_offsets[3]
 
-            window_position = V(accumulated_width, 0, accumulated_height[column_i])
+            window_position = V_(accumulated_width, 0, accumulated_height[column_i])
             lining_verts, panel_verts, glass_verts = create_bm_window(
                 bm,
                 window_lining_size,
@@ -377,7 +378,7 @@ def update_window_modifier_bmesh(context: bpy.types.Context) -> None:
             accumulated_height[column_i] += panel_height
             accumulated_width += panel_width
 
-    bmesh.ops.translate(bm, vec=V(0, lining_offset, 0), verts=bm.verts)
+    bmesh.ops.translate(bm, vec=V_(0, lining_offset, 0), verts=bm.verts)
     bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0001)
 
     if bpy.context.active_object.mode == "EDIT":
