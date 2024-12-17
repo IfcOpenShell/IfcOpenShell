@@ -76,7 +76,13 @@ IfcSchema::IfcProduct::list::ptr mapping::products_represented_by(const IfcSchem
                 IfcSchema::IfcMappedItem* item = *it;
                 if (item->StyledByItem()->size() != 0) continue;
 
-                taxonomy::matrix4::ptr target = taxonomy::cast<taxonomy::matrix4>(map(item->MappingTarget()));
+                taxonomy::matrix4::ptr target;
+                try {
+                    target = taxonomy::cast<taxonomy::matrix4>(map(item->MappingTarget()));
+                } catch (const std::exception& e) {
+                    Logger::Error(e);
+                    continue;
+                }
                 if (!target->is_identity()) {
                     continue;
                 }
@@ -361,8 +367,13 @@ IfcSchema::IfcRepresentation* mapping::representation_mapped_to(const IfcSchema:
         if (item->declaration().is(IfcSchema::IfcMappedItem::Class())) {
             if (item->StyledByItem()->size() == 0) {
                 IfcSchema::IfcMappedItem* mapped_item = item->as<IfcSchema::IfcMappedItem>();
-                taxonomy::matrix4::ptr target = taxonomy::cast<taxonomy::matrix4>(map(mapped_item->MappingTarget()));
-                if (target->is_identity()) {
+                taxonomy::matrix4::ptr target;
+                try {
+                    target = taxonomy::cast<taxonomy::matrix4>(map(mapped_item->MappingTarget()));
+                } catch (const std::exception& e) {
+                    Logger::Error(e);
+                }
+                if (target && target->is_identity()) {
                     IfcSchema::IfcRepresentationMap* rmap = mapped_item->MappingSource();
                     taxonomy::matrix4::ptr origin = taxonomy::cast<taxonomy::matrix4>(map(rmap->MappingOrigin()));
                     if (origin->is_identity()) {

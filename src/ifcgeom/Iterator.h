@@ -198,7 +198,11 @@ namespace IfcGeom {
 				// @todo this shouldn't be necessary with properly immutable taxonomy items
 				converter_->mapping()->use_caching() = false;
 			}
-			converter_->mapping()->get_representations(reps, filters_);
+			try {
+				converter_->mapping()->get_representations(reps, filters_);
+			} catch (const std::exception& e) {
+				Logger::Error(e);
+			}
 			time_points[1] = high_resolution_clock::now();
 
 			for (auto& task : reps) {
