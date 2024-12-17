@@ -52,14 +52,18 @@ def ifc_safe_vector_type(v: Union[VectorType, SequenceOfVectors]) -> Any:
     return np.array(v, dtype="d").tolist()
 
 
-def is_x(value, x, si_conversion=None):
-    if si_conversion:
+def is_x(value: float, x: float, si_conversion: Optional[float] = None) -> bool:
+    if si_conversion is not None:
         value = value * si_conversion
     return (x + PRECISION) > value > (x - PRECISION)
 
 
-round_to_precision = lambda x, si_conversion: round(x * si_conversion, 5) / si_conversion
-round_vector_to_precision = lambda v, si_conversion: Vector([round_to_precision(i, si_conversion) for i in v])
+def round_to_precision(x: float, si_conversion: float) -> float:
+    return round(x * si_conversion, 5) / si_conversion
+
+
+def np_round_to_precision(v: np.ndarray, si_conversion: float) -> np.ndarray:
+    return np.round(v * si_conversion, 5) / si_conversion
 
 
 def np_normalized(v: VectorType) -> np.ndarray:
@@ -1248,69 +1252,77 @@ class ShapeBuilder:
 
     # TODO: move MEP to separate shape builder sub module
     def mep_transition_shape(
-        self, start_segment, end_segment, start_length, end_length, angle=30.0, profile_offset=V(0, 0).freeze()
-    ):
+        self,
+        start_segment: ifcopenshell.entity_instance,
+        end_segment: ifcopenshell.entity_instance,
+        start_length: float,
+        end_length: float,
+        angle: float = 30.0,
+        profile_offset: VectorType = (0.0, 0.0),
+    ) -> Union[tuple[ifcopenshell.entity_instance, dict[str, Any]], tuple[None, None]]:
+        """Generate a MEP transition shape for the provided segments.
+
+        :param start_segment: Starting segment.
+        :param end_segment: Ending segment.
+        :param start_length: Start transition length.
+        :param end_length: End transition length.
+        :param angle: Transition angle, in degrees.
+            Good default values from angle = 30/60 deg
+            30 degree angle will result in 75 degrees on the transition (= 90 - α/2) - https://i.imgur.com/tcoYDWu.png
+        :param profile_offset: 2D vector for profile offset.
+        :return: A tuple of Model/Body/MODEL_VIEW IfcRepresentation and dictionary of transition shape data.
+            Or (None, None) if there was an error in the process.
         """
-        returns tuple of Model/Body/MODEL_VIEW IfcRepresentation and transition shape data
-        """
-        # good default values from angle = 30/60 deg
-        # 30 degree angle will result in 75 degrees on the transition (= 90 - α/2) - https://i.imgur.com/tcoYDWu.png
 
         # TODO: get rid of reliance on profiles
-        def get_profile(element):
+        def get_profile(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
             material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
             if material and material.is_a("IfcMaterialProfileSet") and len(material.MaterialProfiles) == 1:
                 return material.MaterialProfiles[0].Profile
 
-        def get_circle_points(radius, segments=16):
+        def get_circle_points(radius: float, segments: int = 16) -> np.ndarray:
             """starting from (R,0), going counter-clockwise"""
-            angle_d = 2 * pi / segments
-            verts = []
-            for i in range(segments):
-                angle = angle_d * i
-                verts.append(V(cos(angle), sin(angle), 0) * radius)
+            angles = np.linspace(0, 2 * np.pi, segments, endpoint=False)
+            verts = np.column_stack((np.cos(angles), np.sin(angles), np.zeros(segments))) * radius
             return verts
 
-        def get_rectangle_points(dim):
+        def get_rectangle_points(dim: np.ndarray) -> np.ndarray:
             """Starting from (+X/2, +Y/2) going counter-clockwise"""
             dim = dim / 2
-            points = [
-                dim * V(1, 1, 0),
-                dim * V(-1, 1, 0),
-                dim * V(-1, -1, 0),
-                dim * V(1, -1, 0),
-            ]
-            return points
+            offsets = np.array([[1, 1, 0], [-1, 1, 0], [-1, -1, 0], [1, -1, 0]])
+            return dim * offsets
 
         # TODO: support more profiles
-        def get_dim(profile, depth):
+        def get_dim(profile: ifcopenshell.entity_instance, depth: float) -> Union[np.ndarray, None]:
             if profile.is_a("IfcRectangleProfileDef"):
-                return V(profile.XDim / 2, profile.YDim / 2, depth)
+                return np.array([profile.XDim / 2, profile.YDim / 2, depth])
             elif profile.is_a("IfcCircleProfileDef"):
-                return V(profile.Radius, profile.Radius, depth)
+                return np.array([profile.Radius, profile.Radius, depth])
             return None
 
         start_profile = get_profile(start_segment)
         end_profile = get_profile(end_segment)
+        if start_profile is None or end_profile is None:
+            return None, None
 
         start_half_dim = get_dim(start_profile, start_length)
         end_half_dim = get_dim(end_profile, end_length)
 
         # if profile types are not supported
-        if not start_half_dim or not end_half_dim:
+        if start_half_dim is None or end_half_dim is None:
             return None, None
 
         transition_items = []
-        start_offset = V(0, 0, start_length)
+        start_offset = np.array([0, 0, start_length])
         end_extrusion_offset = start_offset.copy()
 
         transition_length = self.mep_transition_length(start_half_dim, end_half_dim, angle, profile_offset)
         if transition_length is None:
             return None, None
 
-        faces = []
-        end_extrusion_offset.z += transition_length
-        end_extrusion_offset.xy += profile_offset
+        faces: list[Sequence[int]] = []
+        end_extrusion_offset[2] += transition_length
+        end_extrusion_offset[:2] += profile_offset
 
         if start_profile.is_a("IfcRectangleProfileDef") and end_profile.is_a("IfcRectangleProfileDef"):
             # no transitions for exactly the same profiles
@@ -1335,22 +1347,22 @@ class ShapeBuilder:
                 (6, 14, 15, 7),
             ]
             points = [
-                start_half_dim * V(-1, -1, 1),
-                start_half_dim * V(-1, -1, 0),
-                start_half_dim * V(1, -1, 0),
-                start_half_dim * V(1, -1, 1),
-                end_half_dim * V(1, -1, 0) + end_extrusion_offset,
-                end_half_dim * V(1, -1, 1) + end_extrusion_offset,
-                end_half_dim * V(-1, -1, 1) + end_extrusion_offset,
-                end_half_dim * V(-1, -1, 0) + end_extrusion_offset,
-                start_half_dim * V(-1, 1, 1),
-                start_half_dim * V(-1, 1, 0),
-                start_half_dim * V(1, 1, 0),
-                start_half_dim * V(1, 1, 1),
-                end_half_dim * V(1, 1, 0) + end_extrusion_offset,
-                end_half_dim * V(1, 1, 1) + end_extrusion_offset,
-                end_half_dim * V(-1, 1, 1) + end_extrusion_offset,
-                end_half_dim * V(-1, 1, 0) + end_extrusion_offset,
+                start_half_dim * (-1, -1, 1),
+                start_half_dim * (-1, -1, 0),
+                start_half_dim * (1, -1, 0),
+                start_half_dim * (1, -1, 1),
+                end_half_dim * (1, -1, 0) + end_extrusion_offset,
+                end_half_dim * (1, -1, 1) + end_extrusion_offset,
+                end_half_dim * (-1, -1, 1) + end_extrusion_offset,
+                end_half_dim * (-1, -1, 0) + end_extrusion_offset,
+                start_half_dim * (-1, 1, 1),
+                start_half_dim * (-1, 1, 0),
+                start_half_dim * (1, 1, 0),
+                start_half_dim * (1, 1, 1),
+                end_half_dim * (1, 1, 0) + end_extrusion_offset,
+                end_half_dim * (1, 1, 1) + end_extrusion_offset,
+                end_half_dim * (-1, 1, 1) + end_extrusion_offset,
+                end_half_dim * (-1, 1, 0) + end_extrusion_offset,
             ]
         elif start_profile.is_a("IfcCircleProfileDef") and end_profile.is_a("IfcCircleProfileDef"):
             # no transitions for exactly the same profiles
@@ -1373,16 +1385,15 @@ class ShapeBuilder:
                 self.extrude_face_set(second_profile_points, end_length, offset=end_extrusion_offset, start_cap=False)
             )
 
-            first_profile_points = [p + start_offset for p in first_profile_points]
-            second_profile_points = [p + end_extrusion_offset for p in second_profile_points]
-
-            points = first_profile_points + second_profile_points
+            first_profile_points += start_offset
+            second_profile_points += end_extrusion_offset
+            points = np.vstack((first_profile_points, second_profile_points))
 
         else:  # one is circular, another one is rectangular
             # support transition from rectangle to circle of the same dimensions
             if transition_length == 0:
                 transition_length = (start_length + end_length) / 2
-                end_extrusion_offset.z += transition_length
+                end_extrusion_offset[2] += transition_length
 
             starting_with_circle = start_profile.is_a("IfcCircleProfileDef")
             if starting_with_circle:
@@ -1391,7 +1402,7 @@ class ShapeBuilder:
                 circle_profile, rect_profile = end_profile, start_profile
 
             circle_points = get_circle_points(circle_profile.Radius)
-            rect_points = get_rectangle_points(V(rect_profile.XDim, rect_profile.YDim, 0))
+            rect_points = get_rectangle_points(np.array([rect_profile.XDim, rect_profile.YDim, 0]))
 
             if starting_with_circle:
                 start_points, end_points = circle_points, rect_points
@@ -1405,11 +1416,11 @@ class ShapeBuilder:
 
             # offset verts
             if starting_with_circle:
-                circle_points = [p + start_offset for p in circle_points]
-                rect_points = [p + end_extrusion_offset for p in rect_points]
+                circle_points += start_offset
+                rect_points += end_extrusion_offset
             else:
-                rect_points = [p + start_offset for p in rect_points]
-                circle_points = [p + end_extrusion_offset for p in circle_points]
+                rect_points += start_offset
+                circle_points += end_extrusion_offset
 
             # circle verts are 0-15, rect verts are 16-19
             points = circle_points + rect_points
@@ -1444,6 +1455,7 @@ class ShapeBuilder:
         transition_items.append(face_set)
 
         body = ifcopenshell.util.representation.get_context(self.file, "Model", "Body", "MODEL_VIEW")
+        assert body
         representation = self.get_representation(body, transition_items, "Tesselation")
 
         transition_data = {
@@ -1459,19 +1471,28 @@ class ShapeBuilder:
 
     # TODO: move to separate shape_builder method
     # so we could check transition length without creating representation
-    def mep_transition_length(self, start_half_dim, end_half_dim, angle, profile_offset=V(0, 0).freeze(), verbose=True):
+    def mep_transition_length(
+        self,
+        start_half_dim: np.ndarray,
+        end_half_dim: np.ndarray,
+        angle: float,
+        profile_offset: VectorType = (0.0, 0.0),
+        verbose: bool = True,
+    ):
         """get the final transition length for two profiles dimensions, angle and XY offset between them,
 
         the difference from `calculate_transition` - `get_transition_length` is making sure
         that length will fit both sides of the transition
         """
         print = lambda *args, **kwargs: __builtins__["print"](*args, **kwargs) if verbose else None
+        np_X, np_Y = 0, 1
+        np_XY = slice(2)
 
         # vectors tend to have bunch of float point garbage
         # that can result in errors when we're calculating value for square root below
-        offset = round_vector_to_precision(profile_offset, 1)
-        diff = start_half_dim.xy - end_half_dim.xy
-        diff = Vector([abs(i) for i in diff])
+        offset = np_round_to_precision(np.array(profile_offset), 1)
+        diff = start_half_dim[np_XY] - end_half_dim[np_XY]
+        diff = np.abs(diff)
 
         print(f"offset = {profile_offset} / {offset}")
         print(f"diff = {diff}")
@@ -1484,7 +1505,7 @@ class ShapeBuilder:
             "verbose": verbose,
         }
 
-        def check_transition(end_profile=False):
+        def check_transition(end_profile: bool = False) -> Union[float, None]:
             length = self.mep_transition_calculate(**calculation_arguments, angle=angle, end_profile=end_profile)
             if length is None:
                 return
@@ -1492,11 +1513,13 @@ class ShapeBuilder:
             other_side_angle = self.mep_transition_calculate(
                 **calculation_arguments, length=length, end_profile=not end_profile
             )
+            if other_side_angle is None:
+                return None
 
             # NOTE: for now we just hardcode the good value for that case
-            same_dimension = is_x(diff.y if not end_profile else diff.x, 0)
-            if same_dimension and is_x(offset.y if not end_profile else offset.x, 0):
-                requested_angle = 90
+            same_dimension = is_x(diff[np_Y] if not end_profile else diff[np_X], 0)
+            if same_dimension and is_x(offset[np_Y] if not end_profile else offset[np_X], 0):
+                requested_angle = 90.0
             else:
                 requested_angle = angle
 
@@ -1510,8 +1533,16 @@ class ShapeBuilder:
         return check_transition() or check_transition(True)
 
     def mep_transition_calculate(
-        self, start_half_dim, end_half_dim, offset, diff=None, end_profile=False, angle=None, length=None, verbose=True
-    ):
+        self,
+        start_half_dim: np.ndarray,
+        end_half_dim: np.ndarray,
+        offset: np.ndarray,
+        diff: Optional[np.ndarray] = None,
+        end_profile: bool = False,
+        length: Optional[float] = None,
+        angle: Optional[float] = None,
+        verbose: bool = True,
+    ) -> Union[float, None]:
         """will return transition length based on the profile dimension differences and offset.
 
         If `length` is provided will return transition angle"""
@@ -1519,17 +1550,21 @@ class ShapeBuilder:
         print = lambda *args, **kwargs: __builtins__["print"](*args, **kwargs) if verbose else None
 
         if diff is None:
-            diff = start_half_dim.xy - end_half_dim.xy
-            diff = Vector([abs(i) for i in diff])
+            diff = start_half_dim[:2] - end_half_dim[:2]
+            diff = np.abs(diff)
+
+        np_X, np_Y = 0, 1
+        np_YX = [1, 0]
 
         if end_profile:
-            diff, offset = diff.yx, offset.yx
+            diff, offset = diff[np_YX], offset[np_YX]
 
-        same_dimension = is_x(diff.x, 0)
-        a = diff.x + offset.x
-        b = diff.x - offset.x
+        same_dimension = is_x(diff[0], 0)
+        a = diff[np_X] + offset[np_X]
+        b = diff[np_X] - offset[np_X]
         if length is None:
             if not same_dimension:
+                assert angle is not None
                 t = tan(radians(angle))
                 h0 = a**2 + 4 * a * b * t**2 + 2 * a * b + b**2
                 # TODO: we might need to specify the exact failing cases in the future
@@ -1540,52 +1575,57 @@ class ShapeBuilder:
                     return None
 
                 h = (a + b + sqrt(h0)) / (2 * t)
-                length_squared = h**2 - offset.y**2
+                length_squared = h**2 - offset[np_Y] ** 2
                 if length_squared <= 0:
-                    print(f"B. angle = {angle} requires h = {h} which is not possible with y offset = {offset.y}")
+                    print(f"B. angle = {angle} requires h = {h} which is not possible with y offset = {offset[np_Y]}")
                     return None
                 length = sqrt(length_squared)
 
                 if verbose:
-                    A = (end_half_dim if end_profile else start_half_dim) * V(1, 0, 0)
-                    end_profile_offset = offset.to_3d() + V(0, 0, length)
-                    D = (start_half_dim if end_profile else end_half_dim) * V(1, 0, 0)
+                    A = (end_half_dim if end_profile else start_half_dim) * (1, 0, 0)
+                    end_profile_offset = np_to_3d(offset, length)
+                    D = (start_half_dim if end_profile else end_half_dim) * (1, 0, 0)
                     B, C = -A, -D
                     C += end_profile_offset
                     D += end_profile_offset
-                    tested_angle = degrees((A - D).angle(B - C))
+                    tested_angle = degrees(np_angle(A - D, B - C))
                     print(f"A. length = {length}, requested angle = {angle}, tested angle = {tested_angle}")
             else:
-                if is_x(offset.x, 0):
+                if is_x(offset[np_X], 0):
                     angle = 90  # NOTE: for now we just hardcode the good value for that case
-                    h = start_half_dim.x / tan(radians(angle / 2))
-                    length_squared = h**2 - offset.y**2
+                    h = start_half_dim[np_X] / tan(radians(angle / 2))
+                    length_squared = h**2 - offset[np_Y] ** 2
                     if length_squared <= 0:
-                        print(f"B. angle = {angle} requires h = {h} which is not possible with y offset = {offset.y}")
+                        print(
+                            f"B. angle = {angle} requires h = {h} which is not possible with y offset = {offset[np_Y]}"
+                        )
                         return None
                     length = sqrt(length_squared)
 
                     if verbose:
-                        O = V(0, 0, 0)
-                        A = V(-start_half_dim.x, 0, length) + offset.to_3d()
-                        B = A * V(-1, 1, 1)
-                        tested_angle = degrees((A - O).angle(B - O))
+                        O = np.zeros(3)
+                        A = (-start_half_dim[np_X], 0, length) + np_to_3d(offset)
+                        B = A * (-1, 1, 1)
+                        tested_angle = degrees(np_angle(A - O, B - O))
                         print(f"B. length = {length}, requested angle = {angle}, tested angle = {tested_angle}")
                 else:
-                    h = offset.x / tan(radians(angle))
-                    length_squared = h**2 - offset.y**2
+                    assert angle is not None
+                    h = offset[np_X] / tan(radians(angle))
+                    length_squared = h**2 - offset[np_Y] ** 2
                     if length_squared <= 0:
-                        print(f"C. angle = {angle} requires h = {h} which is not possible with y offset = {offset.y}")
+                        print(
+                            f"C. angle = {angle} requires h = {h} which is not possible with y offset = {offset[np_Y]}"
+                        )
                         return None
                     length = sqrt(length_squared)
 
                     if verbose:
-                        A = V(-start_half_dim.x, 0, 0)
-                        H = A + V(0, 0, length)
-                        H.y += offset.y
+                        A = np.array((-start_half_dim[np_X], 0, 0))
+                        H = A + (0, 0, length)
+                        H[np_Y] += offset[np_Y]
                         D = H.copy()
-                        D.x += offset.x
-                        tested_angle = degrees((H - A).angle(D - A))
+                        D[np_X] += offset[np_X]
+                        tested_angle = degrees(np_angle(H - A, D - A))
                         print(f"C. length = {length}, requested angle = {angle}, tested angle = {tested_angle}")
 
             return length
@@ -1595,16 +1635,16 @@ class ShapeBuilder:
                 if length == 0:
                     return 0
 
-                h = sqrt(length**2 + offset.y**2)
+                h = sqrt(length**2 + offset[np_Y] ** 2)
                 t = -h * (a + b) / (a * b - h**2)
                 angle = degrees(atan(t))
 
             else:
-                h = sqrt(length**2 + offset.y**2)
-                if is_x(offset.x, 0):
-                    angle = degrees(2 * atan(start_half_dim.x / h))
+                h = sqrt(length**2 + offset[np_Y] ** 2)
+                if is_x(offset[np_X], 0):
+                    angle = degrees(2 * atan(start_half_dim[np_X] / h))
                 else:
-                    angle = degrees(atan(offset.x / h))
+                    angle = degrees(atan(offset[np_X] / h))
             return angle
 
     def mep_bend_shape(
