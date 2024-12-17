@@ -1295,3 +1295,8 @@ class Blender(bonsai.core.tool.Blender):
         if len(blender_binary_path.parents) > 3 and blender_binary_path.parents[2].name == "WindowsApps":
             return blender_binary_path.parents[1].name.rsplit("__", 1)[-1]
         return None
+
+    @classmethod
+    def V_(cls, *args: float) -> Vector:
+        """Just a shortcut for creating mathutils Vector."""
+        return Vector(args)

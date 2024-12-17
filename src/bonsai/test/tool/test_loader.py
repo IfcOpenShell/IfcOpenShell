@@ -25,7 +25,7 @@ import bonsai.tool as tool
 from test.bim.bootstrap import NewFile
 from bonsai.tool.loader import Loader as subject
 import numpy as np
-from ifcopenshell.util.shape_builder import ShapeBuilder, V
+from ifcopenshell.util.shape_builder import ShapeBuilder
 from mathutils import Vector
 from pathlib import Path
 

@@ -24,7 +24,7 @@ import ifcopenshell.api
 import boltspy as bolts
 from math import cos, pi
 from pathlib import Path
-from ifcopenshell.util.shape_builder import ShapeBuilder, V
+from ifcopenshell.util.shape_builder import ShapeBuilder, V, ifc_safe_vector_type
 
 
 class LibraryGenerator:
@@ -201,20 +201,20 @@ class LibraryGenerator:
             if mode == "LLBB":
                 offset = profile.Depth/2 + profiles_gap
                 if mirrored:
-                    transform.Axis1 = self.file.createIfcDirection(V(0, 1))
-                    transform.Axis2 = self.file.createIfcDirection(V(-1, 0))
-                    transform.LocalOrigin.Coordinates = V(-offset, 0)
+                    transform.Axis1 = self.file.createIfcDirection(ifc_safe_vector_type(V(0, 1)))
+                    transform.Axis2 = self.file.createIfcDirection(ifc_safe_vector_type(V(-1, 0)))
+                    transform.LocalOrigin.Coordinates = ifc_safe_vector_type(V(-offset, 0))
                 else:
-                    transform.LocalOrigin.Coordinates = V(offset, 0)
-                    transform.Axis1 = self.file.createIfcDirection(V(0, 1))
-                    transform.Axis2 = self.file.createIfcDirection(V(1, 0))
+                    transform.LocalOrigin.Coordinates = ifc_safe_vector_type(V(offset, 0))
+                    transform.Axis1 = self.file.createIfcDirection(ifc_safe_vector_type(V(0, 1)))
+                    transform.Axis2 = self.file.createIfcDirection(ifc_safe_vector_type(V(1, 0)))
             elif mode == "SLBB":
                 offset = profile.Width/2 + profiles_gap
                 if mirrored:
-                    transform.Axis1 = self.file.createIfcDirection(V(-1, 0))
-                    transform.LocalOrigin.Coordinates = V(-offset, 0)
+                    transform.Axis1 = self.file.createIfcDirection(ifc_safe_vector_type(V(-1, 0)))
+                    transform.LocalOrigin.Coordinates = ifc_safe_vector_type(V(-offset, 0))
                 else:
-                    transform.LocalOrigin.Coordinates = V(offset, 0)
+                    transform.LocalOrigin.Coordinates = ifc_safe_vector_type(V(offset, 0))
 
             return derived_profile
         

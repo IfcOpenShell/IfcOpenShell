@@ -39,13 +39,16 @@ from mathutils import Matrix, Vector
 from copy import deepcopy
 from functools import partial
 from bonsai.bim import import_ifc
+
+# TODO: This line is somehow keeping the world from falling apart with a circular import error.
 from bonsai.bim.module.geometry.helper import Helper
 from bonsai.bim.module.model.data import AuthoringData, RailingData, RoofData, WindowData, DoorData
 from bonsai.bim.module.model.opening import FilledOpeningGenerator
-from ifcopenshell.util.shape_builder import V, ShapeBuilder
+from ifcopenshell.util.shape_builder import ShapeBuilder
 from typing import Optional, Union, TypeVar, Any, Iterable, Literal
 
 T = TypeVar("T")
+V_ = tool.Blender.V_
 
 
 class Model(bonsai.core.tool.Model):
@@ -1122,7 +1125,7 @@ class Model(bonsai.core.tool.Model):
         custom_tread_run = any(run != 0 for run in custom_first_last_tread_run)
         nosing_overlap = max(nosing_length, 0)
         nosing_tread_gap = -min(nosing_length, 0)
-        nosing_overlap_offset = -V(nosing_overlap, 0)
+        nosing_overlap_offset = -V_(nosing_overlap, 0)
 
         def define_generic_stair_treads():
             vertices.append(Vector([0, 0]))
@@ -1134,16 +1137,16 @@ class Model(bonsai.core.tool.Model):
             default_tread_edges = np.array(((0, 1), (1, 2)))
             # horizontal tread line
             if nosing_overlap == 0:
-                default_tread_verts = (V(0, tread_rise), V(tread_run, tread_rise))
+                default_tread_verts = (V_(0, tread_rise), V_(tread_run, tread_rise))
             elif nosing_depth == 0:
-                default_tread_verts = (V(-nosing_overlap, tread_rise), V(tread_run, tread_rise))
+                default_tread_verts = (V_(-nosing_overlap, tread_rise), V_(tread_run, tread_rise))
             else:  # nosing_overlap > 0 nosing_depth > 0
                 # kind of L shape
                 default_tread_verts = (
-                    V(0, tread_rise - nosing_depth),
-                    V(-nosing_overlap, tread_rise - nosing_depth),
-                    V(-nosing_overlap, tread_rise),
-                    V(tread_run, tread_rise),
+                    V_(0, tread_rise - nosing_depth),
+                    V_(-nosing_overlap, tread_rise - nosing_depth),
+                    V_(-nosing_overlap, tread_rise),
+                    V_(tread_run, tread_rise),
                 )
                 add_edges = ((2, 3), (3, 4))
                 default_tread_edges = np.concatenate((default_tread_edges, add_edges))
@@ -1166,7 +1169,7 @@ class Model(bonsai.core.tool.Model):
                 return default_tread_offset, default_tread_verts
 
             # treads
-            current_offset = V(0, 0)
+            current_offset = V_(0, 0)
             for i in range(number_of_risers):
                 last_vert_i = len(vertices) - 1
                 tread_offset, tread_verts = get_tread_data(i)
@@ -1178,9 +1181,9 @@ class Model(bonsai.core.tool.Model):
         if stair_type == "WOOD/STEEL":
             builder = ShapeBuilder(None)
             # full tread rectangle
-            get_tread_verts = partial(builder.get_rectangle_coords, position=V(0, -(tread_depth - tread_rise)))
-            default_tread_verts = get_tread_verts(size=V(tread_run + nosing_overlap, tread_depth))
-            default_tread_offset = V(tread_run + nosing_tread_gap, tread_rise)
+            get_tread_verts = partial(builder.get_rectangle_coords, position=V_(0, -(tread_depth - tread_rise)))
+            default_tread_verts = get_tread_verts(size=V_(tread_run + nosing_overlap, tread_depth))
+            default_tread_offset = V_(tread_run + nosing_tread_gap, tread_rise)
 
             def get_tread_data(i):
                 if custom_tread_run:
@@ -1193,12 +1196,12 @@ class Model(bonsai.core.tool.Model):
                     if current_tread_run:
                         tread_offset = default_tread_offset.copy()
                         tread_offset.x = current_tread_run + nosing_tread_gap
-                        tread_verts = get_tread_verts(size=V(current_tread_run + nosing_overlap, tread_depth))
+                        tread_verts = get_tread_verts(size=V_(current_tread_run + nosing_overlap, tread_depth))
                         return tread_offset, tread_verts
                 return default_tread_offset, default_tread_verts
 
             # each tread is a separate shape
-            cur_offset = V(0, 0)
+            cur_offset = V_(0, 0)
             for i in range(number_of_risers):
                 tread_offset, tread_verts = get_tread_data(i)
                 cur_trade_shape = [v + cur_offset + nosing_overlap_offset for v in tread_verts]
@@ -1219,7 +1222,7 @@ class Model(bonsai.core.tool.Model):
 
             # close the shape
             last_vert_i = len(vertices)
-            vertices.append(vertices[-1] * V(1, 0))
+            vertices.append(vertices[-1] * V_(1, 0))
             edges.extend([(last_vert_i - 1, last_vert_i), (last_vert_i, 0)])
 
             # flip edges direction for ccw polygon winding order
@@ -1233,15 +1236,15 @@ class Model(bonsai.core.tool.Model):
             # from the tread diagonal line
             # we're going it define that line, sample it and abrupt it in case it meets a slab
             # graph: https://www.desmos.com/calculator/bilmnti3cp
-            tread_diagonal_dir = V(tread_run, tread_rise).normalized()
+            tread_diagonal_dir = V_(tread_run, tread_rise).normalized()
             # td_vector is clockwise orthogonal vector
-            td_vector = tread_diagonal_dir.yx * V(1, -1) * tread_depth
+            td_vector = tread_diagonal_dir.yx * V_(1, -1) * tread_depth
 
             stair_tan = tread_rise / tread_run
             # s0 is just a sampled point from the bottom line
             # we stick to the third point as the first point
             # is affected by customized tread run
-            s0 = V(custom_first_last_tread_run[0] or tread_run, tread_rise) + td_vector
+            s0 = V_(custom_first_last_tread_run[0] or tread_run, tread_rise) + td_vector
             # comes from y = stair_tan * x + b
             b = s0.y - stair_tan * s0.x
 
@@ -1250,7 +1253,7 @@ class Model(bonsai.core.tool.Model):
                     y = stair_tan * x + b
                 elif x is None:
                     x = (y - b) / stair_tan
-                return V(x, y)
+                return V_(x, y)
 
             # top nib
             last_vert = vertices[-1]
