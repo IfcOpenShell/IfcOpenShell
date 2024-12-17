@@ -5,7 +5,7 @@ class DecorationShader:
     "shader for the load decorations"
     def __init__(self):
         pass
-    def get(self, pattern: str) -> gpu.types.GPUShader:
+    def new(self, pattern: str) -> gpu.types.GPUShader:
         """pattern: string description of the desired shader
         Possible values
         PERPENDICULAR DISTRIBUTED FORCE: pattern for distributed force 

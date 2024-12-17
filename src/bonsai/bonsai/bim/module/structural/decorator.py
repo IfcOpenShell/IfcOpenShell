@@ -1,10 +1,8 @@
-from math import pi
 from mathutils import Vector
 import numpy as np
 import bpy
 import gpu
 import blf
-from bpy_extras import view3d_utils
 from bpy.types import SpaceView3D
 from gpu_extras.batch import batch_for_shader
 from typing import Iterable, Union
@@ -29,7 +27,7 @@ class LoadsDecorator:
             )
         cls.handlers.append(SpaceView3D.draw_handler_add(handler, (), "WINDOW", "POST_VIEW"))
         cls.decoration_data = ShaderInfo()
-        cls.update(context)
+        cls.update()
         cls.is_installed = True
 
     @classmethod
@@ -42,7 +40,7 @@ class LoadsDecorator:
         cls.is_installed = False
 
     @classmethod
-    def update(cls, context:bpy.types.Context) -> None:
+    def update(cls) -> None:
         cls.decoration_data.update()
         cls.text_info = cls.decoration_data.text_info
         cls.shader_info = cls.decoration_data.info
@@ -83,9 +81,8 @@ class LoadsDecorator:
         #getting depth buffer info, code adapted from:
         #https://blender.stackexchange.com/questions/177185/is-there-a-way-to-render-depth-buffer-into-a-texture-with-gpu-bgl-python-modules
         framebuffer = gpu.state.active_framebuffer_get()
-        viewport_info = gpu.state.viewport_get()
-        width = viewport_info[2]
-        height = viewport_info[3]
+        width = context.region.width 
+        height = context.region.height
         depth_buffer = framebuffer.read_depth(0, 0, width, height)
         depth_array = np.array(depth_buffer.to_list())
 
@@ -95,7 +92,7 @@ class LoadsDecorator:
         self.depth_array = n / (f - (f - n) * depth_array) * (f - n)
 
         for info in self.text_info:
-            text_position = self.location_3d_to_region_2d(info["position"],info["normal"],context)
+            text_position = self.location_3d_to_region_2d(info["position"],context)
             if text_position is not None:
                 font_id = 0
                 blf.position(font_id, text_position[0], text_position[1], text_position[2])
@@ -103,13 +100,12 @@ class LoadsDecorator:
                 blf.color(font_id, 0.9, 0.9, 0.9, 1.0)
                 blf.draw(font_id, info["text"])
 
-    def location_3d_to_region_2d(self, coord: Iterable, normal: Iterable, context: bpy.types.Context) -> Union[Vector,None]:
+    def location_3d_to_region_2d(self, coord: Iterable, context: bpy.types.Context) -> Union[Vector,None]:
         """Convert from 3D space to 2D screen space.
         Filter out the text supposed to be hidden by 3D elements, using the depth array.
         It also hides text that are distant from the camera view to avoid clutter"""
 
         coord = Vector(coord)
-        normal = Vector(normal)
         rv3d = context.region_data
         perspective = rv3d.view_perspective
         view_matrix = rv3d.view_matrix
