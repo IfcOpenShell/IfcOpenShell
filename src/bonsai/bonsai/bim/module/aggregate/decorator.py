@@ -41,7 +41,10 @@ def create_bounding_box(objs):
 
     # Iterate over the selected objects
     for obj in objs:
+        if not obj.data:
+            continue
         # Get the object's bounding box coordinates
+
         bbox_world = [obj.matrix_world @ Vector(b) for b in obj.bound_box]
         obj_min = []
         obj_min.append(min([b[0] for b in bbox_world]))
@@ -248,6 +251,8 @@ class AggregateModeDecorator:
         batch.draw(shader)
 
     def draw_aggregate_name(self, context):
+        if context.mode == "EDIT_MESH":
+            return
         region = context.region
         rv3d = region.data
         props = context.scene.BIMAggregateProperties
@@ -277,6 +282,8 @@ class AggregateModeDecorator:
         blf.draw(self.font_id, text)
 
     def draw_aggregate_empty(self, context):
+        if context.mode == "EDIT_MESH":
+            return
         props = context.scene.BIMAggregateProperties
         aggregate_obj = props.editing_aggregate
         if not aggregate_obj:
@@ -325,6 +332,8 @@ class AggregateModeDecorator:
         self.draw_batch("LINES", indices, color, edges)
 
     def draw_new_objects(self, context):
+        if not context.scene.BIMAggregateProperties.in_aggregate_mode:
+            return
         self.addon_prefs = tool.Blender.get_addon_preferences()
         self.line_shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
         self.line_shader.bind()
