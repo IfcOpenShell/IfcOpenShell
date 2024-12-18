@@ -91,6 +91,10 @@ def np_normalized(v: VectorType) -> np.ndarray:
     return np.divide(v, np.linalg.norm(v))
 
 
+def np_lerp(a: VectorType, b: VectorType, t: float) -> np.ndarray:
+    return a + np.subtract(b, a) * t
+
+
 def np_to_3d(v: VectorType, z: float = 0.0) -> np.ndarray:
     """Convert 2D/4D vector to 3D."""
     l = len(v)
@@ -123,6 +127,16 @@ def np_angle(a: VectorType, b: VectorType) -> float:
     Designed to work similar to `Vector.angle`.
     """
     return np.arccos(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)))
+
+
+def np_angle_signed(a: VectorType, b: VectorType) -> float:
+    """Get signed angle between 2D vectors in radians (clockwise is positive).
+    Designed to work similar to `Vector.angle_signed`.
+    """
+    assert len(a) == 2 and len(b) == 2, "Only 2D vectors are supported."
+    det = a[1] * b[0] - a[0] * b[1]
+    dot = np.dot(a, b)
+    return np.arctan2(det, dot)
 
 
 def np_rotation_matrix(
@@ -163,6 +177,52 @@ def np_rotation_matrix(
     if size == 4:
         return np_to_4x4(matrix)
     return matrix
+
+
+def np_normal(vectors: SequenceOfVectors) -> np.ndarray:
+    """Normal of 3D Polygon.
+
+    Designed to work similar to `mathutils.geometry.normal`.
+    """
+    assert len(vectors) == 3, "3 vectors required"
+    # TODO: can be optimized?
+    verts_np = np.array(vectors[:3])
+    v0, v1, v2 = verts_np[:3]
+    edge1 = v1 - v0
+    edge2 = v2 - v0
+    normal = np.cross(edge1, edge2)
+    norm = np.linalg.norm(normal)
+    return normal / norm
+
+
+def np_intersect_line_line(
+    v1: VectorType, v2: VectorType, v3: VectorType, v4: VectorType
+) -> tuple[np.ndarray, np.ndarray]:
+    """Get 2 closest points on each line.
+    First line - (v1, v2). Second line - (v3, v4).
+
+    Designed to work similar to `mathutils.geometry.intersect_line_line`.
+    """
+    # TODO: could be optimized?
+    d1 = np.subtract(v2, v1)
+    d2 = np.subtract(v4, v3)
+
+    # Cross product of the directions
+    cross_d1_d2 = np.cross(d1, d2)
+    cross_d1_d2_norm: float = np.linalg.norm(cross_d1_d2)
+
+    # Check if the lines are parallel.
+    if is_x(cross_d1_d2_norm, 0):
+        raise ValueError("Lines are parallel and do not intersect uniquely.")
+
+    r = np.subtract(v3, v1)
+    t = np.dot(np.cross(r, d2), cross_d1_d2) / (cross_d1_d2_norm**2)
+    u = np.dot(np.cross(r, d1), cross_d1_d2) / (cross_d1_d2_norm**2)
+
+    # Closest points on each line
+    point_on_line1 = v1 + t * d1
+    point_on_line2 = v3 + u * d2
+    return point_on_line1, point_on_line2
 
 
 # Note: using ShapeBuilder try not to reuse IFC elements in the process
