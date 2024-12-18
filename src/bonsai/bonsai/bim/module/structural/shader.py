@@ -19,18 +19,24 @@
 import gpu
 from typing import Literal
 
+
 class DecorationShader:
     "shader for the load decorations"
 
     def __init__(self):
         pass
 
-    def new(self, pattern: Literal["PERPENDICULAR DISTRIBUTED FORCE",
+    def new(
+        self,
+        pattern: Literal[
+            "PERPENDICULAR DISTRIBUTED FORCE",
             "PARALLEL DISTRIBUTED FORCE",
             "DISTRIBUTED MOMENT",
             "SINGLE FORCE",
             "SINGLE MOMENT",
-            "PLANAR LOAD",]) -> gpu.types.GPUShader:
+            "PLANAR LOAD",
+        ],
+    ) -> gpu.types.GPUShader:
         """pattern: string description of the desired shader
         Possible values
         PERPENDICULAR DISTRIBUTED FORCE: pattern for distributed force
@@ -70,9 +76,9 @@ class DecorationShader:
             shader = self.get_planar_shader()
             return shader
 
-    def get_linear_shader(self, pattern: Literal["PERPENDICULAR DISTRIBUTED FORCE",
-            "PARALLEL DISTRIBUTED FORCE",
-            "DISTRIBUTED MOMENT"]) -> gpu.types.GPUShader:
+    def get_linear_shader(
+        self, pattern: Literal["PERPENDICULAR DISTRIBUTED FORCE", "PARALLEL DISTRIBUTED FORCE", "DISTRIBUTED MOMENT"]
+    ) -> gpu.types.GPUShader:
         """pattern: type of pattern
         PERPENDICULAR DISTRIBUTED FORCE
         PARALLEL DISTRIBUTED FORCE,
@@ -194,7 +200,7 @@ class DecorationShader:
         del shader_info
         return shader
 
-    def get_point_shader(self, pattern: Literal["SINGLE FORCE","SINGLE MOMENT"]) -> gpu.types.GPUShader:
+    def get_point_shader(self, pattern: Literal["SINGLE FORCE", "SINGLE MOMENT"]) -> gpu.types.GPUShader:
         """param: pattern: type of pattern
         SINGLE FORCE,
         SINGLE MOMENT"""
