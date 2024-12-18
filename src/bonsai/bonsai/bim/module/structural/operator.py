@@ -36,7 +36,7 @@ class ShowLoads(bpy.types.Operator):
 
     def modal(self, context, event):
         if event.type == 'F5':
-            LoadsDecorator.update(context)
+            LoadsDecorator.update()
             for area in context.screen.areas:
                 if area.type == 'VIEW_3D':
                     area.tag_redraw()
