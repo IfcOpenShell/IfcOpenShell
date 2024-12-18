@@ -270,7 +270,7 @@ class PolylineOperator:
                 tool.Blender.update_viewport()
 
     def handle_inserting_polyline(self, context, event):
-        if event.value == "RELEASE" and event.type == "LEFTMOUSE":
+        if not self.tool_state.is_input_on and event.value == "RELEASE" and event.type == "LEFTMOUSE":
             result = tool.Polyline.insert_polyline_point(self.input_ui, self.tool_state)
             if result:
                 self.report({"WARNING"}, result)
