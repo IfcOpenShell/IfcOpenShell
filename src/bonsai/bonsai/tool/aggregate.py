@@ -194,9 +194,13 @@ class Aggregate(bonsai.core.tool.Aggregate):
             if not element:
                 continue
 
-        objs = [o.obj for o in props.editing_objects]
+        parts = ifcopenshell.util.element.get_parts(tool.Ifc.get_entity(props.editing_aggregate))
+        objs = [tool.Ifc.get_object(part) for part in parts]
         for obj in objs:
             tool.Aggregate.enable_constraints(obj)
+
+        if context.space_data.local_view:
+            bpy.ops.view3d.localview()
 
         props.in_aggregate_mode = False
         props.not_editing_objects.clear()
