@@ -62,6 +62,13 @@ class Patcher:
         username: str = "root",
         password: str = "pass",
         database: str = "test",
+        full_schema: bool = True,
+        is_strict: bool = False,
+        should_expand: bool = False,
+        should_get_inverses: bool = True,
+        should_get_psets: bool = True,
+        should_get_geometry: bool = True,
+        should_skip_geometry_data: bool = False,
     ):
         """Convert an IFC-SPF model to SQLite or MySQL.
 
@@ -107,20 +114,20 @@ class Patcher:
         self.password = password
         self.database = database
 
-    def patch(self) -> None:
-        self.full_schema = True  # Set true for ifcopenshell.sqlite
-        self.is_strict = False
-        self.should_expand = False  # Set false for ifcopenshell.sqlite
-        self.should_get_inverses = True  # Set true for ifcopenshell.sqlite
-        self.should_get_psets = True
-        self.should_get_geometry = True  # Set true for ifcopenshell.sqlite
-        self.should_skip_geometry_data = False  # Set false for ifcopenshell.sqlite
+        # Configuration Values
+        self.full_schema = full_schema
+        self.is_strict = is_strict
+        self.should_expand = should_expand
+        self.should_get_inverses = should_get_inverses
+        self.should_get_psets = should_get_psets
+        self.should_get_geometry = should_get_geometry
+        self.should_skip_geometry_data = should_skip_geometry_data
 
+    def patch(self) -> None:
         self.schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(self.file.schema)
 
         if self.sql_type == "sqlite":
-            tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".ifcsqlite")
-            db_file = tmp.name
+            db_file = self.database  # Use the given datapath
             self.db = sqlite3.connect(db_file)
             self.c = self.db.cursor()
             self.file_patched = db_file
