@@ -444,6 +444,7 @@ class BIM_UL_structural_activities(UIList):
             row.label(text=item.name)
             row.label(text=item.applied_load_class)
 
+
 class BIM_PT_show_structural_activities(Panel):
     bl_label = "Show Loads"
     bl_idname = "BIM_PT_show_structural_activities"
@@ -463,16 +464,16 @@ class BIM_PT_show_structural_activities(Panel):
 
         row = self.layout.row(align=True)
         row.operator(
-                "bim.show_loads",
-                text="Show loads" ,
-                icon="HIDE_OFF",
-            )
+            "bim.show_loads",
+            text="Show loads",
+            icon="HIDE_OFF",
+        )
         row = self.layout.row(align=True)
-        row.prop(self.props,"reference_frame")
+        row.prop(self.props, "reference_frame")
         row = self.layout.row(align=True)
-        row.prop(self.props,"activity_type")
+        row.prop(self.props, "activity_type")
         row = self.layout.row(align=True)
-        row.prop(self.props,"load_group_to_show")
+        row.prop(self.props, "load_group_to_show")
 
 
 class BIM_PT_structural_loads(Panel):
