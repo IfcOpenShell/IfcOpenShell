@@ -20,13 +20,23 @@ import pytest
 import test.bootstrap
 import ifcopenshell.api
 import numpy as np
-from ifcopenshell.util.shape_builder import ShapeBuilder, is_x, np_rotation_matrix, np_to_3d, np_angle, V
+from ifcopenshell.util.shape_builder import (
+    ShapeBuilder,
+    is_x,
+    np_rotation_matrix,
+    np_to_3d,
+    np_angle,
+    V,
+    np_angle_signed,
+    np_normal,
+    np_intersect_line_line,
+)
 from math import degrees, radians
 from typing import Any, Union
 
 
-class TestNumpyRotationMatrix(test.bootstrap.IFC4):
-    def test_run(self):
+class TestMathutilsCompatibleMethods(test.bootstrap.IFC4):
+    def test_np_rotation_matrix(self):
         from mathutils import Matrix, Vector
 
         # 2D.
@@ -46,6 +56,51 @@ class TestNumpyRotationMatrix(test.bootstrap.IFC4):
         assert np.allclose(Matrix.Rotation(radians(45), 4, "Z"), np_rotation_matrix(radians(45), 4, "Z"))
         rotation_vector_args = radians(45), 4, Vector((1, 1, 1)).normalized()
         assert np.allclose(Matrix.Rotation(*rotation_vector_args), np_rotation_matrix(*rotation_vector_args))
+
+    def test_np_angle(self):
+        from mathutils import Vector
+
+        v1, v2 = (1, 0, 0), (0, 1, 0)
+        angle = np_angle(v1, v2)
+        assert is_x(angle, Vector(v1).angle(Vector(v2)))
+        assert is_x(angle, radians(90))
+
+        v1, v2 = v1[:2], v2[:2]
+        angle = np_angle_signed(v1, v2)
+        assert is_x(angle, Vector(v1).angle_signed(Vector(v2)))
+        assert is_x(angle, -radians(90))
+
+        v1, v2 = (0, 1, 0), (1, 0, 0)
+        angle = np_angle(v1, v2)
+        assert is_x(angle, Vector(v1).angle(Vector(v2)))
+        assert is_x(angle, radians(90))
+
+        v1, v2 = v1[:2], v2[:2]
+        angle = np_angle_signed(v1, v2)
+        assert is_x(angle, Vector(v1).angle_signed(Vector(v2)))
+        assert is_x(angle, radians(90))
+
+    def test_np_normal(self):
+        import mathutils.geometry
+
+        vectors = (0, 0, 0), (1, 0, 0), (0, 1, 0)
+        n = mathutils.geometry.normal(vectors)
+        assert np.allclose(n, np_normal(vectors))
+        assert np.allclose(n, (0, 0, 1))
+
+        vectors = (0, 0, 0), (0, 1, 0), (1, 0, 0)
+        n = mathutils.geometry.normal(vectors)
+        assert np.allclose(n, np_normal(vectors))
+        assert np.allclose(n, (0, 0, -1))
+
+    def test_np_intersect_line_line(self):
+        import mathutils.geometry
+
+        p1, p2 = [0, 0, 0], [1, 1, 1]
+        q1, q2 = [0, 1, 0], [1, 0, 1]
+        expected = mathutils.geometry.intersect_line_line(tuple(p1), tuple(p2), tuple(q1), tuple(q2))
+        result = np_intersect_line_line(p1, p2, q1, q2)
+        assert np.allclose(expected, result)
 
 
 class TestRectangle(test.bootstrap.IFC4):
