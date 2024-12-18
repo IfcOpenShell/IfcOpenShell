@@ -364,7 +364,7 @@ class BIM_PT_object_material(Panel):
 
         for set_item in ObjectMaterialData.data["set_items"]:
             material_name = set_item["material"]
-            material_id = set_item['material_id']
+            material_id = set_item["material_id"]
             if ObjectMaterialData.data["material_class"] == "IfcMaterialList":
                 row = box.row()
                 row.label(text="IfcMaterial", icon="LAYER_ACTIVE")
@@ -379,8 +379,8 @@ class BIM_PT_object_material(Panel):
         self.layerset_bounds(box, active_object, location="Bottom_Interior")
 
     def layerset_bounds(self, box, obj, location="Top_Exterior"):
-        set_usage = ObjectMaterialData.data.get('set_usage', {})
-        layer_set_direction = set_usage.get('layer_set_direction')
+        set_usage = ObjectMaterialData.data.get("set_usage", {})
+        layer_set_direction = set_usage.get("layer_set_direction")
         if layer_set_direction:
             if location == "Top_Exterior":
                 if layer_set_direction == "AXIS3":

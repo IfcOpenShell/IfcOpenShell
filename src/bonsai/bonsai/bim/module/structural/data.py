@@ -32,6 +32,7 @@ def refresh():
     BoundaryConditionsData.is_loaded = False
     LoadGroupDecorationData.is_loaded = False
 
+
 class LoadGroupDecorationData:
     data = {}
     is_loaded = False
@@ -40,15 +41,16 @@ class LoadGroupDecorationData:
     def load(cls):
         cls.data = {"load groups to show": cls.load_groups_to_show()}
         cls.is_loaded = True
-    
+
     @classmethod
     def load_groups_to_show(cls):
         ret = []
-        abrv = {"LOAD_CASE": "L.Case: ",
-                "LOAD_COMBINATION": "L.Comb: ",
-                "LOAD_GROUP": "L.Gr: ",
-                "USERDEFINED": "U.Def: ",
-                "NOTDEFINED": "N.Def: "
+        abrv = {
+            "LOAD_CASE": "L.Case: ",
+            "LOAD_COMBINATION": "L.Comb: ",
+            "LOAD_GROUP": "L.Gr: ",
+            "USERDEFINED": "U.Def: ",
+            "NOTDEFINED": "N.Def: ",
         }
         models = tool.Ifc.get().by_type("IfcStructuralAnalysisModel")
         m = models[0]
@@ -56,21 +58,21 @@ class LoadGroupDecorationData:
         if props.activity_type == "Action":
             groups = m.LoadedBy or []
             for g in groups:
-                ret.append((str(g.id()),".   "+abrv[g.PredefinedType]+"   "+g.Name,""))
+                ret.append((str(g.id()), ".   " + abrv[g.PredefinedType] + "   " + g.Name, ""))
                 related_objects = [rel.RelatedObjects for rel in g.IsGroupedBy]
                 for item in related_objects:
                     for subgoup in [sg for sg in item if sg.is_a("IfcStructuralLoadGroup")]:
-                        ret.append((str(subgoup.id()),".       "+abrv[subgoup.PredefinedType]+subgoup.Name,""))
+                        ret.append((str(subgoup.id()), ".       " + abrv[subgoup.PredefinedType] + subgoup.Name, ""))
 
         if props.activity_type == "External Reaction":
             groups = m.HasResults or []
             for g in groups:
                 result_name = g.ResultForLoadGroup.Name or ""
                 group_name = g.Name or ""
-                ret.append((str(g.id()), group_name + " " + result_name,""))
+                ret.append((str(g.id()), group_name + " " + result_name, ""))
 
         if len(ret) == 0:
-            ret.append(("","",""))
+            ret.append(("", "", ""))
         return ret
 
 
