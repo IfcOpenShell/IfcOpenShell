@@ -123,25 +123,27 @@ class Aggregate(bonsai.core.tool.Aggregate):
             bpy.ops.constraint.apply(constraint=constraint.name)
 
     @classmethod
-    def disable_constraints(cls, part: bpy.types.Object):
+    def disable_constraints(cls, objs: list[bpy.types.Object]):
         # Disable constraints while keeping parts in the same location
-        matrix = part.matrix_world.copy()
-        constraint = next((c for c in part.constraints if c.type == "CHILD_OF"), None)
-        if constraint:
-            constraint.enabled = False
-        part.matrix_world = matrix
+        for obj in objs:
+            matrix = obj.matrix_world.copy()
+            constraint = next((c for c in obj.constraints if c.type == "CHILD_OF"), None)
+            if constraint:
+                constraint.enabled = False
+            obj.matrix_world = matrix
 
     @classmethod
-    def enable_constraints(cls, part: bpy.types.Object):
+    def enable_constraints(cls, objs: list[bpy.types.Object]):
         # Enable constraints while keeping parts in the same location
-        constraint = next((c for c in part.constraints if c.type == "CHILD_OF"), None)
-        if constraint:
-            constraint.enabled = True
+        for obj in objs:
+            constraint = next((c for c in obj.constraints if c.type == "CHILD_OF"), None)
+            if constraint:
+                constraint.enabled = True
         bpy.context.view_layer.update()
-        diff = part.matrix_world.translation - part.location
-        part.location -= diff
+        for obj in objs:
+            diff = obj.matrix_world.translation - obj.location
+            obj.location -= diff
 
-                    
     @classmethod
     def get_aggregate_mode(cls):
         return bpy.context.scene.BIMAggregateProperties.in_aggregate_mode
@@ -178,7 +180,8 @@ class Aggregate(bonsai.core.tool.Aggregate):
                 else:
                     editing_obj = props.editing_objects.add()
                     editing_obj.obj = obj.original
-                    tool.Aggregate.disable_constraints(obj.original)
+
+            tool.Aggregate.disable_constraints([o.obj for o in props.editing_objects])
 
         props.in_aggregate_mode = True
         return {"FINISHED"}
@@ -196,9 +199,7 @@ class Aggregate(bonsai.core.tool.Aggregate):
 
         parts = ifcopenshell.util.element.get_parts(tool.Ifc.get_entity(props.editing_aggregate))
         objs = [tool.Ifc.get_object(part) for part in parts]
-        for obj in objs:
-            tool.Aggregate.enable_constraints(obj)
-
+        tool.Aggregate.enable_constraints(objs)
         if context.space_data.local_view:
             bpy.ops.view3d.localview()
 
