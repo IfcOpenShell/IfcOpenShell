@@ -39,7 +39,6 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSegmentedReferenceCurve* ins
         if (auto fi = taxonomy::dcast<taxonomy::function_item>(crv); crv && fi /*crv->kind() == taxonomy::FUNCTION_ITEM*/) {
             // crv->kind() is polymorphic and the kind of the actual function_item is returned. PWF can have spans of any FUNCTION_ITEM
             // for this reason, a dynamic cast is used and if crv is a function_item it is added to the span
-            //spans.push_back(taxonomy::cast<taxonomy::function_item>(crv));
             spans.push_back(fi);
         } else {
 				Logger::Error("Unsupported");
@@ -67,59 +66,6 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSegmentedReferenceCurve* ins
        cant_function = nullptr;
    }
    return cant_function;
- //   // Determine the valid domain of the PWF... the valid domain is where 
- //   // horizontal, gradient and cant curves are defined
- //   auto gradient = taxonomy::cast<taxonomy::piecewise_function>(map(inst->BaseCurve()));
- //   auto horizontal = taxonomy::cast<taxonomy::piecewise_function>(map(inst->BaseCurve()->as<IfcSchema::IfcGradientCurve>()->BaseCurve()));
- //   double start = std::max(std::max(cant->start(), gradient->start()), horizontal->start());
- //   double end = std::min(std::min(cant->end(), gradient->end()), horizontal->end());
- //   double length = end - start;
-
- //   if (!(0 < length)) {
- //       Logger::Error("IfcSegmentedReferenceCurve does not have a common domain with BaseCurve");
- //   }
-
- //   // define the callback function for the segmented reference curve
- //   function_item_evaluator gradient_evaluator(gradient, &settings_), cant_evaluator(cant, &settings_);
- //   auto composition = [gradient_evaluator, cant_evaluator, start = cant->start()](double u) -> Eigen::Matrix4d {
- //     // u is distance from start of cant curve
- //     // add cant->start() to u to get the distance from start of gradient curve
- //     auto g = gradient_evaluator.evaluate(u + start);
- //     auto c = cant_evaluator.evaluate(u);
-
- //     // Need to multiply g and c so the axis vectors
- //     // from cant have the correct rotation applied so
- //     // they are relative to the gradient curve coordinate system
- //     //
- //     // However, the coordinate points don't need to have the rotations
- //     // of g applied. Save off the x,y,z and cant values
- //     auto x = g(0, 3);
- //     auto y = g(1, 3);
- //     auto z = g(2, 3);
- //     auto s = c(1, 3); // superelevation
-
- //     // change column 3 to (0,0,0,1)
- //     Eigen::Vector4d p(0, 0, 0, 1);
- //     g.col(3) = p;
- //     c.col(3) = p;
-
- //     // multiply g and c to get the axes in the correct orientation
- //     Eigen::Matrix4d m = g * c;
-
- //     // reinstate the values for x and y.
- //     // z is the gradient curve z value plus the superelevation
- //     // that comes from the cant.
- //     m(0, 3) = x;
- //     m(1, 3) = y;
- //     m(2, 3) = z + s;
-
- //     return m;
-	//};
-
-	//taxonomy::piecewise_function::spans_t spans;
- //  spans.emplace_back(length, composition);
- //  auto pwf = taxonomy::make<taxonomy::piecewise_function>(start, spans, inst);
- //  return pwf;
 }
 
 #endif

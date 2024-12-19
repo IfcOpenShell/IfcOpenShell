@@ -39,7 +39,6 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcGradientCurve* inst) {
          if (auto fi = taxonomy::dcast<taxonomy::function_item>(crv); crv && fi /*crv->kind() == taxonomy::FUNCTION_ITEM*/) {
             // crv->kind() is polymorphic and the kind of the actual function_item is returned. PWF can have spans of any FUNCTION_ITEM
             // for this reason, a dynamic cast is used and if crv is a function_item it is added to the span
-            //spans.push_back(taxonomy::cast<taxonomy::function_item>(crv));
             spans.push_back(fi);
         } else {
 				Logger::Error("Unsupported");
@@ -74,27 +73,6 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcGradientCurve* inst) {
    }
 
    return gradient_function;
-	//// define the callback function for the gradient curve
- //  function_item_evaluator horizontal_evaluator(horizontal, &settings_), vertical_evaluator(vertical, &settings_);
- //  auto composition = [horizontal_evaluator, vertical_evaluator,start=vertical->start()](double u) -> Eigen::Matrix4d {
-	//	// u is distance from start of gradient curve (vertical)
-	//	// add vertical->start() to u to get distance from start of horizontal
- //     auto xy = horizontal_evaluator.evaluate(u + start);
- //     auto uz = vertical_evaluator.evaluate(u);
-
- //     uz.col(3)(0) = 0.0; // x is distance along. zero it out so it doesn't add to the x from horizontal
- //     uz.col(1).swap(uz.col(2)); // uz is 2D in distance along - y plane, swap y and z so elevations become z
- //     uz.row(1).swap(uz.row(2));
-
-	//	Eigen::Matrix4d m;
- //     m = xy * uz; // combine horizontal and vertical
- //     return m;
-	//};
-
-	//taxonomy::piecewise_function::spans_t spans;
- //  spans.emplace_back(length, composition);
- //  auto pwf = taxonomy::make<taxonomy::piecewise_function>(start, spans, inst);
- //  return pwf;
 }
 
 #endif

@@ -96,6 +96,52 @@ typedef boost::mpl::vector<
 #endif
 > curve_seg_types;
 
+// this is the piecewise curve segment function for horizontal and vertical
+struct curve_segment_function {
+    curve_segment_function(const Eigen::Matrix4d& curve_segment_placement, const Eigen::Matrix4d& remove_parent_curve_rotation, const Eigen::Matrix4d& remove_parent_curve_translation, std::function<Eigen::Matrix4d(double)> parent_curve_fn) : 
+       curve_segment_placement_(curve_segment_placement),
+       remove_parent_curve_rotation_(remove_parent_curve_rotation),
+       remove_parent_curve_translation_(remove_parent_curve_translation),
+       parent_curve_fn_(parent_curve_fn) {
+    }
+
+    Eigen::Matrix4d operator()(double u) const {
+        Eigen::Matrix4d parent_curve_point = parent_curve_fn_(u);
+        Eigen::Matrix4d curve_segment_point = curve_segment_placement_ * remove_parent_curve_rotation_ * remove_parent_curve_translation_ * parent_curve_point;
+        return curve_segment_point;
+    }
+
+  private:
+    Eigen::Matrix4d curve_segment_placement_;
+    Eigen::Matrix4d remove_parent_curve_rotation_;
+    Eigen::Matrix4d remove_parent_curve_translation_;
+    std::function<Eigen::Matrix4d(double)> parent_curve_fn_;
+};
+
+// this is the piecewise curve segment function for cant
+struct cant_curve_segment_function {
+    cant_curve_segment_function(const Eigen::Matrix4d& curve_segment_placement, const Eigen::Matrix4d& parent_curve_start_point, std::function<Eigen::Matrix4d(double)> parent_curve_fn) : curve_segment_placement_(curve_segment_placement),
+                                                                                                                                                                              parent_curve_start_point_(parent_curve_start_point),
+                                                                                                                                                                              parent_curve_fn_(parent_curve_fn) {
+    }
+
+    Eigen::Matrix4d operator()(double u) const {
+        // The parent curve function returns the cant rotation and superelevation for the parent curve.
+        // Subtract the parent_curve_start_point to get the incremental cant rotation and superelevation
+        // Add the incremental cant rotation and superelevation to curve_segment_placement to get the curve_segment_point
+        Eigen::Matrix4d parent_curve_point = parent_curve_fn_(u);
+        Eigen::Matrix4d cant_increment = parent_curve_point - parent_curve_start_point_;
+        Eigen::Matrix4d curve_segment_point = curve_segment_placement_ + cant_increment;
+        return curve_segment_point;
+    }
+
+  private:
+    Eigen::Matrix4d curve_segment_placement_;
+    Eigen::Matrix4d parent_curve_start_point_;
+    std::function<Eigen::Matrix4d(double)> parent_curve_fn_;
+};
+
+// evaluates a IfcCurveSegment to set up the placement and parent curve function
 class curve_segment_evaluator {
   private:
     mapping* mapping_ = nullptr;
@@ -923,18 +969,12 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCurveSegment* inst) {
 
     const auto& curve_segment_placement = cse.segment_placement();
 
-    std::function<Eigen::Matrix4d(double u)> fn;
+    auto length = fabs(cse.length());
+
     if (segment_type == ST_CANT)
     {
-        fn = [curve_segment_placement, parent_curve_start_point, parent_curve_fn](double u) -> Eigen::Matrix4d {
-            // The parent curve function returns the cant rotation and superelevation for the parent curve.
-            // Subtract the parent_curve_start_point to get the incremental cant rotation and superelevation
-            // Add the incremental cant rotation and superelevation to curve_segment_placement to get the curve_segment_point
-            Eigen::Matrix4d parent_curve_point = (*parent_curve_fn)(u);
-            Eigen::Matrix4d cant_increment = parent_curve_point - (*parent_curve_start_point);
-            Eigen::Matrix4d curve_segment_point = (*curve_segment_placement) + cant_increment;
-            return curve_segment_point;
-        };
+        auto fn = cant_curve_segment_function(*curve_segment_placement, *parent_curve_start_point, *parent_curve_fn);
+        return taxonomy::make<taxonomy::functor_item>(length, fn);
     } else {
         // The parent curve function returns the 4x4 matrix for the parent curve.
         // Subtract the parent curve start point (remove the translation and rotation)
@@ -963,20 +1003,9 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCurveSegment* inst) {
         remove_parent_curve_rotation(1, 0) *= -1.0;
         remove_parent_curve_rotation.col(3) = Eigen::Vector4d(0, 0, 0, 1); // remove the parent curve placement point
 
-        fn = [curve_segment_placement, remove_parent_curve_rotation, remove_parent_curve_translation, parent_curve_fn](double u) -> Eigen::Matrix4d {
-            Eigen::Matrix4d parent_curve_point = (*parent_curve_fn)(u);
-            Eigen::Matrix4d curve_segment_point = (*curve_segment_placement) * remove_parent_curve_rotation * remove_parent_curve_translation * parent_curve_point;
-            return curve_segment_point;
-        };
+        auto fn = curve_segment_function(*curve_segment_placement, remove_parent_curve_rotation, remove_parent_curve_translation, *parent_curve_fn);
+        return taxonomy::make<taxonomy::functor_item>(length, fn);
     }
-
-    auto length = cse.length();
-    return taxonomy::make<taxonomy::functor_item>(fabs(length),fn);
-
-    //taxonomy::piecewise_function::spans_t spans;
-    //spans.emplace_back(fabs(length), taxonomy::function_item(fn));
-    //auto pwf = taxonomy::make<taxonomy::piecewise_function>(0.0, spans,inst);
-    //return pwf;
 }
 
 #endif

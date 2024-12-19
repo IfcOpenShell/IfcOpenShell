@@ -77,6 +77,11 @@ namespace ifcopenshell {
 		virtual bool convert_impl(const taxonomy::loft::ptr, IfcGeom::ConversionResults&) { throw not_implemented_error(); }
 		virtual bool convert_impl(const taxonomy::collection::ptr, IfcGeom::ConversionResults&);
 		virtual bool convert_impl(const taxonomy::function_item::ptr item, IfcGeom::ConversionResults& cs);
+      virtual bool convert_impl(const taxonomy::functor_item::ptr item, IfcGeom::ConversionResults& cs);
+      virtual bool convert_impl(const taxonomy::piecewise_function::ptr item, IfcGeom::ConversionResults& cs);
+      virtual bool convert_impl(const taxonomy::gradient_function::ptr item, IfcGeom::ConversionResults& cs);
+      virtual bool convert_impl(const taxonomy::cant_function::ptr item, IfcGeom::ConversionResults& cs);
+      virtual bool convert_impl(const taxonomy::offset_function::ptr item, IfcGeom::ConversionResults& cs);
 
 		/*
 		virtual void set_offset(const std::array<double, 3> &p_offset);

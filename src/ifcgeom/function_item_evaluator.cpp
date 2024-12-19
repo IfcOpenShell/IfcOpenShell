@@ -38,7 +38,7 @@ struct piecewise_fn_evaluator : public fn_evaluator {
         }
 
         u -= current_span_start_; // make u relative to start of span
-        function_item_evaluator evaluator(current_span_fn_, settings_);
+        function_item_evaluator evaluator(settings_, current_span_fn_);
         return evaluator.evaluate(u);
     }
 
@@ -73,8 +73,8 @@ struct gradient_fn_evaluator : public fn_evaluator {
     gradient_fn_evaluator(taxonomy::gradient_function::const_ptr fn, const ifcopenshell::geometry::Settings& settings) : 
        fn_evaluator(settings),
        fn_(fn), 
-       horizontal_evaluator_(fn->get_horizontal(),settings),
-       vertical_evaluator_(fn->get_vertical(), settings)
+       horizontal_evaluator_(settings, fn->get_horizontal()),
+       vertical_evaluator_(settings, fn->get_vertical())
     {
         start_ = fn_->get_vertical()->start();
     }
@@ -106,8 +106,8 @@ struct gradient_fn_evaluator : public fn_evaluator {
 struct cant_fn_evaluator : public fn_evaluator {
    cant_fn_evaluator(taxonomy::cant_function::const_ptr fn, const ifcopenshell::geometry::Settings& settings) : fn_evaluator(settings),
       fn_(fn),
-      gradient_evaluator_(fn->get_gradient(), settings),
-      cant_evaluator_(fn->get_cant(), settings) {
+      gradient_evaluator_(settings, fn->get_gradient()),
+      cant_evaluator_(settings, fn->get_cant()) {
         start_ = fn_->get_cant()->start();
     }
 
@@ -158,8 +158,8 @@ struct cant_fn_evaluator : public fn_evaluator {
 struct offset_fn_evaluator : public fn_evaluator {
     offset_fn_evaluator(taxonomy::offset_function::const_ptr fn, const ifcopenshell::geometry::Settings& settings) : fn_evaluator(settings),
                                                                                                                        fn_(fn),
-                                                                                                                       basis_evaluator_(fn->get_basis(), settings),
-                                                                                                                       offset_evaluator_(fn->get_offset(), settings) {
+                                                                                                                       basis_evaluator_(settings, fn->get_basis()),
+                                                                                                                       offset_evaluator_(settings, fn->get_offset()) {
     }
 
     fn_evaluator* clone() const override { return new offset_fn_evaluator(*this); }
@@ -180,7 +180,7 @@ struct offset_fn_evaluator : public fn_evaluator {
 
 
 
-function_item_evaluator::function_item_evaluator(taxonomy::function_item::const_ptr fn, const ifcopenshell::geometry::Settings& settings) {
+function_item_evaluator::function_item_evaluator(const ifcopenshell::geometry::Settings& settings,taxonomy::function_item::const_ptr fn) {
     auto kind = fn->kind();
     if (kind == taxonomy::FUNCTOR_ITEM) {
         fn_evaluator_ = new functor_fn_evaluator(std::dynamic_pointer_cast<const taxonomy::functor_item>(fn),settings);

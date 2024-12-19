@@ -239,8 +239,43 @@ bool ifcopenshell::geometry::kernels::AbstractKernel::convert_impl(const taxonom
 }
 
 bool ifcopenshell::geometry::kernels::AbstractKernel::convert_impl(const taxonomy::function_item::ptr item, IfcGeom::ConversionResults& cs) {
-   function_item_evaluator evaluator(item,settings());
+   function_item_evaluator evaluator(settings(),item);
    auto expl = evaluator.evaluate();
 	expl->instance = item->instance;
 	return convert(expl, cs);
+}
+
+bool ifcopenshell::geometry::kernels::AbstractKernel::convert_impl(const taxonomy::functor_item::ptr item, IfcGeom::ConversionResults& cs) {
+    function_item_evaluator evaluator(settings(), item);
+    auto expl = evaluator.evaluate();
+    expl->instance = item->instance;
+    return convert(expl, cs);
+}
+
+bool ifcopenshell::geometry::kernels::AbstractKernel::convert_impl(const taxonomy::piecewise_function::ptr item, IfcGeom::ConversionResults& cs) {
+    function_item_evaluator evaluator(settings(), item);
+    auto expl = evaluator.evaluate();
+    expl->instance = item->instance;
+    return convert(expl, cs);
+}
+
+bool ifcopenshell::geometry::kernels::AbstractKernel::convert_impl(const taxonomy::gradient_function::ptr item, IfcGeom::ConversionResults& cs) {
+    function_item_evaluator evaluator(settings(), item);
+    auto expl = evaluator.evaluate();
+    expl->instance = item->instance;
+    return convert(expl, cs);
+}
+
+bool ifcopenshell::geometry::kernels::AbstractKernel::convert_impl(const taxonomy::cant_function::ptr item, IfcGeom::ConversionResults& cs) {
+    function_item_evaluator evaluator(settings(), item);
+    auto expl = evaluator.evaluate();
+    expl->instance = item->instance;
+    return convert(expl, cs);
+}
+
+bool ifcopenshell::geometry::kernels::AbstractKernel::convert_impl(const taxonomy::offset_function::ptr item, IfcGeom::ConversionResults& cs) {
+    function_item_evaluator evaluator(settings(), item);
+    auto expl = evaluator.evaluate();
+    expl->instance = item->instance;
+    return convert(expl, cs);
 }

@@ -36,7 +36,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcPointByDistanceExpression* i
        curve = taxonomy::dcast<taxonomy::piecewise_function>(basis_curve);
    }
 
-   function_item_evaluator evaluator(curve,settings_);
+   function_item_evaluator evaluator(settings_,curve);
    auto m = evaluator.evaluate(u);
 
    auto o = m.col(3).head<3>();

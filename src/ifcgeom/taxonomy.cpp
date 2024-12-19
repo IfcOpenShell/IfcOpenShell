@@ -163,9 +163,29 @@ namespace {
 		throw std::runtime_error("not implemented");
 	}
 
+    bool compare(const function_item&, const function_item&) {
+        throw std::runtime_error("not implemented");
+    }
+
+    bool compare(const functor_item&, const functor_item&) {
+        throw std::runtime_error("not implemented");
+    }
+
 	bool compare(const piecewise_function&, const piecewise_function&) {
 		throw std::runtime_error("not implemented");
 	}
+
+   bool compare(const gradient_function&, const gradient_function&) {
+        throw std::runtime_error("not implemented");
+   }
+
+   bool compare(const cant_function&, const cant_function&) {
+       throw std::runtime_error("not implemented");
+   }
+
+   bool compare(const offset_function&, const offset_function&) {
+       throw std::runtime_error("not implemented");
+   }
 
 	bool compare(const style& a, const style& b) {
 		const int order[5] = {

@@ -77,9 +77,8 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* inst) {
 			} else if (auto fi = taxonomy::dcast<taxonomy::function_item>(crv); crv && fi /*crv->kind() == taxonomy::FUNCTION_ITEM*/) {
 				// crv->kind() is polymorphic and the kind of the actual function_item is returned. PWF can have spans of any FUNCTION_ITEM
 				// for this reason, a dynamic cast is used and if crv is a function_item it is added to the span
-                //spans.push_back(taxonomy::cast<taxonomy::function_item>(crv));
-                spans.push_back(fi);
-            } else if (!crv) {
+            spans.push_back(fi);
+         } else if (!crv) {
 				return nullptr;
 			}
 		}

@@ -14,7 +14,7 @@ namespace {
 	}
 }
 
-taxonomy::loft::ptr ifcopenshell::geometry::make_loft(const Settings& settings_, const IfcUtil::IfcBaseClass* inst, const taxonomy::function_item::ptr& pwf, std::vector<cross_section>& cross_sections)
+taxonomy::loft::ptr ifcopenshell::geometry::make_loft(const Settings& settings_, const IfcUtil::IfcBaseClass* inst, const taxonomy::function_item::ptr& fn, std::vector<cross_section>& cross_sections)
 {
 	std::sort(cross_sections.begin(), cross_sections.end());
 
@@ -24,13 +24,13 @@ taxonomy::loft::ptr ifcopenshell::geometry::make_loft(const Settings& settings_,
 
 	// @todo currently only the case is handled where directrix returns a function_item
 	// @todo this "if" statement is not really required because the function returns at the start if the Directrix is not a function_item function
-	if (pwf) {
-		function_item_evaluator evaluator(pwf, settings_);
+	if (fn) {
+		function_item_evaluator evaluator(settings_,fn);
 		double start = std::max(0., cross_sections.front().dist_along);
-		double end = std::min(pwf->length(), cross_sections.back().dist_along);
+		double end = std::min(fn->length(), cross_sections.back().dist_along);
 
 		if (end - start < 1.e-9) {
-			Logger::Warning("Empty sweep domain with start at " + std::to_string(cross_sections.front().dist_along) + " end at " + std::to_string(cross_sections.back().dist_along) + " and curve domain length " + std::to_string(pwf->length()), inst);
+			Logger::Warning("Empty sweep domain with start at " + std::to_string(cross_sections.front().dist_along) + " end at " + std::to_string(cross_sections.back().dist_along) + " and curve domain length " + std::to_string(fn->length()), inst);
 			return nullptr;
 		}
 

@@ -149,21 +149,6 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcOffsetCurveByDistances* inst
 
    auto fn = taxonomy::make<taxonomy::offset_function>(curve, offsets);
    return fn;
-
- //  function_item_evaluator curve_evaluator(curve, settings_), offsets_evaluator(offsets, settings_);
- //  auto composition = [curve_evaluator, offsets_evaluator](double u) -> Eigen::Matrix4d {
- //     auto p = curve_evaluator.evaluate(u);
- //     auto offset = offsets_evaluator.evaluate(u);
- //     Eigen::Matrix4d m = p * offset;
- //     return m;
-	//};
-
- //  // current implementation assumes that composition is equal to the full length of basis curve
- //  // this may change depending on decisions in the bSI-IF
- //  taxonomy::piecewise_function::spans_t spans;
- //  spans.emplace_back(taxonomy::make<taxonomy::functor_item>(basis_curve_length, composition));
-	//auto pwf = taxonomy::make<taxonomy::piecewise_function>(start,spans,inst);
-	//return pwf;
 }
 
 #endif

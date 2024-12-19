@@ -35,7 +35,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcFixedReferenceSweptAreaSolid
 
 	// @todo currently only the case is handled where directrix returns a piecewise_function
 	if (auto fn = taxonomy::dcast<taxonomy::function_item>(dir)) {
-        function_item_evaluator evaluator(fn, settings_);
+      function_item_evaluator evaluator(settings_,fn);
 		double start = 0;
       double end = fn->length();
 #ifdef SCHEMA_HAS_IfcDirectrixCurveSweptAreaSolid

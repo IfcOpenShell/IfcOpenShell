@@ -27,7 +27,7 @@ struct fn_evaluator {
 /// @brief utility class to evaluate function_item objects.
 class function_item_evaluator {
   public:
-    function_item_evaluator(taxonomy::function_item::const_ptr fn, const ifcopenshell::geometry::Settings& settings);
+    function_item_evaluator(const ifcopenshell::geometry::Settings& settings, taxonomy::function_item::const_ptr fn);
     function_item_evaluator(const function_item_evaluator& other);
     ~function_item_evaluator();
 

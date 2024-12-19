@@ -93,6 +93,15 @@ typedef item const* ptr;
 				topology_error(const char* const s) : std::runtime_error(s) {}
 			};
 
+			// Implementer note: If you add a new item type, be sure to do the following
+			// 1) Add a new kind to this list
+			// 2) Update the values array used by kind_to_string()
+			// 3) Update the KindsTuple with the class name of the new item
+			// 4) Add compare function (see compare functions in taxonomy.cpp starting around line 9)
+			// 4) Update Python bindings
+			//    a) update list of assign_repr in IfcGeomWrapper.i
+			//    b) update inheritance list in IfcGeomWrapper.i (around line 120 in the file)
+			//    c) update item_to_pyobject function definition in type_conversion.i
 			enum kinds {
                 MATRIX4,
                 POINT3,
@@ -1201,7 +1210,7 @@ typedef item const* ptr;
 			};
 
 			namespace impl {
-				typedef std::tuple<matrix4, point3, direction3, line, circle, ellipse, bspline_curve, offset_curve, plane, cylinder, sphere, torus, bspline_surface, edge, loop, face, shell, solid, loft, extrusion, revolve, sweep_along_curve, node, collection, boolean_result, piecewise_function> KindsTuple;
+				typedef std::tuple<matrix4, point3, direction3, line, circle, ellipse, bspline_curve, offset_curve, plane, cylinder, sphere, torus, bspline_surface, edge, loop, face, shell, solid, loft, extrusion, revolve, sweep_along_curve, node, collection, boolean_result, function_item, functor_item, piecewise_function, gradient_function, cant_function,offset_function> KindsTuple;
 				typedef std::tuple<line, circle, ellipse, bspline_curve, offset_curve, loop, edge> CurvesTuple;
 				typedef std::tuple<plane, cylinder, sphere, torus, bspline_surface, extrusion, revolve> SurfacesTuple;
 				typedef std::tuple<edge, loop, face, piecewise_function> UpgradesTuple;
