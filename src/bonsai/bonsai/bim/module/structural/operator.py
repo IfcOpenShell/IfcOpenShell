@@ -27,6 +27,45 @@ import bonsai.tool as tool
 from math import degrees
 from mathutils import Vector, Matrix
 from bonsai.bim.ifc import IfcStore
+from bonsai.bim.module.structural.decorator import LoadsDecorator
+
+
+class ShowLoads(bpy.types.Operator):
+    """Draw decorations to show strucutural actions in 3d view"""
+
+    bl_idname = "bim.show_loads"
+    bl_label = "Show loads in 3D View"
+
+    def modal(self, context, event):
+        if event.type == "F5":
+            LoadsDecorator.update()
+            for area in context.screen.areas:
+                if area.type == "VIEW_3D":
+                    area.tag_redraw()
+        if event.type == "ESC":
+            LoadsDecorator.uninstall()
+            for area in context.screen.areas:
+                if area.type == "VIEW_3D":
+                    area.tag_redraw()
+            return {"FINISHED"}
+        return {"PASS_THROUGH"}
+
+    def invoke(self, context, event):
+        collection = bpy.data.collections["IfcStructuralItem"]
+        collection.hide_viewport = False
+        context.window.cursor_modal_set("WAIT")
+        try:
+            LoadsDecorator.install(context)
+        except Exception as exc:
+            context.window.cursor_modal_restore()
+            raise exc
+        context.window.cursor_modal_restore()
+        context.window_manager.modal_handler_add(self)
+        for area in context.screen.areas:
+            if area.type == "VIEW_3D":
+                area.tag_redraw()
+
+        return {"RUNNING_MODAL"}
 
 
 class AddStructuralMemberConnection(bpy.types.Operator, tool.Ifc.Operator):
