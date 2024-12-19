@@ -755,7 +755,7 @@ class curve_segment_evaluator {
         if (segment_type_ == ST_HORIZONTAL || segment_type_ == ST_VERTICAL) {
             projected_length_ = length_;
 
-            // There is one significant difference between IfcPolynomalCurve used for horizontal and vertical alignments.
+            // There is one significant difference between IfcPolynomialCurve used for horizontal and vertical alignments.
             // For horizontal alignment, u is the distance along the curve. For vertical alignment, u is the horizontal distance.
             // From 4.2.2.2.8 the polynomial curve equation is in the form of y = Ax^3 for horizontal parabolic transition segments.
             // To evaluate the horizontal function, the value of x that corresponds to the distance along the curve u is needed.
@@ -971,11 +971,12 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCurveSegment* inst) {
     }
 
     auto length = cse.length();
+    return taxonomy::make<taxonomy::functor_item>(fabs(length),fn);
 
-    taxonomy::piecewise_function::spans_t spans;
-    spans.emplace_back(fabs(length), fn);
-    auto pwf = taxonomy::make<taxonomy::piecewise_function>(0.0, spans,inst);
-    return pwf;
+    //taxonomy::piecewise_function::spans_t spans;
+    //spans.emplace_back(fabs(length), taxonomy::function_item(fn));
+    //auto pwf = taxonomy::make<taxonomy::piecewise_function>(0.0, spans,inst);
+    //return pwf;
 }
 
 #endif

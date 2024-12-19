@@ -1,6 +1,6 @@
 #include "profile_helper.h"
 #include "infra_sweep_helper.h"
-#include "piecewise_function_evaluator.h"
+#include "function_item_evaluator.h"
 
 #include <boost/range/combine.hpp>
 
@@ -14,7 +14,7 @@ namespace {
 	}
 }
 
-taxonomy::loft::ptr ifcopenshell::geometry::make_loft(const Settings& settings_, const IfcUtil::IfcBaseClass* inst, const taxonomy::piecewise_function::ptr& pwf, std::vector<cross_section>& cross_sections)
+taxonomy::loft::ptr ifcopenshell::geometry::make_loft(const Settings& settings_, const IfcUtil::IfcBaseClass* inst, const taxonomy::function_item::ptr& pwf, std::vector<cross_section>& cross_sections)
 {
 	std::sort(cross_sections.begin(), cross_sections.end());
 
@@ -22,10 +22,10 @@ taxonomy::loft::ptr ifcopenshell::geometry::make_loft(const Settings& settings_,
 	// @todo intialize as default
 	loft->axis = nullptr;
 
-	// @todo currently only the case is handled where directrix returns a piecewise_function
-	// @todo this "if" statement is not really required because the function returns at the start if the Directrix is not a piecewise function
+	// @todo currently only the case is handled where directrix returns a function_item
+	// @todo this "if" statement is not really required because the function returns at the start if the Directrix is not a function_item function
 	if (pwf) {
-		piecewise_function_evaluator evaluator(pwf, &settings_);
+		function_item_evaluator evaluator(pwf, settings_);
 		double start = std::max(0., cross_sections.front().dist_along);
 		double end = std::min(pwf->length(), cross_sections.back().dist_along);
 
@@ -35,10 +35,10 @@ taxonomy::loft::ptr ifcopenshell::geometry::make_loft(const Settings& settings_,
 		}
 
 		auto curve_length = end - start;
-		auto param_type = settings_.get<ifcopenshell::geometry::settings::PiecewiseStepType>().get();
-		auto param = settings_.get<ifcopenshell::geometry::settings::PiecewiseStepParam>().get();
+		auto param_type = settings_.get<ifcopenshell::geometry::settings::FunctionStepType>().get();
+		auto param = settings_.get<ifcopenshell::geometry::settings::FunctionStepParam>().get();
 		size_t num_steps = 0;
-		if (param_type == ifcopenshell::geometry::settings::PiecewiseStepMethod::MAXSTEPSIZE) {
+		if (param_type == ifcopenshell::geometry::settings::FunctionStepMethod::MAXSTEPSIZE) {
 			// parameter is max step size
 			num_steps = (size_t)std::ceil(curve_length / param);
 		} else {

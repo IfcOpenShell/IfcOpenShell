@@ -19,7 +19,7 @@
 
 #include "mapping.h"
 #include "../profile_helper.h"
-#include "../piecewise_function_evaluator.h"
+#include "../function_item_evaluator.h"
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geometry;
 
@@ -39,10 +39,10 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcOffsetCurveByDistances* inst
     auto first_offset_value = *(offset_values->begin());
 
     auto basis_curve = inst->BasisCurve();
-    auto pw_curve = taxonomy::dcast<taxonomy::piecewise_function>(map(basis_curve));
+    auto curve = taxonomy::dcast<taxonomy::piecewise_function>(map(basis_curve));
 
-    double start = pw_curve->start();
-    double basis_curve_length = pw_curve->length();
+    double start = curve->start();
+    double basis_curve_length = curve->length();
 
     taxonomy::piecewise_function::spans_t offset_spans;
 
@@ -70,7 +70,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcOffsetCurveByDistances* inst
            m.col(3)(1) = py; 
            m.col(3)(2) = pz; 
            return m; };
-        offset_spans.emplace_back(first_distance, fn);
+        offset_spans.emplace_back(taxonomy::make<taxonomy::functor_item>(first_distance, fn));
 	}
 
     auto iter = offset_values->begin();
@@ -114,7 +114,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcOffsetCurveByDistances* inst
             m.col(3)(2) = (l == 0.0 ? zp : (zp + (zn - zp) * u / l));
             return m;
         };
-        offset_spans.emplace_back(l, fn);
+        offset_spans.emplace_back(taxonomy::make<taxonomy::functor_item>(l, fn));
     }
 
 	 // at this point, next == end and prev == end-1
@@ -142,25 +142,28 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcOffsetCurveByDistances* inst
             m.col(3)(2) = pz; 
             return m; };
 
-         offset_spans.emplace_back(l, fn);
+         offset_spans.emplace_back(taxonomy::make<taxonomy::functor_item>(l, fn));
     }
 
    auto offsets = taxonomy::make<taxonomy::piecewise_function>(start,offset_spans);
 
-   piecewise_function_evaluator pw_evaluator(pw_curve, &settings_), offsets_evaluator(offsets, &settings_);
-   auto composition = [pw_evaluator, offsets_evaluator](double u) -> Eigen::Matrix4d {
-      auto p = pw_evaluator.evaluate(u);
-      auto offset = offsets_evaluator.evaluate(u);
-      Eigen::Matrix4d m = p * offset;
-      return m;
-	};
+   auto fn = taxonomy::make<taxonomy::offset_function>(curve, offsets);
+   return fn;
 
-   // current implementation assumes that composition is equal to the full length of basis curve
-   // this may change depending on decisions in the bSI-IF
-   taxonomy::piecewise_function::spans_t spans;
-   spans.emplace_back(basis_curve_length, composition);
-	auto pwf = taxonomy::make<taxonomy::piecewise_function>(start,spans,inst);
-	return pwf;
+ //  function_item_evaluator curve_evaluator(curve, settings_), offsets_evaluator(offsets, settings_);
+ //  auto composition = [curve_evaluator, offsets_evaluator](double u) -> Eigen::Matrix4d {
+ //     auto p = curve_evaluator.evaluate(u);
+ //     auto offset = offsets_evaluator.evaluate(u);
+ //     Eigen::Matrix4d m = p * offset;
+ //     return m;
+	//};
+
+ //  // current implementation assumes that composition is equal to the full length of basis curve
+ //  // this may change depending on decisions in the bSI-IF
+ //  taxonomy::piecewise_function::spans_t spans;
+ //  spans.emplace_back(taxonomy::make<taxonomy::functor_item>(basis_curve_length, composition));
+	//auto pwf = taxonomy::make<taxonomy::piecewise_function>(start,spans,inst);
+	//return pwf;
 }
 
 #endif

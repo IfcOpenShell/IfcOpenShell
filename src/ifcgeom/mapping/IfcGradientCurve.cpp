@@ -18,7 +18,7 @@
  ********************************************************************************/
 
 #include "mapping.h"
-#include "../piecewise_function_evaluator.h"
+#include "../function_item_evaluator.h"
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geometry;
 
@@ -30,15 +30,18 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcGradientCurve* inst) {
 
 	auto segments = inst->Segments();
 
-   std::vector<taxonomy::piecewise_function::ptr> pwfs;
+	taxonomy::piecewise_function::spans_t spans;
 
 	for (auto& segment : *segments) {
 		if (segment->as<IfcSchema::IfcCurveSegment>()) {
 			// @todo check that we don't get a mixture of implicit and explicit definitions
 			auto crv = map(segment->as<IfcSchema::IfcCurveSegment>());
-			if (crv && crv->kind() == taxonomy::PIECEWISE_FUNCTION) {
-				pwfs.push_back(taxonomy::cast<taxonomy::piecewise_function>(crv));
-			} else {
+         if (auto fi = taxonomy::dcast<taxonomy::function_item>(crv); crv && fi /*crv->kind() == taxonomy::FUNCTION_ITEM*/) {
+            // crv->kind() is polymorphic and the kind of the actual function_item is returned. PWF can have spans of any FUNCTION_ITEM
+            // for this reason, a dynamic cast is used and if crv is a function_item it is added to the span
+            //spans.push_back(taxonomy::cast<taxonomy::function_item>(crv));
+            spans.push_back(fi);
+        } else {
 				Logger::Error("Unsupported");
 				return nullptr;
 			}
@@ -56,40 +59,42 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcGradientCurve* inst) {
    double gradient_start = m(0, 3); // start of vertical (row 0, col 3) - "Distance Along" horizontal curve
 
 	// create the vertical pwf
-	auto vertical = taxonomy::make<taxonomy::piecewise_function>(gradient_start, pwfs);
+	auto vertical = taxonomy::make<taxonomy::piecewise_function>(gradient_start, spans);
 
-	// Determine the valid domain of the PWF... the valid domain is where both
-	// the base curve and gradient curves are defined
+	// create the horizontal pwf
    auto horizontal = taxonomy::cast<taxonomy::piecewise_function>(map(inst->BaseCurve()));
-	double start = std::max(horizontal->start(),vertical->start());
-   double end = std::min(horizontal->end(), vertical->end());
-   double length = end - start;
 
-	if (!(0 < length)) {
+	// create the composite gradient curve function
+   auto gradient_function = taxonomy::make<taxonomy::gradient_function>(horizontal, vertical, inst);
+
+	// check to see if there is valid overlap of the horizontal and vertical domains
+   if (!(0 < gradient_function->length())) {
        Logger::Error("IfcGradientCurve does not have a common domain with BaseCurve");
+       gradient_function = nullptr; // not valid
    }
 
-	// define the callback function for the gradient curve
-   piecewise_function_evaluator horizontal_evaluator(horizontal, &settings_), vertical_evaluator(vertical, &settings_);
-   auto composition = [horizontal_evaluator, vertical_evaluator,start=vertical->start()](double u) -> Eigen::Matrix4d {
-		// u is distance from start of gradient curve (vertical)
-		// add vertical->start() to u to get distance from start of horizontal
-      auto xy = horizontal_evaluator.evaluate(u + start);
-      auto uz = vertical_evaluator.evaluate(u);
+   return gradient_function;
+	//// define the callback function for the gradient curve
+ //  function_item_evaluator horizontal_evaluator(horizontal, &settings_), vertical_evaluator(vertical, &settings_);
+ //  auto composition = [horizontal_evaluator, vertical_evaluator,start=vertical->start()](double u) -> Eigen::Matrix4d {
+	//	// u is distance from start of gradient curve (vertical)
+	//	// add vertical->start() to u to get distance from start of horizontal
+ //     auto xy = horizontal_evaluator.evaluate(u + start);
+ //     auto uz = vertical_evaluator.evaluate(u);
 
-      uz.col(3)(0) = 0.0; // x is distance along. zero it out so it doesn't add to the x from horizontal
-      uz.col(1).swap(uz.col(2)); // uz is 2D in distance along - y plane, swap y and z so elevations become z
-      uz.row(1).swap(uz.row(2));
+ //     uz.col(3)(0) = 0.0; // x is distance along. zero it out so it doesn't add to the x from horizontal
+ //     uz.col(1).swap(uz.col(2)); // uz is 2D in distance along - y plane, swap y and z so elevations become z
+ //     uz.row(1).swap(uz.row(2));
 
-		Eigen::Matrix4d m;
-      m = xy * uz; // combine horizontal and vertical
-      return m;
-	};
+	//	Eigen::Matrix4d m;
+ //     m = xy * uz; // combine horizontal and vertical
+ //     return m;
+	//};
 
-	taxonomy::piecewise_function::spans_t spans;
-   spans.emplace_back(length, composition);
-   auto pwf = taxonomy::make<taxonomy::piecewise_function>(start, spans, inst);
-   return pwf;
+	//taxonomy::piecewise_function::spans_t spans;
+ //  spans.emplace_back(length, composition);
+ //  auto pwf = taxonomy::make<taxonomy::piecewise_function>(start, spans, inst);
+ //  return pwf;
 }
 
 #endif

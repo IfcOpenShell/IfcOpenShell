@@ -3,7 +3,7 @@
 #include "../ifcgeom/IfcGeomElement.h"
 #include "../ifcgeom/ConversionSettings.h"
 #include "../ifcgeom/abstract_mapping.h"
-#include "../ifcgeom/piecewise_function_evaluator.h"
+#include "../ifcgeom/function_item_evaluator.h"
 
 #ifdef IFOPSH_WITH_OPENCASCADE
 #include "../ifcgeom/kernels/opencascade/OpenCascadeKernel.h"
@@ -71,6 +71,7 @@ bool is_valid_for_kernel(const ifcopenshell::geometry::kernels::AbstractKernel* 
 		return dynamic_cast<ifcopenshell::geometry::CgalShape*>(shp.Shape().get()) != nullptr;
 	}
 #endif
+    return false;
 }
 
 class HybridKernel : public ifcopenshell::geometry::kernels::AbstractKernel {
@@ -237,8 +238,8 @@ bool ifcopenshell::geometry::kernels::AbstractKernel::convert_impl(const taxonom
 	return r.size() > s;
 }
 
-bool ifcopenshell::geometry::kernels::AbstractKernel::convert_impl(const taxonomy::piecewise_function::ptr item, IfcGeom::ConversionResults& cs) {
-   piecewise_function_evaluator evaluator(item);
+bool ifcopenshell::geometry::kernels::AbstractKernel::convert_impl(const taxonomy::function_item::ptr item, IfcGeom::ConversionResults& cs) {
+   function_item_evaluator evaluator(item,settings());
    auto expl = evaluator.evaluate();
 	expl->instance = item->instance;
 	return convert(expl, cs);

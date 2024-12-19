@@ -23,7 +23,7 @@ using namespace ifcopenshell::geometry;
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* inst) {
 	auto loop = taxonomy::make<taxonomy::loop>();
-	std::vector<taxonomy::piecewise_function::ptr> pwfs;
+	taxonomy::piecewise_function::spans_t spans;
 
 #ifdef SCHEMA_HAS_IfcSegment
 	// 4x3
@@ -74,17 +74,19 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* inst) {
 				for (auto& s : taxonomy::cast<taxonomy::loop>(crv)->children) {
 					loop->children.push_back(s);
 				}
-			}
-			else if (crv && crv->kind() == taxonomy::PIECEWISE_FUNCTION) {
-            pwfs.push_back(taxonomy::cast<taxonomy::piecewise_function>(crv));
-			} else if (!crv) {
+			} else if (auto fi = taxonomy::dcast<taxonomy::function_item>(crv); crv && fi /*crv->kind() == taxonomy::FUNCTION_ITEM*/) {
+				// crv->kind() is polymorphic and the kind of the actual function_item is returned. PWF can have spans of any FUNCTION_ITEM
+				// for this reason, a dynamic cast is used and if crv is a function_item it is added to the span
+                //spans.push_back(taxonomy::cast<taxonomy::function_item>(crv));
+                spans.push_back(fi);
+            } else if (!crv) {
 				return nullptr;
 			}
 		}
 #endif
 	}
 
-	if (pwfs.empty()) {
+	if (spans.empty()) {
 		aggregate_of_instance::ptr profile = inst->file_->getInverse(inst->id(), &IfcSchema::IfcProfileDef::Class(), -1);
 		const bool force_close = profile && profile->size() > 0;
 		loop->closed = force_close;
@@ -92,7 +94,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* inst) {
 		return loop;
 	}
 	else {
-      auto pwf = taxonomy::make<taxonomy::piecewise_function>(0.0,pwfs,inst);
+      auto pwf = taxonomy::make<taxonomy::piecewise_function>(0.0,spans,inst);
 		return pwf;
 	}
 }

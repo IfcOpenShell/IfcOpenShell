@@ -135,7 +135,12 @@ std::pair<char const*, size_t> vector_to_buffer(const T& t) {
 	if (!$1) $1 = try_upcast<matrix4>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__matrix4_t);
 	if (!$1) $1 = try_upcast<node>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__node_t);
 	if (!$1) $1 = try_upcast<offset_curve>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__offset_curve_t);
+	if (!$1) $1 = try_upcast<function_item>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__function_item_t);
+	if (!$1) $1 = try_upcast<functor_item>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__functor_item_t);
 	if (!$1) $1 = try_upcast<piecewise_function>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__piecewise_function_t);
+	if (!$1) $1 = try_upcast<gradient_function>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__gradient_function_t);
+	if (!$1) $1 = try_upcast<cant_function>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__cant_function_t);
+	if (!$1) $1 = try_upcast<offset_function>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__offset_function_t);
 	if (!$1) $1 = try_upcast<plane>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__plane_t);
 	if (!$1) $1 = try_upcast<point3>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__point3_t);
 	if (!$1) $1 = try_upcast<revolve>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__revolve_t);
@@ -199,7 +204,12 @@ namespace {
 %shared_ptr(ifcopenshell::geometry::taxonomy::boolean_result);
 %shared_ptr(ifcopenshell::geometry::taxonomy::item);
 %shared_ptr(ifcopenshell::geometry::taxonomy::implicit_item);
+%shared_ptr(ifcopenshell::geometry::taxonomy::function_item);
+%shared_ptr(ifcopenshell::geometry::taxonomy::functor_item);
 %shared_ptr(ifcopenshell::geometry::taxonomy::piecewise_function);
+%shared_ptr(ifcopenshell::geometry::taxonomy::gradient_function);
+%shared_ptr(ifcopenshell::geometry::taxonomy::cant_function);
+%shared_ptr(ifcopenshell::geometry::taxonomy::offset_function);
 %shared_ptr(ifcopenshell::geometry::taxonomy::less_functor);
 %shared_ptr(ifcopenshell::geometry::taxonomy::eigen_base);
 %shared_ptr(ifcopenshell::geometry::taxonomy::matrix4);
@@ -246,7 +256,7 @@ namespace {
 %include "../ifcgeom/Iterator.h"
 %include "../ifcgeom/GeometrySerializer.h"
 %include "../ifcgeom/taxonomy.h"
-%include "../ifcgeom/piecewise_function_evaluator.h"
+%include "../ifcgeom/function_item_evaluator.h"
 
 %include "../serializers/SvgSerializer.h"
 %include "../serializers/HdfSerializer.h"
@@ -358,7 +368,7 @@ assign_matrix_access(revolve);
 	void set_(const std::string& name, ifcopenshell::geometry::settings::IteratorOutputOptions val) {
 		return $self->set(name, val);
 	}
-	void set_(const std::string& name, ifcopenshell::geometry::settings::PiecewiseStepMethod val) {
+	void set_(const std::string& name, ifcopenshell::geometry::settings::FunctionStepMethod val) {
 		return $self->set(name, val);
 	}
 	void set_(const std::string& name, ifcopenshell::geometry::settings::OutputDimensionalityTypes val) {

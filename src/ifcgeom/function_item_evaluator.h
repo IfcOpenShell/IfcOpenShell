@@ -7,10 +7,29 @@
 
 namespace ifcopenshell { namespace geometry {
 
-/// @brief utility class to evaluate piecewise_function objects
-class piecewise_function_evaluator {
+/// @brief Abstract class for evaluating a function_item. This class is specialized for each of the function_item types.
+struct fn_evaluator {
+    fn_evaluator(const ifcopenshell::geometry::Settings& settings) : settings_(settings) {
+    }
+    fn_evaluator(const fn_evaluator& other) = default;
+    virtual ~fn_evaluator() = default;
+
+    virtual fn_evaluator* clone() const = 0;
+
+    virtual Eigen::Matrix4d evaluate(double u) const = 0;
+    virtual double start() const = 0;
+    virtual double end() const = 0;
+    double length() const { return end() - start(); }
+
+    ifcopenshell::geometry::Settings settings_;
+};
+
+/// @brief utility class to evaluate function_item objects.
+class function_item_evaluator {
   public:
-    piecewise_function_evaluator(taxonomy::piecewise_function::const_ptr pwf, const ifcopenshell::geometry::Settings* settings=nullptr);
+    function_item_evaluator(taxonomy::function_item::const_ptr fn, const ifcopenshell::geometry::Settings& settings);
+    function_item_evaluator(const function_item_evaluator& other);
+    ~function_item_evaluator();
 
     /// @brief returns a vector of "distance along" points where the evaluate function computes loop points
     std::vector<double> evaluation_points() const;
@@ -21,11 +40,11 @@ class piecewise_function_evaluator {
     /// @param nsteps number of steps to evaluate
     std::vector<double> evaluation_points(double ustart, double uend, unsigned nsteps) const;
 
-    /// @brief evaluates the piecewise function between start and end
+    /// @brief evaluates the function between start and end
     /// evaluation point step size is taken from the settings object
     taxonomy::item::ptr evaluate() const;
 
-    /// @brief evaluates the piecewise function between ustart and uend
+    /// @brief evaluates the function between ustart and uend
     /// if ustart and uend are out of range, the range of values evaluated
     /// are constrained to start_ and start_+length_
     /// @param ustart starting location
@@ -34,23 +53,16 @@ class piecewise_function_evaluator {
     /// @return taxonomy::loop::ptr
     taxonomy::item::ptr evaluate(double ustart, double uend, unsigned nsteps) const;
 
-    /// @brief evaluates the piecewise function at u
+    /// @brief evaluates the function at u
     /// @param u u is constrained to be between start_ and start_+length
     /// @return 4x4 placement matrix
     Eigen::Matrix4d evaluate(double u) const;
 
   private:
     taxonomy::item::ptr evaluate(const std::vector<double>& dist) const;
-    std::tuple<double, double, const std::function<Eigen::Matrix4d(double u)>*> get_span(double u) const;
+    fn_evaluator* fn_evaluator_ = nullptr;
 
-    taxonomy::piecewise_function::const_ptr pwf_;
-
-    ifcopenshell::geometry::Settings settings_;
-
-    mutable double current_span_start_ = 0;
-    mutable double current_span_end_ = 0;
-    mutable const std::function<Eigen::Matrix4d(double u)>* current_span_fn_ = nullptr;
-    mutable boost::optional<std::vector<double>> eval_points_;
+    mutable boost::optional<std::vector<double>> eval_points_; // cache evaluation points
 };
 
 }}

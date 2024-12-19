@@ -1,7 +1,7 @@
 #include "../ifcparse/IfcLogger.h"
 #include "taxonomy.h"
 #include "profile_helper.h"
-#include "piecewise_function_impl.h"
+#include "function_item_evaluator.h"
 
 using namespace ifcopenshell::geometry::taxonomy;
 
@@ -464,27 +464,58 @@ ifcopenshell::geometry::taxonomy::solid::ptr ifcopenshell::geometry::create_box(
 }
 
 ///////////////////
-piecewise_function::piecewise_function(double start, const spans_t& s, const IfcUtil::IfcBaseInterface* instance) : implicit_item(instance) {
-    impl_ = new piecewise_function_impl(start, s);
+piecewise_function::piecewise_function(double start, const spans_t& s, const IfcUtil::IfcBaseInterface* instance) : function_item(instance), start_(start), spans_(s) {
 }
 
-piecewise_function::piecewise_function(double start, const std::vector<piecewise_function::ptr>& pwfs, const IfcUtil::IfcBaseInterface* instance) : implicit_item(instance) {
-    impl_ = new piecewise_function_impl(start, pwfs);
+piecewise_function::piecewise_function(double start, const std::vector<piecewise_function::ptr>& pwfs, const IfcUtil::IfcBaseInterface* instance) : function_item(instance), start_(start) {
+    for (auto& pwf : pwfs) {
+        spans_.insert(spans_.end(), pwf->spans().begin(), pwf->spans().end());
+    }
 };
 
-piecewise_function::piecewise_function(const piecewise_function& other) : implicit_item(other) {
-    impl_ = other.impl_->clone_();
+const piecewise_function::spans_t& piecewise_function::spans() const { return spans_; }
+bool piecewise_function::is_empty() const { return spans_.empty(); }
+double piecewise_function::start() const { return start_; }
+double piecewise_function::end() const { return start_ + length(); }
+double piecewise_function::length() const {
+    return std::accumulate(spans_.begin(), spans_.end(), 0.0, [](const auto& v, const auto& s) { return v + s->length(); });
+
+    // this is a secondary option where we only compute length once and cache it.
+    // mutex is needed to prevent interruption of the accumulation if there is multi-threading
+    // skipping this detail for now and just adding up the span lengths every time
+    //if (!length_.has_value()) {
+    //    length_ = std::accumulate(spans_.begin(), spans_.end(), 0.0, [](const auto& v, const auto& s) { return v + s->length(); });
+    //}
+    //return *length_;
 }
 
-piecewise_function::~piecewise_function() {
-    delete impl_;
-}
 
-const piecewise_function::spans_t& piecewise_function::spans() const { return impl_->spans(); }
-bool piecewise_function::is_empty() const { return impl_->is_empty(); }
-double piecewise_function::start() const { return impl_->start(); }
-double piecewise_function::end() const { return impl_->end(); }
-double piecewise_function::length() const {   return impl_->length(); }
+gradient_function::gradient_function(piecewise_function::const_ptr horizontal, piecewise_function::const_ptr vertical, const IfcUtil::IfcBaseInterface* instance) : 
+	function_item(instance), horizontal_(horizontal), vertical_(vertical) {
+}
+double gradient_function::start() const { return std::max(horizontal_->start(), vertical_->start()); }
+double gradient_function::end() const { return std::min(horizontal_->end(), vertical_->end()); }
+piecewise_function::const_ptr gradient_function::get_horizontal() const { return horizontal_; }
+piecewise_function::const_ptr gradient_function::get_vertical() const { return vertical_; }
+
+
+cant_function::cant_function(gradient_function::const_ptr gradient, piecewise_function::const_ptr cant, const IfcUtil::IfcBaseInterface* instance) : 
+	function_item(instance), gradient_(gradient), cant_(cant) {
+}
+double cant_function::start() const { return std::max(gradient_->start(), cant_->start()); }
+double cant_function::end() const { return std::min(gradient_->end(), cant_->end()); }
+gradient_function::const_ptr cant_function::get_gradient() const { return gradient_; }
+piecewise_function::const_ptr cant_function::get_cant() const { return cant_; }
+
+
+offset_function::offset_function(function_item::const_ptr basis, piecewise_function::const_ptr offset, const IfcUtil::IfcBaseInterface* instance) : function_item(instance),
+                                                                                                                                                                       basis_(basis),
+                                                                                                                                                                       offset_(offset) {
+}
+double offset_function::start() const { return basis_->start(); }
+double offset_function::end() const { return basis_->end(); }
+function_item::const_ptr offset_function::get_basis() const { return basis_; }
+piecewise_function::const_ptr offset_function::get_offset() const { return offset_; }
 
 
 ifcopenshell::geometry::taxonomy::collection::ptr ifcopenshell::geometry::flatten(const taxonomy::collection::ptr& deep) {
@@ -499,7 +530,39 @@ const std::string& ifcopenshell::geometry::taxonomy::kind_to_string(kinds k) {
 	using namespace std::string_literals;
 
 	static std::string values[] = {
-		"matrix4"s, "point3"s, "direction3"s, "line"s, "circle"s, "ellipse"s, "bspline_curve"s, "offset_curve"s, "plane"s, "cylinder"s, "sphere"s, "torus"s, "bspline_surface"s, "edge"s, "loop"s, "face"s, "shell"s, "solid"s, "loft"s, "extrusion"s, "revolve"s, "sweep_along_curve"s, "node"s, "collection"s, "boolean_result"s, "piecewise_function"s, "colour"s, "style"s,
+        "matrix4"s,
+        "point3"s,
+        "direction3"s,
+        "line"s,
+        "circle"s,
+        "ellipse"s,
+        "bspline_curve"s,
+        "offset_curve"s,
+        "plane"s,
+        "cylinder"s,
+        "sphere"s,
+        "torus"s,
+        "bspline_surface"s,
+        "edge"s,
+        "loop"s,
+        "face"s,
+        "shell"s,
+        "solid"s,
+        "loft"s,
+        "extrusion"s,
+        "revolve"s,
+        "sweep_along_curve"s,
+        "node"s,
+        "collection"s,
+        "boolean_result"s,
+        "function_item"s,
+        "functor_item"s,
+        "piecewise_function"s,
+        "gradient_function"s,
+        "cant_function"s,
+        "offset_function"s,
+        "colour"s,
+        "style"s,
 	};
 
 	return values[k];
@@ -743,7 +806,7 @@ boost::optional<piecewise_function::ptr> ifcopenshell::geometry::taxonomy::loop_
 					axis = refDirection.cross(Y).normalized();
 					return make<matrix4>(o, axis, refDirection)->components();
 				};
-				spans.emplace_back(l, fn);
+            spans.emplace_back(taxonomy::make<taxonomy::functor_item>(l, fn));
 			}
 			pwf_ = make<piecewise_function>(0.0,spans);
 			loop_->pwf = pwf_;
