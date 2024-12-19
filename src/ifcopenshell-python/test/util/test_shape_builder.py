@@ -123,6 +123,15 @@ class TestCreatePolyline(test.bootstrap.IFC4):
         assert segment.wrappedValue == (2, 3, 1)
 
 
+class TestMirror(test.bootstrap.IFC4):
+    def test_mirror(self):
+        builder = ShapeBuilder(self.file)
+        rectangle = builder.rectangle(size=(100, 100))
+        assert np.allclose(rectangle.Points.CoordList, ((0.0, 0.0), (100.0, 0.0), (100.0, 100.0), (0.0, 100.0)))
+        builder.mirror(rectangle, mirror_axes=(1, 0))
+        assert np.allclose(rectangle.Points.CoordList, ((0.0, 0.0), (-100.0, 0.0), (-100.0, 100.0), (0.0, 100.0)))
+
+
 class TestCalculateTransitions(test.bootstrap.IFC4):
     def calculate_and_test(self, params: dict[str, Any], length: Union[float, None]):
         np_X, np_Y = 0, 1
