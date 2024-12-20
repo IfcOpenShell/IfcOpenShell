@@ -1143,3 +1143,16 @@ class RevertClippingPlaneCut(bpy.types.Operator):
         if replaced_mesh:
             obj.data = replaced_mesh
             tool.Blender.remove_data_block(mesh, do_unlink=False)
+
+
+class CopyTextToClipboard(bpy.types.Operator):
+    bl_idname = "bim.copy_text_to_clipboard"
+    bl_label = "Copy Text To Clipboard"
+    bl_description = "Copy text to clipboard."
+    bl_options = set()
+
+    text: bpy.props.StringProperty(options={"SKIP_SAVE"})
+
+    def execute(self, context):
+        context.window_manager.clipboard = self.text
+        return {"FINISHED"}

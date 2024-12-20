@@ -1122,7 +1122,7 @@ def draw_statusbar(self, context):
     self.layout.label(text=text)
 
 
-def draw_custom_context_menu(self, context):
+def draw_custom_context_menu(self: bpy.types.Menu, context: bpy.types.Context) -> None:
     # https://blender.stackexchange.com/a/275555/86891
     if (
         not hasattr(context, "button_pointer")
@@ -1150,12 +1150,16 @@ def draw_custom_context_menu(self, context):
                     url = doc.get("spec_url", "")
                 else:  # It's a custom property set. No URL available
                     url = ""
+        attr_name = attr.name
         if description:
             layout.separator()
             op_description = layout.operator("bim.show_description", text="IFC Description", icon="INFO")
-            op_description.attr_name = getattr(context.button_pointer, "name", "")
+            op_description.attr_name = attr_name
             op_description.description = description
             op_description.url = url
+        if attr_name:
+            op = layout.operator("bim.copy_text_to_clipboard", text="Copy Attribute Name", icon="COPYDOWN")
+            op.text = attr_name
     else:
         # Ugly but we can't know which type of data is under the cursor so we test everything until it clicks
         try:
