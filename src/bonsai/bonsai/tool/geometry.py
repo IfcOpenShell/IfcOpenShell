@@ -948,6 +948,11 @@ class Geometry(bonsai.core.tool.Geometry):
         return data.BIMMeshProperties.subshape_type == "PROFILE"
 
     @classmethod
+    def is_profile_object_active(cls) -> bool:
+        obj = bpy.context.active_object
+        return bool(obj and (data := obj.data) and isinstance(data, bpy.types.Mesh) and cls.is_profile_based(data))
+
+    @classmethod
     def is_swept_profile(cls, representation: ifcopenshell.entity_instance) -> bool:
         return ifcopenshell.util.representation.resolve_representation(representation).RepresentationType in (
             "SweptSolid",
