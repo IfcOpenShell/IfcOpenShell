@@ -279,6 +279,7 @@ class CadArcFrom3Points(bpy.types.Operator):
     bl_idname = "bim.cad_arc_from_3_points"
     bl_label = "CAD Arc from 3 Points"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Create a points based arc from 3 selected points."
     resolution: bpy.props.IntProperty(name="Arc Resolution", min=1, default=1)
     only_recalculate_center: bpy.props.BoolProperty(name="Only Recalculate Center", default=False)
 
@@ -622,6 +623,7 @@ class AddIfcCircle(bpy.types.Operator):
 class AddIfcArcIndexFillet(bpy.types.Operator):
     bl_idname = "bim.add_ifcarcindex_fillet"
     bl_label = "Add Arc Index Fillet"
+    bl_description = "Add a fillet for the selected vertices."
     bl_options = {"REGISTER", "UNDO"}
     radius: bpy.props.FloatProperty(name="Radius", default=0.1, subtype="DISTANCE")
 
