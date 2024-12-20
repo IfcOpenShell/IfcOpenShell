@@ -999,7 +999,8 @@ class Restriction:
         for constraint, value in self.options.items():
             value = [value] if not isinstance(value, list) else value
             for v in value:
-                if constraint in ["length", "minLength", "maxLength"]:
+                if constraint in ["length", "minLength", "maxLength", "maxExclusive", "maxInclusive",
+                                  "minExclusive", "minInclusive", "totalDigits", "fractionDigits"]:
                     value_dict = {"@value": v}
                 else:
                     value_dict = {"@value": str(v)}
