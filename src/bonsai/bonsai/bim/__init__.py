@@ -105,6 +105,7 @@ classes = [
     operator.ClippingPlaneCutWithCappings,
     operator.CloseBlendWarning,
     operator.CloseError,
+    operator.CopyTextToClipboard,
     operator.EditBlenderCollection,
     operator.FileAssociate,
     operator.FileUnassociate,
