@@ -114,6 +114,7 @@ classes = [
     operator.RemoveIfcFile,
     operator.RevertClippingPlaneCut,
     operator.SelectDataDir,
+    operator.SelectCacheDir,
     operator.SelectIfcFile,
     operator.SelectSchemaDir,
     operator.SelectURIAttribute,

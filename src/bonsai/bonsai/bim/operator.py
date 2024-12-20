@@ -227,6 +227,22 @@ class SelectDataDir(bpy.types.Operator):
         return {"RUNNING_MODAL"}
 
 
+class SelectCacheDir(bpy.types.Operator):
+    bl_idname = "bim.select_cache_dir"
+    bl_label = "Select Cache Directory"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Select the directory that contains HDF5 cache files"
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+
+    def execute(self, context):
+        context.scene.BIMProperties.cache_dir = os.path.dirname(self.filepath)
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
+
+
 class SelectSchemaDir(bpy.types.Operator):
     bl_idname = "bim.select_schema_dir"
     bl_label = "Select Schema Directory"

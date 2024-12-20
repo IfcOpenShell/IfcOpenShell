@@ -120,7 +120,8 @@ class IfcStore:
         if IfcStore.cache is None and IfcStore.path:
             ifc_key = IfcStore.path + IfcStore.file.wrapped_data.header.file_name.time_stamp
             ifc_hash = hashlib.md5(ifc_key.encode("utf-8")).hexdigest()
-            IfcStore.cache_path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "cache", f"{ifc_hash}.h5")
+            os.makedirs(bpy.context.scene.BIMProperties.cache_dir, exist_ok=True)
+            IfcStore.cache_path = os.path.join(bpy.context.scene.BIMProperties.cache_dir, f"{ifc_hash}.h5")
             cache_path = Path(IfcStore.cache_path)
             cache_settings = ifcopenshell.geom.settings()
             serializer_settings = ifcopenshell.geom.serializer_settings()
@@ -160,7 +161,7 @@ class IfcStore:
         assert IfcStore.file
         ifc_key = IfcStore.path + IfcStore.file.wrapped_data.header.file_name.time_stamp
         ifc_hash = hashlib.md5(ifc_key.encode("utf-8")).hexdigest()
-        new_cache_path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "cache", f"{ifc_hash}.h5")
+        new_cache_path = os.path.join(bpy.context.scene.BIMProperties.cache_dir, f"{ifc_hash}.h5")
         IfcStore.cache = None
         try:
             shutil.move(IfcStore.cache_path, new_cache_path)
