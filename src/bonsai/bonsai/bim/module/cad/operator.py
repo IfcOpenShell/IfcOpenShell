@@ -25,6 +25,7 @@ import bonsai.tool as tool
 from mathutils import Vector, Matrix
 from math import pi, radians, sin, cos, sqrt
 import ifcopenshell.util.unit
+from typing import Union
 
 
 messages = {
@@ -622,7 +623,7 @@ class AddIfcArcIndexFillet(bpy.types.Operator):
     bl_idname = "bim.add_ifcarcindex_fillet"
     bl_label = "Add Arc Index Fillet"
     bl_options = {"REGISTER", "UNDO"}
-    radius: bpy.props.FloatProperty(name="Radius", default=0.1)
+    radius: bpy.props.FloatProperty(name="Radius", default=0.1, subtype="DISTANCE")
 
     @classmethod
     def poll(cls, context):
@@ -644,7 +645,7 @@ class AddIfcArcIndexFillet(bpy.types.Operator):
             self.create_arc(context)
         return {"FINISHED"}
 
-    def has_selected_existing_arc(self, context):
+    def has_selected_existing_arc(self, context: bpy.types.Context) -> bool:
         obj = context.active_object
         bm = bmesh.from_edit_mesh(obj.data)
         verts = [v for v in bm.verts if v.select and not v.hide]
@@ -662,8 +663,9 @@ class AddIfcArcIndexFillet(bpy.types.Operator):
                     return True
             except:
                 pass  # Potentially fail if the vert has been removed in the previous operation
+        return False
 
-    def change_radius(self, context):
+    def change_radius(self, context: bpy.types.Context) -> None:
         obj = context.active_object
         bm = bmesh.from_edit_mesh(obj.data)
         edges = [e for e in bm.edges if e.select and not e.hide]

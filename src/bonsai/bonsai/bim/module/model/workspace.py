@@ -29,7 +29,7 @@ from bpy.types import WorkSpaceTool, Menu
 from bonsai.bim.module.model.data import AuthoringData, ItemData
 from bonsai.bim.module.system.data import PortData
 from bonsai.bim.module.model.prop import get_ifc_class
-from typing import Optional
+from typing import Optional, Union
 
 
 # TODO duplicate code in cad/workspace and model/workspace
@@ -234,7 +234,9 @@ class CableTool(BimTool):
     ifc_element_type = "IfcCableSegmentType"
 
 
-def add_layout_hotkey_operator(layout, text, hotkey, description, ui_context=""):
+def add_layout_hotkey_operator(
+    layout: bpy.types.UILayout, text: str, hotkey: str, description: Union[str, None], ui_context: str = ""
+) -> bpy.types.OperatorProperties:
     parts = hotkey.split("_") if hotkey else []
     modifier, key = (parts + ["", ""])[:2]
 

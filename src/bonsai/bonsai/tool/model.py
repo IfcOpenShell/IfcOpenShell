@@ -26,10 +26,12 @@ import numpy as np
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.pset
+import ifcopenshell.geom
 import ifcopenshell.util.element
-import ifcopenshell.util.unit
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
+import ifcopenshell.util.shape
+import ifcopenshell.util.unit
 import bonsai.core.geometry
 import bonsai.core.tool
 import bonsai.tool as tool
@@ -1739,6 +1741,7 @@ class Model(bonsai.core.tool.Model):
         if position is None:
             position = Matrix()
         position_i = position.inverted()
+        assert isinstance(position_i, Matrix)
 
         groups = {"IFCARCINDEX": [], "IFCCIRCLE": []}
         for i, group in enumerate(obj.vertex_groups):
@@ -1781,7 +1784,7 @@ class Model(bonsai.core.tool.Model):
         loop_edges = list(bm.edges)
 
         # Create loops from edges
-        loops = []
+        loops: list[list[bmesh.types.BMEdge]] = []
         while loop_edges:
             edge = loop_edges.pop()
             loop = [edge]
@@ -1802,7 +1805,7 @@ class Model(bonsai.core.tool.Model):
 
         tmp = ifcopenshell.file(schema=tool.Ifc.get().schema)
 
-        def is_in_group(v, group_name):
+        def is_in_group(v: bmesh.types.BMVert, group_name: str) -> bool:
             for group_index in groups[group_name]:
                 if group_index in v[deform_layer]:
                     return True
@@ -1827,7 +1830,7 @@ class Model(bonsai.core.tool.Model):
                     tmp.createIfcCircle(tmp.createIfcAxis2Placement2D(tmp.createIfcCartesianPoint(list(mid))), radius)
                 )
             else:
-                loop_verts = []
+                loop_verts: list[bmesh.types.BMVert] = []
                 for i, edge in enumerate(loop):
                     if i == 0 and len(loop) == 1:
                         loop_verts.append(edge.verts[0])
@@ -1861,7 +1864,9 @@ class Model(bonsai.core.tool.Model):
 
                 if tmp.schema != "IFC2X3" and any([is_in_group(v, "IFCARCINDEX") for v in loop_verts]):
                     # We need to specify segments
-                    coord_list = [list((position_i @ (v.co / unit_scale)).to_2d()) for v in loop_verts]
+                    coord_list: list[list[float]] = [
+                        list((position_i @ (v.co / unit_scale)).to_2d()) for v in loop_verts
+                    ]
                     points = tmp.createIfcCartesianPointList2D(coord_list)
                     i = 0
                     segments = []
