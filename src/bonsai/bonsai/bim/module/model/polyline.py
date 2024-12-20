@@ -38,7 +38,7 @@ from math import pi, sin, cos, degrees
 from mathutils import Vector, Matrix
 from bonsai.bim.module.model.opening import FilledOpeningGenerator
 from bonsai.bim.module.model.decorator import PolylineDecorator
-from typing import Optional
+from typing import Optional, Union, Literal
 from lark import Lark, Transformer
 
 
@@ -47,7 +47,7 @@ class PolylineOperator:
     """ """
 
     @classmethod
-    def poll(cls, context):
+    def poll(cls, context: bpy.types.Context) -> bool:
         return context.space_data.type == "VIEW_3D"
 
     def __init__(self):
@@ -103,7 +103,7 @@ class PolylineOperator:
 
         self.tool_state = tool.Polyline.create_tool_state()
 
-    def recalculate_inputs(self, context):
+    def recalculate_inputs(self, context: bpy.types.Context) -> Union[bool, None]:
         if self.number_input:
             is_valid, self.number_output = tool.Polyline.validate_input(self.number_output, self.input_type)
             self.input_ui.set_value(self.input_type, self.number_output)
@@ -121,7 +121,7 @@ class PolylineOperator:
             tool.Blender.update_viewport()
             return is_valid
 
-    def choose_axis(self, event, x=True, y=True, z=False):
+    def choose_axis(self, event: bpy.types.Event, x: bool = True, y: bool = True, z: bool = False) -> None:
         if x:
             if not event.shift and event.value == "PRESS" and event.type == "X":
                 self.tool_state.axis_method = "X" if self.tool_state.axis_method != event.type else None
@@ -142,7 +142,7 @@ class PolylineOperator:
                 PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
                 tool.Blender.update_viewport()
 
-    def choose_plane(self, event, x=True, y=True, z=True):
+    def choose_plane(self, event: bpy.types.Event, x: bool = True, y: bool = True, z: bool = True) -> None:
         if x:
             if event.shift and event.value == "PRESS" and event.type == "X":
                 self.tool_state.use_default_container = False
@@ -164,7 +164,7 @@ class PolylineOperator:
                 self.tool_state.axis_method = None
                 tool.Blender.update_viewport()
 
-    def handle_instructions(self, context, custom_instructions=""):
+    def handle_instructions(self, context: bpy.types.Context, custom_instructions: str = "") -> None:
         self.snap_info = f"""|
         Axis: {self.tool_state.axis_method}
         Plane: {self.tool_state.plane_method}
@@ -172,7 +172,7 @@ class PolylineOperator:
         """
         context.workspace.status_text_set(self.instructions + custom_instructions + self.snap_info)
 
-    def handle_lock_axis(self, context, event):
+    def handle_lock_axis(self, context: bpy.types.Context, event: bpy.types.Event) -> None:
         if event.value == "PRESS" and event.type == "A":
             self.tool_state.lock_axis = False if self.tool_state.lock_axis else True
             self.tool_state.snap_angle = self.input_ui.get_number_value("WORLD_ANGLE")
@@ -191,7 +191,7 @@ class PolylineOperator:
             PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
             tool.Blender.update_viewport()
 
-    def handle_keyboard_input(self, context, event):
+    def handle_keyboard_input(self, context: bpy.types.Context, event: bpy.types.Event) -> None:
 
         if self.tool_state.is_input_on and event.value == "PRESS" and event.type == "TAB":
             self.recalculate_inputs(context)
@@ -269,7 +269,7 @@ class PolylineOperator:
                 PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
                 tool.Blender.update_viewport()
 
-    def handle_inserting_polyline(self, context, event):
+    def handle_inserting_polyline(self, context: bpy.types.Context, event: bpy.types.Event) -> None:
         if not self.tool_state.is_input_on and event.value == "RELEASE" and event.type == "LEFTMOUSE":
             result = tool.Polyline.insert_polyline_point(self.input_ui, self.tool_state)
             if result:
@@ -301,7 +301,7 @@ class PolylineOperator:
             PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
             tool.Blender.update_viewport()
 
-    def handle_snap_selection(self, context, event):
+    def handle_snap_selection(self, context: bpy.types.Context, event: bpy.types.Event) -> None:
         if event.value == "PRESS" and event.type == "M":
             self.snapping_points = tool.Snap.modify_snapping_point_selection(
                 self.snapping_points, lock_axis=self.tool_state.lock_axis
@@ -310,7 +310,9 @@ class PolylineOperator:
             PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
             tool.Blender.update_viewport()
 
-    def handle_cancelation(self, context, event):
+    def handle_cancelation(
+        self, context: bpy.types.Context, event: bpy.types.Event
+    ) -> Union[None, set[Literal["CANCELLED"]]]:
         if self.tool_state.is_input_on:
             if event.value == "RELEASE" and event.type in {"ESC"}:
                 self.recalculate_inputs(context)
@@ -329,7 +331,9 @@ class PolylineOperator:
                 tool.Blender.update_viewport()
                 return {"CANCELLED"}
 
-    def handle_mouse_move(self, context, event, should_round=False):
+    def handle_mouse_move(
+        self, context: bpy.types.Context, event: bpy.types.Event, should_round: bool = False
+    ) -> Union[None, set[Literal["RUNNING_MODAL"]]]:
         if not self.tool_state.is_input_on:
             if event.type == "MOUSEMOVE" or event.type == "INBETWEEN_MOUSEMOVE":
                 self.mousemove_count += 1
@@ -368,13 +372,13 @@ class PolylineOperator:
                 tool.Polyline.remove_last_polyline_point()
                 tool.Blender.update_viewport()
 
-    def modal(self, context, event):
+    def modal(self, context: bpy.types.Context, event: bpy.types.Event) -> Union[set[str], None]:
         PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
         tool.Blender.update_viewport()
         if event.type in {"MIDDLEMOUSE", "WHEELUPMOUSE", "WHEELDOWNMOUSE"}:
             return {"PASS_THROUGH"}
 
-    def invoke(self, context, event):
+    def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> None:
         PolylineDecorator.install(context)
         tool.Snap.clear_snapping_point()
 
