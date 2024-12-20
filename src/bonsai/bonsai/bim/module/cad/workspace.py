@@ -23,6 +23,7 @@ import bonsai.bim.module.type.prop as type_prop
 import ifcopenshell.util.unit
 from bpy.types import WorkSpaceTool
 from bonsai.bim.module.model.data import AuthoringData, RailingData, RoofData
+from typing import Union
 
 
 # TODO duplicate code in cad/workspace and model/workspace
@@ -329,7 +330,9 @@ def add_header_apply_button(layout, text, apply_operator, cancel_operator, ui_co
     row.label(text="Tools")
 
 
-def add_layout_hotkey_operator(layout, text, hotkey, description, ui_context=""):
+def add_layout_hotkey_operator(
+    layout: bpy.types.UILayout, text: str, hotkey: str, description: Union[str, None], ui_context: str = ""
+) -> bpy.types.OperatorProperties:
     parts = hotkey.split("_")
     modifier, key = parts
     op_text = "" if ui_context == "TOOL_HEADER" else text
