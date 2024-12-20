@@ -1156,3 +1156,59 @@ class ProductDecorator:
             self.draw_batch(
                 "TRIS", product_preview_data["verts"], transparent_color(decorator_color), product_preview_data["tris"]
             )
+
+class WallAxisDecorator:
+    is_installed = False
+    handlers = []
+
+    @classmethod
+    def install(cls, context):
+        if cls.is_installed:
+            cls.uninstall()
+        handler = cls()
+        cls.handlers.append(
+            SpaceView3D.draw_handler_add(handler.draw_wall_axis, (context,), "WINDOW", "POST_VIEW")
+        )
+        cls.is_installed = True
+
+    @classmethod
+    def uninstall(cls):
+        for handler in cls.handlers:
+            try:
+                SpaceView3D.draw_handler_remove(handler, "WINDOW")
+            except ValueError:
+                pass
+        cls.is_installed = False
+
+    def draw_batch(self, shader_type, content_pos, color, indices=None):
+        shader = self.line_shader if shader_type == "LINES" else self.shader
+        batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
+        shader.uniform_float("color", color)
+        batch.draw(shader)
+
+    def draw_wall_axis(self, context):
+        self.addon_prefs = tool.Blender.get_addon_preferences()
+        selected_elements_color = self.addon_prefs.decorator_color_selected
+        unselected_elements_color = self.addon_prefs.decorator_color_unselected
+        special_elements_color = self.addon_prefs.decorator_color_special
+        decorator_color_background = self.addon_prefs.decorator_color_background
+
+        gpu.state.point_size_set(6)
+        gpu.state.blend_set("ALPHA")
+
+        self.line_shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
+        self.line_shader.bind()  # required to be able to change uniforms of the shader
+        self.line_shader.uniform_float("viewportSize", (context.region.width, context.region.height))
+        self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
+        self.line_shader.uniform_float("lineWidth", 2.0)
+        for obj in context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if element.is_a("IfcWall"):
+                layers = tool.Model.get_material_layer_parameters(element)
+                axis = tool.Model.get_wall_axis(obj, layers)
+                verts = [tuple(list(v) + [0.0] )for v in axis["reference"]]
+                self.draw_batch("LINES", verts, selected_elements_color, [(0,1)])
+                verts = [tuple(list(v) + [0.0] )for v in axis["side"]]
+                self.draw_batch("LINES", verts, unselected_elements_color, [(0,1)])
+                
+
