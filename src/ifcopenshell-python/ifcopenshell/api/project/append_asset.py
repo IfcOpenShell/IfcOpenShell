@@ -323,12 +323,16 @@ class Usecase:
 
         element_identity = element.wrapped_data.identity()
 
-        # check if inverse element were created before
-        if self.reuse_identities.get(element_identity) is not None:
-            return
-
-        new = self.file.create_entity(element.is_a())
-        self.reuse_identities[element_identity] = new
+        # Check if inverse element was created before.
+        # Still need to recreate it again - e.g. it could be some rel
+        # that now needs it's RelatingObjects to be extended by the current asset.
+        if (new := self.reuse_identities.get(element_identity)) is not None:
+            # Currently known cases requiring attributes reassignment are rels.
+            if not new.is_a("IfcRelationship"):
+                return
+        else:
+            new = self.file.create_entity(element.is_a())
+            self.reuse_identities[element_identity] = new
 
         for i, attribute in enumerate(element):
             new_attribute = None
@@ -346,10 +350,20 @@ class Usecase:
                 new[i] = new_attribute
 
     def is_another_asset(self, element: ifcopenshell.entity_instance) -> bool:
+        """Is IFC entity from inverse attribute is another asset to append that should be skipped."""
+
+        def by_guid(guid: str) -> Union[ifcopenshell.entity_instance, None]:
+            try:
+                return self.file.by_guid(guid)
+            except RuntimeError:
+                return None
+
         if element == self.settings["element"]:
             return False
         elif element.is_a("IfcFeatureElement"):
             # Feature elements match the target class but aren't considered "assets"
+            return False
+        elif element.is_a("IfcRoot") and by_guid(element.GlobalId) is not None:
             return False
         elif element.is_a(self.target_class):
             return True
