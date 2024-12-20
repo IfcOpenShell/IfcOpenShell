@@ -673,6 +673,71 @@ class Model(bonsai.core.tool.Model):
         return axes
 
     @classmethod
+    def get_connected_walls(
+        cls, walls: list[bpy.types.Object], opposite_direction: bool = False
+    ) -> list[bpy.types.Object]:
+        """
+        Loop through walls by retrieving the next connected wall using the ConnectedTo attribute. 
+        If the function encounters the first wall again, it will return the list of connected walls and indicate that a closed loop has been formed. 
+        If it reaches the end of the connections, the function will call itself in the opposite direction using the ConnectedFrom method 
+        to obtain a list of connected walls in an open loop.
+        """
+
+        is_closed_loop = False
+        wall1 = tool.Ifc.get_entity(walls[0])
+        wall = wall1
+        if not opposite_direction:
+            connection = "ConnectedTo"
+            relation = "RelatedElement"
+        else:
+            connection = "ConnectedFrom"
+            relation = "RelatingElement"
+
+        ordered_walls = []
+        ordered_walls.append(wall1)
+        for i in range(len(walls)):
+            if not getattr(wall, connection) or (
+                next_wall := tool.Ifc.get_object(getattr(getattr(wall, connection)[0], relation)) not in walls
+            ):
+                if opposite_direction:
+                    return ordered_walls, is_closed_loop
+                ordered_walls, is_closed_loop = cls.get_connected_walls(walls, True)
+                break
+            next_wall = getattr(getattr(wall, connection)[0], relation)
+            if next_wall == wall1:
+                is_closed_loop = True
+                break
+            else:
+                ordered_walls.append(next_wall)
+                wall = next_wall
+
+        return [tool.Ifc.get_object(wall) for wall in ordered_walls], is_closed_loop
+
+    @classmethod
+    def get_polygons_from_wall_axis(cls, walls: list[bpy.types.Object]) -> list[shapely.Polygon]:
+        """
+        Get the polygons formed by the intersection of the wall axis reference and side. 
+        The polygon with the larger area will be considered the external polygon. 
+        This function only works with closed loops.
+        """
+        points1 = []
+        points2 = []
+        for w1, w2 in zip(walls, walls[1:] + [walls[0]]):
+            layers1 = tool.Model.get_material_layer_parameters(tool.Ifc.get_entity(w1))
+            layers2 = tool.Model.get_material_layer_parameters(tool.Ifc.get_entity(w2))
+            axis1 = tool.Model.get_wall_axis(w1, layers1)
+            axis2 = tool.Model.get_wall_axis(w2, layers2)
+            intersection1 = tool.Cad.intersect_edges(axis1["reference"], axis2["reference"])
+            intersection2 = tool.Cad.intersect_edges(axis1["side"], axis2["side"])
+            points1.append(intersection1[0])
+            points2.append(intersection2[0])
+
+        poly1 = shapely.Polygon(points1)
+        poly2 = shapely.Polygon(points2)
+
+        return poly1 if poly1.area > poly2.area else poly2
+
+    @classmethod
     def handle_array_on_copied_element(
         cls, element: ifcopenshell.entity_instance, array_data: Optional[dict[str, Any]] = None
     ) -> None:

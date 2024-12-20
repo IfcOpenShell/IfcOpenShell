@@ -100,6 +100,7 @@ classes = (
     roof.GenerateHippedRoof,
     slab.DisableEditingExtrusionProfile,
     slab.DisableEditingSketchExtrusionProfile,
+    slab.AddSlabFromWall,
     slab.DrawPolylineSlab,
     slab.EditExtrusionProfile,
     slab.EditSketchExtrusionProfile,

@@ -963,6 +963,17 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         if bpy.context.scene.BIMGeometryProperties.mode == "ITEM":
             bpy.ops.wm.call_menu(name="BIM_MT_add_representation_item")
         else:
+            walls = False
+            for obj in bpy.context.selected_objects:
+                walls = tool.Ifc.get_entity(obj).is_a("IfcWall")
+            if (
+                walls
+                and relating_type_id
+                and tool.Model.get_usage_type(tool.Ifc.get().by_id(int(relating_type_id))) == "LAYER3"
+            ):
+                bpy.ops.bim.draw_slab_from_wall("INVOKE_DEFAULT")
+                return {"FINISHED"}
+
             for obj in tool.Blender.get_selected_objects():
                 obj.select_set(False)
             if relating_type_id and tool.Model.get_usage_type(tool.Ifc.get().by_id(int(relating_type_id))) == "LAYER2":
