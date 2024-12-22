@@ -518,6 +518,7 @@ class SelectIfcClass(Operator):
             if element := tool.Ifc.get_entity(obj):
                 classes.add(element.is_a())
                 predefined_types.add(ifcopenshell.util.element.get_predefined_type(element))
+        result = ''
         for cls in classes:
             for element in tool.Ifc.get().by_type(cls):
                 if (
@@ -527,6 +528,15 @@ class SelectIfcClass(Operator):
                     continue
                 if obj := tool.Ifc.get_object(element):
                     tool.Blender.select_object(obj)
+
+            # copy selection query to clipboard
+            if not result:
+                result = f"{cls}"
+            else:
+                result += f", {cls}"
+            bpy.context.window_manager.clipboard = result
+            self.report({"INFO"}, f"({result}) was copied to the clipboard.")
+
         return {"FINISHED"}
 
 
@@ -748,3 +758,25 @@ class SelectSimilar(Operator, tool.Ifc.Operator):
                 )
             else:
                 self.report({"INFO"}, f"Selected all objects that share the same ({key}) value")
+        
+        
+        # copy selection query to clipboard
+        if not self.calculate_sum:
+            result = ''
+            if value == True:
+                value = "TRUE"
+            if value == False:
+                value = "FALSE"      
+            if key == "predefined_type":
+                key = "PredefinedType"    
+            if isinstance(value, list) and value:  
+                for item in value:
+                    sub_result = f'{key} = "{item}"'
+                    if not result:
+                        result = sub_result
+                    else:
+                        result += f", {sub_result}"
+            else:
+                result = f'{key} = "{value}"'  
+            bpy.context.window_manager.clipboard = result
+            self.report({"INFO"}, f"({result}) was copied to the clipboard.")
