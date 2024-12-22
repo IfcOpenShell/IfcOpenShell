@@ -47,7 +47,7 @@ void MAKE_INIT_FN(MappingImplementation)(ifcopenshell::geometry::impl::MappingFa
 
 #define mapping POSTFIX_SCHEMA(mapping)
 
-IfcSchema::IfcProduct::list::ptr mapping::products_represented_by(const IfcSchema::IfcRepresentation* representation, bool only_direct) {
+IfcSchema::IfcProduct::list::ptr mapping::products_represented_by(const IfcSchema::IfcRepresentation* representation, IfcSchema::IfcRepresentationMap*& rmap, bool only_direct) {
     IfcSchema::IfcProduct::list::ptr products(new IfcSchema::IfcProduct::list);
 
     IfcSchema::IfcProductRepresentation::list::ptr prodreps = representation->OfProductRepresentation();
@@ -68,7 +68,10 @@ IfcSchema::IfcProduct::list::ptr mapping::products_represented_by(const IfcSchem
 
     IfcSchema::IfcRepresentationMap::list::ptr maps = representation->RepresentationMap();
     if (maps->size() == 1) {
-        IfcSchema::IfcRepresentationMap* rmap = *maps->begin();
+        rmap = *maps->begin();
+        if (not_reusable_maps_.find(rmap) != not_reusable_maps_.end()) {
+            return products;
+        }
         taxonomy::matrix4::ptr origin = taxonomy::cast<taxonomy::matrix4>(map(rmap->MappingOrigin()));
         if (origin->is_identity()) {
             IfcSchema::IfcMappedItem::list::ptr items = rmap->MapUsage();
@@ -76,7 +79,13 @@ IfcSchema::IfcProduct::list::ptr mapping::products_represented_by(const IfcSchem
                 IfcSchema::IfcMappedItem* item = *it;
                 if (item->StyledByItem()->size() != 0) continue;
 
-                taxonomy::matrix4::ptr target = taxonomy::cast<taxonomy::matrix4>(map(item->MappingTarget()));
+                taxonomy::matrix4::ptr target;
+                try {
+                    target = taxonomy::cast<taxonomy::matrix4>(map(item->MappingTarget()));
+                } catch (const std::exception& e) {
+                    Logger::Error(e);
+                    continue;
+                }
                 if (!target->is_identity()) {
                     continue;
                 }
@@ -158,7 +167,8 @@ aggregate_of_instance::ptr mapping::find_openings(const IfcUtil::IfcBaseEntity* 
     if (auto rep = inst->as<IfcSchema::IfcRepresentation>()) {
         // @todo this is essentially only for hybrid kernel trying to guess
         // when not to use a simple kernel.
-        auto prods = products_represented_by(rep, true);
+        IfcSchema::IfcRepresentationMap* rmap;
+        auto prods = products_represented_by(rep, rmap, true);
         for (auto& p : *prods) {
             openings->push(find_openings(p));
         }
@@ -219,13 +229,17 @@ void mapping::get_representations(std::vector<geometry_conversion_task>& tasks, 
     int task_index = 0;
     
     for (auto representation : *representations) {
-        IfcSchema::IfcProduct::list::ptr ifcproducts = filter_products(products_represented_by(representation, false), filters);
+        IfcSchema::IfcRepresentationMap* rmap;
+        IfcSchema::IfcProduct::list::ptr ifcproducts = filter_products(products_represented_by(representation, rmap, false), filters);
         
         if (ifcproducts->size() == 0) {
             continue;
         }
 
         auto geometry_reuse_ok_for_current_representation_ = reuse_ok_(ifcproducts);
+        if (!geometry_reuse_ok_for_current_representation_) {
+            not_reusable_maps_.insert(rmap);
+        }
 
         IfcSchema::IfcRepresentationMap::list::ptr maps = representation->RepresentationMap();
 
@@ -247,7 +261,7 @@ void mapping::get_representations(std::vector<geometry_conversion_task>& tasks, 
         IfcSchema::IfcRepresentation* representation_mapped_to_result = representation_mapped_to(representation);
         if (representation_mapped_to_result) {
             representation_processed_as_mapped_item = geometry_reuse_ok_for_current_representation_ && (
-                ok_mapped_representations->contains(representation_mapped_to_result) || reuse_ok_(products_represented_by(representation_mapped_to_result)));
+                ok_mapped_representations->contains(representation_mapped_to_result) || reuse_ok_(products_represented_by(representation_mapped_to_result, rmap)));
         }
 
         if (representation_processed_as_mapped_item) {
@@ -361,8 +375,13 @@ IfcSchema::IfcRepresentation* mapping::representation_mapped_to(const IfcSchema:
         if (item->declaration().is(IfcSchema::IfcMappedItem::Class())) {
             if (item->StyledByItem()->size() == 0) {
                 IfcSchema::IfcMappedItem* mapped_item = item->as<IfcSchema::IfcMappedItem>();
-                taxonomy::matrix4::ptr target = taxonomy::cast<taxonomy::matrix4>(map(mapped_item->MappingTarget()));
-                if (target->is_identity()) {
+                taxonomy::matrix4::ptr target;
+                try {
+                    target = taxonomy::cast<taxonomy::matrix4>(map(mapped_item->MappingTarget()));
+                } catch (const std::exception& e) {
+                    Logger::Error(e);
+                }
+                if (target && target->is_identity()) {
                     IfcSchema::IfcRepresentationMap* rmap = mapped_item->MappingSource();
                     taxonomy::matrix4::ptr origin = taxonomy::cast<taxonomy::matrix4>(map(rmap->MappingOrigin()));
                     if (origin->is_identity()) {

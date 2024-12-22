@@ -198,12 +198,26 @@ class SelectSimilarType(bpy.types.Operator):
                 continue
             relating_types.add(relating_type)
 
+        result = '' 
         for relating_type in relating_types:
             related_objects = ifcopenshell.util.element.get_types(relating_type)
+            
             for element in related_objects:
                 obj = tool.Ifc.get_object(element)
                 if obj and obj in context.visible_objects:
                     obj.select_set(True)
+
+            # copy selection query to clipboard
+            related_objects_class = related_objects[0].is_a()
+            relating_type_name = relating_type.Name
+            if not result:
+                result = f"{related_objects_class}, type=\"{relating_type_name}\""
+            else:
+                result += f" + {related_objects_class}, type=\"{relating_type_name}\""
+            bpy.context.window_manager.clipboard = result
+            self.report({"INFO"}, f"({result}) was copied to the clipboard.")
+
+            
         return {"FINISHED"}
 
 

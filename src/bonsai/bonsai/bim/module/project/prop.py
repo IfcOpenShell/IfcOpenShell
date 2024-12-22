@@ -217,6 +217,11 @@ class BIMProjectProperties(PropertyGroup):
     )
     element_offset: IntProperty(name="Element Offset", default=0)
     element_limit: IntProperty(name="Element Offset", default=30000)
+    load_indexed_maps: BoolProperty(
+        name="Load Indexed Maps",
+        description="Load indexed maps (UV and color maps)",
+        default=True,
+    )
     should_disable_undo_on_save: BoolProperty(
         name="Disable Undo When Saving (Faster saves, no undo for you!)", default=False
     )

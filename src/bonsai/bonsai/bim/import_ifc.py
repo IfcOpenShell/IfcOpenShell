@@ -37,7 +37,7 @@ import bonsai.tool as tool
 from itertools import chain, accumulate
 from bonsai.bim.ifc import IfcStore, IFC_CONNECTED_TYPE
 from bonsai.tool.loader import OBJECT_DATA_TYPE
-from typing import Dict, Union, Optional, Any
+from typing import Dict, Union, Optional, Any, cast
 
 
 class MaterialCreator:
@@ -72,7 +72,8 @@ class MaterialCreator:
         self.mesh = mesh
         self.obj = obj
         self.parsed_meshes.add(self.mesh.name)
-        self.load_texture_maps(shape_has_openings)
+        if not self.ifc_import_settings.load_indexed_maps:
+            self.load_texture_maps(shape_has_openings)
         self.assign_material_slots_to_faces()
         tool.Geometry.record_object_materials(obj)
         del self.mesh["ios_materials"]
@@ -195,11 +196,11 @@ class IfcImporter:
         self.meshes: dict[str, OBJECT_DATA_TYPE] = {}
         self.mesh_shapes = {}
         self.time = 0
-        self.unit_scale = 1
+        self.unit_scale = 1.0
         # ifc definition ids to blender elements mapping
         self.added_data: dict[int, IFC_CONNECTED_TYPE] = {}
-        self.native_elements = set()
-        self.native_data = {}
+        self.native_elements: set[ifcopenshell.entity_instance] = set()
+        self.native_data: dict[str, Any] = {}
         self.progress = 0
 
         self.material_creator = MaterialCreator(ifc_import_settings, self)
@@ -407,7 +408,7 @@ class IfcImporter:
         matrix[2][3] *= self.unit_scale
 
         # Single swept disk solids (e.g. rebar) are better natively represented as beveled curves
-        if self.is_native_swept_disk_solid(element, resolved_representation):
+        if tool.Loader.is_native_swept_disk_solid(element, resolved_representation):
             self.native_data[element.GlobalId] = {
                 "matrix": matrix,
                 "context": context,
@@ -415,23 +416,6 @@ class IfcImporter:
                 "representation": resolved_representation,
                 "type": "IfcSweptDiskSolid",
             }
-            return True
-
-    def is_native_swept_disk_solid(
-        self, element: ifcopenshell.entity_instance, representation: ifcopenshell.entity_instance
-    ) -> bool:
-        items = [i["item"] for i in ifcopenshell.util.representation.resolve_items(representation)]
-        if len(items) == 1 and items[0].is_a("IfcSweptDiskSolid"):
-            if tool.Blender.Modifier.is_railing(element):
-                return False
-            return True
-        elif len(items) and (  # See #2508 why we accommodate for invalid IFCs here
-            items[0].is_a("IfcSweptDiskSolid")
-            and len({i.is_a() for i in items}) == 1
-            and len({i.Radius for i in items}) == 1
-        ):
-            if tool.Blender.Modifier.is_railing(element):
-                return False
             return True
         return False
 
@@ -538,13 +522,17 @@ class IfcImporter:
             native_data = self.native_data[element.GlobalId]
             mesh_name = f"{native_data['context'].id()}/{native_data['geometry_id']}"
             mesh = self.meshes.get(mesh_name)
+
+            curve_thickness = None
             if mesh is None:
                 if native_data["type"] == "IfcSweptDiskSolid":
-                    mesh = self.create_native_swept_disk_solid(element, mesh_name, native_data)
+                    mesh, curve_thickness = tool.Loader.create_native_swept_disk_solid(element, mesh_name, native_data)
                 tool.Ifc.link(tool.Ifc.get().by_id(native_data["geometry_id"]), mesh)
                 mesh.name = mesh_name
                 self.meshes[mesh_name] = mesh
-            self.create_product(element, mesh=mesh)
+            obj = self.create_product(element, mesh=mesh)
+            tool.Loader.setup_native_swept_disk_solid_thickness(obj, curve_thickness)
+
         print("Done creating geometry")
 
     def create_spatial_elements(self) -> None:
@@ -843,75 +831,6 @@ class IfcImporter:
     def load_existing_meshes(self) -> None:
         self.meshes.update({m.name: m for m in bpy.data.meshes})
 
-    def create_native_swept_disk_solid(
-        self, element: ifcopenshell.entity_instance, mesh_name: str, native_data: dict[str, Any]
-    ) -> bpy.types.Curve:
-        # TODO: georeferencing?
-        curve = bpy.data.curves.new(mesh_name, type="CURVE")
-        curve.dimensions = "3D"
-        curve.resolution_u = 2
-
-        rep_items = ifcopenshell.util.representation.resolve_items(native_data["representation"])
-
-        # Find item styles and add them to the curve.
-        material_style = None
-        material = ifcopenshell.util.element.get_material(element)
-        if material:
-            material_style = tool.Material.get_style(material)
-        item_styles: list[Union[bpy.types.Material, None]] = []
-        for item_data in rep_items:
-            item = item_data["item"]
-            item_style = tool.Style.get_representation_item_style(item) or material_style
-            if item_style is not None:
-                item_style = tool.Ifc.get_object(item_style)
-                assert isinstance(item_style, bpy.types.Material)
-            item_styles.append(item_style)
-        item_styles_unique = list(set(item_styles))
-        for item_style in item_styles_unique:
-            curve.materials.append(item_style)
-        use_same_material_index = len(item_styles_unique) < 2
-
-        def new_polyline(item_style: Union[bpy.types.Material, None]) -> bpy.types.Spline:
-            if use_same_material_index:
-                material_index = 0
-            else:
-                material_index = item_styles_unique.index(item_style)
-
-            polyline = curve.splines.new("POLY")
-            polyline.material_index = material_index
-            return polyline
-
-        for item_data, item_style in zip(rep_items, item_styles):
-            item = item_data["item"]
-
-            polyline = new_polyline(item_style)
-            matrix = item_data["matrix"]
-            matrix[0][3] *= self.unit_scale
-            matrix[1][3] *= self.unit_scale
-            matrix[2][3] *= self.unit_scale
-
-            # TODO: support inner radius, start param, and end param
-            geometry = tool.Loader.create_generic_shape(item.Directrix)
-            if not geometry:
-                continue
-            e = geometry.edges
-            v = geometry.verts
-            vertices = [list(matrix @ [v[i], v[i + 1], v[i + 2], 1]) for i in range(0, len(v), 3)]
-            edges = [[e[i], e[i + 1]] for i in range(0, len(e), 2)]
-            v2 = None
-            for edge in edges:
-                v1 = vertices[edge[0]]
-                if v1 != v2:
-                    polyline = new_polyline(item_style)
-                    polyline.points[-1].co = native_data["matrix"] @ mathutils.Vector(v1)
-                v2 = vertices[edge[1]]
-                polyline.points.add(1)
-                polyline.points[-1].co = native_data["matrix"] @ mathutils.Vector(v2)
-
-        curve.bevel_depth = self.unit_scale * item.Radius
-        curve.use_fill_caps = True
-        return curve
-
     def merge_materials_by_colour(self):
         cleaned_materials = {}
         for m in bpy.data.materials:
@@ -1151,7 +1070,12 @@ class IfcImporter:
                 verts = geometry.verts
                 mesh["has_cartesian_point_offset"] = False
 
-            return tool.Loader.convert_geometry_to_mesh(geometry, mesh, verts=verts)
+            return tool.Loader.convert_geometry_to_mesh(
+                geometry,
+                mesh,
+                verts=verts,
+                load_indexed_maps=self.ifc_import_settings.load_indexed_maps,
+            )
         except:
             self.ifc_import_settings.logger.error("Could not create mesh for %s", element)
             import traceback
@@ -1237,6 +1161,7 @@ class IfcImportSettings:
         self.context_settings: list[ifcopenshell.geom.main.settings] = []
         self.gross_context_settings: list[ifcopenshell.geom.main.settings] = []
         self.elements: set[ifcopenshell.entity_instance] = set()
+        self.load_indexed_maps = False
 
     @staticmethod
     def factory(context=None, input_file=None, logger=None):
@@ -1278,4 +1203,5 @@ class IfcImportSettings:
         settings.element_limit_mode = props.element_limit_mode
         settings.element_offset = props.element_offset
         settings.element_limit = props.element_limit
+        settings.load_indexed_maps = props.load_indexed_maps
         return settings

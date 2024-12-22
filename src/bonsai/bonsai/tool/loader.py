@@ -37,7 +37,7 @@ import numpy as np
 import numpy.typing as npt
 from mathutils import Vector, Matrix
 from pathlib import Path
-from typing import Union, Any
+from typing import Union, Any, Optional
 
 
 # Progressively we'll refactor loading elements into Blender objects into this
@@ -555,13 +555,12 @@ class Loader(bonsai.core.tool.Loader):
             layer = bm.loops.layers.float_color.new("Color")
 
         # remap the faceset CoordList index to the vertices in blender mesh
-        coordinates_remap = []
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         faceset = index_map.MappedTo
-        for co in faceset.Coordinates.CoordList:
-            co = Vector(co) * si_conversion
-            index = min(bm.verts, key=lambda v: (v.co - co).length_squared).index
-            coordinates_remap.append(index)
+
+        bm_verts = np.array([v.co for v in bm.verts])
+        coords_scaled = np.array(faceset.Coordinates.CoordList) * si_conversion
+        coordinates_remap = [np.argmin(np.sum((bm_verts - co) ** 2, axis=1)) for co in coords_scaled]
 
         # ifc indices start with 1
         remap_verts_to_blender = lambda ifc_verts: [coordinates_remap[i - 1] for i in ifc_verts]
@@ -592,22 +591,23 @@ class Loader(bonsai.core.tool.Loader):
             opacity = opacity if opacity is not None else 1.0
             data_list = [d + (opacity,) for d in data_list]
 
+        faces_tex_coord_data = {}
+        for tex_coord_index, face_remap in zip(texture_map, faces_remap, strict=True):
+            faces_tex_coord_data[frozenset(face_remap)] = (tex_coord_index, face_remap)
+
         # Apply attribute to each face
         for bface in bm.faces:
-            face = [loop.vert.index for loop in bface.loops]
+            face = frozenset(loop.vert.index for loop in bface.loops)
             # Find the corresponding index in data list by matching ifc faceset with blender face.
             data_index = None
-            for tex_coord_index, face_remap in zip(texture_map, faces_remap, strict=True):
-                if not all(i in face_remap for i in face):
-                    continue
+            if tex_coord_data := faces_tex_coord_data.get(face):
+                tex_coord_index, face_remap = tex_coord_data
                 # Subtract 1 as tex_coord_index starts with 1.
                 if map_type == "UV":
                     data_index = [tex_coord_index[face_remap.index(i)] - 1 for i in face]
                 else:
                     data_index = [tex_coord_index - 1 for i in face]
-                break
-
-            if data_index is None:
+            else:
                 # This face may be part of another representation item
                 # Or we couldn't match it due to georeferencing.
                 continue
@@ -921,7 +921,12 @@ class Loader(bonsai.core.tool.Loader):
 
     @classmethod
     def convert_geometry_to_mesh(
-        cls, geometry: ifcopenshell.geom.ShapeType, mesh: bpy.types.Mesh, verts=None
+        cls,
+        geometry: ifcopenshell.geom.ShapeType,
+        mesh: bpy.types.Mesh,
+        verts: Optional[list[float]] = None,
+        *,
+        load_indexed_maps=True,
     ) -> bpy.types.Mesh:
         if verts is None:
             verts = geometry.verts
@@ -968,7 +973,7 @@ class Loader(bonsai.core.tool.Loader):
             mesh.update()
 
             rep_str: str = geometry.id
-            if "openings" not in rep_str:
+            if load_indexed_maps and "openings" not in rep_str:
                 rep_id = rep_str.split("-", 1)[0]
                 rep = tool.Ifc.get().by_id(int(rep_id))
                 # For now, not necessary to load maps in Item mode
@@ -1031,3 +1036,116 @@ class Loader(bonsai.core.tool.Loader):
             return
         assert name and uri
         tool.Bsdd.set_active_bsdd(name, uri)
+
+    @classmethod
+    def is_native_swept_disk_solid(
+        cls, element: ifcopenshell.entity_instance, representation: ifcopenshell.entity_instance
+    ) -> bool:
+        items = [i["item"] for i in ifcopenshell.util.representation.resolve_items(representation)]
+        if len(items) == 1 and items[0].is_a("IfcSweptDiskSolid"):
+            if tool.Blender.Modifier.is_railing(element):
+                return False
+            return True
+        elif len(items) and (  # See #2508 why we accommodate for invalid IFCs here
+            items[0].is_a("IfcSweptDiskSolid")
+            and len({i.is_a() for i in items}) == 1
+            and len({i.Radius for i in items}) == 1
+        ):
+            if tool.Blender.Modifier.is_railing(element):
+                return False
+            return True
+        return False
+
+    @classmethod
+    def create_native_swept_disk_solid(
+        cls, element: ifcopenshell.entity_instance, mesh_name: str, native_data: dict[str, Any]
+    ) -> tuple[bpy.types.Curve, Union[float, None]]:
+        """Create Blender curve based on element using IfcSweptDiskAreaSolid.
+
+        :return: created curve and it's thickness (suppose to add the thickness to the object
+            using solidify modifier). Returns `None` instead of thickness if disk has no inner radius
+            or if it's invalid.
+        """
+        # TODO: georeferencing?
+        ifc_file = tool.Ifc.get()
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+        curve = bpy.data.curves.new(mesh_name, type="CURVE")
+        curve.dimensions = "3D"
+        curve.resolution_u = 2
+
+        rep_items = ifcopenshell.util.representation.resolve_items(native_data["representation"])
+
+        # Find item styles and add them to the curve.
+        material_style = None
+        material = ifcopenshell.util.element.get_material(element)
+        if material:
+            material_style = tool.Material.get_style(material)
+        item_styles: list[Union[bpy.types.Material, None]] = []
+        for item_data in rep_items:
+            item = item_data["item"]
+            item_style = tool.Style.get_representation_item_style(item) or material_style
+            if item_style is not None:
+                item_style = tool.Ifc.get_object(item_style)
+                assert isinstance(item_style, bpy.types.Material)
+            item_styles.append(item_style)
+        item_styles_unique = list(set(item_styles))
+        for item_style in item_styles_unique:
+            curve.materials.append(item_style)
+        use_same_material_index = len(item_styles_unique) < 2
+
+        def new_polyline(item_style: Union[bpy.types.Material, None]) -> bpy.types.Spline:
+            if use_same_material_index:
+                material_index = 0
+            else:
+                material_index = item_styles_unique.index(item_style)
+
+            polyline = curve.splines.new("POLY")
+            polyline.material_index = material_index
+            return polyline
+
+        for item_data, item_style in zip(rep_items, item_styles):
+            item = item_data["item"]
+
+            polyline = new_polyline(item_style)
+            matrix = item_data["matrix"]
+            matrix[0][3] *= unit_scale
+            matrix[1][3] *= unit_scale
+            matrix[2][3] *= unit_scale
+
+            # TODO: start param, and end param
+            geometry = tool.Loader.create_generic_shape(item.Directrix)
+            if not geometry:
+                continue
+            e = geometry.edges
+            v = geometry.verts
+            vertices = [list(matrix @ [v[i], v[i + 1], v[i + 2], 1]) for i in range(0, len(v), 3)]
+            edges = [[e[i], e[i + 1]] for i in range(0, len(e), 2)]
+            v2 = None
+            for edge in edges:
+                v1 = vertices[edge[0]]
+                if v1 != v2:
+                    polyline = new_polyline(item_style)
+                    polyline.points[-1].co = native_data["matrix"] @ Vector(v1)
+                v2 = vertices[edge[1]]
+                polyline.points.add(1)
+                polyline.points[-1].co = native_data["matrix"] @ Vector(v2)
+
+        curve.bevel_depth = unit_scale * item.Radius
+        thickness = None
+        if (inner_radius := item.InnerRadius) and (thickness := max(item.Radius - inner_radius, 0)):
+            thickness *= unit_scale
+            curve.use_fill_caps = False
+            # Shade flat.
+            for spline in curve.splines:
+                spline.use_smooth = False
+        else:
+            curve.use_fill_caps = True
+        return curve, thickness
+
+    @classmethod
+    def setup_native_swept_disk_solid_thickness(cls, obj: bpy.types.Object, thickness: Union[float, None]) -> None:
+        if not thickness:
+            return
+        modifier = obj.modifiers.new("Curve Thickness", type="SOLIDIFY")
+        assert isinstance(modifier, bpy.types.SolidifyModifier)
+        modifier.thickness = thickness

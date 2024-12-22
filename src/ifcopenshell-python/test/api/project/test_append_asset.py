@@ -433,6 +433,24 @@ class TestAppendAssetIFC2X3(test.bootstrap.IFC2X3):
         del shading_colour_info["id"], shading_colour_info["type"]
         assert shading_colour_info == shading_attrs["SurfaceColour"]
 
+    def test_update_rels_appending_subsequent_assets(self):
+        library = ifcopenshell.api.project.create_file(version=self.file.schema)
+        element1 = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWall")
+        pset = ifcopenshell.api.pset.add_pset(library, product=element1, name="Test")
+        element2 = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWall")
+        ifcopenshell.api.pset.assign_pset(library, pset=pset, products=[element2])
+
+        reuse_identities = {}
+        element1_ = ifcopenshell.api.project.append_asset(
+            self.file, library, element1, reuse_identities=reuse_identities
+        )
+        element2_ = ifcopenshell.api.project.append_asset(
+            self.file, library, element2, reuse_identities=reuse_identities
+        )
+        pset_data = ifcopenshell.util.element.get_psets(element1_)
+        assert "Test" in pset_data
+        assert ifcopenshell.util.element.get_psets(element2_) == pset_data
+
 
 class TestAppendAssetIFC4(test.bootstrap.IFC4, TestAppendAssetIFC2X3):
     # NOTE: breaks in IFC2X3 since IfcProfileDef doesn't have "HasProperties" inverse in ifc2x3

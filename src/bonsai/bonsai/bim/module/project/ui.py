@@ -173,6 +173,7 @@ class BIM_PT_project(Panel):
         row.prop(pprops, "should_load_geometry")
         row = self.layout.row()
         row.prop(pprops, "should_merge_materials_by_colour")
+        self.layout.prop(pprops, "load_indexed_maps")
         row = self.layout.row()
         row.prop(pprops, "geometry_library")
         row = self.layout.row()

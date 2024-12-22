@@ -132,6 +132,9 @@ class indeterminate_type:
     __pos__ = bop
     __getitem__ = bop
     __getattr__ = bop
+
+    def __iter__(self):
+        return iter(())
 INDETERMINATE = indeterminate_type()
 
 class enum_namespace:

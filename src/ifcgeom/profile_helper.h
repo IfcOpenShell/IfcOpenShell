@@ -28,6 +28,8 @@ namespace ifcopenshell {
 		taxonomy::loop::ptr profile_helper(const taxonomy::matrix4::ptr& m4, const std::vector<profile_point>& points);
 
 		taxonomy::loop::ptr fillet_loop(taxonomy::loop::ptr lp, double radius);
+
+		void remove_duplicate_points_from_loop(std::vector<taxonomy::point3::ptr>& polygon, bool closed, double tol);
 	}
 
 }

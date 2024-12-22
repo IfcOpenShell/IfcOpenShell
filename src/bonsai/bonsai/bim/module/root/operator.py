@@ -211,6 +211,18 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
                 )
                 continue
 
+            should_add_representation = self.should_add_representation
+            export_mesh_to_tesselation = False
+            if self.should_add_representation and isinstance(obj.data, bpy.types.Mesh) and obj.data.polygons:
+                should_add_representation = False
+                export_mesh_to_tesselation = True
+
+                if tool.Geometry.mesh_has_loose_geometry(obj.data):
+                    self.report(
+                        {"WARNING"},
+                        f"Mesh '{obj.data.name}' has loose geometry, loose geometry was be ignored to save mesh to IFC as a tessellation.",
+                    )
+
             element = core.assign_class(
                 tool.Ifc,
                 tool.Collector,
@@ -218,11 +230,12 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
                 obj=obj,
                 ifc_class=ifc_class,
                 predefined_type=predefined_type,
-                should_add_representation=False,
+                should_add_representation=should_add_representation,
                 context=ifc_context,
                 ifc_representation_class=self.ifc_representation_class,
             )
-            if self.should_add_representation and obj.data and len(obj.data.vertices):
+
+            if export_mesh_to_tesselation:
                 representation = tool.Geometry.export_mesh_to_tessellation(obj, ifc_context)
                 ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), element, representation)
                 bonsai.core.geometry.switch_representation(

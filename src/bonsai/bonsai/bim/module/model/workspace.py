@@ -29,7 +29,7 @@ from bpy.types import WorkSpaceTool, Menu
 from bonsai.bim.module.model.data import AuthoringData, ItemData
 from bonsai.bim.module.system.data import PortData
 from bonsai.bim.module.model.prop import get_ifc_class
-from typing import Optional
+from typing import Optional, Union
 
 
 # TODO duplicate code in cad/workspace and model/workspace
@@ -234,7 +234,9 @@ class CableTool(BimTool):
     ifc_element_type = "IfcCableSegmentType"
 
 
-def add_layout_hotkey_operator(layout, text, hotkey, description, ui_context=""):
+def add_layout_hotkey_operator(
+    layout: bpy.types.UILayout, text: str, hotkey: str, description: Union[str, None], ui_context: str = ""
+) -> bpy.types.OperatorProperties:
     parts = hotkey.split("_") if hotkey else []
     modifier, key = (parts + ["", ""])[:2]
 
@@ -954,10 +956,24 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
     def hotkey_S_A(self):
         props = bpy.context.scene.BIMModelProperties
         relating_type_id = AuthoringData.data["relating_type_id_current"]
+        if relating_type_id is None:
+            self.report({"ERROR"}, "No relating type selected")
+            return
         props.relating_type_id = relating_type_id
         if bpy.context.scene.BIMGeometryProperties.mode == "ITEM":
             bpy.ops.wm.call_menu(name="BIM_MT_add_representation_item")
         else:
+            walls = False
+            for obj in bpy.context.selected_objects:
+                walls = tool.Ifc.get_entity(obj).is_a("IfcWall")
+            if (
+                walls
+                and relating_type_id
+                and tool.Model.get_usage_type(tool.Ifc.get().by_id(int(relating_type_id))) == "LAYER3"
+            ):
+                bpy.ops.bim.draw_slab_from_wall("INVOKE_DEFAULT")
+                return {"FINISHED"}
+
             for obj in tool.Blender.get_selected_objects():
                 obj.select_set(False)
             if relating_type_id and tool.Model.get_usage_type(tool.Ifc.get().by_id(int(relating_type_id))) == "LAYER2":

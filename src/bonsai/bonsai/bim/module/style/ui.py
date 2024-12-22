@@ -220,7 +220,8 @@ class BIM_PT_styles(Panel):
         row = self.layout.row(align=True)
         row.label(text=f"Style has {len(textures)} textures", icon="SHADING_TEXTURE")
         row.operator("bim.add_surface_texture", text="", icon="ADD")
-        self.layout.prop(self.props, "uv_mode")
+        if textures:
+            self.layout.prop(self.props, "uv_mode")
 
         for i, texture in enumerate(textures):
             split = self.layout.split(factor=0.30, align=True)

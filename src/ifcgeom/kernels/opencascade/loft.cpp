@@ -21,11 +21,12 @@
 #include "base_utils.h"
 
 #include <TopExp.hxx>
-#include <BRepFill_Filling.hxx>
 #include <BRepTools_WireExplorer.hxx>
 #include <BRepBuilderAPI_MakeEdge.hxx>
 #include <BRepBuilderAPI_MakePolygon.hxx>
 #include <BRepBuilderAPI_MakeFace.hxx>
+#include <BRepOffsetAPI_ThruSections.hxx>
+#include <BRepBuilderAPI_MakeSolid.hxx>
 
 using namespace ifcopenshell::geometry;
 using namespace ifcopenshell::geometry::kernels;
@@ -33,18 +34,85 @@ using namespace IfcGeom;
 using namespace IfcGeom::util;
 
 bool OpenCascadeKernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& result) {
-	// @todo this approach based on BRepFill_Filling is both slow, as well as
-	// potentially incorrect as there is no guarantee that the wires for
-	// subsequently placed profiles are traversed from an equivalent start vertex.
-	
 	if (loft->children.size() < 2) {
 		return false;
+	}
+
+	bool non_polygonal = false;
+	for (auto& ch : loft->children) {
+		if (ch->kind() == taxonomy::FACE) {
+			const auto& f = std::static_pointer_cast<taxonomy::face>(ch);
+			for (auto& w : f->children) {
+				for (auto& e : w->children) {
+					if (e->basis && e->basis->kind() != taxonomy::LINE) {
+						non_polygonal = true;
+						break;
+					}
+				}
+				if (non_polygonal) {
+					break;
+				}
+			}
+			if (non_polygonal) {
+				break;
+			}
+		}
+	}
+
+	if (non_polygonal) {
+		if (loft->children.size() == 2) {
+			BRep_Builder BB;
+			TopoDS_Shell comp;
+			BB.MakeShell(comp);
+
+
+			TopoDS_Shape f0, f1;
+			if (!convert(std::static_pointer_cast<taxonomy::face>(loft->children.front()), f0) ||
+				!convert(std::static_pointer_cast<taxonomy::face>(loft->children.back()), f1))
+			{
+				return false;
+			}
+			if (f0.ShapeType() != TopAbs_FACE || f1.ShapeType() != TopAbs_FACE) {
+				return false;
+			}
+
+			TopExp_Explorer exp1(f0, TopAbs_WIRE);
+			TopExp_Explorer exp2(f1, TopAbs_WIRE);
+			for (; exp1.More() && exp2.More(); exp1.Next(), exp2.Next()) {
+				const auto& w1 = TopoDS::Wire(exp1.Current());
+				const auto& w2 = TopoDS::Wire(exp2.Current());
+				BRepOffsetAPI_ThruSections builder;
+				builder.AddWire(w1);
+				builder.AddWire(w2);
+				builder.Build();
+				if (!builder.IsDone()) {
+					return false;
+				}
+				for (TopExp_Explorer exp(builder.Shape(), TopAbs_FACE); exp.More(); exp.Next()) {
+					BB.Add(comp, exp.Current());
+				}
+			}
+
+			BB.Add(comp, f0.Reversed());
+			BB.Add(comp, f1);
+
+			result = BRepBuilderAPI_MakeSolid(comp).Solid();
+
+			return true;
+		} else {
+			Logger::Error("Lofting more than two sections is not supported");
+			return false;
+		}
 	}
 	
 	TopTools_ListOfShape faces;
 	TopoDS_Compound comp;
 	BRep_Builder BB;
 	BB.MakeCompound(comp);
+
+	// @todo this approach is
+	// potentially incorrect as there is no guarantee that the wires for
+	// subsequently placed profiles are traversed from an equivalent start vertex.
 
 	for (auto it = loft->children.begin(); it < loft->children.end() - 1; ++it) {
 		auto jt = it + 1;
