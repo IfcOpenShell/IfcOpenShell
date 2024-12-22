@@ -61,7 +61,15 @@ class SelectByMaterial(bpy.types.Operator):
     material: bpy.props.IntProperty()
 
     def execute(self, context):
-        core.select_by_material(tool.Material, tool.Spatial, material=tool.Ifc.get().by_id(self.material))
+        material=tool.Ifc.get().by_id(self.material)
+        core.select_by_material(tool.Material, tool.Spatial, material=material)
+        
+        # copy selection query to clipboard
+        material_name = material.Name
+        result = f'material="{material_name}"'  
+        bpy.context.window_manager.clipboard = result
+        self.report({"INFO"}, f"({result}) was copied to the clipboard.")
+        
         return {"FINISHED"}
 
 
