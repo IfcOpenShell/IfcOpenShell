@@ -23,6 +23,7 @@ import ifcopenshell.util.element
 import bonsai.tool as tool
 import bonsai.core.aggregate as core
 import bonsai.core.spatial
+from bonsai.bim.ifc import IfcStore
 
 
 class BIM_OT_aggregate_assign_object(bpy.types.Operator, tool.Ifc.Operator):
@@ -66,6 +67,11 @@ class BIM_OT_aggregate_assign_object(bpy.types.Operator, tool.Ifc.Operator):
                     relating_obj=relating_obj,
                     related_obj=obj,
                 )
+                tool.Aggregate.constrain_part_to_aggregate(obj, relating_obj)
+                props = context.scene.BIMAggregateProperties
+                if relating_obj == props.editing_aggregate and props.in_aggregate_mode:
+                    new_editing_obj = props.editing_objects.add()
+                    new_editing_obj.obj = obj
             except core.IncompatibleAggregateError:
                 self.report({"ERROR"}, f"Cannot aggregate {obj.name} to {relating_obj.name}")
             except core.AggregateRepresentationError:
@@ -94,6 +100,8 @@ class BIM_OT_aggregate_unassign_object(bpy.types.Operator, tool.Ifc.Operator):
                 relating_obj=tool.Ifc.get_object(aggregate),
                 related_obj=tool.Ifc.get_object(element),
             )
+
+            tool.Aggregate.apply_constraints(tool.Ifc.get_object(element))
 
             # Removes Pset related to Linked Aggregates
             if not element.is_a("IfcElementAssembly"):
@@ -177,6 +185,7 @@ class BIM_OT_add_aggregate(bpy.types.Operator, tool.Ifc.Operator):
                     element_obj=aggregate,
                 )
             core.assign_object(tool.Ifc, tool.Aggregate, tool.Collector, relating_obj=aggregate, related_obj=obj)
+            tool.Aggregate.constrain_all_parts_to_aggregate(aggregate)
 
     def create_aggregate(self, context, ifc_class, aggregate_name):
         aggregate = bpy.data.objects.new(aggregate_name, None)
@@ -365,3 +374,68 @@ class BIM_OT_select_linked_aggregates(bpy.types.Operator):
                         obj.select_set(True)
 
         return {"FINISHED"}
+
+class BIM_OT_disable_aggregate_mode(bpy.types.Operator):
+    bl_idname = "bim.disable_aggregate_mode"
+    bl_label = "Disable Aggregate Mode"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        bpy.ops.object.select_all(action="DESELECT")
+        bonsai.core.aggregate.disable_aggregate_mode(tool.Aggregate)
+        return {"FINISHED"}
+
+class BIM_OT_toggle_aggregate_mode_local_view(bpy.types.Operator):
+    bl_idname = "bim.toggle_aggregate_mode_local_view"
+    bl_label = "Toggle Aggregate Mode Local View"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        props = context.scene.BIMAggregateProperties
+        objs = [o.obj for o in props.editing_objects]
+        if props.in_aggregate_mode:
+            if context.space_data.local_view:
+                bpy.ops.view3d.localview()
+            else:
+                for obj in objs:
+                    obj.select_set(True)
+                bpy.ops.view3d.localview()
+
+        return {"FINISHED"}
+
+class BIM_OT_aggregate_assing_new_objects_in_aggregate_mode(bpy.types.Operator):
+    bl_idname = "bim.aggregate_assing_new_objects_in_aggregate_mode"
+    bl_label = "Aggregate Assing New Objects In Aggregate Mode"
+    bl_options = {"REGISTER", "UNDO"}
+    relating_object: bpy.props.IntProperty()
+    related_object: bpy.props.IntProperty()
+
+    def execute(self, context):
+        bpy.ops.object.select_all(action="DESELECT")
+        props = context.scene.BIMAggregateProperties
+        editing_objects = set([o.obj for o in props.editing_objects])
+        not_editing_objects = set([o.obj for o in props.not_editing_objects])
+        objs = []
+        visible_objects = tool.Raycast.get_visible_objects(context)
+        for obj in visible_objects:
+            if obj.visible_in_viewport_get(context.space_data):
+                objs.append(obj.original)
+        new_objs = set(objs) - not_editing_objects - editing_objects
+        new_objs = [o for o in new_objs if o.data]
+        for obj in new_objs:
+            element = tool.Ifc.get_entity(obj)
+            if (aggregate := ifcopenshell.util.element.get_aggregate(element)) == tool.Ifc.get_entity(props.editing_aggregate):
+                continue
+            if element and element.is_a("IfcElement"):
+                obj.select_set(True)
+                editing_obj = props.editing_objects.add()
+                editing_obj.obj = obj
+                props.editing_aggregate.select_set(True)
+        context.view_layer.objects.active = new_objs[0]
+        self.relating_object = tool.Ifc.get_entity(props.editing_aggregate).id()
+        self.related_object = tool.Ifc.get_entity(obj).id()
+
+        BIM_OT_aggregate_assign_object._execute(self, context)
+
+        return {"FINISHED"}
+
