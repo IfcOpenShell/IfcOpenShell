@@ -312,6 +312,7 @@ class Migrator:
         }
 
     def preprocess(self, old_file: ifcopenshell.file, new_file: ifcopenshell.file) -> None:
+        new_file.assign_header_from(old_file)
         to_delete = set()
 
         if old_file.schema == "IFC2X3" and new_file.schema == "IFC4":
