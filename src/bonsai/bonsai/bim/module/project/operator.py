@@ -1427,7 +1427,8 @@ class ExportIFC(bpy.types.Operator):
 
 class LoadLinkedProject(bpy.types.Operator):
     bl_idname = "bim.load_linked_project"
-    bl_label = "Load a project for viewing only."
+    bl_label = "Load Project For Viewing Only"
+    bl_description = "Operator is used to load a project .cache.blend to then link it to the IFC file."
     bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty()
 
@@ -1435,6 +1436,12 @@ class LoadLinkedProject(bpy.types.Operator):
     meshes: dict[str, bpy.types.Mesh]
     # Material names is derived from diffuse as in 'r-g-b-a'.
     blender_mats: dict[str, bpy.types.Material]
+
+    def invoke(self, context, event):
+        # Invoke is for debugging purposes, users are not intended to use this method really.
+        WindowManager = context.window_manager
+        WindowManager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
 
     def execute(self, context):
         import ifcpatch
