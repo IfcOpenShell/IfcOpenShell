@@ -282,7 +282,7 @@ class ShapeBuilder:
             ifc_points = [self.file.create_entity("IfcCartesianPoint", p) for p in points.tolist()]
             if closed:
                 ifc_points.append(ifc_points[0])
-            ifc_curve = self.file.createIfcPolyline(Points=points)
+            ifc_curve = self.file.createIfcPolyline(Points=ifc_points)
             return ifc_curve
 
         dimensions = len(points[0])
