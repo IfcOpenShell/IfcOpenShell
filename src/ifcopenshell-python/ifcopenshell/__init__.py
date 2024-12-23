@@ -158,7 +158,7 @@ def open(
         print(products[0] == model[122] == model["2XQ$n5SLP5MBLyL442paFx"]) # True
     """
     path = Path(path)
-    if not path.exists():
+    if not path.is_file():
         raise FileNotFoundError(f"File does not exist: '{path}'.")
     if format is None:
         format = guess_format(path)
