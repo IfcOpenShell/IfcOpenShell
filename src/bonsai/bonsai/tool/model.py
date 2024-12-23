@@ -677,9 +677,9 @@ class Model(bonsai.core.tool.Model):
         cls, walls: list[bpy.types.Object], opposite_direction: bool = False
     ) -> list[bpy.types.Object]:
         """
-        Loop through walls by retrieving the next connected wall using the ConnectedTo attribute. 
-        If the function encounters the first wall again, it will return the list of connected walls and indicate that a closed loop has been formed. 
-        If it reaches the end of the connections, the function will call itself in the opposite direction using the ConnectedFrom method 
+        Loop through walls by retrieving the next connected wall using the ConnectedTo attribute.
+        If the function encounters the first wall again, it will return the list of connected walls and indicate that a closed loop has been formed.
+        If it reaches the end of the connections, the function will call itself in the opposite direction using the ConnectedFrom method
         to obtain a list of connected walls in an open loop.
         """
 
@@ -716,8 +716,8 @@ class Model(bonsai.core.tool.Model):
     @classmethod
     def get_polygons_from_wall_axis(cls, walls: list[bpy.types.Object]) -> list[shapely.Polygon]:
         """
-        Get the polygons formed by the intersection of the wall axis reference and side. 
-        The polygon with the larger area will be considered the external polygon. 
+        Get the polygons formed by the intersection of the wall axis reference and side.
+        The polygon with the larger area will be considered the external polygon.
         This function only works with closed loops.
         """
         points1 = []

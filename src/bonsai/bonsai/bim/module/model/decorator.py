@@ -1157,6 +1157,7 @@ class ProductDecorator:
                 "TRIS", product_preview_data["verts"], transparent_color(decorator_color), product_preview_data["tris"]
             )
 
+
 class WallAxisDecorator:
     is_installed = False
     handlers = []
@@ -1166,9 +1167,7 @@ class WallAxisDecorator:
         if cls.is_installed:
             cls.uninstall()
         handler = cls()
-        cls.handlers.append(
-            SpaceView3D.draw_handler_add(handler.draw_wall_axis, (context,), "WINDOW", "POST_VIEW")
-        )
+        cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_wall_axis, (context,), "WINDOW", "POST_VIEW"))
         cls.is_installed = True
 
     @classmethod
@@ -1206,9 +1205,7 @@ class WallAxisDecorator:
             if element.is_a("IfcWall"):
                 layers = tool.Model.get_material_layer_parameters(element)
                 axis = tool.Model.get_wall_axis(obj, layers)
-                verts = [tuple(list(v) + [0.0] )for v in axis["reference"]]
-                self.draw_batch("LINES", verts, selected_elements_color, [(0,1)])
-                verts = [tuple(list(v) + [0.0] )for v in axis["side"]]
-                self.draw_batch("LINES", verts, unselected_elements_color, [(0,1)])
-                
-
+                verts = [tuple(list(v) + [0.0]) for v in axis["reference"]]
+                self.draw_batch("LINES", verts, selected_elements_color, [(0, 1)])
+                verts = [tuple(list(v) + [0.0]) for v in axis["side"]]
+                self.draw_batch("LINES", verts, unselected_elements_color, [(0, 1)])

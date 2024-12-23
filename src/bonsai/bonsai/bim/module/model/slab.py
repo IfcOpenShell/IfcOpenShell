@@ -117,7 +117,7 @@ class DumbSlabGenerator:
         # Always assume a closed polyline
         if self.polyline[0] != self.polyline[-1]:
             self.polyline.append(self.polyline[0])
-        
+
         return self.create_slab()
 
     def create_slab(self):
@@ -770,11 +770,15 @@ class AddSlabFromWall(bpy.types.Operator, tool.Ifc.Operator):
             return {"FINISHED"}
         walls, is_closed_loop = tool.Model.get_connected_walls(bpy.context.selected_objects)
         if not is_closed_loop:
-            self.report({"WARNING"}, "Please select a closed loop of walls, or deselect the walls to add a slab using the polyline tool.")
+            self.report(
+                {"WARNING"},
+                "Please select a closed loop of walls, or deselect the walls to add a slab using the polyline tool.",
+            )
             return {"FINISHED"}
-        
+
         DumbSlabGenerator(self.relating_type).generate("WALLS")
         return {"FINISHED"}
+
 
 class DrawPolylineSlab(bpy.types.Operator, PolylineOperator):
     bl_idname = "bim.draw_polyline_slab"
