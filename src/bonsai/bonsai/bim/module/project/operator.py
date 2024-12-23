@@ -465,11 +465,11 @@ class AppendLibraryElement(bpy.types.Operator, tool.Ifc.Operator):
         if element.is_a("IfcTypeProduct"):
             self.import_type_from_ifc(element, context)
         elif element.is_a("IfcProduct"):
-            # NOTE: not used as UI doesn't allow appending non-types
+            # NOTE: Non-types are not exposed in UI directly
+            # but the code is still used when appending products by query.
             self.import_product_from_ifc(element, context)
             element_type = ifcopenshell.util.element.get_type(element)
-            obj = tool.Ifc.get_object(element_type)
-            if obj is None:
+            if element_type is not None and tool.Ifc.get_object(element_type) is None:
                 self.import_type_from_ifc(element_type, context)
         elif element.is_a("IfcMaterial"):
             self.import_material_from_ifc(element, context)
