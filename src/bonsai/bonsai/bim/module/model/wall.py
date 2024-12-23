@@ -1191,7 +1191,7 @@ class DumbWallJoiner:
         axis1 = tool.Model.get_wall_axis(wall1)
         axis2 = tool.Model.get_wall_axis(wall2)
         intersect = tool.Cad.intersect_edges(axis1["reference"], axis2["reference"])
-        # Allow connecting contiguos walls
+        # Allow connecting contiguous walls
         if not intersect:
             for v1 in axis1["reference"]:
                 for v2 in axis2["reference"]:
