@@ -674,44 +674,39 @@ class Model(bonsai.core.tool.Model):
 
     @classmethod
     def get_connected_walls(
-        cls, walls: list[bpy.types.Object], opposite_direction: bool = False
-    ) -> list[bpy.types.Object]:
+        cls, walls: list[bpy.types.Object]) -> list[bpy.types.Object]:
         """
-        Loop through walls by retrieving the next connected wall using the ConnectedTo attribute.
-        If the function encounters the first wall again, it will return the list of connected walls and indicate that a closed loop has been formed.
-        If it reaches the end of the connections, the function will call itself in the opposite direction using the ConnectedFrom method
-        to obtain a list of connected walls in an open loop.
+        Loop through walls by retrieving the next connected wall using the connection path.
+        If the function encounters the first wall again, it will return the list of connected walls.
         """
 
-        is_closed_loop = False
-        wall1 = tool.Ifc.get_entity(walls[0])
-        wall = wall1
-        if not opposite_direction:
-            connection = "ConnectedTo"
-            relation = "RelatedElement"
-        else:
-            connection = "ConnectedFrom"
-            relation = "RelatingElement"
+        first_wall = tool.Ifc.get_entity(walls[0])
+        previous_wall = None
+        current_wall = first_wall
+        ordered_walls = [first_wall]
 
-        ordered_walls = []
-        ordered_walls.append(wall1)
         for i in range(len(walls)):
-            if not getattr(wall, connection) or (
-                next_wall := tool.Ifc.get_object(getattr(getattr(wall, connection)[0], relation)) not in walls
-            ):
-                if opposite_direction:
-                    return ordered_walls, is_closed_loop
-                ordered_walls, is_closed_loop = cls.get_connected_walls(walls, True)
-                break
-            next_wall = getattr(getattr(wall, connection)[0], relation)
-            if next_wall == wall1:
-                is_closed_loop = True
-                break
-            else:
-                ordered_walls.append(next_wall)
-                wall = next_wall
+            paths = []
+            paths.extend([path for path in current_wall.ConnectedTo])
+            paths.extend([path for path in current_wall.ConnectedFrom])
 
-        return [tool.Ifc.get_object(wall) for wall in ordered_walls], is_closed_loop
+            if len(paths) <= 1:
+                return []
+
+            for path in paths:
+                next_wall = path.RelatedElement if path.RelatedElement != current_wall else path.RelatingElement
+                if next_wall == previous_wall:
+                    continue
+                    
+                if next_wall != current_wall and next_wall != first_wall and next_wall not in ordered_walls:
+                    ordered_walls.append(next_wall)
+                    previous_wall = current_wall
+                    current_wall = next_wall
+                    break
+
+                if next_wall == first_wall:
+                    return [tool.Ifc.get_object(wall) for wall in ordered_walls]
+        return []
 
     @classmethod
     def get_polygons_from_wall_axis(cls, walls: list[bpy.types.Object]) -> list[shapely.Polygon]:
@@ -727,8 +722,18 @@ class Model(bonsai.core.tool.Model):
             layers2 = tool.Model.get_material_layer_parameters(tool.Ifc.get_entity(w2))
             axis1 = tool.Model.get_wall_axis(w1, layers1)
             axis2 = tool.Model.get_wall_axis(w2, layers2)
-            intersection1 = tool.Cad.intersect_edges(axis1["reference"], axis2["reference"])
-            intersection2 = tool.Cad.intersect_edges(axis1["side"], axis2["side"])
+            intersection1 = tool.Cad.intersect_edges_v2(axis1["reference"], axis2["reference"])
+            intersection2 = tool.Cad.intersect_edges_v2(axis1["side"], axis2["side"])
+            if intersection1[0] is None or intersection2[0] is None:
+                for v1 in axis1["reference"]:
+                    for v2 in axis2["reference"]:
+                        if tool.Cad.are_vectors_equal(v1, v2, 1e-5):
+                            intersection1 = [v1]
+                for v1 in axis1["side"]:
+                    for v2 in axis2["side"]:
+                        if tool.Cad.are_vectors_equal(v1, v2, 1e-5):
+                            intersection2 = [v1]
+
             points1.append(intersection1[0])
             points2.append(intersection2[0])
 
