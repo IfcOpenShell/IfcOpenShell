@@ -1521,17 +1521,20 @@ class LoadLinkedProject(bpy.types.Operator):
             )
             self.meshes = {}
             self.blender_mats = {}
-            blender_mats = {}
+            blender_mats: dict[tuple[float, float, float, float], bpy.types.Material] = {}
 
             default_mat = np.array([[1, 1, 1, 1]], dtype=np.float32)
-            chunked_guids = []
-            chunked_guid_ids = []
-            chunked_verts = []
-            chunked_faces = []
-            chunked_materials = []
-            chunked_material_ids = []
+            chunked_guids: list[str] = []
+            chunked_guid_ids: list[int] = []
+            chunked_verts: list[np.ndarray] = []
+            chunked_faces: list[np.ndarray] = []
+            # List of material colors.
+            chunked_materials: list[np.ndarray] = []
+            # List of material indices for each face.
+            chunked_material_ids: list[np.ndarray] = []
             material_offset = 0
             chunk_size = 10000
+            # Vertex offset.
             offset = 0
 
             ci = 0
@@ -1771,7 +1774,15 @@ class LoadLinkedProject(bpy.types.Operator):
 
         self.collection.objects.link(obj)
 
-    def create_object(self, verts, faces, materials: list[bpy.types.Material], material_ids, guids, guid_ids):
+    def create_object(
+        self,
+        verts: np.ndarray,
+        faces: np.ndarray,
+        materials: list[bpy.types.Material],
+        material_ids: np.ndarray,
+        guids: list[str],
+        guid_ids: list[int],
+    ) -> None:
         num_vertices = len(verts) // 3
         if not num_vertices:
             return
