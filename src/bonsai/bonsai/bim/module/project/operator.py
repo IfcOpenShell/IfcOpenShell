@@ -1549,9 +1549,10 @@ class LoadLinkedProject(bpy.types.Operator):
                 while True:
                     shape = iterator.get()
                     results.add(self.file.by_id(shape.id))
+                    geometry = shape.geometry
 
                     # Elements with a lot of geometry benefit from instancing to save memory
-                    if len(shape.geometry.faces) > 1000:  # 333 tris
+                    if ifcopenshell.util.shape.get_faces(geometry).shape[0] > 333:  # 333 tris
                         self.process_occurrence(shape)
                         if not iterator.next():
                             if not chunked_verts:
@@ -1611,7 +1612,7 @@ class LoadLinkedProject(bpy.types.Operator):
                     vs = ifcopenshell.util.shape.get_vertices(shape.geometry)
                     vs = np.hstack((vs, np.ones((len(vs), 1))))
                     vs = (np.asmatrix(matrix) * np.asmatrix(vs).T).T.A
-                    vs = vs[:, :3].flatten()
+                    vs = vs[:, :3].ravel()
                     fs = ifcopenshell.util.shape.get_faces(shape.geometry).ravel()
                     chunked_verts.append(vs)
                     chunked_faces.append(fs + offset)
