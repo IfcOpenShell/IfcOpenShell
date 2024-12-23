@@ -1148,10 +1148,13 @@ class RevertClippingPlaneCut(bpy.types.Operator):
 class CopyTextToClipboard(bpy.types.Operator):
     bl_idname = "bim.copy_text_to_clipboard"
     bl_label = "Copy Text To Clipboard"
-    bl_description = "Copy text to clipboard."
     bl_options = set()
 
     text: bpy.props.StringProperty(options={"SKIP_SAVE"})
+
+    @classmethod
+    def description(cls, context, properties):
+        return f"Copy text to clipboard: '{properties.text}'."
 
     def execute(self, context):
         context.window_manager.clipboard = self.text
