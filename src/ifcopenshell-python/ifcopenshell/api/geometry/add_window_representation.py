@@ -711,6 +711,7 @@ class Usecase:
                 frame_size = window_lining_size.copy()
                 frame_size[np_Y] = frame_depth
                 frame_size[np_X] -= x_offsets[0] + x_offsets[2]
+                frame_size[np_Z] -= x_offsets[1] + x_offsets[3]
 
                 window_panel_position = V(accumulated_width, 0, accumulated_height[column_i])
                 # create window panel
