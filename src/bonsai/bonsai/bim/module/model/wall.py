@@ -846,8 +846,29 @@ class DumbWallJoiner:
         wall2 = self.duplicate_wall(wall1)
         element2 = tool.Ifc.get_entity(wall2)
 
-        ifcopenshell.api.run("geometry.disconnect_path", tool.Ifc.get(), element=element1, connection_type="ATEND")
-        ifcopenshell.api.run("geometry.disconnect_path", tool.Ifc.get(), element=element2, connection_type="ATSTART")
+        # Get the ATEND connection from wall1 to use it in wall2
+        relating_element = None
+        connections = element1.ConnectedTo
+        for conn in connections:
+            if conn.RelatingConnectionType == "ATEND":
+                relating_element = conn.RelatedElement
+                description = conn.Description
+        connections = element1.ConnectedFrom
+        for conn in connections:
+            if conn.RelatedConnectionType == "ATEND":
+                relating_element = conn.RelatingElement
+                description = conn.Description
+
+        if relating_element:
+            ifcopenshell.api.run(
+                "geometry.connect_path",
+                tool.Ifc.get(),
+                relating_element=relating_element,
+                related_element=element2,
+                relating_connection="ATSTART",
+                related_connection="ATEND",
+                description=description,
+            )
 
         # During the duplication process, unfilled voids are copied, so we need
         # to check openings on both element1 and element2. Let's check element1
@@ -887,6 +908,21 @@ class DumbWallJoiner:
 
         axis1["reference"][1] = intersect
         axis2["reference"][0] = intersect
+
+        # Create a connection between the walls
+        wall1_end = "ATEND" if tool.Cad.edge_percent(intersect, axis1["reference"]) > 0.5 else "ATSTART"
+        wall2_end = "ATEND" if tool.Cad.edge_percent(intersect, axis2["reference"]) > 0.5 else "ATSTART"
+
+        ifcopenshell.api.run(
+            "geometry.connect_path",
+            tool.Ifc.get(),
+            relating_element=element1,
+            related_element=element2,
+            relating_connection=wall1_end,
+            related_connection=wall2_end,
+            description="MITRE",
+        )
+
         self.recreate_wall(element1, wall1, axis1["reference"], axis1["reference"])
         self.recreate_wall(element2, wall2, axis2["reference"], axis2["reference"])
 
