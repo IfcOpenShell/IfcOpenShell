@@ -628,7 +628,7 @@ class file:
     def __iter__(self) -> Generator[ifcopenshell.entity_instance, None, None]:
         return iter(self[id] for id in self.wrapped_data.entity_names())
 
-    def assign_header_from(self, other):
+    def assign_header_from(self, other: ifcopenshell.file) -> None:
         for k, vs in HEADER_FIELDS.items():
             for v in vs:
                 setattr(getattr(self.header, k), v, getattr(getattr(other.header, k), v))

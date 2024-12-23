@@ -41,13 +41,9 @@ def is_x(value: float, x: float, tolerance: Optional[float] = None) -> bool:
     """Checks whether a value is equivalent to X given a tolerance
 
     :param value: Input value
-    :type value: float
     :param x: The value to compare to
-    :type x: float
     :param tolerance: The tolerance to use. Defaults to 1e-6.
-    :type tolerance: float
     :return: True or false
-    :rtype: bool
     """
     if tolerance is None:
         tolerance = tol
@@ -60,9 +56,7 @@ def get_volume(geometry: ShapeType) -> float:
     Volumes of non-manifold geometry will be unpredictable.
 
     :param geometry: Geometry output calculated by IfcOpenShell
-    :type geometry: geometry
     :return: The volume in m3
-    :rtype: float
     """
 
     # https://stackoverflow.com/questions/1406029/how-to-calculate-the-volume-of-a-3d-mesh-object-the-surface-of-which-is-made-up
@@ -90,9 +84,7 @@ def get_x(geometry: ShapeType) -> float:
     """Calculates the X length of the geometry
 
     :param geometry: Geometry output calculated by IfcOpenShell
-    :type geometry: geometry
     :return: The X dimension
-    :rtype: float
     """
     verts_flat = get_vertices(geometry).ravel()
     return np.max(verts_flat[0::3]) - np.min(verts_flat[0::3])
@@ -102,9 +94,7 @@ def get_y(geometry: ShapeType) -> float:
     """Calculates the Y length of the geometry
 
     :param geometry: Geometry output calculated by IfcOpenShell
-    :type geometry: geometry
     :return: The Y dimension
-    :rtype: float
     """
     verts_flat = get_vertices(geometry).ravel()
     return np.max(verts_flat[1::3]) - np.min(verts_flat[1::3])
@@ -114,9 +104,7 @@ def get_z(geometry: ShapeType) -> float:
     """Calculates the Z length of the geometry
 
     :param geometry: Geometry output calculated by IfcOpenShell
-    :type geometry: geometry
     :return: The Z dimension
-    :rtype: float
     """
     verts_flat = get_vertices(geometry).ravel()
     return np.max(verts_flat[2::3]) - np.min(verts_flat[2::3])
@@ -126,9 +114,7 @@ def get_max_xy(geometry: ShapeType) -> float:
     """Gets the maximum X or Y length of the geometry
 
     :param geometry: Geometry output calculated by IfcOpenShell
-    :type geometry: geometry
     :return: The maximum possible value out of the X and Y dimension
-    :rtype: float
     """
     return max(get_x(geometry), get_y(geometry))
 
@@ -137,9 +123,7 @@ def get_max_xyz(geometry: ShapeType) -> float:
     """Gets the maximum X, Y, or Z length of the geometry
 
     :param geometry: Geometry output calculated by IfcOpenShell
-    :type geometry: geometry
     :return: The maximum possible value out of the X, Y, and Z dimension
-    :rtype: float
     """
     return max(get_x(geometry), get_y(geometry), get_z(geometry))
 
@@ -148,9 +132,7 @@ def get_min_xyz(geometry: ShapeType) -> float:
     """Gets the minimum X, Y, or Z length of the geometry
 
     :param geometry: Geometry output calculated by IfcOpenShell
-    :type geometry: geometry
     :return: The minimum possible value out of the X, Y, and Z dimension
-    :rtype: float
     """
     return min(get_x(geometry), get_y(geometry), get_z(geometry))
 
@@ -159,9 +141,7 @@ def get_shape_matrix(shape: ShapeElementType) -> MatrixType:
     """Formats the transformation matrix of a shape as a 4x4 numpy array
 
     :param shape: Shape output calculated by IfcOpenShell
-    :type shape: shape
     :return: A 4x4 numpy array representing the transformation matrix
-    :rtype: MatrixType
     """
     return np.array(shape.transformation.matrix).reshape((4, 4), order="F")
 
@@ -172,9 +152,7 @@ def get_bbox_centroid(geometry: ShapeType) -> tuple[float, float, float]:
     The centroid is in local coordinates relative to the object's placement.
 
     :param geometry: Geometry output calculated by IfcOpenShell
-    :type geometry: geometry
     :return: A tuple representing the XYZ centroid
-    :rtype: tuple[float, float, float]
     """
     vertices_array = get_vertices(geometry)
     return (np.min(vertices_array, axis=0) + np.max(vertices_array, axis=0)) / 2
@@ -186,9 +164,7 @@ def get_vert_centroid(geometry: ShapeType) -> tuple[float, float, float]:
     The centroid is in local coordinates relative to the object's placement.
 
     :param geometry: Geometry output calculated by IfcOpenShell
-    :type geometry: geometry
     :return: A tuple representing the XYZ centroid
-    :rtype: tuple[float, float, float]
     """
     return np.mean(get_vertices(geometry), axis=0)
 
@@ -200,11 +176,8 @@ def get_element_bbox_centroid(element: ifcopenshell.entity_instance, geometry) -
     is more efficient to use ``get_shape_bbox_centroid``.
 
     :param element: The element occurrence
-    :type: ifcopenshell.entity_instance
     :param geometry: Geometry output calculated by IfcOpenShell
-    :type geometry: geometry
     :return: A tuple representing the XYZ centroid
-    :rtype: npt.NDArray[np.float64]
     """
     centroid = get_bbox_centroid(geometry)
     if not element.ObjectPlacement or not element.ObjectPlacement.is_a("IfcLocalPlacement"):
@@ -220,11 +193,8 @@ def get_shape_bbox_centroid(shape: ShapeType, geometry: ShapeType) -> npt.NDArra
     shape, you can use ``get_element_bbox_centroid``.
 
     :param shape: Shape output calculated by IfcOpenShell
-    :type shape: shape
     :param geometry: Geometry output calculated by IfcOpenShell
-    :type geometry: geometry
     :return: A tuple representing the XYZ centroid
-    :rtype: npt.NDArray[np.float64]
     """
     centroid = get_bbox_centroid(geometry)
     return (get_shape_matrix(shape) @ np.array([*centroid, 1.0]))[0:3]
@@ -235,13 +205,10 @@ def get_vertices(geometry: ShapeType, is_2d: bool = False) -> npt.NDArray[np.flo
 
     Vertices are in local coordinates.
 
-    Results are a nested numpy array e.g. [[v1x, v1y, v1z], [v2x, v2y, v2z], ...]
-
     :param geometry: Geometry output calculated by IfcOpenShell
-    :type geometry: geometry
     :param is_2d: Set to True to to get XY coordinates only.
-    :return: A numpy array listing all the vertices. Each vertex is a numpy array with XYZ coordinates.
-    :rtype: np.array[np.array[float]]
+    :return: A numpy array listing all the vertices and their coordinates.
+        Array shape: (n, 3), where n - number of vertices.
     """
     if is_2d:
         return np.frombuffer(geometry.verts_buffer, "d").reshape(-1, 3)[:, :2]
@@ -258,9 +225,8 @@ def get_edges(geometry: ShapeType) -> npt.NDArray[np.int32]:
     ngons.
 
     :param geometry: Geometry output calculated by IfcOpenShell
-    :type geometry: geometry
-    :return: A numpy array listing all the edges. Each edge is a numpy array with two vertex indices.
-    :rtype: np.array[np.array[int]]
+    :return: A numpy array listing all the edges.
+        Array shape: (n, 2), where n - number of edges.
     """
     return np.frombuffer(geometry.edges_buffer, dtype="i").reshape(-1, 2)
 
@@ -274,9 +240,8 @@ def get_faces(geometry: ShapeType) -> npt.NDArray[np.int32]:
     Results are a nested numpy array e.g. [[f1v1, f1v2, f1v3], [f2v1, f2v2, f2v3], ...]
 
     :param geometry: Geometry output calculated by IfcOpenShell
-    :type geometry: geometry
-    :return: A numpy array listing all the faces. Each face is a numpy array with three vertex indices.
-    :rtype: np.array[np.array[int]]
+    :return: A numpy array listing all the faces.
+        Array shape: (n, 3), where n - number of faces.
     """
     return np.frombuffer(geometry.faces_buffer, dtype="i").reshape(-1, 3)
 
@@ -285,6 +250,7 @@ def get_material_colors(geometry: ShapeType) -> npt.NDArray[np.float64]:
     """Get material colors as a numpy array.
 
     :return: A numpy array listing RGBA color for each shape's material.
+        Array shape: (1, 4).
     """
     # colors_buffer comes from geometry.materials and doesn't account
     # for colors that can be set by some other way (e.g. IfcIndexedColourMap).
@@ -297,6 +263,7 @@ def get_normals(geometry: ShapeType) -> npt.NDArray[np.float64]:
     See geometry settings documentation for settings that affect normals.
 
     :return: A numpy array listing normal for each shape vertex.
+        Array shape: (1, 3).
     """
     return np.frombuffer(geometry.normals_buffer, dtype="d").reshape(-1, 3)
 
@@ -348,11 +315,9 @@ def get_shape_vertices(shape: ShapeType, geometry: ShapeType) -> npt.NDArray[np.
     Results are a nested numpy array e.g. [[v1x, v1y, v1z], [v2x, v2y, v2z], ...]
 
     :param shape: Shape output calculated by IfcOpenShell
-    :type shape: shape
     :param geometry: Geometry output calculated by IfcOpenShell
-    :type geometry: geometry
     :return: A numpy array listing all the vertices. Each vertex is a numpy array with XYZ coordinates.
-    :rtype: np.array[np.array[float]]
+        Array shape: (n, 3), where n - number of vertices.
     """
     verts = get_vertices(geometry)
     mat = get_shape_matrix(shape)
@@ -368,11 +333,8 @@ def get_element_vertices(element: ifcopenshell.entity_instance, geometry: ShapeT
     Results are a nested numpy array e.g. [[v1x, v1y, v1z], [v2x, v2y, v2z], ...]
 
     :param element: The element occurrence
-    :type: ifcopenshell.entity_instance
     :param geometry: Geometry output calculated by IfcOpenShell
-    :type geometry: geometry
     :return: A numpy array listing all the vertices. Each vertex is a numpy array with XYZ coordinates.
-    :rtype: np.array[np.array[float]]
     """
     verts = get_vertices(geometry)
     if not element.ObjectPlacement or not element.ObjectPlacement.is_a("IfcLocalPlacement"):
@@ -385,9 +347,7 @@ def get_bottom_elevation(geometry: ShapeType) -> float:
     """Gets the lowest local Z ordinate of the geometry
 
     :param geometry: Geometry output calculated by IfcOpenShell
-    :type geometry: geometry
     :return: The Z value
-    :rtype: float
     """
     z_values = [geometry.verts[i + 2] for i in range(0, len(geometry.verts), 3)]
     return min(z_values)
@@ -397,9 +357,7 @@ def get_top_elevation(geometry: ShapeType) -> float:
     """Gets the highest local Z ordinate of the geometry
 
     :param geometry: Geometry output calculated by IfcOpenShell
-    :type geometry: geometry
     :return: The Z value
-    :rtype: float
     """
     verts_flat = get_vertices(geometry).ravel()
     return np.max(verts_flat[2::3])
@@ -412,11 +370,8 @@ def get_shape_bottom_elevation(shape: ShapeType, geometry: ShapeType) -> float:
     instead.
 
     :param shape: Shape output calculated by IfcOpenShell
-    :type shape: shape
     :param geometry: Geometry output calculated by IfcOpenShell
-    :type geometry: geometry
     :return: The Z value
-    :rtype: float
     """
     return min([v[2] for v in get_shape_vertices(shape, geometry)])
 
@@ -428,11 +383,8 @@ def get_shape_top_elevation(shape: ShapeType, geometry: ShapeType) -> float:
     instead.
 
     :param shape: Shape output calculated by IfcOpenShell
-    :type shape: shape
     :param geometry: Geometry output calculated by IfcOpenShell
-    :type geometry: geometry
     :return: The Z value
-    :rtype: float
     """
     return max([v[2] for v in get_shape_vertices(shape, geometry)])
 
@@ -444,11 +396,8 @@ def get_element_bottom_elevation(element: ifcopenshell.entity_instance, geometry
     ``get_shape_bottom_elevation``.
 
     :param element: The element occurrence
-    :type: ifcopenshell.entity_instance
     :param geometry: Geometry output calculated by IfcOpenShell
-    :type geometry: geometry
     :return: The Z value
-    :rtype: float
     """
     return min([v[2] for v in get_element_vertices(element, geometry)])
 
@@ -460,11 +409,8 @@ def get_element_top_elevation(element: ifcopenshell.entity_instance, geometry: S
     ``get_shape_top_elevation``.
 
     :param element: The element occurrence
-    :type: ifcopenshell.entity_instance
     :param geometry: Geometry output calculated by IfcOpenShell
-    :type geometry: geometry
     :return: The Z value
-    :rtype: float
     """
     return max([v[2] for v in get_element_vertices(element, geometry)])
 
@@ -473,12 +419,10 @@ def get_bbox(vertices: Iterable[VECTOR_3D]) -> tuple[npt.NDArray[np.float64], np
     """Gets the bounding box of vertices
 
     :param vertices: An iterable of vertices
-    :type: iterable
     :return: The bounding box value represented as a tuple of two numpy arrays.
         The first holds the bottom left corner and the second holds the top
         right.  E.g.  (np.array([minx, miny, minz]), np.array([maxx, maxy,
         maxz]))
-    :rtype: tuple[np.array[float]]
     """
     x_values = [v[0] for v in vertices]
     y_values = [v[1] for v in vertices]
@@ -496,11 +440,8 @@ def get_area_vf(vertices: npt.NDArray[np.float64], faces: npt.NDArray[np.int32])
     """Calculates the surface area given a list of vertices and triangulated faces
 
     :param vertices: A list of 3D vertices, such as returned from get_vertices.
-    :type: np.array[iterable[float]]
     :param faces: A list of faces, such as returned from get_faces.
-    :type: np.array[iterable[int]]
     :return: The surface area.
-    :rtype: float
     """
     # Calculate the triangle normal vectors
     v1 = vertices[faces[:, 1]] - vertices[faces[:, 0]]
@@ -520,9 +461,7 @@ def get_area(geometry: ShapeType) -> float:
     """Calculates the surface area of the geometry
 
     :param geometry: Geometry output calculated by IfcOpenShell
-    :type geometry: geometry
     :return: The surface area.
-    :rtype: float
     """
     vertices = get_vertices(geometry)
     faces = get_faces(geometry)
@@ -548,12 +487,9 @@ def get_side_area(
     you want the projected area, use ``get_footprint_area``.
 
     :param geometry: Geometry output calculated by IfcOpenShell
-    :type geometry: geometry
     :param axis: Either X, Y, or Z. Defaults to Y, which is used for standard
         walls.
-    :type axis: str
     :return: The surface area.
-    :rtype: float
     """
     if direction is None:
         direction = {"X": (1.0, 0.0, 0.0), "Y": (0.0, 1.0, 0.0), "Z": (0.0, 0.0, 1.0)}[axis]
@@ -585,9 +521,7 @@ def get_max_side_area(geometry: ShapeType) -> float:
     See :func:`get_side_area` for how side area is calculated.
 
     :param geometry: Geometry output calculated by IfcOpenShell
-    :type geometry: geometry
     :return: The maximum surface area from either the X, Y, or Z axis.
-    :rtype: float
     """
     return max(get_side_area(geometry, axis="X"), get_side_area(geometry, axis="Y"), get_side_area(geometry, axis="Z"))
 
@@ -611,14 +545,10 @@ def get_footprint_area(
     area. If you want the actual area, use ``get_side_area``.
 
     :param geometry: Geometry output calculated by IfcOpenShell
-    :type geometry: geometry
     :param axis: Either X, Y, or Z. Defaults to Z.
-    :type axis: str,optional
     :param direction: An XYZ iterable (e.g. (0., 0., 1.)). If a direction
         vector is specified, this overrides the axis argument.
-    :type axis: iterable[float],optional
     :return: The surface area.
-    :rtype: float
     """
     if direction is None:
         direction = {"X": (1.0, 0.0, 0.0), "Y": (0.0, 1.0, 0.0), "Z": (0.0, 0.0, 1.0)}[axis]
@@ -682,9 +612,7 @@ def get_outer_surface_area(geometry: ShapeType) -> float:
     exclude the end faces (at the minimum and maximum local Z).
 
     :param geometry: Geometry output calculated by IfcOpenShell
-    :type geometry: geometry
     :return: The surface area.
-    :rtype: float
     """
     vertices = get_vertices(geometry)
     faces = get_faces(geometry)
@@ -710,9 +638,7 @@ def get_footprint_perimeter(geometry: ShapeType) -> float:
     perimeter edges are totaled.
 
     :param geometry: Geometry output calculated by IfcOpenShell
-    :type geometry: geometry
     :return: The perimeter length
-    :rtype: float
     """
     vertices = get_vertices(geometry)
     faces = get_faces(geometry)
@@ -757,9 +683,7 @@ def get_profiles(element: ifcopenshell.entity_instance) -> list[ifcopenshell.ent
     solid extrusions. This is useful for later doing 2D take-off from profiles.
 
     :param element: The element occurrence
-    :type: ifcopenshell.entity_instance
     :return: A list of profiles
-    :rtype: list[ifcopenshell.entity_instance]
     """
     material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
     if material and material.is_a("IfcMaterialProfileSet"):
@@ -767,13 +691,11 @@ def get_profiles(element: ifcopenshell.entity_instance) -> list[ifcopenshell.ent
     return [e.SweptArea for e in get_extrusions(element)]
 
 
-def get_extrusions(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
+def get_extrusions(element: ifcopenshell.entity_instance) -> Union[list[ifcopenshell.entity_instance], None]:
     """Gets all extruded area solids used to define an element's model body geometry
 
     :param element: The element occurrence
-    :type: ifcopenshell.entity_instance
-    :return: A list of extrusion representation items
-    :rtype: list[ifcopenshell.entity_instance]
+    :return: A list of extrusion representation items or `None` if element has no representation.
     """
     representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
     if not representation:
@@ -796,9 +718,7 @@ def get_total_edge_length(geometry: ShapeType) -> float:
     """Calculates the total length of edges in a given geometry.
 
     :param geometry: Geometry output calculated by IfcOpenShell
-    :type geometry: geometry
     :return: The total length of all edges in the geometry.
-    :rtype: float
     """
     vertices = get_vertices(geometry)
     vertices = vertices[get_edges(geometry)]
