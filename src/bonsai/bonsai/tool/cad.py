@@ -196,9 +196,14 @@ class Cad:
         # in orthogonal view
         # https://en.wikipedia.org/wiki/Skew_lines#Nearest_points
 
+        is_2d = False
         # Starting and ending points
         P1, P1_end = edge1
         P2, P2_end = edge2
+        if len(P1) == 2:
+            is_2d = True
+            P1, P1_end = P1.to_3d(), P1_end.to_3d()
+            P2, P2_end = P2.to_3d(), P2_end.to_3d()
 
         # Directions
         d1 = (P1_end - P1).normalized()
@@ -207,7 +212,7 @@ class Cad:
         n = d1.cross(d2)
 
         # if n is zero, lines are parallel
-        if n.length == 0:
+        if abs(n.length) < 1e-6:
             return None, None
 
         n2 = d2.cross(n)
@@ -218,7 +223,10 @@ class Cad:
 
         C2 = P2 + ((P1 - P2).dot(n1) / (d2.dot(n1))) * d2
 
-        return C1, C2
+        if is_2d:
+            return C1.to_2d(), C2.to_2d()
+        else:
+            return C1, C2
 
     @classmethod
     def get_intersection(cls, edge1, edge2):
