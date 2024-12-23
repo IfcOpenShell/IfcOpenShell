@@ -262,12 +262,13 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
                     x, y, z = extrusion.ExtrudedDirection.DirectionRatios
                     extrusion_x_angle = Vector((0, 1)).angle_signed(Vector((y, z)))
                     layer_params = tool.Model.get_material_layer_parameters(element)
+                    offset = layer_params["offset"]
                     if layer_params["direction_sense"] == "NEGATIVE":
                         y = -abs(y) if extrusion_x_angle > 0 else abs(y)
                         z = -abs(z)
+                        offset = -offset
                     extrusion.ExtrudedDirection.DirectionRatios = (x, y, z)
 
-                    offset = layer_params["offset"]
                     if offset != 0.0 and not extrusion.Position:
                         tool.Model.add_extrusion_position(extrusion, offset)
 
