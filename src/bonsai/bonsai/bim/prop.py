@@ -272,10 +272,10 @@ AttributeDataType = Literal["string", "integer", "float", "boolean", "enum", "fi
 
 class Attribute(PropertyGroup):
     tooltip = "`Right Click > IFC Description` to read the attribute description and online documentation"
-    name: StringProperty(name="Name")
+    name: StringProperty(name="Name")  # type: ignore [reportRedeclaration]
     display_name: StringProperty(name="Display Name", get=get_display_name)
-    description: StringProperty(name="Description")
-    ifc_class: StringProperty(name="Ifc Class")
+    description: StringProperty(name="Description")  # type: ignore [reportRedeclaration]
+    ifc_class: StringProperty(name="Ifc Class")  # type: ignore [reportRedeclaration]
     data_type: EnumProperty(  # type: ignore [reportRedeclaration]
         name="Data Type",
         items=[(i, i, "") for i in get_args(AttributeDataType)],
@@ -316,6 +316,9 @@ class Attribute(PropertyGroup):
     metadata: StringProperty(name="Metadata", description="For storing some additional information about the attribute")
 
     if TYPE_CHECKING:
+        name: str
+        description: str
+        ifc_class: str
         data_type: AttributeDataType
 
     def get_value(self) -> Union[str, float, int, bool, None]:

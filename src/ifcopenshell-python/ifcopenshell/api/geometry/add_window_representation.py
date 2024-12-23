@@ -451,7 +451,7 @@ class Usecase:
 
         mullion_thickness: float = lining_props["MullionThickness"] / 2
         first_mullion_offset: float = lining_props["FirstMullionOffset"]
-        second_mullion_offset: flaot = lining_props["SecondMullionOffset"]
+        second_mullion_offset: float = lining_props["SecondMullionOffset"]
         transom_thickness: float = lining_props["TransomThickness"] / 2
         first_transom_offset: float = lining_props["FirstTransomOffset"]
         second_transom_offset: float = lining_props["SecondTransomOffset"]
