@@ -1545,8 +1545,35 @@ class LoadLinkedProject(bpy.types.Operator):
             offset = 0
 
             ci = 0
+
+            def process_chunk() -> None:
+                mats = np.concatenate(chunked_materials)
+                midx = np.concatenate(chunked_material_ids)
+                mats, mapping = np.unique(mats, axis=0, return_inverse=True)
+                midx = mapping[midx]
+
+                mat_results: list[bpy.types.Material] = []
+                for mat in mats:
+                    mat = tuple(mat)
+                    blender_mat = blender_mats.get(mat, None)
+                    if not blender_mat:
+                        blender_mat = bpy.data.materials.new("Chunk")
+                        blender_mat.diffuse_color = mat
+                        blender_mats[mat] = blender_mat
+                    mat_results.append(blender_mat)
+
+                # Create object for current chunk.
+                self.create_object(
+                    np.concatenate(chunked_verts),
+                    np.concatenate(chunked_faces),
+                    mat_results,
+                    midx,
+                    chunked_guids,
+                    chunked_guid_ids,
+                )
+
             if iterator.initialize():
-                while True:
+                while True:  # Main loop.
                     shape = iterator.get()
                     results.add(self.file.by_id(shape.id))
                     geometry = shape.geometry
@@ -1557,31 +1584,8 @@ class LoadLinkedProject(bpy.types.Operator):
                         if not iterator.next():
                             if not chunked_verts:
                                 break
-                            mats = np.concatenate(chunked_materials)
-                            midx = np.concatenate(chunked_material_ids)
-                            mats, mapping = np.unique(mats, axis=0, return_inverse=True)
-                            midx = mapping[midx]
-
-                            mat_results: list[bpy.types.Material] = []
-                            for mat in mats:
-                                mat = tuple(mat)
-                                blender_mat = blender_mats.get(mat, None)
-                                if not blender_mat:
-                                    blender_mat = bpy.data.materials.new("Chunk")
-                                    blender_mat.diffuse_color = mat
-                                    blender_mats[mat] = blender_mat
-                                mat_results.append(blender_mat)
-
-                            # The left over chunk
-                            self.create_object(
-                                np.concatenate(chunked_verts),
-                                np.concatenate(chunked_faces),
-                                mat_results,
-                                midx,
-                                chunked_guids,
-                                chunked_guid_ids,
-                            )
-                            break
+                            process_chunk()
+                            break  # Break from main loop.
                         continue
 
                     ci += 1
@@ -1626,30 +1630,7 @@ class LoadLinkedProject(bpy.types.Operator):
 
                     if offset > chunk_size:
                         has_processed_chunk = True
-
-                        mats = np.concatenate(chunked_materials)
-                        midx = np.concatenate(chunked_material_ids)
-                        mats, mapping = np.unique(mats, axis=0, return_inverse=True)
-                        midx = mapping[midx]
-
-                        mat_results = []
-                        for mat in mats:
-                            mat = tuple(mat)
-                            blender_mat = blender_mats.get(mat, None)
-                            if not blender_mat:
-                                blender_mat = bpy.data.materials.new("Chunk")
-                                blender_mat.diffuse_color = mat
-                                blender_mats[mat] = blender_mat
-                            mat_results.append(blender_mat)
-
-                        self.create_object(
-                            np.concatenate(chunked_verts),
-                            np.concatenate(chunked_faces),
-                            mat_results,
-                            midx,
-                            chunked_guids,
-                            chunked_guid_ids,
-                        )
+                        process_chunk()
                         chunked_guids = []
                         chunked_guid_ids = []
                         chunked_verts = []
@@ -1661,31 +1642,8 @@ class LoadLinkedProject(bpy.types.Operator):
 
                     if not iterator.next():
                         if not has_processed_chunk:
-                            mats = np.concatenate(chunked_materials)
-                            midx = np.concatenate(chunked_material_ids)
-                            mats, mapping = np.unique(mats, axis=0, return_inverse=True)
-                            midx = mapping[midx]
-
-                            mat_results = []
-                            for mat in mats:
-                                mat = tuple(mat)
-                                blender_mat = blender_mats.get(mat, None)
-                                if not blender_mat:
-                                    blender_mat = bpy.data.materials.new("Chunk")
-                                    blender_mat.diffuse_color = mat
-                                    blender_mats[mat] = blender_mat
-                                mat_results.append(blender_mat)
-
-                            # The left over chunk
-                            self.create_object(
-                                np.concatenate(chunked_verts),
-                                np.concatenate(chunked_faces),
-                                mat_results,
-                                midx,
-                                chunked_guids,
-                                chunked_guid_ids,
-                            )
-                        break
+                            process_chunk()
+                        break  # Break main loop.
             self.elements -= results
 
         bpy.context.scene.collection.children.link(self.collection)
