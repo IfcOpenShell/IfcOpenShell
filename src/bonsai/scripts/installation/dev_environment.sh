@@ -1,6 +1,6 @@
 # Please update REPO_PATH and BLENDER_PATH in the script below.
-# Default BLENDER_PATH on Mac: "/Users/$USER/Library/Application Support/Blender/4.3/"
-# Default BLENDER_PATH on Linux: "$HOME/.config/blender/4.3/"
+# Default BLENDER_PATH on Mac: "/Users/$USER/Library/Application Support/Blender/4.3"
+# Default BLENDER_PATH on Linux: "$HOME/.config/blender/4.3"
 # REPO_PATH="/path/to/where/your/git/repository/is/cloned/IfcOpenShell"
 REPO_PATH=""
 BLENDER_PATH=""
@@ -13,7 +13,9 @@ BONSAI_PATH="${BLENDER_PATH}/extensions/raw_githubusercontent_com/bonsai"
 cd "${REPO_PATH}"
 
 # Copy over compiled IfcOpenShell files
-cp "${PACKAGE_PATH}/ifcopenshell/*_wrapper*" "${PWD}/src/ifcopenshell-python/ifcopenshell/"
+for file in "${PACKAGE_PATH}/ifcopenshell/"*_wrapper*; do
+  [ -e "$file" ] && cp "$file" "${PWD}/src/ifcopenshell-python/ifcopenshell/"
+done
 
 # Remove extension and link to Git
 rm "${BONSAI_PATH}/__init__.py"
