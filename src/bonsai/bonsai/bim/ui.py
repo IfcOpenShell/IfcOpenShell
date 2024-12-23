@@ -1139,13 +1139,14 @@ def draw_custom_context_menu(self: bpy.types.Menu, context: bpy.types.Context) -
     layout = self.layout
 
     if isinstance(context.button_pointer, Attribute):
-        description = getattr(context.button_pointer, "description", None)
-        ifc_class = getattr(context.button_pointer, "ifc_class", "")
+        attr = context.button_pointer
+        description = attr.description
+        ifc_class = attr.ifc_class
         if ifc_class:
             try:
-                url = get_entity_doc(version, context.button_pointer.ifc_class).get("spec_url", "")
+                url = get_entity_doc(version, ifc_class).get("spec_url", "")
             except RuntimeError:  # It's not an Entity Attribute. Let's try a Property Set attribute.
-                doc = get_property_set_doc(version, context.button_pointer.ifc_class)
+                doc = get_property_set_doc(version, ifc_class)
                 if doc:
                     url = doc.get("spec_url", "")
                 else:  # It's a custom property set. No URL available
