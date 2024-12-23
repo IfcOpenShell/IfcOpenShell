@@ -103,7 +103,7 @@ class DumbSlabGenerator:
         return self.create_slab()
 
     def derive_from_walls(self):
-        walls, is_closed_loop = tool.Model.get_connected_walls(bpy.context.selected_objects)
+        walls = tool.Model.get_connected_walls(bpy.context.selected_objects)
         polyline_points = []
         poly = tool.Model.get_polygons_from_wall_axis(walls)
         polyline_points = [tuple([v for v in c]) for c in poly.exterior.coords]
@@ -768,12 +768,9 @@ class AddSlabFromWall(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         if not self.relating_type:
             return {"FINISHED"}
-        walls, is_closed_loop = tool.Model.get_connected_walls(bpy.context.selected_objects)
-        if not is_closed_loop:
-            self.report(
-                {"WARNING"},
-                "Please select a closed loop of walls, or deselect the walls to add a slab using the polyline tool.",
-            )
+        walls = tool.Model.get_connected_walls(bpy.context.selected_objects)
+        if not walls:
+            self.report({"WARNING"}, "Please select a closed loop of walls, or deselect the walls to add a slab using the polyline tool.")
             return {"FINISHED"}
 
         DumbSlabGenerator(self.relating_type).generate("WALLS")
