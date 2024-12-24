@@ -13,7 +13,7 @@ BONSAI_PATH="${BLENDER_PATH}/extensions/raw_githubusercontent_com/bonsai"
 cd "${REPO_PATH}"
 
 # Copy over compiled IfcOpenShell files
-cp "${PACKAGE_PATH}/ifcopenshell/*_wrapper*" "${PWD}/src/ifcopenshell-python/ifcopenshell/"
+cp "${PACKAGE_PATH}/ifcopenshell/"*_wrapper* "${PWD}/src/ifcopenshell-python/ifcopenshell/"
 
 # Remove extension and link to Git
 rm "${BONSAI_PATH}/__init__.py"
