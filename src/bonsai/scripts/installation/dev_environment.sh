@@ -2,6 +2,7 @@
 # Default BLENDER_PATH on Mac: "/Users/$USER/Library/Application Support/Blender/4.3"
 # Default BLENDER_PATH on Linux: "$HOME/.config/blender/4.3"
 # REPO_PATH="/path/to/where/your/git/repository/is/cloned/IfcOpenShell"
+set -e
 REPO_PATH=""
 BLENDER_PATH=""
 PACKAGE_PATH="${BLENDER_PATH}/extensions/.local/lib/python3.11/site-packages"
