@@ -770,7 +770,10 @@ class AddSlabFromWall(bpy.types.Operator, tool.Ifc.Operator):
             return {"FINISHED"}
         walls = tool.Model.get_connected_walls(bpy.context.selected_objects)
         if not walls:
-            self.report({"WARNING"}, "Please select a closed loop of walls, or deselect the walls to add a slab using the polyline tool.")
+            self.report(
+                {"WARNING"},
+                "Please select a closed loop of walls, or deselect the walls to add a slab using the polyline tool.",
+            )
             return {"FINISHED"}
 
         DumbSlabGenerator(self.relating_type).generate("WALLS")

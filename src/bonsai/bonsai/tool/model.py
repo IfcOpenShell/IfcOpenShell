@@ -673,8 +673,7 @@ class Model(bonsai.core.tool.Model):
         return axes
 
     @classmethod
-    def get_connected_walls(
-        cls, walls: list[bpy.types.Object]) -> list[bpy.types.Object]:
+    def get_connected_walls(cls, walls: list[bpy.types.Object]) -> list[bpy.types.Object]:
         """
         Loop through walls by retrieving the next connected wall using the connection path.
         If the function encounters the first wall again, it will return the list of connected walls.
@@ -697,7 +696,7 @@ class Model(bonsai.core.tool.Model):
                 next_wall = path.RelatedElement if path.RelatedElement != current_wall else path.RelatingElement
                 if next_wall == previous_wall:
                     continue
-                    
+
                 if next_wall != current_wall and next_wall != first_wall and next_wall not in ordered_walls:
                     ordered_walls.append(next_wall)
                     previous_wall = current_wall
