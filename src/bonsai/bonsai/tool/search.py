@@ -64,19 +64,16 @@ class Search(bonsai.core.tool.Search):
         query = []
         for filter_group in filter_groups:
             filter_group_query = []
-            has_instance_or_entity_filter = False
             for ifc_filter in filter_group.filters:
                 if not ifc_filter.value:
                     continue
                 if ifc_filter.type == "instance":
-                    has_instance_or_entity_filter = True
                     if "bpy.data.texts" in ifc_filter.value:
                         data_name = ifc_filter.value.split("bpy.data.texts")[1][2:-2]
                         filter_group_query.append(bpy.data.texts[data_name].as_string())
                     else:
                         filter_group_query.append(ifc_filter.value)
                 elif ifc_filter.type == "entity":
-                    has_instance_or_entity_filter = True
                     filter_group_query.append(ifc_filter.value)
                 elif ifc_filter.type == "attribute":
                     if not ifc_filter.name:
@@ -113,9 +110,6 @@ class Search(bonsai.core.tool.Search):
                     keys = cls.wrap_value(ifc_filter, ifc_filter.name)
                     comparison, value = cls.get_comparison_and_value(ifc_filter)
                     filter_group_query.append(f"query:{keys}{comparison}{value}")
-            if not has_instance_or_entity_filter:
-                filter_group_query.insert(0, "IfcProduct")
-                filter_group_query.insert(0, "IfcTypeProduct")
             query.append(", ".join(filter_group_query))
         return " + ".join(query)
 

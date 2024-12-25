@@ -159,6 +159,14 @@ class TestFilterElements(test.bootstrap.IFC4):
         assert subject.filter_elements(self.file, "IfcWall") == {element}
         assert subject.filter_elements(self.file, "IfcElement, ! IfcWall") == {element2}
 
+    def test_select_without_elements_token(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        element.Name = "Foo"
+        element2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        element2.Name = "Bar"
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcSlab")
+        assert subject.filter_elements(self.file, "Name=Foo") == {element}
+
     def test_selecting_by_attribute(self):
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         element.Name = "Foo"
