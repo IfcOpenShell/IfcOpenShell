@@ -771,6 +771,23 @@ class FacetTransformer(lark.Transformer):
             results |= r
         return results
 
+    def transform(self, tree: lark.ParseTree):
+        def has_elements_token(tree: lark.tree.ParseTree) -> bool:
+            for child in tree.iter_subtrees_topdown():
+                data = child.data
+                # Tokens that add elements to filter.
+                if data in ("entity", "instance"):
+                    return True
+            return False
+
+        # Only elements tokens can add elements to the filter.
+        # Fallback to default elements if they are not provided.
+        if self.base_elements is None and not has_elements_token(tree):
+            self.elements.update(self.file.by_type("IfcProduct"))
+            self.elements.update(self.file.by_type("IfcTypeProduct"))
+
+        return super().transform(tree)
+
     def facet_list(self, args):
         if self.elements:
             self.results.append(self.elements)
