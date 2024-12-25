@@ -424,18 +424,13 @@ def filter_elements(
     Filter elements based on the provided `query`.
 
     :param ifc_file: The IFC file object
-    :type ifc_file: ifcopenshell.file
     :param query: Query to execute
-    :type query: str
     :param elements: Base set of IFC elements for the query. If not provided,
         all elements in the IFC are queried. If provided, the query will be
         applied to this set of elements, so the result will be a subset of
         elements.
-    :type elements: set[ifcopenshell.entity_instance], optional
     :param edit_in_place: If `True`, mutate the provided `elements` in place. Defaults to `False`
-    :type edit_in_place: bool
     :return: Set of filtered elements
-    :rtype: set[ifcopenshell.entity_instance]
 
     Example:
 
@@ -754,6 +749,11 @@ def set_element_value(
 
 
 class FacetTransformer(lark.Transformer):
+    results: list[set[ifcopenshell.entity_instance]]
+    base_elements: Optional[set[ifcopenshell.entity_instance]]
+    elements: set[ifcopenshell.entity_instance]
+    container_trees: dict[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]]
+
     def __init__(self, ifc_file: ifcopenshell.file, elements: Optional[set[ifcopenshell.entity_instance]] = None):
         self.file = ifc_file
         self.results = []
@@ -763,11 +763,10 @@ class FacetTransformer(lark.Transformer):
         else:
             self.base_elements = elements.copy()
             self.elements = set()
-        self.container_parents = {}
         self.container_trees = {}
 
-    def get_results(self):
-        results = set()
+    def get_results(self) -> set[ifcopenshell.entity_instance]:
+        results: set[ifcopenshell.entity_instance] = set()
         for r in self.results:
             results |= r
         return results
@@ -821,7 +820,7 @@ class FacetTransformer(lark.Transformer):
         name, comparison, value = args
         name = name.children[0].value
 
-        def filter_function(element):
+        def filter_function(element: ifcopenshell.entity_instance) -> bool:
             if name == "PredefinedType":
                 element_value = ifcopenshell.util.element.get_predefined_type(element)
             else:
@@ -833,7 +832,7 @@ class FacetTransformer(lark.Transformer):
     def type(self, args):
         comparison, value = args
 
-        def filter_function(element):
+        def filter_function(element: ifcopenshell.entity_instance) -> bool:
             element_value = getattr(ifcopenshell.util.element.get_type(element), "Name", None)
             return self.compare(element_value, comparison, value)
 
@@ -842,7 +841,7 @@ class FacetTransformer(lark.Transformer):
     def material(self, args):
         comparison, value = args
 
-        def filter_function(element):
+        def filter_function(element: ifcopenshell.entity_instance) -> bool:
             materials = ifcopenshell.util.element.get_materials(element)
             result = False if materials else None
             for material in materials:
@@ -859,7 +858,7 @@ class FacetTransformer(lark.Transformer):
     def property(self, args):
         pset, prop, comparison, value = args
 
-        def filter_function(element):
+        def filter_function(element: ifcopenshell.entity_instance) -> bool:
             if isinstance(pset, str) and isinstance(prop, str):
                 element_value = ifcopenshell.util.element.get_pset(element, pset, prop)
                 return self.compare(element_value, comparison, value)
@@ -888,7 +887,7 @@ class FacetTransformer(lark.Transformer):
     def classification(self, args):
         comparison, value = args
 
-        def filter_function(element):
+        def filter_function(element: ifcopenshell.entity_instance) -> bool:
             references = ifcopenshell.util.classification.get_references(element)
             result = False if references else None
             for reference in references:
@@ -907,7 +906,7 @@ class FacetTransformer(lark.Transformer):
     def location(self, args):
         comparison, value = args
 
-        def filter_function(element):
+        def filter_function(element: ifcopenshell.entity_instance) -> bool:
             container = ifcopenshell.util.element.get_container(element)
             if not container:
                 container = ifcopenshell.util.element.get_aggregate(element)
@@ -925,7 +924,7 @@ class FacetTransformer(lark.Transformer):
     def group(self, args):
         comparison, value = args
 
-        def filter_function(element):
+        def filter_function(element: ifcopenshell.entity_instance) -> bool:
             result = False
             for rel in getattr(element, "HasAssignments", []):
                 if rel.is_a("IfcRelAssignsToGroup") and rel.RelatingGroup:
@@ -969,7 +968,7 @@ class FacetTransformer(lark.Transformer):
             if parent and self.compare(parent.Name, comparison, value):
                 parents.add(parent)
 
-        children = set()
+        children: set[ifcopenshell.entity_instance] = set()
         for parent in parents:
             children |= set(ifcopenshell.util.element.get_decomposition(parent))
 
@@ -981,12 +980,13 @@ class FacetTransformer(lark.Transformer):
     def query(self, args):
         keys, comparison, value = args
 
-        def filter_function(element):
+        def filter_function(element: ifcopenshell.entity_instance) -> bool:
             return self.compare(get_element_value(element, keys), comparison, value)
 
         self.elements = set(filter(filter_function, self.elements))
 
-    def get_container_tree(self, container):
+    def get_container_tree(self, container: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
+        tree: Union[list[ifcopenshell.entity_instance], None]
         tree = self.container_trees.get(container, None)
         if tree:
             return tree
@@ -1048,7 +1048,7 @@ class FacetTransformer(lark.Transformer):
             elif args[0].children[0].data == "false":
                 return False
 
-    def compare(self, element_value, comparison, value):
+    def compare(self, element_value, comparison, value) -> bool:
         if isinstance(element_value, (list, tuple)):
             return any(self.compare(ev, comparison, value) for ev in element_value)
         elif isinstance(value, str):
