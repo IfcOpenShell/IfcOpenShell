@@ -102,7 +102,7 @@ class Document(bonsai.core.tool.Document):
     def import_references(cls, document: ifcopenshell.entity_instance) -> None:
         props = bpy.context.scene.BIMDocumentProperties
         is_ifc2x3 = tool.Ifc.get_schema() == "IFC2X3"
-        references = (document.DocumentReference or []) if is_ifc2x3 else document.HasDocumentReferences
+        references = (document.DocumentReferences or []) if is_ifc2x3 else document.HasDocumentReferences
         for element in references:
             new = props.documents.add()
             new.ifc_definition_id = element.id()
