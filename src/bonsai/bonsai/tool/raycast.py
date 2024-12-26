@@ -169,7 +169,11 @@ class Raycast(bonsai.core.tool.Raycast):
             intersection = tool.Cad.point_on_edge(v, (ray_target, loc))
             distance = (v - intersection).length
             if distance < 0.2:
-                points.append([distance - stick_factor, (v, "Vertex")])
+                snap_point = {
+                    "type": "Vertex",
+                    "point": v,
+                }
+                points.append([(distance - stick_factor), snap_point])
 
         for edge in bm.edges:
             v1 = edge.verts[0].co
@@ -182,14 +186,22 @@ class Raycast(bonsai.core.tool.Raycast):
             intersection = tool.Cad.point_on_edge(division_point, (ray_target, loc))
             distance = (division_point - intersection).length
             if distance < 0.2:
-                points.append([distance, (division_point, "Edge Center")])
+                snap_point = {
+                    "type": "Edge Center",
+                    "point": division_point,
+                }
+                points.append([distance, snap_point])
 
             intersection = tool.Cad.intersect_edges_v2((ray_target, loc), (v1, v2))
             if intersection[0]:
                 if tool.Cad.is_point_on_edge(intersection[1], (v1, v2)):
                     distance = (intersection[1] - intersection[0]).length
                     if distance < 0.2:
-                        points.append([distance + 2 * stick_factor, (intersection[1], "Edge")])
+                        snap_point = {
+                            "type": "Edge",
+                            "point": intersection[1],
+                        }
+                        points.append([(distance + 2 * stick_factor), snap_point])
 
         bm.free()
         snapping_points = []
@@ -224,7 +236,11 @@ class Raycast(bonsai.core.tool.Raycast):
             intersection, _ = mathutils.geometry.intersect_point_line(vertex, ray_target, loc)
             distance = (vertex - intersection).length
             if distance < 0.2:
-                polyline_verts.append((vertex, "Vertex"))
+                snap_point = {
+                    "type": "Vertex",
+                    "point": vertex,
+                }
+                polyline_verts.append(snap_point)
 
         return polyline_verts
 

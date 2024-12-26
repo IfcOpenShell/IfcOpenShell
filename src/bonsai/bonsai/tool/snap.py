@@ -373,7 +373,10 @@ class Snap(bonsai.core.tool.Snap):
         if polyline_points:
             snap_points = tool.Raycast.ray_cast_to_polyline(context, event)
             if snap_points:
-                detected_snaps.append({"Polyline": snap_points})
+                detected_snaps.append({
+                    "group": "Polyline",
+                    "points": snap_points,
+                })
 
         # Measure
         measure_data = context.scene.BIMPolylineProperties.measurement_polyline
@@ -381,25 +384,41 @@ class Snap(bonsai.core.tool.Snap):
             measure_points = measure.polyline_points
             snap_points = tool.Raycast.ray_cast_to_measure(context, event, measure_points)
             if snap_points:
-                detected_snaps.append({"Polyline": snap_points})
+                detected_snaps.append({
+                    "group": "Measure",
+                    "points": snap_points,
+                })
 
         # Edge-Vertex
         for obj in objs_to_raycast:
             if obj.type == "MESH":
                 if len(obj.data.polygons) == 0:
-                    options = tool.Raycast.ray_cast_by_proximity(context, event, obj)
-                    snap_obj = obj
-                    if options:
-                        detected_snaps.append({"Edge-Vertex": (snap_obj, options)})
-                        break
+                    snap_points = tool.Raycast.ray_cast_by_proximity(context, event, obj)
+                    if snap_points:
+                        detected_snaps.append({
+                            "group": "Edge-Vertex",
+                            "object": obj,
+                            "points": snap_points,
+                        })
             if obj.type == "EMPTY":
-                snap_point = [(obj.location, "Vertex")]
-                detected_snaps.append({"Edge-Vertex": (obj, snap_point)})
+                snap_point = {
+                    "type": "Vertex",
+                    "point": obj.location,
+                    "group": "Edge-Vertex",
+                    "object": obj,
+                }
+                detected_snaps.append(snap_point)
 
         # Obj
         snap_obj, hit, face_index = cast_rays_and_get_best_object(objs_to_raycast, mouse_pos)
         if hit is not None:
-            detected_snaps.append({"Object": (snap_obj, hit, face_index)})
+            snap_point = {
+                "point": hit,
+                "group": "Object",
+                "object": obj,
+                "face_index": face_index,
+            }
+            detected_snaps.append(snap_point)
 
         # Axis and Plane
         elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
@@ -443,59 +462,61 @@ class Snap(bonsai.core.tool.Snap):
                 )
 
         if rot_intersection and polyline_points:
-            detected_snaps.append({"Axis": (rot_intersection, axis_start, axis_end)})
+            snap_point = {
+                "point": rot_intersection,
+                "group": "Axis",
+                "axis_start": axis_start,
+                "axis_end": axis_end,
+            }
+            detected_snaps.append(snap_point)
 
-        detected_snaps.append({"Plane": intersection})
+        snap_point = {
+            "point": intersection,
+            "group": "Plane",
+        }
+        detected_snaps.append(snap_point)
 
         return detected_snaps
 
     @classmethod
     def select_snapping_points(cls, context, event, tool_state, detected_snaps):
         snapping_points = []
-        for origin in detected_snaps:
+        for snap_group in detected_snaps:
             snap_obj = None
-            if "Polyline" in origin:
-                options = origin["Polyline"]
-                for op in options:
-                    snapping_points.append(op + (snap_obj,))
+            if snap_group["group"] == "Polyline":
+                for p in snap_group["points"]:
+                    snapping_points.append((p["point"], p["type"], None))
                 break
-            if "Measure" in origin:
-                options = origin["Measure"]
-                for op in options:
-                    snapping_points.append(op + (snap_obj,))
+            if snap_group["group"] == "Measure":
+                for p in snap_group["points"]:
+                    snapping_points.append((p["point"], p["type"], None))
                 break
-            if "Edge-Vertex" in origin:
-                snap_obj, options = origin["Edge-Vertex"]
-                print(">>>", snap_obj, options)
-                for op in options:
-                    snapping_points.append(op + (snap_obj,))
-                break
-            if "Object" in origin:
-                snap_obj, hit, face_index = origin["Object"]
-                matrix = snap_obj.matrix_world.copy()
-                face = snap_obj.data.polygons[face_index]
+            if snap_group["group"] == "Edge-Vertex":
+                for p in snap_group["points"]:
+                    snapping_points.append((p["point"], p["type"], snap_group["object"]))
+
+            if snap_group["group"] == "Object":
+                matrix = snap_group["object"].matrix_world.copy()
+                face = snap_group["object"].data.polygons[snap_group["face_index"]]
                 verts = []
                 for i in face.vertices:
-                    verts.append(matrix @ snap_obj.data.vertices[i].co)
-
-                options = tool.Raycast.ray_cast_by_proximity(context, event, snap_obj, face)
-                if not options:
-                    snapping_points.append((hit, "Face", snap_obj))
+                    verts.append(matrix @ snap_group["object"].data.vertices[i].co)
+                snap_points = tool.Raycast.ray_cast_by_proximity(context, event, snap_group["object"], face)
+                if not snap_points:
+                    snapping_points.append((snap_group["point"], "Face", snap_group["object"]))
                 else:
-                    for op in options:
-                        snapping_points.append(op + (snap_obj,))
+                    for p in snap_points:
+                        snapping_points.append((p["point"], p["type"], snap_group["object"]))
                 break
 
-        for origin in detected_snaps:
-            if "Axis" in origin:
-                intersection = origin["Axis"]
-                axis_start = intersection[1]
-                axis_end = intersection[2]
-                snapping_points.append((intersection[0], "Axis", snap_obj))
+        for snap_group in detected_snaps:
+            if snap_group["group"] == "Axis":
+                axis_start = snap_group["axis_start"]
+                axis_end = snap_group["axis_end"]
+                snapping_points.append((snap_group["point"], "Axis", snap_obj))
 
-            if "Plane" in origin:
-                intersection = origin["Plane"]
-                snapping_points.append((intersection, "Plane", snap_obj))
+            if snap_group["group"] == "Plane":
+                snapping_points.append((snap_group["point"], "Plane", snap_obj))
 
         # Make Axis first priority
         if tool_state.lock_axis or tool_state.axis_method in {"X", "Y", "Z"}:
