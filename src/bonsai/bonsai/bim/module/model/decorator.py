@@ -560,7 +560,7 @@ class PolylineDecorator:
         self.line_shader.bind()  # required to be able to change uniforms of the shader
         self.line_shader.uniform_float("viewportSize", (context.region.width, context.region.height))
         self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
-        self.line_shader.uniform_float("lineWidth", 1.0)
+        self.line_shader.uniform_float("lineWidth", 1.2)
         theme = context.preferences.themes.items()[0][1]
         decorator_color_object_active = (*theme.view_3d.object_active, 1)  # unwrap color values and adds alpha=1
 
@@ -577,10 +577,10 @@ class PolylineDecorator:
             pass
 
         coords = view3d_utils.location_3d_to_region_2d(region, rv3d, mouse_point)
-        padding = 6
+        padding = 8
         verts = []
         edges = []
-        if snap_prop.snap_type in ["Edge", "Vertex"]:
+        if snap_prop.snap_type in ["Edge", "Edge-Intersection", "Vertex"]:
             p1 = (coords[0] - padding, coords[1] + padding)
             p2 = (coords[0] + padding, coords[1] + padding)
             p3 = (coords[0] + padding, coords[1] - padding)
@@ -588,6 +588,8 @@ class PolylineDecorator:
             verts = [p1, p2, p3, p4]
             if snap_prop.snap_type == "Edge":
                 edges = [[0, 1], [1, 3], [3, 2], [2, 0]]
+            elif snap_prop.snap_type == "Edge-Intersection":
+                edges = [[0, 2], [1, 3]]
             else:
                 edges = [[0, 1], [1, 2], [2, 3], [3, 0]]
         elif snap_prop.snap_type == "Edge Center":
