@@ -481,6 +481,7 @@ class Snap(bonsai.core.tool.Snap):
     @classmethod
     def select_snapping_points(cls, context, event, tool_state, detected_snaps):
         snapping_points = []
+        edges = [] # Get edges to create edge-intersection snap
         for snap_group in detected_snaps:
             snap_obj = None
             if snap_group["group"] == "Polyline":
@@ -490,10 +491,14 @@ class Snap(bonsai.core.tool.Snap):
             if snap_group["group"] == "Measure":
                 for p in snap_group["points"]:
                     snapping_points.append((p["point"], p["type"], None))
+                    if p["type"] == "Edge":
+                        edges.append(p)
                 break
             if snap_group["group"] == "Edge-Vertex":
                 for p in snap_group["points"]:
                     snapping_points.append((p["point"], p["type"], snap_group["object"]))
+                    if p["type"] == "Edge":
+                        edges.append(p)
 
             if snap_group["group"] == "Object":
                 matrix = snap_group["object"].matrix_world.copy()
@@ -507,6 +512,8 @@ class Snap(bonsai.core.tool.Snap):
                 else:
                     for p in snap_points:
                         snapping_points.append((p["point"], p["type"], snap_group["object"]))
+                        if p["type"] == "Edge":
+                            edges.append(p)
                 break
 
         for snap_group in detected_snaps:
@@ -517,6 +524,14 @@ class Snap(bonsai.core.tool.Snap):
 
             if snap_group["group"] == "Plane":
                 snapping_points.append((snap_group["point"], "Plane", snap_obj))
+
+        # Edges intersection snap
+        if edges:
+            for e1, e2 in zip(edges, edges[1:] + [edges[0]]):
+                if tool.Cad.are_vectors_equal(e1["point"], e2["point"], tolerance=0.1):
+                    intersection = tool.Cad.intersect_edges_v2(e1["edge_verts"], e2["edge_verts"])
+                    if intersection[1]:
+                        snapping_points.insert(0, (intersection[1], "Edge-Intersection", None))
 
         # Make Axis first priority
         if tool_state.lock_axis or tool_state.axis_method in {"X", "Y", "Z"}:
