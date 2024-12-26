@@ -258,6 +258,8 @@ class IfcImporter:
         self.profile_code("Place objects in collections")
         self.setup_arrays()
         self.profile_code("Setup arrays")
+        tool.Project.load_linked_models_from_ifc()
+        self.profile_code("Load linked models")
         self.lock_scales()
         self.profile_code("Lock objects scales")
         self.add_project_to_scene()

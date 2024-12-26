@@ -49,6 +49,7 @@ class IfcExporter:
         IfcStore.update_cache()
         self.sync_all_objects()
         self.sync_edited_objects()
+        tool.Project.save_linked_models_to_ifc()
         extension = self.ifc_export_settings.output_file.split(".")[-1].lower()
         if extension == "ifczip":
             with tempfile.TemporaryDirectory() as unzipped_path:

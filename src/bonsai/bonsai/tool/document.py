@@ -21,7 +21,7 @@ import ifcopenshell.util.system
 import bonsai.bim.helper
 import bonsai.core.tool
 import bonsai.tool as tool
-from typing import Any, Union
+from typing import Any, Union, Sequence
 
 
 class Document(bonsai.core.tool.Document):
@@ -102,7 +102,7 @@ class Document(bonsai.core.tool.Document):
     def import_references(cls, document: ifcopenshell.entity_instance) -> None:
         props = bpy.context.scene.BIMDocumentProperties
         is_ifc2x3 = tool.Ifc.get_schema() == "IFC2X3"
-        references = (document.DocumentReferences or []) if is_ifc2x3 else document.HasDocumentReferences
+        references = cls.get_document_references(document)
         for element in references:
             new = props.documents.add()
             new.ifc_definition_id = element.id()
@@ -157,3 +157,12 @@ class Document(bonsai.core.tool.Document):
     def set_external_reference_id(cls, reference: ifcopenshell.entity_instance, value: Union[str, None]) -> None:
         """Set IfcExternalReference.ItemReference/Identification, compatible with IFC2X3."""
         reference[1] = value
+
+    @classmethod
+    def get_document_references(
+        cls, document: ifcopenshell.entity_instance
+    ) -> tuple[ifcopenshell.entity_instance, ...]:
+        """Get IfcDocumentReference.ReferencedDocuments, compatible with IFC2X3."""
+        if document.file.schema == "IFC2X3":
+            return document.DocumentReferences or ()
+        return document.HasDocumentReferences
