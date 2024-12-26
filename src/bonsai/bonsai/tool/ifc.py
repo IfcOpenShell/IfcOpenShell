@@ -58,6 +58,7 @@ class Ifc(bonsai.core.tool.Ifc):
 
     @classmethod
     def get_path(cls) -> str:
+        """Get absolute filepath to the IFC file, return empty string if file is not saved."""
         return IfcStore.path
 
     @classmethod
