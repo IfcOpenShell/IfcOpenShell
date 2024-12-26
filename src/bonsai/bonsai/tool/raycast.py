@@ -200,6 +200,7 @@ class Raycast(bonsai.core.tool.Raycast):
                         snap_point = {
                             "type": "Edge",
                             "point": intersection[1],
+                            "edge_verts": (v1, v2),
                         }
                         points.append([(distance + 2 * stick_factor), snap_point])
 
