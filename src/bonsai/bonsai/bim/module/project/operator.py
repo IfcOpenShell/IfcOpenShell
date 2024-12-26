@@ -967,7 +967,11 @@ class LinkIfc(bpy.types.Operator):
     files: bpy.props.CollectionProperty(name="Files", type=bpy.types.OperatorFileListElement)
     directory: bpy.props.StringProperty(subtype="DIR_PATH")
     filter_glob: bpy.props.StringProperty(default="*.ifc", options={"HIDDEN"})
-    use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
+    use_relative_path: bpy.props.BoolProperty(
+        name="Use Relative Path",
+        description="Whether to store linked model path relative to the currently opened IFC file.",
+        default=False,
+    )
     use_cache: bpy.props.BoolProperty(name="Use Cache", default=True)
 
     if TYPE_CHECKING:
@@ -998,9 +1002,9 @@ class LinkIfc(bpy.types.Operator):
                 self.report({"INFO"}, "Can't link the current .blend file")
                 continue
             new = context.scene.BIMProjectProperties.links.add()
-            if self.use_relative_path:
+            if self.use_relative_path and (ifc_filepath := tool.Ifc.get_path()):
                 try:
-                    filepath = filepath.relative_to(bpy.path.abspath("//"))
+                    filepath = filepath.relative_to(Path(ifc_filepath).parent)
                 except:
                     pass  # Perhaps on another drive or something
             # Store link paths as posix for cross-platform.
@@ -1088,7 +1092,7 @@ class LoadLink(bpy.types.Operator):
     filepath_: Path
 
     def execute(self, context):
-        filepath = tool.Blender.ensure_blender_path_is_abs(Path(self.filepath))
+        filepath = Path(tool.Ifc.resolve_uri(self.filepath))
         self.filepath_ = filepath
         if filepath.suffix.lower().endswith(".blend"):
             self.link_blend(filepath)
