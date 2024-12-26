@@ -166,6 +166,7 @@ class PerformQuantityTakeOff(bpy.types.Operator, tool.Ifc.Operator):
 
         props = context.scene.BIMQtoProperties
 
+        elements: set[ifcopenshell.entity_instance]
         if context.selected_objects:
             elements = set()
             for obj in context.selected_objects:
@@ -179,7 +180,17 @@ class PerformQuantityTakeOff(bpy.types.Operator, tool.Ifc.Operator):
 
         ifc_file = tool.Ifc.get()
         results = ifc5d.qto.quantify(ifc_file, elements, rules)
+        not_quantified_elements = elements - set(results.keys())
         ifc5d.qto.edit_qtos(ifc_file, results)
 
-        self.report({"INFO"}, f"Quantities are calculated for {len(elements)} elements.")
+        not_quantified_message = ""
+        if not_quantified_elements:
+            print("Elements that were not quantified:")
+            for element in not_quantified_elements:
+                print(f"- {element}")
+            not_quantified_message = (
+                f" {len(not_quantified_elements)} of them were not quantified, see system console for the details."
+            )
+
+        self.report({"INFO"}, f"Quantities are calculated for {len(elements)} elements.{not_quantified_message}")
         return {"FINISHED"}

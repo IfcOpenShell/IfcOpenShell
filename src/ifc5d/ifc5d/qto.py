@@ -28,12 +28,13 @@ import ifcopenshell.util.shape
 import ifcopenshell.util.representation
 import multiprocessing
 from collections import namedtuple
-from typing import Any, Literal, get_args
+from typing import Any, Literal, get_args, Union
 
 
 Function = namedtuple("Function", ["measure", "name", "description"])
 RULE_SET = Literal["IFC4QtoBaseQuantities", "IFC4QtoBaseQuantitiesBlender"]
 rules: dict[RULE_SET, dict[str, Any]] = {}
+ResultsDict = dict[ifcopenshell.entity_instance, dict[str, dict[str, float]]]
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 for name in get_args(RULE_SET):
@@ -41,13 +42,13 @@ for name in get_args(RULE_SET):
         rules[name] = json.load(f)
 
 
-def quantify(ifc_file: ifcopenshell.file, elements: set[ifcopenshell.entity_instance], rules: dict) -> dict:
+def quantify(ifc_file: ifcopenshell.file, elements: set[ifcopenshell.entity_instance], rules: dict) -> ResultsDict:
     """
 
     :param rules: Set of rules from `ifc5d.qto.rules`.
 
     """
-    results = {}
+    results: ResultsDict = {}
     for calculator, queries in rules["calculators"].items():
         calculator = calculators[calculator]
         for query, qtos in queries.items():
@@ -57,12 +58,8 @@ def quantify(ifc_file: ifcopenshell.file, elements: set[ifcopenshell.entity_inst
     return results
 
 
-def edit_qtos(ifc_file: ifcopenshell.file, results: dict[ifcopenshell.entity_instance, Any]) -> None:
-    """
-
-    :param results: Results from `ifc5d.qto.quantify`.
-
-    """
+def edit_qtos(ifc_file: ifcopenshell.file, results: ResultsDict) -> None:
+    """Apply quantification results as quantity sets."""
     for element, qtos in results.items():
         for name, quantities in qtos.items():
             qto = ifcopenshell.util.element.get_pset(element, name, should_inherit=False)
@@ -158,8 +155,8 @@ class IfcOpenShell:
         cls,
         ifc_file: ifcopenshell.file,
         elements: set[ifcopenshell.entity_instance],
-        qtos: dict,
-        results: dict,
+        qtos: dict[str, dict[str, Union[str, None]]],
+        results: ResultsDict,
     ) -> None:
         import ifcopenshell
         import ifcopenshell.geom
@@ -298,7 +295,10 @@ class Blender:
 
     @staticmethod
     def calculate(
-        ifc_file: ifcopenshell.file, elements: set[ifcopenshell.entity_instance], qtos: dict, results: dict
+        ifc_file: ifcopenshell.file,
+        elements: set[ifcopenshell.entity_instance],
+        qtos: dict[str, dict[str, Union[str, None]]],
+        results: ResultsDict,
     ) -> None:
         import bonsai.tool as tool
         import bonsai.bim.module.qto.calculator as calculator
