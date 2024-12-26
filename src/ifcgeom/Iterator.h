@@ -891,7 +891,7 @@ namespace IfcGeom {
 				}
 			}
 
-			if (!settings_.get<ifcopenshell::geometry::settings::IteratorOutput>().get() == ifcopenshell::geometry::settings::NATIVE) {
+			if (settings_.get<ifcopenshell::geometry::settings::IteratorOutput>().get() != ifcopenshell::geometry::settings::NATIVE) {
 				for (auto& p : all_processed_native_elements_) {
 					delete p;
 				}
