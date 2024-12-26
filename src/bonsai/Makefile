@@ -292,6 +292,11 @@ ifeq ($(PLATFORM), macosm1)
 	prev_whl_name=$$(find build/bonsai/wheels/fonttools-*.whl); \
 	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/arm64/"); \
 	mv "$$prev_whl_name" "$$whl_name";
+
+	# Has only universal build.
+	prev_whl_name=$$(find build/bonsai/wheels/charset_normalizer-*.whl); \
+	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/_arm64/"); \
+	mv "$$prev_whl_name" "$$whl_name";
 endif
 ifeq ($(PLATFORM), macos)
 	# Has universal and arm64 builds.
@@ -304,6 +309,10 @@ ifeq ($(PLATFORM), macos)
 	mv "$$prev_whl_name" "$$whl_name";
 
 	prev_whl_name=$$(find build/bonsai/wheels/greenlet-*.whl); \
+	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/_x86_64/"); \
+	mv "$$prev_whl_name" "$$whl_name";
+
+	prev_whl_name=$$(find build/bonsai/wheels/charset_normalizer-*.whl); \
 	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/_x86_64/"); \
 	mv "$$prev_whl_name" "$$whl_name";
 endif
