@@ -69,6 +69,7 @@ classes = (
     wall.ChangeExtrusionDepth,
     wall.ChangeExtrusionXAngle,
     wall.ChangeLayerLength,
+    wall.AddWallsFromSlab,
     wall.DrawPolylineWall,
     wall.FlipWall,
     wall.MergeWall,
