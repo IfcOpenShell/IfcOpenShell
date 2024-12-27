@@ -516,9 +516,9 @@ def get_gross_volume(o: bpy.types.Object) -> float:
     return gross_volume
 
 
-def has_openings(obj: bpy.types.Object) -> Union[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]]:
+def has_openings(obj: bpy.types.Object) -> bool:
     element = tool.Ifc.get_entity(obj)
-    return element and getattr(element, "HasOpenings", [])
+    return bool(element and tool.Geometry.has_openings(element))
 
 
 def get_obj_decompositions(obj: bpy.types.Object) -> set[ifcopenshell.entity_instance]:
