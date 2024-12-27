@@ -176,12 +176,20 @@ class PerformQuantityTakeOff(bpy.types.Operator, tool.Ifc.Operator):
         else:
             elements = set(tool.Ifc.get().by_type("IfcElement"))
 
-        rules = ifc5d.qto.rules[props.qto_rule]
+        def run_quantification(
+            rule: str, elements: set[ifcopenshell.entity_instance]
+        ) -> set[ifcopenshell.entity_instance]:
+            rules = ifc5d.qto.rules[rule]
+            ifc_file = tool.Ifc.get()
+            results = ifc5d.qto.quantify(ifc_file, elements, rules)
+            ifc5d.qto.edit_qtos(ifc_file, results)
+            not_quantified_elements = elements - set(results.keys())
+            return not_quantified_elements
 
-        ifc_file = tool.Ifc.get()
-        results = ifc5d.qto.quantify(ifc_file, elements, rules)
-        not_quantified_elements = elements - set(results.keys())
-        ifc5d.qto.edit_qtos(ifc_file, results)
+        not_quantified_elements = run_quantification(props.qto_rule, elements)
+        if props.fallback and not_quantified_elements:
+            alternative_rules = next(rule for rule in ifc5d.qto.rules if rule != props.qto_rule)
+            not_quantified_elements = run_quantification(alternative_rules, not_quantified_elements)
 
         not_quantified_message = ""
         if not_quantified_elements:

@@ -41,6 +41,7 @@ class BIM_PT_qto(bpy.types.Panel):
             row.label(text="Quantifying All Objects", icon="MOD_EDGESPLIT")
         row = layout.row()
         row.prop(props, "qto_rule", text="")
+        row.prop(props, "fallback", text="", icon="RADIOBUT_ON" if props.fallback else "RADIOBUT_OFF")
         row = layout.row()
         row.operator("bim.perform_quantity_take_off")
 
