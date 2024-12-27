@@ -775,17 +775,19 @@ def get_end_area(obj: bpy.types.Object) -> float:
     return end_area
 
 
-def get_gross_top_area(obj: bpy.types.Object, angle: int = 45) -> float:
+def get_gross_top_area(obj: bpy.types.Object, angle: float = 45) -> float:
     """_summary_: Returns the gross top area of the object.
 
-    :param blender-object obj: blender object
-    :param int angle: Angle measured from the positive z-axis to the normal-vector of the area. Values lower than this will be ignored, defaults to 45
-    :return float: Gross Top Area
+    :param obj: blender object
+    :param angle: Angle in degrees measured from the positive z-axis to the normal-vector of the area.
+        Values higher than this will be ignored.
+    :return: Gross Top Area
     """
 
     z_axis = (0, 0, 1)
     area = 0
     opening_area = 0
+    assert isinstance(obj.data, bpy.types.Mesh)
     polygons = obj.data.polygons
 
     ifc = tool.Ifc.get()
@@ -810,18 +812,19 @@ def get_gross_top_area(obj: bpy.types.Object, angle: int = 45) -> float:
 
 
 # curently net top area is larger then projected area, because its taking into account internal polygons, or window sills
-def get_net_top_area(obj: bpy.types.Object, angle: int = 45, ignore_internal: bool = True) -> float:
+def get_net_top_area(obj: bpy.types.Object, angle: float = 45, ignore_internal: bool = True) -> float:
     """_summary_: Returns the net top area of the object.
 
     :param blender-object obj: blender object
-    :param int angle: Angle measured from the positive z-axis to the normal-vector of the area.
-        Values lower than this will be ignored, defaults to 45
-    :param bool ignore_internal: Toggle whether internal areas should be subtracted (Like window sills),
+    :param angle: Angle measured from the positive z-axis to the normal-vector of the area.
+        Values higher than this will be ignored.
+    :param ignore_internal: Toggle whether internal areas should be subtracted (Like window sills),
         defaults to True
-    :return float: Net Top Area
+    :return: Net Top Area
     """
     z_axis = (0, 0, 1)
-    area = 0
+    area = 0.0
+    assert isinstance(obj.data, bpy.types.Mesh)
     polygons = obj.data.polygons
 
     for polygon in polygons:
