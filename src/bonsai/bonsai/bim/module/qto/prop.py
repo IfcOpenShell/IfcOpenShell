@@ -70,7 +70,7 @@ class BIMQtoProperties(PropertyGroup):
     fallback: BoolProperty(
         name="Fallback To Other Calculators",
         description=(
-            "If currently selected calculator does not support quantitication "
+            "If currently selected calculator does not support quantification "
             "of some class/property, to try other available calculators."
         ),
         default=False,
