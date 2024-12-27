@@ -24,6 +24,8 @@ import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
+from ifcopenshell.util.shape_builder import VectorType
+from math import radians, cos
 from ifcopenshell.geom import ShapeElementType, ShapeType
 from typing import Optional, Literal, Union, Iterable
 
@@ -471,7 +473,8 @@ def get_area(geometry: ShapeType) -> float:
 def get_side_area(
     geometry: ShapeType,
     axis: AXIS_LITERAL = "Y",
-    direction: Optional[VECTOR_3D] = None,
+    direction: Optional[VectorType] = None,
+    angle: float = 90.0,
 ) -> float:
     """Calculates the total surface area of surfaces that are visible from the specified axis
 
@@ -489,6 +492,8 @@ def get_side_area(
     :param geometry: Geometry output calculated by IfcOpenShell
     :param axis: Either X, Y, or Z. Defaults to Y, which is used for standard
         walls.
+    :param angle: Accept angle difference between face and axis, in degrees.
+        E.g. default angle 90 will find all faces with angle < 90 degrees.
     :return: The surface area.
     """
     if direction is None:
@@ -508,9 +513,10 @@ def get_side_area(
 
     # Find the faces with a normal vector pointing in the desired +Y normal direction
     # normal_tol < 0 is pointing away, = 0 is perpendicular, and > 0 is pointing towards.
-    normal_tol = 0.01  # Close to perpendicular, but with a fuzz for numerical tolerance
+    normal_tol = 0.01  # For angle 90 it's close to perpendicular, but with a fuzz for numerical tolerance
+    acceptable_dot = cos(radians(angle)) + normal_tol
     dot_products = np.dot(triangle_normals, direction)
-    filtered_face_indices = np.where(dot_products > normal_tol)[0]
+    filtered_face_indices = np.where(dot_products > acceptable_dot)[0]
     filtered_faces = faces[filtered_face_indices]
     return get_area_vf(vertices, filtered_faces)
 
