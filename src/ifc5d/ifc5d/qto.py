@@ -17,10 +17,12 @@
 # along with Ifc5D.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import types
 import json
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.pset
+import ifcopenshell.geom
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.selector
@@ -35,6 +37,7 @@ Function = namedtuple("Function", ["measure", "name", "description"])
 RULE_SET = Literal["IFC4QtoBaseQuantities", "IFC4QtoBaseQuantitiesBlender"]
 rules: dict[RULE_SET, dict[str, Any]] = {}
 ResultsDict = dict[ifcopenshell.entity_instance, dict[str, dict[str, float]]]
+QtosFormulas = dict[str, dict[str, str]]
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 for name in get_args(RULE_SET):
@@ -91,7 +94,7 @@ class SI2ProjectUnitConverter:
             "IfcVolumeMeasure": "CUBIC_METRE",
         }
 
-    def convert(self, value, measure):
+    def convert(self, value: float, measure: str) -> float:
         if measure_unit := self.project_units.get(measure, None):
             return ifcopenshell.util.unit.convert(value, None, self.si_names[measure], *measure_unit)
         return value
@@ -101,6 +104,7 @@ class IfcOpenShell:
     """Calculates Model body context geometry using the default IfcOpenShell
     iterator on triangulation elements."""
 
+    # Implementations are located in ifcopenshell.util.shape.
     raw_functions = {
         # IfcLengthMeasure
         "get_x": Function("IfcLengthMeasure", "X", "Calculates the length along the local X axis"),
@@ -158,19 +162,15 @@ class IfcOpenShell:
         qtos: dict[str, dict[str, Union[str, None]]],
         results: ResultsDict,
     ) -> None:
-        import ifcopenshell
-        import ifcopenshell.geom
-        import ifcopenshell.util.shape
-
-        formula_functions = {}
+        formula_functions: dict[str, types.FunctionType] = {}
 
         cls.gross_settings = ifcopenshell.geom.settings()
         cls.gross_settings.set("disable-opening-subtractions", True)
         cls.net_settings = ifcopenshell.geom.settings()
         cls.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
 
-        gross_qtos = {}
-        net_qtos = {}
+        gross_qtos: QtosFormulas = {}
+        net_qtos: QtosFormulas = {}
 
         for name, quantities in qtos.items():
             for quantity, formula in quantities.items():
@@ -179,16 +179,12 @@ class IfcOpenShell:
                 gross_or_net_qtos = gross_qtos if formula.startswith("gross_") else net_qtos
                 if formula.endswith("get_segment_length"):
                     gross_or_net_qtos.setdefault(name, {})[quantity] = formula.partition("_")[2]
-                elif formula.startswith("gross_"):
-                    formula = formula.partition("_")[2]
-                    gross_or_net_qtos.setdefault(name, {})[quantity] = formula
-                    formula_functions[formula] = getattr(ifcopenshell.util.shape, formula)
-                elif formula.startswith("net_"):
+                elif formula.startswith(("gross_", "net_")):
                     formula = formula.partition("_")[2]
                     gross_or_net_qtos.setdefault(name, {})[quantity] = formula
                     formula_functions[formula] = getattr(ifcopenshell.util.shape, formula)
 
-        tasks = []
+        tasks: list[tuple[ifcopenshell.geom.iterator, QtosFormulas]] = []
 
         if gross_qtos:
             tasks.append((IfcOpenShell.create_iterator(ifc_file, cls.gross_settings, list(elements)), gross_qtos))
@@ -198,13 +194,13 @@ class IfcOpenShell:
 
         cls.unit_converter = SI2ProjectUnitConverter(ifc_file)
 
-        for iterator, qtos in tasks:
+        for iterator, qtos_ in tasks:
             if iterator.initialize():
                 while True:
                     shape = iterator.get()
                     element = ifc_file.by_id(shape.id)
                     results.setdefault(element, {})
-                    for name, quantities in qtos.items():
+                    for name, quantities in qtos_.items():
                         results[element].setdefault(name, {})
                         for quantity, formula in quantities.items():
                             if formula == "get_segment_length":
