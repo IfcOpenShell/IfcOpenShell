@@ -35,6 +35,18 @@ AxisType = Literal["x", "y", "z"]
 VectorTuple = tuple[float, float, float]
 
 
+def get_x(o: bpy.types.Object) -> float:
+    return o.bound_box[6][0] - o.bound_box[0][0]
+
+
+def get_y(o: bpy.types.Object) -> float:
+    return o.bound_box[6][1] - o.bound_box[0][1]
+
+
+def get_z(o: bpy.types.Object) -> float:
+    return o.bound_box[6][2] - o.bound_box[0][2]
+
+
 def get_units(o: bpy.types.Object, vg_index: int) -> int:
     return len([v for v in o.data.vertices if vg_index in [g.group for g in v.groups]])
 
@@ -45,17 +57,17 @@ def get_linear_length(o: bpy.types.Object) -> float:
     :param o: Blender Object
     :return: Length
     """
-    x = (Vector(o.bound_box[4]) - Vector(o.bound_box[0])).length
-    y = (Vector(o.bound_box[3]) - Vector(o.bound_box[0])).length
-    z = (Vector(o.bound_box[1]) - Vector(o.bound_box[0])).length
+    x = get_x(o)
+    y = get_y(o)
+    z = get_z(o)
     return max(x, y, z)
 
 
 def get_length(o: bpy.types.Object, vg_index: Optional[int] = None, main_axis: str = "x") -> float:
     if vg_index is None:
-        x = (Vector(o.bound_box[4]) - Vector(o.bound_box[0])).length
-        y = (Vector(o.bound_box[3]) - Vector(o.bound_box[0])).length
-        z = (Vector(o.bound_box[1]) - Vector(o.bound_box[0])).length
+        x = get_x(o)
+        y = get_y(o)
+        z = get_z(o)
         if get_object_main_axis(o) == "x" or main_axis == "x":
             return max(x, y)
         if get_object_main_axis(o) == "z":
@@ -148,8 +160,8 @@ def get_width(o: bpy.types.Object) -> float:
     :param blender-object o: blender object
     :return float: width
     """
-    x = (Vector(o.bound_box[4]) - Vector(o.bound_box[0])).length
-    y = (Vector(o.bound_box[3]) - Vector(o.bound_box[0])).length
+    x = get_x(o)
+    y = get_y(o)
     return min(x, y)
 
 
@@ -159,7 +171,7 @@ def get_height(o: bpy.types.Object) -> float:
     :param blender-object o: blender object
     :return float: height
     """
-    return (Vector(o.bound_box[1]) - Vector(o.bound_box[0])).length
+    return get_z(o)
 
 
 def get_opening_height(obj: bpy.types.Object) -> float:
@@ -432,9 +444,9 @@ def get_net_roofprint_area(o: bpy.types.Object) -> float:
 def get_side_area(o: bpy.types.Object) -> float:
     # There are a few dumb options for this, but this seems the dumbest
     # until I get more practical experience on what works best.
-    x = (Vector(o.bound_box[4]) - Vector(o.bound_box[0])).length
-    y = (Vector(o.bound_box[3]) - Vector(o.bound_box[0])).length
-    z = (Vector(o.bound_box[1]) - Vector(o.bound_box[0])).length
+    x = get_x(o)
+    y = get_y(o)
+    z = get_z(o)
     return max(x * z, y * z)
 
 
@@ -516,9 +528,11 @@ def get_gross_volume(o: bpy.types.Object) -> float:
     return gross_volume
 
 
-def has_openings(obj: bpy.types.Object) -> bool:
+def has_openings(obj: bpy.types.Object) -> list[ifcopenshell.entity_instance]:
     element = tool.Ifc.get_entity(obj)
-    return bool(element and tool.Geometry.has_openings(element))
+    if not element:
+        return []
+    return [o for o in tool.Geometry.get_openings(element)]
 
 
 def get_obj_decompositions(obj: bpy.types.Object) -> set[ifcopenshell.entity_instance]:
@@ -1206,9 +1220,9 @@ def get_object_main_axis(o: bpy.types.Object) -> AxisType:
     :param blender-object o: Blender Object
     :return str: main axis x or y or z
     """
-    x = (Vector(o.bound_box[4]) - Vector(o.bound_box[0])).length
-    y = (Vector(o.bound_box[3]) - Vector(o.bound_box[0])).length
-    z = (Vector(o.bound_box[1]) - Vector(o.bound_box[0])).length
+    x = get_x(o)
+    y = get_y(o)
+    z = get_z(o)
 
     if x >= y and x > z:
         return "x"
@@ -1221,9 +1235,9 @@ def get_object_main_axis(o: bpy.types.Object) -> AxisType:
 
 
 def is_opening_horizontal(o: bpy.types.Object) -> bool:
-    x = (Vector(o.bound_box[4]) - Vector(o.bound_box[0])).length
-    y = (Vector(o.bound_box[3]) - Vector(o.bound_box[0])).length
-    z = (Vector(o.bound_box[1]) - Vector(o.bound_box[0])).length
+    x = get_x(o)
+    y = get_y(o)
+    z = get_z(o)
 
     return z < x and z < y
 
