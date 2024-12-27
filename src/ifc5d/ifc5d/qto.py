@@ -145,6 +145,11 @@ class IfcOpenShell:
             "Side area",
             "The side (non-projected) are of the shape as seen from the local Y-axis",
         ),
+        "get_top_area": Function(
+            "IfcAreaMeasure",
+            "Top area",
+            "The total surface area deviating by no more than 45 degrees from the local Z+ axis.",
+        ),
         # IfcVolumeMeasure
         "get_volume": Function("IfcVolumeMeasure", "Volume", "Calculates the volume of a manifold shape"),
     }
