@@ -28,7 +28,7 @@ from ..entity_instance import entity_instance
 
 from . import has_occ
 
-from typing import TypeVar, Union, Optional, Generator, Any, Literal, overload, TYPE_CHECKING, Iterable
+from typing import TypeVar, Union, Optional, Generator, Any, Literal, overload, TYPE_CHECKING, Iterable, cast
 
 if TYPE_CHECKING:
     from OCC.Core import TopoDS
@@ -262,6 +262,8 @@ class iterator(ifcopenshell_wrapper.Iterator):
             include_or_exclude_type = set(x.__class__.__name__ for x in include_or_exclude)
 
             if include_or_exclude_type == {"entity_instance"}:
+                include_or_exclude = cast(set[entity_instance], include_or_exclude)
+
                 if not all(inst.is_a("IfcProduct") for inst in include_or_exclude):
                     raise ValueError("include and exclude need to be an aggregate of IfcProduct")
 

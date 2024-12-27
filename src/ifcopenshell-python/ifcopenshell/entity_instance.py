@@ -25,7 +25,7 @@ import operator
 import subprocess
 import sys
 import time
-from typing import Union, Any, Callable, TypeVar, overload, Iterable
+from typing import Union, Any, Callable, TypeVar, overload, Iterable, Sequence
 
 from . import ifcopenshell_wrapper
 from . import settings
@@ -551,7 +551,7 @@ class entity_instance:
         include_identifier: bool = True,
         recursive: bool = False,
         return_type: Union[type[dict], type] = dict,
-        ignore: Iterable[str] = (),
+        ignore: Sequence[str] = (),
         scalar_only: bool = False,
     ) -> dict[str, Any]:
         """Return a dictionary of the entity_instance's properties (Python and IFC) and their values.

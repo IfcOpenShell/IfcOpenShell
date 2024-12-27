@@ -38,8 +38,9 @@ class AttributesData:
     def attributes(cls):
         results = []
         element = tool.Ifc.get_entity(bpy.context.active_object)
+        assert element
         data = element.get_info()
-        if hasattr(element, "GlobalId"):
+        if "GlobalId" in data:
             excluded_keys = ["id", "type"]
         else:
             excluded_keys = ["type"]
