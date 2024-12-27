@@ -67,3 +67,11 @@ class BIMQtoProperties(PropertyGroup):
     qto_result: StringProperty(default="", name="Qto Result")
     qto_name: StringProperty(name="Qto Name", default="My_Qto")
     prop_name: StringProperty(name="Prop Name", default="MyDimension")
+    fallback: BoolProperty(
+        name="Fallback To Other Calculators",
+        description=(
+            "If currently selected calculator does not support quantitication "
+            "of some class/property, to try other available calculators."
+        ),
+        default=False,
+    )

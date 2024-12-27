@@ -378,8 +378,10 @@ class BIM_PT_object_qtos(Panel):
                 )
         layout = self.layout
         qtoprops = context.scene.BIMQtoProperties
-        row = layout.row()
+        row = layout.row(align=True)
         row.prop(qtoprops, "qto_rule", text="")
+        # A bit confusing as we typically use this icon for is_null.
+        row.prop(qtoprops, "fallback", text="", icon="RADIOBUT_ON" if qtoprops.fallback else "RADIOBUT_OFF")
         row = layout.row()
         row.operator("bim.perform_quantity_take_off")
 
