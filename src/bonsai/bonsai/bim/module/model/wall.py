@@ -620,7 +620,7 @@ class DumbWallGenerator:
         walls = []
         for i in range(len(polyline_points) - 1):
             vec1 = polyline_points[i]
-            vec2 = polyline_points[i+1]
+            vec2 = polyline_points[i + 1]
             coords = (vec1, vec2)
             walls.append(self.create_wall_from_2_points(coords))
         return walls

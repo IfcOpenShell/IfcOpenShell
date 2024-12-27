@@ -373,10 +373,12 @@ class Snap(bonsai.core.tool.Snap):
         if polyline_points:
             snap_points = tool.Raycast.ray_cast_to_polyline(context, event)
             if snap_points:
-                detected_snaps.append({
-                    "group": "Polyline",
-                    "points": snap_points,
-                })
+                detected_snaps.append(
+                    {
+                        "group": "Polyline",
+                        "points": snap_points,
+                    }
+                )
 
         # Measure
         measure_data = context.scene.BIMPolylineProperties.measurement_polyline
@@ -384,10 +386,12 @@ class Snap(bonsai.core.tool.Snap):
             measure_points = measure.polyline_points
             snap_points = tool.Raycast.ray_cast_to_measure(context, event, measure_points)
             if snap_points:
-                detected_snaps.append({
-                    "group": "Measure",
-                    "points": snap_points,
-                })
+                detected_snaps.append(
+                    {
+                        "group": "Measure",
+                        "points": snap_points,
+                    }
+                )
 
         # Edge-Vertex
         for obj in objs_to_raycast:
@@ -395,11 +399,13 @@ class Snap(bonsai.core.tool.Snap):
                 if len(obj.data.polygons) == 0:
                     snap_points = tool.Raycast.ray_cast_by_proximity(context, event, obj)
                     if snap_points:
-                        detected_snaps.append({
-                            "group": "Edge-Vertex",
-                            "object": obj,
-                            "points": snap_points,
-                        })
+                        detected_snaps.append(
+                            {
+                                "group": "Edge-Vertex",
+                                "object": obj,
+                                "points": snap_points,
+                            }
+                        )
             if obj.type == "EMPTY":
                 snap_point = {
                     "points": [{"type": "Vertex", "point": obj.location}],
@@ -480,7 +486,7 @@ class Snap(bonsai.core.tool.Snap):
     @classmethod
     def select_snapping_points(cls, context, event, tool_state, detected_snaps):
         snapping_points = []
-        edges = [] # Get edges to create edge-intersection snap
+        edges = []  # Get edges to create edge-intersection snap
         for snap_group in detected_snaps:
             snap_obj = None
             if snap_group["group"] == "Polyline":
