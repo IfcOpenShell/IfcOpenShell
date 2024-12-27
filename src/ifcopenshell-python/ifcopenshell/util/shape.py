@@ -532,6 +532,10 @@ def get_max_side_area(geometry: ShapeType) -> float:
     return max(get_side_area(geometry, axis="X"), get_side_area(geometry, axis="Y"), get_side_area(geometry, axis="Z"))
 
 
+def get_top_area(geometry: ShapeType) -> float:
+    return get_side_area(geometry, axis="Z", angle=45)
+
+
 def get_footprint_area(
     geometry: ShapeType,
     axis: AXIS_LITERAL = "Z",

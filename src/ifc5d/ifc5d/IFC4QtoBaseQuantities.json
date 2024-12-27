@@ -484,8 +484,8 @@
             },
             "IfcRoof": {
                 "Qto_RoofBaseQuantities": {
-                    "GrossArea": null,
-                    "NetArea": null,
+                    "GrossArea": "gross_get_top_area",
+                    "NetArea": "net_get_top_area",
                     "ProjectedArea": null
                 }
             },
