@@ -280,6 +280,39 @@ class ChangeLayerLength(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
+class AddWallsFromSlab(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.draw_walls_from_slab"
+    bl_label = "Draw Slab From Wall"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.space_data.type == "VIEW_3D"
+
+    def __init__(self):
+        self.relating_type = None
+        props = bpy.context.scene.BIMModelProperties
+        relating_type_id = props.relating_type_id
+        if relating_type_id:
+            self.relating_type = tool.Ifc.get().by_id(int(relating_type_id))
+
+    def _execute(self, context):
+        if not self.relating_type:
+            return {"FINISHED"}
+        slab = tool.Ifc.get_entity(context.active_object)
+        if not slab.is_a("IfcSlab"):
+            self.report(
+                {"WARNING"},
+                "Please select a slab.",
+            )
+            return {"FINISHED"}
+        walls = DumbWallGenerator(self.relating_type).generate("SLAB")
+
+        if walls:
+            for wall1, wall2 in zip(walls, walls[1:] + [walls[0]]):
+                DumbWallJoiner().join_V(wall2["obj"], wall1["obj"])
+
+
 class DrawPolylineWall(bpy.types.Operator, PolylineOperator):
     bl_idname = "bim.draw_polyline_wall"
     bl_label = "Draw Polyline Wall"
@@ -305,7 +338,7 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator):
         direction_sense = model_props.direction_sense
         offset = model_props.offset
 
-        walls, is_polyline_closed = DumbWallGenerator(self.relating_type).generate(True)
+        walls, is_polyline_closed = DumbWallGenerator(self.relating_type).generate("POLYLINE")
         for wall in walls:
             model = IfcStore.get_file()
             element = tool.Ifc.get_entity(wall["obj"])
@@ -515,7 +548,7 @@ class DumbWallGenerator:
         self.relating_type = relating_type
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
-    def generate(self, draw_from_polyline=False):
+    def generate(self, insertion_type="CURSOR"):
         self.file = IfcStore.get_file()
         self.layers = tool.Model.get_material_layer_parameters(self.relating_type)
         if not self.layers["thickness"]:
@@ -539,9 +572,11 @@ class DumbWallGenerator:
         self.location = Vector((0, 0, 0))
         self.x_angle = 0 if tool.Cad.is_x(props.x_angle, 0, tolerance=0.001) else props.x_angle
 
-        if draw_from_polyline:
+        if insertion_type == "POLYLINE":
             return self.derive_from_polyline()
-        else:
+        elif insertion_type == "SLAB":
+            return self.derive_from_slab()
+        elif insertion_type == "CURSOR":
             return self.derive_from_cursor()
 
     def has_sketch(self):
@@ -569,6 +604,26 @@ class DumbWallGenerator:
             coords = (vec1, vec2)
             walls.append(self.create_wall_from_2_points(coords))
         return walls, is_polyline_closed
+
+    def derive_from_slab(self):
+        slab_obj = bpy.context.active_object
+        slab = tool.Ifc.get_entity(slab_obj)
+        container = ifcopenshell.util.element.get_container(slab)
+        self.container_obj = tool.Ifc.get_object(container)
+        elevation = self.container_obj.location.z
+        representation = ifcopenshell.util.representation.get_representation(slab, "Model", "Body", "MODEL_VIEW")
+        extrusion = tool.Model.get_extrusion(representation)
+        polyline_points = extrusion.SweptArea.OuterCurve.Points.CoordList
+        polyline_points = [[(v * self.unit_scale) for v in p] for p in polyline_points]
+        polyline_points = [slab_obj.matrix_world @ Vector((p[0], p[1], elevation)) for p in polyline_points]
+        is_polyline_closed = True
+        walls = []
+        for i in range(len(polyline_points) - 1):
+            vec1 = polyline_points[i]
+            vec2 = polyline_points[i+1]
+            coords = (vec1, vec2)
+            walls.append(self.create_wall_from_2_points(coords))
+        return walls
 
     def derive_from_sketch(self):
         objs = []
