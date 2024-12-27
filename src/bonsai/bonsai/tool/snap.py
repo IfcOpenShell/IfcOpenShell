@@ -402,8 +402,7 @@ class Snap(bonsai.core.tool.Snap):
                         })
             if obj.type == "EMPTY":
                 snap_point = {
-                    "type": "Vertex",
-                    "point": obj.location,
+                    "points": [{"type": "Vertex", "point": obj.location}],
                     "group": "Edge-Vertex",
                     "object": obj,
                 }
@@ -415,7 +414,7 @@ class Snap(bonsai.core.tool.Snap):
             snap_point = {
                 "point": hit,
                 "group": "Object",
-                "object": obj,
+                "object": snap_obj,
                 "face_index": face_index,
             }
             detected_snaps.append(snap_point)
@@ -501,17 +500,18 @@ class Snap(bonsai.core.tool.Snap):
                         edges.append(p)
 
             if snap_group["group"] == "Object":
-                matrix = snap_group["object"].matrix_world.copy()
-                face = snap_group["object"].data.polygons[snap_group["face_index"]]
+                obj = snap_group["object"]
+                matrix = obj.matrix_world.copy()
+                face = obj.data.polygons[snap_group["face_index"]]
                 verts = []
                 for i in face.vertices:
-                    verts.append(matrix @ snap_group["object"].data.vertices[i].co)
-                snap_points = tool.Raycast.ray_cast_by_proximity(context, event, snap_group["object"], face)
+                    verts.append(matrix @ obj.data.vertices[i].co)
+                snap_points = tool.Raycast.ray_cast_by_proximity(context, event, obj, face)
                 if not snap_points:
-                    snapping_points.append((snap_group["point"], "Face", snap_group["object"]))
+                    snapping_points.append((snap_group["point"], "Face", obj))
                 else:
                     for p in snap_points:
-                        snapping_points.append((p["point"], p["type"], snap_group["object"]))
+                        snapping_points.append((p["point"], p["type"], obj))
                         if p["type"] == "Edge":
                             edges.append(p)
                 break
