@@ -28,9 +28,10 @@ import ifcopenshell.util.element
 import ifcopenshell.util.selector
 import ifcopenshell.util.shape
 import ifcopenshell.util.representation
+import ifcopenshell.util.type
 import multiprocessing
-from collections import namedtuple
-from typing import Any, Literal, get_args, Union
+from collections import namedtuple, defaultdict
+from typing import Any, Literal, get_args, Union, Iterable
 
 
 Function = namedtuple("Function", ["measure", "name", "description"])
@@ -52,10 +53,19 @@ def quantify(ifc_file: ifcopenshell.file, elements: set[ifcopenshell.entity_inst
 
     """
     results: ResultsDict = {}
+    elements_by_classes: defaultdict[str, set[ifcopenshell.entity_instance]] = defaultdict(set)
+    for element in elements:
+        elements_by_classes[element.is_a()].add(element)
+
     for calculator, queries in rules["calculators"].items():
         calculator = calculators[calculator]
-        for query, qtos in queries.items():
-            filtered_elements = ifcopenshell.util.selector.filter_elements(ifc_file, query, elements)
+        for ifc_class, qtos in queries.items():
+            filtered_elements = set()
+            ifc_classes = [ifc_class] + ifcopenshell.util.type.get_applicable_types(ifc_class)
+            for ifc_class in ifc_classes:
+                if ifc_class not in elements_by_classes:
+                    continue
+                filtered_elements.update(elements_by_classes[ifc_class])
             if filtered_elements:
                 calculator.calculate(ifc_file, filtered_elements, qtos, results)
     return results
@@ -98,6 +108,55 @@ class SI2ProjectUnitConverter:
         if measure_unit := self.project_units.get(measure, None):
             return ifcopenshell.util.unit.convert(value, None, self.si_names[measure], *measure_unit)
         return value
+
+
+class IteratorForTypes:
+    """Currently ifcopenshell.geom.iterator support only IfcProducts, so this
+    class is mimicking the iterator interface but works for IfcTypeProducts."""
+
+    element: Union[ifcopenshell.entity_instance, None] = None
+    shape: Union[ifcopenshell.geom.ShapeType, None] = None
+
+    def __init__(
+        self,
+        ifc_file: ifcopenshell.file,
+        settings: ifcopenshell.geom.settings,
+        elements: Iterable[ifcopenshell.entity_instance],
+    ):
+        self.settings = settings
+        self.elements = list(elements)
+        self.element = None
+        self.file = ifc_file
+        model = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
+        assert model
+        self.context = model
+
+    def initialize(self) -> bool:
+        return bool(self.next())
+
+    def get_element_and_geometry(self) -> tuple[ifcopenshell.entity_instance, ifcopenshell.geom.ShapeType]:
+        # get() is not implemented so it won't be confused with iteartor.get().
+        # The difference is important since create_shape for product types
+        # doesn't ouput SpapeElementType, only ShapeTypes.
+        assert self.element and self.shape
+        return (self.element, self.shape)
+
+    def next(self) -> bool:
+        if not self.elements:
+            return False
+        while self.elements:
+            element = self.elements.pop()
+            if self.process_shape(element):
+                return True
+        return False
+
+    def process_shape(self, element: ifcopenshell.entity_instance):
+        representation = ifcopenshell.util.representation.get_representation(element, self.context)
+        if not representation:
+            return False
+        self.shape = ifcopenshell.geom.create_shape(self.settings, representation)
+        self.element = element
+        return True
 
 
 class IfcOpenShell:
@@ -189,44 +248,60 @@ class IfcOpenShell:
                     gross_or_net_qtos.setdefault(name, {})[quantity] = formula
                     formula_functions[formula] = getattr(ifcopenshell.util.shape, formula)
 
-        tasks: list[tuple[ifcopenshell.geom.iterator, QtosFormulas]] = []
+        tasks: list[tuple[Union[ifcopenshell.geom.iterator, IteratorForTypes], QtosFormulas]] = []
 
         if gross_qtos:
-            tasks.append((IfcOpenShell.create_iterator(ifc_file, cls.gross_settings, list(elements)), gross_qtos))
+            for iterator in IfcOpenShell.create_iterators(ifc_file, cls.gross_settings, list(elements)):
+                tasks.append((iterator, gross_qtos))
 
         if net_qtos:
-            tasks.append((IfcOpenShell.create_iterator(ifc_file, cls.net_settings, list(elements)), net_qtos))
+            for iterator in IfcOpenShell.create_iterators(ifc_file, cls.gross_settings, list(elements)):
+                tasks.append((iterator, net_qtos))
 
         cls.unit_converter = SI2ProjectUnitConverter(ifc_file)
 
         for iterator, qtos_ in tasks:
             if iterator.initialize():
                 while True:
-                    shape = iterator.get()
-                    element = ifc_file.by_id(shape.id)
+                    if isinstance(iterator, ifcopenshell.geom.iterator):
+                        shape = iterator.get()
+                        geometry = shape.geometry
+                        element = ifc_file.by_id(shape.id)
+                    else:
+                        element, geometry = iterator.get_element_and_geometry()
+
                     results.setdefault(element, {})
                     for name, quantities in qtos_.items():
                         results[element].setdefault(name, {})
                         for quantity, formula in quantities.items():
                             if formula == "get_segment_length":
-                                results[element][name][quantity] = cls.get_segment_length(ifc_file, shape)
+                                results[element][name][quantity] = cls.get_segment_length(element)
                             else:
                                 results[element][name][quantity] = cls.unit_converter.convert(
-                                    formula_functions[formula](shape.geometry),
+                                    formula_functions[formula](geometry),
                                     IfcOpenShell.raw_functions[formula].measure,
                                 )
                     if not iterator.next():
                         break
 
     @staticmethod
-    def create_iterator(
+    def create_iterators(
         ifc_file: ifcopenshell.file, settings: ifcopenshell.geom.settings, elements: list[ifcopenshell.entity_instance]
-    ) -> ifcopenshell.geom.iterator:
-        return ifcopenshell.geom.iterator(settings, ifc_file, multiprocessing.cpu_count(), include=elements)
+    ) -> list[Union[ifcopenshell.geom.iterator, IteratorForTypes]]:
+        elements_sorted: defaultdict[bool, list[ifcopenshell.entity_instance]] = defaultdict(list)
+        iterators = []
+        for element in elements:
+            elements_sorted[element.is_a("IfcTypeProduct")].append(element)
+        if True in elements_sorted:
+            iterators.append(IteratorForTypes(ifc_file, settings, elements_sorted[True]))
+        if False in elements_sorted:
+            iterators.append(
+                ifcopenshell.geom.iterator(settings, ifc_file, multiprocessing.cpu_count(), include=elements)
+            )
+        return iterators
 
     @classmethod
-    def get_segment_length(cls, ifc_file: ifcopenshell.file, shape) -> float:
-        element = ifc_file.by_id(shape.id)
+    def get_segment_length(cls, element: ifcopenshell.entity_instance) -> float:
         rep = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
         if rep and len(rep.Items or []) == 1 and rep.Items[0].is_a("IfcExtrudedAreaSolid"):
             item = rep.Items[0]
