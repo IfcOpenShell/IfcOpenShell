@@ -506,6 +506,17 @@ class Blender(bonsai.core.tool.Blender):
         Careful with using this method for objects in EDIT mode because
         it requires all EDIT mode changes to be applied.
         """
+        # Example bounding box points for a cube:
+        # [
+        #     (-1.0, -1.0, -1.0),        # 0, min.
+        #     (-1.0, -1.0,  1.0),        # 1
+        #     (-1.0,  1.0,  1.0),        # 2
+        #     (-1.0,  1.0, -1.0),        # 3
+        #     ( 1.0, -1.0, -1.0),        # 4
+        #     ( 1.0, -1.0,  1.0),        # 5
+        #     ( 1.0,  1.0,  1.0),        # 6, max.
+        #     ( 1.0,  1.0, -1.0),        # 7
+        # ]
         bound_box = obj.bound_box
         bbox_dict = {
             "min_x": bound_box[0][0],
