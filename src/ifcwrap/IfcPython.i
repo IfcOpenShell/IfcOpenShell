@@ -57,6 +57,93 @@
 %ignore IfcGeom::NumberNativeDouble;
 %ignore ifcopenshell::geometry::Converter;
 
+// Not relevant for python: new_IfcBaseClass() calls instantiate()
+%ignore schema_definition::instantiate;
+
+// Irrelevant abstract base that only has anonymous concrete implementations
+%ignore instance_factory;
+
+// Not relevant for python usage
+%ignore IfcBaseInterface;
+%ignore IfcBaseClass::data;
+%ignore *::references_to_resolve;
+
+// SVG serializer internal
+%ignore geometry_data;
+%ignore vertical_section;
+%ignore horizontal_plan;
+%ignore storey_sorter;
+%ignore layerset_information;
+
+// taxonomy
+// - tuples
+%ignore curves;
+%ignore surfaces;
+%ignore upgrades;
+
+%ignore loop_to_face_upgrade_impl;
+%ignore curve_to_edge_upgrade_impl;
+%ignore curve_to_loop_upgrade_impl;
+%ignore edge_to_loop_upgrade_impl;
+%ignore curve_to_face_upgrade_impl;
+%ignore loop_to_piecewise_function_upgrade_impl;
+
+// settings, can this done more generally?
+%ignore UseElementNames;
+%ignore UseElementGuids;
+%ignore UseElementStepIds;
+%ignore UseElementTypes;
+%ignore UseYUp;
+%ignore WriteGltfEcef;
+%ignore FloatingPointDigits;
+%ignore BaseUri;
+%ignore WktUseSection;
+%ignore MesherLinearDeflection;
+%ignore MesherAngularDeflection;
+%ignore ReorientShells;
+%ignore LengthUnit;
+%ignore PlaneUnit;
+%ignore Precision;
+%ignore LayersetFirst;
+%ignore DisableBooleanResult;
+%ignore NoWireIntersectionCheck;
+%ignore NoWireIntersectionTolerance;
+%ignore PrecisionFactor;
+%ignore DebugBooleanOperations;
+%ignore BooleanAttempt2d;
+%ignore WeldVertices;
+%ignore UseWorldCoords;
+%ignore UnifyShapes;
+%ignore UseMaterialNames;
+%ignore ConvertBackUnits;
+%ignore ContextIds;
+%ignore ContextTypes;
+%ignore ContextIdentifiers;
+%ignore OutputDimensionality;
+%ignore IteratorOutput;
+%ignore DisableOpeningSubtractions;
+%ignore ApplyDefaultMaterials;
+%ignore DontEmitNormals;
+%ignore GenerateUvs;
+%ignore ApplyLayerSets;
+%ignore UseElementHierarchy;
+%ignore ValidateQuantities;
+%ignore EdgeArrows;
+%ignore SiteLocalPlacement;
+%ignore BuildingLocalPlacement;
+%ignore NoParallelMapping;
+%ignore ForceSpaceTransparency;
+%ignore CircleSegments;
+%ignore KeepBoundingBoxes;
+%ignore SurfaceColour;
+%ignore PiecewiseStepType;
+%ignore PiecewiseStepParam;
+%ignore ModelOffset;
+%ignore ModelRotation;
+
+// Triangulated representation helper struct
+%ignore EdgeKey;
+
 // General python-specific rename rules for comparison operators.
 // Mostly to silence warnings, but might be of use some time.
 %rename("__eq__") operator ==;
@@ -245,14 +332,3 @@ constexpr bool is_std_vector_vector_v = is_std_vector_vector<T>::value;
 
 %include "IfcGeomWrapper.i"
 %include "IfcParseWrapper.i"
-%include "std_vector.i"
-	
-namespace std {
-  %template(float_array_3) array<double, 3>;
-  %template(FloatVector) vector<float>;
-  %template(IntVector) std::vector<int>;
-  %template(DoubleVector) std::vector<double>;
-  %template(StringVector) std::vector<std::string>;
-  %template(FloatVectorVector) std::vector<std::vector<float>>;
-  %template(DoubleVectorVector) std::vector<std::vector<double>>;
-}
