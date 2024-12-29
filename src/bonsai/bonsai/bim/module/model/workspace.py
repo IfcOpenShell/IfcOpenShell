@@ -368,6 +368,10 @@ class CreateObjectUI:
             cls.draw_thumbnail(context)
             cls.draw_add_object_parameters(context)
             cls.draw_add_object(context)
+            if len(context.selected_objects) == 2 and tool.Ifc.get_entity(context.selected_objects[0]):
+                op_icon = custom_icon_previews["APPLY_VOID"].icon_id
+                row = layout.row(align=True) 
+                row.operator("bim.add_opening", text="Apply Void", icon_value=op_icon)
         else:
             cls.draw_type_manager_launcher(context)
 
@@ -805,6 +809,8 @@ class EditObjectUI:
             op_icon = custom_icon_previews["APPLY_VOID"].icon_id
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             row.operator("bim.add_opening", text=op_text, icon_value=op_icon)
+            row.label(text="", icon="EVENT_SHIFT")
+            row.label(text="", icon="EVENT_O")
         else:
             op_text = "Add Void" if ui_context != "TOOL_HEADER" else ""
             op_icon = custom_icon_previews["ADD_VOID"].icon_id
