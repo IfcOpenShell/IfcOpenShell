@@ -881,8 +881,9 @@ class EditOpenings(Operator, tool.Ifc.Operator):
     def _execute(self, context):
         props = bpy.context.scene.BIMModelProperties
         building_objs = set()
+        current_openings = bpy.data.collections.get("IfcOpeningElement").objects
 
-        for obj in context.selected_objects:
+        for obj in current_openings:
             element = tool.Ifc.get_entity(obj)
             if not element:
                 continue
