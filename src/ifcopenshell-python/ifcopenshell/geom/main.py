@@ -74,7 +74,7 @@ SETTING = Literal[
     "no-wire-intersection-check",
     "no-wire-intersection-tolerance",
     "precision-factor",
-    "debug-boolean",
+    "debug",
     "boolean-attempt-2d",
     "weld-vertices",
     "use-world-coords",
