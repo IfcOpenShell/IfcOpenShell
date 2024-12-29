@@ -1258,12 +1258,14 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             bpy.ops.bim.enable_editing_extrusion_axis()
 
     def hotkey_A_O(self):
-        if not bpy.context.selected_objects:
-            return
-        if AuthoringData.data["has_visible_openings"]:
+        if (
+            AuthoringData.data["has_visible_openings"] 
+            or not bpy.context.selected_objects 
+            or AuthoringData.data["active_class"] == "IfcOpeningElement"
+        ):
             bpy.ops.bim.edit_openings()
         else:
-            bpy.ops.bim.show_openings()
+            bpy.ops.bim.show_openings() 
 
 
 custom_icon_previews = None
