@@ -29,7 +29,7 @@ jobs:
           echo 'cd pyodide' > script.sh
           echo 'make && pip install ./pyodide-build' >> script.sh
           echo 'cd ..' >> script.sh
-          echo 'mkdir packages/ifcopenshell' >> script.sh
+          echo 'mkdir -p packages/ifcopenshell' >> script.sh
           echo 'cp IfcOpenShell/pyodide/meta.yaml packages/ifcopenshell' >> script.sh
           echo 'PYODIDE_ROOT=/src/pyodide \' >> script.sh
           echo 'PATH=/src/pyodide/emsdk/emsdk:/src/pyodide/emsdk/emsdk/node/20.18.0_64bit/bin:/src/pyodide/emsdk/emsdk/upstream/emscripten:$PATH \' >> script.sh
