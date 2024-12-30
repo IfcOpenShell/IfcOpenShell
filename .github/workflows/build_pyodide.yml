@@ -23,6 +23,7 @@ jobs:
 
       - name: Build
         run: |
+          find .. -maxdepth 2
           echo 'cd pyodide' > script.sh
           echo 'make && pip install ./pyodide-build' >> script.sh
           echo 'cd ..' >> script.sh
