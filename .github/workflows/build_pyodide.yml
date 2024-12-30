@@ -35,6 +35,7 @@ jobs:
           echo 'PATH=/src/pyodide/emsdk/emsdk:/src/pyodide/emsdk/emsdk/node/20.18.0_64bit/bin:/src/pyodide/emsdk/emsdk/upstream/emscripten:$PATH \' >> script.sh
           echo 'pyodide build-recipes ifcopenshell --install' >> script.sh
           chmod +x script.sh
+          sed -i s/--tty// pyodide/run_docker
           pyodide/run_docker ./script.sh
           
       - name: Upload .zip archives to S3
