@@ -323,8 +323,8 @@ class Polyline(bonsai.core.tool.Polyline):
 
         FORMULA: "="
 
-        imperial: feet? "-"? inches?
-        feet: NUMBER? "-"? fraction? "'"
+        imperial: (inches?) | (feet? "-"? inches?)
+        feet: NUMBER? "-"? fraction? "'"?
         inches: NUMBER? "-"? fraction? "\\""
         fraction: NUMBER "/" NUMBER
 
@@ -382,7 +382,7 @@ class Polyline(bonsai.core.tool.Polyline):
                     else:
                         result = args[0] + args[1]
                 else:
-                    result = args[0]
+                    result = args[0] or 0.0
                 return result
 
             def metric(self, args):
