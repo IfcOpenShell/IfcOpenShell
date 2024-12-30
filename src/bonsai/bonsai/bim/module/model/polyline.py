@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import copy
 import math
@@ -45,6 +46,9 @@ from lark import Lark, Transformer
 class PolylineOperator:
     # TODO Fill doc strings
     """ """
+
+    number_input: list[str]
+    input_type: tool.Polyline.InputType
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -80,7 +84,6 @@ class PolylineOperator:
         self.number_output = ""
         self.number_is_negative = False
         self.input_options = ["D", "A", "X", "Y"]
-        self.input_type = None
         self.input_type = None
         self.input_value_xy = [None, None]
         self.input_ui = tool.Polyline.create_input_ui()

@@ -41,7 +41,7 @@ from mathutils import Vector, Matrix
 from bonsai.bim.module.model.opening import FilledOpeningGenerator
 from bonsai.bim.module.model.decorator import PolylineDecorator, ProductDecorator
 from bonsai.bim.module.model.polyline import PolylineOperator
-from typing import Optional, assert_never, TYPE_CHECKING, get_args, Literal
+from typing import Optional, assert_never, TYPE_CHECKING, get_args, Literal, Union, Any
 from lark import Lark, Transformer
 
 
@@ -330,7 +330,7 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator):
         if relating_type_id:
             self.relating_type = tool.Ifc.get().by_id(int(relating_type_id))
 
-    def create_walls_from_polyline(self, context):
+    def create_walls_from_polyline(self, context: bpy.types.Context) -> Union[set[str], None]:
         if not self.relating_type:
             return {"FINISHED"}
 
@@ -587,7 +587,7 @@ class DumbWallGenerator:
             and bpy.context.scene.grease_pencil.layers[0].active_frame.strokes
         )
 
-    def derive_from_polyline(self):
+    def derive_from_polyline(self) -> tuple[list[Union[dict[str, Any], None]], bool]:
         polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline
         polyline_points = polyline_data[0].polyline_points if polyline_data else []
         is_polyline_closed = False
@@ -658,7 +658,7 @@ class DumbWallGenerator:
         bpy.context.scene.grease_pencil.layers.remove(layer)
         return objs
 
-    def create_wall_from_2_points(self, coords, should_round=False):
+    def create_wall_from_2_points(self, coords, should_round=False) -> Union[dict[str, Any], None]:
         direction = coords[1] - coords[0]
         length = direction.length
         if round(length, 4) < 0.1:
@@ -696,7 +696,7 @@ class DumbWallGenerator:
     def is_near(self, point1, point2):
         return (point1 - point2).length < 0.1
 
-    def derive_from_cursor(self):
+    def derive_from_cursor(self) -> bpy.types.Object:
         RAYCAST_PRECISION = 0.01
         self.location = bpy.context.scene.cursor.location
         if self.container:
@@ -746,7 +746,7 @@ class DumbWallGenerator:
                     break
         return self.create_wall()
 
-    def create_wall(self):
+    def create_wall(self) -> bpy.types.Object:
         props = bpy.context.scene.BIMModelProperties
         ifc_class = self.get_relating_type_class(self.relating_type)
         mesh = bpy.data.meshes.new("Dummy")

@@ -250,7 +250,7 @@ class Snap(bonsai.core.tool.Snap):
         return sorted_intersections
 
     @classmethod
-    def detect_snapping_points(cls, context, event, objs_2d_bbox, tool_state):
+    def detect_snapping_points(cls, context: bpy.types.Context, event: bpy.types.Event, objs_2d_bbox, tool_state):
         rv3d = context.region_data
         space = context.space_data
         mouse_pos = event.mouse_region_x, event.mouse_region_y
