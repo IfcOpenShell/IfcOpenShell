@@ -479,7 +479,7 @@ if platform.system() == "Darwin":
     ADDITIONAL_ARGS = [f"-mmacosx-version-min={TOOLSET}"] + ADDITIONAL_ARGS
 
 if "wasm" in flags:
-    ADDITIONAL_ARGS.extend(("-sWASM_BIGINT", "-fexceptions"))
+    ADDITIONAL_ARGS.extend(("-sWASM_BIGINT", "-fwasm-exceptions"))
 
 # If the linker supports GC sections, set it up to reduce binary file size
 # -fPIC is required for the shared libraries to work
@@ -990,7 +990,11 @@ if "IfcOpenShell-Python" in targets:
             if platform.system() != "Darwin":
                 if BUILD_CFG == "Release":
                     # TODO: This symbol name depends on the Python version?
-                    run([strip, "-s", "-K", "PyInit__ifcopenshell_wrapper", glob.glob(os.path.join(module_dir, "_ifcopenshell_wrapper*.so"))[0]], cwd=module_dir)
+                    so = glob.glob(os.path.join(module_dir, "_ifcopenshell_wrapper*.so"))[0]
+                    if "wasm" in flags:
+                        run(['wasm-strip', so, '-k', "dylink.0"])
+                    else:
+                        run([strip, "-s", "-K", "PyInit__ifcopenshell_wrapper", so], cwd=module_dir)
 
             return module_dir
 
