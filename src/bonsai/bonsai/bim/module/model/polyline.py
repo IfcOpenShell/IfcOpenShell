@@ -173,7 +173,19 @@ class PolylineOperator:
         Plane: {self.tool_state.plane_method}
         Snap: {self.snapping_points[0][1]}
         """
-        context.workspace.status_text_set(self.instructions + custom_instructions + self.snap_info)
+        instructions = self.instructions + custom_instructions + self.snap_info
+
+        def draw_instructions(self: bpy.types.Header, context: bpy.types.Context) -> None:
+            for line in instructions.splitlines():
+                line = line.strip()
+                split = line.split(":", 1)
+                if (key := split[0]) not in ("TAB", "D", "A", "M", "C", "E", "BACKSPACE"):
+                    self.layout.label(text=line)
+                    continue
+
+                self.layout.label(text=split[1], icon=f"EVENT_{key}")
+
+        context.workspace.status_text_set(draw_instructions)
 
     def handle_lock_axis(self, context: bpy.types.Context, event: bpy.types.Event) -> None:
         if event.value == "PRESS" and event.type == "A":
