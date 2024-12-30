@@ -1402,11 +1402,13 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
         original_names: dict[int, dict[int, str]] = {}
 
         def delete_objects(element: ifcopenshell.entity_instance) -> None:
+            """Remove IfcElementAssembly and it's parts."""
             parts = ifcopenshell.util.element.get_parts(element)
             if parts:
                 for part in parts:
                     if part.is_a("IfcElementAssembly"):
                         delete_objects(part)
+                        continue
 
                     tool.Geometry.delete_ifc_object(tool.Ifc.get_object(part))
 
