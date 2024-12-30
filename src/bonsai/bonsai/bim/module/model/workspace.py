@@ -370,7 +370,7 @@ class CreateObjectUI:
             cls.draw_add_object(context)
             if len(context.selected_objects) == 2 and tool.Ifc.get_entity(context.selected_objects[0]):
                 op_icon = custom_icon_previews["APPLY_VOID"].icon_id
-                row = layout.row(align=True) 
+                row = layout.row(align=True)
                 row.operator("bim.add_opening", text="Apply Void", icon_value=op_icon)
         else:
             cls.draw_type_manager_launcher(context)
