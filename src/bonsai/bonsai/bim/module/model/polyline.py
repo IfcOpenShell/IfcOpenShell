@@ -317,7 +317,7 @@ class PolylineOperator:
         self, context: bpy.types.Context, event: bpy.types.Event
     ) -> Union[None, set[Literal["CANCELLED"]]]:
         if self.tool_state.is_input_on:
-            if event.value == "RELEASE" and event.type in {"ESC"}:
+            if event.value == "RELEASE" and event.type in {"ESC", "LEFTMOUSE"}:
                 self.recalculate_inputs(context)
                 self.tool_state.mode = "Mouse"
                 self.tool_state.is_input_on = False
