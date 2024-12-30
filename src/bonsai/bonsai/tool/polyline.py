@@ -438,6 +438,7 @@ class Polyline(bonsai.core.tool.Polyline):
 
             transformer = InputTransform()
             result = transformer.transform(parse_tree)
+            result = round(result, 5)
             return True, str(result)
         except:
             return False, "0"
