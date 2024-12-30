@@ -1,0 +1,38 @@
+name: Build IfcOpenShell WASM / Pyodide
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build_ifcopenshell:
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Checkout Pyodide
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+          repository: pyodide/pyodide
+          ref: '0.26.4'
+          token: ${{ secrets.BUILD_REPO_TOKEN }}
+
+      - name: Build
+        run: |
+          echo 'cd pyodide' > script.sh
+          echo 'make && pip install ./pyodide-build' >> script.sh
+          echo 'cd ..' >> script.sh
+          echo 'mkdir packages/ifcopenshell' >> script.sh
+          echo 'cp IfcOpenShell/pyodide/meta.yaml packages/ifcopenshell' >> script.sh
+          echo 'PYODIDE_ROOT=/src/pyodide \' >> script.sh
+          echo 'PATH=/src/pyodide/emsdk/emsdk:/src/pyodide/emsdk/emsdk/node/20.18.0_64bit/bin:/src/pyodide/emsdk/emsdk/upstream/emscripten:$PATH \' >> script.sh
+          echo 'pyodide build-recipes ifcopenshell --install' >> script.sh
+          pyodide/run_docker script.sh
+          
+      - name: Upload .zip archives to S3
+        run: |
+          aws s3 cp ~/output s3://ifcopenshell-builds/ --recursive --exclude "*" --include "*.whl"
