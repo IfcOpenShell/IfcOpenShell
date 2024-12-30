@@ -20,6 +20,7 @@ jobs:
           repository: pyodide/pyodide
           ref: '0.26.4'
           token: ${{ secrets.BUILD_REPO_TOKEN }}
+          path: pyodide
 
       - name: Build
         run: |
