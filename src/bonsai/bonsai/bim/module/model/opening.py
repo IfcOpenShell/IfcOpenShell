@@ -825,8 +825,8 @@ class ShowOpenings(Operator, tool.Ifc.Operator):
     def _execute(self, context):
         props = bpy.context.scene.BIMModelProperties
         objs = context.selected_objects
-        
-        #add the obj's aggregate, as well, to objs
+
+        # add the obj's aggregate, as well, to objs
         for obj in objs:
             element = tool.Ifc.get_entity(obj)
             if element and getattr(element, "Decomposes", None):

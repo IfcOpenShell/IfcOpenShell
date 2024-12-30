@@ -1261,12 +1261,7 @@ class SlabDirectionDecorator:
         if not obj:
             return
         element = tool.Ifc.get_entity(obj)
-        if (element 
-            and (
-                element.is_a("IfcSlab") 
-                or element.is_a("IfcRoof")
-                )
-            ):
+        if element and (element.is_a("IfcSlab") or element.is_a("IfcRoof")):
             dir = [obj.matrix_world @ Vector(d) for d in dir]
             base = [obj.matrix_world @ Vector(d) for d in base]
             self.draw_batch("LINES", dir, selected_elements_color, [(0, 1), (1, 2), (1, 3)])
