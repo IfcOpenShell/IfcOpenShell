@@ -1,7 +1,7 @@
 name: Build IfcOpenShell WASM / Pyodide
 
 on:
-  workflow_dispatch:
+  push:
 
 jobs:
   build_ifcopenshell:
