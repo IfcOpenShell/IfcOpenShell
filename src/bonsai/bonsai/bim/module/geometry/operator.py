@@ -38,7 +38,7 @@ import bonsai.core.root
 import bonsai.core.drawing
 import bonsai.tool as tool
 import bonsai.bim.handler
-from mathutils import Vector, Matrix
+from mathutils import Vector, Matrix, Quaternion
 from time import time
 from bonsai.bim.ifc import IfcStore
 from ifcopenshell.util.shape_builder import ShapeBuilder
@@ -1399,9 +1399,9 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
         self.pset_name = "BBIM_Linked_Aggregate"
         refresh_start_time = time()
         old_to_new = {}
-        original_names = {}
+        original_names: dict[int, dict[int, str]] = {}
 
-        def delete_objects(element):
+        def delete_objects(element: ifcopenshell.entity_instance) -> None:
             parts = ifcopenshell.util.element.get_parts(element)
             if parts:
                 for part in parts:
@@ -1412,7 +1412,7 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
 
             tool.Geometry.delete_ifc_object(tool.Ifc.get_object(element))
 
-        def get_original_names(element):
+        def get_original_names(element: ifcopenshell.entity_instance) -> dict[int, dict[int, str]]:
             group = [
                 r.RelatingGroup
                 for r in getattr(element, "HasAssignments", []) or []
@@ -1429,6 +1429,7 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
             if parts:
                 for part in parts:
                     if part.is_a("IfcElementAssembly"):
+                        # TODO: missing assignment.
                         original_names | get_original_names(part)
                     else:
                         try:
@@ -1441,7 +1442,7 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
 
             return original_names
 
-        def set_original_name(obj, original_names):
+        def set_original_name(obj: bpy.types.Object, original_names: dict[int, dict[int, str]]) -> None:
             element = tool.Ifc.get_entity(obj)
             aggregate = ifcopenshell.util.element.get_aggregate(element)
             if ifcopenshell.util.element.get_parts(
@@ -1468,7 +1469,7 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
             except:
                 return
 
-        def get_element_assembly(element):
+        def get_element_assembly(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
             if element.is_a("IfcElementAssembly"):
                 return element
             elif element.Decomposes:
@@ -1478,7 +1479,9 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
             else:
                 return None
 
-        def handle_selection(selected_objs):
+        def handle_selection(
+            selected_objs: list[bpy.types.Object],
+        ) -> tuple[list[int], list[ifcopenshell.entity_instance]]:
             selected_elements = [tool.Ifc.get_entity(selected_obj) for selected_obj in selected_objs]
             if None in selected_elements:
                 self.report({"INFO"}, "Object has no Ifc Metadata.")
@@ -1509,7 +1512,9 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
 
             return list(set(linked_aggregate_groups)), selected_parents
 
-        def get_original_matrix(element, base_instance):
+        def get_original_matrix(
+            element: ifcopenshell.entity_instance, base_instance: ifcopenshell.entity_instance
+        ) -> tuple[Matrix, tuple[Vector, Quaternion, Vector]]:
             selected_obj = tool.Ifc.get_object(base_instance)
             selected_matrix = selected_obj.matrix_world
             object_duplicate = tool.Ifc.get_object(element)
@@ -1517,7 +1522,9 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
 
             return selected_matrix, duplicate_matrix
 
-        def set_new_matrix(selected_matrix, duplicate_matrix, old_to_new):
+        def set_new_matrix(
+            selected_matrix: Matrix, duplicate_matrix: tuple[Vector, Quaternion, Vector], old_to_new: dict
+        ) -> None:
             for old, new in old_to_new.items():
                 new_obj = tool.Ifc.get_object(new[0])
                 new_base_matrix = Matrix.LocRotScale(*duplicate_matrix)

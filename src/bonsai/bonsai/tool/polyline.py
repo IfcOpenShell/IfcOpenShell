@@ -26,7 +26,7 @@ from dataclasses import dataclass
 from lark import Lark, Transformer
 from math import degrees, radians, sin, cos, tan
 from mathutils import Vector, Matrix
-from typing import Optional, Union
+from typing import Optional, Union, Literal
 
 
 class Polyline(bonsai.core.tool.Polyline):
@@ -75,6 +75,8 @@ class Polyline(bonsai.core.tool.Polyline):
             else:
                 return Polyline.format_input_ui_units(value)
 
+    InputType = Literal["D", "A", "X", "Y", None]
+
     @dataclass
     class ToolState:
         use_default_container: bool = None
@@ -83,8 +85,8 @@ class Polyline(bonsai.core.tool.Polyline):
         lock_axis: bool = False
         # angle_axis_start: Vector
         # angle_axis_end: Vector
-        axis_method: str = None
-        plane_method: str = None
+        axis_method: Literal["X", "Y", "Z", None] = None
+        plane_method: Literal["XY", "XZ", "YZ", None] = None
         plane_origin: Vector = Vector((0.0, 0.0, 0.0))
         instructions: str = """TAB: Cycle Input
         M: Modify Snap Point
@@ -94,8 +96,8 @@ class Polyline(bonsai.core.tool.Polyline):
         L: Lock axis
     """
         snap_info: str = None
-        mode: str = None
-        input_type: str = None
+        mode: Literal["Mouse", "Select", "Edit", None] = None
+        input_type: "Polyline.InputType" = None
 
     @classmethod
     def create_input_ui(cls, init_z: bool = False, init_area: bool = False) -> PolylineUI:
@@ -307,7 +309,13 @@ class Polyline(bonsai.core.tool.Polyline):
         return
 
     @classmethod
-    def validate_input(cls, input_number, input_type) -> tuple[bool, str]:
+    def validate_input(cls, input_number: str, input_type: InputType) -> tuple[bool, str]:
+        """
+
+        :return: Tuple with a boolean indicating if the input is valid
+            and the final string output.
+            Distance units converted to meters, angles input/output is in degrees.
+        """
 
         grammar_imperial = """
         start: (FORMULA dim expr) | dim
@@ -395,7 +403,7 @@ class Polyline(bonsai.core.tool.Polyline):
                 elif op == "/":
                     return lambda x: x / value
 
-            def FORMULA(cls, args):
+            def FORMULA(self, args):
                 return args[0]
 
             def start(self, args):
