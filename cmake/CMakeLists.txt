@@ -196,13 +196,25 @@ foreach(option_flag IN LISTS option_flags)
     convert_env_var_to_bool("${option_flag}")
 endforeach()
 
+set(CMAKE_FIND_ROOT_PATH_BACKUP "${CMAKE_FIND_ROOT_PATH}")
+
+macro(clear_wasm_sysroot)
 if(WASM_BUILD)
     # when using the nix/build-all.py build script we should not
     # look into the sysroot for most of the dependencies but rather
     # in the designated build/ folder created by the script.
-    set(CMAKE_FIND_ROOT_PATH_BACKUP "${CMAKE_FIND_ROOT_PATH}")
     set(CMAKE_FIND_ROOT_PATH "")
 endif()
+set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE NEVER)
+endmacro()
+
+macro(restore_wasm_sysroot)
+if(WASM_BUILD)
+    # reset to use sysroot
+    set(CMAKE_FIND_ROOT_PATH "${CMAKE_FIND_ROOT_PATH_BACKUP}")
+endif()
+set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+endmacro()
 
 if(WITH_CGAL)
     add_definitions(-DIFOPSH_WITH_CGAL)
@@ -223,7 +235,9 @@ endif()
 
 if(GLTF_SUPPORT OR CITYJSON_SUPPORT)
     UNIFY_ENVVARS_AND_CACHE(JSON_INCLUDE_DIR)
+    clear_wasm_sysroot()
     find_path(json_header_path "nlohmann/json.hpp" HINTS ${JSON_INCLUDE_DIR})
+    restore_wasm_sysroot()
     set(JSON_INCLUDE_DIR ${json_header_path})
 
     if(json_header_path)
@@ -330,13 +344,17 @@ if(USE_MMAP)
     add_definitions(-DUSE_MMAP)
 endif()
 
+clear_wasm_sysroot()
 find_package(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})
+restore_wasm_sysroot()
 message(STATUS "Boost include files found in ${Boost_INCLUDE_DIRS}")
 message(STATUS "Boost libraries found in ${Boost_LIBRARY_DIRS}")
 
 if(NOT MINIMAL_BUILD)
     # libxml2 is required for IFCXML (optional) and SVGFILL (mandatory)
+    clear_wasm_sysroot()
     find_package(LibXml2 REQUIRED)
+    restore_wasm_sysroot()
 endif()
 
 if(IFCXML_SUPPORT)
@@ -352,6 +370,7 @@ if(BUILD_IFCGEOM)
     # Open CASCADE
     if(WITH_OPENCASCADE)
     if("${OCC_INCLUDE_DIR}" STREQUAL "")
+	clear_wasm_sysroot()
         find_path(OCC_INCLUDE_DIR Standard_Version.hxx
             PATHS
                 /usr/include/occt
@@ -359,6 +378,7 @@ if(BUILD_IFCGEOM)
                 /usr/include/opencascade
             REQUIRED
         )
+	restore_wasm_sysroot()
 
         if(OCC_INCLUDE_DIR)
             message(STATUS "Found Open CASCADE include files in: ${OCC_INCLUDE_DIR}")
@@ -418,7 +438,9 @@ if(BUILD_IFCGEOM)
         message(STATUS "Looking for Open CASCADE library files in: ${OCC_LIBRARY_DIR}")
     endif()
 
+    clear_wasm_sysroot()
     find_library(libTKernel NAMES TKernel TKerneld PATHS ${OCC_LIBRARY_DIR} NO_DEFAULT_PATH)
+    restore_wasm_sysroot()
 
     if(libTKernel)
         message(STATUS "Required Open Cascade Library files found")
@@ -640,11 +662,6 @@ if(HDF5_SUPPORT)
     add_definitions(-DWITH_HDF5)
     set(SWIG_DEFINES ${SWIG_DEFINES} -DWITH_HDF5)
 endif(HDF5_SUPPORT)
-
-if(WASM_BUILD)
-    # reset to use sysroot
-    set(CMAKE_FIND_ROOT_PATH "${CMAKE_FIND_ROOT_PATH_BACKUP}")
-endif()
 
 if(ENABLE_BUILD_OPTIMIZATIONS)
     if(MSVC)
@@ -925,8 +942,10 @@ endif()
 
 if(BUILD_IFCGEOM)
     if(WITH_CGAL)
+	clear_wasm_sysroot()
         find_library(libGMP NAMES gmp mpir PATHS ${GMP_LIBRARY_DIR} NO_DEFAULT_PATH)
         find_library(libMPFR NAMES mpfr PATHS ${MPFR_LIBRARY_DIR} NO_DEFAULT_PATH)
+	restore_wasm_sysroot()
         if(NOT libGMP)
             message(FATAL_ERROR "Unable to find GMP library files, aborting")
         endif()
