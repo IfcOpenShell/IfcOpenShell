@@ -12,6 +12,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: recursive
+          path: IfcOpenShell
 
       - name: Checkout Pyodide
         uses: actions/checkout@v3
@@ -20,19 +21,32 @@ jobs:
           repository: pyodide/pyodide
           ref: '0.26.4'
           token: ${{ secrets.BUILD_REPO_TOKEN }}
+          path: pyodide
 
       - name: Build
         run: |
+          find .. -maxdepth 2
+          echo '#!/usr/bin/bash' > script.sh
           echo 'cd pyodide' > script.sh
           echo 'make && pip install ./pyodide-build' >> script.sh
           echo 'cd ..' >> script.sh
-          echo 'mkdir packages/ifcopenshell' >> script.sh
+          echo 'mkdir -p packages/ifcopenshell' >> script.sh
           echo 'cp IfcOpenShell/pyodide/meta.yaml packages/ifcopenshell' >> script.sh
           echo 'PYODIDE_ROOT=/src/pyodide \' >> script.sh
           echo 'PATH=/src/pyodide/emsdk/emsdk:/src/pyodide/emsdk/emsdk/node/20.18.0_64bit/bin:/src/pyodide/emsdk/emsdk/upstream/emscripten:$PATH \' >> script.sh
           echo 'pyodide build-recipes ifcopenshell --install' >> script.sh
-          pyodide/run_docker script.sh
-          
+          chmod +x script.sh
+          sed -i s/--tty// pyodide/run_docker
+          pyodide/run_docker ./script.sh
+          mv dist/IfcOpenShell-0.8.0-py3-none-any.whl dist/ifcopenshell_python-v0.8.0+${GITHUB_SHA:0:7}-cp312-cp312-emscripten_3_1_58_wasm32.whl
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_UPLOAD_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_UPLOAD_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
       - name: Upload .zip archives to S3
         run: |
-          aws s3 cp ~/output s3://ifcopenshell-builds/ --recursive --exclude "*" --include "*.whl"
+          aws s3 cp dist s3://ifcopenshell-builds/ --recursive --exclude "*" --include "*.whl"
