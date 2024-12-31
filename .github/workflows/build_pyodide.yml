@@ -38,7 +38,8 @@ jobs:
           chmod +x script.sh
           sed -i s/--tty// pyodide/run_docker
           pyodide/run_docker ./script.sh
-          
+          mv dist/IfcOpenShell-0.8.0-py3-none-any.whl dist/ifcopenshell-python-v0.8.0-${GITHUB_SHA:0:7}-cp312-cp312-emscripten_3_1_58_wasm32.whl
+
       - name: Upload .zip archives to S3
         run: |
           aws s3 cp ~/output s3://ifcopenshell-builds/ --recursive --exclude "*" --include "*.whl"
