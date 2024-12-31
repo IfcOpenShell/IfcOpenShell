@@ -10,7 +10,6 @@ build:
     BUILD_CFG=Release python nix/build-all.py --without-hdf5 --without-opencollada --without-swig --without-pcre -v --wasm --py312 IfcOpenShell-Python
     mv package/ifcopenshell .
     cp pyodide/setup.py .
-    mv dist/IfcOpenShell-0.8.0-py3-none-any.whl dist/ifcopenshell-python-v0.8.0-${GITHUB_SHA:0:7}-cp312-cp312-emscripten_3_1_58_wasm32.whl
 
 about:
   home: http://ifcopenshell.org
