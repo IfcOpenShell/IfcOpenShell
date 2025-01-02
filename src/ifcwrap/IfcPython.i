@@ -171,7 +171,7 @@
 %{
 	#include "../ifcgeom/Iterator.h"
 	#include "../ifcgeom/taxonomy.h"
-	#include "../ifcgeom/piecewise_function_evaluator.h"
+	#include "../ifcgeom/function_item_evaluator.h"
 #ifdef IFOPSH_WITH_OPENCASCADE
 	#include "../ifcgeom/Serialization/Serialization.h"
 	#include "../ifcgeom/kernels/opencascade/IfcGeomTree.h"
@@ -265,7 +265,7 @@ constexpr bool is_std_vector_vector_v = is_std_vector_vector<T>::value;
 %module ifcopenshell_wrapper %{
 	#include "../ifcgeom/Converter.h"
 	#include "../ifcgeom/taxonomy.h"
-	#include "../ifcgeom/piecewise_function_evaluator.h"
+	#include "../ifcgeom/function_item_evaluator.h"
 #ifdef IFOPSH_WITH_OPENCASCADE
 	#include "../ifcgeom/Serialization/Serialization.h"
 	#include "../ifcgeom/kernels/opencascade/IfcGeomTree.h"

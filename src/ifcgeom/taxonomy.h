@@ -93,7 +93,50 @@ typedef item const* ptr;
 				topology_error(const char* const s) : std::runtime_error(s) {}
 			};
 
-			enum kinds { MATRIX4, POINT3, DIRECTION3, LINE, CIRCLE, ELLIPSE, BSPLINE_CURVE, OFFSET_CURVE, PLANE, CYLINDER, SPHERE, TORUS, BSPLINE_SURFACE, EDGE, LOOP, FACE, SHELL, SOLID, LOFT, EXTRUSION, REVOLVE, SWEEP_ALONG_CURVE, NODE, COLLECTION, BOOLEAN_RESULT, PIECEWISE_FUNCTION, COLOUR, STYLE };
+			// Implementer note: If you add a new item type, be sure to do the following
+			// 1) Add a new kind to this list
+			// 2) Update the values array used by kind_to_string()
+			// 3) Update the KindsTuple with the class name of the new item
+			// 4) Add compare function (see compare functions in taxonomy.cpp starting around line 9)
+			// 4) Update Python bindings
+			//    a) update list of assign_repr in IfcGeomWrapper.i
+			//    b) update inheritance list in IfcGeomWrapper.i (around line 120 in the file)
+			//    c) update item_to_pyobject function definition in type_conversion.i
+			enum kinds {
+                MATRIX4,
+                POINT3,
+                DIRECTION3,
+                LINE,
+                CIRCLE,
+                ELLIPSE,
+                BSPLINE_CURVE,
+                OFFSET_CURVE,
+                PLANE,
+                CYLINDER,
+                SPHERE,
+                TORUS,
+                BSPLINE_SURFACE,
+                EDGE,
+                LOOP,
+                FACE,
+                SHELL,
+                SOLID,
+                LOFT,
+                EXTRUSION,
+                REVOLVE,
+                SWEEP_ALONG_CURVE,
+                NODE,
+                COLLECTION,
+                BOOLEAN_RESULT,
+					 FUNCTION_ITEM,
+                FUNCTOR_ITEM,
+					 PIECEWISE_FUNCTION,
+                GRADIENT_FUNCTION,
+					 CANT_FUNCTION,
+					 OFFSET_FUNCTION,
+                COLOUR,
+                STYLE
+            };
 
 			const std::string& kind_to_string(kinds k);
 
@@ -358,25 +401,73 @@ typedef item const* ptr;
 				using geom_item::geom_item;
 			};
 
-			struct piecewise_function_impl; // forward declaration
-			struct piecewise_function : public implicit_item {
+			struct function_item : public implicit_item {
+                DECLARE_PTR(function_item)
+
+                function_item(const IfcUtil::IfcBaseInterface* instance = nullptr) : implicit_item(instance) {}
+                function_item(function_item&&) = default;
+                function_item(const function_item&) = default;
+
+                virtual ~function_item() = default;
+                virtual double start() const = 0;
+                virtual double end() const = 0;
+                virtual double length() const {
+                    return end() - start();
+                }
+
+                virtual kinds kind() const { return FUNCTION_ITEM; }
+                virtual size_t calc_hash() const {
+                    auto v = std::make_tuple(static_cast<size_t>(FUNCTION_ITEM), 0);
+                    return boost::hash<decltype(v)>{}(v);
+                };
+            };
+
+			struct functor_item : public function_item {
+            DECLARE_PTR(functor_item)
+
+            functor_item(double length, std::function<Eigen::Matrix4d(double u)> fn, const IfcUtil::IfcBaseInterface* instance = nullptr) : function_item(instance),
+						 length_(length), fn_(fn) {}
+            functor_item(functor_item&&) = default;
+            functor_item(const functor_item&) = default;
+            virtual ~functor_item() = default;
+
+				double start() const override { return 0.0; }
+            double end() const override { return length_; }
+
+				Eigen::Matrix4d operator()(double u) const { return fn_(u); }
+
+     			functor_item* clone_() const override { return new functor_item(*this); }
+            virtual kinds kind() const { return FUNCTOR_ITEM; }
+            virtual size_t calc_hash() const {
+                auto v = std::make_tuple(static_cast<size_t>(FUNCTOR_ITEM), 0);
+               return boost::hash<decltype(v)>{}(v);
+            }
+
+         private:
+				double length_;
+				std::function<Eigen::Matrix4d(double u)> fn_;
+         };
+
+			struct piecewise_function : public function_item {
             DECLARE_PTR(piecewise_function)
 
-				using spans_t = std::vector<std::pair<double, std::function<Eigen::Matrix4d(double u)>>>;
+				using spans_t = std::vector<function_item::const_ptr>;
 
             piecewise_function(double start, const spans_t& s, const IfcUtil::IfcBaseInterface* instance = nullptr);
             piecewise_function(double start, const std::vector<piecewise_function::ptr>& pwfs, const IfcUtil::IfcBaseInterface* instance = nullptr);
             piecewise_function(piecewise_function&&) = default;
-            piecewise_function(const piecewise_function&);
-            virtual ~piecewise_function();
+            piecewise_function(const piecewise_function&) = default;
+            virtual ~piecewise_function() = default;
 
 				const spans_t& spans() const;
+            size_t span_count() const {return spans_.size();}
+            function_item::const_ptr span_fn(size_t i) { return spans_[i]; }
 				bool is_empty() const;
-				double start() const;
-				double end() const;
-				double length() const;
+				double start() const override;
+				double end() const override;
+            double length() const override;
 
-				virtual piecewise_function* clone_() const { return new piecewise_function(*this); }
+				piecewise_function* clone_() const override { return new piecewise_function(*this); }
 				virtual kinds kind() const { return PIECEWISE_FUNCTION; }
 
 				virtual size_t calc_hash() const	{
@@ -385,11 +476,89 @@ typedef item const* ptr;
 				}
 
             private:
-				    // note: it would be better if this were a std::unique_ptr, but that requires having the full definition
-					 // of piecewise_function_impl in this header file, which defeats the purpose of the PIMPL idiom.
-					 // if this is a std::unique_ptr, then the _ifcopenshell_wrapper library doesn't compile
-                piecewise_function_impl* impl_ = nullptr;
-			};
+                double start_ = 0.0; // starting value of the pwf
+                spans_t spans_;
+            };
+
+         struct gradient_function : public function_item {
+             DECLARE_PTR(gradient_function)
+             gradient_function(piecewise_function::const_ptr horizontal, piecewise_function::const_ptr vertical, const IfcUtil::IfcBaseInterface* instance = nullptr);
+             gradient_function(gradient_function&&) = default;
+             gradient_function(const gradient_function&) = default;
+             virtual ~gradient_function() = default;
+
+               virtual double start() const override;
+               virtual double end() const override;
+
+					piecewise_function::const_ptr get_horizontal() const;
+               piecewise_function::const_ptr get_vertical() const;
+
+    				gradient_function* clone_() const override { return new gradient_function(*this); }
+
+               virtual kinds kind() const { return GRADIENT_FUNCTION; }
+
+               virtual size_t calc_hash() const {
+                  auto v = std::make_tuple(static_cast<size_t>(GRADIENT_FUNCTION), 0);
+                  return boost::hash<decltype(v)>{}(v);
+               }
+
+      		private:
+               piecewise_function::const_ptr horizontal_, vertical_;
+         };
+
+         struct cant_function : public function_item {
+             DECLARE_PTR(cant_function)
+             cant_function(gradient_function::const_ptr gradient, piecewise_function::const_ptr cant, const IfcUtil::IfcBaseInterface* instance = nullptr);
+             cant_function(cant_function&&) = default;
+             cant_function(const cant_function&) = default;
+             virtual ~cant_function() = default;
+
+             virtual double start() const override;
+             virtual double end() const override;
+
+				 gradient_function::const_ptr get_gradient() const;
+             piecewise_function::const_ptr get_cant() const;
+
+             cant_function* clone_() const override { return new cant_function(*this); }
+
+             virtual kinds kind() const { return CANT_FUNCTION; }
+
+             virtual size_t calc_hash() const {
+                 auto v = std::make_tuple(static_cast<size_t>(CANT_FUNCTION), 0);
+                 return boost::hash<decltype(v)>{}(v);
+             }
+
+           private:
+             gradient_function::const_ptr gradient_;
+             piecewise_function::const_ptr cant_;
+         };
+
+         struct offset_function : public function_item {
+             DECLARE_PTR(offset_function)
+             offset_function(function_item::const_ptr basis, piecewise_function::const_ptr offset, const IfcUtil::IfcBaseInterface* instance = nullptr);
+             offset_function(offset_function&&) = default;
+             offset_function(const offset_function&) = default;
+             virtual ~offset_function() = default;
+
+             virtual double start() const override;
+             virtual double end() const override;
+
+             function_item::const_ptr get_basis() const;
+             piecewise_function::const_ptr get_offset() const;
+
+             offset_function* clone_() const override { return new offset_function(*this); }
+
+             virtual kinds kind() const { return OFFSET_FUNCTION; }
+
+             virtual size_t calc_hash() const {
+                 auto v = std::make_tuple(static_cast<size_t>(OFFSET_FUNCTION), 0);
+                 return boost::hash<decltype(v)>{}(v);
+             }
+
+           private:
+             function_item::const_ptr basis_;
+             piecewise_function::const_ptr offset_;
+         };
 
 #ifdef TAXONOMY_USE_SHARED_PTR
 			typedef std::shared_ptr<item> ptr;
@@ -1041,7 +1210,7 @@ typedef item const* ptr;
 			};
 
 			namespace impl {
-				typedef std::tuple<matrix4, point3, direction3, line, circle, ellipse, bspline_curve, offset_curve, plane, cylinder, sphere, torus, bspline_surface, edge, loop, face, shell, solid, loft, extrusion, revolve, sweep_along_curve, node, collection, boolean_result, piecewise_function> KindsTuple;
+				typedef std::tuple<matrix4, point3, direction3, line, circle, ellipse, bspline_curve, offset_curve, plane, cylinder, sphere, torus, bspline_surface, edge, loop, face, shell, solid, loft, extrusion, revolve, sweep_along_curve, node, collection, boolean_result, function_item, functor_item, piecewise_function, gradient_function, cant_function,offset_function> KindsTuple;
 				typedef std::tuple<line, circle, ellipse, bspline_curve, offset_curve, loop, edge> CurvesTuple;
 				typedef std::tuple<plane, cylinder, sphere, torus, bspline_surface, extrusion, revolve> SurfacesTuple;
 				typedef std::tuple<edge, loop, face, piecewise_function> UpgradesTuple;
