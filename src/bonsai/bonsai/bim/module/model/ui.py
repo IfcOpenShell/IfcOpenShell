@@ -548,7 +548,7 @@ class BIM_PT_door(bpy.types.Panel):
         else:
             row = self.layout.row()
             row.label(text="No Door Found")
-            row.operator("bim.add_door", icon="ADD", text="").obj = ""
+            row.operator("bim.add_door", icon="ADD", text="")
 
 
 class BIM_PT_railing(bpy.types.Panel):

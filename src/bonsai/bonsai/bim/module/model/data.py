@@ -63,14 +63,14 @@ class AuthoringData:
         cls.data["relating_type_description"] = cls.relating_type_description()  # only after .relating_type_id()
         cls.data["predefined_type"] = cls.predefined_type()  # only after .relating_type_id()
 
-        # only after .ifc_classes()
+        # Only after .ifc_classes()
         cls.data["total_types"] = cls.total_types()
         cls.data["total_pages"] = cls.total_pages()
         cls.data["next_page"] = cls.next_page()
         cls.data["prev_page"] = cls.prev_page()
         cls.data["paginated_relating_types"] = cls.paginated_relating_types()
 
-        cls.data["type_thumbnail"] = cls.type_thumbnail()  # only after .relating_type_id()
+        cls.data["type_thumbnail"] = cls.type_thumbnail()  # Only after .relating_type_id()
         cls.data["is_voidable_element"] = cls.is_voidable_element()
         cls.data["has_visible_openings"] = cls.has_visible_openings()
         cls.data["has_visible_boundaries"] = cls.has_visible_boundaries()
@@ -80,6 +80,9 @@ class AuthoringData:
         cls.data["active_representation_type"] = cls.active_representation_type()
         cls.data["boundary_class"] = cls.boundary_class()
         cls.data["selected_material_usages"] = cls.selected_material_usages()
+
+        # Only after .active_material_usage() and .active_class()
+        cls.data["is_flippable_element"] = cls.is_flippable_element()
 
     @classmethod
     def default_container(cls) -> str | None:
@@ -158,6 +161,15 @@ class AuthoringData:
         if active_object := tool.Blender.get_active_object():
             element = tool.Ifc.get_entity(active_object)
             return element and element.is_a("IfcElement") and not element.is_a("IfcOpeningElement")
+
+    @classmethod
+    def is_flippable_element(cls):
+        return cls.data["active_material_usage"] in ("LAYER2", "PROFILE") or cls.data["active_class"] in (
+            "IfcWindow",
+            "IfcWindowStandardCase",
+            "IfcDoor",
+            "IfcDoorStandardCase",
+        )
 
     @classmethod
     def has_visible_openings(cls):
