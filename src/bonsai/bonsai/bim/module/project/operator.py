@@ -1419,9 +1419,6 @@ class ExportIFC(bpy.types.Operator):
             f'IFC Project "{os.path.basename(output_file)}" {"" if not save_blend_file else "And Current Blend File Are"} Saved',
         )
 
-        if bpy.data.is_saved:
-            bpy.ops.wm.save_mainfile("INVOKE_DEFAULT")
-
     @classmethod
     def description(cls, context, properties):
         if properties.should_save_as:
