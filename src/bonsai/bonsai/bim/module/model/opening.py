@@ -1023,6 +1023,8 @@ class DecorationsHandler:
         batch.draw(shader)
 
     def __call__(self, context):
+        if not context.scene.BIMModelProperties.openings:
+            return
         self.addon_prefs = tool.Blender.get_addon_preferences()
         selected_elements_color = self.addon_prefs.decorator_color_selected
         unselected_elements_color = self.addon_prefs.decorator_color_unselected
@@ -1038,6 +1040,12 @@ class DecorationsHandler:
 
         for opening in context.scene.BIMModelProperties.openings:
             obj = opening.obj
+            if context.scene.BIMGeometryProperties.representation_obj == obj:
+                # We are editing the representation of the opening :
+                for item in context.scene.BIMGeometryProperties.item_objs:
+                    if item.obj.mode == "EDIT":
+                        obj = item.obj
+                        break
             if not obj:
                 continue
 

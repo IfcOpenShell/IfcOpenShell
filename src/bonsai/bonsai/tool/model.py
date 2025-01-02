@@ -500,7 +500,7 @@ class Model(bonsai.core.tool.Model):
         has_deleted_opening = True
         while has_deleted_opening:
             has_deleted_opening = False
-            for i, opening in enumerate(props.openings):
+            for i, opening in enumerate(list(props.openings)):
                 if not opening.obj:
                     props.openings.remove(i)
                     has_deleted_opening = True

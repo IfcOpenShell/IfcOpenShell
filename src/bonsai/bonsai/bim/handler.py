@@ -305,8 +305,6 @@ def load_post(scene):
     # After appending the workspace to ensure BIM viewport is affected.
     subscribe_to_viewport_shading_changes()
 
-    bpy.ops.bim.override_escape("INVOKE_DEFAULT")
-
     # To improve usability for new users, we hijack the scene properties
     # tab. We override default scene properties panels with our own poll
     # to hide them unless the user has chosen to view Blender properties.
