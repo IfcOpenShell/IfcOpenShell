@@ -138,6 +138,10 @@ def register():
         kmi = km.keymap_items.new("bim.override_mode_set_object", "TAB", "PRESS")
         addon_keymaps.append((km, kmi))
 
+        km = wm.keyconfigs.addon.keymaps.new(name="3D View", space_type="VIEW_3D")
+        kmi = km.keymap_items.new("bim.override_escape", "ESC", "PRESS")
+        addon_keymaps.append((km, kmi))
+
         km = wm.keyconfigs.addon.keymaps.new(name="Outliner", space_type="OUTLINER")
         kmi = km.keymap_items.new("bim.override_paste_buffer", "V", "PRESS", ctrl=True)
         addon_keymaps.append((km, kmi))
