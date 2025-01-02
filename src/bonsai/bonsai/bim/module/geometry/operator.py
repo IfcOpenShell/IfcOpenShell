@@ -2218,7 +2218,7 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
 class FlipObject(bpy.types.Operator):
     bl_idname = "bim.flip_object"
     bl_label = "Flip Object"
-    bl_description = "Flip object's local axes, keep the position"
+    bl_description = "Flip Element about its local axes, keep the position"
     bl_options = {"REGISTER", "UNDO"}
 
     flip_local_axes: bpy.props.EnumProperty(

@@ -698,10 +698,6 @@ class EditObjectUI:
             )
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             add_layout_hotkey_operator(row, "Rotate 90", "S_R", "Rotate the selected Element by 90 degrees", ui_context)
-            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
-            add_layout_hotkey_operator(
-                row, "Flip", "S_F", "Flip Element about its local axes, keep the position", ui_context
-            )
 
         elif AuthoringData.data["active_material_usage"] == "LAYER3":
             if "LAYER2" in AuthoringData.data["selected_material_usages"]:
@@ -711,8 +707,6 @@ class EditObjectUI:
         elif AuthoringData.data["active_material_usage"] == "PROFILE":
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             add_layout_hotkey_operator(row, "Extend", "S_E", "", ui_context)
-            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
-            add_layout_hotkey_operator(row, "Flip", "S_F", bpy.ops.bim.flip_object.__doc__, ui_context)
 
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             if AuthoringData.data["active_class"] in (
@@ -757,6 +751,9 @@ class EditObjectUI:
                 add_layout_hotkey_operator(row, "Mitre", "S_Y", "", ui_context)
                 row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
                 add_layout_hotkey_operator(row, "Rotate 90", "S_R", bpy.ops.bim.rotate_90.__doc__, ui_context)
+
+        if AuthoringData.data["is_flippable_element"]:
+            cls.draw_flip(ui_context, row)
 
         if PortData.data["total_ports"] > 0:
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
@@ -904,6 +901,11 @@ class EditObjectUI:
         add_layout_hotkey_operator(row, "Toggle Openings", "A_O", "Toggle openings", ui_context)
         row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
         add_layout_hotkey_operator(row, "Decomposition", "A_D", "Select decomposition", ui_context)
+
+    @classmethod
+    def draw_flip(cls, ui_context, layout) -> None:
+        row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else layout
+        add_layout_hotkey_operator(row, "Flip", "S_F", bpy.ops.bim.flip_object.__doc__, ui_context)
 
 
 class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
