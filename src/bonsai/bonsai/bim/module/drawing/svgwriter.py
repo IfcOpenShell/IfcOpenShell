@@ -1273,6 +1273,7 @@ class SvgWriter:
                     v1_global,
                     classes,
                     dimension_text=dimension_text,
+                    unit_primary = dimension_data["unit_primary"],
                     show_description_only=dimension_data["show_description_only"],
                     suppress_zero_inches=dimension_data["suppress_zero_inches"],
                     text_prefix=dimension_data["text_prefix"],
@@ -1299,6 +1300,7 @@ class SvgWriter:
         classes,
         dimension_text=None,
         text_format=lambda x: x,
+        unit_primary = None,
         show_description_only=False,
         suppress_zero_inches=False,
         text_prefix="",
@@ -1334,6 +1336,7 @@ class SvgWriter:
             dimension = (v1_global - v0_global).length
             dimension = helper.format_distance(
                 dimension,
+                unit_primary = unit_primary,
                 precision=self.precision,
                 decimal_places=self.decimal_places,
                 suppress_zero_inches=suppress_zero_inches,

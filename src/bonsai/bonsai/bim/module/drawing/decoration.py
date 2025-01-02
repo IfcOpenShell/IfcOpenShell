@@ -475,6 +475,7 @@ class BaseDecorator:
         blf.disable(font_id, blf.SHADOW)
 
     def draw_dimension_text(self, context, get_text, description, dimension_data, **draw_label_kwargs):
+        unit_primary = dimension_data["unit_primary"]
         prefix = dimension_data["text_prefix"]
         suffix = dimension_data["text_suffix"]
         show_description_only = dimension_data["show_description_only"]
@@ -493,14 +494,37 @@ class BaseDecorator:
         self.draw_label(context, text=text, line_no=line_number_start, multiline=True, **draw_label_kwargs)
 
     @lru_cache(maxsize=None)
-    def format_value(self, context, value):
+    def format_value(self, context, value, unit_primary):
         drawing_pset_data = DrawingsData.data["active_drawing_pset_data"]
-        precision = drawing_pset_data.get("MetricPrecision", None)
-        if not precision:
+        unit_system = bpy.context.scene.unit_settings.system
+        
+        imperial_units = {
+            "Inches - Decimal",
+            "Feet - Decimal",
+            "Feet and Inches - Fractional",
+            "Inches - Fractional",
+        }
+
+        metric_units = {
+            "Meters",
+            "Decimeters",
+            "Centimeters",
+            "Millimeters"
+        }        
+        
+        if (
+            unit_system == "IMPERIAL" 
+            and unit_primary in imperial_units 
+            and unit_primary not in metric_units
+        ):
+
             precision = drawing_pset_data.get("ImperialPrecision", None)
+        else:
+            precision = drawing_pset_data.get("MetricPrecision", None)
+
 
         decimal_places = drawing_pset_data.get("DecimalPlaces", None)
-        return format_distance(value, precision=precision, decimal_places=decimal_places)
+        return format_distance(value, precision=precision, decimal_places=decimal_places, unit_primary=unit_primary)
 
     def draw_asterisk(self, context: bpy.types.Context, pos: Vector, rotation: float = 0.0, scale: float = 1.0) -> None:
         """`pos` is a world space position\n
@@ -709,6 +733,7 @@ class DimensionDecorator(BaseDecorator):
         element = tool.Ifc.get_entity(obj)
         description = element.Description
         dimension_data = DecoratorData.get_dimension_data(obj)
+        unit_primary = dimension_data["unit_primary"]
         show_description_only = dimension_data["show_description_only"]
         text_prefix = dimension_data["text_prefix"]
         text_suffix = dimension_data["text_suffix"]
@@ -735,7 +760,7 @@ class DimensionDecorator(BaseDecorator):
 
             if not show_description_only:
                 length = (v1 - v0).length
-                text = self.format_value(context, length)
+                text = self.format_value(context, length, unit_primary)
                 if isinstance(self, DiameterDecorator):
                     text = "D" + text
                 text = text_prefix + text + text_suffix
@@ -937,6 +962,7 @@ class RadiusDecorator(BaseDecorator):
         element = tool.Ifc.get_entity(obj)
         description = element.Description
         dimension_data = DecoratorData.get_dimension_data(obj)
+        unit_primary = dimension_data["unit_primary"]
         viewportDrawingScale = self.get_viewport_drawing_scale(context)
         text_offset = 20 * viewportDrawingScale
 
@@ -944,7 +970,7 @@ class RadiusDecorator(BaseDecorator):
 
         def get_text():
             length = (spline_points[-1] - spline_points[-2]).length
-            return "R" + self.format_value(context, length)
+            return "R" + self.format_value(context, length, unit_primary)
 
         self.draw_dimension_text(
             context, get_text, description, dimension_data, pos=pos, text_dir=Vector((1, 0)), box_alignment="center"

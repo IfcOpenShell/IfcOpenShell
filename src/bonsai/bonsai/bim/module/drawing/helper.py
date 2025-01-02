@@ -124,6 +124,7 @@ def format_distance(
     value,
     isArea=False,
     hide_units=True,
+    unit_primary = None,
     precision=None,
     decimal_places=None,
     suppress_zero_inches=False,
@@ -139,7 +140,24 @@ def format_distance(
     value *= scaleFactor
 
     # Imperial Formatting
-    if unit_system == "IMPERIAL":
+    imperial_units = {
+        "Inches - Decimal",
+        "Feet - Decimal",
+        "Feet and Inches - Fractional",
+        "Inches - Fractional",
+    }
+
+    metric_units = {
+        "Meters",
+        "Decimeters",
+        "Centimeters",
+        "Millimeters"
+    }        
+    
+    if (
+        (unit_system == "IMPERIAL" or unit_primary in imperial_units)
+        and unit_primary not in metric_units
+    ):
         if in_unit_length:
             if unit_length == "INCHES":
                 toInches = 1
@@ -164,11 +182,18 @@ def format_distance(
 
         # Separate ft and inches
         # Unless Inches are the specified Length Unit
-        if unit_length != "INCHES":
+        if (
+            unit_length != "INCHES" 
+            and unit_primary != "Feet - Decimal" 
+            and unit_system != "METRIC"
+            or unit_primary == "Feet and Inches - Fractional"
+        ):
             feet = int(decInches / inPerFoot)  # remove decimal
             decInches -= feet * inPerFoot
         else:
             feet = 0
+
+        
 
         # Separate Fractional Inches
         decInches = abs(decInches)  # ignore the sign for inches
@@ -224,12 +249,33 @@ def format_distance(
                 tx_dist += str(frac) + "/" + str(base)
             if add_inches or frac:
                 tx_dist += '"'
+            if unit_primary == "Inches - Decimal":
+                value = decInches
+                if decimal_places:
+                    value = round(value, decimal_places)
+                tx_dist = f"{str(value)}\""
+            if unit_primary == "Feet - Decimal":
+                value = decInches/12
+                if decimal_places:
+                    value = round(value, decimal_places)
+                tx_dist = f"{str(value)}\'"   
+
+
+
         else:
             tx_dist = str("%1.3f" % (value * toInches / inPerFoot)) + " sq. ft."
 
     # METRIC FORMATTING
-    elif unit_system == "METRIC":
-        if in_unit_length:
+    elif (
+        unit_system == "METRIC"
+        or unit_primary == "Meters"
+        or unit_primary == "Decimeters"
+        or unit_primary == "Centimeters"
+        or unit_primary == "Millimeters"       
+    ): 
+        if(
+            in_unit_length
+        ):
             if unit_length == "CENTIMETERS":
                 value = value / 100
             if unit_length == "MILLIMETERS":
@@ -242,14 +288,27 @@ def format_distance(
             fmt = "%1." + str(decimal_places) + "f"
 
         # Meters
-        if unit_length == "METERS":
+        if (
+            (unit_length == "METERS" or unit_primary == "Meters")
+            and unit_primary != "Decimeters"
+            and unit_primary != "Centimeters"
+            and unit_primary != "Millimeters"
+        ):
             if decimal_places is None:
                 fmt = "%1.3f"
             if hide_units is False:
                 fmt += " m"
             tx_dist = fmt % value
-        # Centimeters
-        elif unit_length == "CENTIMETERS":
+        # Decimeters
+        elif unit_length == "DECIMETERS" or unit_primary == "Decimeters":
+            if decimal_places is None:
+                fmt = "%1.1f"
+            if hide_units is False:
+                fmt += " cm"
+            d_cm = value * (10)
+            tx_dist = fmt % d_cm
+        # Centimeters   
+        elif unit_length == "CENTIMETERS" or unit_primary == "Centimeters":
             if decimal_places is None:
                 fmt = "%1.1f"
             if hide_units is False:
@@ -257,7 +316,7 @@ def format_distance(
             d_cm = value * (100)
             tx_dist = fmt % d_cm
         # Millimeters
-        elif unit_length == "MILLIMETERS":
+        elif unit_length == "MILLIMETERS" or unit_primary == "Millimeters":
             if decimal_places is None:
                 fmt = "%1.0f"
             if hide_units is False:
@@ -290,6 +349,8 @@ def format_distance(
             tx_dist += s_code
     else:
         tx_dist = fmt % value
+
+
 
     return tx_dist
 
