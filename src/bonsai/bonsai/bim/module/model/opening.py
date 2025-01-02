@@ -855,6 +855,41 @@ class ShowOpenings(Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
+def get_openings_from_objects(objects):
+    to_delete = set()
+    for obj in objects:
+        element = tool.Ifc.get_entity(obj)
+        if not element or not hasattr(element, "HasOpenings"):
+            continue
+        if element.is_a("IfcOpeningElement"):
+            element = element.VoidsElements[0].RelatingBuildingElement
+            obj = tool.Ifc.get_object(element)
+        opening_elts = [r.RelatedOpeningElement for r in element.HasOpenings]
+        for opening_elt in opening_elts:
+            opening_obj = tool.Ifc.get_object(opening_elt)
+            if opening_obj:
+                to_delete.add((opening_elt, opening_obj))
+    return to_delete
+
+
+def hide_openings(objects):
+    for opening, opening_obj in get_openings_from_objects(objects):
+        tool.Ifc.unlink(element=opening)
+        bpy.data.objects.remove(opening_obj)
+    tool.Model.clear_scene_openings()
+
+
+class HideAllOpenings(Operator, tool.Ifc.Operator):
+    bl_idname = "bim.hide_all_openings"
+    bl_label = "Hide All Openings"
+    bl_description = "Hide every single opening"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        hide_openings(context.scene.objects)
+        return {"FINISHED"}
+
+
 class HideOpenings(Operator, tool.Ifc.Operator):
     bl_idname = "bim.hide_openings"
     bl_label = "Hide"
@@ -862,23 +897,7 @@ class HideOpenings(Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        to_delete = set()
-        for obj in context.selected_objects:
-            element = tool.Ifc.get_entity(obj)
-            if not element:
-                continue
-            if element.is_a("IfcOpeningElement"):
-                element = element.VoidsElements[0].RelatingBuildingElement
-                obj = tool.Ifc.get_object(element)
-            openings = [r.RelatedOpeningElement for r in element.HasOpenings]
-            for opening in openings:
-                opening_obj = tool.Ifc.get_object(opening)
-                if opening_obj:
-                    to_delete.add((opening, opening_obj))
-        for opening, opening_obj in to_delete:
-            tool.Ifc.unlink(element=opening)
-            bpy.data.objects.remove(opening_obj)
-        tool.Model.clear_scene_openings()
+        hide_openings(context.selected_objects)
         return {"FINISHED"}
 
 

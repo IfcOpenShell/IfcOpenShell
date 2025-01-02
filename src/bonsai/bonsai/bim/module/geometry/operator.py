@@ -1846,13 +1846,16 @@ class OverridePasteBuffer(bpy.types.Operator):
 class OverrideEscape(bpy.types.Operator):
     bl_idname = "bim.override_escape"
     bl_label = "Override Escape"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         if context.scene.BIMGeometryProperties.mode == "ITEM":
             tool.Geometry.disable_item_mode()
-        if context.scene.BIMGeometryProperties.mode == "EDIT":
+        elif context.scene.BIMGeometryProperties.mode == "EDIT":
             bpy.ops.bim.override_mode_set_object("INVOKE_DEFAULT", should_save=False)
             tool.Geometry.disable_item_mode()
+        elif context.scene.BIMModelProperties.openings:
+            bpy.ops.bim.hide_all_openings()
         return {"FINISHED"}
 
 

@@ -84,6 +84,7 @@ classes = (
     opening.CloneOpening,
     opening.FlipFill,
     opening.HideBooleans,
+    opening.HideAllOpenings,
     opening.HideOpenings,
     opening.RecalculateFill,
     opening.RemoveBooleans,
