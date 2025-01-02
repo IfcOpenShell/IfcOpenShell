@@ -1851,7 +1851,7 @@ class OverrideEscape(bpy.types.Operator):
         if context.scene.BIMGeometryProperties.mode == "ITEM":
             tool.Geometry.disable_item_mode()
         if context.scene.BIMGeometryProperties.mode == "EDIT":
-            bpy.ops.object.editmode_toggle()
+            bpy.ops.bim.override_mode_set_object("INVOKE_DEFAULT", should_save=False)
             tool.Geometry.disable_item_mode()
         return {"FINISHED"}
 
@@ -2005,7 +2005,7 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
                 context.scene.BIMGeometryProperties.mode = "OBJECT"
         context.scene.BIMGeometryProperties.is_changing_mode = False
 
-        if context.active_object:
+        if context.active_object and self.should_save:
             element = tool.Ifc.get_entity(context.active_object)
             if element and element.is_a("IfcRelSpaceBoundary"):
                 return bpy.ops.bim.edit_boundary_geometry()
