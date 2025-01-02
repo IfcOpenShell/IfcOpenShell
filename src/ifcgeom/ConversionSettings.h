@@ -365,22 +365,22 @@ namespace ifcopenshell {
                 static constexpr bool defaultvalue = false;
             };
 
-			enum PiecewiseStepMethod  {
+			enum FunctionStepMethod  {
 				MAXSTEPSIZE,
 				MINSTEPS };
 
-			std::istream& operator>>(std::istream& in, PiecewiseStepMethod& ioo);
+			std::istream& operator>>(std::istream& in, FunctionStepMethod& ioo);
 
-         struct PiecewiseStepType : public SettingBase<PiecewiseStepType, PiecewiseStepMethod> {
-               static constexpr const char* const name = "piecewise-step-type";
-               static constexpr const char* const description = "Indicates the method used for defining step size when evaluating piecewise curves. Provides interpretation of piecewise-step-param";
-               static constexpr PiecewiseStepMethod defaultvalue = MAXSTEPSIZE;
+         struct FunctionStepType : public SettingBase<FunctionStepType, FunctionStepMethod> {
+               static constexpr const char* const name = "function-step-type";
+               static constexpr const char* const description = "Indicates the method used for defining step size when evaluating function-based curves. Provides interpretation of function-step-param";
+               static constexpr FunctionStepMethod defaultvalue = MAXSTEPSIZE;
          };
 
-			struct PiecewiseStepParam : public SettingBase<PiecewiseStepParam, double> {
-               static constexpr const char* const name = "piecewise-step-param";
-               static constexpr const char* const description = "Indicates the parameter value for defining step size when evaluating piecewise curves.";
-               static constexpr double defaultvalue = 0.5; // ceiling of this value is used when PiecewiseStepMethod is MinSteps
+			struct FunctionStepParam : public SettingBase<FunctionStepParam, double> {
+               static constexpr const char* const name = "function-step-param";
+               static constexpr const char* const description = "Indicates the parameter value for defining step size when evaluating function-based curves.";
+               static constexpr double defaultvalue = 0.5; // ceiling of this value is used when FunctionStepMethod is MinSteps
          };
 
 			struct ModelOffset : public SettingBase<ModelOffset, std::vector<double>> {
@@ -413,7 +413,7 @@ namespace ifcopenshell {
 		template <typename settings_t>
 		class IFC_GEOM_API SettingsContainer {
 		public:
-         typedef boost::variant<bool, int, double, std::string, std::set<int>, std::set<std::string>, std::vector<double>, IteratorOutputOptions, PiecewiseStepMethod, OutputDimensionalityTypes, TriangulationMethod> value_variant_t;
+         typedef boost::variant<bool, int, double, std::string, std::set<int>, std::set<std::string>, std::vector<double>, IteratorOutputOptions, FunctionStepMethod, OutputDimensionalityTypes, TriangulationMethod> value_variant_t;
 		private:
 			settings_t settings;
 
@@ -500,7 +500,7 @@ namespace ifcopenshell {
 		};
 
 		class IFC_GEOM_API Settings : public SettingsContainer<
-                                          std::tuple<MesherLinearDeflection, MesherAngularDeflection, ReorientShells, LengthUnit, PlaneUnit, Precision, OutputDimensionality, LayersetFirst, DisableBooleanResult, NoWireIntersectionCheck, NoWireIntersectionTolerance, PrecisionFactor, DebugBooleanOperations, BooleanAttempt2d, SurfaceColour, WeldVertices, UseWorldCoords, UnifyShapes, UseMaterialNames, ConvertBackUnits, ContextIds, ContextTypes, ContextIdentifiers, IteratorOutput, DisableOpeningSubtractions, ApplyDefaultMaterials, DontEmitNormals, GenerateUvs, ApplyLayerSets, UseElementHierarchy, ValidateQuantities, EdgeArrows, BuildingLocalPlacement, SiteLocalPlacement, ForceSpaceTransparency, CircleSegments, KeepBoundingBoxes, PiecewiseStepType, PiecewiseStepParam, NoParallelMapping, ModelOffset, ModelRotation, TriangulationType>
+                                          std::tuple<MesherLinearDeflection, MesherAngularDeflection, ReorientShells, LengthUnit, PlaneUnit, Precision, OutputDimensionality, LayersetFirst, DisableBooleanResult, NoWireIntersectionCheck, NoWireIntersectionTolerance, PrecisionFactor, DebugBooleanOperations, BooleanAttempt2d, SurfaceColour, WeldVertices, UseWorldCoords, UnifyShapes, UseMaterialNames, ConvertBackUnits, ContextIds, ContextTypes, ContextIdentifiers, IteratorOutput, DisableOpeningSubtractions, ApplyDefaultMaterials, DontEmitNormals, GenerateUvs, ApplyLayerSets, UseElementHierarchy, ValidateQuantities, EdgeArrows, BuildingLocalPlacement, SiteLocalPlacement, ForceSpaceTransparency, CircleSegments, KeepBoundingBoxes, FunctionStepType, FunctionStepParam, NoParallelMapping, ModelOffset, ModelRotation, TriangulationType>
 		>
 		{};
 }
