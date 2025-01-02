@@ -771,24 +771,11 @@ class EditObjectUI:
     def draw_regen_operations(cls, row):
         custom_icon = custom_icon_previews.get("REGEN", custom_icon_previews["IFC"]).icon_id
 
-        if AuthoringData.data["active_material_usage"] == "LAYER2":
+        if AuthoringData.data["is_regenable_element"]:
             op = row.operator("bim.hotkey", text="", icon_value=custom_icon)
-            description = f"{bpy.ops.bim.recalculate_wall.__doc__}\n\nHotkey: S G"
+            description = "Recalculate Element Geometry\nHotkey: S G"
             op.hotkey = "S_G"
             op.description = description.strip()
-        elif AuthoringData.data["active_material_usage"] == "PROFILE":
-            if AuthoringData.data["active_class"] in (
-                "IfcCableCarrierSegment",
-                "IfcCableSegment",
-                "IfcDuctSegment",
-                "IfcPipeSegment",
-            ):
-                pass
-            else:
-                op = row.operator("bim.hotkey", text="", icon_value=custom_icon)
-                description = f"{bpy.ops.bim.recalculate_profile.__doc__}\n\nHotkey: S G"
-                op.hotkey = "S_G"
-                op.description = description.strip()
 
         if PortData.data["total_ports"] > 0:
             op = row.operator("bim.hotkey", text="", icon_value=custom_icon)

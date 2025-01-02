@@ -83,6 +83,7 @@ class AuthoringData:
 
         # Only after .active_material_usage() and .active_class()
         cls.data["is_flippable_element"] = cls.is_flippable_element()
+        cls.data["is_regenable_element"] = cls.is_regenable_element()
 
     @classmethod
     def default_container(cls) -> str | None:
@@ -170,6 +171,19 @@ class AuthoringData:
             "IfcDoor",
             "IfcDoorStandardCase",
         )
+
+    @classmethod
+    def is_regenable_element(cls):
+        if cls.data["active_material_usage"] in ("LAYER2", "PROFILE") and cls.data["active_class"] not in (
+            "IfcCableCarrierSegment",
+            "IfcCableSegment",
+            "IfcDuctSegment",
+            "IfcPipeSegment",
+        ):
+            return True
+        if cls.data["active_class"] in ("IfcWindow", "IfcWindowStandardCase", "IfcDoor", "IfcDoorStandardCase"):
+            return True
+        return False
 
     @classmethod
     def has_visible_openings(cls):
