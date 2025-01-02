@@ -1848,17 +1848,12 @@ class OverrideEscape(bpy.types.Operator):
     bl_label = "Override Escape"
 
     def execute(self, context):
-        self.report({"INFO"}, "Operator executed")
-        return {"FINISHED"}
-
-    def modal(self, context, event):
-        if event.type == "ESC" and context.scene.BIMGeometryProperties.mode == "ITEM":
+        if context.scene.BIMGeometryProperties.mode == "ITEM":
             tool.Geometry.disable_item_mode()
-        return {"PASS_THROUGH"}
-
-    def invoke(self, context, event):
-        context.window_manager.modal_handler_add(self)
-        return {"RUNNING_MODAL"}
+        if context.scene.BIMGeometryProperties.mode == "EDIT":
+            bpy.ops.object.editmode_toggle()
+            tool.Geometry.disable_item_mode()
+        return {"FINISHED"}
 
 
 class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
