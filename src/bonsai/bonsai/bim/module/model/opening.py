@@ -845,6 +845,7 @@ class ShowOpenings(Operator, tool.Ifc.Operator):
                 new.obj = opening
                 opening.display_type = "WIRE"
         DecorationsHandler.install(bpy.context)
+        bpy.ops.bim.update_openings_focus()
         return {"FINISHED"}
 
     def update_with_aggregates(self, objs):
@@ -854,6 +855,45 @@ class ShowOpenings(Operator, tool.Ifc.Operator):
                 if element.Decomposes and (aggregate := element.Decomposes[0].RelatingObject):
                     aggregate_obj = tool.Ifc.get_object(aggregate)
                     objs.append(aggregate_obj)
+
+
+class UpdateOpeningsFocus(Operator, tool.Ifc.Operator):
+    bl_idname = "bim.update_openings_focus"
+    bl_label = "Update Openings Focus"
+    bl_description = "Show objects that are not part of the object or its openings as transparent"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        preferences = tool.Blender.get_addon_preferences()
+        if preferences.opening_focus_opacity == 100:
+            return {"FINISHED"}
+        openings = set()
+        building_objects = set()
+        for opening in context.scene.BIMModelProperties.openings:
+            if opening.obj:
+                openings.add(opening.obj)
+                opening_element = tool.Ifc.get_entity(opening.obj)
+                if opening_element is None:  # Most likely an opening created with bim.add_potential_opening
+                    continue
+                building_element = opening_element.VoidsElements[0].RelatingBuildingElement
+                building_objects.add(tool.Ifc.get_object(building_element))
+
+        for obj in context.scene.objects:
+            obj.color = [
+                obj.color[0],
+                obj.color[1],
+                obj.color[2],
+                (
+                    1
+                    if not context.scene.BIMModelProperties.openings
+                    or not building_objects
+                    or obj in openings
+                    or obj in building_objects
+                    or obj in context.selected_objects
+                    else preferences.opening_focus_opacity / 100
+                ),
+            ]
+        return {"FINISHED"}
 
 
 def hide_openings(context, objects):
@@ -872,6 +912,7 @@ def hide_openings(context, objects):
                 bpy.data.objects.remove(opening_obj)
 
     tool.Model.clear_scene_openings()
+    bpy.ops.bim.update_openings_focus()
 
 
 class HideAllOpenings(Operator, tool.Ifc.Operator):
@@ -910,6 +951,7 @@ class EditOpenings(Operator, tool.Ifc.Operator):
 
         tool.Model.clear_scene_openings()
         tool.Model.reload_body_representation(building_objs)
+        bpy.ops.bim.update_openings_focus()
         return {"FINISHED"}
 
     def get_buildings_and_openings(self, context, building_objs, opening_elements):
