@@ -82,6 +82,7 @@ classes = (
     opening.AddPotentialOpening,
     opening.EditOpenings,
     opening.CloneOpening,
+    opening.UpdateOpeningsFocus,
     opening.FlipFill,
     opening.HideBooleans,
     opening.HideAllOpenings,
