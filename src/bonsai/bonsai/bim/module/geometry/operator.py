@@ -1856,6 +1856,8 @@ class OverrideEscape(bpy.types.Operator):
             tool.Geometry.disable_item_mode()
         elif context.scene.BIMModelProperties.openings:
             bpy.ops.bim.hide_all_openings()
+        elif context.scene.BIMAggregateProperties.in_aggregate_mode:
+            bpy.ops.bim.disable_aggregate_mode()
         return {"FINISHED"}
 
 

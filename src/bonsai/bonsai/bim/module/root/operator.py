@@ -220,7 +220,7 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
                 if tool.Geometry.mesh_has_loose_geometry(obj.data):
                     self.report(
                         {"WARNING"},
-                        f"Mesh '{obj.data.name}' has loose geometry, loose geometry was be ignored to save mesh to IFC as a tessellation.",
+                        f"Mesh '{obj.data.name}' has loose geometry, loose geometry will be ignored to save mesh to IFC as a tessellation.",
                     )
 
             element = core.assign_class(
