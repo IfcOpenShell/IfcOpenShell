@@ -824,15 +824,8 @@ class ShowOpenings(Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         props = bpy.context.scene.BIMModelProperties
-        objs = context.selected_objects
-
-        # add the obj's aggregate, as well, to objs
-        for obj in objs:
-            element = tool.Ifc.get_entity(obj)
-            if element and getattr(element, "Decomposes", None):
-                if element.Decomposes and (aggregate := element.Decomposes[0].RelatingObject):
-                    aggregate_obj = tool.Ifc.get_object(aggregate)
-                    objs.append(aggregate_obj)
+        objs = list(context.selected_objects)
+        self.update_with_aggregates(objs)
 
         for obj in objs:
             element = tool.Ifc.get_entity(obj)
@@ -854,28 +847,30 @@ class ShowOpenings(Operator, tool.Ifc.Operator):
         DecorationsHandler.install(bpy.context)
         return {"FINISHED"}
 
-
-def get_openings_from_objects(objects):
-    to_delete = set()
-    for obj in objects:
-        element = tool.Ifc.get_entity(obj)
-        if not element or not hasattr(element, "HasOpenings"):
-            continue
-        if element.is_a("IfcOpeningElement"):
-            element = element.VoidsElements[0].RelatingBuildingElement
-            obj = tool.Ifc.get_object(element)
-        opening_elts = [r.RelatedOpeningElement for r in element.HasOpenings]
-        for opening_elt in opening_elts:
-            opening_obj = tool.Ifc.get_object(opening_elt)
-            if opening_obj:
-                to_delete.add((opening_elt, opening_obj))
-    return to_delete
+    def update_with_aggregates(self, objs):
+        for obj in objs:
+            element = tool.Ifc.get_entity(obj)
+            if element and getattr(element, "Decomposes", None):
+                if element.Decomposes and (aggregate := element.Decomposes[0].RelatingObject):
+                    aggregate_obj = tool.Ifc.get_object(aggregate)
+                    objs.append(aggregate_obj)
 
 
-def hide_openings(objects):
-    for opening, opening_obj in get_openings_from_objects(objects):
-        tool.Ifc.unlink(element=opening)
-        bpy.data.objects.remove(opening_obj)
+def hide_openings(context, objects):
+    for opening_prop in context.scene.BIMModelProperties.openings:
+        opening_obj = opening_prop.obj
+        if opening_obj:
+            opening_element = tool.Ifc.get_entity(opening_obj)
+            if opening_element:
+                building_element = opening_element.VoidsElements[0].RelatingBuildingElement
+                if building_element:
+                    building_obj = tool.Ifc.get_object(building_element)
+                    if building_obj in objects:
+                        tool.Ifc.unlink(element=opening_element)
+                        bpy.data.objects.remove(opening_obj)
+            elif opening_obj in objects:  # Hide openings that do not fill a BuildingElement
+                bpy.data.objects.remove(opening_obj)
+
     tool.Model.clear_scene_openings()
 
 
@@ -886,7 +881,7 @@ class HideAllOpenings(Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        hide_openings(context.scene.objects)
+        hide_openings(context, context.scene.objects[:])
         return {"FINISHED"}
 
 
@@ -897,7 +892,7 @@ class HideOpenings(Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        hide_openings(context.selected_objects)
+        hide_openings(context, context.selected_objects[:])
         return {"FINISHED"}
 
 
@@ -906,50 +901,68 @@ class EditOpenings(Operator, tool.Ifc.Operator):
     bl_label = "Edit"
     bl_description = "Edit Openings"
     bl_options = {"REGISTER", "UNDO"}
+    apply_all: bpy.props.BoolProperty(default=False)
 
     def _execute(self, context):
-        props = bpy.context.scene.BIMModelProperties
-        building_objs = set()
-        current_openings = bpy.data.collections.get("IfcOpeningElement").objects
+        building_objs, opening_elements = self.get_buildings_and_openings(context.scene.BIMModelProperties)
+        for opening_element in opening_elements:
+            self.edit_opening(building_objs, opening_element)
 
-        for obj in current_openings:
-            element = tool.Ifc.get_entity(obj)
-            if not element:
-                continue
-            if element.is_a("IfcOpeningElement"):
-                element = element.VoidsElements[0].RelatingBuildingElement
-                obj = tool.Ifc.get_object(element)
-            openings = [r.RelatedOpeningElement for r in element.HasOpenings]
-            for opening in openings:
-                opening_obj = tool.Ifc.get_object(opening)
-                building_objs.add(obj)
-
-                similar_openings = bonsai.core.geometry.get_similar_openings(tool.Ifc, opening)
-                similar_openings_building_objs = bonsai.core.geometry.get_similar_openings_building_objs(
-                    tool.Ifc, similar_openings
-                )
-                building_objs.update(similar_openings_building_objs)
-
-                if opening_obj:
-                    if tool.Ifc.is_edited(opening_obj):
-                        tool.Geometry.run_geometry_update_representation(obj=opening_obj)
-                        bonsai.core.geometry.edit_similar_opening_placement(tool.Geometry, opening, similar_openings)
-                    elif tool.Ifc.is_moved(opening_obj):
-                        bonsai.core.geometry.edit_object_placement(
-                            tool.Ifc, tool.Geometry, tool.Surveyor, obj=opening_obj
-                        )
-                        bonsai.core.geometry.edit_similar_opening_placement(tool.Geometry, opening, similar_openings)
-
-                    building_objs.update(
-                        self.get_all_building_objects_of_similar_openings(opening)
-                    )  # NB this has nothing to do with clone similar_opening
-                    tool.Ifc.unlink(element=opening)
-                    if bpy.context.scene.BIMGeometryProperties.representation_obj == opening_obj:
-                        bpy.context.scene.BIMGeometryProperties.representation_obj = None
-                    bpy.data.objects.remove(opening_obj)
-
+        tool.Model.clear_scene_openings()
         tool.Model.reload_body_representation(building_objs)
         return {"FINISHED"}
+
+    def get_buildings_and_openings(self, context, building_objs, opening_elements):
+        props = context.scene.BIMModelProperties
+        building_objs = set()
+        opening_elements = set()
+        if self.apply_all:
+            for opening_prop in props.openings:
+                opening_obj = opening_prop.obj
+                if opening_obj is None:
+                    continue
+                opening_element = tool.Ifc.get_entity(opening_obj)
+                if opening_element is None:
+                    bpy.data.objects.remove(opening_obj)
+                    continue
+                opening_elements.add(opening_element)
+                building_element = opening_element.VoidsElements[0].RelatingBuildingElement
+                building_objs.add(tool.Ifc.get_object(building_element))
+        else:
+            for obj in context.selected_objects:
+                building_element = tool.Ifc.get_entity(obj)
+                if not hasattr(building_element, "HasOpenings"):
+                    continue
+                for relation in building_element.HasOpenings:
+                    opening_element = relation.RelatedOpeningElement
+                    if tool.Ifc.get_object(opening_element):
+                        opening_elements.add(opening_element)
+                    building_objs.add(obj)
+
+    def edit_opening(self, building_objs, opening_element):
+        opening_obj = tool.Ifc.get_object(opening_element)
+
+        similar_openings = bonsai.core.geometry.get_similar_openings(tool.Ifc, opening_element)
+        similar_openings_building_objs = bonsai.core.geometry.get_similar_openings_building_objs(
+            tool.Ifc, similar_openings
+        )
+        building_objs.update(similar_openings_building_objs)
+
+        if opening_obj:
+            if tool.Ifc.is_edited(opening_obj):
+                tool.Geometry.run_geometry_update_representation(obj=opening_obj)
+                bonsai.core.geometry.edit_similar_opening_placement(tool.Geometry, opening_element, similar_openings)
+            elif tool.Ifc.is_moved(opening_obj):
+                bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=opening_obj)
+                bonsai.core.geometry.edit_similar_opening_placement(tool.Geometry, opening_element, similar_openings)
+
+            building_objs.update(
+                self.get_all_building_objects_of_similar_openings(opening_element)
+            )  # NB this has nothing to do with clone similar_opening
+            tool.Ifc.unlink(element=opening_element)
+            if bpy.context.scene.BIMGeometryProperties.representation_obj == opening_obj:
+                bpy.context.scene.BIMGeometryProperties.representation_obj = None
+            bpy.data.objects.remove(opening_obj)
 
     def get_all_building_objects_of_similar_openings(self, opening):
         if not opening.is_a("IfcOpeningElement") or not opening.HasFillings:

@@ -1254,9 +1254,8 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             bpy.ops.bim.enable_editing_extrusion_axis()
 
     def hotkey_A_O(self):
-        opening_collection = bpy.data.collections.get("IfcOpeningElement")
-        if opening_collection and opening_collection.objects:
-            bpy.ops.bim.edit_openings()
+        if bpy.context.scene.BIMModelProperties.openings:
+            bpy.ops.bim.edit_openings(apply_all=True)
         else:
             bpy.ops.bim.show_openings()
 
