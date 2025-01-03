@@ -315,6 +315,13 @@ def get_enum_items(
     return items
 
 
+def draw_expandable_panel(layout, context, label: str, ui_func, default_closed: bool = True):
+    header, panel = layout.panel(label, default_closed=default_closed)
+    header.label(text=label)
+    if panel:
+        ui_func(panel, context)
+
+
 def convert_property_group_from_si(property_group: bpy.types.PropertyGroup, skip_props: tuple[str, ...] = ()) -> None:
     """Method converts property group values from si to current ifc project units
 
