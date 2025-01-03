@@ -261,9 +261,17 @@ class Geometry(bonsai.core.tool.Geometry):
             mesh_element.is_a("IfcShapeRepresentation")
             and ifcopenshell.util.representation.resolve_representation(mesh_element).RepresentationType
             == "AdvancedBrep"
-        ) or mesh_element.is_a("IfcAdvancedBrep"):
+        ) or mesh_element.is_a("IfcAdvancedBrep") or not obj.data:
             return
-        if obj.data and "ios_edges" in obj.data:
+        if hasattr(obj.data, "attributes") and (ios_edges_attribute := obj.data.attributes.get("ios_edges")):
+            # Edges from a forced triangulation are stored as True in a boolean attribute on the mesh
+            bm = bmesh.new()
+            bm.from_mesh(obj.data)
+            edges_to_dissolve = [e for i, e in enumerate(bm.edges) if not ios_edges_attribute.data[i].value]
+            bmesh.ops.dissolve_edges(bm, edges=edges_to_dissolve)
+            bm.to_mesh(obj.data)
+            bm.free()
+        elif "ios_edges" in obj.data:
             bm = bmesh.new()
             bm.from_mesh(obj.data)
             edges_to_keep = set(map(frozenset, obj.data["ios_edges"]))

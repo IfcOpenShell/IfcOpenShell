@@ -939,7 +939,8 @@ class Loader(bonsai.core.tool.Loader):
             # we do `.tolist()` because Blender can't assign `np.int32` to it's custom attributes
             ios_edges = list(set(tuple(e) for e in ifcopenshell.util.shape.get_edges(geometry).tolist()))
             mesh["ios_edges"] = ios_edges
-            mesh["ios_item_ids"] = ifcopenshell.util.shape.get_faces_representation_item_ids(geometry).tolist()
+            ios_item_ids = ifcopenshell.util.shape.get_faces_representation_item_ids(geometry).tolist()
+            mesh["ios_item_ids"] = ios_item_ids
 
             mesh.vertices.add(num_vertices)
             mesh.vertices.foreach_set("co", verts)
@@ -981,19 +982,13 @@ class Loader(bonsai.core.tool.Loader):
                 if rep.is_a("IfcShapeRepresentation"):
                     tool.Loader.load_indexed_colour_map(rep, mesh)
 
-            ios_edges_indices = [(e[0], e[1]) for e in ios_edges]
-            attribute_ios_edges = mesh.attributes.get("ios_edges")
-            if not attribute_ios_edges:
-                attribute_ios_edges = mesh.attributes.new("ios_edges", domain="EDGE", type="BOOLEAN")
-
-            attribute_ios_edges.data.foreach_set(
-                "value",
-                [
-                    (e.vertices[0], e.vertices[1]) in ios_edges_indices
-                    or (e.vertices[1], e.vertices[0]) in ios_edges_indices
-                    for e in mesh.edges
-                ],
-            )
+            ios_edges_values = [
+                (e.vertices[0], e.vertices[1]) in ios_edges
+                or (e.vertices[1], e.vertices[0]) in ios_edges
+                for e in mesh.edges
+            ]
+            tool.Blender.Attribute.fill_attribute(mesh, "ios_edges", "EDGE", "BOOLEAN", ios_edges_values)
+            tool.Blender.Attribute.fill_attribute(mesh, "ios_item_ids", "FACE", "INT", ios_item_ids)
         else:
             e = geometry.edges
             v = verts
@@ -1006,9 +1001,11 @@ class Loader(bonsai.core.tool.Loader):
             except AttributeError:
                 edges_item_ids = []
             mesh["ios_edges_item_ids"] = edges_item_ids
+            tool.Blender.Attribute.fill_attribute(mesh, "ios_edges_item_ids", "EDGE", "INT", edges_item_ids)
 
         mesh["ios_materials"] = [m.instance_id() for m in geometry.materials]
         mesh["ios_material_ids"] = geometry.material_ids
+        tool.Blender.Attribute.fill_attribute(mesh, "ios_material_ids", "FACE", "INT", geometry.material_ids)
         return mesh
 
     @classmethod

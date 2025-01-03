@@ -1032,6 +1032,30 @@ class Blender(bonsai.core.tool.Blender):
                     if child_obj:
                         yield child_obj
 
+    class Attribute:
+        @classmethod
+        def fill_attribute(cls, data: bpy.types.ID, attribute_name: str, domain: str, data_type: str, values):
+            attribute = cls.ensure_attribute(data, attribute_name, domain, data_type)
+            attribute.data.foreach_set(cls.get_data_name(data_type), values)
+
+        @classmethod
+        def ensure_attribute(cls, data: bpy.types.ID, attribute_name: str, domain: str, data_type: str):
+            attribute = data.attributes.get(attribute_name)
+            if not attribute:
+                attribute = data.attributes.new(attribute_name, domain=domain, type=data_type)
+            return attribute
+
+        @classmethod
+        def get_data_name(cls, data_type: str):
+            if data_type in ("FLOAT", "INT", "BOOLEAN", "STRING"):
+                return "value"
+            if data_type.endswith("VECTOR"):
+                return "vector"
+            elif data_type.endswith("COLOR"):
+                return "color"
+            else:
+                raise NotImplementedError(f"Attribute data type `{data_type}` not implemented yet")
+
     @classmethod
     def get_last_commit_hash(cls) -> Union[str, None]:
         """Get 8 symbols of last commit hash if it's present or return None otherwise."""
