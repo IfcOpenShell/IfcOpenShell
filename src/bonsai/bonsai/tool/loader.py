@@ -989,6 +989,7 @@ class Loader(bonsai.core.tool.Loader):
             ]
             tool.Blender.Attribute.fill_attribute(mesh, "ios_edges", "EDGE", "BOOLEAN", ios_edges_values)
             tool.Blender.Attribute.fill_attribute(mesh, "ios_item_ids", "FACE", "INT", ios_item_ids)
+            tool.Blender.Attribute.fill_attribute(mesh, "ios_material_ids", "FACE", "INT", geometry.material_ids)
         else:
             e = geometry.edges
             v = verts
@@ -1002,10 +1003,10 @@ class Loader(bonsai.core.tool.Loader):
                 edges_item_ids = []
             mesh["ios_edges_item_ids"] = edges_item_ids
             tool.Blender.Attribute.fill_attribute(mesh, "ios_edges_item_ids", "EDGE", "INT", edges_item_ids)
+            tool.Blender.Attribute.fill_attribute(mesh, "ios_material_ids", "EDGE", "INT", geometry.material_ids)
 
         mesh["ios_materials"] = [m.instance_id() for m in geometry.materials]
         mesh["ios_material_ids"] = geometry.material_ids
-        tool.Blender.Attribute.fill_attribute(mesh, "ios_material_ids", "FACE", "INT", geometry.material_ids)
         return mesh
 
     @classmethod
