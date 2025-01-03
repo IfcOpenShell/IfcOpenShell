@@ -1185,6 +1185,9 @@ class DecorationsHandler:
 
                 verts = [tuple(obj.matrix_world @ v.co) for v in bm.verts]
                 edges = [tuple([v.index for v in e.verts]) for e in bm.edges]
+                ios_edges = [(edge[0], edge[1]) for edge in obj.data.get("ios_edges", [])]
+                if ios_edges:
+                    edges = [e for e in edges if (e[0], e[1]) in ios_edges or (e[1], e[0]) in ios_edges]
                 color = selected_elements_color if obj in context.selected_objects else special_elements_color
                 self.draw_batch("LINES", verts, color, edges)
 
