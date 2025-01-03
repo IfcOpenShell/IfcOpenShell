@@ -937,7 +937,8 @@ class Loader(bonsai.core.tool.Loader):
             # ios_edges holds true edges that aren't triangulated.
             #
             # we do `.tolist()` because Blender can't assign `np.int32` to it's custom attributes
-            mesh["ios_edges"] = list(set(tuple(e) for e in ifcopenshell.util.shape.get_edges(geometry).tolist()))
+            ios_edges = list(set(tuple(e) for e in ifcopenshell.util.shape.get_edges(geometry).tolist()))
+            mesh["ios_edges"] = ios_edges
             mesh["ios_item_ids"] = ifcopenshell.util.shape.get_faces_representation_item_ids(geometry).tolist()
 
             mesh.vertices.add(num_vertices)
@@ -979,6 +980,20 @@ class Loader(bonsai.core.tool.Loader):
                 # For now, not necessary to load maps in Item mode
                 if rep.is_a("IfcShapeRepresentation"):
                     tool.Loader.load_indexed_colour_map(rep, mesh)
+
+            ios_edges_indices = [(e[0], e[1]) for e in ios_edges]
+            attribute_ios_edges = mesh.attributes.get("ios_edges")
+            if not attribute_ios_edges:
+                attribute_ios_edges = mesh.attributes.new("ios_edges", domain="EDGE", type="BOOLEAN")
+
+            attribute_ios_edges.data.foreach_set(
+                "value",
+                [
+                    (e.vertices[0], e.vertices[1]) in ios_edges_indices
+                    or (e.vertices[1], e.vertices[0]) in ios_edges_indices
+                    for e in mesh.edges
+                ],
+            )
         else:
             e = geometry.edges
             v = verts
