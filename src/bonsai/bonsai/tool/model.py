@@ -494,16 +494,12 @@ class Model(bonsai.core.tool.Model):
         return ifc_importer.added_data.values()
 
     @classmethod
-    def clear_scene_openings(cls) -> None:
-        """Clear removed scene openings."""
-        props = bpy.context.scene.BIMModelProperties
-        has_deleted_opening = True
-        while has_deleted_opening:
-            has_deleted_opening = False
-            for i, opening in enumerate(list(props.openings)):
-                if not opening.obj:
-                    props.openings.remove(i)
-                    has_deleted_opening = True
+    def purge_scene_openings(cls) -> None:
+        """Purge removed scene openings."""
+        openings = bpy.context.scene.BIMModelProperties.openings
+        for i in range(len(openings) - 1, -1, -1):
+            if not openings[i].obj:
+                openings.remove(i)
 
     @classmethod
     def get_material_layer_parameters(cls, element: ifcopenshell.entity_instance) -> dict[str, Any]:

@@ -1526,8 +1526,8 @@ class Geometry(bonsai.core.tool.Geometry):
 
         Use `.RelatedOpeningElement` to get the opening element.
         """
-        for element in getattr(element, "HasOpenings", ()):
-            yield element
+        for element_rel in getattr(element, "HasOpenings", ()):
+            yield element_rel
 
         if aggregate := ifcopenshell.util.element.get_aggregate(element):
             yield from cls.get_openings(aggregate)
