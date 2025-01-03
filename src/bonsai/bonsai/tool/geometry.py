@@ -48,6 +48,7 @@ import bonsai.bim.import_ifc
 from collections import defaultdict
 from math import radians, pi
 from mathutils import Vector, Matrix
+from mathutils.bvhtree import BVHTree
 from bonsai.bim.ifc import IfcStore
 from typing import Union, Iterable, Optional, Literal, Iterator, List, TYPE_CHECKING, get_args, Generator
 from typing_extensions import TypeIs
@@ -1792,3 +1793,11 @@ class Geometry(bonsai.core.tool.Geometry):
             if not edge.link_faces:
                 return True
         return False
+
+    @classmethod
+    def get_bvh_tree(cls, obj:bpy.types.Object) -> BVHTree:
+        bm = tool.Blender.get_bmesh_for_mesh(obj.data)
+        bm.transform(obj.matrix_world)
+        return BVHTree.FromBMesh(bm)
+
+        
