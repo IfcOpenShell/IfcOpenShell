@@ -224,18 +224,33 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         description='Software to open .pdf, leave blank uses system default. E.g. [["path to application eg. /Applications/Inkscape.app/Contents/MacOS/inkscape", "path"]]',
     )
     spreadsheet_command: StringProperty(name="Spreadsheet Command", description='E.g. [["libreoffice", "path"]]')
-    should_hide_empty_props: BoolProperty(name="Hide Empty Properties", default=True)
-    should_setup_workspace: BoolProperty(name="Setup Workspace Layout for BIM", default=True)
-    activate_workspace: BoolProperty(name="Activate BIM Workspace on Startup", default=True)
+    should_hide_empty_props: BoolProperty(
+        name="Hide Empty Properties",
+        default=True,
+        description="If disabled, this will show empty properties when displaying property sets contents",
+    )
+    should_setup_workspace: BoolProperty(
+        name="Setup Workspace Layout for BIM",
+        default=True,
+        description="If enabled, this will add a default workspace dedicated to working with BIM models.\nIt is recommended to keep this `Enabled`",
+    )
+    activate_workspace: BoolProperty(
+        name="Activate BIM Workspace on Startup",
+        default=True,
+        description="If enabled, this will automatically activate the BIM workspace when opening a project.\It is recommended to keep this `Enabled`",
+    )
     should_setup_toolbar: BoolProperty(
         name="Always Show Toolbar In 3D Viewport",
         default=True,
         description="If disabled, the toolbar will only load when an IFC model is active",
     )
     should_play_chaching_sound: BoolProperty(name="Play A Cha-Ching Sound When Project Costs Updates", default=False)
-    spatial_elements_unselectable: BoolProperty(name="Make Spatial Elements Unselectable By Default", default=True)
+    spatial_elements_unselectable: BoolProperty(
+        name="Make Spatial Elements Unselectable By Default", 
+        default=True, 
+        description="If disabled, it will be possible to select spatial elements in the 3D viewport.\nIt is recommended to keep this `Enabled`, as this can have unintended consequences")
     decorations_colour: bpy.props.FloatVectorProperty(
-        name="Decorations Colour", subtype="COLOR", default=(1, 1, 1, 1), min=0.0, max=1.0, size=4
+        name="Decorations Color", subtype="COLOR", default=(1, 1, 1, 1), min=0.0, max=1.0, size=4
     )
     decorator_color_selected: bpy.props.FloatVectorProperty(
         name="Selected Elements Color",
@@ -283,6 +298,15 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         description="Color of background overlays",
     )
 
+    opening_focus_opacity: bpy.props.IntProperty(
+        default=100,
+        min=0,
+        max=100,
+        subtype="PERCENTAGE",
+        name="Non-Openings Opacity",
+        description="When modifying openings, other elements of the model will display with some transparency.\n0 is fully transparent and 100 is fully opaque",
+    )
+
     def draw(self, context):
         layout = self.layout
 
@@ -295,96 +319,77 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row = layout.row()
         row.operator("bim.file_associate", icon="LOCKVIEW_ON")
         row.operator("bim.file_unassociate", icon="LOCKVIEW_OFF")
-        row = layout.row()
-        row.prop(self, "svg2pdf_command")
-        row = layout.row()
-        row.prop(self, "svg2dxf_command")
-        row = layout.row()
-        row.prop(self, "svg_command")
-        row = layout.row()
-        row.prop(self, "layout_svg_command")
-        row = layout.row()
-        row.prop(self, "pdf_command")
-        row = layout.row()
-        row.prop(self, "spreadsheet_command")
-        row = layout.row()
-        row.prop(self, "should_hide_empty_props")
-        row = layout.row()
-        row.prop(self, "should_setup_workspace")
-        row = layout.row()
-        row.prop(self, "activate_workspace")
-        row = layout.row()
-        row.prop(self, "should_setup_toolbar")
-        row = layout.row()
-        row.prop(self, "should_play_chaching_sound")
-        row = layout.row()
-        row.prop(self, "spatial_elements_unselectable")
 
-        row = layout.row()
-        row.prop(context.scene.BIMProjectProperties, "should_disable_undo_on_save")
-        row = layout.row()
-        row.prop(context.scene.BIMProjectProperties, "should_stream")
+        bonsai.bim.helper.draw_expandable_panel(self.layout, context, "Command Paths", self.draw_commands)
+        bonsai.bim.helper.draw_expandable_panel(self.layout, context, "Misc.", self.draw_misc_settings)
+        bonsai.bim.helper.draw_expandable_panel(self.layout, context, "Model", self.draw_model_settings)
+        bonsai.bim.helper.draw_expandable_panel(self.layout, context, "Colors", self.draw_decorator_colors)
+        bonsai.bim.helper.draw_expandable_panel(self.layout, context, "Directories", self.draw_directories)
+        bonsai.bim.helper.draw_expandable_panel(self.layout, context, "Drawing", self.draw_drawing_settings)
+        bonsai.bim.helper.draw_expandable_panel(self.layout, context, "Openings", self.draw_openings_settings)
 
-        row = layout.row()
-        row.prop(context.scene.BIMModelProperties, "occurrence_name_style")
+    def draw_commands(self, layout, context):
+        layout.prop(self, "svg2pdf_command")
+        layout.prop(self, "svg2dxf_command")
+        layout.prop(self, "svg_command")
+        layout.prop(self, "layout_svg_command")
+        layout.prop(self, "pdf_command")
+        layout.prop(self, "spreadsheet_command")
+
+    def draw_misc_settings(self, layout, context):
+        layout.prop(self, "should_hide_empty_props")
+        layout.prop(self, "should_setup_workspace")
+        layout.prop(self, "activate_workspace")
+        layout.prop(self, "should_setup_toolbar")
+        layout.prop(self, "should_play_chaching_sound")
+        layout.prop(self, "spatial_elements_unselectable")
+        layout.prop(context.scene.BIMProjectProperties, "should_disable_undo_on_save")
+        layout.prop(context.scene.BIMProjectProperties, "should_stream")
+
+    def draw_model_settings(self, layout, context):
+        layout.prop(context.scene.BIMModelProperties, "occurrence_name_style")
         if context.scene.BIMModelProperties == "CUSTOM":
-            row = layout.row()
-            row.prop(context.scene.BIMModelProperties, "occurrence_name_function")
+            layout.prop(context.scene.BIMModelProperties, "occurrence_name_function")
 
-        row = self.layout.row()
-        row.prop(self, "decorations_colour")
-        row = self.layout.row()
-        row.prop(self, "decorator_color_selected")
-        row = self.layout.row()
-        row.prop(self, "decorator_color_unselected")
-        row = self.layout.row()
-        row.prop(self, "decorator_color_special")
-        row = self.layout.row()
-        row.prop(self, "decorator_color_error")
-        row = self.layout.row()
-        row.prop(self, "decorator_color_background")
-
-        row = self.layout.row(align=True)
+    def draw_directories(self, layout, context):
+        row = layout.row(align=True)
         row.prop(context.scene.BIMProperties, "schema_dir")
         row.operator("bim.select_schema_dir", icon="FILE_FOLDER", text="")
 
-        row = self.layout.row(align=True)
+        row = layout.row(align=True)
         row.prop(context.scene.BIMProperties, "data_dir")
         row.operator("bim.select_data_dir", icon="FILE_FOLDER", text="")
 
-        row = self.layout.row()
-        row.prop(context.scene.BIMProperties, "pset_dir")
-        row = self.layout.row()
-        row.prop(context.scene.DocProperties, "sheets_dir")
-        row = self.layout.row()
-        row.prop(context.scene.DocProperties, "layouts_dir")
-        row = self.layout.row()
-        row.prop(context.scene.DocProperties, "titleblocks_dir")
-        row = self.layout.row()
-        row.prop(context.scene.DocProperties, "drawings_dir")
-        row = self.layout.row()
-        row.prop(context.scene.DocProperties, "stylesheet_path")
-        row = self.layout.row()
-        row.prop(context.scene.DocProperties, "schedules_stylesheet_path")
-        row = self.layout.row()
-        row.prop(context.scene.DocProperties, "markers_path")
-        row = self.layout.row()
-        row.prop(context.scene.DocProperties, "symbols_path")
-        row = self.layout.row()
-        row.prop(context.scene.DocProperties, "patterns_path")
-        row = self.layout.row()
-        row.prop(context.scene.DocProperties, "shadingstyles_path")
-        row = self.layout.row()
-        row.prop(context.scene.DocProperties, "shadingstyle_default")
-        row = self.layout.row()
+    def draw_drawing_settings(self, layout, context):
+        layout.prop(context.scene.BIMProperties, "pset_dir")
+        layout.prop(context.scene.DocProperties, "sheets_dir")
+        layout.prop(context.scene.DocProperties, "layouts_dir")
+        layout.prop(context.scene.DocProperties, "titleblocks_dir")
+        layout.prop(context.scene.DocProperties, "drawings_dir")
+        layout.prop(context.scene.DocProperties, "stylesheet_path")
+        layout.prop(context.scene.DocProperties, "schedules_stylesheet_path")
+        layout.prop(context.scene.DocProperties, "markers_path")
+        layout.prop(context.scene.DocProperties, "symbols_path")
+        layout.prop(context.scene.DocProperties, "patterns_path")
+        layout.prop(context.scene.DocProperties, "shadingstyles_path")
+        layout.prop(context.scene.DocProperties, "shadingstyle_default")
+        row = layout.row()
         row.prop(context.scene.DocProperties, "drawing_font")
         row.prop(context.scene.DocProperties, "magic_font_scale")
-        row = self.layout.row()
-        row.prop(context.scene.DocProperties, "imperial_precision")
-        row = self.layout.row()
-        row.prop(context.scene.DocProperties, "tolerance")
-        row = self.layout.row()
-        row.prop(context.scene.DocProperties, "classes_to_wireframe")
+        layout.prop(context.scene.DocProperties, "imperial_precision")
+        layout.prop(context.scene.DocProperties, "tolerance")
+        layout.prop(context.scene.DocProperties, "classes_to_wireframe")
+
+    def draw_decorator_colors(self, layout, context):
+        layout.row().prop(self, "decorations_colour")
+        layout.row().prop(self, "decorator_color_selected")
+        layout.row().prop(self, "decorator_color_unselected")
+        layout.row().prop(self, "decorator_color_special")
+        layout.row().prop(self, "decorator_color_error")
+        layout.row().prop(self, "decorator_color_background")
+
+    def draw_openings_settings(self, layout, context):
+        layout.prop(self, "opening_focus_opacity")
 
 
 # Scene panel groups
