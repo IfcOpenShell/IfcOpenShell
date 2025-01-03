@@ -157,6 +157,7 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
                 tool.Ifc.unlink(element=element2)
                 bpy.data.objects.remove(obj2)
 
+        tool.Model.clear_scene_openings()
         context.view_layer.objects.active = obj1
         return {"FINISHED"}
 
