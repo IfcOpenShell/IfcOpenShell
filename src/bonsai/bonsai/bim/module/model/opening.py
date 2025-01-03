@@ -902,6 +902,10 @@ def hide_openings(context, objects):
         if opening_obj:
             opening_element = tool.Ifc.get_entity(opening_obj)
             if opening_element:
+                if not hasattr(opening_element, "VoidsElements"):
+                    # This opening has been assigned to another ifc class. Remove it from the openings pool. See #3854
+                    opening_prop.obj = None
+                    continue
                 building_element = opening_element.VoidsElements[0].RelatingBuildingElement
                 if building_element:
                     building_obj = tool.Ifc.get_object(building_element)
@@ -945,7 +949,7 @@ class EditOpenings(Operator, tool.Ifc.Operator):
     apply_all: bpy.props.BoolProperty(default=False)
 
     def _execute(self, context):
-        building_objs, opening_elements = self.get_buildings_and_openings(context.scene.BIMModelProperties)
+        building_objs, opening_elements = self.get_buildings_and_openings(context)
         for opening_element in opening_elements:
             self.edit_opening(building_objs, opening_element)
 
@@ -954,7 +958,7 @@ class EditOpenings(Operator, tool.Ifc.Operator):
         bpy.ops.bim.update_openings_focus()
         return {"FINISHED"}
 
-    def get_buildings_and_openings(self, context, building_objs, opening_elements):
+    def get_buildings_and_openings(self, context):
         props = context.scene.BIMModelProperties
         building_objs = set()
         opening_elements = set()
@@ -980,6 +984,7 @@ class EditOpenings(Operator, tool.Ifc.Operator):
                     if tool.Ifc.get_object(opening_element):
                         opening_elements.add(opening_element)
                     building_objs.add(obj)
+        return building_objs, opening_elements
 
     def edit_opening(self, building_objs, opening_element):
         opening_obj = tool.Ifc.get_object(opening_element)
