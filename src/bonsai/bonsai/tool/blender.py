@@ -683,6 +683,20 @@ class Blender(bonsai.core.tool.Blender):
             data_block, do_unlink=do_unlink, do_id_user=do_unlink, do_ui_user=do_unlink
         )
 
+    @classmethod
+    def remove_data_blocks(cls, data_blocks: list[bpy.types.ID], remove_unused_data: bool = False) -> None:
+        """Removes several data blocks at once
+
+        :param data_blocks: iterable of data blocks to remove
+        :param remove_unused_data: set to True to purge data that would be orphaned by the operation
+        :return: None
+        :rtype: None
+        """
+        data_blocks = list(data_blocks)
+        if remove_unused_data:
+            data_blocks.extend([o.data for o in data_blocks if hasattr(o, "data") and o.data and o.data.users <= 1])
+        bpy.data.batch_remove(data_blocks)
+
     ## BMESH UTILS ##
     @classmethod
     def apply_bmesh(cls, mesh: bpy.types.Mesh, bm: bmesh.types.BMesh, obj: Optional[bpy.types.Object] = None) -> None:
