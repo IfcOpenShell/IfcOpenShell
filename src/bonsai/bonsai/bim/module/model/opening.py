@@ -902,7 +902,7 @@ def hide_openings(context, objects):
         if opening_obj:
             opening_element = tool.Ifc.get_entity(opening_obj)
             if opening_element:
-                if not hasattr(opening_element, "VoidsElements"):
+                if not opening_element.is_a("IfcOpeningElement"):
                     # This opening has been assigned to another ifc class. Remove it from the openings pool. See #3854
                     opening_prop.obj = None
                     continue
@@ -912,7 +912,7 @@ def hide_openings(context, objects):
                     if building_obj in objects:
                         tool.Ifc.unlink(element=opening_element)
                         bpy.data.objects.remove(opening_obj)
-            elif opening_obj in objects:  # Hide openings that do not fill a BuildingElement
+            if opening_obj in objects:
                 bpy.data.objects.remove(opening_obj)
 
     tool.Model.clear_scene_openings()
@@ -976,14 +976,23 @@ class EditOpenings(Operator, tool.Ifc.Operator):
                 building_objs.add(tool.Ifc.get_object(building_element))
         else:
             for obj in context.selected_objects:
-                building_element = tool.Ifc.get_entity(obj)
-                if not hasattr(building_element, "HasOpenings"):
-                    continue
-                for relation in building_element.HasOpenings:
-                    opening_element = relation.RelatedOpeningElement
-                    if tool.Ifc.get_object(opening_element):
-                        opening_elements.add(opening_element)
-                    building_objs.add(obj)
+                element = tool.Ifc.get_entity(obj)
+                if element.is_a("IfcOpeningElement"):
+                    opening_element = element
+                    opening_elements.add(opening_element)
+                    if opening_element.VoidsElements:
+                        building_element = opening_element.VoidsElements[0].RelatingBuildingElement
+                        building_obj = tool.Ifc.get_object(building_element)
+                        if building_obj:
+                            building_objs.add(building_obj)
+                elif hasattr(element, "HasOpenings"):
+                    building_element = element
+                    for relation in building_element.HasOpenings:
+                        opening_element = relation.RelatedOpeningElement
+                        if tool.Ifc.get_object(opening_element):
+                            opening_elements.add(opening_element)
+                        building_objs.add(obj)
+
         return building_objs, opening_elements
 
     def edit_opening(self, building_objs, opening_element):
