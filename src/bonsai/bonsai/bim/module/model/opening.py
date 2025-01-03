@@ -574,7 +574,6 @@ class AddBoolean(Operator, tool.Ifc.Operator):
         )
 
         tool.Model.mark_manual_booleans(element1, booleans)
-        tool.Model.purge_scene_openings()
 
         bonsai.core.geometry.switch_representation(
             tool.Ifc,
@@ -587,6 +586,7 @@ class AddBoolean(Operator, tool.Ifc.Operator):
         )
 
         tool.Blender.remove_data_blocks([obj2], remove_unused_data=True)
+        tool.Model.purge_scene_openings()
         return {"FINISHED"}
 
 
@@ -837,12 +837,13 @@ class ShowOpenings(Operator, tool.Ifc.Operator):
         while objs:
             obj = objs.pop(0)
             element = tool.Ifc.get_entity(obj)
-            if element and getattr(element, "Decomposes", None):
-                # Select aggregate recursively
-                if element.Decomposes and (aggregate := element.Decomposes[0].RelatingObject):
-                    aggregate_obj = tool.Ifc.get_object(aggregate)
-                    objs.append(aggregate_obj)
-            objects_element_map.add((obj, element))
+            if element:
+                if getattr(element, "Decomposes", None):
+                    # Select aggregate recursively
+                    if element.Decomposes and (aggregate := element.Decomposes[0].RelatingObject):
+                        aggregate_obj = tool.Ifc.get_object(aggregate)
+                        objs.append(aggregate_obj)
+                objects_element_map.add((obj, element))
 
         for obj, element in objects_element_map:
             self.show_object_openings(obj, element)
@@ -1082,6 +1083,47 @@ class CloneOpening(Operator, tool.Ifc.Operator):
 
         ifcopenshell.api.run("void.add_opening", tool.Ifc.get(), opening=new_opening, element=wall)
         new_opening.ObjectPlacement = opening_placement
+        return {"FINISHED"}
+
+
+class PurgeUnusedOpenings(Operator, tool.Ifc.Operator):
+    bl_idname = "bim.purge_unused_openings"
+    bl_label = "Purge Unused Openings"
+    bl_description = "Purge Openings that do not intersect with their related building element"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return any(
+            [tool.Geometry.has_openings(element)]
+            for element in [tool.Ifc.get_entity(obj) for obj in context.selected_objects]
+            if element
+        )
+
+    def _execute(self, context):
+        bpy.ops.bim.show_openings()
+        objects = context.selected_objects[:]
+        [o.select_set(False) for o in objects]
+        active_object = context.active_object
+        purged = 0
+        for obj in objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element or not tool.Geometry.has_openings(element):
+                continue
+            obj_bvh_tree = tool.Geometry.get_bvh_tree(obj)
+            for opening_rel in tool.Geometry.get_openings(element):
+                opening_elt = opening_rel.RelatedOpeningElement
+                opening_obj = tool.Ifc.get_object(opening_elt)
+                opening_bvh_tree = tool.Geometry.get_bvh_tree(opening_obj)
+                if not opening_bvh_tree.overlap(obj_bvh_tree):
+                    opening_obj.select_set(True)
+                    purged += 1
+        if context.selected_objects:
+            bpy.ops.bim.override_object_delete(is_batch=False)
+        bpy.ops.bim.edit_openings(apply_all=True)
+        [o.select_set(True) for o in objects]
+        context.view_layer.objects.active = active_object
+        self.report({"INFO"}, f"{purged} unused openings were purged.")
         return {"FINISHED"}
 
 

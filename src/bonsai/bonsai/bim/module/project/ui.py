@@ -537,6 +537,7 @@ class BIM_PT_purge(Panel):
         layout = self.layout
         layout.operator("bim.purge_unused_objects", text="Purge Unused Profiles").object_type = "PROFILE"
         layout.operator("bim.purge_unused_objects", text="Purge Unused Types").object_type = "TYPE"
+        layout.operator("bim.purge_unused_openings", text="Purge Unused Openings in Selected Objects")
         row = layout.row(align=True)
         row.label(text="Materials: ")
         row.operator("bim.purge_unused_objects", text="Purge Unused").object_type = "MATERIAL"
