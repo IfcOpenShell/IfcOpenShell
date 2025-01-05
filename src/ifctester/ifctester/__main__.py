@@ -52,20 +52,21 @@ if args.ifc:
     specs.validate(ifc)
     print("Finished validating:", time.time() - start)
 
-if args.reporter == "Console":
-    engine = reporter.Console(specs, use_colour=not args.no_color)
-elif args.reporter == "Txt":
-    engine = reporter.Txt(specs)
-elif args.reporter == "Json":
-    engine = reporter.Json(specs)
-elif args.reporter == "Html":
-    engine = reporter.Html(specs)
-elif args.reporter == "Ods":
-    engine = reporter.Ods(specs, excel_safe=args.excel_safe)
-elif args.reporter == "OdsSummary":
-    engine = reporter.OdsSummary(specs, excel_safe=args.excel_safe)
-elif args.reporter == "Bcf":
-    engine = reporter.Bcf(specs)
+reporter_types = {
+    "Console": lambda: reporter.Console(specs, use_colour=not args.no_color),
+    "Txt": lambda: reporter.Txt(specs),
+    "Json": lambda: reporter.Json(specs),
+    "Html": lambda: reporter.Html(specs),
+    "Ods": lambda: reporter.Ods(specs, excel_safe=args.excel_safe),
+    "OdsSummary": lambda: reporter.OdsSummary(specs, excel_safe=args.excel_safe),
+    "Bcf": lambda: reporter.Bcf(specs),
+}
+
+engine = reporter_types.get(args.reporter)
+if engine is None:
+    raise Exception(f"Expected one one of the following values for reporter: {', '.join(reporter_types)}")
+
+engine = engine()
 
 engine.report()
 
