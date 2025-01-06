@@ -173,6 +173,7 @@ classes = (
     door.EnableEditingDoor,
     door.RemoveDoor,
     railing.BIM_OT_add_railing,
+    railing.CopyRailingParameters,
     railing.AddRailing,
     railing.CancelEditingRailing,
     railing.FinishEditingRailing,
