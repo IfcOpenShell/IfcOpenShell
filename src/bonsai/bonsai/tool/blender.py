@@ -21,6 +21,7 @@ import bpy
 import bmesh
 import json
 import os
+from ifcopenshell import entity_instance
 import ifcopenshell.api
 import ifcopenshell.util.element
 import bonsai.core.tool
@@ -922,58 +923,131 @@ class Blender(bonsai.core.tool.Blender):
 
     class Modifier:
         @classmethod
-        def is_eligible_for_railing_modifier(cls, obj):
+        def try_applying_edit_mode(cls, obj: bpy.types.Object, element: entity_instance) -> bool:
+            """Tries to validate the current BIM modifier parameters for the active object
+            Goes into path editing mode if the modifier supports it
+
+            Returns True if an action was taken, False otherwise
+            """
+            if cls.is_roof(element):
+                if cls.is_editing_roof_parameters(obj):
+                    bpy.ops.bim.finish_editing_roof()
+                bpy.ops.bim.enable_editing_roof_path()
+            elif cls.is_railing(element):
+                if cls.is_editing_railing_parameters(obj):
+                    bpy.ops.bim.finish_editing_railing()
+                bpy.ops.bim.enable_editing_railing_path()
+            elif cls.is_editing_stair_parameters(obj):
+                bpy.ops.bim.finish_editing_stair()
+            elif cls.is_editing_door_parameters(obj):
+                bpy.ops.bim.finish_editing_door()
+            elif cls.is_editing_window_parameters(obj):
+                bpy.ops.bim.finish_editing_window()
+            else: 
+                return False
+            return True
+            
+        @classmethod
+        def try_canceling_editing_modifier_parameters_or_path(cls, obj: bpy.types.Object) -> bool:
+            """Tries to cancel the current BIM modifier parameters or path edition for the active object
+
+            Returns True if an action was taken, False otherwise
+            """
+            if cls.is_editing_railing_path(obj):
+                bpy.ops.bim.cancel_editing_railing_path()
+            elif cls.is_editing_roof_path(obj):
+                bpy.ops.bim.cancel_editing_roof_path()
+            elif cls.is_editing_railing_parameters(obj):
+                bpy.ops.bim.cancel_editing_railing()
+            elif cls.is_editing_door_parameters(obj):
+                bpy.ops.bim.cancel_editing_door()
+            elif cls.is_editing_window_parameters(obj):
+                bpy.ops.bim.cancel_editing_window()
+            elif cls.is_editing_roof_parameters(obj):
+                bpy.ops.bim.cancel_editing_roof()
+            elif cls.is_editing_stair_parameters(obj):
+                bpy.ops.bim.cancel_editing_stair()
+            else:
+                return False
+            return True
+
+        @classmethod
+        def is_eligible_for_railing_modifier(cls, obj: bpy.types.Object)-> bool:
             return tool.Blender.is_object_an_ifc_class(obj, ("IfcRailing", "IfcRailingType"))
 
         @classmethod
-        def is_eligible_for_stair_modifier(cls, obj):
+        def is_eligible_for_stair_modifier(cls, obj: bpy.types.Object)-> bool:
             return tool.Blender.is_object_an_ifc_class(
                 obj, ("IfcStairFlight", "IfcStairFlightType", "IfcMember", "IfcMemberType", "IfcStair", "IfcStairType")
             )
 
         @classmethod
-        def is_eligible_for_window_modifier(cls, obj):
+        def is_eligible_for_window_modifier(cls, obj: bpy.types.Object)-> bool:
             return tool.Blender.is_object_an_ifc_class(obj, ("IfcWindow", "IfcWindowType", "IfcWindowStyle"))
 
         @classmethod
-        def is_eligible_for_door_modifier(cls, obj):
+        def is_eligible_for_door_modifier(cls, obj: bpy.types.Object)-> bool:
             return tool.Blender.is_object_an_ifc_class(obj, ("IfcDoor", "IfcDoorType", "IfcDoorStyle"))
 
         @classmethod
-        def is_eligible_for_roof_modifier(cls, obj):
+        def is_eligible_for_roof_modifier(cls, obj: bpy.types.Object)-> bool:
             return tool.Blender.is_object_an_ifc_class(obj, ("IfcRoof", "IfcRoofType"))
 
         @classmethod
-        def is_railing(cls, element):
+        def is_railing(cls, element: entity_instance)-> bool:
             return tool.Pset.get_element_pset(element, "BBIM_Railing")
 
         @classmethod
-        def is_roof(cls, element):
+        def is_roof(cls, element: entity_instance)-> bool:
             return tool.Pset.get_element_pset(element, "BBIM_Roof")
 
         @classmethod
-        def is_window(cls, element):
+        def is_window(cls, element: entity_instance)-> bool:
             return tool.Pset.get_element_pset(element, "BBIM_Window")
 
         @classmethod
-        def is_door(cls, element):
+        def is_door(cls, element: entity_instance)-> bool:
             return tool.Pset.get_element_pset(element, "BBIM_Door")
 
         @classmethod
-        def is_stair(cls, element):
+        def is_stair(cls, element: entity_instance)-> bool:
             return tool.Pset.get_element_pset(element, "BBIM_Stair")
 
         @classmethod
-        def is_editing_parameters(cls, obj):
-            return obj.BIMRailingProperties.is_editing or obj.BIMRoofProperties.is_editing
+        def is_editing_railing_path(cls, obj: bpy.types.Object):
+            return obj.BIMRailingProperties.is_editing_path
 
         @classmethod
-        def is_modifier_with_non_editable_path(cls, element):
+        def is_editing_roof_path(cls, obj: bpy.types.Object)-> bool:
+            return obj.BIMRoofProperties.is_editing_path
+
+        @classmethod
+        def is_editing_railing_parameters(cls, obj: bpy.types.Object)-> bool:
+            return obj.BIMRailingProperties.is_editing
+
+        @classmethod
+        def is_editing_roof_parameters(cls, obj: bpy.types.Object)-> bool:
+            return obj.BIMRoofProperties.is_editing
+
+        @classmethod
+        def is_editing_window_parameters(cls, obj: bpy.types.Object)-> bool:
+            return obj.BIMWindowProperties.is_editing
+
+        @classmethod
+        def is_editing_door_parameters(cls, obj: bpy.types.Object)-> bool:
+            return obj.BIMDoorProperties.is_editing
+
+        @classmethod
+        def is_editing_stair_parameters(cls, obj: bpy.types.Object)-> bool:
+            return obj.BIMStairProperties.is_editing
+
+        @classmethod
+        def is_modifier_with_non_editable_path(cls, element: entity_instance)-> bool:
             return cls.is_stair(element) or cls.is_door(element) or cls.is_window(element)
 
         class Array:
             @classmethod
-            def bake_children_transform(cls, parent_element, item):
+            def bake_children_transform(cls, parent_element: entity_instance, item):
                 modifier_data = list(cls.get_modifiers_data(parent_element))[item]
                 children = cls.get_children_objects(modifier_data)
                 for child in children:
