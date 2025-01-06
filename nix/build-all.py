@@ -307,7 +307,7 @@ if platform.system() == "Darwin":
 BOOST_VERSION_UNDERSCORE = BOOST_VERSION.replace(".", "_")
 
 OCE_LOCATION = f"https://github.com/tpaviot/oce/archive/OCE-{OCE_VERSION}.tar.gz"
-BOOST_LOCATION = f"https://boostorg.jfrog.io/artifactory/main/release/{BOOST_VERSION}/source/"
+BOOST_LOCATION = f"https://github.com/boostorg/boost/releases/download/boost-{BOOST_VERSION}/"
 
 # Helper functions
 
@@ -747,7 +747,7 @@ if "boost" in targets:
         download_url=BOOST_LOCATION,
         # don't remember what this is, but fail on 1.86
         # patch="./patches/boost/boostorg_regex_62.patch",
-        download_name=f"boost_{BOOST_VERSION_UNDERSCORE}.tar.bz2"
+        download_name=f"boost-{BOOST_VERSION}-b2-nodocs.tar.gz"
     )
     if "wasm" in flags:
         # only supported on nix for now
