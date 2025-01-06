@@ -332,17 +332,16 @@ set DEPENDENCY_DIR=%DEPS_DIR%\boost_%BOOST_VER%
 set BOOST_LIBRARYDIR=%DEPENDENCY_DIR%\stage\%GEN_SHORTHAND%\lib
 :: NOTE Also zip download exists, if encountering problems with 7z for some reason.
 set ZIP_EXT=7z
-set BOOST_ZIP=boost_%BOOST_VER%.%ZIP_EXT%
+set BOOST_ZIP=boost-%BOOST_VERSION%-b2-nodocs.%ZIP_EXT%
 
-:: On 2021-05-11 Boost changed download address:
-:: Instead of: https://dl.bintray.com/boostorg/release/ you should use https://boostorg.jfrog.io/artifactory/main/release/ to retrieve boost releases.
-
-rem call :DownloadFile https://dl.bintray.com/boostorg/release/%BOOST_VERSION%/source/%BOOST_ZIP% "%DEPS_DIR%" %BOOST_ZIP%
-call :DownloadFile https://boostorg.jfrog.io/artifactory/main/release/%BOOST_VERSION%/source/%BOOST_ZIP% "%DEPS_DIR%" %BOOST_ZIP%
+call :DownloadFile https://github.com/boostorg/boost/releases/download/boost-%BOOST_VERSION%/%BOOST_ZIP% "%DEPS_DIR%" %BOOST_ZIP%
 
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-call :ExtractArchive %BOOST_ZIP% "%DEPS_DIR%" "%DEPENDENCY_DIR%"
+call :ExtractArchive %BOOST_ZIP% "%DEPS_DIR%" %DEPENDENCY_DIR%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
+
+:: top-level folder name changed when migrating to github releases
+ren %DEPS_DIR%\boost-%BOOST_VERSION% boost_%BOOST_VER%
 
 :: Build Boost build script
 if not exist "%DEPENDENCY_DIR%\project-config.jam". (
