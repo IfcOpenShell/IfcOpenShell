@@ -599,7 +599,6 @@ class BIM_PT_railing(bpy.types.Panel):
                 row.operator("bim.copy_railing_parameters", icon="COPYDOWN", text="")
                 row.operator("bim.enable_editing_railing_path", icon="ANIM", text="")
                 # TODO: good for preview but probably should move to .is_editing == True
-
                 # since it's writing to ifc
                 row.operator("bim.flip_railing_path_order", icon="ARROW_LEFTRIGHT", text="")
                 row.operator("bim.remove_railing", icon="X", text="")

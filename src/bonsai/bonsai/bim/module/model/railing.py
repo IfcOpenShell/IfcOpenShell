@@ -357,14 +357,13 @@ class AddRailing(bpy.types.Operator, tool.Ifc.Operator):
 class CopyRailingParameters(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.copy_railing_parameters"
     bl_label = "Copy Railing Parameters from Active to Selected"
-    bl_options = {"REGISTER"}
+    bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
     def poll(cls, context):
         return context.active_object and len(context.selected_objects) > 1
 
     def _execute(self, context):
-        active_object = context.active_object
         source_obj = context.active_object
         source_props = source_obj.BIMRailingProperties
         railing_data = source_props.get_general_kwargs(convert_to_project_units=True)
@@ -386,7 +385,7 @@ class CopyRailingParameters(bpy.types.Operator, tool.Ifc.Operator):
             update_railing_modifier_bmesh(context)
             update_railing_modifier_ifc_data(context)
 
-        context.view_layer.objects.active = active_object
+        context.view_layer.objects.active = source_obj
         return {"FINISHED"}
 
 
