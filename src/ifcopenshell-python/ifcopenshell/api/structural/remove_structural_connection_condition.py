@@ -16,28 +16,29 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell.api
+import ifcopenshell
+import ifcopenshell.api.structural
+import ifcopenshell.util.element
 
 
-class Usecase:
-    def __init__(self, file, relation=None):
-        """Removes a relationship between a connection and a condition
+def remove_structural_connection_condition(file: ifcopenshell.file, relation: ifcopenshell.entity_instance) -> None:
+    """Removes a relationship between a connection and a condition
 
-        The condition and the member itself is preserved.
+    The condition and the member itself is preserved.
 
-        :param relation: The IfcRelConnectsStructuralMember to remove.
-        :type relation: ifcopenshell.entity_instance.entity_instance
-        :return: None
-        :rtype: None
-        """
-        self.file = file
-        self.settings = {"relation": relation}
+    :param relation: The IfcRelConnectsStructuralMember to remove.
+    :type relation: ifcopenshell.entity_instance
+    :return: None
+    :rtype: None
+    """
+    settings = {"relation": relation}
 
-    def execute(self):
-        if self.settings["relation"].AppliedCondition:
-            ifcopenshell.api.run(
-                "structural.remove_structural_boundary_condition",
-                self.file,
-                **{"connection": self.settings["relation"].RelatedStructuralConnection}
-            )
-        self.file.remove(self.settings["relation"])
+    if settings["relation"].AppliedCondition:
+        ifcopenshell.api.structural.remove_structural_boundary_condition(
+            file,
+            connection=settings["relation"].RelatedStructuralConnection,
+        )
+    history = settings["relation"].OwnerHistory
+    file.remove(settings["relation"])
+    if history:
+        ifcopenshell.util.element.remove_deep2(file, history)

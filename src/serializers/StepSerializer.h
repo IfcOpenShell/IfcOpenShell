@@ -17,13 +17,15 @@
  *                                                                              *
  ********************************************************************************/
 
+#ifdef IFOPSH_WITH_OPENCASCADE
+
 #ifndef STEPSERIALIZER_H
 #define STEPSERIALIZER_H
 
 #include <STEPControl_Writer.hxx>
 #include <Interface_Static.hxx>
 
-#include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
+#include "../ifcgeom/Iterator.h"
 
 #include "../serializers/OpenCascadeBasedSerializer.h"
 
@@ -32,8 +34,8 @@ class StepSerializer : public OpenCascadeBasedSerializer
 private:
 	STEPControl_Writer writer;	
 public:
-	explicit StepSerializer(const std::string& out_filename, const SerializerSettings& settings)
-		: OpenCascadeBasedSerializer(out_filename, settings)
+	explicit StepSerializer(const std::string& out_filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& serializer_settings)
+		: OpenCascadeBasedSerializer(out_filename, geometry_settings, serializer_settings)
 	{}
 	virtual ~StepSerializer() {}
 	void writeShape(const std::string& name, const TopoDS_Shape& shape) {
@@ -58,4 +60,5 @@ public:
 	}
 };
 
+#endif
 #endif

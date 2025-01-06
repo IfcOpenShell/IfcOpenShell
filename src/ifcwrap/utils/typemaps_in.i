@@ -318,3 +318,91 @@ CREATE_VECTOR_TYPEMAP_IN(std::string, STRING, str)
 CREATE_OPTIONAL_TYPEMAP_IN(int, integer, int)
 CREATE_OPTIONAL_TYPEMAP_IN(double, real, float)
 CREATE_OPTIONAL_TYPEMAP_IN(std::string, string, str)
+
+%{
+	bool check_aggregate_of_swig_type(PyObject* aggregate, swig_type_info* type_obj) {
+		if (!PySequence_Check(aggregate)) return false;
+		for(Py_ssize_t i = 0; i < PySequence_Size(aggregate); ++i) {
+			PyObject* element = PySequence_GetItem(aggregate, i);
+			
+			bool b = true;
+			void* argp1 = nullptr;
+			auto res1 = SWIG_ConvertPtr(element, &argp1, type_obj, 0);
+			if (!SWIG_IsOK(res1)) {
+				b = false;
+			}
+			
+			Py_DECREF(element);
+			if (!b) {
+				return false;
+			}
+		}
+		return true;		
+	}
+
+	template <typename T>
+	std::vector<T> python_sequence_as_swig_object_vector(PyObject* aggregate, swig_type_info* type_obj) {
+		std::vector<T> result_vector;
+		result_vector.reserve(PySequence_Size(aggregate));
+		for(Py_ssize_t i = 0; i < PySequence_Size(aggregate); ++i) {
+			PyObject* element = PySequence_GetItem(aggregate, i);
+			void* argp1 = nullptr;
+			auto res1 = SWIG_ConvertPtr(element, &argp1, type_obj, 0);
+			if (SWIG_IsOK(res1)) {
+				auto arg1 = reinterpret_cast<IfcGeom::OpaqueCoordinate<4>*>(argp1);
+				result_vector.push_back(*arg1);
+			}
+		}
+		return result_vector;
+	}
+%}
+
+%typemap(typecheck,precedence=SWIG_TYPECHECK_INTEGER) const std::vector<IfcGeom::OpaqueCoordinate<4>>& {
+	$1 = check_aggregate_of_swig_type($input, SWIGTYPE_p_IfcGeom__OpaqueCoordinateT_4_t) ? 1 : 0;
+}
+%typemap(arginit) const std::vector<IfcGeom::OpaqueCoordinate<4>>& {
+	$1 = new std::vector<IfcGeom::OpaqueCoordinate<4>>();
+}
+%typemap(in) const std::vector<IfcGeom::OpaqueCoordinate<4>>& {
+	if (!check_aggregate_of_swig_type($input, SWIGTYPE_p_IfcGeom__OpaqueCoordinateT_4_t)) {
+		SWIG_exception(SWIG_TypeError, "");
+	}
+	*$1 = python_sequence_as_swig_object_vector<IfcGeom::OpaqueCoordinate<4>>($input, SWIGTYPE_p_IfcGeom__OpaqueCoordinateT_4_t);
+}
+%typemap(freearg) const std::vector<IfcGeom::OpaqueCoordinate<4>>& {
+	delete $1;
+}
+
+
+
+%define CREATE_SET_TYPEMAP_IN(template_type)
+
+	%typemap(in) std::set<template_type> {
+		if (!check_aggregate_of_type($input, get_python_type<template_type>())) {
+			SWIG_exception(SWIG_TypeError, "Invalid");
+		}
+		$1 = python_sequence_as_set<template_type>($input);
+	}
+	%typemap(typecheck,precedence=SWIG_TYPECHECK_INTEGER) std::set<template_type> {
+		$1 = check_aggregate_of_type($input, get_python_type<template_type>()) ? 1 : 0;
+	}
+
+	%typemap(typecheck,precedence=SWIG_TYPECHECK_INTEGER) const std::set<template_type>& {
+		$1 = check_aggregate_of_type($input, get_python_type<template_type>()) ? 1 : 0;
+	}
+	%typemap(arginit) const std::set<template_type>& {
+		$1 = new std::set<template_type>();
+	}
+	%typemap(in) const std::set<template_type>& {
+		if (!check_aggregate_of_type($input, get_python_type<template_type>())) {
+			SWIG_exception(SWIG_TypeError, "Invalid");
+		}
+		*$1 = python_sequence_as_set<template_type>($input);
+	}
+	%typemap(freearg) const std::set<template_type>& {
+		delete $1;
+	}
+%enddef
+
+CREATE_SET_TYPEMAP_IN(int)
+CREATE_SET_TYPEMAP_IN(std::string)

@@ -17,14 +17,13 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.owner
 
 
 class TestEditAddress(test.bootstrap.IFC4):
     def test_editing_a_postal_address(self):
         address = self.file.createIfcPostalAddress()
-        ifcopenshell.api.run(
-            "owner.edit_address",
+        ifcopenshell.api.owner.edit_address(
             self.file,
             address=address,
             attributes={
@@ -53,21 +52,23 @@ class TestEditAddress(test.bootstrap.IFC4):
 
     def test_editing_a_telecom_address(self):
         address = self.file.createIfcTelecomAddress()
-        ifcopenshell.api.run(
-            "owner.edit_address",
+        attributes = {
+            "Purpose": "OFFICE",
+            "Description": "Description",
+            "UserDefinedPurpose": "UserDefinedPurpose",
+            "TelephoneNumbers": ["Telephone", "Numbers"],
+            "FacsimileNumbers": ["Facsimile", "Numbers"],
+            "PagerNumber": "PagerNumber",
+            "ElectronicMailAddresses": ["Electronic", "Mail", "Addresses"],
+            "WWWHomePageURL": "WWWHomePageURL",
+        }
+        if self.file.schema != "IFC2X3":
+            attributes["MessagingIDs"] = ["Messaging", "IDs"]
+
+        ifcopenshell.api.owner.edit_address(
             self.file,
             address=address,
-            attributes={
-                "Purpose": "OFFICE",
-                "Description": "Description",
-                "UserDefinedPurpose": "UserDefinedPurpose",
-                "TelephoneNumbers": ["Telephone", "Numbers"],
-                "FacsimileNumbers": ["Facsimile", "Numbers"],
-                "PagerNumber": "PagerNumber",
-                "ElectronicMailAddresses": ["Electronic", "Mail", "Addresses"],
-                "WWWHomePageURL": "WWWHomePageURL",
-                "MessagingIDs": ["Messaging", "IDs"],
-            },
+            attributes=attributes,
         )
         assert address.Purpose == "OFFICE"
         assert address.Description == "Description"
@@ -77,4 +78,9 @@ class TestEditAddress(test.bootstrap.IFC4):
         assert address.PagerNumber == "PagerNumber"
         assert address.ElectronicMailAddresses == ("Electronic", "Mail", "Addresses")
         assert address.WWWHomePageURL == "WWWHomePageURL"
-        assert address.MessagingIDs == ("Messaging", "IDs")
+        if self.file.schema != "IFC2X3":
+            assert address.MessagingIDs == ("Messaging", "IDs")
+
+
+class TestEditAddressIFC2X3(test.bootstrap.IFC2X3, TestEditAddress):
+    pass

@@ -16,11 +16,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Reads and writes encoded GlobalIds"""
+"""Reads and writes encoded GlobalIds
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+IFC entities may be identified using a unique ID (called a UUID or GUID). This
+128-bit label is often represented in the form
+xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx. However, in IFC, it is also usually
+stored as a 22 character base 64 encoded string. This module lets you convert
+between these representations and generate new UUIDs.
+"""
 
 import uuid
 import string
@@ -30,16 +33,16 @@ from functools import reduce
 chars = string.digits + string.ascii_uppercase + string.ascii_lowercase + "_$"
 
 
-def compress(g):
+def compress(g: str) -> str:
     bs = [int(g[i : i + 2], 16) for i in range(0, len(g), 2)]
 
     def b64(v, l=4):
-        return "".join([chars[(v // (64 ** i)) % 64] for i in range(l)][::-1])
+        return "".join([chars[(v // (64**i)) % 64] for i in range(l)][::-1])
 
     return "".join([b64(bs[0], 2)] + [b64((bs[i] << 16) + (bs[i + 1] << 8) + bs[i + 2]) for i in range(1, 16, 3)])
 
 
-def expand(g):
+def expand(g: str) -> str:
     def b64(v):
         return reduce(lambda a, b: a * 64 + b, map(lambda c: chars.index(c), v))
 
@@ -50,9 +53,9 @@ def expand(g):
     return "".join(["%02x" % b for b in bs])
 
 
-def split(g):
+def split(g: str) -> str:
     return "{%s-%s-%s-%s-%s}" % (g[:8], g[8:12], g[12:16], g[16:20], g[20:])
 
 
-def new():
+def new() -> str:
     return compress(uuid.uuid4().hex)

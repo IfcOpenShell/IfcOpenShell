@@ -23,7 +23,7 @@
 #ifdef WITH_GLTF
 
 #include "../serializers/serializers_api.h"
-#include "../ifcgeom_schema_agnostic/GeometrySerializer.h"
+#include "../ifcgeom/GeometrySerializer.h"
 
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
@@ -36,10 +36,12 @@ private:
 	std::ofstream fstream_, tmp_fstream1_, tmp_fstream2_;
 	std::map<std::string, int> materials_, meshes_;
 	json json_, node_array_;
+	boost::optional<json> ecef_transform_, north_rotation_;
+	int bufferViewId;
 
-	int writeMaterial(const IfcGeom::Material& style);
+	int writeMaterial(const ifcopenshell::geometry::taxonomy::style::ptr style);
 public:
-	GltfSerializer(const std::string& filename, const SerializerSettings& settings);
+	GltfSerializer(const std::string& filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings);
 	virtual ~GltfSerializer();
 	bool ready();
 	void writeHeader();
@@ -48,7 +50,7 @@ public:
 	void finalize();
 	bool isTesselated() const { return true; }
 	void setUnitNameAndMagnitude(const std::string& /*name*/, float /*magnitude*/) {}
-	void setFile(IfcParse::IfcFile*) {}
+	void setFile(IfcParse::IfcFile*);
 };
 
 #endif

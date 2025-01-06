@@ -1,0 +1,10 @@
+fastapi==0.109.1
+httpx==0.24.1
+jose==1.0.0
+jsonpickle==3.0.1
+passlib==1.7.4
+pydantic==1.10.13
+python_dateutil==2.8.2
+python_jose==3.3.0
+py2neo==2021.2.4
+

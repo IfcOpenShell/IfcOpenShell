@@ -25,7 +25,7 @@
 #include <fstream>
 
 #include "../serializers/serializers_api.h"
-#include "../ifcgeom_schema_agnostic/GeometrySerializer.h"
+#include "../ifcgeom/GeometrySerializer.h"
 
 // http://people.sc.fsu.edu/~jburkardt/txt/obj_format.txt
 class SERIALIZERS_API WaveFrontOBJSerializer : public WriteOnlyGeometrySerializer {
@@ -35,11 +35,11 @@ private:
 	unsigned int vcount_total;
 	std::set<std::string> materials;
 public:
-	WaveFrontOBJSerializer(const stream_or_filename& obj_filename, const stream_or_filename& mtl_filename, const SerializerSettings& settings);
+	WaveFrontOBJSerializer(const stream_or_filename& obj_filename, const stream_or_filename& mtl_filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings);
 	virtual ~WaveFrontOBJSerializer() {}
 	bool ready();
 	void writeHeader();
-	void writeMaterial(const IfcGeom::Material& style);
+	void writeMaterial(const ifcopenshell::geometry::taxonomy::style::ptr style);
 	void write(const IfcGeom::TriangulationElement* o);
 	void write(const IfcGeom::BRepElement* /*o*/) {}
 	void finalize() {}

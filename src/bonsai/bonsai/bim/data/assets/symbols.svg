@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<svg baseProfile="full" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <g id="rectangle-tag">
+        <rect x="-6" y="-2.5" width="12" height="5" fill="white" stroke="black" style="stroke-width: 0.25;" />
+    </g>
+    <g id="triangle-tag">
+        <path style="fill: white; stroke: black; stroke-width: 0.25;" d="M 3.1409425e-7,-7.1069207 5.7650623,2.8784603 l -11.5301246,-6e-7 z" />
+    </g>
+    <g id="hexagon-tag">
+        <path style="fill: white; stroke: black; stroke-width: 0.25;" d="m 0.0161133,-6.0583333 5.2339915,3.8366023 -2.031433,6.1633977 c 0,0 -6.4894866,-0.027414 -6.4894866,-0.027414 l -1.97929,-6.1803395 5.2662181,-3.7922467" />
+    </g>
+    <g id="capsule-tag">
+        <rect x="-6" y="-2.5" width="12" height="5" rx="2.5" ry="2.5" fill="white" stroke="black" style="stroke-width: 0.25;" />
+    </g>
+    <g id="circle-tag">
+        <circle r="5" fill="white" stroke="black" style="stroke-width: 0.25;" />
+    </g>
+    <g id="door-tag">
+        <circle r="5" fill="white" stroke="black" style="stroke-width: 0.25;" />
+        <text y="-1.75" class="regular" text-anchor="middle" dominant-baseline="middle" data-type="text-template"></text>
+        <line x1="-5" x2="5" style="stroke: black; stroke-width: 0.25;" />
+        <text y="2.5" class="regular" text-anchor="middle" dominant-baseline="middle" data-type="text-template"></text>
+    </g>
+    <g id="window-tag">
+        <path style="fill: white; stroke: black; stroke-width: 0.25;" d="m 0.0161133,-6.0583333 5.2339915,3.8366023 -2.031433,6.1633977 c 0,0 -6.4894866,-0.027414 -6.4894866,-0.027414 l -1.97929,-6.1803395 5.2662181,-3.7922467" />
+    </g>
+    <g id="space-tag">
+        <text y="-5" class="large" text-anchor="middle" dominant-baseline="middle" data-type="text-template"></text>
+        <rect x="-6" y="-2.5" width="12" height="5" fill="white" stroke="black" style="stroke-width: 0.25;" />
+        <text class="regular" text-anchor="middle" dominant-baseline="middle" data-type="text-template"></text>
+        <text y="5" class="regular" text-anchor="middle" dominant-baseline="middle" data-type="text-template"></text>
+    </g>
+    <g id="elevation-arrow">
+        <path style="fill: black;" d="M -7.07106 0 0 -7.07106 7.07106 0" />
+    </g>
+    <g id="elevation-tag">
+        <circle r="5" fill="white" stroke="black" style="stroke-width: 0.25;" />
+        <line x1="-5" y1="0" x2="5" y2="0" style="stroke: black; stroke-width: 0.25;" />
+    </g>
+    <g id="section-arrow">
+        <path style="fill: black;" d="M -7.07106 0 0 -7.07106 7.07106 0" />
+    </g>
+    <g id="section-tag">
+        <circle r="5" fill="white" stroke="black" style="stroke-width: 0.25;" />
+        <line x1="-5" y1="0" x2="5" y2="0" style="stroke: black; stroke-width: 0.25;" />
+    </g>
+    <g id="dot">
+        <circle r="1" fill="black" stroke="black" style="stroke-width: 0.25;" />
+    </g>
+    <g id="setout-tag">
+        <circle fill="white" stroke="black" r="2.5" style="stroke-width: 0.5"/>
+        <path d="M 0 0 L -2.5 0 A 2.5 2.5 0 0 1 0 -2.5 Z" fill="black"/>
+        <path d="M 0 0 L 2.5 0 A 2.5 2.5 0 0 1 0 2.5 Z" fill="black"/>
+        <text x="3" y="-8" class="regular" text-anchor="start" dominant-baseline="auto" data-type="text-template"></text>
+        <text x="3" y="-4" class="regular" text-anchor="start" dominant-baseline="auto" data-type="text-template"></text>
+    </g>
+    <g id="setout-point">
+        <circle fill="white" stroke="black" r="2.5" style="stroke-width: 0.5"/>
+        <path d="M 0 0 L -2.5 0 A 2.5 2.5 0 0 1 0 -2.5 Z" fill="black"/>
+        <path d="M 0 0 L 2.5 0 A 2.5 2.5 0 0 1 0 2.5 Z" fill="black"/>
+    </g>
+    <g id="control-point">
+        <path style="fill: white; stroke: black; stroke-width: 0.5;" d="M 2.286165,1.4798666 H -1.0000316e-7 -2.2861651 L -1.1430826,-0.5000101 -1.0000316e-7,-2.479888 1.1430827,-0.5000101 Z" />
+        <circle r="0.5" fill="black" stroke="black" style="stroke-width: 0.25;" />
+    </g>
+    <g id="traverse-point">
+        <path style="fill: white; stroke: black; stroke-width: 0.5;" d="M -2,-2 2,2 M -2,2 2,-2" />
+    </g>
+    <g id="spot-elevation">
+        <path style="fill: white; stroke: black; stroke-width: 0.5;" d="M 0,-2 0,2 M -2,0 2,0" />
+    </g>
+</svg>

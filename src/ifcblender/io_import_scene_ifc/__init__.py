@@ -86,7 +86,7 @@ def import_ifc(filename, use_names, process_relations, blender_booleans):
 
     print(f"Reading {bpy.path.basename(filename)}...")
     settings = ifcopenshell_geom.settings()
-    settings.set(settings.DISABLE_OPENING_SUBTRACTIONS, blender_booleans)
+    settings.set("disable-opening-subtractions", blender_booleans)
     assert os.path.exists(filename), filename
     ifc_file = ifcopenshell.open(filename)
     iterator = ifcopenshell_geom.iterator(settings, ifc_file)
@@ -163,6 +163,7 @@ def import_ifc(filename, use_names, process_relations, blender_booleans):
 
             me.from_pydata(verts, [], faces)
             me.validate()
+
             # MATERIAL CREATION
             def add_material(mname, props):
                 if mname in bpy.data.materials:

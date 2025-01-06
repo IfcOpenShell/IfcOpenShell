@@ -19,11 +19,13 @@
  *                                                                              *
  ********************************************************************************/
 
+#ifdef IFOPSH_WITH_OPENCASCADE
+
 #ifndef SVGSERIALIZER_H
 #define SVGSERIALIZER_H
 
-#include "../ifcgeom_schema_agnostic/GeometrySerializer.h"
-#include "../ifcgeom_schema_agnostic/base_utils.h"
+#include "../ifcgeom/GeometrySerializer.h"
+#include "../ifcgeom/kernels/opencascade/base_utils.h"
 #include "../serializers/serializers_api.h"
 #include "../serializers/util.h"
 
@@ -41,6 +43,10 @@
 #include <BRepTopAdaptor_FClass2d.hxx>
 #include <Geom_Plane.hxx>
 #include <BRepBndLib.hxx>
+#include <BRepMesh_IncrementalMesh.hxx>
+#include <TopExp_Explorer.hxx>
+#include <TopoDS.hxx>
+#include <BRepGProp_Face.hxx>
 
 #if OCC_VERSION_HEX >= 0x70300
 #include <Bnd_OBB.hxx>
@@ -51,7 +57,7 @@
 #include <limits>
 #include <array>
 
-typedef std::pair<IfcUtil::IfcBaseEntity*, std::string> drawing_key;
+typedef std::pair<const IfcUtil::IfcBaseEntity*, std::string> drawing_key;
 
 struct storey_sorter {
 	bool operator()(const drawing_key& ad, const drawing_key& bd) const {
@@ -71,12 +77,12 @@ struct storey_sorter {
 		if (a_is_storey && b_is_storey) {
 			boost::optional<double> a_elev, b_elev;
 			try {
-				a_elev = static_cast<double>(*a->get("Elevation"));
-				b_elev = static_cast<double>(*b->get("Elevation"));
+				a_elev = static_cast<double>(a->get("Elevation"));
+				b_elev = static_cast<double>(b->get("Elevation"));
 			} catch (...) {};
 			if (a_elev && b_elev) {
 				if (std::equal_to<double>()(*a_elev, *b_elev)) {
-					return std::less<unsigned int>()(a->data().id(), b->data().id());
+					return std::less<unsigned int>()(a->id(), b->id());
 				} else {
 					return std::less<double>()(*a_elev, *b_elev);
 				}
@@ -84,23 +90,23 @@ struct storey_sorter {
 
 			boost::optional<std::string> a_name, b_name;
 			try {
-				a_name = static_cast<std::string>(*a->get("Name"));
-				b_name = static_cast<std::string>(*b->get("Name"));
+				a_name = static_cast<std::string>(a->get("Name"));
+				b_name = static_cast<std::string>(b->get("Name"));
 			} catch (...) {};
 			if (a_name && b_name) {
 				if (std::equal_to<std::string>()(*a_name, *b_name)) {
-					return std::less<unsigned int>()(a->data().id(), b->data().id());
+					return std::less<unsigned int>()(a->id(), b->id());
 				} else {
 					return std::less<std::string>()(*a_name, *b_name);
 				}
 			}
 		}
-		return std::less<IfcUtil::IfcBaseEntity*>()(a, b);
+		return std::less<const IfcUtil::IfcBaseEntity*>()(a, b);
 	}
 };
 
 struct horizontal_plan {
-	IfcUtil::IfcBaseEntity* storey;
+	const IfcUtil::IfcBaseEntity* storey;
 	double elevation, offset, next_elevation;
 };
 
@@ -120,8 +126,8 @@ struct geometry_data {
 	TopoDS_Shape compound_local;
 	std::vector<boost::optional<std::vector<double>>> dash_arrays;
 	gp_Trsf trsf;
-	IfcUtil::IfcBaseEntity* product;
-	IfcUtil::IfcBaseEntity* storey;
+	const IfcUtil::IfcBaseEntity* product;
+	const IfcUtil::IfcBaseEntity* storey;
 	double storey_elevation;
 	std::string ifc_name, svg_name;
 };
@@ -205,31 +211,52 @@ namespace {
 	class hlr_calc {
 	private:
 		const HLRAlgo_Projector& projector_;
+		const std::list<std::pair<const IfcUtil::IfcBaseEntity*, TopoDS_Shape>>* product_shapes_ = nullptr;
 
 	public:
-		typedef TopoDS_Shape result_type;
+		typedef std::list<std::pair<const IfcUtil::IfcBaseEntity*, TopoDS_Shape>> result_type;
 
 		hlr_calc(const HLRAlgo_Projector& projector) : projector_(projector)
 		{}
 
-		TopoDS_Shape operator()(boost::blank&) const {
+		void set_product_shape(const std::list<std::pair<const IfcUtil::IfcBaseEntity*, TopoDS_Shape>>* product_shapes) {
+			product_shapes_ = product_shapes;
+		}
+
+		result_type operator()(boost::blank&) const {
 			throw std::runtime_error("");
 		}
 
-		TopoDS_Shape operator()(opencascade::handle<HLRBRep_Algo>& algo) {
+		result_type operator()(opencascade::handle<HLRBRep_Algo>& algo) {
 			algo->Projector(projector_);
 			algo->Update();
 			algo->Hide();
 			HLRBRep_HLRToShape hlr_shapes(algo);
-			return occt_join(hlr_shapes.OutLineVCompound(), hlr_shapes.VCompound());
+			if (product_shapes_) {
+				std::list<std::pair<const IfcUtil::IfcBaseEntity*, TopoDS_Shape>> r;
+				for (auto& p : *product_shapes_) {
+					r.push_back({ p.first, occt_join(hlr_shapes.OutLineVCompound(p.second), hlr_shapes.VCompound(p.second)) });
+				}
+				return r;
+			} else {
+				return { {nullptr, occt_join(hlr_shapes.OutLineVCompound(), hlr_shapes.VCompound())}};
+			}
 		}
 
-		TopoDS_Shape operator()(opencascade::handle<HLRBRep_PolyAlgo>& algo) {
+		result_type operator()(opencascade::handle<HLRBRep_PolyAlgo>& algo) {
 			algo->Projector(projector_);
 			algo->Update();
 			HLRBRep_PolyHLRToShape hlr_shapes;
 			hlr_shapes.Update(algo);
-			return occt_join(hlr_shapes.OutLineVCompound(), hlr_shapes.VCompound());
+			if (product_shapes_) {
+				std::list<std::pair<const IfcUtil::IfcBaseEntity*, TopoDS_Shape>> r;
+				for (auto& p : *product_shapes_) {
+					r.push_back({ p.first, occt_join(hlr_shapes.OutLineVCompound(p.second), hlr_shapes.VCompound(p.second)) });
+				}
+				return r;
+			} else {
+				return { {nullptr, occt_join(hlr_shapes.OutLineVCompound(), hlr_shapes.VCompound()) } };
+			}
 		}
 	};
 
@@ -240,13 +267,13 @@ namespace {
 			gp_XYZ dxyz, xdir, ydir;
 
 		public:
-			std::list<TopoDS_Shape>::const_iterator item;
+			TopoDS_Shape* item;
 			TopoDS_Face face;
 			bool is_convex;
 			// @note copying the BRepTopAdaptor_FClass2d didn't work so it's a pointer
 			BRepTopAdaptor_FClass2d* fclass;
 
-			face_info(std::list<TopoDS_Shape>::const_iterator it, const TopoDS_Face& fa)
+			face_info(TopoDS_Shape* it, const TopoDS_Face& fa)
 				: item(it)
 				, face(fa)
 				, fclass(nullptr)
@@ -309,11 +336,16 @@ namespace {
 					}
 				} else {
 					gp_Pnt2d tmp;
-					for (int i = 0; i < 4; ++i) {
+					// 0,1,2,3 -> interp over bounding box edges (i%4, (i+1)%4)
+					// 4,5 -> interp over bounding box diagonals (i%4, (i+2)%4)
+					// @todo use boolean_utils.h points_on_planar_face_generator?
+					// ... or skip faces with inner bounds all together ?
+					// ... ?
+					for (int i = 0; i < 6; ++i) {
 						// @todo proper edge intersection
 						for (int j = 0; j < 16; ++j) {
-							const gp_Pnt2d& a = *loop[i];
-							const gp_Pnt2d& b = *loop[(i + 1) % 4];
+							const gp_Pnt2d& a = *loop[i % 4];
+							const gp_Pnt2d& b = *loop[(i + (i >= 4 ? 2 : 1)) % 4];
 							interp(a, b, j / 16.0, tmp);
 							if (fclass->Perform(tmp) == TopAbs_OUT) {
 								return false;
@@ -329,17 +361,19 @@ namespace {
 		hlr_brep_or_poly_t engine_;
 		bool use_prefiltering_;
 		bool use_hlr_poly_;
+		bool segment_projection_;
 		gp_Ax1 view_direction_;
 		HLRAlgo_Projector projector_;
 
 		std::multimap<double, face_info> large_ortho_faces_;
-		std::list<TopoDS_Shape> items_;
+		std::list<std::pair<const IfcUtil::IfcBaseEntity*, TopoDS_Shape>> items_;
 
 	public:
 
-		prefiltered_hlr(bool use_prefiltering, bool use_hlr_poly, const gp_Pln& view_direction)
+		prefiltered_hlr(bool use_prefiltering, bool use_hlr_poly, bool segment_projection, const gp_Pln& view_direction)
 			: use_prefiltering_(use_prefiltering)
 			, use_hlr_poly_(use_hlr_poly)
+			, segment_projection_(segment_projection)
 			// @nb negative z in accordance with occt projector convention (and opengl)
 			, view_direction_(view_direction.Axis())
 		{
@@ -354,7 +388,7 @@ namespace {
 			projector_ = HLRAlgo_Projector(trsf, false, 1.);
 		}
 
-		bool is_obscured_(std::list<TopoDS_Shape>::const_iterator sit) {
+		bool is_obscured_(TopoDS_Shape* sit) {
 			const TopoDS_Shape& s = *sit;
 
 			double min_d = std::numeric_limits<double>::infinity();
@@ -372,6 +406,13 @@ namespace {
 			Bnd_Box box;
 			BRepBndLib::AddClose(s, box);
 
+			if (box.IsVoid()) {
+				// false or true, it doesn't really matter, just don't
+				// proceed because asking for a corner of a void box
+				// throws an exception.
+				return false;
+			}
+
 			auto lower = large_ortho_faces_.lower_bound(0.);
 			auto upper = large_ortho_faces_.upper_bound(min_d);
 
@@ -388,9 +429,9 @@ namespace {
 			return false;
 		}
 		
-		void add(const TopoDS_Shape& s) {
+		void add(const TopoDS_Shape& s, const IfcUtil::IfcBaseEntity* product) {
 			if (!use_prefiltering_) {
-				items_.insert(items_.end(), s);
+				items_.insert(items_.end(), {product, s});
 				return;
 			}
 
@@ -429,7 +470,7 @@ namespace {
 
 				Logger::Notice("Included " + std::to_string(n_faces_included) + " faces out of " + std::to_string(n_total) + " after prefiltering");
 
-				auto it = items_.insert(items_.end(), C);
+				auto it = items_.insert(items_.end(), { product, C });
 
 				{
 					TopExp_Explorer exp(C, TopAbs_FACE);
@@ -453,7 +494,7 @@ namespace {
 										auto d = -(pnt.XYZ() - view_direction_.Location().XYZ()).Dot(view_direction_.Direction().XYZ());
 
 										if (d > 1.e-5) {
-											large_ortho_faces_.insert({ d, face_info(it, face) });
+											large_ortho_faces_.insert({ d, face_info(&it->second, face) });
 										}
 									}
 								}
@@ -462,15 +503,15 @@ namespace {
 					}
 				}
 			} else {
-				items_.insert(items_.end(), s);
+				items_.insert(items_.end(), { product, s });
 			}
 		}
 
-		TopoDS_Shape build() {
+		std::list<std::pair<const IfcUtil::IfcBaseEntity*, TopoDS_Shape>> build() {
 			size_t n_included = 0;
 			for (auto it = items_.begin(); it != items_.end(); ++it) {
-				if (!use_prefiltering_ || !is_obscured_(it)) {
-					hlr_writer vis(*it);
+				if (!use_prefiltering_ || !is_obscured_(&it->second)) {
+					hlr_writer vis(it->second);
 					boost::apply_visitor(vis, engine_);
 					n_included++;
 				}
@@ -478,7 +519,11 @@ namespace {
 			if (use_prefiltering_) {
 				Logger::Notice("Included " + std::to_string(n_included) + " elements out of " + std::to_string(items_.size()) + " after prefiltering");
 			}
+			
 			hlr_calc vis(projector_);
+			if (segment_projection_) {
+				vis.set_product_shape(&items_);
+			}
 			return boost::apply_visitor(vis, engine_);
 		}
 	};
@@ -512,17 +557,21 @@ protected:
 	storey_height_display_types storey_height_display_;
 	bool draw_door_arcs_, is_floor_plan_;
 	bool auto_section_, auto_elevation_;
-	bool use_namespace_, use_hlr_poly_, use_prefiltering_, always_project_, polygonal_;
+	bool use_namespace_, use_hlr_poly_, use_prefiltering_, segment_projection_, always_project_, polygonal_;
 	bool emit_building_storeys_;
 	bool no_css_;
+	bool unify_inputs_;
+	bool mirror_y_;
+	bool mirror_x_;
+	bool only_valid_ = false;
 
 	int profile_threshold_;
 
 	IfcParse::IfcFile* file;
-	IfcUtil::IfcBaseEntity* storey_;
+	const IfcUtil::IfcBaseEntity* storey_;
 	std::multimap<drawing_key, path_object, storey_sorter> paths;
 	std::map<drawing_key, drawing_meta> drawing_metadata;
-	std::map<IfcUtil::IfcBaseEntity*, hlr_t> storey_hlr;
+	std::map<const IfcUtil::IfcBaseEntity*, hlr_t> storey_hlr;
 
 	float_item_list xcoords, ycoords, radii;
 	size_t xcoords_begin, ycoords_begin, radii_begin;
@@ -544,8 +593,8 @@ protected:
 	subtract_before_project subtraction_settings_;
 
 public:
-	SvgSerializer(const stream_or_filename& out_filename, const SerializerSettings& settings)
-		: WriteOnlyGeometrySerializer(settings)
+	SvgSerializer(const stream_or_filename& out_filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings)
+		: WriteOnlyGeometrySerializer(geometry_settings, settings)
 		, svg_file(out_filename)
 		, xmin(+std::numeric_limits<double>::infinity())
 		, ymin(+std::numeric_limits<double>::infinity())
@@ -562,10 +611,14 @@ public:
 		, use_namespace_(false)
 		, use_hlr_poly_(false)
 		, use_prefiltering_(false)
+		, segment_projection_(false)
 		, always_project_(false)
 		, polygonal_(false)
 		, emit_building_storeys_(true)
 		, no_css_(false)
+		, mirror_y_(false)
+		, mirror_x_(false)
+		, unify_inputs_(false)
 		, profile_threshold_(-1)
 		, file(0)
 		, storey_(0)
@@ -587,14 +640,14 @@ public:
     void write(const IfcGeom::BRepElement* o);
     void write(path_object& p, const TopoDS_Shape& wire, boost::optional<std::vector<double>> dash_array=boost::none);
 	void write(const geometry_data& data);
-    path_object& start_path(const gp_Pln& p, IfcUtil::IfcBaseEntity* storey, const std::string& id);
+    path_object& start_path(const gp_Pln& p, const IfcUtil::IfcBaseEntity* storey, const std::string& id);
 	path_object& start_path(const gp_Pln& p, const std::string& drawing_name, const std::string& id);
 	bool isTesselated() const { return false; }
     void finalize();
     void setUnitNameAndMagnitude(const std::string& /*name*/, float /*magnitude*/) {}
 	void setFile(IfcParse::IfcFile* f);
     void setBoundingRectangle(double width, double height);
-	void setSectionHeight(double h, IfcUtil::IfcBaseEntity* storey = 0);
+	void setSectionHeight(double h, const IfcUtil::IfcBaseEntity* storey = 0);
 	void setSectionHeightsFromStoreys(double offset=1.2);
 	void setPrintSpaceNames(bool b) { print_space_names_ = b; }
 	void setPrintSpaceAreas(bool b) { print_space_areas_ = b; }
@@ -646,6 +699,14 @@ public:
 		return use_prefiltering_;
 	}
 
+	void setSegmentProjection(bool b) {
+		segment_projection_ = b;
+	}
+
+	bool getSegmentProjection() const {
+		return segment_projection_;
+	}
+
 	void setPolygonal(bool b) {
 		polygonal_ = b;
 	}
@@ -660,6 +721,22 @@ public:
 
 	void setNoCSS(bool b) {
 		no_css_ = b;
+	}
+
+	void setUnifyInputs(bool b) {
+		unify_inputs_ = b;
+	}
+
+	bool getUnifyInputs() const {
+		return unify_inputs_;
+	}
+
+	void setOnlyValid(bool b) {
+		only_valid_ = b;
+	}
+
+	bool getOnlyValid(bool b) const {
+		return only_valid_;
 	}
 
 	void setScale(double s) { scale_ = s; }
@@ -698,8 +775,25 @@ public:
 		return profile_threshold_;
 	}
 
+	void setMirrorY(bool b) {
+		mirror_y_ = b;
+	}
+
+	bool getMirrorY() const {
+		return mirror_y_;
+	}
+
+	void setMirrorX(bool b) {
+		mirror_x_ = b;
+	}
+
+	bool getMirrorX() const {
+		return mirror_x_;
+	}
+
 protected:
 	std::string writeMetadata(const drawing_meta& m);
 };
 
+#endif
 #endif

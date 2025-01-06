@@ -1,0 +1,92 @@
+@import url("./shared.css");
+
+.table-container {
+    display: block;
+    height: calc(100vh - var(--margin-small));
+    width: 100%;
+    margin-bottom: var(--margin-medium);
+}
+
+.csv-table {
+    margin-top: var(--margin-small);
+}
+
+/* ------------ Overwriting Tabulator CSS rules ------------ */
+
+:root.light .tabulator-header,
+:root.light .tabulator .tabulator-header .tabulator-col {
+    background: var(--nav-bg-color) !important;
+    color: var(--text-color);
+}
+
+:root.light .tabulator {
+    border-top: 1px solid var(--border-color);
+    border-bottom: 2px solid var(--border-color);
+}
+
+:root.blender .tabulator-table-holder,
+:root.blender .tabulator {
+    background-color: var(--blender-panel-background) !important;
+}
+
+:root.blender .tabulator-header {
+    border-bottom-color: var(--blender-tab-outline);
+    color: var(--blender-text);
+}
+
+:root.blender .tabulator-header,
+:root.blender .tabulator .tabulator-header .tabulator-col {
+    background-color: var(--blender-panel-header) !important;
+}
+
+:root.blender .tabulator {
+    border-top-color: var(--blender-tab-outline);
+    border-bottom-color: var(--blender-tab-outline);
+    color: var(--blender-text);
+}
+
+:root.blender .tabulator-row-odd .tabulator-cell {
+    background-color: var(--blender-odd-row);
+    transition: filter 0.2s ease;
+}
+
+:root.blender .tabulator-row-even .tabulator-cell {
+    background-color: var(--blender-even-row);
+    transition: filter 0.2s ease;
+}
+
+:root.blender .tabulator-row-odd:hover .tabulator-cell,
+:root.blender .tabulator-row-even:hover .tabulator-cell {
+    filter: brightness(1.4);
+}
+
+:root.blender .tabulator-row,
+:root.blender .tabulator-cell {
+    color: var(--blender-text);
+}
+
+:root.blender .tabulator-selected .tabulator-cell,
+:root.blender .tabulator-row.tabulator-selected {
+    background-color: var(--blender-active-highlight) !important;
+    color: var(--blender-active-text-highlight) !important;
+}
+
+:root.blender .tabulator-selected:hover .tabulator-cell,
+:root.blender .tabulator-row.tabulator-selected:hover {
+    filter: brightness(1.2)
+}
+
+:root.blender .tabulator-popup-container {
+    background: var(--blender-panel-background);
+    border: var(--blender-tab-outline);
+}
+
+:root.blender .tabulator-menu-item {
+    color: var(--blender-text) !important;
+    background-color: var(--blender-panel-background) !important;
+    transition: filter 0.1s ease;
+}
+
+:root.blender .tabulator-menu-item:hover {
+    filter: brightness(1.4);
+}

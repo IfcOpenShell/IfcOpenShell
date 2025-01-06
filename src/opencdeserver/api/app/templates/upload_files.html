@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Kontroll.digital</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.3.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            $('#save_metadata_button').on('click', function (event) {
+                event.preventDefault();
+                save_metadata();
+            });
+        });
+        function save_metadata () {
+            let form_values = $('#save_metadata_form').serialize();
+            console.log('Form values: ' + form_values);
+            $.ajax ({
+                type: 'POST',
+                url: './save-metadata-for-documents',
+                data: form_values,
+                dataType: 'json',
+                success: function (msg) {
+                    if (msg) {
+                        console.log('Result of save-metadata-for-documents: ' + msg);
+                        callback(msg)
+                    }
+                },
+                error: function () {
+                    let errors = ['An unknown error occured.'];
+                    console.log(errors);
+                }
+            });
+        }
+        function callback (msg) {
+            let callback_url = $('#callback_url').val();
+            let session_id = $('#upload_session').val();
+            let server_context = $('#server_context').val();
+            let upload_documents_url = 'https://api.kontroll.digital/documents/1.0/upload-instructions'
+                + '?session_id=' + session_id
+                + '&server_context=' + server_context
+
+            callback_url = callback_url + '?upload_documents_url=' + encodeURIComponent(upload_documents_url)
+
+            console.log('Upload documents url: ' + upload_documents_url);
+            console.log('Callback url: ' + callback_url);
+
+            $.get ({
+                url: callback_url,
+                crossDomain: true,
+                dataType: 'html',
+                success: function (msg) {
+                    if (msg) {
+                        console.log('Result text: ' + msg);
+                        $('#result_message').text('You may now close this window.');
+                    }
+                },
+                error: function () {
+                    let errors = ['An unknown error occured.'];
+                    console.log(errors);
+                }
+            });
+        }
+    </script>
+    <style>
+        body {
+            align-content: center;
+            justify-content: center;
+            padding-top: 40px;
+            padding-bottom: 40px;
+            background-color: #f5f5f5;
+        }
+        .page_layout {
+            width: 100%;
+            max-width: 780px;
+            padding: 15px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+<div id="page_layout" class="page_layout">
+    <form action="" id="save_metadata_form" name="save_metadata_form">
+        <h1 class="h3 mb-3">kontroll.digital</h1>
+
+        <div id="save_metadata_div">
+
+            <table class="table">
+                <thead>
+                <tr>
+                    <th scope="col">Id</th>
+                    <th scope="col">Title</th>
+                    <th scope="col">Version</th>
+                    <th scope="col">File name</th>
+                </tr>
+                </thead>
+                <tbody>
+
+                {% for document in documents %}
+
+                    <tr>
+                        <input type="hidden" id="session_file_id@{{document.session_file_id}}" name="session_file_id@{{document.session_file_id}}" value="{{document.session_file_id}}">
+                        <td>{{document.document_id}}<input type="hidden" id="document@{{document.session_file_id}}" name="document@{{document.session_file_id}}" value="{{document.document_id}}"></td>
+                        <td><input type="text" id="title@{{document.session_file_id}}" name="title@{{document.session_file_id}}" value="{{document.title}}"></td>
+                        <td><input type="text" id="version_number@{{document.session_file_id}}" name="version_number@{{document.session_file_id}}" value="{{document.version_number}}"></td>
+                        <td>{{document.file_name}}<input type="hidden" id="filename@{{document.session_file_id}}" name="filename@{{document.session_file_id}}" value="{{document.file_name}}"></td>
+                    <tr>
+
+                {% endfor %}
+
+                </tbody>
+            </table>
+
+            <input type="hidden" id="username" name="username" value="{{username}}">
+            <input type="hidden" id="email" name="email" value="{{email}}">
+            <input type="hidden" id="full_name" name="full_name" value="{{full_name}}">
+            <input type="hidden" id="upload_session" name="upload_session" value="{{upload_session}}">
+            <input type="hidden" id="server_context" name="server_context" value="{{server_context}}">
+            <input type="hidden" id="callback_url" name="callback_url" value="{{callback_url}}">
+            <input type="hidden" id="callback_expires_in" name="callback_expires_in" value="{{callback_expires_in}}">
+
+             <div class="form-group mb-3">
+                 <label for="project">Associate document with this project:</label>
+                 <select class="form-control" id="project" name="project">
+                     {% for project in projects %}
+                         <option value="{{project.project_id}}">{{project.name}}</option>
+                     {% endfor %}
+                 </select>
+             </div>
+
+            <button class="btn btn-lg btn-primary btn-block" type="submit" id="save_metadata_button">Save metadata</button>
+
+        </div>
+    </form>
+</div>
+</body>
+</html>
+

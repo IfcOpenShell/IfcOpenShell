@@ -1,21 +1,36 @@
 # bsdd
 
-An experimental work in progress library to interact with the buildingSMART Data Dictionary (bSDD) API.
+A library to interact with the buildingSMART Data Dictionary (bSDD) API.
+This packages is totally independent from other packages in IfcOpenShell and requires only a python installation to run.
 
-More reading:
+## Installation
 
- * [Swagger API docs](https://bs-dd-api-prototype.azurewebsites.net/swagger/index.html)
- * [bSDD Github Repository](https://github.com/buildingSMART/bSDD)
+```bash
+pip install git+https://git@github.com/ifcopenshell/ifcopenshell.git@v0.8.0#subdirectory=src/bsdd
 
-# Demo
-
-Let's replicate the SketchUp example:
-
+# check your installation
+python
+>>> from bsdd import Client
+>>> client = Client()
+>>> [l["uri"] for l in client.get_dictionary()["dictionaries"] if "4.3" in l["uri"]][0]
+'https://identifier.buildingsmart.org/uri/buildingsmart/ifc/4.3'
 ```
-client = Client()
-pprint(client.Domain())
-pprint(client.SearchListOpen("http://identifier.buildingsmart.org/uri/nlsfb/nlsfb2005-2.2", RelatedIfcEntity="IfcWall"))
-data = client.Classification("http://identifier.buildingsmart.org/uri/nlsfb/nlsfb2005-2.2/class/21.21")
-pprint(data)
-apply_ifc_classification_properties(ifc_file, element, data["classificationProperties"])
+
+## Develop
+
+```bash
+# create a fork in your domain
+git clone git@github.com:<your-name>/IfcOpenShell.git
+cd src/bsdd
+
+# if you use vs code / pycharm, you can launch it from this folder
+code .
+
+# if you use conda/mamba. follow instructions below:
+# otherwise setup a dev env in your preferred way.
+mamba create -n bsdd-dev python pytest requests
+mamba activate bsdd-dev
+
+# run tests
+pytest
 ```

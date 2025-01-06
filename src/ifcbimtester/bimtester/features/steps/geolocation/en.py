@@ -30,7 +30,7 @@ from bimtester.ifc import IfcStore
 from bimtester.lang import _
 
 
-@step(u'There must be at least one "{ifc_class}" element')
+@step('There must be at least one "{ifc_class}" element')
 def step_impl(context, ifc_class):
     assert len(IfcStore.file.by_type(ifc_class)) >= 1, _("An element of {} could not be found").format(ifc_class)
 
@@ -68,7 +68,7 @@ def check_ifc4_geolocation(entity_name, prop_name=None, value=None, should_asser
         return actual_value
 
 
-@step(u"The project must have coordinate reference system data")
+@step("The project must have coordinate reference system data")
 def step_impl(context):
     if IfcStore.file.schema == "IFC2X3":
         for site in IfcStore.file.by_type("IfcSite"):
@@ -77,7 +77,7 @@ def step_impl(context):
     check_ifc4_geolocation("IfcProjectedCRS")
 
 
-@step(u'The name of the CRS must be "{coordinate_reference_name}"')
+@step('The name of the CRS must be "{coordinate_reference_name}"')
 def step_impl(context, coordinate_reference_name):
     if IfcStore.file.schema == "IFC2X3":
         for site in IfcStore.file.by_type("IfcSite"):
@@ -86,7 +86,7 @@ def step_impl(context, coordinate_reference_name):
     check_ifc4_geolocation("IfcProjectedCRS", "Name", coordinate_reference_name)
 
 
-@step(u'The description of the CRS must be "{value}"')
+@step('The description of the CRS must be "{value}"')
 def step_impl(context, value):
     if IfcStore.file.schema == "IFC2X3":
         for site in IfcStore.file.by_type("IfcSite"):
@@ -95,7 +95,7 @@ def step_impl(context, value):
     check_ifc4_geolocation("IfcProjectedCRS", "Description", value)
 
 
-@step(u'The geodetic datum must be "{coordinate_reference_name}"')
+@step('The geodetic datum must be "{coordinate_reference_name}"')
 def step_impl(context, coordinate_reference_name):
     if IfcStore.file.schema == "IFC2X3":
         for site in IfcStore.file.by_type("IfcSite"):
@@ -104,7 +104,7 @@ def step_impl(context, coordinate_reference_name):
     check_ifc4_geolocation("IfcProjectedCRS", "GeodeticDatum", coordinate_reference_name)
 
 
-@step(u'The vertical datum must be "{coordinate_reference_name}"')
+@step('The vertical datum must be "{coordinate_reference_name}"')
 def step_impl(context, coordinate_reference_name):
     if IfcStore.file.schema == "IFC2X3":
         for site in IfcStore.file.by_type("IfcSite"):
@@ -113,7 +113,7 @@ def step_impl(context, coordinate_reference_name):
     check_ifc4_geolocation("IfcProjectedCRS", "VerticalDatum", coordinate_reference_name)
 
 
-@step(u'The map projection must be "{coordinate_reference_name}"')
+@step('The map projection must be "{coordinate_reference_name}"')
 def step_impl(context, coordinate_reference_name):
     if IfcStore.file.schema == "IFC2X3":
         for site in IfcStore.file.by_type("IfcSite"):
@@ -122,7 +122,7 @@ def step_impl(context, coordinate_reference_name):
     check_ifc4_geolocation("IfcProjectedCRS", "MapProjection", coordinate_reference_name)
 
 
-@step(u'The map zone must be "{coordinate_reference_name}"')
+@step('The map zone must be "{coordinate_reference_name}"')
 def step_impl(context, coordinate_reference_name):
     if IfcStore.file.schema == "IFC2X3":
         for site in IfcStore.file.by_type("IfcSite"):
@@ -131,7 +131,7 @@ def step_impl(context, coordinate_reference_name):
     check_ifc4_geolocation("IfcProjectedCRS", "MapZone", coordinate_reference_name)
 
 
-@step(u'The map unit must be "{unit}"')
+@step('The map unit must be "{unit}"')
 def step_impl(context, unit):
     if IfcStore.file.schema == "IFC2X3":
         for site in IfcStore.file.by_type("IfcSite"):
@@ -148,7 +148,7 @@ def step_impl(context, unit):
     assert actual_value == unit, _('We expected a value of "{}" but instead got "{}"').format(unit, actual_value)
 
 
-@step(u"The project must have coordinate transformations to convert from local to global coordinates")
+@step("The project must have coordinate transformations to convert from local to global coordinates")
 def step_impl(context):
     if IfcStore.file.schema == "IFC2X3":
         for site in IfcStore.file.by_type("IfcSite"):
@@ -156,7 +156,7 @@ def step_impl(context):
     check_ifc4_geolocation("IfcMapConversion")
 
 
-@step(u'The eastings of the model must be offset by "{number}" to derive its global coordinates')
+@step('The eastings of the model must be offset by "{number}" to derive its global coordinates')
 def step_impl(context, number):
     number = util.assert_number(number)
     if IfcStore.file.schema == "IFC2X3":
@@ -166,7 +166,7 @@ def step_impl(context, number):
     check_ifc4_geolocation("IfcMapConversion", "Eastings", number)
 
 
-@step(u'The northings of the model must be offset by "{number}" to derive its global coordinates')
+@step('The northings of the model must be offset by "{number}" to derive its global coordinates')
 def step_impl(context, number):
     number = util.assert_number(number)
     if IfcStore.file.schema == "IFC2X3":
@@ -176,7 +176,7 @@ def step_impl(context, number):
     check_ifc4_geolocation("IfcMapConversion", "Northings", number)
 
 
-@step(u'The height of the model must be offset by "{number}" to derive its global coordinates')
+@step('The height of the model must be offset by "{number}" to derive its global coordinates')
 def step_impl(context, number):
     number = util.assert_number(number)
     if IfcStore.file.schema == "IFC2X3":
@@ -186,7 +186,7 @@ def step_impl(context, number):
     check_ifc4_geolocation("IfcMapConversion", "OrthogonalHeight", number)
 
 
-@step(u'The model must be rotated clockwise by "{number}" to derive its global coordinates')
+@step('The model must be rotated clockwise by "{number}" to derive its global coordinates')
 def step_impl(context, number):
     number = util.assert_number(number)
     if IfcStore.file.schema == "IFC2X3":
@@ -198,7 +198,7 @@ def step_impl(context, number):
     assert actual_value == value, _('We expected a value of "{}" but instead got "{}"').format(value, actual_value)
 
 
-@step(u'The model must be scaled along the horizontal axis by "{number}" to derive its global coordinates')
+@step('The model must be scaled along the horizontal axis by "{number}" to derive its global coordinates')
 def step_impl(context, number):
     number = util.assert_number(number)
     if IfcStore.file.schema == "IFC2X3":
@@ -208,7 +208,7 @@ def step_impl(context, number):
     check_ifc4_geolocation("IfcMapConversion", "Scale", number)
 
 
-@step(u'The model must be rotated clockwise by "{number}" for true north to point up')
+@step('The model must be rotated clockwise by "{number}" for true north to point up')
 def step_impl(context, number):
     number = util.assert_number(number)
     project = IfcStore.file.by_type("IfcProject")[0]
@@ -228,7 +228,7 @@ def step_impl(context, number):
     assert False, _("True north is not defined in the file")
 
 
-@step(u'The site "{guid}" has a longitude of "{number}"')
+@step('The site "{guid}" has a longitude of "{number}"')
 def step_impl(context, guid, number):
     number = util.assert_number(number)
     site = util.assert_guid(IfcStore.file, guid)
@@ -238,7 +238,7 @@ def step_impl(context, guid, number):
     util.assert_attribute(site, "RefLongitude", number)
 
 
-@step(u'The site "{guid}" has a latitude of "{number}"')
+@step('The site "{guid}" has a latitude of "{number}"')
 def step_impl(context, guid, number):
     number = util.assert_number(number)
     site = util.assert_guid(IfcStore.file, guid)
@@ -248,7 +248,7 @@ def step_impl(context, guid, number):
     util.assert_attribute(site, "RefLatitude", number)
 
 
-@step(u'The site "{guid}" has an elevation of "{number}"')
+@step('The site "{guid}" has an elevation of "{number}"')
 def step_impl(context, guid, number):
     number = util.assert_number(number)
     site = util.assert_guid(IfcStore.file, guid)
@@ -256,7 +256,7 @@ def step_impl(context, guid, number):
     util.assert_attribute(site, "RefElevation", number)
 
 
-@step(u'The site "{guid}" must be coincident with the project origin')
+@step('The site "{guid}" must be coincident with the project origin')
 def step_impl(context, guid):
     site = util.assert_guid(IfcStore.file, guid)
     util.assert_type(site, "IfcSite")

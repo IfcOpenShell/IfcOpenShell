@@ -16,7 +16,13 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from fractions import Fraction
 from math import pi
+from typing import Iterable, Any, Union, Literal, Optional
+
+import ifcopenshell
+import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
+import ifcopenshell.api.unit
 
 prefixes = {
     "EXA": 1e18,
@@ -213,11 +219,9 @@ si_conversions = {
     "fahrenheit": 1.8,
 }
 
-
 si_offsets = {
     "fahrenheit": -459.67,
 }
-
 
 imperial_types = {
     "thou": "LENGTHUNIT",
@@ -259,7 +263,6 @@ imperial_types = {
     "fahrenheit": "THERMODYNAMICTEMPERATUREUNIT",
 }
 
-
 prefix_symbols = {
     "EXA": "E",
     "PETA": "P",
@@ -294,7 +297,64 @@ unit_symbols = {
     "square foot": "ft2",
     "square yard": "yd2",
     "square mile": "mi2",
+    # conversion based units
+    "thou": "th",
+    "inch": "in",
+    "foot": "ft",
+    "yard": "yd",
+    "mile": "mi",
+    "square thou": "th2",
+    "square inch": "in2",
+    "square foot": "ft2",
+    "square yard": "yd2",
+    "acre": "ac",
+    "square mile": "mi2",
+    "cubic thou": "th3",
+    "cubic inch": "in3",
+    "cubic foot": "ft3",
+    "cubic yard": "yd3",
+    "cubic mile": "mi3",
+    "litre": "L",
+    "fluid ounce UK": "fl oz",
+    "fluid ounce US": "fl oz",
+    "pint UK": "pt",
+    "pint US": "pt",
+    "gallon UK": "gal",
+    "gallon US": "gal",
+    "degree": "°",
+    "ounce": "oz",
+    "pound": "lb",
+    "ton UK": "ton",
+    "ton US": "ton",
+    "lbf": "lbf",
+    "kip": "kip",
+    "psi": "psi",
+    "ksi": "ksi",
+    "minute": "min",
+    "hour": "hr",
+    "day": "day",
+    "btu": "btu",
+    "fahrenheit": "°F",
 }
+
+QUANTITY_CLASS = Literal[
+    "IfcQuantityCount",
+    "IfcQuantityNumber",
+    "IfcQuantityLength",
+    "IfcQuantityArea",
+    "IfcQuantityVolume",
+    "IfcQuantityWeight",
+    "IfcQuantityTime",
+    "IfcQuantityCount",
+]
+
+MEASURE_CLASS = Literal[
+    "IfcNumericMeasure",
+    "IfcLengthMeasure",
+    "IfcAreaMeasure",
+    "IfcVolumeMeasure",
+    "IfcMassMeasure",
+]
 
 
 def get_prefix(text):
@@ -313,11 +373,30 @@ def get_prefix_multiplier(text):
     return 1
 
 
-def get_unit_name(text):
+def get_unit_name(text: str) -> Union[str, None]:
+    """Get unit name from str, if unit is in SI."""
     text = text.upper().replace("METER", "METRE")
     for name in unit_names:
         if name.replace("_", " ") in text:
             return name
+
+
+def get_unit_name_universal(text: str) -> Union[str, None]:
+    """Get unit name from str, supports both SI and imperial system.
+
+    Can be used to provide units for `convert()`"""
+    text = text.upper().replace("METER", "METRE")
+    for name in unit_names:
+        if name.replace("_", " ") in text:
+            return name
+    for name in imperial_types:
+        if name.upper() in text:
+            return name
+
+
+def get_full_unit_name(unit: ifcopenshell.entity_instance) -> str:
+    prefix = getattr(unit, "Prefix", None) or ""
+    return prefix + unit.Name.upper()
 
 
 def get_si_dimensions(name):
@@ -328,32 +407,44 @@ def get_named_dimensions(name):
     return named_dimensions.get(name, (0, 0, 0, 0, 0, 0, 0))
 
 
-def get_unit_assignment(ifc_file):
+def get_unit_assignment(ifc_file: ifcopenshell.file) -> Union[ifcopenshell.entity_instance, None]:
     unit_assignments = ifc_file.by_type("IfcUnitAssignment")
     if unit_assignments:
         return unit_assignments[0]
 
 
-def get_project_unit(ifc_file, unit_type):
+def get_project_unit(ifc_file: ifcopenshell.file, unit_type: str) -> Union[ifcopenshell.entity_instance, None]:
     """Get the default project unit of a particular unit type
 
     :param ifc_file: The IFC file.
-    :type ifc_file: ifcopenshell.file.file
     :param unit_type: The type of unit, taken from the list of IFC unit types,
         such as "LENGTHUNIT".
-    :type unit_type: str
-    :return: The IFC unit entity, or nothing if there is no default project unit
-        defined.
-    :rtype: ifcopenshell.entity_instance,None
+    :return: The IFC unit entity, or nothing if there is no default project
+        unit defined.
     """
-    unit_assignment = get_unit_assignment(ifc_file)
-    if unit_assignment:
+    if unit_assignment := get_unit_assignment(ifc_file):
         for unit in unit_assignment.Units or []:
             if getattr(unit, "UnitType", None) == unit_type:
                 return unit
 
 
-def get_property_unit(prop, ifc_file):
+def get_property_unit(
+    prop: ifcopenshell.entity_instance, ifc_file: ifcopenshell.file
+) -> Union[ifcopenshell.entity_instance, None]:
+    """Gets the unit definition of a property or quantity
+
+    Properties and quantities in psets and qtos can be associated with a unit.
+    This unit may be defined at the property itself explicitly, or if not
+    specified, fallback to the project default.
+
+    :param prop: The property instance. You can fetch this via the instance ID
+        if doing :func:`ifcopenshell.util.element.get_psets` with
+        ``verbose=True``.
+    :param ifc_file: The IFC file being used. This is necessary to check
+        default project units.
+    :return: The IFC unit entity, or nothing if there is no default project
+        unit defined.
+    """
     unit = getattr(prop, "Unit", None)
     if unit:
         return unit
@@ -361,12 +452,18 @@ def get_property_unit(prop, ifc_file):
     if not unit_assignment:
         return
     entity = prop.wrapped_data.declaration().as_entity()
+    measure_class = None
     if prop.is_a("IfcPhysicalSimpleQuantity"):
         measure_class = entity.attribute_by_index(3).type_of_attribute().declared_type().name()
     elif prop.is_a("IfcPropertySingleValue") and prop.NominalValue:
         measure_class = prop.NominalValue.is_a()
-    elif prop.is_a("IfcPropertyEnumeratedValue") and prop.EnumerationValues:
-        measure_class = prop.EnumerationValues[0].is_a()
+    elif prop.is_a("IfcPropertyEnumeratedValue"):
+        if prop.EnumerationReference:
+            unit = getattr(prop.EnumerationReference, "Unit", None)
+            if unit:
+                return unit
+        if prop.EnumerationValues:
+            measure_class = prop.EnumerationValues[0].is_a()
     elif prop.is_a("IfcPropertyListValue") and prop.ListValues:
         measure_class = prop.ListValues[0].is_a()
     elif prop.is_a("IfcPropertyBoundedValue"):
@@ -392,20 +489,46 @@ def get_property_unit(prop, ifc_file):
             else:
                 table_units[f"{attribute}Unit"] = None
         return table_units
+    if measure_class is None:
+        return
     unit_type = get_measure_unit_type(measure_class)
     units = [u for u in unit_assignment.Units if getattr(u, "UnitType", None) == unit_type]
     if units:
         return units[0]
 
 
-def get_unit_measure_class(unit_type):
+def get_unit_measure_class(unit_type: str) -> MEASURE_CLASS:
+    """Get the IFC measure class for a unit type.
+
+    IFC has specific classes used to measure different units. An example of an
+    IFC measure class is ``IfcLengthMeasure``. An example of the correlating
+    unit type (i.e. the IfcUnitEnum) is ``LENGTHUNIT``.
+
+    The inverse function of this is :func:`get_measure_unit_type`
+
+    :param unit_type: A string chosen from IfcUnitEnum, such as LENGTHUNIT
+    """
     if unit_type == "USERDEFINED":
         # See https://github.com/buildingSMART/IFC4.3.x-development/issues/71
         return "IfcNumericMeasure"
     return "Ifc" + unit_type[0:-4].lower().capitalize() + "Measure"
 
 
-def get_measure_unit_type(measure_class):
+def get_measure_unit_type(measure_class: MEASURE_CLASS) -> str:
+    """Get the unit type of an IFC measure class
+
+    IFC has different unit types which can be associated with units (e.g. SI
+    units, imperial units, derived units, etc). An example of a unit type (i.e.
+    an IfcUnitEnum) is ``LENGTHUNIT``. An example of the correlating measure
+    class used to store length data is ``IfcLengthMeasure``.
+
+    The inverse fucntion of this is :func:`get_unit_measure_class`
+
+    :param measure_class: The measure class, such as ``IfcLengthMeasure``. If
+        you have an ``IfcPropertySingleValue``, you can get this using
+        ``prop.NominalValue.is_a()``.
+    :return: The unit type, as an uppercase value of IfcUnitEnum.
+    """
     if measure_class == "IfcNumericMeasure":
         # See https://github.com/buildingSMART/IFC4.3.x-development/issues/71
         return "USERDEFINED"
@@ -414,7 +537,7 @@ def get_measure_unit_type(measure_class):
     return measure_class.upper() + "UNIT"
 
 
-def get_symbol_measure_class(symbol):
+def get_symbol_measure_class(symbol: Optional[str] = None) -> MEASURE_CLASS:
     # Dumb, but everybody gets it, unlike regex golf
     if not symbol:
         return "IfcNumericMeasure"
@@ -432,7 +555,7 @@ def get_symbol_measure_class(symbol):
     return "IfcNumericMeasure"
 
 
-def get_symbol_quantity_class(symbol):
+def get_symbol_quantity_class(symbol: Optional[str] = None) -> QUANTITY_CLASS:
     # Dumb, but everybody gets it, unlike regex golf
     if not symbol:
         return "IfcQuantityCount"
@@ -450,32 +573,30 @@ def get_symbol_quantity_class(symbol):
     return "IfcQuantityCount"
 
 
-def get_unit_symbol(unit):
+def get_unit_symbol(unit: ifcopenshell.entity_instance) -> str:
     symbol = ""
     if unit.is_a("IfcSIUnit"):
         symbol += prefix_symbols.get(unit.Prefix, "")
     symbol += unit_symbols.get(unit.Name.replace("METER", "METRE"), "?")
+    if unit.is_a("IfcContextDependentUnit") and unit.UnitType == "USERDEFINED":
+        symbol = unit.Name
     return symbol
 
 
-def convert_unit(value, from_unit, to_unit):
+def convert_unit(value: float, from_unit: ifcopenshell.entity_instance, to_unit: ifcopenshell.entity_instance) -> float:
     """Convert from one unit to another unit
 
     :param value: The numeric value you want to convert
-    :type value: float
     :param from_unit: The IfcNamedUnit to confirm from.
-    :type from_unit: ifcopenshell.entity_instance.entity_instance
     :param to_unit: The IfcNamedUnit to confirm from.
-    :type to_unit: ifcopenshell.entity_instance.entity_instance
     :return: The converted value.
-    :rtype: float
     """
     return convert(
         value, getattr(from_unit, "Prefix", None), from_unit.Name, getattr(to_unit, "Prefix", None), to_unit.Name
     )
 
 
-def convert(value, from_prefix, from_unit, to_prefix, to_unit):
+def convert(value: float, from_prefix: Optional[str], from_unit: str, to_prefix: Optional[str], to_unit: str) -> float:
     """Converts between length, area, and volume units
 
     In this case, you manually specify the names and (optionally) prefixes to
@@ -483,20 +604,14 @@ def convert(value, from_prefix, from_unit, to_prefix, to_unit):
     already available as IFC entities, consider using convert_unit() instead.
 
     :param value: The numeric value you want to convert
-    :type value: float
-    :param from_prefix: A prefix from IfcSIPrefix. Can be None.
-    :type from_prefix: str,optional
+    :param from_prefix: A prefix from IfcSIPrefix. Can be None
     :param from_unit: IfcSIUnitName or IfcConversionBasedUnit.Name
-    :type from_unit: str
-    :param to_prefix: A prefix from IfcSIPrefix. Can be None.
-    :type to_prefix: str,optional
+    :param to_prefix: A prefix from IfcSIPrefix. Can be None
     :param to_unit: IfcSIUnitName or IfcConversionBasedUnit.Name
-    :type to_unit: str
     :return: The converted value.
-    :rtype: float
     """
-    if from_unit in si_conversions:
-        value *= si_conversions[from_unit]
+    if from_unit.lower() in si_conversions:
+        value *= si_conversions[from_unit.lower()]
     elif from_prefix:
         value *= get_prefix_multiplier(from_prefix)
         if "SQUARE" in from_unit:
@@ -504,8 +619,8 @@ def convert(value, from_prefix, from_unit, to_prefix, to_unit):
         elif "CUBIC" in from_unit:
             value *= get_prefix_multiplier(from_prefix)
             value *= get_prefix_multiplier(from_prefix)
-    if to_unit in si_conversions:
-        return value * (1 / si_conversions[to_unit])
+    if to_unit.lower() in si_conversions:
+        return value * (1 / si_conversions[to_unit.lower()])
     elif to_prefix:
         value *= 1 / get_prefix_multiplier(to_prefix)
         if "SQUARE" in from_unit:
@@ -516,8 +631,8 @@ def convert(value, from_prefix, from_unit, to_prefix, to_unit):
     return value
 
 
-def calculate_unit_scale(file):
-    """Returns a unit scale factor to convert to and from IFC project length units and SI meters
+def calculate_unit_scale(ifc_file: ifcopenshell.file, unit_type: str = "LENGTHUNIT") -> float:
+    """Returns a unit scale factor to convert to and from IFC project units and SI units.
 
     Example:
 
@@ -526,15 +641,16 @@ def calculate_unit_scale(file):
         ifc_project_length * unit_scale = si_meters
         si_meters / unit_scale = ifc_project_length
 
+    :param ifc_file: The IFC file.
+    :param unit_type: The type of SI unit, defaults to "LENGTHUNIT"
     :returns: The scale factor
-    :rtype: float
     """
-    if not file.by_type("IfcUnitAssignment"):
+    if not ifc_file.by_type("IfcUnitAssignment"):
         return 1
-    units = file.by_type("IfcUnitAssignment")[0]
+    units = ifc_file.by_type("IfcUnitAssignment")[0]
     unit_scale = 1
     for unit in units.Units:
-        if not hasattr(unit, "UnitType") or unit.UnitType != "LENGTHUNIT":
+        if not hasattr(unit, "UnitType") or unit.UnitType != unit_type:
             continue
         while unit.is_a("IfcConversionBasedUnit"):
             unit_scale *= unit.ConversionFactor.ValueComponent.wrappedValue
@@ -542,3 +658,194 @@ def calculate_unit_scale(file):
         if unit.is_a("IfcSIUnit"):
             unit_scale *= get_prefix_multiplier(unit.Prefix)
     return unit_scale
+
+
+def format_length(
+    value: float,
+    precision: float,
+    decimal_places: int = 2,
+    suppress_zero_inches=True,
+    unit_system: Literal["metric", "imperial"] = "imperial",
+    input_unit: Literal["foot", "inch"] = "foot",
+    output_unit: Literal["foot", "inch"] = "foot",
+) -> str:
+    """Formats a length for readability and imperial formatting
+
+    :param value: The value in meters if metric, or either decimal feet or
+        inches if imperial depending on input_unit.
+    :param precision: How precise the format should be. I.e. round to nearest.
+        For imperial, it is 1/Nth. E.g. 12 means to the nearest 1/12th of an
+        inch.
+    :param decimal_places: How many decimal places to display. Defaults to 2.
+    :param suppress_zero_inches: If imperial, whether or not to supress the
+        inches if the inches is zero.
+    :param unit_system: Choose whether your value is "metric" or "imperial"
+    :param input_unit: If imperial, specify whether your value is "foot" or
+        "inch".
+    :param output_unit: If imperial, specify whether your value is "foot" to
+        format as both feet and inches, or "inch" if only inches should be
+        shown.
+    :returns: The formatted string, such as 1' - 5 1/2".
+    """
+    if unit_system == "imperial":
+        if input_unit == "foot":
+            feet = int(value)
+            inches = (value - feet) * 12
+        elif input_unit == "inch":
+            inches = value % 12
+            feet = int(round((value - inches) / 12))
+
+        # Round to the nearest 1/N
+        nearest = round(inches * precision)
+
+        # Create a fraction based on the rounded value and the precision
+        frac = Fraction(nearest, precision)
+
+        # If fraction is a whole number, format it accordingly
+        if frac.denominator == 1:
+            if suppress_zero_inches and frac.numerator == 0:
+                if output_unit == "foot":
+                    return f"{feet}'"
+                return f'{feet * 12}"'
+            if output_unit == "foot":
+                return f"{feet}' - {frac.numerator}\""
+            return f'{(feet * 12) + frac.numerator}"'
+        if frac.numerator > frac.denominator:
+            remainder = frac.numerator % frac.denominator
+            whole = int((frac.numerator - remainder) / frac.denominator)
+            if output_unit == "foot":
+                return f"{feet}' - {whole} {remainder}/{frac.denominator}\""
+            return f'{(feet * 12) + whole} {remainder}/{frac.denominator}"'
+        if output_unit == "foot":
+            return f"{feet}' - {frac.numerator}/{frac.denominator}\""
+        return f'{feet * 12} {frac.numerator}/{frac.denominator}"'
+    elif unit_system == "metric":
+        rounded_val = round(value / precision) * precision
+        return f"{rounded_val:.{decimal_places}f}"
+
+
+def is_attr_type(
+    content_type: ifcopenshell_wrapper.parameter_type,
+    ifc_unit_type_name: str,
+    include_select_types: bool = True,
+) -> Union[ifcopenshell_wrapper.type_declaration, None]:
+    cur_decl = content_type
+
+    if hasattr(cur_decl, "name") and cur_decl.name() == ifc_unit_type_name:
+        return cur_decl
+
+    if include_select_types:
+        if hasattr(cur_decl, "select_list"):
+            for select_item in cur_decl.select_list():
+                if is_attr_type(select_item, ifc_unit_type_name):
+                    return select_item
+
+    if hasattr(cur_decl, "declared_type"):
+        return is_attr_type(cur_decl.declared_type(), ifc_unit_type_name, include_select_types)
+
+    if isinstance(cur_decl, ifcopenshell_wrapper.aggregation_type):
+        # support aggregate of aggregates, as in IfcCartesianPointList3D.CoordList
+        def get_declared_type_from_aggregate(cur_decl):
+            cur_decl = cur_decl.type_of_element()
+            if not isinstance(cur_decl, ifcopenshell_wrapper.aggregation_type):
+                return cur_decl.declared_type()
+            return get_declared_type_from_aggregate(cur_decl)
+
+        cur_decl = get_declared_type_from_aggregate(cur_decl)
+        return is_attr_type(cur_decl, ifc_unit_type_name, include_select_types)
+
+    return None
+
+
+def iter_element_and_attributes_per_type(
+    ifc_file: ifcopenshell.file, attr_type_name: str
+) -> Iterable[tuple[ifcopenshell.entity_instance, ifcopenshell_wrapper.attribute, Any]]:
+    schema: ifcopenshell_wrapper.schema_definition = ifcopenshell_wrapper.schema_by_name(ifc_file.schema_identifier)
+
+    for element in ifc_file:
+        entity = schema.declaration_by_name(element.is_a())
+        attrs = entity.all_attributes()
+        for attr, val, is_derived in zip(attrs, list(element), entity.derived()):
+            if is_derived:
+                continue
+
+            # Get all methods and attributes of the element
+            attr_type = attr.type_of_attribute()
+            base_type = is_attr_type(attr_type, attr_type_name)
+            if base_type is None:
+                continue
+
+            if val is None:
+                continue
+
+            if isinstance(val, ifcopenshell.entity_instance) and not val.is_a(attr_type_name):
+                continue
+
+            yield element, attr, val
+
+
+def convert_file_length_units(ifc_file: ifcopenshell.file, target_units: str = "METER") -> ifcopenshell.file:
+    """Converts all units in an IFC file to the specified target units. Returns a new file."""
+    import ifcopenshell.util.element
+    import ifcopenshell.util.geolocation
+    import ifcopenshell.api.georeference
+
+    prefix = get_prefix(target_units)
+    si_unit = get_unit_name(target_units)
+
+    # Copy all elements from the original file to the patched file
+    file_patched = ifcopenshell.file.from_string(ifc_file.wrapped_data.to_string())
+
+    old_length = get_project_unit(file_patched, "LENGTHUNIT")
+    if si_unit:
+        new_length = ifcopenshell.api.unit.add_si_unit(file_patched, unit_type="LENGTHUNIT", prefix=prefix)
+    else:
+        target_units = target_units.lower()
+        if imperial_types.get(target_units) != "LENGTHUNIT":
+            raise Exception(
+                f'Couldn\'t identify target units "{target_units}". '
+                'The method supports singular unit names like "CENTIMETER", "METER", "FOOT", etc.'
+            )
+        new_length = ifcopenshell.api.unit.add_conversion_based_unit(file_patched, name=target_units)
+
+    # support tuple of tuples, as in IfcCartesianPointList3D.CoordList
+    def convert_value(value):
+        if not isinstance(value, tuple):
+            return convert_unit(value, old_length, new_length)
+        return tuple(convert_value(v) for v in value)
+
+    # Traverse all elements and their nested attributes in the file and convert them
+    for element, attr, val in iter_element_and_attributes_per_type(file_patched, "IfcLengthMeasure"):
+        if isinstance(val, ifcopenshell.entity_instance):
+            new_value = convert_value(val.wrappedValue)
+            getattr(element, attr.name()).wrappedValue = new_value
+        else:
+            new_value = convert_value(val)
+            setattr(element, attr.name(), new_value)
+
+    has_map_unit = False
+    if (
+        ifc_file.schema == "IFC2X3"
+        and (crs := ifcopenshell.util.element.get_pset(ifc_file.by_type("IfcProject")[0], name="ePSet_ProjectedCRS"))
+        and crs.get("MapUnit")
+    ) or (ifc_file.schema != "IFC2X3" and (crs := ifc_file.by_type("IfcProjectedCRS")) and crs[0].MapUnit):
+        has_map_unit = True
+
+    if has_map_unit:
+        parameters = ifcopenshell.util.geolocation.get_helmert_transformation_parameters(ifc_file)
+        ifcopenshell.api.georeference.edit_georeferencing(
+            file_patched,
+            coordinate_operation={
+                "Eastings": parameters.e,
+                "Northings": parameters.n,
+                "OrthogonalHeight": parameters.h,
+                "Scale": parameters.scale / convert_value(1),
+            },
+        )
+
+    unit_assignment = get_unit_assignment(file_patched)
+    unit_assignment.Units = [new_length, *(u for u in unit_assignment.Units if u.UnitType != new_length.UnitType)]
+    if not file_patched.get_total_inverses(old_length):
+        ifcopenshell.util.element.remove_deep2(file_patched, old_length)
+
+    return file_patched

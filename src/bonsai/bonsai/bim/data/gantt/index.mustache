@@ -1,0 +1,55 @@
+<link href="jsgantt.css" rel="stylesheet" type="text/css"/>
+<link href="../../module/sequence/gantt/main.css" rel="stylesheet" type="text/css"/>
+<script src="jsgantt.js" type="text/javascript"></script>
+<script type="text/javascript" src="../../module/sequence/gantt/index.js"></script>
+<script>
+var json_data = `{{{json_data}}}`;
+</script>
+
+<div id="options" class="no-print">
+  <h4>Choose a language:
+  <select id="lang" class="sweet_button" onchange="set_language(event)">
+    <option value='cn'>Chinese (cn)</option>
+    <option value='cs'>Czech (cs)</option>
+    <option value='nl'>Dutch (Standard)</option>
+    <option value='en' selected>English (en)</option>
+    <option value='fr'>French (fr)</option>
+    <option value='de'>German (de)</option>
+    <option value='hu'>Hungarian (hu)</option>
+    <option value='id'>Indonesian (id)</option>
+    <option value='it'>Italian (it)</option>
+    <option value='ja'>Japanese (ja)</option>
+    <option value='pt'>Portuguese (pt)</option>
+    <option value='ru'>Russian (ru)</option>
+    <option value='es'>Spanish (es)</option>
+    <option value='sv'>Swedish (sv)</option>
+    <option value='tr'>Turkish (tr)</option>
+  </select>
+  </h4>
+
+  <br>
+</div>
+<div class="top-right no-print" id="print_options">
+  <select class="sweet_button" id="print_page_size">
+    <option value="210,297">A4 Portrait</option>
+    <option value="297,210">A4 Landscape</option>
+    <option value="297,420">A3 Portrait</option>
+    <option value="420,297">A3 Landscape</option>
+    <option value="420,594">A2 Portrait</option>
+    <option value="594,420">A2 Landscape</option>
+    <option value="594,841">A1 Portrait</option>
+    <option value="841,594">A1 Landscape</option>
+    <option value="841,1189">A0 Portrait</option>
+    <option value="1189,841">A0 Landscape</option>
+  </select>
+</div>
+
+<div id="schedule-data" class="no-print"></div>
+<div id="schedule-header" style=""></div>
+<div style="position:relative" class="gantt" id="GanttChartDIV"></div>
+
+<script>
+var data = `{{{data}}}`;
+setupPage(data);
+create_gantt_chart(atob(json_data))
+</script>

@@ -1,0 +1,3103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<BuildingInformation>
+  <Classification>
+    <System>
+      <Name>UniFormat</Name>
+      <EditionVersion>II (E1557-97)</EditionVersion>
+      <EditionDate>
+        <Year>2017</Year>
+        <Month>3</Month>
+        <Day>20</Day>
+      </EditionDate>
+      <Description>Construction project management using ASTM UNIFORMAT II improves building investment performance with proven standardized value engineering methods. 
+The UNIFORMAT II classification enables a seamless link of all phases of a building life cycle - from facilities development through facilities management.</Description>
+      <Source>http://www.uniformat.com/</Source>
+      <Items>
+        <Item>
+          <ID>A</ID>
+          <Name>SUBSTRUCTURE    </Name>
+          <Description/>
+          <Availability>ModelElement</Availability>
+          <Children>
+            <Item>
+              <ID>A10</ID>
+              <Name>Foundations    </Name>
+              <Description/>
+              <Availability>ModelElement</Availability>
+              <Children>
+                <Item>
+                  <ID>A1010</ID>
+                  <Name>Standard Foundations   </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>A1011</ID>
+                      <Name>Wall Foundations   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>A1012</ID>
+                      <Name>Column Foundations &amp; Pile Caps</Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>A1013</ID>
+                      <Name>Perimeter Drainage &amp; Insulation </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>A1020</ID>
+                  <Name>Special Foundations   </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>A1021</ID>
+                      <Name>Pile Foundations   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>A1022</ID>
+                      <Name>Grade Beams   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>A1023</ID>
+                      <Name>Caissons    </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>A1024</ID>
+                      <Name>Underprinting    </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>A1025</ID>
+                      <Name>Dewatering    </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>A1026</ID>
+                      <Name>Raft Foundations   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>A1027</ID>
+                      <Name>Pressure Injected Grouting  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>A1029</ID>
+                      <Name>Other Special Conditions  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>A1030</ID>
+                  <Name>Slab on Grade  </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>A1031</ID>
+                      <Name>Standard Slab on Grade </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>A1032</ID>
+                      <Name>Structural Slab on Grade </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>A1033</ID>
+                      <Name>Inclined Slab on Grade </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>A1034</ID>
+                      <Name>Trenches, Pits &amp; Bases </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>A1035</ID>
+                      <Name>Under-Slab Drainage &amp; Insulation </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+              </Children>
+            </Item>
+            <Item>
+              <ID>A20</ID>
+              <Name>Basement Construction   </Name>
+              <Description/>
+              <Availability>ModelElement</Availability>
+              <Children>
+                <Item>
+                  <ID>A2010</ID>
+                  <Name>Basement Excavation   </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>A2011</ID>
+                      <Name>Excavation for Basements  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>A2012</ID>
+                      <Name>Structure Back Fill &amp; Compaction</Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>A2013</ID>
+                      <Name>Shoring    </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>A2020</ID>
+                  <Name>Basement Walls   </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>A2021</ID>
+                      <Name>Basement Wall Construction  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>A2022</ID>
+                      <Name>Moisture Protection   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>A2023</ID>
+                      <Name>Basement Wall Insulation  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>A2024</ID>
+                      <Name>Interior Skin   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+              </Children>
+            </Item>
+          </Children>
+        </Item>
+        <Item>
+          <ID>B</ID>
+          <Name>SHELL    </Name>
+          <Description/>
+          <Availability>ModelElement</Availability>
+          <Children>
+            <Item>
+              <ID>B10</ID>
+              <Name>Superstructure    </Name>
+              <Description/>
+              <Availability>ModelElement</Availability>
+              <Children>
+                <Item>
+                  <ID>B1010</ID>
+                  <Name>Floor Construction   </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>B1011</ID>
+                      <Name>Suspended Basement Floors Construction </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>B1012</ID>
+                      <Name>Upper Floors Construction  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>B1013</ID>
+                      <Name>Balcony Floors Construction  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>B1014</ID>
+                      <Name>Ramps    </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>B1015</ID>
+                      <Name>Exterior Stairs and Fire Escapes</Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>B1016</ID>
+                      <Name>Floor Raceway Systems  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>B1019</ID>
+                      <Name>Other Floor Construction  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>B1020</ID>
+                  <Name>Roof Construction   </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>B1021</ID>
+                      <Name>Flat Roof Construction  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>B1022</ID>
+                      <Name>Pitched Roof Construction  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>B1023</ID>
+                      <Name>Canopies    </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>B1029</ID>
+                      <Name>Other Roof Systems  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+              </Children>
+            </Item>
+            <Item>
+              <ID>B20</ID>
+              <Name>Exterior Enclosure   </Name>
+              <Description/>
+              <Availability>ModelElement</Availability>
+              <Children>
+                <Item>
+                  <ID>B2010</ID>
+                  <Name>Exterior Walls   </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>B2011</ID>
+                      <Name>Exterior Wall Construction  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>B2012</ID>
+                      <Name>Parapets    </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>B2013</ID>
+                      <Name>Exterior Louvers, Screens, and Fencing</Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>B2014</ID>
+                      <Name>Exterior Sun Control Devices </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>B2015</ID>
+                      <Name>Balcony Walls &amp; Handrails </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>B2016</ID>
+                      <Name>Exterior Soffits   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>B2020</ID>
+                  <Name>Exterior Windows   </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>B2021</ID>
+                      <Name>Windows    </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>B2022</ID>
+                      <Name>Curtain Walls   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>B2023</ID>
+                      <Name>Storefronts    </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>B2030</ID>
+                  <Name>Exterior Doors   </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>B2031</ID>
+                      <Name>Glazed Doors &amp; Entrances </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>B2032</ID>
+                      <Name>Solid Exterior Doors  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>B2033</ID>
+                      <Name>Revolving Doors   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>B2034</ID>
+                      <Name>Overhead Doors   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>B2039</ID>
+                      <Name>Other Doors &amp; Entrances </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+              </Children>
+            </Item>
+            <Item>
+              <ID>B30</ID>
+              <Name>Roofing    </Name>
+              <Description/>
+              <Availability>ModelElement</Availability>
+              <Children>
+                <Item>
+                  <ID>B3010</ID>
+                  <Name>Roof Coverings   </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>B3011</ID>
+                      <Name>Roof Finishes   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>B3012</ID>
+                      <Name>Traffic Toppings &amp; Paving Membranes</Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>B3013</ID>
+                      <Name>Roof Insulation &amp; Fill </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>B3014</ID>
+                      <Name>Flashings &amp; Trim  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>B3015</ID>
+                      <Name>Roof Eaves and Soffits </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>B3016</ID>
+                      <Name>Gutters and Downspouts  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>B3020</ID>
+                  <Name>Roof Openings   </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>B3021</ID>
+                      <Name>Glazed Roof Openings  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>B3022</ID>
+                      <Name>Roof Hatches   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>B3023</ID>
+                      <Name>Gravity Roof Ventilators  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+              </Children>
+            </Item>
+          </Children>
+        </Item>
+        <Item>
+          <ID>C</ID>
+          <Name>INTERIORS    </Name>
+          <Description/>
+          <Availability>ModelElement</Availability>
+          <Children>
+            <Item>
+              <ID>C10</ID>
+              <Name>Interior Construction   </Name>
+              <Description/>
+              <Availability>ModelElement</Availability>
+              <Children>
+                <Item>
+                  <ID>C1010</ID>
+                  <Name>Partitions    </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>C1011</ID>
+                      <Name>Fixed Partitions   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>C1012</ID>
+                      <Name>Demountable Partitions   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>C1013</ID>
+                      <Name>Retractable Partitions   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>C1014</ID>
+                      <Name>Site Built Toilet Partitions </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>C1015</ID>
+                      <Name>Site Built Compartments Cubicles </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>C1016</ID>
+                      <Name>Interior Balustrades and Screens </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>C1017</ID>
+                      <Name>Interior Windows &amp; Storefronts </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>C1020</ID>
+                  <Name>Interior Doors   </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>C1021</ID>
+                      <Name>Interior Doors   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>C1022</ID>
+                      <Name>Interior Door Frames  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>C1023</ID>
+                      <Name>Interior Door Hardware  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>C1024</ID>
+                      <Name>Interior Door Wall Opening Elements</Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>C1025</ID>
+                      <Name>Interior Door Sidelights &amp; Transoms</Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>C1026</ID>
+                      <Name>Interior Hatches &amp; Access Doors</Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>C1027</ID>
+                      <Name>Door Painting &amp; Decoration </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>C1030</ID>
+                  <Name>Fittings    </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>C1031</ID>
+                      <Name>Fabricated Toilet Partitions  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>C1032</ID>
+                      <Name>Fabricated Compartments &amp; Cubicles </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>C1033</ID>
+                      <Name>Storage Shelving and Lockers </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>C1034</ID>
+                      <Name>Ornamental Metals and Handrails </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>C1035</ID>
+                      <Name>Identifying Devices   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>C1036</ID>
+                      <Name>Closet Specialties   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>C1037</ID>
+                      <Name>General Fittings &amp; Misc. Metals</Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+              </Children>
+            </Item>
+            <Item>
+              <ID>C20</ID>
+              <Name>Stairs    </Name>
+              <Description/>
+              <Availability>ModelElement</Availability>
+              <Children>
+                <Item>
+                  <ID>C2010</ID>
+                  <Name>Stair Construction   </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>C2011</ID>
+                      <Name>Regular Stairs   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>C2012</ID>
+                      <Name>Curved Stairs   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>C2013</ID>
+                      <Name>Spiral Stairs   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>C2014</ID>
+                      <Name>Stair Handrails and Balustrades </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>C2020</ID>
+                  <Name>Stair Finishes   </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>C2021</ID>
+                      <Name>Stair, Tread, and Landing Finishes</Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>C2022</ID>
+                      <Name>Stair Soffit Finishes  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>C2023</ID>
+                      <Name>Stair Handrail &amp; Balustrade Finishes</Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+              </Children>
+            </Item>
+            <Item>
+              <ID>C30</ID>
+              <Name>Interior Finishes   </Name>
+              <Description/>
+              <Availability>ModelElement</Availability>
+              <Children>
+                <Item>
+                  <ID>C3010</ID>
+                  <Name>Wall Finishes   </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>C3011</ID>
+                      <Name>Wall Finishes to Inside ExteriorWalls</Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>C3012</ID>
+                      <Name>Wall Finishes to Interior Walls</Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>C3013</ID>
+                      <Name>Column Finishes   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>C3020</ID>
+                  <Name>Floor Finishes   </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>C3021</ID>
+                      <Name>Floor Toppings   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>C3022</ID>
+                      <Name>Traffic Membranes   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>C3023</ID>
+                      <Name>Hardeners and Sealers  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>C3024</ID>
+                      <Name>Flooring    </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>C3025</ID>
+                      <Name>Carpeting    </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>C3026</ID>
+                      <Name>Bases, Curbs and Trim </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>C3027</ID>
+                      <Name>Access Pedastal Flooring  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>C3030</ID>
+                  <Name>Ceiling Finishes   </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>C3031</ID>
+                      <Name>Ceiling Finishes   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>C3032</ID>
+                      <Name>Suspended Ceilings   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>C3033</ID>
+                      <Name>Other Ceilings   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+              </Children>
+            </Item>
+          </Children>
+        </Item>
+        <Item>
+          <ID>D</ID>
+          <Name>SERVICES    </Name>
+          <Description/>
+          <Availability>ModelElement</Availability>
+          <Children>
+            <Item>
+              <ID>D10</ID>
+              <Name>Conveying    </Name>
+              <Description/>
+              <Availability>ModelElement</Availability>
+              <Children>
+                <Item>
+                  <ID>D1010</ID>
+                  <Name>Elevators &amp; Lifts  </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>D1011</ID>
+                      <Name>Passenger Elevators   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D1012</ID>
+                      <Name>Freight Elevators   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D1013</ID>
+                      <Name>Lifts    </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>D1020</ID>
+                  <Name>Escalators &amp; Moving Walks </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>D1021</ID>
+                      <Name>Escalators    </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D1022</ID>
+                      <Name>Moving Walks   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>D1090</ID>
+                  <Name>Other Conveying Systems  </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>D1091</ID>
+                      <Name>Dumbwaiters    </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D1092</ID>
+                      <Name>Pneumatic Tube Systems  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D1093</ID>
+                      <Name>Hoists &amp; Cranes  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D1094</ID>
+                      <Name>Conveyors    </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D1095</ID>
+                      <Name>Chutes    </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D1096</ID>
+                      <Name>Turntables    </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D1097</ID>
+                      <Name>Baggage Handling &amp; Loading Systems</Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D1098</ID>
+                      <Name>Transportation Systems   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+              </Children>
+            </Item>
+            <Item>
+              <ID>D20</ID>
+              <Name>Plumbing    </Name>
+              <Description/>
+              <Availability>ModelElement</Availability>
+              <Children>
+                <Item>
+                  <ID>D2010</ID>
+                  <Name>Plumbing Fixtures   </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>D2011</ID>
+                      <Name>Water Closets   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D2012</ID>
+                      <Name>Urinals    </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D2013</ID>
+                      <Name>Lavatories    </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D2014</ID>
+                      <Name>Sinks    </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D2015</ID>
+                      <Name>Bathtubs    </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D2016</ID>
+                      <Name>Wash Fountains   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D2017</ID>
+                      <Name>Showers    </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D2018</ID>
+                      <Name>Drinking Fountains and Coolers </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D2019</ID>
+                      <Name>Bidets and Other Plumbing Fixtures</Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>D2020</ID>
+                  <Name>Domestic Water Distribution  </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>D2021</ID>
+                      <Name>Cold Water Service  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D2022</ID>
+                      <Name>Hot Water Service  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D2023</ID>
+                      <Name>Domestic Water Supply Equipment </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>D2030</ID>
+                  <Name>Sanitary Waste   </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>D2031</ID>
+                      <Name>Waste Piping   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D2032</ID>
+                      <Name>Vent Piping   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D2033</ID>
+                      <Name>Floor Drains   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D2034</ID>
+                      <Name>Sanitary Waste Equipment  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D2035</ID>
+                      <Name>Pipe Insulation   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>D2040</ID>
+                  <Name>Rain Water Drainage  </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>D2041</ID>
+                      <Name>Pipe &amp; Fittings  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D2042</ID>
+                      <Name>Roof Drains   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D2043</ID>
+                      <Name>Rainwater Drainage Equipment  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D2044</ID>
+                      <Name>Pipe Insulation   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>D2090</ID>
+                  <Name>Other Plumbing Systems  </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>D2091</ID>
+                      <Name>Gas Distribution   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D2092</ID>
+                      <Name>Acid Waste Systems  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D2093</ID>
+                      <Name>Interceptors    </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D2094</ID>
+                      <Name>Pool Piping and Equipment </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D2095</ID>
+                      <Name>Decorative Fountain Piping Devices </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D2099</ID>
+                      <Name>Other Piping Systems  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+              </Children>
+            </Item>
+            <Item>
+              <ID>D30</ID>
+              <Name>HVAC    </Name>
+              <Description/>
+              <Availability>ModelElement</Availability>
+              <Children>
+                <Item>
+                  <ID>D3010</ID>
+                  <Name>Energy Supply   </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>D3011</ID>
+                      <Name>Oil Supply System  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D3012</ID>
+                      <Name>Gas Supply System  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D3013</ID>
+                      <Name>Coal Supply System  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D3014</ID>
+                      <Name>Steam Supply System  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D3015</ID>
+                      <Name>Hot Water Supply System </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D3016</ID>
+                      <Name>Solar Energy System  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D3017</ID>
+                      <Name>Wind Energy System  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>D3020</ID>
+                  <Name>Heat Generating Systems  </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>D3021</ID>
+                      <Name>Boilers    </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D3022</ID>
+                      <Name>Boiler Room Piping &amp; Specialties</Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D3023</ID>
+                      <Name>Auxiliary Equipment   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D3024</ID>
+                      <Name>Insulation    </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>D3030</ID>
+                  <Name>Cooling Generating Systems  </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>D3031</ID>
+                      <Name>Chilled Water Systems  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D3032</ID>
+                      <Name>Direct Expansion Systems  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>D3040</ID>
+                  <Name>Distribution Systems   </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>D3041</ID>
+                      <Name>Air Distribution Systems  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D3042</ID>
+                      <Name>Exhaust Ventilation Systems  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D3043</ID>
+                      <Name>Steam Distribution Systems  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D3044</ID>
+                      <Name>Hot Water Distribution  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D3045</ID>
+                      <Name>Chilled Water Distribution  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D3046</ID>
+                      <Name>Change-over Distribution System  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D3047</ID>
+                      <Name>Glycol Distribution Systems  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>D3050</ID>
+                  <Name>Terminal &amp; Package Units </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>D3051</ID>
+                      <Name>Terminal Self-Contained Units  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D3052</ID>
+                      <Name>Package Units   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>D3060</ID>
+                  <Name>Controls &amp; Instrumentation  </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>D3061</ID>
+                      <Name>Heating Generating Systems  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D3062</ID>
+                      <Name>Cooling Generating Systems  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D3063</ID>
+                      <Name>Heating/Cooling Air Handling Units </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D3064</ID>
+                      <Name>Exhaust &amp; Ventilating Systems </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D3065</ID>
+                      <Name>Hoods and Exhaust Systems </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D3066</ID>
+                      <Name>Terminal Devices   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D3067</ID>
+                      <Name>Energy Monitoring &amp; Control </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D3068</ID>
+                      <Name>Building Automation Systems  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D3069</ID>
+                      <Name>Other Controls &amp; Instrumentation </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>D3070</ID>
+                  <Name>Systems Testing &amp; Balancing </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>D3071</ID>
+                      <Name>Piping System Testing &amp; Balancing</Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D3072</ID>
+                      <Name>Air Systems Testing &amp; Balancing</Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D3073</ID>
+                      <Name>HVAC Commissioning   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D3079</ID>
+                      <Name>Other Systems Testing and Balancing</Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>D3090</ID>
+                  <Name>Other HVAC Systems &amp; Equipment</Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>D3091</ID>
+                      <Name>Special Cooling Systems &amp; Devices</Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D3092</ID>
+                      <Name>Special Humidity Control  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D3093</ID>
+                      <Name>Dust &amp; Fume Collectors </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D3094</ID>
+                      <Name>Air Curtains   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D3095</ID>
+                      <Name>Air Purifiers   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D3096</ID>
+                      <Name>Paint Spray Booth Ventilation </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D3097</ID>
+                      <Name>General Construction Items (HVAC) </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+              </Children>
+            </Item>
+            <Item>
+              <ID>D40</ID>
+              <Name>Fire Protection   </Name>
+              <Description/>
+              <Availability>ModelElement</Availability>
+              <Children>
+                <Item>
+                  <ID>D4010</ID>
+                  <Name>Sprinklers    </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>D4011</ID>
+                      <Name>Sprinkler Water Supply  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D4012</ID>
+                      <Name>Sprinkler Pumping Equipment  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D4013</ID>
+                      <Name>Dry Sprinkler System  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>D4020</ID>
+                  <Name>Standpipes    </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>D4021</ID>
+                      <Name>Standpipe Water Supply  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D4022</ID>
+                      <Name>Pumping Equipment   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D4023</ID>
+                      <Name>Standpipe Equipment   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D4024</ID>
+                      <Name>Fire Hose Equipment  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>D4030</ID>
+                  <Name>Fire Protection Specialties  </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>D4031</ID>
+                      <Name>Fire Extinguishers   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D4032</ID>
+                      <Name>Fire Extinguisher Cabinets  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>D4090</ID>
+                  <Name>Other Fire Protection Systems </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>D4091</ID>
+                      <Name>Carbon Dioxide Systems  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D4092</ID>
+                      <Name>Foam Generating Equipment  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D4093</ID>
+                      <Name>Clean Agent Systems  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D4094</ID>
+                      <Name>Dry Chemical System  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D4095</ID>
+                      <Name>Hood &amp; Duct Fire Protection</Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+              </Children>
+            </Item>
+            <Item>
+              <ID>D50</ID>
+              <Name>Electrical    </Name>
+              <Description/>
+              <Availability>ModelElement</Availability>
+              <Children>
+                <Item>
+                  <ID>D5010</ID>
+                  <Name>Electrical Service &amp; Distribution </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>D5011</ID>
+                      <Name>High Tension Service &amp; Dist.</Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D5012</ID>
+                      <Name>Low Tension Service &amp; Dist.</Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>D5020</ID>
+                  <Name>Lighting and Branch Wiring </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>D5021</ID>
+                      <Name>Branch Wiring Devices  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D5022</ID>
+                      <Name>Lighting Equipment   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>D5030</ID>
+                  <Name>Communications &amp; Security  </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>D5031</ID>
+                      <Name>Public Address &amp; Music Systems</Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D5032</ID>
+                      <Name>Intercommunication &amp; Paging System </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D5033</ID>
+                      <Name>Telephone Systems   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D5034</ID>
+                      <Name>Call Systems   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D5035</ID>
+                      <Name>Television Systems   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D5036</ID>
+                      <Name>Clock and Program Systems </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D5037</ID>
+                      <Name>Fire Alarm Systems  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D5038</ID>
+                      <Name>Security and Detection Systems </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D5039</ID>
+                      <Name>Local Area Networks  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>D5090</ID>
+                  <Name>Other Electrical Systems  </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>D5091</ID>
+                      <Name>Grounding Systems   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D5092</ID>
+                      <Name>Emergency Light &amp; Power Systems</Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D5093</ID>
+                      <Name>Floor Raceway Systems  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D5094</ID>
+                      <Name>Other Special Systems &amp; Devices</Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>D5095</ID>
+                      <Name>General Construction Items (Elect.) </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+              </Children>
+            </Item>
+          </Children>
+        </Item>
+        <Item>
+          <ID>E</ID>
+          <Name>EQUIPMENT &amp; FURNISHINGS  </Name>
+          <Description/>
+          <Availability>ModelElement</Availability>
+          <Children>
+            <Item>
+              <ID>E10</ID>
+              <Name>Equipment    </Name>
+              <Description/>
+              <Availability>ModelElement</Availability>
+              <Children>
+                <Item>
+                  <ID>E1010</ID>
+                  <Name>Commercial Equipment   </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>E1011</ID>
+                      <Name>Security &amp; Vault Equipment </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>E1012</ID>
+                      <Name>Teller and Service Equipment </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>E1013</ID>
+                      <Name>Registration Equipment   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>E1014</ID>
+                      <Name>Checkroom Equipment   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>E1015</ID>
+                      <Name>Mercantile Equipment   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>E1016</ID>
+                      <Name>Laundry &amp; Dry Cleaning Equipment</Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>E1017</ID>
+                      <Name>Vending Equipment   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>E1018</ID>
+                      <Name>Office Equipment   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>E1020</ID>
+                  <Name>Institutional Equipment   </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>E1021</ID>
+                      <Name>Ecclesiastical Equipment   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>E1022</ID>
+                      <Name>Library Equipment   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>E1023</ID>
+                      <Name>Theater &amp; Stage Equipment </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>E1024</ID>
+                      <Name>Instrumental Equipment   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>E1025</ID>
+                      <Name>Audio-visual Equipment   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>E1026</ID>
+                      <Name>Detention Equipment   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>E1027</ID>
+                      <Name>Laboratory Equipment   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>E1028</ID>
+                      <Name>Medical Equipment   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>E1029</ID>
+                      <Name>Other Institutional Equipment  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>E1030</ID>
+                  <Name>Vehicular Equipment   </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>E1031</ID>
+                      <Name>Vehicular Service Equipment  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>E1032</ID>
+                      <Name>Parking Control Equipment  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>E1033</ID>
+                      <Name>Loading Dock Equipment  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>E1039</ID>
+                      <Name>Other Vehicular Equipment  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>E1090</ID>
+                  <Name>Other Equipment   </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>E1091</ID>
+                      <Name>Maintenance Equipment   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>E1092</ID>
+                      <Name>Solid Waste Handling Equipment </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>E1093</ID>
+                      <Name>Food Service Equipment  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>E1094</ID>
+                      <Name>Residential Equipment   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>E1095</ID>
+                      <Name>Unit Kitchens   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>E1097</ID>
+                      <Name>Window Washing Equipment  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>E1099</ID>
+                      <Name>Other Equipment   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+              </Children>
+            </Item>
+            <Item>
+              <ID>E20</ID>
+              <Name>Furnishings    </Name>
+              <Description/>
+              <Availability>ModelElement</Availability>
+              <Children>
+                <Item>
+                  <ID>E2010</ID>
+                  <Name>Fixed Furnishings   </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>E2011</ID>
+                      <Name>Fixed Artwork   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>E2012</ID>
+                      <Name>Fixed Casework   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>E2013</ID>
+                      <Name>Blinds and Other Window Treatment</Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>E2014</ID>
+                      <Name>Fixed Floor Grilles and Mats</Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>E2015</ID>
+                      <Name>Fixed Multiple Seating  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>E2016</ID>
+                      <Name>Fixed Interior Landscaping  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>E2020</ID>
+                  <Name>Movable Furnishings   </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>E2021</ID>
+                      <Name>Movable Artwork   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>E2022</ID>
+                      <Name>Furniture &amp; Accessories  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>E2023</ID>
+                      <Name>Movable Rugs and Mats </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>E2024</ID>
+                      <Name>Movable Interior Landscaping  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+              </Children>
+            </Item>
+          </Children>
+        </Item>
+        <Item>
+          <ID>F</ID>
+          <Name>SPECIAL CONSTRUCTION &amp; DEMOLITION </Name>
+          <Description/>
+          <Availability>ModelElement</Availability>
+          <Children>
+            <Item>
+              <ID>F10</ID>
+              <Name>Special Construction   </Name>
+              <Description/>
+              <Availability>ModelElement</Availability>
+              <Children>
+                <Item>
+                  <ID>F1010</ID>
+                  <Name>Special Structures   </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>F1011</ID>
+                      <Name>Air Supported Structures  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>F1012</ID>
+                      <Name>Pre-engineered Structures   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>F1013</ID>
+                      <Name>Other Special Structures  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>F1020</ID>
+                  <Name>Integrated Construction   </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>F1021</ID>
+                      <Name>Integrated Assemblies   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>F1022</ID>
+                      <Name>Special Purpose Rooms  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>F1023</ID>
+                      <Name>Other Integrated Construction  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>F1030</ID>
+                  <Name>Special Construction Systems  </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>F1031</ID>
+                      <Name>Sound, Vibration &amp; Seismic Const.</Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>F1032</ID>
+                      <Name>Radiation Protection   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>F1033</ID>
+                      <Name>Special Security Systems  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>F1034</ID>
+                      <Name>Vaults    </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>F1039</ID>
+                      <Name>Other Special Construction Systems </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>F1040</ID>
+                  <Name>Special Facilities   </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>F1041</ID>
+                      <Name>Aquatic Facilities   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>F1042</ID>
+                      <Name>Ice Rinks   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>F1043</ID>
+                      <Name>Site Constructed Incinerators  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>F1044</ID>
+                      <Name>Kennels &amp; Animal Shelters </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>F1045</ID>
+                      <Name>Liquid &amp; Gas Storage Tanks</Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>F1049</ID>
+                      <Name>Other Special Facilities  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>F1050</ID>
+                  <Name>Special Controls and Instrumentation </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>F1051</ID>
+                      <Name>Recording Instrumentation   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>F1052</ID>
+                      <Name>Building Automation System  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>F1059</ID>
+                      <Name>Other Special Controls &amp; Instrumentation</Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+              </Children>
+            </Item>
+            <Item>
+              <ID>F20</ID>
+              <Name>Selective Building Demolition  </Name>
+              <Description/>
+              <Availability>ModelElement</Availability>
+              <Children>
+                <Item>
+                  <ID>F2010</ID>
+                  <Name>Building Elements Demolition  </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>F2011</ID>
+                      <Name>Building Interior Demolition  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>F2012</ID>
+                      <Name>Building Exterior Demolition  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>F2020</ID>
+                  <Name>Hazardous Components Abatement  </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>F2021</ID>
+                      <Name>Removal of Hazardous Components </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>F2022</ID>
+                      <Name>Encapsulation of Hazardous Components </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+              </Children>
+            </Item>
+          </Children>
+        </Item>
+        <Item>
+          <ID>G</ID>
+          <Name>BUILDING SITEWORK   </Name>
+          <Description/>
+          <Availability>ModelElement</Availability>
+          <Children>
+            <Item>
+              <ID>G10</ID>
+              <Name>Site Preparation   </Name>
+              <Description/>
+              <Availability>ModelElement</Availability>
+              <Children>
+                <Item>
+                  <ID>G1010</ID>
+                  <Name>Site Clearing   </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>G1011</ID>
+                      <Name>Clearing &amp; Grubbing  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G1012</ID>
+                      <Name>Tree Removal &amp; Thinning </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>G1020</ID>
+                  <Name>Site Demolition and Relocations </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>G1021</ID>
+                      <Name>Building Demolition   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G1022</ID>
+                      <Name>Demolition of Site Components </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G1023</ID>
+                      <Name>Relocation of Building &amp; Utilities</Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G1024</ID>
+                      <Name>Utilities Relocation   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>G1030</ID>
+                  <Name>Site Earthwork   </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>G1031</ID>
+                      <Name>Site Grading Excavation  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G1032</ID>
+                      <Name>Borrow Fill   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G1033</ID>
+                      <Name>Soil Stabilization &amp; Treatment </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G1034</ID>
+                      <Name>Site Dewatering   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G1035</ID>
+                      <Name>Site Shoring   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G1036</ID>
+                      <Name>Embankments    </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G1037</ID>
+                      <Name>Erosion Control   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>G1040</ID>
+                  <Name>Hazardous Waste Remediation  </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>G1041</ID>
+                      <Name>Removal of Contaminated Soil </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G1042</ID>
+                      <Name>Soil Restoration &amp; Treatment </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+              </Children>
+            </Item>
+            <Item>
+              <ID>G20</ID>
+              <Name>Site Improvements   </Name>
+              <Description/>
+              <Availability>ModelElement</Availability>
+              <Children>
+                <Item>
+                  <ID>G2010</ID>
+                  <Name>Roadways    </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>G2011</ID>
+                      <Name>Bases and Sub-Bases  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G2012</ID>
+                      <Name>Paving &amp; Surfacing  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G2013</ID>
+                      <Name>Curbs Gutters &amp; Drains </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G2014</ID>
+                      <Name>Guardrails and Barriers  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G2015</ID>
+                      <Name>Painted Lines   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G2016</ID>
+                      <Name>Markings &amp; Signage  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G2017</ID>
+                      <Name>Vehicular Bridges   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>G2020</ID>
+                  <Name>Parking Lots   </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>G2021</ID>
+                      <Name>Bases and Sub-Bases  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G2022</ID>
+                      <Name>Paving &amp; Surfacing  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G2023</ID>
+                      <Name>Curbs, Rails &amp; Barriers </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G2024</ID>
+                      <Name>Parking Booths &amp; Equipment </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G2025</ID>
+                      <Name>Markings &amp; Signage  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>G2030</ID>
+                  <Name>Pedestrian Paving   </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>G2031</ID>
+                      <Name>Paving &amp; Surfacing  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G2032</ID>
+                      <Name>Edging    </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G2033</ID>
+                      <Name>Exterior Steps   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G2034</ID>
+                      <Name>Pedestrian Bridges   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>G2040</ID>
+                  <Name>Site Development   </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>G2041</ID>
+                      <Name>Fences &amp; Gates  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G2042</ID>
+                      <Name>Retaining Walls   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G2043</ID>
+                      <Name>Terrace &amp; Perimeter Walls </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G2044</ID>
+                      <Name>Signage    </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G2045</ID>
+                      <Name>Site Furnishings   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G2046</ID>
+                      <Name>Fountains, Pools, &amp; Watercourses </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G2047</ID>
+                      <Name>Playing Fields   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G2048</ID>
+                      <Name>Flagpoles    </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G2049</ID>
+                      <Name>Miscellaneous Structures   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>G2050</ID>
+                  <Name>Landscaping    </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>G2051</ID>
+                      <Name>Fine Grading &amp; Soil Preparation</Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G2052</ID>
+                      <Name>Erosion Control Measures  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G2053</ID>
+                      <Name>Top Soil and Planting Beds</Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G2054</ID>
+                      <Name>Seeding and Sodding  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G2055</ID>
+                      <Name>Planting    </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G2056</ID>
+                      <Name>Planters    </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G2057</ID>
+                      <Name>Irrigation Systems   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G2059</ID>
+                      <Name>Other Landscape Features  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+              </Children>
+            </Item>
+            <Item>
+              <ID>G30</ID>
+              <Name>Site Mechanical Utilities  </Name>
+              <Description/>
+              <Availability>ModelElement</Availability>
+              <Children>
+                <Item>
+                  <ID>G3010</ID>
+                  <Name>Water Supply   </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>G3011</ID>
+                      <Name>Potable Water Distribution and Storage</Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G3012</ID>
+                      <Name>Non-potable Water Distrib. and Storage</Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G3013</ID>
+                      <Name>Well Systems   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G3014</ID>
+                      <Name>Fire Protection Distribution and Storage</Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G3015</ID>
+                      <Name>Pumping Stations   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G3016</ID>
+                      <Name>Package Water Treatment Plants </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>G3020</ID>
+                  <Name>Sanitary Sewer   </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>G3021</ID>
+                      <Name>Piping    </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G3022</ID>
+                      <Name>Manholes &amp; Cleanouts  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G3023</ID>
+                      <Name>Septic Disposal Systems  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G3024</ID>
+                      <Name>Lift Stations   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G3025</ID>
+                      <Name>Packaged Water Waste Treatment Plants</Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G3026</ID>
+                      <Name>Septic Tanks   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G3027</ID>
+                      <Name>Drain Fields   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>G3030</ID>
+                  <Name>Storm Sewer   </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>G3031</ID>
+                      <Name>Piping    </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G3032</ID>
+                      <Name>Manholes    </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G3033</ID>
+                      <Name>Headwalls &amp; Catch Basins </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G3034</ID>
+                      <Name>Lift Stations   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G3035</ID>
+                      <Name>Retention Ponds   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G3036</ID>
+                      <Name>Ditches &amp; Culverts  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>G3040</ID>
+                  <Name>Heating Distribution   </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>G3041</ID>
+                      <Name>Steam Supply   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G3042</ID>
+                      <Name>Condensate Return   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G3043</ID>
+                      <Name>Hot Water Supply System </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G3044</ID>
+                      <Name>Pumping Stations   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>G3050</ID>
+                  <Name>Cooling Distribution   </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>G3051</ID>
+                      <Name>Chilled Water Piping  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G3052</ID>
+                      <Name>Wells for Cooling/Heating  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G3053</ID>
+                      <Name>Pumping Stations   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G3054</ID>
+                      <Name>Cooling Towers on Site </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>G3060</ID>
+                  <Name>Fuel Distribution   </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>G3061</ID>
+                      <Name>Fuel Piping   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G3062</ID>
+                      <Name>Fuel Equipment   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G3063</ID>
+                      <Name>Fuel Storage Tanks  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G3064</ID>
+                      <Name>Fuel Dispensing Stations  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>G3090</ID>
+                  <Name>Other Site Mechanical Utilities </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>G3091</ID>
+                      <Name>Industrial Waste Systems  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G3092</ID>
+                      <Name>POL Distribution Systems  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+              </Children>
+            </Item>
+            <Item>
+              <ID>G40</ID>
+              <Name>Site Electrical Utilities  </Name>
+              <Description/>
+              <Availability>ModelElement</Availability>
+              <Children>
+                <Item>
+                  <ID>G4010</ID>
+                  <Name>Electrical Distribution   </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>G4011</ID>
+                      <Name>Substations    </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G4012</ID>
+                      <Name>Overhead Power Distribution  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G4013</ID>
+                      <Name>Underground Power Distribution  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>G4020</ID>
+                  <Name>Site Lighting   </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>G4021</ID>
+                      <Name>Fixtures &amp; Transformers  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G4022</ID>
+                      <Name>Poles    </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G4023</ID>
+                      <Name>Wiring Conduits &amp; Ductbanks </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G4024</ID>
+                      <Name>Site Lighting Controls  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>G4030</ID>
+                  <Name>Site Communications &amp; Security </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>G4031</ID>
+                      <Name>Site Communications Systems  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G4032</ID>
+                      <Name>Site Security &amp; Alarm Systems</Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>G4090</ID>
+                  <Name>Other Site Electrical Utilities </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>G4091</ID>
+                      <Name>Cathodic Protection   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G4092</ID>
+                      <Name>Site Emergency Power Generation </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+              </Children>
+            </Item>
+            <Item>
+              <ID>G90</ID>
+              <Name>Other Site Construction  </Name>
+              <Description/>
+              <Availability>ModelElement</Availability>
+              <Children>
+                <Item>
+                  <ID>G9010</ID>
+                  <Name>Service and Pedestrian Tunnels </Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>G9011</ID>
+                      <Name>Service Tunnels   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G9012</ID>
+                      <Name>Trench Boxes   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                    <Item>
+                      <ID>G9013</ID>
+                      <Name>Pedestrian Tunnels   </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+                <Item>
+                  <ID>G9090</ID>
+                  <Name>Other Site Systems &amp; Equipment</Name>
+                  <Description/>
+                  <Availability>ModelElement</Availability>
+                  <Children>
+                    <Item>
+                      <ID>G9091</ID>
+                      <Name>Snow Melting Systems  </Name>
+                      <Description/>
+                      <Availability>ModelElement</Availability>
+                    </Item>
+                  </Children>
+                </Item>
+              </Children>
+            </Item>
+          </Children>
+        </Item>
+      </Items>
+    </System>
+  </Classification>
+</BuildingInformation>

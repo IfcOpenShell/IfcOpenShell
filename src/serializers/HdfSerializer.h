@@ -20,7 +20,7 @@
 #ifndef HDFSERIALIZER_H
 #define HDFSERIALIZER_H
 
-#ifdef WITH_HDF5
+#if defined(WITH_HDF5) && defined(IFOPSH_WITH_OPENCASCADE)
 
 #include <set>
 #include <string>
@@ -29,7 +29,7 @@
 #include "H5Cpp.h"
 
 #include "../serializers/serializers_api.h"
-#include "../ifcgeom_schema_agnostic/GeometrySerializer.h"
+#include "../ifcgeom/GeometrySerializer.h"
 
 #define USE_BINARY
 
@@ -38,7 +38,7 @@ private:
 	const std::string hdf_filename;
 	unsigned int vcount_total;
 	H5::H5File file;
-	SerializerSettings settings_;
+	ifcopenshell::geometry::SerializerSettings settings_;
 
 	static const H5std_string DATASET_NAME_POSITIONS;
 	static const H5std_string DATASET_NAME_UVCOORDS;
@@ -47,6 +47,7 @@ private:
 	static const H5std_string DATASET_NAME_EDGES;
 	static const H5std_string DATASET_NAME_MATERIAL_IDS;
 	static const H5std_string DATASET_NAME_ITEM_IDS;
+	static const H5std_string DATASET_NAME_EDGES_ITEM_IDS;
 	static const H5std_string DATASET_NAME_MATERIALS;
 	static const H5std_string DATASET_NAME_OCCT;
 	static const H5std_string DATASET_NAME_PLACEMENT;	
@@ -89,11 +90,11 @@ private:
 	std::map<std::string, std::string> group_cache_;
 
 	H5::Group createRepresentationGroup(const H5::Group& element_group, const std::string& gid);
-	void read_surface_style(surface_style_serialization& sss, std::shared_ptr<IfcGeom::SurfaceStyle>& style_ptr);
-	void write_style(surface_style_serialization& data, const IfcGeom::SurfaceStyle& s);
+	void read_surface_style(surface_style_serialization& sss, const ifcopenshell::geometry::taxonomy::style::ptr& style_ptr);
+	void write_style(surface_style_serialization& data, const ifcopenshell::geometry::taxonomy::style::ptr& s);
 
 public:
-	HdfSerializer(const std::string& hdf_filename, const SerializerSettings& settings, bool read_only=false);
+	HdfSerializer(const std::string& hdf_filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings, bool read_only=false);
 	virtual ~HdfSerializer() {}
 	bool ready();
 	void writeHeader();

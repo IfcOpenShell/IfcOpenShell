@@ -19,11 +19,12 @@
 import datetime
 from re import findall
 from dateutil import parser
+from typing import Literal, Union, Any, overload
 
 try:
     import isodate
-except:
-    pass  # Duration parsing not supported
+except ModuleNotFoundError as e:
+    print(f"Note: duration parsing not available due to missing dependencies: util.date - {e}")
 
 
 def timedelta2duration(timedelta):
@@ -35,8 +36,7 @@ def timedelta2duration(timedelta):
     }
     if components["seconds"]:
         components["hours"], components["minutes"], components["seconds"] = [
-            int(i)
-            for i in str(datetime.timedelta(seconds=components["seconds"])).split(":")
+            int(i) for i in str(datetime.timedelta(seconds=components["seconds"])).split(":")
         ]
     return isodate.Duration(**components)
 
@@ -98,14 +98,40 @@ def readable_ifc_duration(string):
     final_string += f"{months} m " if months else ""
     final_string += f"{weeks} w " if weeks else ""
     final_string += f"{days} d " if days else ""
-    final_string += f"{hours} h " if hours else ""
+    final_string += f"{round(float(hours),2)} h " if hours else ""
     final_string += f"{minutes} m " if minutes else ""
     final_string += f"{seconds} s " if seconds else ""
 
     return final_string
 
 
-def datetime2ifc(dt, ifc_type):
+@overload
+def datetime2ifc(dt: None, ifc_type: Any) -> None: ...
+@overload
+def datetime2ifc(
+    dt: Union[datetime.date, str, None],
+    ifc_type: Literal[
+        "IfcDuration",
+        "IfcTimeStamp",
+        "IfcDateTime",
+        "IfcDate",
+        "IfcTime",
+        "IfcCalendarDate",
+        "IfcLocalTime",
+    ],
+) -> Union[int, str, dict[str, Any], None]: ...
+def datetime2ifc(
+    dt: Union[datetime.date, str, None],
+    ifc_type: Literal[
+        "IfcDuration",
+        "IfcTimeStamp",
+        "IfcDateTime",
+        "IfcDate",
+        "IfcTime",
+        "IfcCalendarDate",
+        "IfcLocalTime",
+    ],
+) -> Union[int, str, dict[str, Any], None]:
     if isinstance(dt, str):
         if ifc_type == "IfcDuration":
             return dt
@@ -113,6 +139,8 @@ def datetime2ifc(dt, ifc_type):
             dt = datetime.datetime.fromisoformat(dt)
         except:
             dt = datetime.time.fromisoformat(dt)
+    elif dt is None:
+        return
 
     if ifc_type == "IfcDuration":
         return isodate.duration_isoformat(dt)
@@ -122,9 +150,7 @@ def datetime2ifc(dt, ifc_type):
         if isinstance(dt, datetime.datetime):
             return dt.isoformat()
         elif isinstance(dt, datetime.date):
-            return datetime.datetime.combine(
-                dt, datetime.datetime.min.time()
-            ).isoformat()
+            return datetime.datetime.combine(dt, datetime.datetime.min.time()).isoformat()
     elif ifc_type == "IfcDate":
         if isinstance(dt, datetime.datetime):
             return dt.date().isoformat()
@@ -148,6 +174,8 @@ def datetime2ifc(dt, ifc_type):
             "MinuteComponent": dt.minute,
             "SecondComponent": dt.second,
         }
+
+    raise TypeError(f"Unsupported ifc_type for conversion from datetime.datetime = {ifc_type}, value = {dt}")
 
 
 def string_to_date(string):
@@ -180,12 +208,10 @@ def string_to_duration(duration_string):
     match = findall(r"(\d+\.?\d*)s", duration_string)
     if match:
         seconds = float(match[0])
-    return isodate.duration_isoformat(
-        datetime.timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds)
-    )
+    return isodate.duration_isoformat(datetime.timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds))
 
 
-def parse_duration(value):
+def parse_duration(value: Union[str, None]) -> Union[datetime.timedelta, None]:
     if not value:
         return None
     if isinstance(value, str):
@@ -193,8 +219,8 @@ def parse_duration(value):
             try:
                 return isodate.parse_duration(value)
             except:
-                print("error parsing ISO string duration")
-                return None
+                print("Error parsing ISO string duration")
+            return None
         else:
             try:
                 final_string = "P"
@@ -204,11 +230,7 @@ def parse_duration(value):
                         final_string += char
                     elif char == "D":
                         final_string += "D"
-                        if (
-                            "H" in value_upper
-                            or "S" in value_upper
-                            or "MIN" in value_upper
-                        ):
+                        if "H" in value_upper or "S" in value_upper or "MIN" in value_upper:
                             final_string += "T"
                     elif char == "W":
                         final_string += "W"
@@ -218,9 +240,7 @@ def parse_duration(value):
                         final_string += "Y"
                     elif char == "H":
                         final_string = (
-                            final_string[:1] + "T" + final_string[1:]
-                            if "T" not in final_string
-                            else final_string
+                            final_string[:1] + "T" + final_string[1:] if "T" not in final_string else final_string
                         )
                         final_string += "H"
                     elif char == "M":
@@ -229,12 +249,16 @@ def parse_duration(value):
                         final_string += "M"
                     elif char == "S":
                         final_string = (
-                            final_string[:1] + "T" + final_string[1:]
-                            if "T" not in final_string
-                            else final_string
+                            final_string[:1] + "T" + final_string[1:] if "T" not in final_string else final_string
                         )
                         final_string += "S"
                 return isodate.parse_duration(final_string)
             except:
                 print("error fuzzy parsing duration")
                 return None
+
+
+def canonicalise_time(time):
+    if not time:
+        return "-"
+    return time.strftime("%d/%m/%y")

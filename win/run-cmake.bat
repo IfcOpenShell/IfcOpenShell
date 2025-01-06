@@ -80,7 +80,7 @@ IF NOT EXIST ..\%BUILD_DIR%. mkdir ..\%BUILD_DIR%
 pushd ..\%BUILD_DIR%
 
 :: tfk: todo remove duplication
-set BOOST_VERSION=1.74.0
+set BOOST_VERSION=1.86.0
 set BOOST_VER=%BOOST_VERSION:.=_%
 
 set BOOST_ROOT=%DEPS_DIR%\boost_%BOOST_VER%
@@ -93,7 +93,7 @@ set LIBXML2_INCLUDE_DIR=%DEPS_DIR%\OpenCOLLADA\Externals\LibXML\include
 set LIBXML2_LIBRARIES=%INSTALL_DIR%\OpenCOLLADA\lib\opencollada\xml.lib
 set HDF5_INCLUDE_DIR=%INSTALL_DIR%\HDF5-%HDF5_VERSION%-win%ARCH_BITS%\include
 set HDF5_LIBRARY_DIR=%INSTALL_DIR%\HDF5-%HDF5_VERSION%-win%ARCH_BITS%\lib
-if not defined PY_VER_MAJOR_MINOR set PY_VER_MAJOR_MINOR=34
+if not defined PY_VER_MAJOR_MINOR set PY_VER_MAJOR_MINOR=311
 if not defined PYTHONHOME set PYTHONHOME=%INSTALL_DIR%\Python%PY_VER_MAJOR_MINOR%
 set PYTHON_INCLUDE_DIR=%PYTHONHOME%\include
 set PYTHON_LIBRARY=%PYTHONHOME%\libs\python%PY_VER_MAJOR_MINOR%.lib
@@ -109,6 +109,11 @@ set GMP_INCLUDE_DIR=%INSTALL_DIR%\mpir
 set GMP_LIBRARY_DIR=%INSTALL_DIR%\mpir
 set MPFR_INCLUDE_DIR=%INSTALL_DIR%\mpfr
 set MPFR_LIBRARY_DIR=%INSTALL_DIR%\mpfr
+set EIGEN_DIR=%INSTALL_DIR%\Eigen
+set USD_INCLUDE_DIR=%INSTALL_DIR%\usd\include
+set USD_LIBRARY_DIR=%INSTALL_DIR%\usd\lib
+set TBB_INCLUDE_DIR=%INSTALL_DIR%\tbb\include
+set TBB_LIBRARY_DIR=%INSTALL_DIR%\tbb\lib
 
 echo.
 call cecho.cmd 0 10 "Script configuration:"
@@ -141,6 +146,11 @@ echo    GMP_INCLUDE_DIR         = %GMP_INCLUDE_DIR%
 echo    GMP_LIBRARY_DIR         = %GMP_LIBRARY_DIR%
 echo    MPFR_INCLUDE_DIR        = %MPFR_INCLUDE_DIR%
 echo    MPFR_LIBRARY_DIR        = %MPFR_LIBRARY_DIR%
+echo    EIGEN_DIR               = %EIGEN_DIR%
+echo    USD_INCLUDE_DIR         = %USD_INCLUDE_DIR%
+echo    USD_LIBRARY_DIR         = %USD_LIBRARY_DIR%
+echo    TBB_INCLUDE_DIR         = %TBB_INCLUDE_DIR%
+echo    TBB_LIBRARY_DIR         = %TBB_LIBRARY_DIR%
 echo.
 echo    CMAKE_INSTALL_PREFIX    = %CMAKE_INSTALL_PREFIX%
 echo.

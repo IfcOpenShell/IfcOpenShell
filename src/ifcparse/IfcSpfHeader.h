@@ -16,140 +16,147 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.         *
  *                                                                              *
  ********************************************************************************/
- 
+
 #ifndef IFCSPFHEADER_H
 #define IFCSPFHEADER_H
 
 #include "ifc_parse_api.h"
-
-#include "../ifcparse/IfcSpfStream.h"
-#include "../ifcparse/IfcWrite.h"
+#include "IfcEntityInstanceData.h"
 
 namespace IfcParse {
+    class IfcFile;
 
-class IFC_PARSE_API HeaderEntity : public IfcEntityInstanceData {
-private:	
-	const char * const _datatype;
-	size_t size_;
+class IFC_PARSE_API HeaderEntity {
+  private:
+    const char* const datatype_;
+    IfcFile* file_;
+    
+    HeaderEntity(const HeaderEntity&);            //N/A
+    HeaderEntity& operator=(const HeaderEntity&); //N/A
+  protected:
+      IfcEntityInstanceData data_;
 
-	HeaderEntity(const HeaderEntity&); //N/A
-	HeaderEntity& operator =(const HeaderEntity&); //N/A
-protected:
-	HeaderEntity(const char * const datatype, size_t size, IfcParse::IfcFile* file);
-	virtual ~HeaderEntity();
+    HeaderEntity(const char* const datatype, size_t size, IfcParse::IfcFile* file);
+    virtual ~HeaderEntity();
 
-	void setValue(unsigned int i, const std::string& s) {
-		IfcWrite::IfcWriteArgument* argument = new IfcWrite::IfcWriteArgument;
-		argument->set(s);
-		setArgument(i, argument);
-	}
+    void setValue(unsigned int index, const std::string& string) {
+        data_.storage_.set(index, string);
+    }
 
-	void setValue(unsigned int i, const std::vector<std::string>& s) {
-		IfcWrite::IfcWriteArgument* argument = new IfcWrite::IfcWriteArgument;
-		argument->set(s);
-		setArgument(i, argument);
-	}
+    void setValue(unsigned int index, const std::vector<std::string>& strings) {
+        data_.storage_.set(index, strings);
+    }
 
-public:
-	virtual size_t getArgumentCount() const {
-		return size_;
-	}
+  public:
+    virtual size_t getArgumentCount() const {
+        return data_.size();
+    }
 
-	std::string toString(bool upper=false) const {
-		std::stringstream ss;
-		ss << _datatype << IfcEntityInstanceData::toString(upper);
-		return ss.str();
-	}
+    AttributeValue getArgument(size_t index) const {
+        return data_.get_attribute_value(index);
+    }
+
+    std::string toString(bool upper = false) const {
+        std::stringstream stream;
+        stream << datatype_;
+        data_.toString(stream, upper);
+        return stream.str();
+    }
 };
 
 class IFC_PARSE_API FileDescription : public HeaderEntity {
-public:
-	explicit FileDescription(IfcFile* = 0);
+  public:
+    explicit FileDescription(IfcFile* = 0);
 
-	std::vector<std::string> description() const { return *getArgument(0); }
-	std::string implementation_level() const { return *getArgument(1); }
+    std::vector<std::string> description() const { return data_.get_attribute_value(0); }
+    std::string implementation_level() const { return data_.get_attribute_value(1); }
 
-	void description(const std::vector<std::string>& value) { setValue(0, value); }
-	void implementation_level(const std::string& value) { setValue(1, value); }
+    void description(const std::vector<std::string>& value) { setValue(0, value); }
+    void implementation_level(const std::string& value) { setValue(1, value); }
 };
 
-class IFC_PARSE_API FileName : public HeaderEntity  {
-public:
-	explicit FileName(IfcFile* = 0);
+class IFC_PARSE_API FileName : public HeaderEntity {
+  public:
+    explicit FileName(IfcFile* = 0);
 
-	std::string name() const { return *getArgument(0); }
-	std::string time_stamp() const { return *getArgument(1); }
-	std::vector<std::string> author() const { return *getArgument(2); }
-	std::vector<std::string> organization() const { return *getArgument(3); }
-	std::string preprocessor_version() const { return *getArgument(4); }
-	std::string originating_system() const { return *getArgument(5); }
-	std::string authorization() const { return *getArgument(6); }
+    std::string name() const { return data_.get_attribute_value(0); }
+    std::string time_stamp() const { return data_.get_attribute_value(1); }
+    std::vector<std::string> author() const { return data_.get_attribute_value(2); }
+    std::vector<std::string> organization() const { return data_.get_attribute_value(3); }
+    std::string preprocessor_version() const { return data_.get_attribute_value(4); }
+    std::string originating_system() const { return data_.get_attribute_value(5); }
+    std::string authorization() const { return data_.get_attribute_value(6); }
 
-	void name(const std::string& value) { setValue(0, value); }
-	void time_stamp(const std::string& value) { setValue(1, value); }
-	void author(const std::vector<std::string>& value) { setValue(2, value); }
-	void organization(const std::vector<std::string>& value) { setValue(3, value); }
-	void preprocessor_version(const std::string& value) { setValue(4, value); }
-	void originating_system(const std::string& value) { setValue(5, value); }
-	void authorization(const std::string& value) { setValue(6, value); }
+    void name(const std::string& value) { setValue(0, value); }
+    void time_stamp(const std::string& value) { setValue(1, value); }
+    void author(const std::vector<std::string>& value) { setValue(2, value); }
+    void organization(const std::vector<std::string>& value) { setValue(3, value); }
+    void preprocessor_version(const std::string& value) { setValue(4, value); }
+    void originating_system(const std::string& value) { setValue(5, value); }
+    void authorization(const std::string& value) { setValue(6, value); }
 };
 
-class IFC_PARSE_API FileSchema : public HeaderEntity  {
-public:
-	explicit FileSchema(IfcFile* = 0);
+class IFC_PARSE_API FileSchema : public HeaderEntity {
+  public:
+    explicit FileSchema(IfcFile* = 0);
 
-	std::vector<std::string> schema_identifiers() const { return *getArgument(0); }
+    std::vector<std::string> schema_identifiers() const { return data_.get_attribute_value(0); }
 
-	void schema_identifiers(const std::vector<std::string>& value) { setValue(0, value); }
+    void schema_identifiers(const std::vector<std::string>& value) { setValue(0, value); }
 };
 
 class IFC_PARSE_API IfcSpfHeader {
-private:
-	IfcFile* file_;
-	FileDescription* _file_description;
-	FileName* _file_name;
-	FileSchema* _file_schema;
-	void readParen();
-	void readSemicolon();
-	enum Trail {
-		TRAILING_SEMICOLON,
-		TRAILING_PAREN,
-		NONE
-	};
-	void readTerminal(const std::string& term, Trail trail);
-public:
-	explicit IfcSpfHeader(IfcParse::IfcFile* file = 0)
-		: file_(file), _file_description(0), _file_name(0), _file_schema(0) 
-	{
-		_file_description = new FileDescription(file_);
-		_file_name = new FileName(file_);
-		_file_schema = new FileSchema(file_);
-	}
+  private:
+    IfcFile* file_;
+    FileDescription* file_description_;
+    FileName* file_name_;
+    FileSchema* file_schema_;
+    void readParen();
+    void readSemicolon();
+    enum Trail {
+        TRAILING_SEMICOLON,
+        TRAILING_PAREN,
+        NONE
+    };
+    void readTerminal(const std::string& term, Trail trail);
 
-	~IfcSpfHeader()
-	{
-		delete _file_schema;
-		delete _file_name;
-		delete _file_description;
-	}
+  public:
+    explicit IfcSpfHeader(IfcParse::IfcFile* file = nullptr)
+        : file_(file),
+          file_description_(0),
+          file_name_(0),
+          file_schema_(0)
+    {
+        if (file == nullptr) {
+            file_description_ = new FileDescription(file_);
+            file_name_ = new FileName(file_);
+            file_schema_ = new FileSchema(file_);
+        }
+    }
 
-	IfcParse::IfcFile* file() { return file_; }
-	void file(IfcParse::IfcFile * file) { file_ = file; }
+    ~IfcSpfHeader() {
+        delete file_schema_;
+        delete file_name_;
+        delete file_description_;
+    }
 
-	void read();	
-	bool tryRead();
-	
-	void write(std::ostream& os) const;
+    IfcParse::IfcFile* file() { return file_; }
+    void file(IfcParse::IfcFile* file) { file_ = file; }
 
-	const FileDescription& file_description() const;
-	const FileName& file_name() const;
-	const FileSchema& file_schema() const;
+    void read();
+    bool tryRead();
 
-	FileDescription& file_description();
-	FileName& file_name();
-	FileSchema& file_schema();
+    void write(std::ostream& out) const;
+
+    const FileDescription& file_description() const;
+    const FileName& file_name() const;
+    const FileSchema& file_schema() const;
+
+    FileDescription& file_description();
+    FileName& file_name();
+    FileSchema& file_schema();
 };
 
-}
+} // namespace IfcParse
 
 #endif

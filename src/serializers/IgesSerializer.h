@@ -17,6 +17,8 @@
  *                                                                              *
  ********************************************************************************/
 
+#ifdef IFOPSH_WITH_OPENCASCADE
+
 #ifndef IGESSERIALIZER_H
 #define IGESSERIALIZER_H
 
@@ -38,8 +40,8 @@ private:
 public:
     /// @note IGESControl_Controller::Init() must be called prior to instantiating IgesSerializer.
     /// See http://tracker.dev.opencascade.org/view.php?id=23679 for more information.
-    IgesSerializer(const std::string& out_filename, const SerializerSettings& settings)
-        : OpenCascadeBasedSerializer(out_filename, settings)
+    IgesSerializer(const std::string& out_filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings)
+        : OpenCascadeBasedSerializer(out_filename, geometry_settings, settings)
 	{}
 	virtual ~IgesSerializer() {}
 	void writeShape(const std::string&, const TopoDS_Shape& shape) {
@@ -61,4 +63,5 @@ public:
 	}
 };
 
+#endif
 #endif

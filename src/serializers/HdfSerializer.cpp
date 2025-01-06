@@ -17,11 +17,12 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifdef WITH_HDF5
+#if defined(WITH_HDF5) && defined(IFOPSH_WITH_OPENCASCADE)
 
 #include "HdfSerializer.h"
 
-#include "../ifcgeom_schema_agnostic/IfcGeomRenderStyles.h"
+#include "../ifcgeom/IfcGeomRenderStyles.h"
+#include "../ifcgeom/kernels/opencascade/OpenCascadeConversionResult.h"
 
 #include "../ifcparse/utils.h"
 
@@ -52,8 +53,8 @@ herr_t print_stack(hid_t /*estack*/, void*) {
 	return 0;
 }
 
-HdfSerializer::HdfSerializer(const std::string& hdf_filename, const SerializerSettings& settings, bool read_only)
-	: GeometrySerializer(settings)
+HdfSerializer::HdfSerializer(const std::string& hdf_filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings, bool read_only)
+	: GeometrySerializer(geometry_settings, settings)
 	, hdf_filename(hdf_filename)
 	, settings_(settings)
 {
@@ -232,28 +233,20 @@ namespace {
 	}
 }
 
-void HdfSerializer::read_surface_style(surface_style_serialization& s, std::shared_ptr<IfcGeom::SurfaceStyle>& style_ptr) {
+void HdfSerializer::read_surface_style(surface_style_serialization& s, const ifcopenshell::geometry::taxonomy::style::ptr& gss_) {
+	auto& gss = *gss_;
 	if (strlen(s.name) || s.id) {
-		if (strlen(s.name) && s.id) {
-			style_ptr = std::make_shared<IfcGeom::SurfaceStyle>(s.id, s.name);
-		} else if (strlen(s.name)) {
-			style_ptr = std::make_shared<IfcGeom::SurfaceStyle>(s.name);
-		} else if (s.id) {
-			style_ptr = std::make_shared<IfcGeom::SurfaceStyle>(s.id);
-		}
-		auto& gss = *style_ptr;
-
 		if (s.diffuse[0] == s.diffuse[0]) {
-			gss.Diffuse().emplace(s.diffuse[0], s.diffuse[1], s.diffuse[2]);
+			gss.diffuse = ifcopenshell::geometry::taxonomy::colour(s.diffuse[0], s.diffuse[1], s.diffuse[2]);
 		}
 		if (s.specular[0] == s.specular[0]) {
-			gss.Specular().emplace(s.specular[0], s.specular[1], s.specular[2]);
+			gss.specular = ifcopenshell::geometry::taxonomy::colour(s.specular[0], s.specular[1], s.specular[2]);
 		}
 		if (s.transparency == s.transparency) {
-			gss.Transparency() = s.transparency;
+			gss.transparency = s.transparency;
 		}
 		if (s.specularity == s.specularity) {
-			gss.Specularity() = s.specularity;
+			gss.specularity = s.specularity;
 		}
 	}
 
@@ -282,20 +275,16 @@ IfcGeom::Element* HdfSerializer::read(IfcParse::IfcFile& f, const std::string& g
 	std::string context = read_scalar_attribute<std::string>(element_group, "context");
 	std::string unique_id = read_scalar_attribute<std::string>(element_group, "unique_id");
 
-	gp_Trsf trsf;
+	auto trsf = ifcopenshell::geometry::taxonomy::make<ifcopenshell::geometry::taxonomy::matrix4>();
 	auto placeds = element_group.openDataSet(DATASET_NAME_PLACEMENT);
 	double m44[4][4];
 	placeds.read(m44, H5::PredType::NATIVE_DOUBLE);
-	trsf.SetValues(
-		m44[0][0], m44[0][1], m44[0][2], m44[0][3],
-		m44[1][0], m44[1][1], m44[1][2], m44[1][3],
-		m44[2][0], m44[2][1], m44[2][2], m44[2][3]
-	);
+	// @todo check
+	trsf->components() << Eigen::Map<Eigen::Matrix4d>(&m44[0][0]);
 
 	auto representation_group = element_group.openGroup(representation_id_str);
 	std::string geom_id = read_scalar_attribute<std::string>(representation_group, "geom_id");
 
-	IfcGeom::ElementSettings element_settings(settings_, f.getUnit("LENGTHUNIT").second, type);
 	auto inst = f.instance_by_id(id)->as<IfcUtil::IfcBaseEntity>();
 
 	boost::shared_ptr<IfcGeom::Representation::BRep> brep_geometry;
@@ -316,6 +305,9 @@ IfcGeom::Element* HdfSerializer::read(IfcParse::IfcFile& f, const std::string& g
 	if (rt == READ_BREP && !brep_geometry) {
 		auto brepDataset = representation_group.openDataSet(DATASET_NAME_OCCT);
 		
+		/*
+		// @todo
+
 		static const auto ignored_settings =
 			// Settings that do not affect storage of brep data
 			IfcGeom::IteratorSettings::DISABLE_TRIANGULATION | IfcGeom::IteratorSettings::USE_BREP_DATA |
@@ -336,6 +328,7 @@ IfcGeom::Element* HdfSerializer::read(IfcParse::IfcFile& f, const std::string& g
 		if (stored_settings != requested_settings && (stored_settings | IfcGeom::IteratorSettings::USE_WORLD_COORDS) != requested_settings) {
 			throw std::runtime_error("Settings mismatch");
 		}
+		*/
 
 		std::vector<brep_element> parts;
 		{
@@ -353,74 +346,41 @@ IfcGeom::Element* HdfSerializer::read(IfcParse::IfcFile& f, const std::string& g
 			brepDataset.read(parts.data(), compound);
 		}
 
-		IfcGeom::IfcRepresentationShapeItems shapes;
+		IfcGeom::ConversionResults shapes;
+		
 		for (auto& part : parts) {
 			TopoDS_Shape shp = read_shape(part.shape_serialization);
 
-			// The gp_GTrsf(Mat, V) constructor isn't very smart in that
-			// it sets the Form to gp_Other. This, in turn, then means that
-			// in IfcOpenShell when the BRepElement is cast to a TopoDS_Compound
-			// (happens e.g in SVG and Python), and the trsf is multiplied into
-			// the shape, it is automatically converted to a Nurbs object.
-			// For this reason we do a quick identity check so that we in that
-			// case can keep the Form at gp_Identity. Better yet would be to
-			// do a full decomposition of the matrix in Translation Rotation and
-			// Scale components and use the OCCT APIs to reconstruct the Trsf
-			// from that.
+			// @todo check
+			auto matrix = ifcopenshell::geometry::taxonomy::make<ifcopenshell::geometry::taxonomy::matrix4>();
+			matrix->components() << Eigen::Map<Eigen::Matrix4d>(&part.matrix[0][0]);
 
-			gp_Mat M(
-				part.matrix[0][0], part.matrix[0][1], part.matrix[0][2],
-				part.matrix[1][0], part.matrix[1][1], part.matrix[1][2],
-				part.matrix[2][0], part.matrix[2][1], part.matrix[2][2]
-			);
-
-			bool is_identity = true;
-
-			// quick identity test
-
-			for (int i = 1; i < 4; ++i) {
-				for (int j = 1; j < 4; ++j) {
-					if (std::fabs(M.Row(i).Coord(j) - ((i == j) ? 1.0 : 0.0)) > 1.e-9) {
-						is_identity = false;
-					}
-				}
-			}
-
-			gp_XYZ V(
-				part.matrix[3][0], part.matrix[3][1], part.matrix[3][2]
-			);
-
-			if (gp_Pnt(V).Distance(gp::Origin()) > 1.e-9) {
-				is_identity = false;
-			}
-
-			gp_GTrsf trsf;
-			
-			if (!is_identity) {
-				trsf = gp_GTrsf(M, V);
-				trsf.SetForm();
-			}
-
-			std::shared_ptr<IfcGeom::SurfaceStyle> style_ptr;
+			auto style_ptr = ifcopenshell::geometry::taxonomy::make<ifcopenshell::geometry::taxonomy::style>();
 			read_surface_style(part.surface_style, style_ptr);
 			
-			shapes.push_back(IfcGeom::IfcRepresentationShapeItem(part.id, trsf, shp, style_ptr));
+			shapes.push_back(IfcGeom::ConversionResult(part.id, matrix, new ifcopenshell::geometry::OpenCascadeShape(shp), style_ptr));
 		}
+
+		/*
+		// @todo
 
 		// World coordinates can be applied post-hoc
 		if (settings_.get(IfcGeom::IteratorSettings::USE_WORLD_COORDS) && !(stored_settings & IfcGeom::IteratorSettings::USE_WORLD_COORDS)) {
-			for (IfcGeom::IfcRepresentationShapeItems::iterator it = shapes.begin(); it != shapes.end(); ++it) {
+			for (IfcGeom::ConversionResults::iterator it = shapes.begin(); it != shapes.end(); ++it) {
 				it->prepend(trsf);
 			}
-			trsf = gp_Trsf();
+			trsf = ifcopenshell::geometry::taxonomy::make<ifcopenshell::geometry::taxonomy::matrix4>();
 		}
+		*/
 
-		brep_geometry = boost::shared_ptr<IfcGeom::Representation::BRep>(new IfcGeom::Representation::BRep(element_settings, geom_id, shapes));
+		brep_geometry = boost::shared_ptr<IfcGeom::Representation::BRep>(new IfcGeom::Representation::BRep(geometry_settings(), type, geom_id, shapes));
 
-
+		/*
+		// @todo
 		if (!settings_.get(IfcGeom::IteratorSettings::USE_WORLD_COORDS)) {
 			brep_cache_.insert({ representation_id_str, brep_geometry });
 		}
+		*/
 	}
 	
 	if (rt == READ_TRIANGULATION && !triangulation_geometry) {
@@ -438,6 +398,7 @@ IfcGeom::Element* HdfSerializer::read(IfcParse::IfcFile& f, const std::string& g
 		auto uvcoords = read_dataset<double>(meshGroup, DATASET_NAME_UVCOORDS);
 		auto material_ids = read_dataset<int>(meshGroup, DATASET_NAME_MATERIAL_IDS);
 		auto item_ids = read_dataset<int>(meshGroup, DATASET_NAME_ITEM_IDS);
+		auto edges_item_ids = read_dataset<int>(meshGroup, DATASET_NAME_EDGES_ITEM_IDS);
 
 		std::vector<surface_style_serialization> surface_styles;
 
@@ -457,14 +418,15 @@ IfcGeom::Element* HdfSerializer::read(IfcParse::IfcFile& f, const std::string& g
 			ds.read(surface_styles.data(), style_compound);
 		}
 
-		std::vector<std::shared_ptr<IfcGeom::SurfaceStyle>> surface_style_ptrs(surface_styles.size());
+		std::vector<ifcopenshell::geometry::taxonomy::style::ptr> surface_style_ptrs(surface_styles.size());
 
 		for (size_t i = 0; i < surface_styles.size(); ++i) {
 			read_surface_style(surface_styles[i], surface_style_ptrs[i]);
 		}
 
 		triangulation_geometry = boost::shared_ptr<IfcGeom::Representation::Triangulation>(new IfcGeom::Representation::Triangulation(
-			element_settings,
+			geometry_settings_,
+			type,
 			geom_id,
 			verts,
 			faces,
@@ -474,6 +436,7 @@ IfcGeom::Element* HdfSerializer::read(IfcParse::IfcFile& f, const std::string& g
 			material_ids,
 			surface_style_ptrs,
 			item_ids
+			, edges_item_ids
 		));
 
 		triangulation_cache_.insert({ representation_id_str, triangulation_geometry });
@@ -484,7 +447,7 @@ IfcGeom::Element* HdfSerializer::read(IfcParse::IfcFile& f, const std::string& g
 	} else {
 		return new IfcGeom::TriangulationElement(
 			IfcGeom::Element(
-				element_settings,
+				geometry_settings_,
 				id,
 				parent_id,
 				name,
@@ -496,21 +459,6 @@ IfcGeom::Element* HdfSerializer::read(IfcParse::IfcFile& f, const std::string& g
 			),
 			triangulation_geometry
 		);
-	}
-}
-
-namespace {
-	std::array<std::array<double, 4>, 4> gtrsf_to_matrix(const gp_GTrsf& trsf) {
-		std::array<std::array<double, 4>, 4> arr;
-
-		for (int i = 1; i < 5; ++i) {
-			for (int j = 1; j < 4; ++j) {
-				arr[i-1][j-1] = trsf.Value(j, i);
-			}
-			arr[i - 1][3] = i == 4 ? 1.0 : 0.0;
-		}
-
-		return arr;
 	}
 }
 
@@ -554,12 +502,13 @@ H5::Group HdfSerializer::write(const IfcGeom::Element* o) {
 	H5::DataSpace dataspace_4x4(2, dims_4x4);
 
 	auto placement_dataset = element_group.createDataSet(DATASET_NAME_PLACEMENT, H5::PredType::NATIVE_DOUBLE, dataspace_4x4);
-	const std::vector<double>& m43 = o->transformation().matrix().data();
+	const auto& m = o->transformation().data()->ccomponents();
+	// @todo check, is this needed, can we use the storage of Eigen?
 	double m44[4][4] = {
-		{ m43[0], m43[3], m43[6], m43[9] },
-		{ m43[1], m43[4], m43[7], m43[10] },
-		{ m43[2], m43[5], m43[8], m43[11] },
-		{ 0, 0, 0, 1 }
+		{ m(0,0), m(1,0), m(2,0), m(3,0) },
+		{ m(0,1), m(1,1), m(2,1), m(3,1) },
+		{ m(0,2), m(1,2), m(2,2), m(3,2) },
+		{ m(0,3), m(1,3), m(2,3), m(3,3) }
 	};
 	placement_dataset.write(m44, H5::PredType::NATIVE_DOUBLE);
 
@@ -590,25 +539,27 @@ H5::Group HdfSerializer::createRepresentationGroup(const H5::Group& element_grou
 	return representation_group;
 }
 
-void HdfSerializer::write_style(surface_style_serialization& data, const IfcGeom::SurfaceStyle& s) {
-	data.name = s.Name().c_str();
-	data.original_name = s.original_name().c_str();
-	data.id = s.Id().get_value_or(0);
-	if (s.Diffuse()) {
-		data.diffuse[0] = s.Diffuse()->R();
-		data.diffuse[1] = s.Diffuse()->G();
-		data.diffuse[2] = s.Diffuse()->B();
+void HdfSerializer::write_style(surface_style_serialization& data, const ifcopenshell::geometry::taxonomy::style::ptr& sptr) {
+	auto& s = *sptr;
+	data.name = s.name.c_str();
+	// @todo
+	data.original_name = s.name.c_str();
+	data.id = s.instance->as<IfcUtil::IfcBaseClass>()->id();
+	if (s.diffuse) {
+		data.diffuse[0] = s.diffuse.ccomponents()(0);
+		data.diffuse[1] = s.diffuse.ccomponents()(1);
+		data.diffuse[2] = s.diffuse.ccomponents()(2);
 	}
-	if (s.Specular()) {
-		data.specular[0] = s.Specular()->R();
-		data.specular[1] = s.Specular()->G();
-		data.specular[2] = s.Specular()->B();
+	if (s.specular) {
+		data.specular[0] = s.specular.ccomponents()(0);
+		data.specular[1] = s.specular.ccomponents()(1);
+		data.specular[2] = s.specular.ccomponents()(2);
 	}
-	if (s.Transparency()) {
-		data.transparency = *s.Transparency();
+	if (s.transparency == s.transparency) {
+		data.transparency = s.transparency;
 	}
-	if (s.Specularity()) {
-		data.specularity = *s.Specularity();
+	if (s.specularity == s.specularity) {
+		data.specularity = s.specularity;
 	}
 }
 
@@ -645,17 +596,24 @@ void HdfSerializer::write(const IfcGeom::BRepElement* o) {
 	size_t i = 0;
 	for (auto it = o->geometry().begin(); it != o->geometry().end(); ++it, ++i) {
 		parts[i].id = it->ItemId();
-		std::array<std::array<double, 4>, 4> arr = gtrsf_to_matrix(it->Placement());
+		const auto& m = o->transformation().data()->ccomponents();
+		// @todo check, is this needed, can we use the storage of Eigen?
+		std::array<std::array<double, 4>, 4> arr = { {
+			{ { m(0,0), m(1,0), m(2,0), m(3,0) } },
+			{ { m(0,1), m(1,1), m(2,1), m(3,1) } },
+			{ { m(0,2), m(1,2), m(2,2), m(3,2) } },
+			{ { m(0,3), m(1,3), m(2,3), m(3,3) } }
+		} };
 		for (int j = 0; j < 4; ++j) {
 			std::copy(arr[j].begin(), arr[j].end(), parts[i].matrix[j]);
 		}
 
 		brep_strings.emplace_back();
-		write_shape(it->Shape(), brep_strings.back());
+		write_shape(std::static_pointer_cast<ifcopenshell::geometry::OpenCascadeShape>(it->Shape())->shape(), brep_strings.back());
 		
 		parts[i].surface_style = { "", "", 0, {nan,nan,nan}, {nan,nan,nan}, nan, nan };
 		if (it->hasStyle()) {
-			auto& s = it->Style();
+			auto s = it->StylePtr();
 			write_style(parts[i].surface_style, s);
 		}
 
@@ -677,7 +635,11 @@ void HdfSerializer::write(const IfcGeom::BRepElement* o) {
 
 	H5::DataSpace attrdspace(H5S_SCALAR);
 	H5::Attribute att = brepDataset.createAttribute("settings", H5::PredType::NATIVE_UINT64, attrdspace);
+	/*
+	// @todo
 	uint64_t value = o->geometry().settings().get_raw();
+	*/
+	uint64_t value = 0;
 	att.write(H5::PredType::NATIVE_UINT64, &value);
 }
 
@@ -720,7 +682,7 @@ void HdfSerializer::write(const IfcGeom::TriangulationElement* o) {
 		data.reserve(ts.size());
 		for (auto& m : ts) {
 			data.emplace_back();
-			write_style(data.back(), m.get_style());
+			write_style(data.back(), m);
 		}
 
 		auto ds = meshGroup.createDataSet(DATASET_NAME_MATERIALS, dt, dataspace);
@@ -736,6 +698,7 @@ const H5std_string HdfSerializer::DATASET_NAME_INDICES = "indices";
 const H5std_string HdfSerializer::DATASET_NAME_EDGES = "edges";
 const H5std_string HdfSerializer::DATASET_NAME_MATERIAL_IDS = "material_ids";
 const H5std_string HdfSerializer::DATASET_NAME_ITEM_IDS = "item_ids";
+const H5std_string HdfSerializer::DATASET_NAME_EDGES_ITEM_IDS = "edges_item_ids";
 const H5std_string HdfSerializer::DATASET_NAME_MATERIALS = "materials";
 const H5std_string HdfSerializer::DATASET_NAME_OCCT = "brep";
 const H5std_string HdfSerializer::DATASET_NAME_PLACEMENT = "placement";

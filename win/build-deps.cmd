@@ -114,7 +114,7 @@ if "%CMAKE_VERSION%" LSS "cmake version 3.11.4" (
 )
 
 :: NOTE Boost < 1.64 doesn't work without tricks if the user has only VS 2017 installed and no earlier versions.
-set BOOST_VERSION=1.74.0
+set BOOST_VERSION=1.86.0
 :: Version string with underscores instead of dots.
 set BOOST_VER=%BOOST_VERSION:.=_%
 
@@ -169,17 +169,19 @@ cd "%DEPS_DIR%"
 :: VERSIONS
 set HDF5_VERSION=1.8.22
 set HDF5_VERSION_MAJOR=1.8
-set OCCT_VERSION=7.5.3
-:: TODO Update to 3.5 when it's released as it will have an option to install debug libraries.
+set OCCT_VERSION=7.8.1
 :: NOTE If updating the default Python version, change PY_VER_MAJOR_MINOR accordingly in run-cmake.bat
-set PYTHON_VERSION=3.4.3
+set PYTHON_VERSION=3.11.7
 
 :: VERSION DERIVATIONS
 set OCC_INCLUDE_DIR=%INSTALL_DIR%\opencascade-%OCCT_VERSION%\inc>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 set OCC_LIBRARY_DIR=%INSTALL_DIR%\opencascade-%OCCT_VERSION%\win%ARCH_BITS%\lib>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
-set PY_VER_MAJOR_MINOR=%PYTHON_VERSION:~0,3%
-set PY_VER_MAJOR_MINOR=%PY_VER_MAJOR_MINOR:.=%
-set PYTHONHOME=%INSTALL_DIR%\Python%PY_VER_MAJOR_MINOR%
+for /f "tokens=1,2,3 delims=." %%a in ("%PYTHON_VERSION%") do ( 
+    set PY_VER_MAJOR_MINOR=%%a%%b
+)
+IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
+    set PYTHONHOME=%INSTALL_DIR%\Python%PY_VER_MAJOR_MINOR%
+)
 
 :: Cache last used CMake generator and configurable dependency dirs for other scripts to use
 :: This is consolidated at the beginning of the script so that the script can be partially
@@ -193,7 +195,54 @@ IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
     echo PYTHONHOME=%PYTHONHOME%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 )
 
+:proj
+
+IF EXIST "%INSTALL_DIR%\proj-9.2.1" (
+    echo Found existing "%INSTALL_DIR%\proj-9.2.1", skipping
+    goto :mpir
+)
+
+set DEPENDENCY_NAME=sqlite3
+md %INSTALL_DIR%\sqlite3\lib %INSTALL_DIR%\sqlite3\bin %INSTALL_DIR%\sqlite3\include
+call :DownloadFile https://www.sqlite.org/2023/sqlite-amalgamation-3430100.zip "%DEPS_DIR%" sqlite-amalgamation-3430100.zip
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+call :ExtractArchive sqlite-amalgamation-3430100.zip "%DEPS_DIR%" "%DEPS_DIR%\sqlite-amalgamation-3430100"
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+pushd "%DEPS_DIR%\sqlite-amalgamation-3430100"
+cl /c sqlite3.c
+lib /OUT:%INSTALL_DIR%\sqlite3\lib\sqlite3.lib sqlite3.obj
+cl sqlite3.c shell.c /link /out:%INSTALL_DIR%\sqlite3\bin\sqlite3.exe
+set PATH=%PATH%;%INSTALL_DIR%\sqlite3\bin
+copy sqlite3.h %INSTALL_DIR%\sqlite3\include
+popd
+
+set DEPENDENCY_NAME=proj
+set DEPENDENCY_DIR=%DEPS_DIR%\proj-9.2.1
+call :DownloadFile https://download.osgeo.org/proj/proj-9.2.1.zip "%DEPS_DIR%" proj-9.2.1.zip
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+call :ExtractArchive proj-9.2.1.zip "%DEPS_DIR%" "%DEPS_DIR%\proj-9.2.1"
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+cd "%DEPENDENCY_DIR%"
+call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\proj-9.2.1" ^
+    -DSQLITE3_INCLUDE_DIR=%INSTALL_DIR%\sqlite3\include ^
+    -DSQLITE3_LIBRARY=%INSTALL_DIR%\sqlite3\lib\sqlite3.lib ^
+    -DENABLE_TIFF=Off -DENABLE_CURL=Off -DBUILD_PROJSYNC=Off ^
+    -DBUILD_SHARED_LIBS=Off ^
+    -DBUILD_TESTING=Off
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\PROJ.sln" %BUILD_CFG%
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+
+
 :mpir
+
+IF EXIST "%INSTALL_DIR%\mpir" (
+    echo Found existing "%INSTALL_DIR%\mpir", skipping
+    goto :mpfr
+)
+
 set DEPENDENCY_NAME=mpir
 set DEPENDENCY_DIR=%DEPS_DIR%\mpir
 call :GitCloneAndCheckoutRevision https://github.com/BrianGladman/mpir.git "%DEPENDENCY_DIR%"
@@ -217,6 +266,12 @@ copy ..\..\lib\%VS_PLATFORM%\%DEBUG_OR_RELEASE%\* "%INSTALL_DIR%\mpir"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 :mpfr
+
+IF EXIST "%INSTALL_DIR%\mpfr" (
+    echo Found existing "%INSTALL_DIR%\mpfr", skipping
+    goto :HDF5
+)
+
 set DEPENDENCY_NAME=mpfr
 set DEPENDENCY_DIR=%DEPS_DIR%\mpfr
 call :GitCloneAndCheckoutRevision https://github.com/aothms/mpfr.git "%DEPENDENCY_DIR%" 2ebbe10fd029a480cf6e8a64c493afa9f3654251
@@ -244,11 +299,18 @@ copy lib\%VS_PLATFORM%\%DEBUG_OR_RELEASE%\* "%INSTALL_DIR%\mpfr"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 :HDF5
+
 set DEPENDENCY_NAME=hdf5
 set DEPENDENCY_DIR=%DEPS_DIR%
 cd "%DEPENDENCY_DIR%"
 set HDF5_CMAKE_ZIP=CMake-hdf5-%HDF5_VERSION%.zip
 set HDF5_INSTALL_ZIP_NAME=HDF5-%HDF5_VERSION%-win%ARCH_BITS%
+
+IF EXIST "%INSTALL_DIR%\%HDF5_INSTALL_ZIP_NAME%" (
+    echo Found existing "%INSTALL_DIR%\%HDF5_INSTALL_ZIP_NAME%", skipping
+    goto :Boost
+)
+
 if "%ARCH_BITS%"=="64" set ARCH_BITS_64=64
 call :DownloadFile http://support.hdfgroup.org/ftp/HDF5/releases/hdf5-%HDF5_VERSION_MAJOR%/hdf5-%HDF5_VERSION%/src/CMake-hdf5-%HDF5_VERSION%.zip "%DEPS_DIR%" %HDF5_CMAKE_ZIP%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
@@ -309,11 +371,19 @@ IF NOT EXIST "%INSTALL_DIR%\json\nlohmann". mkdir "%INSTALL_DIR%\json\nlohmann"
 call :DownloadFile https://github.com/nlohmann/json/releases/download/v3.6.1/json.hpp "%INSTALL_DIR%\json\nlohmann" json.hpp
 
 :OpenCOLLADA
+
 :: Note OpenCOLLADA has only Release and Debug builds.
 set DEPENDENCY_NAME=OpenCOLLADA
 set DEPENDENCY_DIR=%DEPS_DIR%\OpenCOLLADA
 :: Use a fixed revision in order to prevent introducing breaking changes
 call :GitCloneAndCheckoutRevision https://github.com/KhronosGroup/OpenCOLLADA.git "%DEPENDENCY_DIR%" 064a60b65c2c31b94f013820856bc84fb1937cc6
+
+IF EXIST "%INSTALL_DIR%\OpenCOLLADA" (
+    echo Found existing "%INSTALL_DIR%\OpenCOLLADA", skipping
+    :: we do need to clone though because the bundled libxml includes are not installed
+    goto :OCCT
+)
+
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 cd "%DEPENDENCY_DIR%"
 :: Debug build of OpenCOLLADAValidator fails (https://github.com/KhronosGroup/OpenCOLLADA/issues/377) so
@@ -334,14 +404,20 @@ call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %DEBUG_OR_RELEASE%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 :OCCT
+
 SET OCCT_VER=V%OCCT_VERSION:.=_%
+
+IF EXIST "%INSTALL_DIR%\opencascade-%OCCT_VERSION%" (
+    echo Found existing "%INSTALL_DIR%\opencascade-%OCCT_VERSION%", skipping
+    goto :Python
+)
 
 :: OCCT has many dependencies but FreeType is the only mandatory
 set DEPENDENCY_NAME=FreeType
 set DEPENDENCY_DIR=%DEPS_DIR%\freetype-2.7.1
 set FREETYPE_ZIP=ft271.zip
 cd "%DEPS_DIR%"
-call :DownloadFile http://download.savannah.gnu.org/releases/freetype/%FREETYPE_ZIP% "%DEPS_DIR%" %FREETYPE_ZIP%
+call :DownloadFile https://download-mirror.savannah.gnu.org/releases/freetype/ft271.zip "%DEPS_DIR%" %FREETYPE_ZIP%
 if not %ERRORLEVEL%==0 goto :Error
 call :ExtractArchive %FREETYPE_ZIP% "%DEPS_DIR%" "%DEPENDENCY_DIR%"
 if not %ERRORLEVEL%==0 goto :Error
@@ -408,11 +484,9 @@ del "%INSTALL_DIR%\opencascade-%OCCT_VERSION%\*.bat"
 :Python
 set DEPENDENCY_NAME=Python %PYTHON_VERSION%
 set DEPENDENCY_DIR=N/A
-set PYTHON_AMD64_POSTFIX=.amd64
-:: NOTE/TODO Beginning from 3.5.0: set PYTHON_AMD64_POSTFIX=-amd64
+set PYTHON_AMD64_POSTFIX=-amd64
 IF NOT %TARGET_ARCH%==x64 set PYTHON_AMD64_POSTFIX=
-:: NOTE/TODO 3.5.0 doesn't use MSI any longer, but exe: set PYTHON_INSTALLER=python-%PYTHON_VERSION%%PYTHON_AMD64_POSTFIX%.exe
-set PYTHON_INSTALLER=python-%PYTHON_VERSION%%PYTHON_AMD64_POSTFIX%.msi
+set PYTHON_INSTALLER=python-%PYTHON_VERSION%%PYTHON_AMD64_POSTFIX%.exe
 
 IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
     cd "%DEPS_DIR%"
@@ -421,12 +495,12 @@ IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
     REM Uninstall if build Rebuild/Clean used
     IF NOT %BUILD_TYPE%==Build (
         call cecho.cmd 0 13 "Uninstalling %DEPENDENCY_NAME%. Please be patient, this will take a while."
-        msiexec /x %PYTHON_INSTALLER% /qn
+        start /w %PYTHON_INSTALLER% /quiet /uninstall
     )
 
     IF NOT EXIST "%PYTHONHOME%". (
         call cecho.cmd 0 13 "Installing %DEPENDENCY_NAME%. Please be patient, this will take a while."
-        msiexec /qn /i %PYTHON_INSTALLER% TARGETDIR="%PYTHONHOME%"
+        start /w  %PYTHON_INSTALLER% /quiet TargetDir="%PYTHONHOME%"
     ) ELSE (
         call cecho.cmd 0 13 "%DEPENDENCY_NAME% already installed. Skipping."
     )
@@ -435,12 +509,18 @@ IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
 )
 
 :SWIG
+
+IF EXIST "%INSTALL_DIR%\swigwin" (
+    echo Found existing "%INSTALL_DIR%\swigwin", skipping
+    goto :cgal
+)
+
 set SWIG_VERSION=3.0.12
 set DEPENDENCY_NAME=SWIG %SWIG_VERSION%
 set DEPENDENCY_DIR=N/A
 set SWIG_ZIP=swigwin-%SWIG_VERSION%.zip
 cd "%DEPS_DIR%"
-call :DownloadFile https://sourceforge.net/projects/swig/files/swigwin/swigwin-%SWIG_VERSION%/%SWIG_ZIP% "%DEPS_DIR%" %SWIG_ZIP%
+call :DownloadFile https://github.com/aothms/swigwin-3.0.12/raw/refs/heads/main/swigwin-3.0.12.zip "%DEPS_DIR%" %SWIG_ZIP%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :ExtractArchive %SWIG_ZIP% "%DEPS_DIR%" "%DEPS_DIR%\swigwin"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
@@ -452,6 +532,12 @@ IF EXIST "%DEPS_DIR%\swigwin-%SWIG_VERSION%". (
 IF EXIST "%DEPS_DIR%\swigwin\". robocopy "%DEPS_DIR%\swigwin" "%INSTALL_DIR%\swigwin" /E /IS /MOVE /njh /njs
 
 :cgal
+
+IF EXIST "%INSTALL_DIR%\cgal" (
+    echo Found existing "%INSTALL_DIR%\cgal", skipping
+    goto :Eigen
+)
+
 set DEPENDENCY_NAME=cgal
 set DEPENDENCY_DIR=%DEPS_DIR%\cgal
 call :GitCloneAndCheckoutRevision https://github.com/CGAL/cgal.git "%DEPENDENCY_DIR%" v5.2.3
@@ -472,6 +558,50 @@ call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\CGAL.sln" %BUILD_CFG%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
+
+:Eigen
+set DEPENDENCY_NAME=Eigen
+set DEPENDENCY_DIR=%INSTALL_DIR%\%DEPENDENCY_NAME%
+call :GitCloneAndCheckoutRevision https://gitlab.com/libeigen/eigen.git "%DEPENDENCY_DIR%" 3.3.9
+
+:: :tbb
+:: set DEPENDENCY_NAME=tbb
+:: set DEPENDENCY_DIR=%DEPS_DIR%\tbb
+:: call :GitCloneAndCheckoutRevision https://github.com/wjakob/tbb  "%DEPENDENCY_DIR%" 9e219e24fe223b299783200f217e9d27790a87b0
+:: IF NOT %ERRORLEVEL%==0 GOTO :Error
+:: cd "%DEPENDENCY_DIR%"
+:: call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\tbb"  ^
+::                -DBUILD_SHARED_LIBS=Off
+:: IF NOT %ERRORLEVEL%==0 GOTO :Error
+:: call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\TBB.sln" %BUILD_CFG%
+:: IF NOT %ERRORLEVEL%==0 GOTO :Error
+:: call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
+:: IF NOT %ERRORLEVEL%==0 GOTO :Error
+:: 
+:: :usd
+:: set DEPENDENCY_NAME=usd
+:: set DEPENDENCY_DIR=%DEPS_DIR%\usd
+:: call :GitCloneAndCheckoutRevision https://github.com/PixarAnimationStudios/OpenUSD "%DEPENDENCY_DIR%" v24.05
+:: IF NOT %ERRORLEVEL%==0 GOTO :Error
+:: cd "%DEPENDENCY_DIR%"
+:: call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\usd"  ^
+::                -DBOOST_ROOT="%DEPS_DIR%\boost_%BOOST_VER%" ^
+::                -DOneTBB_CMAKE_ENABLE=On                    ^
+::                -DTBB_ROOT_DIR="%INSTALL_DIR%\tbb"          ^
+::                -DPXR_ENABLE_PYTHON_SUPPORT=FALSE           ^
+::                -DPXR_ENABLE_GL_SUPPORT=FALSE               ^
+::                -DPXR_BUILD_IMAGING=FALSE                   ^
+::                -DPXR_BUILD_TUTORIALS=FALSE                 ^
+::                -DPXR_BUILD_EXAMPLES=FALSE                  ^
+::                -DPXR_BUILD_USD_TOOLS=FALSE                 ^
+::                -DPXR_BUILD_TESTS=FALSE                     ^
+::                -DBUILD_SHARED_LIBS=Off                     ^
+::                -DBOOST_LIBRARYDIR="%DEPS_DIR%\boost_%BOOST_VER%\stage\vs%VS_VER%-%VS_PLATFORM%\lib"
+:: IF NOT %ERRORLEVEL%==0 GOTO :Error
+:: call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\USD.sln" %BUILD_CFG%
+:: IF NOT %ERRORLEVEL%==0 GOTO :Error
+:: call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
+:: IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 :Successful
 echo.

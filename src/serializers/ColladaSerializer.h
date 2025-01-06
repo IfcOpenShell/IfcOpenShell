@@ -41,10 +41,10 @@
 #pragma GCC diagnostic pop
 #endif
 
-#include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
+#include "../ifcgeom/Iterator.h"
 
 #include "../serializers/serializers_api.h"
-#include "../ifcgeom_schema_agnostic/GeometrySerializer.h"
+#include "../ifcgeom/GeometrySerializer.h"
 
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/io.hpp>
@@ -75,7 +75,7 @@ private:
                 const std::string &mesh_id, const std::string &default_material_name,
                 const std::vector<double>& positions, const std::vector<double>& normals,
                 const std::vector<int>& faces, const std::vector<int>& edges,
-                const std::vector<int>& material_ids, const std::vector<IfcGeom::Material>& materials,
+                const std::vector<int>& material_ids, const std::vector<ifcopenshell::geometry::taxonomy::style::ptr>& materials,
                 const std::vector<double>& uvs, const std::vector<std::string>& material_references);
 			void close();
             ColladaSerializer *serializer;
@@ -89,7 +89,7 @@ private:
 			const std::string scene_id;
 			bool scene_opened;
 			std::stack<COLLADASW::Node*> parentNodes;
-			std::stack<IfcGeom::Transformation> matrixStack;
+			std::stack<ifcopenshell::geometry::taxonomy::matrix4> matrixStack;
 		public:
 			ColladaScene(const std::string& scene_id, COLLADASW::StreamWriter& stream, ColladaSerializer *_serializer)
 				: COLLADASW::LibraryVisualScenes(&stream)
@@ -118,11 +118,11 @@ private:
 				explicit ColladaEffects(COLLADASW::StreamWriter& stream)
 					: COLLADASW::LibraryEffects(&stream)
 				{}
-				void write(const IfcGeom::Material &material, const std::string &material_uri);
+				void write(const ifcopenshell::geometry::taxonomy::style::ptr& material, const std::string &material_uri);
 				void close();
                 ColladaSerializer *serializer;
 			};
-			std::vector<IfcGeom::Material> materials;
+			std::vector<ifcopenshell::geometry::taxonomy::style::ptr> materials;
 			std::vector<std::string> material_uris;
 		public:
 			explicit ColladaMaterials(COLLADASW::StreamWriter& stream, ColladaSerializer *_serializer)
@@ -130,9 +130,9 @@ private:
 				, serializer(_serializer)
 		                , effects(stream)
 			{}
-			void add(const IfcGeom::Material& material);
-			std::string getMaterialUri(const IfcGeom::Material& material);
-			bool contains(const IfcGeom::Material& material);
+			void add(const ifcopenshell::geometry::taxonomy::style::ptr& material);
+			std::string getMaterialUri(const ifcopenshell::geometry::taxonomy::style::ptr& material);
+			bool contains(const ifcopenshell::geometry::taxonomy::style::ptr& material);
 			void write();
             ColladaSerializer *serializer;
             ColladaEffects effects;
@@ -165,14 +165,14 @@ private:
 			std::vector<int> faces;
 			std::vector<int> edges;
 			std::vector<int> material_ids;
-			std::vector<IfcGeom::Material> materials;
+			std::vector<ifcopenshell::geometry::taxonomy::style::ptr> materials;
 			std::vector<std::string> material_references;
             std::vector<double> uvs;
 			std::vector<const IfcGeom::Element*> parents_;
 
 			DeferredObject(const std::string& unique_id, const std::string& representation_id, const std::string& type, const IfcGeom::Transformation& transformation,
 				const std::vector<double>& vertices, const std::vector<double>& normals, const std::vector<int>& faces,
-				const std::vector<int>& edges, const std::vector<int>& material_ids, const std::vector<IfcGeom::Material>& materials,
+				const std::vector<int>& edges, const std::vector<int>& material_ids, const std::vector<ifcopenshell::geometry::taxonomy::style::ptr>& materials,
 				const std::vector<std::string>& material_references, const std::vector<double>& uvs)
 				: unique_id(unique_id)
 				, representation_id(representation_id)
@@ -219,9 +219,9 @@ private:
 	std::string unit_name;
 	float unit_magnitude;
 public:
-    ColladaSerializer(const std::string& dae_filename, const SerializerSettings& settings)
-        : WriteOnlyGeometrySerializer(settings)
-		, exporter("IfcOpenShell", dae_filename, this, settings.precision >= 15)
+    ColladaSerializer(const std::string& dae_filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings)
+        : WriteOnlyGeometrySerializer(geometry_settings, settings)
+		, exporter("IfcOpenShell", dae_filename, this, settings.get<ifcopenshell::geometry::settings::FloatingPointDigits>().get() >= 15)
     {
         exporter.serializer = this;
         exporter.materials.serializer = this;

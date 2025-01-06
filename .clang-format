@@ -1,0 +1,24 @@
+# We'll use defaults from the LLVM style with modifications
+BasedOnStyle: LLVM
+ColumnLimit: 0 # we do not enforce column lenght, please format responsibly
+IndentWidth: 4
+---
+Language: Cpp
+AllowShortEnumsOnASingleLine: false
+AlwaysBreakTemplateDeclarations: Yes
+BinPackArguments: false
+BinPackParameters: false
+BraceWrapping:
+    SplitEmptyFunction: false
+    SplitEmptyRecord: false
+    SplitEmptyNamespace: false
+IncludeBlocks: Regroup
+InsertBraces: true
+InsertNewlineAtEOF: true
+PackConstructorInitializers: CurrentLine
+PointerAlignment: Left
+ReflowComments: false # keep licenze comment blocks
+SortIncludes: CaseInsensitive
+SpacesInLineCommentPrefix:
+    Maximum: 1
+TabWidth: 4

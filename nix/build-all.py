@@ -48,10 +48,16 @@
 #     on OS X El Capitan with homebrew:                                       #
 #          $ brew install git bison autoconf automake libffi cmake            #
 #                                                                             #
+#     on RHEL-related distros:                                                #
+#          $ yum install git gcc gcc-c++ autoconf bison make cmake            #
+#            mesa-libGL-devel libffi-devel fontconfig-devel bzip2             #
+#            automake patch                                                   #
 ###############################################################################
 import logging
 import os
+import re
 import sys
+import glob
 import subprocess as sp
 import shutil
 import tarfile
@@ -76,11 +82,11 @@ PROJECT_NAME = "IfcOpenShell"
 USE_CURRENT_PYTHON_VERSION = os.getenv("USE_CURRENT_PYTHON_VERSION")
 ADD_COMMIT_SHA = os.getenv("ADD_COMMIT_SHA")
 
-PYTHON_VERSIONS = ["3.6.14", "3.7.13", "3.8.13", "3.9.11", "3.10.3", "3.11.0"]
+PYTHON_VERSIONS = ["3.9.11", "3.10.3", "3.11.8", "3.12.1", "3.13.0"]
 JSON_VERSION = "v3.6.1"
 OCE_VERSION = "0.18.3"
-OCCT_VERSION = "7.5.3"
-BOOST_VERSION = "1.80.0"
+OCCT_VERSION = "7.8.1"
+BOOST_VERSION = "1.86.0"
 PCRE_VERSION = "8.41"
 LIBXML2_VERSION = "2.9.11"
 SWIG_VERSION = "4.0.2"
@@ -90,6 +96,8 @@ HDF5_VERSION = "1.12.1"
 GMP_VERSION = "6.2.1"
 MPFR_VERSION = "3.1.6" # latest is 4.1.0
 CGAL_VERSION = "5.3"
+USD_VERSION = "23.05"
+TBB_VERSION = "2021.9.0"
 
 # binaries
 cp = "cp"
@@ -186,7 +194,7 @@ cecho(""" - How many compiler processes may be run in parallel.
 
 dependency_tree = {
     'IfcParse': ('boost', 'libxml2', 'hdf5'),
-    'IfcGeom': ('IfcParse', 'occ', 'json', 'cgal'),
+    'IfcGeom': ('IfcParse', 'occ', 'json', 'cgal', 'eigen'),
     'IfcConvert': ('IfcGeom',),
     'OpenCOLLADA': ('libxml2', 'pcre'),
     'IfcGeomServer': ('IfcGeom',),
@@ -200,7 +208,9 @@ dependency_tree = {
     'json': (),
     'hdf5': (),
     'cgal': (),
+    'eigen': (),
     'freetype': (),
+    # 'usd': ('boost', 'oneTBB')
 }
 
 def v(dep):
@@ -214,6 +224,7 @@ if "v" in flags:
 else:
     logger.setLevel(logging.INFO)
 
+OFF_ON = ["OFF", "ON"]
 BUILD_STATIC = "shared" not in flags
 ENABLE_FLAG = "--enable-static" if BUILD_STATIC else "--enable-shared"
 DISABLE_FLAG = "--disable-shared" if BUILD_STATIC else "--disable-static"
@@ -254,6 +265,11 @@ if not os.path.exists(LOG_FILE):
     open(LOG_FILE, "w").close()
 logger.info(f"using command log file '{LOG_FILE}'")
 
+# Causing havoc in python 3.11 build
+try:
+    del os.environ['__PYVENV_LAUNCHER__']
+except: pass
+
 def run(cmds, cwd=None, can_fail=False):
 
     """
@@ -284,8 +300,9 @@ if platform.system() == "Darwin":
         # Apparently not supported
         PYTHON_VERSIONS = [pv for pv in PYTHON_VERSIONS if tuple(map(int, pv.split("."))) >= (3, 7)]
     if run(["sw_vers", "-productVersion"]) < "10.16":
-        # Apparently not supported
-        PYTHON_VERSIONS = [pv for pv in PYTHON_VERSIONS if tuple(map(int, pv.split("."))) < (3, 11)]
+        # This is now solved with the '__PYVENV_LAUNCHER__' hack
+        # PYTHON_VERSIONS = [pv for pv in PYTHON_VERSIONS if tuple(map(int, pv.split("."))) < (3, 11)]
+        pass
 
 BOOST_VERSION_UNDERSCORE = BOOST_VERSION.replace(".", "_")
 
@@ -319,7 +336,7 @@ def run_cmake(arg1, cmake_args, cmake_dir=None, cwd=None):
     if "wasm" in flags:
         wasm.append("emcmake")
         
-    run([*wasm, "cmake", P, *cmake_args, f"-DCMAKE_BUILD_TYPE={BUILD_CFG}"], cwd=cwd)
+    run([*wasm, "cmake", P, *cmake_args, f"-DCMAKE_BUILD_TYPE={BUILD_CFG}", f"-DBUILD_SHARED_LIBS={OFF_ON[not BUILD_STATIC]}"], cwd=cwd)
 
 
 def git_clone_or_pull_repository(clone_url, target_dir, revision=None):
@@ -333,12 +350,15 @@ def git_clone_or_pull_repository(clone_url, target_dir, revision=None):
         run([git, "clone", "--recursive", clone_url, target_dir])
     else:
         logger.info(f"directory '{target_dir}' already cloned. Pulling latest changes.")
+        run([git, "-C", target_dir, "fetch", "--all", "--tags"])
 
     # detect whether we are on a branch and pull
     if run([git, "rev-parse", "--abbrev-ref", "HEAD"], cwd=target_dir) != "HEAD":
         run([git, "pull", clone_url], cwd=target_dir)
 
     if revision != None:
+        run([git, "reset", "--hard"], cwd=target_dir)
+        run([git, "fetch", "--all"], cwd=target_dir)
         run([git, "checkout", revision], cwd=target_dir)
 
 
@@ -445,6 +465,9 @@ def build_dependency(name, mode, build_tool_args, download_url, download_name, d
         shutil.copytree(os.path.join(extract_dir, "boost"), os.path.join(DEPS_DIR, "install", f"boost-{BOOST_VERSION}", "boost"))
         logger.info(f"\rInstalled {name}     \n")
 
+    if "diskcleanup" in flags:
+        shutil.rmtree(build_dir, ignore_errors=True)
+
 cecho("Collecting dependencies:", GREEN)
 
 # Set compiler flags for 32bit builds on 64bit system
@@ -456,10 +479,12 @@ if platform.system() == "Darwin":
     ADDITIONAL_ARGS = [f"-mmacosx-version-min={TOOLSET}"] + ADDITIONAL_ARGS
 
 if "wasm" in flags:
-    ADDITIONAL_ARGS.extend(("-sWASM_BIGINT", "-fexceptions"))
+    ADDITIONAL_ARGS.extend(("-sWASM_BIGINT", "-fwasm-exceptions"))
 
 # If the linker supports GC sections, set it up to reduce binary file size
 # -fPIC is required for the shared libraries to work
+
+compiler_flags = "CFLAGS", "CXXFLAGS", "LDFLAGS"
 
 CXXFLAGS = os.environ.get("CXXFLAGS", "")
 CFLAGS = os.environ.get("CFLAGS", "")
@@ -486,7 +511,11 @@ else:
         CXXFLAGS=CXXFLAGS_MINIMAL
         CFLAGS=CFLAGS_MINIMAL
     LDFLAGS = f"{LDFLAGS} {ADDITIONAL_ARGS_STR}"
-    
+
+if "lto" in flags:
+    for f in compiler_flags:
+        locals()[f] += f" -flto={IFCOS_NUM_BUILD_PROCS}"
+
 os.environ["CXXFLAGS"] = CXXFLAGS
 os.environ["CFLAGS"] = CFLAGS
 os.environ["LDFLAGS"] = LDFLAGS
@@ -496,6 +525,11 @@ os.environ["LDFLAGS"] = LDFLAGS
 # build_dependency(name="cmake-%s" % (CMAKE_VERSION,), mode="autoconf", build_tool_args=[], download_url="https://cmake.org/files/v%s" % (CMAKE_VERSION_2,), download_name="cmake-%s.tar.gz" % (CMAKE_VERSION,))
 
 if 'hdf5' in targets:
+    # not supported
+    orig = [os.environ[f] for f in compiler_flags]
+    for f in compiler_flags:
+        os.environ[f] = re.sub(r"-flto(=\w+)?", "", os.environ[f])
+
     HDF5_MAJOR = ".".join(HDF5_VERSION.split(".")[:-1])
     build_dependency(
         name=f"hdf5-{HDF5_VERSION}",
@@ -506,6 +540,10 @@ if 'hdf5' in targets:
         ctest_result=f"HDF5-{HDF5_VERSION}-{platform.system()}",
         ctest_result_path=f"HDF_Group/HDF5/{HDF5_VERSION}"
     )
+    
+    for f, o in zip(compiler_flags, orig):
+        os.environ[f] = o
+    
 
 if "json" in targets:
     json_url = f"https://github.com/nlohmann/json/releases/download/{JSON_VERSION}/json.hpp"
@@ -514,6 +552,9 @@ if "json" in targets:
         os.makedirs(os.path.dirname(json_install_path))
     if not os.path.exists(json_install_path):
         urlretrieve(json_url, json_install_path)
+        
+if "eigen" in targets:
+    git_clone_or_pull_repository("https://gitlab.com/libeigen/eigen.git", f"{DEPS_DIR}/install/eigen-3.3.9", revision="3.3.9")
 
 if "pcre" in targets:
     build_dependency(
@@ -547,12 +588,22 @@ if "freetype" in targets:
         download_url = "https://github.com/freetype/freetype",
         download_name = "freetype2",
         download_tool=download_tool_git,
+        revision="VER-2-11-1"
     )
 
 if USE_OCCT and "occ" in targets:
     patches = []
     if OCCT_VERSION < "7.4":
         patches.append("./patches/occt/enable-exception-handling.patch")
+        
+    if OCCT_VERSION == "7.7.1":
+        patches.append("./patches/occt/no_ExpToCasExe.patch")
+    
+    if OCCT_VERSION == "7.7.2":
+        patches.append("./patches/occt/no_ExpToCasExe_7_7_2.patch")
+
+    if OCCT_VERSION == "7.8.1":
+        patches.append("./patches/occt/no_ExpToCasExe_7_8_1.patch")
     
     if "wasm" in flags:
         patches.append("./patches/occt/no_em_js.patch")
@@ -687,13 +738,15 @@ if "boost" in targets:
             "--with-thread",
             "--with-date_time",
             "--with-iostreams",
+            "--with-filesystem",
             f"link={LINK_TYPE}",
             *toolset,
             *map(str_concat("cxxflags"), CXXFLAGS.strip().split(' ')),
             *map(str_concat("linkflags"), LDFLAGS.strip().split(' ')),
             "stage", "-s", "NO_BZIP2=1"],
         download_url=BOOST_LOCATION,
-        patch="./patches/boost/boostorg_regex_62.patch",
+        # don't remember what this is, but fail on 1.86
+        # patch="./patches/boost/boostorg_regex_62.patch",
         download_name=f"boost_{BOOST_VERSION_UNDERSCORE}.tar.bz2"
     )
     if "wasm" in flags:
@@ -741,7 +794,42 @@ if "cgal" in targets:
         download_tool=download_tool_git,
         revision=f"v{CGAL_VERSION}"
     )
-    
+
+if "usd" in targets:
+    build_dependency(
+        name=f"oneTBB-{TBB_VERSION}",
+        mode="cmake",
+        build_tool_args=[
+            f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/tbb-{TBB_VERSION}",
+            f"-DTBB_TEST=OFF"
+        ],
+        download_url="https://github.com/oneapi-src/oneTBB",
+        download_name="oneTBB",
+        download_tool=download_tool_git,
+        revision=f"v{TBB_VERSION}"
+    )
+
+    build_dependency(
+        name=f"usd-{USD_VERSION}",
+        mode="cmake",
+        build_tool_args=[
+            f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/usd-{USD_VERSION}",
+            f"-DBOOST_ROOT={DEPS_DIR}/install/boost-{BOOST_VERSION}",
+            f"-DTBB_ROOT_DIR={DEPS_DIR}/install/tbb-{TBB_VERSION}",
+            f"-DPXR_ENABLE_PYTHON_SUPPORT=FALSE",
+            f"-DPXR_ENABLE_GL_SUPPORT=FALSE",
+            f"-DPXR_BUILD_IMAGING=FALSE",
+            f"-DPXR_BUILD_TUTORIALS=FALSE",
+            f"-DPXR_BUILD_EXAMPLES=FALSE",
+            f"-DPXR_BUILD_USD_TOOLS=FALSE",
+            f"-DPXR_BUILD_TESTS=FALSE"
+        ],
+        download_url="https://github.com/PixarAnimationStudios/USD",
+        download_name="USD",
+        download_tool=download_tool_git,
+        revision=f"v{USD_VERSION}"
+    )
+
 cecho("Building IfcOpenShell:", GREEN)
 
 IFCOS_DIR = os.path.join(DEPS_DIR, "build", "ifcopenshell")
@@ -752,7 +840,6 @@ os.makedirs(IFCOS_DIR, exist_ok=True)
 executables_dir = os.path.join(IFCOS_DIR, "executables")
 os.makedirs(executables_dir, exist_ok=True)
 
-OFF_ON = ["OFF", "ON"]
 
 cmake_args = [
     "-DUSE_MMAP="                      "OFF",
@@ -761,8 +848,10 @@ cmake_args = [
     "-DBOOST_ROOT="                    f"{DEPS_DIR}/install/boost-{BOOST_VERSION}",
     "-DGLTF_SUPPORT="                  "ON",
     "-DJSON_INCLUDE_DIR="              f"{DEPS_DIR}/install/json",
+    "-DEIGEN_DIR="                     f"{DEPS_DIR}/install/eigen-3.3.9",
     "-DBoost_NO_BOOST_CMAKE="          "On",
-    "-DADD_COMMIT_SHA="              +("On" if ADD_COMMIT_SHA else "Off")
+    "-DADD_COMMIT_SHA="              +("On" if ADD_COMMIT_SHA else "Off"),
+    "-DVERSION_OVERRIDE="            +("On" if ADD_COMMIT_SHA else "Off")
 ]
 
 if "wasm" in flags:
@@ -823,6 +912,13 @@ if "hdf5" in targets:
     ])
 else:
     cmake_args.append("-DHDF5_SUPPORT=Off")
+
+if "usd" in targets:
+    cmake_args.extend([
+        "-DUSD_SUPPORT="               "On",
+        "-DUSD_INCLUDE_DIR="           f"{DEPS_DIR}/install/usd-{USD_VERSION}/include",
+        "-DUSD_LIBRARY_DIR="           f"{DEPS_DIR}/install/usd-{USD_VERSION}/lib"
+    ])
 
 if not explicit_targets or {"IfcGeom", "IfcConvert", "IfcGeomServer"} & set(explicit_targets):
     logger.info("\rConfiguring executables...")
@@ -885,15 +981,20 @@ if "IfcOpenShell-Python" in targets:
 
         logger.info(f"\rBuilding python {python_version} wrapper...   ")
 
-        run([make, f"-j{IFCOS_NUM_BUILD_PROCS}", "_ifcopenshell_wrapper"], cwd=python_dir)
+        run([make, f"-j{IFCOS_NUM_BUILD_PROCS}", "ifcopenshell_wrapper"], cwd=python_dir)
         run([make, "install/local"], cwd=os.path.join(python_dir, "ifcwrap"))
 
         if python_executable:
             module_dir = os.path.dirname(run([python_executable, "-c", "import inspect, ifcopenshell; print(inspect.getfile(ifcopenshell))"]))
 
             if platform.system() != "Darwin":
-                # TODO: This symbol name depends on the Python version?
-                run([strip, "-s", "-K", "PyInit__ifcopenshell_wrapper", "_ifcopenshell_wrapper.so"], cwd=module_dir)
+                if BUILD_CFG == "Release":
+                    # TODO: This symbol name depends on the Python version?
+                    so = glob.glob(os.path.join(module_dir, "_ifcopenshell_wrapper*.so"))[0]
+                    if "wasm" in flags:
+                        run(['wasm-strip', so, '-k', "dylink.0"])
+                    else:
+                        run([strip, "-s", "-K", "PyInit__ifcopenshell_wrapper", so], cwd=module_dir)
 
             return module_dir
 

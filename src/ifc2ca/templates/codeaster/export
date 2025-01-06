@@ -1,0 +1,13 @@
+P actions make_etude
+P memory_limit {{ allocated_memory }}
+P time_limit {{ time_limit }}
+P version stable
+F comm {{ model_name }}_{{ run_label }}.comm D  1
+F libr {{ model_name }}.med D  20
+F mess {{ model_name }}_{{ run_label }}.mess R  6
+{%- if "LC" in cases %}
+F rmed {{ model_name + "_LC" }}.rmed R  80
+{%- endif %}
+{%- if "COMB" in cases %}
+F rmed {{ model_name + "_COMB" }}.rmed R  81
+{%- endif %}

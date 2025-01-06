@@ -20,6 +20,9 @@
 ADD_EXECUTABLE(IfcParseExamples IfcParseExamples.cpp)
 TARGET_LINK_LIBRARIES(IfcParseExamples IfcParse)
 set_target_properties(IfcParseExamples PROPERTIES FOLDER Examples)
+target_compile_features(IfcParseExamples PUBLIC cxx_std_17)
+
+if (WITH_OPENCASCADE)
 
 ADD_EXECUTABLE(IfcOpenHouse IfcOpenHouse.cpp)
 TARGET_LINK_LIBRARIES(IfcOpenHouse ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES})
@@ -28,3 +31,15 @@ set_target_properties(IfcOpenHouse PROPERTIES FOLDER Examples)
 ADD_EXECUTABLE(IfcAdvancedHouse IfcAdvancedHouse.cpp)
 TARGET_LINK_LIBRARIES(IfcAdvancedHouse ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES})
 set_target_properties(IfcAdvancedHouse PROPERTIES FOLDER Examples)
+
+endif()
+
+if(SCHEMA_VERSIONS MATCHES "4x3")
+    ADD_EXECUTABLE(IfcAlignment IfcAlignment.cpp)
+    TARGET_LINK_LIBRARIES(IfcAlignment ${IFCOPENSHELL_LIBRARIES})
+    set_target_properties(IfcAlignment PROPERTIES FOLDER Examples)
+
+    ADD_EXECUTABLE(IfcSimplifiedAlignment IfcSimplifiedAlignment.cpp)
+    TARGET_LINK_LIBRARIES(IfcSimplifiedAlignment ${IFCOPENSHELL_LIBRARIES})
+    set_target_properties(IfcSimplifiedAlignment PROPERTIES FOLDER Examples)
+endif()

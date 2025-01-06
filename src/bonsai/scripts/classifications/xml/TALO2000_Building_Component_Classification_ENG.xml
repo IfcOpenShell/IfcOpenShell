@@ -1,0 +1,896 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<BuildingInformation>
+	<Classification>
+		<System>
+			<Name>TALO 2000 Building Component Classification</Name>
+			<EditionVersion>2006</EditionVersion>
+			<EditionDate>
+				<Year>2006</Year>
+				<Month>12</Month>
+				<Day>13</Day>
+			</EditionDate>
+			<Description>The TALO 2000 classifying the information used for the implementation and control of the construction project from a perspective of costs. The classification is divided into sections that describe physical building components and technology components as well as tasks such as project, real estate and user tasks.</Description>
+			<Source>https://www.rakennustieto.fi/index/tuotteet/nimikkeistot_21/talo2000.html</Source>
+			<Items>
+				<Item>
+					<ID>1</ID>
+					<Name>Building elements</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>1.1</ID>
+							<Name>Site elements</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>1.1.1</ID>
+									<Name>Ground elements</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>1.1.1.1</ID>
+											<Name>Clearing elements</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.1.1.2</ID>
+											<Name>Trenches</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.1.1.3</ID>
+											<Name>Channels</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.1.1.4</ID>
+											<Name>Filling on site</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.1.1.5</ID>
+											<Name>Embankments</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.1.1.6</ID>
+											<Name>Draining elements</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.1.1.7</ID>
+											<Name>Other ground elements</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>1.1.2</ID>
+									<Name>Soil stabilisation and reinforcement elements</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>1.1.2.1</ID>
+											<Name>Piles</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.1.2.2</ID>
+											<Name>Soil stabilisation elements</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.1.2.3</ID>
+											<Name>Reinforcement elements</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.1.2.4</ID>
+											<Name>Other soil stabilisation and reinforcement elements</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>1.1.3</ID>
+									<Name>Paved and green areas</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>1.1.3.1</ID>
+											<Name>Traffic area pavings</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.1.3.2</ID>
+											<Name>Parking area pavings</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.1.3.3</ID>
+											<Name>Leisure and play area pavings</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.1.3.4</ID>
+											<Name>Green areas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.1.3.5</ID>
+											<Name>Special area pavings</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>1.1.4</ID>
+									<Name>Site equipment</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>1.1.4.1</ID>
+											<Name>Building equipment</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.1.4.2</ID>
+											<Name>Leisure equipment</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.1.4.3</ID>
+											<Name>Play equipment</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.1.4.4</ID>
+											<Name>Site signage</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.1.4.5</ID>
+											<Name>Other site equipment</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>1.1.5</ID>
+									<Name>Site constructions</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>1.1.5.1</ID>
+											<Name>Yard sheds</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.1.5.2</ID>
+											<Name>Yard shelters and pergolas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.1.5.3</ID>
+											<Name>Fences and retaining walls</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.1.5.4</ID>
+											<Name>Site stairs, ramps and terraces</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.1.5.5</ID>
+											<Name>Site parking facilities</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.1.5.6</ID>
+											<Name>Other site constructions</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>1.2</ID>
+							<Name>Building elements</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>1.2.1</ID>
+									<Name>Foundations</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>1.2.1.1</ID>
+											<Name>Footings</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.2.1.2</ID>
+											<Name>Enclosure walls, foundation columns, foundation beams</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.2.1.3</ID>
+											<Name>Special foundations</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>1.2.2</ID>
+									<Name>Ground floors</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>1.2.2.1</ID>
+											<Name>Ground floor slabs</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.2.2.2</ID>
+											<Name>Ground floor ducts</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.2.2.3</ID>
+											<Name>Special ground floors</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>1.2.3</ID>
+									<Name>Structural frame</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>1.2.3.1</ID>
+											<Name>Civil defence shelters</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.2.3.2</ID>
+											<Name>Bearing walls</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.2.3.3</ID>
+											<Name>Columns</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.2.3.4</ID>
+											<Name>Beams</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.2.3.5</ID>
+											<Name>Intermediate floors</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.2.3.6</ID>
+											<Name>Roofing decks</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.2.3.7</ID>
+											<Name>Structural frame stairs</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.2.3.8</ID>
+											<Name>Other structural elements</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>1.2.4</ID>
+									<Name>Facades</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>1.2.4.1</ID>
+											<Name>External walls</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.2.4.2</ID>
+											<Name>Windows</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.2.4.3</ID>
+											<Name>External doors</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.2.4.4</ID>
+											<Name>Facade attachments</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.2.4.5</ID>
+											<Name>Other facade sections</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>1.2.5</ID>
+									<Name>External decks</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>1.2.5.1</ID>
+											<Name>Balconies</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.2.5.2</ID>
+											<Name>Shelters and pergolas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.2.5.3</ID>
+											<Name>Special external decks</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>1.2.6</ID>
+									<Name>Roofs</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>1.2.6.1</ID>
+											<Name>Roof substructures</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.2.6.2</ID>
+											<Name>Eaves</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.2.6.3</ID>
+											<Name>Roofings</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.2.6.4</ID>
+											<Name>Roof safety products</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.2.6.5</ID>
+											<Name>Glass roof structures</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.2.6.6</ID>
+											<Name>Skylights and hatches</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.2.6.7</ID>
+											<Name>Special roof substructures</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+						<Item>
+							<ID>1.3</ID>
+							<Name>Internal space elements (infills)</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>1.3.1</ID>
+									<Name>Internal dividers</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>1.3.1.1</ID>
+											<Name>Partitions</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.3.1.2</ID>
+											<Name>Glass partitions</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.3.1.3</ID>
+											<Name>Special partitions</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.3.1.4</ID>
+											<Name>Balustrades and railings</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.3.1.5</ID>
+											<Name>Internal doors</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.3.1.6</ID>
+											<Name>Special doors</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.3.1.7</ID>
+											<Name>Space stairs</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.3.1.8</ID>
+											<Name>Other internal dividers</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>1.3.2</ID>
+									<Name>Space surfaces</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>1.3.2.1</ID>
+											<Name>Floor surface elements</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.3.2.2</ID>
+											<Name>Floorings</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.3.2.3</ID>
+											<Name>Ceiling surface elements</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.3.2.4</ID>
+											<Name>Ceiling finishings</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.3.2.5</ID>
+											<Name>Wall surface elements</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.3.2.6</ID>
+											<Name>Wall finishings</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.3.2.7</ID>
+											<Name>Other space surfaces</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>1.3.3</ID>
+									<Name>Internal fixtures</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>1.3.3.1</ID>
+											<Name>Standard fittings</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.3.3.2</ID>
+											<Name>Special fittings</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.3.3.3</ID>
+											<Name>Accessories</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.3.3.4</ID>
+											<Name>Standard appliances</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.3.3.5</ID>
+											<Name>Internal signage</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.3.3.6</ID>
+											<Name>Other internal fixtures</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>1.3.4</ID>
+									<Name>Other internal space elements (infills)</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>1.3.4.1</ID>
+											<Name>Maintenance platforms and catwalks</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.3.4.2</ID>
+											<Name>Fireplaces and flues</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.3.4.3</ID>
+											<Name>Other special internal space elements (infills)</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>1.3.5</ID>
+									<Name>Box units</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>1.3.5.1</ID>
+											<Name>Box unit bathrooms</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.3.5.2</ID>
+											<Name>Box unit refrigeration rooms</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.3.5.3</ID>
+											<Name>Box unit saunas</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.3.5.4</ID>
+											<Name>Box units for services systems</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.3.5.5</ID>
+											<Name>Flue and duct components</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>1.3.5.6</ID>
+											<Name>Other box units</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+					</Children>
+				</Item>
+				<Item>
+					<ID>2</ID>
+					<Name>Services elements</Name>
+					<Description/>
+					<Availability>ModelElement</Availability>
+					<Children>
+						<Item>
+							<ID>2.1</ID>
+							<Name>Plumbing elements</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>2.2</ID>
+							<Name>Air conditioning elements</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>2.3</ID>
+							<Name>Electrical elements</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>2.4</ID>
+							<Name>Data transfer elements</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children/>
+						</Item>
+						<Item>
+							<ID>2.5</ID>
+							<Name>Mechanical elements</Name>
+							<Description/>
+							<Availability>ModelElement</Availability>
+							<Children>
+								<Item>
+									<ID>2.5.1</ID>
+									<Name>Transportation equipment</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>2.5.1.1</ID>
+											<Name>Lifts</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>2.5.1.2</ID>
+											<Name>Escalators and conveyors</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>2.5.1.3</ID>
+											<Name>Other transportation equipment</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+								<Item>
+									<ID>2.5.2</ID>
+									<Name>Space-specific machines and devices</Name>
+									<Description/>
+									<Availability>ModelElement</Availability>
+									<Children>
+										<Item>
+											<ID>2.5.2.1</ID>
+											<Name>Kitchen equipment</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>2.5.2.2</ID>
+											<Name>Laundry machines</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>2.5.2.3</ID>
+											<Name>Civil defence shelter equipment</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>2.5.2.4</ID>
+											<Name>Pool machines and devices</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+										<Item>
+											<ID>2.5.2.5</ID>
+											<Name>Other space-specific machines and devices</Name>
+											<Description/>
+											<Availability>ModelElement</Availability>
+											<Children/>
+										</Item>
+									</Children>
+								</Item>
+							</Children>
+						</Item>
+					</Children>
+				</Item>
+			</Items>
+		</System>
+	</Classification>
+</BuildingInformation>

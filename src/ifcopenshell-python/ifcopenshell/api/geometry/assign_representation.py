@@ -16,18 +16,26 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell.api
+import ifcopenshell.api.owner
+import ifcopenshell.api.geometry
 import ifcopenshell.util.element
+from typing import Any
+
+
+def assign_representation(
+    file: ifcopenshell.file, product: ifcopenshell.entity_instance, representation: ifcopenshell.entity_instance
+) -> None:
+    usecase = Usecase()
+    usecase.file = file
+    usecase.settings = {"product": product, "representation": representation}
+    return usecase.execute()
 
 
 class Usecase:
-    def __init__(self, file, **settings):
-        self.file = file
-        self.settings = {"product": None, "representation": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+    file: ifcopenshell.file
+    settings: dict[str, Any]
 
-    def execute(self):
+    def execute(self) -> None:
         if self.settings["product"].is_a("IfcProduct"):
             product_type = ifcopenshell.util.element.get_type(self.settings["product"])
             if (
@@ -63,13 +71,15 @@ class Usecase:
                 types = self.settings["product"].Types
             if types:
                 for element in types[0].RelatedObjects:
-                    mapped_representation = ifcopenshell.api.run(
-                        "geometry.map_representation", self.file, **{"representation": self.settings["representation"]}
+                    mapped_representation = ifcopenshell.api.geometry.map_representation(
+                        self.file, representation=self.settings["representation"]
                     )
                     self.assign_product_representation(element, mapped_representation)
-        ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": self.settings["product"]})
+        ifcopenshell.api.owner.update_owner_history(self.file, **{"element": self.settings["product"]})
 
-    def assign_product_representation(self, product, representation):
+    def assign_product_representation(
+        self, product: ifcopenshell.entity_instance, representation: ifcopenshell.entity_instance
+    ) -> None:
         definition = product.Representation
         if not definition:
             definition = self.file.createIfcProductDefinitionShape()

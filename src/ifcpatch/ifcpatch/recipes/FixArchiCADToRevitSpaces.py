@@ -1,5 +1,29 @@
+# IfcPatch - IFC patching utiliy
+# Copyright (C) 2023 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of IfcPatch.
+#
+# IfcPatch is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# IfcPatch is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
+
+import logging
+import ifcopenshell
+
+
 class Patcher:
-    def __init__(self, src, file, logger):
+    input_argument = "REQUIRED"
+
+    def __init__(self, src: str, file: None, logger: logging.Logger):
         """Allow ArchiCAD IFC spaces to open as Revit rooms
 
         The underlying problem is that Revit does not bring in IFC spaces as
@@ -27,22 +51,23 @@ class Patcher:
         requires you to run it using Blender, as the geometric modification
         uses the Blender geometry engine.
 
+        `input` argument is required for this recipe, `file` argument is ignored.
+
         Example:
 
         .. code:: python
-
-            ifcpatch.execute({"input": model, "recipe": "FixArchiCADToRevitSpaces", "arguments": []})
+            ifcpatch.execute({"input": "input.ifc", "recipe": "FixArchiCADToRevitSpaces", "arguments": []})
         """
         self.src = src
         self.file = file
         self.logger = logger
 
-    def patch(self):
+    def patch(self) -> None:
         import bpy
-        import blenderbim.tool as tool
+        import bonsai.tool as tool
         import ifcopenshell
         import ifcopenshell.util.element
-        from blenderbim.bim.ifc import IfcStore
+        from bonsai.bim.ifc import IfcStore
         from mathutils import Vector, Matrix
 
         if len(bpy.data.objects) > 0:
@@ -51,10 +76,11 @@ class Patcher:
 
         bpy.ops.bim.load_project(filepath=self.src)
 
-        def recalculate_origin(wall):
+        def recalculate_origin(wall: bpy.types.Object) -> None:
             new_origin = wall.matrix_world @ Vector(wall.bound_box[0])
             if (wall.matrix_world.translation - new_origin).length < 0.001:
                 return
+            assert isinstance(wall.data, bpy.types.Mesh)
             wall.data.transform(
                 Matrix.Translation(
                     (wall.matrix_world.inverted().to_quaternion() @ (wall.matrix_world.translation - new_origin))

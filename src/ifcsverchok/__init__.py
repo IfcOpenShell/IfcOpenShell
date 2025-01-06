@@ -19,8 +19,8 @@
 bl_info = {
     "name": "IFC for Sverchok",
     "author": "Martina Jakubowska, Dion Moult",
-    "version": (0, 0, 999999),
-    "blender": (2, 90, 0),
+    "version": (0, 0, 0),
+    "blender": (3, 1, 0),
     "location": "Node Editor",
     "category": "Node",
     "description": "An extension to Sverchok to work with IFC data",
@@ -30,8 +30,52 @@ bl_info = {
 
 import importlib
 import logging
-logger = logging.getLogger('sverchok.ifc')
+import types
+import bpy
+
+logger = logging.getLogger("sverchok.ifc")
+
+
+def get_blender_addon_package_by_name(addon_name: str) -> types.ModuleType:
+    # Check for legacy addons.
+    if addon_name in bpy.context.preferences.addons:
+        return importlib.import_module(addon_name)
+    elif bpy.app.version < (4, 2, 0):
+        raise ModuleNotFoundError
+
+    # Check for Blender extensions.
+    addon_package = None
+    for package_name in bpy.context.preferences.addons.keys():
+        if package_name.endswith(f".{addon_name}"):
+            try:
+                addon_package = importlib.import_module(package_name)
+            except ModuleNotFoundError:
+                pass
+    if addon_package is None:
+        raise ModuleNotFoundError
+    return addon_package
+
+
+def ensure_addons_are_enabled(*addon_names: str) -> None:
+    errors = []
+    for addon_name in addon_names:
+        try:
+            module = get_blender_addon_package_by_name(addon_name)
+            # `__addon_enabled__` is not present if addon wasn't enabled before
+            if not getattr(module, "__addon_enabled__", False):
+                errors.append(f"- Addon {addon_name} appears to be disabled, it should be enabled before IFC Sverchok.")
+        except ModuleNotFoundError:
+            errors.append(f"- Addon {addon_name} is not installed.")
+
+    if errors:
+        raise Exception("Some issues were found trying to enable IFC Sverchok:\n" + "\n".join(errors))
+
+
+ensure_addons_are_enabled("bonsai", "sverchok")
+
+
 from sverchok.ui.nodeview_space_menu import add_node_menu
+
 
 def nodes_index():
     return [
@@ -58,7 +102,6 @@ def nodes_index():
                 ("ifc.get_attribute", "SvIfcGetAttribute"),
                 ("ifc.select_blender_objects", "SvIfcSelectBlenderObjects"),
                 ("ifc.api", "SvIfcApi"),
-                ("ifc.api_WIP", "SvIfcApiWIP"),
                 ("ifc.bmesh_to_ifc", "SvIfcBMeshToIfcRepr"),
                 ("ifc.sverchok_to_ifc", "SvIfcSverchokToIfcRepr"),
                 ("ifc.create_project", "SvIfcCreateProject"),
@@ -68,37 +111,15 @@ def nodes_index():
     ]
 
 
-node_categories = [
-    {
-        "IFC": [
-            "SvIfcCreateFile",
-            "SvIfcReadFile",
-            "SvIfcWriteFile",
-            "SvIfcCreateEntity",
-            "SvIfcCreateShape",
-            "SvIfcReadEntity",
-            "SvIfcPickIfcClass",
-            "SvIfcById",
-            "SvIfcByGuid",
-            "SvIfcByType",
-            "SvIfcByQuery",
-            "SvIfcAdd",
-            "SvIfcAddPset",
-            "SvIfcAddSpatialElement",
-            "SvIfcRemove",
-            "SvIfcGenerateGuid",
-            "SvIfcGetProperty",
-            "SvIfcGetAttribute",
-            "SvIfcSelectBlenderObjects",
-            "SvIfcApi",
-            "SvIfcApiWIP",
-            "SvIfcBMeshToIfcRepr",
-            "SvIfcSverchokToIfcRepr",
-            "SvIfcCreateProject",
-            "SvIfcQuickProjectSetup",
-        ]
-    }
-]
+def make_node_categories() -> list[dict[str, list[str]]]:
+    node_categories = [{}]
+    for category, nodes in nodes_index():
+        nodes = [node_name for idname, node_name in nodes]
+        node_categories[0][category] = nodes
+    return node_categories
+
+
+node_categories = make_node_categories()
 
 
 def make_node_list():
@@ -116,9 +137,10 @@ imported_modules = make_node_list()
 
 reload_event = False
 
-import bpy
 from os.path import splitext
 import ifcopenshell
+import ifcopenshell.api
+import ifcopenshell.util.element
 from ifcsverchok.ifcstore import SvIfcStore
 
 
@@ -161,10 +183,13 @@ class IFC_Sv_write_file(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return any("IFC" in n for n in context.space_data.edit_tree.nodes.keys())
+        space = context.space_data
+        if not isinstance(space, bpy.types.SpaceNodeEditor):
+            return False
+        return any("IFC" in n for n in space.edit_tree.nodes.keys())
 
-    def ensure_hirarchy(self, file):
-        elements_in_buildings = set()
+    def ensure_hirarchy(self, file: ifcopenshell.file) -> None:
+        elements_in_buildings: set[ifcopenshell.entity_instance] = set()
         if len(file.by_type("IfcBuilding")) == 0:
             my_building = ifcopenshell.api.run("root.create_entity", file, ifc_class="IfcBuilding", name="My Building")
             elements = ifcopenshell.util.element.get_decomposition(my_building)
@@ -177,7 +202,7 @@ class IFC_Sv_write_file(bpy.types.Operator):
             if not (spatial.is_a("IfcSite") or spatial.is_a("IfcBuilding")) and (spatial not in elements_in_buildings):
                 elements = ifcopenshell.util.element.get_decomposition(spatial)
                 ifcopenshell.api.run(
-                    "aggregate.assign_object", file, product=spatial, relating_object=file.by_type("IfcBuilding")[0]
+                    "aggregate.assign_object", file, products=[spatial], relating_object=file.by_type("IfcBuilding")[0]
                 )
 
         for building in file.by_type("IfcBuilding"):
@@ -188,7 +213,10 @@ class IFC_Sv_write_file(bpy.types.Operator):
         for element in elements:
             if element not in elements_in_buildings:
                 ifcopenshell.api.run(
-                    "spatial.assign_container", file, product=element, relating_structure=file.by_type("IfcBuilding")[0]
+                    "spatial.assign_container",
+                    file,
+                    products=[element],
+                    relating_structure=file.by_type("IfcBuilding")[0],
                 )
 
         for building in file.by_type("IfcBuilding"):
@@ -197,7 +225,7 @@ class IFC_Sv_write_file(bpy.types.Operator):
                 if len(file.by_type("IfcSite")) == 0:
                     ifcopenshell.api.run("root.create_entity", file, ifc_class="IfcSite", name="My Site")
                 ifcopenshell.api.run(
-                    "aggregate.assign_object", file, product=building, relating_object=file.by_type("IfcSite")[0]
+                    "aggregate.assign_object", file, products=[building], relating_object=file.by_type("IfcSite")[0]
                 )
                 try:
                     if file.by_type("IfcSite")[0].Decomposes[0].RelatingObject.is_a("IfcProject"):
@@ -207,7 +235,7 @@ class IFC_Sv_write_file(bpy.types.Operator):
                 ifcopenshell.api.run(
                     "aggregate.assign_object",
                     file,
-                    product=file.by_type("IfcSite")[0],
+                    products=[file.by_type("IfcSite")[0]],
                     relating_object=file.by_type("IfcProject")[0],
                 )
         self.file = file
@@ -244,6 +272,7 @@ class IFC_PT_write_file_panel(bpy.types.Panel):
     def poll(cls, context):
         if context.space_data.edit_tree and any("IFC" in n for n in context.space_data.edit_tree.nodes.keys()):
             return True
+        return False
 
     def draw(self, context):
         ng = context.space_data.node_tree

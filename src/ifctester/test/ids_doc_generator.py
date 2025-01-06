@@ -22,15 +22,19 @@ import uuid
 import pytest
 import functools
 import ifcopenshell
+import ifcopenshell.api
+import ifcopenshell.guid
 import ifctester
 import test_facet
 import test_ids
 import numpy as np
+from pathlib import Path
 from xml.dom.minidom import parseString
 from ifctester import ids
 from ifcopenshell import validate
 
 outdir = "build"
+
 
 # Just for aesthetics so we don't keep on getting brand new GlobalIds on each generation
 def regenerate_guids(ifc):
@@ -79,7 +83,9 @@ class FacetDocGenerator:
         # Create an IDS with the applicability selecting exactly
         # the entity type passed to us in `inst`.
         specs = ids.Ids(title=name)
-        spec = ids.Specification(name=name, minOccurs=1)
+
+        # todo: to resume IFC2X3 we need to ensure that entities and attributes are consistent with that schema in order to pass audit
+        spec = ids.Specification(name=name, minOccurs=1, ifcVersion=["IFC4"])
         spec.applicability.append(ids.Entity(name=inst.is_a().upper()))
         spec.requirements.append(facet)
         specs.specifications.append(spec)
@@ -183,7 +189,7 @@ test_ids.run = IdsDocGenerator()
 pytest.main(["-p", "no:pytest-blender"])
 
 for facet, testcases in test_facet.run.testcases.items():
-    with open(os.path.join(outdir, f"testcases-{facet}.md"), "w") as f:
+    with open(os.path.join(outdir, f"testcases-{facet}.md"), "w", encoding="utf-8") as f:
         write = functools.partial(print, file=f)
         write(f"# {facet.capitalize()} testcases")
         write()
@@ -207,7 +213,7 @@ for facet, testcases in test_facet.run.testcases.items():
             )
             write()
 
-with open(os.path.join(outdir, f"testcases-ids.md"), "w") as f:
+with open(os.path.join(outdir, f"testcases-ids.md"), "w", encoding="utf-8") as f:
     write = functools.partial(print, file=f)
     write(f"# IDS integration testcases")
     write()
@@ -283,13 +289,16 @@ spec.requirements.append(
     ifctester.ids.Property(
         propertySet="Pset_WallCommon",
         name="FireRating",
-        measure="IfcLabel",
+        datatype="IfcLabel",
         value=restriction,
         instructions="Fire rating is specified using the Fire Resistance Level as defined in the Australian National Construction Code (NCC) 2019. Valid examples include -/-/-, -/120/120, and 60/60/60",
     )
 )
 
-specs.to_xml(os.path.join(outdir, "library", "sample.ids"))
+ids_path = Path(outdir) / "library" / "sample.ids"
+if not ids_path.parent.exists():
+    ids_path.parent.mkdir()
+specs.to_xml(str(ids_path))
 
 # Create sample model
 model = ifcopenshell.file()
@@ -312,15 +321,15 @@ site = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcSite", na
 building = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBuilding", name="Building A")
 storey = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBuildingStorey", name="Ground Floor")
 
-ifcopenshell.api.run("aggregate.assign_object", model, relating_object=project, product=site)
-ifcopenshell.api.run("aggregate.assign_object", model, relating_object=site, product=building)
-ifcopenshell.api.run("aggregate.assign_object", model, relating_object=building, product=storey)
+ifcopenshell.api.run("aggregate.assign_object", model, relating_object=project, products=[site])
+ifcopenshell.api.run("aggregate.assign_object", model, relating_object=site, products=[building])
+ifcopenshell.api.run("aggregate.assign_object", model, relating_object=building, products=[storey])
 
 wall_types = []
 for i in range(0, 4):
     wall_type = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWallType", name=f"DEMO{i + 1}")
     wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall", name=f"WALL {i + 1}")
-    ifcopenshell.api.run("type.assign_type", model, related_object=wall, relating_type=wall_type)
+    ifcopenshell.api.run("type.assign_type", model, related_objects=[wall], relating_type=wall_type)
     representation = ifcopenshell.api.run(
         "geometry.add_wall_representation", model, context=body, length=5, height=3, thickness=(i + 1) * 0.05
     )
@@ -339,6 +348,6 @@ for i in range(0, 4):
     location = np.eye(4)
     location[1][3] += i * 1
     ifcopenshell.api.run("geometry.edit_object_placement", model, product=wall, matrix=location)
-    ifcopenshell.api.run("spatial.assign_container", model, relating_structure=storey, product=wall)
+    ifcopenshell.api.run("spatial.assign_container", model, relating_structure=storey, products=[wall])
 
 model.write(os.path.join(outdir, "library", "sample.ifc"))

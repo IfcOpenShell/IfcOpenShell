@@ -16,33 +16,45 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell
+import ifcopenshell.util.element
 
-class Usecase:
-    def __init__(self, file, library=None):
-        """Removes a library
 
-        All references along with their relationships will also be removed. Any
-        products which have relationships to this library will not be removed.
+def remove_library(file: ifcopenshell.file, library: ifcopenshell.entity_instance) -> None:
+    """Removes a library
 
-        :param library: The IfcLibraryInformation entity you want to remove
-        :type library: ifcopenshell.entity_instance.entity_instance
-        :return: None
-        :rtype: None
+    All references along with their relationships will also be removed. Any
+    products which have relationships to this library will not be removed.
 
-        Example:
+    :param library: The IfcLibraryInformation entity you want to remove
+    :type library: ifcopenshell.entity_instance
+    :return: None
+    :rtype: None
 
-        .. code:: python
+    Example:
 
-            library = ifcopenshell.api.run("library.add_library", model, name="Brickschema")
-            ifcopenshell.api.run("library.remove_library", model, library=library)
-        """
-        self.file = file
-        self.settings = {"library": library}
+    .. code:: python
 
-    def execute(self):
-        for reference in set(self.settings["library"].HasLibraryReferences or []):
-            self.file.remove(reference)
-        self.file.remove(self.settings["library"])
-        for rel in self.file.by_type("IfcRelAssociatesLibrary"):
-            if not rel.RelatingLibrary:
-                self.file.remove(rel)
+        library = ifcopenshell.api.library.add_library(model, name="Brickschema")
+        ifcopenshell.api.library.remove_library(model, library=library)
+    """
+
+    if file.schema != "IFC2X3":
+        rels = []
+        for reference in set(library.HasLibraryReferences):
+            rels.extend(reference.LibraryRefForObjects)
+            file.remove(reference)
+        rels.extend(library.LibraryInfoForObjects)
+        file.remove(library)
+    else:
+        for reference in set(library.LibraryReference or []):
+            file.remove(reference)
+        file.remove(library)
+        # RelatingLibrary could either be library itself or library reference we removed
+        rels = [rel for rel in file.by_type("IfcRelAssociatesLibrary") if rel.RelatingLibrary is None]
+
+    for rel in rels:
+        history = rel.OwnerHistory
+        file.remove(rel)
+        if history:
+            ifcopenshell.util.element.remove_deep2(file, history)

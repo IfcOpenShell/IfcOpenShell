@@ -17,13 +17,22 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.library
+import ifcopenshell.util.element
 
 
 class TestUnassignReference(test.bootstrap.IFC4):
     def test_unassigning_a_reference(self):
         reference = self.file.createIfcLibraryReference()
-        product = self.file.createIfcWall()
-        ifcopenshell.api.run("library.assign_reference", self.file, product=product, reference=reference)
-        ifcopenshell.api.run("library.unassign_reference", self.file, product=product, reference=reference)
+        products = [self.file.createIfcWall() for i in range(3)]
+        ifcopenshell.api.library.assign_reference(self.file, products=products, reference=reference)
+        ifcopenshell.api.library.unassign_reference(self.file, products=products[:1], reference=reference)
+        assert ifcopenshell.util.element.get_referenced_elements(reference) == set(products[1:])
+
+        ifcopenshell.api.library.unassign_reference(self.file, products=products[1:], reference=reference)
+        assert ifcopenshell.util.element.get_referenced_elements(reference) == set()
         assert len(self.file.by_type("IfcRelAssociatesLibrary")) == 0
+
+
+class TestUnassignReferenceIFC2X3(test.bootstrap.IFC2X3, TestUnassignReference):
+    pass

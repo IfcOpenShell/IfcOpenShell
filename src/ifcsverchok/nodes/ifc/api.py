@@ -24,7 +24,8 @@ from bpy.props import StringProperty, EnumProperty
 from sverchok.node_tree import SverchCustomTreeNode
 from sverchok.data_structure import updateNode
 import logging
-logger = logging.getLogger('sverchok.ifc')
+
+logger = logging.getLogger("sverchok.ifc")
 
 
 def update_usecase(self, context):

@@ -1,23 +1,23 @@
-﻿
+#include "MainWindow.h"
+
 #include <QApplication>
-#include <QString>
-#ifndef QT_NO_OPENGL
-#include <QGLFormat>
-#endif
 
-#include "mainwindow.h"
-
-int main(int argc, char **argv)
+int main(int argc, char *argv[])
 {
-    QApplication app(argc, argv);
+  QApplication app(argc, argv);
 
-	//QGLViewer viewer;
+  // Set the icon in the window title-bar on mswindows
+  // and dock icon on macos.
+  // "icon" alias defined in .qrc file
+  QIcon appIcon(":/icon");
+  app.setWindowIcon(appIcon);
+  // File icon set with:
+  // mswindows - .rc file
+  // macos - .icns file (using CMake)
 
-   // Restore the previous viewer state.
-   //viewer.restoreStateFromFile();
+  qreal dpiScale = app.devicePixelRatio();
 
-    MainWindow window;
-    //window.openFile("	");
+  MainWindow window(dpiScale);
 
   window.show();
 

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en" class="blender">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bonsai Web UI</title>
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="https://bonsaibim.org/assets/images/favicon-blender.png"
+    />
+    <link rel="stylesheet" href="/static/css/index.css" id="index-stylesheet" />
+    <link
+      rel="stylesheet"
+      id="tabulator-stylesheet"
+      href="https://unpkg.com/tabulator-tables/dist/css/tabulator_site_dark.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"
+    />
+    <script
+      type="text/javascript"
+      src="https://code.jquery.com/jquery-3.6.0.min.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="https://unpkg.com/tabulator-tables/dist/js/tabulator.min.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="https://cdn.socket.io/4.0.0/socket.io.min.js"
+    ></script>
+    <script>
+      var SOCKET_PORT = {{port}};
+    </script>
+    <script defer src="./static/js/index.js"></script>
+  </head>
+  <body>
+    <nav>
+      <img
+        src="https://bonsaibim.org/assets/images/blender/blender-logo.png"
+        alt="Logo"
+        class="logo"
+      />
+      <ul>
+        <li>
+          <a href="/" class="active"
+            ><i class="fa-solid fa-table"></i> Schedules</a
+          >
+        </li>
+        <li>
+          <a href="/costing"
+            ><i class="fa-solid fa-exclamation-triangle"></i>Costing</a
+          >
+        </li>
+        <li>
+          <a href="/sequencing"
+            ><i class="fa-solid fa-chart-gantt"></i> Construction Sequencing</a
+          >
+        </li>
+        <li>
+          <a href="/documentation"
+            ><i class="fa-solid fa-images"></i> Documentation</a
+          >
+        </li>
+        <li>
+          <a><i class="fa-solid fa-camera"></i> BCF Topics</a>
+        </li>
+        <li>
+          <a><i class="fa-solid fa-square-check"></i> IDS Audits</a>
+        </li>
+        <li>
+          <a><i class="fa-solid fa-hotel"></i> Facility Management</a>
+        </li>
+      </ul>
+      <button id="toggle-theme" onclick="toggleTheme()">
+        <i class="fas fa-moon"></i>
+      </button>
+    </nav>
+    <div id="connected-list-div">
+      <button id="show-connected-button" onclick="toggleClientList()">
+        Connected Blenders:
+        <span id="blender-count">0</span>
+        <i class="fas fa-chevron-down"></i>
+      </button>
+      <div id="client-list"></div>
+    </div>
+    <div id="container"></div>
+    <footer>
+      <p>Bonsai Version: {{version}}</p>
+    </footer>
+  </body>
+</html>

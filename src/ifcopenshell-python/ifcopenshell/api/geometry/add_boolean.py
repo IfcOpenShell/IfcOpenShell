@@ -16,30 +16,57 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import ifcopenshell.util.unit
+import numpy as np
+import numpy.typing as npt
+from typing import Optional, TYPE_CHECKING, Literal
+
+if TYPE_CHECKING:
+    import bpy.types
+
+
+NPArrayOfFloats = npt.NDArray[np.float64]
+
+
+def add_boolean(
+    file: ifcopenshell.file,
+    representation: ifcopenshell.entity_instance,
+    # A matrix to define a clipping Ifchalfspacesolid.
+    # The XY plane is the clipping boundary and +Z is removed.
+    operator: str = "DIFFERENCE",
+    # IfcHalfSpaceSolid, Mesh
+    type: Literal["IfcHalfSpaceSolid", "Mesh"] = "IfcHalfSpaceSolid",
+    matrix: Optional[NPArrayOfFloats] = None,
+    # A Blender OBJ to define the voided OBJ for a "Mesh" type
+    blender_obj: Optional[bpy.types.Object] = None,
+    # A Blender OBJ to define the void OBJ for a "Mesh" type
+    blender_void: Optional[bpy.types.Object] = None,
+    should_force_faceted_brep: bool = False,
+    should_force_triangulation: bool = False,
+) -> list[ifcopenshell.entity_instance]:
+    """For `type` values:
+    - "IfcHalfSpaceSolid" - `matrix` is not optional.
+    - "Mesh" - `blender_obj` and `blender_void` are not optional
+    """
+    usecase = Usecase()
+    usecase.file = file
+    usecase.settings = {
+        "representation": representation,
+        "operator": operator,
+        "type": type,
+        "matrix": matrix,
+        "blender_obj": blender_obj,
+        "blender_void": blender_void,
+        "should_force_faceted_brep": should_force_faceted_brep,
+        "should_force_triangulation": should_force_triangulation,
+    }
+    return usecase.execute()
 
 
 class Usecase:
-    def __init__(self, file, **settings):
-        self.file = file
-        self.settings = {
-            "representation": None,
-            "operator": "DIFFERENCE",
-            # IfcHalfSpaceSolid, Mesh
-            "type": "IfcHalfSpaceSolid",
-            # The XY plane is the clipping boundary and +Z is removed.
-            "matrix": None,  # A matrix to define a clipping Ifchalfspacesolid.
-            "blender_obj": None,  # A Blender OBJ to define the voided OBJ for a "Mesh" type
-            "blender_void": None,  # A Blender OBJ to define the void OBJ for a "Mesh" type
-            "should_force_faceted_brep": False,
-            "should_force_triangulation": False,
-        }
-        for key, value in settings.items():
-            self.settings[key] = value
-
     def execute(self):
         self.settings["unit_scale"] = ifcopenshell.util.unit.calculate_unit_scale(self.file)
-        self.settings["representation"].RepresentationType = "Clipping"
         if self.settings["type"] == "IfcHalfSpaceSolid":
             result = self.create_half_space_solid()
         elif self.settings["type"] == "Mesh":
@@ -47,27 +74,32 @@ class Usecase:
                 result = self.create_blender_mesh()
         items = []
         for item in self.settings["representation"].Items:
-            items.append(self.file.createIfcBooleanResult(self.settings["operator"], item, result))
+            if (
+                self.settings["operator"] == "DIFFERENCE"
+                and result.is_a("IfcHalfSpaceSolid")
+                and (
+                    item.is_a("IfcSweptAreaSolid")
+                    or item.is_a("IfcSweptDiskSolid")
+                    or item.is_a("IfcBooleanClippingResult")
+                )
+            ):
+                items.append(self.file.createIfcBooleanClippingResult(self.settings["operator"], item, result))
+                representation_type = "Clipping"
+            else:
+                items.append(self.file.createIfcBooleanResult(self.settings["operator"], item, result))
+                representation_type = "CSG"
+        self.settings["representation"].RepresentationType = representation_type
         self.settings["representation"].Items = items
+        return items
 
     def create_half_space_solid(self):
-        clipping = self.settings["matrix"]
-        return self.file.createIfcHalfSpaceSolid(
-            self.file.createIfcPlane(
-                self.file.createIfcAxis2Placement3D(
-                    self.file.createIfcCartesianPoint(
-                        (
-                            self.convert_si_to_unit(clipping[0][3]),
-                            self.convert_si_to_unit(clipping[1][3]),
-                            self.convert_si_to_unit(clipping[2][3]),
-                        )
-                    ),
-                    self.file.createIfcDirection((clipping[0][2], clipping[1][2], clipping[2][2])),
-                    self.file.createIfcDirection((clipping[0][0], clipping[1][0], clipping[2][0])),
-                )
-            ),
-            False,
-        )
+        clipping = np.array(self.settings["matrix"])[:3]
+        local_z = self.file.createIfcDirection(clipping[:, 2].tolist())
+        local_x = self.file.createIfcDirection(clipping[:, 0].tolist())
+        point = self.file.createIfcCartesianPoint(self.convert_si_to_unit(clipping[:, 3]).tolist())
+        placement = self.file.createIfcAxis2Placement3D(point, local_z, local_x)
+        plane = self.file.createIfcPlane(placement)
+        return self.file.createIfcHalfSpaceSolid(plane, AgreementFlag=False)
 
     def create_blender_mesh(self):
         self.ifc_vertices = []

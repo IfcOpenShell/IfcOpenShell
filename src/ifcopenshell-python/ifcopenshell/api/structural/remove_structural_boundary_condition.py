@@ -15,33 +15,36 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
+from typing import Optional
 
 
-class Usecase:
-    def __init__(self, file, connection=None, boundary_condition=None):
-        """Removes a condition from a connection, or an orphased boundary condition
+def remove_structural_boundary_condition(
+    file: ifcopenshell.file,
+    connection: Optional[ifcopenshell.entity_instance] = None,
+    boundary_condition: Optional[ifcopenshell.entity_instance] = None,
+) -> None:
+    """Removes a condition from a connection, or an orphased boundary condition
 
-        :param connection: The IfcStructuralConnection to remove the condition
-            from. If omitted, it is assumed to be an orphaned condition.
-        :type connection: ifcopenshell.entity_instance.entity_instance,optional
-        :param boundary_condition: The IfcBoundaryCondition to remove.
-        :type boundary_condition: ifcopenshell.entity_instance.entity_instance
-        :return: None
-        :rtype: None
-        """
-        self.file = file
-        self.settings = {"connection": connection, "boundary_condition": boundary_condition}
+    :param connection: The IfcStructuralConnection to remove the condition
+        from. If omitted, it is assumed to be an orphaned condition.
+    :type connection: ifcopenshell.entity_instance,optional
+    :param boundary_condition: The IfcBoundaryCondition to remove.
+    :type boundary_condition: ifcopenshell.entity_instance, optional.
+    :return: None
+    :rtype: None
+    """
+    settings = {"connection": connection, "boundary_condition": boundary_condition}
 
-    def execute(self):
-        if self.settings["connection"]:
-            # remove boundary condition from a connection
-            if not self.settings["connection"].AppliedCondition:
-                return
-            if len(self.file.get_inverse(self.settings["connection"].AppliedCondition)) == 1:
-                self.file.remove(self.settings["connection"].AppliedCondition)
-            self.settings["connection"].AppliedCondition = None
-        else:
-            # remove the boundary condition
-            for conn in self.file.get_inverse(self.settings["boundary_condition"]):
-                conn.AppliedCondition = None
-            self.file.remove(self.settings["boundary_condition"])
+    if settings["connection"]:
+        # remove boundary condition from a connection
+        if not settings["connection"].AppliedCondition:
+            return
+        if len(file.get_inverse(settings["connection"].AppliedCondition)) == 1:
+            file.remove(settings["connection"].AppliedCondition)
+        settings["connection"].AppliedCondition = None
+    else:
+        # remove the boundary condition
+        for conn in file.get_inverse(settings["boundary_condition"]):
+            conn.AppliedCondition = None
+        file.remove(settings["boundary_condition"])

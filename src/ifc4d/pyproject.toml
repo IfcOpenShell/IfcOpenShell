@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ifc4d"
+version = "0.0.0"
+authors = [
+  { name="Dion Moult", email="dion@thinkmoult.com" },
+]
+description = "IFC 4D scheduling library to support file conversions and calculations"
+readme = "README.md"
+keywords = ["IFC", "4D", "BIM"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
+]
+dependencies = [
+    "ifcopenshell",
+    "typing-extensions",
+]
+
+[project.urls]
+Homepage = "http://ifcopenshell.org"
+Documentation = "https://docs.ifcopenshell.org"
+Issues = "https://github.com/IfcOpenShell/IfcOpenShell/issues"
+
+[tool.setuptools.packages.find]
+include = ["ifc4d"]
+exclude = ["test*"]

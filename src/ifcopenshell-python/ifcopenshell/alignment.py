@@ -16,228 +16,87 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import operator
 
-from dataclasses import dataclass
+import math
+from typing import Sequence
 
-import numpy
+import numpy as np
 
 import ifcopenshell
 import ifcopenshell.geom
-import ifcopenshell.express
-import ifcopenshell.transition_curve
-
-# geometric primitives
-
-# @notes
-# - not sure if the separation of geometric primitives make sense
-#   does it make handling the variety of distance expressions and
-#   interpolation harder?
+import ifcopenshell.guid
+import ifcopenshell.template
+from ifcopenshell import entity_instance
+from ifcopenshell import ifcopenshell_wrapper
 
 
-@dataclass
-class line:
-    start_point: numpy.ndarray
-    direction_vector: numpy.ndarray
-
-    def __call__(self, u):
-        p = numpy.ndarray((3,))
-        p[0:2] = self.start_point + self.direction_vector * u
-        p[2] = numpy.nan
-        return p
-
-
-@dataclass
-class circle:
-    radius: numpy.ndarray
-
-    def __call__(self, u):
-        return numpy.array([self.radius * numpy.cos(u), self.radius * numpy.sin(u), numpy.nan])
-
-
-def place(matrix, func):
+def evaluate_representation(shape_rep: entity_instance, dist_along: float) -> np.ndarray:
     """
-    Higher order function for application of a 3x3 matrix
-    to a 2D point. Assumes a functor such as line or circle.
+    Calculate the 4x4 geometric transform at a point on an alignment segment
+    @param shape_rep: The representation shape (composite curve, gradient curve, or segmented reference curve) to evaluate
+    @param dist_along: The distance along this representation at the point of interest (point to be calculated)
     """
-
-    def inner(*args):
-        v = func(*args)
-        # homogenize
-        v = numpy.insert(v[0:2], v[0:2].shape, 1, axis=-1)
-        p = numpy.ndarray((3,))
-        p[0:2] = (matrix @ v)[0:2]
-        p[2] = numpy.nan
-        return p
-
-    return inner
-
-
-# primitives for manipulating and joining curve functor domains
-
-
-def reparametrized_curve(fn, a, b):
-    return lambda u: fn(a * u + b)
-
-
-def normalized_curve(fn):
-    return lambda u: fn(u / fn.length)
-
-
-class trimmed_curve:
-    def __init__(self, fn, length):
-        self.fn = fn
-        self.length = length
-
-    def __call__(self, u):
-        assert u >= 0.0 and u <= self.length
-        return self.fn(u)
-
-
-class piecewise:
-    # takes a set of functors and returns a function f(u) that delegates to the correct segment
-
-    def __init__(self, fns):
-        self.fns = fns
-        self.length = sum(map(operator.attrgetter("length"), fns))
-
-    def __call__(self, u):
-        # this is silly, assuming `u` is monotonically increases we should not always start
-        # searching from the first segment or at least binary search into the segment
-        # lengths
-        u0 = 0
-        for fn in self.fns:
-            u1 = u0 + fn.length
-            if u >= u0 and u <= u1:
-                return fn(u - u0)
-            u0 = u1
-
-
-# mapping functions from IFC entities
-
-
-def map_inst(inst):
-    """
-    Looks up one of the implementation functions below in the global namespace
-    """
-    return globals()[f"impl_{inst.is_a()}"](inst)
-
-
-def impl_IfcLine(inst):
-    return line(
-        numpy.array(inst.Pnt.Coordinates),
-        numpy.array(inst.Dir.Orientation.DirectionRatios) * inst.Dir.Magnitude,
-    )
-
-
-def impl_IfcCircle(inst):
-    return place(map_inst(inst.Position), circle(inst.Radius))
-
-
-def impl_IfcClothoid(inst):
-    # @todo
-    # place = map_inst(inst.Position)
-    # ifcopenshell.transition_curve.TransitionCurve(
-    #     StartPoint          = place.T[2]
-    #     StartDirection      = numpy.arctan2(place.T[0][1], place.T[0][0]),
-    #     SegmentLength       =
-    #     IsStartRadiusCCW    =
-    #     IsEndRadiusCCW      =
-    #     TransitionCurveType =
-    #     StartRadius         =
-    #     EndRadius           =
-    # )
-    return lambda *args: numpy.array((0.0, 0.0))
-
-
-def impl_IfcAxis2Placement2D(inst):
-    arr = numpy.eye(3)
-
-    if inst is None:
-        return arr
-
-    arr.T[2, 0:2] = inst.Location.Coordinates
-
-    if inst.RefDirection is None:
-        return arr
-
-    arr.T[0, 0:2] = inst.RefDirection.DirectionRatios
-    arr.T[0, 0:2] /= numpy.linalg.norm(arr.T[0, 0:2])
-    arr.T[1, 0:2] = -arr.T[0, 1], arr.T[0, 0]
-
-    return arr
-
-
-# conversion functions for semantic design parameters (not used atm)
-
-
-def convert(inst):
-    """
-    Looks up one of the conversion functions below in the global namespace
-    """
-    yield from globals()[f"convert_{inst.is_a()}_{inst.PredefinedType}"](inst)
-
-
-def convert_IfcAlignmentHorizontalSegment_LINE(data):
-    xy = numpy.array(data.StartPoint.Coordinates)
-    yield xy
-    di = numpy.array([numpy.cos(data.StartDirection), numpy.sin(data.StartDirection)])
-    yield xy + di * data.SegmentLength
-
-
-# Two approaches, either DesignParameters or Representation
-
-
-def interpret_linear_element_semantics(settings, crv):
-    # traverse decomposition
-    for rel in crv.IsNestedBy:
-        for obj in rel.RelatedObjects:
-            yield from interpret_linear_element_semantics(settings, obj)
-
-    # lookup design parameters and dispatch to conversion function
-    if crv.is_a("IfcAlignmentSegment"):
-        dp = crv.DesignParameters
-        yield from convert(dp)
-
-
-def evaluate_segment(segment):
-    # print(segment)
-    # print(segment.ParentCurve)
-    # print()
-
-    func = place(map_inst(segment.Placement), map_inst(segment.ParentCurve))
-
-    # reparam so domain starts at zero
-    reparam = reparametrized_curve(func, 1.0, -segment.SegmentStart[0])
-
-    # embed curve length (doesn't do much, just make length recoverable)
-    trimmed = trimmed_curve(reparam, segment.SegmentLength[0])
-
-    return trimmed
-
-
-def interpret_linear_element_geometry(settings, crv):
-    func = piecewise(
-        list(
-            map(
-                evaluate_segment,
-                crv.Representation.Representations[0].Items[0].Segments,
-            )
+    supported_rep_types = ["IFCCOMPOSITECURVE", "IFCGRADIENTCURVE", "IFCSEGMENTEDREFERENCECURVE"]
+    shape_rep_type = shape_rep.is_a().upper()
+    if not shape_rep_type in supported_rep_types:
+        raise NotImplementedError(
+            f"Expected entity type to be one of {[_ for _ in supported_rep_types]}, got '{shape_rep_type}"
         )
-    )
 
-    for u in numpy.linspace(0, func.length, num=int(numpy.ceil(func.length / 0.05))):
-        yield func(u)
+    # TODO: confirm point is not beyond limits of alignment
+
+    s = ifcopenshell.geom.settings()
+    piecewise_function = ifcopenshell_wrapper.map_shape(s, shape_rep.wrapped_data)
+    pwf_evaluator = ifcopenshell_wrapper.piecewise_function_evaluator(piecewise_function, s)
+
+    trans_matrix = pwf_evaluator.evaluate(dist_along)
+
+    return np.array(trans_matrix, dtype=np.float64).T
 
 
-interpret_linear_element = interpret_linear_element_geometry
+def evaluate_segment(segment: entity_instance, dist_along: float) -> np.ndarray:
+    """
+    Calculate the 4x4 geometric transform at a point on an alignment segment
+    @param segment: The segment containing the point that we would like to
+    @param dist_along: The distance along this segment at the point of interest (point to be calculated)
+    """
+    supported_segment_types = ["IFCCURVESEGMENT"]
+    segment_type = segment.is_a().upper()
+    if not segment_type in supported_segment_types:
+        raise NotImplementedError(f"Expected entity type 'IFCCURVESEGMENT', got '{segment_type}")
+    if dist_along > segment.SegmentLength:
+        raise ValueError(f"Provided value {dist_along=} is beyond the end of the segment ({segment.SegmentLength}).")
+
+    s = ifcopenshell.geom.settings()
+    piecewise_function = ifcopenshell_wrapper.map_shape(s, segment.wrapped_data)
+    pwf_evaluator = ifcopenshell_wrapper.piecewise_function_evaluator(piecewise_function, s)
+
+    trans_matrix = pwf_evaluator.evaluate(dist_along)
+
+    return np.array(trans_matrix, dtype=np.float64).T
 
 
-def create_shape(settings, elem):
-    if elem.is_a("IfcLinearPositioningElement") or elem.is_a("IfcLinearElement"):
-        return numpy.row_stack(list(interpret_linear_element(settings, elem)))
-    else:
-        return ifcopenshell.geom.create_shape(settings, elem)
+def generate_vertices(rep_curve: entity_instance, distance_interval: float = 5.0) -> np.ndarray:
+    """
+    Generate vertices along an alignment
+
+    @param rep_curve: The alignment's representation curve to use to generate vertices.
+
+    Note: rep_curve must be IfcCompositeCurve, IfcGradientCurve, or IfcSegmentedReferenceCurve
+
+    @param distance_interval: The distance between points along the alignment at which to generate the points
+    """
+    if rep_curve is None:
+        raise ValueError("Alignment representation not found.")
+
+    s = ifcopenshell.geom.settings()
+    s.set("PIECEWISE_STEP_PARAM", distance_interval)
+    shape = ifcopenshell.geom.create_shape(s, rep_curve)
+    vertices = shape.verts
+    if len(vertices) == 0:
+        msg = f"[ERROR] No vertices generated by ifcopenshell.geom.create_shape()."
+        raise ValueError(msg)
+    return np.array(vertices).reshape((-1, 3))
 
 
 def print_structure(alignment, indent=0):
@@ -250,17 +109,550 @@ def print_structure(alignment, indent=0):
             print_structure(child, indent + 2)
 
 
+def name_segments(prefix: str, segments: Sequence[entity_instance]) -> None:
+    """
+    Sets the segment name like ("H1" for horizontal, "V1" for vertical, "C1" for cant)
+    """
+    for i, segment in enumerate(segments):
+        segment.Name = f"{prefix}{i + 1}"
+
+
+class IfcAlignmentHelper:
+    """
+    Create a new IfcAlignment including horizontal and vertical alignments by PI points.
+
+    Currently only supports horizontal lines and circular arcs (no spirals or other transitions)
+    Currently only supports parabolic vertical curves.
+    Does not yet accommodate cant alignment considerations.
+    """
+
+    # TODO: add missing functionality noted in the docstring
+
+    def __init__(
+        self,
+        file: ifcopenshell.file = None,
+        filename: str = None,
+        creator: str = None,
+        organization: str = None,
+        application: str = None,
+        project_globalid=None,
+        project_name: str = None,
+    ):
+        """
+        @param file: An existing model that the alignment will be added to
+        @param filename: Name for a new model to be created that will contain the alignment
+        @param creator: Name of the actor creating the file
+        @param organization: Name of the creator's organization
+        @param application: Name of the authoring application
+        @param project_globalid: value for the file's IfcProject.GlobalId attribute
+        @param project_name: value for the file's IfcProject.Name attribute
+        """
+        if file is None:
+            self._file = ifcopenshell.template.create(
+                filename=filename,
+                creator=creator,
+                organization=organization,
+                application=application,
+                project_globalid=project_globalid,
+                project_name=project_name,
+                schema_identifier="IFC4X3_ADD2",
+            )
+        else:
+            self._file = file
+
+        self._geom_context = self._file.by_type("IfcGeometricRepresentationContext")[0]
+        self._axis_geom_subcontext = self._file.createIfcGeometricRepresentationSubContext(
+            ContextIdentifier="Axis", ContextType="Model", ParentContext=self._geom_context, TargetView="GRAPH_VIEW"
+        )
+
+    def _create_segment_representations(
+        self,
+        global_placement: entity_instance,
+        curve_segments: Sequence[entity_instance],
+        segments: Sequence[entity_instance],
+    ):
+        for curve_segment, alignment_segment in zip(curve_segments, segments):
+            axis_representation = self._file.create_entity(
+                type="IfcShapeRepresentation",
+                ContextOfItems=self._axis_geom_subcontext,
+                RepresentationIdentifier="Axis",
+                RepresentationType="Segment",
+                Items=(curve_segment,),
+            )
+            product = self._file.create_entity(
+                type="IfcProductDefinitionShape", Name=None, Description=None, Representations=(axis_representation,)
+            )
+            alignment_segment.ObjectPlacement = global_placement
+            alignment_segment.Representation = product
+
+    def _map_alignment_horizontal_segment(self, segment: entity_instance) -> Sequence[entity_instance]:
+        segment_type = segment.is_a().upper()
+        expected_type = "IFCALIGNMENTHORIZONTALSEGMENT"
+        if not segment_type == expected_type:
+            raise TypeError(f"Expected to see type '{expected_type}', instead received '{segment_type}'.")
+
+        start_point = segment.StartPoint
+        start_direction = segment.StartDirection
+        start_radius = segment.StartRadiusOfCurvature
+        length = segment.SegmentLength
+        _type = segment.PredefinedType
+
+        if math.isclose(length, 0):
+            # set transition value based on whether this is the final zero-length segment
+            transition = "DISCONTINUOUS"
+        else:
+            transition = "CONTSAMEGRADIENTSAMECURVATURE"
+
+        match _type:
+            case "LINE":
+                parent_curve = self._file.create_entity(
+                    type="IfcLine",
+                    Pnt=self._file.create_entity(
+                        type="IfcCartesianPoint",
+                        Coordinates=(0.0, 0.0),
+                    ),
+                    Dir=self._file.create_entity(
+                        type="IfcVector",
+                        Orientation=self._file.create_entity(
+                            type="IfcDirection",
+                            DirectionRatios=(1.0, 0.0),
+                        ),
+                        Magnitude=1.0,
+                    ),
+                )
+                curve_segment = self._file.create_entity(
+                    type="IfcCurveSegment",
+                    Transition=transition,
+                    Placement=self._file.create_entity(
+                        type="IfcAxis2Placement2D",
+                        Location=start_point,
+                        RefDirection=self._file.createIfcDirection(
+                            (math.cos(start_direction), math.sin(start_direction)),
+                        ),
+                    ),
+                    SegmentStart=self._file.createIfcLengthMeasure(0.0),
+                    SegmentLength=self._file.createIfcLengthMeasure(length),
+                    ParentCurve=parent_curve,
+                )
+                result = (curve_segment, None)
+            case "CIRCULARARC":
+                parent_curve = self._file.createIfcCircle(
+                    Position=self._file.createIfcAxis2Placement2D(
+                        Location=self._file.createIfcCartesianPoint(Coordinates=(0.0, 0.0)),
+                        RefDirection=self._file.createIfcDirection(
+                            (math.cos(start_direction), math.sin(start_direction))
+                        ),
+                    ),
+                    Radius=abs(start_radius),
+                )
+
+                curve_segment = self._file.create_entity(
+                    type="IfcCurveSegment",
+                    Transition=transition,
+                    Placement=self._file.create_entity(
+                        type="IfcAxis2Placement2D",
+                        Location=start_point,
+                        RefDirection=self._file.createIfcDirection(
+                            (math.cos(start_direction), math.sin(start_direction))
+                        ),
+                    ),
+                    SegmentStart=self._file.createIfcLengthMeasure(0.0),
+                    SegmentLength=self._file.createIfcLengthMeasure(length * start_radius / abs(start_radius)),
+                    ParentCurve=parent_curve,
+                )
+                result = (curve_segment, None)
+
+            case _:
+                result = (None, None)
+
+        return result
+
+    def _create_horizontal_alignment(
+        self,
+        name: str,
+        description: str,
+        points: Sequence[Sequence[float]],
+        radii: Sequence[float],
+        include_geometry: bool = True,
+    ):
+        """
+        Create a horizontal alignment using the PI layout method.
+
+        @param name: value for Name attribute
+        @param description: value for Description attribute
+        @param points: (X, Y) pairs denoting the location of the horizontal PIs, including start (POB) and end (POE).
+        @param radii: radii values to use for transition
+        @param include_geometry: optionally create the alignment geometric representation as well as the semantic business logic
+        """
+        horizontal_segments = list()  # business logic
+        horizontal_curve_segments = list()  # geometry
+
+        xBT, yBT = points[0]
+        xPI, yPI = points[1]
+
+        i = 1
+
+        for radius in radii:
+            # back tangent
+            dxBT = xPI - xBT
+            dyBT = yPI - yBT
+            angleBT = math.atan2(dyBT, dxBT)
+            lengthBT = math.sqrt(dxBT * dxBT + dyBT * dyBT)
+
+            # forward tangent
+            i += 1
+            xFT, yFT = points[i]
+            dxFT = xFT - xPI
+            dyFT = yFT - yPI
+            angleFT = math.atan2(dyFT, dxFT)
+
+            delta = angleFT - angleBT
+
+            tangent = abs(radius * math.tan(delta / 2))
+
+            lc = abs(radius * delta)
+
+            radius *= delta / abs(delta)
+
+            xPC = xPI - tangent * math.cos(angleBT)
+            yPC = yPI - tangent * math.sin(angleBT)
+
+            xPT = xPI + tangent * math.cos(angleFT)
+            yPT = yPI + tangent * math.sin(angleFT)
+
+            tangent_run = lengthBT - tangent
+
+            # create back tangent run
+            pt = self._file.create_entity(
+                type="IfcCartesianPoint",
+                Coordinates=(xBT, yBT),
+            )
+            design_parameters = self._file.create_entity(
+                type="IfcAlignmentHorizontalSegment",
+                StartTag=None,
+                EndTag=None,
+                StartPoint=pt,
+                StartDirection=angleBT,
+                StartRadiusOfCurvature=0.0,
+                EndRadiusOfCurvature=0.0,
+                SegmentLength=tangent_run,
+                GravityCenterLineHeight=None,
+                PredefinedType="LINE",
+            )
+            alignment_segment = self._file.create_entity(
+                type="IfcAlignmentSegment",
+                GlobalId=ifcopenshell.guid.new(),
+                OwnerHistory=None,
+                Name=None,
+                Description=None,
+                ObjectType=None,
+                ObjectPlacement=None,
+                Representation=None,
+                DesignParameters=design_parameters,
+            )
+            horizontal_segments.append(alignment_segment)
+
+            if include_geometry:
+                horizontal_curve_segments.append(self._map_alignment_horizontal_segment(design_parameters)[0])
+
+            # create circular curve
+            pc = self._file.create_entity(
+                type="IfcCartesianPoint",
+                Coordinates=(xPC, yPC),
+            )
+            design_parameters = self._file.create_entity(
+                type="IfcAlignmentHorizontalSegment",
+                StartTag=None,
+                EndTag=None,
+                StartPoint=pc,
+                StartDirection=angleBT,
+                StartRadiusOfCurvature=float(radius),
+                EndRadiusOfCurvature=float(radius),
+                SegmentLength=lc,
+                GravityCenterLineHeight=None,
+                PredefinedType="CIRCULARARC",
+            )
+            alignment_segment = self._file.create_entity(
+                type="IfcAlignmentSegment",
+                GlobalId=ifcopenshell.guid.new(),
+                OwnerHistory=None,
+                Name=None,
+                Description=None,
+                ObjectType=None,
+                ObjectPlacement=None,
+                Representation=None,
+                DesignParameters=design_parameters,
+            )
+            horizontal_segments.append(alignment_segment)
+
+            if include_geometry:
+                horizontal_curve_segments.append(self._map_alignment_horizontal_segment(design_parameters)[0])
+
+            xBT = xPT
+            yBT = yPT
+            xPI = xFT
+            yPI = yFT
+
+        # done processing radii
+        # create last tangent run
+        dx = xPI - xBT
+        dy = yPI - yBT
+        angleBT = math.atan2(dy, dx)
+        tangent_run = math.sqrt(dx * dx + dy * dy)
+        pt = self._file.create_entity(type="IfcCartesianPoint", Coordinates=(xBT, yBT))
+
+        design_parameters = self._file.create_entity(
+            type="IfcAlignmentHorizontalSegment",
+            StartTag=None,
+            EndTag=None,
+            StartPoint=pt,
+            StartDirection=angleBT,
+            StartRadiusOfCurvature=0.0,
+            EndRadiusOfCurvature=0.0,
+            SegmentLength=tangent_run,
+            GravityCenterLineHeight=None,
+            PredefinedType="LINE",
+        )
+        alignment_segment = self._file.create_entity(
+            type="IfcAlignmentSegment",
+            GlobalId=ifcopenshell.guid.new(),
+            OwnerHistory=None,
+            Name=None,
+            Description=None,
+            ObjectType=None,
+            ObjectPlacement=None,
+            Representation=None,
+            DesignParameters=design_parameters,
+        )
+        horizontal_segments.append(alignment_segment)
+        if include_geometry:
+            horizontal_curve_segments.append(self._map_alignment_horizontal_segment(design_parameters)[0])
+
+        # create zero length terminator segment
+        poe = self._file.create_entity(type="IfcCartesianPoint", Coordinates=(xPI, yPI))
+
+        design_parameters = self._file.create_entity(
+            type="IfcAlignmentHorizontalSegment",
+            StartTag="POE",
+            EndTag="POE",
+            StartPoint=poe,
+            StartDirection=angleBT,
+            StartRadiusOfCurvature=0.0,
+            EndRadiusOfCurvature=0.0,
+            SegmentLength=0.0,
+            GravityCenterLineHeight=None,
+            PredefinedType="LINE",
+        )
+        alignment_segment = self._file.create_entity(
+            type="IfcAlignmentSegment",
+            GlobalId=ifcopenshell.guid.new(),
+            OwnerHistory=None,
+            Name=None,
+            Description=None,
+            ObjectType=None,
+            ObjectPlacement=None,
+            Representation=None,
+            DesignParameters=design_parameters,
+        )
+        horizontal_segments.append(alignment_segment)
+        if include_geometry:
+            horizontal_curve_segments.append(self._map_alignment_horizontal_segment(design_parameters)[0])
+
+        if include_geometry:
+            composite_curve = self._file.create_entity(
+                type="IfcCompositeCurve",
+                Segments=horizontal_curve_segments,
+                SelfIntersect=False,
+            )
+        else:
+            composite_curve = None
+
+        return horizontal_segments, horizontal_curve_segments, composite_curve
+
+    def _add_horizontal_alignment(
+        self,
+        alignment_name: str,
+        points: Sequence[Sequence[float]],
+        radii: Sequence[float],
+        include_geometry: bool = True,
+        alignment_description: str = None,
+        start_station: float = 1000.0,
+    ):
+        horizontal_segments, horizontal_curve_segments, composite_curve = self._create_horizontal_alignment(
+            alignment_name,
+            alignment_description,
+            points,
+            radii,
+            include_geometry,
+        )
+
+        name_segments(prefix="H", segments=horizontal_segments)
+
+        # Create the horizontal alignment (IfcAlignmentHorizontal) and nest alignment segments
+        horizontal_alignment = self._file.create_entity(
+            type="IfcAlignmentHorizontal",
+            GlobalId=ifcopenshell.guid.new(),
+            OwnerHistory=None,
+            Name=f"{alignment_name} - Horizontal",
+            Description=alignment_description,
+            ObjectType=None,
+            ObjectPlacement=None,
+            Representation=None,
+        )
+
+        nests_horizontal_segments = self._file.create_entity(
+            type="IfcRelNests",
+            GlobalId=ifcopenshell.guid.new(),
+            OwnerHistory=None,
+            Name="Nests horizontal alignment segments under horizontal alignment",
+            RelatingObject=horizontal_alignment,
+            RelatedObjects=horizontal_segments,
+        )
+
+        placement = self._file.createIfcLocalPlacement(
+            PlacementRelTo=None,
+            RelativePlacement=self._file.createIfcAxis2Placement2D(
+                Location=self._file.createIfcCartesianPoint(Coordinates=(0.0, 0.0))
+            ),
+        )
+
+        # create the alignment
+        alignment = self._file.create_entity(
+            type="IfcAlignment",
+            GlobalId=ifcopenshell.guid.new(),
+            OwnerHistory=None,
+            Name=alignment_name,
+            Description=alignment_description,
+            ObjectType=None,
+            ObjectPlacement=placement,
+            Representation=None,
+            PredefinedType=None,
+        )
+
+        # create geometric representation
+        if include_geometry:
+            # create the footprint representation
+            footprint_shape_representation = self._file.create_entity(
+                type="IfcShapeRepresentation",
+                ContextOfItems=self._axis_geom_subcontext,
+                RepresentationIdentifier="FootPrint",
+                RepresentationType="Curve2D",
+                Items=(composite_curve,),
+            )
+
+            # create the alignment product definition
+            product_definition_shape = self._file.create_entity(
+                type="IfcProductDefinitionShape",
+                Name="Alignment Product Definition Shape",
+                Description=None,
+                Representations=(footprint_shape_representation,),
+            )
+
+            # create representations for each segment
+            self._create_segment_representations(placement, horizontal_curve_segments, horizontal_segments)
+
+            # add the representation to the alignment
+            alignment.Representation = product_definition_shape
+
+            # create referent for start station
+            start_referent = self._file.createIfcReferent(
+                GlobalId=ifcopenshell.guid.new(),
+                OwnerHistory=None,
+                Name="Start Station",
+                Description=None,
+                ObjectType=None,
+                ObjectPlacement=self._file.createIfcLinearPlacement(
+                    RelativePlacement=self._file.createIfcAxis2PlacementLinear(
+                        Location=self._file.createIfcPointByDistanceExpression(
+                            DistanceAlong=self._file.createIfcLengthMeasure(0.0),
+                            OffsetLateral=None,
+                            OffsetVertical=None,
+                            OffsetLongitudinal=None,
+                            BasisCurve=composite_curve,
+                        ),
+                    ),
+                    CartesianPosition=None,
+                ),
+                Representation=None,
+                PredefinedType="STATION",
+            )
+
+            # nest the horizontal and the referent under the alignment
+            nesting_of_alignment = self._file.create_entity(
+                type="IfcRelNests",
+                GlobalId=ifcopenshell.guid.new(),
+                OwnerHistory=None,
+                Name="Nests horizontal alignment and referents under overall alignment",
+                RelatingObject=alignment,
+                RelatedObjects=(horizontal_alignment, start_referent),
+            )
+
+            # aggregate the horizontal under the project
+            project = self._file.by_type("IfcProject")[0]
+            alignment_within_project = self._file.createIfcRelAggregates(
+                GlobalId=ifcopenshell.guid.new(),
+                OwnerHistory=None,
+                Name="Aggregates alignment under the project",
+                RelatingObject=project,
+                RelatedObjects=(alignment,),
+            )
+
+        return alignment
+
+    def add_vertical_alignment(
+        self,
+        name: str,
+        description: str,
+        vpoints: Sequence[Sequence[float]],
+        vclengths: Sequence[Sequence[float]],
+        include_geometry: bool = True,
+    ):
+        """
+        Create a vertical alignment using the PI layout method.
+
+        @param name: value for Name attribute
+        @param description: value for Description attribute
+        @param vpoints: (distance_along, Z_height) pairs denoting the location of the vertical PIs, including start and end.
+        @param vclengths: radii values to use for transition
+        @param include_geometry: optionally create the alignment geometric representation as well as the semantic business logic
+        """
+        pass
+
+    def add_alignment(
+        self,
+        name: str,
+        hpoints: Sequence[Sequence[float]],
+        radii: Sequence[float],
+        include_geometry: bool = True,
+        description: str = None,
+        start_station: float = 1000.0,
+    ):
+        """
+        Create a new alignment with a horizontal alignment using the PI layout method
+        """
+        self._add_horizontal_alignment(
+            alignment_name=name,
+            points=hpoints,
+            radii=radii,
+            include_geometry=include_geometry,
+            alignment_description=description,
+            start_station=start_station,
+        )
+
+    def save_file(self, filename) -> None:
+        self._file.write(filename)
+
+
 if __name__ == "__main__":
     import sys
     from matplotlib import pyplot as plt
 
-    s = ifcopenshell.express.parse("IFC4x3_RC3.exp")
-    ifcopenshell.register_schema(s)
     f = ifcopenshell.open(sys.argv[1])
     print_structure(f.by_type("IfcAlignment")[0])
 
-    al_hor = f.by_type("IfcAlignmentHorizontal")[0]
-    xy = create_shape({}, al_hor)
+    al_hor_rep = f.by_type("IfcCompositeCurve")[0]
 
-    plt.plot(xy.T[0], xy.T[1])
+    xy = generate_vertices(rep_curve=al_hor_rep, distance_interval=10.0)
+
+    plt.plot(xy[0], xy[1])
     plt.savefig("horizontal_alignment.png")

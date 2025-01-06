@@ -17,22 +17,26 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.owner
 
 
-class TestAssignProduct(test.bootstrap.IFC4):
+class TestAssignActor(test.bootstrap.IFC4):
     def test_assigning_an_actor(self):
         wall = self.file.createIfcWall()
         wall2 = self.file.createIfcWall()
         actor = self.file.createIfcActor()
-        ifcopenshell.api.run("owner.assign_actor", self.file, relating_actor=actor, related_object=wall)
+        ifcopenshell.api.owner.assign_actor(self.file, relating_actor=actor, related_object=wall)
         assert actor.IsActingUpon[0].RelatedObjects == (wall,)
-        ifcopenshell.api.run("owner.assign_actor", self.file, relating_actor=actor, related_object=wall2)
+        ifcopenshell.api.owner.assign_actor(self.file, relating_actor=actor, related_object=wall2)
         assert actor.IsActingUpon[0].RelatedObjects == (wall, wall2)
 
     def test_not_assigning_twice(self):
         wall = self.file.createIfcWall()
         actor = self.file.createIfcActor()
-        ifcopenshell.api.run("owner.assign_actor", self.file, relating_actor=actor, related_object=wall)
-        ifcopenshell.api.run("owner.assign_actor", self.file, relating_actor=actor, related_object=wall)
+        ifcopenshell.api.owner.assign_actor(self.file, relating_actor=actor, related_object=wall)
+        ifcopenshell.api.owner.assign_actor(self.file, relating_actor=actor, related_object=wall)
         assert actor.IsActingUpon[0].RelatedObjects == (wall,)
+
+
+class TestAssignActorIFC2X3(test.bootstrap.IFC2X3, TestAssignActor):
+    pass

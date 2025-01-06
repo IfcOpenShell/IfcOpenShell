@@ -38,18 +38,13 @@
 
 #include <Standard_Version.hxx>
 
-#ifdef USE_IFC4
-#include "../ifcparse/Ifc4.h"
-#define IfcSchema Ifc4
-#else
-#include "../ifcparse/Ifc2x3.h"
 #define IfcSchema Ifc2x3
-#endif
-
+#include "../ifcparse/macros.h"
+#include "../ifcparse/Ifc2x3.h"
 #include "../ifcparse/IfcBaseClass.h"
 #include "../ifcparse/IfcHierarchyHelper.h"
-#include "../ifcgeom/IfcGeom.h"
-#include "../ifcgeom_schema_agnostic/Serialization.h"
+
+#include "../ifcgeom/Serialization/Serialization.h"
 
 #if USE_VLD
 #include <vld.h>
@@ -73,7 +68,7 @@ int main() {
 
 	// Lateron changing the name of the IfcProject can be done by obtaining a reference to the 
 	// project, which has been created automatically.
-	file.getSingle<IfcSchema::IfcProject>()->setName("IfcOpenHouse"s);
+	file.getSingle<IfcSchema::IfcProject>()->setName("IfcAdvancedHouse"s);
 
 	// To demonstrate the ability to serialize arbitrary opencascade solids a building envelope is
 	// constructed by applying boolean operations. Naturally, in IFC, building elements should be 

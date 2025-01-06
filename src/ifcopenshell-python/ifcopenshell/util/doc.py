@@ -18,10 +18,12 @@
 
 import json
 from pathlib import Path
-from pprint import pprint
 import copy
 import ifcopenshell
+import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
 import ifcopenshell.util.attribute
+import ifcopenshell.util.schema
+from typing import Optional, Literal
 
 try:
     import glob
@@ -58,27 +60,34 @@ IFC4x3_SPEC_URL_TEMPLATE = "https://ifc43-docs.standards.buildingsmart.org/IFC/R
 # child -> description
 # note: in IFC4x3 there is no children[] for properties
 
-
-SCHEMA_FILES = {
+SUPPORTED_SCHEMA = ifcopenshell.util.schema.IFC_SCHEMA
+SCHEMA_FILES: dict[SUPPORTED_SCHEMA, dict] = {
     "IFC2X3": {
         "entities": BASE_MODULE_PATH / "schema/ifc2x3_entities.json",
         "properties": BASE_MODULE_PATH / "schema/ifc2x3_properties.json",
         "types": BASE_MODULE_PATH / "schema/ifc2x3_types.json",
+        "classes_suggestions": BASE_MODULE_PATH / "schema/ifc_classes_suggestions.json",
     },
     "IFC4": {
         "entities": BASE_MODULE_PATH / "schema/ifc4_entities.json",
         "properties": BASE_MODULE_PATH / "schema/ifc4_properties.json",
         "types": BASE_MODULE_PATH / "schema/ifc4_types.json",
+        "classes_suggestions": BASE_MODULE_PATH / "schema/ifc_classes_suggestions.json",
     },
     "IFC4X3": {
         "entities": BASE_MODULE_PATH / "schema/ifc4x3_entities.json",
         "properties": BASE_MODULE_PATH / "schema/ifc4x3_properties.json",
         "types": BASE_MODULE_PATH / "schema/ifc4x3_types.json",
+        "classes_suggestions": BASE_MODULE_PATH / "schema/ifc_classes_suggestions.json",
     },
 }
 
 db = None
-schema_by_name = {"IFC2X3": None, "IFC4": None, "IFC4X3": None}
+schema_by_name: dict[SUPPORTED_SCHEMA, Optional[ifcopenshell_wrapper.schema_definition]] = {
+    "IFC2X3": None,
+    "IFC4": None,
+    "IFC4X3": None,
+}
 
 
 def get_db(version):
@@ -95,14 +104,26 @@ def get_db(version):
 
                 with open(schema_path, "r") as fi:
                     db[ifc_version][data_type] = json.load(fi)
+
+    version = ifcopenshell.util.schema.get_fallback_schema(version)
     return db.get(version)
 
 
-def get_schema_by_name(version):
+def get_schema_by_name(version: str) -> ifcopenshell_wrapper.schema_definition:
     global schema_by_name
+    version = ifcopenshell.util.schema.get_fallback_schema(version)
     if not schema_by_name[version]:
-        schema_by_name[version] = ifcopenshell.ifcopenshell_wrapper.schema_by_name(version)
+        schema_name = "IFC4X3_ADD2" if version == "IFC4X3" else version
+        schema_by_name[version] = ifcopenshell_wrapper.schema_by_name(schema_name)
     return schema_by_name[version]
+
+
+def get_class_suggestions(version, class_name):
+    db = get_db(version)
+    if not db:
+        return
+    class_suggestions = db["classes_suggestions"].get(class_name)
+    return class_suggestions
 
 
 def get_entity_doc(version, entity_name, recursive=True):
@@ -137,7 +158,7 @@ def get_predefined_type_doc(version, entity, predefined_type):
     if db:
         entity = db["entities"].get(entity)
         if entity:
-            return entity["predefined_types"].get(predefined_type)
+            return entity.get("predefined_types", {}).get(predefined_type)
 
 
 def get_property_set_doc(version, pset):
@@ -895,7 +916,7 @@ class DocExtractor:
 
         entities_dict = dict()
         types_dict = dict()
-        schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name("IFC4X3")
+        schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name("IFC4X3_ADD2")
 
         for entity in schema.declarations():
             entity_name = entity.name()

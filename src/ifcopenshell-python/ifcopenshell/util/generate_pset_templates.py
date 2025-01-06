@@ -18,21 +18,26 @@
 
 RUN_FROM_DEV_REPO = False
 
-import ifcopenshell.api
+import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
+import ifcopenshell.api.unit
+import ifcopenshell.api.project
+import ifcopenshell.guid
 import ifcopenshell.util.attribute
-from pathlib import Path
-from lxml import etree
 import glob
 import sys
+from pathlib import Path
+from lxml import etree
+from itertools import chain
+
 
 if not RUN_FROM_DEV_REPO:
     import zipfile
     import shutil
 
 BASE_MODULE_PATH = Path(__file__).parent
-IFC4x3_HTML_LOCATION = BASE_MODULE_PATH / "IFC4.3-html-iso-release"
 
 if not RUN_FROM_DEV_REPO:
+    IFC4x3_HTML_ZIP_LOCATION = BASE_MODULE_PATH / "annex-a-psd.zip"
     IFC4x3_OUTPUT_PATH = BASE_MODULE_PATH / "schema/Pset_IFC4X3.ifc"
 else:
     IFC4x3_PSD_LOCATION = BASE_MODULE_PATH / "../output/psd"
@@ -47,8 +52,9 @@ IFC2x3_OUTPUT_PATH = BASE_MODULE_PATH / "schema/Pset_IFC2X3.ifc"
 PROPERTY_TYPES_DICT = {
     "TypePropertySingleValue": ("P_SINGLEVALUE", "type"),
     # in IFC2X3 weirdly xmls have TypeSimpleProperty
-    # no difference with TypePropertySingleValue though
-    "TypeSimpleProperty": ("P_SINGLEVALUE", "type"),
+    # which is actually more P_REFERENCEVALUE value, not P_SINGLEVALUE
+    # because it utilizes IfcTimeSeries
+    "TypeSimpleProperty": ("P_REFERENCEVALUE", "type"),
     "TypePropertyListValue": ("P_LISTVALUE", "type"),
     "TypePropertyBoundedValue": ("P_BOUNDEDVALUE", "type"),
     "TypePropertyReferenceValue": ("P_REFERENCEVALUE", "reftype"),
@@ -63,20 +69,18 @@ class PsetTemplatesGenerator:
         print("Starting parsing data for IFC4X3...")
 
         if not RUN_FROM_DEV_REPO:
-            if not IFC4x3_HTML_LOCATION.is_dir():
+            if not IFC4x3_HTML_ZIP_LOCATION.is_file():
                 raise Exception(
-                    f'ISO release for Ifc4.3.0.1 expected to be in folder "{IFC4x3_HTML_LOCATION.resolve()}\\"\n'
+                    f'ISO release for Ifc4.3.2.0 expected to be located in "{IFC4x3_HTML_ZIP_LOCATION.resolve()}"\n'
                     "For generating ifc pset library please either setup docs as described above \n"
-                    "or change IFC4x3_HTML_LOCATION in the script accordingly.\n"
+                    "or change IFC4x3_HTML_ZIP_LOCATION in the script accordingly.\n"
                     "You can download docs from the repository: \n"
-                    "https://github.com/buildingSMART/IFC4.3-html/releases/tag/sep-13-release"
+                    "https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/HTML/annex-a-psd.zip"
                 )
             # unzip the data
-            if not RUN_FROM_DEV_REPO:
-                pset_data_zip = IFC4x3_HTML_LOCATION / "IFC/RELEASE/IFC4x3/HTML/annex-a-psd.zip"
-                pset_data_location = BASE_MODULE_PATH / "temp/annex-a-psd"
-                with zipfile.ZipFile(pset_data_zip, "r") as fi_zip:
-                    fi_zip.extractall(pset_data_location)
+            pset_data_location = BASE_MODULE_PATH / "temp/annex-a-psd"
+            with zipfile.ZipFile(IFC4x3_HTML_ZIP_LOCATION, "r") as fi_zip:
+                fi_zip.extractall(pset_data_location)
         else:
             if not IFC4x3_PSD_LOCATION.is_dir():
                 raise Exception(
@@ -96,7 +100,7 @@ class PsetTemplatesGenerator:
         print("Starting parsing data for IFC2X3...")
         if not IFC2x3_HTML_ZIP_LOCATION.is_file():
             raise Exception(
-                f'ISO release for IFC2x3 TC1 expected to be in folder "{IFC2x3_HTML_ZIP_LOCATION.resolve()}\\"\n'
+                f'ISO release for IFC2x3 TC1 expected to be located in "{IFC2x3_HTML_ZIP_LOCATION.resolve()}"\n'
                 "For doc extraction please either setup docs as described above \n"
                 "or change IFC2x3_HTML_LOCATION in the script accordingly.\n"
                 "You can download docs from the url: \n"
@@ -120,13 +124,16 @@ class PsetTemplatesGenerator:
 
     def parse_psets_data(self, schema_name, pset_data_glob, project_name, ifc_output_path):
         schema_name = schema_name.upper()
-        self.ifc_file = ifcopenshell.api.run("project.create_file", version=schema_name)
+        self.ifc_file = ifcopenshell.api.project.create_file(version=schema_name)
+        self.units = dict()
         schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(schema_name)
 
         self.ifc_derived_unit_enum = (
             schema.declaration_by_name("IfcDerivedUnitEnum").as_enumeration_type().enumeration_items()
         )
         self.ifc_unit_enum = schema.declaration_by_name("IfcUnitEnum").as_enumeration_type().enumeration_items()
+        select_types = schema.declaration_by_name("IfcValue").select_list()
+        self.ifc_value_types = [t.name() for t in chain(*[select_type.select_list() for select_type in select_types])]
 
         project = self.ifc_entity("IfcProject", Name=project_name, GlobalId=ifcopenshell.guid.new())
         psets_list = []
@@ -146,7 +153,7 @@ class PsetTemplatesGenerator:
         # 2) enumeration
         # 3) property set (also with IFCRELASSOCIATESLIBRARY)
         # 4) property definition (also with IFCRELASSOCIATESLIBRARY)
-        # but in ifc4x3 there is no data for those library refernces
+        # but in ifc4x3 there is no data for those library references
         # TODO: need to add it to .ifc for IFC4X3 too
         # if https://github.com/buildingSMART/IFC4.3.x-development/issues/587 is resolved
 
@@ -169,8 +176,12 @@ class PsetTemplatesGenerator:
                 TemplateType=root_xml.get("templatetype"),
                 Name=pset_name,
                 Description=root_xml.find("Definition").text,
-                ApplicableEntity=",".join(applicable_entities),
+                ApplicableEntity=",".join(applicable_entities).strip(),
             )
+            if project_name.startswith("IFC2X3"):
+                pset.TemplateType = self.get_pset_template_type_ifc2x3(pset)
+            else:
+                pset.TemplateType = root_xml.get("templatetype")
 
             # NOTE: there is also Applicability tag
             # but it's seems always empty in ifc4 and ifc4x3
@@ -246,11 +257,38 @@ class PsetTemplatesGenerator:
         self.add_prop_type_params_to_prop(pset_type, pdef, pset_property, property_type_tag)
         return pset_property
 
+    def get_unit(self, unit_type):
+        # to define USERDEFINED unit type we'd need more info
+        # like UserDefinedType name and elements for IfcDerivedUnit
+        # which is not provided in .xmls
+        if unit_type != "USERDEFINED":
+            return None
+
+        if unit_type in self.units:
+            return self.units[unit_type]
+
+        unit_entity = None
+        if unit_type in self.ifc_derived_unit_enum:
+            # TODO: define derived units if there will be someday api like `ifcopenshell.api.unit.add_derived_unit(...)`
+            # since creating IfcDerivedUnit is more complex and requiring settting up elements it consists of
+            # and related IfcNamedUnits
+            # unit_entity = ifcopenshell.api.unit.add_derived_unit(self.ifc_file, unit_type=unit_type)
+            pass
+        elif unit_type in self.ifc_unit_enum:
+            unit_entity = ifcopenshell.api.unit.add_si_unit(self.ifc_file, unit_type=unit_type)
+        elif unit_type == "IFCMONETARYUNIT":
+            self.ifc_entity("IFCMONETARYUNIT", Currency="")
+        else:
+            print(f"WARNING. Wasn't able to find units {unit_type} in schema.")
+        self.units[unit_type] = unit_entity
+        return unit_entity
+
     def add_prop_type_params_to_prop(self, pset_type, pdef, pset_property, property_type_tag):
         if not pset_type:
             property_type = pdef.find("QtoType").text
         else:
             property_type, property_type_parse = PROPERTY_TYPES_DICT[property_type_tag]
+
         pset_property.TemplateType = property_type
 
         if not pset_type or property_type == "P_COMPLEX":
@@ -285,7 +323,24 @@ class PsetTemplatesGenerator:
             pset_property.SecondaryMeasureType = property_type_xml.find("DefinedValue/DataType").get("type")
         else:
             if property_type == "P_REFERENCEVALUE":
-                pset_property.PrimaryMeasureType = property_type_xml.get(property_type_parse)
+                if property_type_tag == "TypeSimpleProperty":
+                    type_xml = property_type_xml.find("DataType")
+                    primary_measure_type = type_xml.get(property_type_parse)
+                    unit_type = property_type_xml.find("UnitType")
+                    secondary_measure_type = (
+                        unit_type.get(property_type_parse).strip() if unit_type is not None else None
+                    )
+
+                    if primary_measure_type != "IfcTimeSeries":
+                        unit = self.get_unit(secondary_measure_type)
+                        secondary_measure_type = primary_measure_type
+                        primary_measure_type = "IfcTimeSeries"
+                        pset_property.PrimaryUnit = unit
+
+                    pset_property.PrimaryMeasureType = primary_measure_type
+                    pset_property.SecondaryMeasureType = secondary_measure_type
+                else:
+                    pset_property.PrimaryMeasureType = property_type_xml.get(property_type_parse)
                 # TODO: ifc4add2 seems to have some secondary measure types
                 # need to add it in ifc4x3 too
                 # if https://github.com/buildingSMART/IFC4.3.x-development/issues/586 is resolved
@@ -297,17 +352,10 @@ class PsetTemplatesGenerator:
 
                     # only used only in ifc2x3, omitted in ifc4 and ifc4x3
                     unit_type_xml = property_type_xml.find("UnitType")
+
                     if unit_type_xml is not None:
                         unit_type = unit_type_xml.get(property_type_parse).strip()
-                        if unit_type.lower().startswith("ifc"):
-                            unit_entity = self.ifc_entity(unit_type)
-                        else:
-                            if unit_type in self.ifc_derived_unit_enum:
-                                unit_entity = self.ifc_entity("IfcDerivedUnit", UnitType=unit_type)
-                            elif unit_type in self.ifc_unit_enum:
-                                unit_entity = self.ifc_entity("IfcNamedUnit", UnitType=unit_type)
-                            else:
-                                print("WARNING. Wasn't able to find units {unit_type} in schema.")
+                        unit_entity = self.get_unit(unit_type)
                         pset_property.PrimaryUnit = unit_entity
 
                 type_xml = property_type_xml.find(property_type_node)
@@ -317,7 +365,50 @@ class PsetTemplatesGenerator:
                 else:
                     primary_measure_type = type_xml.get(property_type_parse)
 
+                primary_measure_type = primary_measure_type.strip()
+                if property_type == "P_SINGLEVALUE" and primary_measure_type not in self.ifc_value_types:
+                    print(
+                        f"Error assinging {primary_measure_type} as PrimaryMeasureType - it's not IfcValue, {property_type_tag}"
+                    )
+
                 pset_property.PrimaryMeasureType = primary_measure_type
+
+    def get_pset_template_type_ifc2x3(self, pset_template: ifcopenshell.entity_instance) -> str:
+        def declaration_is_a(declaration: ifcopenshell_wrapper.declaration, ifc_class: str) -> bool:
+            if declaration.name() == ifc_class:
+                return True
+            super_type = declaration.supertype()
+            if not super_type:
+                return False
+            return declaration_is_a(super_type, ifc_class)
+
+        name = pset_template.Name
+        applicability = pset_template.ApplicableEntity
+        schema = ifcopenshell.schema_by_name("IFC2X3")
+
+        if "PHistory" in name:
+            return "PSET_PERFORMANCEDRIVEN"
+        applicable_types = applicability.replace(", ", ",").split(",")
+        for applicable_type in applicable_types:
+            if not applicable_type:
+                continue
+            parts = applicable_type.split("/")
+            assert 3 > len(parts) > 0
+            if parts[0].isupper():  # IFC2X3 thing
+                applicable_type = parts[1]
+            else:
+                applicable_type = parts[0]
+            applicable_type = applicable_type.strip()
+
+            declaration = schema.declaration_by_name(applicable_type)
+            if declaration_is_a(declaration, "IfcTypeObject"):
+                return "PSET_TYPEDRIVENOVERRIDE"
+            # ifc4x3+
+            elif declaration_is_a(declaration, "IfcProfileDef"):
+                return "PSET_PROFILEDRIVEN"
+            elif declaration_is_a(declaration, "IfcMaterialDefinition"):
+                return "PSET_MATERIALDRIVEN"
+        return "PSET_OCCURRENCEDRIVEN"
 
 
 if __name__ == "__main__":

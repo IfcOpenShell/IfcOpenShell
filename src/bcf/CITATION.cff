@@ -10,7 +10,7 @@ type: software
 authors:
   - name: "IfcOpenShell contributors"
 repository-code: >-
-  https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.7.0/src/bcf
+  https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.8.0/src/bcf
 abstract: >-
   Library to read and write BCF-XML and query OpenCDE
   BCF-API modules

@@ -1,9 +1,13 @@
 mkdir build && cd build
 
+REM Remove dot from PY_VER for use in library name
+REM From https://github.com/tpaviot/pythonocc-core/blob/master/ci/conda/bld.bat
 set MY_PY_VER=%PY_VER:.=%
+
 set LIBXML2="%LIBRARY_PREFIX%/lib/libxml2.lib"
 
 cmake -G "Ninja" ^
+ -D SCHEMA_VERSIONS="2x3;4;4x1;4x3_add2" ^
  -D CMAKE_BUILD_TYPE:STRING=Release ^
  -D CMAKE_INSTALL_PREFIX:FILEPATH="%LIBRARY_PREFIX%" ^
  -D CMAKE_PREFIX_PATH:FILEPATH="%LIBRARY_PREFIX%" ^
@@ -11,6 +15,9 @@ cmake -G "Ninja" ^
  -D OCC_INCLUDE_DIR:FILEPATH="%LIBRARY_PREFIX%\include\opencascade" ^
  -D OCC_LIBRARY_DIR:FILEPATH="%LIBRARY_PREFIX%\lib" ^
  -D CGAL_INCLUDE_DIR:FILEPATH="%LIBRARY_PREFIX%\include" ^
+ -D EIGEN_DIR:FILEPATH="%LIBRARY_PREFIX%\include\eigen3" ^
+ -D LIBXML2_INCLUDE_DIR=%LIBRARY_PREFIX%/include/libxml2 ^
+ -D LIBXML2_LIBRARIES=%LIBRARY_PREFIX%/lib/libxml2.lib ^
  -D GMP_INCLUDE_DIR:FILEPATH="%LIBRARY_PREFIX%\include" ^
  -D GMP_LIBRARY_DIR:FILEPATH="%LIBRARY_PREFIX%\lib" ^
  -D MPFR_LIBRARY_DIR:FILEPATH="%LIBRARY_PREFIX%\lib" ^
@@ -31,14 +38,14 @@ cmake -G "Ninja" ^
  -D BUILD_CONVERT:BOOL=ON ^
  -D BUILD_IFCMAX:BOOL=OFF ^
  -D IFCXML_SUPPORT:BOOL=ON ^
- -D Boost_LIBRARYDIR:FILEPATH="%LIBRARY_PREFIX%\lib" ^
- -D Boost_INCLUDEDIR:FILEPATH="%LIBRARY_PREFIX%\include" ^
+ -D Boost_LIBRARY_DIR:FILEPATH="%LIBRARY_PREFIX%\lib" ^
+ -D Boost_INCLUDE_DIR:FILEPATH="%LIBRARY_PREFIX%\include" ^
  -D Boost_USE_STATIC_LIBS:BOOL=OFF ^
- %SRC_DIR%/cmake
-
+ -D CITYJSON_SUPPORT:BOOL=OFF ^
+ ../cmake
+ 
 if errorlevel 1 exit 1
 
-:: Build and install
-cmake --build . -- install
+ninja install -j 1
 
 if errorlevel 1 exit 1

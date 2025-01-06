@@ -16,8 +16,13 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
+from typing import Union
 
-def get_primitive_type(attribute_or_data_type):
+
+def get_primitive_type(
+    attribute_or_data_type: Union[ifcopenshell_wrapper.attribute, ifcopenshell_wrapper.parameter_type]
+) -> Union[str, tuple[str, list[str]]]:
     if hasattr(attribute_or_data_type, "type_of_attribute"):
         data_type = str(attribute_or_data_type.type_of_attribute())
     else:
@@ -26,6 +31,8 @@ def get_primitive_type(attribute_or_data_type):
         return get_primitive_type(data_type[data_type[1:].find("<") + 1 :])
     elif data_type.find("<list") == 0:
         return ("list", get_primitive_type(data_type[data_type[1:].find("<") + 1 :]))
+    elif data_type.find("<array") == 0:
+        return ("array", get_primitive_type(data_type[data_type[1:].find("<") + 1 :]))
     elif data_type.find("<set") == 0:
         return ("set", get_primitive_type(data_type[data_type[1:].find("<") + 1 :]))
     elif data_type.find("<select") == 0:
@@ -44,11 +51,13 @@ def get_primitive_type(attribute_or_data_type):
         return "boolean"
     elif "<enumeration" in data_type:
         return "enum"
+    elif "<binary" in data_type:
+        return "binary"
 
 
-def get_enum_items(attribute):
+def get_enum_items(attribute: ifcopenshell_wrapper.attribute) -> tuple[str, ...]:
     return attribute.type_of_attribute().declared_type().enumeration_items()
 
 
-def get_select_items(attribute):
+def get_select_items(attribute: ifcopenshell_wrapper.attribute) -> tuple[ifcopenshell_wrapper.entity, ...]:
     return attribute.type_of_attribute().declared_type().select_list()

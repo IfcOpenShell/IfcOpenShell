@@ -12,7 +12,7 @@ RUN apt-get -y update && apt-get -y install unzip curl
 # Install AWS Lambda runtime interface client
 RUN pip install --target ${FUNCTION_DIR} awslambdaric
 
-# Set the IfcOpenShell build version (check available builds at: https://blenderbim.org/docs-python/ifcopenshell-python/installation.html)
+# Set the IfcOpenShell build version (check available builds at: https://docs.ifcopenshell.org/ifcopenshell-python/installation.html)
 ARG IFC_OPENSHELL_BUILD="39-v0.7.0-476ab50"
 
 # Download and extract IfcOpenShell

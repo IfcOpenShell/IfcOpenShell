@@ -17,17 +17,18 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "../ifcparse/IfcFile.h"
-
 #include "IfcSpfHeader.h"
 
-static const char * const ISO_10303_21		= "ISO-10303-21";
-static const char * const HEADER			= "HEADER";
-static const char * const FILE_DESCRIPTION	= "FILE_DESCRIPTION";
-static const char * const FILE_NAME			= "FILE_NAME";
-static const char * const FILE_SCHEMA		= "FILE_SCHEMA";
-static const char * const ENDSEC			= "ENDSEC";
-static const char * const DATA				= "DATA";
+#include "IfcFile.h"
+#include "IfcLogger.h"
+
+static const char* const ISO_10303_21 = "ISO-10303-21";
+static const char* const HEADER = "HEADER";
+static const char* const FILE_DESCRIPTION = "FILE_DESCRIPTION";
+static const char* const FILE_NAME = "FILE_NAME";
+static const char* const FILE_SCHEMA = "FILE_SCHEMA";
+static const char* const ENDSEC = "ENDSEC";
+static const char* const DATA = "DATA";
 // The following header entities are not normally encountered in IFC files and are not parsed.
 // static const char * const FILE_POPULATION   = "FILE_POPULATION";
 // static const char * const SECTION_LANGUAGE  = "SECTION_LANGUAGE";
@@ -35,141 +36,147 @@ static const char * const DATA				= "DATA";
 
 using namespace IfcParse;
 
-HeaderEntity::HeaderEntity(const char * const datatype, size_t size, IfcFile* file)
-	: IfcEntityInstanceData(file, size)
-	, _datatype(datatype)
-	, size_(size)
-{
-	if (file) {
-		offset_in_file_ = file->stream->Tell();
-		load();
-	}
+namespace {
+    IfcEntityInstanceData read_from_file(IfcFile* f, size_t s) {
+        parse_context pc;
+        f->tokens->Next();
+        f->load(-1, nullptr, pc, -1);
+        return pc.construct(-1, f->references_to_resolve, nullptr, s);
+    }
 }
 
-HeaderEntity::~HeaderEntity()
-{
-	clearArguments();
+HeaderEntity::HeaderEntity(const char* const datatype, size_t size, IfcFile* file)
+    : datatype_(datatype)
+    , file_(file)
+    , data_(file ? read_from_file(file, size) : IfcEntityInstanceData(storage_t(size)))
+{}
+
+HeaderEntity::~HeaderEntity() {
 }
 
 void IfcSpfHeader::readSemicolon() {
-	if (!TokenFunc::isOperator(file_->tokens->Next(), ';')) {
-		throw IfcException(std::string("Expected ;"));
-	}
+    if (!TokenFunc::isOperator(file_->tokens->Next(), ';')) {
+        throw IfcException(std::string("Expected ;"));
+    }
 }
 
 void IfcSpfHeader::readParen() {
-	if (!TokenFunc::isOperator(file_->tokens->Next(), '(')) {
-		throw IfcException(std::string("Expected ("));
-	}
+    if (!TokenFunc::isOperator(file_->tokens->Next(), '(')) {
+        throw IfcException(std::string("Expected ("));
+    }
 }
 
 void IfcSpfHeader::readTerminal(const std::string& term, Trail trail) {
-	if (TokenFunc::asStringRef(file_->tokens->Next()) != term) {
-		throw IfcException(std::string("Expected " + term));
-	}
-	if (trail == TRAILING_SEMICOLON) {
-		readSemicolon();
-	} else if (trail == TRAILING_PAREN) {
-		readParen();
-	}
+    if (TokenFunc::asStringRef(file_->tokens->Next()) != term) {
+        throw IfcException(std::string("Expected " + term));
+    }
+    if (trail == TRAILING_SEMICOLON) {
+        readSemicolon();
+    } else if (trail == TRAILING_PAREN) {
+        readParen();
+    }
 }
 
 void IfcSpfHeader::read() {
-	readTerminal(ISO_10303_21, TRAILING_SEMICOLON);
-	readTerminal(HEADER, TRAILING_SEMICOLON);
+    readTerminal(ISO_10303_21, TRAILING_SEMICOLON);
+    readTerminal(HEADER, TRAILING_SEMICOLON);
 
-	// | The header section of every exchange structure shall contain one 
-	// | instance of each of the following entities: file_description, file_name, 
-	// | and file_schema, and they shall appear in that order. Instances of 
-	// | file_population, section_language and section_context may appear after 
-	// | file_schema. If instances of user-defined header section entities are 
-	// | present, they shall appear after the header section entity instances 
-	// | defined in this section.
-	// 
-	// ISO 10303-21 Second edition 2002-01-15 p. 16
+    // | The header section of every exchange structure shall contain one
+    // | instance of each of the following entities: file_description, file_name,
+    // | and file_schema, and they shall appear in that order. Instances of
+    // | file_population, section_language and section_context may appear after
+    // | file_schema. If instances of user-defined header section entities are
+    // | present, they shall appear after the header section entity instances
+    // | defined in this section.
+    //
+    // ISO 10303-21 Second edition 2002-01-15 p. 16
 
-	readTerminal(FILE_DESCRIPTION, NONE);
-	delete _file_description;
-	_file_description = new FileDescription(file_);
-	// readSemicolon();
+    readTerminal(FILE_DESCRIPTION, NONE);
+    delete file_description_;
+    // readParen();
+    file_description_ = new FileDescription(file_);
+    readSemicolon();
 
-	readTerminal(FILE_NAME, NONE);
-	delete _file_name;
-	_file_name = new FileName(file_);
-	// readSemicolon();
+    readTerminal(FILE_NAME, NONE);
+    delete file_name_;
+    // readParen();
+    file_name_ = new FileName(file_);
+    readSemicolon();
 
-	readTerminal(FILE_SCHEMA, NONE);
-	delete _file_schema;
-	_file_schema = new FileSchema(file_);
-	// readSemicolon();
+    readTerminal(FILE_SCHEMA, NONE);
+    delete file_schema_;
+    // readParen();
+    file_schema_ = new FileSchema(file_);
+    readSemicolon();
 }
 
 bool IfcSpfHeader::tryRead() {
-	try {
-		read();
-		return true;
-	} catch (const std::exception& e) {
-		Logger::Error(e);
-		return false;
-	}
+    try {
+        read();
+        return true;
+    } catch (const std::exception& e) {
+        Logger::Error(e);
+        return false;
+    }
 }
 
-void IfcSpfHeader::write(std::ostream& os) const {
-	os << ISO_10303_21 << ";" << "\n";
-	os << HEADER << ";" << "\n";
-	os << file_description().toString(true) << ";" << "\n";
-	os << file_name().toString(true) << ";" << "\n";
-	os << file_schema().toString(true) << ";" << "\n";
-	os << ENDSEC << ";" << "\n";
-	os << DATA << ";" << "\n";
+void IfcSpfHeader::write(std::ostream& out) const {
+    out << ISO_10303_21 << ";"
+        << "\n";
+    out << HEADER << ";"
+        << "\n";
+    out << file_description().toString(true) << ";"
+        << "\n";
+    out << file_name().toString(true) << ";"
+        << "\n";
+    out << file_schema().toString(true) << ";"
+        << "\n";
+    out << ENDSEC << ";"
+        << "\n";
+    out << DATA << ";"
+        << "\n";
 }
 
 const FileDescription& IfcSpfHeader::file_description() const {
-	if (_file_description) {
-		return *_file_description; 
-	} else {
-		throw IfcException("File description not set");
-	}
+    if (file_description_ == nullptr) {
+        throw IfcException("File description not set");
+    }
+    return *file_description_;
 }
 
 const FileName& IfcSpfHeader::file_name() const {
-	if (_file_name) {
-		return *_file_name; 
-	} else {
-		throw IfcException("File name not set");
-	}
+    if (file_name_ == nullptr) {
+        throw IfcException("File name not set");
+    }
+    return *file_name_;
 }
 
 const FileSchema& IfcSpfHeader::file_schema() const {
-	if (_file_schema) {
-		return *_file_schema; 
-	} else {
-		throw IfcException("File schema not set");
-	}
+    if (file_schema_ == nullptr) {
+        throw IfcException("File schema not set");
+    }
+    return *file_schema_;
 }
 
 FileDescription& IfcSpfHeader::file_description() {
-	if (_file_description) {
-		return *_file_description; 
-	} else {
-		throw IfcException("File description not set");
-	}
+    if (file_description_ == nullptr) {
+        throw IfcException("File description not set");
+    }
+    return *file_description_;
 }
 
 FileName& IfcSpfHeader::file_name() {
-	if (_file_name) {
-		return *_file_name; 
-	} else {
-		throw IfcException("File name not set");
-	}
+    if (file_name_ == nullptr) {
+        throw IfcException("File name not set");
+    }
+    return *file_name_;
 }
 
 FileSchema& IfcSpfHeader::file_schema() {
-	if (_file_schema) {
-		return *_file_schema; 
-	} else {
-		throw IfcException("File schema not set");
-	}
+    if (file_schema_ == nullptr) {
+        throw IfcException("File schema not set");
+    }
+    return *file_schema_;
 }
 
 FileDescription::FileDescription(IfcFile* file) : HeaderEntity(FILE_DESCRIPTION, 2, file) {}

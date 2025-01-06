@@ -420,6 +420,15 @@ def process_expression(context):
                 exclude=[context.rel_op_extended],
             )
         else:
+            if len(context.simple_expression.branches()) == 2 and str(context.rel_op_extended) == 'in':
+                # IfcBlobTexture
+                try:
+                    is_literal_str_list = set(map(type, ast.literal_eval(str(context.simple_expression.branches()[1])))) == {str}
+                except:
+                    is_literal_str_list = False
+                if is_literal_str_list:
+                    a, b = map(str, context.simple_expression.branches())
+                    return f"{a}.lower() {str(context.rel_op_extended)} {b}"
             return concat(context.rel_op_extended, context.simple_expression)
     elif context.multiplication_like_op:
         if str(context.multiplication_like_op.branches()[0]) == "||":
@@ -576,7 +585,7 @@ def process_local_variable(context):
         if (
             context.parameter_type.generalized_types.general_aggregation_types.general_set_type
         ):
-            expr = re.sub("(\[[^\]]*\])", "express_set(\\1)", expr)
+            expr = re.sub(r"(\[[^\]]*\])", "express_set(\\1)", expr)
 
         return "%s = %s" % (str(context.variable_id).lower(), expr)
     else:
@@ -979,6 +988,8 @@ class indeterminate_type:
     __pos__= bop
     __getitem__ = bop
     __getattr__ = bop
+    def __iter__(self):
+        return iter(())
 
 INDETERMINATE = indeterminate_type()
 

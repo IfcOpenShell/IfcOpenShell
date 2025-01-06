@@ -27,7 +27,7 @@ class Patcher:
 
         .. code:: python
 
-            ifcpatch.execute({"input": model, "recipe": "RemoveSiteRepresentation", "arguments": []})
+            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "RemoveSiteRepresentation", "arguments": []})
         """
         self.src = src
         self.file = file

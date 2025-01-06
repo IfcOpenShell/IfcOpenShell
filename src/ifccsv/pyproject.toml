@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ifccsv"
+version = "0.0.0"
+authors = [
+  { name="Dion Moult", email="dion@thinkmoult.com" },
+]
+description = "IFC import and export from CSV, XLSX, ODS, and Pandas Dataframes"
+readme = "README.md"
+keywords = ["IFC", "CSV", "XLS", "XLSX", "ODS", "BIM"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
+]
+dependencies = [
+    "ifcopenshell",
+]
+
+[project.urls]
+Homepage = "http://ifcopenshell.org"
+Documentation = "https://docs.ifcopenshell.org"
+Issues = "https://github.com/IfcOpenShell/IfcOpenShell/issues"
+
+[tool.setuptools]
+py-modules = ["ifccsv"]

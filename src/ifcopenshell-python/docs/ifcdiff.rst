@@ -18,23 +18,58 @@ Changes will be sorted into three lists:
 
 There are different methods of installation, depending on your situation.
 
-1. **Source installation** is recommended for users wanting to use the latest
+1. **PyPI** is recommended for developers using Pip.
+2. **Using Bonsai** is recommended for non-developers wanting a graphical
+   interface.
+3. **Source installation** is recommended for users wanting to use the latest
    code as a library or a CLI utility.
-2. **Using the BlenderBIM Add-on** is recommended for non-developers wanting a
-   graphical interface.
+
+PyPI
+----
+
+.. code-block::
+
+    pip install ifcdiff
+
+Using Bonsai
+------------
+
+Bonsai is a Blender based graphical interface to IfcOpenShell.  Other than
+providing a graphical IFC authoring platform, it also comes with IfcOpenShell,
+its utilities, and a Python shell built-in. This means you don't need to
+install Python first, and you also can compare your IfcOpenShell scripting to
+what you see with a visual model viewer, or use a graphical interface to access
+the IfcOpenShell utilities.
+
+1. Install Bonsai by following the `Bonsai
+   installation documentation
+   <https://docs.bonsaibim.org/quickstart/installation.html>`_.
+
+2. Launch Blender. Change to the **Scene Properties** tab in the **Properties
+   Panel**. Scroll down to the **IFC Quality Control > IFC Diff** panel.
+
+3. Browse to your old IFC file, new IFC file.
+
+4. Optionally add any relationships you want to check.
+
+5. Optionally type in a filter query.
+
+6. Press **Execute IFC Diff**
+
+TODO: add pictures and make this clearer for non-developers.
 
 Source installation
 -------------------
 
 1. :doc:`Install IfcOpenShell <ifcopenshell-python/installation>`
-2. `Clone the source code <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.7.0/src/ifcdiff>`_.
+2. `Clone the source code <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.8.0/src/ifcdiff>`_.
 3. ``cd /path/to/IfcOpenShell/src/ifcdiff``
 4. ``pip install -r requirements.txt``
 
 Here is a minimal example of how to use IfcDiff as a Python module or CLI
 utility:
 
-::
+.. code-block:: console
 
     $ python -m ifcdiff -h
     usage: ifcdiff.py [-h] [-o OUTPUT] [-r RELATIONSHIPS] old new
@@ -72,36 +107,9 @@ Here is a minimal example of how to use IfcDiff as a library:
 
 You can also alias it to a command:
 
-::
+.. code-block:: bash
 
-    $ alias ifcdiff='python -m ifcdiff'
-
-Using the BlenderBIM Add-on
----------------------------
-
-The BlenderBIM Add-on is a Blender based graphical interface to IfcOpenShell.
-Other than providing a graphical IFC authoring platform, it also comes with
-IfcOpenShell, its utilities, and a Python shell built-in. This means you don't
-need to install Python first, and you also can compare your IfcOpenShell
-scripting to what you see with a visual model viewer, or use a graphical
-interface to access the IfcOpenShell utilities.
-
-1. Install the BlenderBIM Add-on by following the `BlenderBIM Add-on
-   installation documentation
-   <https://blenderbim.org/docs/users/installation.html>`_.
-
-2. Launch Blender. Change to the **Scene Properties** tab in the **Properties
-   Panel**. Scroll down to the **IFC Quality Control > IFC Diff** panel.
-
-3. Browse to your old IFC file, new IFC file.
-
-4. Optionally add any relationships you want to check.
-
-5. Optionally type in a filter query.
-
-6. Press **Execute IFC Diff**
-
-TODO: add pictures and make this clearer for non-developers.
+    alias ifcdiff='python -m ifcdiff'
 
 Geometry changes
 ----------------

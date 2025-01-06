@@ -33,7 +33,7 @@ class Patcher:
         .. code:: python
 
             # All IfcSites will shift back to 0,0,0.
-            ifcpatch.execute({"input": model, "recipe": "ResetSpatialElementLocations", "arguments": ["IfcSite"]})
+            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "ResetSpatialElementLocations", "arguments": ["IfcSite"]})
         """
         self.src = src
         self.file = file

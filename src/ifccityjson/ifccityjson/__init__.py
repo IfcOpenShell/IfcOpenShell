@@ -1,4 +1,3 @@
-
 # ifccityjson - Python CityJSON to IFC converter
 # Copyright (C) 2021 Laurens J.N. Oostwegel <l.oostwegel@gmail.com>
 #
@@ -19,5 +18,4 @@
 
 from .cityjson2ifc import *
 
-# Export version number
-__version__ = "0.0.1"
+__version__ = version = "0.0.0"

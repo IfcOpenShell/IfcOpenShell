@@ -1,0 +1,65 @@
+name: ci-ifcconvert
+
+on:
+  workflow_dispatch:
+
+jobs:
+  activate:
+    runs-on: ubuntu-latest
+    if: |
+      github.repository == 'IfcOpenShell/IfcOpenShell'
+    steps:
+    - name: Set env
+      run: echo ok go
+
+  build:
+    needs: activate
+    name: ${{ matrix.config.name }}-${{ matrix.pyver }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - {
+            name: "Windows 64bit",
+            short_name: win64,
+          }
+          - {
+            name: "Windows 32bit",
+            short_name: win32,
+          }
+          - {
+            name: "Linux 64bit",
+            short_name: linux64
+          }
+          - {
+            name: "MacOS Intel 64bit",
+            short_name: macos64
+          }
+          - {
+            name: "MacOS Silicon 64bit",
+            short_name: macosm164
+          }
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2 # https://github.com/actions/setup-python
+        with:
+          python-version: '3.11' # Version range or exact version of a Python version to use, using SemVer's version range syntax
+          architecture: 'x64' # optional x64 or x86. Defaults to x64 if not specified
+      - run: echo ${{ env.DATE }}
+      - name: Get current version
+        id: version
+        run: echo "version=$(cat VERSION)" >> $GITHUB_OUTPUT
+      - name: Compile
+        run: |
+          cd src/ifcopenshell-python &&
+          make zip-ifcconvert PLATFORM=${{ matrix.config.short_name }}
+      - name: Upload zip file to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: src/ifcopenshell-python/dist/ifcconvert-${{ steps.version.outputs.version }}-${{ matrix.config.short_name }}.zip
+          asset_name: ifcconvert-${{ steps.version.outputs.version }}-${{ matrix.config.short_name }}.zip
+          release_name: "ifcconvert-${{steps.version.outputs.version}}"
+          tag: "ifcconvert-${{steps.version.outputs.version}}"
+          overwrite: true

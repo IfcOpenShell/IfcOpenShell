@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bsdd"
+version = "0.0.0"
+authors = [
+  { name="Dion Moult", email="dion@thinkmoult.com" },
+]
+description = "Library to interact with the buildingSMART Data Dictionary"
+readme = "README.md"
+requires-python = ">=3.9"
+keywords = ["IFC", "bSDD", "BIM"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+    "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
+]
+dependencies = [
+    "requests",
+    "typing-extensions",
+]
+
+[project.optional-dependencies]
+dev = [
+    "coverage[toml]>=6.5",
+    "pytest",
+]
+
+[project.urls]
+Homepage = "http://ifcopenshell.org"
+Documentation = "https://docs.ifcopenshell.org"
+Issues = "https://github.com/IfcOpenShell/IfcOpenShell/issues"
+
+[tool.setuptools]
+py-modules = ["bsdd"]

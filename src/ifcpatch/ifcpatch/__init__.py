@@ -19,15 +19,31 @@
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import shutil
+import sys
 import ifcopenshell
 import logging
 import typing
 import inspect
 import collections
 import importlib
+import importlib.util
+from typing import Union, Iterable, Optional, Any, TypedDict, Literal
+from typing_extensions import NotRequired
 
 
-def execute(args):
+__version__ = version = "0.0.0"
+
+
+class ArgumentsDict(TypedDict):
+    recipe: str
+    file: NotRequired[ifcopenshell.file]
+    input: NotRequired[str]
+    log: NotRequired[str]
+    arguments: NotRequired[list]
+
+
+def execute(args: ArgumentsDict) -> Union[ifcopenshell.file, str]:
     """Execute a patch recipe
 
     The details of how the patch recipe is executed depends on the definition of
@@ -37,10 +53,13 @@ def execute(args):
     :param args: A dictionary of arguments, corresponding to the parameters
         listed subsequent to this in this docstring.
     :type args: dict
-    :param input: A filepath to the incoming IFC file.
-    :type input: str
     :param file: An IFC model to apply the patch recipe to.
-    :type file: ifcopenshell.file.file
+        Required for most recipes except the ones that require `input`.
+    :type file: ifcopenshell.file, optional
+    :param input: A filepath to the incoming IFC file.
+        Required/supported only for some recipes, see specific recipes descriptions,
+        in other cases will be ignored.
+    :type input: str, optional
     :param recipe: The name of the recipe. This is the same as the filename of
         the recipe. E.g. "ExtractElements".
     :type recipe: str
@@ -52,7 +71,6 @@ def execute(args):
     :type arguments: list
     :return: The result of the patch. This is typically a patched model, either
         as an object or as a string.
-    :rtype: ifcopenshell.file.file,str
 
     Example:
 
@@ -69,19 +87,38 @@ def execute(args):
     if "log" in args:
         logging.basicConfig(filename=args["log"], filemode="a", level=logging.DEBUG)
     logger = logging.getLogger("IFCPatch")
-    ifc_file = args["input"]
-    recipes = getattr(__import__("ifcpatch.recipes.{}".format(args["recipe"])), "recipes")
-    recipe = getattr(recipes, args["recipe"])
-    if recipe.Patcher.__init__.__doc__ is not None:
-        patcher = recipe.Patcher(args["input"], args["file"], logger, *args["arguments"])
+    if recipe_dir := os.environ.get("IFCPATCH_RECIPE_DIR"):
+        spec = importlib.util.spec_from_file_location(args["recipe"], os.path.join(recipe_dir, args["recipe"] + ".py"))
+        recipe = importlib.util.module_from_spec(spec)
+        sys.modules[args["recipe"]] = recipe
+        spec.loader.exec_module(recipe)
     else:
-        patcher = recipe.Patcher(args["input"], args["file"], logger, args["arguments"])
+        recipe = importlib.import_module(f"ifcpatch.recipes.{args['recipe']}")
+
+    # Ensure file or input is provided.
+    input_argument = get_patch_input_argument_use(args["recipe"])
+    if input_argument == "REQUIRED":
+        if not args.get("input"):
+            raise ValueError(f"Recipe {args['recipe']} is requiring 'input' argument to be provided.")
+    elif "file" not in args:  # SUPPORTED, IGNORED.
+        raise ValueError(f"Recipe {args['recipe']} is requiring 'file' argument to be provided.")
+
+    arguments = args.get("arguments", None) or []
+    if recipe.Patcher.__init__.__doc__ is not None:
+        patcher = recipe.Patcher(args.get("input"), args.get("file"), logger, *arguments)
+    else:
+        patcher = recipe.Patcher(args.get("input"), args.get("file"), logger, arguments)
     patcher.patch()
     output = getattr(patcher, "file_patched", patcher.file)
     return output
 
 
-def write(output, filepath):
+def get_patch_input_argument_use(recipe: str) -> Literal["REQUIRED", "SUPPORTED", "IGNORED"]:
+    recipe_module = sys.modules[recipe]
+    return getattr(recipe_module.Patcher, "input_argument", "IGNORED")
+
+
+def write(output: Union[ifcopenshell.file, str], filepath: str) -> None:
     """Write the output of an IFC patch to a file
 
     Typically a patch output would be a patched IFC model file object, or as a
@@ -99,7 +136,7 @@ def write(output, filepath):
         return
     elif isinstance(output, str):
         if os.path.exists(output):
-            os.rename(output, filepath)
+            shutil.move(output, filepath)
         else:
             with open(filepath, "w") as text_file:
                 text_file.write(output)
@@ -108,8 +145,8 @@ def write(output, filepath):
 
 
 def extract_docs(
-    submodule_name: str, cls_name: str, method_name: str = "__init__", boilerplate_args: typing.Iterable[str] = None
-):
+    submodule_name: str, cls_name: str, method_name: str = "__init__", boilerplate_args: Optional[Iterable[str]] = None
+) -> Union[dict[str, Any], None]:
     """Extract class docstrings and method arguments
 
     :param submodule_name: Submodule from which to extract the class
@@ -131,10 +168,10 @@ def extract_docs(
         print(f"Error : IFCPatch {str(submodule)} could not load because : {str(e)}")
 
 
-def _extract_docs(cls, method_name, boilerplate_args):
+def _extract_docs(cls: type, method_name: str, boilerplate_args: Union[Iterable[str], None]) -> dict[str, Any]:
     inputs = collections.OrderedDict()
     method = getattr(cls, method_name)
-    docs = {"class": cls}
+    docs: dict[str, Any] = {"class": cls}
     if boilerplate_args is None:
         boilerplate_args = []
 
@@ -146,16 +183,28 @@ def _extract_docs(cls, method_name, boilerplate_args):
         if isinstance(parameter.default, (str, float, int, bool)):
             inputs[name]["default"] = parameter.default
 
+    # Parse data from type hints.
     type_hints = typing.get_type_hints(method)
     for input_name in inputs.keys():
         type_hint = type_hints.get(input_name, None)
         if type_hint is None:  # The argument is not type-hinted. (Or hinted to None ??)
             continue
+
+        input_data = inputs[input_name]
+        # E.g. list[str].
+        if isinstance(type_hint, typing.GenericAlias):
+            input_data["generic_type"] = type_hint.__name__
+            type_hint = typing.get_args(type_hint)[0]
+
         if isinstance(type_hint, typing._UnionGenericAlias):
             inputs[input_name]["type"] = [t.__name__ for t in typing.get_args(type_hint)]
+        elif type_hint.__name__ == "Literal":
+            inputs[input_name]["type"] = "Literal"
+            inputs[input_name]["enum_items"] = list(typing.get_args(type_hint))
         else:
             inputs[input_name]["type"] = type_hint.__name__
 
+    # Parse the docstring.
     description = ""
     doc = method.__doc__
     if doc is not None:
@@ -169,6 +218,11 @@ def _extract_docs(cls, method_name, boilerplate_args):
                 param_name = line.split(":")[1].strip().replace("param ", "")
                 if param_name in inputs:
                     inputs[param_name]["description"] = line.split(":")[2].strip()
+            # :filter_glob is our special doc-tag.
+            elif line.startswith(":filter_glob"):
+                param_name = line.split(":")[1].strip().replace("filter_glob ", "")
+                if param_name in inputs:
+                    inputs[param_name]["filter_glob"] = line.split(":")[2].strip()
             elif i == 2:
                 description += line
             elif i > 2:

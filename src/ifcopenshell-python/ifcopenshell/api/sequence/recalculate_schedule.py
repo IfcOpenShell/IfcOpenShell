@@ -18,40 +18,43 @@
 
 import datetime
 import networkx as nx
-import ifcopenshell.api
+import ifcopenshell.api.sequence
 import ifcopenshell.util.date
 import ifcopenshell.util.sequence
 
 
+def recalculate_schedule(file: ifcopenshell.file, work_schedule: ifcopenshell.entity_instance) -> None:
+    """Calculate the critical path and floats for a work schedule
+
+    This implements critical path analysis, using the forward pass and
+    backward pass method. When run, any tasks that have no float will be
+    marked as critical, and both the total and free floats will be
+    populated for all task times.
+
+    Cyclical relationships are detected and will result in a recursion
+    error.
+
+    :param work_schedule: The IfcWorkSchedule to perform the calculation on.
+    :type work_schedule: ifcopenshell.entity_instance
+    :return: None
+    :rtype: None
+
+    Example:
+
+    .. code:: python
+
+        # See the example for ifcopenshell.api.sequence.cascade_schedule for
+        # details of how to set up a basic set of tasks and calculate the
+        # critical path. Typically cascade_schedule is run prior to ensure
+        # that dates are correct.
+    """
+    usecase = Usecase()
+    usecase.file = file
+    usecase.settings = {"work_schedule": work_schedule}
+    return usecase.execute()
+
+
 class Usecase:
-    def __init__(self, file, work_schedule=None):
-        """Calculate the critical path and floats for a work schedule
-
-        This implements critical path analysis, using the forward pass and
-        backward pass method. When run, any tasks that have no float will be
-        marked as critical, and both the total and free floats will be
-        populated for all task times.
-
-        Cyclical relationships are detected and will result in a recursion
-        error.
-
-        :param work_schedule: The IfcWorkSchedule to perform the calculation on.
-        :type work_schedule: ifcopenshell.entity_instance.entity_instance
-        :return: None
-        :rtype: None
-
-        Example:
-
-        .. code:: python
-
-            # See the example for ifcopenshell.api.sequence.cascade_schedule for
-            # details of how to set up a basic set of tasks and calculate the
-            # critical path. Typically cascade_schedule is run prior to ensure
-            # that dates are correct.
-        """
-        self.file = file
-        self.settings = {"work_schedule": work_schedule}
-
     def execute(self):
         # The method implemented is the same as shown here:
         # https://www.youtube.com/watch?v=qTErIV6OqLg
@@ -84,9 +87,7 @@ class Usecase:
                 break  # We have an infinite loop due to a cyclic graph
 
         if is_cyclic:
-            raise RecursionError(
-                "Task graph is cyclic and so critical path method cannot be performed."
-            )
+            raise RecursionError("Task graph is cyclic and so critical path method cannot be performed.")
             return
 
         self.pending_nodes = set(self.g.nodes)
@@ -112,9 +113,7 @@ class Usecase:
         self.g = nx.DiGraph()
         self.edges = []
         self.g.add_node("start", duration=0, duration_type="ELAPSEDTIME", calendar=None)
-        self.g.add_node(
-            "finish", duration=0, duration_type="ELAPSEDTIME", calendar=None
-        )
+        self.g.add_node("finish", duration=0, duration_type="ELAPSEDTIME", calendar=None)
         for rel in self.settings["work_schedule"].Controls:
             for related_object in rel.RelatedObjects:
                 if not related_object.is_a("IfcTask"):
@@ -129,9 +128,7 @@ class Usecase:
             return
 
         if task.TaskTime and task.TaskTime.ScheduleDuration:
-            duration = ifcopenshell.util.date.ifc2datetime(
-                task.TaskTime.ScheduleDuration
-            ).days
+            duration = ifcopenshell.util.date.ifc2datetime(task.TaskTime.ScheduleDuration).days
             duration_type = task.TaskTime.DurationType
         else:
             duration = 0
@@ -148,28 +145,34 @@ class Usecase:
             [
                 (
                     rel.RelatingProcess.id(),
-                    rel.RelatedProcess.id(),
+                    task.id(),
                     {
-                        "lag_time": 0
-                        if not rel.TimeLag
-                        else ifcopenshell.util.date.ifc2datetime(
-                            rel.TimeLag.LagValue.wrappedValue
-                        ).days,
+                        "lag_time": (
+                            0
+                            if not rel.TimeLag
+                            else ifcopenshell.util.date.ifc2datetime(rel.TimeLag.LagValue.wrappedValue).days
+                        ),
                         "type": self.sequence_type_map[rel.SequenceType],
                     },
                 )
-                for rel in task.IsSuccessorFrom or []
+                for rel in ifcopenshell.util.sequence.get_sequence_assignment(task, sequence="predecessor")
             ]
         )
-        predecessor_types = [rel.SequenceType for rel in task.IsSuccessorFrom]
-        successor_types = [rel.SequenceType for rel in task.IsPredecessorTo]
+
+        predecessor_types = [
+            rel.SequenceType for rel in ifcopenshell.util.sequence.get_sequence_assignment(task, "predecessor")
+        ]
+        successor_types = [
+            rel.SequenceType for rel in ifcopenshell.util.sequence.get_sequence_assignment(task, "successor")
+        ]
 
         if not predecessor_types:
             self.edges.append(("start", task.id(), {"lag_time": 0, "type": "FS"}))
             if task.TaskTime and task.TaskTime.ScheduleStart:
-                self.start_dates.append(
-                    ifcopenshell.util.date.ifc2datetime(task.TaskTime.ScheduleStart)
-                )
+                self.start_dates.append(ifcopenshell.util.date.ifc2datetime(task.TaskTime.ScheduleStart))
+                self.g.nodes[task.id()]["early_start"] = ifcopenshell.util.date.ifc2datetime(
+                    task.TaskTime.ScheduleStart
+                )  # we assume this task is constrained to start on this date
         if not successor_types:
             self.edges.append((task.id(), "finish", {"lag_time": 0, "type": "FF"}))
 
@@ -181,30 +184,17 @@ class Usecase:
             task = self.file.by_id(ifc_definition_id)
             if not task.TaskTime:
                 continue
-            ifcopenshell.api.run(
-                "sequence.edit_task_time",
+            ifcopenshell.api.sequence.edit_task_time(
                 self.file,
                 task_time=task.TaskTime,
                 attributes={
-                    "FreeFloat": ifcopenshell.util.date.datetime2ifc(
-                        data["free_float"], "IfcDuration"
-                    ),
-                    "TotalFloat": ifcopenshell.util.date.datetime2ifc(
-                        data["total_float"], "IfcDuration"
-                    ),
+                    "FreeFloat": ifcopenshell.util.date.datetime2ifc(data["free_float"], "IfcDuration"),
+                    "TotalFloat": ifcopenshell.util.date.datetime2ifc(data["total_float"], "IfcDuration"),
                     "IsCritical": data["total_float"].days == 0,
-                    "EarlyStart": ifcopenshell.util.date.datetime2ifc(
-                        data["early_start"], "IfcDateTime"
-                    ),
-                    "EarlyFinish": ifcopenshell.util.date.datetime2ifc(
-                        data["early_finish"], "IfcDateTime"
-                    ),
-                    "LateStart": ifcopenshell.util.date.datetime2ifc(
-                        data["late_start"], "IfcDateTime"
-                    ),
-                    "LateFinish": ifcopenshell.util.date.datetime2ifc(
-                        data["late_finish"], "IfcDateTime"
-                    ),
+                    "EarlyStart": ifcopenshell.util.date.datetime2ifc(data["early_start"], "IfcDateTime"),
+                    "EarlyFinish": ifcopenshell.util.date.datetime2ifc(data["early_finish"], "IfcDateTime"),
+                    "LateStart": ifcopenshell.util.date.datetime2ifc(data["late_start"], "IfcDateTime"),
+                    "LateFinish": ifcopenshell.util.date.datetime2ifc(data["late_finish"], "IfcDateTime"),
                 },
             )
 
@@ -223,6 +213,16 @@ class Usecase:
         else:
             finishes = []
             starts = []
+            if data.get("early_start") is not None:
+                data["early_finish"] = ifcopenshell.util.sequence.get_start_or_finish_date(
+                    data["early_start"],
+                    datetime.timedelta(days=data["duration"]),
+                    data["duration_type"],
+                    data["calendar"],
+                    date_type="FINISH",
+                )
+                return True  # we're done! We assume this task is constrained and finish processing it
+
             for predecessor in predecessors:
                 predecessor_data = self.g.nodes[predecessor]
                 edge = self.g[predecessor][node]
@@ -234,11 +234,7 @@ class Usecase:
                     if edge["lag_time"]:
                         days += edge["lag_time"]
                     if days:
-                        starts.append(
-                            datetime.datetime.combine(
-                                self.offset_date(finish, days, data), datetime.time(9)
-                            )
-                        )
+                        starts.append(datetime.datetime.combine(self.offset_date(finish, days, data), datetime.time(9)))
                         starts.append(
                             datetime.datetime.combine(
                                 self.offset_date(finish, days, predecessor_data),
@@ -253,9 +249,7 @@ class Usecase:
                         return
                     if edge["lag_time"]:
                         starts.append(self.offset_date(start, edge["lag_time"], data))
-                        starts.append(
-                            self.offset_date(start, edge["lag_time"], predecessor_data)
-                        )
+                        starts.append(self.offset_date(start, edge["lag_time"], predecessor_data))
                     else:
                         starts.append(start)
                 elif edge["type"] == "FF":
@@ -263,12 +257,8 @@ class Usecase:
                     if finish is None:
                         return
                     if edge["lag_time"]:
-                        finishes.append(
-                            self.offset_date(finish, edge["lag_time"], data)
-                        )
-                        finishes.append(
-                            self.offset_date(finish, edge["lag_time"], predecessor_data)
-                        )
+                        finishes.append(self.offset_date(finish, edge["lag_time"], data))
+                        finishes.append(self.offset_date(finish, edge["lag_time"], predecessor_data))
                     else:
                         finishes.append(finish)
                 elif edge["type"] == "SF":
@@ -280,9 +270,7 @@ class Usecase:
                         days += edge["lag_time"]
                     if days or edge["lag_time"]:
                         finishes.append(
-                            datetime.datetime.combine(
-                                self.offset_date(start, days, data), datetime.time(17)
-                            )
+                            datetime.datetime.combine(self.offset_date(start, days, data), datetime.time(17))
                         )
                         finishes.append(
                             datetime.datetime.combine(
@@ -305,9 +293,7 @@ class Usecase:
                 if potential_finish > data["early_finish"]:
                     data["early_finish"] = potential_finish
                 else:
-                    data[
-                        "early_start"
-                    ] = ifcopenshell.util.sequence.get_start_or_finish_date(
+                    data["early_start"] = ifcopenshell.util.sequence.get_start_or_finish_date(
                         data["early_finish"],
                         datetime.timedelta(days=data["duration"]),
                         data["duration_type"],
@@ -363,9 +349,7 @@ class Usecase:
                         days += edge["lag_time"]
                     if days or edge["lag_time"]:
                         finishes.append(
-                            datetime.datetime.combine(
-                                self.offset_date(start, -days, data), datetime.time(17)
-                            )
+                            datetime.datetime.combine(self.offset_date(start, -days, data), datetime.time(17))
                         )
                         finishes.append(
                             datetime.datetime.combine(
@@ -390,9 +374,7 @@ class Usecase:
                         return
                     if edge["lag_time"]:
                         starts.append(self.offset_date(start, -edge["lag_time"], data))
-                        starts.append(
-                            self.offset_date(start, -edge["lag_time"], successor_data)
-                        )
+                        starts.append(self.offset_date(start, -edge["lag_time"], successor_data))
                     else:
                         starts.append(start)
                     free_floats.append(
@@ -409,12 +391,8 @@ class Usecase:
                     if finish is None:
                         return
                     if edge["lag_time"]:
-                        finishes.append(
-                            self.offset_date(finish, -edge["lag_time"], data)
-                        )
-                        finishes.append(
-                            self.offset_date(finish, -edge["lag_time"], successor_data)
-                        )
+                        finishes.append(self.offset_date(finish, -edge["lag_time"], data))
+                        finishes.append(self.offset_date(finish, -edge["lag_time"], successor_data))
                     else:
                         finishes.append(finish)
                     free_floats.append(
@@ -435,9 +413,7 @@ class Usecase:
                         days += edge["lag_time"]
                     if days:
                         starts.append(
-                            datetime.datetime.combine(
-                                self.offset_date(finish, -days, data), datetime.time(9)
-                            )
+                            datetime.datetime.combine(self.offset_date(finish, -days, data), datetime.time(9))
                         )
                         starts.append(
                             datetime.datetime.combine(
@@ -459,13 +435,8 @@ class Usecase:
             if starts and finishes:
                 data["late_start"] = min(starts)
                 data["late_finish"] = min(finishes)
-                if (
-                    self.offset_date(data["late_start"], data["duration"], data)
-                    < data["late_finish"]
-                ):
-                    data[
-                        "late_finish"
-                    ] = ifcopenshell.util.sequence.get_start_or_finish_date(
+                if self.offset_date(data["late_start"], data["duration"], data) < data["late_finish"]:
+                    data["late_finish"] = ifcopenshell.util.sequence.get_start_or_finish_date(
                         data["late_start"],
                         datetime.timedelta(days=data["duration"]),
                         data["duration_type"],
@@ -473,9 +444,7 @@ class Usecase:
                         date_type="FINISH",
                     )
                 else:
-                    data[
-                        "late_start"
-                    ] = ifcopenshell.util.sequence.get_start_or_finish_date(
+                    data["late_start"] = ifcopenshell.util.sequence.get_start_or_finish_date(
                         data["late_finish"],
                         datetime.timedelta(days=data["duration"]),
                         data["duration_type"],
@@ -516,9 +485,7 @@ class Usecase:
             data["total_float"] = data["late_finish"] - data["early_finish"]
             # If the float is within the span of a single day, it may show as a 8 hours
             if data["total_float"].seconds == 60 * 60 * 8:
-                data["total_float"] = datetime.timedelta(
-                    days=data["total_float"].days + 1
-                )
+                data["total_float"] = datetime.timedelta(days=data["total_float"].days + 1)
 
         data["free_float"] = min(free_floats) if free_floats else None
         # If the float is within the span of a single day, it may show as a 8 hours

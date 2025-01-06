@@ -18,14 +18,18 @@
 
 import datetime
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.root
+import ifcopenshell.api.control
+import ifcopenshell.api.sequence
+
+
+# NOTE: IfcTaskTime was introduced in IFC4
 
 
 class TestEditTaskTime(test.bootstrap.IFC4):
     def test_editing_all_attributes(self):
-        task_time = ifcopenshell.api.run("sequence.add_task_time", self.file, task=self.file.createIfcTask())
-        ifcopenshell.api.run(
-            "sequence.edit_task_time",
+        task_time = ifcopenshell.api.sequence.add_task_time(self.file, task=self.file.createIfcTask())
+        ifcopenshell.api.sequence.edit_task_time(
             self.file,
             task_time=task_time,
             attributes={
@@ -73,9 +77,8 @@ class TestEditTaskTime(test.bootstrap.IFC4):
         assert task_time.Completion == 0.5
 
     def test_editing_just_a_start_date_with_no_duration_or_finish(self):
-        task_time = ifcopenshell.api.run("sequence.add_task_time", self.file, task=self.file.createIfcTask())
-        ifcopenshell.api.run(
-            "sequence.edit_task_time",
+        task_time = ifcopenshell.api.sequence.add_task_time(self.file, task=self.file.createIfcTask())
+        ifcopenshell.api.sequence.edit_task_time(
             self.file,
             task_time=task_time,
             attributes={
@@ -89,13 +92,12 @@ class TestEditTaskTime(test.bootstrap.IFC4):
         assert task_time.ScheduleDuration is None
 
     def test_editing_just_a_start_date_with_no_duration_or_finish_but_with_a_calendar(self):
-        ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
-        calendar = ifcopenshell.api.run("sequence.add_work_calendar", self.file)
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        calendar = ifcopenshell.api.sequence.add_work_calendar(self.file)
         task = self.file.createIfcTask()
-        ifcopenshell.api.run("control.assign_control", self.file, relating_control=calendar, related_object=task)
-        task_time = ifcopenshell.api.run("sequence.add_task_time", self.file, task=task)
-        ifcopenshell.api.run(
-            "sequence.edit_task_time",
+        ifcopenshell.api.control.assign_control(self.file, relating_control=calendar, related_object=task)
+        task_time = ifcopenshell.api.sequence.add_task_time(self.file, task=task)
+        ifcopenshell.api.sequence.edit_task_time(
             self.file,
             task_time=task_time,
             attributes={
@@ -109,9 +111,8 @@ class TestEditTaskTime(test.bootstrap.IFC4):
         assert task_time.ScheduleDuration is None
 
     def test_schedule_finish_dates_are_auto_calculated_if_possible(self):
-        task_time = ifcopenshell.api.run("sequence.add_task_time", self.file, task=self.file.createIfcTask())
-        ifcopenshell.api.run(
-            "sequence.edit_task_time",
+        task_time = ifcopenshell.api.sequence.add_task_time(self.file, task=self.file.createIfcTask())
+        ifcopenshell.api.sequence.edit_task_time(
             self.file,
             task_time=task_time,
             attributes={
@@ -126,9 +127,8 @@ class TestEditTaskTime(test.bootstrap.IFC4):
         assert task_time.ScheduleFinish == "2000-01-01T17:00:00"
 
     def test_schedule_durations_are_auto_calculated_if_possible(self):
-        task_time = ifcopenshell.api.run("sequence.add_task_time", self.file, task=self.file.createIfcTask())
-        ifcopenshell.api.run(
-            "sequence.edit_task_time",
+        task_time = ifcopenshell.api.sequence.add_task_time(self.file, task=self.file.createIfcTask())
+        ifcopenshell.api.sequence.edit_task_time(
             self.file,
             task_time=task_time,
             attributes={
@@ -143,9 +143,8 @@ class TestEditTaskTime(test.bootstrap.IFC4):
         assert task_time.ScheduleFinish == "2000-01-01T17:00:00"
 
     def test_a_duration_takes_priority_over_start_and_finish_dates(self):
-        task_time = ifcopenshell.api.run("sequence.add_task_time", self.file, task=self.file.createIfcTask())
-        ifcopenshell.api.run(
-            "sequence.edit_task_time",
+        task_time = ifcopenshell.api.sequence.add_task_time(self.file, task=self.file.createIfcTask())
+        ifcopenshell.api.sequence.edit_task_time(
             self.file,
             task_time=task_time,
             attributes={
@@ -161,9 +160,8 @@ class TestEditTaskTime(test.bootstrap.IFC4):
         assert task_time.ScheduleFinish == "2000-01-01T17:00:00"
 
     def test_durations_can_be_specified_in_datetime_objects(self):
-        task_time = ifcopenshell.api.run("sequence.add_task_time", self.file, task=self.file.createIfcTask())
-        ifcopenshell.api.run(
-            "sequence.edit_task_time",
+        task_time = ifcopenshell.api.sequence.add_task_time(self.file, task=self.file.createIfcTask())
+        ifcopenshell.api.sequence.edit_task_time(
             self.file,
             task_time=task_time,
             attributes={
@@ -178,9 +176,8 @@ class TestEditTaskTime(test.bootstrap.IFC4):
         assert task_time.ScheduleFinish == "2000-01-01T17:00:00"
 
     def test_zero_durations_are_allowed(self):
-        task_time = ifcopenshell.api.run("sequence.add_task_time", self.file, task=self.file.createIfcTask())
-        ifcopenshell.api.run(
-            "sequence.edit_task_time",
+        task_time = ifcopenshell.api.sequence.add_task_time(self.file, task=self.file.createIfcTask())
+        ifcopenshell.api.sequence.edit_task_time(
             self.file,
             task_time=task_time,
             attributes={
@@ -195,13 +192,12 @@ class TestEditTaskTime(test.bootstrap.IFC4):
         assert task_time.ScheduleFinish == "2000-01-01T09:00:00"
 
     def test_editing_a_start_date_and_duration_with_a_calendar(self):
-        ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
-        calendar = ifcopenshell.api.run("sequence.add_work_calendar", self.file)
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        calendar = ifcopenshell.api.sequence.add_work_calendar(self.file)
         task = self.file.createIfcTask()
-        ifcopenshell.api.run("control.assign_control", self.file, relating_control=calendar, related_object=task)
-        task_time = ifcopenshell.api.run("sequence.add_task_time", self.file, task=task)
-        ifcopenshell.api.run(
-            "sequence.edit_task_time",
+        ifcopenshell.api.control.assign_control(self.file, relating_control=calendar, related_object=task)
+        task_time = ifcopenshell.api.sequence.add_task_time(self.file, task=task)
+        ifcopenshell.api.sequence.edit_task_time(
             self.file,
             task_time=task_time,
             attributes={
@@ -214,23 +210,19 @@ class TestEditTaskTime(test.bootstrap.IFC4):
         assert task_time.ScheduleFinish == "2020-01-07T17:00:00"
         assert task_time.ScheduleDuration == "P7D"
 
-        work_time = ifcopenshell.api.run(
-            "sequence.add_work_time", self.file, work_calendar=calendar, time_type="WorkingTimes"
+        work_time = ifcopenshell.api.sequence.add_work_time(self.file, work_calendar=calendar, time_type="WorkingTimes")
+        pattern = ifcopenshell.api.sequence.assign_recurrence_pattern(
+            self.file, parent=work_time, recurrence_type="WEEKLY"
         )
-        pattern = ifcopenshell.api.run(
-            "sequence.assign_recurrence_pattern", self.file, parent=work_time, recurrence_type="WEEKLY"
-        )
-        ifcopenshell.api.run(
-            "sequence.edit_recurrence_pattern",
+        ifcopenshell.api.sequence.edit_recurrence_pattern(
             self.file,
             recurrence_pattern=pattern,
             attributes={"WeekdayComponent": [1, 2, 3, 4, 5]},
         )
-        ifcopenshell.api.run(
-            "sequence.add_time_period", self.file, recurrence_pattern=pattern, start_time="09:00", end_time="17:00"
+        ifcopenshell.api.sequence.add_time_period(
+            self.file, recurrence_pattern=pattern, start_time="09:00", end_time="17:00"
         )
-        ifcopenshell.api.run(
-            "sequence.edit_task_time",
+        ifcopenshell.api.sequence.edit_task_time(
             self.file,
             task_time=task_time,
             attributes={

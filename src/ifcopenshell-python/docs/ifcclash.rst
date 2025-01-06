@@ -5,19 +5,25 @@ IfcClash is both a CLI utility and library that lets you perform clash detection
 on one or more IFC models. Clashes are defined in terms of clash sets with
 filters using the IFC query syntax.
 
+PyPI
+----
+
+.. code-block::
+
+    pip install ifcclash
+
 Source installation
 -------------------
 
 1. :doc:`Install IfcOpenShell <ifcopenshell-python/installation>`
-2. `Install hppfcl <https://github.com/humanoid-path-planner/hpp-fcl>`_
-3. Optionally `install bcf <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.7.0/src/bcf>`_ (needed for BCF reports of results)
-4. `Clone the source code <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.7.0/src/ifcclash>`_.
-5. ``cd /path/to/IfcOpenShell/src/ifcclash``
+2. Optionally `install bcf <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.8.0/src/bcf>`_ (needed for BCF reports of results)
+3. `Clone the source code <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.8.0/src/ifcclash>`_.
+4. ``cd /path/to/IfcOpenShell/src/ifcclash``
 
-Here is a minimal example of how to use IfcPatch as a Python module or CLI
+Here is a minimal example of how to use IfcClash as a Python module or CLI
 utility:
 
-::
+.. code-block:: console
 
     $ python -m ifcclash -h
 
@@ -67,7 +73,7 @@ defined with data sources.
             "b": [
                 {
                     "file": "/path/to/two.ifc",
-                    "selector": ".IfcWall",
+                    "selector": "IfcWall",
                     "mode": "i"
                 }
             ]
@@ -77,10 +83,10 @@ defined with data sources.
 Once your have your JSON description of your clashes, usage is like any other
 CLI app.
 
-::
+.. code-block:: bash
 
-    $ ifcclash clash_sets.json
-    $ cat output.json
+    ifcclash clash_sets.json
+    cat output.json
 
 Here is a minimal example of how to use IfcClash as a library:
 
@@ -106,13 +112,13 @@ Here is a minimal example of how to use IfcClash as a library:
 
 You can also alias it to a command:
 
-::
+.. code-block:: bash
 
-    $ alias ifcclash='python -m ifcclash'
+    alias ifcclash='python -m ifcclash'
 
 Alternatively, you can package it as an executable.
 
 ::
 
-    $ python make.py
-    $ ./dist/ifcclash
+    python make.py
+    ./dist/ifcclash

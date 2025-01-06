@@ -1,0 +1,30 @@
+{
+    "IfcClassification": {
+        "Specification": "Location"
+    },
+    "IfcPropertyBoundedValue": {
+        "Specification": "Description"
+    },
+    "IfcPropertyEnumeratedValue": {
+        "Specification": "Description"
+    },
+    "IfcPropertyListValue": {
+        "Specification": "Description"
+    },
+    "IfcPropertyReferenceValue": {
+        "Specification": "Description"
+    },
+    "IfcPropertyTableValue": {
+        "Specification": "Description"
+    },
+    "IfcPropertySingleValue": {
+        "Specification": "Description"
+    },
+    "IfcComplexProperty": {
+        "Specification": "Description"
+    },
+    "IfcWorkTime": {
+        "StartDate": "Start",
+        "FinishDate": "Finish"
+    }
+}

@@ -18,6 +18,7 @@
 
 import bpy
 import ifcopenshell
+import ifcopenshell.api
 import ifcsverchok.helper
 from sverchok.node_tree import SverchCustomTreeNode
 
@@ -34,9 +35,9 @@ class SvIfcCreateProject(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helpe
         self.outputs.new("SvVerticesSocket", "file")
 
     def draw_buttons(self, context, layout):
-        op = layout.operator(
-            "node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False
-        ).tooltip = "Adds project, unit and context to IFC file"
+        op = layout.operator("node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False).tooltip = (
+            "Adds project, unit and context to IFC file"
+        )
         # op.tooltip = self.tooltip
 
     def process(self):

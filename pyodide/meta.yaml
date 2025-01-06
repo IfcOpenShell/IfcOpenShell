@@ -1,13 +1,14 @@
 package:
   name: ifcopenshell
-  version: 0.7.0
+  version: 0.8.0
 
 source:
-  path: IfcOpenShell
+  path: ../../IfcOpenShell
 
 build:
   script: |
-    python nix/build-all.py --without-hdf5 --without-opencollada --without-swig --without-pcre -v --wasm --py310 IfcOpenShell-Python
+    BUILD_CFG=Release python nix/build-all.py --without-hdf5 --without-opencollada --without-swig --without-pcre -v --wasm --py312 IfcOpenShell-Python
+    mv package/ifcopenshell .
     cp pyodide/setup.py .
 
 about:

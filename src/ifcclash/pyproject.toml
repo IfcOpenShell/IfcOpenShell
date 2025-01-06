@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ifcclash"
+version = "0.0.0"
+authors = [
+  { name="Dion Moult", email="dion@thinkmoult.com" },
+]
+description = "IFC clash detection library to handle intersections, collisions, and clearance checks"
+readme = "README.md"
+keywords = ["IFC", "clash", "BIM"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
+]
+dependencies = [
+    "ifcopenshell",
+]
+
+[project.urls]
+Homepage = "http://ifcopenshell.org"
+Documentation = "https://docs.ifcopenshell.org"
+Issues = "https://github.com/IfcOpenShell/IfcOpenShell/issues"
+
+[tool.setuptools.packages.find]
+include = ["ifcclash"]
+exclude = ["test*"]

@@ -18,7 +18,6 @@
 
 import ifcopenshell
 import ifcopenshell.util.element
-from toposort import toposort_flatten as toposort
 
 
 class Patcher:
@@ -35,9 +34,9 @@ class Patcher:
         If filesize is an issue, another approach would be to use IFCZIP
         instead to compress the model. Optimising the model only typically
         affects filesize and has minimal impact on load times. Large filesizes
-        can usually be solved through other means. Consult the BlenderBIM Add-on
+        can usually be solved through other means. Consult the bonsai Add-on
         documentation on dealing with large models for more details.
-        
+
         Warning: this optimise recipe is very, very slow. Please consider using
         RecycleNonRootedElements instead.
 
@@ -45,7 +44,7 @@ class Patcher:
 
         .. code:: python
 
-            ifcpatch.execute({"input": model, "recipe": "Optimise", "arguments": []})
+            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "Optimise", "arguments": []})
         """
         self.src = src
         self.file = file
@@ -53,6 +52,8 @@ class Patcher:
         self.optimized_file = ifcopenshell.file(schema=self.file.schema)
 
     def patch(self):
+        from toposort import toposort_flatten as toposort
+
         def generate_instances_and_references():
             """
             Generator which yields an entity id and

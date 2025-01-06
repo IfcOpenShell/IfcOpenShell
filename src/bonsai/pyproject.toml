@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bonsai"
+version = "0.0.0"
+authors = [
+  { name="Dion Moult", email="dion@thinkmoult.com" },
+]
+description = "A native Building Information Model authoring platform using IFC"
+keywords = ["IFC", "Blender", "BIM"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+]
+dependencies = [
+    "ifcopenshell",
+]
+
+[project.urls]
+Homepage = "http://bonsaibim.org"
+Documentation = "https://docs.bonsaibim.org"
+Issues = "https://github.com/IfcOpenShell/IfcOpenShell/issues"
+
+[tool.setuptools.packages.find]
+include = ["bonsai*"]
+exclude = ["test*"]
+
+[tool.setuptools.package-data]
+"*" = ["*.*", "libs/desktop/bonsai"]

@@ -17,13 +17,17 @@
  *                                                                              *
  ********************************************************************************/
 
+#ifdef IFOPSH_WITH_OPENCASCADE
+
 #ifndef OPENCASCADEBASEDSERIALIZER_H
 #define OPENCASCADEBASEDSERIALIZER_H
 
 #include "../serializers/serializers_api.h"
-#include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
+#include "../ifcgeom/Iterator.h"
 
-#include "../ifcgeom_schema_agnostic/GeometrySerializer.h"
+#include "../ifcgeom/GeometrySerializer.h"
+
+#include <TopoDS_Shape.hxx>
 
 class SERIALIZERS_API OpenCascadeBasedSerializer : public WriteOnlyGeometrySerializer {
 	OpenCascadeBasedSerializer(const OpenCascadeBasedSerializer&); //N/A
@@ -32,8 +36,8 @@ protected:
 	const std::string out_filename;
 	const char* getSymbolForUnitMagnitude(float mag);
 public:
-	explicit OpenCascadeBasedSerializer(const std::string& out_filename, const SerializerSettings& settings)
-		: WriteOnlyGeometrySerializer(settings)
+	explicit OpenCascadeBasedSerializer(const std::string& out_filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings)
+		: WriteOnlyGeometrySerializer(geometry_settings, settings)
 		, out_filename(out_filename)
 	{}
 	virtual ~OpenCascadeBasedSerializer() {}
@@ -46,4 +50,5 @@ public:
 	void setFile(IfcParse::IfcFile*) {}
 };
 
+#endif
 #endif

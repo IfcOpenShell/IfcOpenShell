@@ -1,0 +1,167 @@
+{
+    "IfcActuator": [
+        {
+            "name": "Electric Strike",
+            "predefined_type": "NOTDEFINED"
+        }
+    ],
+    "IfcAirTerminalBox": [
+        {
+            "name": "VAV Box"
+        }
+    ],
+    "IfcCableSegment": [
+        {
+            "name": "Lighting Rod"
+        }
+    ],
+    "IfcCovering": [
+        {
+            "name": "Flashing"
+        },
+        {
+            "name": "Capping"
+        },
+        {
+            "name": "Screed",
+            "predefined_type": "FLOORING"
+        },
+        {
+            "name": "Screed",
+            "predefined_type": "TOPPING"
+        }
+    ],
+    "IfcDistributionElement": [
+        {
+            "name": "Furnace"
+        }
+    ],
+    "IfcDistributionElementType": [
+        {
+            "name": "Furnace"
+        }
+    ],
+    "IfcElectricDistributionBoard": [
+        {
+            "name": "Circuit Breaker Panel",
+            "predefined_type": "DISTRIBUTIONBOARD"
+        },
+        {
+            "name": "Electrical Panel",
+            "predefined_type": "DISTRIBUTIONBOARD"
+        }
+    ],
+    "IfcElectricDistributionBoardType": [
+        {
+            "name": "Circuit Breaker Panel",
+            "predefined_type": "DISTRIBUTIONBOARD"
+        },
+        {
+            "name": "Electrical Panel",
+            "predefined_type": "DISTRIBUTIONBOARD"
+        }
+    ],
+    "IfcFurniture": [
+        {
+            "name": "Casework"
+        },
+        {
+            "name": "Millwork"
+        },
+        {
+            "name": "Signage"
+        }
+    ],
+    "IfcFurnitureType": [
+        {
+            "name": "Casework"
+        },
+        {
+            "name": "Millwork"
+        },
+        {
+            "name": "Signage"
+        }
+    ],
+    "IfcGeographicElement": [
+        {
+            "name": "Trees"
+        },
+        {
+            "name": "Plants"
+        },
+        {
+            "name": "Shrubs"
+        }
+    ],
+    "IfcGeographicElementType": [
+        {
+            "name": "Trees"
+        },
+        {
+            "name": "Plants"
+        },
+        {
+            "name": "Shrubs"
+        }
+    ],    
+    "IfcPlate": [
+        {
+            "name": "Glazing"
+        },
+        {
+            "name": "Glass"
+        },
+        {
+            "name": "Pane"
+        }
+    ],
+    "IfcSensor": [
+        {
+            "name": "Card Reader"
+        },
+        {
+            "name": "Fob Reader"
+        }
+    ],
+    "IfcSlab": [
+        {
+            "name": "Hob"
+        }
+    ],
+    "IfcSwitchingDevice": [
+        {
+            "name": "Reed Switch"
+        },
+        {
+            "name": "Electric Isolating Switch"
+        }
+    ],
+    "IfcUnitaryEquipment": [
+        {
+            "name": "Fan Coil Unit"
+        }
+    ],
+    "IfcWall": [
+        {
+            "name": "Glazing"
+        },
+        {
+            "name": "Glass"
+        },
+        {
+            "name": "Pane"
+        }
+    ],
+    "IfcWindow": [
+        {
+            "name": "Glazing"
+        },
+        {
+            "name": "Glass"
+        },
+        {
+            "name": "Pane"
+        }
+    ]
+}

@@ -1,0 +1,65 @@
+So, here are some note needed to know about how quantities are calculated.
+
+NET VOLUME AND GROSS VOLUME
+The difference between gross volume and net volume is that the gross volume is calculated
+without the related IFC opening.
+So, if an object is created lets say with a hole but without defining the opening, the hole is counted into net volume (so gross volume and net volume are the same).
+This is in order to follow the native IFC approach.
+
+WALLS 
+Walls quantities are calculated with the convention that the object main axis is the 'x'. 
+Also openings inside a wall have to main axis 'x'
+
+SLAB THICKNESS
+The slab thickness is defined as Width, following the IFC definition
+Also, note that these dimensions are calculated only if the slab is prismatic.
+
+LATERAL AREA
+All lateral areas are counted, so for example also the inside surfaces.
+It shouldn't be like that so we should find a method to only external lateral area.
+
+DOORS AND WINDOWS
+Doors and Windows have to have the main axis along 'x' and the height is measured along 'z' axis
+
+SPACES
+For calculating FinishFloorHeight and FinishCeilingHeight it substract the related IfcCovering with predefined type 'CEILING' and 'FLOORING'.
+NetPerimeter needs to substract related doors so basically it's needed to get the bounding walls. At this moment, i don't know how to do that.
+I created btw a "get_space_net_perimeter" that does nothing, only for reminder.
+Also GrossWallArea and NetWallArea need bounding object so for the moment is still in the todo list.
+GrossFloorArea: following the definition, it should exclude the wall claddings, but for now, this is not considered into the calculation.
+NetFloorArea: it doesn't count the following entities contained in the spatial entity: IfcColumn and IfcWall. Just add other entities into 'get_net_floor_area' if it's needed
+NetVolume: like NetFloorArea, it doesn't count the following entities contained in the spatial entity: IfcColumn and IfcWall
+Also, the entire IfcColumn (or IfcWall) object volume is substracted, so it should be better to substract only the shared volume between IfcSpace and IfcColumn. Look at todo list
+
+DUCT SEGMENTS AND DUCT FITTINGS
+The length is calculated like a beam. Also outer surface area. Gross cross section area, net cross section area and weight are not calculated right now because the parametrically cross section area seems filled (without hole).
+
+WEIGHT
+The object weight is calculated by multiplying the object mass density with the object volume (net or gross).
+It's only calculated if the object material has a MassDensity property in the Pset_MaterialCommon.
+It's calculated also only if the material is a "IfcMaterial" or a "IfcMaterialLayerSetUsage" or a "IfcMaterialProfileSetUsage".
+If the object material is a "IfcMaterialLayerSetUsage" the weight is calculated based on the average of layer thicknesses.
+If the object material is a "IfcMaterialProfileSetUsage", the weight is calculated only if there is only one profile (for simplicity).
+Also, at the moment there is no control over the measure unit so pay attention about that.
+
+
+
+REMAINING TODO FUNCTIONS
+IfcSpace - NetPerimeter
+IfcSpace - GrossWallArea
+IfcSpace - NetWallArea
+IfcSpace - Calculate only shared volume between IfcColumn and IfcSpace
+IfcPipeSegment - Gross cross section area
+IfcCableSegment - Cross section area
+Qto_PipeFittingBaseQuantities - Basically all quantities because the object can not be straight
+Qto_BuildingBaseQuantities - (n.7) Not sure if it's useful to map this entity because for example BBim doesn't create a building representation
+Qto_PictorialSignQuantities - SignArea
+Qto_ArealStratumBaseQuantities - PlanLength
+Qto_RoofBaseQuantities - ProjectedArea
+Qto_EarthworksCutBase - LooseVolume
+Qto_KerbBaseQuantities - Depth (not sure what's the difference between depth and width: there are 4 dimensions, i don't understand the difference)
+Qto_LinearStratumBaseQuantities - Diameter
+Qto_LinearStratumBaseQuantities - Length
+Qto_BodyGeometryValidation - SurfaceGenusBeforeFeatures
+Qto_BodyGeometryValidation - SurfaceGenusAfterFeatures
+

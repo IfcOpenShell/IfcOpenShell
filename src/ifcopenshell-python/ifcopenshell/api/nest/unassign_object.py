@@ -17,50 +17,58 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.owner
+import ifcopenshell.util.element
 
 
-class Usecase:
-    def __init__(self, file, related_object=None):
-        """Unassigns a related_object from its nest.
-        
-        An object (the whole within a decomposition) is Nested by zero or one more smaller objects.
-        This function will remove this nesting relationship.
-        
-        If the object is not part of a nesting relationship, nothing will happen.
-        
-        :param related_object: The child of the nesting relationship, typically
-            an IfcElement.
-        :type related_object: ifcopenshell.entity_instance.entity_instance
-        :return: None if the nest has only one child, otherwise the IfcRelNests relationship instance
+def unassign_object(file: ifcopenshell.file, related_objects: list[ifcopenshell.entity_instance]) -> None:
+    """Unassigns related_objects from their nests.
 
-        Example:
+    An object (the whole within a decomposition) is Nested by zero or one more smaller objects.
+    This function will remove this nesting relationship.
 
-        .. code:: python
+    If the object is not part of a nesting relationship, nothing will happen.
 
-            task = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcSite")
-            subtask1 = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBuilding")
-            subtask2 = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBuilding")
-            ifcopenshell.api.run("nest.assign_object", model, related_object=subtask1, relating_object=task)
-            ifcopenshell.api.run("nest.assign_object", model, related_object=subtask2, relating_object=task)
-            # The relationship is returned as task still has subtask2
-            rel = ifcopenshell.api.run("nest.unassign_object", model, related_object=subtask1)
-            # Nothing is returned, as the relationship has no related objects
-            ifcopenshell.api.run("nest.unassign_object", model, related_object=subtask2)
-        """
-        self.file = file
-        self.settings = {"related_object": related_object}
+    :param related_objects: The list of children of the nesting relationship,
+        typically IfcElements.
+    :type related_objects: list[ifcopenshell.entity_instance]
+    :return: None
+    :rtype: None
 
-    def execute(self):
-        for rel in self.settings["related_object"].Nests or []:
-            if not rel.is_a("IfcRelNests"):
-                continue
-            if len(rel.RelatedObjects) == 1:
-                return self.file.remove(rel)
-            related_objects = list(rel.RelatedObjects)
-            related_objects.remove(self.settings["related_object"])
-            rel.RelatedObjects = related_objects
-            ifcopenshell.api.run(
-                "owner.update_owner_history", self.file, **{"element": rel}
-            )
-            return rel
+    Example:
+
+    .. code:: python
+
+        task = ifcopenshell.api.root.create_entity(model, ifc_class="IfcTasks")
+        subtask1 = ifcopenshell.api.root.create_entity(model, ifc_class="IfcTask")
+        subtask2 = ifcopenshell.api.root.create_entity(model, ifc_class="IfcTask")
+        ifcopenshell.api.nest.assign_object(model, related_objects=[subtask1], relating_object=task)
+        ifcopenshell.api.nest.assign_object(model, related_objects=[subtask2], relating_object=task)
+        # nothing is returned
+        rel = ifcopenshell.api.nest.unassign_object(model, related_objects=[subtask1])
+        # nothing is returned, relationship is removed
+        ifcopenshell.api.nest.unassign_object(model, related_objects=[subtask2])
+    """
+
+    # NOTE: maintain .RelatedObjects order as it has meaning in IFC
+    related_objects_set = set(related_objects)
+    ifc2x3 = file.schema == "IFC2X3"
+    if ifc2x3:
+        rels = set(
+            rel
+            for object in related_objects_set
+            if (rel := next((rel for rel in object.Decomposes if rel.is_a("IfcRelNests")), None))
+        )
+    else:
+        rels = set(rel for object in related_objects if (rel := next((rel for rel in object.Nests), None)))
+
+    for rel in rels:
+        cur_related_objects = [o for o in rel.RelatedObjects if o not in related_objects_set]
+        if cur_related_objects:
+            rel.RelatedObjects = cur_related_objects
+            ifcopenshell.api.owner.update_owner_history(file, **{"element": rel})
+        else:
+            history = rel.OwnerHistory
+            file.remove(rel)
+            if history:
+                ifcopenshell.util.element.remove_deep2(file, history)

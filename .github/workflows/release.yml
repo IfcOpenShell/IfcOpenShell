@@ -8,12 +8,12 @@ on:
 jobs:
   activate:
     if: github.repository == 'IfcOpenShell/IfcOpenShell'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
     - run: echo ok go
   build:
     needs: activate
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -52,8 +52,8 @@ jobs:
            -DOCC_INCLUDE_DIR=/usr/include/opencascade \
            -DOCC_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu \
            -DPYTHON_EXECUTABLE:FILEPATH=/usr/bin/python3 \
-           -DPYTHON_INCLUDE_DIR:PATH=/usr/include/python3.8 \
-           -DPYTHON_LIBRARY:FILEPATH=/usr/lib/x86_64-linux-gnu/libpython3.8.so \
+           -DPYTHON_INCLUDE_DIR:PATH=/usr/include/python3.10 \
+           -DPYTHON_LIBRARY:FILEPATH=/usr/lib/x86_64-linux-gnu/libpython3.10.so \
            -DLIBXML2_INCLUDE_DIR=/usr/include/libxml2 \
            -DLIBXML2_LIBRARIES=/usr/lib/x86_64-linux-gnu/libxml2.so \
            -DGLTF_SUPPORT=On \

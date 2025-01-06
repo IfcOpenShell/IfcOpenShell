@@ -3,6 +3,7 @@ import re
 import ast
 import collections
 import ifcopenshell
+from logging import Logger
 from dataclasses import dataclass
 from codegen import indent
 
@@ -62,7 +63,7 @@ def fix_type(v):
     return v
 
 
-def run(f, logger):
+def run(f: ifcopenshell.file, logger: Logger) -> None:
     from _pytest import assertion
 
     if hasattr(logger, "set_instance"):
@@ -81,7 +82,7 @@ def run(f, logger):
     orig = ifcopenshell.settings.unpack_non_aggregate_inverses
     ifcopenshell.settings.unpack_non_aggregate_inverses = True
 
-    fn = os.path.join(os.path.dirname(__file__), "rules", f"{f.schema}.py")
+    fn = os.path.join(os.path.dirname(__file__), "rules", f"{f.schema_identifier}.py")
     try:
         source = open(fn, "r").read()
     except FileNotFoundError as e:
@@ -90,9 +91,9 @@ def run(f, logger):
         import subprocess
 
         current_dir_files = {fn.lower(): fn for fn in os.listdir('.')}
-        schema_name = str(f.schema).split(' ')[-1].lower()
+        schema_name = str(f.schema_identifier).split(' ')[-1].lower()
         schema_path = current_dir_files.get(schema_name + '.exp')
-        fn = schema_name + '.py'
+        fn = schema_path[:-4] + '.py'
         if not os.path.exists(fn):
             subprocess.run([sys.executable, "-m", "ifcopenshell.express.rule_compiler", schema_path, fn], check=True)
             time.sleep(1.)
@@ -100,7 +101,7 @@ def run(f, logger):
 
     a = ast.parse(source)
     assertion.rewrite.rewrite_asserts(mod=a, source=source)
-    cd = compile(a, f"{f.schema}.py", "exec")
+    cd = compile(a, f"{f.schema_identifier}.py", "exec")
     scope = {}
     exec(cd, scope)
     S = ifcopenshell.ifcopenshell_wrapper.schema_by_name(f.schema_identifier)
@@ -217,7 +218,14 @@ def run(f, logger):
                 check(value[0], S.declaration_by_name(value.is_a()), instance=inst)
 
     for inst in f:
-        values = list(inst)
+        try:
+            values = list(inst)
+        except Exception as e:
+            if hasattr(logger, "set_state"):
+                logger.error(str(e))
+            else:
+                logger.error("For instance:\n    %s\n%s", inst, e)
+            continue
         entity = S.declaration_by_name(inst.is_a())
         attrs = entity.all_attributes()
         for i, (attr, val, is_derived) in enumerate(
