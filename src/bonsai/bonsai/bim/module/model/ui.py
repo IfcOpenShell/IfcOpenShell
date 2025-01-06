@@ -649,13 +649,12 @@ class BIM_PT_roof(bpy.types.Panel):
                     self.layout.prop(props, prop)
 
                 update_roof_modifier_bmesh(obj)
-
             elif props.is_editing_path:
                 row.operator("bim.finish_editing_roof_path", icon="CHECKMARK", text="")
                 row.operator("bim.cancel_editing_roof_path", icon="CANCEL", text="")
-
             else:
                 row.operator("bim.enable_editing_roof", icon="GREASEPENCIL", text="")
+                row.operator("bim.copy_roof_parameters", icon="COPYDOWN", text="")
                 row.operator("bim.enable_editing_roof_path", icon="ANIM", text="")
                 row.operator("bim.remove_roof", icon="X", text="")
 
