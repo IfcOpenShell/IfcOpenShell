@@ -1858,6 +1858,8 @@ class OverrideEscape(bpy.types.Operator):
             bpy.ops.bim.hide_all_openings()
         elif context.scene.BIMAggregateProperties.in_aggregate_mode:
             bpy.ops.bim.disable_aggregate_mode()
+        elif context.active_object and context.active_object.BIMRailingProperties.is_editing_path:
+            bpy.ops.bim.cancel_editing_railing_path()
         return {"FINISHED"}
 
 

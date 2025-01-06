@@ -354,6 +354,41 @@ class AddRailing(bpy.types.Operator, tool.Ifc.Operator):
         tool.Model.add_body_representation(obj)
 
 
+class CopyRailingParameters(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.copy_railing_parameters"
+    bl_label = "Copy Railing Parameters from Active to Selected"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.active_object and len(context.selected_objects) > 1
+
+    def _execute(self, context):
+        source_obj = context.active_object
+        source_props = source_obj.BIMRailingProperties
+        railing_data = source_props.get_general_kwargs(convert_to_project_units=True)
+
+        for target_obj in context.selected_objects:
+            if target_obj == source_obj:
+                continue
+            context.view_layer.objects.active = target_obj
+            RailingData.load()
+            if not "path_data" in RailingData.data:
+                continue
+            railing_data["path_data"] = RailingData.data["path_data"]
+            target_element = tool.Ifc.get_entity(target_obj)
+            target_props = target_obj.BIMRailingProperties
+
+            target_props.set_props_kwargs_from_ifc_data(railing_data)
+            update_bbim_railing_pset(target_element, railing_data)
+            refresh()
+            update_railing_modifier_bmesh(context)
+            update_railing_modifier_ifc_data(context)
+
+        context.view_layer.objects.active = source_obj
+        return {"FINISHED"}
+
+
 class EnableEditingRailing(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_railing"
     bl_label = "Enable Editing Railing"
