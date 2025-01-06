@@ -925,18 +925,22 @@ class curve_segment_evaluator {
 
                 // This functor is the derivative of y(x) => dy/dx = f'(x)
                 auto df = [lu=length_unit_,coeffY](double x) -> double {
-                    auto begin = std::next(coeffY.begin());
-                    auto iter = begin;
+                    auto begin = coeffY.begin();
+                    auto iter = std::next(begin);
                     auto end = coeffY.end();
                     double value = 0;
-                    double lu_exp = 0.0;
+                    // y = A0 + A1*x + A2*x^2 + A3*x^3
+                    // y' = 0 + 1*A1*x^0 + 2*A2*x^1 + 3*A3*x^2
+                    // The units of y are length. y' is unitless
+                    // The units of x are length.
+                    // A unit conversion of the coefficients is needed
+                    // A1 = length^0
+                    // A2 = length^-1
+                    // A3 = Length^-2
                     for (; iter != end; iter++) {
                         auto exp = std::distance(begin, iter);
                         auto coeff = (*iter);
-                        double a = (double)exp * coeff * pow(lu, lu_exp--);
-                        double b = x ? pow(x, exp - 1) : 0; // when x and exp are zero? 0^-1 is infinite and the result is undefined
-                        double v = a * b;
-                        //double v = (double)exp * coeff * pow(lu, lu_exp--) * pow(x, exp - 1);
+                        double v = (double)exp * coeff * pow(lu, 1-exp) * pow(x, exp - 1);
                         value += v;
                     }
                     return value;
@@ -986,14 +990,13 @@ class curve_segment_evaluator {
                 for (int i = 0; i < 2; i++) {             // loop over X and Y
                     auto begin = coefficients[i]->cbegin();
                     auto end = coefficients[i]->cend();
-                    double lu_exp = 1.0;
                     for (auto iter = begin; iter != end; iter++) {
                         auto exp = std::distance(begin, iter);
                         auto coeff = (*iter);
-                        position[i] += coeff * pow(lu, lu_exp--) * pow(x, exp);
+                        position[i] += coeff * pow(lu, 1-exp) * pow(x, exp);
 
                         if (iter != begin) {
-                            slope[i] += coeff * pow(lu, lu_exp) * exp * pow(x, exp - 1);
+                            slope[i] += exp * coeff * pow(lu, 1-exp) * pow(x, exp - 1);
                         }
                     }
                 }
