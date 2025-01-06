@@ -569,6 +569,7 @@ class RoofData:
         if not cls.data["pset_data"]:
             return
         cls.data["general_params"] = cls.general_params()
+        cls.data["path_data"] = cls.path_data()
 
     @classmethod
     def pset_data(cls):
@@ -588,6 +589,10 @@ class RoofData:
 
             general_params[prop_readable_name] = prop_value
         return general_params
+
+    @classmethod
+    def path_data(cls):
+        return cls.data["pset_data"]["data_dict"]["path_data"]
 
 
 class ItemData:

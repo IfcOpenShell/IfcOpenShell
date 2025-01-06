@@ -186,6 +186,7 @@ classes = (
     roof.BIM_OT_add_roof,
     roof.AddRoof,
     roof.CancelEditingRoof,
+    roof.CopyRoofParameters,
     roof.FinishEditingRoof,
     roof.EnableEditingRoof,
     roof.CancelEditingRoofPath,

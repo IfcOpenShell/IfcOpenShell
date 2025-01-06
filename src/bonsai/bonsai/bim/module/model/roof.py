@@ -438,7 +438,7 @@ def update_roof_modifier_bmesh(obj: bpy.types.Object) -> None:
     # NOTE: using Data since bmesh update will hapen very often
     if not RoofData.is_loaded:
         RoofData.load()
-    path_data = RoofData.data["pset_data"]["data_dict"]["path_data"]
+    path_data = RoofData.data["path_data"]
     angle_layer_data = path_data.get("gable_roof_angles", None)
     separate_verts_data = path_data.get("gable_roof_separate_verts", None)
 
@@ -737,6 +737,41 @@ class CancelEditingRoofPath(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         return cancel_editing_roof_path(context)
+
+
+class CopyRoofParameters(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.copy_roof_parameters"
+    bl_label = "Copy Roof Parameters from Active to Selected"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.active_object and len(context.selected_objects) > 1
+
+    def _execute(self, context):
+        source_obj = context.active_object
+        source_props = source_obj.BIMRoofProperties
+        data = source_props.get_general_kwargs(convert_to_project_units=True)
+
+        for target_obj in context.selected_objects:
+            if target_obj == source_obj:
+                continue
+            context.view_layer.objects.active = target_obj
+            RoofData.load()
+            if not "path_data" in RoofData.data:
+                continue
+            data["path_data"] = RoofData.data["path_data"]
+            target_element = tool.Ifc.get_entity(target_obj)
+            target_props = target_obj.BIMRoofProperties
+
+            target_props.set_props_kwargs_from_ifc_data(data)
+            update_bbim_roof_pset(target_element, data)
+            refresh()
+            update_roof_modifier_bmesh(target_obj)
+            update_roof_modifier_ifc_data(context)
+
+        context.view_layer.objects.active = source_obj
+        return {"FINISHED"}
 
 
 class FinishEditingRoofPath(bpy.types.Operator, tool.Ifc.Operator):
