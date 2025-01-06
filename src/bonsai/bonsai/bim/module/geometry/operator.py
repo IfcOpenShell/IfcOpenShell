@@ -1858,8 +1858,9 @@ class OverrideEscape(bpy.types.Operator):
             bpy.ops.bim.hide_all_openings()
         elif context.scene.BIMAggregateProperties.in_aggregate_mode:
             bpy.ops.bim.disable_aggregate_mode()
-        elif context.active_object and context.active_object.BIMRailingProperties.is_editing_path:
-            bpy.ops.bim.cancel_editing_railing_path()
+        elif active_object:=context.active_object:
+            if tool.Blender.Modifier.try_canceling_editing_modifier_parameters_or_path(active_object):
+                pass
         return {"FINISHED"}
 
 
@@ -1921,13 +1922,8 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
                 bpy.ops.bim.enable_editing_boundary_geometry()
             elif element.is_a("IfcGridAxis"):
                 self.enable_edit_mode(context)
-            elif tool.Blender.Modifier.is_editing_parameters(obj):
-                # This should go BEFORE the modifiers
-                self.report({"INFO"}, "Can't edit while modifier parameters are being modified")
-            elif tool.Blender.Modifier.is_roof(element):
-                bpy.ops.bim.enable_editing_roof_path()
-            elif tool.Blender.Modifier.is_railing(element):
-                bpy.ops.bim.enable_editing_railing_path()
+            elif tool.Blender.Modifier.try_applying_edit_mode(obj, element):
+                pass
             else:
                 bpy.ops.bim.import_representation_items()
         elif tool.Geometry.is_representation_item(obj):
