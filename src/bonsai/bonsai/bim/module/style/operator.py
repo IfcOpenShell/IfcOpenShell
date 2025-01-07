@@ -80,6 +80,7 @@ class RemoveStyle(bpy.types.Operator, tool.Ifc.Operator):
     style: bpy.props.IntProperty()
 
     def _execute(self, context):
+        core.disable_editing_style(tool.Style)  # So we don't end up soft-locking style edition
         core.remove_style(tool.Ifc, tool.Style, style=tool.Ifc.get().by_id(self.style), reload_styles_ui=True)
 
 
@@ -233,6 +234,35 @@ class UpdateCurrentStyle(bpy.types.Operator):
                 if mat and mat not in updated_materials and mat.BIMStyleProperties.ifc_definition_id != 0:
                     mat.BIMStyleProperties.active_style_type = current_style_type
                     updated_materials.add(mat)
+        return {"FINISHED"}
+
+
+class SetAssetMaterialToExternalStyle(bpy.types.Operator):
+    bl_idname = "bim.set_asset_material_to_external_style"
+    bl_label = "Set To External Style"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute_delayed(self, name, filepath, props):
+        style_id = props.active_style.ifc_definition_id
+        bpy.ops.bim.enable_editing_surface_style(style=style_id, ifc_class="IfcExternallyDefinedSurfaceStyle")
+        bpy.ops.bim.browse_external_style(
+            data_block_type="materials",
+            data_block=name,
+            filepath=filepath,
+            active_surface_style_id=style_id,
+            use_relative_path=False,
+        )
+        bpy.ops.bim.edit_surface_style()
+
+    def execute(self, context):
+        # We delay execution because for some obscure reason we can't use
+        # the temp override to copy material node tree `right now`
+        name = context.asset.name
+        filepath = context.asset.full_library_path
+        bpy.app.timers.register(
+            lambda: self.execute_delayed(name, filepath, context.scene.BIMStylesProperties),
+            first_interval=0.001,
+        )
         return {"FINISHED"}
 
 

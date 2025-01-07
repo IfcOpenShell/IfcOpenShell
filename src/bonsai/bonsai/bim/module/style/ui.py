@@ -52,7 +52,7 @@ class BIM_PT_styles(Panel):
             row.operator("bim.load_styles", text="", icon="IMPORT").style_type = style_type
             return
 
-        active_style = bool(self.props.styles and self.props.active_style_index < len(self.props.styles))
+        active_style = self.props.active_style
         row = self.layout.row(align=True)
         row.label(text="{} {}s".format(len(self.props.styles), self.props.style_type), icon="SHADING_RENDERED")
         row.operator("bim.disable_editing_styles", text="", icon="CANCEL")
@@ -62,7 +62,7 @@ class BIM_PT_styles(Panel):
         if not self.props.is_adding:
             row.operator("bim.enable_adding_presentation_style", text="", icon="ADD")
         if active_style:
-            style = self.props.styles[self.props.active_style_index]
+            style = active_style
 
             row.operator("bim.duplicate_style", text="", icon="DUPLICATE").style = style.ifc_definition_id
             row.operator("bim.select_by_style", text="", icon="RESTRICT_SELECT_OFF").style = style.ifc_definition_id
@@ -237,7 +237,7 @@ class BIM_PT_styles(Panel):
     def draw_externally_defined_surface_style(self):
         row = self.layout.row()
         op = row.operator("bim.browse_external_style", icon="APPEND_BLEND", text="Append From Blend File")
-        style = self.props.styles[self.props.active_style_index]
+        style = self.props.active_style
         op.active_surface_style_id = style.ifc_definition_id
         bonsai.bim.helper.draw_attributes(self.props.external_style_attributes, self.layout)
 
@@ -327,3 +327,12 @@ class BIM_PT_style(Panel):
         row = self.layout.row(align=True)
         row.label(text="IFC Style Name:")
         row.label(text=BlenderMaterialStyleData.data["linked_style_name"])
+
+
+def draw_asset_browser_context_menu_append(self, context):
+    asset = context.asset
+    if not asset or not asset.id_type == "MATERIAL":
+        return
+    if not context.scene.BIMStylesProperties.is_editing:
+        return
+    self.layout.operator("bim.set_asset_material_to_external_style")
