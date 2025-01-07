@@ -155,7 +155,7 @@ class AddMaterial(bpy.types.Operator, tool.Ifc.Operator):
 
 class DuplicateMaterial(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.duplicate_material"
-    bl_label = "Diplicate Material"
+    bl_label = "Duplicate Material"
     bl_options = {"REGISTER", "UNDO"}
     material: bpy.props.IntProperty(name="Material ID")
 
