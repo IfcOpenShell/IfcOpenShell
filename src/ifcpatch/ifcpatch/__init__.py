@@ -114,7 +114,8 @@ def execute(args: ArgumentsDict) -> Union[ifcopenshell.file, str]:
 
 
 def get_patch_input_argument_use(recipe: str) -> Literal["REQUIRED", "SUPPORTED", "IGNORED"]:
-    recipe_module = sys.modules[recipe]
+    # try out of tree and subpackage imports
+    recipe_module = sys.modules.get(f"ifcpatch.recipes.{recipe}") or sys.modules.get(recipe)
     return getattr(recipe_module.Patcher, "input_argument", "IGNORED")
 
 
