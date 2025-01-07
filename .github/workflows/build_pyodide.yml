@@ -25,7 +25,8 @@ jobs:
 
       - name: Build
         run: |
-          find .. -maxdepth 2
+          VERSION=`cat IfcOpenShell/VERSION`
+          sed -i s/0.8.0/$VERSION/g IfcOpenShell/pyodide/meta.yaml
           echo '#!/usr/bin/bash' > script.sh
           echo 'cd pyodide' > script.sh
           echo 'make && pip install ./pyodide-build' >> script.sh
