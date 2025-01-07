@@ -431,9 +431,10 @@ class BIM_OT_aggregate_assign_new_objects_in_aggregate_mode(bpy.types.Operator):
                 editing_obj = props.editing_objects.add()
                 editing_obj.obj = obj
                 props.editing_aggregate.select_set(True)
-        context.view_layer.objects.active = new_objs[0]
-        self.relating_object = tool.Ifc.get_entity(props.editing_aggregate).id()
-        self.related_object = tool.Ifc.get_entity(obj).id()
+        if new_objs:
+            context.view_layer.objects.active = new_objs[0]
+            self.relating_object = tool.Ifc.get_entity(props.editing_aggregate).id()
+            self.related_object = tool.Ifc.get_entity(obj).id()
 
         BIM_OT_aggregate_assign_object._execute(self, context)
 
