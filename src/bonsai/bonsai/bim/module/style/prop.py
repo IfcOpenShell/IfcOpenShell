@@ -261,6 +261,11 @@ class BIMStylesProperties(PropertyGroup):
 
     styles: CollectionProperty(name="Styles", type=Style)
     active_style_index: IntProperty(name="Active Style Index")
+
+    @property
+    def active_style(self):
+        return self.styles[self.active_style_index] if 0 <= self.active_style_index < len(self.styles) else None
+
     active_style_type: EnumProperty(
         name="Active Style Type",
         description="Update current blender material to match style type for all objects in the scene",

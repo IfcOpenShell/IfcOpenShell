@@ -116,9 +116,7 @@ class Style(bonsai.core.tool.Style):
     @classmethod
     def get_active_style_in_ui(cls) -> Union[bpy.types.PropertyGroup, None]:
         props = bpy.context.scene.BIMStylesProperties
-        if len(props.styles) > props.active_style_index >= 0:
-            return props.styles[props.active_style_index]
-        return None
+        return props.active_style
 
     @classmethod
     def get_active_style_type(cls) -> str:
