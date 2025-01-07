@@ -1190,3 +1190,37 @@ def draw_custom_context_menu(self: bpy.types.Menu, context: bpy.types.Context) -
                 layout.separator()
                 url_op = layout.operator("bim.open_uri", icon="URL", text="Online IFC Documentation")
                 url_op.uri = url
+
+class BIM_PT_decorators_overlay(Panel):
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'HEADER'
+    bl_parent_id = 'VIEW3D_PT_overlay'
+    bl_label = "Bonsai Decorators"
+
+    @classmethod
+    def poll(cls, context):
+        return context.mode == 'OBJECT'
+
+    def draw(self, context):
+        layout = self.layout
+
+        view = context.space_data
+        overlay = view.overlay
+
+        geo_props = bpy.context.scene.BIMGeoreferenceProperties
+        agg_props = bpy.context.scene.BIMAggregateProperties
+        model_props = bpy.context.scene.BIMModelProperties
+        display_all = overlay.show_overlays
+
+        col = layout.column()
+        col.active = display_all
+
+        row = col.row(align=True)
+        row.prop(geo_props, "should_visualise", text="Georeference")
+        row.prop(geo_props, "visualization_scale", text="Size", slider=True)
+        row = col.row(align=True)
+        row.prop(agg_props, "aggregate_decorator", text="Aggregate")
+        row = col.row(align=True)
+        row.prop(model_props, "show_wall_axis", text="Wall Axis")
+        row = col.row(align=True)
+        row.prop(model_props, "show_slab_direction", text="Slab Direction")
