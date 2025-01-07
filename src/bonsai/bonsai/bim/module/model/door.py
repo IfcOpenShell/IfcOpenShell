@@ -42,8 +42,7 @@ import collections
 V_ = tool.Blender.V_
 
 
-def update_door_modifier_representation(context: bpy.types.Context) -> None:
-    obj = context.active_object
+def update_door_modifier_representation(obj: bpy.types.Object) -> None:
     props = obj.BIMDoorProperties
     element = tool.Ifc.get_entity(obj)
     ifc_file = tool.Ifc.get()
@@ -546,11 +545,10 @@ class BIM_OT_add_door(bpy.types.Operator, tool.Ifc.Operator):
 class AddDoor(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_door"
     bl_label = "Add Door"
-    bl_description = "Add Bonsai parametric door to the active IFC element"
+    bl_description = "Add a Parametric Door to the Selected IFC Door Elements"
     bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
-        obj = context.active_object
+    def add_door_on_object(self, obj):
         element = tool.Ifc.get_entity(obj)
         props = obj.BIMDoorProperties
 
@@ -571,18 +569,25 @@ class AddDoor(bpy.types.Operator, tool.Ifc.Operator):
             pset=pset,
             properties={"Data": tool.Ifc.get().createIfcText(json.dumps(door_data, default=list))},
         )
-        update_door_modifier_representation(context)
+        update_door_modifier_representation(obj)
+
+    def _execute(self, context):
+        for obj in context.selected_objects:
+            if not tool.Blender.Modifier.is_eligible_for_door_modifier(obj):
+                continue
+            self.add_door_on_object(obj)
         return {"FINISHED"}
 
 
 class CancelEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.cancel_editing_door"
-    bl_label = "Cancel Editing Door"
-    bl_options = {"REGISTER"}
+    bl_label = "Cancel Editing Door on Selected Objects"
+    bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
-        obj = context.active_object
+    def cancel_editing_door_on_object(self, obj, element):
         element = tool.Ifc.get_entity(obj)
+        if not tool.Blender.Modifier.is_door(element):
+            return
         props = obj.BIMDoorProperties
         data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Door", "Data"))
         data.update(data.pop("lining_properties"))
@@ -603,17 +608,22 @@ class CancelEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
         )
 
         props.is_editing = False
+
+    def _execute(self, context):
+        for obj in context.selected_objects:
+            self.cancel_editing_door_on_object(obj)
         return {"FINISHED"}
 
 
 class FinishEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.finish_editing_door"
-    bl_label = "Finish Editing Door"
-    bl_options = {"REGISTER"}
+    bl_label = "Finish Editing Door on Selected Objects"
+    bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
-        obj = context.active_object
+    def finish_editing_door_on_object(self, obj):
         element = tool.Ifc.get_entity(obj)
+        if not tool.Blender.Modifier.is_door(element):
+            return
         props = obj.BIMDoorProperties
 
         door_data = props.get_general_kwargs(convert_to_project_units=True)
@@ -625,45 +635,54 @@ class FinishEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
 
         props.is_editing = False
 
-        update_door_modifier_representation(context)
+        update_door_modifier_representation(obj)
 
         pset = tool.Pset.get_element_pset(element, "BBIM_Door")
         door_data = tool.Ifc.get().createIfcText(json.dumps(door_data, default=list))
         ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": door_data})
+
+    def _execute(self, context):
+        for obj in context.selected_objects:
+            self.finish_editing_door_on_object(obj)
         return {"FINISHED"}
 
 
 class EnableEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_door"
-    bl_label = "Enable Editing Door"
-    bl_options = {"REGISTER"}
+    bl_label = "Enable Editing Door on Selected Objects"
+    bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        obj = context.active_object
-        props = obj.BIMDoorProperties
-        element = tool.Ifc.get_entity(obj)
-        data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Door", "Data"))
-        data.update(data.pop("lining_properties"))
-        data.update(data.pop("panel_properties"))
+        for obj in context.selected_objects:
+            props = obj.BIMDoorProperties
+            element = tool.Ifc.get_entity(obj)
+            if not tool.Blender.Modifier.is_door(element):
+                continue
+            data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Door", "Data"))
+            data.update(data.pop("lining_properties"))
+            data.update(data.pop("panel_properties"))
 
-        # required since we could load pset from .ifc and BIMDoorProperties won't be set
-        props.set_props_kwargs_from_ifc_data(data)
-        props.is_editing = True
+            # required since we could load pset from .ifc and BIMDoorProperties won't be set
+            props.set_props_kwargs_from_ifc_data(data)
+            props.is_editing = True
         return {"FINISHED"}
 
 
 class RemoveDoor(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_door"
-    bl_label = "Remove Door"
-    bl_options = {"REGISTER"}
+    bl_label = "Remove Door on Selected Objects"
+    bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
-        obj = context.active_object
-        props = obj.BIMDoorProperties
+    def remove_door_on_object(self, obj):
         element = tool.Ifc.get_entity(obj)
+        if not tool.Blender.Modifier.is_door(element):
+            return
         obj.BIMDoorProperties.is_editing = False
 
         pset = tool.Pset.get_element_pset(element, "BBIM_Door")
         ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=element, pset=pset)
 
+    def _execute(self, context):
+        for obj in context.selected_objects:
+            self.remove_door_on_object(obj)
         return {"FINISHED"}
