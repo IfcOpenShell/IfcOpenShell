@@ -403,9 +403,9 @@ class BIM_OT_toggle_aggregate_mode_local_view(bpy.types.Operator):
 
         return {"FINISHED"}
 
-class BIM_OT_aggregate_assing_new_objects_in_aggregate_mode(bpy.types.Operator):
-    bl_idname = "bim.aggregate_assing_new_objects_in_aggregate_mode"
-    bl_label = "Aggregate Assing New Objects In Aggregate Mode"
+class BIM_OT_aggregate_assign_new_objects_in_aggregate_mode(bpy.types.Operator):
+    bl_idname = "bim.aggregate_assign_new_objects_in_aggregate_mode"
+    bl_label = "Aggregate Assign New Objects In Aggregate Mode"
     bl_options = {"REGISTER", "UNDO"}
     relating_object: bpy.props.IntProperty()
     related_object: bpy.props.IntProperty()
