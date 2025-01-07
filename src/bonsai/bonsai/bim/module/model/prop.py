@@ -25,6 +25,7 @@ from bonsai.bim.prop import ObjProperty
 from bonsai.bim.module.model.data import AuthoringData
 from bpy.types import PropertyGroup, NodeTree
 from math import pi, radians
+from bonsai.bim.module.model.decorator import WallAxisDecorator, SlabDirectionDecorator
 
 
 def get_ifc_class(self, context):
@@ -80,6 +81,20 @@ def is_object_array_applicable(self, obj):
     if not element:
         return False
     return ifcopenshell.util.element.get_pset(element, "BBIM_Array")
+
+
+def update_wall_axis_decorator(self, context):
+    if self.show_wall_axis:
+        WallAxisDecorator.install(bpy.context)
+    else:
+        WallAxisDecorator.uninstall()
+
+
+def update_slab_direction_decorator(self, context):
+    if self.show_slab_direction:
+        SlabDirectionDecorator.install(bpy.context)
+    else:
+        SlabDirectionDecorator.uninstall()
 
 
 class BIMModelProperties(PropertyGroup):
@@ -162,6 +177,16 @@ class BIMModelProperties(PropertyGroup):
         description="It's a convention that affects the offset to reference line",
     )
     offset: bpy.props.FloatProperty(name="Offset", default=0.0, description="Material usage offset from reference line")
+    show_wall_axis: bpy.props.BoolProperty(
+        name="Show Wall Axis",
+        default=False,
+        update=update_wall_axis_decorator,
+    )
+    show_slab_direction: bpy.props.BoolProperty(
+        name="Show Slab Direction",
+        default=False,
+        update=update_slab_direction_decorator,
+    )
 
 
 class BIMArrayProperties(PropertyGroup):
