@@ -454,7 +454,7 @@ class Helper:
             x_axis = (mesh.vertices[loop[0]].co - center).normalized()
         else:
             x_axis = (mesh.vertices[loop[1]].co - mesh.vertices[loop[0]].co).normalized()
-        z_axis = profile_face.polygons[0].normal.normalized()
+        z_axis = profile_face.polygons[0].normal.normalized() * (-1)
         y_axis = z_axis.cross(x_axis).normalized()
         matrix = Matrix((x_axis, y_axis, z_axis))
         matrix.normalize()
