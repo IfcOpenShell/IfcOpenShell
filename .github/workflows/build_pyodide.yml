@@ -27,6 +27,7 @@ jobs:
         run: |
           VERSION=`cat IfcOpenShell/VERSION`
           sed -i s/0.8.0/$VERSION/g IfcOpenShell/pyodide/meta.yaml
+          sed -i s/0.8.0/$VERSION/g IfcOpenShell/pyodide/setup.py
           echo '#!/usr/bin/bash' > script.sh
           echo 'cd pyodide' > script.sh
           echo 'make && pip install ./pyodide-build' >> script.sh
@@ -39,7 +40,7 @@ jobs:
           chmod +x script.sh
           sed -i s/--tty// pyodide/run_docker
           pyodide/run_docker ./script.sh
-          mv dist/ifcopenshell-$VERSION-py3-none-any.whl dist/ifcopenshell-v$VERSION+${GITHUB_SHA:0:7}-cp312-cp312-emscripten_3_1_58_wasm32.whl
+          mv dist/ifcopenshell-$VERSION-py3-none-any.whl dist/ifcopenshell-$VERSION+${GITHUB_SHA:0:7}-cp312-cp312-emscripten_3_1_58_wasm32.whl
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
