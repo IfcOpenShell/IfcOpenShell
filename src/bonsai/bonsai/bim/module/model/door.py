@@ -584,7 +584,7 @@ class CancelEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Cancel Editing Door on Selected Objects"
     bl_options = {"REGISTER", "UNDO"}
 
-    def cancel_editing_door_on_object(self, obj, element):
+    def cancel_editing_door_on_object(self, obj):
         element = tool.Ifc.get_entity(obj)
         if not tool.Blender.Modifier.is_door(element):
             return
@@ -652,19 +652,22 @@ class EnableEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Enable Editing Door on Selected Objects"
     bl_options = {"REGISTER", "UNDO"}
 
+    def edit_door_on_obj(self, obj):
+        element = tool.Ifc.get_entity(obj)
+        if not tool.Blender.Modifier.is_door(element):
+            return
+        props = obj.BIMDoorProperties
+        data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Door", "Data"))
+        data.update(data.pop("lining_properties"))
+        data.update(data.pop("panel_properties"))
+
+        # required since we could load pset from .ifc and BIMDoorProperties won't be set
+        props.set_props_kwargs_from_ifc_data(data)
+        props.is_editing = True
+
     def _execute(self, context):
         for obj in context.selected_objects:
-            props = obj.BIMDoorProperties
-            element = tool.Ifc.get_entity(obj)
-            if not tool.Blender.Modifier.is_door(element):
-                continue
-            data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Door", "Data"))
-            data.update(data.pop("lining_properties"))
-            data.update(data.pop("panel_properties"))
-
-            # required since we could load pset from .ifc and BIMDoorProperties won't be set
-            props.set_props_kwargs_from_ifc_data(data)
-            props.is_editing = True
+            self.edit_door_on_obj(obj)
         return {"FINISHED"}
 
 

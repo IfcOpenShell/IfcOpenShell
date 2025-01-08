@@ -254,6 +254,20 @@ def export_attributes(
 ENUM_ITEMS_DATA = Union[bpy.types.PropertyGroup, bpy.types.ID, bpy.types.Operator, bpy.types.OperatorProperties]
 
 
+def get_display_value(value: str, float_decimal_precision: int = 6) -> str:
+    """
+    This will get rid of the floating point precision artifacts in float values stored as a string
+    """
+    try:
+        digits = len(value.split(".")[1])
+        value = float(value)
+        if digits > 6:  # Maximal decimal float precision
+            value = round(value, float_decimal_precision)
+    except (ValueError, IndexError):  # Not castable to a float or no decimal places (eg integer)
+        pass
+    return str(value)
+
+
 def prop_with_search(
     layout: bpy.types.UILayout,
     data: ENUM_ITEMS_DATA,
