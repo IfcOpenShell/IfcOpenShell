@@ -31,15 +31,12 @@ def draw_ui(context, layout, attributes):
     if props.is_editing_attributes:
         row = layout.row(align=True)
         op = row.operator("bim.edit_attributes", icon="CHECKMARK", text="Save Attributes")
-        op.obj = obj.name
         op = row.operator("bim.disable_editing_attributes", icon="CANCEL", text="")
-        op.obj = obj.name
 
         bonsai.bim.helper.draw_attributes(props.attributes, layout, copy_operator="bim.copy_attribute_to_selection")
     else:
         row = layout.row()
         op = row.operator("bim.enable_editing_attributes", icon="GREASEPENCIL", text="Edit")
-        op.obj = obj.name
 
         for attribute in attributes:
             row = layout.row(align=True)
