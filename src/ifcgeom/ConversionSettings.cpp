@@ -49,7 +49,7 @@ std::istream& ifcopenshell::geometry::settings::operator>>(std::istream& in, Ite
 	return in;
 }
 
-std::istream& ifcopenshell::geometry::settings::operator>>(std::istream& in, PiecewiseStepMethod& ioo) {
+std::istream& ifcopenshell::geometry::settings::operator>>(std::istream& in, FunctionStepMethod& ioo) {
     std::string token;
     in >> token;
     boost::to_upper(token);

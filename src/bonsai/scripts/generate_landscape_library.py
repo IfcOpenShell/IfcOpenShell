@@ -26,7 +26,7 @@ import bonsai.tool as tool
 from math import cos, sin, tan, pi
 from pathlib import Path
 from itertools import chain
-from ifcopenshell.util.shape_builder import ShapeBuilder, V
+from ifcopenshell.util.shape_builder import ShapeBuilder
 from collections import namedtuple
 from mathutils import Vector, Matrix
 from random import uniform

@@ -21,7 +21,7 @@ import ifcopenshell.util.system
 import bonsai.bim.helper
 import bonsai.core.tool
 import bonsai.tool as tool
-from typing import Any, Union
+from typing import Any, Union, Sequence
 
 
 class Document(bonsai.core.tool.Document):
@@ -94,26 +94,23 @@ class Document(bonsai.core.tool.Document):
                 element = rel.RelatingDocument
                 new = props.documents.add()
                 new.ifc_definition_id = element.id()
-                new.name = element.Name or "Unnamed"
+                new["name"] = element.Name or "Unnamed"
                 new.is_information = True
-                if tool.Ifc.get_schema() == "IFC2X3":
-                    new.identification = element.DocumentId or "*"
-                else:
-                    new.identification = element.Identification or "*"
+                new["identification"] = cls.get_document_information_id(element)
 
     @classmethod
     def import_references(cls, document: ifcopenshell.entity_instance) -> None:
         props = bpy.context.scene.BIMDocumentProperties
         is_ifc2x3 = tool.Ifc.get_schema() == "IFC2X3"
-        references = (document.DocumentReference or []) if is_ifc2x3 else document.HasDocumentReferences
+        references = cls.get_document_references(document)
         for element in references:
             new = props.documents.add()
             new.ifc_definition_id = element.id()
             # Use Description + Location instead of Name as IFC has a restriction
             # for IfcDocumentReference to have Name only if it has no ReferencedDocument.
             name = " - ".join([x for x in [element.Description, element.Location] if x])
-            new.name = name or "Unnamed"
-            new.identification = (element.ItemReference if is_ifc2x3 else element.Identification) or "*"
+            new["name"] = name or "Unnamed"
+            new["identification"] = cls.get_external_reference_id(element)
             new.is_information = False
 
     @classmethod
@@ -123,12 +120,9 @@ class Document(bonsai.core.tool.Document):
             for element in document.IsPointer[0].RelatedDocuments or []:
                 new = props.documents.add()
                 new.ifc_definition_id = element.id()
-                new.name = element.Name or "Unnamed"
+                new["name"] = element.Name or "Unnamed"
                 new.is_information = True
-                if tool.Ifc.get_schema() == "IFC2X3":
-                    new.identification = element.DocumentId or "*"
-                else:
-                    new.identification = element.Identification or "*"
+                new["identification"] = cls.get_document_information_id(element) or "*"
 
     @classmethod
     def is_document_information(cls, document: ifcopenshell.entity_instance) -> bool:
@@ -143,3 +137,32 @@ class Document(bonsai.core.tool.Document):
     @classmethod
     def set_active_document(cls, document: ifcopenshell.entity_instance) -> None:
         bpy.context.scene.BIMDocumentProperties.active_document_id = document.id()
+
+    @classmethod
+    def get_document_information_id(cls, document: ifcopenshell.entity_instance) -> Union[str, None]:
+        """Get IfcDocumentInformation.DocumentId/Identification, compatible with IFC2X3."""
+        return document[0]
+
+    @classmethod
+    def set_document_information_id(cls, document: ifcopenshell.entity_instance, value: Union[str, None]) -> None:
+        """Set IfcDocumentInformation.DocumentId/Identification, compatible with IFC2X3."""
+        document[0] = value
+
+    @classmethod
+    def get_external_reference_id(cls, reference: ifcopenshell.entity_instance) -> Union[str, None]:
+        """Get IfcExternalReference.ItemReference/Identification, compatible with IFC2X3."""
+        return reference[1]
+
+    @classmethod
+    def set_external_reference_id(cls, reference: ifcopenshell.entity_instance, value: Union[str, None]) -> None:
+        """Set IfcExternalReference.ItemReference/Identification, compatible with IFC2X3."""
+        reference[1] = value
+
+    @classmethod
+    def get_document_references(
+        cls, document: ifcopenshell.entity_instance
+    ) -> tuple[ifcopenshell.entity_instance, ...]:
+        """Get IfcDocumentReference.ReferencedDocuments, compatible with IFC2X3."""
+        if document.file.schema == "IFC2X3":
+            return document.DocumentReferences or ()
+        return document.HasDocumentReferences

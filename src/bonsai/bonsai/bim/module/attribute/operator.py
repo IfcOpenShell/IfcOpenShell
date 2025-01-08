@@ -41,6 +41,7 @@ class EnableEditingAttributes(bpy.types.Operator):
         props.attributes.clear()
 
         element = tool.Ifc.get_entity(obj)
+        assert element
         has_inherited_predefined_type = False
         if not element.is_a("IfcTypeObject") and (element_type := ifcopenshell.util.element.get_type(element)):
             # Allow for None due to https://github.com/buildingSMART/IFC4.3.x-development/issues/818

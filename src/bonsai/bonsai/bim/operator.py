@@ -48,7 +48,7 @@ class SetTab(bpy.types.Operator):
     # NOTE: bl_label is set to empty string intentionally
     # to avoid showing the operator's name in the tooltips, see #3704
     bl_label = ""
-    bl_options = {"REGISTER", "UNDO", "INTERNAL"}
+    bl_options = {"INTERNAL"}
     tab: bpy.props.StringProperty()
 
     @classmethod
@@ -67,7 +67,7 @@ class SetTab(bpy.types.Operator):
 class SwitchTab(bpy.types.Operator):
     bl_idname = "bim.switch_tab"
     bl_label = "Switch Tab"
-    bl_options = {"REGISTER", "UNDO"}
+    bl_options = set()
     bl_description = "Switches to the last used tab"
 
     def execute(self, context):
@@ -171,7 +171,7 @@ class BIM_OT_multiple_file_selector(bpy.types.Operator):
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     @classmethod
-    def poll(self, context):
+    def poll(cls, context):
         return getattr(context, "file_props", None) is not None
 
     def execute(self, context):
@@ -1143,3 +1143,19 @@ class RevertClippingPlaneCut(bpy.types.Operator):
         if replaced_mesh:
             obj.data = replaced_mesh
             tool.Blender.remove_data_block(mesh, do_unlink=False)
+
+
+class CopyTextToClipboard(bpy.types.Operator):
+    bl_idname = "bim.copy_text_to_clipboard"
+    bl_label = "Copy Text To Clipboard"
+    bl_options = set()
+
+    text: bpy.props.StringProperty(options={"SKIP_SAVE"})
+
+    @classmethod
+    def description(cls, context, properties):
+        return f"Copy text to clipboard: '{properties.text}'."
+
+    def execute(self, context):
+        context.window_manager.clipboard = self.text
+        return {"FINISHED"}

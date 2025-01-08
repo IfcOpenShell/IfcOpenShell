@@ -133,6 +133,10 @@ class Facet:
             if requirement.cardinality == "prohibited":
                 is_prohibited = not is_prohibited
             templates = self.prohibited_templates if is_prohibited else self.requirement_templates
+            if requirement.cardinality == "optional":
+                templates = [
+                    t.replace("shall", "may").replace("Shall", "May").replace("must", "may") for t in templates
+                ]
 
         for template in templates:
             total_variables = len(template) - len(template.replace("{", ""))
@@ -412,7 +416,8 @@ class Classification(Facet):
                 reason = {"type": "VALUE", "actual": values}
 
         if is_pass:
-            systems = [ifcopenshell.util.classification.get_classification(r).Name for r in references]
+            classifications = filter(None, (ifcopenshell.util.classification.get_classification(r) for r in references))
+            systems = [r.Name for r in classifications]
             is_pass = any([self.system == s for s in systems])
             if not is_pass:
                 reason = {"type": "SYSTEM", "actual": systems}
@@ -1047,7 +1052,7 @@ class Restriction:
 
 
 class Result:
-    def __init__(self, is_pass, reason=None):
+    def __init__(self, is_pass: bool, reason: Optional[dict[str, Any]] = None):
         self.is_pass = is_pass
         self.reason = reason
 

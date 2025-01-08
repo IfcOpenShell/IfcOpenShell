@@ -126,6 +126,10 @@ class Link(PropertyGroup):
     )
 
 
+class EditedObj(PropertyGroup):
+    obj: PointerProperty(type=bpy.types.Object)
+
+
 class BIMProjectProperties(PropertyGroup):
     is_editing: BoolProperty(name="Is Editing", default=False)
     is_loading: BoolProperty(name="Is Loading", default=False)
@@ -174,7 +178,11 @@ class BIMProjectProperties(PropertyGroup):
     should_cache: BoolProperty(name="Cache", default=False)
     deflection_tolerance: FloatProperty(name="Deflection Tolerance", default=0.001)
     angular_tolerance: FloatProperty(name="Angular Tolerance", default=0.5)
-    void_limit: IntProperty(name="Void Limit", default=30)
+    void_limit: IntProperty(
+        name="Void Limit",
+        default=30,
+        description="Maxium number of openings that object can have. If object has more openings, it will be loaded without openings",
+    )
     distance_limit: FloatProperty(name="Distance Limit", default=1000, subtype="DISTANCE")
     false_origin_mode: bpy.props.EnumProperty(
         items=[
@@ -209,6 +217,11 @@ class BIMProjectProperties(PropertyGroup):
     )
     element_offset: IntProperty(name="Element Offset", default=0)
     element_limit: IntProperty(name="Element Offset", default=30000)
+    load_indexed_maps: BoolProperty(
+        name="Load Indexed Maps",
+        description="Load indexed maps (UV and color maps)",
+        default=True,
+    )
     should_disable_undo_on_save: BoolProperty(
         name="Disable Undo When Saving (Faster saves, no undo for you!)", default=False
     )
@@ -222,6 +235,7 @@ class BIMProjectProperties(PropertyGroup):
     queried_obj_root: bpy.props.PointerProperty(type=bpy.types.Object)
     clipping_planes: bpy.props.CollectionProperty(type=ObjProperty)
     clipping_planes_active: bpy.props.IntProperty(min=0, default=0, max=5)
+    edited_objs: bpy.props.CollectionProperty(type=EditedObj)
 
     @property
     def clipping_planes_objs(self):

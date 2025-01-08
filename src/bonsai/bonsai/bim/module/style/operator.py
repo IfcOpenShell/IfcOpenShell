@@ -27,6 +27,7 @@ import ifcopenshell.util.representation
 import ifcopenshell.util.unit
 from pathlib import Path
 from mathutils import Vector
+from typing import Any, Union
 
 
 # TODO: is this still relevant or can it be deleted?
@@ -79,6 +80,7 @@ class RemoveStyle(bpy.types.Operator, tool.Ifc.Operator):
     style: bpy.props.IntProperty()
 
     def _execute(self, context):
+        core.disable_editing_style(tool.Style)  # So we don't end up soft-locking style edition
         core.remove_style(tool.Ifc, tool.Style, style=tool.Ifc.get().by_id(self.style), reload_styles_ui=True)
 
 
@@ -141,6 +143,13 @@ class UnlinkStyle(bpy.types.Operator, tool.Ifc.Operator):
             core.remove_style(tool.Ifc, tool.Style, style)
         else:
             material_copy.use_fake_user = True
+            # Need to reload Styles UI since it's item is now pointing to wrong Blender material.
+            if (
+                tool.Style.is_editing_styles()
+                and (style_type := tool.Style.get_active_style_type())
+                and style_type == style.is_a()
+            ):
+                tool.Style.import_presentation_styles(style_type)
 
         # Ensure there won't be any style sync on project save:
         # bim.update_representation would create new IfcSurfaceStyle
@@ -219,10 +228,41 @@ class UpdateCurrentStyle(bpy.types.Operator):
             context.scene.BIMStylesProperties.active_style_type = current_style_type
             return {"FINISHED"}
 
+        updated_materials = set()
         for obj in context.selected_objects:
             for mat in obj.data.materials:
-                if mat and mat.BIMStyleProperties.ifc_definition_id != 0:
+                if mat and mat not in updated_materials and mat.BIMStyleProperties.ifc_definition_id != 0:
                     mat.BIMStyleProperties.active_style_type = current_style_type
+                    updated_materials.add(mat)
+        return {"FINISHED"}
+
+
+class SetAssetMaterialToExternalStyle(bpy.types.Operator):
+    bl_idname = "bim.set_asset_material_to_external_style"
+    bl_label = "Set To External Style"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute_delayed(self, name, filepath, props):
+        style_id = props.active_style.ifc_definition_id
+        bpy.ops.bim.enable_editing_surface_style(style=style_id, ifc_class="IfcExternallyDefinedSurfaceStyle")
+        bpy.ops.bim.browse_external_style(
+            data_block_type="materials",
+            data_block=name,
+            filepath=filepath,
+            active_surface_style_id=style_id,
+            use_relative_path=False,
+        )
+        bpy.ops.bim.edit_surface_style()
+
+    def execute(self, context):
+        # We delay execution because for some obscure reason we can't use
+        # the temp override to copy material node tree `right now`
+        name = context.asset.name
+        filepath = context.asset.full_library_path
+        bpy.app.timers.register(
+            lambda: self.execute_delayed(name, filepath, context.scene.BIMStylesProperties),
+            first_interval=0.001,
+        )
         return {"FINISHED"}
 
 
@@ -377,8 +417,13 @@ class ActivateExternalStyle(bpy.types.Operator):
         else:
             material = bpy.data.materials[self.material_name]
 
+        style = tool.Ifc.get_entity(material)
+        if not style:
+            self.report({"INFO"}, "Material '{self.material_name}' is not an IFC style.")
+            return {"CANCELLED"}
+
         props = context.scene.BIMStylesProperties
-        if props.is_editing:
+        if props.is_editing_style == style.id() and props.is_editing_class == "IfcExternallyDefinedSurfaceStyle":
             location = props.external_style_attributes["Location"].string_value
             identification = props.external_style_attributes["Identification"].string_value
         else:
@@ -479,6 +524,7 @@ class LoadStyles(bpy.types.Operator):
 class SelectByStyle(bpy.types.Operator):
     bl_idname = "bim.select_by_style"
     bl_label = "Select By Style"
+    bl_description = "Select objects using the provided style"
     bl_options = {"REGISTER", "UNDO"}
     style: bpy.props.IntProperty()
 
@@ -522,7 +568,12 @@ class ChooseTextureMapPath(bpy.types.Operator):
 
         abs_path = Path(self.filepath)
         if self.use_relative_path:
-            image_filepath = abs_path.relative_to(Path(tool.Ifc.get_path()).parent)
+            parent = Path(tool.Ifc.get_path()).parent
+            if abs_path.is_relative_to(parent):
+                image_filepath = abs_path.relative_to(parent)
+            else:
+                self.report({"INFO"}, "Path is not relative to the .ifc file, it will be saved as absolute.")
+                image_filepath = abs_path
         else:
             image_filepath = abs_path
 
@@ -659,11 +710,24 @@ class EnableEditingSurfaceStyle(bpy.types.Operator):
     def execute(self, context):
         props = bpy.context.scene.BIMStylesProperties
         style = tool.Ifc.get().by_id(self.style)
+        style_elements = tool.Style.get_style_elements(style)
+
+        if self.ifc_class == "IfcSurfaceStyleWithTextures":
+            rendering_style = style_elements.get("IfcSurfaceStyleRendering", None)
+            # TODO: support creating texture styles without defining rendering style first.
+            if rendering_style is None:
+                self.report(
+                    {"ERROR"},
+                    "Editing texture style without defining rendering style is not yet supported. "
+                    "Define render style first",
+                )
+                return {"CANCELLED"}
+
         props.is_editing_style = self.style
         props.is_editing_class = self.ifc_class
+        props.is_editing_existing_style = self.ifc_class in style_elements
         tool.Style.set_surface_style_props()
 
-        style_elements = tool.Style.get_style_elements(style)
         surface_style = style_elements.get(self.ifc_class, None)
         attributes = tool.Style.get_style_ui_props_attributes(self.ifc_class)
 
@@ -702,6 +766,8 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Edit Surface Style"
     bl_options = {"REGISTER", "UNDO"}
 
+    surface_style: Union[ifcopenshell.entity_instance, None]
+
     def _execute(self, context):
         self.props = bpy.context.scene.BIMStylesProperties
         self.style = tool.Ifc.get().by_id(self.props.is_editing_style)
@@ -713,9 +779,12 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
         self.texture_style = style_elements.get("IfcSurfaceStyleWithTextures", None)
 
         if self.surface_style:
-            self.edit_existing_style()
+            result = self.edit_existing_style()
         else:
-            self.add_new_style()
+            result = self.add_new_style()
+
+        if result:
+            return result
 
         self.props.is_editing_style = 0
         core.load_styles(tool.Style, style_type=self.props.style_type)
@@ -725,7 +794,10 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
         material.BIMStyleProperties.active_style_type = material.BIMStyleProperties.active_style_type
 
     def edit_existing_style(self):
+        ifc_file = tool.Ifc.get()
         material = tool.Ifc.get_object(self.style)
+        assert self.surface_style
+
         if self.surface_style.is_a() == "IfcSurfaceStyleShading":
             ifcopenshell.api.run(
                 "style.edit_surface_style",
@@ -748,22 +820,19 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
         elif self.props.is_editing_class == "IfcSurfaceStyleWithTextures":
             # TODO: fix same issues as with creating new IfcSurfaceStyleWithTextures
             material = tool.Ifc.get_object(self.style)
-            shading_style = self.rendering_style or self.shading_style
-            if self.rendering_style is None:
-                self.report(
-                    {"ERROR"},
-                    "Editing texture styles without defining shading/rendering style is not yet supported. "
-                    "Define shading/render style first",
-                )
-                return {"CANCELLED"}
-            textures = tool.Ifc.run("style.add_surface_textures", textures=self.get_texture_attributes(), uv_maps=[])
+            textures = self.get_texture_attributes()
+            if not textures:
+                assert self.texture_style
+                ifcopenshell.api.style.remove_surface_style(ifc_file, self.texture_style)
+                return
+            textures = tool.Ifc.run("style.add_surface_textures", textures=textures, uv_maps=[])
             texture_style = tool.Ifc.run(
                 "style.add_surface_style",
                 style=self.style,
                 ifc_class="IfcSurfaceStyleWithTextures",
                 attributes={"Textures": textures},
             )
-            tool.Loader.create_surface_style_with_textures(material, shading_style, texture_style)
+            tool.Loader.create_surface_style_with_textures(material, self.rendering_style, texture_style)
         else:
             attributes = tool.Style.get_style_ui_props_attributes(self.surface_style.is_a())
             ifcopenshell.api.run(
@@ -796,24 +865,17 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
         elif self.props.is_editing_class == "IfcSurfaceStyleWithTextures":
             # TODO: provide `uv_maps` - need to rework .get_uv_maps not to depend on a single representation
             material = tool.Ifc.get_object(self.style)
-            shading_style = self.rendering_style or self.shading_style
-            # TODO: support creating texture styles without defining rendering style first
-            if self.rendering_style is None:
-                self.report(
-                    {"ERROR"},
-                    "Creating texture styles without defining shading/rendering style is not yet supported. "
-                    "Define shading/render style first",
-                )
-                return {"CANCELLED"}
-            textures = tool.Ifc.run("style.add_surface_textures", textures=self.get_texture_attributes(), uv_maps=[])
-            if textures:
-                texture_style = tool.Ifc.run(
-                    "style.add_surface_style",
-                    style=self.style,
-                    ifc_class="IfcSurfaceStyleWithTextures",
-                    attributes={"Textures": textures},
-                )
-            tool.Loader.create_surface_style_with_textures(material, shading_style, texture_style)
+            textures = self.get_texture_attributes()
+            if not textures:
+                return
+            textures = tool.Ifc.run("style.add_surface_textures", textures=textures, uv_maps=[])
+            texture_style = tool.Ifc.run(
+                "style.add_surface_style",
+                style=self.style,
+                ifc_class="IfcSurfaceStyleWithTextures",
+                attributes={"Textures": textures},
+            )
+            tool.Loader.create_surface_style_with_textures(material, self.rendering_style, texture_style)
         else:
             attributes = tool.Style.get_style_ui_props_attributes(self.props.is_editing_class)
             surface_style = ifcopenshell.api.run(
@@ -861,7 +923,7 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
 
     # TODO: support RepeatS/RepeatT params in UI:
     # add it to prop.Texture and Style.get_texture_style_data_from_props
-    def get_texture_attributes(self):
+    def get_texture_attributes(self) -> list[dict[str, Any]]:
         textures = []
         for texture in self.props.textures:
             texture_data = {
@@ -1104,4 +1166,40 @@ class AssignStyleToSelected(bpy.types.Operator, tool.Ifc.Operator):
             )
 
         tool.Geometry.reload_representation(representations.values())
+        return {"FINISHED"}
+
+
+class SelectStyleInStylesUI(bpy.types.Operator):
+    bl_idname = "bim.styles_ui_select"
+    bl_label = "Select Style In Styles UI"
+    bl_options = {"REGISTER", "UNDO"}
+    style_id: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = bpy.context.scene.BIMStylesProperties
+        ifc_file = tool.Ifc.get()
+        style = ifc_file.by_id(self.style_id)
+        core.load_styles(tool.Style, style.is_a())
+
+        props.active_style_index = next((i for i, m in enumerate(props.styles) if m.ifc_definition_id == self.style_id))
+        self.report(
+            {"INFO"},
+            f"Style '{style.Name or 'Unnamed'}' is selected in Styles UI.",
+        )
+        return {"FINISHED"}
+
+
+class RemoveSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.remove_surface_style"
+    bl_label = "Remove Surface Style"
+    bl_description = "Remove the currently edited surface style from the active style"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        ifc_file = tool.Ifc.get()
+        props = context.scene.BIMStylesProperties
+        style = ifc_file.by_id(props.is_editing_style)
+        surface_style = tool.Style.get_style_elements(style)[props.is_editing_class]
+        ifcopenshell.api.style.remove_surface_style(ifc_file, surface_style)
+        core.disable_editing_style(tool.Style)
         return {"FINISHED"}

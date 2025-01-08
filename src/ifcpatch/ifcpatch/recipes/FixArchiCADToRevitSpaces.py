@@ -16,9 +16,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
+import logging
+import ifcopenshell
+
 
 class Patcher:
-    def __init__(self, src, file, logger):
+    input_argument = "REQUIRED"
+
+    def __init__(self, src: str, file: None, logger: logging.Logger):
         """Allow ArchiCAD IFC spaces to open as Revit rooms
 
         The underlying problem is that Revit does not bring in IFC spaces as
@@ -46,17 +51,18 @@ class Patcher:
         requires you to run it using Blender, as the geometric modification
         uses the Blender geometry engine.
 
+        `input` argument is required for this recipe, `file` argument is ignored.
+
         Example:
 
         .. code:: python
-
-            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "FixArchiCADToRevitSpaces", "arguments": []})
+            ifcpatch.execute({"input": "input.ifc", "recipe": "FixArchiCADToRevitSpaces", "arguments": []})
         """
         self.src = src
         self.file = file
         self.logger = logger
 
-    def patch(self):
+    def patch(self) -> None:
         import bpy
         import bonsai.tool as tool
         import ifcopenshell
@@ -70,10 +76,11 @@ class Patcher:
 
         bpy.ops.bim.load_project(filepath=self.src)
 
-        def recalculate_origin(wall):
+        def recalculate_origin(wall: bpy.types.Object) -> None:
             new_origin = wall.matrix_world @ Vector(wall.bound_box[0])
             if (wall.matrix_world.translation - new_origin).length < 0.001:
                 return
+            assert isinstance(wall.data, bpy.types.Mesh)
             wall.data.transform(
                 Matrix.Translation(
                     (wall.matrix_world.inverted().to_quaternion() @ (wall.matrix_world.translation - new_origin))

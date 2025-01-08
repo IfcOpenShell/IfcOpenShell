@@ -54,6 +54,8 @@ def enable_editing_cost_items(cost: tool.Cost, cost_schedule: ifcopenshell.entit
     cost.enable_editing_cost_items(cost_schedule)
     cost.load_active_schedule_columns()
     cost.load_cost_schedule_tree()
+    if not cost.is_active_schedule_of_rates() and (schedule_of_rates := cost.get_active_schedule_of_rates()):
+        cost.load_schedule_of_rates_tree(schedule_of_rates)
     cost.play_sound()
 
 
@@ -160,11 +162,14 @@ def assign_cost_item_quantity(
     cost_item: ifcopenshell.entity_instance,
     related_object_type: tool.Cost.RELATED_OBJECT_TYPE,
     prop_name: str,
-) -> None:
+) -> bool:
     products = cost.get_products(related_object_type)
     if products:
         ifc.run("cost.assign_cost_item_quantity", cost_item=cost_item, products=products, prop_name=prop_name)
         cost.load_cost_item_quantity_assignments(cost_item, related_object_type=related_object_type)
+        return True
+    else:
+        return False
 
 
 def load_cost_item_quantities(cost: tool.Cost) -> None:

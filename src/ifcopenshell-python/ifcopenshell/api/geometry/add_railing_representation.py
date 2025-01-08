@@ -16,19 +16,38 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import numpy as np
 import ifcopenshell.util.unit
-from ifcopenshell.util.shape_builder import ShapeBuilder, V
-from itertools import chain
-from mathutils import Vector, Matrix
-import collections
-import mathutils
+from ifcopenshell.util.shape_builder import (
+    ShapeBuilder,
+    V,
+    SequenceOfVectors,
+    is_x,
+    np_angle,
+    np_angle_signed,
+    np_normalized,
+    np_to_3d,
+    np_normal,
+    np_intersect_line_line,
+    np_lerp,
+)
 from math import pi, cos, sin, tan, radians
 from typing import Literal, Optional, Any
+from typing_extensions import assert_never
 
 
 def mm(x: float) -> float:
     """mm to meters shortcut for readability"""
     return x / 1000
+
+
+TERMINAL_TYPE = Literal[
+    "180",
+    "TO_END_POST",
+    "TO_WALL",
+    "TO_FLOOR",
+    "TO_END_POST_AND_FLOOR",
+]
 
 
 def add_railing_representation(
@@ -37,18 +56,12 @@ def add_railing_representation(
     # IfcGeometricRepresentationContext
     context: ifcopenshell.entity_instance,
     railing_type: Literal["WALL_MOUNTED_HANDRAIL"] = "WALL_MOUNTED_HANDRAIL",
-    railing_path: list[Vector],
+    railing_path: SequenceOfVectors,
     use_manual_supports: bool = False,
     support_spacing: Optional[float] = None,
     railing_diameter: Optional[float] = None,
     clear_width: Optional[float] = None,
-    terminal_type: Literal[
-        "180",
-        "TO_END_POST",
-        "TO_WALL",
-        "TO_FLOOR",
-        "TO_END_POST_AND_FLOOR",
-    ] = "180",
+    terminal_type: TERMINAL_TYPE = "180",
     height: Optional[float] = None,
     looped_path: bool = False,
     unit_scale: Optional[float] = None,
@@ -57,35 +70,22 @@ def add_railing_representation(
     Units are expected to be in IFC project units.
 
     :param context: IfcGeometricRepresentationContext for the representation.
-    :type context: ifcopenshell.entity_instance
     :param railing_type: Type of the railing. Defaults to "WALL_MOUNTED_HANDRAIL".
-    :type railing_type: Literal["WALL_MOUNTED_HANDRAIL"], optional
     :param railing_path: A list of points coordinates for the railing path,
         coordinates are expected to be at the top of the railing, not at the center.
         If not provided, default path [(0, 0, 1), (1, 0, 1), (2, 0, 1)] (in meters) will be used
-    :type railing_path: list[Vector], optional.
     :param use_manual_supports: If enabled, supports are added on every vertex on the edges of the railing path.
         If disabled, supports are added automatically based on the support spacing. Default to False.
-    :type use_manual_supports: bool, optional
     :param support_spacing: Distance between supports if automatic supports are used. Defaults to 1m.
-    :type support_spacing: float, optional
     :param railing_diameter: Railing diameter. Defaults to 50mm.
-    :type railing_diameter: float, optional
     :param clear_width: Clear width between the railing and the wall. Defaults to 40mm.
-    :type clear_width: float, optional
     :param terminal_type: type of the cap. Defaults to "180".
-    :type terminal_type: Literal["180","TO_END_POST","TO_WALL","TO_FLOOR","TO_END_POST_AND_FLOOR"], optional
     :param height: defaults to 1m
-    :type height: float, optional
     :param looped_path: Whether to end the railing on the first point of `railing_path`. Defaults to False.
-    :type looped_path: bool, optional
     :param unit_scale: The unit scale as calculated by
         ifcopenshell.util.unit.calculate_unit_scale. If not provided, it
         will be automatically calculated for you.
-    :type unit_scale: float, optional
     :return: IfcShapeRepresentation for a railing.
-    :rtype: ifcopenshell.entity_instance
-
     """
     usecase = Usecase()
     usecase.file = file
@@ -100,7 +100,7 @@ def add_railing_representation(
             "railing_path": (
                 railing_path
                 if railing_path is not None
-                else usecase.path_si_to_units([V(0, 0, 1), V(1, 0, 1), V(2, 0, 1)])
+                else usecase.path_si_to_units(V([(0, 0, 1), (1, 0, 1), (2, 0, 1)]))
             ),
             "use_manual_supports": use_manual_supports,
             "support_spacing": support_spacing if support_spacing is not None else usecase.convert_si_to_unit(mm(1000)),
@@ -121,25 +121,29 @@ def add_railing_representation(
 
 
 class Usecase:
+    file: ifcopenshell.file
+    settings: dict[str, Any]
+
     def execute(self):
-        arc_points = []
-        items_3d = []
+        arc_points: list[np.ndarray] = []
+        items_3d: list[ifcopenshell.entity_instance] = []
         builder = ShapeBuilder(self.file)
         z_down = V(0, 0, -1)
 
         # measurements
         # from settings
-        use_manual_supports = self.settings["use_manual_supports"]
-        railing_radius = self.settings["railing_diameter"] / 2
-        support_spacing = self.settings["support_spacing"]
-        clear_width = self.settings["clear_width"]
+        use_manual_supports: bool = self.settings["use_manual_supports"]
+        railing_radius: float = self.settings["railing_diameter"] / 2
+        support_spacing: float = self.settings["support_spacing"]
+        clear_width: float = self.settings["clear_width"]
         # for calculations purposes we use height without railing radius
-        height = self.settings["height"] - railing_radius
-        cap_type = self.settings["terminal_type"]
-        ifc_context = self.settings["context"]
-        railing_coords = self.settings["railing_path"]
-        looped_path = self.settings["looped_path"]
-        railing_coords = [p - z_down * railing_radius for p in railing_coords]
+        height: float = self.settings["height"] - railing_radius
+        cap_type: TERMINAL_TYPE = self.settings["terminal_type"]
+        ifc_context: ifcopenshell.entity_instance = self.settings["context"]
+        railing_coords: SequenceOfVectors = self.settings["railing_path"]
+        looped_path: bool = self.settings["looped_path"]
+        railing_coords: np.ndarray
+        railing_coords = np.subtract(railing_coords, z_down * railing_radius)
 
         # constant
         terminal_radius = self.convert_si_to_unit(mm(150))
@@ -150,59 +154,70 @@ class Usecase:
         support_disk_depth = self.convert_si_to_unit(mm(20))
 
         # util functions
-        float_is_zero = lambda f: 0.0001 >= f >= -0.0001
-        collinear = lambda d0, d1: float_is_zero(d0.angle(d1))
+        def collinear(d0: np.ndarray, d1: np.ndarray) -> bool:
+            return is_x(np_angle(d0, d1), 0)
 
-        def add_support_on_point(point, railing_direction):
+        np_Z = 2
+        np_XY = slice(2)
+        np_YX = [1, 0]
+
+        def add_support_on_point(
+            point: np.ndarray, railing_direction: np.ndarray
+        ) -> tuple[ifcopenshell.entity_instance, ...]:
             """create a support arc and a disk based on the position and direction of the railing"""
-            ortho_dir = (railing_direction.yx * V(1, -1)).to_3d().normalized()
+            ortho_dir = railing_direction[np_YX] * (1, -1)
+            ortho_dir = np_normalized(np_to_3d(ortho_dir))
             arc_center = point + ortho_dir * support_length
-            support_points = [
+            support_points: list[np.ndarray] = [
                 point,
                 arc_center - ortho_dir * support_length * cos(pi / 4) + z_down * support_length * sin(pi / 4),
                 arc_center + z_down * support_length,
             ]
-            polyline = builder.polyline(support_points, closed=False, arc_points=[1])
+            polyline = builder.polyline(support_points, closed=False, arc_points=(1,))
             solid = builder.create_swept_disk_solid(polyline, support_radius)
 
             support_disk_circle = builder.circle(radius=support_disk_radius)
 
-            angle = V(0, 1).angle_signed(ortho_dir.xy)
+            angle = np_angle_signed((0, 1), ortho_dir[np_XY])
             y_extrusion_kwargs = builder.rotate_extrusion_kwargs_by_z(builder.extrude_kwargs("Y"), angle)
             support_disk = builder.extrude(
                 support_disk_circle, support_disk_depth, position=support_points[-1], **y_extrusion_kwargs
             )
-            return [solid, support_disk]
+            return (solid, support_disk)
 
-        def get_fillet_points(v0, v1, v2, radius):
+        def get_fillet_points(v0: np.ndarray, v1: np.ndarray, v2: np.ndarray, radius: float) -> list[np.ndarray]:
             """get fillet points between edges v0v1 and v1v2"""
-            dir1 = (v0 - v1).normalized()
-            dir2 = (v2 - v1).normalized()
-            edge_angle = dir1.angle(dir2)
+            dir1 = np_normalized(v0 - v1)
+            dir2 = np_normalized(v2 - v1)
+            edge_angle = np_angle(dir1, dir2)
             slide_distance = radius / tan(edge_angle / 2)
 
             fillet_v1co = v1 + (dir1 * slide_distance)
             fillet_v2co = v1 + (dir2 * slide_distance)
 
-            normal = mathutils.geometry.normal([v0, v1, v2])
-            center = mathutils.geometry.intersect_line_line(
-                fillet_v1co, fillet_v1co + normal.cross(dir1), fillet_v2co, fillet_v2co + normal.cross(dir2)
+            normal = np_normal([v0, v1, v2])
+            center = np_intersect_line_line(
+                fillet_v1co,
+                fillet_v1co + np.cross(normal, dir1),
+                fillet_v2co,
+                fillet_v2co + np.cross(normal, dir2),
             )[0]
 
-            midpointco = center + ((fillet_v1co.lerp(fillet_v2co, 0.5) - center).normalized() * radius)
+            dir_ = np_normalized(np_lerp(fillet_v1co, fillet_v2co, 0.5) - center)
+            midpointco = center + dir_ * radius
             return [fillet_v1co, midpointco, fillet_v2co]
 
-        def add_arcs_on_turnings_points(base_points):
+        def add_arcs_on_turnings_points(base_points: np.ndarray) -> np.ndarray:
             """add 3 point fillet arcs on turning points of the railing path"""
             if len(base_points) < 3:
                 return base_points
 
             # looking for turning points by checking non-collinear edges
-            output_points = base_points[:1]
-            prev_dir = (base_points[1] - base_points[0]).normalized()
+            output_points: list[np.ndarray] = list(base_points[:1])
+            prev_dir = np_normalized(base_points[1] - base_points[0])
             i = 1
             while i < len(base_points) - 1:
-                cur_dir = (base_points[i + 1] - base_points[i]).normalized()
+                cur_dir = np_normalized(base_points[i + 1] - base_points[i])
 
                 if collinear(cur_dir, prev_dir):
                     output_points.append(base_points[i])
@@ -220,19 +235,21 @@ class Usecase:
                 output_points[0] = output_points[-1]
             else:
                 output_points.append(base_points[-1])
-            return output_points
+            return V(output_points)
 
-        def create_supports_items(railing_coords, manual_supports=False):
+        def create_supports_items(
+            railing_coords: np.ndarray, manual_supports: bool = False
+        ) -> list[ifcopenshell.entity_instance]:
             """create supports items based on the railing coordinates"""
-            supports_items = []
+            supports_items: list[ifcopenshell.entity_instance] = []
 
             # simplified_coords is a list of points that form non-collinear edges
-            simplified_coords = [railing_coords[0]]
-            prev_dir = (railing_coords[1] - railing_coords[0]).normalized()
+            simplified_coords: list[np.ndarray] = [railing_coords[0]]
+            prev_dir = np_normalized(railing_coords[1] - railing_coords[0])
 
             # iterating over each edge of the railing path
             for i in range(1, len(railing_coords) - 1):
-                cur_dir = (railing_coords[i + 1] - railing_coords[i]).normalized()
+                cur_dir = np_normalized(railing_coords[i + 1] - railing_coords[i])
 
                 if not collinear(cur_dir, prev_dir):
                     simplified_coords.append(railing_coords[i])
@@ -252,8 +269,8 @@ class Usecase:
             for i in range(0, len(simplified_coords) - 1):
                 v0, v1 = simplified_coords[i : i + 2]
                 edge = v1 - v0
-                length = edge.length
-                edge_dir = edge.normalized()
+                length: float = np.linalg.norm(edge)
+                edge_dir = np_normalized(edge)
                 n_supports, support_offset = divmod(length, support_spacing)
                 n_supports = int(n_supports) + 1
                 support_offset /= 2
@@ -265,14 +282,17 @@ class Usecase:
 
             return supports_items
 
-        def add_cap(railing_coords, arc_points, start=False):
+        def add_cap(railing_coords: np.ndarray, arc_points: list[np.ndarray], start: bool = False):
             """add handrail terminal cap"""
             railing_coords_for_cap = railing_coords[::-1] if start else railing_coords
+            arc_points = arc_points[::-1] if start else arc_points
 
-            start_point = railing_coords_for_cap[-1]
-            cap_dir = (railing_coords_for_cap[-1] - railing_coords_for_cap[-2]).to_3d().normalized()
-            ortho_dir = (cap_dir.yx * V(1, -1)).to_3d().normalized()
-            local_z_down = cap_dir.cross(ortho_dir)
+            start_point: np.ndarray = railing_coords_for_cap[-1]
+            cap_dir = railing_coords_for_cap[-1] - railing_coords_for_cap[-2]
+            cap_dir = np_normalized(cap_dir)
+            ortho_dir = np_to_3d(cap_dir[np_YX] * (1, -1))
+            ortho_dir = np_normalized(ortho_dir)
+            local_z_down = np.cross(cap_dir, ortho_dir)
             if start:
                 ortho_dir = -ortho_dir
 
@@ -285,7 +305,7 @@ class Usecase:
 
                 if cap_type == "TO_END_POST":
                     end_point = railing_coords_for_cap[-2].copy()
-                    end_point.z -= terminal_radius * 2
+                    end_point[np_Z] -= terminal_radius * 2
                     cap_coords.append(end_point)
 
             elif cap_type == "TO_WALL":
@@ -319,17 +339,20 @@ class Usecase:
                 arc_points.append(first_arc_coords[1])
 
                 end_point = railing_coords_for_cap[-2].copy()
-                end_point.z -= height
+                end_point[np_Z] -= height
                 second_arc_coords = get_fillet_points(
                     first_arc_end, first_arc_end + local_z_down * terminal_radius, end_point, terminal_radius
                 )
                 arc_points.append(second_arc_coords[1])
                 cap_coords = [start_point] + first_arc_coords + second_arc_coords + [end_point]
+            else:
+                assert_never(cap_type)
 
-            railing_coords = railing_coords_for_cap + cap_coords
+            railing_coords = np.vstack((railing_coords_for_cap, cap_coords))
 
             if start:
                 railing_coords = railing_coords[::-1]
+                arc_points = arc_points[::-1]
             return railing_coords, arc_points
 
         # need to add first two points to the path
@@ -344,17 +367,37 @@ class Usecase:
             railing_coords, arc_points = add_cap(railing_coords, arc_points, start=True)
             railing_coords, arc_points = add_cap(railing_coords, arc_points, start=False)
 
+        def get_arc_indices(points: np.ndarray, arc_points: list[np.ndarray]) -> list[int]:
+            points_ = points.copy()
+            arc_indices = []
+            i_base = 0
+            for arc_point in arc_points:
+                for i, point in enumerate(points_):
+                    if np.allclose(arc_point, point):
+                        current_index = i + i_base
+                        arc_indices.append(current_index)
+                        i_base = current_index + 1
+                        break
+                else:
+                    raise Exception(
+                        f"Arc point '{arc_point}' is not present in points:\n{points_}\nFull points data:\n{points}"
+                    )
+                points_ = points_[i + 1 :]
+            return arc_indices
+
         railing_path = builder.polyline(
-            railing_coords, closed=False, arc_points=[railing_coords.index(p) for p in arc_points]
+            railing_coords,
+            closed=False,
+            arc_points=get_arc_indices(railing_coords, arc_points),
         )
         railing_solid = builder.create_swept_disk_solid(railing_path, railing_radius)
         items_3d.append(railing_solid)
         representation = builder.get_representation(ifc_context, items=items_3d)
         return representation
 
-    def convert_si_to_unit(self, value):
+    def convert_si_to_unit(self, value: float) -> float:
         return value / self.settings["unit_scale"]
 
-    def path_si_to_units(self, path):
+    def path_si_to_units(self, path: np.ndarray) -> np.ndarray:
         """converts list of vectors from SI to ifc project units"""
-        return [self.convert_si_to_unit(v) for v in path]
+        return path / self.settings["unit_scale"]

@@ -28,6 +28,7 @@ from bonsai.bim.module.sequence.data import (
     TaskICOMData,
     AnimationColorSchemeData,
 )
+from typing import Any
 
 
 class BIM_PT_status(Panel):
@@ -1007,7 +1008,7 @@ class BIM_PT_work_calendars(Panel):
         if self.props.active_work_time_id == work_time["id"]:
             self.draw_editable_work_time_ui(work_time)
 
-    def draw_editable_work_time_ui(self, work_time):
+    def draw_editable_work_time_ui(self, work_time: dict[str, Any]) -> None:
         draw_attributes(self.props.work_time_attributes, self.layout)
         if work_time["RecurrencePattern"]:
             self.draw_editable_recurrence_pattern_ui(

@@ -17,21 +17,23 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import re
+import types
 import lark
 import numpy as np
 import ifcopenshell.api.pset
 import ifcopenshell.api.geometry
 import ifcopenshell.util
 import ifcopenshell.util.attribute
-import ifcopenshell.util.fm
-import ifcopenshell.util.unit
-import ifcopenshell.util.element
-import ifcopenshell.util.placement
-import ifcopenshell.util.geolocation
 import ifcopenshell.util.classification
+import ifcopenshell.util.element
+import ifcopenshell.util.fm
+import ifcopenshell.util.geolocation
+import ifcopenshell.util.placement
+import ifcopenshell.util.pset
 import ifcopenshell.util.schema
 import ifcopenshell.util.shape
 import ifcopenshell.util.system
+import ifcopenshell.util.unit
 from decimal import Decimal
 from typing import Optional, Any, Union, Iterable
 
@@ -133,10 +135,11 @@ get_element_grammar = lark.Lark(
 format_grammar = lark.Lark(
     """start: function
 
-    function: round | number | format_length | lower | upper | title | concat | substr | ESCAPED_STRING | NUMBER
+    function: round | number | int | format_length | lower | upper | title | concat | substr | ESCAPED_STRING | NUMBER
 
     round: "round(" function "," NUMBER ")"
     number: "number(" function ["," ESCAPED_STRING ["," ESCAPED_STRING]] ")"
+    int: "int(" function ")"
     format_length: metric_length | imperial_length
     metric_length: "metric_length(" function "," NUMBER "," NUMBER ")"
     imperial_length: "imperial_length(" function "," NUMBER ["," ESCAPED_STRING "," ESCAPED_STRING] ")"
@@ -247,6 +250,9 @@ class FormatTransformer(lark.Transformer):
         return ifcopenshell.util.unit.format_length(
             float(value), int(precision), unit_system="imperial", input_unit=input_unit, output_unit=output_unit
         )
+
+    def int(self, args: list[str]) -> str:
+        return str(int(float(args[0])))
 
 
 class GetElementTransformer(lark.Transformer):
@@ -418,18 +424,13 @@ def filter_elements(
     Filter elements based on the provided `query`.
 
     :param ifc_file: The IFC file object
-    :type ifc_file: ifcopenshell.file
     :param query: Query to execute
-    :type query: str
     :param elements: Base set of IFC elements for the query. If not provided,
         all elements in the IFC are queried. If provided, the query will be
         applied to this set of elements, so the result will be a subset of
         elements.
-    :type elements: set[ifcopenshell.entity_instance], optional
     :param edit_in_place: If `True`, mutate the provided `elements` in place. Defaults to `False`
-    :type edit_in_place: bool
     :return: Set of filtered elements
-    :rtype: set[ifcopenshell.entity_instance]
 
     Example:
 
@@ -461,10 +462,25 @@ class SetElementValueException(Exception): ...
 
 def set_element_value(
     ifc_file: ifcopenshell.file,
-    element: Union[ifcopenshell.entity_instance, Iterable[ifcopenshell.entity_instance], None],
+    element: Union[
+        ifcopenshell.entity_instance,
+        dict[str, Any],
+        Iterable[ifcopenshell.entity_instance],
+        None,
+    ],
     query: Union[str, list[str]],
     value: Any,
+    *,
+    concat: str = ", ",
 ) -> None:
+    """Set element value based on the provided query.
+
+    :param element: IFC element to change.
+    :param query: String query to identify the attribute to change.
+    :param value: Value to set.
+    :param concat: Concatenation symbol, used only to deserialize property
+        set enum values from string values.
+    """
     original_element = element
     if isinstance(query, (list, tuple)):
         keys = query
@@ -640,6 +656,73 @@ def set_element_value(
                         elif pset.is_a("IfcElementQuantity") and prop_value != float(value):
                             ifcopenshell.api.pset.edit_qto(ifc_file, qto=pset, properties={prop: float(value)})
             elif pset.is_a("IfcPropertySet") and element.get(key, None) != value:
+
+                def process_pset_prop_value(
+                    pset: ifcopenshell.entity_instance, prop: str, value: Any
+                ) -> Union[Any, types.EllipsisType]:
+                    """Try to process value for edit_pset.
+
+                    `edit_pset` is expecting a sequence of values
+                    for enum properties, not just a string of some-symbol-separated values.
+
+                    Return `...` if property can be skipped as it has the same value.
+                    """
+                    if not isinstance(value, str):
+                        return value
+
+                    current_value = element.get(key, ...)
+                    # Check if previous value is a list as a fast way to identify enum properties.
+                    if not isinstance(current_value, (types.EllipsisType, list)):
+                        return value
+
+                    if isinstance(current_value, list):
+                        # Value won't change, safe to skip editing IFC.
+                        enum_values = value.split(concat)
+                        if len(enum_values) == len(current_value) and set(enum_values) == set(current_value):
+                            return ...
+
+                    template = ifcopenshell.util.pset.get_template(ifc_file.schema)
+                    pset_template = template.get_by_name(pset.Name)
+                    if pset_template is None:
+                        return value
+                    for prop_template in pset_template.HasPropertyTemplates:
+                        # 2 IfcSimplePropertyTemplate.Name
+                        if prop_template[2] != prop:
+                            continue
+
+                        # 4 IfcSimplePropertyTemplate.TemplateType
+                        if prop_template[4] != "P_ENUMERATEDVALUE":
+                            # Not a enum property.
+                            return value
+
+                        # 7 IfcSimplePropertyTemplate.Enumerators
+                        if (enumeration := prop_template[7]) is None:
+                            # Enum property but without enumerators,
+                            # make it a sequence to keep it assignable as a enum.
+                            return (value,)
+
+                        # 1 IfcPropertyEnumeration.EnumerationValues
+                        available_enum_values = {v.wrappedValue for v in enumeration[1]}
+                        if value in available_enum_values:
+                            # Valid enum item, just keep it a sequence.
+                            return (value,)
+
+                        # Taking a wild guess that it's `concat` separated list.
+                        enum_values = value.split(concat)
+                        if not all(v in available_enum_values for v in enum_values):
+                            raise Exception(
+                                "Error setting pset enum property.\n"
+                                f"Invalid enum values for property '{prop} in pset '{pset}': '{', '.join(enum_values)}'.\n"
+                                f"Possible enum values for this property: {', '.join(available_enum_values)}."
+                            )
+                        return enum_values
+
+                    # Couldn't find property template for this prop - delegate decision to edit_pset.
+                    return value
+
+                value = process_pset_prop_value(pset, key, value)
+                if value == ...:
+                    return
                 ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties={key: value})
             elif pset.is_a("IfcElementQuantity"):
                 try:
@@ -661,11 +744,16 @@ def set_element_value(
                 return
 
     raise SetElementValueException(
-        f"Failed to set value for element '{original_element}' with query '{query}' (invalid or unsupported query)."
+        f"Failed to set value '{value}' for element '{original_element}' with query '{query}' (invalid or unsupported query)."
     )
 
 
 class FacetTransformer(lark.Transformer):
+    results: list[set[ifcopenshell.entity_instance]]
+    base_elements: Optional[set[ifcopenshell.entity_instance]]
+    elements: set[ifcopenshell.entity_instance]
+    container_trees: dict[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]]
+
     def __init__(self, ifc_file: ifcopenshell.file, elements: Optional[set[ifcopenshell.entity_instance]] = None):
         self.file = ifc_file
         self.results = []
@@ -675,14 +763,30 @@ class FacetTransformer(lark.Transformer):
         else:
             self.base_elements = elements.copy()
             self.elements = set()
-        self.container_parents = {}
         self.container_trees = {}
 
-    def get_results(self):
-        results = set()
+    def get_results(self) -> set[ifcopenshell.entity_instance]:
+        results: set[ifcopenshell.entity_instance] = set()
         for r in self.results:
             results |= r
         return results
+
+    def transform(self, tree: lark.ParseTree):
+        def has_elements_token(tree: lark.tree.ParseTree) -> bool:
+            for child in tree.iter_subtrees_topdown():
+                data = child.data
+                # Tokens that add elements to filter.
+                if data in ("entity", "instance"):
+                    return True
+            return False
+
+        # Only elements tokens can add elements to the filter.
+        # Fallback to default elements if they are not provided.
+        if self.base_elements is None and not has_elements_token(tree):
+            self.elements.update(self.file.by_type("IfcProduct"))
+            self.elements.update(self.file.by_type("IfcTypeProduct"))
+
+        return super().transform(tree)
 
     def facet_list(self, args):
         if self.elements:
@@ -733,7 +837,7 @@ class FacetTransformer(lark.Transformer):
         name, comparison, value = args
         name = name.children[0].value
 
-        def filter_function(element):
+        def filter_function(element: ifcopenshell.entity_instance) -> bool:
             if name == "PredefinedType":
                 element_value = ifcopenshell.util.element.get_predefined_type(element)
             else:
@@ -745,7 +849,7 @@ class FacetTransformer(lark.Transformer):
     def type(self, args):
         comparison, value = args
 
-        def filter_function(element):
+        def filter_function(element: ifcopenshell.entity_instance) -> bool:
             element_value = getattr(ifcopenshell.util.element.get_type(element), "Name", None)
             return self.compare(element_value, comparison, value)
 
@@ -754,7 +858,7 @@ class FacetTransformer(lark.Transformer):
     def material(self, args):
         comparison, value = args
 
-        def filter_function(element):
+        def filter_function(element: ifcopenshell.entity_instance) -> bool:
             materials = ifcopenshell.util.element.get_materials(element)
             result = False if materials else None
             for material in materials:
@@ -771,7 +875,7 @@ class FacetTransformer(lark.Transformer):
     def property(self, args):
         pset, prop, comparison, value = args
 
-        def filter_function(element):
+        def filter_function(element: ifcopenshell.entity_instance) -> bool:
             if isinstance(pset, str) and isinstance(prop, str):
                 element_value = ifcopenshell.util.element.get_pset(element, pset, prop)
                 return self.compare(element_value, comparison, value)
@@ -800,7 +904,7 @@ class FacetTransformer(lark.Transformer):
     def classification(self, args):
         comparison, value = args
 
-        def filter_function(element):
+        def filter_function(element: ifcopenshell.entity_instance) -> bool:
             references = ifcopenshell.util.classification.get_references(element)
             result = False if references else None
             for reference in references:
@@ -819,7 +923,7 @@ class FacetTransformer(lark.Transformer):
     def location(self, args):
         comparison, value = args
 
-        def filter_function(element):
+        def filter_function(element: ifcopenshell.entity_instance) -> bool:
             container = ifcopenshell.util.element.get_container(element)
             if not container:
                 container = ifcopenshell.util.element.get_aggregate(element)
@@ -837,7 +941,7 @@ class FacetTransformer(lark.Transformer):
     def group(self, args):
         comparison, value = args
 
-        def filter_function(element):
+        def filter_function(element: ifcopenshell.entity_instance) -> bool:
             result = False
             for rel in getattr(element, "HasAssignments", []):
                 if rel.is_a("IfcRelAssignsToGroup") and rel.RelatingGroup:
@@ -881,7 +985,7 @@ class FacetTransformer(lark.Transformer):
             if parent and self.compare(parent.Name, comparison, value):
                 parents.add(parent)
 
-        children = set()
+        children: set[ifcopenshell.entity_instance] = set()
         for parent in parents:
             children |= set(ifcopenshell.util.element.get_decomposition(parent))
 
@@ -893,12 +997,13 @@ class FacetTransformer(lark.Transformer):
     def query(self, args):
         keys, comparison, value = args
 
-        def filter_function(element):
+        def filter_function(element: ifcopenshell.entity_instance) -> bool:
             return self.compare(get_element_value(element, keys), comparison, value)
 
         self.elements = set(filter(filter_function, self.elements))
 
-    def get_container_tree(self, container):
+    def get_container_tree(self, container: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
+        tree: Union[list[ifcopenshell.entity_instance], None]
         tree = self.container_trees.get(container, None)
         if tree:
             return tree
@@ -960,7 +1065,7 @@ class FacetTransformer(lark.Transformer):
             elif args[0].children[0].data == "false":
                 return False
 
-    def compare(self, element_value, comparison, value):
+    def compare(self, element_value, comparison, value) -> bool:
         if isinstance(element_value, (list, tuple)):
             return any(self.compare(ev, comparison, value) for ev in element_value)
         elif isinstance(value, str):

@@ -20,6 +20,7 @@ from __future__ import annotations
 import os
 import datetime
 import ifcopenshell
+from xmlschema.validators.exceptions import XMLSchemaValidationError
 from xmlschema import XMLSchema
 from xmlschema import etree_tostring
 from xml.etree import ElementTree as ET
@@ -43,16 +44,26 @@ cwd = os.path.dirname(os.path.realpath(__file__))
 schema = None
 
 
+class IdsXmlValidationError(Exception):
+    def __init__(self, xml_error: XMLSchemaValidationError, message: str):
+        self.xml_error = xml_error
+        super().__init__(message)
+
+
 @overload
 def open(filepath: str, validate: Literal[False] = False) -> Ids: ...
 @overload
 def open(filepath: str, validate: Literal[True]) -> None: ...
 def open(filepath: str, validate=False) -> Union[Ids, None]:
-    if validate:
-        get_schema().validate(filepath)
-    return Ids().parse(
-        get_schema().decode(filepath, strip_namespaces=True, namespaces={"": "http://standards.buildingsmart.org/IDS"})
-    )
+    try:
+        if validate:
+            get_schema().validate(filepath)
+        decode = get_schema().decode(
+            filepath, strip_namespaces=True, namespaces={"": "http://standards.buildingsmart.org/IDS"}
+        )
+    except XMLSchemaValidationError as e:
+        raise IdsXmlValidationError(e, f"Provided .ids file ({filepath}) appears to be invalid. See details above.")
+    return Ids().parse(decode)
 
 
 def get_schema():

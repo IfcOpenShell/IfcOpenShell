@@ -6,7 +6,7 @@ setlocal
 rem Uncomment setting REPO_PATH to use custom path for IfcOpenShell repository.
 rem Otherwise by default it is assumed script is executed from IfcOpenShell directory.
 rem SET REPO_PATH=%HOMEDRIVE%\Users\%USERNAME%\Where\Your\Git\Repository\Is\Cloned\IfcOpenShell
-SET BLENDER_PATH=%HOMEDRIVE%\Users\%USERNAME%\AppData\Roaming\Blender Foundation\Blender\4.2
+SET BLENDER_PATH=%HOMEDRIVE%\Users\%USERNAME%\AppData\Roaming\Blender Foundation\Blender\4.3
 SET PACKAGE_PATH=%BLENDER_PATH%\extensions\.local\lib\python3.11\site-packages
 SET BONSAI_PATH=%BLENDER_PATH%\extensions\user_default\bonsai
 

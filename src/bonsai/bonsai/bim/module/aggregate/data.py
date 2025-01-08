@@ -19,6 +19,7 @@
 import bpy
 import bonsai.tool as tool
 import ifcopenshell.util.element
+from typing import Union
 
 
 def refresh():
@@ -68,23 +69,26 @@ class AggregateData:
         return bool(cls.get_related_objects())
 
     @classmethod
-    def total_linked_aggregate(cls):
+    def total_linked_aggregate(cls) -> Union[int, None]:
         element = tool.Ifc.get_entity(bpy.context.active_object)
         aggregate = ifcopenshell.util.element.get_aggregate(element)
         if not aggregate:
-            return []
+            return
         if not element:
-            return []
+            return
 
-        product_linked_agg_group = [
-            r
-            for r in getattr(aggregate, "HasAssignments", []) or []
-            if r.is_a("IfcRelAssignsToGroup")
-            if "BBIM_Linked_Aggregate" in r.RelatingGroup.Name
-        ]
+        product_linked_agg_group = next(
+            (
+                r
+                for r in getattr(aggregate, "HasAssignments", []) or []
+                if r.is_a("IfcRelAssignsToGroup")
+                if "BBIM_Linked_Aggregate" in r.RelatingGroup.Name
+            ),
+            None,
+        )
 
-        if not product_linked_agg_group:
-            return []
+        if product_linked_agg_group is None:
+            return
 
-        total = len(product_linked_agg_group[0].RelatedObjects)
+        total = len(product_linked_agg_group.RelatedObjects)
         return total

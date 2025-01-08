@@ -25,10 +25,13 @@ import collections.abc
 import numpy as np
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.pset
+import ifcopenshell.geom
 import ifcopenshell.util.element
-import ifcopenshell.util.unit
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
+import ifcopenshell.util.shape
+import ifcopenshell.util.unit
 import bonsai.core.geometry
 import bonsai.core.tool
 import bonsai.tool as tool
@@ -38,13 +41,16 @@ from mathutils import Matrix, Vector
 from copy import deepcopy
 from functools import partial
 from bonsai.bim import import_ifc
+
+# TODO: This line is somehow keeping the world from falling apart with a circular import error.
 from bonsai.bim.module.geometry.helper import Helper
 from bonsai.bim.module.model.data import AuthoringData, RailingData, RoofData, WindowData, DoorData
 from bonsai.bim.module.model.opening import FilledOpeningGenerator
-from ifcopenshell.util.shape_builder import V, ShapeBuilder
+from ifcopenshell.util.shape_builder import ShapeBuilder
 from typing import Optional, Union, TypeVar, Any, Iterable, Literal
 
 T = TypeVar("T")
+V_ = tool.Blender.V_
 
 
 class Model(bonsai.core.tool.Model):
@@ -488,15 +494,12 @@ class Model(bonsai.core.tool.Model):
         return ifc_importer.added_data.values()
 
     @classmethod
-    def clear_scene_openings(cls) -> None:
-        props = bpy.context.scene.BIMModelProperties
-        has_deleted_opening = True
-        while has_deleted_opening:
-            has_deleted_opening = False
-            for i, opening in enumerate(props.openings):
-                if not opening.obj:
-                    props.openings.remove(i)
-                    has_deleted_opening = True
+    def purge_scene_openings(cls) -> None:
+        """Purge removed scene openings."""
+        openings = bpy.context.scene.BIMModelProperties.openings
+        for i in range(len(openings) - 1, -1, -1):
+            if not openings[i].obj:
+                openings.remove(i)
 
     @classmethod
     def get_material_layer_parameters(cls, element: ifcopenshell.entity_instance) -> dict[str, Any]:
@@ -616,7 +619,14 @@ class Model(bonsai.core.tool.Model):
             elif material.is_a("IfcMaterialLayerSet"):
                 axis = ifcopenshell.util.element.get_pset(element, "EPset_Parametric", "LayerSetDirection")
                 if axis is None:
-                    if element.is_a() in ["IfcSlabType", "IfcRoofType", "IfcRampType", "IfcPlateType"]:
+                    if element.is_a() in [
+                        "IfcSlabType",
+                        "IfcRoofType",
+                        "IfcRampType",
+                        "IfcPlateType",
+                        "IfcCovering",
+                        "IfcFurniture",
+                    ]:
                         axis = "AXIS3"
                     else:
                         axis = "AXIS2"
@@ -659,6 +669,75 @@ class Model(bonsai.core.tool.Model):
         return axes
 
     @classmethod
+    def get_connected_walls(cls, walls: list[bpy.types.Object]) -> list[bpy.types.Object]:
+        """
+        Loop through walls by retrieving the next connected wall using the connection path.
+        If the function encounters the first wall again, it will return the list of connected walls.
+        """
+
+        first_wall = tool.Ifc.get_entity(walls[0])
+        previous_wall = None
+        current_wall = first_wall
+        ordered_walls = [first_wall]
+
+        for i in range(len(walls)):
+            paths = []
+            paths.extend([path for path in current_wall.ConnectedTo])
+            paths.extend([path for path in current_wall.ConnectedFrom])
+
+            if len(paths) <= 1:
+                return []
+
+            for path in paths:
+                next_wall = path.RelatedElement if path.RelatedElement != current_wall else path.RelatingElement
+                if next_wall == previous_wall:
+                    continue
+
+                if next_wall != current_wall and next_wall != first_wall and next_wall not in ordered_walls:
+                    ordered_walls.append(next_wall)
+                    previous_wall = current_wall
+                    current_wall = next_wall
+                    break
+
+                if next_wall == first_wall:
+                    return [tool.Ifc.get_object(wall) for wall in ordered_walls]
+        return []
+
+    @classmethod
+    def get_polygons_from_wall_axis(cls, walls: list[bpy.types.Object]) -> list[shapely.Polygon]:
+        """
+        Get the polygons formed by the intersection of the wall axis reference and side.
+        The polygon with the larger area will be considered the external polygon.
+        This function only works with closed loops.
+        """
+        points1 = []
+        points2 = []
+        for w1, w2 in zip(walls, walls[1:] + [walls[0]]):
+            layers1 = tool.Model.get_material_layer_parameters(tool.Ifc.get_entity(w1))
+            layers2 = tool.Model.get_material_layer_parameters(tool.Ifc.get_entity(w2))
+            axis1 = tool.Model.get_wall_axis(w1, layers1)
+            axis2 = tool.Model.get_wall_axis(w2, layers2)
+            intersection1 = tool.Cad.intersect_edges_v2(axis1["reference"], axis2["reference"])
+            intersection2 = tool.Cad.intersect_edges_v2(axis1["side"], axis2["side"])
+            if intersection1[0] is None or intersection2[0] is None:
+                for v1 in axis1["reference"]:
+                    for v2 in axis2["reference"]:
+                        if tool.Cad.are_vectors_equal(v1, v2, 1e-5):
+                            intersection1 = [v1]
+                for v1 in axis1["side"]:
+                    for v2 in axis2["side"]:
+                        if tool.Cad.are_vectors_equal(v1, v2, 1e-5):
+                            intersection2 = [v1]
+
+            points1.append(intersection1[0])
+            points2.append(intersection2[0])
+
+        poly1 = shapely.Polygon(points1)
+        poly2 = shapely.Polygon(points2)
+
+        return poly1 if poly1.area > poly2.area else poly2
+
+    @classmethod
     def handle_array_on_copied_element(
         cls, element: ifcopenshell.entity_instance, array_data: Optional[dict[str, Any]] = None
     ) -> None:
@@ -669,19 +748,23 @@ class Model(bonsai.core.tool.Model):
             if not array_pset:
                 return
 
-            array_pset_data = array_pset["Data"]
+            # TODO: Non-strictness is temporary. It was added due
+            # to a bug infecting ifc models since it occurred,
+            # can be reverted later.
+            array_pset_data = array_pset.get("Data", None)
             array_pset = tool.Ifc.get().by_id(array_pset["id"])
             ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=element, pset=array_pset)
 
             # remove constraints
             obj = tool.Ifc.get_object(element)
+            assert isinstance(obj, bpy.types.Object)
             if not array_pset_data:  # skip array parents
                 constraint = next((c for c in obj.constraints if c.type == "CHILD_OF"), None)
                 if constraint:
                     matrix = obj.matrix_world.copy()
                     obj.constraints.remove(constraint)
-                    # keep the matrix before the constraint
-                    # otherwise object will jump to some previous position
+                    # Keep the matrix before removing the constraint,
+                    # otherwise object will jump to some previous position.
                     obj.matrix_world = matrix
                 tool.Blender.lock_transform(obj, False)
 
@@ -763,11 +846,11 @@ class Model(bonsai.core.tool.Model):
                     # add child pset
                     child_pset = tool.Pset.get_element_pset(child_element, "BBIM_Array")
                     if child_pset:
-                        ifcopenshell.api.run(
-                            "pset.edit_pset",
+                        ifcopenshell.api.pset.edit_pset(
                             tool.Ifc.get(),
                             pset=child_pset,
                             properties={"Data": None},
+                            should_purge=False,
                         )
 
                     # set child object position
@@ -1109,7 +1192,7 @@ class Model(bonsai.core.tool.Model):
         custom_tread_run = any(run != 0 for run in custom_first_last_tread_run)
         nosing_overlap = max(nosing_length, 0)
         nosing_tread_gap = -min(nosing_length, 0)
-        nosing_overlap_offset = -V(nosing_overlap, 0)
+        nosing_overlap_offset = -V_(nosing_overlap, 0)
 
         def define_generic_stair_treads():
             vertices.append(Vector([0, 0]))
@@ -1121,16 +1204,16 @@ class Model(bonsai.core.tool.Model):
             default_tread_edges = np.array(((0, 1), (1, 2)))
             # horizontal tread line
             if nosing_overlap == 0:
-                default_tread_verts = (V(0, tread_rise), V(tread_run, tread_rise))
+                default_tread_verts = (V_(0, tread_rise), V_(tread_run, tread_rise))
             elif nosing_depth == 0:
-                default_tread_verts = (V(-nosing_overlap, tread_rise), V(tread_run, tread_rise))
+                default_tread_verts = (V_(-nosing_overlap, tread_rise), V_(tread_run, tread_rise))
             else:  # nosing_overlap > 0 nosing_depth > 0
                 # kind of L shape
                 default_tread_verts = (
-                    V(0, tread_rise - nosing_depth),
-                    V(-nosing_overlap, tread_rise - nosing_depth),
-                    V(-nosing_overlap, tread_rise),
-                    V(tread_run, tread_rise),
+                    V_(0, tread_rise - nosing_depth),
+                    V_(-nosing_overlap, tread_rise - nosing_depth),
+                    V_(-nosing_overlap, tread_rise),
+                    V_(tread_run, tread_rise),
                 )
                 add_edges = ((2, 3), (3, 4))
                 default_tread_edges = np.concatenate((default_tread_edges, add_edges))
@@ -1153,7 +1236,7 @@ class Model(bonsai.core.tool.Model):
                 return default_tread_offset, default_tread_verts
 
             # treads
-            current_offset = V(0, 0)
+            current_offset = V_(0, 0)
             for i in range(number_of_risers):
                 last_vert_i = len(vertices) - 1
                 tread_offset, tread_verts = get_tread_data(i)
@@ -1165,9 +1248,9 @@ class Model(bonsai.core.tool.Model):
         if stair_type == "WOOD/STEEL":
             builder = ShapeBuilder(None)
             # full tread rectangle
-            get_tread_verts = partial(builder.get_rectangle_coords, position=V(0, -(tread_depth - tread_rise)))
-            default_tread_verts = get_tread_verts(size=V(tread_run + nosing_overlap, tread_depth))
-            default_tread_offset = V(tread_run + nosing_tread_gap, tread_rise)
+            get_tread_verts = partial(builder.get_rectangle_coords, position=V_(0, -(tread_depth - tread_rise)))
+            default_tread_verts = get_tread_verts(size=V_(tread_run + nosing_overlap, tread_depth))
+            default_tread_offset = V_(tread_run + nosing_tread_gap, tread_rise)
 
             def get_tread_data(i):
                 if custom_tread_run:
@@ -1180,12 +1263,12 @@ class Model(bonsai.core.tool.Model):
                     if current_tread_run:
                         tread_offset = default_tread_offset.copy()
                         tread_offset.x = current_tread_run + nosing_tread_gap
-                        tread_verts = get_tread_verts(size=V(current_tread_run + nosing_overlap, tread_depth))
+                        tread_verts = get_tread_verts(size=V_(current_tread_run + nosing_overlap, tread_depth))
                         return tread_offset, tread_verts
                 return default_tread_offset, default_tread_verts
 
             # each tread is a separate shape
-            cur_offset = V(0, 0)
+            cur_offset = V_(0, 0)
             for i in range(number_of_risers):
                 tread_offset, tread_verts = get_tread_data(i)
                 cur_trade_shape = [v + cur_offset + nosing_overlap_offset for v in tread_verts]
@@ -1206,7 +1289,7 @@ class Model(bonsai.core.tool.Model):
 
             # close the shape
             last_vert_i = len(vertices)
-            vertices.append(vertices[-1] * V(1, 0))
+            vertices.append(vertices[-1] * V_(1, 0))
             edges.extend([(last_vert_i - 1, last_vert_i), (last_vert_i, 0)])
 
             # flip edges direction for ccw polygon winding order
@@ -1220,15 +1303,15 @@ class Model(bonsai.core.tool.Model):
             # from the tread diagonal line
             # we're going it define that line, sample it and abrupt it in case it meets a slab
             # graph: https://www.desmos.com/calculator/bilmnti3cp
-            tread_diagonal_dir = V(tread_run, tread_rise).normalized()
+            tread_diagonal_dir = V_(tread_run, tread_rise).normalized()
             # td_vector is clockwise orthogonal vector
-            td_vector = tread_diagonal_dir.yx * V(1, -1) * tread_depth
+            td_vector = tread_diagonal_dir.yx * V_(1, -1) * tread_depth
 
             stair_tan = tread_rise / tread_run
             # s0 is just a sampled point from the bottom line
             # we stick to the third point as the first point
             # is affected by customized tread run
-            s0 = V(custom_first_last_tread_run[0] or tread_run, tread_rise) + td_vector
+            s0 = V_(custom_first_last_tread_run[0] or tread_run, tread_rise) + td_vector
             # comes from y = stair_tan * x + b
             b = s0.y - stair_tan * s0.x
 
@@ -1237,7 +1320,7 @@ class Model(bonsai.core.tool.Model):
                     y = stair_tan * x + b
                 elif x is None:
                     x = (y - b) / stair_tan
-                return V(x, y)
+                return V_(x, y)
 
             # top nib
             last_vert = vertices[-1]
@@ -1491,7 +1574,6 @@ class Model(bonsai.core.tool.Model):
             profile_set_usage=None,
         )
         tool.Model.replace_object_ifc_representation(body, obj, representation)
-        tool.Ifc.finish_edit(obj)
 
     @classmethod
     def auto_detect_profiles(
@@ -1546,7 +1628,7 @@ class Model(bonsai.core.tool.Model):
                     if group_count != 2:  # Each circle needs 2 verts
                         return (False, "CIRCLE")
 
-        loop_edges = set(bm.edges)
+        loop_edges = list(bm.edges)
 
         # Create loops from edges
         loops = []
@@ -1724,6 +1806,7 @@ class Model(bonsai.core.tool.Model):
         if position is None:
             position = Matrix()
         position_i = position.inverted()
+        assert isinstance(position_i, Matrix)
 
         groups = {"IFCARCINDEX": [], "IFCCIRCLE": []}
         for i, group in enumerate(obj.vertex_groups):
@@ -1763,10 +1846,10 @@ class Model(bonsai.core.tool.Model):
                     if group_count != 2:  # Each circle needs 2 verts
                         return (False, "CIRCLE")
 
-        loop_edges = set(bm.edges)
+        loop_edges = list(bm.edges)
 
         # Create loops from edges
-        loops = []
+        loops: list[list[bmesh.types.BMEdge]] = []
         while loop_edges:
             edge = loop_edges.pop()
             loop = [edge]
@@ -1787,7 +1870,7 @@ class Model(bonsai.core.tool.Model):
 
         tmp = ifcopenshell.file(schema=tool.Ifc.get().schema)
 
-        def is_in_group(v, group_name):
+        def is_in_group(v: bmesh.types.BMVert, group_name: str) -> bool:
             for group_index in groups[group_name]:
                 if group_index in v[deform_layer]:
                     return True
@@ -1812,7 +1895,7 @@ class Model(bonsai.core.tool.Model):
                     tmp.createIfcCircle(tmp.createIfcAxis2Placement2D(tmp.createIfcCartesianPoint(list(mid))), radius)
                 )
             else:
-                loop_verts = []
+                loop_verts: list[bmesh.types.BMVert] = []
                 for i, edge in enumerate(loop):
                     if i == 0 and len(loop) == 1:
                         loop_verts.append(edge.verts[0])
@@ -1846,7 +1929,9 @@ class Model(bonsai.core.tool.Model):
 
                 if tmp.schema != "IFC2X3" and any([is_in_group(v, "IFCARCINDEX") for v in loop_verts]):
                     # We need to specify segments
-                    coord_list = [list((position_i @ (v.co / unit_scale)).to_2d()) for v in loop_verts]
+                    coord_list: list[list[float]] = [
+                        list((position_i @ (v.co / unit_scale)).to_2d()) for v in loop_verts
+                    ]
                     points = tmp.createIfcCartesianPointList2D(coord_list)
                     i = 0
                     segments = []
@@ -1886,3 +1971,11 @@ class Model(bonsai.core.tool.Model):
                     curves.append(tmp.createIfcIndexedPolyCurve(points))
 
         return {"ifc_file": tmp, "curves": curves}
+
+    @classmethod
+    def is_boolean_obj(cls, obj: bpy.types.Object) -> bool:
+        return obj.type == "MESH" and obj.data.BIMMeshProperties.ifc_boolean_id
+
+    @classmethod
+    def get_booleaned_obj(cls, boolean_obj: bpy.types.Object) -> bpy.types.Object:
+        return boolean_obj.data.BIMMeshProperties.obj

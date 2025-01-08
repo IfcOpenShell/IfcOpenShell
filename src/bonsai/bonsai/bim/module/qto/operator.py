@@ -166,6 +166,7 @@ class PerformQuantityTakeOff(bpy.types.Operator, tool.Ifc.Operator):
 
         props = context.scene.BIMQtoProperties
 
+        elements: set[ifcopenshell.entity_instance]
         if context.selected_objects:
             elements = set()
             for obj in context.selected_objects:
@@ -175,11 +176,29 @@ class PerformQuantityTakeOff(bpy.types.Operator, tool.Ifc.Operator):
         else:
             elements = set(tool.Ifc.get().by_type("IfcElement"))
 
-        rules = ifc5d.qto.rules[props.qto_rule]
+        def run_quantification(
+            rule: str, elements: set[ifcopenshell.entity_instance]
+        ) -> set[ifcopenshell.entity_instance]:
+            rules = ifc5d.qto.rules[rule]
+            ifc_file = tool.Ifc.get()
+            results = ifc5d.qto.quantify(ifc_file, elements, rules)
+            ifc5d.qto.edit_qtos(ifc_file, results)
+            not_quantified_elements = elements - set(results.keys())
+            return not_quantified_elements
 
-        ifc_file = tool.Ifc.get()
-        results = ifc5d.qto.quantify(ifc_file, elements, rules)
-        ifc5d.qto.edit_qtos(ifc_file, results)
+        not_quantified_elements = run_quantification(props.qto_rule, elements)
+        if props.fallback and not_quantified_elements:
+            alternative_rules = next(rule for rule in ifc5d.qto.rules if rule != props.qto_rule)
+            not_quantified_elements = run_quantification(alternative_rules, not_quantified_elements)
 
-        self.report({"INFO"}, f"Quantities are calculated for {len(elements)} elements.")
+        not_quantified_message = ""
+        if not_quantified_elements:
+            print("Elements that were not quantified:")
+            for element in not_quantified_elements:
+                print(f"- {element}")
+            not_quantified_message = (
+                f" {len(not_quantified_elements)} of them were not quantified, see system console for the details."
+            )
+
+        self.report({"INFO"}, f"Quantities are calculated for {len(elements)} elements.{not_quantified_message}")
         return {"FINISHED"}

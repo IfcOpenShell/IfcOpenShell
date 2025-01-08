@@ -24,6 +24,7 @@ import ifcopenshell.util.representation
 import ifcopenshell.util.type
 import ifcopenshell.util.unit
 import ifcopenshell.api
+import bonsai.bim.helper
 import bonsai.tool as tool
 import bonsai.core.geometry
 import bonsai.core.type as core
@@ -197,12 +198,25 @@ class SelectSimilarType(bpy.types.Operator):
                 continue
             relating_types.add(relating_type)
 
+        result = ""
         for relating_type in relating_types:
             related_objects = ifcopenshell.util.element.get_types(relating_type)
+
             for element in related_objects:
                 obj = tool.Ifc.get_object(element)
                 if obj and obj in context.visible_objects:
                     obj.select_set(True)
+
+            # copy selection query to clipboard
+            related_objects_class = related_objects[0].is_a()
+            relating_type_name = relating_type.Name
+            if not result:
+                result = f'{related_objects_class}, type="{relating_type_name}"'
+            else:
+                result += f' + {related_objects_class}, type="{relating_type_name}"'
+            bpy.context.window_manager.clipboard = result
+            self.report({"INFO"}, f"({result}) was copied to the clipboard.")
+
         return {"FINISHED"}
 
 
@@ -315,6 +329,12 @@ class DuplicateType(bpy.types.Operator, tool.Ifc.Operator):
             tool.Blender.select_and_activate_single_object(context, new_obj)
         else:
             self.report({"INFO"}, "Type object can't be selected : It may be hidden or in an excluded collection.")
-        context.scene.BIMModelProperties.ifc_class = new.is_a()
-        context.scene.BIMModelProperties.relating_type_id = str(new_obj.BIMObjectProperties.ifc_definition_id)
+
+        props = context.scene.BIMModelProperties
+
+        ifc_class = new.is_a()
+        # Set duplicated type as active in current tool.
+        if ifc_class in (i[0] for i in (bonsai.bim.helper.get_enum_items(props, "ifc_class", context) or ()) if i):
+            context.scene.BIMModelProperties.ifc_class = new.is_a()
+            context.scene.BIMModelProperties.relating_type_id = str(new_obj.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}

@@ -16,12 +16,15 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+# pyright: reportUnnecessaryTypeIgnoreComment=error
+
 import bpy
 import ifcopenshell.api
 import bonsai.tool as tool
 from bpy_extras.io_utils import ImportHelper
 import bonsai.tool as tool
 import bonsai.core.cost as core
+from typing import get_args, TYPE_CHECKING
 
 
 class AddCostSchedule(bpy.types.Operator, tool.Ifc.Operator):
@@ -261,17 +264,34 @@ class AssignCostItemQuantity(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Assign Cost Item Quantity"
     bl_options = {"REGISTER", "UNDO"}
     cost_item: bpy.props.IntProperty()
-    related_object_type: bpy.props.StringProperty()
+    related_object_type: bpy.props.EnumProperty(  # type: ignore [reportRedeclaration]
+        items=[(i, i, "") for i in get_args(tool.Cost.RELATED_OBJECT_TYPE)],
+    )
     prop_name: bpy.props.StringProperty()
 
+    if TYPE_CHECKING:
+        related_object_type: tool.Cost.RELATED_OBJECT_TYPE
+
+    @classmethod
+    def description(cls, context, properties) -> str:
+        descr = f"Assign cost item quantity to the active cost item from active {properties.related_object_type}"
+        if prop_name := properties.prop_name:
+            descr += f" property '{prop_name}'"
+        return descr
+
     def _execute(self, context):
-        core.assign_cost_item_quantity(
+        result = core.assign_cost_item_quantity(
             tool.Ifc,
             tool.Cost,
             cost_item=tool.Ifc.get().by_id(self.cost_item),
             related_object_type=self.related_object_type,
             prop_name=self.prop_name,  # TODO: REVIEW PROP_NAME USABILITY
         )
+        if not result:
+            self.report(
+                {"ERROR"},
+                f"Cost item wasn't assigned - no objects of type '{self.related_object_type}' are selected.",
+            )
 
 
 class UnassignCostItemQuantity(bpy.types.Operator, tool.Ifc.Operator):
@@ -403,7 +423,7 @@ class AddCostValue(bpy.types.Operator, tool.Ifc.Operator):
 
 class RemoveCostItemValue(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_cost_value"
-    bl_label = "Add Cost Item Value"
+    bl_label = "Remove Cost Item Value"
     bl_options = {"REGISTER", "UNDO"}
     parent: bpy.props.IntProperty()
     cost_value: bpy.props.IntProperty()
@@ -613,6 +633,7 @@ class LoadCostItemTypes(bpy.types.Operator):
 class AssignCostValue(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_cost_value"
     bl_label = "Assign Cost Rate Value"
+    bl_description = "Assign cost rate value to active cost item"
     bl_options = {"REGISTER", "UNDO"}
     cost_item: bpy.props.IntProperty()
     cost_rate: bpy.props.IntProperty()
@@ -621,17 +642,6 @@ class AssignCostValue(bpy.types.Operator, tool.Ifc.Operator):
         core.assign_cost_value(
             tool.Ifc, cost_item=tool.Ifc.get().by_id(self.cost_item), cost_rate=tool.Ifc.get().by_id(self.cost_rate)
         )
-
-
-class LoadScheduleOfRates(bpy.types.Operator):
-    bl_idname = "bim.load_schedule_of_rates_tree"
-    bl_label = "Load Schedule of Rates"
-    bl_options = {"REGISTER", "UNDO"}
-    cost_schedule: bpy.props.IntProperty()
-
-    def execute(self, context):
-        core.load_schedule_of_rates_tree(tool.Cost, schedule_of_rates=tool.Ifc.get().by_id(self.cost_schedule))
-        return {"FINISHED"}
 
 
 class ExpandCostItemRate(bpy.types.Operator, tool.Ifc.Operator):
@@ -659,6 +669,7 @@ class ContractCostItemRate(bpy.types.Operator, tool.Ifc.Operator):
 class CalculateCostItemResourceValue(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.calculate_cost_item_resource_value"
     bl_label = "Calculate Cost Item Resource Value"
+    bl_description = "Calculate cost item value based on it's resources. Any previous cost values are removed"
     bl_options = {"REGISTER", "UNDO"}
     cost_item: bpy.props.IntProperty()
 
@@ -705,7 +716,12 @@ class ClearCostItemAssignments(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Clear Cost Item Product Assignments"
     bl_options = {"REGISTER", "UNDO"}
     cost_item: bpy.props.IntProperty()
-    related_object_type: bpy.props.StringProperty()
+    related_object_type: bpy.props.EnumProperty(  # type: ignore [reportRedeclaration]
+        items=[(i, i, "") for i in get_args(tool.Cost.RELATED_OBJECT_TYPE)],
+    )
+
+    if TYPE_CHECKING:
+        related_object_type: tool.Cost.RELATED_OBJECT_TYPE
 
     def _execute(self, context):
         core.clear_cost_item_assignments(

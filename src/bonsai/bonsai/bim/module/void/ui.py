@@ -134,5 +134,6 @@ class BIM_PT_booleans(Panel):
             row.label(text=upsteam_obj.name)
             row.operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF").ifc_id = upstream_obj_ifc_id
 
-            row = layout.row()
+            row = layout.row(align=True)
+            row.operator("bim.hide_booleans", text="Hide Boolean")
             row.operator("bim.remove_booleans", text="Remove Boolean", icon="X")

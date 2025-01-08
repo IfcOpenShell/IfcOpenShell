@@ -1378,16 +1378,14 @@ class ActivateBcfViewpoint(bpy.types.Operator):
     def set_view_setup_hints(
         self, viewpoint: bcf.agnostic.visinfo.VisualizationInfoHandler, context: bpy.types.Context
     ) -> None:
-        if viewpoint.visualization_info.components.view_setup_hints:
-            if not viewpoint.visualization_info.components.view_setup_hints.spaces_visible:
+        # TODO: handle view_setup_hints.openings_visible
+        # should we reload elements with/without opening applied here or ...?
+        if view_setup_hints := tool.Bcf.get_viewpoint_view_setup_hints(viewpoint):
+            pass
+            if not view_setup_hints.spaces_visible:
                 self.hide_spaces(context)
-            if viewpoint.visualization_info.components.view_setup_hints.openings_visible is not None:
-                self.set_openings_visibility(
-                    viewpoint.visualization_info.components.view_setup_hints.openings_visible, context
-                )
         else:
             self.hide_spaces(context)
-            self.set_openings_visibility(False, context)
 
     def hide_spaces(self, context: bpy.types.Context) -> None:
         old = context.area.type
@@ -1396,9 +1394,6 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         bpy.ops.object.select_pattern(pattern="IfcSpace/*")
         bpy.ops.object.hide_view_set()
         context.area.type = old
-
-    def set_openings_visibility(self, is_visible, context):
-        pass  # We no longer have an openings collection
 
     def set_selection(self, viewpoint: bcf.agnostic.visinfo.VisualizationInfoHandler) -> None:
         selected_global_ids = viewpoint.get_selected_guids()

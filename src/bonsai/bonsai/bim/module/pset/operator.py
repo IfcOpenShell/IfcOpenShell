@@ -81,7 +81,7 @@ class DisablePsetEditing(bpy.types.Operator, tool.Ifc.Operator):
                 )
         props.active_pset_id = 0
         props.active_pset_name = ""
-        props.active_pset_type = ""
+        props.active_pset_type = "-"
 
 
 class EditPset(bpy.types.Operator, tool.Ifc.Operator):
@@ -447,9 +447,67 @@ class AddProposedProp(bpy.types.Operator):
     prop_name: bpy.props.StringProperty()
     prop_value: bpy.props.StringProperty()
 
+    @classmethod
+    def description(cls, context, properties):
+        description = "Add proposed property to the custom property set.\n\n"
+        props = tool.Pset.get_pset_props(properties.obj, properties.obj_type)
+        if props.active_pset_type == "PSET":
+            description += (
+                "Property type will be deduced from the provided value. Possible types:\n"
+                "- provide an integer or a float to create integer/real property\n"
+                "- 'true', 'false' to add a boolean property\n"
+                "- 'null' or '' (empty value) to add a null property\n"
+                "- any other value will be added as a string property"
+            )
+        else:
+            from ifcopenshell.api.pset.edit_qto import FLOAT_TYPE_KEYWORDS
+
+            description += (
+                "Property type will be deduced from the provided value and property name. Possible types:\n"
+                "- Integer values - Count type\n"
+                "- Float values - will try to match one of the keywords below in prop name, "
+                "otherwise will default to Length type\n\n"
+                "Types and their keywords:\n"
+            )
+            for prop_type, keywords in FLOAT_TYPE_KEYWORDS:
+                description += f"- {prop_type} - {', '.join(keywords)}\n"
+            description = description.rstrip()  # Strip last newline.
+        return description
+
     def execute(self, context):
         res = core.add_proposed_prop(tool.Pset, self.obj, self.obj_type, self.prop_name, self.prop_value)
         if res:
             self.report({"ERROR"}, res)
             return {"CANCELLED"}
         return {"FINISHED"}
+
+
+class SavePsetAsTemplate(bpy.types.Operator, tool.PsetTemplate.PsetTemplateOperator):
+    bl_idname = "bim.save_pset_as_template"
+    bl_label = "Save Pset As Template"
+    bl_description = "Save the provided pset as a pset template"
+    bl_options = {"REGISTER", "UNDO"}
+    pset_id: bpy.props.IntProperty()
+
+    def invoke(self, context, event):
+        props = context.scene.BIMPsetTemplateProperties
+        if tool.Blender.get_enum_safe(props, "pset_template_files") is None:
+            self.report({"ERROR"}, "No template files found. You can create one in Property Set Templates UI.")
+            return {"CANCELLED"}
+        return context.window_manager.invoke_props_dialog(self, width=250)
+
+    def draw(self, context):
+        props = context.scene.BIMPsetTemplateProperties
+        self.layout.prop(props, "pset_template_files", text="Template File")
+
+    def _execute(self, context):
+        ifc_file = tool.Ifc.get()
+        pset = ifc_file.by_id(self.pset_id)
+        template_file = IfcStore.pset_template_file
+        assert template_file
+
+        tool.PsetTemplate.add_pset_as_template(pset, template_file)
+
+        template_file.write(IfcStore.pset_template_path)
+        bonsai.bim.handler.refresh_ui_data()
+        bonsai.bim.schema.reload(ifc_file.schema)

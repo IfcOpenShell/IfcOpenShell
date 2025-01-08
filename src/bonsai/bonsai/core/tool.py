@@ -357,6 +357,7 @@ class Drawing:
     def import_sheets(cls): pass
     def import_text_attributes(cls, obj): pass
     def is_active_drawing(cls, drawing): pass
+    def is_annotation_object_type(cls, element, object_types): pass
     def is_camera_orthographic(cls): pass
     def is_drawing_active(cls): pass
     def is_editing_sheets(cls): pass
@@ -540,7 +541,6 @@ class Misc:
     def get_object_storey(cls, obj): pass
     def get_storey_elevation_in_si(cls, storey): pass
     def get_storey_height_in_si(cls, storey, total_storeys): pass
-    def mark_object_as_edited(cls, obj): pass
     def move_object_to_elevation(cls, obj, elevation): pass
     def run_root_copy_class(cls, obj=None): pass
     def scale_object_to_height(cls, obj, height): pass
@@ -560,7 +560,7 @@ class Model:
     def import_curve(cls, curve, obj=None, position=None): pass
     def import_rectangle(cls, obj, position, profile): pass
     def load_openings(cls, openings): pass
-    def clear_scene_openings(cls): pass
+    def purge_scene_openings(cls): pass
     def get_usage_type(cls, element): pass
     def get_material_layer_parameters(cls, element): pass
     def get_manual_booleans(cls, element): pass
@@ -671,6 +671,11 @@ class Pset:
     def import_single_value_from_template(cls, pset_template, prop_template, data, props): pass
     def is_pset_applicable(cls,element, pset_name): pass
     def set_active_pset(cls, props, pset, has_template): pass
+
+
+@interface
+class PsetTemplate:
+    pass
 
 
 @interface
@@ -926,7 +931,7 @@ class Spatial:
     def get_purged_inner_holes_poly(cls, union_geom, min_area): pass
     def get_poly_valid_interior_list(cls, poly, min_area, interiors_list): pass
     def get_buffered_poly_from_linear_ring(cls, linear_ring): pass
-    def get_bmesh_from_polygon(cls, poly, h): pass
+    def get_bmesh_from_polygon(cls, poly, h, polygon_is_si=False): pass
     def get_named_obj_from_bmesh(cls, name, bmesh): pass
     def get_named_obj_from_mesh(cls, name, mesh): pass
     def get_named_mesh_from_bmesh(cls, name, bmesh): pass
@@ -1010,6 +1015,8 @@ class Style:
     def import_surface_attributes(cls, style): pass
     def is_editing_styles(cls): pass
     def reload_material_from_ifc(cls, obj): pass
+    def is_style_side_attribute_edited(cls, style, new_attributes): pass
+    def reload_repersentations(cls, style): pass
 
 
 @interface

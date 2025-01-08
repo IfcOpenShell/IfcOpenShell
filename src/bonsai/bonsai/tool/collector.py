@@ -39,6 +39,7 @@ class Collector(bonsai.core.tool.Collector):
                     users_collection.objects.unlink(obj)
 
         element = tool.Ifc.get_entity(obj)
+        assert element
 
         # Note that tool.Geometry.is_locked is only checked within the if
         # statements for efficiency as it is a slow check.
@@ -163,7 +164,7 @@ class Collector(bonsai.core.tool.Collector):
             pass
 
     @classmethod
-    def set_layer_collection_visibility(cls, layer_collection):
+    def set_layer_collection_visibility(cls, layer_collection: bpy.types.LayerCollection) -> None:
         name = layer_collection.collection.name
         if name in (
             "IfcTypeProduct",
@@ -177,7 +178,7 @@ class Collector(bonsai.core.tool.Collector):
             layer_collection.hide_viewport = False
 
     @classmethod
-    def reset_default_visibility(cls):
+    def reset_default_visibility(cls) -> None:
         project = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
         project_collection = project.BIMObjectProperties.collection
         for layer_collection in bpy.context.view_layer.layer_collection.children:

@@ -20,6 +20,7 @@ import bpy
 import ifcopenshell
 import ifcpatch
 import bonsai.core.tool
+from typing import Any
 
 
 class Patch(bonsai.core.tool.Patch):
@@ -29,3 +30,24 @@ class Patch(bonsai.core.tool.Patch):
             {"input": infile, "file": ifcopenshell.open(infile), "recipe": "Migrate", "arguments": [schema]}
         )
         ifcpatch.write(output, outfile)
+
+    @classmethod
+    def is_filepath_argument(cls, recipe: str, arg_name: str) -> bool:
+        # TODO: Temporary hack to identify filepath arguments.
+        # Should mark them as such in the patches documentation
+        # and process it later.
+        return recipe == "SplitByBuildingStorey" and arg_name == "output_dir"
+
+    @classmethod
+    def does_patch_has_output(cls, recipe: str) -> bool:
+        return recipe != "SplitByBuildingStorey"
+
+    @classmethod
+    def post_process_patch_arguments(cls, recipe: str, args: list[Any]) -> list[Any]:
+        if recipe == "ExtractElements":
+            query = args[0]
+            assert isinstance(query, str)
+            if "bpy.data.texts" in query:
+                text_name = query.split("bpy.data.texts")[1][2:-2]
+                args[0] = bpy.data.texts[text_name].as_string()
+        return args

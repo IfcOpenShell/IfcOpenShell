@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+# pyright: reportUnnecessaryTypeIgnoreComment=error
+
 import os
 import bpy
 import json
@@ -31,6 +33,8 @@ from datetime import datetime
 from dateutil import parser, relativedelta
 from bonsai.bim.ifc import IfcStore
 from bpy_extras.io_utils import ImportHelper
+from typing import get_args, TYPE_CHECKING
+from typing_extensions import assert_never
 
 
 class EnableStatusFilters(bpy.types.Operator):
@@ -507,8 +511,17 @@ class AssignProcess(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Assign Process"
     bl_options = {"REGISTER", "UNDO"}
     task: bpy.props.IntProperty()
-    related_object_type: bpy.props.StringProperty()
+    related_object_type: bpy.props.EnumProperty(  # type: ignore [reportRedeclaration]
+        items=[(i, i, "") for i in get_args(tool.Sequence.RELATED_OBJECT_TYPE)],
+    )
     related_object: bpy.props.IntProperty()
+
+    if TYPE_CHECKING:
+        related_object_type: tool.Sequence.RELATED_OBJECT_TYPE
+
+    @classmethod
+    def description(cls, context, properties):
+        return f"Assign selected {properties.related_object_type} to the selected task"
 
     def _execute(self, context):
         if self.related_object_type == "RESOURCE":
@@ -526,6 +539,8 @@ class AssignProcess(bpy.types.Operator, tool.Ifc.Operator):
                 core.assign_input_products(tool.Ifc, tool.Sequence, tool.Spatial, task=tool.Ifc.get().by_id(self.task))
         elif self.related_object_type == "CONTROL":
             self.report({"ERROR"}, "Assigning process control is not yet supported")  # TODO
+        else:
+            assert_never(self.related_object_type)
 
 
 class UnassignProcess(bpy.types.Operator, tool.Ifc.Operator):
@@ -533,9 +548,18 @@ class UnassignProcess(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Unassign Process"
     bl_options = {"REGISTER", "UNDO"}
     task: bpy.props.IntProperty()
-    related_object_type: bpy.props.StringProperty()
+    related_object_type: bpy.props.EnumProperty(  # type: ignore [reportRedeclaration]
+        items=[(i, i, "") for i in get_args(tool.Sequence.RELATED_OBJECT_TYPE)],
+    )
     related_object: bpy.props.IntProperty()
     resource: bpy.props.IntProperty()
+
+    if TYPE_CHECKING:
+        related_object_type: tool.Sequence.RELATED_OBJECT_TYPE
+
+    @classmethod
+    def description(cls, context, properties):
+        return f"Unassign selected {properties.related_object_type} from the selected task"
 
     def _execute(self, context):
         if self.related_object_type == "RESOURCE":
@@ -562,6 +586,9 @@ class UnassignProcess(bpy.types.Operator, tool.Ifc.Operator):
                 )
         elif self.related_object_type == "CONTROL":
             pass  # TODO
+            self.report({"INFO"}, "Unassigning process control is not yet supported.")
+        else:
+            assert_never(self.related_object_type)
         return {"FINISHED"}
 
 
@@ -1207,17 +1234,13 @@ class Bonsai_DatePicker(bpy.types.Operator):
         context.scene.DatePickerProperties.selected_date = self.display_date
         return context.window_manager.invoke_props_dialog(self)
 
-    def get_scene_prop(self, prop_path):
-        prop = bpy.context.scene.get(prop_path.split(".")[0])
-        for part in prop_path.split(".")[1:]:
-            if part:
-                prop = prop.get(part)
-        return prop
+    def get_scene_prop(self, prop_path: str) -> str:
+        scene = bpy.context.scene
+        return scene.path_resolve(prop_path)
 
-    def set_scene_prop(self, prop_path, value):
-        parent = self.get_scene_prop(prop_path[: prop_path.rfind(".")])
-        prop = prop_path.split(".")[-1]
-        parent[prop] = value
+    def set_scene_prop(self, prop_path: str, value: str) -> None:
+        scene = bpy.context.scene
+        tool.Blender.set_prop_from_path(scene, prop_path, value)
 
 
 class Bonsai_DatePickerSetDate(bpy.types.Operator):

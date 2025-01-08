@@ -45,8 +45,8 @@ class CoveringTool(WorkSpaceTool):
         CoveringToolUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
 
 
-def add_layout_hotkey(layout, text, hotkey, description):
-    args = ["covering", layout, text, hotkey, description]
+def add_layout_hotkey(layout: bpy.types.UILayout, text: str, hotkey: str, description: str) -> None:
+    args = ("covering", layout, text, hotkey, description)
     tool.Blender.add_layout_hotkey_operator(*args)
 
 

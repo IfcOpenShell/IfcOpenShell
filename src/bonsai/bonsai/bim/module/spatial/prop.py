@@ -80,24 +80,6 @@ def update_element_mode(self: "BIMSpatialDecompositionProperties", context: bpy.
     tool.Spatial.load_contained_elements()
 
 
-def update_container_obj(self: "BIMObjectSpatialProperties", context: bpy.types.Context) -> None:
-    if self.container_obj is None or not (obj := context.active_object):
-        return
-    if not (element := tool.Ifc.get_entity(self.container_obj)):
-        self.container_obj = None
-        return
-    if tool.Spatial.can_contain(element, obj):
-        return
-    if (
-        (container := ifcopenshell.util.element.get_container(element))
-        and (container_obj := tool.Ifc.get_object(container))
-        and tool.Spatial.can_contain(container, obj)
-    ):
-        self.container_obj = container_obj
-        return
-    self.container_obj = None
-
-
 def update_grid_is_locked(self, context):
     if not tool.Ifc.get():
         return
@@ -126,8 +108,10 @@ def update_spatial_is_locked(self, context):
         if obj := tool.Ifc.get_object(element):
             if self.is_locked:
                 tool.Geometry.lock_object(obj)
+                obj.hide_select = True
             else:
                 tool.Geometry.unlock_object(obj)
+                obj.hide_select = False
     # Need to update ViewportData.mode.
     bonsai.bim.handler.refresh_ui_data()
 
@@ -140,15 +124,20 @@ def update_grid_is_visible(self: "BIMGridProperties", context: bpy.types.Context
     bpy.ops.bim.toggle_grids(is_visible=self.is_visible)
 
 
-def poll_container_obj(self, obj):
-    return obj is None or tool.Ifc.get_entity(obj)
+def poll_container_obj(self: "BIMObjectSpatialProperties", container_obj: bpy.types.Object) -> bool:
+    obj = self.id_data
+    if (
+        (container := tool.Ifc.get_entity(container_obj))
+        and (tool.Ifc.get_entity(obj))
+        and tool.Spatial.can_contain(container, obj)
+    ):
+        return True
+    return False
 
 
 class BIMObjectSpatialProperties(PropertyGroup):
     is_editing: BoolProperty(name="Is Editing")
-    container_obj: PointerProperty(
-        type=bpy.types.Object, name="Container", update=update_container_obj, poll=poll_container_obj
-    )
+    container_obj: PointerProperty(type=bpy.types.Object, name="Container", poll=poll_container_obj)
 
 
 class BIMContainer(PropertyGroup):

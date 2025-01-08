@@ -39,6 +39,7 @@ def disable_editing_text(drawing: tool.Drawing, obj: bpy.types.Object) -> None:
 def edit_text(drawing: tool.Drawing, obj: bpy.types.Object) -> None:
     drawing.synchronise_ifc_and_text_attributes(obj)
     drawing.update_text_size_pset(obj)
+    drawing.update_newline_at(obj)
     drawing.update_text_value(obj)
     drawing.disable_editing_text(obj)
 
@@ -56,13 +57,15 @@ def edit_assigned_product(
     ifc: tool.Ifc, drawing: tool.Drawing, obj: bpy.types.Object, product: Optional[ifcopenshell.entity_instance] = None
 ) -> None:
     element = ifc.get_entity(obj)
+    assert element
     existing_product = drawing.get_assigned_product(element)
     if existing_product != product:
         if existing_product:
             ifc.run("drawing.unassign_product", relating_product=existing_product, related_object=element)
         if product:
             ifc.run("drawing.assign_product", relating_product=product, related_object=element)
-        drawing.update_text_value(obj)
+        if drawing.is_annotation_object_type(element, ("TEXT", "TEXT_LEADER")):
+            drawing.update_text_value(obj)
 
     drawing.disable_editing_assigned_product(obj)
 
@@ -113,7 +116,7 @@ def regenerate_sheet(drawing: tool.Drawing, sheet: ifcopenshell.entity_instance)
             drawing.delete_file(path_layout)
 
 
-def open_sheet(drawing: tool.Drawing, sheet: ifcopenshell.entity_instance) -> None:
+def open_layout(drawing: tool.Drawing, sheet: ifcopenshell.entity_instance) -> None:
     drawing.open_layout_svg(drawing.get_document_uri(sheet, "LAYOUT"))
 
 
@@ -362,7 +365,7 @@ def remove_drawing(ifc: tool.Ifc, drawing_tool: tool.Drawing, drawing: ifcopensh
 
 
 def update_drawing_name(
-    ifc: tool.Ifc, drawing_tool: tool.Drawing, drawing: ifcopenshell.entity_instance, name=None
+    ifc: tool.Ifc, drawing_tool: tool.Drawing, drawing: ifcopenshell.entity_instance, name: str
 ) -> None:
     if drawing_tool.get_name(drawing) != name:
         ifc.run("attribute.edit_attributes", product=drawing, attributes={"Name": name})

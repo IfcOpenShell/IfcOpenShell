@@ -271,9 +271,12 @@ class RadianceExporterProperties(PropertyGroup):
     )
 
     def get_subcategories(self, context):
+        global SUBCATEGORIES_ENUM_ITEMS
         if self.category in spectraldb:
-            return [(k, k, "") for k in spectraldb[self.category].keys()]
-        return []
+            SUBCATEGORIES_ENUM_ITEMS = [(k, k, "") for k in spectraldb[self.category].keys()]
+        else:
+            SUBCATEGORIES_ENUM_ITEMS = []
+        return SUBCATEGORIES_ENUM_ITEMS
 
     subcategory: bpy.props.EnumProperty(
         items=get_subcategories, name="Subcategory", description="Material subcategory", update=update_material_mapping

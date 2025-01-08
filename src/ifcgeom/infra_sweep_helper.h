@@ -18,7 +18,7 @@ namespace ifcopenshell {
 			}
 		};
 
-		taxonomy::loft::ptr make_loft(const Settings& settings_, const IfcUtil::IfcBaseClass* inst, const taxonomy::piecewise_function::ptr& directrix, std::vector<cross_section>& cross_sections);
+		taxonomy::loft::ptr make_loft(const Settings& settings_, const IfcUtil::IfcBaseClass* inst, const taxonomy::function_item::ptr& directrix, std::vector<cross_section>& cross_sections);
 	}
 
 }

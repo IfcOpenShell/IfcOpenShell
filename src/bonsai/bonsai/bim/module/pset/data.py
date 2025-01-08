@@ -56,6 +56,7 @@ class Data:
         for name, data in sorted(psetqtos.items()):
             pset = ifc_file.by_id(data["id"])
             pset_uses = ifcopenshell.util.element.get_elements_by_pset(pset)
+            has_template = bool(tool.Pset.get_pset_template(name))
             results.append(
                 {
                     "id": data["id"],
@@ -63,6 +64,7 @@ class Data:
                     "is_expanded": is_expanded.get(data["id"], True),
                     "Properties": [{"Name": k, "NominalValue": v} for k, v in sorted(data.items()) if k != "id"],
                     "shared_pset_uses": len(pset_uses),
+                    "has_template": has_template,
                 }
             )
         return sorted(results, key=lambda v: v["Name"])

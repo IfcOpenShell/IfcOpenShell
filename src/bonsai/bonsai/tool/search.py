@@ -1,6 +1,26 @@
+# Bonsai - OpenBIM Blender Add-on
+# Copyright (C) 2022 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of Bonsai.
+#
+# Bonsai is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Bonsai is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
+
+
 import bpy
 import json
 import lark
+import bonsai.tool as tool
 import bonsai.core.tool
 import ifcopenshell.guid
 import ifcopenshell.util.selector
@@ -44,19 +64,16 @@ class Search(bonsai.core.tool.Search):
         query = []
         for filter_group in filter_groups:
             filter_group_query = []
-            has_instance_or_entity_filter = False
             for ifc_filter in filter_group.filters:
                 if not ifc_filter.value:
                     continue
                 if ifc_filter.type == "instance":
-                    has_instance_or_entity_filter = True
                     if "bpy.data.texts" in ifc_filter.value:
                         data_name = ifc_filter.value.split("bpy.data.texts")[1][2:-2]
                         filter_group_query.append(bpy.data.texts[data_name].as_string())
                     else:
                         filter_group_query.append(ifc_filter.value)
                 elif ifc_filter.type == "entity":
-                    has_instance_or_entity_filter = True
                     filter_group_query.append(ifc_filter.value)
                 elif ifc_filter.type == "attribute":
                     if not ifc_filter.name:
@@ -93,9 +110,6 @@ class Search(bonsai.core.tool.Search):
                     keys = cls.wrap_value(ifc_filter, ifc_filter.name)
                     comparison, value = cls.get_comparison_and_value(ifc_filter)
                     filter_group_query.append(f"query:{keys}{comparison}{value}")
-            if not has_instance_or_entity_filter:
-                filter_group_query.insert(0, "IfcProduct")
-                filter_group_query.insert(0, "IfcTypeProduct")
             query.append(", ".join(filter_group_query))
         return " + ".join(query)
 
@@ -266,6 +280,23 @@ class Search(bonsai.core.tool.Search):
         if index >= len(palette) - 1:
             return palette[-1]
         return cls.interpolate_color(palette[index], palette[index + 1], fraction)
+
+    @classmethod
+    def get_query_for_selected_elements(cls) -> str:
+        global_ids = []
+        for obj in tool.Blender.get_selected_objects():
+            if element := tool.Ifc.get_entity(obj):
+                if global_id := getattr(element, "GlobalId", None):
+                    global_ids.append(global_id)
+
+        query = ",".join(global_ids)
+        if len(global_ids) > 50:
+            # Too much to store in a string property.
+            name = f"globalid-filter-{ifcopenshell.guid.new()}"
+            text_data = bpy.data.texts.new(name)
+            text_data.from_string(query)
+            query = f"bpy.data.texts['{name}']"
+        return query
 
 
 class ImportFilterQueryTransformer(lark.Transformer):

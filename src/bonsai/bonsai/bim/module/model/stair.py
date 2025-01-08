@@ -33,12 +33,10 @@ from bpy.props import FloatProperty, IntProperty
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
 
 
-def regenerate_stair_mesh(context: bpy.types.Context) -> None:
-    obj = context.active_object
+def regenerate_stair_mesh(obj: bpy.types.Object) -> None:
     props_kwargs = obj.BIMStairProperties.get_props_kwargs()
     vertices, edges, faces = tool.Model.generate_stair_2d_profile(**props_kwargs)
 
-    obj = context.active_object
     bm = bmesh.new()
     bm.verts.index_update()
     bm.edges.index_update()
@@ -57,7 +55,8 @@ def regenerate_stair_mesh(context: bpy.types.Context) -> None:
     translate_verts = [v for v in extruded["geom"] if isinstance(v, BMVert)]
     bmesh.ops.translate(bm, vec=extrusion_vector, verts=translate_verts)
 
-    if context.active_object.mode == "EDIT":
+    assert isinstance(obj.data, bpy.types.Mesh)
+    if obj.mode == "EDIT":
         bmesh.update_edit_mesh(obj.data)
     else:
         bm.to_mesh(obj.data)
@@ -111,7 +110,6 @@ def update_ifc_stair_props(obj: bpy.types.Object) -> None:
             "NosingLength": nosing_length,
         },
     )
-    tool.Ifc.edit(obj)
 
     # update related annotation objects
     def get_elements_from_product(product: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
@@ -179,10 +177,11 @@ class AddStair(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_stair"
     bl_label = "Add Stair"
     bl_description = "Add Bonsai parametric stair to the active IFC element"
-    bl_options = {"REGISTER"}
+    bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
         obj = context.active_object
+        assert obj
         element = tool.Ifc.get_entity(obj)
         props = obj.BIMStairProperties
         ifc_file = tool.Ifc.get()
@@ -198,7 +197,12 @@ class AddStair(bpy.types.Operator, tool.Ifc.Operator):
             pset=pset,
             properties={"Data": tool.Ifc.get().createIfcText(json.dumps(stair_data))},
         )
-        regenerate_stair_mesh(context)
+
+        if obj.type == "EMPTY":
+            obj = tool.Geometry.recreate_object_with_data(obj, data=bpy.data.meshes.new("temp"), is_global=True)
+            tool.Blender.set_active_object(obj)
+
+        regenerate_stair_mesh(obj)
         update_ifc_stair_props(obj)
         tool.Model.add_body_representation(obj)
 
@@ -215,7 +219,7 @@ class CancelEditingStair(bpy.types.Operator, tool.Ifc.Operator):
         props = obj.BIMStairProperties
         # restore previous settings since editing was canceled
         props.set_props_kwargs_from_ifc_data(data)
-        regenerate_stair_mesh(context)
+        regenerate_stair_mesh(obj)
 
         props.is_editing = False
 
@@ -234,7 +238,7 @@ class FinishEditingStair(bpy.types.Operator, tool.Ifc.Operator):
 
         data = props.get_props_kwargs(convert_to_project_units=True)
         props.is_editing = False
-        regenerate_stair_mesh(context)
+        regenerate_stair_mesh(obj)
         tool.Model.add_body_representation(obj)
 
         pset = tool.Pset.get_element_pset(element, "BBIM_Stair")

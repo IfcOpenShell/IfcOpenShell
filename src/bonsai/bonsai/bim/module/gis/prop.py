@@ -23,7 +23,9 @@ from bonsai.bim.prop import StrProperty
 
 class BIMCityJsonProperties(PropertyGroup):
     def get_lods(self, context):
-        return [(item.name, "LOD" + item.name, "Level of Detail " + item.name) for item in self.lods]
+        global LODS_ENUM_ITEMS
+        LODS_ENUM_ITEMS = [(item.name, "LOD" + item.name, "Level of Detail " + item.name) for item in self.lods]
+        return LODS_ENUM_ITEMS
 
     # TODO: instead of subtype it would be nice to have a helper operator that allows filtered file browsing
     input: StringProperty(name="CityJSON Input", default="", subtype="FILE_PATH")

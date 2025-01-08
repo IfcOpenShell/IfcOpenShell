@@ -18,6 +18,7 @@
 
 import bpy
 import bmesh
+import math
 import bonsai.core.tool
 import bonsai.tool as tool
 from bonsai.bim.module.drawing.helper import format_distance
@@ -25,7 +26,7 @@ from dataclasses import dataclass
 from lark import Lark, Transformer
 from math import degrees, radians, sin, cos, tan
 from mathutils import Vector, Matrix
-from typing import Optional
+from typing import Optional, Union, Literal
 
 
 class Polyline(bonsai.core.tool.Polyline):
@@ -74,6 +75,8 @@ class Polyline(bonsai.core.tool.Polyline):
             else:
                 return Polyline.format_input_ui_units(value)
 
+    InputType = Literal["D", "A", "X", "Y", None]
+
     @dataclass
     class ToolState:
         use_default_container: bool = None
@@ -82,8 +85,9 @@ class Polyline(bonsai.core.tool.Polyline):
         lock_axis: bool = False
         # angle_axis_start: Vector
         # angle_axis_end: Vector
-        axis_method: str = None
-        plane_method: str = None
+        axis_method: Literal["X", "Y", "Z", None] = None
+        plane_method: Literal["XY", "XZ", "YZ", None] = None
+        plane_origin: Vector = Vector((0.0, 0.0, 0.0))
         instructions: str = """TAB: Cycle Input
         M: Modify Snap Point
         C: Close
@@ -92,19 +96,21 @@ class Polyline(bonsai.core.tool.Polyline):
         L: Lock axis
     """
         snap_info: str = None
-        mode: str = None
-        input_type: str = None
+        mode: Literal["Mouse", "Select", "Edit", None] = None
+        input_type: "Polyline.InputType" = None
 
     @classmethod
-    def create_input_ui(cls, init_z=False, init_area=False):
+    def create_input_ui(cls, init_z: bool = False, init_area: bool = False) -> PolylineUI:
         return cls.PolylineUI(init_z=init_z, init_area=init_area)
 
     @classmethod
-    def create_tool_state(cls):
+    def create_tool_state(cls) -> ToolState:
         return cls.ToolState()
 
     @classmethod
-    def calculate_distance_and_angle(cls, context, input_ui, tool_state, should_round=False):
+    def calculate_distance_and_angle(
+        cls, context: bpy.types.Context, input_ui: PolylineUI, tool_state: ToolState, should_round: bool = False
+    ) -> None:
 
         try:
             polyline_data = context.scene.BIMPolylineProperties.insertion_polyline[0]
@@ -190,7 +196,7 @@ class Polyline(bonsai.core.tool.Polyline):
         return
 
     @classmethod
-    def calculate_area(cls, context, input_ui):
+    def calculate_area(cls, context: bpy.types.Context, input_ui: PolylineUI) -> Union[PolylineUI, None]:
         try:
             polyline_data = context.scene.BIMPolylineProperties.insertion_polyline[0]
             polyline_points = polyline_data.polyline_points
@@ -239,7 +245,7 @@ class Polyline(bonsai.core.tool.Polyline):
         return
 
     @classmethod
-    def calculate_x_y_and_z(cls, context, input_ui, tool_state):
+    def calculate_x_y_and_z(cls, context: bpy.types.Context, input_ui: PolylineUI, tool_state: ToolState) -> None:
         try:
             polyline_data = context.scene.BIMPolylineProperties.insertion_polyline[0]
             polyline_points = polyline_data.polyline_points
@@ -276,6 +282,12 @@ class Polyline(bonsai.core.tool.Polyline):
 
             rot_vector = tool.Cad.angle_3_vectors(second_to_last_point, last_point, snap_vector, angle, degrees=True)
 
+            # When the angle in 180 degrees it might create a rotation vector that is equal to
+            # when the angle is 0 degress, leading the insertion point to the opposite direction
+            # This prevents the issue by ensuring the the negative x direction
+            if round(angle, 4) == round(math.pi, 4):
+                rot_vector.x = -1.0
+
             coords = rot_vector * distance + last_point
 
             x = coords[0]
@@ -297,99 +309,13 @@ class Polyline(bonsai.core.tool.Polyline):
         return
 
     @classmethod
-    def create_wall_preview_vertices(cls, context, relating_type):
-        def create_bmesh_from_vertices(vertices):
-            bm = bmesh.new()
+    def validate_input(cls, input_number: str, input_type: InputType) -> tuple[bool, str]:
+        """
 
-            new_verts = [bm.verts.new(v) for v in base_vertices]
-            if is_closed:
-                new_edges = [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
-                new_edges.append(
-                    bm.edges.new((new_verts[-1], new_verts[0]))
-                )  # Add an edge between the last an first point to make it closed.
-            else:
-                new_edges = [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
-
-            bm.verts.index_update()
-            bm.edges.index_update()
-            return bm
-
-        # Get properties from object type
-        layers = tool.Model.get_material_layer_parameters(relating_type)
-        if not layers["thickness"]:
-            return
-        thickness = layers["thickness"]
-
-        height = float(context.scene.BIMModelProperties.extrusion_depth)
-        rl = float(context.scene.BIMModelProperties.rl1)
-        x_angle = float(context.scene.BIMModelProperties.x_angle)
-        angle_distortion = height * tan(x_angle)
-
-        base_vertices = []
-        top_vertices = []
-        polyline_data = context.scene.BIMPolylineProperties.insertion_polyline
-        polyline_points = polyline_data[0].polyline_points if polyline_data else []
-        if len(polyline_points) < 2:
-            context.scene.BIMPolylineProperties.product_preview.clear()
-            return
-        for point in polyline_points:
-            base_vertices.append(Vector((point.x, point.y, point.z)))
-
-        is_closed = False
-        if (
-            base_vertices[0].x == base_vertices[-1].x
-            and base_vertices[0].y == base_vertices[-1].y
-            and base_vertices[0].z == base_vertices[-1].z
-        ):
-            is_closed = True
-            base_vertices.pop(-1)  # Remove the last point. The edges are going to inform that the shape is closed.
-
-        bm_base = create_bmesh_from_vertices(base_vertices)
-
-        offset_base_verts = tool.Cad.offset_edges(bm_base, thickness)
-        top_vertices = tool.Cad.offset_edges(bm_base, angle_distortion)
-        offset_top_verts = tool.Cad.offset_edges(bm_base, angle_distortion + thickness)
-
-        if is_closed:
-            base_vertices.append(base_vertices[0])
-            offset_base_verts.append(offset_base_verts[0])
-            top_vertices.append(top_vertices[0])
-            offset_top_verts.append(offset_top_verts[0])
-
-        if offset_base_verts is not None:
-            context.scene.BIMPolylineProperties.product_preview.clear()
-            for v in base_vertices:
-                prop = context.scene.BIMPolylineProperties.product_preview.add()
-                prop.x = v.x
-                prop.y = v.y
-                prop.z = v.z + rl
-
-            for v in offset_base_verts[::-1]:
-                new_v = Vector((v.co.x, v.co.y, v.co.z))
-                prop = context.scene.BIMPolylineProperties.product_preview.add()
-                prop.x = new_v.x
-                prop.y = new_v.y
-                prop.z = new_v.z + rl
-
-            for v in top_vertices:
-                # new_v = v #+ scaled_direction
-                new_v = Vector((v.co.x, v.co.y, v.co.z))
-                prop = context.scene.BIMPolylineProperties.product_preview.add()
-                prop.x = new_v.x
-                prop.y = new_v.y
-                prop.z = new_v.z + rl + height
-
-            for v in offset_top_verts[::-1]:
-                new_v = Vector((v.co.x, v.co.y, v.co.z))  # + scaled_direction
-                prop = context.scene.BIMPolylineProperties.product_preview.add()
-                prop.x = new_v.x
-                prop.y = new_v.y
-                prop.z = new_v.z + rl + height
-
-        bm_base.free()
-
-    @classmethod
-    def validate_input(cls, input_number, input_type):
+        :return: Tuple with a boolean indicating if the input is valid
+            and the final string output.
+            Distance units converted to meters, angles input/output is in degrees.
+        """
 
         grammar_imperial = """
         start: (FORMULA dim expr) | dim
@@ -397,8 +323,8 @@ class Polyline(bonsai.core.tool.Polyline):
 
         FORMULA: "="
 
-        imperial: feet? "-"? inches?
-        feet: NUMBER? "-"? fraction? "'"
+        imperial: (inches?) | (feet? "-"? inches?)
+        feet: NUMBER? "-"? fraction? "'"?
         inches: NUMBER? "-"? fraction? "\\""
         fraction: NUMBER "/" NUMBER
 
@@ -419,7 +345,7 @@ class Polyline(bonsai.core.tool.Polyline):
 
         FORMULA: "="
 
-        metric: NUMBER "mm²"? "m²"? "mm"? "m"? "°"?
+        metric: NUMBER "mm"? "m"? "°"?
 
         expr: (ADD | SUB | MUL | DIV) dim
 
@@ -456,7 +382,7 @@ class Polyline(bonsai.core.tool.Polyline):
                     else:
                         result = args[0] + args[1]
                 else:
-                    result = args[0]
+                    result = args[0] or 0.0
                 return result
 
             def metric(self, args):
@@ -477,7 +403,7 @@ class Polyline(bonsai.core.tool.Polyline):
                 elif op == "/":
                     return lambda x: x / value
 
-            def FORMULA(cls, args):
+            def FORMULA(self, args):
                 return args[0]
 
             def start(self, args):
@@ -512,12 +438,13 @@ class Polyline(bonsai.core.tool.Polyline):
 
             transformer = InputTransform()
             result = transformer.transform(parse_tree)
+            result = round(result, 5)
             return True, str(result)
         except:
             return False, "0"
 
     @classmethod
-    def format_input_ui_units(cls, value, is_area=False):
+    def format_input_ui_units(cls, value: float, is_area: bool = False) -> str:
         unit_system = tool.Drawing.get_unit_system()
         if unit_system == "IMPERIAL":
             precision = bpy.context.scene.DocProperties.imperial_precision
@@ -538,7 +465,7 @@ class Polyline(bonsai.core.tool.Polyline):
         )
 
     @classmethod
-    def insert_polyline_point(cls, input_ui, tool_state=None):
+    def insert_polyline_point(cls, input_ui: PolylineUI, tool_state: Optional[ToolState] = None) -> Union[str, None]:
         x = input_ui.get_number_value("X")
         y = input_ui.get_number_value("Y")
         if input_ui.get_number_value("Z") is not None:
@@ -551,6 +478,15 @@ class Polyline(bonsai.core.tool.Polyline):
         snap_vertex = bpy.context.scene.BIMPolylineProperties.snap_mouse_point[0]
         if tool_state and tool_state.use_default_container:
             z = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
+
+        # Lock one dimension when in plane method
+        if tool_state.plane_origin:
+            if tool_state.plane_method == "XY":
+                z = tool_state.plane_origin.z
+            elif tool_state.plane_method == "XZ":
+                y = tool_state.plane_origin.y
+            elif tool_state.plane_method == "YZ":
+                x = tool_state.plane_origin.x
 
         if x is None and y is None:
             x = snap_vertex.x
@@ -596,7 +532,7 @@ class Polyline(bonsai.core.tool.Polyline):
         polyline_data.total_length = total_length
 
     @classmethod
-    def close_polyline(cls):
+    def close_polyline(cls) -> None:
         polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline
         polyline_points = polyline_data[0].polyline_points if polyline_data else []
         if len(polyline_points) > 2:
@@ -612,17 +548,17 @@ class Polyline(bonsai.core.tool.Polyline):
                 polyline_point.position = first_point.position
 
     @classmethod
-    def clear_polyline(cls):
+    def clear_polyline(cls) -> None:
         bpy.context.scene.BIMPolylineProperties.insertion_polyline.clear()
 
     @classmethod
-    def remove_last_polyline_point(cls):
+    def remove_last_polyline_point(cls) -> None:
         polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline
         polyline_points = polyline_data[0].polyline_points if polyline_data else []
         polyline_points.remove(len(polyline_points) - 1)
 
     @classmethod
-    def move_polyline_to_measure(cls, context, input_ui):
+    def move_polyline_to_measure(cls, context: bpy.types.Context, input_ui: PolylineUI) -> None:
         polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline
         polyline_points = polyline_data[0].polyline_points if polyline_data else []
         measurement_data = bpy.context.scene.BIMPolylineProperties.measurement_polyline.add()

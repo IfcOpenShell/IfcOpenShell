@@ -24,6 +24,28 @@ typedef Polyhedron::Facet_const_handle Facet_const_handle;
 typedef Polyhedron::Halfedge_around_facet_const_circulator Halfedge_around_facet_circulator;
 
 namespace {
+	template <typename Facet>
+	CGAL::Direction_3<Kernel_> newell(Facet& face) {
+		typename Kernel_::FT a(0), b(0), c(0);
+		CGAL::Polyhedron_3<Kernel_>::Halfedge_around_facet_const_circulator current_halfedge = face.facet_begin();
+		do {
+			auto& curr = current_halfedge->vertex()->point();
+			auto& next = current_halfedge->next()->vertex()->point();
+			a += (curr.y() - next.y()) * (curr.z() + next.z());
+			b += (curr.z() - next.z()) * (curr.x() + next.x());
+			c += (curr.x() - next.x()) * (curr.y() + next.y());
+		} while (++current_halfedge != face.facet_begin());
+		return CGAL::Direction_3<Kernel_>(a, b, c);
+	}
+
+	struct Plane_equation {
+		template <typename Facet>
+		typename Facet::Plane_3 operator()(Facet& face) {
+			typename Facet::Halfedge_handle h = face.halfedge();
+			return typename Facet::Plane_3(h->vertex()->point(), newell(face));
+		}
+	};
+
 	bool are_facets_coplanar(const Facet_const_handle& f1, const Facet_const_handle& f2) {
 		// Function to determine if two facets are coplanar
 		// You can use the normal vectors and the equation of the planes to determine coplanarity
@@ -80,36 +102,44 @@ ifcopenshell::geometry::CgalShape::CgalShape(const cgal_shape_t& shape, bool con
 	shape_ = shape;
 	convex_tag_ = convex;
 
+	std::set<cgal_shape_t::Facet_handle> faces_to_remove;
+
 	for (const auto& face : CGAL::faces(*shape_)) {
-		// @todo O^2 alert! Use aabb tree or box intersections
-		bool has_self_intersection = false;
+		auto V = newell(*face).to_vector();
+		CGAL::Plane_3<Kernel_> plane(CGAL::Point_3<Kernel_>(), V);
+		auto b1 = plane.base1();
+		auto b2 = plane.base2();
+
+		if (V.squared_length() == 0) {
+			Logger::Warning("Removed face due to self-intersections");
+			faces_to_remove.insert(face);
+			continue;
+		}
+		auto C = face->halfedge()->vertex()->point();
+		auto transform_point = [&V, &C, &b1, &b2](const auto& p) {
+			auto dv = p - C;
+			return CGAL::Point_2<Kernel_>(
+				dv * b1,
+				dv * b2
+			);
+		};
+
+		std::vector<CGAL::Point_2<Kernel_>> ps;
+			
 		for (auto& he1 : CGAL::halfedges_around_face(face->halfedge(), *shape_)) {
-			CGAL::Segment_3<Kernel_> s1;
-			{
-				const auto& source = he1->vertex()->point();
-				const auto& target = he1->next()->vertex()->point();
-				s1 = { source, target };
-			}
-			for (auto& he2 : CGAL::halfedges_around_face(face->halfedge(), *shape_)) {
-				if (he1 == he2 || he1->next() == he2 || he2->next() == he1) {
-					// skip topologically connected edges
-					continue;
-				}
-				CGAL::Segment_3<Kernel_> s2;
-				{
-					const auto& source = he2->vertex()->point();
-					const auto& target = he2->next()->vertex()->point();
-					s2 = { source, target };
-				}
-				if (CGAL::do_intersect(s1, s2)) {
-					has_self_intersection = true;
-					break;
-				}
-			}
+			const auto& source = he1->vertex()->point();
+			ps.push_back(transform_point(source));
 		}
 
-		if (has_self_intersection) {
-			throw std::runtime_error("Self-intersection in facet boundary, not attempting triangulation");
+		if (!CGAL::Polygon_2<Kernel_>(ps.begin(), ps.end()).is_simple()) {
+			Logger::Warning("Removed face due to self-intersections");
+			faces_to_remove.insert(face);
+		}
+	}
+
+	{
+		for (auto& face : faces_to_remove) {
+			CGAL::Euler::remove_face(face->halfedge(), *shape_);
 		}
 	}
 
@@ -442,30 +472,6 @@ OpaqueCoordinate<3> ifcopenshell::geometry::CgalShape::position()
 	} else {
 		throw std::runtime_error("Invalid shape type");
 	}
-}
-
-namespace {
-	template <typename Facet>
-	CGAL::Direction_3<Kernel_> newell(Facet& face) {
-		typename Kernel_::FT a(0), b(0), c(0);
-		CGAL::Polyhedron_3<Kernel_>::Halfedge_around_facet_const_circulator current_halfedge = face.facet_begin();
-		do {
-			auto& curr = current_halfedge->vertex()->point();
-			auto& next = current_halfedge->next()->vertex()->point();
-			a += (curr.y() - next.y()) * (curr.z() + next.z());
-			b += (curr.z() - next.z()) * (curr.x() + next.x());
-			c += (curr.x() - next.x()) * (curr.y() + next.y());
-		} while (++current_halfedge != face.facet_begin());
-		return CGAL::Direction_3<Kernel_>(a, b, c);
-	}
-
-	struct Plane_equation {
-		template <typename Facet>
-		typename Facet::Plane_3 operator()(Facet& face) {
-			typename Facet::Halfedge_handle h = face.halfedge();
-			return typename Facet::Plane_3(h->vertex()->point(), newell(face));
-		}
-	};
 }
 
 OpaqueCoordinate<3> ifcopenshell::geometry::CgalShape::axis()

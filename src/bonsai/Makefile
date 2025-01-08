@@ -85,7 +85,7 @@ BLENDER_PLATFORM:=windows-x64
 endif
 
 # Current build commit hash.
-OLD:=fdf4749
+OLD:=a2538fd
 .PHONY: bump
 bump:
 ifndef NEW
@@ -287,6 +287,16 @@ ifeq ($(PLATFORM), macosm1)
 	prev_whl_name=$$(find build/bonsai/wheels/greenlet-*.whl); \
 	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/_arm64/"); \
 	mv "$$prev_whl_name" "$$whl_name";
+
+	# has universal and x86_64 builds.
+	prev_whl_name=$$(find build/bonsai/wheels/fonttools-*.whl); \
+	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/arm64/"); \
+	mv "$$prev_whl_name" "$$whl_name";
+
+	# Has only universal build.
+	prev_whl_name=$$(find build/bonsai/wheels/charset_normalizer-*.whl); \
+	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/_arm64/"); \
+	mv "$$prev_whl_name" "$$whl_name";
 endif
 ifeq ($(PLATFORM), macos)
 	# Has universal and arm64 builds.
@@ -302,8 +312,7 @@ ifeq ($(PLATFORM), macos)
 	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/_x86_64/"); \
 	mv "$$prev_whl_name" "$$whl_name";
 
-	# has universal and arm builds.
-	prev_whl_name=$$(find build/bonsai/wheels/fonttools-*.whl); \
+	prev_whl_name=$$(find build/bonsai/wheels/charset_normalizer-*.whl); \
 	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/_x86_64/"); \
 	mv "$$prev_whl_name" "$$whl_name";
 endif
@@ -316,6 +325,12 @@ endif
 		echo "Error: universal2 wheel files are not supported by Blender!"; \
 		exit 1; \
 	fi
+
+	# Temporary workaround for Blender not handling non-3.11 wheels #5743.
+	# Use '-n' as on macos x86-64 doesn't have a binary wheel and it autoincludes 'cp311'.
+	prev_whl_name=$$(find build/bonsai/wheels/tzfpy-*.whl); \
+	whl_name=$$(echo $$prev_whl_name | sed "s/-cp39-/-cp$(PYNUMBER)-/"); \
+	mv -n "$$prev_whl_name" "$$whl_name";
 
 ifneq ($(PLATFORM), linux)
 	# Safeguard: in case one of `pip download` will break,

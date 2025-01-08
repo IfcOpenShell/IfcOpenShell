@@ -9,7 +9,7 @@ import ifcopenshell.api.unit
 import ifcopenshell.geom
 import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.shape
-from ifcopenshell.util.shape_builder import ShapeBuilder, V
+from ifcopenshell.util.shape_builder import ShapeBuilder
 from typing import get_args
 
 

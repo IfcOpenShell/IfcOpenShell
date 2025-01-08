@@ -18,6 +18,7 @@
 
 import ifcopenshell
 import ifcopenshell.guid
+import ifcopenshell.util.pset
 from typing import Optional
 
 
@@ -26,8 +27,8 @@ def add_prop_template(
     pset_template: ifcopenshell.entity_instance,
     name: str = "NewProperty",
     description: Optional[str] = None,
-    template_type: str = "P_SINGLEVALUE",
-    primary_measure_type: str = "IfcLabel",
+    template_type: Optional[str] = None,
+    primary_measure_type: Optional[str] = None,
 ) -> ifcopenshell.entity_instance:
     """Adds new property templates to a property set template
 
@@ -57,16 +58,14 @@ def add_prop_template(
 
     :param pset_template: The property set template to add the property
         template to.
-    :type pset_template: ifcopenshell.entity_instance
     :param name: The name of the property
-    :type name: str,optional
     :param description: A few words describing what the property stores.
-    :type description: str,optional
-    :param primary_measure_type: The data type of the property. Consult the
-        IFC documentation for the full list of data types.
-    :param primary_measure_type: str,optional
+    :param template_type: The type of the property. If not provided,
+        P_SINGLEVALUE or Q_LENGTH will be assumed (depending on the pset type).
+    :param primary_measure_type: The data type of the property,
+        doesn't used for quantity set templates.
+        Consult the IFC documentation for the full list of data types.
     :return: The newly created IfcSimplePropertyTemplate.
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -85,27 +84,31 @@ def add_prop_template(
             name="ChemicalType", description="The class of chemical spillage.",
             primary_measure_type="IfcLabel")
     """
-    settings = {
-        "pset_template": pset_template,
-        "name": name,
-        "description": description,
-        "template_type": template_type,
-        "primary_measure_type": primary_measure_type,
-    }
+    assumed_pset_type = ifcopenshell.util.pset.get_pset_template_type(pset_template) or "PSET"
+
+    if template_type is None:
+        template_type = "Q_LENGTH" if assumed_pset_type == "QTO" else "P_SINGLEVALUE"
+
+    if assumed_pset_type == "PSET":
+        if primary_measure_type is None:
+            primary_measure_type = "IfcLabel"
+    else:
+        # QTO props doesn't need a primary measure type.
+        primary_measure_type = None
 
     prop_template = file.create_entity(
         "IfcSimplePropertyTemplate",
         **{
             "GlobalId": ifcopenshell.guid.new(),
-            "Name": settings["name"],
-            "Description": settings["description"],
-            "PrimaryMeasureType": settings["primary_measure_type"],
-            "TemplateType": settings["template_type"],
+            "Name": name,
+            "Description": description,
+            "PrimaryMeasureType": primary_measure_type,
+            "TemplateType": template_type,
             "AccessState": "READWRITE",
             "Enumerators": None,
-        }
+        },
     )
-    has_property_templates = list(settings["pset_template"].HasPropertyTemplates or [])
+    has_property_templates = list(pset_template.HasPropertyTemplates or [])
     has_property_templates.append(prop_template)
-    settings["pset_template"].HasPropertyTemplates = has_property_templates
+    pset_template.HasPropertyTemplates = has_property_templates
     return prop_template

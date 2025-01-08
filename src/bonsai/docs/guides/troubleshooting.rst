@@ -80,6 +80,17 @@ can `report a bug <https://github.com/ifcopenshell/ifcopenshell/issues>`_ or
    distro's package repositories, then you may be missing some modules like
    ``numpy``. Try installing it manually like ``apt install python-numpy``.
 
+4. **I get an error saying "Bonsai installed for wrong Python version."**"
+
+   If you have Python >=3.12 then installation from the Blender extensions platform
+   is not supported and you need to download and install Python 3.12 build from
+   `Github Releases <https://github.com/IfcOpenShell/IfcOpenShell/releases>`__.
+
+   If you have Python 3.11, then you probably downloaded build for wrong Python
+   version by accident. To fix it uninstall it and download Python 3.11 build
+   from `Github Releases <https://github.com/IfcOpenShell/IfcOpenShell/releases>`__ 
+   or from Blender extensions platform.
+
 Saving and loading blend files
 ------------------------------
 

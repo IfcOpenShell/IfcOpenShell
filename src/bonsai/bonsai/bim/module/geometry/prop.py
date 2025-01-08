@@ -119,6 +119,7 @@ def update_shape_aspect(self, context):
 class RepresentationItem(PropertyGroup):
     name: StringProperty(name="Name")
     surface_style: StringProperty(name="Surface Style")
+    surface_style_id: IntProperty(name="Surface Style ID")
     layer: StringProperty(name="Layer")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     shape_aspect: StringProperty(name="Shape Aspect")

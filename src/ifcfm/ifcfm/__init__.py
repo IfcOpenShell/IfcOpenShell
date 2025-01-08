@@ -20,6 +20,10 @@ import os
 import re
 import csv
 import importlib
+import ifcopenshell.util.selector
+from pathlib import Path
+from collections import defaultdict
+from typing import Literal, Union, Any, Callable
 
 try:
     from openpyxl import Workbook
@@ -44,24 +48,50 @@ except:
 __version__ = version = "0.0.0"
 
 
+ParserPreset = Literal["basic", "cobie24", "cobie24legacy"]
+_parser_presets_configs = {}
+
+
+def get_presets_configs() -> dict[ParserPreset, dict[str, Any]]:
+    global _parser_presets_configs
+    if not _parser_presets_configs:
+        fm_dir = Path(__file__).parent
+        for f in fm_dir.iterdir():
+            if not f.suffix == ".py" or f.name.startswith("_"):
+                continue
+            preset = f.stem
+            module = importlib.import_module(f"ifcfm.{preset}")
+            config = getattr(module, "config")
+            _parser_presets_configs[preset] = config
+    return _parser_presets_configs
+
+
 class Parser:
-    def __init__(self, preset="basic"):
+    config: dict[str, Any]
+    categories: defaultdict[str, dict[str, Any]]
+    get_custom_element_data: dict[
+        str, Union[Callable[[ifcopenshell.file, ifcopenshell.entity_instance], dict[str, Any]], dict[str, Any]]
+    ]
+    duplicate_keys: list[tuple[dict[str, Any], dict[str, Any]]]
+
+    def __init__(self, preset: Union[str, ParserPreset, dict[str, Any]] = "basic"):
         self.file = None
         self.preset = preset
-        self.categories = {}
-        self.config = None
+        self.categories = defaultdict(dict)
         self.get_custom_element_data = {}
         self.duplicate_keys = []
 
         if isinstance(preset, str):
-            module = importlib.import_module(f"ifcfm.{preset}")
-            self.config = getattr(module, "config")
+            presets = get_presets_configs()
+            if preset not in presets:
+                raise Exception(f"Invalid preset '{preset}'. Available presets: {','.join(presets.keys())}.")
+            self.config = get_presets_configs()[preset]
         else:
             self.config = preset
 
-    def parse(self, ifc_file, name=None):
+    # TODO: name is unused?
+    def parse(self, ifc_file: ifcopenshell.file, name=None):
         for category_name, category_config in self.config["categories"].items():
-            self.categories.setdefault(category_name, {})
             for element in category_config["get_category_elements"](ifc_file):
                 get_element_data = category_config["get_element_data"]
 
@@ -69,7 +99,7 @@ class Parser:
                     data = {}
                     for key, query in get_element_data.items():
                         data[key] = ifcopenshell.util.selector.get_element_value(element, query)
-                else:
+                elif isinstance(get_element_data, Callable):
                     data = get_element_data(ifc_file, element) or {}
 
                 get_custom_element_data = self.get_custom_element_data.get(category_name, lambda x, y: None)
@@ -77,28 +107,26 @@ class Parser:
                     custom_data = {}
                     for key, query in get_custom_element_data.items():
                         custom_data[key] = ifcopenshell.util.selector.get_element_value(element, query)
-                else:
+                elif isinstance(get_custom_element_data, Callable):
                     custom_data = get_custom_element_data(ifc_file, element) or {}
 
                 data.update(custom_data)
 
                 if data:
                     key = "-".join([str(data[k]) for k in category_config["keys"]])
+                    # TODO: duplicate_keys are never used?
                     if key in self.categories[category_name]:
                         self.duplicate_keys.append((self.categories[category_name][key], data))
                     self.categories[category_name][key] = data
 
-    def federate(self, paths):
+    def federate(self, paths: list[str]) -> None:
         for path in paths:
             spreadsheet = pd.ExcelFile(path)
             sheet_names = spreadsheet.sheet_names
 
             for category_name, category_config in self.config["categories"].items():
-                self.categories.setdefault(category_name, {})
                 if category_name not in sheet_names:
                     continue
-
-                self.categories.setdefault(category_name, {})
                 df = pd.read_excel(spreadsheet, sheet_name=category_name, keep_default_na=False)
                 for _, row in df.iterrows():
                     key = "-".join([str(row[k]) for k in category_config["keys"]])
@@ -106,28 +134,37 @@ class Parser:
                         continue
                     self.categories[category_name][key] = row.to_dict()
 
-    def exclude_categories(self, names):
+    def exclude_categories(self, names: list[str]) -> None:
         for name in names:
             if name in self.config["categories"]:
                 del self.config["categories"][name]
 
-    def exclude_element_data(self, category, names):
+    def exclude_element_data(self, category: str, names: list[str]) -> None:
         headers = self.config["categories"][category]["headers"]
         self.config["categories"][category]["headers"] = [h for h in headers if h not in names]
 
 
 class Writer:
-    def __init__(self, parser):
+    config: dict[str, Any]
+    categories: dict[str, dict[str, Any]]
+
+    def __init__(self, parser: Parser):
         self.parser = parser
         if isinstance(self.parser.preset, str):
-            module = importlib.import_module(f"ifcfm.{self.parser.preset}")
-            self.config = getattr(module, "config")
+            self.config = get_presets_configs()[self.parser.preset]
         elif isinstance(self.parser.preset, dict):
             self.config = self.parser.preset["config"]
         else:
             self.config = getattr(self.parser.preset, "config")
 
-    def write(self, null="N/A", empty="-", bool_true="YES", bool_false="NO", list_separator=", "):
+    def write(
+        self,
+        null: str = "N/A",
+        empty: str = "-",
+        bool_true: str = "YES",
+        bool_false: str = "NO",
+        list_separator: str = ", ",
+    ) -> None:
         self.categories = {}
         null = self.config.get("null", null)
         empty = self.config.get("empty", empty)
@@ -179,19 +216,21 @@ class Writer:
                     rows = sorted(rows, key=lambda x: natural_sort(x[i]), reverse=reverse)
             self.categories[category] = {"headers": headers, "rows": rows}
 
-    def write_csv(self, output, delimiter=","):
+    def write_csv(self, output_folder: str, delimiter: str = ",") -> None:
+        output_folder_ = Path(output_folder)
+        output_folder_.mkdir(exist_ok=True)
         filename = None
-        if len(self.categories.keys()) == 1 and "." in os.path.basename(output):
-            filename = output
+        if len(self.categories.keys()) == 1 and "." in os.path.basename(output_folder_):
+            filename = output_folder_
         for category, data in self.categories.items():
-            category_filename = filename or os.path.join(output, f"{category}.csv")
+            category_filename = filename or output_folder_ / f"{category}.csv"
             with open(category_filename, "w", newline="", encoding="utf-8") as f:
                 writer = csv.writer(f, delimiter=delimiter)
                 writer.writerow(data["headers"])
                 for row in data["rows"]:
                     writer.writerow(row)
 
-    def write_ods(self, output):
+    def write_ods(self, output: str) -> None:
         doc = OpenDocumentSpreadsheet()
 
         for key, value in self.config.get("colours", {}).items():
@@ -229,7 +268,7 @@ class Writer:
 
         doc.save(output, True)
 
-    def write_xlsx(self, output):
+    def write_xlsx(self, output: str) -> None:
         workbook = Workbook()
 
         cell_formats = {}
@@ -270,7 +309,7 @@ class Writer:
 
         workbook.save(output)
 
-    def write_pd(self):
+    def write_pd(self) -> dict[str, pd.DataFrame]:
         results = {}
         for category, data in self.categories.items():
             results[category] = pd.DataFrame(data["rows"], columns=data["headers"])

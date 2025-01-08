@@ -68,6 +68,8 @@ class ExploreTool(bpy.types.WorkSpaceTool):
         op.hotkey = "S_M"
         row = layout.row(align=True)
         row.prop(prop, "measurement_type", text="Measure Type", expand=True, icon_only=True, emboss=True)
+        row = layout.row(align=True)
+        op = row.operator("bim.clear_measurement", text="", icon="X")
 
 
 class ExploreHotkey(bpy.types.Operator):

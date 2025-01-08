@@ -48,7 +48,7 @@ from shapely.ops import unary_union
 from lxml import etree
 from mathutils import Vector, Matrix
 from fractions import Fraction
-from typing import Optional, Union, Iterable, Any, Literal
+from typing import Optional, Union, Iterable, Any, Literal, Sequence
 from pathlib import Path
 
 
@@ -212,9 +212,9 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def is_annotation_object_type(
-        cls, element: ifcopenshell.entity_instance, object_types: Union[str, list[str]]
+        cls, element: ifcopenshell.entity_instance, object_types: Union[str, Sequence[str]]
     ) -> bool:
-        if not isinstance(object_types, collections.abc.Iterable):
+        if isinstance(object_types, str):
             object_types = [object_types]
 
         element_type = element.is_a()
@@ -767,6 +767,14 @@ class Drawing(bonsai.core.tool.Drawing):
                 camera.BIMCameraProperties.has_annotation = bool(pset["HasAnnotation"])
             if "IsNTS" in pset:
                 camera.BIMCameraProperties.is_nts = bool(pset["IsNTS"])
+            if "DPI" in pset:
+                camera.BIMCameraProperties.dpi = int(pset["DPI"])
+            if "LineworkMode" in pset:
+                camera.BIMCameraProperties.linework_mode = str(pset["LineworkMode"])
+            if "FillMode" in pset:
+                camera.BIMCameraProperties.fill_mode = str(pset["FillMode"])
+            if "CutMode" in pset:
+                camera.BIMCameraProperties.cut_mode = str(pset["CutMode"])
 
         camera_props.update_props = update_props
 
@@ -774,7 +782,9 @@ class Drawing(bonsai.core.tool.Drawing):
     def import_drawings(cls) -> None:
         props = bpy.context.scene.DocProperties
         expanded_target_views = {d.target_view for d in props.drawings if d.is_expanded}
-        current_drawings_selection = {d.ifc_definition_id: d.is_selected for d in props.drawings}
+        if not hasattr(cls, "drawing_selected_states"):
+            cls.drawing_selected_states = {}
+        cls.drawing_selected_states.update({d.ifc_definition_id: d.is_selected for d in props.drawings if d.is_drawing})
         props.drawings.clear()
         drawings = [e for e in tool.Ifc.get().by_type("IfcAnnotation") if e.ObjectType == "DRAWING"]
         grouped_drawings = {
@@ -801,7 +811,7 @@ class Drawing(bonsai.core.tool.Drawing):
             for drawing in sorted(drawings, key=lambda x: x.Name or "Unnamed"):
                 new = props.drawings.add()
                 new.name = drawing.Name or "Unnamed"
-                new.is_selected = current_drawings_selection.get(drawing.id(), True)
+                new.is_selected = cls.drawing_selected_states.setdefault(drawing.id(), True)
                 new.is_drawing = True
                 new.ifc_definition_id = drawing.id()  # Last, to prevent unnecessary prop callbacks
 
@@ -828,6 +838,9 @@ class Drawing(bonsai.core.tool.Drawing):
     def import_sheets(cls) -> None:
         props = bpy.context.scene.DocProperties
         expanded_sheets = {s.ifc_definition_id for s in props.sheets if s.is_expanded}
+        if not hasattr(cls, "sheet_selected_states"):
+            cls.sheet_selected_states = {}
+        cls.sheet_selected_states.update({s.ifc_definition_id: s.is_selected for s in props.sheets if s.is_sheet})
         props.sheets.clear()
         sheets = [d for d in tool.Ifc.get().by_type("IfcDocumentInformation") if d.Scope == "SHEET"]
         for sheet in sorted(sheets, key=lambda s: getattr(s, "Identification", getattr(s, "DocumentId", None))):
@@ -840,6 +853,7 @@ class Drawing(bonsai.core.tool.Drawing):
             new.name = sheet.Name
             new.is_sheet = True
             new.is_expanded = sheet.id() in expanded_sheets
+            new.is_selected = cls.sheet_selected_states.setdefault(sheet.id(), True)
 
             if not new.is_expanded:
                 continue
@@ -876,6 +890,23 @@ class Drawing(bonsai.core.tool.Drawing):
                 return item
 
     @classmethod
+    def get_active_sheet_item(
+        cls, *, is_sheet: bool = False, reference_type: str = ""
+    ) -> Union[bpy.types.PropertyGroup, None]:
+        props = bpy.context.scene.DocProperties
+        sheet_index = props.active_sheet_index
+        if len(props.sheets) > sheet_index >= 0:
+            item = props.sheets[sheet_index]
+            if not is_sheet and not reference_type:
+                return item
+            if is_sheet:
+                if item.is_sheet:
+                    return item
+            elif reference_type:
+                if item.reference_type == reference_type:
+                    return item
+
+    @classmethod
     def import_text_attributes(cls, obj: bpy.types.Object) -> None:
         from bonsai.bim.module.drawing.prop import BOX_ALIGNMENT_POSITIONS
 
@@ -896,6 +927,7 @@ class Drawing(bonsai.core.tool.Drawing):
 
         text_data = DecoratorData.get_ifc_text_data(obj)
         props.font_size = str(text_data["FontSize"])
+        props.newline_at = text_data["Newline_At"]
 
     @classmethod
     def import_assigned_product(cls, obj: bpy.types.Object) -> None:
@@ -1014,6 +1046,22 @@ class Drawing(bonsai.core.tool.Drawing):
                 pset=pset,
                 properties={"Classes": classes},
             )
+
+    @classmethod
+    def update_newline_at(cls, obj: bpy.types.Object) -> None:
+        props = obj.BIMTextProperties
+        element = tool.Ifc.get_entity(obj)
+        newline_at = int(props.newline_at)
+        ifc_file = tool.Ifc.get()
+        pset = tool.Pset.get_element_pset(element, "EPset_Annotation")
+        if not pset:
+            pset = ifcopenshell.api.run("pset.add_pset", ifc_file, product=element, name="EPset_Annotation")
+        ifcopenshell.api.run(
+            "pset.edit_pset",
+            ifc_file,
+            pset=pset,
+            properties={"Newline_At": newline_at},
+        )
 
     # TODO below this point is highly experimental prototype code with no tests
 
@@ -1548,7 +1596,7 @@ class Drawing(bonsai.core.tool.Drawing):
     def sync_object_placement(cls, obj: bpy.types.Object) -> Union[ifcopenshell.entity_instance, None]:
         blender_matrix = np.array(obj.matrix_world)
         element = tool.Ifc.get_entity(obj)
-        if (obj.scale - mathutils.Vector((1.0, 1.0, 1.0))).length > 1e-4:
+        if tool.Geometry.is_scaled(obj):
             bpy.ops.bim.update_representation(obj=obj.name)
             return element
         if element.is_a("IfcGridAxis"):
@@ -1661,6 +1709,11 @@ class Drawing(bonsai.core.tool.Drawing):
             # EPset_AnnotationSurveyArea is not standard! See bSI-4.3 proposal #660.
             symbol = ifcopenshell.util.element.get_pset(element, "EPset_AnnotationSurveyArea", "PointType")
         return symbol
+
+    @classmethod
+    def get_newline_at(cls, element: ifcopenshell.entity_instance) -> Union[int, 0]:
+        newline_at = ifcopenshell.util.element.get_pset(element, "EPset_Annotation", "Newline_At")
+        return newline_at
 
     @classmethod
     def has_linework(cls, drawing: ifcopenshell.entity_instance) -> bool:
@@ -1852,7 +1905,7 @@ class Drawing(bonsai.core.tool.Drawing):
                 subcontexts.append(context_filter)
 
         # Hide everything first, then selectively show. This is significantly faster.
-        with bpy.context.temp_override(area=next(a for a in bpy.context.screen.areas if a.type == "VIEW_3D")):
+        with bpy.context.temp_override(**tool.Blender.get_viewport_context()):
             bpy.ops.object.hide_view_set(unselected=False)
             bpy.ops.object.hide_view_set(unselected=True)
 

@@ -102,7 +102,7 @@ class Snap(bonsai.core.tool.Snap):
         return snap_point
 
     @classmethod
-    def update_snapping_point(cls, snap_point, snap_type):
+    def update_snapping_point(cls, snap_point, snap_type, snap_obj=None):
         try:
             snap_vertex = bpy.context.scene.BIMPolylineProperties.snap_mouse_point[0]
         except:
@@ -112,6 +112,10 @@ class Snap(bonsai.core.tool.Snap):
         snap_vertex.y = snap_point[1]
         snap_vertex.z = snap_point[2]
         snap_vertex.snap_type = snap_type
+        if snap_obj:
+            snap_vertex.snap_object = snap_obj.name
+        else:
+            snap_vertex.snap_object = ""
 
     @classmethod
     def clear_snapping_point(cls):
@@ -246,7 +250,7 @@ class Snap(bonsai.core.tool.Snap):
         return sorted_intersections
 
     @classmethod
-    def detect_snapping_points(cls, context, event, objs_2d_bbox, tool_state):
+    def detect_snapping_points(cls, context: bpy.types.Context, event: bpy.types.Event, objs_2d_bbox, tool_state):
         rv3d = context.region_data
         space = context.space_data
         mouse_pos = event.mouse_region_x, event.mouse_region_y
@@ -358,23 +362,6 @@ class Snap(bonsai.core.tool.Snap):
                     ):  # Check for local view and local collections for this viewport and object
                         objs_to_raycast.append(obj)
 
-        # Obj
-        snap_obj, hit, face_index = cast_rays_and_get_best_object(objs_to_raycast, mouse_pos)
-        if hit is not None:
-            detected_snaps.append({"Object": (snap_obj, hit, face_index)})
-
-        # Edge-Vertex
-        for obj in objs_to_raycast:
-            if obj.type == "MESH":
-                if len(obj.data.polygons) == 0:
-                    options = tool.Raycast.ray_cast_by_proximity(context, event, obj)
-                    snap_obj = obj
-                    if options:
-                        detected_snaps.append({"Edge-Vertex": (snap_obj, options)})
-                        break
-            if obj.type == "EMPTY":
-                snap_point = [(obj.location, "Vertex")]
-                detected_snaps.append({"Edge-Vertex": (obj, snap_point)})
         # Polyline
         try:
             polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline[0]
@@ -386,7 +373,12 @@ class Snap(bonsai.core.tool.Snap):
         if polyline_points:
             snap_points = tool.Raycast.ray_cast_to_polyline(context, event)
             if snap_points:
-                detected_snaps.append({"Polyline": snap_points})
+                detected_snaps.append(
+                    {
+                        "group": "Polyline",
+                        "points": snap_points,
+                    }
+                )
 
         # Measure
         measure_data = context.scene.BIMPolylineProperties.measurement_polyline
@@ -394,12 +386,51 @@ class Snap(bonsai.core.tool.Snap):
             measure_points = measure.polyline_points
             snap_points = tool.Raycast.ray_cast_to_measure(context, event, measure_points)
             if snap_points:
-                detected_snaps.append({"Polyline": snap_points})
+                detected_snaps.append(
+                    {
+                        "group": "Measure",
+                        "points": snap_points,
+                    }
+                )
+
+        # Edge-Vertex
+        for obj in objs_to_raycast:
+            if obj.type == "MESH":
+                if len(obj.data.polygons) == 0:
+                    snap_points = tool.Raycast.ray_cast_by_proximity(context, event, obj)
+                    if snap_points:
+                        detected_snaps.append(
+                            {
+                                "group": "Edge-Vertex",
+                                "object": obj,
+                                "points": snap_points,
+                            }
+                        )
+            if obj.type == "EMPTY":
+                snap_point = {
+                    "points": [{"type": "Vertex", "point": obj.location}],
+                    "group": "Edge-Vertex",
+                    "object": obj,
+                }
+                detected_snaps.append(snap_point)
+
+        # Obj
+        snap_obj, hit, face_index = cast_rays_and_get_best_object(objs_to_raycast, mouse_pos)
+        if hit is not None:
+            snap_point = {
+                "point": hit,
+                "group": "Object",
+                "object": snap_obj,
+                "face_index": face_index,
+            }
+            detected_snaps.append(snap_point)
 
         # Axis and Plane
         elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
 
         plane_origin, plane_normal = select_plane_method()
+        tool_state.plane_origin = plane_origin  # This will be used along with plane method
+
         intersection = tool.Raycast.ray_cast_to_plane(context, event, plane_origin, plane_normal)
 
         axis_start = None
@@ -436,55 +467,77 @@ class Snap(bonsai.core.tool.Snap):
                 )
 
         if rot_intersection and polyline_points:
-            detected_snaps.append({"Axis": (rot_intersection, axis_start, axis_end)})
+            snap_point = {
+                "point": rot_intersection,
+                "group": "Axis",
+                "axis_start": axis_start,
+                "axis_end": axis_end,
+            }
+            detected_snaps.append(snap_point)
 
-        detected_snaps.append({"Plane": intersection})
+        snap_point = {
+            "point": intersection,
+            "group": "Plane",
+        }
+        detected_snaps.append(snap_point)
 
         return detected_snaps
 
     @classmethod
     def select_snapping_points(cls, context, event, tool_state, detected_snaps):
         snapping_points = []
-        for origin in detected_snaps:
-            if "Object" in list(origin.keys()):
-                snap_obj, hit, face_index = origin["Object"]
-                matrix = snap_obj.matrix_world.copy()
-                face = snap_obj.data.polygons[face_index]
+        edges = []  # Get edges to create edge-intersection snap
+        for snap_group in detected_snaps:
+            snap_obj = None
+            if snap_group["group"] == "Polyline":
+                for p in snap_group["points"]:
+                    snapping_points.append((p["point"], p["type"], None))
+                break
+            if snap_group["group"] == "Measure":
+                for p in snap_group["points"]:
+                    snapping_points.append((p["point"], p["type"], None))
+                    if p["type"] == "Edge":
+                        edges.append(p)
+                break
+            if snap_group["group"] == "Edge-Vertex":
+                for p in snap_group["points"]:
+                    snapping_points.append((p["point"], p["type"], snap_group["object"]))
+                    if p["type"] == "Edge":
+                        edges.append(p)
+
+            if snap_group["group"] == "Object":
+                obj = snap_group["object"]
+                matrix = obj.matrix_world.copy()
+                face = obj.data.polygons[snap_group["face_index"]]
                 verts = []
                 for i in face.vertices:
-                    verts.append(matrix @ snap_obj.data.vertices[i].co)
-
-                options = tool.Raycast.ray_cast_by_proximity(context, event, snap_obj, face)
-                if not options:
-                    snapping_points.append((hit, "Face"))
+                    verts.append(matrix @ obj.data.vertices[i].co)
+                snap_points = tool.Raycast.ray_cast_by_proximity(context, event, obj, face)
+                if not snap_points:
+                    snapping_points.append((snap_group["point"], "Face", obj))
                 else:
-                    for op in options:
-                        snapping_points.append(op)
-
+                    for p in snap_points:
+                        snapping_points.append((p["point"], p["type"], obj))
+                        if p["type"] == "Edge":
+                            edges.append(p)
                 break
 
-            if "Edge-Vertex" in list(origin.keys()):
-                snap_obj, options = origin["Edge-Vertex"]
-                for op in options:
-                    snapping_points.append(op)
-                break
+        for snap_group in detected_snaps:
+            if snap_group["group"] == "Axis":
+                axis_start = snap_group["axis_start"]
+                axis_end = snap_group["axis_end"]
+                snapping_points.append((snap_group["point"], "Axis", snap_obj))
 
-            if "Polyline" in list(origin.keys()):
-                options = origin["Polyline"]
-                for op in options:
-                    snapping_points.append(op)
-                break
+            if snap_group["group"] == "Plane":
+                snapping_points.append((snap_group["point"], "Plane", snap_obj))
 
-        for origin in detected_snaps:
-            if "Axis" in list(origin.keys()):
-                intersection = origin["Axis"]
-                axis_start = intersection[1]
-                axis_end = intersection[2]
-                snapping_points.append((intersection[0], "Axis"))
-
-            if "Plane" in list(origin.keys()):
-                intersection = origin["Plane"]
-                snapping_points.append((intersection, "Plane"))
+        # Edges intersection snap
+        if edges:
+            for e1, e2 in zip(edges, edges[1:] + [edges[0]]):
+                if tool.Cad.are_vectors_equal(e1["point"], e2["point"], tolerance=0.1):
+                    intersection = tool.Cad.intersect_edges_v2(e1["edge_verts"], e2["edge_verts"])
+                    if intersection[1]:
+                        snapping_points.insert(0, (intersection[1], "Edge-Intersection", None))
 
         # Make Axis first priority
         if tool_state.lock_axis or tool_state.axis_method in {"X", "Y", "Z"}:
@@ -500,7 +553,7 @@ class Snap(bonsai.core.tool.Snap):
                     cls.update_snapping_point(point[0], point[1])
                     return snapping_points
 
-        cls.update_snapping_point(snapping_points[0][0], snapping_points[0][1])
+        cls.update_snapping_point(snapping_points[0][0], snapping_points[0][1], snapping_points[0][2])
         return snapping_points
 
     @classmethod

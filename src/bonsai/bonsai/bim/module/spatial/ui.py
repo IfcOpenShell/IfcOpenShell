@@ -136,21 +136,38 @@ class BIM_PT_spatial_decomposition(Panel):
             op.part_class = self.props.subelement_class
 
             row = self.layout.row(align=True)
-            if self.props.active_container.ifc_class == "IfcProject":
-                row.enabled = False
-            op = row.operator("bim.set_default_container", icon="OUTLINER_COLLECTION", text="Set Default")
+            non_ifc_project_active = self.props.active_container.ifc_class != "IfcProject"
+
+            col = row.column(align=True)
+            col.enabled = non_ifc_project_active
+            op = col.operator("bim.set_default_container", icon="OUTLINER_COLLECTION", text="Set Default")
             op.container = ifc_definition_id
-            op = row.operator("bim.set_container_visibility", icon="FULLSCREEN_EXIT", text="Isolate")
+
+            col = row.column(align=True)
+            col.enabled = non_ifc_project_active
+            op = col.operator("bim.set_container_visibility", icon="FULLSCREEN_EXIT", text="Isolate")
             op.mode = "ISOLATE"
             op.container = ifc_definition_id
-            op = row.operator("bim.set_container_visibility", icon="HIDE_OFF", text="")
+
+            col = row.column(align=True)
+            col.enabled = non_ifc_project_active
+            op = col.operator("bim.set_container_visibility", icon="HIDE_OFF", text="")
             op.mode = "SHOW"
             op.container = ifc_definition_id
-            op = row.operator("bim.set_container_visibility", icon="HIDE_ON", text="")
+
+            col = row.column(align=True)
+            col.enabled = non_ifc_project_active
+            op = col.operator("bim.set_container_visibility", icon="HIDE_ON", text="")
             op.mode = "HIDE"
             op.container = ifc_definition_id
-            row.operator("bim.select_container", icon="OBJECT_DATA", text="").container = ifc_definition_id
-            op = row.operator("bim.delete_container", icon="X", text="")
+
+            # The only operator that's enabled for IfcProject.
+            col = row.column(align=True)
+            col.operator("bim.select_container", icon="OBJECT_DATA", text="").container = ifc_definition_id
+
+            col = row.column(align=True)
+            col.enabled = non_ifc_project_active
+            op = col.operator("bim.delete_container", icon="X", text="")
             op.container = ifc_definition_id
 
         self.layout.template_list(

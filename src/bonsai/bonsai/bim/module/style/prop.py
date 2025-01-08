@@ -33,7 +33,7 @@ from bpy.props import (
 )
 
 import gettext
-from typing import Literal
+from typing import Literal, Union
 
 
 _ = gettext.gettext
@@ -69,6 +69,13 @@ class Style(PropertyGroup):
     diffuse_colour: bpy.props.FloatVectorProperty(
         name="Diffuse Colour", subtype="COLOR", default=(1, 1, 1), min=0.0, max=1.0, size=3
     )
+    blender_material: PointerProperty(
+        description=(
+            "Needed for UI to have style->blender material link that won't break on undo. "
+            "Can be None if it's not a surface style"
+        ),
+        type=bpy.types.Material,
+    )
 
 
 STYLE_TYPES = [
@@ -77,14 +84,14 @@ STYLE_TYPES = [
 ]
 
 
-def update_shading_styles(self, context):
+def update_shading_styles(self: "BIMStylesProperties", context: bpy.types.Context) -> None:
     for mat in bpy.data.materials:
         if mat.BIMStyleProperties.ifc_definition_id == 0:
             continue
         tool.Style.change_current_style_type(mat, self.active_style_type)
 
 
-def update_shader_graph(self, context):
+def update_shader_graph(self: Union["Texture", "BIMStylesProperties"], context: bpy.types.Context) -> None:
     props = self.id_data.BIMStylesProperties if isinstance(self, Texture) else self
 
     if not props.update_graph:
@@ -141,16 +148,21 @@ class ColourRgb(PropertyGroup):
     # to fit blender.bim.helper.draw_attribute
     is_uri = False
     is_optional = False
+    special_type = ""
 
-    def get_value_name(self):
+    def get_value_name(self, *args, **kwargs):
         return "color_value"
 
 
 class BIMStylesProperties(PropertyGroup):
-    is_adding: BoolProperty(name="Is Adding")
-    is_editing: BoolProperty(name="Is Editing")
-    is_editing_style: IntProperty(name="Is Editing Style")
-    is_editing_class: StringProperty(name="Is Editing Class")
+    is_adding: BoolProperty(name="Is Adding", description="Is adding new IfcPresentationStyle")
+    is_editing: BoolProperty(name="Is Editing", description="Is editing IfcPresentationStyle")
+    is_editing_style: IntProperty(name="Is Editing Style", description="Is editing new presentation item surface style")
+    is_editing_class: StringProperty(
+        name="Is Editing Class",
+        description="Presentation item surface style class currently edited",
+    )
+    is_editing_existing_style: BoolProperty(name="Is Editing Existing", description="Is editing existing surface style")
     attributes: CollectionProperty(name="Attributes", type=Attribute)
     external_style_attributes: CollectionProperty(name="External Style Attributes", type=Attribute)
     refraction_style_attributes: CollectionProperty(name="Refraction Style Attributes", type=Attribute)
@@ -249,6 +261,11 @@ class BIMStylesProperties(PropertyGroup):
 
     styles: CollectionProperty(name="Styles", type=Style)
     active_style_index: IntProperty(name="Active Style Index")
+
+    @property
+    def active_style(self):
+        return self.styles[self.active_style_index] if 0 <= self.active_style_index < len(self.styles) else None
+
     active_style_type: EnumProperty(
         name="Active Style Type",
         description="Update current blender material to match style type for all objects in the scene",
@@ -258,7 +275,7 @@ class BIMStylesProperties(PropertyGroup):
     )
 
 
-def update_shading_style(self, context):
+def update_shading_style(self: "BIMStyleProperties", context: bpy.types.Context) -> None:
     blender_material = self.id_data
     style_elements = tool.Style.get_style_elements(blender_material)
     if self.active_style_type == "External":

@@ -21,6 +21,8 @@
 import math
 import json
 import functools
+import re
+import warnings
 
 import ifcopenshell
 import ifcopenshell.geom
@@ -72,6 +74,7 @@ class draw_settings:
     prefilter: bool = True
     include_curves: bool = False
     unify_inputs: bool = True
+    arrange_spaces: bool = False
 
 
 def main(
@@ -85,6 +88,8 @@ def main(
     geom_settings = ifcopenshell.geom.settings(
         # when not doing booleans, proper solids from shells isn't a requirement
         REORIENT_SHELLS=settings.subtract_before_hlr,
+        # SVG serialiazation depends on element hierarchy now to look up the parent
+        ELEMENT_HIERARCHY=True,
     )
 
     # this is required for serialization
@@ -210,11 +215,11 @@ def main(
     if not settings.cells:
         return svg_data_1.encode("ascii", "xmlcharrefreplace")
 
-    def yield_groups(n):
-        if n.nodeType == n.ELEMENT_NODE and n.tagName == "g":
+    def yield_groups(n, tag="g"):
+        if n.nodeType == n.ELEMENT_NODE and n.tagName == tag:
             yield n
         for c in n.childNodes:
-            yield from yield_groups(c)
+            yield from yield_groups(c, tag=tag)
 
     dom1 = parseString(svg_data_1)
     svg1 = dom1.childNodes[0]
@@ -414,7 +419,59 @@ def main(
             # This generally shouldn't happen
             g1.appendChild(g2)
 
-    data = dom1.toxml()
+    if settings.arrange_spaces:
+        root_groups = [g for g in yield_groups(svg1) if g.parentNode.tagName == "svg"]
+        ref_node = root_groups[-1].nextSibling
+        parent = root_groups[0].parentNode
+        zone_groups = []
+
+        for i in range(len(root_groups)):
+            for j in range(len(root_groups)):
+                if i != j:
+                    parent.removeChild(root_groups[j])
+
+            # wasteful and looses data for unknown reasons
+            # svg_contents = svg1.toxml()
+            # polies = W.svg_to_polygons(svg_contents, "IfcSpace")
+
+            polies = [
+                p.getAttribute("d")
+                for p in yield_groups(svg1, "path")
+                if "IfcSpace" in p.parentNode.getAttribute("class")
+            ]
+            assert all(s.count("M") == 1 for s in polies)
+            polies = [[[*map(float, s[1:].split(","))] for s in d.split(" ")[:-1]] for d in polies]
+
+            def create_poly(b):
+                p = ifcopenshell.ifcopenshell_wrapper.polygon_2()
+                p.boundary = b
+                return p
+
+            polies = [create_poly(p) for p in polies]
+
+            def min_bound_extent(p):
+                arr = numpy.array(p.boundary)
+                return (arr.max(axis=0) - arr.min(axis=0)).min() > 0.5
+
+            polies = type(polies)(filter(min_bound_extent, polies))
+            arranged = W.arrange_polygons(polies)
+            svg_data_3 = W.polygons_to_svg(arranged, False)
+            dom3 = parseString(svg_data_3)
+            svg3 = dom3.childNodes[0]
+            g3 = next(yield_groups(svg3))
+            for p in g3.getElementsByTagName("path"):
+                p.setAttribute("style", "fill: none; stroke: black; stroke-width: 0.2")
+            zone_groups.append(g3)
+            parent.removeChild(root_groups[i])
+            for j in range(len(root_groups)):
+                parent.insertBefore(root_groups[j], ref_node)
+
+        for rg, zg in zip(root_groups, zone_groups):
+            for p in rg.getElementsByTagName("path"):
+                p.setAttribute("style", "fill: none; stroke: black; stroke-width: 0.05")
+            rg.appendChild(zg)
+
+    data = dom1.toprettyxml()
     data = data.encode("ascii", "xmlcharrefreplace")
 
     return data

@@ -32,7 +32,11 @@ from bpy.props import (
 
 
 class BIMMiscProperties(PropertyGroup):
-    total_storeys: IntProperty(name="Total Storeys", default=1)
+    total_storeys: IntProperty(
+        name="Total Storeys",
+        description="Number of storeys above object's storey to take into account for resizing",
+        default=1,
+    )
     override_colour: FloatVectorProperty(
         name="Override Colour", subtype="COLOR", default=(1, 0, 0, 1), min=0.0, max=1.0, size=4
     )

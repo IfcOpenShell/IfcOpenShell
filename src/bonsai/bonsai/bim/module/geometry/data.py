@@ -78,9 +78,6 @@ class ViewportData:
                 modes.append(edit_mode)
             elif element.is_a("IfcGridAxis"):
                 modes.append(edit_mode)
-            elif tool.Blender.Modifier.is_editing_parameters(obj):
-                # This should go BEFORE the modifiers
-                pass
             elif tool.Blender.Modifier.is_roof(element):
                 modes.append(edit_mode)
             elif tool.Blender.Modifier.is_railing(element):

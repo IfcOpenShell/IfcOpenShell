@@ -94,7 +94,7 @@ class LaunchTypeManager(bpy.types.Operator):
         props = context.scene.BIMModelProperties
         props.type_page = 1
         if get_ifc_class(None, context):
-            ifc_class = props.ifc_class or AuthoringData.data["ifc_element_type"]
+            ifc_class = AuthoringData.data["ifc_class_current"] or AuthoringData.data["ifc_element_type"]
         else:
             ifc_class = AuthoringData.data["ifc_element_type"]
 
@@ -176,7 +176,7 @@ class LaunchTypeManager(bpy.types.Operator):
             else:
                 row = box.row()
                 op = box.operator("bim.load_type_thumbnails", text="", icon="FILE_REFRESH", emboss=False)
-                op.ifc_class = props.ifc_class
+                op.ifc_class = AuthoringData.data["ifc_class_current"]
 
             row = box.row()
             row.alignment = "CENTER"
@@ -290,7 +290,9 @@ class BIM_PT_stair(bpy.types.Panel):
         if not StairData.is_loaded:
             StairData.load()
 
-        props = context.active_object.BIMStairProperties
+        obj = context.active_object
+        assert obj
+        props = obj.BIMStairProperties
 
         if StairData.data["pset_data"]:
             row = self.layout.row(align=True)
@@ -310,7 +312,7 @@ class BIM_PT_stair(bpy.types.Panel):
                         self.layout.prop(props, prop_name, text="")
                     else:
                         self.layout.prop(props, prop_name)
-                regenerate_stair_mesh(context)
+                regenerate_stair_mesh(obj)
             else:
                 calculated_params = StairData.data["calculated_params"]
                 row.operator("bim.enable_editing_stair", icon="GREASEPENCIL", text="")
@@ -556,7 +558,7 @@ class BIM_PT_door(bpy.types.Panel):
         else:
             row = self.layout.row()
             row.label(text="No Door Found")
-            row.operator("bim.add_door", icon="ADD", text="").obj = ""
+            row.operator("bim.add_door", icon="ADD", text="")
 
 
 class BIM_PT_railing(bpy.types.Panel):
@@ -604,6 +606,7 @@ class BIM_PT_railing(bpy.types.Panel):
 
             else:
                 row.operator("bim.enable_editing_railing", icon="GREASEPENCIL", text="")
+                row.operator("bim.copy_railing_parameters", icon="COPYDOWN", text="")
                 row.operator("bim.enable_editing_railing_path", icon="ANIM", text="")
                 # TODO: good for preview but probably should move to .is_editing == True
                 # since it's writing to ifc
@@ -638,7 +641,9 @@ class BIM_PT_roof(bpy.types.Panel):
         if not RoofData.is_loaded:
             RoofData.load()
 
-        props = context.active_object.BIMRoofProperties
+        obj = context.active_object
+        assert obj
+        props = obj.BIMRoofProperties
 
         if RoofData.data["pset_data"]:
             row = self.layout.row(align=True)
@@ -653,14 +658,13 @@ class BIM_PT_roof(bpy.types.Panel):
                 for prop in general_props:
                     self.layout.prop(props, prop)
 
-                update_roof_modifier_bmesh(context)
-
+                update_roof_modifier_bmesh(obj)
             elif props.is_editing_path:
                 row.operator("bim.finish_editing_roof_path", icon="CHECKMARK", text="")
                 row.operator("bim.cancel_editing_roof_path", icon="CANCEL", text="")
-
             else:
                 row.operator("bim.enable_editing_roof", icon="GREASEPENCIL", text="")
+                row.operator("bim.copy_roof_parameters", icon="COPYDOWN", text="")
                 row.operator("bim.enable_editing_roof_path", icon="ANIM", text="")
                 row.operator("bim.remove_roof", icon="X", text="")
 

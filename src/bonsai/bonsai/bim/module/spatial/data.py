@@ -110,7 +110,7 @@ class SpatialDecompositionData:
                 pass
 
     @classmethod
-    def subelement_class(cls):
+    def subelement_class(cls) -> list[tuple[str, str, str]]:
         results = []
         props = bpy.context.scene.BIMSpatialDecompositionProperties
         if not (container := props.active_container):

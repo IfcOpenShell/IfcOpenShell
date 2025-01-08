@@ -27,43 +27,53 @@ from logging import Logger
 
 
 class Patcher:
-    def __init__(self, src: str, file: ifcopenshell.file, logger: Logger, filepath: Union[str, ifcopenshell.file]):
-        """Merge two IFC models into one
+    def __init__(
+        self, src: str, file: ifcopenshell.file, logger: Logger, filepaths: list[Union[str, ifcopenshell.file]]
+    ):
+        """Merge two or more IFC models into one
 
-        Note that other than combining the two IfcProject elements into one, no
-        further processing will be done. This means that you may end up with
-        duplicate spatial hierarchies (i.e. 2 sites, 2 buildings, etc).
+        Note that other than combining the two (or more) IfcProject elements into
+        one, no further processing will be done. This means that you may end up
+        with duplicate spatial hierarchies (i.e. 2 sites, 2 buildings, etc).
 
         Will automatically convert length units in the second model to the main
         model's unit before merging.
 
-        :param filepath: The filepath of the second IFC model to merge into the
-            first. The first model is already specified as the input to
-            IfcPatch.
-        :type filepath: Union[str, ifcopenshell.file]
-        :filter_glob filepath: *.ifc;*.ifczip;*.ifcxml
+        :param filepaths: The filepath(s) of the second (, third, ...) IFC model
+            to merge into the first. The first model is already specified as the
+            input to IfcPatch.
+        :filter_glob filepaths: *.ifc;*.ifczip;*.ifcxml
 
         Example:
 
         .. code:: python
 
-            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "MergeProject", "arguments": ["/path/to/model2.ifc"]})
+            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "MergeProjects", "arguments": ["/path/to/model2.ifc"]})
         """
         self.src = src
         self.file = file
         self.logger = logger
-        self.filepath = filepath
+        self.filepaths = filepaths
 
     def patch(self):
-        for filepath in self.filepath:
+        if isinstance(self.filepaths, Union[str, ifcopenshell.file]):
+            print(
+                (
+                    "WARNING. Passing a single file/filepath will be deprecated soon for MergeProjects ifcpatch, "
+                    "replace it with a list of file/filepaths."
+                )
+            )
+            self.filepaths = [self.filepaths]
+        for filepath in self.filepaths:
             if isinstance(filepath, ifcopenshell.file):
                 other = filepath
             else:
                 other = ifcopenshell.open(filepath)
+                assert isinstance(other, ifcopenshell.file)
 
             self.merge(other)
 
-    def merge(self, other):
+    def merge(self, other: ifcopenshell.file) -> None:
         if (main_unit := self.get_unit_name(self.file)) != self.get_unit_name(other):
             other = ifcopenshell.util.unit.convert_file_length_units(other, main_unit)
 
@@ -128,7 +138,7 @@ class Patcher:
         length_unit = ifcopenshell.util.unit.get_project_unit(ifc_file, "LENGTHUNIT")
         return ifcopenshell.util.unit.get_full_unit_name(length_unit)
 
-    def reuse_existing_contexts(self):
+    def reuse_existing_contexts(self) -> None:
         to_delete = set()
 
         for added_context in self.added_contexts:

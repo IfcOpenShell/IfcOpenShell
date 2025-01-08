@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell.util.element
 import ifcopenshell.util.unit
 from math import sin, cos
 from typing import Optional, Union, Any
@@ -24,21 +25,30 @@ from ifcopenshell.util.data import Clipping
 
 def add_wall_representation(
     file: ifcopenshell.file,
-    context: ifcopenshell.entity_instance,  # IfcGeometricRepresentationContext
-    # all lengths are in meters
+    context: ifcopenshell.entity_instance,
     length: float = 1.0,
     height: float = 3.0,
     offset: float = 0.0,
     thickness: float = 0.2,
-    # Sloped walls along the wall's X axis, provided in radians
     x_angle: float = 0.0,
-    # A list of planes that define clipping half space solids
-    # Planes are defined either by Clipping objects
-    # or by dictionaries of arguments for `Clipping.parse`
     clippings: Optional[list[Union[Clipping, dict[str, Any]]]] = None,
-    # Any existing IfcBooleanResults
     booleans: Optional[list[ifcopenshell.entity_instance]] = None,
 ) -> ifcopenshell.entity_instance:
+    """
+    Add a geometric representation for a wall.
+
+    :param context: The IfcGeometricRepresentationContext for the representation,
+        only Model/Body/MODEL_VIEW type of representations are currently supported.
+    :param length: The length of the wall in meters.
+    :param height: The height of the wall in meters.
+    :param offset: The base offset distance of the wall from the origin.
+    :param thickness: The thickness of the wall in meters.
+    :param x_angle: The slope angle along the wall's X-axis, in radians.
+    :param clippings: List of clipping definitions. Clippings can be `Clipping` objects
+        or dictionaries of arguments for `Clipping.parse`.
+    :param booleans: List of any existing IfcBooleanResults.
+    :return: IfcShapeRepresentation.
+    """
     usecase = Usecase()
     usecase.file = file
     usecase.settings = {
@@ -55,17 +65,21 @@ def add_wall_representation(
 
 
 class Usecase:
-    def execute(self):
-        self.settings["unit_scale"] = ifcopenshell.util.unit.calculate_unit_scale(self.file)
-        self.settings["clippings"] = [Clipping.parse(c) for c in self.settings["clippings"]]
+    file: ifcopenshell.file
+    settings: dict[str, Any]
+    clippings: list[Clipping]
+
+    def execute(self) -> ifcopenshell.entity_instance:
+        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
+        self.clippings = [Clipping.parse(c) for c in self.settings["clippings"]]
         return self.file.createIfcShapeRepresentation(
             self.settings["context"],
             self.settings["context"].ContextIdentifier,
-            "Clipping" if self.settings["clippings"] or self.settings["booleans"] else "SweptSolid",
+            "Clipping" if self.clippings or self.settings["booleans"] else "SweptSolid",
             [self.create_item()],
         )
 
-    def create_item(self):
+    def create_item(self) -> ifcopenshell.entity_instance:
         length = self.convert_si_to_unit(self.settings["length"])
         thickness = self.convert_si_to_unit(self.settings["thickness"])
         thickness *= 1 / cos(self.settings["x_angle"])
@@ -98,27 +112,27 @@ class Usecase:
         )
         if self.settings["booleans"]:
             extrusion = self.apply_booleans(extrusion)
-        if self.settings["clippings"]:
+        if self.clippings:
             extrusion = self.apply_clippings(extrusion)
         return extrusion
 
-    def apply_booleans(self, first_operand):
+    def apply_booleans(self, first_operand: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
         while self.settings["booleans"]:
             boolean = self.settings["booleans"].pop()
             boolean.FirstOperand = first_operand
             first_operand = boolean
         return first_operand
 
-    def apply_clippings(self, first_operand):
-        while self.settings["clippings"]:
-            clipping = self.settings["clippings"].pop()
+    def apply_clippings(self, first_operand: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+        while self.clippings:
+            clipping = self.clippings.pop()
             if isinstance(clipping, ifcopenshell.entity_instance):
                 new = ifcopenshell.util.element.copy(self.file, clipping)
                 new.FirstOperand = first_operand
                 first_operand = new
             else:  # Clipping
-                first_operand = clipping.apply(self.file, first_operand, self.settings["unit_scale"])
+                first_operand = clipping.apply(self.file, first_operand, self.unit_scale)
         return first_operand
 
-    def convert_si_to_unit(self, co):
-        return co / self.settings["unit_scale"]
+    def convert_si_to_unit(self, co: Any) -> Any:
+        return co / self.unit_scale

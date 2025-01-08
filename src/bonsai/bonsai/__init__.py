@@ -317,7 +317,7 @@ if IN_BLENDER:
                     # But Blender currently doesn't support separate builds for different Python version,
                     # so those issues might still slip in.
                     box.label(text="Bonsai installed for wrong Python version.")
-                    box.label(text=f"Expected: {py}. Got: {binary_py}.")
+                    box.label(text=f"Expected binary version: {py}. Got: {binary_py}.")
                     # On reinstallation, dependencies versions doesn't change, so Blender will just ignore new dependencies.
                     # So, we need to make user will disable an extension (just uninstallation won't remove dependencies).
                     # Blender restart doesn't seem to be required in that case
@@ -325,7 +325,13 @@ if IN_BLENDER:
                     box.label(text="Try reinstalling with the correct Python version.")
                     box.label(text="Before reinstallation make sure to")
                     box.label(text="DISABLE Bonsai (uninstallation won't help).")
-                    box.label(text="You can download correct version below.")
+                    if py == "3.11":
+                        box.label(text="You can download correct version below.")
+                    else:
+                        box.label(text="Since you're using Python >3.11,")
+                        box.label(text="installation from Blender extensions platform")
+                        box.label(text="is not supported and you need to download")
+                        box.label(text="and install Bonsai from the link below.")
 
                 layout.operator("bim.copy_debug_information", text="Copy Error Message To Clipboard")
                 op = layout.operator("bim.open_uri", text="How Can I Fix This?")

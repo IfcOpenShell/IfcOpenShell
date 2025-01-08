@@ -18,7 +18,7 @@
 
 import ifcopenshell.api.style
 import ifcopenshell.util.element
-from typing import Any
+from typing import Iterable
 
 
 def remove_style(file: ifcopenshell.file, style: ifcopenshell.entity_instance) -> None:
@@ -47,9 +47,10 @@ def remove_style(file: ifcopenshell.file, style: ifcopenshell.entity_instance) -
 
 class Usecase:
     file: ifcopenshell.file
-    settings: dict[str, Any]
 
-    def execute(self, style: ifcopenshell.entity_instance) -> None:
+    def execute(
+        self, style: ifcopenshell.entity_instance, do_not_delete: Iterable[ifcopenshell.entity_instance] = ()
+    ) -> None:
         self.purge_inverses(style)
         ifc_class = style.is_a()
         if ifc_class == "IfcSurfaceStyle":
@@ -57,7 +58,9 @@ class Usecase:
                 ifcopenshell.api.style.remove_surface_style(self.file, style=style_)
         elif ifc_class == "IfcFillAreaStyle":
             for style_ in style.FillStyles:
-                ifcopenshell.util.element.remove_deep2(self.file, style_, also_consider=[style])
+                ifcopenshell.util.element.remove_deep2(
+                    self.file, style_, also_consider=[style], do_not_delete=list(do_not_delete)
+                )
         self.file.remove(style)
 
     def purge_inverses(self, style: ifcopenshell.entity_instance) -> None:
@@ -86,5 +89,5 @@ class Usecase:
     ) -> None:
         for inverse in self.file.get_inverse(fill_area_style_hatching):
             if inverse.is_a("IfcFillAreaStyle"):
-                self.execute(inverse)
+                self.execute(inverse, do_not_delete=(fill_area_style_hatching, style))
         ifcopenshell.util.element.remove_deep2(self.file, fill_area_style_hatching, do_not_delete=[style])

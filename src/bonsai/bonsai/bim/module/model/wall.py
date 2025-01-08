@@ -15,6 +15,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
+#
+# pyright: reportUnnecessaryTypeIgnoreComment=error
 
 import bpy
 import copy
@@ -37,9 +39,9 @@ from bonsai.bim.ifc import IfcStore
 from math import pi, sin, cos, degrees
 from mathutils import Vector, Matrix
 from bonsai.bim.module.model.opening import FilledOpeningGenerator
-from bonsai.bim.module.model.decorator import PolylineDecorator
+from bonsai.bim.module.model.decorator import PolylineDecorator, ProductDecorator
 from bonsai.bim.module.model.polyline import PolylineOperator
-from typing import Optional
+from typing import Optional, assert_never, TYPE_CHECKING, get_args, Literal, Union, Any
 from lark import Lark, Transformer
 
 
@@ -61,11 +63,18 @@ class AlignWall(bpy.types.Operator):
     bl_idname = "bim.align_wall"
     bl_label = "Align Wall"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = """ Align the selected walls to the last selected wall:
+    bl_description = """ Align the selected walls to the active wall:
     'Ext.': align to the EXTERIOR face
     'C/L': align to wall CENTERLINE
     'Int.': align to the INTERIOR face"""
-    align_type: bpy.props.StringProperty()
+
+    AlignType = Literal["CENTERLINE", "EXTERIOR", "INTERIOR"]
+    align_type: bpy.props.EnumProperty(  # type: ignore [reportRedeclaration]
+        items=((i, i, "") for i in get_args(AlignType))
+    )
+
+    if TYPE_CHECKING:
+        align_type: AlignType
 
     @classmethod
     def poll(cls, context):
@@ -84,7 +93,8 @@ class AlignWall(bpy.types.Operator):
                 aligner.align_first_layer()
             elif self.align_type == "INTERIOR":
                 aligner.align_last_layer()
-            tool.Ifc.edit(obj)
+            else:
+                assert_never(self.align_type)
         return {"FINISHED"}
 
 
@@ -270,19 +280,37 @@ class ChangeLayerLength(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
-def recalculate_dumb_wall_origin(wall, new_origin=None):
-    if new_origin is None:
-        new_origin = wall.matrix_world @ Vector(wall.bound_box[0])
-    if (wall.matrix_world.translation - new_origin).length < 0.001:
-        return
-    wall.data.transform(
-        Matrix.Translation(
-            (wall.matrix_world.inverted().to_quaternion() @ (wall.matrix_world.translation - new_origin))
-        )
-    )
-    wall.matrix_world.translation = new_origin
-    for child in wall.children:
-        child.matrix_parent_inverse = wall.matrix_world.inverted()
+class AddWallsFromSlab(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.draw_walls_from_slab"
+    bl_label = "Draw Slab From Wall"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.space_data.type == "VIEW_3D"
+
+    def __init__(self):
+        self.relating_type = None
+        props = bpy.context.scene.BIMModelProperties
+        relating_type_id = props.relating_type_id
+        if relating_type_id:
+            self.relating_type = tool.Ifc.get().by_id(int(relating_type_id))
+
+    def _execute(self, context):
+        if not self.relating_type:
+            return {"FINISHED"}
+        slab = tool.Ifc.get_entity(context.active_object)
+        if not slab.is_a("IfcSlab"):
+            self.report(
+                {"WARNING"},
+                "Please select a slab.",
+            )
+            return {"FINISHED"}
+        walls = DumbWallGenerator(self.relating_type).generate("SLAB")
+
+        if walls:
+            for wall1, wall2 in zip(walls, walls[1:] + [walls[0]]):
+                DumbWallJoiner().join_V(wall2["obj"], wall1["obj"])
 
 
 class DrawPolylineWall(bpy.types.Operator, PolylineOperator):
@@ -297,15 +325,34 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator):
     def __init__(self):
         super().__init__()
         self.relating_type = None
-        relating_type_id = bpy.context.scene.BIMModelProperties.relating_type_id
+        props = bpy.context.scene.BIMModelProperties
+        relating_type_id = props.relating_type_id
         if relating_type_id:
             self.relating_type = tool.Ifc.get().by_id(int(relating_type_id))
 
-    def create_walls_from_polyline(self, context):
+    def create_walls_from_polyline(self, context: bpy.types.Context) -> Union[set[str], None]:
         if not self.relating_type:
             return {"FINISHED"}
 
-        walls, is_polyline_closed = DumbWallGenerator(self.relating_type).generate(True)
+        model_props = context.scene.BIMModelProperties
+        direction_sense = model_props.direction_sense
+        offset = model_props.offset
+
+        walls, is_polyline_closed = DumbWallGenerator(self.relating_type).generate("POLYLINE")
+        for wall in walls:
+            model = IfcStore.get_file()
+            element = tool.Ifc.get_entity(wall["obj"])
+            material = ifcopenshell.util.element.get_material(element)
+            material_set_usage = model.by_id(material.id())
+            # if material.is_a("IfcMaterialLayerSetUsage"):
+            attributes = {"OffsetFromReferenceLine": offset, "DirectionSense": direction_sense}
+            ifcopenshell.api.run(
+                "material.edit_layer_usage",
+                model,
+                **{"usage": material_set_usage, "attributes": attributes},
+            )
+            DumbWallRecalculator().recalculate([wall["obj"]])
+
         if walls:
             if is_polyline_closed:
                 for wall1, wall2 in zip(walls, walls[1:] + [walls[0]]):
@@ -324,15 +371,34 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator):
         PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
         tool.Blender.update_viewport()
 
-        self.handle_lock_axis(context, event)
+        self.handle_lock_axis(context, event)  # Must come before "PASS_TRHOUGH"
 
         if event.type in {"MIDDLEMOUSE", "WHEELUPMOUSE", "WHEELDOWNMOUSE"}:
             self.handle_mouse_move(context, event)
             return {"PASS_THROUGH"}
 
-        self.handle_instructions(context)
+        # Wall axis settings
+        if event.value == "RELEASE" and event.type == "F":
+            direction_sense = context.scene.BIMModelProperties.direction_sense
+            context.scene.BIMModelProperties.direction_sense = (
+                "NEGATIVE" if direction_sense == "POSITIVE" else "POSITIVE"
+            )
 
-        self.handle_mouse_move(context, event)
+        if event.value == "RELEASE" and event.type == "O":
+            offset_type = context.scene.BIMModelProperties.offset_type
+            items = ["EXTERIOR", "CENTER", "INTERIOR"]
+            index = items.index(offset_type)
+            size = len(items)
+            context.scene.BIMModelProperties.offset_type = items[((index + 1) % size)]
+
+        props = bpy.context.scene.BIMModelProperties
+        wall_config = f"""Direction: {props.direction_sense}
+        Offset Type: {props.offset_type}
+        Offset Value: {props.offset}
+        """
+        self.handle_instructions(context, wall_config)
+
+        self.handle_mouse_move(context, event, should_round=True)
 
         self.choose_axis(event)
 
@@ -345,8 +411,8 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator):
         ):
             self.create_walls_from_polyline(context)
             context.workspace.status_text_set(text=None)
+            ProductDecorator.uninstall()
             PolylineDecorator.uninstall()
-            context.scene.BIMPolylineProperties.product_preview.clear()
             tool.Polyline.clear_polyline()
             tool.Blender.update_viewport()
             return {"FINISHED"}
@@ -355,18 +421,16 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator):
 
         self.handle_inserting_polyline(context, event)
 
-        if event.type in {"C", "LEFTMOUSE", "RIGHTMOUSE", "RET", "NUMPAD_ENTER", "BACK_SPACE"}:
-            tool.Polyline.create_wall_preview_vertices(context, self.relating_type)
-
         cancel = self.handle_cancelation(context, event)
         if cancel is not None:
-            context.scene.BIMPolylineProperties.product_preview.clear()
+            ProductDecorator.uninstall()
             return cancel
 
         return {"RUNNING_MODAL"}
 
     def invoke(self, context, event):
         super().invoke(context, event)
+        ProductDecorator.install(context)
         self.tool_state.use_default_container = True
         self.tool_state.plane_method = "XY"
         return {"RUNNING_MODAL"}
@@ -376,11 +440,11 @@ class DumbWallAligner:
     # An alignment shifts the origin of all walls to the closest point on the
     # local X axis of the reference wall. In addition, the Z rotation is copied.
     # Z translations are ignored for alignment.
-    def __init__(self, wall, reference_wall):
+    def __init__(self, wall: bpy.types.Object, reference_wall: bpy.types.Object):
         self.wall = wall
         self.reference_wall = reference_wall
 
-    def align_centerline(self):
+    def align_centerline(self) -> None:
         self.align_rotation()
 
         l_start = Vector(self.reference_wall.bound_box[0]).lerp(Vector(self.reference_wall.bound_box[3]), 0.5)
@@ -398,7 +462,7 @@ class DumbWallAligner:
         new_origin = point - offset
         self.wall.matrix_world.translation[0], self.wall.matrix_world.translation[1] = new_origin.xy
 
-    def align_last_layer(self):
+    def align_last_layer(self) -> None:
         self.align_rotation()
 
         if self.is_rotation_flipped():
@@ -421,7 +485,7 @@ class DumbWallAligner:
         new_origin = point - offset
         self.wall.matrix_world.translation[0], self.wall.matrix_world.translation[1] = new_origin.xy
 
-    def align_first_layer(self):
+    def align_first_layer(self) -> None:
         self.align_rotation()
 
         if self.is_rotation_flipped():
@@ -444,7 +508,7 @@ class DumbWallAligner:
         new_origin = point - offset
         self.wall.matrix_world.translation[0], self.wall.matrix_world.translation[1] = new_origin.xy
 
-    def align_rotation(self):
+    def align_rotation(self) -> None:
         reference = (self.reference_wall.matrix_world.to_quaternion() @ Vector((1, 0, 0))).to_2d()
         wall = (self.wall.matrix_world.to_quaternion() @ Vector((1, 0, 0))).to_2d()
         angle = reference.angle_signed(wall)
@@ -456,7 +520,7 @@ class DumbWallAligner:
             self.wall.rotation_euler[2] += angle
         bpy.context.view_layer.update()
 
-    def is_rotation_flipped(self):
+    def is_rotation_flipped(self) -> bool:
         reference = (self.reference_wall.matrix_world.to_quaternion() @ Vector((1, 0, 0))).to_2d()
         wall = (self.wall.matrix_world.to_quaternion() @ Vector((1, 0, 0))).to_2d()
         angle = reference.angle_signed(wall)
@@ -484,7 +548,7 @@ class DumbWallGenerator:
         self.relating_type = relating_type
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
-    def generate(self, draw_from_polyline=False):
+    def generate(self, insertion_type="CURSOR"):
         self.file = IfcStore.get_file()
         self.layers = tool.Model.get_material_layer_parameters(self.relating_type)
         if not self.layers["thickness"]:
@@ -508,9 +572,11 @@ class DumbWallGenerator:
         self.location = Vector((0, 0, 0))
         self.x_angle = 0 if tool.Cad.is_x(props.x_angle, 0, tolerance=0.001) else props.x_angle
 
-        if draw_from_polyline:
+        if insertion_type == "POLYLINE":
             return self.derive_from_polyline()
-        else:
+        elif insertion_type == "SLAB":
+            return self.derive_from_slab()
+        elif insertion_type == "CURSOR":
             return self.derive_from_cursor()
 
     def has_sketch(self):
@@ -521,7 +587,7 @@ class DumbWallGenerator:
             and bpy.context.scene.grease_pencil.layers[0].active_frame.strokes
         )
 
-    def derive_from_polyline(self):
+    def derive_from_polyline(self) -> tuple[list[Union[dict[str, Any], None]], bool]:
         polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline
         polyline_points = polyline_data[0].polyline_points if polyline_data else []
         is_polyline_closed = False
@@ -538,6 +604,26 @@ class DumbWallGenerator:
             coords = (vec1, vec2)
             walls.append(self.create_wall_from_2_points(coords))
         return walls, is_polyline_closed
+
+    def derive_from_slab(self):
+        slab_obj = bpy.context.active_object
+        slab = tool.Ifc.get_entity(slab_obj)
+        container = ifcopenshell.util.element.get_container(slab)
+        self.container_obj = tool.Ifc.get_object(container)
+        elevation = self.container_obj.location.z
+        representation = ifcopenshell.util.representation.get_representation(slab, "Model", "Body", "MODEL_VIEW")
+        extrusion = tool.Model.get_extrusion(representation)
+        polyline_points = extrusion.SweptArea.OuterCurve.Points.CoordList
+        polyline_points = [[(v * self.unit_scale) for v in p] for p in polyline_points]
+        polyline_points = [slab_obj.matrix_world @ Vector((p[0], p[1], elevation)) for p in polyline_points]
+        is_polyline_closed = True
+        walls = []
+        for i in range(len(polyline_points) - 1):
+            vec1 = polyline_points[i]
+            vec2 = polyline_points[i + 1]
+            coords = (vec1, vec2)
+            walls.append(self.create_wall_from_2_points(coords))
+        return walls
 
     def derive_from_sketch(self):
         objs = []
@@ -572,7 +658,7 @@ class DumbWallGenerator:
         bpy.context.scene.grease_pencil.layers.remove(layer)
         return objs
 
-    def create_wall_from_2_points(self, coords, should_round=False):
+    def create_wall_from_2_points(self, coords, should_round=False) -> Union[dict[str, Any], None]:
         direction = coords[1] - coords[0]
         length = direction.length
         if round(length, 4) < 0.1:
@@ -610,7 +696,7 @@ class DumbWallGenerator:
     def is_near(self, point1, point2):
         return (point1 - point2).length < 0.1
 
-    def derive_from_cursor(self):
+    def derive_from_cursor(self) -> bpy.types.Object:
         RAYCAST_PRECISION = 0.01
         self.location = bpy.context.scene.cursor.location
         if self.container:
@@ -660,7 +746,7 @@ class DumbWallGenerator:
                     break
         return self.create_wall()
 
-    def create_wall(self):
+    def create_wall(self) -> bpy.types.Object:
         props = bpy.context.scene.BIMModelProperties
         ifc_class = self.get_relating_type_class(self.relating_type)
         mesh = bpy.data.meshes.new("Dummy")
@@ -799,7 +885,7 @@ class DumbWallJoiner:
         body = copy.deepcopy(axis1["reference"])
         self.recreate_wall(element1, wall1, axis, body)
 
-    def split(self, wall1, target):
+    def split(self, wall1: bpy.types.Object, target: Vector) -> None:
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
         element1 = tool.Ifc.get_entity(wall1)
@@ -815,8 +901,29 @@ class DumbWallJoiner:
         wall2 = self.duplicate_wall(wall1)
         element2 = tool.Ifc.get_entity(wall2)
 
-        ifcopenshell.api.run("geometry.disconnect_path", tool.Ifc.get(), element=element1, connection_type="ATEND")
-        ifcopenshell.api.run("geometry.disconnect_path", tool.Ifc.get(), element=element2, connection_type="ATSTART")
+        # Get the ATEND connection from wall1 to use it in wall2
+        relating_element = None
+        connections = element1.ConnectedTo
+        for conn in connections:
+            if conn.RelatingConnectionType == "ATEND":
+                relating_element = conn.RelatedElement
+                description = conn.Description
+        connections = element1.ConnectedFrom
+        for conn in connections:
+            if conn.RelatedConnectionType == "ATEND":
+                relating_element = conn.RelatingElement
+                description = conn.Description
+
+        if relating_element:
+            ifcopenshell.api.run(
+                "geometry.connect_path",
+                tool.Ifc.get(),
+                relating_element=relating_element,
+                related_element=element2,
+                relating_connection="ATSTART",
+                related_connection="ATEND",
+                description=description,
+            )
 
         # During the duplication process, unfilled voids are copied, so we need
         # to check openings on both element1 and element2. Let's check element1
@@ -856,10 +963,25 @@ class DumbWallJoiner:
 
         axis1["reference"][1] = intersect
         axis2["reference"][0] = intersect
+
+        # Create a connection between the walls
+        wall1_end = "ATEND" if tool.Cad.edge_percent(intersect, axis1["reference"]) > 0.5 else "ATSTART"
+        wall2_end = "ATEND" if tool.Cad.edge_percent(intersect, axis2["reference"]) > 0.5 else "ATSTART"
+
+        ifcopenshell.api.run(
+            "geometry.connect_path",
+            tool.Ifc.get(),
+            relating_element=element1,
+            related_element=element2,
+            relating_connection=wall1_end,
+            related_connection=wall2_end,
+            description="MITRE",
+        )
+
         self.recreate_wall(element1, wall1, axis1["reference"], axis1["reference"])
         self.recreate_wall(element2, wall2, axis2["reference"], axis2["reference"])
 
-    def flip(self, wall1):
+    def flip(self, wall1: bpy.types.Object) -> None:
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
         if tool.Ifc.is_moved(wall1):
@@ -1124,6 +1246,12 @@ class DumbWallJoiner:
         axis1 = tool.Model.get_wall_axis(wall1)
         axis2 = tool.Model.get_wall_axis(wall2)
         intersect = tool.Cad.intersect_edges(axis1["reference"], axis2["reference"])
+        # Allow connecting contiguous walls
+        if not intersect:
+            for v1 in axis1["reference"]:
+                for v2 in axis2["reference"]:
+                    if tool.Cad.are_vectors_equal(v1, v2, 1e-5):
+                        intersect = (v1, v2)
         if intersect:
             intersect, _ = intersect
         else:
@@ -1429,22 +1557,42 @@ class DumbWallJoiner:
 
             if connection1 == connection2:
                 if (connected_at_end and angle > 0) or (not connected_at_end and angle < 0):
-                    pt = bbf.to_2d().to_3d()
-                    x_axis = bsn - bbf
-                    y_axis = tbf - bbf
+                    if layers1["direction_sense"] == "POSITIVE":
+                        pt = bbf.to_2d().to_3d()
+                        x_axis = bsn - bbf
+                        y_axis = tbf - bbf
+                    else:
+                        pt = bsf.to_2d().to_3d()
+                        x_axis = bbn - bsf
+                        y_axis = tsf - bsf
                 else:
-                    pt = bbn.to_2d().to_3d()
-                    x_axis = bsf - bbn
-                    y_axis = tbn - bbn
+                    if layers1["direction_sense"] == "POSITIVE":
+                        pt = bbn.to_2d().to_3d()
+                        x_axis = bsf - bbn
+                        y_axis = tbn - bbn
+                    else:
+                        pt = bsn.to_2d().to_3d()
+                        x_axis = bbf - bsn
+                        y_axis = tsn - bsn
             else:
                 if (connected_at_end and angle < 0) or (not connected_at_end and angle > 0):
-                    pt = bbf.to_2d().to_3d()
-                    x_axis = bsn - bbf
-                    y_axis = tbf - bbf
+                    if layers1["direction_sense"] == "POSITIVE":
+                        pt = bbf.to_2d().to_3d()
+                        x_axis = bsn - bbf
+                        y_axis = tbf - bbf
+                    else:
+                        pt = bsf.to_2d().to_3d()
+                        x_axis = bbn - bsf
+                        y_axis = tsf - bsf
                 else:
-                    pt = bbn.to_2d().to_3d()
-                    x_axis = bsf - bbn
-                    y_axis = tbn - bbn
+                    if layers1["direction_sense"] == "POSITIVE":
+                        pt = bbn.to_2d().to_3d()
+                        x_axis = bsf - bbn
+                        y_axis = tbn - bbn
+                    else:
+                        pt = bsn.to_2d().to_3d()
+                        x_axis = bbf - bsn
+                        y_axis = tsn - bsn
 
             if connection1 != "ATEND":
                 y_axis *= -1
@@ -1514,6 +1662,7 @@ class DumbWallJoiner:
         axis1 = tool.Model.get_wall_axis(wall1, layers1)
 
         bases = [axis1["base"][0].to_3d(), axis1["base"][1].to_3d(), axis1["side"][0].to_3d(), axis1["side"][1].to_3d()]
+        bases = [Vector((v[0], v[1], wall1.matrix_world.translation.z)) for v in bases]  # add wall Z location
 
         extrusion = self.get_extrusion_data(tool.Ifc.get().by_id(wall1.data.BIMMeshProperties.ifc_definition_id))
         wall_dir = wall1.matrix_world.to_quaternion() @ extrusion["direction"]

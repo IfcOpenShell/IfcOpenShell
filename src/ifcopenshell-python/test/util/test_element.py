@@ -53,6 +53,7 @@ class TestGetPsetIFC4(test.bootstrap.IFC4):
             "id": 4,
             "class": "IfcPropertySingleValue",
             "value": "b",
+            "value_type": "IfcLabel",
         }
 
     def test_getting_the_psets_of_a_product_type_as_a_dictionary(self):
@@ -66,6 +67,7 @@ class TestGetPsetIFC4(test.bootstrap.IFC4):
                 "id": 3,
                 "class": "IfcPropertySingleValue",
                 "value": "y",
+                "value_type": "IfcLabel",
             },
             "id": pset.id(),
         }
@@ -866,6 +868,72 @@ class TestGetNestIFC4(test.bootstrap.IFC4):
 
 
 class TestGetNestIFC2X3(test.bootstrap.IFC2X3, TestGetNestIFC4):
+    pass
+
+
+class TestGetPartsIFC4(test.bootstrap.IFC4):
+    def test_run(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcElementAssembly")
+        subelement = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWindow")
+        ifcopenshell.api.aggregate.assign_object(self.file, products=[subelement], relating_object=element)
+
+        # Test two separate rels.
+        rel = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcRelAggregates")
+        subelement2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWindow")
+        rel.RelatingObject = element
+        rel.RelatedObjects = [subelement2]
+
+        assert set(subject.get_parts(element)) == {subelement, subelement2}
+
+
+class TestGetPartsIFC2X3(test.bootstrap.IFC2X3, TestGetPartsIFC4):
+    pass
+
+
+class TestGetContainedIFC4(test.bootstrap.IFC4):
+    def test_run(self):
+        container = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuildingStorey")
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWindow")
+        ifcopenshell.api.spatial.assign_container(self.file, products=[element], relating_structure=container)
+
+        # Test two separate rels.
+        rel = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcRelContainedInSpatialStructure")
+        element2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWindow")
+        rel.RelatingStructure = container
+        rel.RelatedElements = [element2]
+
+        assert set(subject.get_contained(container)) == {element, element2}
+
+
+class TestGetContainedIFC2X3(test.bootstrap.IFC2X3, TestGetContainedIFC4):
+    pass
+
+
+class TestGetComponentsIFC4(test.bootstrap.IFC4):
+    def test_run(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcElementAssembly")
+        subelement = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWindow")
+        ifcopenshell.api.nest.assign_object(self.file, related_objects=[subelement], relating_object=element)
+
+        # Test two separate rels.
+        rel = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcRelNests")
+        subelement2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWindow")
+        rel.RelatingObject = element
+        rel.RelatedObjects = [subelement2]
+
+        assert set(subject.get_components(element)) == {subelement, subelement2}
+
+    def test_include_ports(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcFlowSegment")
+        port = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcDistributionPort")
+        subelement = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcFlowSegment")
+        ifcopenshell.api.nest.assign_object(self.file, related_objects=[port, subelement], relating_object=element)
+
+        assert set(subject.get_components(element)) == {subelement}
+        assert set(subject.get_components(element, include_ports=True)) == {port, subelement}
+
+
+class TestGetComponentsIFC2X3(test.bootstrap.IFC2X3, TestGetComponentsIFC4):
     pass
 
 

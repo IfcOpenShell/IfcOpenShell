@@ -27,7 +27,7 @@ def get_references(element: ifcopenshell.entity_instance, should_inherit=True) -
             references := getattr(element, "HasExternalReference", None)
         ) is not None:
             return {r.RelatingReference for r in references}
-    if should_inherit:
+    if should_inherit and element.is_a("IfcObject"):
         element_type = ifcopenshell.util.element.get_type(element)
         if element_type and element_type != element:
             results = get_references(element_type)
@@ -54,7 +54,7 @@ def get_references(element: ifcopenshell.entity_instance, should_inherit=True) -
 def get_classification(reference: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
     if reference.is_a("IfcClassification"):
         return reference
-    return get_classification(reference.ReferencedSource)
+    return get_classification(reference.ReferencedSource) if reference.ReferencedSource is not None else None
 
 
 def get_inherited_references(reference: Optional[ifcopenshell.entity_instance]) -> list[ifcopenshell.entity_instance]:

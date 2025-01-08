@@ -77,7 +77,7 @@ option(HDF5_SUPPORT "Enable HDF5 support (requires HDF5, zlib)" ON)
 option(WITH_PROJ "Enable output of Earth-Centered Earth-Fixed glTF output using the PROJ library" OFF)
 option(IFCXML_SUPPORT "Build IfcParse with ifcXML support (requires libxml2)." ON)
 option(USD_SUPPORT "Build IfcConvert with USD support (requires pixar's USD library)." OFF)
-option(CITYJSON_SUPPORT "Build IfcConvert with CityJSON support (requires CityJSON library)." ON)
+option(CITYJSON_SUPPORT "Build IfcConvert with CityJSON support (requires CityJSON library)." OFF)
 option(WITH_RELATIONSHIP_VALIDATION "Build IfcConvert with option to validate geometrical relationships." OFF)
 
 option(USERSPACE_PYTHON_PREFIX "Installs IfcPython for the current user only instead of system-wide." OFF)
@@ -196,13 +196,25 @@ foreach(option_flag IN LISTS option_flags)
     convert_env_var_to_bool("${option_flag}")
 endforeach()
 
+set(CMAKE_FIND_ROOT_PATH_BACKUP "${CMAKE_FIND_ROOT_PATH}")
+
+macro(clear_wasm_sysroot)
 if(WASM_BUILD)
     # when using the nix/build-all.py build script we should not
     # look into the sysroot for most of the dependencies but rather
     # in the designated build/ folder created by the script.
-    set(CMAKE_FIND_ROOT_PATH_BACKUP "${CMAKE_FIND_ROOT_PATH}")
     set(CMAKE_FIND_ROOT_PATH "")
 endif()
+set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE NEVER)
+endmacro()
+
+macro(restore_wasm_sysroot)
+if(WASM_BUILD)
+    # reset to use sysroot
+    set(CMAKE_FIND_ROOT_PATH "${CMAKE_FIND_ROOT_PATH_BACKUP}")
+endif()
+set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+endmacro()
 
 if(WITH_CGAL)
     add_definitions(-DIFOPSH_WITH_CGAL)
@@ -223,7 +235,9 @@ endif()
 
 if(GLTF_SUPPORT OR CITYJSON_SUPPORT)
     UNIFY_ENVVARS_AND_CACHE(JSON_INCLUDE_DIR)
+    clear_wasm_sysroot()
     find_path(json_header_path "nlohmann/json.hpp" HINTS ${JSON_INCLUDE_DIR})
+    restore_wasm_sysroot()
     set(JSON_INCLUDE_DIR ${json_header_path})
 
     if(json_header_path)
@@ -330,13 +344,17 @@ if(USE_MMAP)
     add_definitions(-DUSE_MMAP)
 endif()
 
+clear_wasm_sysroot()
 find_package(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})
+restore_wasm_sysroot()
 message(STATUS "Boost include files found in ${Boost_INCLUDE_DIRS}")
 message(STATUS "Boost libraries found in ${Boost_LIBRARY_DIRS}")
 
 if(NOT MINIMAL_BUILD)
     # libxml2 is required for IFCXML (optional) and SVGFILL (mandatory)
+    clear_wasm_sysroot()
     find_package(LibXml2 REQUIRED)
+    restore_wasm_sysroot()
 endif()
 
 if(IFCXML_SUPPORT)
@@ -352,6 +370,7 @@ if(BUILD_IFCGEOM)
     # Open CASCADE
     if(WITH_OPENCASCADE)
     if("${OCC_INCLUDE_DIR}" STREQUAL "")
+	clear_wasm_sysroot()
         find_path(OCC_INCLUDE_DIR Standard_Version.hxx
             PATHS
                 /usr/include/occt
@@ -359,6 +378,7 @@ if(BUILD_IFCGEOM)
                 /usr/include/opencascade
             REQUIRED
         )
+	restore_wasm_sysroot()
 
         if(OCC_INCLUDE_DIR)
             message(STATUS "Found Open CASCADE include files in: ${OCC_INCLUDE_DIR}")
@@ -418,7 +438,9 @@ if(BUILD_IFCGEOM)
         message(STATUS "Looking for Open CASCADE library files in: ${OCC_LIBRARY_DIR}")
     endif()
 
+    clear_wasm_sysroot()
     find_library(libTKernel NAMES TKernel TKerneld PATHS ${OCC_LIBRARY_DIR} NO_DEFAULT_PATH)
+    restore_wasm_sysroot()
 
     if(libTKernel)
         message(STATUS "Required Open Cascade Library files found")
@@ -640,11 +662,6 @@ if(HDF5_SUPPORT)
     add_definitions(-DWITH_HDF5)
     set(SWIG_DEFINES ${SWIG_DEFINES} -DWITH_HDF5)
 endif(HDF5_SUPPORT)
-
-if(WASM_BUILD)
-    # reset to use sysroot
-    set(CMAKE_FIND_ROOT_PATH "${CMAKE_FIND_ROOT_PATH_BACKUP}")
-endif()
 
 if(ENABLE_BUILD_OPTIMIZATIONS)
     if(MSVC)
@@ -925,8 +942,10 @@ endif()
 
 if(BUILD_IFCGEOM)
     if(WITH_CGAL)
+	clear_wasm_sysroot()
         find_library(libGMP NAMES gmp mpir PATHS ${GMP_LIBRARY_DIR} NO_DEFAULT_PATH)
         find_library(libMPFR NAMES mpfr PATHS ${MPFR_LIBRARY_DIR} NO_DEFAULT_PATH)
+	restore_wasm_sysroot()
         if(NOT libGMP)
             message(FATAL_ERROR "Unable to find GMP library files, aborting")
         endif()
@@ -1051,10 +1070,19 @@ if(BUILD_CONVERT)
         target_include_directories(cityjson_converter PRIVATE ../src)
         set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} cityjson_converter)
 
+        install(TARGETS cityjson_converter
+            ARCHIVE DESTINATION ${LIBDIR}
+            LIBRARY DESTINATION ${LIBDIR}
+        )
+
         add_executable(cityjson_converter_exe ${CITYJSON_CONVERT_FILES})
         set_target_properties(cityjson_converter_exe PROPERTIES COMPILE_FLAGS "-DCITYJSON_EXECUTABLE")
         target_include_directories(cityjson_converter_exe PRIVATE ../src)
         target_link_libraries(cityjson_converter_exe ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${HDF5_LIBRARIES} ${USD_LIBRARIES})
+
+        install(TARGETS cityjson_converter_exe
+            RUNTIME DESTINATION ${BINDIR}
+        )
     endif()
 
     # IfcConvert
@@ -1192,13 +1220,20 @@ install(TARGETS IfcParse
 )
 
 if(BUILD_IFCGEOM)
-    install(FILES ${IFCGEOM_H_FILES}
+    # install(FILES ${IFCGEOM_H_FILES}
+    #     DESTINATION ${INCLUDEDIR}/ifcgeom
+    # )
+
+    install(FILES ${SCHEMA_AGNOSTIC_H_FILES}
         DESTINATION ${INCLUDEDIR}/ifcgeom
     )
 
-    install(FILES ${SCHEMA_AGNOSTIC_H_FILES}
-        DESTINATION ${INCLUDEDIR}/ifcgeom_schema_agnostic
-    )
+    foreach(kernel ${GEOMETRY_KERNELS})
+        file(GLOB IFCGEOM_H_FILES ../src/ifcgeom/kernels/${kernel}/*.h)
+         install(FILES ${IFCGEOM_H_FILES}
+            DESTINATION ${INCLUDEDIR}/ifcgeom/kernels/${kernel}
+        )
+    endforeach()
 
     install(TARGETS ${IFCGEOM_SCHEMA_LIBRARIES} ${kernel_libraries} IfcGeom
         ARCHIVE DESTINATION ${LIBDIR}
@@ -1214,14 +1249,22 @@ if(BUILD_CONVERT)
         RUNTIME DESTINATION ${BINDIR}
     )
 
-    install(FILES ${SERIALIZERS_FILES}
+    install(FILES ${SERIALIZERS_H_FILES}
         DESTINATION ${INCLUDEDIR}/serializers/
     )
 
-    install(FILES ${SERIALIZERS_S_FILES}
+    install(FILES ${SERIALIZERS_S_H_FILES}
         DESTINATION ${INCLUDEDIR}/serializers/schema_dependent
     )
 endif(BUILD_CONVERT)
+
+if(BUILD_CONVERT OR BUILD_IFCPYTHON)
+    install(TARGETS geometry_serializer ${geometry_serializer_libraries}
+        ARCHIVE DESTINATION ${LIBDIR}
+        LIBRARY DESTINATION ${LIBDIR}
+        RUNTIME DESTINATION ${BINDIR}
+    )
+endif(BUILD_CONVERT OR BUILD_IFCPYTHON)
 
 # Cmake uninstall target
 if(NOT TARGET uninstall)

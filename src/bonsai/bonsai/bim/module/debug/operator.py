@@ -923,7 +923,14 @@ class RestartBlender(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        import os
-
-        path = bpy.app.binary_path
-        os.execv(path, sys.argv)
+        ms_store_app_id = tool.Blender.get_microsoft_store_app_id()
+        if not ms_store_app_id:
+            path = bpy.app.binary_path
+            os.execv(path, sys.argv)
+        else:
+            # Microsoft apps do not allow launching blender.exe directly
+            # since Blender folder is kind of private.
+            cmd_exe = Path(os.environ["SystemRoot"]) / "system32" / "cmd.exe"
+            blender_app = f"shell:AppsFolder\\BlenderFoundation.Blender_{ms_store_app_id}!BLENDER"
+            cmd_args = ["/c", "start", blender_app] + sys.argv[1:]
+            os.execv(cmd_exe, cmd_args)

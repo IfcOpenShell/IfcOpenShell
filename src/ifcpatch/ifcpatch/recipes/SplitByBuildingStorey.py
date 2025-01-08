@@ -16,17 +16,27 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
+import logging
+import ifcopenshell
+from pathlib import Path
+from typing import Union
+
 
 class Patcher:
-    def __init__(self, src, file, logger, output_dir=None):
+    input_argument = "SUPPORTED"
+
+    def __init__(self, src: str, file: ifcopenshell.file, logger: logging.Logger, output_dir: Union[str, None] = None):
         """Split an IFC model into multiple models based on building storey
 
         The new IFC model names will be named after the storey name in the
         format of {i}-{name}.ifc, where {i} is an ascending number starting from
         0 and {name} is the name of the storey.
 
+        `input` argument might be provided to ifcpatch - it will be used load file from disk
+        (otherwise `file` will be saved to a temporary file).
+
         :param output_dir: Specifies an output directory where the new IFC models will be saved.
-        :type output_dir: str
 
         Example:
 
@@ -39,25 +49,37 @@ class Patcher:
         self.logger = logger
         self.output_dir = output_dir
 
-    def patch(self):
+    def patch(self) -> None:
         import ifcopenshell
+        import tempfile
         from shutil import copyfile
+
+        if self.output_dir is None:
+            output_dir = None
+        else:
+            output_dir = Path(self.output_dir)
+            output_dir.mkdir(parents=True, exist_ok=True)
+
+        temp_file = None
+        if not self.src:
+            temp_file = tempfile.NamedTemporaryFile(suffix=".ifc", delete=False)
+            self.src = temp_file.name
+            self.file.write(self.src)
 
         storeys = self.file.by_type("IfcBuildingStorey")
         for i, storey in enumerate(storeys):
-            dest = (
-                "{}-{}.ifc".format(i, storey.Name)
-                if self.output_dir == None
-                else "{}/{}-{}.ifc".format(self.output_dir, i, storey.Name)
-            )
+            filename = f"{i}-{storey.Name}.ifc"
+            dest = filename if output_dir == None else output_dir / filename
             copyfile(self.src, dest)
-            old_ifc = ifcopenshell.open(dest)
+            old_ifc: ifcopenshell.file = ifcopenshell.open(dest)
             new_ifc = ifcopenshell.file(schema=self.file.schema)
+
             if self.file.schema == "IFC2X3":
                 elements = old_ifc.by_type("IfcProject") + old_ifc.by_type("IfcProduct")
             else:
                 elements = old_ifc.by_type("IfcContext") + old_ifc.by_type("IfcProduct")
-            inverse_elements = []
+
+            inverse_elements: list[ifcopenshell.entity_instance] = []
             for element in elements:
                 if element.is_a("IfcElement") and not self.is_in_storey(element, storey):
                     element.Representation = None
@@ -76,9 +98,13 @@ class Patcher:
                     new_ifc.remove(element)
             new_ifc.write(dest)
 
-    def is_in_storey(self, element, storey):
+        if temp_file is not None:
+            temp_file.close()
+            os.unlink(temp_file.name)
+
+    def is_in_storey(self, element: ifcopenshell.entity_instance, storey: ifcopenshell.entity_instance) -> bool:
         return (
-            element.ContainedInStructure
-            and element.ContainedInStructure[0].RelatingStructure.is_a("IfcBuildingStorey")
-            and element.ContainedInStructure[0].RelatingStructure.GlobalId == storey.GlobalId
+            (contained_in_structure := element.ContainedInStructure)
+            and (relating_structure := contained_in_structure[0].RelatingStructure).is_a("IfcBuildingStorey")
+            and relating_structure.GlobalId == storey.GlobalId
         )

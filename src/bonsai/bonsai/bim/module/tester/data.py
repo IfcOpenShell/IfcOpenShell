@@ -18,6 +18,7 @@
 
 import bpy
 import bonsai.tool as tool
+import ifctester.reporter
 
 
 def refresh():
@@ -34,12 +35,12 @@ class TesterData:
         cls.is_loaded = True
 
     @classmethod
-    def has_report(cls):
-        return tool.Tester.report
+    def has_report(cls) -> bool:
+        return bool(tool.Tester.report)
 
     @classmethod
-    def specification(cls):
+    def specification(cls) -> list[ifctester.reporter.ResultsSpecification]:
         if not tool.Tester.report:
-            return {}
+            return []
         props = bpy.context.scene.IfcTesterProperties
         return tool.Tester.report[props.active_specification_index]

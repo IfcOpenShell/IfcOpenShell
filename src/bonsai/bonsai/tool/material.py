@@ -74,6 +74,11 @@ class Material(bonsai.core.tool.Material):
         return None
 
     @classmethod
+    def get_material_category(cls, material: ifcopenshell.entity_instance) -> str:
+        # IfcMaterial has Category since IFC4.
+        return getattr(material, "Category", None) or "Uncategorised"
+
+    @classmethod
     def import_material_definitions(cls, material_type: str) -> None:
         props = bpy.context.scene.BIMMaterialProperties
 
@@ -99,8 +104,7 @@ class Material(bonsai.core.tool.Material):
 
             for m in materials:
                 # IfcMaterial has Category since IFC4.
-                category = getattr(m, "Category", None)
-                category = category or "Uncategorised"
+                category = cls.get_material_category(m)
                 categories[category].append(m)
 
             for category, mats in categories.items():
@@ -123,12 +127,16 @@ class Material(bonsai.core.tool.Material):
 
             if category_index_to_reselect is not None:
                 props.active_material_index = category_index_to_reselect
-            return
-        for material in materials:
-            new = props.materials.add()
-            new["name"] = get_name(material)
-            new.ifc_definition_id = material.id()
-            new.total_elements = len(ifcopenshell.util.element.get_elements_by_material(tool.Ifc.get(), material))
+        else:
+            for material in materials:
+                new = props.materials.add()
+                new["name"] = get_name(material)
+                new.ifc_definition_id = material.id()
+                new.total_elements = len(ifcopenshell.util.element.get_elements_by_material(tool.Ifc.get(), material))
+
+        from bonsai.bim.module.material.data import MaterialsData
+
+        MaterialsData.data["material_styles_data"] = MaterialsData.material_styles_data()
 
     @classmethod
     def is_editing_materials(cls) -> bool:
@@ -425,3 +433,14 @@ class Material(bonsai.core.tool.Material):
 
         i += cls.purge_unused_materials()
         return i
+
+    @classmethod
+    def get_material_name(cls, material: ifcopenshell.entity_instance) -> Union[str, None]:
+        ifc_class = material.is_a()
+        if ifc_class == "IfcMaterialList":
+            return None
+        elif ifc_class == "IfcMaterialLayerSet":
+            # Optional IfcLabel.
+            return material.LayerSetName
+        # Optional IfcLabel except for IfcMaterial.
+        return material.Name
