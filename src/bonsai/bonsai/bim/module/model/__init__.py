@@ -95,6 +95,7 @@ classes = (
     profile.ChangeCardinalPoint,
     profile.ChangeProfileDepth,
     profile.DisableEditingExtrusionAxis,
+    profile.DrawPolylineProfile,
     profile.EditExtrusionAxis,
     profile.EnableEditingExtrusionAxis,
     profile.ExtendProfile,
