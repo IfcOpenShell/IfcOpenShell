@@ -174,9 +174,10 @@ class Aggregate(bonsai.core.tool.Aggregate):
                 if obj.original not in parts_objs:
                     if obj == props.editing_aggregate:
                         continue
-                    obj.original.display_type = "WIRE"
                     not_editing_obj = props.not_editing_objects.add()
                     not_editing_obj.obj = obj.original
+                    not_editing_obj.previous_display_type = obj.original.display_type
+                    obj.original.display_type = "WIRE"
                 else:
                     editing_obj = props.editing_objects.add()
                     editing_obj.obj = obj.original
@@ -190,9 +191,9 @@ class Aggregate(bonsai.core.tool.Aggregate):
     def disable_aggregate_mode(cls):
         context = bpy.context
         props = context.scene.BIMAggregateProperties
-        objs = [o.obj for o in props.not_editing_objects]
-        for obj in objs:
-            obj.original.display_type = "TEXTURED"
+        for obj_prop in props.not_editing_objects:
+            obj = obj_prop.obj
+            obj.original.display_type = obj_prop.previous_display_type
             element = tool.Ifc.get_entity(obj)
             if not element:
                 continue
