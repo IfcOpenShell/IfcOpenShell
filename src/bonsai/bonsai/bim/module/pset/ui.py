@@ -20,7 +20,7 @@ import bpy
 import bonsai.tool as tool
 from bpy.types import Panel
 from bonsai.bim.ifc import IfcStore
-from bonsai.bim.helper import prop_with_search
+from bonsai.bim.helper import prop_with_search, get_display_value
 from bonsai.bim.module.pset.data import (
     ObjectPsetsData,
     ObjectQtosData,
@@ -197,7 +197,7 @@ def draw_psetqto_ui(
                 row = box.row(align=True)
                 row.scale_y = 0.8
                 row.label(text=prop["Name"])
-                op = row.operator("bim.select_similar", text=nominal_value, icon="NONE", emboss=False)
+                op = row.operator("bim.select_similar", text=get_display_value(nominal_value), icon="NONE", emboss=False)
                 op.key = '"' + pset["Name"].replace('"', '\\"') + '"."' + prop["Name"].replace('"', '\\"') + '"'
                 # calculate sum of all selected objects
                 if active_operator:

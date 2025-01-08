@@ -28,20 +28,33 @@ import bonsai.core.attribute as core
 from bonsai.bim.ifc import IfcStore
 
 
+def get_objs_for_operation(operator_properties, context):
+    if operator_properties.obj:
+        return [bpy.data.objects[operator_properties.obj]]
+    if operator_properties.mass_operation:
+        return context.selected_objects[:]
+    return [context.active_object]
+
+
 class EnableEditingAttributes(bpy.types.Operator):
     bl_idname = "bim.enable_editing_attributes"
     bl_label = "Enable Editing Attributes"
+    bl_description = "ALT + Left Click to enable editing attributes on all selected objects"
     bl_options = {"REGISTER", "UNDO"}
-    obj: bpy.props.StringProperty()
+    obj: bpy.props.StringProperty(options={"SKIP_SAVE"})
+    mass_operation: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
 
-    def execute(self, context):
-        self.file = IfcStore.get_file()
-        obj = bpy.data.objects[self.obj]
+    def invoke(self, context, event):
+        self.mass_operation = event.alt
+        return self.execute(context)
+
+    def enable_editing_attribute_on_obj(self, obj):
         props = obj.BIMAttributeProperties
         props.attributes.clear()
 
         element = tool.Ifc.get_entity(obj)
-        assert element
+        if not element:
+            return
         has_inherited_predefined_type = False
         if not element.is_a("IfcTypeObject") and (element_type := ifcopenshell.util.element.get_type(element)):
             # Allow for None due to https://github.com/buildingSMART/IFC4.3.x-development/issues/818
@@ -67,31 +80,48 @@ class EnableEditingAttributes(bpy.types.Operator):
 
         bonsai.bim.helper.import_attributes2(element, props.attributes, callback=callback)
         props.is_editing_attributes = True
+
+    def execute(self, context):
+        for obj in get_objs_for_operation(self, context):
+            self.enable_editing_attribute_on_obj(obj)
         return {"FINISHED"}
 
 
 class DisableEditingAttributes(bpy.types.Operator):
     bl_idname = "bim.disable_editing_attributes"
     bl_label = "Disable Editing Attributes"
+    bl_description = "ALT + Left Click to disable editing attributes on all selected objects"
     bl_options = {"REGISTER", "UNDO"}
-    obj: bpy.props.StringProperty()
+    obj: bpy.props.StringProperty(options={"SKIP_SAVE"})
+    mass_operation: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
 
-    def execute(self, context):
-        obj = bpy.data.objects.get(self.obj)
+    def invoke(self, context, event):
+        self.mass_operation = event.alt
+        return self.execute(context)
+
+    def disable_editing_attributes_on_obj(self, obj):
         props = obj.BIMAttributeProperties
         props.is_editing_attributes = False
+
+    def execute(self, context):
+        for obj in get_objs_for_operation(self, context):
+            self.disable_editing_attributes_on_obj(obj)
         return {"FINISHED"}
 
 
 class EditAttributes(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_attributes"
     bl_label = "Edit Attributes"
+    bl_description = "ALT + Left Click to edit attributes on all selected objects"
     bl_options = {"REGISTER", "UNDO"}
-    obj: bpy.props.StringProperty()
+    obj: bpy.props.StringProperty(options={"SKIP_SAVE"})
+    mass_operation: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
 
-    def _execute(self, context):
-        self.file = IfcStore.get_file()
-        obj = bpy.data.objects.get(self.obj)
+    def invoke(self, context, event):
+        self.mass_operation = event.alt
+        return self.execute(context)
+
+    def edit_attributes_on_obj(self, obj):
         props = obj.BIMAttributeProperties
         product = tool.Ifc.get_entity(obj)
 
@@ -112,6 +142,11 @@ class EditAttributes(bpy.types.Operator, tool.Ifc.Operator):
         if (name := tool.Loader.get_name(product)) and obj.name != name:
             obj.name = name
         bpy.ops.bim.disable_editing_attributes(obj=obj.name)
+
+    def _execute(self, context):
+        self.file = IfcStore.get_file()
+        for obj in get_objs_for_operation(self, context):
+            self.edit_attributes_on_obj(obj)
         return {"FINISHED"}
 
 
