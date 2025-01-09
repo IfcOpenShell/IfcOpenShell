@@ -786,6 +786,10 @@ class ProductDecorator:
 
     @classmethod
     def uninstall(cls):
+        props = bpy.context.scene.BIMProductPreviewProperties # updated by model/polyline.py
+        props.verts.clear()
+        props.edges.clear()
+        props.tris.clear()
         for handler in cls.handlers:
             try:
                 SpaceView3D.draw_handler_remove(handler, "WINDOW")
@@ -978,127 +982,12 @@ class ProductDecorator:
             data["verts"] = [tuple(rot_mat @ (Vector((v[0], v[1], (v[2] + rl)))) + mouse_point) for v in data["verts"]]
             return data
 
-    def get_profile_preview_data(self, context, relating_type):
-        material = ifcopenshell.util.element.get_material(relating_type)
-        try:
-            profile_curve = material.MaterialProfiles[0].Profile
-        except:
-            return {}
-
-        model_props = context.scene.BIMModelProperties
-        cardinal_point = model_props.cardinal_point
-
-        polyline_verts = []
-        polyline_data = context.scene.BIMPolylineProperties.insertion_polyline
-        polyline_points = polyline_data[0].polyline_points if polyline_data else []
-        if len(polyline_points) < 2:
-            return
-        for point in polyline_points:
-            polyline_verts.append(Vector((point.x, point.y, point.z)))
-        polyline_edges = [(i, i+1) for i in range(len(polyline_verts)-1)]
-        settings = ifcopenshell.geom.settings()
-        settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
-        shape = ifcopenshell.geom.create_shape(settings, profile_curve)
-
-        verts = shape.verts
-        if not verts:
-            raise RuntimeError("Profile shape has no vertices, it probably is invalid.")
-
-        edges = shape.edges
-
-        grouped_verts = [[verts[i], verts[i + 1], 0] for i in range(0, len(verts), 3)]
-        grouped_edges = [[edges[i], edges[i + 1]] for i in range(0, len(edges), 2)]
-
-        # Create offsets based on cardinal point
-        min_x = min(v[0] for v in grouped_verts)
-        max_x = max(v[0] for v in grouped_verts)
-        min_y = min(v[1] for v in grouped_verts)
-        max_y = max(v[1] for v in grouped_verts)
-
-        x_offset = (max_x - min_x) / 2
-        y_offset = (max_y - min_y) / 2
-
-        match cardinal_point:
-            case "1":
-                grouped_verts = [(v[0] - x_offset, v[1] + y_offset, v[2]) for v in grouped_verts]
-            case "2":
-                grouped_verts = [(v[0], v[1] + y_offset, v[2]) for v in grouped_verts]
-            case "3":
-                grouped_verts = [(v[0] + x_offset, v[1] + y_offset, v[2]) for v in grouped_verts]
-            case "4":
-                grouped_verts = [(v[0] - x_offset, v[1], v[2]) for v in grouped_verts]
-            case "5":
-                grouped_verts = [(v[0], v[1], v[2]) for v in grouped_verts]
-            case "6":
-                grouped_verts = [(v[0] + x_offset, v[1], v[2]) for v in grouped_verts]
-            case "7":
-                grouped_verts = [(v[0] - x_offset, v[1] - y_offset, v[2]) for v in grouped_verts]
-            case "8":
-                grouped_verts = [(v[0], v[1] - y_offset, v[2]) for v in grouped_verts]
-            case "9":
-                grouped_verts = [(v[0] + x_offset, v[1] - y_offset, v[2]) for v in grouped_verts]
-
-
-        scale_mat = Matrix.Scale(-1, 4, (1.0, 0.0, 0.0))
-        grouped_verts = [scale_mat @ Vector(v) for v in grouped_verts]
-        profile_curve = bpy.data.curves.new("Profile", type='CURVE')
-        profile_curve.dimensions = "2D"
-        profile_curve.splines.new('POLY')
-        profile_curve.splines[0].points.add(len(grouped_verts) - 1)
-
-        for i, point in enumerate(profile_curve.splines[0].points):
-            point.co = Vector((*grouped_verts[i], 0))
-
-        profile_obj = bpy.data.objects.new("Profile", profile_curve)
-
-        preview_curve = bpy.data.curves.new("Polyline", type='CURVE')
-        preview_curve.dimensions = "2D"
-        preview_curve.splines.new('POLY')
-        preview_curve.splines[0].points.add(len(polyline_verts) - 1)
-        for i, point in enumerate(preview_curve.splines[0].points):
-            point.co = Vector((*polyline_verts[i], 0))
-        preview_curve.splines[0].use_smooth = False
-        preview_curve.bevel_mode = "OBJECT"
-        preview_curve.bevel_object = profile_obj
-
-        preview_obj = bpy.data.objects.new("Preview", preview_curve)
-        context.scene.collection.objects.link(preview_obj)
-        bpy.context.view_layer.objects.active = preview_obj
-        selection = preview_obj.select_get()
-        bpy.ops.object.select_all(action="DESELECT")
-        preview_obj.select_set(True)
-        bpy.ops.object.convert(target="MESH")
-        preview_obj = bpy.data.objects["Preview"]
-
-        bm = bmesh.new()
-        new_verts = [bm.verts.new(v.co) for v in preview_obj.data.vertices]
-        index = [[v for v in edge.vertices] for edge in preview_obj.data.edges]
-        new_edges = [bm.edges.new((new_verts[i[0]], new_verts[i[1]])) for i in index]
-        for face in preview_obj.data.polygons:
-            verts = [new_verts[i] for i in face.vertices]
-            bm.faces.new(verts)
-        bm.verts.index_update()
-        bm.edges.index_update()
-        tris = [[loop.vert.index for loop in triangles] for triangles in bm.calc_loop_triangles()]
-
+    def get_profile_preview_data(self, context):
+        props = context.scene.BIMProductPreviewProperties
         data = {}
-        data["verts"] = [tuple(v.co) for v in bm.verts]
-        data["edges"] = [(edge.verts[0].index, edge.verts[1].index) for edge in bm.edges]
-        data["tris"] = tris
-
-        bpy.data.objects.remove(bpy.data.objects[preview_obj.name], do_unlink=True)
-        bpy.data.objects.remove(bpy.data.objects[profile_obj.name], do_unlink=True)
-        try:
-            bpy.data.curves.remove(profile_obj.data, do_unlink=True)
-        except:
-            pass
-        try:
-            bpy.data.curves.remove(preview_obj.data, do_unlink=True)
-        except:
-            pass
-
-        bm.free()
-
+        data["verts"] = [(*v.value,) for v in props.verts]
+        data["edges"] = [(int(e.tvalue[0]),int(e.tvalue[1])) for e in props.edges]
+        data["tris"] = [(int(t.value[0]), int(t.value[1]), int(t.value[2])) for t in props.tris]
         return data
 
     def draw_product_preview(self, context):
@@ -1144,7 +1033,7 @@ class ProductDecorator:
 
         # Profile type products
         self.line_shader.uniform_float("lineWidth", 0.5)
-        product_preview_data = self.get_profile_preview_data(context, self.relating_type)
+        product_preview_data = self.get_profile_preview_data(context)
         if product_preview_data:
             self.draw_batch("LINES", product_preview_data["verts"], decorator_color, product_preview_data["edges"])
             self.draw_batch(

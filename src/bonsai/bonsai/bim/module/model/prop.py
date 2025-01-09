@@ -820,3 +820,13 @@ class BIMPolylineProperties(PropertyGroup):
     snap_mouse_ref: bpy.props.CollectionProperty(type=SnapMousePoint)
     insertion_polyline: bpy.props.CollectionProperty(type=Polyline)
     measurement_polyline: bpy.props.CollectionProperty(type=Polyline)
+
+class ProductPreviewItem(PropertyGroup):
+    value: bpy.props.FloatVectorProperty()
+    tvalue: bpy.props.FloatVectorProperty(size=2)
+
+class BIMProductPreviewProperties(PropertyGroup):
+    verts: bpy.props.CollectionProperty(type=ProductPreviewItem)
+    edges: bpy.props.CollectionProperty(type=ProductPreviewItem)
+    tris: bpy.props.CollectionProperty(type=ProductPreviewItem)
+
