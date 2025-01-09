@@ -1039,6 +1039,8 @@ class ProductDecorator:
                 grouped_verts = [(v[0] + x_offset, v[1] - y_offset, v[2]) for v in grouped_verts]
 
 
+        scale_mat = Matrix.Scale(-1, 4, (1.0, 0.0, 0.0))
+        grouped_verts = [scale_mat @ Vector(v) for v in grouped_verts]
         profile_curve = bpy.data.curves.new("Profile", type='CURVE')
         profile_curve.dimensions = "2D"
         profile_curve.splines.new('POLY')
