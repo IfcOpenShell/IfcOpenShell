@@ -324,10 +324,9 @@ class IfcCsv:
             # If the DataFrame has fewer rows than the table, blank out the extra rows
             num_rows_table = len(first_table.getElementsByType(TableRow)) - 1  # Exclude header row
             if len(df) < num_rows_table:
-                for i in range(len(df) + 1, num_rows_table + 1):  # +1 to account for header
-                    for cell in first_table.getElementsByType(TableRow)[i].getElementsByType(TableCell):
-                        for item in cell.childNodes:
-                            cell.removeChild(item)
+                rows = first_table.getElementsByType(TableRow)
+                for i in reversed(range(len(df) + 1, num_rows_table + 1)):  # +1 to account for header
+                    first_table.removeChild(rows[i])
 
             ods_document.save(output)
         else:
