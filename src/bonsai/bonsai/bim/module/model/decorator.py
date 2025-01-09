@@ -25,15 +25,14 @@ import bmesh
 import ifcopenshell
 import bonsai.tool as tool
 import math
-from math import sin, cos, tan, radians, atan2
+from math import sin, cos, radians 
 from bpy.types import SpaceView3D
 from bpy_extras import view3d_utils
-from mathutils import Vector, Matrix, Quaternion
+from mathutils import Vector, Matrix
 from gpu_extras.batch import batch_for_shader
 from gpu_extras.presets import draw_circle_2d
 from typing import Union
 from bonsai.bim.module.drawing.helper import format_distance
-from bonsai.bim.module.geometry.decorator import ItemDecorator
 
 
 def transparent_color(color, alpha=0.1):
@@ -803,191 +802,12 @@ class ProductDecorator:
         shader.uniform_float("color", color)
         batch.draw(shader)
 
-    def get_wall_preview_data(cls, context, relating_type):
-        def create_bmesh_from_vertices(vertices):
-            bm = bmesh.new()
-
-            new_verts = [bm.verts.new(v) for v in polyline_vertices]
-            if is_closed:
-                new_edges = [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
-                new_edges.append(
-                    bm.edges.new((new_verts[-1], new_verts[0]))
-                )  # Add an edge between the last an first point to make it closed.
-            else:
-                new_edges = [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
-
-            bm.verts.index_update()
-            bm.edges.index_update()
-            return bm
-
-        # Get properties from object type
-        layers = tool.Model.get_material_layer_parameters(relating_type)
-        if not layers["thickness"]:
-            return
-        thickness = layers["thickness"]
-        model_props = context.scene.BIMModelProperties
-        direction_sense = model_props.direction_sense
-        direction = 1
-        if direction_sense == "NEGATIVE":
-            direction = -1
-        offset_type = model_props.offset_type
-        offset = 0
-        if offset_type == "CENTER":
-            offset = -thickness / 2
-        elif offset_type == "INTERIOR":
-            offset = -thickness
-
-        unit_system = tool.Drawing.get_unit_system()
-        factor = 1
-        if unit_system == "IMPERIAL":
-            factor = 3.048
-        if unit_system == "METRIC":
-            unit_length = context.scene.unit_settings.length_unit
-            if unit_length == "MILLIMETERS":
-                factor = 1000
-
-        # For the model properties, the offset value should just be converted
-        # However, for the wall preview logic that follows, offset and thickness must change direction
-        model_props.offset = offset * factor
-        thickness *= direction
-        offset *= direction
-
-        height = float(model_props.extrusion_depth)
-        rl = float(model_props.rl1)
-        x_angle = float(model_props.x_angle)
-        angle_distortion = height * tan(x_angle)
-
-        wall_preview_data = {}
-        wall_preview_data["verts"] = []
-
-        # Verts
-        polyline_vertices = []
-        polyline_data = context.scene.BIMPolylineProperties.insertion_polyline
-        polyline_points = polyline_data[0].polyline_points if polyline_data else []
-        if len(polyline_points) < 2:
-            wall_preview_data = []
-            return
-        for point in polyline_points:
-            polyline_vertices.append(Vector((point.x, point.y, point.z)))
-
-        is_closed = False
-        if (
-            polyline_vertices[0].x == polyline_vertices[-1].x
-            and polyline_vertices[0].y == polyline_vertices[-1].y
-            and polyline_vertices[0].z == polyline_vertices[-1].z
-        ):
-            is_closed = True
-            polyline_vertices.pop(-1)  # Remove the last point. The edges are going to inform that the shape is closed.
-
-        bm_base = create_bmesh_from_vertices(polyline_vertices)
-        base_vertices = tool.Cad.offset_edges(bm_base, offset)
-        offset_base_verts = tool.Cad.offset_edges(bm_base, thickness + offset)
-        top_vertices = tool.Cad.offset_edges(bm_base, angle_distortion + offset)
-        offset_top_verts = tool.Cad.offset_edges(bm_base, angle_distortion + thickness + offset)
-        if is_closed:
-            base_vertices.append(base_vertices[0])
-            offset_base_verts.append(offset_base_verts[0])
-            top_vertices.append(top_vertices[0])
-            offset_top_verts.append(offset_top_verts[0])
-
-        if offset_base_verts is not None:
-            for v in base_vertices:
-                wall_preview_data["verts"].append((v.co.x, v.co.y, v.co.z + rl))
-
-            for v in offset_base_verts[::-1]:
-                wall_preview_data["verts"].append((v.co.x, v.co.y, v.co.z + rl))
-
-            for v in top_vertices:
-                wall_preview_data["verts"].append((v.co.x, v.co.y, v.co.z + rl + height))
-
-            for v in offset_top_verts[::-1]:
-                wall_preview_data["verts"].append((v.co.x, v.co.y, v.co.z + rl + height))
-
-        bm_base.free()
-
-        # Edges and Tris
-        points = []
-        side_edges_1 = []
-        side_edges_2 = []
-        base_edges = []
-
-        for i in range(len(wall_preview_data["verts"])):
-            points.append(Vector(wall_preview_data["verts"][i]))
-
-        n = len(points) // 2
-        bottom_side_1 = [[i, (i + 1) % (n)] for i in range((n - 1) // 2)]
-        bottom_side_2 = [[i, (i + 1) % (n)] for i in range(n // 2, n - 1)]
-        bottom_connections = [[i, n - i - 1] for i in range(n // 2)]
-        bottom_loop = bottom_connections + bottom_side_1 + bottom_side_2
-        side_edges_1.extend(bottom_side_1)
-        side_edges_2.extend(bottom_side_2)
-        base_edges.extend(bottom_loop)
-
-        upper_side_1 = [[i + n for i in edges] for edges in bottom_side_1]
-        upper_side_2 = [[i + n for i in edges] for edges in bottom_side_2]
-        upper_loop = [[i + n for i in edges] for edges in bottom_loop]
-        side_edges_1.extend(upper_side_1)
-        side_edges_2.extend(upper_side_2)
-        base_edges.extend(upper_loop)
-
-        loops = [side_edges_1, side_edges_2, base_edges]
-
-        wall_preview_data["edges"] = []
-        wall_preview_data["tris"] = []
-        for i, group in enumerate(loops):
-            bm = bmesh.new()
-
-            new_verts = [bm.verts.new(v) for v in points]
-            new_edges = [bm.edges.new((new_verts[e[0]], new_verts[e[1]])) for e in group]
-
-            bm.verts.index_update()
-            bm.edges.index_update()
-
-            if i == 2:
-                new_faces = bmesh.ops.contextual_create(bm, geom=bm.edges)
-            new_faces = bmesh.ops.bridge_loops(bm, edges=bm.edges, use_pairs=True, use_cyclic=True)
-
-            bm.verts.index_update()
-            bm.edges.index_update()
-            edges = [[v.index for v in e.verts] for e in bm.edges]
-            tris = [[l.vert.index for l in loop] for loop in bm.calc_loop_triangles()]
-            wall_preview_data["edges"].extend(edges)
-            wall_preview_data["tris"].extend(tris)
-
-        wall_preview_data["edges"] = list(set(tuple(e) for e in wall_preview_data["edges"]))
-        wall_preview_data["tris"] = list(set(tuple(t) for t in wall_preview_data["tris"]))
-
-        return wall_preview_data
-
-    def get_product_preview_data(cls, context, relating_type):
-        model_props = context.scene.BIMModelProperties
-        if relating_type.is_a("IfcDoorType"):
-            rl = float(model_props.rl1)
-        elif relating_type.is_a("IfcWindowType"):
-            rl = float(model_props.rl2)
-        else:
-            rl = 0
-        snap_prop = context.scene.BIMPolylineProperties.snap_mouse_point[0]
-        mouse_point = Vector((snap_prop.x, snap_prop.y, snap_prop.z))
-        snap_obj = bpy.data.objects.get(snap_prop.snap_object)
-        snap_element = tool.Ifc.get_entity(snap_obj)
-        rot_mat = Quaternion()
-        if snap_element and snap_element.is_a("IfcWall"):
-            rot_mat = snap_obj.matrix_world.to_quaternion()
-
-        obj_type = tool.Ifc.get_object(relating_type)
-        if obj_type.data:
-            data = ItemDecorator.get_obj_data(obj_type)
-            data["verts"] = [tuple(obj_type.matrix_world.inverted() @ Vector(v)) for v in data["verts"]]
-            data["verts"] = [tuple(rot_mat @ (Vector((v[0], v[1], (v[2] + rl)))) + mouse_point) for v in data["verts"]]
-            return data
-
-    def get_profile_preview_data(self, context):
+    def get_product_preview_data(self, context):
         props = context.scene.BIMProductPreviewProperties
         data = {}
-        data["verts"] = [(*v.value,) for v in props.verts]
-        data["edges"] = [(int(e.tvalue[0]),int(e.tvalue[1])) for e in props.edges]
-        data["tris"] = [(int(t.value[0]), int(t.value[1]), int(t.value[2])) for t in props.tris]
+        data["verts"] = [(*v.value_3d,) for v in props.verts]
+        data["edges"] = [(int(e.value_2d[0]),int(e.value_2d[1])) for e in props.edges]
+        data["tris"] = [(int(t.value_3d[0]), int(t.value_3d[1]), int(t.value_3d[2])) for t in props.tris]
         return data
 
     def draw_product_preview(self, context):
@@ -1014,26 +834,7 @@ class ProductDecorator:
         else:
             return
 
-        # Wall
-        if self.relating_type.is_a("IfcWallType"):
-            wall_preview_data = self.get_wall_preview_data(context, self.relating_type)
-            if wall_preview_data:
-                self.draw_batch("LINES", wall_preview_data["verts"], decorator_color, wall_preview_data["edges"])
-                self.draw_batch(
-                    "TRIS", wall_preview_data["verts"], transparent_color(decorator_color), wall_preview_data["tris"]
-                )
-
-        # Mesh type products
-        product_preview_data = self.get_product_preview_data(context, self.relating_type)
-        if product_preview_data:
-            self.draw_batch("LINES", product_preview_data["verts"], decorator_color, product_preview_data["edges"])
-            self.draw_batch(
-                "TRIS", product_preview_data["verts"], transparent_color(decorator_color), product_preview_data["tris"]
-            )
-
-        # Profile type products
-        self.line_shader.uniform_float("lineWidth", 0.5)
-        product_preview_data = self.get_profile_preview_data(context)
+        product_preview_data = self.get_product_preview_data(context)
         if product_preview_data:
             self.draw_batch("LINES", product_preview_data["verts"], decorator_color, product_preview_data["edges"])
             self.draw_batch(
