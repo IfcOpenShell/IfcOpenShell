@@ -118,10 +118,6 @@ class BimTool(WorkSpaceTool):
             EditObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
         else:
             CreateObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
-            # Show some UI for spatial elements that are unselectable by default.
-            if active_ifc_object:
-                EditObjectUI.layout = layout  # Prevent .draw_modes from using old layout and crash.
-                EditObjectUI.draw_modes(context)
 
 
 class WallTool(BimTool):
