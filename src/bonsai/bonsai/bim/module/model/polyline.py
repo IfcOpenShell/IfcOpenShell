@@ -43,6 +43,150 @@ from typing import Optional, Union, Literal
 from lark import Lark, Transformer
 
 
+def get_profile_preview_data(context, relating_type):
+    material = ifcopenshell.util.element.get_material(relating_type)
+    try:
+        profile_curve = material.MaterialProfiles[0].Profile
+    except:
+        return {}
+
+    model_props = context.scene.BIMModelProperties
+    cardinal_point = model_props.cardinal_point
+
+    polyline_verts = []
+    polyline_data = context.scene.BIMPolylineProperties.insertion_polyline
+    polyline_points = polyline_data[0].polyline_points if polyline_data else []
+    if len(polyline_points) < 2:
+        return
+    for point in polyline_points:
+        polyline_verts.append(Vector((point.x, point.y, point.z)))
+    polyline_edges = [(i, i+1) for i in range(len(polyline_verts)-1)]
+
+    # Get profile shape
+    settings = ifcopenshell.geom.settings()
+    settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
+    shape = ifcopenshell.geom.create_shape(settings, profile_curve)
+
+    verts = shape.verts
+    if not verts:
+        raise RuntimeError("Profile shape has no vertices, it probably is invalid.")
+
+    edges = shape.edges
+
+    grouped_verts = [[verts[i], verts[i + 1], 0] for i in range(0, len(verts), 3)]
+    grouped_edges = [[edges[i], edges[i + 1]] for i in range(0, len(edges), 2)]
+
+    # Create offsets based on cardinal point
+    min_x = min(v[0] for v in grouped_verts)
+    max_x = max(v[0] for v in grouped_verts)
+    min_y = min(v[1] for v in grouped_verts)
+    max_y = max(v[1] for v in grouped_verts)
+
+    x_offset = (max_x - min_x) / 2
+    y_offset = (max_y - min_y) / 2
+
+    match cardinal_point:
+        case "1":
+            grouped_verts = [(v[0] - x_offset, v[1] + y_offset, v[2]) for v in grouped_verts]
+        case "2":
+            grouped_verts = [(v[0], v[1] + y_offset, v[2]) for v in grouped_verts]
+        case "3":
+            grouped_verts = [(v[0] + x_offset, v[1] + y_offset, v[2]) for v in grouped_verts]
+        case "4":
+            grouped_verts = [(v[0] - x_offset, v[1], v[2]) for v in grouped_verts]
+        case "5":
+            grouped_verts = [(v[0], v[1], v[2]) for v in grouped_verts]
+        case "6":
+            grouped_verts = [(v[0] + x_offset, v[1], v[2]) for v in grouped_verts]
+        case "7":
+            grouped_verts = [(v[0] - x_offset, v[1] - y_offset, v[2]) for v in grouped_verts]
+        case "8":
+            grouped_verts = [(v[0], v[1] - y_offset, v[2]) for v in grouped_verts]
+        case "9":
+            grouped_verts = [(v[0] + x_offset, v[1] - y_offset, v[2]) for v in grouped_verts]
+
+
+    # Create profile curve
+    scale_mat = Matrix.Scale(-1, 4, (1.0, 0.0, 0.0))
+    grouped_verts = [scale_mat @ Vector(v) for v in grouped_verts]
+    profile_curve = bpy.data.curves.new("Profile", type='CURVE')
+    profile_curve.dimensions = "2D"
+    profile_curve.splines.new('POLY')
+    profile_curve.splines[0].points.add(len(grouped_verts))
+
+    for i, point in enumerate(profile_curve.splines[0].points):
+        if i == len(grouped_verts): # Close curve
+            point.co = Vector((*grouped_verts[0], 0))
+            continue
+        point.co = Vector((*grouped_verts[i], 0))
+    profile_obj = bpy.data.objects.new("Profile", profile_curve)
+
+    # Create path curve with profile object as bevel
+    path_curve = bpy.data.curves.new("Polyline", type='CURVE')
+    path_curve.dimensions = "2D"
+    path_curve.splines.new('POLY')
+    path_curve.splines[0].points.add(len(polyline_verts) - 1)
+    for i, point in enumerate(path_curve.splines[0].points):
+        point.co = Vector((*polyline_verts[i], 0))
+    path_curve.splines[0].use_smooth = False
+    path_curve.bevel_mode = "OBJECT"
+    path_curve.bevel_object = profile_obj
+
+    # Convert path curve to mesh
+    # This operation throws a warning when done during gpu drawing, so it was removed from the decorator file to be handled here 
+    path_obj = bpy.data.objects.new("Preview", path_curve)
+    context.scene.collection.objects.link(path_obj)
+    bpy.context.view_layer.objects.active = path_obj
+    dg = context.evaluated_depsgraph_get()
+    path_obj = path_obj.evaluated_get(dg) 
+    me = path_obj.to_mesh()
+
+    # Create bmesh from path mesh
+    bm = bmesh.new()
+    new_verts = [bm.verts.new(v.co) for v in me.vertices]
+    index = [[v for v in edge.vertices] for edge in me.edges]
+    new_edges = [bm.edges.new((new_verts[i[0]], new_verts[i[1]])) for i in index]
+    for face in me.polygons:
+        verts = [new_verts[i] for i in face.vertices]
+        bm.faces.new(verts)
+    bm.verts.index_update()
+    bm.edges.index_update()
+    tris = [[loop.vert.index for loop in triangles] for triangles in bm.calc_loop_triangles()]
+
+    bpy.data.objects.remove(bpy.data.objects[path_obj.name], do_unlink=True)
+    bpy.data.objects.remove(bpy.data.objects[profile_obj.name], do_unlink=True)
+    try:
+        bpy.data.curves.remove(profile_obj.data, do_unlink=True)
+    except:
+        pass
+    try:
+        bpy.data.curves.remove(path_obj.data, do_unlink=True)
+    except:
+        pass
+
+    data = {}
+    data["verts"] = [tuple(v.co) for v in bm.verts]
+    data["edges"] = [(edge.verts[0].index, edge.verts[1].index) for edge in bm.edges]
+    data["tris"] = tris
+
+    # Update properties so it can be used by the decorator
+    props = context.scene.BIMProductPreviewProperties
+    props.verts.clear()
+    props.edges.clear()
+    props.tris.clear()
+        
+    for vert in data["verts"]:
+        v = props.verts.add()
+        v.value = vert
+    for edge in data["edges"]:
+        e = props.edges.add()
+        e.tvalue = edge
+    for tri in data["tris"]:
+        t = props.tris.add()
+        t.value = tri
+
+    bm.free()
+
 class PolylineOperator:
     # TODO Fill doc strings
     """ """
@@ -386,6 +530,10 @@ class PolylineOperator:
             if event.value == "RELEASE" and event.type == "BACK_SPACE":
                 tool.Polyline.remove_last_polyline_point()
                 tool.Blender.update_viewport()
+
+    def get_product_preview_data(self, context: bpy.types.Context, relating_type: ifcopenshell.entity_isntance):
+         if relating_type.is_a() in ["IfcBeamType", "IfcCoveringType", "IfcMemberType"]:
+             return get_profile_preview_data(context, relating_type)
 
     def modal(self, context: bpy.types.Context, event: bpy.types.Event) -> Union[set[str], None]:
         PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
