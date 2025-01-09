@@ -1908,6 +1908,10 @@ class Model(bonsai.core.tool.Model):
         return obj.type == "MESH" and obj.data.BIMMeshProperties.ifc_boolean_id
 
     @classmethod
+    def get_booleaned_obj(cls, boolean_obj: bpy.types.Object) -> bpy.types.Object:
+        return boolean_obj.data.BIMMeshProperties.obj
+
+    @classmethod
     def add_extrusion_position(cls, extrusion: ifcopenshell.entity_instance, offset: float) -> None:
         ifc_file = tool.Ifc.get()
 
