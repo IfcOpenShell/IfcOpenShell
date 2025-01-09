@@ -105,7 +105,7 @@ class DumbProfileGenerator:
         obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(self.relating_type, ifc_class), mesh)
 
         matrix_world = Matrix()
-        if self.relating_type.is_a() in ["IfcBeamType", "IfcMemberType"] or self.relating_type.is_a(
+        if self.relating_type.is_a() in ["IfcBeamType", "IfcCoveringType", "IfcMemberType"] or self.relating_type.is_a(
             "IfcFlowSegmentType"
         ):
             matrix_world = Matrix.Rotation(pi / 2, 4, "Z") @ Matrix.Rotation(pi / 2, 4, "X") @ matrix_world
