@@ -296,12 +296,12 @@ class IfcCsv:
             writer.writerow(self.headers)
             for row in self.results:
                 writer.writerow(row)
-            if any([s for s in self.summaries if s is not None]):
+            if self.has_summaries():
                 writer.writerow(self.summaries)
 
     def export_ods(self, output, should_preserve_existing=False):
         df = self.export_pd()
-        if self.summaries:
+        if self.has_summaries():
             df.loc[df.shape[0]] = self.summaries
 
         if os.path.exists(output) and should_preserve_existing:
@@ -362,9 +362,12 @@ class IfcCsv:
         row.addElement(new_cell)
         return new_cell
 
+    def has_summaries(self):
+        return any([s for s in self.summaries if s is not None])
+
     def export_xlsx(self, output, should_preserve_existing=False):
         df = self.export_pd()
-        if self.summaries:
+        if self.has_summaries():
             df.loc[df.shape[0]] = self.summaries
 
         if os.path.exists(output):
