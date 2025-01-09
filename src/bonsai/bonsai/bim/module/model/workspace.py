@@ -509,16 +509,12 @@ class CreateObjectUI:
             if ifc_class:
                 box = cls.layout.box()
                 row = box.row(align=True)
+                prop_with_search(row, cls.props, "relating_type_id", text="")
                 if AuthoringData.data["type_thumbnail"] and ui_context == "TOOL_HEADER":
                     row.template_icon(icon_value=AuthoringData.data["type_thumbnail"])
-                    row.operator("bim.launch_type_manager", text=AuthoringData.data["relating_type_name"], emboss=False)
+                    row.operator("bim.launch_type_manager", text="Type Manager", emboss=False)
                 else:
-                    row.operator(
-                        "bim.launch_type_manager",
-                        icon="BLANK1",
-                        text=AuthoringData.data["relating_type_name"],
-                        emboss=False,
-                    )
+                    row.operator("bim.launch_type_manager", icon="BLANK1", text="Type Manager", emboss=False)
 
                 row.operator(
                     "bim.launch_type_manager",
@@ -595,7 +591,7 @@ class EditObjectUI:
                 op = row.operator("bim.disable_aggregate_mode", text="", icon="X")
                 op = row.operator("bim.toggle_aggregate_mode_local_view", text="", icon="ZOOM_SELECTED")
                 op = row.operator("bim.aggregate_assign_new_objects_in_aggregate_mode", text="", icon="CUBE")
-                
+
             text = format_ifc_camel_case(AuthoringData.data["active_class"])
             layout.label(text=f"{text} Edit Tools:", icon="RESTRICT_SELECT_OFF")
             cls.draw_parameter_adjustments(context)
@@ -966,16 +962,18 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             bpy.ops.wm.call_menu(name="BIM_MT_add_representation_item")
         else:
             # Slab from walls
-            walls = False
+            # Make sure only Ifc Walls are selected
             for obj in bpy.context.selected_objects:
-                walls = tool.Ifc.get_entity(obj).is_a("IfcWall")
-            if (
-                walls
-                and relating_type_id
-                and tool.Model.get_usage_type(tool.Ifc.get().by_id(int(relating_type_id))) == "LAYER3"
-            ):
-                bpy.ops.bim.draw_slab_from_wall("INVOKE_DEFAULT")
-                return {"FINISHED"}
+                element = tool.Ifc.get_entity(obj)
+                if not element or not element.is_a("IfcWall"):
+                    break
+            else:
+                if (
+                    relating_type_id
+                    and tool.Model.get_usage_type(tool.Ifc.get().by_id(int(relating_type_id))) == "LAYER3"
+                ):
+                    bpy.ops.bim.draw_slab_from_wall("INVOKE_DEFAULT")
+                    return {"FINISHED"}
             # Walls from slab
             slab = tool.Ifc.get_entity(bpy.context.active_object)
             if (

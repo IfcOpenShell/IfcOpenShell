@@ -84,7 +84,7 @@ class LaunchTypeManager(bpy.types.Operator):
     bl_idname = "bim.launch_type_manager"
     bl_label = "Launch Type Manager"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Display all available Construction Types to add new instances"
+    bl_description = "Display all available Construction Types to add new occurrences"
 
     def execute(self, context):
         bpy.ops.bim.hotkey("INVOKE_DEFAULT", hotkey="S_A")
@@ -102,7 +102,7 @@ class LaunchTypeManager(bpy.types.Operator):
         if ifc_class is not None:
             bpy.ops.bim.load_type_thumbnails(ifc_class=ifc_class, offset=0, limit=9)
         return context.window_manager.invoke_props_dialog(
-            self, width=550, title="Type Manager", confirm_text="Add Type"
+            self, width=550, title="Type Manager", confirm_text="Add Occurrence"
         )
 
     def draw(self, context):
@@ -146,7 +146,7 @@ class LaunchTypeManager(bpy.types.Operator):
             op = row.operator("bim.set_active_type", text=relating_type["name"], icon="BLANK1", emboss=False)
             op.relating_type = relating_type["id"]
 
-            op = row.operator("bim.launch_type_menu", icon="DOWNARROW_HLT", text="", emboss=False)
+            op = row.operator("bim.launch_type_menu", icon="PREFERENCES", text="", emboss=False)
             op.relating_type_id = relating_type["id"]
 
             row = box.row()
@@ -163,7 +163,15 @@ class LaunchTypeManager(bpy.types.Operator):
                 row2.operator("bim.set_active_type", text="", emboss=False).relating_type = relating_type["id"]
                 row2.operator("bim.set_active_type", text="", emboss=False).relating_type = relating_type["id"]
                 row2.operator("bim.set_active_type", text="", emboss=False).relating_type = relating_type["id"]
-                row2.operator("bim.set_active_type", text="", emboss=False).relating_type = relating_type["id"]
+                is_current_relating_type = str(relating_type["id"]) == str(
+                    AuthoringData.data["relating_type_id_current"]
+                )
+                if is_current_relating_type:
+                    active_row = row2.row()
+                    active_row.alignment = "CENTER"
+                    active_row.label(text="Active", icon="CHECKMARK")
+                else:
+                    row2.operator("bim.set_active_type", text="", emboss=False).relating_type = relating_type["id"]
             else:
                 row = box.row()
                 op = box.operator("bim.load_type_thumbnails", text="", icon="FILE_REFRESH", emboss=False)

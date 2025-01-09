@@ -489,7 +489,6 @@ class SetActiveType(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         props = context.scene.BIMModelProperties
         props.relating_type_id = str(self.relating_type)
-        context.window.screen = context.window.screen  # Closes the type manager popup
 
 
 class AlignProduct(bpy.types.Operator):
