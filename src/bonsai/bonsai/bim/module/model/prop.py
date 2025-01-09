@@ -822,8 +822,8 @@ class BIMPolylineProperties(PropertyGroup):
     measurement_polyline: bpy.props.CollectionProperty(type=Polyline)
 
 class ProductPreviewItem(PropertyGroup):
-    value: bpy.props.FloatVectorProperty()
-    tvalue: bpy.props.FloatVectorProperty(size=2)
+    value_3d: bpy.props.FloatVectorProperty()
+    value_2d: bpy.props.FloatVectorProperty(size=2)
 
 class BIMProductPreviewProperties(PropertyGroup):
     verts: bpy.props.CollectionProperty(type=ProductPreviewItem)
