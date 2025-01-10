@@ -40,7 +40,9 @@ class AssignType(bpy.types.Operator, tool.Ifc.Operator):
     related_object: bpy.props.StringProperty()
 
     def _execute(self, context):
-        type = tool.Ifc.get().by_id(self.relating_type or int(context.active_object.BIMTypeProperties.relating_type))
+        relating_type = tool.Ifc.get().by_id(
+            self.relating_type or int(context.active_object.BIMTypeProperties.relating_type)
+        )
         related_objects = (
             [bpy.data.objects.get(self.related_object)]
             if self.related_object
@@ -49,9 +51,9 @@ class AssignType(bpy.types.Operator, tool.Ifc.Operator):
         model_props = context.scene.BIMModelProperties
         for obj in related_objects:
             element = tool.Ifc.get_entity(obj)
-            core.assign_type(tool.Ifc, tool.Type, element=element, type=type)
+            core.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
             if model_props.occurrence_name_style == "TYPE":
-                obj.name = tool.Model.generate_occurrence_name(type, element.is_a())
+                obj.name = tool.Model.generate_occurrence_name(relating_type, element.is_a())
 
 
 class UnassignType(bpy.types.Operator, tool.Ifc.Operator):
