@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 
 def copy_class(
     ifc: tool.Ifc, collector: tool.Collector, geometry: tool.Geometry, root: tool.Root, obj: bpy.types.Object
-) -> ifcopenshell.entity_instance:
+) -> ifcopenshell.entity_instance | None:
     element = ifc.get_entity(obj)
     if not element:
         return
@@ -43,14 +43,12 @@ def copy_class(
         ifc.run("type.map_type_representations", related_object=new, relating_type=relating_type)
         root.link_object_data(ifc.get_object(relating_type), obj)
     elif representation:
-        root.copy_representation(element, new)
-        new_representation = root.get_element_representation(new, root.get_representation_context(representation))
+        copied_entities = root.copy_representation(element, new)
         data = geometry.duplicate_object_data(obj)
         if data:
+            geometry.copy_data_links(data, copied_entities)
             geometry.change_object_data(obj, data, is_global=True)
-            geometry.rename_object(data, geometry.get_representation_name(new_representation))
-            geometry.link(new_representation, data)
-            geometry.reload_representation_item_ids(new_representation, data)
+            geometry.rename_object(data, geometry.get_representation_name(ifc.get_entity(data)))
         root.assign_body_styles(new, obj)
     collector.assign(obj)
     if root.is_element_a(new, "IfcOpeningElement"):

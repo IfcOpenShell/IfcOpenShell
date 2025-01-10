@@ -84,13 +84,12 @@ class Loader(bonsai.core.tool.Loader):
     @classmethod
     def get_mesh_name_from_shape(cls, geometry: ifcopenshell.geom.ShapeType) -> str:
         representation_id = cls.get_representation_id_from_shape(geometry)
-        representation = tool.Ifc.get().by_id(representation_id)
-        context_id = representation.ContextOfItems.id() if hasattr(representation, "ContextOfItems") else 0
-        return cls.get_mesh_name(context_id, representation_id)
+        return cls.get_mesh_name(tool.Ifc.get().by_id(representation_id))
 
     @classmethod
-    def get_mesh_name(cls, context_id: int, representation_id: int) -> str:
-        return "{}/{}".format(context_id, representation_id)
+    def get_mesh_name(cls, representation: ifcopenshell.entity_instance) -> str:
+        context_id = representation.ContextOfItems.id() if hasattr(representation, "ContextOfItems") else 0
+        return "{}/{}".format(context_id, representation.id())
 
     @classmethod
     def get_name(cls, element: ifcopenshell.entity_instance) -> str:

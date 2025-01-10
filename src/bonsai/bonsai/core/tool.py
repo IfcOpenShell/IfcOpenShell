@@ -387,6 +387,7 @@ class Geometry:
     def clear_cache(cls, element): pass
     def clear_modifiers(cls, obj): pass
     def clear_scale(cls, obj): pass
+    def copy_data_links(cls, data, copied_entities) -> None: pass
     def delete_data(cls, data): pass
     def delete_ifc_object(cls, obj): pass
     def delete_opening_object_placement(cls, opening): pass
@@ -420,7 +421,6 @@ class Geometry:
     def record_object_position(cls, obj): pass
     def recreate_object_with_data(cls, obj, data): pass
     def reimport_element_representations(cls, obj, representation, apply_openings=True): pass
-    def reload_representation_item_ids(cls, representation, data) -> None: pass
     def remove_connection(cls, connection): pass
     def rename_object(cls, obj, name): pass
     def replace_object_data_globally(cls, old_data, new_data): pass

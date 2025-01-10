@@ -259,10 +259,14 @@ class Geometry(bonsai.core.tool.Geometry):
         # a cylinder) so dissolving edges should not be allowed.
         mesh_element = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
         if (
-            mesh_element.is_a("IfcShapeRepresentation")
-            and ifcopenshell.util.representation.resolve_representation(mesh_element).RepresentationType
-            == "AdvancedBrep"
-        ) or mesh_element.is_a("IfcAdvancedBrep") or not obj.data:
+            (
+                mesh_element.is_a("IfcShapeRepresentation")
+                and ifcopenshell.util.representation.resolve_representation(mesh_element).RepresentationType
+                == "AdvancedBrep"
+            )
+            or mesh_element.is_a("IfcAdvancedBrep")
+            or not obj.data
+        ):
             return
         if hasattr(obj.data, "attributes") and (ios_edges_attribute := obj.data.attributes.get("ios_edges")):
             # Edges from a forced triangulation are stored as True in a boolean attribute on the mesh
@@ -612,7 +616,7 @@ class Geometry(bonsai.core.tool.Geometry):
 
     @classmethod
     def get_representation_name(cls, representation: ifcopenshell.entity_instance) -> str:
-        return tool.Loader.get_mesh_name(representation.ContextOfItems.id(), representation.id())
+        return tool.Loader.get_mesh_name(representation)
 
     @classmethod
     def get_styles(
@@ -719,7 +723,7 @@ class Geometry(bonsai.core.tool.Geometry):
             if not tool.Loader.is_native_swept_disk_solid(element, representation):
                 continue
             if curve is None:
-                mesh_name = tool.Loader.get_mesh_name(context.id(), representation.id())
+                mesh_name = tool.Loader.get_mesh_name(representation)
                 native_data = {
                     "representation": representation,
                     # TODO: calculate mapped item matrix.
@@ -1729,8 +1733,14 @@ class Geometry(bonsai.core.tool.Geometry):
         return results
 
     @classmethod
-    def reload_representation_item_ids(cls, representation: ifcopenshell.entity_instance, data: bpy.types.Mesh) -> None:
-        data["ios_item_ids"] = [i["item"].id() for i in ifcopenshell.util.representation.resolve_items(representation)]
+    def copy_data_links(cls, data: bpy.types.Mesh, copied_entities: dict[int, ifcopenshell.entity_instance]) -> None:
+        representation = tool.Ifc.get_entity(data)
+        representation = copied_entities.get(representation.id(), representation)
+        tool.Ifc.link(representation, data)
+        if item_ids := data.get("ios_item_ids"):
+            data["ios_item_ids"] = [copied_entities.get(i, tool.Ifc.get().by_id(i)).id() for i in item_ids]
+        if item_ids := data.get("ios_edges_item_ids"):
+            data["ios_edges_item_ids"] = [copied_entities.get(i, tool.Ifc.get().by_id(i)).id() for i in item_ids]
 
     @classmethod
     def export_mesh_to_tessellation(
