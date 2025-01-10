@@ -563,7 +563,6 @@ class LoadTypeThumbnails(bpy.types.Operator, tool.Ifc.Operator):
             return
 
         props = bpy.context.scene.BIMModelProperties
-        processing = set()
         # Only process at most one paginated class at a time.
         # Large projects have hundreds of types which can lead to unnecessary lag.
         if not AuthoringData.is_loaded:
@@ -576,6 +575,12 @@ class LoadTypeThumbnails(bpy.types.Operator, tool.Ifc.Operator):
             if offset < 0:
                 offset = 0
             queue = queue[offset : offset + 9]
+
+        # The active type may be in another page than the active one :
+        if relating_type_id_current := AuthoringData.data["relating_type_id_current"]:
+            active_element = tool.Ifc.get_entity_by_id(int(relating_type_id_current))
+            if active_element and active_element not in queue:
+                queue.append(active_element)
 
         while queue:
             # if bpy.app.is_job_running("RENDER_PREVIEW") does not seem to reflect asset preview generation

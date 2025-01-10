@@ -107,13 +107,7 @@ class AuthoringData:
 
     @classmethod
     def type_thumbnail(cls):
-        if not cls.data["relating_type_id"]:
-            return 0
-        relating_type_id = tool.Blender.get_enum_safe(cls.props, "relating_type_id")
-        if relating_type_id is None:
-            return 0
-        element = tool.Ifc.get().by_id(int(relating_type_id))
-        return cls.type_thumbnails.get(element.id(), None) or 0
+        return cls.type_thumbnails.get(int(cls.data["relating_type_id_current"] or 0), 0)
 
     @classmethod
     def total_types(cls):

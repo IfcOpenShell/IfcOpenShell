@@ -84,7 +84,7 @@ class LaunchTypeManager(bpy.types.Operator):
     bl_idname = "bim.launch_type_manager"
     bl_label = "Launch Type Manager"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Display all available Construction Types to add new occurrences"
+    bl_description = "Browse, Edit and Manage Types"
 
     def execute(self, context):
         return {"FINISHED"}

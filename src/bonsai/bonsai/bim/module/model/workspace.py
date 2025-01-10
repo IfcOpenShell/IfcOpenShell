@@ -504,54 +504,58 @@ class CreateObjectUI:
         row = cls.layout.row(align=True)
         if not AuthoringData.data["ifc_element_type"]:
             prop_with_search(row, cls.props, "ifc_class", text="Type Class" if ui_context != "TOOL_HEADER" else "")
-        if AuthoringData.data["ifc_classes"]:
-            ifc_class = AuthoringData.data["ifc_class_current"]
-            if ifc_class:
-                box = cls.layout.box()
-                row = box.row(align=True)
-                if ui_context == "TOOL_HEADER":
-                    row.template_icon(icon_value=AuthoringData.data.get("type_thumbnail", 0))
-                row.operator("bim.launch_type_manager", text=AuthoringData.data["relating_type_name"], emboss=False)
-                row.operator(
-                    "bim.launch_type_manager",
-                    icon=tool.Blender.TYPE_MANAGER_ICON,
-                    text="",
-                    emboss=False,
-                )
+        if not AuthoringData.data["ifc_classes"]:
+            return
+        if not (ifc_class := AuthoringData.data["ifc_class_current"]):
+            return
 
-                if ui_context != "TOOL_HEADER":
-                    row = box.row(align=True)
-                    row.alignment = "CENTER"
-                    row.operator(
-                        "bim.launch_type_manager",
-                        text=AuthoringData.data["relating_type_description"],
-                        emboss=False,
-                    )
+        box = cls.layout.box()
 
-                    if AuthoringData.data["type_thumbnail"]:
-                        row1 = box.row()
-                        row1.ui_units_y = 0.01
-                        row1.template_icon(icon_value=AuthoringData.data["type_thumbnail"], scale=4)
-                        row2 = box.column(align=True)
-                        row2.ui_units_y = 4
-                        for _ in range(4):
-                            row2.operator("bim.launch_type_manager", text="", emboss=False)
-                    else:
-                        op = box.operator(
-                            "bim.load_type_thumbnails",
-                            text="",
-                            icon="FILE_REFRESH",
-                            emboss=False,
-                        )
-                        op.ifc_class = ifc_class
+        row = box.row(align=True)
+        thumbnail: int = AuthoringData.data["type_thumbnail"]
+        row.template_icon(icon_value=thumbnail)
+        row.operator("bim.launch_type_manager", text=AuthoringData.data["relating_type_name"], emboss=False)
+        row.operator(
+            "bim.launch_type_manager",
+            icon=tool.Blender.TYPE_MANAGER_ICON,
+            text="",
+            emboss=False,
+        )
 
-                    row = box.row(align=True)
-                    row.alignment = "CENTER"
-                    row.operator(
-                        "bim.launch_type_manager",
-                        text=AuthoringData.data["predefined_type"],
-                        emboss=False,
-                    )
+        if ui_context == "TOOL_HEADER":
+            return
+        row = box.row(align=True)
+        row.alignment = "CENTER"
+        row.operator(
+            "bim.launch_type_manager",
+            text=AuthoringData.data["relating_type_description"],
+            emboss=False,
+        )
+
+        if thumbnail != 0:
+            row1 = box.row()
+            row1.ui_units_y = 0.01
+            row1.template_icon(icon_value=thumbnail, scale=4)
+            row2 = box.column(align=True)
+            row2.ui_units_y = 4
+            for _ in range(4):
+                row2.operator("bim.launch_type_manager", text="", emboss=False)
+        else:
+            op = box.operator(
+                "bim.load_type_thumbnails",
+                text="",
+                icon="FILE_REFRESH",
+                emboss=False,
+            )
+            op.ifc_class = ifc_class
+
+        row = box.row(align=True)
+        row.alignment = "CENTER"
+        row.operator(
+            "bim.launch_type_manager",
+            text=AuthoringData.data["predefined_type"],
+            emboss=False,
+        )
 
 
 class EditObjectUI:
