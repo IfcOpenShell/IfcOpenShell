@@ -1973,6 +1973,13 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
             ProfileDecorator.install(context)
             if not bpy.app.background:
                 tool.Blender.set_viewport_tool("bim.cad_tool")
+        elif item.is_a("IfcAnnotationFillArea"):
+            tool.Model.import_annotation_fill_area(item, obj=obj)
+            obj.data.BIMMeshProperties.ifc_definition_id = item.id()
+            self.enable_edit_mode(context)
+            ProfileDecorator.install(context)
+            if not bpy.app.background:
+                tool.Blender.set_viewport_tool("bim.cad_tool")
         elif tool.Geometry.is_curvelike_item(item):
             tool.Model.import_curve(item, obj=obj)
             obj.data.BIMMeshProperties.ifc_definition_id = item.id()
@@ -2126,10 +2133,7 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
                 tool.Geometry.import_item(obj)
         elif item.is_a("IfcSweptAreaSolid"):
             ProfileDecorator.uninstall()
-
-            profile = tool.Model.export_profile(obj)
-
-            if not profile:
+            if not (profile := tool.Model.export_profile(obj)):
 
                 def msg(self, context):
                     self.layout.label(text="INVALID PROFILE")
@@ -2186,6 +2190,26 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
                             product=element,
                             representation=new_footprint,
                         )
+        elif item.is_a("IfcAnnotationFillArea"):
+            ProfileDecorator.uninstall()
+            if not (profile := tool.Model.export_annotation_fill_area(obj)):
+
+                def msg(self, context):
+                    self.layout.label(text="INVALID PROFILE")
+
+                bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
+                ProfileDecorator.install(bpy.context)
+                self.enable_edit_mode(bpy.context)
+                return
+
+            for inverse in tool.Ifc.get().get_inverse(item):
+                ifcopenshell.util.element.replace_attribute(inverse, item, profile)
+            ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), item)
+            obj.data.BIMMeshProperties.ifc_definition_id = profile.id()
+
+            tool.Geometry.reload_representation(bpy.context.scene.BIMGeometryProperties.representation_obj)
+            tool.Geometry.import_item(obj)
+            tool.Geometry.import_item_attributes(obj)
         elif tool.Geometry.is_curvelike_item(item):
             ProfileDecorator.uninstall()
             new = tool.Model.export_curves(obj)

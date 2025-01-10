@@ -132,6 +132,12 @@ class Model(bonsai.core.tool.Model):
         return tool.Ifc.get().createIfcCartesianPointList2D(points)
 
     @classmethod
+    def export_annotation_fill_area(cls, obj: bpy.types.Object) -> ifcopenshell.entity_instance | None:
+        result = cls.auto_detect_annotation_fill_area(obj, obj.data)
+        if isinstance(result, dict) and result["annotation_fill_area"]:
+            return tool.Ifc.get().add(result["annotation_fill_area"])
+
+    @classmethod
     def export_profile(
         cls, obj: bpy.types.Object, position: Optional[Matrix] = None
     ) -> ifcopenshell.entity_instance | None:
@@ -269,6 +275,12 @@ class Model(bonsai.core.tool.Model):
         return obj
 
     @classmethod
+    def import_annotation_fill_area(
+        cls, annotation_fill_area: ifcopenshell.entity_instance, obj: Optional[bpy.types.Object] = None
+    ) -> bpy.types.Object:
+        return cls.import_profile(annotation_fill_area, obj)
+
+    @classmethod
     def import_profile(
         cls,
         profile: ifcopenshell.entity_instance,
@@ -299,6 +311,10 @@ class Model(bonsai.core.tool.Model):
                         cls.convert_curve_to_mesh(obj, position, inner_curve)
             elif profile.is_a() == "IfcRectangleProfileDef":
                 cls.import_rectangle(obj, position, profile)
+            elif profile.is_a() == "IfcAnnotationFillArea":
+                cls.convert_curve_to_mesh(obj, position, profile.OuterBoundary)
+                for inner_boundary in profile.InnerBoundaries or []:
+                    cls.convert_curve_to_mesh(obj, position, inner_boundary)
 
         mesh = bpy.data.meshes.new("Profile")
         mesh.from_pydata(cls.vertices, cls.edges, [])
@@ -1574,6 +1590,20 @@ class Model(bonsai.core.tool.Model):
             profile_set_usage=None,
         )
         tool.Model.replace_object_ifc_representation(body, obj, representation)
+
+    @classmethod
+    def auto_detect_annotation_fill_area(cls, obj: bpy.types.Object, mesh: bpy.types.Mesh) -> dict | None:
+        result = cls.auto_detect_profiles(obj, mesh)
+        fill_area = None
+        if isinstance(result, dict) and (profile_def := result["profile_def"]):
+            if profile_def.is_a("IfcArbitraryClosedProfileDef"):
+                fill_area = result["ifc_file"].createIfcAnnotationFillArea(profile_def.OuterCurve)
+            elif profile_def.is_a("IfcArbitraryProfileDefWithVoids"):
+                fill_area = result["ifc_file"].createIfcAnnotationFillArea(
+                    profile_def.OuterCurve, profile_def.InnerCurves
+                )
+            if fill_area:
+                return {"ifc_file": result["ifc_file"], "annotation_fill_area": fill_area}
 
     @classmethod
     def auto_detect_profiles(
