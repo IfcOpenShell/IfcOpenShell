@@ -440,8 +440,9 @@ class CreateObjectUI:
         row = cls.layout.row(align=True)
         if AuthoringData.data["relating_type_id"]:
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
-            op = row.operator("bim.hotkey", text="Add", icon_value=custom_icon_previews["ADD"].icon_id)
-            op.hotkey = "S_A"
+            if context.space_data.type == "VIEW_3D": # Wall polyline tool works only in 3D Space
+                op = row.operator("bim.hotkey", text="Add", icon_value=custom_icon_previews["ADD"].icon_id)
+                op.hotkey = "S_A"
         else:
             row.label(text="No Construction Type", icon="FILE_3D")
 

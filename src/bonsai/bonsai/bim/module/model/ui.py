@@ -115,8 +115,6 @@ class LaunchTypeManager(bpy.types.Operator):
         row.operator("bim.launch_add_element", text=f"Create New {AuthoringData.data['ifc_element_type']}", icon="ADD")
 
         row = self.layout.row(align=True)
-        row.prop(props, "relating_type_id", text="")
-        # prop_with_search(row, props, "relating_type_id", text="", should_click_ok_to_validate=True)
         row.prop(props, "search_name", icon="FILTER", text="")
 
         columns = self.layout.column_flow(columns=3)
