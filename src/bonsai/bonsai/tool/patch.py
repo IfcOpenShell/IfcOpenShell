@@ -33,10 +33,8 @@ class Patch(bonsai.core.tool.Patch):
 
     @classmethod
     def is_filepath_argument(cls, recipe: str, arg_name: str) -> bool:
-        # TODO: Temporary hack to identify filepath arguments.
-        # Should mark them as such in the patches documentation
-        # and process it later.
-        return recipe == "SplitByBuildingStorey" and arg_name == "output_dir"
+        # There is probably a more explicit way to do this
+        return "filepath" in arg_name
 
     @classmethod
     def does_patch_has_output(cls, recipe: str) -> bool:

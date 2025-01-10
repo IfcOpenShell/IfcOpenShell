@@ -20,7 +20,7 @@ import typing
 
 
 class Patcher:
-    def __init__(self, src, file, logger, z: typing.Union[str, float] = "0"):
+    def __init__(self, file, logger, z: typing.Union[str, float] = "0"):
         """Offset building storeys by a particular Z value
 
         All objects placed relative to the storeys will also be shifted.
@@ -35,7 +35,6 @@ class Patcher:
             # Shift all storeys up by 42 units
             ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "OffsetStoreyElevations", "arguments": [42]})
         """
-        self.src = src
         self.file = file
         self.logger = logger
         self.z = float(z)

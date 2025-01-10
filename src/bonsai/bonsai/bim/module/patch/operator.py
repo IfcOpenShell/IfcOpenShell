@@ -98,12 +98,6 @@ class ExecuteIfcPatch(bpy.types.Operator):
 
         if props.should_load_from_memory and tool.Ifc.get():
             args["file"] = tool.Ifc.get()
-            if ifcpatch.get_patch_input_argument_use(recipe_name) == "REQUIRED":
-                self.report(
-                    {"ERROR"},
-                    f"The recipe '{recipe_name}' is not currently supported if file is loaded from memory.",
-                )
-                return {"CANCELLED"}
         else:
             args["input"] = cast(str, props.ifc_patch_input)
             args["file"] = cast(ifcopenshell.file, ifcopenshell.open(props.ifc_patch_input))

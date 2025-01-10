@@ -21,7 +21,7 @@ import ifcopenshell.util.element
 
 
 class Patcher:
-    def __init__(self, src, file, logger):
+    def __init__(self, file, logger):
         """Optimise the filesize of an IFC model
 
         It is possible to non-losslessly optimise the filesize of an IFC model.
@@ -46,7 +46,6 @@ class Patcher:
 
             ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "Optimise", "arguments": []})
         """
-        self.src = src
         self.file = file
         self.logger = logger
         self.optimized_file = ifcopenshell.file(schema=self.file.schema)

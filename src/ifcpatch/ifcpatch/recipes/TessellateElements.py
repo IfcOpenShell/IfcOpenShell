@@ -30,7 +30,6 @@ from typing import Union
 class Patcher:
     def __init__(
         self,
-        src: str,
         file: ifcopenshell.file,
         logger: Logger,
         query: str = "IfcBeam",
@@ -58,7 +57,6 @@ class Patcher:
 
             ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "TessellateElements", "arguments": ["IfcBeam", False]})
         """
-        self.src = src
         self.file = file
         self.logger = logger
         self.query = query

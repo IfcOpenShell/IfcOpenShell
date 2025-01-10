@@ -27,7 +27,7 @@ import ifcopenshell.util.element
 
 
 class Patcher:
-    def __init__(self, src, file, logger):
+    def __init__(self, file, logger):
         """Fix missing door swings in Revit when viewing ArchiCAD IFCs
 
         ArchiCAD has the ability to store 2D data with objects like doors for
@@ -56,7 +56,6 @@ class Patcher:
 
             ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "FixArchiCADToRevitDoorSwings", "arguments": []})
         """
-        self.src = src
         self.file = file
         self.logger = logger
 
