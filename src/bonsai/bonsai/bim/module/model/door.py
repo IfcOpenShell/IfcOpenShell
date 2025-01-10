@@ -572,7 +572,7 @@ class AddDoor(bpy.types.Operator, tool.Ifc.Operator):
         update_door_modifier_representation(obj)
 
     def _execute(self, context):
-        for obj in context.selected_objects:
+        for obj in tool.Blender.get_selected_objects():
             if not tool.Blender.Modifier.is_eligible_for_door_modifier(obj):
                 continue
             self.add_door_on_object(obj)
@@ -610,7 +610,7 @@ class CancelEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
         props.is_editing = False
 
     def _execute(self, context):
-        for obj in context.selected_objects:
+        for obj in tool.Blender.get_selected_objects():
             self.cancel_editing_door_on_object(obj)
         return {"FINISHED"}
 
@@ -642,7 +642,7 @@ class FinishEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
         ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": door_data})
 
     def _execute(self, context):
-        for obj in context.selected_objects:
+        for obj in tool.Blender.get_selected_objects():
             self.finish_editing_door_on_object(obj)
         return {"FINISHED"}
 
@@ -666,7 +666,7 @@ class EnableEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
         props.is_editing = True
 
     def _execute(self, context):
-        for obj in context.selected_objects:
+        for obj in tool.Blender.get_selected_objects():
             self.edit_door_on_obj(obj)
         return {"FINISHED"}
 
@@ -686,6 +686,6 @@ class RemoveDoor(bpy.types.Operator, tool.Ifc.Operator):
         ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=element, pset=pset)
 
     def _execute(self, context):
-        for obj in context.selected_objects:
+        for obj in tool.Blender.get_selected_objects():
             self.remove_door_on_object(obj)
         return {"FINISHED"}
