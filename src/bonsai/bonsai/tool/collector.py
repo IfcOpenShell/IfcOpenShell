@@ -31,11 +31,11 @@ class Collector(bonsai.core.tool.Collector):
             for users_collection in obj.users_collection:
                 if obj.BIMObjectProperties.collection == users_collection:
                     continue
-                # Users are free to user extra collections for their own
+                # Users are free to use extra collections for their own
                 # purposes except for the reserved keyword "Ifc" and
                 # "Collection" (which is the default collection that comes with
-                # a Blender session)
-                if "Ifc" in users_collection.name or users_collection.name == "Collection":
+                # a Blender session) and "Unsorted" (our special collection).
+                if "Ifc" in users_collection.name or users_collection.name in ("Collection", "Unsorted"):
                     users_collection.objects.unlink(obj)
 
         element = tool.Ifc.get_entity(obj)
