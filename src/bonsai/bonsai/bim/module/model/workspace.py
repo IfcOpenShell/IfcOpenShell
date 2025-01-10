@@ -509,13 +509,9 @@ class CreateObjectUI:
             if ifc_class:
                 box = cls.layout.box()
                 row = box.row(align=True)
-                prop_with_search(row, cls.props, "relating_type_id", text="")
-                if AuthoringData.data["type_thumbnail"] and ui_context == "TOOL_HEADER":
-                    row.template_icon(icon_value=AuthoringData.data["type_thumbnail"])
-                    row.operator("bim.launch_type_manager", text="Type Manager", emboss=False)
-                else:
-                    row.operator("bim.launch_type_manager", icon="BLANK1", text="Type Manager", emboss=False)
-
+                if ui_context == "TOOL_HEADER":
+                    row.template_icon(icon_value=AuthoringData.data.get("type_thumbnail", 0))
+                row.operator("bim.launch_type_manager", text=AuthoringData.data["relating_type_name"], emboss=False)
                 row.operator(
                     "bim.launch_type_manager",
                     icon=tool.Blender.TYPE_MANAGER_ICON,

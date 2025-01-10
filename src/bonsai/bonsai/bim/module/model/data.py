@@ -58,14 +58,15 @@ class AuthoringData:
         cls.data["ifc_classes"] = cls.ifc_classes()
         cls.data["ifc_class_current"] = cls.ifc_class_current()
         # Make sure .ifc_classes() was run before next lines
-        cls.data["filtered_type_elements"] = cls.filtered_type_elements()
-        # Make sure .filtered_type_elements() was run before next lines
+        cls.data["type_elements"] = cls.type_elements()
+        cls.data["type_elements_filtered"] = cls.type_elements_filtered()
         cls.data["relating_type_id"] = cls.relating_type_id()
         # Make sure .relating_type_id() was run before next lines
         cls.data["relating_type_id_current"] = cls.relating_type_id_current()
         cls.data["relating_type_name"] = cls.relating_type_name()
         cls.data["relating_type_description"] = cls.relating_type_description()
         cls.data["predefined_type"] = cls.predefined_type()
+        # Make sure .type_elements_filtered() was run before next lines
         cls.data["total_types"] = cls.total_types()
         cls.data["total_pages"] = cls.total_pages()  # Only after .total_types()
         cls.data["next_page"] = cls.next_page()
@@ -116,7 +117,7 @@ class AuthoringData:
 
     @classmethod
     def total_types(cls):
-        return len(cls.data["filtered_type_elements"])
+        return len(cls.data["type_elements_filtered"])
 
     @classmethod
     def total_pages(cls):
@@ -134,19 +135,24 @@ class AuthoringData:
             return cls.props.type_page - 1
 
     @classmethod
-    def filtered_type_elements(cls):
+    def type_elements(cls):
         ifc_class = cls.data["ifc_class_current"]
         if not ifc_class:
             return []
         elements = list(tool.Ifc.get().by_type(ifc_class))
-        if cls.props.search_name:
-            elements = [e for e in elements if cls.props.search_name.lower() in (e.Name or "Unnamed").lower()]
         return natsorted(elements, key=lambda s: (s.Name or "Unnamed").lower())
+
+    @classmethod
+    def type_elements_filtered(cls):
+        elements = cls.data["type_elements"]
+        if cls.props.search_name:
+            return [e for e in elements if cls.props.search_name.lower() in (e.Name or "Unnamed").lower()]
+        return elements
 
     @classmethod
     def paginated_relating_types(cls):
         results = []
-        elements = cls.data["filtered_type_elements"]
+        elements = cls.data["type_elements_filtered"]
         elements = elements[(cls.props.type_page - 1) * cls.types_per_page : cls.props.type_page * cls.types_per_page]
         for element in elements:
             predefined_type = ifcopenshell.util.element.get_predefined_type(element)
@@ -273,7 +279,7 @@ class AuthoringData:
 
     @classmethod
     def relating_type_id(cls):
-        elements = cls.data["filtered_type_elements"]
+        elements = cls.data["type_elements"]
         return [(str(e.id()), e.Name or "Unnamed", e.Description or "") for e in elements]
 
     @classmethod

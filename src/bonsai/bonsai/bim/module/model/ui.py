@@ -87,7 +87,6 @@ class LaunchTypeManager(bpy.types.Operator):
     bl_description = "Display all available Construction Types to add new occurrences"
 
     def execute(self, context):
-        bpy.ops.bim.hotkey("INVOKE_DEFAULT", hotkey="S_A")
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -101,9 +100,7 @@ class LaunchTypeManager(bpy.types.Operator):
         # will be None if project has no types
         if ifc_class is not None:
             bpy.ops.bim.load_type_thumbnails(ifc_class=ifc_class, offset=0, limit=9)
-        return context.window_manager.invoke_props_dialog(
-            self, width=550, title="Type Manager", confirm_text="Add Occurrence"
-        )
+        return context.window_manager.invoke_props_dialog(self, width=550, title="Type Manager", confirm_text="Close")
 
     def draw(self, context):
         props = context.scene.BIMModelProperties
@@ -113,25 +110,33 @@ class LaunchTypeManager(bpy.types.Operator):
             text += "s"
         row.label(text=text, icon="FILE_VOLUME")
         row.menu("BIM_MT_type_manager_menu", text="", icon="PREFERENCES")
+
         row = self.layout.row(align=True)
         row.operator("bim.launch_add_element", text=f"Create New {AuthoringData.data['ifc_element_type']}", icon="ADD")
 
+        row = self.layout.row(align=True)
+        row.prop(props, "relating_type_id", text="")
+        # prop_with_search(row, props, "relating_type_id", text="", should_click_ok_to_validate=True)
+        row.prop(props, "search_name", icon="FILTER", text="")
+
         columns = self.layout.column_flow(columns=3)
-        row = columns.row(align=True)
-        row.alignment = "CENTER"
+        if AuthoringData.data["total_pages"] > 0:
+            row = columns.row(align=True)
+            row.alignment = "RIGHT"
+            row2 = row.row(align=True)
+            row2.label(text="Page")
+            row2.prop(props, "type_page", text="", emboss=False)
+            row2.label(text=f"/{AuthoringData.data['total_pages']} ")
 
-        row = columns.row(align=True)
-        row.alignment = "RIGHT"
-        if AuthoringData.data["total_pages"] > 1:
-            row.label(text=f"Page {props.type_page}/{AuthoringData.data['total_pages']} ")
-        if AuthoringData.data["prev_page"]:
-            op = row.operator("bim.change_type_page", icon="TRIA_LEFT", text="")
-            op.page = AuthoringData.data["prev_page"]
-        if AuthoringData.data["next_page"]:
-            op = row.operator("bim.change_type_page", icon="TRIA_RIGHT", text="")
-            op.page = AuthoringData.data["next_page"]
+            prev_page_op = row.row(align=True)
+            op = prev_page_op.operator("bim.change_type_page", icon="TRIA_LEFT", text="")
+            op.page = AuthoringData.data["prev_page"] or 0
+            prev_page_op.enabled = op.page > 0
 
-        self.layout.prop(props, "search_name", icon="VIEWZOOM", text="")
+            next_page_op = row.row(align=True)
+            op = next_page_op.operator("bim.change_type_page", icon="TRIA_RIGHT", text="")
+            op.page = AuthoringData.data["next_page"] or 0
+            next_page_op.enabled = op.page > 0
 
         flow = self.layout.grid_flow(row_major=True, columns=3, even_columns=True, even_rows=True, align=True)
 
@@ -139,11 +144,11 @@ class LaunchTypeManager(bpy.types.Operator):
             outer_col = flow.column()
             box = outer_col.box()
 
-            row = box.row(align=True)
+            row = box.row()
             op = row.operator("bim.set_active_type", text=relating_type["name"], icon="BLANK1", emboss=False)
             op.relating_type = relating_type["id"]
 
-            op = row.operator("bim.launch_type_menu", icon="PREFERENCES", text="", emboss=False)
+            op = row.operator("bim.launch_type_menu", icon="PREFERENCES", text="", emboss=True)
             op.relating_type_id = relating_type["id"]
 
             row = box.row()

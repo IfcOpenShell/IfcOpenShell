@@ -65,10 +65,14 @@ def update_relating_type_id(self, context):
     AuthoringData.data["relating_type_name"] = AuthoringData.relating_type_name()
     AuthoringData.data["type_thumbnail"] = AuthoringData.type_thumbnail()
     AuthoringData.data["predefined_type"] = AuthoringData.predefined_type()
+    self.type_page = [e[0] for e in AuthoringData.data["relating_type_id"]].index(self.relating_type_id) // 9 + 1
 
 
 def update_type_page(self, context):
     AuthoringData.data["paginated_relating_types"] = AuthoringData.paginated_relating_types()
+    bpy.ops.bim.load_type_thumbnails(ifc_class=self.ifc_class, offset=9 * (self.type_page - 1), limit=9)
+    self["type_page"] = min(self["type_page"], AuthoringData.data["total_pages"])
+    self["type_page"] = max(self["type_page"], 1)
 
 
 def update_relating_array_from_object(self, context):
@@ -101,7 +105,7 @@ def update_search_name(self, context):
     AuthoringData.load()
     # Total number of pages may decrease when using the search bar :
     if self.type_page > AuthoringData.data["total_pages"]:
-        self.type_page = AuthoringData.data["total_pages"]
+        self.type_page = max(1, AuthoringData.data["total_pages"])
     bpy.ops.bim.load_type_thumbnails(ifc_class=self.ifc_class)
 
 
@@ -177,7 +181,7 @@ class BIMModelProperties(PropertyGroup):
     # Used for plan calculation points such as in room generation
     rl3: bpy.props.FloatProperty(name="RL", default=1, subtype="DISTANCE", description="Z offset for space calculation")
     x_angle: bpy.props.FloatProperty(name="X Angle", default=0, subtype="ANGLE", min=-pi / 180 * 89, max=pi / 180 * 89)
-    type_page: bpy.props.IntProperty(name="Type Page", default=1, update=update_type_page)
+    type_page: bpy.props.IntProperty(name="Type Page", default=1, min=1,update=update_type_page)
     type_name: bpy.props.StringProperty(name="Name", default="TYPEX")
     boundary_class: bpy.props.EnumProperty(items=get_boundary_class, name="Boundary Class")
     direction_sense: bpy.props.EnumProperty(

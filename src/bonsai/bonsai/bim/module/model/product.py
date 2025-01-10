@@ -568,7 +568,7 @@ class LoadTypeThumbnails(bpy.types.Operator, tool.Ifc.Operator):
         # Large projects have hundreds of types which can lead to unnecessary lag.
         if not AuthoringData.is_loaded:
             AuthoringData.load()
-        queue = AuthoringData.data["filtered_type_elements"]
+        queue = AuthoringData.data["type_elements_filtered"]
         if self.limit:
             queue = queue[self.offset : self.offset + self.limit]
         else:
