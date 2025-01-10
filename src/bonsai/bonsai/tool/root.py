@@ -354,7 +354,6 @@ class Root(bonsai.core.tool.Root):
         tool.Aggregate.constrain_all_parts_to_aggregate(tool.Ifc.get_object(new_aggregate[0]))
         tool.Blender.select_and_activate_single_object(bpy.context, tool.Ifc.get_object(new_aggregate[0]))
 
-        
     @classmethod
     def run_geometry_add_representation(
         cls,

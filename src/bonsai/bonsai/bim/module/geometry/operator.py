@@ -1858,7 +1858,7 @@ class OverrideEscape(bpy.types.Operator):
             bpy.ops.bim.hide_all_openings()
         elif context.scene.BIMAggregateProperties.in_aggregate_mode:
             bpy.ops.bim.disable_aggregate_mode()
-        elif active_object:=context.active_object:
+        elif active_object := context.active_object:
             if tool.Blender.Modifier.try_canceling_editing_modifier_parameters_or_path(active_object):
                 pass
         return {"FINISHED"}
@@ -1902,7 +1902,9 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"ERROR"}, f"Element '{obj.name}' is in item mode and cannot be edited directly")
         elif obj in [o.obj for o in context.scene.BIMAggregateProperties.not_editing_objects]:
             obj.select_set(False)
-            self.report({"ERROR"}, f"Element '{obj.name}' does not belong to this aggregate and cannot be edited directly")
+            self.report(
+                {"ERROR"}, f"Element '{obj.name}' does not belong to this aggregate and cannot be edited directly"
+            )
         elif obj in bpy.context.scene.BIMProjectProperties.clipping_planes_objs:
             self.report({"ERROR"}, "Clipping planes cannot be edited")
         elif element:

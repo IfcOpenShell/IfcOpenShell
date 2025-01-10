@@ -983,8 +983,7 @@ class Loader(bonsai.core.tool.Loader):
                     tool.Loader.load_indexed_colour_map(rep, mesh)
 
             ios_edges_values = [
-                (e.vertices[0], e.vertices[1]) in ios_edges
-                or (e.vertices[1], e.vertices[0]) in ios_edges
+                (e.vertices[0], e.vertices[1]) in ios_edges or (e.vertices[1], e.vertices[0]) in ios_edges
                 for e in mesh.edges
             ]
             tool.Blender.Attribute.fill_attribute(mesh, "ios_edges", "EDGE", "BOOLEAN", ios_edges_values)

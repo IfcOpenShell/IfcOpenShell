@@ -197,7 +197,9 @@ def draw_psetqto_ui(
                 row = box.row(align=True)
                 row.scale_y = 0.8
                 row.label(text=prop["Name"])
-                op = row.operator("bim.select_similar", text=get_display_value(nominal_value), icon="NONE", emboss=False)
+                op = row.operator(
+                    "bim.select_similar", text=get_display_value(nominal_value), icon="NONE", emboss=False
+                )
                 op.key = '"' + pset["Name"].replace('"', '\\"') + '"."' + prop["Name"].replace('"', '\\"') + '"'
                 # calculate sum of all selected objects
                 if active_operator:

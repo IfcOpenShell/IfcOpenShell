@@ -25,7 +25,7 @@ import bmesh
 import ifcopenshell
 import bonsai.tool as tool
 import math
-from math import sin, cos, radians 
+from math import sin, cos, radians
 from bpy.types import SpaceView3D
 from bpy_extras import view3d_utils
 from mathutils import Vector, Matrix
@@ -785,7 +785,7 @@ class ProductDecorator:
 
     @classmethod
     def uninstall(cls):
-        props = bpy.context.scene.BIMProductPreviewProperties # updated by model/polyline.py
+        props = bpy.context.scene.BIMProductPreviewProperties  # updated by model/polyline.py
         props.verts.clear()
         props.edges.clear()
         props.tris.clear()
@@ -806,7 +806,7 @@ class ProductDecorator:
         props = context.scene.BIMProductPreviewProperties
         data = {}
         data["verts"] = [(*v.value_3d,) for v in props.verts]
-        data["edges"] = [(int(e.value_2d[0]),int(e.value_2d[1])) for e in props.edges]
+        data["edges"] = [(int(e.value_2d[0]), int(e.value_2d[1])) for e in props.edges]
         data["tris"] = [(int(t.value_3d[0]), int(t.value_3d[1]), int(t.value_3d[2])) for t in props.tris]
         return data
 

@@ -200,6 +200,7 @@ def get_wall_preview_data(context, relating_type):
 
     return data
 
+
 def get_vertical_profile_preview_data(context, relating_type):
     material = ifcopenshell.util.element.get_material(relating_type)
     try:
@@ -261,7 +262,7 @@ def get_vertical_profile_preview_data(context, relating_type):
     # Create extrusion bmesh
     bm = bmesh.new()
 
-    grouped_verts.append(grouped_verts[0]) # Close profile
+    grouped_verts.append(grouped_verts[0])  # Close profile
     new_verts = [bm.verts.new(v) for v in grouped_verts]
     new_edges = [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(grouped_verts) - 1)]
 
@@ -296,11 +297,13 @@ def get_vertical_profile_preview_data(context, relating_type):
     # Add only profile edges
     edges = []
     for edge in bm.edges:
-        if (edge.verts[0].co.z == min_z and edge.verts[1].co.z == min_z) or (edge.verts[0].co.z == max_z and edge.verts[1].co.z == max_z):
+        if (edge.verts[0].co.z == min_z and edge.verts[1].co.z == min_z) or (
+            edge.verts[0].co.z == max_z and edge.verts[1].co.z == max_z
+        ):
             edges.append(edge)
     # Add axis edge
     edges = [(edge.verts[0].index, edge.verts[1].index) for edge in edges]
-    edges.append((len(verts)-1, len(verts)-2))
+    edges.append((len(verts) - 1, len(verts) - 2))
     data["verts"] = verts
     data["edges"] = edges
     data["tris"] = tris
@@ -327,7 +330,7 @@ def get_horizontal_profile_preview_data(context, relating_type):
         return
     for point in polyline_points:
         polyline_verts.append(Vector((point.x, point.y, point.z)))
-    polyline_edges = [(i, i+1) for i in range(len(polyline_verts)-1)]
+    polyline_edges = [(i, i + 1) for i in range(len(polyline_verts) - 1)]
 
     # Get profile shape
     settings = ifcopenshell.geom.settings()
@@ -372,26 +375,25 @@ def get_horizontal_profile_preview_data(context, relating_type):
         case "9":
             grouped_verts = [(v[0] + x_offset, v[1] - y_offset, v[2]) for v in grouped_verts]
 
-
     # Create profile curve
     scale_mat = Matrix.Scale(-1, 4, (1.0, 0.0, 0.0))
     grouped_verts = [scale_mat @ Vector(v) for v in grouped_verts]
-    profile_curve = bpy.data.curves.new("Profile", type='CURVE')
+    profile_curve = bpy.data.curves.new("Profile", type="CURVE")
     profile_curve.dimensions = "2D"
-    profile_curve.splines.new('POLY')
+    profile_curve.splines.new("POLY")
     profile_curve.splines[0].points.add(len(grouped_verts))
 
     for i, point in enumerate(profile_curve.splines[0].points):
-        if i == len(grouped_verts): # Close curve
+        if i == len(grouped_verts):  # Close curve
             point.co = Vector((*grouped_verts[0], 0))
             continue
         point.co = Vector((*grouped_verts[i], 0))
     profile_obj = bpy.data.objects.new("Profile", profile_curve)
 
     # Create path curve with profile object as bevel
-    path_curve = bpy.data.curves.new("Polyline", type='CURVE')
+    path_curve = bpy.data.curves.new("Polyline", type="CURVE")
     path_curve.dimensions = "2D"
-    path_curve.splines.new('POLY')
+    path_curve.splines.new("POLY")
     path_curve.splines[0].points.add(len(polyline_verts) - 1)
     for i, point in enumerate(path_curve.splines[0].points):
         point.co = Vector((*polyline_verts[i], 0))
@@ -400,12 +402,12 @@ def get_horizontal_profile_preview_data(context, relating_type):
     path_curve.bevel_object = profile_obj
 
     # Convert path curve to mesh
-    # This operation throws a warning when done during gpu drawing, so it was removed from the decorator file to be handled here 
+    # This operation throws a warning when done during gpu drawing, so it was removed from the decorator file to be handled here
     path_obj = bpy.data.objects.new("Preview", path_curve)
     context.scene.collection.objects.link(path_obj)
     bpy.context.view_layer.objects.active = path_obj
     dg = context.evaluated_depsgraph_get()
-    path_obj = path_obj.evaluated_get(dg) 
+    path_obj = path_obj.evaluated_get(dg)
     me = path_obj.to_mesh()
 
     # Create bmesh from path mesh
@@ -812,13 +814,9 @@ class PolylineOperator:
                 tool.Blender.update_viewport()
 
     def get_product_preview_data(self, context: bpy.types.Context, relating_type: ifcopenshell.entity_isntance):
-        if (
-            tool.Model.get_usage_type(relating_type) == "PROFILE" and relating_type.is_a() not in {"IfcColumnType"}
-        ):
+        if tool.Model.get_usage_type(relating_type) == "PROFILE" and relating_type.is_a() not in {"IfcColumnType"}:
             data = get_horizontal_profile_preview_data(context, relating_type)
-        elif (
-            tool.Model.get_usage_type(relating_type) == "PROFILE" and relating_type.is_a() in {"IfcColumnType"}
-        ):
+        elif tool.Model.get_usage_type(relating_type) == "PROFILE" and relating_type.is_a() in {"IfcColumnType"}:
             data = get_vertical_profile_preview_data(context, relating_type)
         elif tool.Model.get_usage_type(relating_type) == "LAYER2":
             data = get_wall_preview_data(context, relating_type)
@@ -832,7 +830,7 @@ class PolylineOperator:
         props.verts.clear()
         props.edges.clear()
         props.tris.clear()
-        
+
         for vert in data["verts"]:
             v = props.verts.add()
             v.value_3d = vert

@@ -591,7 +591,7 @@ class EditObjectUI:
                 op = row.operator("bim.disable_aggregate_mode", text="", icon="X")
                 op = row.operator("bim.toggle_aggregate_mode_local_view", text="", icon="ZOOM_SELECTED")
                 op = row.operator("bim.aggregate_assign_new_objects_in_aggregate_mode", text="", icon="CUBE")
-                
+
             text = format_ifc_camel_case(AuthoringData.data["active_class"])
             layout.label(text=f"{text} Edit Tools:", icon="RESTRICT_SELECT_OFF")
             cls.draw_parameter_adjustments(context)
@@ -954,7 +954,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
     def hotkey_S_A(self):
         props = bpy.context.scene.BIMModelProperties
         relating_type_id = AuthoringData.data["relating_type_id_current"]
-        relating_type_class =  AuthoringData.data["ifc_class_current"]
+        relating_type_class = AuthoringData.data["ifc_class_current"]
         if relating_type_id is None:
             self.report({"ERROR"}, "No relating type selected")
             return
@@ -993,7 +993,9 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             ):
                 bpy.ops.bim.draw_polyline_slab("INVOKE_DEFAULT")
             elif (
-                relating_type_id and tool.Model.get_usage_type(tool.Ifc.get().by_id(int(relating_type_id))) == "PROFILE" and relating_type_class not in {"IfcColumnType"}
+                relating_type_id
+                and tool.Model.get_usage_type(tool.Ifc.get().by_id(int(relating_type_id))) == "PROFILE"
+                and relating_type_class not in {"IfcColumnType"}
             ):
                 bpy.ops.bim.draw_polyline_profile("INVOKE_DEFAULT")
             else:

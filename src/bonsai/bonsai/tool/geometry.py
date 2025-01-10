@@ -1795,9 +1795,7 @@ class Geometry(bonsai.core.tool.Geometry):
         return False
 
     @classmethod
-    def get_bvh_tree(cls, obj:bpy.types.Object) -> BVHTree:
+    def get_bvh_tree(cls, obj: bpy.types.Object) -> BVHTree:
         bm = tool.Blender.get_bmesh_for_mesh(obj.data)
         bm.transform(obj.matrix_world)
         return BVHTree.FromBMesh(bm)
-
-        

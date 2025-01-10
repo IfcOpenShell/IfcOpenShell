@@ -821,12 +821,13 @@ class BIMPolylineProperties(PropertyGroup):
     insertion_polyline: bpy.props.CollectionProperty(type=Polyline)
     measurement_polyline: bpy.props.CollectionProperty(type=Polyline)
 
+
 class ProductPreviewItem(PropertyGroup):
     value_3d: bpy.props.FloatVectorProperty()
     value_2d: bpy.props.FloatVectorProperty(size=2)
+
 
 class BIMProductPreviewProperties(PropertyGroup):
     verts: bpy.props.CollectionProperty(type=ProductPreviewItem)
     edges: bpy.props.CollectionProperty(type=ProductPreviewItem)
     tris: bpy.props.CollectionProperty(type=ProductPreviewItem)
-

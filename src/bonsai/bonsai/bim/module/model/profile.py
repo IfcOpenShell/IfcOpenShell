@@ -1145,7 +1145,6 @@ class DrawPolylineProfile(bpy.types.Operator, PolylineOperator):
                 for profile1, profile2 in zip(profiles[:-1], profiles[1:]):
                     DumbProfileJoiner().join_V(profile2["obj"], profile1["obj"])
 
-
     def modal(self, context, event):
         if not self.relating_type:
             self.report({"WARNING"}, "You need to select a profile type.")
@@ -1175,7 +1174,6 @@ class DrawPolylineProfile(bpy.types.Operator, PolylineOperator):
             index = items.index(offset_type)
             size = len(items)
             context.scene.BIMModelProperties.offset_type = items[((index + 1) % size)]
-
 
         props = bpy.context.scene.BIMModelProperties
         wall_config = f"""Direction: {props.direction_sense}
@@ -1222,4 +1220,3 @@ class DrawPolylineProfile(bpy.types.Operator, PolylineOperator):
         self.tool_state.use_default_container = True
         self.tool_state.plane_method = "XY"
         return {"RUNNING_MODAL"}
-

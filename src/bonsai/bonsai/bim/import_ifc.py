@@ -1129,7 +1129,6 @@ class IfcImporter:
                     tool.Aggregate.constrain_all_parts_to_aggregate(relating_obj)
         bpy.context.scene.BIMAggregateProperties.aggregate_decorator = True
 
-
     def lock_scales(self) -> None:
         elements = set(self.file.by_type("IfcProduct"))
         while elements:
