@@ -108,12 +108,10 @@ class LaunchTypeManager(bpy.types.Operator):
     def draw(self, context):
         props = context.scene.BIMModelProperties
         row = self.layout.row(align=True)
+        text = f"{AuthoringData.data['total_types']} {AuthoringData.data['ifc_element_type']}"
         if AuthoringData.data["total_types"] > 1:
-            text = f"{AuthoringData.data['total_types']} {AuthoringData.data['ifc_element_type']}s"
-        else:
-            text = f"{AuthoringData.data['total_types']} {AuthoringData.data['ifc_element_type']}"
+            text += "s"
         row.label(text=text, icon="FILE_VOLUME")
-        # prop_with_search(row, props, "ifc_class", text="", should_click_ok_to_validate=True)
         row.menu("BIM_MT_type_manager_menu", text="", icon="PREFERENCES")
         row = self.layout.row(align=True)
         row.operator("bim.launch_add_element", text=f"Create New {AuthoringData.data['ifc_element_type']}", icon="ADD")
@@ -121,9 +119,6 @@ class LaunchTypeManager(bpy.types.Operator):
         columns = self.layout.column_flow(columns=3)
         row = columns.row(align=True)
         row.alignment = "CENTER"
-        ### In case you want something here in the future
-
-        ###
 
         row = columns.row(align=True)
         row.alignment = "RIGHT"
@@ -135,6 +130,8 @@ class LaunchTypeManager(bpy.types.Operator):
         if AuthoringData.data["next_page"]:
             op = row.operator("bim.change_type_page", icon="TRIA_RIGHT", text="")
             op.page = AuthoringData.data["next_page"]
+
+        self.layout.prop(props, "search_name", icon="VIEWZOOM", text="")
 
         flow = self.layout.grid_flow(row_major=True, columns=3, even_columns=True, even_rows=True, align=True)
 

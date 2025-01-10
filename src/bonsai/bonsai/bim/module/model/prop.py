@@ -97,10 +97,25 @@ def update_slab_direction_decorator(self, context):
         SlabDirectionDecorator.uninstall()
 
 
+def update_search_name(self, context):
+    AuthoringData.load()
+    # Total number of pages may decrease when using the search bar :
+    if self.type_page > AuthoringData.data["total_pages"]:
+        self.type_page = AuthoringData.data["total_pages"]
+    bpy.ops.bim.load_type_thumbnails(ifc_class=self.ifc_class)
+
+
 class BIMModelProperties(PropertyGroup):
     ifc_class: bpy.props.EnumProperty(items=get_ifc_class, name="Construction Class", update=update_ifc_class)
     relating_type_id: bpy.props.EnumProperty(
         items=get_relating_type_id, name="Relating Type", update=update_relating_type_id
+    )
+    search_name: bpy.props.StringProperty(
+        name="Search Name",
+        default="",
+        description="Use this property to filter the list of available types",
+        update=update_search_name,
+        options={"SKIP_SAVE", "TEXTEDIT_UPDATE"},
     )
     menu_relating_type_id: bpy.props.IntProperty()
     icon_id: bpy.props.IntProperty()

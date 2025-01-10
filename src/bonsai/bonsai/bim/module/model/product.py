@@ -566,7 +566,9 @@ class LoadTypeThumbnails(bpy.types.Operator, tool.Ifc.Operator):
         processing = set()
         # Only process at most one paginated class at a time.
         # Large projects have hundreds of types which can lead to unnecessary lag.
-        queue = sorted(tool.Ifc.get().by_type(self.ifc_class), key=lambda e: e.Name or "Unnamed")
+        if not AuthoringData.is_loaded:
+            AuthoringData.load()
+        queue = AuthoringData.data["filtered_type_elements"]
         if self.limit:
             queue = queue[self.offset : self.offset + self.limit]
         else:
