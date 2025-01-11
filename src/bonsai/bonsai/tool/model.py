@@ -1264,7 +1264,9 @@ class Model(bonsai.core.tool.Model):
         if stair_type == "WOOD/STEEL":
             builder = ShapeBuilder(None)
             # full tread rectangle
-            get_tread_verts = partial(builder.get_rectangle_coords, position=V_(0, -(tread_depth - tread_rise)))
+            def get_tread_verts(*args, **kwargs):
+                fn = partial(builder.get_rectangle_coords, position=V_(0, -(tread_depth - tread_rise)))
+                return [Vector(x) for x in fn(*args, **kwargs)]
             default_tread_verts = get_tread_verts(size=V_(tread_run + nosing_overlap, tread_depth))
             default_tread_offset = V_(tread_run + nosing_tread_gap, tread_rise)
 
