@@ -1419,3 +1419,29 @@ class Blender(bonsai.core.tool.Blender):
     def V_(cls, *args: float) -> Vector:
         """Just a shortcut for creating mathutils Vector."""
         return Vector(args)
+
+    @classmethod
+    def detect_icon_color_mode(cls, key="RegularText", threshold=1.671):
+        """
+        Uses the color of text to determin if custom icons should be dark mode (dm) or light mode (mode).
+
+        Args:
+            key (str): The key representing the UI element (e.g., "RegularText").
+            threshold (float, optional): The RGB sum threshold for determining dark mode. Default is 1.671.
+
+        Returns:
+            str: 'dm' (dark mode) if the RGB sum is > threshold, otherwise 'lm' (light mode).
+        """
+        theme = bpy.context.preferences.themes[0]
+        ui_colors = {
+            "RegularText": theme.user_interface.wcol_regular.text[:3],  # User Interface - Regular - Text
+            "ToolText": theme.user_interface.wcol_tool.text[:3],  # User Interface - Tool - Text
+            "MenuBackgroundText": theme.user_interface.wcol_menu_back.text[
+                :3
+            ],  # User Interface - Menu Background - Text
+            "MenuText": theme.user_interface.wcol_menu.text[:3],  # User Interface - Menu - Text
+            "MenuTextSelected": theme.user_interface.wcol_menu.text_sel[:3],  # User Interface - Menu - Selected
+        }
+        color = ui_colors.get(key, (0.0, 0.0, 0.0))
+        rgb_sum = sum(color[:3])
+        return "dm" if rgb_sum > threshold else "lm"
