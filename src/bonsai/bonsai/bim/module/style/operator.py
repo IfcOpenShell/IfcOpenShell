@@ -80,7 +80,6 @@ class RemoveStyle(bpy.types.Operator, tool.Ifc.Operator):
     style: bpy.props.IntProperty()
 
     def _execute(self, context):
-        core.disable_editing_style(tool.Style)  # So we don't end up soft-locking style edition
         core.remove_style(tool.Ifc, tool.Style, style=tool.Ifc.get().by_id(self.style), reload_styles_ui=True)
 
 

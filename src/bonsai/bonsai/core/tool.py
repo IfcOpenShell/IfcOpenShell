@@ -1013,6 +1013,7 @@ class Style:
     def get_uv_maps(cls, representation): pass
     def import_presentation_styles(cls, style_type): pass
     def import_surface_attributes(cls, style): pass
+    def is_editing_style(cls): pass
     def is_editing_styles(cls): pass
     def reload_material_from_ifc(cls, obj): pass
     def is_style_side_attribute_edited(cls, style, new_attributes): pass
