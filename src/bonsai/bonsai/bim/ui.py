@@ -237,7 +237,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     activate_workspace: BoolProperty(
         name="Activate BIM Workspace on Startup",
         default=True,
-        description="If enabled, this will automatically activate the BIM workspace when opening a project.\It is recommended to keep this `Enabled`",
+        description="If enabled, this will automatically activate the BIM workspace when opening a project.\nIt is recommended to keep this `Enabled`",
     )
     should_setup_toolbar: BoolProperty(
         name="Always Show Toolbar In 3D Viewport",
