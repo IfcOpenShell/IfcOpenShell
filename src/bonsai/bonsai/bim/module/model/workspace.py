@@ -35,7 +35,7 @@ from typing import Optional, Union
 def load_custom_icons():
     global custom_icon_previews, display_mode
     if display_mode is None:
-        display_mode = tool.Blender.detect_icon_color_mode("ToolText")
+        display_mode = tool.Blender.detect_icon_color_mode("user_interface.wcol_tool.text")
 
     icons_dir = os.path.join(os.path.dirname(__file__), "..", "..", "data", "icons")
     custom_icon_previews = bpy.utils.previews.new()
