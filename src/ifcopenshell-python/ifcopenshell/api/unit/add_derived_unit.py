@@ -20,7 +20,9 @@ import ifcopenshell.util.unit
 from typing import Any, Optional
 
 
-def add_derived_unit(file: ifcopenshell.file, unit_type: str, userdefinedtype : str, attributes: dict[ifcopenshell.entity_instance, int]) -> ifcopenshell.entity_instance:
+def add_derived_unit(
+    file: ifcopenshell.file, unit_type: str, userdefinedtype: str, attributes: dict[ifcopenshell.entity_instance, int]
+) -> ifcopenshell.entity_instance:
     """Add a new Derive unit
 
     The supported types are ANGULARVELOCITYUNIT, AREADENSITYUNIT, COMPOUNDPLANEANGLEUNIT,
@@ -68,13 +70,14 @@ def add_derived_unit(file: ifcopenshell.file, unit_type: str, userdefinedtype : 
 
     """
     settings = {"unit_type": unit_type, "attributes": attributes}
-    
+
     derive_unit_elements = []
 
-    for named_unit in settings['attributes']:
-        derive_unit_elements.append(file.create_entity("IfcDerivedUnitElement", Unit=named_unit, Exponent = settings['attributes'][named_unit]))
-                                    
-    return file.create_entity("IfcDerivedUnit",
-                               Elements = derive_unit_elements,
-                               UnitType=settings["unit_type"],
-                               UserDefinedType=userdefinedtype)
+    for named_unit in settings["attributes"]:
+        derive_unit_elements.append(
+            file.create_entity("IfcDerivedUnitElement", Unit=named_unit, Exponent=settings["attributes"][named_unit])
+        )
+
+    return file.create_entity(
+        "IfcDerivedUnit", Elements=derive_unit_elements, UnitType=settings["unit_type"], UserDefinedType=userdefinedtype
+    )

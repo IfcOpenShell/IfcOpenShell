@@ -167,7 +167,9 @@ class BIMModelProperties(PropertyGroup):
     rl2: bpy.props.FloatProperty(name="RL", default=1, subtype="DISTANCE", description="Z offset for windows")
     # Used for plan calculation points such as in room generation
     rl3: bpy.props.FloatProperty(name="RL", default=1, subtype="DISTANCE", description="Z offset for space calculation")
-    x_angle: bpy.props.FloatProperty(name="X Angle", default=0, subtype="ANGLE", min=math.radians(-180), max=math.radians(180), update=update_x_angle)
+    x_angle: bpy.props.FloatProperty(
+        name="X Angle", default=0, subtype="ANGLE", min=math.radians(-180), max=math.radians(180), update=update_x_angle
+    )
     type_page: bpy.props.IntProperty(name="Type Page", default=1, update=update_type_page)
     type_name: bpy.props.StringProperty(name="Name", default="TYPEX")
     boundary_class: bpy.props.EnumProperty(items=get_boundary_class, name="Boundary Class")
