@@ -2950,7 +2950,7 @@ class OverrideMoveAggregate(bpy.types.Operator):
                 obj.select_set(False)
                 continue
             element = tool.Ifc.get_entity(obj)
-            if not element or props.in_aggregate_mode:
+            if not element or not element.is_a("IfcElement") or props.in_aggregate_mode:
                 continue
             parts = ifcopenshell.util.element.get_parts(element)
             if parts:
