@@ -56,11 +56,20 @@ class DisableEditingMaterials(bpy.types.Operator):
 class SelectByMaterial(bpy.types.Operator):
     bl_idname = "bim.select_by_material"
     bl_label = "Select By Material"
+    bl_description = "Select objects using the provided material"
     bl_options = {"REGISTER", "UNDO"}
     material: bpy.props.IntProperty()
 
     def execute(self, context):
-        core.select_by_material(tool.Material, tool.Spatial, material=tool.Ifc.get().by_id(self.material))
+        material = tool.Ifc.get().by_id(self.material)
+        core.select_by_material(tool.Material, tool.Spatial, material=material)
+
+        # copy selection query to clipboard
+        material_name = material.Name
+        result = f'material="{material_name}"'
+        bpy.context.window_manager.clipboard = result
+        self.report({"INFO"}, f"({result}) was copied to the clipboard.")
+
         return {"FINISHED"}
 
 
@@ -146,7 +155,7 @@ class AddMaterial(bpy.types.Operator, tool.Ifc.Operator):
 
 class DuplicateMaterial(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.duplicate_material"
-    bl_label = "Diplicate Material"
+    bl_label = "Duplicate Material"
     bl_options = {"REGISTER", "UNDO"}
     material: bpy.props.IntProperty(name="Material ID")
 

@@ -27,9 +27,7 @@ from logging import Logger
 
 
 class Patcher:
-    def __init__(
-        self, src: str, file: ifcopenshell.file, logger: Logger, filepaths: list[Union[str, ifcopenshell.file]]
-    ):
+    def __init__(self, file: ifcopenshell.file, logger: Logger, filepaths: list[Union[str, ifcopenshell.file]]):
         """Merge two or more IFC models into one
 
         Note that other than combining the two (or more) IfcProject elements into
@@ -50,7 +48,6 @@ class Patcher:
 
             ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "MergeProjects", "arguments": ["/path/to/model2.ifc"]})
         """
-        self.src = src
         self.file = file
         self.logger = logger
         self.filepaths = filepaths

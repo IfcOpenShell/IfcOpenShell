@@ -34,7 +34,6 @@ class Ifc(bonsai.core.tool.Ifc):
     OBJECT_TYPE = Literal[
         "Object",
         "Material",
-        "MaterialSet",
         "MaterialSetItem",
         "Task",
         "Cost",
@@ -58,6 +57,7 @@ class Ifc(bonsai.core.tool.Ifc):
 
     @classmethod
     def get_path(cls) -> str:
+        """Get absolute filepath to the IFC file, return empty string if file is not saved."""
         return IfcStore.path
 
     @classmethod
@@ -101,7 +101,7 @@ class Ifc(bonsai.core.tool.Ifc):
         Return None if object is not linked to IFC or it's linked to non-existent element.
         """
         ifc = IfcStore.get_file()
-        if not ifc:
+        if not ifc or not obj:
             return
 
         props = None
@@ -109,6 +109,8 @@ class Ifc(bonsai.core.tool.Ifc):
             props = obj.BIMObjectProperties
         elif isinstance(obj, bpy.types.Material):
             props = obj.BIMStyleProperties
+        else:
+            props = obj.BIMMeshProperties
 
         if props and (ifc_definition_id := props.ifc_definition_id):
             try:
@@ -245,7 +247,7 @@ class Ifc(bonsai.core.tool.Ifc):
         return (uri if not uri else os.path.join(ifc_path, uri)).replace("\\", "/")
 
     @classmethod
-    def get_relative_uri(cls, uri):
+    def get_relative_uri(cls, uri: str) -> str:
         if not os.path.isabs(uri):
             return uri
         ifc_path = cls.get_path()

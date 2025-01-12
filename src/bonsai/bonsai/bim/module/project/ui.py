@@ -173,6 +173,7 @@ class BIM_PT_project(Panel):
         row.prop(pprops, "should_load_geometry")
         row = self.layout.row()
         row.prop(pprops, "should_merge_materials_by_colour")
+        self.layout.prop(pprops, "load_indexed_maps")
         row = self.layout.row()
         row.prop(pprops, "geometry_library")
         row = self.layout.row()
@@ -536,6 +537,7 @@ class BIM_PT_purge(Panel):
         layout = self.layout
         layout.operator("bim.purge_unused_objects", text="Purge Unused Profiles").object_type = "PROFILE"
         layout.operator("bim.purge_unused_objects", text="Purge Unused Types").object_type = "TYPE"
+        layout.operator("bim.purge_unused_openings", text="Purge Unused Openings in Selected Objects")
         row = layout.row(align=True)
         row.label(text="Materials: ")
         row.operator("bim.purge_unused_objects", text="Purge Unused").object_type = "MATERIAL"

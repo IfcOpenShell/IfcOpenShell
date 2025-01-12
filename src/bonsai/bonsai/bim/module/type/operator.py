@@ -40,7 +40,9 @@ class AssignType(bpy.types.Operator, tool.Ifc.Operator):
     related_object: bpy.props.StringProperty()
 
     def _execute(self, context):
-        type = tool.Ifc.get().by_id(self.relating_type or int(context.active_object.BIMTypeProperties.relating_type))
+        relating_type = tool.Ifc.get().by_id(
+            self.relating_type or int(context.active_object.BIMTypeProperties.relating_type)
+        )
         related_objects = (
             [bpy.data.objects.get(self.related_object)]
             if self.related_object
@@ -49,9 +51,9 @@ class AssignType(bpy.types.Operator, tool.Ifc.Operator):
         model_props = context.scene.BIMModelProperties
         for obj in related_objects:
             element = tool.Ifc.get_entity(obj)
-            core.assign_type(tool.Ifc, tool.Type, element=element, type=type)
+            core.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
             if model_props.occurrence_name_style == "TYPE":
-                obj.name = tool.Model.generate_occurrence_name(type, element.is_a())
+                obj.name = tool.Model.generate_occurrence_name(relating_type, element.is_a())
 
 
 class UnassignType(bpy.types.Operator, tool.Ifc.Operator):
@@ -198,12 +200,25 @@ class SelectSimilarType(bpy.types.Operator):
                 continue
             relating_types.add(relating_type)
 
+        result = ""
         for relating_type in relating_types:
             related_objects = ifcopenshell.util.element.get_types(relating_type)
+
             for element in related_objects:
                 obj = tool.Ifc.get_object(element)
                 if obj and obj in context.visible_objects:
                     obj.select_set(True)
+
+            # copy selection query to clipboard
+            related_objects_class = related_objects[0].is_a()
+            relating_type_name = relating_type.Name
+            if not result:
+                result = f'{related_objects_class}, type="{relating_type_name}"'
+            else:
+                result += f' + {related_objects_class}, type="{relating_type_name}"'
+            bpy.context.window_manager.clipboard = result
+            self.report({"INFO"}, f"({result}) was copied to the clipboard.")
+
         return {"FINISHED"}
 
 

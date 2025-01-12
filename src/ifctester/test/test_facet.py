@@ -259,9 +259,19 @@ class TestAttribute:
         facet = Attribute(name="Name", cardinality="prohibited")
         run("A prohibited facet returns the opposite of a required facet", facet=facet, inst=element, expected=False)
         facet = Attribute(name="Name", cardinality="optional")
-        run("An optional facet always passes regardless of outcome 1/2", facet=facet, inst=element, expected=True)
+        run(
+            "An optional facet only checks requirements if there is a value to check 1/2",
+            facet=facet,
+            inst=element,
+            expected=True,
+        )
         facet = Attribute(name="Rabbit", cardinality="optional")
-        run("An optional facet always passes regardless of outcome 2/2", facet=facet, inst=element, expected=True)
+        run(
+            "An optional facet only checks requirements if there is a value to check 2/2",
+            facet=facet,
+            inst=element,
+            expected=True,
+        )
 
         ifc = ifcopenshell.file()
         facet = Attribute(name="Name")
@@ -750,9 +760,19 @@ class TestClassification:
         facet = Classification(system="Foobar", cardinality="prohibited")
         run("A prohibited facet returns the opposite of a required facet", facet=facet, inst=element1, expected=False)
         facet = Classification(system="Foobar", cardinality="optional")
-        run("An optional facet always passes regardless of outcome 1/2", facet=facet, inst=element0, expected=True)
+        run(
+            "An optional facet only checks requirements if there is a value to check 1/2",
+            facet=facet,
+            inst=element0,
+            expected=True,
+        )
         facet = Classification(system="Foobar", cardinality="optional")
-        run("An optional facet always passes regardless of outcome 2/2", facet=facet, inst=element1, expected=True)
+        run(
+            "An optional facet only checks requirements if there is a value to check 2/2",
+            facet=facet,
+            inst=element1,
+            expected=True,
+        )
 
         facet = Classification(system="Foobar", value="1")
         run(
@@ -887,9 +907,19 @@ class TestProperty:
         facet = Property(propertySet="Foo_Bar", baseName="Foo", dataType="IFCLABEL", cardinality="prohibited")
         run("A prohibited facet returns the opposite of a required facet", facet=facet, inst=element, expected=False)
         facet = Property(propertySet="Foo_Bar", baseName="Foo", dataType="IFCLABEL", cardinality="optional")
-        run("An optional facet always passes regardless of outcome 1/2", facet=facet, inst=element, expected=True)
+        run(
+            "An optional facet only checks requirements if there is a value to check 1/2",
+            facet=facet,
+            inst=element,
+            expected=True,
+        )
         facet = Property(propertySet="Foo_Bar", baseName="Bar", dataType="IFCLABEL", cardinality="optional")
-        run("An optional facet always passes regardless of outcome 2/2", facet=facet, inst=element, expected=True)
+        run(
+            "An optional facet only checks requirements if there is a value to check 2/2",
+            facet=facet,
+            inst=element,
+            expected=True,
+        )
 
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ""})
         facet = Property(propertySet="Foo_Bar", baseName="Foo", dataType="IFCLOGICAL")
@@ -1278,9 +1308,19 @@ class TestMaterial:
         facet = Material(cardinality="prohibited")
         run("A prohibited facet returns the opposite of a required facet", facet=facet, inst=element, expected=False)
         facet = Material(cardinality="optional")
-        run("An optional facet always passes regardless of outcome 1/2", facet=facet, inst=element, expected=True)
+        run(
+            "An optional facet only checks requirements if there is a value to check 1/2",
+            facet=facet,
+            inst=element,
+            expected=True,
+        )
         facet = Material(value="Foo", cardinality="optional")
-        run("An optional facet always passes regardless of outcome 1/2", facet=facet, inst=element, expected=True)
+        run(
+            "An optional facet only checks requirements if there is a value to check 1/2",
+            facet=facet,
+            inst=element,
+            expected=False,
+        )
 
         ifc = ifcopenshell.file()
         facet = Material(value="Foo")

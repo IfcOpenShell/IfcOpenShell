@@ -465,11 +465,11 @@ class AppendLibraryElement(bpy.types.Operator, tool.Ifc.Operator):
         if element.is_a("IfcTypeProduct"):
             self.import_type_from_ifc(element, context)
         elif element.is_a("IfcProduct"):
-            # NOTE: not used as UI doesn't allow appending non-types
+            # NOTE: Non-types are not exposed in UI directly
+            # but the code is still used when appending products by query.
             self.import_product_from_ifc(element, context)
             element_type = ifcopenshell.util.element.get_type(element)
-            obj = tool.Ifc.get_object(element_type)
-            if obj is None:
+            if element_type is not None and tool.Ifc.get_object(element_type) is None:
                 self.import_type_from_ifc(element_type, context)
         elif element.is_a("IfcMaterial"):
             self.import_material_from_ifc(element, context)
@@ -967,7 +967,11 @@ class LinkIfc(bpy.types.Operator):
     files: bpy.props.CollectionProperty(name="Files", type=bpy.types.OperatorFileListElement)
     directory: bpy.props.StringProperty(subtype="DIR_PATH")
     filter_glob: bpy.props.StringProperty(default="*.ifc", options={"HIDDEN"})
-    use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
+    use_relative_path: bpy.props.BoolProperty(
+        name="Use Relative Path",
+        description="Whether to store linked model path relative to the currently opened IFC file.",
+        default=False,
+    )
     use_cache: bpy.props.BoolProperty(name="Use Cache", default=True)
 
     if TYPE_CHECKING:
@@ -998,9 +1002,9 @@ class LinkIfc(bpy.types.Operator):
                 self.report({"INFO"}, "Can't link the current .blend file")
                 continue
             new = context.scene.BIMProjectProperties.links.add()
-            if self.use_relative_path:
+            if self.use_relative_path and (ifc_filepath := tool.Ifc.get_path()):
                 try:
-                    filepath = filepath.relative_to(bpy.path.abspath("//"))
+                    filepath = filepath.relative_to(Path(ifc_filepath).parent)
                 except:
                     pass  # Perhaps on another drive or something
             # Store link paths as posix for cross-platform.
@@ -1088,7 +1092,7 @@ class LoadLink(bpy.types.Operator):
     filepath_: Path
 
     def execute(self, context):
-        filepath = tool.Blender.ensure_blender_path_is_abs(Path(self.filepath))
+        filepath = Path(tool.Ifc.resolve_uri(self.filepath))
         self.filepath_ = filepath
         if filepath.suffix.lower().endswith(".blend"):
             self.link_blend(filepath)
@@ -1415,9 +1419,6 @@ class ExportIFC(bpy.types.Operator):
             f'IFC Project "{os.path.basename(output_file)}" {"" if not save_blend_file else "And Current Blend File Are"} Saved',
         )
 
-        if bpy.data.is_saved:
-            bpy.ops.wm.save_mainfile("INVOKE_DEFAULT")
-
     @classmethod
     def description(cls, context, properties):
         if properties.should_save_as:
@@ -1427,7 +1428,8 @@ class ExportIFC(bpy.types.Operator):
 
 class LoadLinkedProject(bpy.types.Operator):
     bl_idname = "bim.load_linked_project"
-    bl_label = "Load a project for viewing only."
+    bl_label = "Load Project For Viewing Only"
+    bl_description = "Operator is used to load a project .cache.blend to then link it to the IFC file."
     bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty()
 
@@ -1435,6 +1437,12 @@ class LoadLinkedProject(bpy.types.Operator):
     meshes: dict[str, bpy.types.Mesh]
     # Material names is derived from diffuse as in 'r-g-b-a'.
     blender_mats: dict[str, bpy.types.Material]
+
+    def invoke(self, context, event):
+        # Invoke is for debugging purposes, users are not intended to use this method really.
+        WindowManager = context.window_manager
+        WindowManager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
 
     def execute(self, context):
         import ifcpatch
@@ -1521,56 +1529,64 @@ class LoadLinkedProject(bpy.types.Operator):
             )
             self.meshes = {}
             self.blender_mats = {}
-            blender_mats = {}
+            blender_mats: dict[tuple[float, float, float, float], bpy.types.Material] = {}
 
             default_mat = np.array([[1, 1, 1, 1]], dtype=np.float32)
-            chunked_guids = []
-            chunked_guid_ids = []
-            chunked_verts = []
-            chunked_faces = []
-            chunked_materials = []
-            chunked_material_ids = []
+            chunked_guids: list[str] = []
+            chunked_guid_ids: list[int] = []
+            chunked_verts: list[np.ndarray] = []
+            chunked_faces: list[np.ndarray] = []
+            # List of material colors.
+            chunked_materials: list[np.ndarray] = []
+            # List of material indices for each face.
+            chunked_material_ids: list[np.ndarray] = []
             material_offset = 0
             chunk_size = 10000
+            # Vertex offset.
             offset = 0
 
             ci = 0
+
+            def process_chunk() -> None:
+                mats = np.concatenate(chunked_materials)
+                midx = np.concatenate(chunked_material_ids)
+                mats, mapping = np.unique(mats, axis=0, return_inverse=True)
+                midx = mapping[midx]
+
+                mat_results: list[bpy.types.Material] = []
+                for mat in mats:
+                    mat = tuple(mat)
+                    blender_mat = blender_mats.get(mat, None)
+                    if not blender_mat:
+                        blender_mat = bpy.data.materials.new("Chunk")
+                        blender_mat.diffuse_color = mat
+                        blender_mats[mat] = blender_mat
+                    mat_results.append(blender_mat)
+
+                # Create object for current chunk.
+                self.create_object(
+                    np.concatenate(chunked_verts),
+                    np.concatenate(chunked_faces),
+                    mat_results,
+                    midx,
+                    chunked_guids,
+                    chunked_guid_ids,
+                )
+
             if iterator.initialize():
-                while True:
+                while True:  # Main loop.
                     shape = iterator.get()
                     results.add(self.file.by_id(shape.id))
+                    geometry = shape.geometry
 
                     # Elements with a lot of geometry benefit from instancing to save memory
-                    if len(shape.geometry.faces) > 1000:  # 333 tris
+                    if ifcopenshell.util.shape.get_faces(geometry).shape[0] > 333:  # 333 tris
                         self.process_occurrence(shape)
                         if not iterator.next():
                             if not chunked_verts:
                                 break
-                            mats = np.concatenate(chunked_materials)
-                            midx = np.concatenate(chunked_material_ids)
-                            mats, mapping = np.unique(mats, axis=0, return_inverse=True)
-                            midx = mapping[midx]
-
-                            mat_results: list[bpy.types.Material] = []
-                            for mat in mats:
-                                mat = tuple(mat)
-                                blender_mat = blender_mats.get(mat, None)
-                                if not blender_mat:
-                                    blender_mat = bpy.data.materials.new("Chunk")
-                                    blender_mat.diffuse_color = mat
-                                    blender_mats[mat] = blender_mat
-                                mat_results.append(blender_mat)
-
-                            # The left over chunk
-                            self.create_object(
-                                np.concatenate(chunked_verts),
-                                np.concatenate(chunked_faces),
-                                mat_results,
-                                midx,
-                                chunked_guids,
-                                chunked_guid_ids,
-                            )
-                            break
+                            process_chunk()
+                            break  # Break from main loop.
                         continue
 
                     ci += 1
@@ -1601,7 +1617,7 @@ class LoadLinkedProject(bpy.types.Operator):
                     vs = ifcopenshell.util.shape.get_vertices(shape.geometry)
                     vs = np.hstack((vs, np.ones((len(vs), 1))))
                     vs = (np.asmatrix(matrix) * np.asmatrix(vs).T).T.A
-                    vs = vs[:, :3].flatten()
+                    vs = vs[:, :3].ravel()
                     fs = ifcopenshell.util.shape.get_faces(shape.geometry).ravel()
                     chunked_verts.append(vs)
                     chunked_faces.append(fs + offset)
@@ -1615,30 +1631,7 @@ class LoadLinkedProject(bpy.types.Operator):
 
                     if offset > chunk_size:
                         has_processed_chunk = True
-
-                        mats = np.concatenate(chunked_materials)
-                        midx = np.concatenate(chunked_material_ids)
-                        mats, mapping = np.unique(mats, axis=0, return_inverse=True)
-                        midx = mapping[midx]
-
-                        mat_results = []
-                        for mat in mats:
-                            mat = tuple(mat)
-                            blender_mat = blender_mats.get(mat, None)
-                            if not blender_mat:
-                                blender_mat = bpy.data.materials.new("Chunk")
-                                blender_mat.diffuse_color = mat
-                                blender_mats[mat] = blender_mat
-                            mat_results.append(blender_mat)
-
-                        self.create_object(
-                            np.concatenate(chunked_verts),
-                            np.concatenate(chunked_faces),
-                            mat_results,
-                            midx,
-                            chunked_guids,
-                            chunked_guid_ids,
-                        )
+                        process_chunk()
                         chunked_guids = []
                         chunked_guid_ids = []
                         chunked_verts = []
@@ -1650,31 +1643,8 @@ class LoadLinkedProject(bpy.types.Operator):
 
                     if not iterator.next():
                         if not has_processed_chunk:
-                            mats = np.concatenate(chunked_materials)
-                            midx = np.concatenate(chunked_material_ids)
-                            mats, mapping = np.unique(mats, axis=0, return_inverse=True)
-                            midx = mapping[midx]
-
-                            mat_results = []
-                            for mat in mats:
-                                mat = tuple(mat)
-                                blender_mat = blender_mats.get(mat, None)
-                                if not blender_mat:
-                                    blender_mat = bpy.data.materials.new("Chunk")
-                                    blender_mat.diffuse_color = mat
-                                    blender_mats[mat] = blender_mat
-                                mat_results.append(blender_mat)
-
-                            # The left over chunk
-                            self.create_object(
-                                np.concatenate(chunked_verts),
-                                np.concatenate(chunked_faces),
-                                mat_results,
-                                midx,
-                                chunked_guids,
-                                chunked_guid_ids,
-                            )
-                        break
+                            process_chunk()
+                        break  # Break main loop.
             self.elements -= results
 
         bpy.context.scene.collection.children.link(self.collection)
@@ -1771,7 +1741,15 @@ class LoadLinkedProject(bpy.types.Operator):
 
         self.collection.objects.link(obj)
 
-    def create_object(self, verts, faces, materials: list[bpy.types.Material], material_ids, guids, guid_ids):
+    def create_object(
+        self,
+        verts: np.ndarray,
+        faces: np.ndarray,
+        materials: list[bpy.types.Material],
+        material_ids: np.ndarray,
+        guids: list[str],
+        guid_ids: list[int],
+    ) -> None:
         num_vertices = len(verts) // 3
         if not num_vertices:
             return

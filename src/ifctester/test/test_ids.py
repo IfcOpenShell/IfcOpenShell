@@ -51,7 +51,7 @@ def run(
 
 class TestIds:
     def test_failing_on_opening_invalid_ids_data(self):
-        with pytest.raises(xmlschema.validators.exceptions.XMLSchemaValidationError):
+        with pytest.raises(ids.IdsXmlValidationError):
             ids.open("""<?xml version="1.0" encoding="UTF-8"?><clearly_not_an_ids/>""")
 
     def test_create_an_ids_with_minimal_information(self):

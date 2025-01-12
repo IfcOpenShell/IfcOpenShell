@@ -23,7 +23,6 @@ import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
-from ifcopenshell.util.shape_builder import V
 import bonsai.core.root
 import bonsai.core.geometry
 import bonsai.tool as tool
@@ -125,6 +124,7 @@ def update_railing_modifier_bmesh(context: bpy.types.Context) -> None:
     """
     obj = context.active_object
     props = obj.BIMRailingProperties
+    V_ = tool.Blender.V_
 
     # NOTE: using Data since bmesh update will hapen very often
     if not RailingData.is_loaded:
@@ -171,8 +171,8 @@ def update_railing_modifier_bmesh(context: bpy.types.Context) -> None:
             v0, v1 = main_edge.verts
             edge_dissolving_verts.extend([v0, v1])
 
-            edge_dir = ((v1.co - v0.co) * V(1, 1, 0)).normalized()
-            ortho_vector = edge_dir.cross(V(0, 0, 1))
+            edge_dir = ((v1.co - v0.co) * V_(1, 1, 0)).normalized()
+            ortho_vector = edge_dir.cross(V_(0, 0, 1))
 
             extruded_geom = bmesh.ops.extrude_edge_only(bm, edges=[main_edge])["geom"]
             extruded_verts = bm_sort_out_geom(extruded_geom)["verts"]
@@ -352,6 +352,41 @@ class AddRailing(bpy.types.Operator, tool.Ifc.Operator):
         update_railing_modifier_bmesh(context)
         update_railing_modifier_ifc_data(context)
         tool.Model.add_body_representation(obj)
+
+
+class CopyRailingParameters(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.copy_railing_parameters"
+    bl_label = "Copy Railing Parameters from Active to Selected"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.active_object and len(context.selected_objects) > 1
+
+    def _execute(self, context):
+        source_obj = context.active_object
+        source_props = source_obj.BIMRailingProperties
+        railing_data = source_props.get_general_kwargs(convert_to_project_units=True)
+
+        for target_obj in context.selected_objects:
+            if target_obj == source_obj:
+                continue
+            context.view_layer.objects.active = target_obj
+            RailingData.load()
+            if not "path_data" in RailingData.data:
+                continue
+            railing_data["path_data"] = RailingData.data["path_data"]
+            target_element = tool.Ifc.get_entity(target_obj)
+            target_props = target_obj.BIMRailingProperties
+
+            target_props.set_props_kwargs_from_ifc_data(railing_data)
+            update_bbim_railing_pset(target_element, railing_data)
+            refresh()
+            update_railing_modifier_bmesh(context)
+            update_railing_modifier_ifc_data(context)
+
+        context.view_layer.objects.active = source_obj
+        return {"FINISHED"}
 
 
 class EnableEditingRailing(bpy.types.Operator, tool.Ifc.Operator):

@@ -296,12 +296,12 @@ class IfcCsv:
             writer.writerow(self.headers)
             for row in self.results:
                 writer.writerow(row)
-            if any([s for s in self.summaries if s is not None]):
+            if self.has_summaries():
                 writer.writerow(self.summaries)
 
     def export_ods(self, output, should_preserve_existing=False):
         df = self.export_pd()
-        if self.summaries:
+        if self.has_summaries():
             df.loc[df.shape[0]] = self.summaries
 
         if os.path.exists(output) and should_preserve_existing:
@@ -324,10 +324,9 @@ class IfcCsv:
             # If the DataFrame has fewer rows than the table, blank out the extra rows
             num_rows_table = len(first_table.getElementsByType(TableRow)) - 1  # Exclude header row
             if len(df) < num_rows_table:
-                for i in range(len(df) + 1, num_rows_table + 1):  # +1 to account for header
-                    for cell in first_table.getElementsByType(TableRow)[i].getElementsByType(TableCell):
-                        for item in cell.childNodes:
-                            cell.removeChild(item)
+                rows = first_table.getElementsByType(TableRow)
+                for i in reversed(range(len(df) + 1, num_rows_table + 1)):  # +1 to account for header
+                    first_table.removeChild(rows[i])
 
             ods_document.save(output)
         else:
@@ -362,9 +361,12 @@ class IfcCsv:
         row.addElement(new_cell)
         return new_cell
 
+    def has_summaries(self):
+        return any([s for s in self.summaries if s is not None])
+
     def export_xlsx(self, output, should_preserve_existing=False):
         df = self.export_pd()
-        if self.summaries:
+        if self.has_summaries():
             df.loc[df.shape[0]] = self.summaries
 
         if os.path.exists(output):

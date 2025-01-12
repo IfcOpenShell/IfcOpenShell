@@ -72,6 +72,7 @@ class Style(bonsai.core.tool.Style):
     def disable_editing(cls) -> None:
         props = bpy.context.scene.BIMStylesProperties
         props.is_editing_style = 0
+        props.is_editing_class = ""
         props.attributes.clear()
         props.external_style_attributes.clear()
         props.refraction_style_attributes.clear()
@@ -115,9 +116,7 @@ class Style(bonsai.core.tool.Style):
     @classmethod
     def get_active_style_in_ui(cls) -> Union[bpy.types.PropertyGroup, None]:
         props = bpy.context.scene.BIMStylesProperties
-        if len(props.styles) > props.active_style_index >= 0:
-            return props.styles[props.active_style_index]
-        return None
+        return props.active_style
 
     @classmethod
     def get_active_style_type(cls) -> str:
@@ -550,6 +549,10 @@ class Style(bonsai.core.tool.Style):
     @classmethod
     def is_editing_styles(cls) -> bool:
         return bpy.context.scene.BIMStylesProperties.is_editing
+
+    @classmethod
+    def is_editing_style(cls) -> bool:
+        return bpy.context.scene.BIMStylesProperties.is_editing_style
 
     @classmethod
     def select_elements(cls, elements: list[ifcopenshell.entity_instance]) -> None:

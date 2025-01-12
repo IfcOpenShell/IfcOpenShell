@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import bpy
 import bonsai.bim.helper
 import bonsai.bim.module.cost.prop as CostProp
 from bpy.types import Panel, UIList
@@ -175,6 +176,8 @@ class BIM_PT_cost_schedules(Panel):
                 else:
                     op = row.operator("bim.enable_editing_cost_item_attributes", text="", icon="GREASEPENCIL")
                     op.cost_item = ifc_definition_id
+
+        BIM_UL_cost_items_trait.draw_header(self.layout)
         self.layout.template_list(
             "BIM_UL_cost_items",
             "",
@@ -587,6 +590,26 @@ class BIM_PT_cost_item_rates(Panel):
 
 
 class BIM_UL_cost_items_trait:
+    @classmethod
+    def draw_header(cls, layout: bpy.types.UILayout):
+        row = layout.row(align=True)
+
+        split1 = row.split(factor=0.1)
+        split1.label(text="ID")
+
+        split2 = split1.split(factor=0.5)
+        split2.alignment = "RIGHT"
+        split2.label(text="Name")
+        if CostSchedulesData.data["is_editing_rates"]:
+            split2.label(text="Unit")
+        else:
+            split2.label(text="Quantity")
+        split2.label(text="Value")
+
+        for column in bpy.context.scene.BIMCostProperties.columns:
+            split2.label(text=column.name)
+        split2.label(text="Total Cost")
+
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
             self.props = context.scene.BIMCostProperties

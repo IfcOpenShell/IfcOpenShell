@@ -18,7 +18,7 @@
 
 
 class Patcher:
-    def __init__(self, src, file, logger, ifc_class="IfcSite"):
+    def __init__(self, file, logger, ifc_class="IfcSite"):
         """Resets the location of a spatial element to 0,0,0
 
         Another more specialised patch to fix incorrect coordinate usage is to
@@ -35,7 +35,6 @@ class Patcher:
             # All IfcSites will shift back to 0,0,0.
             ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "ResetSpatialElementLocations", "arguments": ["IfcSite"]})
         """
-        self.src = src
         self.file = file
         self.logger = logger
         self.ifc_class = ifc_class

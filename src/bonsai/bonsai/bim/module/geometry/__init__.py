@@ -50,6 +50,8 @@ classes = (
     operator.OverrideMeshSeparate,
     operator.OverrideModeSetEdit,
     operator.OverrideModeSetObject,
+    operator.OverrideMoveAggregate,
+    operator.OverrideMoveAggregateMacro,
     operator.OverrideOriginSet,
     operator.OverrideOutlinerDelete,
     operator.OverridePasteBuffer,
@@ -94,6 +96,8 @@ def register():
     operator.OverrideDuplicateMoveLinkedMacro.define("TRANSFORM_OT_translate")
     operator.DuplicateMoveLinkedAggregateMacro.define("BIM_OT_object_duplicate_move_linked_aggregate")
     operator.DuplicateMoveLinkedAggregateMacro.define("TRANSFORM_OT_translate")
+    operator.OverrideMoveAggregateMacro.define("BIM_OT_override_move_aggregate")
+    operator.OverrideMoveAggregateMacro.define("TRANSFORM_OT_translate")
 
     bpy.types.Object.BIMGeometryProperties = bpy.props.PointerProperty(type=prop.BIMObjectGeometryProperties)
     bpy.types.Scene.BIMGeometryProperties = bpy.props.PointerProperty(type=prop.BIMGeometryProperties)
@@ -116,6 +120,8 @@ def register():
             "bim.object_duplicate_move_linked_aggregate_macro", "D", "PRESS", ctrl=True, shift=True
         )
         addon_keymaps.append((km, kmi))
+        kmi = km.keymap_items.new("bim.override_move_aggregate_macro", "G", "PRESS")
+        addon_keymaps.append((km, kmi))
         kmi = km.keymap_items.new("bim.override_paste_buffer", "V", "PRESS", ctrl=True)
         addon_keymaps.append((km, kmi))
         kmi = km.keymap_items.new("bim.override_mode_set_edit", "TAB", "PRESS")
@@ -136,6 +142,10 @@ def register():
 
         km = wm.keyconfigs.addon.keymaps.new(name="Curve", space_type="EMPTY")
         kmi = km.keymap_items.new("bim.override_mode_set_object", "TAB", "PRESS")
+        addon_keymaps.append((km, kmi))
+
+        km = wm.keyconfigs.addon.keymaps.new(name="3D View", space_type="VIEW_3D")
+        kmi = km.keymap_items.new("bim.override_escape", "ESC", "PRESS")
         addon_keymaps.append((km, kmi))
 
         km = wm.keyconfigs.addon.keymaps.new(name="Outliner", space_type="OUTLINER")

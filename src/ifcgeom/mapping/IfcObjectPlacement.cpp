@@ -96,6 +96,12 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcObjectPlacement* inst) {
 
 	result->components() = offset_and_rotation_ * result->ccomponents();
 
+	auto abs_det = std::abs(result->ccomponents().determinant());
+	if (abs_det < 1.e-7) {
+		Logger::Warning("Ignoring singular matrix:", inst);
+		return nullptr;
+	}
+
 	return result;
 }
 

@@ -548,7 +548,7 @@ class BIM_PT_door(bpy.types.Panel):
         else:
             row = self.layout.row()
             row.label(text="No Door Found")
-            row.operator("bim.add_door", icon="ADD", text="").obj = ""
+            row.operator("bim.add_door", icon="ADD", text="")
 
 
 class BIM_PT_railing(bpy.types.Panel):
@@ -596,6 +596,7 @@ class BIM_PT_railing(bpy.types.Panel):
 
             else:
                 row.operator("bim.enable_editing_railing", icon="GREASEPENCIL", text="")
+                row.operator("bim.copy_railing_parameters", icon="COPYDOWN", text="")
                 row.operator("bim.enable_editing_railing_path", icon="ANIM", text="")
                 # TODO: good for preview but probably should move to .is_editing == True
                 # since it's writing to ifc
@@ -648,13 +649,12 @@ class BIM_PT_roof(bpy.types.Panel):
                     self.layout.prop(props, prop)
 
                 update_roof_modifier_bmesh(obj)
-
             elif props.is_editing_path:
                 row.operator("bim.finish_editing_roof_path", icon="CHECKMARK", text="")
                 row.operator("bim.cancel_editing_roof_path", icon="CANCEL", text="")
-
             else:
                 row.operator("bim.enable_editing_roof", icon="GREASEPENCIL", text="")
+                row.operator("bim.copy_roof_parameters", icon="COPYDOWN", text="")
                 row.operator("bim.enable_editing_roof_path", icon="ANIM", text="")
                 row.operator("bim.remove_roof", icon="X", text="")
 

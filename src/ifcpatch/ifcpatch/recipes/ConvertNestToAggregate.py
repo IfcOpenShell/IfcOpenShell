@@ -21,7 +21,7 @@ import ifcopenshell.guid
 
 
 class Patcher:
-    def __init__(self, src, file, logger):
+    def __init__(self, file, logger):
         """Convert nesting relationships to aggregate relationships
 
         Some software like Revit won't load nested children elements because
@@ -39,7 +39,6 @@ class Patcher:
 
             ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "ConvertNestToAggregate", "arguments": []})
         """
-        self.src = src
         self.file = file
         self.logger = logger
 

@@ -55,28 +55,38 @@ class Root(bonsai.core.tool.Root):
             )
 
     @classmethod
-    def copy_representation(cls, source: ifcopenshell.entity_instance, dest: ifcopenshell.entity_instance) -> None:
+    def copy_representation(
+        cls, source: ifcopenshell.entity_instance, dest: ifcopenshell.entity_instance
+    ) -> dict[int, ifcopenshell.entity_instance]:
         def exclude_callback(attribute):
             return attribute.is_a("IfcProfileDef") and attribute.ProfileName
 
+        copied_entities: dict[int, ifcopenshell.entity_instance] = {}
+
         if dest.is_a("IfcProduct"):
             if not source.Representation:
-                return
+                return copied_entities
             dest.Representation = ifcopenshell.util.element.copy_deep(
                 tool.Ifc.get(),
                 source.Representation,
                 exclude=["IfcGeometricRepresentationContext"],
                 exclude_callback=exclude_callback,
+                copied_entities=copied_entities,
             )
         elif dest.is_a("IfcTypeProduct"):
             if not source.RepresentationMaps:
-                return
+                return copied_entities
             dest.RepresentationMaps = [
                 ifcopenshell.util.element.copy_deep(
-                    tool.Ifc.get(), m, exclude=["IfcGeometricRepresentationContext"], exclude_callback=exclude_callback
+                    tool.Ifc.get(),
+                    m,
+                    exclude=["IfcGeometricRepresentationContext"],
+                    exclude_callback=exclude_callback,
+                    copied_entities=copied_entities,
                 )
                 for m in source.RepresentationMaps
             ]
+        return copied_entities
 
     @classmethod
     def does_type_have_representations(cls, element: ifcopenshell.entity_instance) -> bool:
@@ -329,6 +339,7 @@ class Root(bonsai.core.tool.Root):
                     )
                     continue
 
+                tool.Aggregate.apply_constraints(tool.Ifc.get_object(new[0]))
                 bonsai.core.aggregate.assign_object(
                     tool.Ifc,
                     tool.Aggregate,
@@ -349,6 +360,9 @@ class Root(bonsai.core.tool.Root):
                             relating_obj=tool.Ifc.get_object(new_aggregate[0]),
                             related_obj=tool.Ifc.get_object(tool.Ifc.get_entity(obj)),
                         )
+
+        tool.Aggregate.constrain_all_parts_to_aggregate(tool.Ifc.get_object(new_aggregate[0]))
+        tool.Blender.select_and_activate_single_object(bpy.context, tool.Ifc.get_object(new_aggregate[0]))
 
     @classmethod
     def run_geometry_add_representation(

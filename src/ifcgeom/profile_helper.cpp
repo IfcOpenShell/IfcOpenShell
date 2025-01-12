@@ -54,6 +54,32 @@ taxonomy::loop::ptr ifcopenshell::geometry::fillet_loop(taxonomy::loop::ptr loop
 	return loop;
 }
 
+void ifcopenshell::geometry::remove_duplicate_points_from_loop(std::vector<taxonomy::point3::ptr>& polygon, bool closed, double tol) {
+	tol *= tol;
+
+	for (;;) {
+		bool removed = false;
+		int n = polygon.size() - (closed ? 0 : 1);
+		for (size_t i = 0; i < n; ++i) {
+			// wrap around to the first point in case of a closed loop
+			auto j = (i + 1) % polygon.size();
+			double dist = (polygon[i]->ccomponents() - polygon[j]->ccomponents()).squaredNorm();
+			if (dist < tol) {
+				// do not remove the first or last point to
+				// maintain connectivity with other wires
+				if ((closed && j == 0) || (!closed && j == (n - 1))) {
+					polygon.erase(polygon.begin() + i);
+				} else {
+					polygon.erase(polygon.begin() + j);
+				}
+				removed = true;
+				break;
+			}
+		}
+		if (!removed) break;
+	}
+}
+
 taxonomy::loop::ptr ifcopenshell::geometry::polygon_from_points(const std::vector<taxonomy::point3::ptr>& ps, bool external) {
 	auto loop = taxonomy::make<taxonomy::loop>();
 	loop->external = external;

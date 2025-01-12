@@ -307,7 +307,7 @@ if platform.system() == "Darwin":
 BOOST_VERSION_UNDERSCORE = BOOST_VERSION.replace(".", "_")
 
 OCE_LOCATION = f"https://github.com/tpaviot/oce/archive/OCE-{OCE_VERSION}.tar.gz"
-BOOST_LOCATION = f"https://boostorg.jfrog.io/artifactory/main/release/{BOOST_VERSION}/source/"
+BOOST_LOCATION = f"https://github.com/boostorg/boost/releases/download/boost-{BOOST_VERSION}/"
 
 # Helper functions
 
@@ -350,6 +350,7 @@ def git_clone_or_pull_repository(clone_url, target_dir, revision=None):
         run([git, "clone", "--recursive", clone_url, target_dir])
     else:
         logger.info(f"directory '{target_dir}' already cloned. Pulling latest changes.")
+        run([git, "-C", target_dir, "fetch", "--all", "--tags"])
 
     # detect whether we are on a branch and pull
     if run([git, "rev-parse", "--abbrev-ref", "HEAD"], cwd=target_dir) != "HEAD":
@@ -478,7 +479,7 @@ if platform.system() == "Darwin":
     ADDITIONAL_ARGS = [f"-mmacosx-version-min={TOOLSET}"] + ADDITIONAL_ARGS
 
 if "wasm" in flags:
-    ADDITIONAL_ARGS.extend(("-sWASM_BIGINT", "-fexceptions"))
+    ADDITIONAL_ARGS.extend(("-sWASM_BIGINT", "-fwasm-exceptions"))
 
 # If the linker supports GC sections, set it up to reduce binary file size
 # -fPIC is required for the shared libraries to work
@@ -746,7 +747,7 @@ if "boost" in targets:
         download_url=BOOST_LOCATION,
         # don't remember what this is, but fail on 1.86
         # patch="./patches/boost/boostorg_regex_62.patch",
-        download_name=f"boost_{BOOST_VERSION_UNDERSCORE}.tar.bz2"
+        download_name=f"boost-{BOOST_VERSION}-b2-nodocs.tar.gz"
     )
     if "wasm" in flags:
         # only supported on nix for now
@@ -989,7 +990,11 @@ if "IfcOpenShell-Python" in targets:
             if platform.system() != "Darwin":
                 if BUILD_CFG == "Release":
                     # TODO: This symbol name depends on the Python version?
-                    run([strip, "-s", "-K", "PyInit__ifcopenshell_wrapper", glob.glob(os.path.join(module_dir, "_ifcopenshell_wrapper*.so"))[0]], cwd=module_dir)
+                    so = glob.glob(os.path.join(module_dir, "_ifcopenshell_wrapper*.so"))[0]
+                    if "wasm" in flags:
+                        run(['wasm-strip', so, '-k', "dylink.0"])
+                    else:
+                        run([strip, "-s", "-K", "PyInit__ifcopenshell_wrapper", so], cwd=module_dir)
 
             return module_dir
 

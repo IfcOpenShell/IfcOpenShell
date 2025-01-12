@@ -24,17 +24,12 @@ from typing import Union
 
 
 class Patcher:
-    input_argument = "SUPPORTED"
-
-    def __init__(self, src: str, file: ifcopenshell.file, logger: logging.Logger, output_dir: Union[str, None] = None):
+    def __init__(self, file: ifcopenshell.file, logger: logging.Logger, output_dir: Union[str, None] = None):
         """Split an IFC model into multiple models based on building storey
 
         The new IFC model names will be named after the storey name in the
         format of {i}-{name}.ifc, where {i} is an ascending number starting from
         0 and {name} is the name of the storey.
-
-        `input` argument might be provided to ifcpatch - it will be used load file from disk
-        (otherwise `file` will be saved to a temporary file).
 
         :param output_dir: Specifies an output directory where the new IFC models will be saved.
 
@@ -44,7 +39,6 @@ class Patcher:
 
             ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "SplitByBuildingStorey", "arguments": ["C:/.../output_files"]})
         """
-        self.src = src
         self.file = file
         self.logger = logger
         self.output_dir = output_dir
@@ -60,17 +54,14 @@ class Patcher:
             output_dir = Path(self.output_dir)
             output_dir.mkdir(parents=True, exist_ok=True)
 
-        temp_file = None
-        if not self.src:
-            temp_file = tempfile.NamedTemporaryFile(suffix=".ifc", delete=False)
-            self.src = temp_file.name
-            self.file.write(self.src)
+        temp_file = tempfile.NamedTemporaryFile(suffix=".ifc", delete=False)
+        self.file.write(temp_file.name)
 
         storeys = self.file.by_type("IfcBuildingStorey")
         for i, storey in enumerate(storeys):
             filename = f"{i}-{storey.Name}.ifc"
             dest = filename if output_dir == None else output_dir / filename
-            copyfile(self.src, dest)
+            copyfile(temp_file.name, dest)
             old_ifc: ifcopenshell.file = ifcopenshell.open(dest)
             new_ifc = ifcopenshell.file(schema=self.file.schema)
 
@@ -98,9 +89,8 @@ class Patcher:
                     new_ifc.remove(element)
             new_ifc.write(dest)
 
-        if temp_file is not None:
-            temp_file.close()
-            os.unlink(temp_file.name)
+        temp_file.close()
+        os.unlink(temp_file.name)
 
     def is_in_storey(self, element: ifcopenshell.entity_instance, storey: ifcopenshell.entity_instance) -> bool:
         return (

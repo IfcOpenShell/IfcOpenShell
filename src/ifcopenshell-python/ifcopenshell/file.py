@@ -222,7 +222,7 @@ class file:
     def __init__(
         self,
         f: Optional[ifcopenshell_wrapper.file] = None,
-        schema: Optional[str] = None,
+        schema: Optional[ifcopenshell.util.schema.IFC_SCHEMA] = None,
         schema_version: Optional[tuple[int, int, int, int]] = None,
     ):
         """Create a new blank IFC model
@@ -239,7 +239,6 @@ class file:
             or "IFC4X3". These refer to the ISO approved versions of IFC.
             Defaults to "IFC4" if not specified, which is currently recommended
             for all new projects.
-        :type schema: string
         :param schema_version: If you want to specify an exact version of IFC
             that may not be an ISO approved version, use this argument instead
             of ``schema``. IFC versions on technical.buildingsmart.org are
@@ -248,7 +247,6 @@ class file:
             ADD2 TC1, which is the official version approved by ISO when people
             refer to "IFC4". Generally you should not use this argument unless
             you are testing non-ISO IFC releases.
-        :type schema_version: tuple[int, int, int, int]
 
         Example:
 
@@ -630,7 +628,7 @@ class file:
     def __iter__(self) -> Generator[ifcopenshell.entity_instance, None, None]:
         return iter(self[id] for id in self.wrapped_data.entity_names())
 
-    def assign_header_from(self, other):
+    def assign_header_from(self, other: ifcopenshell.file) -> None:
         for k, vs in HEADER_FIELDS.items():
             for v in vs:
                 setattr(getattr(self.header, k), v, getattr(getattr(other.header, k), v))

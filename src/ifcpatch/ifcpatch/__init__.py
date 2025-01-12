@@ -20,6 +20,7 @@
 
 import os
 import shutil
+import sys
 import ifcopenshell
 import logging
 import typing
@@ -86,32 +87,22 @@ def execute(args: ArgumentsDict) -> Union[ifcopenshell.file, str]:
     if "log" in args:
         logging.basicConfig(filename=args["log"], filemode="a", level=logging.DEBUG)
     logger = logging.getLogger("IFCPatch")
-    recipes = getattr(__import__("ifcpatch.recipes.{}".format(args["recipe"])), "recipes")
-    recipe = getattr(recipes, args["recipe"])
-
-    # Ensure file or input is provided.
-    input_argument = get_patch_input_argument_use(args["recipe"])
-    if input_argument == "REQUIRED":
-        if not args.get("input"):
-            raise ValueError(f"Recipe {args['recipe']} is requiring 'input' argument to be provided.")
-    elif "file" not in args:  # SUPPORTED, IGNORED.
-        raise ValueError(f"Recipe {args['recipe']} is requiring 'file' argument to be provided.")
-
-    arguments = args.get("arguments", [])
-    if recipe.Patcher.__init__.__doc__ is not None:
-        patcher = recipe.Patcher(args.get("input"), args.get("file"), logger, *arguments)
+    if recipe_dir := os.environ.get("IFCPATCH_RECIPE_DIR"):
+        spec = importlib.util.spec_from_file_location(args["recipe"], os.path.join(recipe_dir, args["recipe"] + ".py"))
+        recipe = importlib.util.module_from_spec(spec)
+        sys.modules[args["recipe"]] = recipe
+        spec.loader.exec_module(recipe)
     else:
-        patcher = recipe.Patcher(args.get("input"), args.get("file"), logger, arguments)
+        recipe = importlib.import_module(f"ifcpatch.recipes.{args['recipe']}")
+
+    arguments = args.get("arguments", None) or []
+    if recipe.Patcher.__init__.__doc__ is not None:
+        patcher = recipe.Patcher(args.get("file"), logger, *arguments)
+    else:
+        patcher = recipe.Patcher(args.get("file"), logger, arguments)
     patcher.patch()
     output = getattr(patcher, "file_patched", patcher.file)
     return output
-
-
-def get_patch_input_argument_use(recipe: str) -> Literal["REQUIRED", "SUPPORTED", "IGNORED"]:
-    import importlib
-
-    recipe_module = importlib.import_module(f"ifcpatch.recipes.{recipe}")
-    return getattr(recipe_module.Patcher, "input_argument", "IGNORED")
 
 
 def write(output: Union[ifcopenshell.file, str], filepath: str) -> None:

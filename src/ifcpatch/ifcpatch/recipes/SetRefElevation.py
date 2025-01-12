@@ -20,7 +20,7 @@ import typing
 
 
 class Patcher:
-    def __init__(self, src, file, logger, elevation: typing.Union[str, float] = "0"):
+    def __init__(self, file, logger, elevation: typing.Union[str, float] = "0"):
         """Sets the reference elevation of all IfcSites
 
         To completely reference model coordinates, a reference elevation should
@@ -41,7 +41,6 @@ class Patcher:
             # All IfcSites will have their reference elevation set to 42.
             ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "SetRefElevation", "arguments": [42]})
         """
-        self.src = src
         self.file = file
         self.logger = logger
         self.elevation = float(elevation)

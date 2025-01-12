@@ -21,7 +21,7 @@ import ifcopenshell.util.element
 
 
 class Patcher:
-    def __init__(self, src, file, logger):
+    def __init__(self, file, logger):
         """Downgrade indexed polycurves to simple polylines
 
         Low quality IFC viewers like Navisworks do not support various IFC4
@@ -39,7 +39,6 @@ class Patcher:
 
             ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "DowngradeIndexedPolyCurve", "arguments": []})
         """
-        self.src = src
         self.file = file
         self.logger = logger
 

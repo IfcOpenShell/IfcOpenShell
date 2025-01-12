@@ -38,7 +38,7 @@ import bonsai.core.root
 import bonsai.core.drawing
 import bonsai.tool as tool
 import bonsai.bim.handler
-from mathutils import Vector, Matrix
+from mathutils import Vector, Matrix, Quaternion
 from time import time
 from bonsai.bim.ifc import IfcStore
 from ifcopenshell.util.shape_builder import ShapeBuilder
@@ -1399,20 +1399,22 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
         self.pset_name = "BBIM_Linked_Aggregate"
         refresh_start_time = time()
         old_to_new = {}
-        original_names = {}
+        original_names: dict[int, dict[int, str]] = {}
 
-        def delete_objects(element):
+        def delete_objects(element: ifcopenshell.entity_instance) -> None:
+            """Remove IfcElementAssembly and it's parts."""
             parts = ifcopenshell.util.element.get_parts(element)
             if parts:
                 for part in parts:
                     if part.is_a("IfcElementAssembly"):
                         delete_objects(part)
+                        continue
 
                     tool.Geometry.delete_ifc_object(tool.Ifc.get_object(part))
 
             tool.Geometry.delete_ifc_object(tool.Ifc.get_object(element))
 
-        def get_original_names(element):
+        def get_original_names(element: ifcopenshell.entity_instance) -> dict[int, dict[int, str]]:
             group = [
                 r.RelatingGroup
                 for r in getattr(element, "HasAssignments", []) or []
@@ -1429,6 +1431,7 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
             if parts:
                 for part in parts:
                     if part.is_a("IfcElementAssembly"):
+                        # TODO: missing assignment.
                         original_names | get_original_names(part)
                     else:
                         try:
@@ -1441,7 +1444,7 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
 
             return original_names
 
-        def set_original_name(obj, original_names):
+        def set_original_name(obj: bpy.types.Object, original_names: dict[int, dict[int, str]]) -> None:
             element = tool.Ifc.get_entity(obj)
             aggregate = ifcopenshell.util.element.get_aggregate(element)
             if ifcopenshell.util.element.get_parts(
@@ -1468,7 +1471,7 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
             except:
                 return
 
-        def get_element_assembly(element):
+        def get_element_assembly(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
             if element.is_a("IfcElementAssembly"):
                 return element
             elif element.Decomposes:
@@ -1478,7 +1481,9 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
             else:
                 return None
 
-        def handle_selection(selected_objs):
+        def handle_selection(
+            selected_objs: list[bpy.types.Object],
+        ) -> tuple[list[int], list[ifcopenshell.entity_instance]]:
             selected_elements = [tool.Ifc.get_entity(selected_obj) for selected_obj in selected_objs]
             if None in selected_elements:
                 self.report({"INFO"}, "Object has no Ifc Metadata.")
@@ -1509,7 +1514,9 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
 
             return list(set(linked_aggregate_groups)), selected_parents
 
-        def get_original_matrix(element, base_instance):
+        def get_original_matrix(
+            element: ifcopenshell.entity_instance, base_instance: ifcopenshell.entity_instance
+        ) -> tuple[Matrix, tuple[Vector, Quaternion, Vector]]:
             selected_obj = tool.Ifc.get_object(base_instance)
             selected_matrix = selected_obj.matrix_world
             object_duplicate = tool.Ifc.get_object(element)
@@ -1517,7 +1524,9 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
 
             return selected_matrix, duplicate_matrix
 
-        def set_new_matrix(selected_matrix, duplicate_matrix, old_to_new):
+        def set_new_matrix(
+            selected_matrix: Matrix, duplicate_matrix: tuple[Vector, Quaternion, Vector], old_to_new: dict
+        ) -> None:
             for old, new in old_to_new.items():
                 new_obj = tool.Ifc.get_object(new[0])
                 new_base_matrix = Matrix.LocRotScale(*duplicate_matrix)
@@ -1837,19 +1846,22 @@ class OverridePasteBuffer(bpy.types.Operator):
 class OverrideEscape(bpy.types.Operator):
     bl_idname = "bim.override_escape"
     bl_label = "Override Escape"
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        self.report({"INFO"}, "Operator executed")
-        return {"FINISHED"}
-
-    def modal(self, context, event):
-        if event.type == "ESC" and context.scene.BIMGeometryProperties.mode == "ITEM":
+        if context.scene.BIMGeometryProperties.mode == "ITEM":
             tool.Geometry.disable_item_mode()
-        return {"PASS_THROUGH"}
-
-    def invoke(self, context, event):
-        context.window_manager.modal_handler_add(self)
-        return {"RUNNING_MODAL"}
+        elif context.scene.BIMGeometryProperties.mode == "EDIT":
+            bpy.ops.bim.override_mode_set_object("INVOKE_DEFAULT", should_save=False)
+            tool.Geometry.disable_item_mode()
+        elif context.scene.BIMModelProperties.openings:
+            bpy.ops.bim.hide_all_openings()
+        elif context.scene.BIMAggregateProperties.in_aggregate_mode:
+            bpy.ops.bim.disable_aggregate_mode()
+        elif active_object := context.active_object:
+            if tool.Blender.Modifier.try_canceling_editing_modifier_parameters_or_path(active_object):
+                pass
+        return {"FINISHED"}
 
 
 class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
@@ -1869,9 +1881,17 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         selected_objs = context.selected_objects  # Purposely exclude active object
 
+        if self.has_aggregates(selected_objs):
+            if not context.scene.BIMAggregateProperties.in_aggregate_mode:
+                bonsai.core.aggregate.enable_aggregate_mode(tool.Aggregate, context.active_object)
+                return {"FINISHED"}
+
         if len(selected_objs) == 1 and context.active_object == selected_objs[0]:
             self.handle_single_object(context, context.active_object)
         elif len(selected_objs) == 0:
+            if context.scene.BIMAggregateProperties.in_aggregate_mode:
+                bonsai.core.aggregate.disable_aggregate_mode(tool.Aggregate)
+                return {"FINISHED"}
             tool.Geometry.disable_item_mode()
         elif len(selected_objs) > 1:
             self.handle_multiple_selected_objects(context)
@@ -1880,6 +1900,11 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
         element = tool.Ifc.get_entity(obj)
         if obj == context.scene.BIMGeometryProperties.representation_obj:
             self.report({"ERROR"}, f"Element '{obj.name}' is in item mode and cannot be edited directly")
+        elif obj in [o.obj for o in context.scene.BIMAggregateProperties.not_editing_objects]:
+            obj.select_set(False)
+            self.report(
+                {"ERROR"}, f"Element '{obj.name}' does not belong to this aggregate and cannot be edited directly"
+            )
         elif obj in bpy.context.scene.BIMProjectProperties.clipping_planes_objs:
             self.report({"ERROR"}, "Clipping planes cannot be edited")
         elif element:
@@ -1899,13 +1924,8 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
                 bpy.ops.bim.enable_editing_boundary_geometry()
             elif element.is_a("IfcGridAxis"):
                 self.enable_edit_mode(context)
-            elif tool.Blender.Modifier.is_editing_parameters(obj):
-                # This should go BEFORE the modifiers
-                self.report({"INFO"}, "Can't edit while modifier parameters are being modified")
-            elif tool.Blender.Modifier.is_roof(element):
-                bpy.ops.bim.enable_editing_roof_path()
-            elif tool.Blender.Modifier.is_railing(element):
-                bpy.ops.bim.enable_editing_railing_path()
+            elif tool.Blender.Modifier.try_applying_edit_mode(obj, element):
+                pass
             else:
                 bpy.ops.bim.import_representation_items()
         elif tool.Geometry.is_representation_item(obj):
@@ -1953,6 +1973,13 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
             ProfileDecorator.install(context)
             if not bpy.app.background:
                 tool.Blender.set_viewport_tool("bim.cad_tool")
+        elif item.is_a("IfcAnnotationFillArea"):
+            tool.Model.import_annotation_fill_area(item, obj=obj)
+            obj.data.BIMMeshProperties.ifc_definition_id = item.id()
+            self.enable_edit_mode(context)
+            ProfileDecorator.install(context)
+            if not bpy.app.background:
+                tool.Blender.set_viewport_tool("bim.cad_tool")
         elif tool.Geometry.is_curvelike_item(item):
             tool.Model.import_curve(item, obj=obj)
             obj.data.BIMMeshProperties.ifc_definition_id = item.id()
@@ -1970,6 +1997,18 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
         if context.scene.BIMGeometryProperties.mode != "EDIT":
             context.scene.BIMGeometryProperties.mode = "EDIT"
         context.scene.BIMGeometryProperties.is_changing_mode = False
+
+    def has_aggregates(self, objs):
+        for obj in objs:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            aggregate = ifcopenshell.util.element.get_aggregate(element)
+            parts = ifcopenshell.util.element.get_parts(element)
+            if (aggregate or parts) and not bpy.context.scene.BIMAggregateProperties.in_aggregate_mode:
+                return True
+            else:
+                return False
 
 
 class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
@@ -2001,14 +2040,14 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
                 context.scene.BIMGeometryProperties.mode = "OBJECT"
         context.scene.BIMGeometryProperties.is_changing_mode = False
 
-        if context.active_object:
+        if context.active_object and self.should_save:
             element = tool.Ifc.get_entity(context.active_object)
             if element and element.is_a("IfcRelSpaceBoundary"):
                 return bpy.ops.bim.edit_boundary_geometry()
             elif tool.Geometry.is_representation_item(context.active_object):
                 self.edit_representation_item(context.active_object)
                 tool.Root.reload_item_decorator()
-                #So you can keep hitting tab to cycle out of edit mode
+                # So you can keep hitting tab to cycle out of edit mode
                 context.active_object.select_set(False)
                 bpy.context.view_layer.objects.active = None
                 return {"FINISHED"}
@@ -2094,10 +2133,7 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
                 tool.Geometry.import_item(obj)
         elif item.is_a("IfcSweptAreaSolid"):
             ProfileDecorator.uninstall()
-
-            profile = tool.Model.export_profile(obj)
-
-            if not profile:
+            if not (profile := tool.Model.export_profile(obj)):
 
                 def msg(self, context):
                     self.layout.label(text="INVALID PROFILE")
@@ -2154,6 +2190,26 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
                             product=element,
                             representation=new_footprint,
                         )
+        elif item.is_a("IfcAnnotationFillArea"):
+            ProfileDecorator.uninstall()
+            if not (profile := tool.Model.export_annotation_fill_area(obj)):
+
+                def msg(self, context):
+                    self.layout.label(text="INVALID PROFILE")
+
+                bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
+                ProfileDecorator.install(bpy.context)
+                self.enable_edit_mode(bpy.context)
+                return
+
+            for inverse in tool.Ifc.get().get_inverse(item):
+                ifcopenshell.util.element.replace_attribute(inverse, item, profile)
+            ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), item)
+            obj.data.BIMMeshProperties.ifc_definition_id = profile.id()
+
+            tool.Geometry.reload_representation(bpy.context.scene.BIMGeometryProperties.representation_obj)
+            tool.Geometry.import_item(obj)
+            tool.Geometry.import_item_attributes(obj)
         elif tool.Geometry.is_curvelike_item(item):
             ProfileDecorator.uninstall()
             new = tool.Model.export_curves(obj)
@@ -2211,7 +2267,7 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
 class FlipObject(bpy.types.Operator):
     bl_idname = "bim.flip_object"
     bl_label = "Flip Object"
-    bl_description = "Flip object's local axes, keep the position"
+    bl_description = "Flip Element about its local axes, keep the position"
     bl_options = {"REGISTER", "UNDO"}
 
     flip_local_axes: bpy.props.EnumProperty(
@@ -2649,9 +2705,9 @@ class ImportRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
                 tool.Geometry.lock_object(item_obj)
 
             if "IfcOpeningElement" in obj.name:
-                item_obj.display_type = 'WIRE'
+                item_obj.display_type = "WIRE"
 
-            item_obj.select_set(True)#so you can quickly hit tab again, for edit mode
+            item_obj.select_set(True)  # so you can quickly hit tab again, for edit mode
             context.view_layer.objects.active = item_obj
 
         tool.Root.reload_item_decorator()
@@ -2857,3 +2913,55 @@ class AddCurvelikeItem(bpy.types.Operator, tool.Ifc.Operator):
         obj.data.BIMMeshProperties.ifc_definition_id = item.id()
         tool.Geometry.import_item(obj)
         tool.Geometry.import_item_attributes(obj)
+
+
+class OverrideMoveAggregateMacro(bpy.types.Macro):
+    bl_idname = "bim.override_move_aggregate_macro"
+    bl_label = "IFC Move Aggregate"
+    bl_options = {"REGISTER", "UNDO"}
+
+
+class OverrideMoveAggregate(bpy.types.Operator):
+    bl_idname = "bim.override_move_aggregate"
+    bl_label = "IFC Move Aggregate"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return len(context.selected_objects) > 0
+
+    def execute(self, context):
+        # Deep magick from the dawn of time
+        if IfcStore.get_file():
+            IfcStore.execute_ifc_operator(self, context)
+            if self.new_active_obj:
+                context.view_layer.objects.active = self.new_active_obj
+            return {"FINISHED"}
+
+        return {"FINISHED"}
+
+    def _execute(self, context):
+        props = context.scene.BIMAggregateProperties
+        not_editing_objs = [o.obj for o in props.not_editing_objects]
+        aggregates_to_move = []
+        for obj in context.selected_objects:
+            self.new_active_obj = None
+            if obj in not_editing_objs:
+                obj.select_set(False)
+                continue
+            element = tool.Ifc.get_entity(obj)
+            if not element or props.in_aggregate_mode:
+                continue
+            parts = ifcopenshell.util.element.get_parts(element)
+            if parts:
+                aggregates_to_move.append(tool.Ifc.get_object(element))
+                continue
+            aggregate = ifcopenshell.util.element.get_aggregate(element)
+            if aggregate:
+                aggregates_to_move.append(tool.Ifc.get_object(aggregate))
+                obj.select_set(False)
+        aggregates_to_move = set(aggregates_to_move)
+        for obj in aggregates_to_move:
+            obj.select_set(True)
+            self.new_active_obj = obj
+        return {"FINISHED"}

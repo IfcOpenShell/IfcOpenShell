@@ -69,6 +69,7 @@ classes = (
     wall.ChangeExtrusionDepth,
     wall.ChangeExtrusionXAngle,
     wall.ChangeLayerLength,
+    wall.AddWallsFromSlab,
     wall.DrawPolylineWall,
     wall.FlipWall,
     wall.MergeWall,
@@ -81,9 +82,12 @@ classes = (
     opening.AddPotentialOpening,
     opening.EditOpenings,
     opening.CloneOpening,
+    opening.UpdateOpeningsFocus,
     opening.FlipFill,
     opening.HideBooleans,
+    opening.HideAllOpenings,
     opening.HideOpenings,
+    opening.PurgeUnusedOpenings,
     opening.RecalculateFill,
     opening.RemoveBooleans,
     opening.ShowBooleans,
@@ -91,6 +95,7 @@ classes = (
     profile.ChangeCardinalPoint,
     profile.ChangeProfileDepth,
     profile.DisableEditingExtrusionAxis,
+    profile.DrawPolylineProfile,
     profile.EditExtrusionAxis,
     profile.EnableEditingExtrusionAxis,
     profile.ExtendProfile,
@@ -100,6 +105,7 @@ classes = (
     roof.GenerateHippedRoof,
     slab.DisableEditingExtrusionProfile,
     slab.DisableEditingSketchExtrusionProfile,
+    slab.AddSlabFromWall,
     slab.DrawPolylineSlab,
     slab.EditExtrusionProfile,
     slab.EditSketchExtrusionProfile,
@@ -122,6 +128,7 @@ classes = (
     prop.SnapMousePoint,
     prop.PolylinePoint,
     prop.Polyline,
+    prop.ProductPreviewItem,
     prop.BIMModelProperties,
     prop.BIMArrayProperties,
     prop.BIMStairProperties,
@@ -131,6 +138,7 @@ classes = (
     prop.BIMRailingProperties,
     prop.BIMRoofProperties,
     prop.BIMPolylineProperties,
+    prop.BIMProductPreviewProperties,
     ui.BIM_PT_array,
     ui.BIM_PT_stair,
     ui.BIM_PT_sverchok,
@@ -168,6 +176,7 @@ classes = (
     door.EnableEditingDoor,
     door.RemoveDoor,
     railing.BIM_OT_add_railing,
+    railing.CopyRailingParameters,
     railing.AddRailing,
     railing.CancelEditingRailing,
     railing.FinishEditingRailing,
@@ -180,6 +189,7 @@ classes = (
     roof.BIM_OT_add_roof,
     roof.AddRoof,
     roof.CancelEditingRoof,
+    roof.CopyRoofParameters,
     roof.FinishEditingRoof,
     roof.EnableEditingRoof,
     roof.CancelEditingRoofPath,
@@ -211,6 +221,7 @@ def register():
 
     bpy.types.Scene.BIMModelProperties = bpy.props.PointerProperty(type=prop.BIMModelProperties)
     bpy.types.Scene.BIMPolylineProperties = bpy.props.PointerProperty(type=prop.BIMPolylineProperties)
+    bpy.types.Scene.BIMProductPreviewProperties = bpy.props.PointerProperty(type=prop.BIMProductPreviewProperties)
     bpy.types.Object.BIMArrayProperties = bpy.props.PointerProperty(type=prop.BIMArrayProperties)
     bpy.types.Object.BIMStairProperties = bpy.props.PointerProperty(type=prop.BIMStairProperties)
     bpy.types.Object.BIMSverchokProperties = bpy.props.PointerProperty(type=prop.BIMSverchokProperties)
@@ -241,6 +252,7 @@ def unregister():
 
     del bpy.types.Scene.BIMModelProperties
     del bpy.types.Scene.BIMPolylineProperties
+    del bpy.types.Scene.BIMProductPreviewProperties
     del bpy.types.Object.BIMArrayProperties
     del bpy.types.Object.BIMStairProperties
     del bpy.types.Object.BIMSverchokProperties

@@ -87,9 +87,15 @@ The filters are chained and apply from left to right.
 
     filter[, filter]*
 
-There are nine types of filters to choose from. Some of these filters will add
-new elements to your filter group, and some will filter previously added
-elements in your filter group based on their criteria.
+Below is the table of filters to choose from. Most of these filters will filter
+previously added elements in your filter group based on their criteria.
+
+There are two exceptions - if ``elements`` are not provided to ``filter_elements``
+*Class* and *GlobalId* filters (without ``[!]``) will add new elements to the filter group ,
+otherwise they'll also filter elements based on criteria.
+
+If neither *Class* and *GlobalId* and ``elements`` are not provided then filter
+will search through all IfcTypeProducts and IfcProducts in the IFC project.
 
 .. csv-table::
    :header: "Filter", "Type", "Usage", "Example"

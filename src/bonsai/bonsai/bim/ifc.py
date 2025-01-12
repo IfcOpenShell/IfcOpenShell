@@ -33,7 +33,7 @@ import bonsai.bim.handler
 import bonsai.tool as tool
 from pathlib import Path
 from bonsai.tool.brick import BrickStore
-from typing import Set, Union, Optional, TypedDict, Callable, NotRequired
+from typing import Set, Union, Optional, TypedDict, Callable, NotRequired, cast
 
 
 IFC_CONNECTED_TYPE = Union[bpy.types.Material, bpy.types.Object]
@@ -105,8 +105,9 @@ class IfcStore:
     @staticmethod
     def get_file():
         if IfcStore.file is None:
-            IfcStore.path = bpy.context.scene.BIMProperties.ifc_file
-            if not os.path.isabs(IfcStore.path):
+            IfcStore.path = cast(str, bpy.context.scene.BIMProperties.ifc_file)
+            # Interpret relative paths as relative to .blend file.
+            if IfcStore.path and not os.path.isabs(IfcStore.path):
                 IfcStore.path = os.path.abspath(os.path.join(bpy.path.abspath("//"), IfcStore.path))
             if IfcStore.path:
                 try:

@@ -26,7 +26,7 @@ from typing import Union
 
 
 class Patcher:
-    def __init__(self, src: str, file: ifcopenshell.file, logger: Logger, property_name: str, quantity_name: str):
+    def __init__(self, file: ifcopenshell.file, logger: Logger, property_name: str, quantity_name: str):
         """Converts a property to a standardised quantity
 
         IFC can store arbitrary key value metadata associated with a elements
@@ -59,7 +59,6 @@ class Patcher:
             # "NetSideArea", if that standardised quantity exists.
             ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "ConvertPropertiesToQuantities", "arguments": ["Area", "NetSideArea"]})
         """
-        self.src = src
         self.file = file
         self.logger = logger
         self.source_property_name = property_name

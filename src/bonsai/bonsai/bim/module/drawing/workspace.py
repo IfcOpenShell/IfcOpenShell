@@ -24,6 +24,7 @@ import bonsai.tool as tool
 from bonsai.bim.module.drawing.data import DecoratorData, AnnotationData
 from bonsai.bim.helper import prop_with_search
 from bpy.types import WorkSpaceTool
+from typing import Union
 
 
 class LaunchAnnotationTypeManager(bpy.types.Operator):
@@ -131,7 +132,9 @@ class AnnotationTool(WorkSpaceTool):
         AnnotationToolUI.draw(context, layout)
 
 
-def add_layout_hotkey_operator(layout, text, hotkey, description):
+def add_layout_hotkey_operator(
+    layout: bpy.types.UILayout, text: str, hotkey: str, description: Union[str, None]
+) -> tuple[bpy.types.OperatorProperties, bpy.types.UILayout]:
     modifiers = {
         "A": "EVENT_ALT",
         "S": "EVENT_SHIFT",

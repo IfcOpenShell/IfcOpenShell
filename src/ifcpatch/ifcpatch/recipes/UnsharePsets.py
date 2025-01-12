@@ -25,18 +25,22 @@ from logging import Logger
 
 
 class Patcher:
-    def __init__(self, src: str, file: ifcopenshell.file, logger: Logger, query: str = ""):
+    def __init__(self, file: ifcopenshell.file, logger: Logger, query: str = ""):
         """Create independent copies for shared psets in IFC file.
 
-        In IFC it's possible that same property set is shared by multiple elements,
-        so editing it's properties will automatically change their values for all those elements.
+        In IFC it's possible that same property set is shared by multiple
+        elements, so editing it's properties will automatically change their
+        values for all those elements.
 
-        Sometimes it's intended but sometimes it's not and it's just the way some other
-        software exports IFC (e.g. there is a known case when Tekla exports shared psets for all the occurrences).
-        While it is more optimized way to store data, it may lead to unexpected results when editing properties.
+        Sometimes it's intended but sometimes it's not and it's just the way
+        some other software exports IFC (e.g. there is a known case when Tekla
+        exports shared psets for all the occurrences).  While it is more
+        optimized way to store data, it may lead to unexpected results when
+        editing properties.
 
-        This recipe creates independent copies of all shared psets (may be limited by the query)
-        and assigns them to the elements, so they can be edited without affecting any other elements.
+        This recipe creates independent copies of all shared psets (may be
+        limited by the query) and assigns them to the elements, so they can be
+        edited without affecting any other elements.
 
         :param query: A query to select the subset of IFC elements, optional.
             If not provided, patch will be applied to all shared property sets in the model.
@@ -51,7 +55,6 @@ class Patcher:
             # Unshare psets on all IfcWalls.
             ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "UnsharePsets", "arguments": ["IfcWall"]})
         """
-        self.src = src
         self.file = file
         self.logger = logger
         self.query = query

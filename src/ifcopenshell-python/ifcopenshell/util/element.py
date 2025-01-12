@@ -1132,8 +1132,8 @@ def get_aggregate(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.e
         element = file.by_type("IfcBeam")[0]
         aggregate = ifcopenshell.util.element.get_aggregate(element)
     """
-    is_not_ifc2x3 = element.file.schema != "IFC2X3"
     if decomposes := getattr(element, "Decomposes", None):
+        is_not_ifc2x3 = element.file.schema != "IFC2X3"
         if is_not_ifc2x3 or decomposes[0].is_a("IfcRelAggregates"):
             return decomposes[0].RelatingObject
 

@@ -87,6 +87,20 @@ def add_part_to_object(
     blender.set_active_object(obj)
 
 
+def enable_aggregate_mode(
+    aggregator: tool.Aggregate,
+    obj: bpy.types.Object,
+):
+    if aggregator.get_aggregate_mode():
+        disable_aggregate_mode(aggregator)
+
+    aggregator.enable_aggregate_mode(obj)
+
+
+def disable_aggregate_mode(aggregator: tool.Aggregate):
+    aggregator.disable_aggregate_mode()
+
+
 class IncompatibleAggregateError(Exception):
     pass
 

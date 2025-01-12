@@ -25,6 +25,7 @@ from bonsai.bim.prop import ObjProperty
 from bonsai.bim.module.model.data import AuthoringData
 from bpy.types import PropertyGroup, NodeTree
 from math import pi, radians
+from bonsai.bim.module.model.decorator import WallAxisDecorator, SlabDirectionDecorator
 
 
 def get_ifc_class(self, context):
@@ -80,6 +81,26 @@ def is_object_array_applicable(self, obj):
     if not element:
         return False
     return ifcopenshell.util.element.get_pset(element, "BBIM_Array")
+
+
+def update_wall_axis_decorator(self, context):
+    if self.show_wall_axis:
+        WallAxisDecorator.install(bpy.context)
+    else:
+        WallAxisDecorator.uninstall()
+
+
+def update_slab_direction_decorator(self, context):
+    if self.show_slab_direction:
+        SlabDirectionDecorator.install(bpy.context)
+    else:
+        SlabDirectionDecorator.uninstall()
+
+
+def update_x_angle(self, context):
+    angle_deg = math.degrees(self.x_angle)
+    if tool.Cad.is_x(angle_deg, -90, 0.5) or tool.Cad.is_x(angle_deg, 90, 0.5):
+        self.x_angle = 0
 
 
 class BIMModelProperties(PropertyGroup):
@@ -146,7 +167,7 @@ class BIMModelProperties(PropertyGroup):
     rl2: bpy.props.FloatProperty(name="RL", default=1, subtype="DISTANCE", description="Z offset for windows")
     # Used for plan calculation points such as in room generation
     rl3: bpy.props.FloatProperty(name="RL", default=1, subtype="DISTANCE", description="Z offset for space calculation")
-    x_angle: bpy.props.FloatProperty(name="X Angle", default=0, subtype="ANGLE", min=-pi / 180 * 89, max=pi / 180 * 89)
+    x_angle: bpy.props.FloatProperty(name="X Angle", default=0, subtype="ANGLE", min=math.radians(-180), max=math.radians(180), update=update_x_angle)
     type_page: bpy.props.IntProperty(name="Type Page", default=1, update=update_type_page)
     type_name: bpy.props.StringProperty(name="Name", default="TYPEX")
     boundary_class: bpy.props.EnumProperty(items=get_boundary_class, name="Boundary Class")
@@ -162,6 +183,16 @@ class BIMModelProperties(PropertyGroup):
         description="It's a convention that affects the offset to reference line",
     )
     offset: bpy.props.FloatProperty(name="Offset", default=0.0, description="Material usage offset from reference line")
+    show_wall_axis: bpy.props.BoolProperty(
+        name="Show Wall Axis",
+        default=False,
+        update=update_wall_axis_decorator,
+    )
+    show_slab_direction: bpy.props.BoolProperty(
+        name="Show Slab Direction",
+        default=False,
+        update=update_slab_direction_decorator,
+    )
 
 
 class BIMArrayProperties(PropertyGroup):
@@ -795,3 +826,14 @@ class BIMPolylineProperties(PropertyGroup):
     snap_mouse_ref: bpy.props.CollectionProperty(type=SnapMousePoint)
     insertion_polyline: bpy.props.CollectionProperty(type=Polyline)
     measurement_polyline: bpy.props.CollectionProperty(type=Polyline)
+
+
+class ProductPreviewItem(PropertyGroup):
+    value_3d: bpy.props.FloatVectorProperty()
+    value_2d: bpy.props.FloatVectorProperty(size=2)
+
+
+class BIMProductPreviewProperties(PropertyGroup):
+    verts: bpy.props.CollectionProperty(type=ProductPreviewItem)
+    edges: bpy.props.CollectionProperty(type=ProductPreviewItem)
+    tris: bpy.props.CollectionProperty(type=ProductPreviewItem)
