@@ -144,7 +144,7 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     def get_active_object(cls) -> bpy.types.Object:
-        return bpy.context.view_layer.objects.active or getattr(bpy.context, "active_object", None)
+        return getattr(bpy.context, "active_object", None) or bpy.context.view_layer.objects.active
 
     @classmethod
     def get_selected_objects(cls) -> set[bpy.types.Object]:
