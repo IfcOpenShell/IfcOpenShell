@@ -26,24 +26,10 @@ from bonsai.bim.module.model.data import AuthoringData, RailingData, RoofData
 from typing import Union
 
 
-# TODO duplicate code in cad/workspace and model/workspace
-def check_display_mode():
-    global display_mode
-    try:
-        theme = bpy.context.preferences.themes["Default"]
-        text_color = theme.user_interface.wcol_menu_item.text
-        if sum(text_color) < 2.6:
-            display_mode = "lm"
-        else:
-            display_mode = "dm"
-    except:
-        display_mode = "dm"
-
-
 def load_custom_icons():
-    global custom_icon_previews
+    global custom_icon_previews, display_mode
     if display_mode is None:
-        check_display_mode()
+        display_mode = tool.Blender.detect_icon_color_mode("ToolText")
 
     icons_dir = os.path.join(os.path.dirname(__file__), "..", "..", "data", "icons")
     custom_icon_previews = bpy.utils.previews.new()
