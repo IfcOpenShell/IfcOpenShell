@@ -124,6 +124,11 @@ class BIMMaterialProperties(PropertyGroup):
     styles: EnumProperty(items=get_styles, name="Styles")
     contexts: EnumProperty(items=get_contexts, name="Contexts")
 
+    @property
+    def active_material(self):
+        if self.active_material_index < len(self.materials):
+            return self.materials[self.active_material_index]
+
 
 class BIMObjectMaterialProperties(PropertyGroup):
     material_type: EnumProperty(items=get_object_material_type, name="Material Type")

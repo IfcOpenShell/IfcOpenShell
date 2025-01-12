@@ -402,10 +402,8 @@ class BIM_PT_material_psets(Panel):
         if not ifc_file or ifc_file.schema == "IFC2X3":
             return False  # We don't support material psets in IFC2X3 because they suck
         props = context.scene.BIMMaterialProperties
-        if props.materials and props.active_material_index < len(props.materials):
-            material = props.materials[props.active_material_index]
-            if material.ifc_definition_id:
-                return True
+        if props.is_editing and (material := props.active_material) and material.ifc_definition_id:
+            return True
         return False
 
     def draw(self, context):
