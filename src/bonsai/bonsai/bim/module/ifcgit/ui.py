@@ -1,6 +1,7 @@
 import bpy
 import time
 import os
+import platform
 
 from bonsai.bim.module.ifcgit.data import IfcGitData
 
@@ -26,7 +27,22 @@ class IFCGIT_PT_panel(bpy.types.Panel):
         if not IfcGitData.data["git_exe"]:
             row = layout.row()
             row.label(text="Git is not installed", icon="ERROR")
+            if platform.system() == "Windows":
+                row.operator(
+                    "ifcgit.install_git",
+                    text="Install Git from Microsoft Store",
+                    icon="PACKAGE",
+                )
             return
+        elif not IfcGitData.data["ifcmerge_exe"]:
+            # TODO check if ifcmerge is up-to-date
+            row = layout.row()
+            row.label(text="ifcmerge is not installed", icon="ERROR")
+            row.operator(
+                "ifcgit.install_ifcmerge",
+                text="Install ifcmerge",
+                icon="PACKAGE",
+            )
 
         props = context.scene.IfcGitProperties
 

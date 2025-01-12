@@ -386,3 +386,36 @@ class ObjectLog(bpy.types.Operator):
         step_id = context.active_object.BIMObjectProperties.ifc_definition_id
         core.entity_log(tool.IfcGit, tool.Ifc, step_id, self)
         return {"FINISHED"}
+
+
+class InstallGit(bpy.types.Operator):
+    """Installs Git if possible"""
+
+    bl_label = "Install Git"
+    bl_idname = "ifcgit.install_git"
+    bl_options = {"REGISTER"}
+
+    @classmethod
+    def poll(cls, context):
+        IfcGitData.make_sure_is_loaded()
+        if IfcGitData.data["git_exe"]:
+            return False
+        return True
+
+    def execute(self, context):
+        core.install_git(tool.IfcGit, self)
+        refresh()
+        return {"FINISHED"}
+
+
+class InstallIfcmerge(bpy.types.Operator):
+    """Installs ifcmerge if possible"""
+
+    bl_label = "Install ifcmerge"
+    bl_idname = "ifcgit.install_ifcmerge"
+    bl_options = {"REGISTER"}
+
+    def execute(self, context):
+        core.install_ifcmerge(tool.IfcGit, self)
+        refresh()
+        return {"FINISHED"}

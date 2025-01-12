@@ -19,6 +19,8 @@
 from __future__ import annotations
 import os
 import re
+import subprocess
+import shutil
 import bpy
 import logging
 from bonsai.bim import import_ifc
@@ -545,6 +547,51 @@ class IfcGit:
         except git.exc.CommandError:
             logtext = "No Git history found :("
         return logtext
+
+    @classmethod
+    def install_git_windows(cls, operator: bpy.types.Operator) -> None:
+        """Command to install Git on Windows using winget"""
+        command = ["winget", "install", "--id", "Git.Git", "-e", "--source", "msstore"]
+        try:
+            subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        except subprocess.CalledProcessError as e:
+            operator.report({"ERROR"}, f"Called Process Error occurred: {e}")
+        except FileNotFoundError:
+            operator.report({"ERROR"}, "Winget is not available. Make sure Windows Package Manager is installed.")
+
+    @classmethod
+    def install_ifcmerge_linux(cls, name_exe: str, operator: bpy.types.Operator) -> None:
+        """Command to install ifcmerge on Linux"""
+        src_dir = os.path.join(os.path.dirname(__file__), "../libs/desktop")
+        destdir = os.path.join(os.environ["HOME"], ".local", "bin")
+        try:
+            os.makedirs(destdir, exist_ok=True)
+            shutil.copy(os.path.join(src_dir, name_exe), destdir)
+            os.chmod(os.path.join(destdir, name_exe), 0o755)
+        except Exception as e:
+            operator.report({"ERROR"}, f"Error installing file: {e}")
+
+    @classmethod
+    def install_ifcmerge_windows(cls, name_exe: str, operator: bpy.types.Operator) -> None:
+        """Command to install ifcmerge on Windows"""
+        src_dir = os.path.join(os.path.dirname(__file__), "..\\libs\\desktop")
+        destdir = os.path.join(os.environ["USERPROFILE"], "AppData", "Local", "Bonsai", "bin")
+        try:
+            os.makedirs(destdir, exist_ok=True)
+            shutil.copy(os.path.join(src_dir, name_exe), destdir)
+        except Exception as e:
+            operator.report({"ERROR"}, f"Error installing file: {e}")
+
+        current_path = os.environ["PATH"]
+
+        if destdir not in current_path:
+            os.environ["PATH"] = current_path + ";" + destdir
+            command = f'setx PATH "%PATH%;{destdir}"'
+            try:
+                subprocess.run(command, check=True, shell=True)
+                print(f"User %PATH% updated permanently with: {destdir}")
+            except subprocess.CalledProcessError as e:
+                operator.report({"ERROR"}, f"Error permanently updating %PATH%: {e}")
 
 
 class IfcGitRepo:

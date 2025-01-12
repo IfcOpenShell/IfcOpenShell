@@ -229,6 +229,14 @@ endif
 	# Required for Desktop icon and file association
 	cp -r bonsai/libs/desktop build/bonsai/libs/
 
+	# required for three-way git merging
+ifeq ($(PLATFORM), win)
+	cd build/bonsai/libs/desktop && wget https://github.com/brunopostle/ifcmerge/releases/download/2024-06-24/ifcmerge.zip
+	cd build/bonsai/libs/desktop && unzip ifcmerge.zip && rm ifcmerge.zip
+else
+	cd build/bonsai/libs/desktop && wget https://raw.githubusercontent.com/brunopostle/ifcmerge/main/ifcmerge
+endif
+
 	# Generate translations module for Bonsai build
 	git clone https://github.com/IfcOpenShell/bonsai-translations.git build/working
 	$(PYTHON) scripts/bonsai_translations.py -i "build/working" -o "build/bonsai"

@@ -37,6 +37,8 @@ classes = (
     operator.Push,
     operator.RefreshGit,
     operator.SwitchRevision,
+    operator.InstallGit,
+    operator.InstallIfcmerge,
     prop.IfcGitTag,
     prop.IfcGitListItem,
     prop.IfcGitProperties,
