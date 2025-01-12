@@ -19,8 +19,6 @@
 
 import bpy
 import bmesh
-from bmesh.types import BMVert, BMFace
-
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.element
@@ -169,22 +167,6 @@ def update_door_modifier_representation(obj: bpy.types.Object) -> None:
     tool.Model.update_simple_openings(element)
 
 
-# TODO: move it out to tools
-def bm_sort_out_geom(
-    geom_data: list[Union[bmesh.types.BMVert, bmesh.types.BMEdge, bmesh.types.BMFace]]
-) -> dict[str, Any]:
-    geom_dict = {"verts": [], "edges": [], "faces": []}
-
-    for el in geom_data:
-        if isinstance(el, BMVert):
-            geom_dict["verts"].append(el)
-        elif isinstance(el, BMFace):
-            geom_dict["faces"].append(el)
-        else:
-            geom_dict["edges"].append(el)
-    return geom_dict
-
-
 def bm_mirror(
     bm: bmesh.types.BMesh,
     verts: list[bmesh.types.BMVert],
@@ -208,7 +190,7 @@ def bm_mirror(
         for v in verts:
             faces.update(v.link_faces)
         duplicated = bmesh.ops.duplicate(bm, geom=list(faces))
-        verts = bm_sort_out_geom(duplicated["geom"])["verts"]
+        verts = tool.Model.bm_sort_out_geom(duplicated["geom"])["verts"]
 
     bmesh.ops.transform(bm, verts=verts, matrix=matrix, space=Matrix.Identity(4))
     return verts
@@ -242,7 +224,7 @@ def create_bm_extruded_profile(
 
     extruded = bmesh.ops.extrude_face_region(bm, geom=new_faces)
     extrusion_vector = extrusion_vector * magnitude
-    extruded_verts = bm_sort_out_geom(extruded["geom"])["verts"]
+    extruded_verts = tool.Model.bm_sort_out_geom(extruded["geom"])["verts"]
     bmesh.ops.translate(bm, vec=extrusion_vector, verts=extruded_verts)
 
     bmesh.ops.translate(bm, vec=position, verts=new_verts + extruded_verts)
@@ -304,7 +286,7 @@ def create_bm_door_lining(
 
     extruded = bmesh.ops.extrude_face_region(bm, geom=new_faces)
     extrusion_vector = Vector((0, 1, 0)) * depth
-    translate_verts = [v for v in extruded["geom"] if isinstance(v, BMVert)]
+    translate_verts = [v for v in extruded["geom"] if isinstance(v, bmesh.types.BMVert)]
     bmesh.ops.translate(bm, vec=extrusion_vector, verts=translate_verts)
 
     bmesh.ops.translate(bm, vec=position, verts=new_verts + translate_verts)

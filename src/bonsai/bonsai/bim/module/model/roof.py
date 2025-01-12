@@ -26,7 +26,6 @@ import ifcopenshell.util.unit
 import bonsai.core.root
 import bonsai.tool as tool
 from bonsai.bim.helper import convert_property_group_from_si
-from bonsai.bim.module.model.door import bm_sort_out_geom
 from bonsai.bim.module.model.data import RoofData, refresh
 from bonsai.bim.module.model.decorator import ProfileDecorator
 
@@ -327,7 +326,7 @@ def generate_hiped_roof_bmesh(
     bmesh.ops.delete(bm, geom=bottom_chords_to_remove, context="EDGES")
 
     # add roof thickness
-    extrusion_geom = bm_sort_out_geom(bmesh.ops.extrude_face_region(bm, geom=bm.faces)["geom"])
+    extrusion_geom = tool.Model.bm_sort_out_geom(bmesh.ops.extrude_face_region(bm, geom=bm.faces)["geom"])
     extruded_edges = extrusion_geom["edges"]
     extruded_verts = extrusion_geom["verts"]
     rafter_edge_angle = pi / 2 - rafter_edge_angle

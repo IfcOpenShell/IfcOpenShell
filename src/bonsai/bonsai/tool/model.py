@@ -1263,10 +1263,12 @@ class Model(bonsai.core.tool.Model):
 
         if stair_type == "WOOD/STEEL":
             builder = ShapeBuilder(None)
+
             # full tread rectangle
             def get_tread_verts(*args, **kwargs):
                 fn = partial(builder.get_rectangle_coords, position=V_(0, -(tread_depth - tread_rise)))
                 return [Vector(x) for x in fn(*args, **kwargs)]
+
             default_tread_verts = get_tread_verts(size=V_(tread_run + nosing_overlap, tread_depth))
             default_tread_offset = V_(tread_run + nosing_tread_gap, tread_rise)
 
@@ -2011,3 +2013,18 @@ class Model(bonsai.core.tool.Model):
     @classmethod
     def get_booleaned_obj(cls, boolean_obj: bpy.types.Object) -> bpy.types.Object:
         return boolean_obj.data.BIMMeshProperties.obj
+
+    @classmethod
+    def bm_sort_out_geom(
+        cls, geom_data: list[Union[bmesh.types.BMVert, bmesh.types.BMEdge, bmesh.types.BMFace]]
+    ) -> dict[str, Any]:
+        geom_dict = {"verts": [], "edges": [], "faces": []}
+
+        for el in geom_data:
+            if isinstance(el, bmesh.types.BMVert):
+                geom_dict["verts"].append(el)
+            elif isinstance(el, bmesh.types.BMFace):
+                geom_dict["faces"].append(el)
+            else:
+                geom_dict["edges"].append(el)
+        return geom_dict
