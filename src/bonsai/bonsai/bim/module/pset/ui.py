@@ -25,7 +25,6 @@ from bonsai.bim.module.pset.data import (
     ObjectPsetsData,
     ObjectQtosData,
     MaterialPsetsData,
-    MaterialSetPsetsData,
     MaterialSetItemPsetsData,
     TaskQtosData,
     ResourceQtosData,
@@ -88,7 +87,7 @@ def draw_enumerated_property(
 
 
 def get_active_pset_obj_name(context: bpy.types.Context, obj_type: tool.Ifc.OBJECT_TYPE) -> str:
-    if obj_type in ("Object", "MaterialSet", "MaterialSetItem"):
+    if obj_type in ("Object", "MaterialSetItem"):
         return context.active_object.name
     return ""
 
@@ -428,46 +427,6 @@ class BIM_PT_material_psets(Panel):
 
         for pset in MaterialPsetsData.data["psets"]:
             draw_psetqto_ui(context, pset["id"], pset, props, self.layout, "Material")
-
-
-class BIM_PT_material_set_psets(Panel):
-    bl_label = "Material Set Property Sets"
-    bl_idname = "BIM_PT_material_set_psets"
-    bl_options = {"DEFAULT_CLOSED"}
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "object"
-    bl_parent_id = "BIM_PT_object_material"
-
-    @classmethod
-    def poll(cls, context):
-        if not context.active_object:
-            return False
-        if not tool.Ifc.get() or tool.Ifc.get().schema == "IFC2X3":
-            return False  # We don't support material psets in IFC2X3 because they suck
-        if not tool.Ifc.get_entity(context.active_object):
-            return False
-        if not ObjectMaterialData.is_loaded:
-            ObjectMaterialData.load()
-        ifc_class = ObjectMaterialData.data["material_class"]
-        return bool(ifc_class and "Set" in ifc_class)
-
-    def draw(self, context):
-        if not MaterialSetPsetsData.is_loaded:
-            MaterialSetPsetsData.load()
-
-        props = context.active_object.MaterialSetPsetProperties
-        row = self.layout.row(align=True)
-        prop_with_search(row, props, "pset_name", text="")
-        op = row.operator("bim.add_pset", icon="ADD", text="")
-        op.obj = context.active_object.name
-        op.obj_type = "MaterialSet"
-
-        if not props.active_pset_id and props.active_pset_name and props.active_pset_type == "PSET":
-            draw_psetqto_ui(context, 0, {}, props, self.layout, "MaterialSet")
-
-        for pset in MaterialSetPsetsData.data["psets"]:
-            draw_psetqto_ui(context, pset["id"], pset, props, self.layout, "MaterialSet")
 
 
 class BIM_PT_material_set_item_psets(Panel):

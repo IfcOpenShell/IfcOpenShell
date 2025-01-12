@@ -34,7 +34,6 @@ class Ifc(bonsai.core.tool.Ifc):
     OBJECT_TYPE = Literal[
         "Object",
         "Material",
-        "MaterialSet",
         "MaterialSetItem",
         "Task",
         "Cost",
