@@ -1,0 +1,30 @@
+name: Deploy Pyodide Demo App to GitHub Pages
+
+on:
+  push:
+    paths:
+      - 'src/pyodide/**'
+      - '.github/workflows/publish-pyodide-demo-app.yml'
+
+jobs:
+  # Build job
+  build:
+    # Specify runner +  build & upload the static files as an artifact
+    runs-on: ubuntu-latest
+    steps:
+      - name: Upload static files as artifact
+        id: deployment
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: src/pyodide/demo-app/
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
