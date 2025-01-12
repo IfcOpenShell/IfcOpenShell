@@ -7,11 +7,22 @@ on:
       - '.github/workflows/publish-pyodide-demo-app.yml'
 
 jobs:
-  # Build job
+  activate:
+    runs-on: ubuntu-latest
+    if: |
+      github.repository == 'IfcOpenShell/IfcOpenShell'
+    steps:
+    - name: Set env
+      run: echo ok go
+      
   build:
-    # Specify runner +  build & upload the static files as an artifact
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout (recursive)
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+          fetch-depth: 0
       - name: Upload static files as artifact
         id: deployment
         uses: actions/upload-pages-artifact@v3
