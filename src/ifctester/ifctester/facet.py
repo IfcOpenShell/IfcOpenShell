@@ -279,16 +279,13 @@ class Attribute(Facet):
         return results
 
     def __call__(self, inst: ifcopenshell.entity_instance, logger: Optional[Logger] = None) -> AttributeResult:
-        if self.cardinality == "optional":
-            return AttributeResult(True)
-
         if isinstance(self.name, str):
             names = [self.name]
             attribute_type = inst.wrapped_data.get_attribute_category(self.name)
             if attribute_type == 1:  # Forward attribute
                 values = [getattr(inst, self.name, None)]
             else:
-                values = [None]
+                values = []
         else:
             info = inst.get_info()
             names = []
@@ -304,6 +301,8 @@ class Attribute(Facet):
         reason = None
 
         if not is_pass:
+            if self.cardinality == "optional":
+                return AttributeResult(True)
             reason = {"type": "NOVALUE"}
 
         if is_pass:
@@ -394,9 +393,6 @@ class Classification(Facet):
         return ifc_file.by_type("IfcObjectDefinition")
 
     def __call__(self, inst: ifcopenshell.entity_instance, logger: Optional[Logger] = None) -> ClassificationResult:
-        if self.cardinality == "optional":
-            return ClassificationResult(True)  # Is this really the correct behaviour?
-
         leaf_references = ifcopenshell.util.classification.get_references(inst)
 
         references = leaf_references.copy()
@@ -407,6 +403,8 @@ class Classification(Facet):
         reason = None
 
         if not is_pass:
+            if self.cardinality == "optional":
+                return ClassificationResult(True)
             reason = {"type": "NOVALUE"}
 
         if is_pass and self.value:
@@ -657,9 +655,6 @@ class Property(Facet):
         )
 
     def __call__(self, inst: ifcopenshell.entity_instance, logger: Optional[Logger] = None) -> PropertyResult:
-        if self.cardinality == "optional":
-            return PropertyResult(True)
-
         if isinstance(self.propertySet, str):
             pset = get_pset(inst, self.propertySet)
             psets = {self.propertySet: pset} if pset else {}
@@ -671,6 +666,8 @@ class Property(Facet):
         reason = None
 
         if not is_pass:
+            if self.cardinality == "optional":
+                return PropertyResult(True)
             reason = {"type": "NOPSET"}
 
         if is_pass:
@@ -691,6 +688,8 @@ class Property(Facet):
                     props[pset_name] = {k: v for k, v in pset_props.items() if k == self.baseName}
 
                 if not bool(props[pset_name]):
+                    if self.cardinality == "optional":
+                        return PropertyResult(True)
                     is_pass = False
                     reason = {"type": "NOVALUE"}
                     break
@@ -918,15 +917,14 @@ class Material(Facet):
         return ifc_file.by_type("IfcObjectDefinition")
 
     def __call__(self, inst: ifcopenshell.entity_instance, logger: Optional[Logger] = None) -> MaterialResult:
-        if self.cardinality == "optional":
-            return MaterialResult(True)
-
         material = ifcopenshell.util.element.get_material(inst, should_skip_usage=True)
 
         is_pass = material is not None
         reason = None
 
         if not is_pass:
+            if self.cardinality == "optional":
+                return MaterialResult(True)
             reason = {"type": "NOVALUE"}
 
         if is_pass and self.value:
