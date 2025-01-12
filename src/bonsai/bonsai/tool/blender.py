@@ -1423,7 +1423,7 @@ class Blender(bonsai.core.tool.Blender):
     @classmethod
     def detect_icon_color_mode(cls, key="RegularText", threshold=1.671):
         """
-        Uses the color of text to determin if custom icons should be dark mode (dm) or light mode (mode).
+        Uses the color of text to determine if custom icons should be dark mode (dm) or light mode (mode).
 
         Args:
             key (str): The key representing the UI element (e.g., "RegularText").
