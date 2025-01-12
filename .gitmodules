@@ -20,3 +20,6 @@
 [submodule "src/ifcopenshell-python/ifcopenshell/simple_spf"]
 	path = src/ifcopenshell-python/ifcopenshell/simple_spf
 	url = https://github.com/IfcOpenShell/step-file-parser
+[submodule "src/pyodide/demo-app/wheels"]
+	path = src/pyodide/demo-app/wheels
+	url = https://github.com/IfcOpenShell/wasm-wheels
