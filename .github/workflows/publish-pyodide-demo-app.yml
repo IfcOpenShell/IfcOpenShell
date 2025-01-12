@@ -1,5 +1,9 @@
 name: Deploy Pyodide Demo App to GitHub Pages
 
+permissions:
+  id-token: write
+  pages: write
+
 on:
   push:
     paths:
@@ -16,6 +20,7 @@ jobs:
       run: echo ok go
       
   build:
+    needs: activate
     runs-on: ubuntu-latest
     steps:
       - name: Checkout (recursive)
