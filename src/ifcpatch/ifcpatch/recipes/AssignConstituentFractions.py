@@ -17,8 +17,7 @@ class Patcher:
     and assigns fraction values accordingly.
     """
 
-    def __init__(self, src: str, file: ifcopenshell.file, logger: Logger, *args):
-        self.src = src
+    def __init__(self, file: ifcopenshell.file, logger: Logger):
         self.file = file
         self.logger = logger
 
