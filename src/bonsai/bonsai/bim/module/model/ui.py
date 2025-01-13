@@ -311,6 +311,15 @@ class BIM_PT_stair(bpy.types.Panel):
                         self.layout.prop(props, prop_name, text="")
                     else:
                         self.layout.prop(props, prop_name)
+                    if prop_name == "height":  # Weak but we just want to insert this inside props drawing
+                        row_length = self.layout.row(align=True)
+                        row_length.prop(props, "total_length_target")
+                        row_length.prop(
+                            props,
+                            "total_length_lock",
+                            text="",
+                            icon="LOCKED" if props.total_length_lock else "UNLOCKED",
+                        )
                 regenerate_stair_mesh(obj)
             else:
                 calculated_params = StairData.data["calculated_params"]
