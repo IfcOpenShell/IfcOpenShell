@@ -616,7 +616,6 @@ def get_component_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entity
 
 def get_system_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_instance) -> dict[str, Any]:
     system, component = element
-    category = get_category(system)
     component_name = val(component.Name)
     return {
         "Name": val(system.Name),
