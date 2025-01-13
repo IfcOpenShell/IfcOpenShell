@@ -171,7 +171,7 @@ def get_vert_centroid(geometry: ShapeType) -> tuple[float, float, float]:
     return np.mean(get_vertices(geometry), axis=0)
 
 
-def get_element_bbox_centroid(element: ifcopenshell.entity_instance, geometry) -> npt.NDArray[np.float64]:
+def get_element_bbox_centroid(element: ifcopenshell.entity_instance, geometry: ShapeType) -> npt.NDArray[np.float64]:
     """Calculates the element's bounding box centroid
 
     The centroid is in global coordinates. Note that if you have the shape, it
@@ -188,7 +188,7 @@ def get_element_bbox_centroid(element: ifcopenshell.entity_instance, geometry) -
     return (mat @ np.array([*centroid, 1.0]))[0:3]
 
 
-def get_shape_bbox_centroid(shape: ShapeType, geometry: ShapeType) -> npt.NDArray[np.float64]:
+def get_shape_bbox_centroid(shape: ShapeElementType, geometry: ShapeType) -> npt.NDArray[np.float64]:
     """Calculates the shape's bounding box centroid
 
     The centroid is in global coordinates. Note that if you do not have the
@@ -308,7 +308,7 @@ def get_edges_representation_item_ids(geometry: ShapeType) -> npt.NDArray[np.int
     return np.frombuffer(geometry.edges_item_ids_buffer, dtype="i")
 
 
-def get_shape_vertices(shape: ShapeType, geometry: ShapeType) -> npt.NDArray[np.float64]:
+def get_shape_vertices(shape: ShapeElementType, geometry: ShapeType) -> npt.NDArray[np.float64]:
     """Get the shape's vertices as a numpy array
 
     Vertices are in global coordinates. If you do not have the shape, you can
