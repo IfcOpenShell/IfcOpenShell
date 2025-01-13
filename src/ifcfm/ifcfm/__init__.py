@@ -49,6 +49,7 @@ __version__ = version = "0.0.0"
 
 
 ParserPreset = Literal["basic", "cobie24", "cobie24legacy"]
+GetElementDataCallBack = Callable[[ifcopenshell.file, ifcopenshell.entity_instance], dict[str, Any]]
 _parser_presets_configs = {}
 
 
@@ -69,9 +70,7 @@ def get_presets_configs() -> dict[ParserPreset, dict[str, Any]]:
 class Parser:
     config: dict[str, Any]
     categories: defaultdict[str, dict[str, Any]]
-    get_custom_element_data: dict[
-        str, Union[Callable[[ifcopenshell.file, ifcopenshell.entity_instance], dict[str, Any]], dict[str, Any]]
-    ]
+    get_custom_element_data: dict[str, Union[GetElementDataCallBack, dict[str, Any]]]
     duplicate_keys: list[tuple[dict[str, Any], dict[str, Any]]]
 
     def __init__(self, preset: Union[str, ParserPreset, dict[str, Any]] = "basic"):
@@ -93,6 +92,7 @@ class Parser:
     def parse(self, ifc_file: ifcopenshell.file, name=None):
         for category_name, category_config in self.config["categories"].items():
             for element in category_config["get_category_elements"](ifc_file):
+                get_element_data: Union[GetElementDataCallBack, dict[str, Any]]
                 get_element_data = category_config["get_element_data"]
 
                 if isinstance(get_element_data, dict):
