@@ -138,9 +138,18 @@ class AuthoringData:
 
     @classmethod
     def type_elements_filtered(cls):
+        search_query = cls.props.search_name.lower()
+        def filter_element(element):
+            if search_query in (element.Name or "Unnamed").lower():
+                return True
+            if search_query in (element.Description or "").lower():
+                return True
+            if search_query in ifcopenshell.util.element.get_predefined_type(element).lower():
+                return True
+            return False
         elements = cls.data["type_elements"]
         if cls.props.search_name:
-            return [e for e in elements if cls.props.search_name.lower() in (e.Name or "Unnamed").lower()]
+            return [e for e in elements if filter_element(e)]
         return elements
 
     @classmethod
