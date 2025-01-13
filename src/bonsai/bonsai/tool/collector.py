@@ -43,6 +43,7 @@ class Collector(bonsai.core.tool.Collector):
 
         # Note that tool.Geometry.is_locked is only checked within the if
         # statements for efficiency as it is a slow check.
+        tool.Geometry.lock_scale(obj)
 
         if element.is_a("IfcGridAxis"):
             if tool.Geometry.is_locked(element):

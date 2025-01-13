@@ -132,7 +132,6 @@ class Geometry(bonsai.core.tool.Geometry):
         obj.lock_rotation = (True, True, True)
         obj.lock_rotation_w = True
         obj.lock_rotations_4d = True
-        obj.lock_scale = (True, True, True)
 
     @classmethod
     def unlock_object(cls, obj: bpy.types.Object) -> None:
@@ -140,7 +139,6 @@ class Geometry(bonsai.core.tool.Geometry):
         obj.lock_rotation = (False, False, False)
         obj.lock_rotation_w = False
         obj.lock_rotations_4d = False
-        obj.lock_scale = (False, False, False)
 
     @classmethod
     def lock_scale(cls, obj: bpy.types.Object) -> None:
