@@ -330,7 +330,12 @@ endif
 	# Use '-n' as on macos x86-64 doesn't have a binary wheel and it autoincludes 'cp311'.
 	prev_whl_name=$$(find build/bonsai/wheels/tzfpy-*.whl); \
 	whl_name=$$(echo $$prev_whl_name | sed "s/-cp39-/-cp$(PYNUMBER)-/"); \
-	mv -n "$$prev_whl_name" "$$whl_name";
+	echo "$$prev_whl_name $$whl_name"; \
+	if [ "$$(realpath $$prev_whl_name)" = "$$(realpath $$whl_name)" ]; then \
+		echo "Source and destination are the same file. Skipping move."; \
+	else \
+		mv -n "$$prev_whl_name" "$$whl_name"; \
+	fi
 
 ifneq ($(PLATFORM), linux)
 	# Safeguard: in case one of `pip download` will break,
