@@ -128,12 +128,12 @@ class Facet:
             templates = self.applicability_templates
         elif clause_type == "requirement":
             is_prohibited = False
-            if specification.maxOccurs == 0:
+            if specification and specification.maxOccurs == 0:
                 is_prohibited = not is_prohibited
-            if requirement.cardinality == "prohibited":
+            if requirement and requirement.cardinality == "prohibited":
                 is_prohibited = not is_prohibited
             templates = self.prohibited_templates if is_prohibited else self.requirement_templates
-            if requirement.cardinality == "optional":
+            if requirement and requirement.cardinality == "optional":
                 templates = [
                     t.replace("shall", "may").replace("Shall", "May").replace("must", "may") for t in templates
                 ]
