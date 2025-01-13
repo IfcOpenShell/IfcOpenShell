@@ -73,7 +73,7 @@ class AuthoringData:
         cls.data["prev_page"] = cls.prev_page()
         cls.data["paginated_relating_types"] = cls.paginated_relating_types()
 
-        cls.data["type_thumbnail"] = cls.type_thumbnail()
+        cls.data["type_thumbnail"] = cls.type_thumbnail()  # Only after .relating_type_id_current()
         cls.data["is_voidable_element"] = cls.is_voidable_element()
         cls.data["has_visible_openings"] = cls.has_visible_openings()
         cls.data["has_visible_boundaries"] = cls.has_visible_boundaries()
@@ -139,14 +139,16 @@ class AuthoringData:
     @classmethod
     def type_elements_filtered(cls):
         search_query = cls.props.search_name.lower()
+
         def filter_element(element):
             if search_query in (element.Name or "Unnamed").lower():
                 return True
             if search_query in (element.Description or "").lower():
                 return True
-            if search_query in ifcopenshell.util.element.get_predefined_type(element).lower():
+            if search_query in (ifcopenshell.util.element.get_predefined_type(element) or "").lower():
                 return True
             return False
+
         elements = cls.data["type_elements"]
         if cls.props.search_name:
             return [e for e in elements if filter_element(e)]
