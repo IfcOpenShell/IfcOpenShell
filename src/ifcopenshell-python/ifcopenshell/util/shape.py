@@ -145,7 +145,7 @@ def get_shape_matrix(shape: ShapeElementType) -> MatrixType:
     :param shape: Shape output calculated by IfcOpenShell
     :return: A 4x4 numpy array representing the transformation matrix
     """
-    return np.array(shape.transformation.matrix).reshape((4, 4), order="F")
+    return np.frombuffer(shape.transformation_buffer, "d").reshape((4, 4), order="F")
 
 
 def get_bbox_centroid(geometry: ShapeType) -> tuple[float, float, float]:
