@@ -1141,6 +1141,7 @@ config = {
     "bool_false": "No",
     "categories": {
         "Contact": {
+            "colour": "r",
             "keys": ["Email"],
             "headers": [
                 "Email",
@@ -1169,6 +1170,7 @@ config = {
             "get_element_data": get_contact_data,
         },
         "Facility": {
+            "colour": "r",
             "keys": ["Name"],
             "headers": [
                 "Name",
@@ -1200,6 +1202,7 @@ config = {
             "get_element_data": get_facility_data,
         },
         "Floor": {
+            "colour": "r",
             "keys": ["Name"],
             "headers": [
                 "Name",
@@ -1219,6 +1222,7 @@ config = {
             "get_element_data": get_floor_data,
         },
         "Space": {
+            "colour": "r",
             "keys": ["Name"],
             "headers": [
                 "Name",
@@ -1241,6 +1245,7 @@ config = {
             "get_element_data": get_space_data,
         },
         "Zone": {
+            "colour": "o",
             "keys": ["Name", "Category", "SpaceNames"],
             "headers": [
                 "Name",
@@ -1259,6 +1264,7 @@ config = {
             "get_element_data": get_zone_data,
         },
         "Type": {
+            "colour": "r",
             "keys": ["Name"],
             "headers": [
                 "Name",
@@ -1303,6 +1309,7 @@ config = {
             "get_element_data": get_type_data,
         },
         "Component": {
+            "colour": "r",
             "keys": ["Name"],
             "headers": [
                 "Name",
@@ -1331,6 +1338,7 @@ config = {
             "get_element_data": get_component_data,
         },
         "System": {
+            "colour": "o",
             "keys": ["Name", "Category", "ComponentNames"],
             "headers": [
                 "Name",
@@ -1349,6 +1357,7 @@ config = {
             "get_element_data": get_system_data,
         },
         "Assembly": {  # Note that this is technically "not required"
+            "colour": "o",
             "keys": ["Name", "SheetName", "ParentName"],
             "headers": [
                 "Name",
@@ -1369,6 +1378,7 @@ config = {
             "get_element_data": get_assembly_data,
         },
         "Connection": {  # Note that this is technically "not required"
+            "colour": "o",
             "keys": ["Name", "ConnectionType", "RowName1", "RowName2"],
             "headers": [
                 "Name",
@@ -1392,6 +1402,7 @@ config = {
             "get_element_data": get_connection_data,
         },
         "Spare": {
+            "colour": "r",
             "keys": ["Name"],
             "headers": [
                 "Name",
@@ -1413,6 +1424,7 @@ config = {
             "get_element_data": get_spare_data,
         },
         "Resource": {
+            "colour": "r",
             "keys": ["Name"],
             "headers": [
                 "Name",
@@ -1430,6 +1442,7 @@ config = {
             "get_element_data": get_resource_data,
         },
         "Job": {
+            "colour": "r",
             "keys": ["Name", "TypeName", "TaskNumber"],
             "headers": [
                 "Name",
@@ -1458,6 +1471,7 @@ config = {
             "get_element_data": get_job_data,
         },
         "Document": {
+            "colour": "r",
             "keys": ["Name", "Stage", "SheetName", "RowName"],
             "headers": [
                 "Name",
@@ -1482,6 +1496,7 @@ config = {
             "get_element_data": get_document_data,
         },
         "Attribute": {
+            "colour": "o",
             "keys": ["Name", "SheetName", "RowName"],
             "headers": [
                 "Name",
@@ -1504,6 +1519,7 @@ config = {
             "get_element_data": pass_category_elements_as_data,
         },
         "Coordinate": {
+            "colour": "o",
             "keys": ["Name", "SheetName", "RowName"],
             "headers": (
                 "Name",

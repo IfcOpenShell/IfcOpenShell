@@ -271,18 +271,22 @@ class Writer:
     def write_xlsx(self, output: str) -> None:
         workbook = Workbook()
 
-        cell_formats = {}
+        cell_formats: dict[str, PatternFill] = {}
         for key, value in self.config.get("colours", {}).items():
             fill = PatternFill(start_color=value, end_color=value, fill_type="solid")
             cell_formats[key] = fill
 
         for category, data in self.categories.items():
-            colours = self.config.get("categories", {}).get(category, {}).get("colours", [])
+            category_data = self.config.get("categories", {}).get(category, {})
+            colours = category_data.get("colours", ())
 
             if category in workbook.sheetnames:
                 worksheet = workbook[category]
             else:
                 worksheet = workbook.create_sheet(category)
+
+            if category_colour := category_data.get("colour", None):
+                worksheet.sheet_properties.tabColor = cell_formats[category_colour].start_color.rgb
 
             r = 1  # Openpyxl uses 1-based indexing
             c = 1
