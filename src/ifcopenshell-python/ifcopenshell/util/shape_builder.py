@@ -90,6 +90,14 @@ def np_normalized(v: VectorType) -> np.ndarray:
     return np.divide(v, np.linalg.norm(v))
 
 
+def np_matrix_normalized(matrix: np.ndarray) -> np.ndarray:
+    # Ensure translation is not affected.
+    scale_factors = np.linalg.norm(matrix[:3, :3], axis=0)
+    rotation_matrix = matrix.copy()
+    rotation_matrix[:3, :3] /= scale_factors
+    return rotation_matrix
+
+
 def np_lerp(a: VectorType, b: VectorType, t: float) -> np.ndarray:
     return a + np.subtract(b, a) * t
 
@@ -176,6 +184,23 @@ def np_rotation_matrix(
     if size == 4:
         return np_to_4x4(matrix)
     return matrix
+
+
+def np_matrix_to_euler(matrix: np.ndarray) -> tuple[float, float, float]:
+    """Convert a rotation matrix to Euler angles.
+
+    Designed to work similar to `mathutils.Matrix.to_euler`.
+    Currently only XYZ rotation is supported.
+    """
+    if matrix.shape not in ((3, 3), (4, 4)):
+        raise ValueError(f"Matrix must be 3x3 or 4x4, got {matrix.shape}.")
+
+    matrix = np_matrix_normalized(matrix)
+    y = -np.arcsin(matrix[2, 0])
+    cos_y = np.cos(y)
+    x = np.arctan2(matrix[2, 1] / cos_y, matrix[2, 2] / cos_y)
+    z = np.arctan2(matrix[1, 0] / cos_y, matrix[0, 0] / cos_y)
+    return (x, y, z)
 
 
 def np_normal(vectors: SequenceOfVectors) -> np.ndarray:

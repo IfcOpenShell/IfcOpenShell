@@ -30,6 +30,7 @@ from ifcopenshell.util.shape_builder import (
     np_angle_signed,
     np_normal,
     np_intersect_line_line,
+    np_matrix_to_euler,
 )
 from math import degrees, radians
 from typing import Any, Union
@@ -56,6 +57,21 @@ class TestMathutilsCompatibleMethods(test.bootstrap.IFC4):
         assert np.allclose(Matrix.Rotation(radians(45), 4, "Z"), np_rotation_matrix(radians(45), 4, "Z"))
         rotation_vector_args = radians(45), 4, Vector((1, 1, 1)).normalized()
         assert np.allclose(Matrix.Rotation(*rotation_vector_args), np_rotation_matrix(*rotation_vector_args))
+
+    def test_np_matrix_to_euler(self):
+        from mathutils import Euler
+
+        # Test 3x3.
+        rot = Euler((0.5, 0.5, 0.5)).to_matrix()
+        assert np.allclose(rot.to_euler(), np_matrix_to_euler(V(rot)))
+
+        rot = rot.to_4x4()
+        assert np.allclose(rot.to_euler(), np_matrix_to_euler(V(rot)))
+
+        # Ensure support scaled matrices.
+        rot = Euler((0.5, 0.5, 0.5)).to_matrix()
+        rot.col[0] *= 2
+        assert np.allclose(rot.to_euler(), np_matrix_to_euler(V(rot)))
 
     def test_np_angle(self):
         from mathutils import Vector
