@@ -32,8 +32,9 @@ except:
     pass  # No XLSX support
 
 try:
+    import odf.namespaces as odf_ns
     from odf.opendocument import OpenDocumentSpreadsheet
-    from odf.style import Style, TableCellProperties
+    from odf.style import Style, TableCellProperties, TableProperties
     from odf.table import Table, TableRow, TableCell
     from odf.text import P
 except:
@@ -234,14 +235,26 @@ class Writer:
         doc = OpenDocumentSpreadsheet()
 
         for key, value in self.config.get("colours", {}).items():
+            color_str = "#" + value
+
             style = Style(name=key, family="table-cell")
             style.addElement(TableCellProperties(backgroundcolor="#" + value))
             doc.automaticstyles.addElement(style)
 
+            style = Style(name=f"{key}-table", family="table")
+            style.addElement(props := TableProperties())
+            # odfpy grammar is outdated and it doesn't allow to set it with `setAttribute`.
+            props.setAttrNS(odf_ns.TABLEOOONS, "tab-color", color_str)
+            doc.automaticstyles.addElement(style)
+
         for category, data in self.categories.items():
-            colours = self.config.get("categories", {}).get(category, {}).get("colours", [])
+            category_data = self.config.get("categories", {}).get(category, {})
+            colours = category_data.get("colours", ())
 
             table = Table(name=category)
+            if category_colour := category_data.get("colour", None):
+                table.setAttribute("stylename", f"{category_colour}-table")
+
             tr = TableRow()
             for header in data["headers"]:
                 tc = TableCell(valuetype="string", stylename="h")
