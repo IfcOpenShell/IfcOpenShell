@@ -130,7 +130,15 @@ class Usecase:
                     continue
                 elif obj.is_a("IfcFeatureElement"):
                     # Feature elements affect the geometry of their parent, and
-                    # so logically should always move with the parent.
+                    # so logically should always move with the parent. However,
+                    # subchildren shouldn't move.
+                    placement2 = obj.ObjectPlacement
+                    for referenced_placement2 in placement2.ReferencedByPlacements:
+                        matrix2 = ifcopenshell.util.placement.get_local_placement(referenced_placement2)
+                        for obj2 in referenced_placement2.PlacesObject:
+                            results.append(
+                                {"product": obj2, "matrix": matrix2, "is_si": False, "should_transform_children": True}
+                            )
                     continue
                 results.append({"product": obj, "matrix": matrix, "is_si": False, "should_transform_children": True})
         return results

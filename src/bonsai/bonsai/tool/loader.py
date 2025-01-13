@@ -84,13 +84,12 @@ class Loader(bonsai.core.tool.Loader):
     @classmethod
     def get_mesh_name_from_shape(cls, geometry: ifcopenshell.geom.ShapeType) -> str:
         representation_id = cls.get_representation_id_from_shape(geometry)
-        representation = tool.Ifc.get().by_id(representation_id)
-        context_id = representation.ContextOfItems.id() if hasattr(representation, "ContextOfItems") else 0
-        return cls.get_mesh_name(context_id, representation_id)
+        return cls.get_mesh_name(tool.Ifc.get().by_id(representation_id))
 
     @classmethod
-    def get_mesh_name(cls, context_id: int, representation_id: int) -> str:
-        return "{}/{}".format(context_id, representation_id)
+    def get_mesh_name(cls, representation: ifcopenshell.entity_instance) -> str:
+        context_id = representation.ContextOfItems.id() if hasattr(representation, "ContextOfItems") else 0
+        return "{}/{}".format(context_id, representation.id())
 
     @classmethod
     def get_name(cls, element: ifcopenshell.entity_instance) -> str:
@@ -983,8 +982,7 @@ class Loader(bonsai.core.tool.Loader):
                     tool.Loader.load_indexed_colour_map(rep, mesh)
 
             ios_edges_values = [
-                (e.vertices[0], e.vertices[1]) in ios_edges
-                or (e.vertices[1], e.vertices[0]) in ios_edges
+                (e.vertices[0], e.vertices[1]) in ios_edges or (e.vertices[1], e.vertices[0]) in ios_edges
                 for e in mesh.edges
             ]
             tool.Blender.Attribute.fill_attribute(mesh, "ios_edges", "EDGE", "BOOLEAN", ios_edges_values)

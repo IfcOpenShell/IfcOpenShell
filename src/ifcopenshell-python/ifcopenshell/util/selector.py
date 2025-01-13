@@ -763,7 +763,18 @@ class FacetTransformer(lark.Transformer):
         else:
             self.base_elements = elements.copy()
             self.elements = set()
+        self.has_additive_facet_in_current_list = False
         self.container_trees = {}
+
+    def add_default_elements(self):
+        if self.has_additive_facet_in_current_list:
+            return
+        self.has_additive_facet_in_current_list = True
+        if self.base_elements:
+            self.elements.update(self.base_elements)
+        else:
+            self.elements.update(self.file.by_type("IfcProduct"))
+            self.elements.update(self.file.by_type("IfcTypeProduct"))
 
     def get_results(self) -> set[ifcopenshell.entity_instance]:
         results: set[ifcopenshell.entity_instance] = set()
@@ -771,29 +782,14 @@ class FacetTransformer(lark.Transformer):
             results |= r
         return results
 
-    def transform(self, tree: lark.ParseTree):
-        def has_elements_token(tree: lark.tree.ParseTree) -> bool:
-            for child in tree.iter_subtrees_topdown():
-                data = child.data
-                # Tokens that add elements to filter.
-                if data in ("entity", "instance"):
-                    return True
-            return False
-
-        # Only elements tokens can add elements to the filter.
-        # Fallback to default elements if they are not provided.
-        if self.base_elements is None and not has_elements_token(tree):
-            self.elements.update(self.file.by_type("IfcProduct"))
-            self.elements.update(self.file.by_type("IfcTypeProduct"))
-
-        return super().transform(tree)
-
     def facet_list(self, args):
         if self.elements:
             self.results.append(self.elements)
             self.elements = set()
+            self.has_additive_facet_in_current_list = False
 
     def instance(self, args):
+        self.has_additive_facet_in_current_list = True
         if self.base_elements is None:
             if args[0].data == "globalid":
                 try:
@@ -816,6 +812,7 @@ class FacetTransformer(lark.Transformer):
                 }
 
     def entity(self, args):
+        self.has_additive_facet_in_current_list = True
         if self.base_elements is None:
             if args[0].data == "ifc_class":
                 try:
@@ -844,6 +841,7 @@ class FacetTransformer(lark.Transformer):
                 element_value = getattr(element, name, None)
             return self.compare(element_value, comparison, value)
 
+        self.add_default_elements()
         self.elements = set(filter(filter_function, self.elements))
 
     def type(self, args):
@@ -853,6 +851,7 @@ class FacetTransformer(lark.Transformer):
             element_value = getattr(ifcopenshell.util.element.get_type(element), "Name", None)
             return self.compare(element_value, comparison, value)
 
+        self.add_default_elements()
         self.elements = set(filter(filter_function, self.elements))
 
     def material(self, args):
@@ -870,6 +869,7 @@ class FacetTransformer(lark.Transformer):
                 return result if comparison == "=" else not result
             return self.compare(None, comparison, value)
 
+        self.add_default_elements()
         self.elements = set(filter(filter_function, self.elements))
 
     def property(self, args):
@@ -899,6 +899,7 @@ class FacetTransformer(lark.Transformer):
                                 return self.compare(element_value, comparison, value)
             return self.compare(None, comparison, value)
 
+        self.add_default_elements()
         self.elements = set(filter(filter_function, self.elements))
 
     def classification(self, args):
@@ -918,6 +919,7 @@ class FacetTransformer(lark.Transformer):
                 return result if comparison == "=" else not result
             return self.compare(None, comparison, value)
 
+        self.add_default_elements()
         self.elements = set(filter(filter_function, self.elements))
 
     def location(self, args):
@@ -936,6 +938,7 @@ class FacetTransformer(lark.Transformer):
                 return result if comparison == "=" else not result
             return self.compare(None, comparison, value)
 
+        self.add_default_elements()
         self.elements = set(filter(filter_function, self.elements))
 
     def group(self, args):
@@ -949,6 +952,7 @@ class FacetTransformer(lark.Transformer):
                         result = True
             return result if comparison == "=" else not result
 
+        self.add_default_elements()
         self.elements = set(filter(filter_function, self.elements))
 
     def parent(self, args):
@@ -989,6 +993,7 @@ class FacetTransformer(lark.Transformer):
         for parent in parents:
             children |= set(ifcopenshell.util.element.get_decomposition(parent))
 
+        self.add_default_elements()
         if comparison == "=":
             self.elements = self.elements & children
         else:
@@ -1000,6 +1005,7 @@ class FacetTransformer(lark.Transformer):
         def filter_function(element: ifcopenshell.entity_instance) -> bool:
             return self.compare(get_element_value(element, keys), comparison, value)
 
+        self.add_default_elements()
         self.elements = set(filter(filter_function, self.elements))
 
     def get_container_tree(self, container: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:

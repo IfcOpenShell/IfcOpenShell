@@ -375,6 +375,7 @@ class BIM_OT_select_linked_aggregates(bpy.types.Operator):
 
         return {"FINISHED"}
 
+
 class BIM_OT_disable_aggregate_mode(bpy.types.Operator):
     bl_idname = "bim.disable_aggregate_mode"
     bl_label = "Disable Aggregate Mode"
@@ -384,6 +385,7 @@ class BIM_OT_disable_aggregate_mode(bpy.types.Operator):
         bpy.ops.object.select_all(action="DESELECT")
         bonsai.core.aggregate.disable_aggregate_mode(tool.Aggregate)
         return {"FINISHED"}
+
 
 class BIM_OT_toggle_aggregate_mode_local_view(bpy.types.Operator):
     bl_idname = "bim.toggle_aggregate_mode_local_view"
@@ -402,6 +404,7 @@ class BIM_OT_toggle_aggregate_mode_local_view(bpy.types.Operator):
                 bpy.ops.view3d.localview()
 
         return {"FINISHED"}
+
 
 class BIM_OT_aggregate_assign_new_objects_in_aggregate_mode(bpy.types.Operator):
     bl_idname = "bim.aggregate_assign_new_objects_in_aggregate_mode"
@@ -424,7 +427,9 @@ class BIM_OT_aggregate_assign_new_objects_in_aggregate_mode(bpy.types.Operator):
         new_objs = [o for o in new_objs if o.data]
         for obj in new_objs:
             element = tool.Ifc.get_entity(obj)
-            if (aggregate := ifcopenshell.util.element.get_aggregate(element)) == tool.Ifc.get_entity(props.editing_aggregate):
+            if (aggregate := ifcopenshell.util.element.get_aggregate(element)) == tool.Ifc.get_entity(
+                props.editing_aggregate
+            ):
                 continue
             if element and element.is_a("IfcElement"):
                 obj.select_set(True)
@@ -439,4 +444,3 @@ class BIM_OT_aggregate_assign_new_objects_in_aggregate_mode(bpy.types.Operator):
         BIM_OT_aggregate_assign_object._execute(self, context)
 
         return {"FINISHED"}
-

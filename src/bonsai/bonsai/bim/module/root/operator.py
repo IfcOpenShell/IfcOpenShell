@@ -532,19 +532,19 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
                 "material.assign_profile", tool.Ifc.get(), material_profile=material_profile, profile=profile
             )
         elif representation_template == "WINDOW":
-            with context.temp_override(active_object=obj):
+            with context.temp_override(active_object=obj, selected_objects=[]):
                 bpy.ops.bim.add_window()
         elif representation_template == "DOOR":
-            with context.temp_override(active_object=obj):
+            with context.temp_override(active_object=obj, selected_objects=[]):
                 bpy.ops.bim.add_door()
         elif representation_template == "STAIR":
-            with context.temp_override(active_object=obj):
+            with context.temp_override(active_object=obj, selected_objects=[]):
                 bpy.ops.bim.add_stair()
         elif representation_template == "RAILING":
-            with context.temp_override(active_object=obj):
+            with context.temp_override(active_object=obj, selected_objects=[]):
                 bpy.ops.bim.add_railing()
         elif representation_template == "ROOF":
-            with context.temp_override(active_object=obj):
+            with context.temp_override(active_object=obj, selected_objects=[]):
                 bpy.ops.bim.add_roof()
 
     def draw(self, context):

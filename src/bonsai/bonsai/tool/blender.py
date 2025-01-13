@@ -144,7 +144,7 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     def get_active_object(cls) -> bpy.types.Object:
-        return bpy.context.view_layer.objects.active
+        return getattr(bpy.context, "active_object", None) or bpy.context.view_layer.objects.active
 
     @classmethod
     def get_selected_objects(cls) -> set[bpy.types.Object]:
@@ -185,10 +185,6 @@ class Blender(bonsai.core.tool.Blender):
             return context.scene.BIMMaterialProperties.materials[
                 context.scene.BIMMaterialProperties.active_material_index
             ].ifc_definition_id
-        elif obj_type == "MaterialSet":
-            return ifcopenshell.util.element.get_material(
-                tool.Ifc.get_entity(bpy.data.objects.get(obj)), should_skip_usage=True
-            ).id()
         elif obj_type == "MaterialSetItem":
             return bpy.data.objects.get(obj).BIMObjectMaterialProperties.active_material_set_item_id
         elif obj_type == "Task":

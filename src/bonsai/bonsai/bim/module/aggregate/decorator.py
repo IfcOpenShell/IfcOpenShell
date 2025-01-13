@@ -207,7 +207,6 @@ class AggregateDecorator:
             parts = ifcopenshell.util.element.get_parts(tool.Ifc.get_entity(aggregate))
             parts_objs = [tool.Ifc.get_object(p) for p in parts]
 
-
             indices, edges = create_bounding_box(parts_objs)
             self.line_shader.uniform_float("lineWidth", 0.5)
             self.draw_batch("LINES", indices, color, edges)
@@ -230,9 +229,7 @@ class AggregateModeDecorator:
         cls.handlers.append(
             SpaceView3D.draw_handler_add(handler.draw_aggregate_empty, (context,), "WINDOW", "POST_VIEW")
         )
-        cls.handlers.append(
-            SpaceView3D.draw_handler_add(handler.draw_new_objects, (context,), "WINDOW", "POST_VIEW")
-        )
+        cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_new_objects, (context,), "WINDOW", "POST_VIEW"))
         cls.is_installed = True
 
     @classmethod
@@ -352,12 +349,11 @@ class AggregateModeDecorator:
         new_objs = [o for o in new_objs if o.data]
         for obj in new_objs:
             element = tool.Ifc.get_entity(obj)
-            if (aggregate := ifcopenshell.util.element.get_aggregate(element)) == tool.Ifc.get_entity(props.editing_aggregate):
+            if (aggregate := ifcopenshell.util.element.get_aggregate(element)) == tool.Ifc.get_entity(
+                props.editing_aggregate
+            ):
                 continue
             if element and element.is_a("IfcElement"):
                 data = ItemDecorator.get_obj_data(obj)
                 if data:
-                    self.draw_batch(
-                        "TRIS", data["verts"], transparent_color((1, 0, 0, 1)), data["tris"]
-                    )
-
+                    self.draw_batch("TRIS", data["verts"], transparent_color((1, 0, 0, 1)), data["tris"])

@@ -26,7 +26,6 @@ import ifcopenshell.util.unit
 import bonsai.core.root
 import bonsai.core.geometry
 import bonsai.tool as tool
-from bonsai.bim.module.model.door import bm_sort_out_geom
 from bonsai.bim.module.model.data import RailingData, refresh
 from bonsai.bim.module.model.decorator import ProfileDecorator
 
@@ -47,7 +46,7 @@ def bm_split_edge_at_offset(edge: bmesh.types.BMEdge, offset: float) -> dict[str
 
     split_output_0 = bmesh.utils.edge_split(edge, v0, offset / edge_len)
     split_output_1 = bmesh.utils.edge_split(edge, v1, offset / (edge_len - offset))
-    new_geometry = bm_sort_out_geom(split_output_0 + split_output_1)
+    new_geometry = tool.Model.bm_sort_out_geom(split_output_0 + split_output_1)
     return new_geometry
 
 
@@ -175,11 +174,11 @@ def update_railing_modifier_bmesh(context: bpy.types.Context) -> None:
             ortho_vector = edge_dir.cross(V_(0, 0, 1))
 
             extruded_geom = bmesh.ops.extrude_edge_only(bm, edges=[main_edge])["geom"]
-            extruded_verts = bm_sort_out_geom(extruded_geom)["verts"]
+            extruded_verts = tool.Model.bm_sort_out_geom(extruded_geom)["verts"]
             bmesh.ops.translate(bm, vec=ortho_vector * (-thickness / 2), verts=extruded_verts)
 
             extruded_geom = bmesh.ops.extrude_edge_only(bm, edges=[main_edge])["geom"]
-            extruded_verts = bm_sort_out_geom(extruded_geom)["verts"]
+            extruded_verts = tool.Model.bm_sort_out_geom(extruded_geom)["verts"]
             bmesh.ops.translate(bm, vec=ortho_vector * (thickness / 2), verts=extruded_verts)
 
             # dissolve middle edge
@@ -187,7 +186,7 @@ def update_railing_modifier_bmesh(context: bpy.types.Context) -> None:
 
         # height
         extruded_geom = bmesh.ops.extrude_face_region(bm, geom=bm.faces)["geom"]
-        extruded_verts = bm_sort_out_geom(extruded_geom)["verts"]
+        extruded_verts = tool.Model.bm_sort_out_geom(extruded_geom)["verts"]
         extrusion_vector = Vector((0, 0, 1)) * height
         bmesh.ops.translate(bm, vec=extrusion_vector, verts=extruded_verts)
 

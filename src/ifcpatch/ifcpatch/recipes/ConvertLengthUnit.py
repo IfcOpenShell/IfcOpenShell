@@ -53,7 +53,6 @@ LengthUnit = typing.Literal[
 class Patcher:
     def __init__(
         self,
-        src: str,
         file: ifcopenshell.file,
         logger: Logger,
         unit: LengthUnit = "METER",
@@ -76,7 +75,6 @@ class Patcher:
             # Convert to feet
             model = ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "ConvertLengthUnit", "arguments": ["FOOT"]})
         """
-        self.src = src
         self.file = file
         self.logger = logger
         self.unit = unit

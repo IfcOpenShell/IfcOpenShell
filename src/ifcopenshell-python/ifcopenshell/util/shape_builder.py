@@ -30,7 +30,6 @@ import ifcopenshell.util.unit
 from math import cos, sin, pi, tan, radians, degrees, atan, sqrt
 from typing import Union, Optional, Literal, Any, Sequence, TYPE_CHECKING
 from itertools import chain
-from mathutils import Vector
 
 PRECISION = 1.0e-5
 

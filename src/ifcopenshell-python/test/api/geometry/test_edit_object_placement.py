@@ -545,11 +545,12 @@ class TestEditObjectPlacement(test.bootstrap.IFC4):
         with pytest.raises(RuntimeError):
             self.file.by_id(previous_placement_id)
 
-    def test_changing_placements_always_affecting_child_features_as_a_special_case(self):
+    def test_changing_placements_always_affecting_child_features_but_not_subchildren_as_a_special_case(self):
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
         ifcopenshell.api.unit.assign_unit(self.file)
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         subelement = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcOpeningElement")
+        subsubelement = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcDoor")
 
         matrix = numpy.eye(4)
         matrix[:3, 3] = (1, 1, 1)
@@ -557,15 +558,22 @@ class TestEditObjectPlacement(test.bootstrap.IFC4):
         submatrix = numpy.eye(4)
         submatrix[:3, 3] = (1, 2, 3)
 
+        subsubmatrix = numpy.eye(4)
+        subsubmatrix[:3, 3] = (7, 8, 9)
+
         shifted_submatrix = numpy.eye(4)
         shifted_submatrix[:3, 3] = (1, 3, 5)
 
         ifcopenshell.api.void.add_opening(self.file, opening=subelement, element=element)
+        ifcopenshell.api.void.add_filling(self.file, opening=subelement, element=subsubelement)
         previous_placement_id = ifcopenshell.api.geometry.edit_object_placement(
             self.file, product=element, matrix=matrix.copy(), is_si=False
         ).id()
         ifcopenshell.api.geometry.edit_object_placement(
             self.file, product=subelement, matrix=submatrix.copy(), is_si=False
+        )
+        ifcopenshell.api.geometry.edit_object_placement(
+            self.file, product=subsubelement, matrix=subsubmatrix.copy(), is_si=False
         )
         ifcopenshell.api.geometry.edit_object_placement(
             self.file,
@@ -578,7 +586,11 @@ class TestEditObjectPlacement(test.bootstrap.IFC4):
         assert numpy.array_equal(
             ifcopenshell.util.placement.get_local_placement(subelement.ObjectPlacement), shifted_submatrix
         )
+        assert numpy.array_equal(
+            ifcopenshell.util.placement.get_local_placement(subsubelement.ObjectPlacement), subsubmatrix
+        )
         assert subelement.ObjectPlacement.PlacementRelTo == element.ObjectPlacement
+        assert subsubelement.ObjectPlacement.PlacementRelTo == subelement.ObjectPlacement
         # old placement should be removed to avoid orphaned entities
         with pytest.raises(RuntimeError):
             self.file.by_id(previous_placement_id)

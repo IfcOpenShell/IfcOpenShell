@@ -33,7 +33,6 @@ def refresh():
     ObjectPsetsData.is_loaded = False
     ObjectQtosData.is_loaded = False
     MaterialPsetsData.is_loaded = False
-    MaterialSetPsetsData.is_loaded = False
     MaterialSetItemPsetsData.is_loaded = False
     TaskQtosData.is_loaded = False
     ResourceQtosData.is_loaded = False
@@ -185,29 +184,13 @@ class MaterialPsetsData(Data):
             if material.ifc_definition_id:
                 material = tool.Ifc.get().by_id(material.ifc_definition_id)
                 category = getattr(material, "Category", None) or None
-                psets = bonsai.bim.schema.ifc.psetqto.get_applicable("IfcMaterial", category, pset_only=True)
+                psets = bonsai.bim.schema.ifc.psetqto.get_applicable(props.material_type, category, pset_only=True)
                 psetnames = cls.format_pset_enum(psets)
                 assigned_names = ifcopenshell.util.element.get_psets(
                     material, psets_only=True, should_inherit=False
                 ).keys()
                 return [p for p in psetnames if p[0] not in assigned_names]
         return []
-
-
-class MaterialSetPsetsData(Data):
-    data = {}
-    is_loaded = False
-
-    @classmethod
-    def load(cls):
-        psets = {}
-        element = tool.Ifc.get_entity(bpy.context.active_object)
-        if element:
-            material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
-            if material and "Set" in material.is_a():
-                psets = cls.psetqtos(material)
-        cls.data = {"psets": psets}
-        cls.is_loaded = True
 
 
 class MaterialSetItemPsetsData(Data):

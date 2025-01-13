@@ -112,6 +112,12 @@ def update_search_name(self, context):
     bpy.ops.bim.load_type_thumbnails(ifc_class=self.ifc_class)
 
 
+def update_x_angle(self, context):
+    angle_deg = math.degrees(self.x_angle)
+    if tool.Cad.is_x(angle_deg, -90, 0.5) or tool.Cad.is_x(angle_deg, 90, 0.5):
+        self.x_angle = 0
+
+
 class BIMModelProperties(PropertyGroup):
     ifc_class: bpy.props.EnumProperty(items=get_ifc_class, name="Construction Class", update=update_ifc_class)
     relating_type_id: bpy.props.EnumProperty(
@@ -183,8 +189,10 @@ class BIMModelProperties(PropertyGroup):
     rl2: bpy.props.FloatProperty(name="RL", default=1, subtype="DISTANCE", description="Z offset for windows")
     # Used for plan calculation points such as in room generation
     rl3: bpy.props.FloatProperty(name="RL", default=1, subtype="DISTANCE", description="Z offset for space calculation")
-    x_angle: bpy.props.FloatProperty(name="X Angle", default=0, subtype="ANGLE", min=-pi / 180 * 89, max=pi / 180 * 89)
-    type_page: bpy.props.IntProperty(name="Type Page", default=1, min=1,update=update_type_page)
+    type_page: bpy.props.IntProperty(name="Type Page", default=1, min=1, update=update_type_page)
+    x_angle: bpy.props.FloatProperty(
+        name="X Angle", default=0, subtype="ANGLE", min=math.radians(-180), max=math.radians(180), update=update_x_angle
+    )
     type_name: bpy.props.StringProperty(name="Name", default="TYPEX")
     boundary_class: bpy.props.EnumProperty(items=get_boundary_class, name="Boundary Class")
     direction_sense: bpy.props.EnumProperty(
@@ -842,3 +850,14 @@ class BIMPolylineProperties(PropertyGroup):
     snap_mouse_ref: bpy.props.CollectionProperty(type=SnapMousePoint)
     insertion_polyline: bpy.props.CollectionProperty(type=Polyline)
     measurement_polyline: bpy.props.CollectionProperty(type=Polyline)
+
+
+class ProductPreviewItem(PropertyGroup):
+    value_3d: bpy.props.FloatVectorProperty()
+    value_2d: bpy.props.FloatVectorProperty(size=2)
+
+
+class BIMProductPreviewProperties(PropertyGroup):
+    verts: bpy.props.CollectionProperty(type=ProductPreviewItem)
+    edges: bpy.props.CollectionProperty(type=ProductPreviewItem)
+    tris: bpy.props.CollectionProperty(type=ProductPreviewItem)

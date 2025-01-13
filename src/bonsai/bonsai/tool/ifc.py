@@ -34,7 +34,6 @@ class Ifc(bonsai.core.tool.Ifc):
     OBJECT_TYPE = Literal[
         "Object",
         "Material",
-        "MaterialSet",
         "MaterialSetItem",
         "Task",
         "Cost",
@@ -102,7 +101,7 @@ class Ifc(bonsai.core.tool.Ifc):
         Return None if object is not linked to IFC or it's linked to non-existent element.
         """
         ifc = IfcStore.get_file()
-        if not ifc:
+        if not ifc or not obj:
             return
 
         props = None
@@ -110,6 +109,8 @@ class Ifc(bonsai.core.tool.Ifc):
             props = obj.BIMObjectProperties
         elif isinstance(obj, bpy.types.Material):
             props = obj.BIMStyleProperties
+        else:
+            props = obj.BIMMeshProperties
 
         if props and (ifc_definition_id := props.ifc_definition_id):
             try:

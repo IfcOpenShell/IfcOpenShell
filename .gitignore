@@ -98,3 +98,5 @@ src/ifcopenshell-python/ifcopenshell/ifcopenshell_wrapper.py
 
 # Brickschema
 src/bonsai/bonsai/bim/schema/Brick.ttl
+bonsaiDecoratorForLoads.code-workspace
+dev_environment.bat

@@ -18,6 +18,7 @@
 
 import bpy
 from . import ui, prop, operator
+from bpy.app.handlers import persistent
 
 classes = (
     operator.AddCurvelikeItem,
@@ -89,7 +90,20 @@ classes = (
 addon_keymaps = []
 
 
+@persistent
+def block_scale(scene):
+    if obj := (getattr(bpy.context, "active_object", None) or bpy.context.view_layer.objects.active):
+        if isinstance(obj, bpy.types.Object) and obj.BIMObjectProperties.ifc_definition_id:
+            if obj.scale != (1, 1, 1):
+                obj.scale = (1, 1, 1)
+        elif isinstance(obj, bpy.types.Mesh) and obj.BIMMeshProperties.ifc_definition_id:
+            if obj.scale != (1, 1, 1):
+                obj.scale = (1, 1, 1)
+
+
 def register():
+    bpy.app.handlers.depsgraph_update_pre.append(block_scale)
+
     operator.OverrideDuplicateMoveMacro.define("BIM_OT_override_object_duplicate_move")
     operator.OverrideDuplicateMoveMacro.define("TRANSFORM_OT_translate")
     operator.OverrideDuplicateMoveLinkedMacro.define("BIM_OT_override_object_duplicate_move_linked")
@@ -158,6 +172,8 @@ def register():
 
 
 def unregister():
+    bpy.app.handlers.depsgraph_update_pre.remove(block_scale)
+
     bpy.types.VIEW3D_MT_object.remove(ui.object_menu)
     bpy.types.OUTLINER_MT_object.remove(ui.outliner_menu)
     bpy.types.VIEW3D_MT_object_context_menu.remove(ui.outliner_menu)

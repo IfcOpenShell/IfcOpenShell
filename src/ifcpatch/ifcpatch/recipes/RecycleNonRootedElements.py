@@ -22,7 +22,7 @@ import ifcopenshell.util.element
 
 
 class Patcher:
-    def __init__(self, src: str, file: ifcopenshell.file, logger: logging.Logger):
+    def __init__(self, file: ifcopenshell.file, logger: logging.Logger):
         """Optimise the filesize of an IFC model by reusing non-rooted elements
 
         It is possible to non-losslessly optimise the filesize of an IFC model.
@@ -46,7 +46,6 @@ class Patcher:
 
             ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "RecycleNonRootedElements", "arguments": []})
         """
-        self.src = src
         self.file = file
         self.logger = logger
 

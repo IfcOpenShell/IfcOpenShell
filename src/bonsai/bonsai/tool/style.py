@@ -551,6 +551,10 @@ class Style(bonsai.core.tool.Style):
         return bpy.context.scene.BIMStylesProperties.is_editing
 
     @classmethod
+    def is_editing_style(cls) -> bool:
+        return bpy.context.scene.BIMStylesProperties.is_editing_style
+
+    @classmethod
     def select_elements(cls, elements: list[ifcopenshell.entity_instance]) -> None:
         for element in elements:
             obj = tool.Ifc.get_object(element)

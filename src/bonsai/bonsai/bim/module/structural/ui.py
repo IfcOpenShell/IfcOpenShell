@@ -445,6 +445,37 @@ class BIM_UL_structural_activities(UIList):
             row.label(text=item.applied_load_class)
 
 
+class BIM_PT_show_structural_activities(Panel):
+    bl_label = "Show Loads"
+    bl_idname = "BIM_PT_show_structural_activities"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_tab_structural"
+
+    @classmethod
+    def poll(cls, context):
+        file = IfcStore.get_file()
+        return file and hasattr(file, "schema") and file.schema != "IFC2X3"
+
+    def draw(self, context):
+
+        self.props = context.scene.BIMStructuralProperties
+
+        row = self.layout.row(align=True)
+        row.operator(
+            "bim.show_loads",
+            text="Show loads",
+            icon="HIDE_OFF",
+        )
+        row = self.layout.row(align=True)
+        row.prop(self.props, "reference_frame")
+        row = self.layout.row(align=True)
+        row.prop(self.props, "activity_type")
+        row = self.layout.row(align=True)
+        row.prop(self.props, "load_group_to_show")
+
+
 class BIM_PT_structural_loads(Panel):
     bl_label = "Structural Loads"
     bl_idname = "BIM_PT_structural_loads"

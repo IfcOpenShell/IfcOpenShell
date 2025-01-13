@@ -237,7 +237,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     activate_workspace: BoolProperty(
         name="Activate BIM Workspace on Startup",
         default=True,
-        description="If enabled, this will automatically activate the BIM workspace when opening a project.\It is recommended to keep this `Enabled`",
+        description="If enabled, this will automatically activate the BIM workspace when opening a project.\nIt is recommended to keep this `Enabled`",
     )
     should_setup_toolbar: BoolProperty(
         name="Always Show Toolbar In 3D Viewport",
@@ -246,9 +246,10 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     )
     should_play_chaching_sound: BoolProperty(name="Play A Cha-Ching Sound When Project Costs Updates", default=False)
     spatial_elements_unselectable: BoolProperty(
-        name="Make Spatial Elements Unselectable By Default", 
-        default=True, 
-        description="If disabled, it will be possible to select spatial elements in the 3D viewport.\nIt is recommended to keep this `Enabled`, as this can have unintended consequences")
+        name="Make Spatial Elements Unselectable By Default",
+        default=True,
+        description="If disabled, it will be possible to select spatial elements in the 3D viewport.\nIt is recommended to keep this `Enabled`, as this can have unintended consequences",
+    )
     decorations_colour: bpy.props.FloatVectorProperty(
         name="Decorations Color", subtype="COLOR", default=(1, 1, 1, 1), min=0.0, max=1.0, size=4
     )
@@ -1191,15 +1192,16 @@ def draw_custom_context_menu(self: bpy.types.Menu, context: bpy.types.Context) -
                 url_op = layout.operator("bim.open_uri", icon="URL", text="Online IFC Documentation")
                 url_op.uri = url
 
+
 class BIM_PT_decorators_overlay(Panel):
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'HEADER'
-    bl_parent_id = 'VIEW3D_PT_overlay'
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "HEADER"
+    bl_parent_id = "VIEW3D_PT_overlay"
     bl_label = "Bonsai Decorators"
 
     @classmethod
     def poll(cls, context):
-        return context.mode == 'OBJECT'
+        return context.mode == "OBJECT"
 
     def draw(self, context):
         layout = self.layout

@@ -54,7 +54,6 @@ except:
 class Patcher:
     def __init__(
         self,
-        src,
         file,
         logger,
         sql_type: SQLTypes = "SQLite",
@@ -98,7 +97,6 @@ class Patcher:
                 {"input": "input.ifc", "file": model, "recipe": "Ifc2Sql", "arguments": ["sqlite"]}
             )
         """
-        self.src = src
         self.file = file
         self.logger = logger
         self.sql_type = sql_type.lower()

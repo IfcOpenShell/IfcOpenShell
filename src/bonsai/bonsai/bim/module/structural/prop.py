@@ -21,7 +21,12 @@ import bpy
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
 from bonsai.bim.prop import StrProperty, Attribute
-from bonsai.bim.module.structural.data import StructuralLoadCasesData, StructuralLoadsData, BoundaryConditionsData
+from bonsai.bim.module.structural.data import (
+    StructuralLoadCasesData,
+    StructuralLoadsData,
+    BoundaryConditionsData,
+    LoadGroupDecorationData,
+)
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -33,6 +38,16 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+
+
+def get_load_groups_to_show(self, context):
+    if not LoadGroupDecorationData.is_loaded:
+        LoadGroupDecorationData.load()
+    return LoadGroupDecorationData.data["load groups to show"]
+
+
+def update_activity_type(self, context):
+    LoadGroupDecorationData.is_loaded = False
 
 
 def get_applicable_structural_load_types(self, context):
@@ -151,6 +166,27 @@ class BIMStructuralProperties(PropertyGroup):
     boundary_condition_types: EnumProperty(items=get_boundary_condition_types, name="Boundary Condition Types")
     boundary_condition_attributes: CollectionProperty(name="Boundary Condition Attributes", type=Attribute)
     filtered_boundary_conditions: BoolProperty(name="Filtered Boundary Conditions", default=False)
+
+    show_loads: BoolProperty(name="Show Loads", default=False)
+    update_load_repr: BoolProperty(name="Update Load Representation", default=False)
+    enable_repr_auto_update: BoolProperty(name="Auto Update", default=False)
+    reference_frame: EnumProperty(
+        items=[
+            ("GLOBAL_COORDS", "Global", "Show loads in global reference frame"),
+            ("LOCAL_COORDS", "Local", "Show loads in local reference frame"),
+        ],
+        name="Reference Frame",
+    )
+    activity_type: EnumProperty(
+        items=[
+            ("Action", "Actions", "Show actions loads"),
+            ("External Reaction", "External Reactions", "Show reactions on boundary conditions"),
+            ("Internal Reactions", "Internal Reactions", "Show internal reactions on members"),
+        ],
+        name="Activity Type",
+        update=update_activity_type,
+    )
+    load_group_to_show: EnumProperty(items=get_load_groups_to_show, name="Load Groups")
 
 
 class BIMObjectStructuralProperties(PropertyGroup):

@@ -25,7 +25,6 @@ from logging import Logger
 class Patcher:
     def __init__(
         self,
-        src: str,
         file: ifcopenshell.file,
         logger: Logger,
         schema: ifcopenshell.util.schema.IFC_SCHEMA = "IFC4",
@@ -45,7 +44,6 @@ class Patcher:
             # Upgrade an IFC2X3 model to IFC4
             ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "Migrate", "arguments": ["IFC4"]})
         """
-        self.src = src
         self.file = file
         self.logger = logger
         self.schema = schema

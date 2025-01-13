@@ -25,7 +25,6 @@ import typing
 class Patcher:
     def __init__(
         self,
-        src,
         file,
         logger,
         name: str = "EPSG:1234",
@@ -59,7 +58,6 @@ class Patcher:
             # Set the current origin 0,0,0 to correlate to map coordinates 1000,1000,0 and a grid north of 15.
             ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "SetFalseOrigin", "arguments": ["EPSG:1234", 0, 0, 0, 1000, 1000, 0, 15, 0]})
         """
-        self.src = src
         self.file = file
         self.logger = logger
         self.name = name
@@ -73,7 +71,7 @@ class Patcher:
         self.rotate_angle = float(rotate_angle)
 
     def patch(self):
-        SetWorldCoordinateSystem.Patcher(self.src, self.file, self.logger, x=0, y=0, z=0, ax=0, ay=0, az=0).patch()
+        SetWorldCoordinateSystem.Patcher(self.file, self.logger, x=0, y=0, z=0, ax=0, ay=0, az=0).patch()
         coordinate_operation = {
             "Eastings": self.e,
             "Northings": self.n,
@@ -90,7 +88,6 @@ class Patcher:
             self.file, projected_crs={"Name": self.name}, coordinate_operation=coordinate_operation
         )
         OffsetObjectPlacements.Patcher(
-            self.src,
             self.file,
             self.logger,
             x=-self.x,

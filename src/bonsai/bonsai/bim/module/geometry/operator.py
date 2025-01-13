@@ -1858,7 +1858,7 @@ class OverrideEscape(bpy.types.Operator):
             bpy.ops.bim.hide_all_openings()
         elif context.scene.BIMAggregateProperties.in_aggregate_mode:
             bpy.ops.bim.disable_aggregate_mode()
-        elif active_object:=context.active_object:
+        elif active_object := context.active_object:
             if tool.Blender.Modifier.try_canceling_editing_modifier_parameters_or_path(active_object):
                 pass
         return {"FINISHED"}
@@ -1902,7 +1902,9 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"ERROR"}, f"Element '{obj.name}' is in item mode and cannot be edited directly")
         elif obj in [o.obj for o in context.scene.BIMAggregateProperties.not_editing_objects]:
             obj.select_set(False)
-            self.report({"ERROR"}, f"Element '{obj.name}' does not belong to this aggregate and cannot be edited directly")
+            self.report(
+                {"ERROR"}, f"Element '{obj.name}' does not belong to this aggregate and cannot be edited directly"
+            )
         elif obj in bpy.context.scene.BIMProjectProperties.clipping_planes_objs:
             self.report({"ERROR"}, "Clipping planes cannot be edited")
         elif element:
@@ -1966,6 +1968,13 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
         elif item.is_a("IfcSweptAreaSolid"):
             tool.Geometry.sync_item_positions()
             tool.Model.import_profile(item.SweptArea, obj=obj)
+            obj.data.BIMMeshProperties.ifc_definition_id = item.id()
+            self.enable_edit_mode(context)
+            ProfileDecorator.install(context)
+            if not bpy.app.background:
+                tool.Blender.set_viewport_tool("bim.cad_tool")
+        elif item.is_a("IfcAnnotationFillArea"):
+            tool.Model.import_annotation_fill_area(item, obj=obj)
             obj.data.BIMMeshProperties.ifc_definition_id = item.id()
             self.enable_edit_mode(context)
             ProfileDecorator.install(context)
@@ -2124,10 +2133,7 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
                 tool.Geometry.import_item(obj)
         elif item.is_a("IfcSweptAreaSolid"):
             ProfileDecorator.uninstall()
-
-            profile = tool.Model.export_profile(obj)
-
-            if not profile:
+            if not (profile := tool.Model.export_profile(obj)):
 
                 def msg(self, context):
                     self.layout.label(text="INVALID PROFILE")
@@ -2184,6 +2190,26 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
                             product=element,
                             representation=new_footprint,
                         )
+        elif item.is_a("IfcAnnotationFillArea"):
+            ProfileDecorator.uninstall()
+            if not (profile := tool.Model.export_annotation_fill_area(obj)):
+
+                def msg(self, context):
+                    self.layout.label(text="INVALID PROFILE")
+
+                bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
+                ProfileDecorator.install(bpy.context)
+                self.enable_edit_mode(bpy.context)
+                return
+
+            for inverse in tool.Ifc.get().get_inverse(item):
+                ifcopenshell.util.element.replace_attribute(inverse, item, profile)
+            ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), item)
+            obj.data.BIMMeshProperties.ifc_definition_id = profile.id()
+
+            tool.Geometry.reload_representation(bpy.context.scene.BIMGeometryProperties.representation_obj)
+            tool.Geometry.import_item(obj)
+            tool.Geometry.import_item_attributes(obj)
         elif tool.Geometry.is_curvelike_item(item):
             ProfileDecorator.uninstall()
             new = tool.Model.export_curves(obj)
@@ -2924,7 +2950,7 @@ class OverrideMoveAggregate(bpy.types.Operator):
                 obj.select_set(False)
                 continue
             element = tool.Ifc.get_entity(obj)
-            if not element or props.in_aggregate_mode:
+            if not element or not element.is_a("IfcElement") or props.in_aggregate_mode:
                 continue
             parts = ifcopenshell.util.element.get_parts(element)
             if parts:

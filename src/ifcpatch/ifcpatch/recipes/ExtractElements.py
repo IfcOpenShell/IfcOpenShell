@@ -25,7 +25,7 @@ from logging import Logger
 
 
 class Patcher:
-    def __init__(self, src: str, file: ifcopenshell.file, logger: Logger, query: str = "IfcWall"):
+    def __init__(self, file: ifcopenshell.file, logger: Logger, query: str = "IfcWall"):
         """Extract certain elements into a new model
 
         Extract a subset of elements from an existing IFC data set and save it
@@ -48,7 +48,6 @@ class Patcher:
             # Extract all walls and slabs
             ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "ExtractElements", "arguments": ["IfcWall, IfcSlab"]})
         """
-        self.src = src
         self.file = file
         self.logger = logger
         self.query = query
