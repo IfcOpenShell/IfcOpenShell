@@ -268,7 +268,7 @@ class Context:
 
         opening.Representation = self.model.createIfcProductDefinitionShape(
             Representations=[
-                self.model.createIfcRepresentation(
+                self.model.createIfcShapeRepresentation(
                     body,
                     "Body",
                     "SweptSolid",
