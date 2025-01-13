@@ -57,20 +57,23 @@ class AuthoringData:
         cls.data["ifc_element_type"] = cls.ifc_element_type
         cls.data["ifc_classes"] = cls.ifc_classes()
         cls.data["ifc_class_current"] = cls.ifc_class_current()
-        cls.data["relating_type_id"] = cls.relating_type_id()  # only after .ifc_classes()
-        cls.data["relating_type_id_current"] = cls.relating_type_id_current()  # only after .ifc_classes()
-        cls.data["relating_type_name"] = cls.relating_type_name()  # only after .relating_type_id()
-        cls.data["relating_type_description"] = cls.relating_type_description()  # only after .relating_type_id()
-        cls.data["predefined_type"] = cls.predefined_type()  # only after .relating_type_id()
-
-        # Only after .ifc_classes()
+        # Make sure .ifc_classes() was run before next lines
+        cls.data["type_elements"] = cls.type_elements()
+        cls.data["type_elements_filtered"] = cls.type_elements_filtered()
+        cls.data["relating_type_id"] = cls.relating_type_id()
+        # Make sure .relating_type_id() was run before next lines
+        cls.data["relating_type_id_current"] = cls.relating_type_id_current()
+        cls.data["relating_type_name"] = cls.relating_type_name()
+        cls.data["relating_type_description"] = cls.relating_type_description()
+        cls.data["predefined_type"] = cls.predefined_type()
+        # Make sure .type_elements_filtered() was run before next lines
         cls.data["total_types"] = cls.total_types()
-        cls.data["total_pages"] = cls.total_pages()
+        cls.data["total_pages"] = cls.total_pages()  # Only after .total_types()
         cls.data["next_page"] = cls.next_page()
         cls.data["prev_page"] = cls.prev_page()
         cls.data["paginated_relating_types"] = cls.paginated_relating_types()
 
-        cls.data["type_thumbnail"] = cls.type_thumbnail()  # Only after .relating_type_id()
+        cls.data["type_thumbnail"] = cls.type_thumbnail()  # Only after .relating_type_id_current()
         cls.data["is_voidable_element"] = cls.is_voidable_element()
         cls.data["has_visible_openings"] = cls.has_visible_openings()
         cls.data["has_visible_boundaries"] = cls.has_visible_boundaries()
@@ -104,23 +107,15 @@ class AuthoringData:
 
     @classmethod
     def type_thumbnail(cls):
-        if not cls.data["relating_type_id"]:
-            return 0
-        relating_type_id = tool.Blender.get_enum_safe(cls.props, "relating_type_id")
-        if relating_type_id is None:
-            return 0
-        element = tool.Ifc.get().by_id(int(relating_type_id))
-        return cls.type_thumbnails.get(element.id(), None) or 0
+        return cls.type_thumbnails.get(int(cls.data["relating_type_id_current"] or 0), 0)
 
     @classmethod
     def total_types(cls):
-        ifc_class = cls.data["ifc_class_current"]
-        return len(tool.Ifc.get().by_type(ifc_class)) if ifc_class else 0
+        return len(cls.data["type_elements_filtered"])
 
     @classmethod
     def total_pages(cls):
-        ifc_class = cls.data["ifc_class_current"]
-        total_types = len(tool.Ifc.get().by_type(ifc_class)) if ifc_class else 0
+        total_types = cls.data["total_types"]
         return math.ceil(total_types / cls.types_per_page)
 
     @classmethod
@@ -134,12 +129,35 @@ class AuthoringData:
             return cls.props.type_page - 1
 
     @classmethod
-    def paginated_relating_types(cls):
+    def type_elements(cls):
         ifc_class = cls.data["ifc_class_current"]
         if not ifc_class:
             return []
+        elements = list(tool.Ifc.get().by_type(ifc_class))
+        return natsorted(elements, key=lambda s: (s.Name or "Unnamed").lower())
+
+    @classmethod
+    def type_elements_filtered(cls):
+        search_query = cls.props.search_name.lower()
+
+        def filter_element(element):
+            if search_query in (element.Name or "Unnamed").lower():
+                return True
+            if search_query in (element.Description or "").lower():
+                return True
+            if search_query in (ifcopenshell.util.element.get_predefined_type(element) or "").lower():
+                return True
+            return False
+
+        elements = cls.data["type_elements"]
+        if cls.props.search_name:
+            return [e for e in elements if filter_element(e)]
+        return elements
+
+    @classmethod
+    def paginated_relating_types(cls):
         results = []
-        elements = natsorted(tool.Ifc.get().by_type(ifc_class), key=lambda e: e.Name or "Unnamed")
+        elements = cls.data["type_elements_filtered"]
         elements = elements[(cls.props.type_page - 1) * cls.types_per_page : cls.props.type_page * cls.types_per_page]
         for element in elements:
             predefined_type = ifcopenshell.util.element.get_predefined_type(element)
@@ -266,13 +284,8 @@ class AuthoringData:
 
     @classmethod
     def relating_type_id(cls):
-        results = []
-        ifc_class = cls.data["ifc_class_current"]
-        if ifc_class:
-            elements = natsorted(tool.Ifc.get().by_type(ifc_class), key=lambda s: (s.Name or "Unnamed").lower())
-            results.extend(elements)
-            return [(str(e.id()), e.Name or "Unnamed", e.Description or "") for e in results]
-        return []
+        elements = cls.data["type_elements"]
+        return [(str(e.id()), e.Name or "Unnamed", e.Description or "") for e in elements]
 
     @classmethod
     def relating_type_id_current(cls):

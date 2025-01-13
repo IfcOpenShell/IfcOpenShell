@@ -491,7 +491,6 @@ class SetActiveType(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         props = context.scene.BIMModelProperties
         props.relating_type_id = str(self.relating_type)
-        context.window.screen = context.window.screen  # Closes the type manager popup
 
 
 class AlignProduct(bpy.types.Operator):
@@ -566,10 +565,11 @@ class LoadTypeThumbnails(bpy.types.Operator, tool.Ifc.Operator):
             return
 
         props = bpy.context.scene.BIMModelProperties
-        processing = set()
         # Only process at most one paginated class at a time.
         # Large projects have hundreds of types which can lead to unnecessary lag.
-        queue = sorted(tool.Ifc.get().by_type(self.ifc_class), key=lambda e: e.Name or "Unnamed")
+        if not AuthoringData.is_loaded:
+            AuthoringData.load()
+        queue = AuthoringData.data["type_elements_filtered"]
         if self.limit:
             queue = queue[self.offset : self.offset + self.limit]
         else:
@@ -577,6 +577,12 @@ class LoadTypeThumbnails(bpy.types.Operator, tool.Ifc.Operator):
             if offset < 0:
                 offset = 0
             queue = queue[offset : offset + 9]
+
+        # The active type may be in another page than the active one :
+        if relating_type_id_current := AuthoringData.data["relating_type_id_current"]:
+            active_element = tool.Ifc.get_entity_by_id(int(relating_type_id_current))
+            if active_element and active_element not in queue:
+                queue.append(active_element)
 
         while queue:
             # if bpy.app.is_job_running("RENDER_PREVIEW") does not seem to reflect asset preview generation

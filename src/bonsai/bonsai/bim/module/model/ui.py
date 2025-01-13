@@ -84,10 +84,9 @@ class LaunchTypeManager(bpy.types.Operator):
     bl_idname = "bim.launch_type_manager"
     bl_label = "Launch Type Manager"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Display all available Construction Types to add new instances"
+    bl_description = "Browse, Edit and Manage Types"
 
     def execute(self, context):
-        bpy.ops.bim.hotkey("INVOKE_DEFAULT", hotkey="S_A")
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -101,40 +100,42 @@ class LaunchTypeManager(bpy.types.Operator):
         # will be None if project has no types
         if ifc_class is not None:
             bpy.ops.bim.load_type_thumbnails(ifc_class=ifc_class, offset=0, limit=9)
-        return context.window_manager.invoke_props_dialog(
-            self, width=550, title="Type Manager", confirm_text="Add Type"
-        )
+        return context.window_manager.invoke_props_dialog(self, width=550, title="Type Manager", confirm_text="Close")
 
     def draw(self, context):
         props = context.scene.BIMModelProperties
         row = self.layout.row(align=True)
+        text = f"{AuthoringData.data['total_types']} {AuthoringData.data['ifc_element_type']}"
         if AuthoringData.data["total_types"] > 1:
-            text = f"{AuthoringData.data['total_types']} {AuthoringData.data['ifc_element_type']}s"
-        else:
-            text = f"{AuthoringData.data['total_types']} {AuthoringData.data['ifc_element_type']}"
+            text += "s"
         row.label(text=text, icon="FILE_VOLUME")
-        # prop_with_search(row, props, "ifc_class", text="", should_click_ok_to_validate=True)
         row.menu("BIM_MT_type_manager_menu", text="", icon="PREFERENCES")
+
         row = self.layout.row(align=True)
         row.operator("bim.launch_add_element", text=f"Create New {AuthoringData.data['ifc_element_type']}", icon="ADD")
 
+        row = self.layout.row(align=True)
+        # row.prop(props, "relating_type_id", text="")
+        row.prop(props, "search_name", icon="FILTER", text="")
+
         columns = self.layout.column_flow(columns=3)
-        row = columns.row(align=True)
-        row.alignment = "CENTER"
-        ### In case you want something here in the future
+        if AuthoringData.data["total_pages"] > 0:
+            row = columns.row(align=True)
+            row.alignment = "RIGHT"
+            row2 = row.row(align=True)
+            row2.label(text="Page")
+            row2.prop(props, "type_page", text="", emboss=False)
+            row2.label(text=f"/{AuthoringData.data['total_pages']} ")
 
-        ###
+            prev_page_op = row.row(align=True)
+            op = prev_page_op.operator("bim.change_type_page", icon="TRIA_LEFT", text="")
+            op.page = AuthoringData.data["prev_page"] or 0
+            prev_page_op.enabled = op.page > 0
 
-        row = columns.row(align=True)
-        row.alignment = "RIGHT"
-        if AuthoringData.data["total_pages"] > 1:
-            row.label(text=f"Page {props.type_page}/{AuthoringData.data['total_pages']} ")
-        if AuthoringData.data["prev_page"]:
-            op = row.operator("bim.change_type_page", icon="TRIA_LEFT", text="")
-            op.page = AuthoringData.data["prev_page"]
-        if AuthoringData.data["next_page"]:
-            op = row.operator("bim.change_type_page", icon="TRIA_RIGHT", text="")
-            op.page = AuthoringData.data["next_page"]
+            next_page_op = row.row(align=True)
+            op = next_page_op.operator("bim.change_type_page", icon="TRIA_RIGHT", text="")
+            op.page = AuthoringData.data["next_page"] or 0
+            next_page_op.enabled = op.page > 0
 
         flow = self.layout.grid_flow(row_major=True, columns=3, even_columns=True, even_rows=True, align=True)
 
@@ -142,11 +143,11 @@ class LaunchTypeManager(bpy.types.Operator):
             outer_col = flow.column()
             box = outer_col.box()
 
-            row = box.row(align=True)
+            row = box.row()
             op = row.operator("bim.set_active_type", text=relating_type["name"], icon="BLANK1", emboss=False)
             op.relating_type = relating_type["id"]
 
-            op = row.operator("bim.launch_type_menu", icon="DOWNARROW_HLT", text="", emboss=False)
+            op = row.operator("bim.launch_type_menu", icon="PREFERENCES", text="", emboss=True)
             op.relating_type_id = relating_type["id"]
 
             row = box.row()
@@ -163,7 +164,15 @@ class LaunchTypeManager(bpy.types.Operator):
                 row2.operator("bim.set_active_type", text="", emboss=False).relating_type = relating_type["id"]
                 row2.operator("bim.set_active_type", text="", emboss=False).relating_type = relating_type["id"]
                 row2.operator("bim.set_active_type", text="", emboss=False).relating_type = relating_type["id"]
-                row2.operator("bim.set_active_type", text="", emboss=False).relating_type = relating_type["id"]
+                is_current_relating_type = str(relating_type["id"]) == str(
+                    AuthoringData.data["relating_type_id_current"]
+                )
+                if is_current_relating_type:
+                    active_row = row2.row()
+                    active_row.alignment = "CENTER"
+                    active_row.label(text="Active", icon="CHECKMARK")
+                else:
+                    row2.operator("bim.set_active_type", text="", emboss=False).relating_type = relating_type["id"]
             else:
                 row = box.row()
                 op = box.operator("bim.load_type_thumbnails", text="", icon="FILE_REFRESH", emboss=False)
