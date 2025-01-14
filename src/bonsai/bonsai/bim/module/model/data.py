@@ -241,10 +241,9 @@ class AuthoringData:
 
     @classmethod
     def is_representation_item_active(cls) -> bool:
-        object = bpy.context.active_object
-        if not object:
+        if not (obj := tool.Blender.get_active_object()):
             return False
-        return tool.Geometry.is_representation_item(object)
+        return tool.Geometry.is_representation_item(obj)
 
     @classmethod
     def active_representation_type(cls):
