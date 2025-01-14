@@ -341,16 +341,20 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Add Element"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Add an IFC physical product, construction type, and more"
+    ifc_class: bpy.props.StringProperty(options={"SKIP_SAVE"})
 
     def invoke(self, context, event):
         return IfcStore.execute_ifc_operator(self, context, is_invoke=True)
 
     def _invoke(self, context, event):
+        props = context.scene.BIMRootProperties
         # For convenience, preselect OBJ representation template if applicable
         if (obj := context.active_object) and obj.type == "MESH":
-            props = context.scene.BIMRootProperties
             props.representation_template = "OBJ"
             props.representation_obj = obj
+        # For convenience, preselect IFC class
+        if self.ifc_class:
+            props.ifc_class = self.ifc_class
         return context.window_manager.invoke_props_dialog(self)
 
     def _execute(self, context):
