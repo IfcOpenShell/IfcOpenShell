@@ -38,7 +38,9 @@ logger = logging.getLogger("sverchok.ifc")
 
 def get_blender_addon_package_by_name(addon_name: str) -> types.ModuleType:
     # Check for legacy addons.
-    if addon_name in bpy.context.preferences.addons:
+    # Make an exception for sverchok as it keeps getting installed by all kind of names
+    # and then hacks `sverchok` into `sys.modules`.
+    if addon_name in bpy.context.preferences.addons or addon_name == "sverchok":
         return importlib.import_module(addon_name)
     elif bpy.app.version < (4, 2, 0):
         raise ModuleNotFoundError
