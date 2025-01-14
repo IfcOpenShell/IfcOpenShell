@@ -556,15 +556,15 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
         props = context.scene.BIMRootProperties
         self.layout.use_property_split = True
         self.layout.use_property_decorate = False
-        prop_with_search(self.layout, props, "ifc_product", text="Definition")
-        prop_with_search(self.layout, props, "ifc_class", should_click_ok_to_validate=True)
+        prop_with_search(self.layout, props, "ifc_product", text="Definition", should_click_ok=True)
+        prop_with_search(self.layout, props, "ifc_class", should_click_ok=True)
         ifc_predefined_types = root_prop.get_ifc_predefined_types(context.scene.BIMRootProperties, context)
         if ifc_predefined_types:
-            prop_with_search(self.layout, props, "ifc_predefined_type")
+            prop_with_search(self.layout, props, "ifc_predefined_type", should_click_ok=True)
             if props.ifc_predefined_type == "USERDEFINED":
                 row = self.layout.row()
                 row.prop(props, "ifc_userdefined_type")
-        prop_with_search(self.layout, props, "representation_template", text="Representation")
+        prop_with_search(self.layout, props, "representation_template", text="Representation", should_click_ok=True)
         if props.representation_template == "OBJ":
             row = self.layout.row()
             row.prop(props, "representation_obj", text="Object")
@@ -572,7 +572,7 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
             row = self.layout.row()
             row.prop(props, "profile", text="Profile")
         if props.representation_template != "EMPTY":
-            prop_with_search(self.layout, props, "contexts")
+            prop_with_search(self.layout, props, "contexts", should_click_ok=True)
 
 
 class LaunchAddElement(bpy.types.Operator, tool.Ifc.Operator):

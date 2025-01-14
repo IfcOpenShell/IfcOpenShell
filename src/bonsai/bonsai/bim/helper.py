@@ -272,7 +272,7 @@ def prop_with_search(
     layout: bpy.types.UILayout,
     data: ENUM_ITEMS_DATA,
     prop_name: str,
-    should_click_ok_to_validate: bool = False,
+    should_click_ok: bool = False,
     original_operator_path: Optional[str] = None,
     **kwargs: Any,
 ):
@@ -285,7 +285,7 @@ def prop_with_search(
             row.context_pointer_set(name="data", data=data)
             op = row.operator("bim.enum_property_search", text="", icon="VIEWZOOM")
             op.prop_name = prop_name
-            op.should_click_ok_to_validate = should_click_ok_to_validate
+            op.should_click_ok = should_click_ok
             op.original_operator_path = original_operator_path or ""
     except TypeError:  # Prop is not iterable
         pass

@@ -868,7 +868,7 @@ def update_enum_property_search_prop(self, context):
             if self.first_launch:
                 self.first_launch = False
             else:
-                if not self.should_click_ok_to_validate:
+                if not self.should_click_ok:
                     context.window.screen = context.window.screen
             if predefined_type:
                 try:
@@ -889,7 +889,7 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
     collection_identifiers: bpy.props.CollectionProperty(type=StrProperty)
     collection_predefined_types: bpy.props.CollectionProperty(type=StrProperty)
     prop_name: bpy.props.StringProperty()
-    should_click_ok_to_validate: bpy.props.BoolProperty(default=False)
+    should_click_ok: bpy.props.BoolProperty(default=False)
     original_operator_path: bpy.props.StringProperty(name="Original Operator Path", default="", options={"SKIP_SAVE"})
 
     identifiers: list[str]
