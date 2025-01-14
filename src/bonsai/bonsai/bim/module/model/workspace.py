@@ -422,7 +422,7 @@ class CreateObjectUI:
         row = cls.layout.row(align=True)
         if AuthoringData.data["relating_type_id"]:
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
-            if context.space_data.type == "VIEW_3D": # Wall polyline tool works only in 3D Space
+            if context.space_data.type == "VIEW_3D":  # Wall polyline tool works only in 3D Space
                 op = row.operator("bim.hotkey", text="Add", icon_value=custom_icon_previews["ADD"].icon_id)
                 op.hotkey = "S_A"
         else:
@@ -936,56 +936,42 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             row.prop(self, "z")
 
     def hotkey_S_A(self):
-        props = bpy.context.scene.BIMModelProperties
-        relating_type_id = AuthoringData.data["relating_type_id_current"]
-        relating_type_class = AuthoringData.data["ifc_class_current"]
-        if relating_type_id is None:
-            self.report({"ERROR"}, "No relating type selected")
-            return
-        props.relating_type_id = relating_type_id
         if bpy.context.scene.BIMGeometryProperties.mode == "ITEM":
             bpy.ops.wm.call_menu(name="BIM_MT_add_representation_item")
-        else:
-            # Slab from walls
-            # Make sure only Ifc Walls are selected
-            for obj in bpy.context.selected_objects:
-                element = tool.Ifc.get_entity(obj)
-                if not element or not element.is_a("IfcWall"):
-                    break
-            else:
-                if (
-                    relating_type_id
-                    and tool.Model.get_usage_type(tool.Ifc.get().by_id(int(relating_type_id))) == "LAYER3"
-                ):
-                    bpy.ops.bim.draw_slab_from_wall("INVOKE_DEFAULT")
-                    return {"FINISHED"}
-            # Walls from slab
-            slab = tool.Ifc.get_entity(bpy.context.active_object)
-            if (
-                slab
-                and slab.is_a("IfcSlab")
-                and relating_type_id
-                and tool.Model.get_usage_type(tool.Ifc.get().by_id(int(relating_type_id))) == "LAYER2"
-            ):
-                bpy.ops.bim.draw_walls_from_slab("INVOKE_DEFAULT")
-                return {"FINISHED"}
+            return
 
-            for obj in tool.Blender.get_selected_objects():
-                obj.select_set(False)
-            if relating_type_id and tool.Model.get_usage_type(tool.Ifc.get().by_id(int(relating_type_id))) == "LAYER2":
-                bpy.ops.bim.draw_polyline_wall("INVOKE_DEFAULT")
-            elif (
-                relating_type_id and tool.Model.get_usage_type(tool.Ifc.get().by_id(int(relating_type_id))) == "LAYER3"
-            ):
-                bpy.ops.bim.draw_polyline_slab("INVOKE_DEFAULT")
-            elif (
-                relating_type_id
-                and tool.Model.get_usage_type(tool.Ifc.get().by_id(int(relating_type_id))) == "PROFILE"
-                and relating_type_class not in {"IfcColumnType"}
-            ):
-                bpy.ops.bim.draw_polyline_profile("INVOKE_DEFAULT")
-            else:
-                bpy.ops.bim.add_occurrence("INVOKE_DEFAULT")
+        props = bpy.context.scene.BIMModelProperties
+        relating_type_class = AuthoringData.data["ifc_class_current"]
+        if not (relating_type_id := tool.Blender.get_enum_safe(props, "relating_type_id")):
+            self.report({"ERROR"}, "No relating type selected")
+            return
+
+        relating_type = tool.Ifc.get().by_id(int(relating_type_id))
+
+        has_only_walls_selected = all(
+            (e := tool.Ifc.get_entity(o)) and e.is_a("IfcWall") for o in tool.Blender.get_selected_objects()
+        )
+
+        if tool.Model.get_usage_type(relating_type) == "LAYER3" and has_only_walls_selected:
+            return bpy.ops.bim.draw_slab_from_wall("INVOKE_DEFAULT")
+        elif (
+            (active_obj := tool.Blender.get_active_object())
+            and (active_element := tool.Ifc.get_entity(active_obj))
+            and active_element.is_a("IfcSlab")
+            and tool.Model.get_usage_type(relating_type) == "LAYER2"
+        ):
+            return bpy.ops.bim.draw_walls_from_slab("INVOKE_DEFAULT")
+
+        for obj in tool.Blender.get_selected_objects():
+            obj.select_set(False)
+
+        if tool.Model.get_usage_type(relating_type) == "LAYER2":
+            return bpy.ops.bim.draw_polyline_wall("INVOKE_DEFAULT")
+        elif tool.Model.get_usage_type(relating_type) == "LAYER3":
+            return bpy.ops.bim.draw_polyline_slab("INVOKE_DEFAULT")
+        elif tool.Model.get_usage_type(relating_type) == "PROFILE" and relating_type_class != "IfcColumnType":
+            return bpy.ops.bim.draw_polyline_profile("INVOKE_DEFAULT")
+        return bpy.ops.bim.add_occurrence("INVOKE_DEFAULT")
 
     def hotkey_S_Q(self):
         if not bpy.context.selected_objects:
