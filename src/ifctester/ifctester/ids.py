@@ -50,11 +50,7 @@ class IdsXmlValidationError(Exception):
         super().__init__(message)
 
 
-@overload
-def open(filepath: str, validate: Literal[False] = False) -> Ids: ...
-@overload
-def open(filepath: str, validate: Literal[True]) -> None: ...
-def open(filepath: str, validate=False) -> Union[Ids, None]:
+def open(filepath: str, validate: bool = False) -> Ids:
     try:
         if validate:
             get_schema().validate(filepath)
@@ -63,6 +59,19 @@ def open(filepath: str, validate=False) -> Union[Ids, None]:
         )
     except XMLSchemaValidationError as e:
         raise IdsXmlValidationError(e, f"Provided .ids file ({filepath}) appears to be invalid. See details above.")
+    return Ids().parse(decode)
+
+
+def from_string(xml: str, validate: bool = False) -> Ids:
+    tree = ET.ElementTree(ET.fromstring(xml))
+    try:
+        if validate:
+            get_schema().validate(tree)
+        decode = get_schema().decode(
+            tree, strip_namespaces=True, namespaces={"": "http://standards.buildingsmart.org/IDS"}
+        )
+    except XMLSchemaValidationError as e:
+        raise IdsXmlValidationError(e, "Provided XML appears to be invalid. See details above.")
     return Ids().parse(decode)
 
 
