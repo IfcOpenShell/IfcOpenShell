@@ -257,7 +257,7 @@ class Specification:
                 facets = [facets]
             for facet_xml in facets:
                 name_capitalised = name[0].upper() + name[1:]
-                facet = globals()[name_capitalised]().parse(facet_xml)
+                facet = globals()[name_capitalised]().parse(facet_xml or {})
                 results.append(facet)
         return results
 

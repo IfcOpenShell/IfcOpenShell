@@ -242,6 +242,29 @@ class TestIds:
         assert spec.requirements[0].failures[0]["element"] == wall
         assert spec2.requirements[0].failures[0]["element"] == wall
 
+    def test_parsing_entities_with_no_attributes(self):
+        model = ifcopenshell.file()
+        wall1 = model.createIfcWall(Name="Waldo")
+        wall2 = model.createIfcWall(Name="Wally")
+        model.createIfcWall(Name="Walter")
+        material = model.createIfcMaterial()
+        ifcopenshell.api.material.assign_material(model, products=[wall1, wall2], material=material)
+        specs = ids.Ids(title="Title")
+        spec = ids.Specification(name="Name")
+        spec.applicability.append(ids.Material())
+        spec.requirements.append(ids.Attribute(name="Name", value="Waldo"))
+        specs.specifications.append(spec)
+        xml = specs.to_string()
+        specs = ids.from_string(xml)
+        run(
+            "The material facet with no attributes selects elements with a material",
+            specs,
+            model,
+            False,
+            [wall1, wall2],
+            [wall2],
+        )
+
 
 class TestSpecification:
     def test_create_specification_with_minimal_information(self):
