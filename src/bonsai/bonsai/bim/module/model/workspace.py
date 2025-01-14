@@ -374,7 +374,7 @@ class CreateObjectUI:
         row1.operator(
             "bim.launch_type_manager",
             icon="ERROR",
-            text=f"No {AuthoringData.data['ifc_element_type']}s Found",
+            text=f"No {AuthoringData.data['ifc_element_type'] or 'Type'}s Found",
             emboss=False,
         )
         row1.operator(

@@ -105,18 +105,18 @@ class LaunchTypeManager(bpy.types.Operator):
     def draw(self, context):
         props = context.scene.BIMModelProperties
         row = self.layout.row(align=True)
-        text = f"{AuthoringData.data['total_types']} {AuthoringData.data['ifc_element_type']}"
+        text = f"{AuthoringData.data['total_types']} {AuthoringData.data['ifc_element_type'] or 'Types'}"
         if AuthoringData.data["total_types"] > 1:
             text += "s"
         row.label(text=text, icon="FILE_VOLUME")
         row.menu("BIM_MT_type_manager_menu", text="", icon="PREFERENCES")
 
         row = self.layout.row(align=True)
-        row.operator("bim.launch_add_element", text=f"Create New {AuthoringData.data['ifc_element_type']}", icon="ADD")
+        row.operator("bim.launch_add_element", text=f"Create New {AuthoringData.data['ifc_element_type'] or 'Type'}", icon="ADD")
 
-        row = self.layout.row(align=True)
-        # row.prop(props, "relating_type_id", text="")
-        row.prop(props, "search_name", icon="FILTER", text="")
+        if AuthoringData.data["total_types"]:
+            row = self.layout.row(align=True)
+            row.prop(props, "search_name", icon="FILTER", text="")
 
         columns = self.layout.column_flow(columns=3)
         if AuthoringData.data["total_pages"] > 0:
