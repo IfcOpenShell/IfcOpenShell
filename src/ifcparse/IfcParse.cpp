@@ -502,7 +502,9 @@ Token IfcParse::GeneralTokenPtr(IfcSpfLexer* lexer, unsigned start, unsigned end
     if (first == '#') {
         token.type = Token_IDENTIFIER;
         if (!ParseInt(tokenStr.c_str() + 1, token.value_int)) {
-            throw IfcException("Identifier token as not integer");
+            Logger::Message(Logger::LOG_ERROR, "Token '" + tokenStr + "' at offset " + std::to_string(token.startPos) + " is not valid");
+            token.type = Token_OPERATOR;
+            token.value_char = '$';
         }
     } else if (first == '\'') {
         token.type = Token_STRING;
