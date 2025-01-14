@@ -999,7 +999,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             bpy.ops.bim.align_product(align_type="CENTERLINE")
 
     def hotkey_S_E(self):
-        if not bpy.context.selected_objects:
+        if not bpy.context.selected_objects or not (active_object := bpy.context.active_object):
             return
 
         # NOTE: placing it before the other operations because railing can also be SweptSolid
@@ -1019,7 +1019,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         elif tool.Model.is_parametric_window_active() or tool.Model.is_parametric_door_active():
             return
 
-        selected_usages = {}
+        selected_usages: dict[str, list[bpy.types.Object]] = {}
         for obj in bpy.context.selected_objects:
             element = tool.Ifc.get_entity(obj)
             if not element:
@@ -1037,6 +1037,10 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             selected_usages.setdefault(usage, []).append(obj)
 
         if len(bpy.context.selected_objects) == 1:
+            # Active object was probably unselected because it doesn't have a usage.
+            if bpy.context.selected_objects[0] != active_object:
+                return
+
             if self.active_material_usage == "LAYER3":
                 # Edit LAYER3 profile
                 if bpy.context.active_object and bpy.context.active_object.mode == "OBJECT":
