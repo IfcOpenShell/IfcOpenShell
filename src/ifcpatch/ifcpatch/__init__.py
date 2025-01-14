@@ -28,7 +28,7 @@ import inspect
 import collections
 import importlib
 import importlib.util
-from typing import Union, Iterable, Optional, Any, TypedDict, Literal
+from typing import Union, Iterable, Optional, Any, TypedDict, Literal, Sequence
 from typing_extensions import NotRequired
 
 
@@ -40,7 +40,7 @@ class ArgumentsDict(TypedDict):
     file: NotRequired[ifcopenshell.file]
     input: NotRequired[str]
     log: NotRequired[str]
-    arguments: NotRequired[list]
+    arguments: NotRequired[Sequence[Any]]
 
 
 def execute(args: ArgumentsDict) -> Union[ifcopenshell.file, str]:

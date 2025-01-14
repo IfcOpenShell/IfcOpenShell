@@ -38,7 +38,7 @@ from bonsai.bim.module.geometry.helper import Helper
 from bonsai.bim.module.model.wall import DumbWallRecalculator
 from bonsai.bim.module.model.decorator import ProfileDecorator, PolylineDecorator, ProductDecorator
 from bonsai.bim.module.model.polyline import PolylineOperator
-from typing import Union, Any
+from typing import Union, Any, Optional
 
 
 class DumbProfileGenerator:
@@ -317,7 +317,7 @@ class DumbProfileJoiner:
         self.axis_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Axis", "GRAPH_VIEW")
         self.body_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
 
-    def unjoin(self, profile1):
+    def unjoin(self, profile1: bpy.types.Object) -> None:
         element1 = tool.Ifc.get_entity(profile1)
         if not element1:
             return
@@ -330,7 +330,7 @@ class DumbProfileJoiner:
         body = copy.deepcopy(axis1)
         self.recreate_profile(element1, profile1, axis, body)
 
-    def join_E(self, profile1, target, connection=None):
+    def join_E(self, profile1: bpy.types.Object, target: Vector, connection: Optional[str] = None) -> None:
         """`connection` = `ATEND` / `ATSTART` to explicitly define the reference point for the join.
 
         For example if profile 1m long and `target` is at (0, 0, 0.1) and `connection` = `None`
@@ -354,7 +354,7 @@ class DumbProfileJoiner:
         body[1 if connection == "ATEND" else 0] = intersect
         self.recreate_profile(element1, profile1, axis, body)
 
-    def set_depth(self, profile1, si_length):
+    def set_depth(self, profile1: bpy.types.Object, si_length: float) -> None:
         element1 = tool.Ifc.get_entity(profile1)
         if not element1:
             return
@@ -369,7 +369,7 @@ class DumbProfileJoiner:
         body[1] = end
         self.recreate_profile(element1, profile1, axis, body)
 
-    def join_T(self, profile1, profile2):
+    def join_T(self, profile1: bpy.types.Object, profile2: bpy.types.Object) -> None:
         element1 = tool.Ifc.get_entity(profile1)
         element2 = tool.Ifc.get_entity(profile2)
         axis1 = self.get_profile_axis(profile1)
@@ -393,7 +393,7 @@ class DumbProfileJoiner:
 
         self.recreate_profile(element1, profile1, axis1, axis1)
 
-    def join_V(self, profile1, profile2):
+    def join_V(self, profile1: bpy.types.Object, profile2: bpy.types.Object) -> None:
         element1 = tool.Ifc.get_entity(profile1)
         element2 = tool.Ifc.get_entity(profile2)
         axis1 = self.get_profile_axis(profile1)
@@ -419,7 +419,7 @@ class DumbProfileJoiner:
         self.recreate_profile(element1, profile1, axis1, axis1)
         self.recreate_profile(element2, profile2, axis2, axis2)
 
-    def join_L(self, profile1, profile2):
+    def join_L(self, profile1: bpy.types.Object, profile2: bpy.types.Object) -> None:
         element1 = tool.Ifc.get_entity(profile1)
         element2 = tool.Ifc.get_entity(profile2)
         axis1 = self.get_profile_axis(profile1)
@@ -445,7 +445,7 @@ class DumbProfileJoiner:
         self.recreate_profile(element1, profile1, axis1, axis1)
         self.recreate_profile(element2, profile2, axis2, axis2)
 
-    def recreate_profile(self, element, obj, axis=None, body=None):
+    def recreate_profile(self, element: ifcopenshell.entity_instance, obj: bpy.types.Object, axis=None, body=None):
         if axis is None or body is None:
             axis = body = self.get_profile_axis(obj)
         self.axis = copy.deepcopy(axis)
@@ -836,10 +836,10 @@ class DumbProfileJoiner:
                 z_axis = obj.matrix_world.to_quaternion() @ Vector((-1, 0, 0))
         return self.create_matrix(p, x_axis, y_axis, z_axis)
 
-    def create_matrix(self, p, x, y, z):
+    def create_matrix(self, p: Vector, x: Vector, y: Vector, z: Vector) -> Matrix:
         return Matrix([x, y, z, p]).to_4x4().transposed()
 
-    def get_profile_axis(self, obj):
+    def get_profile_axis(self, obj: bpy.types.Object) -> list[Vector]:
         z_values = [v[2] for v in obj.bound_box]
         return [
             (obj.matrix_world @ Vector((0.0, 0.0, min(z_values)))),
