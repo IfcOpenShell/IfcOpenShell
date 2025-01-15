@@ -2007,12 +2007,12 @@ class Model(bonsai.core.tool.Model):
         return {"ifc_file": tmp, "curves": curves}
 
     @classmethod
-    def is_boolean_obj(cls, obj: bpy.types.Object) -> bool:
-        return obj.type == "MESH" and obj.data.BIMMeshProperties.ifc_boolean_id
-
-    @classmethod
-    def get_booleaned_obj(cls, boolean_obj: bpy.types.Object) -> bpy.types.Object:
-        return boolean_obj.data.BIMMeshProperties.obj
+    def get_booleaned_obj(cls, obj: bpy.types.Object) -> Union[bpy.types.Object, None]:
+        """Get boolean obj, return `None` if either it's not a tracked boolean
+        or it's not referring to an object (e.g. potential boolean object)."""
+        if obj.type != "MESH":
+            return
+        return obj.data.BIMMeshProperties.obj
 
     @classmethod
     def get_tracked_opening_type(cls, obj: bpy.types.Object) -> Union[Literal["OPENING", "BOOLEAN"], None]:

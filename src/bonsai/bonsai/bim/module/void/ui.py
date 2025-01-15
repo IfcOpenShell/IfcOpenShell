@@ -104,6 +104,9 @@ class BIM_PT_booleans(Panel):
         if not BooleansData.is_loaded:
             BooleansData.load()
 
+        obj = context.active_object
+        assert obj
+
         if not context.active_object.data:
             return
         layout = self.layout
@@ -126,8 +129,7 @@ class BIM_PT_booleans(Panel):
             )
             op.mark_as_manual = not booleans_are_manual
 
-        elif context.active_object.data.BIMMeshProperties.ifc_boolean_id:
-            upsteam_obj = context.active_object.data.BIMMeshProperties.obj
+        elif upsteam_obj := obj.data.BIMMeshProperties.obj:
             upstream_obj_ifc_id = upsteam_obj.BIMObjectProperties.ifc_definition_id
 
             row = layout.row(align=True)

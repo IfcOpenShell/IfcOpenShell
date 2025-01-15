@@ -36,6 +36,7 @@ import ifcopenshell.util.unit
 import bonsai.tool as tool
 import bonsai.core.geometry
 import bonsai.bim.import_ifc as import_ifc
+from collections import defaultdict
 from bonsai.bim.ifc import IfcStore
 from math import pi, radians
 from mathutils import Vector, Matrix
@@ -737,27 +738,43 @@ class HideBooleans(Operator, tool.Ifc.Operator):
         set_active_obj, set_selected_objs = None, None
         boolean_objs: list[bpy.types.Object]
         selected_objects = tool.Blender.get_selected_objects()
-        selected_booleans_objs = [obj for obj in selected_objects if tool.Model.is_boolean_obj(obj)]
+        selected_booleans_objs = [
+            obj for obj in selected_objects if tool.Model.get_tracked_opening_type(obj) == "BOOLEAN"
+        ]
+
+        # Hide currently selected booleans, otherwise hide all booleans.
         if selected_booleans_objs:
             boolean_objs = selected_booleans_objs
             if (active_object := context.active_object) in selected_booleans_objs:
                 active_obj_source = active_object
             else:
                 active_obj_source = selected_booleans_objs[0]
-            set_active_obj = active_obj_source.data.BIMMeshProperties.obj
-            set_selected_objs = [tool.Model.get_booleaned_obj(obj) for obj in boolean_objs]
+            set_active_obj = tool.Model.get_booleaned_obj(active_obj_source)
+            assert set_active_obj
+            set_selected_objs = [
+                bool_obj for obj in selected_booleans_objs if (bool_obj := tool.Model.get_booleaned_obj(obj))
+            ]
         else:
             props = bpy.context.scene.BIMModelProperties
-            boolean_objs = [obj for o in props.openings if (obj := o.obj)]
+            boolean_objs = [obj for o in props.openings if (obj := o.obj) and o.name == "BOOLEAN"]
 
-        objects_to_remove = set()
+        objects_to_remove: set[bpy.types.Object] = set()
+        booleans_to_add: dict[bpy.types.Object, list[bpy.types.Object]] = defaultdict(list)
+
         for obj in boolean_objs:
-            ifc_boolean_id = obj.data.BIMMeshProperties.ifc_boolean_id
-            boolean = tool.Ifc.get_entity_by_id(ifc_boolean_id)
+            main_obj = tool.Model.get_booleaned_obj(obj)
+            if not main_obj:
+                continue
 
             # Update boolean transform.
-            if boolean:
-                main_obj = cast(bpy.types.Object, obj.data.BIMMeshProperties.obj)
+            if main_obj:
+                ifc_boolean_id = obj.data.BIMMeshProperties.ifc_boolean_id
+                boolean = tool.Ifc.get_entity_by_id(ifc_boolean_id)
+
+                if boolean is None:
+                    booleans_to_add[main_obj].append(obj)
+                    continue
+
                 if boolean.is_a("IfcHalfSpaceSolid"):
                     surface = boolean.BaseSurface
 
@@ -780,6 +797,11 @@ class HideBooleans(Operator, tool.Ifc.Operator):
 
         tool.Blender.remove_data_blocks(objects_to_remove, remove_unused_data=True)
         tool.Model.purge_scene_openings()
+
+        if booleans_to_add:
+            for obj, boolean_objs in booleans_to_add.items():
+                with context.temp_override(selected_objects=boolean_objs + [obj]):
+                    bpy.ops.bim.add_boolean()
 
         if set_active_obj and set_selected_objs is not None:
             tool.Blender.set_objects_selection(context, set_active_obj, set_selected_objs)
