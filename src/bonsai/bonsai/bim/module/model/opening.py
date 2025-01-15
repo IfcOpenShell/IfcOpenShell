@@ -25,6 +25,7 @@ import logging
 import numpy as np
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.geometry
 import ifcopenshell.geom
 import ifcopenshell.util.shape
 import ifcopenshell.util.element
@@ -527,52 +528,81 @@ class AddBoolean(Operator, tool.Ifc.Operator):
 
     @classmethod
     def poll(cls, context):
-        if not len(context.selected_objects) == 2:
-            cls.poll_message_set("Exactly 2 objects need to be selected.")
+        if not len(context.selected_objects) >= 2:
+            cls.poll_message_set("At least 2 objects need to be selected.")
             return False
         return True
 
     def _execute(self, context):
-        props = context.scene.BIMModelProperties
-        obj1, obj2 = context.selected_objects
-        element1 = tool.Ifc.get_entity(obj1)
-        element2 = tool.Ifc.get_entity(obj2)
-        if not (bool(element1) ^ bool(element2)):
-            self.report({"INFO"}, "One of the selected objects should be blender object and another IFC object.")
-            return {"FINISHED"}
+        ifc_file = tool.Ifc.get()
+        ifc_objects: list[bpy.types.Object] = []
+        non_ifc_objects: list[bpy.types.Object] = []
+        for obj in context.selected_objects:
+            if tool.Ifc.get_entity(obj):
+                ifc_objects.append(obj)
+            else:
+                non_ifc_objects.append(obj)
 
-        # element1 - IFC object, element2 - blender object.
-        if element2 and not element1:
-            obj1, obj2 = obj2, obj1
-            element1, element2 = element2, element1
+        if not non_ifc_objects:
+            self.report({"INFO"}, "At least 1 non-ifc object should be selected to be added as a boolean.")
+            return {"CANCELLED"}
 
-        representation = tool.Geometry.get_active_representation(obj1)
+        if len(ifc_objects) != 1:
+            self.report(
+                {"INFO"},
+                f"Only 1 IFC object need to be selected to add booleans to, currently selected {len(ifc_objects)} IFC objects.",
+            )
+            return {"CANCELLED"}
+
+        ifc_obj = ifc_objects[0]
+
+        representation = tool.Geometry.get_active_representation(ifc_obj)
         if not representation:
             self.report({"INFO"}, "No representation found for the selected IFC object.")
             return {"FINISHED"}
 
-        if not obj2.data or len(obj2.data.polygons) <= 4:  # It takes 4 faces to create a closed solid
-            mesh_data = {"type": "IfcHalfSpaceSolid", "matrix": obj1.matrix_world.inverted() @ obj2.matrix_world}
-        else:
-            mesh_data = {"type": "Mesh", "blender_obj": obj1, "blender_void": obj2}
+        # Apply objects as booleans.
+        booleans = []
+        for boolean_obj in non_ifc_objects:
+            if (
+                not boolean_obj.data
+                or not isinstance(boolean_obj.data, bpy.types.Mesh)
+                or len(boolean_obj.data.polygons) <= 4
+            ):  # It takes 4 faces to create a closed solid
+                mesh_data = {
+                    "type": "IfcHalfSpaceSolid",
+                    "matrix": ifc_obj.matrix_world.inverted() @ boolean_obj.matrix_world,
+                }
+            else:
+                mesh_data = {
+                    "type": "Mesh",
+                    "blender_obj": ifc_obj,
+                    "blender_void": boolean_obj,
+                }
 
-        booleans = ifcopenshell.api.run(
-            "geometry.add_boolean", tool.Ifc.get(), representation=representation, operator="DIFFERENCE", **mesh_data
-        )
+            booleans_ = ifcopenshell.api.geometry.add_boolean(
+                ifc_file,
+                representation=representation,
+                operator="DIFFERENCE",
+                **mesh_data,
+            )
+            booleans.extend(booleans_)
 
-        tool.Model.mark_manual_booleans(element1, booleans)
+        element = tool.Ifc.get_entity(ifc_obj)
+        assert element
+        tool.Model.mark_manual_booleans(element, booleans)
 
         bonsai.core.geometry.switch_representation(
             tool.Ifc,
             tool.Geometry,
-            obj=obj1,
+            obj=ifc_obj,
             representation=representation,
             should_reload=True,
             is_global=True,
             should_sync_changes_first=False,
         )
 
-        tool.Blender.remove_data_blocks([obj2], remove_unused_data=True)
+        tool.Blender.remove_data_blocks(non_ifc_objects, remove_unused_data=True)
         tool.Model.purge_scene_openings()
         return {"FINISHED"}
 
