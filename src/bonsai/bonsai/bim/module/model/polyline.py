@@ -466,7 +466,7 @@ def get_product_preview_data(context, relating_type):
         data["verts"] = [tuple(obj_type.matrix_world.inverted() @ Vector(v)) for v in data["verts"]]
         data["verts"] = [tuple(rot_mat @ (Vector((v[0], v[1], (v[2] + rl)))) + mouse_point) for v in data["verts"]]
 
-    return data
+        return data
 
 
 class PolylineOperator:
