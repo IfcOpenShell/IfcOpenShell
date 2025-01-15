@@ -948,7 +948,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
 
         relating_type = tool.Ifc.get().by_id(int(relating_type_id))
 
-        has_only_walls_selected = all(
+        has_only_walls_selected = tool.Blender.get_selected_objects() and all(
             (e := tool.Ifc.get_entity(o)) and e.is_a("IfcWall") for o in tool.Blender.get_selected_objects()
         )
 
