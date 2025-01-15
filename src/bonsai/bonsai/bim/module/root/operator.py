@@ -341,6 +341,8 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Add Element"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Add an IFC physical product, construction type, and more"
+    is_specific_tool: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+    ifc_product: bpy.props.StringProperty(options={"SKIP_SAVE"})
     ifc_class: bpy.props.StringProperty(options={"SKIP_SAVE"})
 
     def invoke(self, context, event):
@@ -353,6 +355,8 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
             props.representation_template = "OBJ"
             props.representation_obj = obj
         # For convenience, preselect IFC class
+        if self.ifc_product:
+            props.ifc_product = self.ifc_product
         if self.ifc_class:
             props.ifc_class = self.ifc_class
         return context.window_manager.invoke_props_dialog(self)
@@ -562,8 +566,9 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
         row.prop(props, "name")
         row = self.layout.row()
         row.prop(props, "description")
-        prop_with_search(self.layout, props, "ifc_product", text="Definition", should_click_ok=True)
-        prop_with_search(self.layout, props, "ifc_class", should_click_ok=True)
+        if not self.is_specific_tool:
+            prop_with_search(self.layout, props, "ifc_product", text="Definition", should_click_ok=True)
+            prop_with_search(self.layout, props, "ifc_class", should_click_ok=True)
         ifc_predefined_types = root_prop.get_ifc_predefined_types(context.scene.BIMRootProperties, context)
         if ifc_predefined_types:
             prop_with_search(self.layout, props, "ifc_predefined_type", should_click_ok=True)

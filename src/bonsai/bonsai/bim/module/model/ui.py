@@ -112,9 +112,12 @@ class LaunchTypeManager(bpy.types.Operator):
         row.menu("BIM_MT_type_manager_menu", text="", icon="PREFERENCES")
 
         row = self.layout.row(align=True)
-        row.operator(
+        op = row.operator(
             "bim.add_element", text=f"Create New {AuthoringData.data['ifc_element_type'] or 'Type'}", icon="ADD"
-        ).ifc_class = (AuthoringData.data["ifc_element_type"] or "")
+        )
+        op.is_specific_tool = bool(AuthoringData.data["ifc_element_type"])
+        op.ifc_product = "IfcElementType"
+        op.ifc_class = AuthoringData.data["ifc_element_type"] or props.ifc_class or ""
 
         if AuthoringData.data["total_types"]:
             row = self.layout.row(align=True)

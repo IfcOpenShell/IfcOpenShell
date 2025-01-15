@@ -392,10 +392,12 @@ class CreateObjectUI:
 
             row = box.row(align=True)
             row.alignment = "CENTER"
-            row.operator(
-                "bim.launch_add_element",
-                text=f"Create New {AuthoringData.data['ifc_element_type']}",
+            op = row.operator(
+                "bim.add_element", text=f"Create New {AuthoringData.data['ifc_element_type'] or 'Type'}", icon="ADD"
             )
+            op.is_specific_tool = bool(AuthoringData.data["ifc_element_type"])
+            op.ifc_product = "IfcElementType"
+            op.ifc_class = AuthoringData.data["ifc_element_type"] or props.ifc_class or ""
 
             row = box.row(align=True)
 
