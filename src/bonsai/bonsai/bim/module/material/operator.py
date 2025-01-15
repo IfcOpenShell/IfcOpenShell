@@ -29,7 +29,7 @@ import bonsai.core.style
 import bonsai.core.material as core
 import bonsai.bim.module.model.profile as model_profile
 from bonsai.bim.ifc import IfcStore
-from typing import Any, Union
+from typing import Any, Union, TYPE_CHECKING
 
 
 class LoadMaterials(bpy.types.Operator):
@@ -202,9 +202,17 @@ class RemoveMaterialSet(bpy.types.Operator, tool.Ifc.Operator):
 class AssignMaterialToSelected(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_material_to_selected"
     bl_label = "Assign Material To Selected"
-    bl_description = "Assign currently selected material in Materials UI to the selected objects"
+    bl_description = (
+        "Assign currently selected material in Materials UI to the selected objects.\n\n"
+        "ALT+CLICK to assign material as a usage."
+    )
     bl_options = {"REGISTER", "UNDO"}
     material: bpy.props.IntProperty(name="Material IFC ID")
+    assign_as_usage: bpy.props.BoolProperty(
+        name="Assign Material As A Usage",
+        default=False,
+        options={"SKIP_SAVE"},
+    )
 
     @classmethod
     def poll(cls, context):
@@ -213,13 +221,25 @@ class AssignMaterialToSelected(bpy.types.Operator, tool.Ifc.Operator):
             return False
         return True
 
+    def invoke(self, context, event):
+        if event.type == "LEFTMOUSE" and event.alt:
+            material_class = tool.Ifc.get().by_id(self.material).is_a()
+            if material_class not in ("IfcMaterialProfileSet", "IfcMaterialLayerSet"):
+                self.report({"ERROR"}, f"{material_class} cannot be assigned as a usage.")
+                return {"CANCELLED"}
+            self.assign_as_usage = True
+        return self.execute(context)
+
     def _execute(self, context):
         material = tool.Ifc.get().by_id(self.material)
         objects = tool.Blender.get_selected_objects()
+        material_type = material.is_a()
+        if self.assign_as_usage:
+            material_type += "Usage"
         core.assign_material(
             tool.Ifc,
             tool.Material,
-            material_type=tool.Material.get_active_material_type(),
+            material_type=material_type,
             objects=objects,
             material=material,
         )
