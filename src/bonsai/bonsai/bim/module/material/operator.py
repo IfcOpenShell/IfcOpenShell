@@ -886,16 +886,30 @@ class SelectMaterialInMaterialsUI(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     material_id: bpy.props.IntProperty()
 
+    if TYPE_CHECKING:
+        material_id: int
+
     def execute(self, context):
         props = bpy.context.scene.BIMMaterialProperties
         ifc_file = tool.Ifc.get()
-        material = ifc_file.by_id(self.material_id)
-        core.load_materials(tool.Material, material.is_a())
+        material_id = self.material_id
+        material = ifc_file.by_id(material_id)
+        material_class = material.is_a()
+
+        # Current we do not support editing usaged not on instance,
+        # so fallback to the material set it's referring to.
+        if material_class.endswith("Usage"):
+            material_class = material_class.removesuffix("Usage")
+            if material_class == "IfcMaterialProfileSet":
+                material = material.ForProfileSet
+            else:  # IfcMaterialLayerSet
+                material = material.ForLayerSet
+            material_id = material.id()
+
+        core.load_materials(tool.Material, material_class)
 
         def get_material_item() -> Union[tuple[int, bpy.types.PropertyGroup], None]:
-            return next(
-                ((i, m) for i, m in enumerate(props.materials) if m.ifc_definition_id == self.material_id), None
-            )
+            return next(((i, m) for i, m in enumerate(props.materials) if m.ifc_definition_id == material_id), None)
 
         material_item = get_material_item()
 
