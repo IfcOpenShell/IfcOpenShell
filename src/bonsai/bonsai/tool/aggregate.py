@@ -85,66 +85,6 @@ class Aggregate(bonsai.core.tool.Aggregate):
         return parts
 
     @classmethod
-    def constrain_all_parts_to_aggregate(cls, aggregate: bpy.types.Object):
-        agg_element = tool.Ifc.get_entity(aggregate)
-        parts = ifcopenshell.util.element.get_parts(agg_element)
-        parts_objs = [tool.Ifc.get_object(p) for p in parts]
-        for obj in parts_objs:
-            constraint = next((c for c in obj.constraints if c.type == "CHILD_OF"), None)
-            if constraint:
-                try:
-                    bpy.context.view_layer.objects.active = obj
-                    bpy.ops.constraint.apply(constraint="Child Of")
-                except:
-                    pass
-            constraint = obj.constraints.new("CHILD_OF")
-            constraint.target = aggregate
-
-    @classmethod
-    def constrain_part_to_aggregate(cls, part: bpy.types.Object, aggregate: bpy.types.Object):
-        constraint = next((c for c in part.constraints if c.type == "CHILD_OF"), None)
-        if constraint:
-            try:
-                bpy.context.view_layer.objects.active = obj
-                bpy.ops.constraint.apply(constraint="Child Of")
-            except:
-                pass
-        constraint = part.constraints.new("CHILD_OF")
-        constraint.target = aggregate
-
-        if bpy.context.scene.BIMAggregateProperties.in_aggregate_mode:
-            constraint.enabled = False
-
-    @classmethod
-    def apply_constraints(cls, part: bpy.types.Object):
-        constraint = next((c for c in part.constraints if c.type == "CHILD_OF"), None)
-        if constraint:
-            bpy.context.view_layer.objects.active = part
-            bpy.ops.constraint.apply(constraint=constraint.name)
-
-    @classmethod
-    def disable_constraints(cls, objs: list[bpy.types.Object]):
-        # Disable constraints while keeping parts in the same location
-        for obj in objs:
-            matrix = obj.matrix_world.copy()
-            constraint = next((c for c in obj.constraints if c.type == "CHILD_OF"), None)
-            if constraint:
-                constraint.enabled = False
-            obj.matrix_world = matrix
-
-    @classmethod
-    def enable_constraints(cls, objs: list[bpy.types.Object]):
-        # Enable constraints while keeping parts in the same location
-        for obj in objs:
-            constraint = next((c for c in obj.constraints if c.type == "CHILD_OF"), None)
-            if constraint:
-                constraint.enabled = True
-        bpy.context.view_layer.update()
-        for obj in objs:
-            diff = obj.matrix_world.translation - obj.location
-            obj.location -= diff
-
-    @classmethod
     def get_aggregate_mode(cls):
         return bpy.context.scene.BIMAggregateProperties.in_aggregate_mode
 
@@ -182,7 +122,6 @@ class Aggregate(bonsai.core.tool.Aggregate):
                     editing_obj = props.editing_objects.add()
                     editing_obj.obj = obj.original
 
-            tool.Aggregate.disable_constraints([o.obj for o in props.editing_objects])
 
         props.in_aggregate_mode = True
         return {"FINISHED"}
@@ -200,7 +139,6 @@ class Aggregate(bonsai.core.tool.Aggregate):
 
         parts = ifcopenshell.util.element.get_parts(tool.Ifc.get_entity(props.editing_aggregate))
         objs = [tool.Ifc.get_object(part) for part in parts]
-        tool.Aggregate.enable_constraints(objs)
         if context.space_data.local_view:
             bpy.ops.view3d.localview()
 

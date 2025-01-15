@@ -67,7 +67,6 @@ class BIM_OT_aggregate_assign_object(bpy.types.Operator, tool.Ifc.Operator):
                     relating_obj=relating_obj,
                     related_obj=obj,
                 )
-                tool.Aggregate.constrain_part_to_aggregate(obj, relating_obj)
                 props = context.scene.BIMAggregateProperties
                 if relating_obj == props.editing_aggregate and props.in_aggregate_mode:
                     new_editing_obj = props.editing_objects.add()
@@ -101,7 +100,6 @@ class BIM_OT_aggregate_unassign_object(bpy.types.Operator, tool.Ifc.Operator):
                 related_obj=tool.Ifc.get_object(element),
             )
 
-            tool.Aggregate.apply_constraints(tool.Ifc.get_object(element))
 
             # Removes Pset related to Linked Aggregates
             if not element.is_a("IfcElementAssembly"):
@@ -185,7 +183,6 @@ class BIM_OT_add_aggregate(bpy.types.Operator, tool.Ifc.Operator):
                     element_obj=aggregate,
                 )
             core.assign_object(tool.Ifc, tool.Aggregate, tool.Collector, relating_obj=aggregate, related_obj=obj)
-            tool.Aggregate.constrain_all_parts_to_aggregate(aggregate)
 
     def create_aggregate(self, context, ifc_class, aggregate_name):
         aggregate = bpy.data.objects.new(aggregate_name, None)

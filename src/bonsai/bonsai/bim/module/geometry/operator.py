@@ -2931,7 +2931,7 @@ class OverrideMoveAggregateMacro(bpy.types.Macro):
 
 class OverrideMoveAggregate(bpy.types.Operator):
     bl_idname = "bim.override_move_aggregate"
-    bl_label = "IFC Move Aggregate"
+    bl_label = "IFC Move"
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -2971,5 +2971,9 @@ class OverrideMoveAggregate(bpy.types.Operator):
         aggregates_to_move = set(aggregates_to_move)
         for obj in aggregates_to_move:
             obj.select_set(True)
+            if parts := ifcopenshell.util.element.get_parts(tool.Ifc.get_entity(obj)):
+                for part in parts:
+                    part_obj = tool.Ifc.get_object(part)
+                    part_obj.select_set(True)
             self.new_active_obj = obj
         return {"FINISHED"}
