@@ -446,17 +446,9 @@ class AddPotentialOpening(Operator, AddObjectHelper):
     bl_label = "Add Opening"
     bl_description = "Add an Opening object which can be applied on an Element"
     bl_options = {"REGISTER", "UNDO"}
-    x: FloatProperty(name="X", default=0.5)
-    y: FloatProperty(name="Y", default=0.5)
-    z: FloatProperty(name="Z", default=0.5)
-
-    def draw_settings(context, layout, tool):
-        row = self.layout.row()
-        row.prop(data=self, property="x", label="Size X")
-        row = self.layout.row()
-        row.prop(data=self, property="y")
-        row = self.layout.row()
-        row.prop(data=self, property="z")
+    x: FloatProperty(name="Size X", default=0.5, subtype="DISTANCE")
+    y: FloatProperty(name="Y", default=0.5, subtype="DISTANCE")
+    z: FloatProperty(name="Z", default=0.5, subtype="DISTANCE")
 
     def execute(self, context):
         props = context.scene.BIMModelProperties
