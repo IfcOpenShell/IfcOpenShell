@@ -2015,6 +2015,14 @@ class Model(bonsai.core.tool.Model):
         return boolean_obj.data.BIMMeshProperties.obj
 
     @classmethod
+    def get_tracked_opening_type(cls, obj: bpy.types.Object) -> Union[Literal["OPENING", "BOOLEAN"], None]:
+        """Get tracked opening type, return `None` if object is not a tracked opening."""
+        for opening in bpy.context.scene.BIMModelProperties.openings:
+            if opening.obj == obj:
+                return opening.name
+        return None
+
+    @classmethod
     def bm_sort_out_geom(
         cls, geom_data: list[Union[bmesh.types.BMVert, bmesh.types.BMEdge, bmesh.types.BMFace]]
     ) -> dict[str, Any]:

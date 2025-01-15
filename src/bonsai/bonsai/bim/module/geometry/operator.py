@@ -983,7 +983,9 @@ class OverrideDuplicateMove(bpy.types.Operator):
                 OverrideDuplicateMove.duplicate_item(self, obj)
                 continue
 
-            linked_non_ifc_object = linked and not element
+            tracked_opening_type = tool.Model.get_tracked_opening_type(obj)
+            is_tracked_opening = bool(tracked_opening_type)
+            keep_data_linked = linked and not element and not is_tracked_opening
 
             # Prior to duplicating, sync the object placement to make decomposition recreation more stable.
             if tool.Ifc.is_moved(obj):
@@ -1000,10 +1002,16 @@ class OverrideDuplicateMove(bpy.types.Operator):
             if tool.Ifc.is_edited(obj, ignore_scale=True):
                 tool.Ifc.edit(new_obj)
 
-            if obj.data and not linked_non_ifc_object:
+            if obj.data and not keep_data_linked:
                 # assure root.copy_class won't replace the previous mesh globally
                 temp_data = obj.data.copy()
                 new_obj.data = temp_data
+
+                # Unlink from previous boolean element
+                # and keep object tracked for decorations.
+                if is_tracked_opening:
+                    new_obj.data.BIMMeshProperties.ifc_boolean_id = 0
+                    tool.Root.add_tracked_opening(new_obj, tracked_opening_type)
 
             if obj == context.active_object:
                 self.new_active_obj = new_obj
@@ -1012,7 +1020,7 @@ class OverrideDuplicateMove(bpy.types.Operator):
             obj.select_set(False)
             new_obj.select_set(True)
 
-            if linked_non_ifc_object:
+            if not element:
                 continue
 
             # clear object's collection so it will be able to have it's own

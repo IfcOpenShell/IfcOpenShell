@@ -51,8 +51,6 @@ def copy_class(
             geometry.rename_object(data, geometry.get_representation_name(ifc.get_entity(data)))
         root.assign_body_styles(new, obj)
     collector.assign(obj)
-    if root.is_element_a(new, "IfcOpeningElement"):
-        root.add_tracked_opening(obj)
     return new
 
 

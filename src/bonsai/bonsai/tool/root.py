@@ -26,17 +26,18 @@ import bonsai.core.tool
 import bonsai.core.aggregate
 import bonsai.core.geometry
 import bonsai.tool as tool
-from typing import Union, Optional, Any
+from typing import Union, Optional, Any, Literal
 from bonsai.bim.module.spatial.decorator import GridDecorator
 from bonsai.bim.module.geometry.decorator import ItemDecorator
 
 
 class Root(bonsai.core.tool.Root):
     @classmethod
-    def add_tracked_opening(cls, obj: bpy.types.Object) -> None:
+    def add_tracked_opening(cls, obj: bpy.types.Object, opening_type: Literal["OPENING", "BOOLEAN"]) -> None:
         """Add tracked opening or boolean object."""
         new = bpy.context.scene.BIMModelProperties.openings.add()
         new.obj = obj
+        new.name = opening_type
 
     @classmethod
     def assign_body_styles(cls, element: ifcopenshell.entity_instance, obj: bpy.types.Object) -> None:
