@@ -229,7 +229,7 @@ void mapping::get_representations(std::vector<geometry_conversion_task>& tasks, 
     int task_index = 0;
     
     for (auto representation : *representations) {
-        IfcSchema::IfcRepresentationMap* rmap;
+        IfcSchema::IfcRepresentationMap* rmap = nullptr;
         IfcSchema::IfcProduct::list::ptr ifcproducts = filter_products(products_represented_by(representation, rmap, false), filters);
         
         if (ifcproducts->size() == 0) {
@@ -237,7 +237,7 @@ void mapping::get_representations(std::vector<geometry_conversion_task>& tasks, 
         }
 
         auto geometry_reuse_ok_for_current_representation_ = reuse_ok_(ifcproducts);
-        if (!geometry_reuse_ok_for_current_representation_) {
+        if (!geometry_reuse_ok_for_current_representation_ && rmap != nullptr) {
             not_reusable_maps_.insert(rmap);
         }
 
@@ -269,13 +269,24 @@ void mapping::get_representations(std::vector<geometry_conversion_task>& tasks, 
             continue;
         }
 
-        // @todo, fix this properly by considering the mapped geometry types in the representation.
-        geometry_conversion_task task;
-        task.index = task_index++;
-        task.representation = representation;
-        task.products = ifcproducts->generalize();
-
-        tasks.emplace_back(task);
+        if (!geometry_reuse_ok_for_current_representation_ && ifcproducts->size() > 1) {
+            // reuse_ok is taken into account in products_represented_by(), but not when
+            // the same IfcRepresentation is directly assigned to multiple products.
+            for (auto& p : *ifcproducts) {
+                geometry_conversion_task task;
+                task.index = task_index++;
+                task.representation = representation;
+                task.products = aggregate_of_instance::ptr(new aggregate_of_instance);
+                task.products->push(p);
+                tasks.emplace_back(task);
+            }
+        } else {
+            geometry_conversion_task task;
+            task.index = task_index++;
+            task.representation = representation;
+            task.products = ifcproducts->generalize();
+            tasks.emplace_back(task);
+        }
     }
 }
 
