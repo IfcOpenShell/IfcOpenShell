@@ -497,9 +497,7 @@ class AddPotentialOpening(Operator, AddObjectHelper):
             obj.matrix_world = new_matrix
 
         tool.Model.purge_scene_openings()
-
-        new = props.openings.add()
-        new.obj = obj
+        tool.Root.add_tracked_opening(obj)
 
         DecorationsHandler.install(context)
         return {"FINISHED"}
@@ -511,7 +509,6 @@ class AddPotentialHalfSpaceSolid(Operator, AddObjectHelper):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        props = context.scene.BIMModelProperties
         bm = bmesh.new()
         bmesh.ops.create_grid(bm, size=0.5)
         bm.verts.ensure_lookup_table()
@@ -524,9 +521,7 @@ class AddPotentialHalfSpaceSolid(Operator, AddObjectHelper):
         obj.name = "HalfSpaceSolid"
 
         tool.Model.purge_scene_openings()
-
-        new = props.openings.add()
-        new.obj = obj
+        tool.Root.add_tracked_opening(obj)
 
         DecorationsHandler.install(context)
         return {"FINISHED"}
@@ -676,8 +671,7 @@ class ShowBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
                     objects_to_remove.add(existing_booleans[boolean_id])
                 boolean_obj.data.BIMMeshProperties.ifc_boolean_id = boolean_id
                 boolean_obj.data.BIMMeshProperties.obj = obj
-                new = props.openings.add()
-                new.obj = boolean_obj
+                tool.Root.add_tracked_opening(boolean_obj)
                 booleans_objs.append(boolean_obj)
 
         tool.Blender.remove_data_blocks(objects_to_remove, remove_unused_data=True)
@@ -862,9 +856,8 @@ class ShowOpenings(Operator, tool.Ifc.Operator):
         for opening in openings_objects:
             self.on_new_opening_obj(opening)
 
-    def on_new_opening_obj(self, opening_obj):
-        new = bpy.context.scene.BIMModelProperties.openings.add()
-        new.obj = opening_obj
+    def on_new_opening_obj(self, opening_obj: bpy.types.Object) -> None:
+        tool.Root.add_tracked_opening(opening_obj)
         opening_obj.display_type = "WIRE"
 
 

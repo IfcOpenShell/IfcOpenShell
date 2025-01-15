@@ -34,6 +34,7 @@ from bonsai.bim.module.geometry.decorator import ItemDecorator
 class Root(bonsai.core.tool.Root):
     @classmethod
     def add_tracked_opening(cls, obj: bpy.types.Object) -> None:
+        """Add tracked opening or boolean object."""
         new = bpy.context.scene.BIMModelProperties.openings.add()
         new.obj = obj
 
