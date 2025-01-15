@@ -436,14 +436,12 @@ def update_roof_modifier_bmesh(obj: bpy.types.Object) -> None:
         RoofData.load()
     path_data = RoofData.data["path_data"]
     angle_layer_data = path_data.get("gable_roof_angles", None)
-    separate_verts_data = path_data.get("gable_roof_separate_verts", None)
 
     si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
     # need to make sure we support edit mode
     # since users will probably be in edit mode when they'll be changing roof path
     bm = tool.Blender.get_bmesh_for_mesh(obj.data, clean=True)
     angle_layer = bm.edges.layers.float.new("BBIM_gable_roof_angles")
-    separate_verts_layer = bm.edges.layers.int.new("BBIM_gable_roof_separate_verts")
 
     # generating roof path
     new_verts = [bm.verts.new(Vector(v) * si_conversion) for v in path_data["verts"]]
@@ -451,7 +449,6 @@ def update_roof_modifier_bmesh(obj: bpy.types.Object) -> None:
         e = path_data["edges"][i]
         edge = bm.edges.new((new_verts[e[0]], new_verts[e[1]]))
         edge[angle_layer] = angle_layer_data[i] if angle_layer_data else 0
-        edge[separate_verts_layer] = separate_verts_data[i] if separate_verts_data else 0
 
     if props.is_editing_path:
         tool.Blender.apply_bmesh(obj.data, bm)
@@ -482,15 +479,12 @@ def get_path_data(obj: bpy.types.Object) -> Union[dict[str, Any], None]:
     bm_mesh_clean_up(bm)
 
     angle_layer = bm.edges.layers.float.get("BBIM_gable_roof_angles")
-    separate_verts_layer = bm.edges.layers.int.get("BBIM_gable_roof_separate_verts")
 
     path_data = dict()
     path_data["edges"] = [bm_get_indices(e.verts) for e in bm.edges]
     path_data["verts"] = [v.co / si_conversion for v in bm.verts]
     if angle_layer:
         path_data["gable_roof_angles"] = [e[angle_layer] for e in bm.edges]
-    if separate_verts_layer:
-        path_data["gable_roof_separate_verts"] = [e[separate_verts_layer] for e in bm.edges]
 
     if not path_data["edges"] or not path_data["verts"]:
         return None
@@ -820,7 +814,6 @@ class SetGableRoofEdgeAngle(bpy.types.Operator):
     bl_label = "Set Gable Roof Edge Angle"
     bl_options = {"REGISTER", "UNDO"}
     angle: bpy.props.FloatProperty(name="Angle", default=90)
-    separate_verts: bpy.props.BoolProperty(name="Separate Verts", default=True)
 
     @classmethod
     def poll(cls, context):
@@ -843,17 +836,12 @@ class SetGableRoofEdgeAngle(bpy.types.Operator):
         if "BBIM_gable_roof_angles" not in me.attributes:
             me.attributes.new("BBIM_gable_roof_angles", type="FLOAT", domain="EDGE")
 
-        if "BBIM_gable_roof_separate_verts" not in me.attributes:
-            me.attributes.new("BBIM_gable_roof_separate_verts", type="INT", domain="EDGE")
-
         angles_layer = bm.edges.layers.float["BBIM_gable_roof_angles"]
-        separate_verts_layer = bm.edges.layers.int["BBIM_gable_roof_separate_verts"]
 
         for e in bm.edges:
             if not e.select:
                 continue
             e[angles_layer] = self.angle
-            e[separate_verts_layer] = self.separate_verts
 
         tool.Blender.apply_bmesh(me, bm)
         return {"FINISHED"}
