@@ -88,5 +88,7 @@ def assign_class(
             ifc.run("aggregate.assign_object", products=[element], relating_object=default_container)
         elif root.is_containable(element):
             ifc.run("spatial.assign_container", products=[element], relating_structure=default_container)
+            if relating_obj := root.is_in_aggregate_mode(element):
+                ifc.run("aggregate.assign_object", products=[element], relating_object=relating_obj)
     collector.assign(obj)
     return element
