@@ -208,11 +208,11 @@ class ProfileDecorator:
         if draw_faces:
             self.draw_faces(bm, all_vertices)
 
-        self.draw_batch("LINES", all_vertices, transparent_color(unselected_elements_color), unselected_edges)
-        self.draw_batch("LINES", all_vertices, selected_elements_color, selected_edges)
         self.draw_batch("LINES", all_vertices, background_elements_color, arc_edges)
         self.draw_batch("LINES", all_vertices, special_elements_color, preview_edges)
         self.draw_batch("LINES", all_vertices, special_elements_color, roof_angle_edges)
+        self.draw_batch("LINES", all_vertices, unselected_elements_color, unselected_edges)
+        self.draw_batch("LINES", all_vertices, selected_elements_color, selected_edges)
 
         self.draw_batch("POINTS", unselected_vertices, transparent_color(unselected_elements_color, 0.5))
         self.draw_batch("POINTS", error_vertices, error_elements_color)

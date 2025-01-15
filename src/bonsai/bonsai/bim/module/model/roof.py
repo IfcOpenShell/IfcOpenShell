@@ -25,17 +25,15 @@ import ifcopenshell.util.representation
 import ifcopenshell.util.unit
 import bonsai.core.root
 import bonsai.tool as tool
-from bonsai.bim.helper import convert_property_group_from_si
 from bonsai.bim.module.model.data import RoofData, refresh
 from bonsai.bim.module.model.decorator import ProfileDecorator
 
 import json
-from math import tan, pi, radians
-from mathutils import Vector, Matrix
+from math import cos, tan, pi, radians
+from mathutils import Vector, Matrix, Quaternion
 import mathutils.geometry
 from bpypolyskel import bpypolyskel
 import shapely
-from pprint import pprint
 from typing import Literal, Union, Any
 
 # reference:
@@ -89,7 +87,7 @@ class GenerateHippedRoof(bpy.types.Operator, tool.Ifc.Operator):
             self.report(op_status, error_message)
             return {"CANCELLED"}
 
-        generate_hiped_roof_bmesh(bm, self.mode, self.height, self.angle)
+        generate_hipped_roof_bmesh(bm, self.mode, self.height, self.angle)
         tool.Blender.apply_bmesh(obj.data, bm)
         return {"FINISHED"}
 
@@ -107,7 +105,7 @@ def is_valid_roof_footprint(bm: bmesh.types.BMesh) -> tuple[set[str], str]:
     return ({"FINISHED"}, "")
 
 
-def generate_hiped_roof_bmesh(
+def generate_hipped_roof_bmesh(
     bm: bmesh.types.BMesh,
     mode: Literal["ANGLE", "HEIGHT"] = "ANGLE",
     height: float = 1.0,
@@ -125,29 +123,23 @@ def generate_hiped_roof_bmesh(
 
     If roof bmesh needed only to supply into decorator then there is no reason to mutate it.
     """
-
     if not mutate_current_bmesh:
         bm = bm.copy()
 
-    # CLEAN UP
     bm_mesh_clean_up(bm)
 
-    boundary_lines = []
-
-    original_geometry_data = dict()
+    rafter_edge_angle = pi / 2 - rafter_edge_angle  # It's easier to work with this angle.
+    angled_edges = []
     angle_layer = bm.edges.layers.float.get("BBIM_gable_roof_angles")
-    separate_verts_layer = bm.edges.layers.int.get("BBIM_gable_roof_separate_verts")
     if angle_layer:
-        original_geometry_data["edges"] = [
-            (set(bm_get_indices(e.verts)), e[angle_layer], e[separate_verts_layer]) for e in bm.edges
+        angled_edges = [
+            (set([v.co.copy().freeze() for v in e.verts]), e[angle_layer]) for e in bm.edges if e[angle_layer]
         ]
-    else:
-        original_geometry_data["edges"] = [(set(bm_get_indices(e.verts)), None, None) for e in bm.edges]
 
-    original_geometry_data["verts"] = {v.index: v.co.copy() for v in bm.verts}
     footprint_z = bm.verts[:][0].co.z
 
-    def calculate_hiped_roof():
+    def calculate_hipped_roof():
+        boundary_lines = []
         for edge in bm.edges:
             boundary_lines.append(shapely.LineString([v.co for v in edge.verts]))
 
@@ -187,202 +179,210 @@ def generate_hiped_roof_bmesh(
         nonlocal height, angle
         if mode == "HEIGHT":
             height = height
-            angle = 0.0
+            tan_angle = 0.0
         else:
-            angle = tan(angle)
+            tan_angle = tan(angle)
             height = 0.0
 
         faces = bpypolyskel.polygonize(
-            verts, start_exterior_index, total_exterior_verts, inner_loops, height, angle, faces, unit_vectors
+            verts, start_exterior_index, total_exterior_verts, inner_loops, height, tan_angle, faces, unit_vectors
         )
+
         edges = []
         return verts, edges, faces
 
-    verts, edges, faces = calculate_hiped_roof()
+    verts, edges, faces = calculate_hipped_roof()
     bm.clear()
 
     new_verts = [bm.verts.new(v) for v in verts]
     new_edges = [bm.edges.new([new_verts[vi] for vi in edge]) for edge in edges]
     new_faces = [bm.faces.new([new_verts[vi] for vi in face]) for face in faces]
 
-    def find_identical_new_vert(co: Vector) -> Union[bmesh.types.BMVert, None]:
-        for v in bm.verts:
-            if tool.Cad.is_x((co - v.co).length, 0):
-                return v
+    if mode == "HEIGHT": # Calculate the angle we ended up with.
+        new_faces[0].normal_update()
+        angle = new_faces[0].normal.angle(Vector((0, 0, 1)))
 
-    def find_other_polygon_verts(edge: bmesh.types.BMEdge) -> list[bmesh.types.BMVert]:
-        polygon = edge.link_faces[0]
-        return [v for v in polygon.verts if v not in edge.verts]
 
-    def change_angle(projected_vert_co: Vector, edge_verts: list[bmesh.types.BMVert], new_angle: float) -> Vector:
-        A, B = [v.co for v in edge_verts]
-        P = projected_vert_co
+    # bpypolyskel performs a straight skeleton with equal weights. Ideally, we
+    # need support for weighted straight skeletons (CGAL has this function) to
+    # calculate skeletons of varying angles. Doing anything else, such as
+    # creating new vertices, splitting edges, or sliding vertices is extremely
+    # error prone and only works in simple scenarios.
 
-        AP = P - A
-        AB = B - A
-        AB_dir = AB.normalized()
-        proj_length = AP.dot(AB_dir)
-        C = A + AB_dir * proj_length
-        Pp = P * Vector([1, 1, 0]) + Vector([0, 0, C.z])
-
-        Pp = P * Vector([1, 1, 0]) + Vector([0, 0, C.z])
-        angle_tan = tan(new_angle)
-        dist = (P.z - Pp.z) / angle_tan
-        PPnew = C + (Pp - C).normalized() * dist
-        Pnew = PPnew * Vector([1, 1, 0]) + Vector([0, 0, P.z])
-        return Pnew
-
-    footprint_edges = []
-    footprint_verts = set()
-    verts_to_change = {}
-    verts_to_rip = []
-    bottom_chords_to_remove = []
-
-    def is_footprint_vert(v: bmesh.types.BMVert) -> bool:
-        return tool.Cad.is_x(v.co.z - footprint_z, 0)
+    # In the meantime, we can support the simplest, but luckily also most
+    # common scenario of a gable roof, or hipped roof where the varied angle
+    # only occurs on a triangle face.
 
     def is_footprint_edge(edge: bmesh.types.BMEdge) -> bool:
-        return all(is_footprint_vert(v) for v in edge.verts)
+        return all(tool.Cad.is_x(v.co.z - footprint_z, 0) for v in edge.verts)
 
-    # find footprint edges
+    footprint_edges = set()
+    gable_edges = set()
+    edges_to_delete = set()
+    face_angles = {}
+
+    # Post process skeleton to handle gables and custom angles.
     for edge in bm.edges:
-        if is_footprint_edge(edge):
-            footprint_edges.append(edge)
-            footprint_verts.update(edge.verts)
-
-    old_verts_remap = {}
-    for old_vert in original_geometry_data["verts"]:
-        old_vert_co = original_geometry_data["verts"][old_vert]
-        old_verts_remap[old_vert] = find_identical_new_vert(old_vert_co)
-
-    # iterate over edges from original geometry
-    # if their angle was redefined by user - apply the changes to the related vertices
-    # to match the requested angle
-
-    process_later = []
-    for old_edge_verts, defined_angle, separate_verts in original_geometry_data["edges"]:
-        if not defined_angle:
+        if not is_footprint_edge(edge):
             continue
-
-        edge_verts_remaped = set(old_verts_remap[old_vert] for old_vert in old_edge_verts)
-
-        identical_edge = None
-        for edge in footprint_edges:
-            if set(edge.verts) == edge_verts_remaped:
-                identical_edge = edge
-                break
-        assert identical_edge
-
-        if separate_verts:
-            verts_to_move = find_other_polygon_verts(identical_edge)
-            for v in verts_to_move:
-                vert_co = v.co
-                new_vert_co = change_angle(vert_co, edge_verts_remaped, defined_angle)
-                verts_to_rip.append([v, new_vert_co, identical_edge])
-        else:
-            process_later.append([identical_edge, edge_verts_remaped, defined_angle])
-
-        if defined_angle >= pi / 2:
-            bottom_chords_to_remove.append(identical_edge)
-
-    def separate_vert(
-        bm: bmesh.types.BMesh, vert: bmesh.types.BMVert, edge: bmesh.types.BMEdge, new_co: Vector
-    ) -> bmesh.types.BMVert:
-        face = next(f for f in vert.link_faces if edge in f.edges)
-        new_v = bmesh.utils.face_vert_separate(face, vert)
-        new_v.co = new_co
-        new_edge = bm.edges.new((vert, new_v))
-
-        for cur_edge in face.edges:
-            if cur_edge == edge:
-                continue
-            bmesh.ops.contextual_create(bm, geom=[new_edge, cur_edge])
-        return new_v
-
-    # correct angle for verts that require verts separation
-    # store separated verts for angle correction later
-    related_verts = {}
-    for v, new_co, edge in verts_to_rip:
-        new_v = separate_vert(bm, v, edge, new_co)
-        related_verts.setdefault(v, []).append(new_v)
-
-    # verts angle correction.
-    # we're taking into account new verts created after verts separation
-    # required for asymmetrical gable roof
-    for identical_edge, edge_verts_remaped, defined_angle in process_later:
-        verts_to_move = find_other_polygon_verts(identical_edge)
-        for v in verts_to_move[:]:
-            verts_to_move.extend(related_verts.get(v, []))
-
-        for v in verts_to_move:
-            vert_co = verts_to_change.get(v, v.co)
-            new_vert_co = change_angle(vert_co, edge_verts_remaped, defined_angle)
-            verts_to_change[v] = new_vert_co
-
-    # apply all changes once at the end
-    for v in verts_to_change:
-        v.co = verts_to_change[v]
-
-    bmesh.ops.delete(bm, geom=bottom_chords_to_remove, context="EDGES")
-
-    # add roof thickness
-    extrusion_geom = tool.Model.bm_sort_out_geom(bmesh.ops.extrude_face_region(bm, geom=bm.faces)["geom"])
-    extruded_edges = extrusion_geom["edges"]
-    extruded_verts = extrusion_geom["verts"]
-    rafter_edge_angle = pi / 2 - rafter_edge_angle
-    default_offset_dir = Vector([0, 0, 1]) * roof_thickness
-    footprint_verts = set()
-
-    if not tool.Cad.is_x(rafter_edge_angle, 0):
-        footprint_edges = []
-        for edge in extruded_edges:
-            if is_footprint_edge(edge):
-                footprint_edges.append(edge)
-                footprint_verts.update(edge.verts)
-
-        def get_top_vert(v):
-            non_footprint_verts = []
-            for edge in v.link_edges:
-                v1 = edge.other_vert(v)
-                if not is_footprint_vert(v1):
-                    non_footprint_verts.append(v1)
-
-            if len(non_footprint_verts) == 1:
-                return non_footprint_verts[0]
-
-            return min(non_footprint_verts, key=lambda v1: (v1.co - v.co).length)
-
-        top_verts = dict()
-        for v in footprint_verts:
-            top_verts[v] = get_top_vert(v)
-
-        # TODO: rafter_edge_angle might differ
-        # if footprint edges are not connected by 90 degrees
-        verts_offsets = dict()
-        for edge in footprint_edges:
-            v0, v1 = edge.verts
-            edge_dir = (v0.co - v1.co).normalized()
-            offset_dir = Matrix.Rotation(rafter_edge_angle, 4, edge_dir) @ default_offset_dir
-            for v in edge.verts:
-                previous_offset = verts_offsets.get(v, None)
-                if previous_offset:
-                    previous_offset.xy += offset_dir.xy
+        footprint_edges.add(edge)
+        if len(edge.link_faces) != 1 or len(edge.link_faces[0].verts) != 3:
+            continue  # Too complicated for us to figure out without a weighted skeleton
+        face_verts = edge.link_faces[0].verts
+        verts = set([v.co.copy().freeze() for v in edge.verts])
+        for angled_edge, edge_angle in angled_edges:
+            if angled_edge == verts:
+                face_angles[edge.link_faces[0]] = edge_angle
+                ridge_vert = [v for v in face_verts if v.co.copy().freeze() not in verts][0]
+                if len(ridge_vert.link_edges) == 3:
+                    ridge_edge = [e for e in ridge_vert.link_edges if e not in edge.link_faces[0].edges][0]
+                    other_ridge_vert = ridge_edge.other_vert(ridge_vert)
                 else:
-                    verts_offsets[v] = offset_dir
+                    # We cannot actually get this correct without a weighted
+                    # skeleton, but for now let's assume we duplicate the ridge
+                    # vert and slide the vertex towards the midpoint of the
+                    # footprint edge.
+                    edge_midpoint = edge.verts[0].co.lerp(edge.verts[1].co, 0.5)
+                    edge_midpoint.z = ridge_vert.co.z
+                    poke = bmesh.ops.poke(bm, faces=[edge.link_faces[0]])
+                    other_ridge_vert = poke["verts"][0]
+                    other_ridge_vert.co = ridge_vert.co + (edge_midpoint - ridge_vert.co).normalized() * 0.01
+                    ridge_vert, other_ridge_vert = other_ridge_vert, ridge_vert
 
-        for v in verts_offsets:
-            vert_offset = verts_offsets[v]
-            top = top_verts[v].co
-            bot = v.co + default_offset_dir
-            base = v.co
-            offsetted = v.co + vert_offset
-            # all this math is needed to maintain the same roof thickness
-            # for different rafter edge angles
-            v.co = mathutils.geometry.intersect_line_line(bot, top, base, offsetted)[0]
+                face_center = (face_verts[0].co + face_verts[1].co + face_verts[2].co) / 3
+                x_axis = (edge.verts[1].co - edge.verts[0].co).normalized()
+                z_axis = Vector((0, 0, -1))
+                y_axis = z_axis.cross(x_axis)
+                positive = edge.verts[0].co + (y_axis * 0.01)
+                negative = edge.verts[0].co - (y_axis * 0.01)
+                if (face_center - positive).length < (face_center - negative).length:
+                    y_axis = -y_axis
+                    x_axis = y_axis.cross(z_axis)  # Recalculate X axis to make rotation sign consistent
+                rotation_quaternion = Quaternion(x_axis, edge_angle)
+                plane_no = rotation_quaternion @ z_axis
 
-    verts = [v for v in extruded_verts if v not in footprint_verts]
-    bmesh.ops.translate(bm, vec=default_offset_dir, verts=verts)
+                if intersect := tool.Cad.intersect_edge_plane(
+                    other_ridge_vert.co, ridge_vert.co, edge.verts[0].co, plane_no
+                ):
+                    edge_percent = tool.Cad.edge_percent(intersect, (other_ridge_vert.co, ridge_vert.co))
+                    if edge_percent <= 0:
+                        ridge_vert.co = other_ridge_vert.co
+                    else:
+                        ridge_vert.co = intersect
+
+                if tool.Cad.is_x(edge_angle, pi / 2, tolerance=radians(1)):
+                    footprint_edges.remove(edge)
+                    edges_to_delete.add(edge)
+                    gable_edges.update(
+                        [e for e in ridge_vert.link_edges if e.other_vert(ridge_vert) != other_ridge_vert]
+                    )
+                break
+
+    bmesh.ops.delete(bm, geom=list(edges_to_delete), context="EDGES")
+
+    # Determine cutting planes for rafter_edge_angle
+    # The skeleton is always extruded in the -Z. A cutting plane is applied at
+    # the footprint or gable edge if a rafter_edge_angle is specified.
+    cutting_planes = {}
+    bm.faces.ensure_lookup_table()
+
+    if not tool.Cad.is_x(rafter_edge_angle, 0, tolerance=radians(1)):
+        for e in footprint_edges:
+            face = e.link_faces[0]
+            planes = []
+            verts = [v.co for v in face.verts]
+            face_center = sum(verts[1:], start=verts[0].copy()) / len(verts)
+            v1, v2 = [v.co.copy() for v in e.verts]
+            if not tool.Cad.is_x(v1.z, footprint_z):
+                v1, v2 = v2, v1
+            x_axis = (v2 - v1).normalized()
+            z_axis = Vector((0, 0, -1))
+            y_axis = z_axis.cross(x_axis)
+            positive = v1 + (y_axis * 0.01)
+            negative = v1 - (y_axis * 0.01)
+            plane_no = y_axis
+            if (face_center - positive).length < (face_center - negative).length:
+                plane_no = -y_axis
+                x_axis = plane_no.cross(z_axis)  # Recalculate X axis to make rotation sign consistent
+            rotation_quaternion = Quaternion(x_axis, rafter_edge_angle)
+            plane_no = rotation_quaternion @ plane_no
+            planes.append((v1, plane_no))
+            cutting_planes[face] = planes
+
+        # Gable edges are special - they are not cut at the rafter_edge_angle.
+        # We copy the neighbouring cutting planes to make sure they mitre
+        # correctly.
+        for e in gable_edges:
+            face = e.link_faces[0]
+            planes = []
+            neighbouring_faces = set()
+            neighbouring_faces.update(e.verts[0].link_faces)
+            neighbouring_faces.update(e.verts[1].link_faces)
+            for f in neighbouring_faces:
+                planes.extend(cutting_planes.get(f, []))
+            cutting_planes[face] = planes
+
+    # Extrude skeleton using roof thickness
+    for top_face in [f for f in bm.faces]:
+        face = top_face.copy()
+        face.tag = True  # Tags keep track of which geometry is part of our current skeleton fragment
+
+        if face.normal.z > 0:
+            face.normal_flip()
+
+        # This means that different fragments of the roof may not exactly join together.
+        # It's technically correct, but may look weird if the architect doesn't know what they're doing.
+        face_angle = face_angles.get(top_face, angle)
+        # Alternatively maybe we can offer a "distort" mode which doesn't preserve thickness at custom angles:
+        # face_angle = angle
+        extrusion_height = roof_thickness / cos(face_angle)
+        extrusion_vector = Vector((0, 0, -1)) * extrusion_height
+        extrusion = tool.Model.bm_sort_out_geom(bmesh.ops.extrude_face_region(bm, geom=[face])["geom"])
+        bmesh.ops.translate(bm, vec=extrusion_vector, verts=extrusion["verts"])
+
+        for plane_co, plane_no in cutting_planes.get(top_face, []):
+            geom = set()
+            for f in bm.faces:
+                if f.tag:
+                    geom.add(f)
+                    for e in f.edges:
+                        geom.add(e)
+                    for v in f.verts:
+                        geom.add(v)
+
+            result = bmesh.ops.bisect_plane(
+                bm, geom=list(geom), plane_co=plane_co, plane_no=plane_no, clear_outer=True, clear_inner=False
+            )
+            for g in result["geom"]:
+                if isinstance(g, bmesh.types.BMFace):
+                    g.tag = True
+            bm.faces.ensure_lookup_table()
+            result = bmesh.ops.triangle_fill(
+                bm, use_dissolve=True, edges=[g for g in result["geom_cut"] if isinstance(g, bmesh.types.BMEdge)]
+            )
+            for g in result["geom"]:
+                if isinstance(g, bmesh.types.BMFace):
+                    g.tag = True
+            verts = set()
+            [verts.update(f.verts) for f in bm.faces if f.tag]
+            bmesh.ops.remove_doubles(bm, verts=list(verts), dist=1e-4)
+
+        for f in bm.faces:
+            f.tag = False
+
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
+
+    # Merge fragments and remove internal faces.
+    bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-4)
+    faces_to_delete = set()
+    for face in [f for f in bm.faces]:
+        is_internal = True
+        for e in face.edges:
+            if len(e.link_faces) < 3:
+                is_internal = False
+        if is_internal:
+            faces_to_delete.add(face)
+    bmesh.ops.delete(bm, geom=list(faces_to_delete), context="FACES")
     return bm
 
 
@@ -412,9 +412,6 @@ def update_roof_modifier_ifc_data(context: bpy.types.Context) -> None:
     # type attributes
     if props.roof_type == "HIP/GABLE ROOF":
         element.PredefinedType = "GABLE_ROOF" if roof_is_gabled() else "HIP_ROOF"
-
-    # occurrences attributes
-    # occurrences = tool.Ifc.get_all_element_occurrences(element)
 
     tool.Model.add_body_representation(obj)
 
@@ -450,19 +447,17 @@ def update_roof_modifier_bmesh(obj: bpy.types.Object) -> None:
 
     # generating roof path
     new_verts = [bm.verts.new(Vector(v) * si_conversion) for v in path_data["verts"]]
-    new_edges = []
     for i in range(len(path_data["edges"])):
         e = path_data["edges"][i]
         edge = bm.edges.new((new_verts[e[0]], new_verts[e[1]]))
         edge[angle_layer] = angle_layer_data[i] if angle_layer_data else 0
         edge[separate_verts_layer] = separate_verts_data[i] if separate_verts_data else 0
-        new_edges.append(edge)
 
     if props.is_editing_path:
         tool.Blender.apply_bmesh(obj.data, bm)
         return
 
-    generate_hiped_roof_bmesh(
+    generate_hipped_roof_bmesh(
         bm,
         props.generation_method,
         props.height,
@@ -692,7 +687,7 @@ class EnableEditingRoofPath(bpy.types.Operator, tool.Ifc.Operator):
 
             main_bm.edges.layers.int.new("BBIM_preview")
 
-            second_bm = generate_hiped_roof_bmesh(
+            second_bm = generate_hipped_roof_bmesh(
                 bm,
                 props.generation_method,
                 props.height,
@@ -701,7 +696,6 @@ class EnableEditingRoofPath(bpy.types.Operator, tool.Ifc.Operator):
                 props.rafter_edge_angle,
                 mutate_current_bmesh=False,
             )
-            bmesh.ops.translate(second_bm, verts=second_bm.verts, vec=Vector((0, 0, 1)))
 
             tool.Blender.bmesh_join(main_bm, second_bm, callback=mark_preview_edges)
             return main_bm

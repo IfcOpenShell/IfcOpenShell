@@ -829,7 +829,7 @@ class BIMRoofProperties(PropertyGroup):
         soft_max=to_percentage(radians(60.0)),
     )
     roof_thickness: bpy.props.FloatProperty(name="Roof Thickness", default=0.1, subtype="DISTANCE")
-    rafter_edge_angle: bpy.props.FloatProperty(name="Rafter Edge Angle", min=0, max=pi, default=pi / 2, subtype="ANGLE")
+    rafter_edge_angle: bpy.props.FloatProperty(name="Rafter Edge Angle", min=0, max=pi / 2, default=pi / 2, subtype="ANGLE")
 
     def get_general_kwargs(self, generation_method=None, convert_to_project_units=False):
         if generation_method is None:
