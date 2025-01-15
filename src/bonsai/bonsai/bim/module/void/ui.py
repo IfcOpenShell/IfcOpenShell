@@ -44,7 +44,7 @@ class BIM_PT_voids(Panel):
 
         props = context.active_object.BIMObjectProperties
 
-        if len(context.selected_objects) == 2:
+        if len(context.selected_objects) >= 2:
             row = self.layout.row(align=True)
             op = row.operator("bim.add_opening", icon="ADD", text="Add Opening")
 
