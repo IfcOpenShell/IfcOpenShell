@@ -127,6 +127,8 @@ def poll_representation_obj(self, obj):
 
 class BIMRootProperties(PropertyGroup):
     contexts: EnumProperty(items=get_contexts, name="Contexts", options=set())
+    name: StringProperty(name="Name")
+    description: StringProperty(name="Description")
     ifc_product: EnumProperty(items=get_ifc_products, name="Products", update=refresh_classes)
     ifc_class: EnumProperty(items=get_ifc_classes, name="Class", update=refresh_predefined_types)
     ifc_predefined_type: EnumProperty(items=get_ifc_predefined_types, name="Predefined Type", default=None)

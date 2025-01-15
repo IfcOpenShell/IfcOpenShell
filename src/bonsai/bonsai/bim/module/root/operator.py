@@ -384,6 +384,7 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
             mesh = bpy.data.meshes.new("Mesh")
 
         obj = bpy.data.objects.new(props.ifc_class[3:], mesh)
+        obj.name = props.name or "Unnamed"
         obj.location = bpy.context.scene.cursor.location
         element = core.assign_class(
             tool.Ifc,
@@ -394,6 +395,7 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
             predefined_type=predefined_type,
             should_add_representation=False,
         )
+        element.Description = props.description or None
 
         if representation_template == "EMTPY" or not ifc_context:
             pass
@@ -556,6 +558,10 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
         props = context.scene.BIMRootProperties
         self.layout.use_property_split = True
         self.layout.use_property_decorate = False
+        row = self.layout.row()
+        row.prop(props, "name")
+        row = self.layout.row()
+        row.prop(props, "description")
         prop_with_search(self.layout, props, "ifc_product", text="Definition", should_click_ok=True)
         prop_with_search(self.layout, props, "ifc_class", should_click_ok=True)
         ifc_predefined_types = root_prop.get_ifc_predefined_types(context.scene.BIMRootProperties, context)
