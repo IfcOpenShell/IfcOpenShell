@@ -198,10 +198,9 @@ def generate_hipped_roof_bmesh(
     new_edges = [bm.edges.new([new_verts[vi] for vi in edge]) for edge in edges]
     new_faces = [bm.faces.new([new_verts[vi] for vi in face]) for face in faces]
 
-    if mode == "HEIGHT": # Calculate the angle we ended up with.
+    if mode == "HEIGHT":  # Calculate the angle we ended up with.
         new_faces[0].normal_update()
         angle = new_faces[0].normal.angle(Vector((0, 0, 1)))
-
 
     # bpypolyskel performs a straight skeleton with equal weights. Ideally, we
     # need support for weighted straight skeletons (CGAL has this function) to
