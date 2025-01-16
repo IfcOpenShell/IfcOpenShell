@@ -952,7 +952,7 @@ class Geometry(bonsai.core.tool.Geometry):
 
     @classmethod
     def is_movable(cls, item: ifcopenshell.entity_instance) -> bool:
-        return item.is_a("IfcSweptAreaSolid")
+        return item.is_a("IfcSweptAreaSolid") or item.is_a("IfcHalfSpaceSolid")
 
     @classmethod
     def is_profile_based(cls, data: bpy.types.Mesh) -> bool:
@@ -1571,12 +1571,10 @@ class Geometry(bonsai.core.tool.Geometry):
         has_changed = False
 
         for item_obj in props.item_objs:
-            if not (obj := item_obj.obj):
+            if not (obj := item_obj.obj) or not tool.Ifc.is_moved(obj):
                 continue
             item = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
             if is_swept_area := item.is_a("IfcSweptAreaSolid"):
-                if not tool.Ifc.is_moved(obj):
-                    continue
                 has_changed = True
                 old_position = item.Position
 
@@ -1591,6 +1589,25 @@ class Geometry(bonsai.core.tool.Geometry):
                 item.Position = builder.create_axis2_placement_3d_from_matrix(position)
                 if old_position:
                     ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_position)
+            if item.is_a("IfcHalfSpaceSolid"):
+                has_changed = True
+                surface = item.BaseSurface
+                if surface.is_a("IfcPlane"):
+                    position = surface.Position
+                    m = Matrix(ifcopenshell.util.placement.get_axis2placement(position).tolist())
+                    m.translation *= unit_scale
+
+                    new_m = rep_obj.matrix_world.inverted() @ obj.matrix_world
+                    new_m.normalize()
+                    new_m.translation /= unit_scale
+                    new_m = np.array(new_m)
+                    surface.Position = builder.create_axis2_placement_3d_from_matrix(new_m)
+                    ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), position)
+                else:
+                    self.report(
+                        {"INFO"},
+                        f"Editing boolean using non-IfcPlane IfcSurface ({surface.is_a()}) is not supported.",
+                    )
 
         if has_changed:
             cls.reload_representation(rep_obj)
@@ -1631,21 +1648,36 @@ class Geometry(bonsai.core.tool.Geometry):
         item = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
         obj.data.clear_geometry()
 
-        geometry = tool.Loader.create_generic_shape(item)
-        if (cartesian_point_offset := cls.get_cartesian_point_offset(rep_obj)) is not None:
-            verts_array = np.array(geometry.verts)
-            offset = np.array([-cartesian_point_offset[0], -cartesian_point_offset[1], -cartesian_point_offset[2]])
-            offset_verts = verts_array + np.tile(offset, len(verts_array) // 3)
-            verts = offset_verts.tolist()
+        if item.is_a("IfcHalfSpaceSolid"):
+            bm = bmesh.new()
+            bmesh.ops.create_grid(bm, size=0.5)
+            bm.verts.ensure_lookup_table()
+            bm.edges.ensure_lookup_table()
+            bm.faces.ensure_lookup_table()
+            bm.to_mesh(obj.data)
+            bm.free()
+
+            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+            position = item.BaseSurface.Position
+            position = Matrix(ifcopenshell.util.placement.get_axis2placement(position).tolist())
+            position.translation *= unit_scale
+            obj.matrix_world = rep_obj.matrix_world @ position
         else:
-            verts = geometry.verts
-        tool.Loader.convert_geometry_to_mesh(geometry, obj.data, verts=verts)
+            geometry = tool.Loader.create_generic_shape(item)
+            if (cartesian_point_offset := cls.get_cartesian_point_offset(rep_obj)) is not None:
+                verts_array = np.array(geometry.verts)
+                offset = np.array([-cartesian_point_offset[0], -cartesian_point_offset[1], -cartesian_point_offset[2]])
+                offset_verts = verts_array + np.tile(offset, len(verts_array) // 3)
+                verts = offset_verts.tolist()
+            else:
+                verts = geometry.verts
+            tool.Loader.convert_geometry_to_mesh(geometry, obj.data, verts=verts)
 
-        if ios_materials := list(obj.data["ios_materials"]):
-            material = tool.Ifc.get_object(tool.Ifc.get().by_id(ios_materials[0]))
-            obj.data.materials.append(material)
+            if ios_materials := list(obj.data["ios_materials"]):
+                material = tool.Ifc.get_object(tool.Ifc.get().by_id(ios_materials[0]))
+                obj.data.materials.append(material)
 
-        obj.matrix_world = rep_obj.matrix_world.copy()
+            obj.matrix_world = rep_obj.matrix_world.copy()
 
         if is_swept_area := item.is_a("IfcSweptAreaSolid"):
             position = item.Position

@@ -131,10 +131,7 @@ class RepresentationItemObject(PropertyGroup):
     name: StringProperty(name="Name")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     obj: PointerProperty(type=bpy.types.Object)
-    verts: StringProperty(name="Verts")
-    edges: StringProperty(name="Edges")
-    special_verts: StringProperty(name="Special Verts")
-    special_edges: StringProperty(name="Special Edges")
+    is_boolean: BoolProperty(name="Is Boolean", default=False)
 
 
 class ShapeAspect(PropertyGroup):

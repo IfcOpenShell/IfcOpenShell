@@ -2694,8 +2694,19 @@ class ImportRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
         data = obj.data
         assert data
         item_ids = data["ios_item_ids"] if "ios_item_ids" in data else data["ios_edges_item_ids"]
-        for item_id in set(item_ids):
+        queue = list(set(item_ids))
+        processed_ids = set()
+        boolean_ids = set()
+        while queue:
+            item_id = queue.pop()
+            if item_id in processed_ids:
+                continue  # In theory, an item can be used multiple times (e.g. in a boolean stack).
             item = tool.Ifc.get().by_id(item_id)
+            if item.is_a("IfcBooleanResult"):
+                queue.append(item.FirstOperand.id())
+                queue.append(item.SecondOperand.id())
+                boolean_ids.add(item.SecondOperand.id())
+                continue
             item_mesh = bpy.data.meshes.new(f"Item/{item.is_a()}/{item_id}")
             item_mesh.BIMMeshProperties.ifc_definition_id = item_id
 
@@ -2705,6 +2716,7 @@ class ImportRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
 
             new = props.item_objs.add()
             new.obj = item_obj
+            new.is_boolean = item_id in boolean_ids
 
             tool.Geometry.import_item(item_obj)
             tool.Geometry.import_item_attributes(item_obj)
@@ -2712,11 +2724,9 @@ class ImportRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
             if not tool.Geometry.is_movable(item):
                 tool.Geometry.lock_object(item_obj)
 
-            if "IfcOpeningElement" in obj.name:
-                item_obj.display_type = "WIRE"
-
             item_obj.select_set(True)  # so you can quickly hit tab again, for edit mode
             context.view_layer.objects.active = item_obj
+            processed_ids.add(item_id)
 
         tool.Root.reload_item_decorator()
 

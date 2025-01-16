@@ -36,15 +36,18 @@ class ItemDecorator:
         if cls.is_installed:
             cls.uninstall()
         obj_is_selected = {}
+        obj_is_boolean = {}
         objs = {}
         for item_obj in context.scene.BIMGeometryProperties.item_objs:
             if obj := item_obj.obj:
                 objs[obj.name] = cls.get_obj_data(obj)
                 obj_is_selected[obj.name] = obj.select_get()
+                obj_is_boolean[obj.name] = item_obj.is_boolean
 
         handler = cls()
         handler.objs = objs
         handler.obj_is_selected = obj_is_selected
+        handler.obj_is_boolean = obj_is_boolean
         cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_text, (context,), "WINDOW", "POST_PIXEL"))
         cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw, (context,), "WINDOW", "POST_VIEW"))
         cls.is_installed = True
@@ -138,7 +141,7 @@ class ItemDecorator:
         self.line_shader.bind()  # required to be able to change uniforms of the shader
         # POLYLINE_UNIFORM_COLOR specific uniforms
         self.line_shader.uniform_float("viewportSize", (context.region.width, context.region.height))
-        self.line_shader.uniform_float("lineWidth", 1.0)
+        self.line_shader.uniform_float("lineWidth", 2.0)
 
         # general shader
         self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
@@ -154,6 +157,9 @@ class ItemDecorator:
                         continue
                     self.draw_batch("LINES", data["verts"], selected_elements_color, data["edges"])
                     self.draw_batch("TRIS", data["verts"], transparent_color(selected_elements_color), data["tris"])
+                elif self.obj_is_boolean[obj_name]:
+                    self.draw_batch("LINES", data["verts"], special_elements_color, data["edges"])
+                    self.draw_batch("TRIS", data["verts"], transparent_color(special_elements_color), data["tris"])
                 else:
-                    self.draw_batch("LINES", data["verts"], decorator_color_background, data["edges"])
+                    self.draw_batch("LINES", data["verts"], transparent_color(unselected_elements_color, alpha=0.2), data["edges"])
                     self.draw_batch("TRIS", data["verts"], transparent_color(special_elements_color), data["tris"])
