@@ -358,7 +358,7 @@ class Usecase:
         # need to add first two points to the path
         # to create the turning arcs and supports on the last segment of the loop
         if looped_path:
-            railing_coords += railing_coords[:2]
+            railing_coords = np.vstack((railing_coords, railing_coords[:2]))
 
         items_3d.extend(create_supports_items(railing_coords, manual_supports=use_manual_supports))
         railing_coords = add_arcs_on_turnings_points(railing_coords)
