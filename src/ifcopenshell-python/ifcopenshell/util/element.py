@@ -959,7 +959,7 @@ def get_decomposition(element: ifcopenshell.entity_instance, is_recursive=True) 
     """
     Retrieves all subelements of an element based on the spatial decomposition
     hierarchy. This includes all subspaces and elements contained in subspaces,
-    parts of an aggreate, all openings, and all fills of any openings.
+    parts of an aggregate, all openings, and all fills of any openings.
 
     :param element: The IFC element
     :return: The decomposition of the element
