@@ -18,8 +18,21 @@
 
 import bpy
 from bpy.types import PropertyGroup
-from bpy.props import PointerProperty
+from bpy.props import PointerProperty, StringProperty, IntProperty, BoolProperty, CollectionProperty
+
+
+class Boolean(PropertyGroup):
+    name: StringProperty(name="Name")
+    operator: StringProperty(name="Operator")
+    ifc_definition_id: IntProperty(name="IFC Definition ID")
+    level: IntProperty(name="Level")
 
 
 class VoidProperties(PropertyGroup):
     desired_opening: PointerProperty(name="Desired Opening To Fill", type=bpy.types.Object)
+
+
+class BIMBooleanProperties(PropertyGroup):
+    is_editing: BoolProperty(name="Is Editing", default=False)
+    booleans: CollectionProperty(name="Booleans", type=Boolean)
+    active_boolean_index: IntProperty(name="Active Boolean Index")

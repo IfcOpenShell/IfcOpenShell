@@ -80,7 +80,7 @@ class BooleansData:
 
     @classmethod
     def booleans(cls):
-        obj = bpy.context.active_object
+        obj = bpy.context.scene.BIMGeometryProperties.representation_obj or bpy.context.active_object
         if (
             not obj.data
             or not hasattr(obj.data, "BIMMeshProperties")
@@ -93,7 +93,7 @@ class BooleansData:
 
     @classmethod
     def manual_booleans(cls):
-        obj = bpy.context.active_object
+        obj = bpy.context.scene.BIMGeometryProperties.representation_obj or bpy.context.active_object
         if (
             not obj.data
             or not hasattr(obj.data, "BIMMeshProperties")

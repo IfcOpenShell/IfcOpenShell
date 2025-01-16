@@ -18,7 +18,7 @@
 
 import bpy
 import bonsai.tool as tool
-from bpy.types import Panel
+from bpy.types import Panel, UIList
 from bonsai.bim.module.void.data import BooleansData, VoidsData
 
 
@@ -110,19 +110,18 @@ class BIM_PT_booleans(Panel):
         if not context.active_object.data:
             return
         layout = self.layout
-        props = context.active_object.data.BIMMeshProperties
+        props = context.scene.BIMBooleanProperties
 
         if context.active_object.data.BIMMeshProperties.ifc_definition_id:
             row = layout.row(align=True)
             total_booleans = BooleansData.data["total_booleans"]
             manual_booleans = BooleansData.data["manual_booleans"]
             row.label(text=f"{len(total_booleans)} Booleans Found ({len(manual_booleans)} Manual)")
+            if props.is_editing:
+                row.operator("bim.disable_editing_booleans", icon="CANCEL", text="")
+            else:
+                row.operator("bim.enable_editing_booleans", icon="IMPORT", text="")
             row.operator("bim.add_boolean", text="", icon="ADD")
-            show_boolean_button = row.row(align=True)
-            show_boolean_button.operator("bim.show_booleans", text="", icon="HIDE_OFF")
-            show_boolean_button.enabled = len(total_booleans) > 0
-            row.operator("bim.hide_booleans", text="", icon="HIDE_ON")
-
             booleans_are_manual = len(manual_booleans) == len(total_booleans)
             op = row.operator(
                 "bim.booleans_mark_as_manual", text="", icon="PINNED" if booleans_are_manual else "UNPINNED"
@@ -136,6 +135,26 @@ class BIM_PT_booleans(Panel):
             row.label(text=upsteam_obj.name)
             row.operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF").ifc_id = upstream_obj_ifc_id
 
+        if not props.is_editing:
+            return
+
+        self.layout.template_list("BIM_UL_booleans", "", props, "booleans", props, "active_boolean_index")
+
+
+class BIM_UL_booleans(UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        if item:
+            if item.operator == "DIFFERENCE":
+                icon = "SELECT_DIFFERENCE"
+            elif item.operator == "INTERSECTION":
+                icon = "SELECT_INTERSECT"
+            elif item.operator == "UNION":
+                icon = "SELECT_EXTEND"
+            elif "IfcHalfSpaceSolid" in item.name:
+                icon = "NORMALS_FACE"
+            else:
+                icon = "MESH_DATA"
             row = layout.row(align=True)
-            row.operator("bim.hide_booleans", text="Hide Boolean")
-            row.operator("bim.remove_booleans", text="Remove Boolean", icon="X")
+            for i in range(0, item.level):
+                row.label(text="", icon="BLANK1")
+            row.label(text=item.name, icon=icon)

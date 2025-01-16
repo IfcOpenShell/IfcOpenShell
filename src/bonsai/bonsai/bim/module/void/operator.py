@@ -295,4 +295,50 @@ class BooleansMarkAsManual(bpy.types.Operator, tool.Ifc.Operator):
             {"INFO"}, f"{len(booleans)} booleans were marked as {'manual' if self.mark_as_manual else 'automatic'}"
         )
         bonsai.bim.handler.refresh_ui_data()
+
+
+class EnableEditingBooleans(bpy.types.Operator):
+    bl_idname = "bim.enable_editing_booleans"
+    bl_label = "Enable Editing Booleans"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Manage a hierarchy of boolean operations"
+
+    @classmethod
+    def poll(cls, context):
+        return bpy.context.scene.BIMGeometryProperties.representation_obj
+
+    def execute(self, context):
+        props = context.scene.BIMBooleanProperties
+        rep_obj = bpy.context.scene.BIMGeometryProperties.representation_obj
+        representation = tool.Geometry.get_active_representation(rep_obj)
+        representation = ifcopenshell.util.representation.resolve_representation(representation)
+        props.booleans.clear()
+
+        def load_boolean(item, level=0):
+            new = props.booleans.add()
+            new.name = f"{item.is_a()}/{item.id()}"
+            new.ifc_definition_id = item.id()
+            new.level = level
+            if item.is_a("IfcBooleanResult"):
+                new.name += f"/{item.Operator}"
+                new.operator = item.Operator
+                load_boolean(item.FirstOperand, level + 1)
+                load_boolean(item.SecondOperand, level + 1)
+
+        for item in representation.Items:
+            if item.is_a("IfcBooleanResult"):
+                load_boolean(item)
+
+        props.is_editing = True
+        return {"FINISHED"}
+
+
+class DisableEditingBooleans(bpy.types.Operator):
+    bl_idname = "bim.disable_editing_booleans"
+    bl_label = "Disable Editing Booleans"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        props = context.scene.BIMBooleanProperties
+        props.is_editing = False
         return {"FINISHED"}
