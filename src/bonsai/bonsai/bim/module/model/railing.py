@@ -360,7 +360,10 @@ class CopyRailingParameters(bpy.types.Operator, tool.Ifc.Operator):
 
     @classmethod
     def poll(cls, context):
-        return context.active_object and len(context.selected_objects) > 1
+        if not context.active_object or len(context.selected_objects) < 1:
+            cls.poll_message_set("At least 2 objects must be selected.")
+            return False
+        return True
 
     def _execute(self, context):
         source_obj = context.active_object
