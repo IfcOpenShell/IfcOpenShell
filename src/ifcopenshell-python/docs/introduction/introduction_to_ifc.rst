@@ -51,7 +51,7 @@ The official IFC documentation describes hundreds of **IFC Classes**, ranging
 from walls, door, to tasks, cost items, parametric materials, and structural
 analysis constraints. There are also hundreds of **IFC Concepts**, which may
 describe how a wall is in a storey, a construction task might occur one after
-another, or how an surface bounds a space for energy analysis.
+another, or how a surface bounds a space for energy analysis.
 
 It takes time to learn the many **IFC Classes** and **IFC Concepts** available.
 Once you do, you will be able to richly describe our built environment
