@@ -45,13 +45,13 @@ from bpy.props import (
 def getTaskColumns(self, context):
     if not SequenceData.is_loaded:
         SequenceData.load()
-    return SequenceData.data["taskcolumns_enum"]
+    return SequenceData.data["task_columns_enum"]
 
 
 def getTaskTimeColumns(self, context):
     if not SequenceData.is_loaded:
         SequenceData.load()
-    return SequenceData.data["tasktimecolumns_enum"]
+    return SequenceData.data["task_time_columns_enum"]
 
 
 def getWorkSchedules(self, context):

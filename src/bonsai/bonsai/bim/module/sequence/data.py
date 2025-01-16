@@ -46,7 +46,7 @@ class SequenceData:
             "has_work_calendars": cls.has_work_calendars(),
             "schedule_predefined_types_enum": cls.schedule_predefined_types_enum(),
             "task_columns_enum": cls.task_columns_enum(),
-            "tasktimecolumns_enum": cls.tasktimecolumns_enum(),
+            "task_time_columns_enum": cls.task_time_columns_enum(),
         }
         cls.load_work_plans()
         cls.load_work_schedules()
@@ -278,7 +278,7 @@ class SequenceData:
         return taskcolumns_enum
 
     @classmethod
-    def tasktimecolumns_enum(cls) -> list[tuple[str, str, str]]:
+    def task_time_columns_enum(cls) -> list[tuple[str, str, str]]:
         schema = tool.Ifc.schema()
         tasktimecolumns_enum = []
         for a in schema.declaration_by_name("IfcTaskTime").all_attributes():
