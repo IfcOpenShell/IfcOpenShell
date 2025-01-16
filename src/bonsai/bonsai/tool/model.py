@@ -2038,3 +2038,7 @@ class Model(bonsai.core.tool.Model):
             else:
                 geom_dict["edges"].append(el)
         return geom_dict
+
+    @classmethod
+    def add_filled_opening(cls, voided_obj: bpy.types.Object, filling_obj: bpy.types.Object) -> None:
+        FilledOpeningGenerator().generate(filling_obj, voided_obj)

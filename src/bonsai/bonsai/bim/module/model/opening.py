@@ -48,18 +48,6 @@ from gpu_extras.batch import batch_for_shader
 from typing import Union, Optional, Any, cast, Sequence
 
 
-class AddFilledOpening(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.add_filled_opening"
-    bl_label = "Add Filled Opening"
-    bl_options = {"REGISTER", "UNDO"}
-    voided_obj: bpy.props.StringProperty()
-    filling_obj: bpy.props.StringProperty()
-
-    def _execute(self, context):
-        FilledOpeningGenerator().generate(bpy.data.objects.get(self.filling_obj), bpy.data.objects.get(self.voided_obj))
-        return {"FINISHED"}
-
-
 class FilledOpeningGenerator:
     def generate(
         self,

@@ -77,7 +77,6 @@ classes = (
     wall.SplitWall,
     wall.UnjoinWalls,
     opening.AddBoolean,
-    opening.AddFilledOpening,
     opening.AddPotentialHalfSpaceSolid,
     opening.AddPotentialOpening,
     opening.EditOpenings,

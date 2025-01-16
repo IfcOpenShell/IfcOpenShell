@@ -419,7 +419,7 @@ class AddConstrTypeInstance(bpy.types.Operator, tool.Ifc.Operator):
         ):
             if instance_class in ["IfcWindow", "IfcDoor"]:
                 # TODO For now we are hardcoding windows and doors as a prototype
-                bpy.ops.bim.add_filled_opening(voided_obj=building_obj.name, filling_obj=obj.name)
+                tool.Model.add_filled_opening(building_obj, obj)
         else:
             if self.container_obj:
                 if props.rl_mode == "BOTTOM":
