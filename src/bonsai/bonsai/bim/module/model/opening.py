@@ -1129,6 +1129,25 @@ class CloneOpening(Operator, tool.Ifc.Operator):
 
         ifcopenshell.api.void.add_opening(ifc_file, opening=new_opening, element=voided_element)
         new_opening.ObjectPlacement = opening_placement
+
+        # Update affected representations.
+        elements_to_update = tool.Aggregate.get_parts_recursively(voided_element)
+        for element in elements_to_update:
+            obj = tool.Ifc.get_object(element)
+            if not isinstance(obj, bpy.types.Object) or not isinstance(obj.data, bpy.types.Mesh):
+                continue
+            representation = tool.Geometry.get_active_representation(obj)
+            assert representation
+            bonsai.core.geometry.switch_representation(
+                tool.Ifc,
+                tool.Geometry,
+                obj=obj,
+                representation=representation,
+                should_reload=True,
+                is_global=True,
+                should_sync_changes_first=False,
+            )
+
         return {"FINISHED"}
 
 

@@ -76,6 +76,7 @@ class Aggregate(bonsai.core.tool.Aggregate):
 
     @classmethod
     def get_parts_recursively(cls, element: ifcopenshell.entity_instance) -> set[ifcopenshell.entity_instance]:
+        """Get elements parts recursively, resulting set includes `element`."""
         parts = set()
         queue = {element}
         while queue:
@@ -121,7 +122,6 @@ class Aggregate(bonsai.core.tool.Aggregate):
                 else:
                     editing_obj = props.editing_objects.add()
                     editing_obj.obj = obj.original
-
 
         props.in_aggregate_mode = True
         return {"FINISHED"}
