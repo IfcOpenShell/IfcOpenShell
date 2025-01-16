@@ -161,5 +161,7 @@ class ItemDecorator:
                     self.draw_batch("LINES", data["verts"], special_elements_color, data["edges"])
                     self.draw_batch("TRIS", data["verts"], transparent_color(special_elements_color), data["tris"])
                 else:
-                    self.draw_batch("LINES", data["verts"], transparent_color(unselected_elements_color, alpha=0.2), data["edges"])
+                    self.draw_batch(
+                        "LINES", data["verts"], transparent_color(unselected_elements_color, alpha=0.2), data["edges"]
+                    )
                     self.draw_batch("TRIS", data["verts"], transparent_color(special_elements_color), data["tris"])

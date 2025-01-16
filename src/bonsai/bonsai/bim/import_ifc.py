@@ -1117,7 +1117,6 @@ class IfcImporter:
                         tool.Blender.Modifier.Array.constrain_children_to_parent(element)
 
 
-
 class IfcImportSettings:
     def __init__(self):
         self.logger: logging.Logger = None

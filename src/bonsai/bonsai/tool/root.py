@@ -221,7 +221,7 @@ class Root(bonsai.core.tool.Root):
     def is_in_aggregate_mode(cls, element: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
         props = bpy.context.scene.BIMAggregateProperties
         if props.editing_aggregate and props.in_aggregate_mode:
-            return tool.Ifc.get_entity(props.editing_aggregate)        
+            return tool.Ifc.get_entity(props.editing_aggregate)
 
     @classmethod
     def reload_grid_decorator(cls) -> None:
