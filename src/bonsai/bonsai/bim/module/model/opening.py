@@ -901,13 +901,13 @@ class ShowOpenings(Operator, tool.Ifc.Operator):
         opening_obj.display_type = "WIRE"
 
 
-class UpdateOpeningsFocus(Operator, tool.Ifc.Operator):
+class UpdateOpeningsFocus(Operator):
     bl_idname = "bim.update_openings_focus"
     bl_label = "Update Openings Focus"
     bl_description = "Show objects that are not part of the object or its openings as transparent"
     bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
+    def execute(self, context):
         preferences = tool.Blender.get_addon_preferences()
         if preferences.opening_focus_opacity == 100:
             return {"FINISHED"}
