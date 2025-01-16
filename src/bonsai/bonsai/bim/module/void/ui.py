@@ -60,6 +60,9 @@ class BIM_PT_voids(Panel):
             for filling in VoidsData.data["fillings"]:
                 row = self.layout.row(align=True)
                 row.label(text=filling["Name"], icon="SELECT_INTERSECT")
+                op = row.operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF")
+                op.ifc_id = filling["id"]
+                op.tooltip = "Select filling object."
                 row.operator("bim.remove_filling", icon="X", text="").filling = filling["id"]
         else:
             if not VoidsData.data["openings"]:
@@ -72,6 +75,9 @@ class BIM_PT_voids(Panel):
                         row = self.layout.row(align=True)
                         row.label(text=opening["Name"], icon="SELECT_SUBTRACT")
                         row.label(text=filling["Name"], icon="SELECT_INTERSECT")
+                        op = row.operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF")
+                        op.ifc_id = filling["id"]
+                        op.tooltip = "Select filling object."
                 else:
                     row = self.layout.row(align=True)
                     row.label(text=opening["Name"], icon="SELECT_SUBTRACT")
