@@ -184,21 +184,6 @@ class SelectFailedEntities(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SelectEntity(bpy.types.Operator):
-    bl_idname = "bim.select_entity"
-    bl_label = "Select Entity"
-    bl_options = {"REGISTER", "UNDO"}
-    ifc_id: bpy.props.IntProperty()
-
-    def execute(self, context):
-        bpy.ops.object.select_all(action="DESELECT")
-        for obj in context.scene.objects:
-            if obj.BIMObjectProperties.ifc_definition_id == self.ifc_id:
-                obj.select_set(True)
-                bpy.context.view_layer.objects.active = obj
-        return {"FINISHED"}
-
-
 class ExportBcf(bpy.types.Operator):
     bl_idname = "bim.export_bcf"
     bl_label = "Export BCF"

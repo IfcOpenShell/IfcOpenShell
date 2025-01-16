@@ -955,6 +955,32 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
                         )
 
 
+class BIM_OT_select_entity(bpy.types.Operator):
+    bl_idname = "bim.select_entity"
+    bl_label = "Select Entity"
+    bl_options = {"REGISTER", "UNDO"}
+    ifc_id: bpy.props.IntProperty()
+    tooltip: bpy.props.StringProperty()
+
+    @classmethod
+    def description(cls, context, properties) -> str:
+        return properties.tooltip
+
+    def execute(self, context):
+        element = tool.Ifc.get_entity_by_id(self.ifc_id)
+        if not element:
+            self.report({"ERROR"}, f"No IFC element found with id #{self.ifc_id}.")
+            return {"CANCELLED"}
+
+        obj = tool.Ifc.get_object(element)
+        if not isinstance(obj, bpy.types.Object):
+            self.report({"ERROR"}, f"The following element is not present in the scene as Blender object: '{element}'.")
+            return {"CANCELLED"}
+
+        tool.Blender.set_objects_selection(context, obj, [obj], clear_previous_selection=True)
+        return {"FINISHED"}
+
+
 class BIM_OT_select_object(bpy.types.Operator):
     bl_idname = "bim.select_object"
     bl_label = "Select Object"
