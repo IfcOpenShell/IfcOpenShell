@@ -16,7 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import bpy
+import ifcopenshell
 import isodate
+import bonsai.tool as tool
 import bonsai.bim.helper
 from bpy.types import Panel, UIList
 from bonsai.bim.ifc import IfcStore
@@ -28,7 +31,7 @@ from bonsai.bim.module.sequence.data import (
     TaskICOMData,
     AnimationColorSchemeData,
 )
-from typing import Any
+from typing import Any, Optional
 
 
 class BIM_PT_status(Panel):
@@ -320,6 +323,7 @@ class BIM_PT_work_schedules(Panel):
         row.operator("bim.contract_all_tasks", text="Contract All")
         row = self.layout.row(align=True)
         self.draw_task_operators()
+        BIM_UL_tasks.draw_header(self.layout)
         self.layout.template_list(
             "BIM_UL_tasks",
             "",
@@ -814,10 +818,23 @@ class BIM_UL_product_output_tasks(UIList):
 
 
 class BIM_UL_tasks(UIList):
+    @classmethod
+    def draw_header(cls, layout: bpy.types.UILayout):
+        props = bpy.context.scene.BIMWorkScheduleProperties
+        row = layout.row(align=True)
+
+        split1 = row.split(factor=0.1)
+        split1.label(text="ID", icon="BLANK1")
+        split2 = split1.split(factor=0.9 - min(0.5, 0.15 * len(props.columns)))
+        split2.label(text="Name")
+        cls.draw_custom_columns(props, split2, header=True)
+
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
             self.props = context.scene.BIMWorkScheduleProperties
-            task = IfcStore.get_file().by_id(item.ifc_definition_id)
+            ifc_file = tool.Ifc.get()
+            # TODO: cache instead of accessing IFC directly.
+            task = ifc_file.by_id(item.ifc_definition_id)
             row = layout.row(align=True)
 
             self.draw_hierarchy(row, item)
@@ -827,7 +844,7 @@ class BIM_UL_tasks(UIList):
             split2 = split1.split(factor=0.9 - min(0.5, 0.15 * len(self.props.columns)))
             split2.prop(item, "name", emboss=False, text="")
 
-            self.draw_custom_columns(split2, item, task)
+            BIM_UL_tasks.draw_custom_columns(self.props, split2, item, task)
 
             if self.props.active_task_id and self.props.editing_task_type == "ATTRIBUTES":
                 row.prop(
@@ -860,7 +877,7 @@ class BIM_UL_tasks(UIList):
                     op = row.operator("bim.assign_successor", text="", icon="TRACKING_FORWARDS", emboss=False)
                 op.task = item.ifc_definition_id
 
-    def draw_order_operator(self, row, ifc_definition_id):
+    def draw_order_operator(self, row: bpy.types.UILayout, ifc_definition_id: int) -> None:
         task = SequenceData.data["tasks"][ifc_definition_id]
         if task["NestingIndex"] is not None:
             if task["NestingIndex"] == 0:
@@ -872,7 +889,7 @@ class BIM_UL_tasks(UIList):
                 op.task = ifc_definition_id
                 op.new_index = task["NestingIndex"] - 1
 
-    def draw_hierarchy(self, row, item):
+    def draw_hierarchy(self, row: bpy.types.UILayout, item: bpy.types.PropertyGroup) -> None:
         for i in range(0, item.level_index):
             row.label(text="", icon="BLANK1")
         if item.has_children:
@@ -887,37 +904,67 @@ class BIM_UL_tasks(UIList):
         else:
             row.label(text="", icon="DOT")
 
-    def draw_custom_columns(self, row, item, task):
-        for column in self.props.columns:
+    @classmethod
+    def draw_custom_columns(
+        cls,
+        props: bpy.types.PropertyGroup,
+        row: bpy.types.UILayout,
+        item: Optional[bpy.types.PropertyGroup] = None,
+        task: Optional[ifcopenshell.entity_instance] = None,
+        *,
+        header: bool = False,
+    ) -> None:
+        if not header:
+            assert item and task
+
+        for column in props.columns:
             if column.name == "IfcTaskTime.ScheduleStart":
-                if item.derived_start:
-                    row.label(text=item.derived_start + "*")
+                if header:
+                    row.label(text="Start")
                 else:
-                    row.prop(item, "start", emboss=False, text="")
+                    if item.derived_start:
+                        row.label(text=item.derived_start + "*")
+                    else:
+                        row.prop(item, "start", emboss=False, text="")
             elif column.name == "IfcTaskTime.ScheduleFinish":
-                if item.derived_finish:
-                    row.label(text=item.derived_finish + "*")
+                if header:
+                    row.label(text="Finish")
                 else:
-                    row.prop(item, "finish", emboss=False, text="")
+                    if item.derived_finish:
+                        row.label(text=item.derived_finish + "*")
+                    else:
+                        row.prop(item, "finish", emboss=False, text="")
             elif column.name == "IfcTaskTime.ScheduleDuration":
-                if item.derived_duration:
-                    row.label(text=item.derived_duration + "*")
+                if header:
+                    row.label(text="Duration")
                 else:
-                    row.prop(item, "duration", emboss=False, text="")
+                    if item.derived_duration:
+                        row.label(text=item.derived_duration + "*")
+                    else:
+                        row.prop(item, "duration", emboss=False, text="")
             elif column.name == "Controls.Calendar":
-                if item.derived_calendar:
-                    row.label(text=item.derived_calendar + "*")
+                if header:
+                    row.label(text="Calendar")
                 else:
-                    row.label(text=item.calendar or "-")
+                    if item.derived_calendar:
+                        row.label(text=item.derived_calendar + "*")
+                    else:
+                        row.label(text=item.calendar or "-")
             else:
                 ifc_class, name = column.name.split(".")
-                if ifc_class == "IfcTask":
-                    value = getattr(task, name)
-                elif ifc_class == "IfcTaskTime":
-                    value = getattr(task.TaskTime, name) if task.TaskTime else None
-                if value is None:
-                    value = "-"
-                row.label(text=str(value))
+                if header:
+                    row.label(text=name)
+                else:
+                    if ifc_class == "IfcTask":
+                        value = getattr(task, name)
+                    elif ifc_class == "IfcTaskTime":
+                        value = getattr(task.TaskTime, name) if task.TaskTime else None
+                    else:
+                        assert False, f"Unexpected ifc_class '{ifc_class}'."
+                    if value is None:
+                        value = "-"
+                    else:
+                        row.label(text=str(value))
 
 
 class BIM_PT_work_calendars(Panel):
