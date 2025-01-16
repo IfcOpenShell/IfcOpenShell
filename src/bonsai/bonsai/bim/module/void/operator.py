@@ -257,7 +257,7 @@ class SelectDecomposition(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BooleansMarkAsManual(bpy.types.Operator):
+class BooleansMarkAsManual(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.booleans_mark_as_manual"
     bl_label = "Mark Booleans as Manual"
     bl_options = {"REGISTER", "UNDO"}
@@ -280,7 +280,7 @@ class BooleansMarkAsManual(bpy.types.Operator):
         cls.poll_message_set("Need to select IFC element with representation")
         return False
 
-    def execute(self, context):
+    def _execute(self, context):
         obj = context.active_object
         element = tool.Ifc.get_entity(obj)
         representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
