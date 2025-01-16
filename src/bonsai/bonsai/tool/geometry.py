@@ -1261,12 +1261,28 @@ class Geometry(bonsai.core.tool.Geometry):
         [consider_inverses.append(colour := t) for t in getattr(representation_item, "HasColours", [])]
         [consider_inverses.append(texture := t) for t in getattr(representation_item, "HasTextures", [])]
 
+        representation = None
+        boolean_results_to_remove = set()
         for inverse in ifc_file.get_inverse(representation_item):
             if inverse.is_a("IfcShapeRepresentation"):
                 if inverse.OfShapeAspect:
                     shape_aspects.append(inverse.OfShapeAspect[0])
                 else:
                     representation = inverse
+            elif inverse.is_a("IfcBooleanResult"):
+                if inverse.SecondOperand == representation_item:
+                    other_operand = inverse.FirstOperand
+                else:
+                    other_operand = inverse.SecondOperand
+                for inverse2 in ifc_file.get_inverse(inverse):
+                    if inverse2.is_a("IfcBooleanResult"):
+                        if inverse2.FirstOperand == inverse:
+                            inverse2.FirstOperand = other_operand
+                        else:
+                            inverse2.SecondOperand = other_operand
+                    elif inverse2.is_a("IfcShapeRepresentation"):
+                        inverse2.Items = tuple(set(inverse2.Items) - {inverse} | {other_operand})
+                boolean_results_to_remove.add(inverse)
 
         if styled_item:
             consider_inverses.remove(styled_item)
@@ -1284,9 +1300,13 @@ class Geometry(bonsai.core.tool.Geometry):
         for shape_aspect in shape_aspects:
             cls.remove_representation_items_from_shape_aspect([representation_item], shape_aspect)
 
-        representation.Items = tuple(set(representation.Items) - {representation_item})
+        if representation:
+            representation.Items = tuple(set(representation.Items) - {representation_item})
         also_consider = list(consider_inverses)
         ifcopenshell.util.element.remove_deep2(ifc_file, representation_item, also_consider=also_consider)
+
+        for boolean_result in boolean_results_to_remove:
+            cls.remove_representation_item(boolean_result)
 
     @classmethod
     def create_shape_aspect(
