@@ -832,9 +832,7 @@ class BIM_UL_tasks(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
             self.props = context.scene.BIMWorkScheduleProperties
-            ifc_file = tool.Ifc.get()
-            # TODO: cache instead of accessing IFC directly.
-            task = ifc_file.by_id(item.ifc_definition_id)
+            task = SequenceData.data["tasks"][item.ifc_definition_id]
             row = layout.row(align=True)
 
             self.draw_hierarchy(row, item)
@@ -910,7 +908,7 @@ class BIM_UL_tasks(UIList):
         props: bpy.types.PropertyGroup,
         row: bpy.types.UILayout,
         item: Optional[bpy.types.PropertyGroup] = None,
-        task: Optional[ifcopenshell.entity_instance] = None,
+        task: Optional[dict[str, Any]] = None,
         *,
         header: bool = False,
     ) -> None:
@@ -956,9 +954,12 @@ class BIM_UL_tasks(UIList):
                     row.label(text=name)
                 else:
                     if ifc_class == "IfcTask":
-                        value = getattr(task, name)
+                        value = task[name]
                     elif ifc_class == "IfcTaskTime":
-                        value = getattr(task.TaskTime, name) if task.TaskTime else None
+                        if (task_time_id := task["TaskTime"]) is None:
+                            value = None
+                        else:
+                            value = SequenceData.data["task_times"][task_time_id][name]
                     else:
                         assert False, f"Unexpected ifc_class '{ifc_class}'."
                     if value is None:
