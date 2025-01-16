@@ -161,7 +161,7 @@ class FilledOpeningGenerator:
 
         voided_objs = [voided_obj]
         # Openings affect all subelements of an aggregate
-        for subelement in ifcopenshell.util.element.get_decomposition(element):
+        for subelement in tool.Aggregate.get_parts_recursively(element):
             subobj = tool.Ifc.get_object(subelement)
             if subobj:
                 voided_objs.append(subobj)
