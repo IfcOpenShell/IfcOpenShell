@@ -805,6 +805,8 @@ class DumbWallGenerator:
         )
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Parametric")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "Bonsai.DumbLayer2"})
+        material = ifcopenshell.util.element.get_material(element)
+        material.LayerSetDirection = "AXIS2"
         obj.select_set(True)
         return obj
 

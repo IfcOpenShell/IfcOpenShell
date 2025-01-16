@@ -188,10 +188,8 @@ class DumbSlabGenerator:
 
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Parametric")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "Bonsai.DumbLayer3"})
-
         material = ifcopenshell.util.element.get_material(element)
         material.LayerSetDirection = "AXIS3"
-
         obj.select_set(True)
         return obj
 
