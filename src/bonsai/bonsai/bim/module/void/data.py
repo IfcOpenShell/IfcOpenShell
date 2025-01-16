@@ -17,7 +17,9 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import ifcopenshell
 import bonsai.tool as tool
+from typing import Any, Generator, Union
 
 
 def refresh():
@@ -31,13 +33,25 @@ class VoidsData:
 
     @classmethod
     def load(cls):
-        cls.data = {"active_opening": cls.active_opening(), "openings": cls.openings(), "fillings": cls.fillings()}
+        cls.data = {
+            "active_opening": cls.active_opening(),
+            "openings": cls.openings(),
+            "fillings": cls.fillings(),
+            "voided_element": cls.voided_element(),
+            "filled_voids": cls.filled_voids(),
+        }
         cls.is_loaded = True
+
+    @classmethod
+    def get_element_data(cls, element: ifcopenshell.entity_instance) -> dict[str, Any]:
+        return {"id": element.id(), "Name": element.Name or "Unnamed"}
 
     @classmethod
     def active_opening(cls):
         element = tool.Ifc.get_entity(bpy.context.active_object)
+        cls.element = element
         if element and element.is_a("IfcOpeningElement"):
+            cls.element = element
             return element.id()
 
     @classmethod
@@ -51,8 +65,14 @@ class VoidsData:
             opening = rel.RelatedOpeningElement
             for rel2 in getattr(opening, "HasFillings", []) or []:
                 filling = rel2.RelatedBuildingElement
-                has_fillings.append({"id": filling.id(), "Name": filling.Name or "Unnamed"})
-            results.append({"id": opening.id(), "Name": opening.Name or "Unnamed", "HasFillings": has_fillings})
+                has_fillings.append(cls.get_element_data(filling))
+
+            results.append(
+                cls.get_element_data(opening)
+                | {
+                    "HasFillings": has_fillings,
+                }
+            )
         return results
 
     @classmethod
@@ -63,8 +83,33 @@ class VoidsData:
         results = []
         for rel in getattr(element, "HasFillings", []) or []:
             filling = rel.RelatedBuildingElement
-            results.append({"id": filling.id(), "Name": filling.Name or "Unnamed"})
+            results.append(cls.get_element_data(filling))
         return results
+
+    @classmethod
+    def get_voided_element_data(cls, opening: ifcopenshell.entity_instance) -> Union[dict[str, Any], None]:
+        voids_elements = None
+        if voids := opening.VoidsElements:
+            voided_element = voids[0].RelatingBuildingElement
+            voids_elements = cls.get_element_data(voided_element)
+        return voids_elements
+
+    @classmethod
+    def voided_element(cls) -> Union[dict[str, Any], None]:
+        if not (element := cls.element) or not element.is_a("IfcOpeningElement"):
+            return None
+        return cls.get_voided_element_data(element)
+
+    @classmethod
+    def filled_voids(cls) -> Union[dict[str, Any], None]:
+        if not (element := cls.element) or not (fills_voids := getattr(element, "FillsVoids", [])):
+            return None
+
+        opening = fills_voids[0].RelatingOpeningElement
+        result = cls.get_element_data(opening) | {
+            "VoidsElements": cls.get_voided_element_data(opening),
+        }
+        return result
 
 
 class BooleansData:

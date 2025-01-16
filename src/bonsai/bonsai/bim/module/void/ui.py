@@ -16,10 +16,20 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import bonsai.tool as tool
 from bpy.types import Panel, UIList
 from bonsai.bim.module.void.data import BooleansData, VoidsData
+from typing import Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import bpy._typing.rna_enums as rna_enums
+
+
+OPENING_ICON = "SELECT_SUBTRACT"
+FILLING_ICON = "SELECT_INTERSECT"
+VOIDED_ELEMENT_ICON = "SELECT_EXTEND"
 
 
 class BIM_PT_voids(Panel):
@@ -55,33 +65,52 @@ class BIM_PT_voids(Panel):
 
             if not VoidsData.data["fillings"]:
                 row = self.layout.row()
-                row.label(text="No Fillings", icon="SELECT_INTERSECT")
+                row.label(text="No Fillings", icon=FILLING_ICON)
 
             for filling in VoidsData.data["fillings"]:
                 row = self.layout.row(align=True)
-                row.label(text=filling["Name"], icon="SELECT_INTERSECT")
-                op = row.operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF")
-                op.ifc_id = filling["id"]
-                op.tooltip = "Select filling object."
+                self.draw_selectable_element_ui(row, filling, "filling", FILLING_ICON)
                 row.operator("bim.remove_filling", icon="X", text="").filling = filling["id"]
+
+            if voided := VoidsData.data["voided_element"]:
+                row = self.layout.row(align=True)
+                self.draw_selectable_element_ui(row, voided, "voided", VOIDED_ELEMENT_ICON)
+
         else:
             if not VoidsData.data["openings"]:
                 row = self.layout.row()
-                row.label(text="No Openings", icon="SELECT_SUBTRACT")
+                row.label(text="No Openings", icon=OPENING_ICON)
 
             for opening in VoidsData.data["openings"]:
                 if opening["HasFillings"]:
                     for filling in opening["HasFillings"]:
                         row = self.layout.row(align=True)
-                        row.label(text=opening["Name"], icon="SELECT_SUBTRACT")
-                        row.label(text=filling["Name"], icon="SELECT_INTERSECT")
-                        op = row.operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF")
-                        op.ifc_id = filling["id"]
-                        op.tooltip = "Select filling object."
+                        row.label(text=opening["Name"], icon=OPENING_ICON)
+                        self.draw_selectable_element_ui(row, filling, "filling", FILLING_ICON)
                 else:
                     row = self.layout.row(align=True)
-                    row.label(text=opening["Name"], icon="SELECT_SUBTRACT")
+                    row.label(text=opening["Name"], icon=OPENING_ICON)
                 row.operator("bim.remove_opening", icon="X", text="").opening_id = opening["id"]
+
+            if (opening := VoidsData.data["filled_voids"]) is None:
+                row = self.layout.row()
+                row.label(text="No Voids Filled", icon=VOIDED_ELEMENT_ICON)
+            else:
+                row = self.layout.row()
+                row.label(text="Voided Element:", icon=VOIDED_ELEMENT_ICON)
+                row = self.layout.row(align=True)
+                row.label(text=opening["Name"], icon=OPENING_ICON)
+                voided_element = opening["VoidsElements"]
+                if voided_element is not None:
+                    self.draw_selectable_element_ui(row, voided_element, "voided", VOIDED_ELEMENT_ICON)
+
+    def draw_selectable_element_ui(
+        self, layout: bpy.types.UILayout, element_data: dict[str, Any], object_hint: str, icon: rna_enums.IconItems
+    ) -> None:
+        layout.label(text=element_data["Name"], icon=icon)
+        op = layout.operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF")
+        op.ifc_id = element_data["id"]
+        op.tooltip = f"Select {object_hint} object."
 
 
 class BIM_PT_booleans(Panel):
