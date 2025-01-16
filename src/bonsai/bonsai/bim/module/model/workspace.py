@@ -117,6 +117,17 @@ class WallTool(BimTool):
     ifc_element_type = "IfcWallType"
 
 
+class RailingTool(BimTool):
+    bl_space_type = "VIEW_3D"
+    bl_context_mode = "OBJECT"
+    bl_idname = "bim.railing_tool"
+    bl_label = "Railing Tool"
+    bl_description = "Create and edit railings"
+    bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.railing")
+    bl_widget = None
+    ifc_element_type = "IfcRailingType"
+
+
 class SlabTool(BimTool):
     bl_space_type = "VIEW_3D"
     bl_context_mode = "OBJECT"
@@ -126,6 +137,17 @@ class SlabTool(BimTool):
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.slab")
     bl_widget = None
     ifc_element_type = "IfcSlabType"
+
+
+class RoofTool(BimTool):
+    bl_space_type = "VIEW_3D"
+    bl_context_mode = "OBJECT"
+    bl_idname = "bim.roof_tool"
+    bl_label = "Roof Tool"
+    bl_description = "Create and edit roofs"
+    bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.roof")
+    bl_widget = None
+    ifc_element_type = "IfcRoofType"
 
 
 class DoorTool(BimTool):
@@ -146,6 +168,28 @@ class WindowTool(BimTool):
     bl_label = "Window Tool"
     bl_description = "Create and edit windows"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.window")
+    bl_widget = None
+    ifc_element_type = "IfcWindowType"
+
+
+class FurnitureTool(BimTool):
+    bl_space_type = "VIEW_3D"
+    bl_context_mode = "OBJECT"
+    bl_idname = "bim.furniture_tool"
+    bl_label = "Furniture Tool"
+    bl_description = "Create and edit windows"
+    bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.furniture")
+    bl_widget = None
+    ifc_element_type = "IfcFurnitureType"
+
+
+class OpeningTool(BimTool):
+    bl_space_type = "VIEW_3D"
+    bl_context_mode = "OBJECT"
+    bl_idname = "bim.opening_tool"
+    bl_label = "Opening Tool"
+    bl_description = "Create and edit openings"
+    bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.opening")
     bl_widget = None
     ifc_element_type = "IfcWindowType"
 
