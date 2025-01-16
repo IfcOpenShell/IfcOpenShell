@@ -26,6 +26,7 @@ import numpy as np
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.geometry
+import ifcopenshell.api.void
 import ifcopenshell.geom
 import ifcopenshell.util.shape
 import ifcopenshell.util.element
@@ -1097,20 +1098,28 @@ class EditOpenings(Operator, tool.Ifc.Operator):
 class CloneOpening(Operator, tool.Ifc.Operator):
     bl_idname = "bim.clone_opening"
     bl_label = "Clone Opening"
-    bl_description = "Clone the selected Opening and assign to the selected Element"
+    bl_description = "Clone the active Opening object and assign to the selected Element"
     bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
-        objects = bpy.context.selected_objects
+    @classmethod
+    def poll(cls, context):
+        if len(context.selected_objects) != 2:
+            cls.poll_message_set("Exactly 2 objects must be selected.")
+            return False
+        return True
 
-        for obj in objects:
-            entity = tool.Ifc.get_entity(obj)
-            if entity.is_a() == "IfcWall":
-                wall = entity
-                continue
-            if entity.is_a() == "IfcOpeningElement":
-                opening = entity
-                continue
+    def _execute(self, context):
+        # NOTE: Operator displayed in UI only with IfcOpeningElement being active.
+        ifc_file = tool.Ifc.get()
+        objects = bpy.context.selected_objects
+        opening_obj = context.active_object
+        assert opening_obj
+        opening = tool.Ifc.get_entity(opening_obj)
+        assert opening and opening.is_a("IfcOpeningElement")
+
+        voided_obj = next(o for o in objects if o != opening_obj)
+        voided_element = tool.Ifc.get_entity(voided_obj)
+        assert voided_element
 
         opening_placement = opening.ObjectPlacement
         opening_representation = opening.Representation
@@ -1118,7 +1127,7 @@ class CloneOpening(Operator, tool.Ifc.Operator):
         new_opening = ifcopenshell.api.run("root.create_entity", tool.Ifc.get(), ifc_class="IfcOpeningElement")
         new_opening.Representation = opening_representation
 
-        ifcopenshell.api.run("void.add_opening", tool.Ifc.get(), opening=new_opening, element=wall)
+        ifcopenshell.api.void.add_opening(ifc_file, opening=new_opening, element=voided_element)
         new_opening.ObjectPlacement = opening_placement
         return {"FINISHED"}
 

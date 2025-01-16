@@ -217,8 +217,18 @@ class CableTool(BimTool):
 
 
 def add_layout_hotkey_operator(
-    layout: bpy.types.UILayout, text: str, hotkey: str, description: Union[str, None], ui_context: str = ""
+    layout: bpy.types.UILayout,
+    text: str,
+    hotkey: str,
+    description: Union[str, None],
+    ui_context: str = "",
+    *,
+    operator: str = "bim.hotkey",
 ) -> bpy.types.OperatorProperties:
+    """
+    :param operator: Operator to display in UI. Displaying the specific operator in UI can be useful
+        to provide poll error messages.
+    """
     parts = hotkey.split("_") if hotkey else []
     modifier, key = (parts + ["", ""])[:2]
 
@@ -227,7 +237,7 @@ def add_layout_hotkey_operator(
     modifier_icon, modifier_str = MODIFIERS.get(modifier, ("NONE", ""))
 
     row = layout.row(align=True)
-    op = row.operator("bim.hotkey", text=op_text, icon_value=custom_icon)
+    op = row.operator(operator, text=op_text, icon_value=custom_icon)
 
     if ui_context != "TOOL_HEADER":
         row.label(text="", icon=modifier_icon)
@@ -236,11 +246,12 @@ def add_layout_hotkey_operator(
     hotkey_description = f"Hotkey: {modifier_str} {key}".strip()
     description = "\n\n".join(filter(None, [description, hotkey_description]))
 
-    op.hotkey = hotkey
-    if ui_context == "TOOL_HEADER":
-        op.description = text + "\n" + description
-    else:
-        op.description = description
+    if operator == "bim.hotkey":
+        op.hotkey = hotkey
+        if ui_context == "TOOL_HEADER":
+            op.description = text + "\n" + description
+        else:
+            op.description = description
     return op
 
 
@@ -804,12 +815,8 @@ class EditObjectUI:
             op_text = "" if IS_TOOL_HEADER else "Edit Openings"
             row.operator("bim.edit_openings", icon="CHECKMARK", text=op_text)
             row.operator("bim.hide_openings", icon="CANCEL", text="")
-            if len(context.selected_objects) == 2:
-                row = cls.layout.row(align=True)
-                row.label(text="", icon="EVENT_SHIFT")
-                row.label(text="", icon="EVENT_L")
-                row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
-                row.operator("bim.clone_opening", text="Clone Opening")
+            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+            add_layout_hotkey_operator(row, "Clone Opening", "S_L", "", ui_context, operator="bim.clone_opening")
 
     @classmethod
     def draw_align(cls, context):
