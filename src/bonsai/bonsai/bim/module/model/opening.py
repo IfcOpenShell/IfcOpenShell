@@ -45,7 +45,7 @@ from bpy.types import SpaceView3D
 from bpy.props import FloatProperty
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
 from gpu_extras.batch import batch_for_shader
-from typing import Union, Optional, Any, cast
+from typing import Union, Optional, Any, cast, Sequence
 
 
 class AddFilledOpening(bpy.types.Operator, tool.Ifc.Operator):
@@ -63,19 +63,21 @@ class AddFilledOpening(bpy.types.Operator, tool.Ifc.Operator):
 class FilledOpeningGenerator:
     def generate(
         self,
-        filling_obj: Union[bpy.types.Object, None],
-        voided_obj: Union[bpy.types.Object, None],
+        filling_obj: bpy.types.Object,
+        voided_obj: bpy.types.Object,
         target: Optional[Vector] = None,
-    ) -> None:
+    ) -> Union[None, str]:
+        """
+        :param target: Target opening position. If ommited, cursor position is used.
+        :return: None if there was no errors, otherwise returns a string with error message.
+        """
         props = bpy.context.scene.BIMModelProperties
         opening_thickness_si = 0.0
 
         filling = tool.Ifc.get_entity(filling_obj)
         element = tool.Ifc.get_entity(voided_obj)
 
-        if not voided_obj or not filling_obj:
-            return
-
+        assert filling and element
         if filling.FillsVoids:
             ifcopenshell.api.run(
                 "void.remove_opening", tool.Ifc.get(), opening=filling.FillsVoids[0].RelatingOpeningElement
@@ -94,7 +96,7 @@ class FilledOpeningGenerator:
                 target = filling_obj.matrix_world.translation.copy()
                 raycast = voided_obj.closest_point_on_mesh(voided_obj.matrix_world.inverted() @ target, distance=0.5)
                 if not raycast[0]:
-                    return
+                    return "TARGET is too far away from the voided object's mesh."
 
             # In this prototype, we assume openings are only added to axis-based elements
             layers = tool.Model.get_material_layer_parameters(element)
@@ -121,6 +123,8 @@ class FilledOpeningGenerator:
                 new_matrix.translation.xyz = voided_obj.matrix_world @ local_position_on_voided_obj
                 rotation_matrix = Matrix.Rotation(radians(-90), 4, "X")
                 new_matrix @= rotation_matrix
+            else:
+                assert False, f"Unexpected layer set direction: {layers['layer_set_direction']}"
 
             filling_obj.matrix_world = new_matrix
             bpy.context.view_layer.update()
@@ -149,6 +153,7 @@ class FilledOpeningGenerator:
             representation = ifcopenshell.util.representation.get_representation(
                 existing_opening_occurrence, "Model", "Body", "MODEL_VIEW"
             )
+            assert representation
             representation = ifcopenshell.util.representation.resolve_representation(representation)
         else:
             representation = self.generate_opening_from_filling(
@@ -175,8 +180,10 @@ class FilledOpeningGenerator:
         for voided_obj in voided_objs:
             if voided_obj.data:
                 voided_element = tool.Ifc.get_entity(voided_obj)
+                assert voided_element
                 context = tool.Geometry.get_active_representation_context(voided_obj)
                 representation = tool.Geometry.get_representation_by_context(voided_element, context)
+                assert representation
 
                 bonsai.core.geometry.switch_representation(
                     tool.Ifc,
@@ -273,11 +280,12 @@ class FilledOpeningGenerator:
             )
             filling_obj = tool.Ifc.get_object(filling_type)
         context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
+        assert context
 
         if profile:
             profile = ifcopenshell.util.representation.resolve_representation(profile)
 
-            def get_curve_2d_from_3d(profile):
+            def get_curve_2d_from_3d(profile: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
                 if len(profile.Items) == 1:
                     curve_3d = profile.Items[0]
                     if tool.Ifc.get_schema() == "IFC2X3":
@@ -944,7 +952,7 @@ class UpdateOpeningsFocus(Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
-def hide_openings(context, objects):
+def hide_openings(context: bpy.types.Context, objects: Sequence[bpy.types.Object]) -> None:
     objects_to_remove = set()
     for opening_prop in context.scene.BIMModelProperties.openings:
         opening_obj = opening_prop.obj
@@ -1008,10 +1016,12 @@ class EditOpenings(Operator, tool.Ifc.Operator):
         bpy.ops.bim.update_openings_focus()
         return {"FINISHED"}
 
-    def get_buildings_and_openings(self, context):
+    def get_buildings_and_openings(
+        self, context: bpy.types.Context
+    ) -> tuple[set[bpy.types.Object], set[ifcopenshell.entity_instance]]:
         props = context.scene.BIMModelProperties
-        building_objs = set()
-        opening_elements = set()
+        building_objs: set[bpy.types.Object] = set()
+        opening_elements: set[ifcopenshell.entity_instance] = set()
         objects_to_remove = set()
         if self.apply_all:
             for opening_prop in props.openings:
@@ -1045,8 +1055,10 @@ class EditOpenings(Operator, tool.Ifc.Operator):
         tool.Blender.remove_data_blocks(objects_to_remove, remove_unused_data=True)
         return building_objs, opening_elements
 
-    def edit_openings(self, building_objs, opening_elements):
-        objects_to_remove = set()
+    def edit_openings(
+        self, building_objs: set[bpy.types.Object], opening_elements: set[ifcopenshell.entity_instance]
+    ) -> None:
+        objects_to_remove: set[bpy.types.Object] = set()
         for opening_element in opening_elements:
             opening_obj = tool.Ifc.get_object(opening_element)
 

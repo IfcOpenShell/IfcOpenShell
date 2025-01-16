@@ -662,26 +662,28 @@ class Model(bonsai.core.tool.Model):
                 return "PROFILE"
 
     @classmethod
-    def get_wall_axis(cls, obj: bpy.types.Object, layers: Optional[dict[str, Any]] = None) -> dict[str, Any]:
+    def get_wall_axis(
+        cls, obj: bpy.types.Object, layers: Optional[dict[str, Any]] = None
+    ) -> dict[str, tuple[Vector, Vector]]:
         x_values = [v[0] for v in obj.bound_box]
         min_x = min(x_values)
         max_x = max(x_values)
         axes = {}
         if layers:
             axes = {
-                "base": [
+                "base": (
                     (obj.matrix_world @ Vector((min_x, layers["offset"], 0.0))).to_2d(),
                     (obj.matrix_world @ Vector((max_x, layers["offset"], 0.0))).to_2d(),
-                ],
-                "side": [
+                ),
+                "side": (
                     (obj.matrix_world @ Vector((min_x, layers["offset"] + layers["thickness"], 0.0))).to_2d(),
                     (obj.matrix_world @ Vector((max_x, layers["offset"] + layers["thickness"], 0.0))).to_2d(),
-                ],
+                ),
             }
-        axes["reference"] = [
+        axes["reference"] = (
             (obj.matrix_world @ Vector((min_x, 0.0, 0.0))).to_2d(),
             (obj.matrix_world @ Vector((max_x, 0.0, 0.0))).to_2d(),
-        ]
+        )
         return axes
 
     @classmethod
