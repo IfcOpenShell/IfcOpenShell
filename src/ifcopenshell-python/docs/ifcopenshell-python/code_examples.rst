@@ -162,7 +162,7 @@ Get the distribution system of an element
 
 .. code-block:: python
 
-    import ifcopenshell.util.classification
+    import ifcopenshell.util.system
 
     pipe = model.by_type("IfcPipeSegment")[0]
     # Elements may be assigned to multiple systems simultaneously, such as electrical, hydraulic, etc
