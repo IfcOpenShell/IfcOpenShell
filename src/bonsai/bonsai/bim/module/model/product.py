@@ -107,6 +107,9 @@ class AddDefaultType(bpy.types.Operator, tool.Ifc.Operator):
         elif self.ifc_element_type == "IfcRoofType":
             props.ifc_predefined_type = "HIP_ROOF"
             props.representation_template = "ROOF"
+        elif self.ifc_element_type == "IfcStairType":
+            props.ifc_predefined_type = "STRAIGHT_RUN_STAIR"
+            props.representation_template = "STAIR"
         bpy.ops.bim.add_element()
 
 

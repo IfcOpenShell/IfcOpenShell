@@ -172,15 +172,48 @@ class WindowTool(BimTool):
     ifc_element_type = "IfcWindowType"
 
 
+class StairTool(BimTool):
+    bl_space_type = "VIEW_3D"
+    bl_context_mode = "OBJECT"
+    bl_idname = "bim.stair_tool"
+    bl_label = "Stair Tool"
+    bl_description = "Create and edit stairs"
+    bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.stair")
+    bl_widget = None
+    ifc_element_type = "IfcStairType"
+
+
+class RampTool(BimTool):
+    bl_space_type = "VIEW_3D"
+    bl_context_mode = "OBJECT"
+    bl_idname = "bim.ramp_tool"
+    bl_label = "Ramp Tool"
+    bl_description = "Create and edit ramps"
+    bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.ramp")
+    bl_widget = None
+    ifc_element_type = "IfcRampType"
+
+
 class FurnitureTool(BimTool):
     bl_space_type = "VIEW_3D"
     bl_context_mode = "OBJECT"
     bl_idname = "bim.furniture_tool"
     bl_label = "Furniture Tool"
-    bl_description = "Create and edit windows"
+    bl_description = "Create and edit furniture"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.furniture")
     bl_widget = None
     ifc_element_type = "IfcFurnitureType"
+
+
+class LightFixtureTool(BimTool):
+    bl_space_type = "VIEW_3D"
+    bl_context_mode = "OBJECT"
+    bl_idname = "bim.light_fixture_tool"
+    bl_label = "Furniture Tool"
+    bl_description = "Create and edit light fixtures"
+    bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.lightfixture")
+    bl_widget = None
+    ifc_element_type = "IfcLightFixtureType"
 
 
 class OpeningTool(BimTool):
@@ -221,7 +254,7 @@ class DuctTool(BimTool):
     bl_context_mode = "OBJECT"
     bl_idname = "bim.duct_tool"
     bl_label = "Duct Tool"
-    bl_description = "Create and edit ducks"  # No, not a typo.
+    bl_description = "Create and edit duct segments"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.duct")
     bl_widget = None
     ifc_element_type = "IfcDuctSegmentType"
