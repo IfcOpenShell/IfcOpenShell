@@ -1148,6 +1148,7 @@ if(ADD_COMMIT_SHA)
             message("git found: ${GIT_EXECUTABLE} with version ${GIT_VERSION_STRING}")
             execute_process(
                 COMMAND ${GIT_EXECUTABLE} branch -a --contains HEAD
+                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                 OUTPUT_VARIABLE git_branches
                 OUTPUT_STRIP_TRAILING_WHITESPACE
             )
@@ -1164,13 +1165,19 @@ if(ADD_COMMIT_SHA)
         endif()
 
         execute_process(
-            COMMAND "${GIT_EXECUTABLE}" rev-parse --short HEAD
-	    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+            COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
             OUTPUT_VARIABLE git_sha
             OUTPUT_STRIP_TRAILING_WHITESPACE
         )
+
         message(STATUS "IfcOpenShell branch: \"${git_branch}\"")
         message(STATUS "IfcOpenShell commit: \"${git_sha}\"")
+
+        if ("${git_branch}" STREQUAL "" OR "${git_sha}" STREQUAL "")
+            message(FATAL_ERROR "Unable to determine commit sha and/or branch")
+        endif()
+
         add_definitions(-DIFCOPENSHELL_BRANCH=${git_branch})
         add_definitions(-DIFCOPENSHELL_COMMIT=${git_sha})
     endif()
