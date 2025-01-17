@@ -17,6 +17,7 @@ jobs:
                          sqlite-devel bzip2-devel zlib-devel openssl-devel xz-devel      \
                          readline-devel ncurses-devel libffi-devel libuuid-devel git-lfs \
                          findutils
+          git config --global --add safe.directory '*'
 
       - name: Install aws cli
         run: |
