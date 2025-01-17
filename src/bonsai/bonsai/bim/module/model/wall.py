@@ -618,6 +618,8 @@ class DumbWallGenerator:
         polyline_points = extrusion.SweptArea.OuterCurve.Points.CoordList
         polyline_points = [[(v * self.unit_scale) for v in p] for p in polyline_points]
         polyline_points = [slab_obj.matrix_world @ Vector((p[0], p[1], elevation)) for p in polyline_points]
+        if not tool.Cad.is_counter_clockwise_order(polyline_points[0], polyline_points[1], polyline_points[2]):
+            polyline_points = polyline_points[::-1]
         is_polyline_closed = True
         walls = []
         for i in range(len(polyline_points) - 1):
