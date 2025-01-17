@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import os
 import re
 import bpy
@@ -24,7 +25,9 @@ import base64
 import pystache
 import mathutils
 import webbrowser
+import isodate
 import ifcopenshell
+import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.sequence
 import ifcopenshell.util.date
 import ifcopenshell.util.element
@@ -34,7 +37,11 @@ import bonsai.tool as tool
 import bonsai.bim.helper
 from dateutil import parser
 from datetime import datetime
-from typing import Optional, Any, Union, Literal
+from datetime import time as datetime_time
+from typing import Optional, Any, Union, Literal, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import bonsai.bim.prop
 
 
 class Sequence(bonsai.core.tool.Sequence):
@@ -344,19 +351,23 @@ class Sequence(bonsai.core.tool.Sequence):
     def load_task_time_attributes(cls, task_time: ifcopenshell.entity_instance) -> None:
         import bonsai.bim.module.sequence.helper as helper
 
-        def callback(name, prop, data):
+        def callback(
+            name: str, prop: Union[bonsai.bim.prop.Attribute, None], data: dict[str, Any]
+        ) -> Union[bool, None]:
             if prop and prop.data_type == "string":
-                duration_props = bpy.context.scene.BIMWorkScheduleProperties.durations_attributes.add()
-                duration_props.name = name
-                if prop.is_null:
-                    for key in duration_props.keys():
-                        if key != "name":
-                            setattr(duration_props, key, 0)
-                    return True
-                if name in ["ScheduleDuration", "ActualDuration", "FreeFloat", "TotalFloat"] and data[name]:
-                    for key, value in helper.parse_duration_as_blender_props(data[name]).items():
-                        duration_props[key] = value
-                    return True
+                # TODO: Check actual attribute type instead of providing attribute names.
+                if name in ("ScheduleDuration", "ActualDuration", "FreeFloat", "TotalFloat"):
+                    duration_props = bpy.context.scene.BIMWorkScheduleProperties.durations_attributes.add()
+                    duration_props.name = name
+                    if prop.is_null:
+                        for key in duration_props.keys():
+                            if key != "name":
+                                setattr(duration_props, key, 0)
+                        return True
+                    if data[name]:
+                        for key, value in helper.parse_duration_as_blender_props(data[name]).items():
+                            duration_props[key] = value
+                        return True
             if isinstance(data[name], datetime):
                 prop.string_value = "" if prop.is_null else data[name].isoformat()
                 return True
@@ -1713,3 +1724,16 @@ class Sequence(bonsai.core.tool.Sequence):
     def get_animation_color_scheme(cls):
         if len(bpy.context.scene.BIMAnimationProperties.saved_color_schemes) > 0:
             return tool.Ifc.get().by_id(int(bpy.context.scene.BIMAnimationProperties.saved_color_schemes))
+
+    @classmethod
+    def parse_isodate_datetime(cls, datetime_str: str, include_time: bool) -> datetime:
+        if include_time:
+            return isodate.parse_datetime(datetime_str)
+        date = isodate.parse_date(datetime_str)
+        return datetime.combine(date, datetime_time())
+
+    @classmethod
+    def isodate_datetime(cls, datetime_: datetime, include_time: bool) -> str:
+        if include_time:
+            return isodate.datetime_isoformat(datetime_)
+        return isodate.date_isoformat(datetime_)

@@ -38,6 +38,7 @@ def parse_duration(value):
 
 
 def canonicalise_time(time: Union[datetime, None]) -> str:
+    """Actualy canonicalises datetime as just a date, time is not included."""
     if not time:
         return "-"
     return time.strftime("%d/%m/%y")

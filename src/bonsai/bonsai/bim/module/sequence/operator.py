@@ -1178,27 +1178,45 @@ class Bonsai_DatePicker(bpy.types.Operator):
     bl_label = "Date Picker"
     bl_idname = "bim.datepicker"
     bl_options = {"REGISTER", "UNDO"}
-    display_date: bpy.props.StringProperty(name="Display Date")
     target_prop: bpy.props.StringProperty(name="Target date prop to set")
+    # TODO: base it on property type.
+    include_time: bpy.props.BoolProperty(name="Include Time", default=True)
+
+    if TYPE_CHECKING:
+        target_prop: str
+        include_time: bool
 
     def execute(self, context):
+        selected_date = context.scene.DatePickerProperties.selected_date
         try:
-            value = parser.parse(context.scene.DatePickerProperties.selected_date, dayfirst=True, fuzzy=True)
-            self.set_scene_prop(self.target_prop, helper.canonicalise_time(value))
-        except:
-            pass
-        return {"FINISHED"}
+            # Just to make sure the date is valid.
+            tool.Sequence.parse_isodate_datetime(selected_date, self.include_time)
+            self.set_scene_prop(self.target_prop, selected_date)
+            return {"FINISHED"}
+        except Exception as e:
+            self.report({"ERROR"}, f"Provided date is invalid: '{selected_date}'. Exception: {str(e)}.")
+            return {"CANCELLED"}
 
     def draw(self, context):
-        current_date = parser.parse(context.scene.DatePickerProperties.display_date, dayfirst=True, fuzzy=True)
-        current_month = (current_date.year, current_date.month)
+        props = context.scene.DatePickerProperties
+        display_date = tool.Sequence.parse_isodate_datetime(props.display_date, False)
+        current_month = (display_date.year, display_date.month)
         lines = calendar.monthcalendar(*current_month)
         month_title, week_titles = calendar.month(*current_month).splitlines()[:2]
 
         layout = self.layout
         row = layout.row()
-        row.prop(context.scene.DatePickerProperties, "selected_date")
+        row.prop(props, "selected_date", text="Date")
 
+        # Time.
+        if self.include_time:
+            row = layout.row()
+            row.label(text="Time:")
+            row.prop(props, "selected_hour", text="H")
+            row.prop(props, "selected_min", text="M")
+            row.prop(props, "selected_sec", text="S")
+
+        # Month.
         split = layout.split()
         col = split.row()
         op = col.operator("bim.redraw_datepicker", icon="TRIA_LEFT", text="")
@@ -1210,12 +1228,14 @@ class Bonsai_DatePicker(bpy.types.Operator):
         op = col.operator("bim.redraw_datepicker", icon="TRIA_RIGHT", text="")
         op.action = "next"
 
+        # Day of week.
         row = layout.row(align=True)
         for title in week_titles.split():
             col = row.column(align=True)
             col.alignment = "CENTER"
             col.label(text=title.strip())
 
+        # Days calendar.
         for line in lines:
             row = layout.row(align=True)
             for i in line:
@@ -1223,15 +1243,31 @@ class Bonsai_DatePicker(bpy.types.Operator):
                 if i == 0:
                     col.label(text="  ")
                 else:
+                    selected_date = datetime(year=display_date.year, month=display_date.month, day=i)
                     op = col.operator("bim.datepicker_setdate", text="{:2d}".format(i))
-                    selected_date = "{}/{}/{}".format(i, current_date.month, current_date.year)
-                    selected_date = parser.parse(selected_date, dayfirst=True, fuzzy=True)
-                    op.selected_date = helper.canonicalise_time(selected_date)
+                    if self.include_time:
+                        selected_date = selected_date.replace(
+                            hour=props.selected_hour, minute=props.selected_min, second=props.selected_sec
+                        )
+                    op.selected_date = tool.Sequence.isodate_datetime(selected_date, self.include_time)
 
     def invoke(self, context, event):
-        self.display_date = self.get_scene_prop(self.target_prop) or helper.canonicalise_time(datetime.now())
-        context.scene.DatePickerProperties.display_date = self.display_date
-        context.scene.DatePickerProperties.selected_date = self.display_date
+        props = context.scene.DatePickerProperties
+        current_date_str = self.get_scene_prop(self.target_prop)
+        if current_date_str:
+            current_date = tool.Sequence.parse_isodate_datetime(current_date_str, self.include_time)
+        else:
+            current_date = datetime.now()
+            # Seconds of the moment when datepicker opened will probably only annoy users.
+            current_date = current_date.replace(second=0)
+
+        if self.include_time:
+            props["selected_hour"] = current_date.hour
+            props["selected_min"] = current_date.minute
+            props["selected_sec"] = current_date.second
+
+        props.display_date = tool.Sequence.isodate_datetime(current_date.replace(day=1), False)
+        props.selected_date = tool.Sequence.isodate_datetime(current_date, self.include_time)
         return context.window_manager.invoke_props_dialog(self)
 
     def get_scene_prop(self, prop_path: str) -> str:
@@ -1261,15 +1297,15 @@ class Bonsai_RedrawDatePicker(bpy.types.Operator):
     action: bpy.props.StringProperty()
 
     def invoke(self, context, event):
-        current_date = parser.parse(context.scene.DatePickerProperties.display_date, dayfirst=True, fuzzy=True)
+        props = context.scene.DatePickerProperties
+        current_date = tool.Sequence.parse_isodate_datetime(props.display_date, False)
 
         if self.action == "previous":
             date_to_set = current_date - relativedelta.relativedelta(months=1)
-        elif self.action == "next":
+        else:  # "next".
             date_to_set = current_date + relativedelta.relativedelta(months=1)
 
-        context.scene.DatePickerProperties.display_date = helper.canonicalise_time(date_to_set)
-
+        props.display_date = tool.Sequence.isodate_datetime(date_to_set, False)
         return {"FINISHED"}
 
 

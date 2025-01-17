@@ -520,9 +520,23 @@ class BIMWorkCalendarProperties(PropertyGroup):
     end_time: StringProperty(name="End Time")
 
 
+def update_selected_date(self: "DatePickerProperties", context: bpy.types.Context) -> None:
+    # `include_time` is `True`, otherwise time props are not displayed in UI.
+    include_time = True
+    selected_date = tool.Sequence.parse_isodate_datetime(self.selected_date, include_time)
+    selected_date = selected_date.replace(hour=self.selected_hour, minute=self.selected_min, second=self.selected_sec)
+    self.selected_date = tool.Sequence.isodate_datetime(selected_date, include_time)
+
+
 class DatePickerProperties(PropertyGroup):
-    display_date: StringProperty(name="Display Date")
+    display_date: StringProperty(
+        name="Display Date",
+        description="Needed to keep track of what month is currently opened in date picker without affecting the currently selected date.",
+    )
     selected_date: StringProperty(name="Selected Date")
+    selected_hour: IntProperty(min=0, max=23, update=update_selected_date)
+    selected_min: IntProperty(min=0, max=59, update=update_selected_date)
+    selected_sec: IntProperty(min=0, max=59, update=update_selected_date)
 
 
 class BIMDateTextProperties(PropertyGroup):
