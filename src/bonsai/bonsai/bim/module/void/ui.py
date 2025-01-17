@@ -156,7 +156,6 @@ class BIM_PT_booleans(Panel):
                 row.operator("bim.disable_editing_booleans", icon="CANCEL", text="")
             else:
                 row.operator("bim.enable_editing_booleans", icon="IMPORT", text="")
-            row.operator("bim.add_boolean", text="", icon="ADD")
             booleans_are_manual = len(manual_booleans) == len(total_booleans)
             op = row.operator(
                 "bim.booleans_mark_as_manual", text="", icon="PINNED" if booleans_are_manual else "UNPINNED"
@@ -172,6 +171,10 @@ class BIM_PT_booleans(Panel):
 
         if not props.is_editing:
             return
+
+        row = layout.row(align=True)
+        row.prop(props, "operator", text="")
+        row.operator("bim.add_boolean", text="", icon="ADD")
 
         self.layout.template_list("BIM_UL_booleans", "", props, "booleans", props, "active_boolean_index")
 

@@ -18,7 +18,7 @@
 
 import bpy
 from bpy.types import PropertyGroup
-from bpy.props import PointerProperty, StringProperty, IntProperty, BoolProperty, CollectionProperty
+from bpy.props import PointerProperty, StringProperty, IntProperty, BoolProperty, CollectionProperty, EnumProperty
 
 
 class Boolean(PropertyGroup):
@@ -36,3 +36,12 @@ class BIMBooleanProperties(PropertyGroup):
     is_editing: BoolProperty(name="Is Editing", default=False)
     booleans: CollectionProperty(name="Booleans", type=Boolean)
     active_boolean_index: IntProperty(name="Active Boolean Index")
+    operator: EnumProperty(
+        items=[
+            ("DIFFERENCE", "DIFFERENCE", ""),
+            ("INTERSECTION", "INTERSECTION", ""),
+            ("UNION", "UNION", ""),
+        ],
+        name="Operator",
+        default="DIFFERENCE",
+    )

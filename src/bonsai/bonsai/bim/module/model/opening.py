@@ -532,77 +532,59 @@ class AddBoolean(Operator, tool.Ifc.Operator):
         return True
 
     def _execute(self, context):
-        ifc_file = tool.Ifc.get()
-        ifc_objects: list[bpy.types.Object] = []
-        non_ifc_objects: list[bpy.types.Object] = []
-        for obj in context.selected_objects:
-            if tool.Ifc.get_entity(obj):
-                ifc_objects.append(obj)
-            else:
-                non_ifc_objects.append(obj)
-
-        if not non_ifc_objects:
-            self.report({"INFO"}, "At least 1 non-ifc object should be selected to be added as a boolean.")
+        first_obj = tool.Blender.get_active_object()
+        if not tool.Geometry.is_representation_item(first_obj):
+            self.report({"INFO"}, "At least two representation items must be selected to add a boolean.")
+            return {"CANCELLED"}
+        second_objs = [
+            o for o in tool.Blender.get_selected_objects() if o != first_obj and tool.Geometry.is_representation_item(o)
+        ]
+        if not second_objs:
+            self.report({"INFO"}, "At least two representation items must be selected to add a boolean.")
             return {"CANCELLED"}
 
-        if len(ifc_objects) != 1:
-            self.report(
-                {"INFO"},
-                f"Only 1 IFC object need to be selected to add booleans to, currently selected {len(ifc_objects)} IFC objects.",
-            )
-            return {"CANCELLED"}
+        props = context.scene.BIMBooleanProperties
 
-        ifc_obj = ifc_objects[0]
+        first_item = tool.Ifc.get().by_id(first_obj.data.BIMMeshProperties.ifc_definition_id)
 
-        representation = tool.Geometry.get_active_representation(ifc_obj)
-        if not representation:
-            self.report({"INFO"}, "No representation found for the selected IFC object.")
-            return {"FINISHED"}
+        while True:
+            is_part_of_boolean = False
+            for inverse in tool.Ifc.get().get_inverse(first_item):
+                if inverse.is_a("IfcBooleanResult"):
+                    is_part_of_boolean = True
+                    first_item = inverse
+            if not is_part_of_boolean:
+                break
 
-        # Apply objects as booleans.
-        booleans = []
-        for boolean_obj in non_ifc_objects:
-            if (
-                not boolean_obj.data
-                or not isinstance(boolean_obj.data, bpy.types.Mesh)
-                or len(boolean_obj.data.polygons) <= 4
-            ):  # It takes 4 faces to create a closed solid
-                mesh_data = {
-                    "type": "IfcHalfSpaceSolid",
-                    "matrix": ifc_obj.matrix_world.inverted() @ boolean_obj.matrix_world,
-                }
-            else:
-                mesh_data = {
-                    "type": "Mesh",
-                    "blender_obj": ifc_obj,
-                    "blender_void": boolean_obj,
-                }
-
-            booleans_ = ifcopenshell.api.geometry.add_boolean(
-                ifc_file,
-                representation=representation,
-                operator="DIFFERENCE",
-                **mesh_data,
-            )
-            booleans.extend(booleans_)
-
-        element = tool.Ifc.get_entity(ifc_obj)
-        assert element
-        tool.Model.mark_manual_booleans(element, booleans)
-
-        bonsai.core.geometry.switch_representation(
-            tool.Ifc,
-            tool.Geometry,
-            obj=ifc_obj,
-            representation=representation,
-            should_reload=True,
-            is_global=True,
-            should_sync_changes_first=False,
+        # Don't replace style or aspect relationships.
+        to_replace = set(
+            [
+                i
+                for i in tool.Ifc.get().get_inverse(first_item)
+                if i.is_a("IfcShapeRepresentation") or i.is_a("IfcBooleanResult")
+            ]
         )
 
-        tool.Blender.remove_data_blocks(non_ifc_objects, remove_unused_data=True)
-        tool.Model.purge_scene_openings()
-        return {"FINISHED"}
+        first = first_item
+
+        booleans = set()
+        for second_obj in second_objs:
+            second = tool.Ifc.get().by_id(second_obj.data.BIMMeshProperties.ifc_definition_id)
+            for inverse in tool.Ifc.get().get_inverse(second):
+                if inverse.is_a("IfcShapeRepresentation"):
+                    inverse.Items = list(set(inverse.Items) - {second})
+            first = tool.Ifc.get().create_entity("IfcBooleanResult", props.operator, first, second)
+            booleans.add(first)
+
+        for inverse in to_replace:
+            ifcopenshell.util.element.replace_attribute(inverse, first_item, first)
+
+        rep_obj = bpy.context.scene.BIMGeometryProperties.representation_obj
+        rep_element = tool.Ifc.get_entity(rep_obj)
+        tool.Model.mark_manual_booleans(rep_element, booleans)
+        tool.Geometry.reload_representation(rep_obj)
+        if props.is_editing:
+            bpy.ops.bim.enable_editing_booleans()
 
 
 class ShowBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
