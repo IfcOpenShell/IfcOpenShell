@@ -57,6 +57,8 @@ class ItemDecorator:
         verts = []
         edges = []
         tris = []
+        special_verts = []
+        special_edges = []
 
         if len(obj.data.loop_triangles) > 0:
             verts = [tuple(obj.matrix_world @ v.co) for v in obj.data.vertices]
@@ -81,7 +83,26 @@ class ItemDecorator:
         ]
         edges = bbox_edges
         verts.extend(bbox_verts)
-        return {"verts": verts, "edges": edges, "tris": tris}
+
+        if "HalfSpaceSolid" in obj.name:
+            # Arrow shape
+            special_verts = [
+                tuple(obj.matrix_world @ Vector((0, 0, 0))),
+                tuple(obj.matrix_world @ Vector((0, 0, 0.5))),
+                tuple(obj.matrix_world @ Vector((0.05, 0, 0.45))),
+                tuple(obj.matrix_world @ Vector((-0.05, 0, 0.45))),
+                tuple(obj.matrix_world @ Vector((0, 0.05, 0.45))),
+                tuple(obj.matrix_world @ Vector((0, -0.05, 0.45))),
+            ]
+            special_edges = [(0, 1), (1, 2), (1, 3), (1, 4), (1, 5)]
+
+        return {
+            "verts": verts,
+            "edges": edges,
+            "tris": tris,
+            "special_verts": special_verts,
+            "special_edges": special_edges,
+        }
 
     @classmethod
     def uninstall(cls):
@@ -157,11 +178,14 @@ class ItemDecorator:
                         continue
                     self.draw_batch("LINES", data["verts"], selected_elements_color, data["edges"])
                     self.draw_batch("TRIS", data["verts"], transparent_color(selected_elements_color), data["tris"])
+                    self.draw_batch("LINES", data["special_verts"], selected_elements_color, data["special_edges"])
                 elif self.obj_is_boolean[obj_name]:
                     self.draw_batch("LINES", data["verts"], special_elements_color, data["edges"])
                     self.draw_batch("TRIS", data["verts"], transparent_color(special_elements_color), data["tris"])
+                    self.draw_batch("LINES", data["special_verts"], special_elements_color, data["special_edges"])
                 else:
                     self.draw_batch(
                         "LINES", data["verts"], transparent_color(unselected_elements_color, alpha=0.2), data["edges"]
                     )
                     self.draw_batch("TRIS", data["verts"], transparent_color(special_elements_color), data["tris"])
+                    self.draw_batch("LINES", data["special_verts"], special_elements_color, data["special_edges"])

@@ -309,6 +309,8 @@ class BIM_MT_add_representation_item(Menu):
                 "ICOSPHERE"
             )
             self.layout.operator("bim.add_meshlike_item", icon="MESH_CYLINDER", text="Mesh Cylinder").shape = "CYLINDER"
+            self.layout.separator()
+            self.layout.operator("bim.add_half_space_solid_item", icon="ORIENTATION_NORMAL", text="Half Space Solid")
 
         if ItemData.data["representation_type"] in ("SolidModel", "SweptSolid"):
             self.layout.operator(
@@ -317,6 +319,8 @@ class BIM_MT_add_representation_item(Menu):
             self.layout.operator(
                 "bim.add_swept_area_solid_item", icon="MESH_CYLINDER", text="Extruded Area Solid Cylinder"
             ).shape = "CYLINDER"
+            self.layout.separator()
+            self.layout.operator("bim.add_half_space_solid_item", icon="ORIENTATION_NORMAL", text="Half Space Solid")
 
         if ItemData.data["representation_type"] in ("Annotation2D"):
             self.layout.operator("bim.add_curvelike_item", icon="IPO_CONSTANT", text="Polycurve").shape = "LINE"

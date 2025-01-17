@@ -2933,6 +2933,64 @@ class AddCurvelikeItem(bpy.types.Operator, tool.Ifc.Operator):
         tool.Geometry.import_item_attributes(obj)
 
 
+class AddHalfSpaceSolidItem(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.add_half_space_solid_item"
+    bl_label = "Add Half Space Solid Item"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        if (
+            not tool.Blender.get_selected_objects()
+            or not (active_obj := tool.Blender.get_active_object())
+            or not tool.Geometry.is_representation_item(active_obj)
+        ):
+            # In theory we can have half space solid as a top level item but let's not go there today.
+            self.report({"ERROR"}, "Select an item to apply the half space solid to.")
+            return {"CANCELLED"}
+
+        props = context.scene.BIMGeometryProperties
+        mesh = bpy.data.meshes.new("Tmp")
+        obj = bpy.data.objects.new("Tmp", mesh)
+        scene = bpy.context.scene
+        scene.collection.objects.link(obj)
+        bpy.context.view_layer.objects.active = obj
+        obj.select_set(True)
+        new = props.item_objs.add()
+        new.obj = obj
+
+        matrix = props.representation_obj.matrix_world.copy()
+        matrix.translation = context.scene.cursor.location
+        local_matrix = props.representation_obj.matrix_world.inverted() @ matrix
+
+        obj.show_in_front = True
+        obj.matrix_world = matrix
+        tool.Geometry.record_object_position(obj)
+
+        ifc_file = tool.Ifc.get()
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+        local_z = ifc_file.createIfcDirection((0.0, 0.0, 1.0))
+        local_x = ifc_file.createIfcDirection((1.0, 0.0, 0.0))
+        point = ifc_file.createIfcCartesianPoint((np.array(local_matrix.translation) / unit_scale).tolist())
+        placement = ifc_file.createIfcAxis2Placement3D(point, local_z, local_x)
+        plane = ifc_file.createIfcPlane(placement)
+        item = ifc_file.createIfcHalfSpaceSolid(plane, AgreementFlag=False)
+
+        representation = tool.Geometry.get_active_representation(props.representation_obj)
+        representation = ifcopenshell.util.representation.resolve_representation(representation)
+
+        representation.Items = list(representation.Items) + [item]
+        tool.Geometry.reload_representation(bpy.context.scene.BIMGeometryProperties.representation_obj)
+
+        obj.name = obj.data.name = f"Item/{item.is_a()}/{item.id()}"
+        obj.data.BIMMeshProperties.ifc_definition_id = item.id()
+        tool.Geometry.import_item(obj)
+
+        # TODO refactor to core and not rely on selection
+        tool.Blender.select_and_activate_single_object(context, active_obj)
+        tool.Blender.select_object(obj)
+        bpy.ops.bim.add_boolean()
+
+
 class OverrideMoveAggregateMacro(bpy.types.Macro):
     bl_idname = "bim.override_move_aggregate_macro"
     bl_label = "IFC Move Aggregate"

@@ -22,6 +22,7 @@ from bpy.app.handlers import persistent
 
 classes = (
     operator.AddCurvelikeItem,
+    operator.AddHalfSpaceSolidItem,
     operator.AddMeshlikeItem,
     operator.AddRepresentation,
     operator.AddSweptAreaSolidItem,
