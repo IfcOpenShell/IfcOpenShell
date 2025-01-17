@@ -1217,16 +1217,21 @@ class Bonsai_DatePicker(bpy.types.Operator):
             row.prop(props, "selected_sec", text="S")
 
         # Month.
+        month_delta = relativedelta.relativedelta(months=1)
         split = layout.split()
         col = split.row()
-        op = col.operator("bim.redraw_datepicker", icon="TRIA_LEFT", text="")
-        op.action = "previous"
+        op = col.operator("wm.context_set_string", icon="TRIA_LEFT", text="")
+        op.data_path = "scene.DatePickerProperties.display_date"
+        op.value = tool.Sequence.isodate_datetime(display_date - month_delta, False)
+
         col = split.row()
         col.label(text=month_title.strip())
+
         col = split.row()
         col.alignment = "RIGHT"
-        op = col.operator("bim.redraw_datepicker", icon="TRIA_RIGHT", text="")
-        op.action = "next"
+        op = col.operator("wm.context_set_string", icon="TRIA_RIGHT", text="")
+        op.data_path = "scene.DatePickerProperties.display_date"
+        op.value = tool.Sequence.isodate_datetime(display_date + month_delta, False)
 
         # Day of week.
         row = layout.row(align=True)
@@ -1248,12 +1253,13 @@ class Bonsai_DatePicker(bpy.types.Operator):
                 else:
                     selected_date = datetime(year=display_date.year, month=display_date.month, day=i)
                     is_current_date = current_selected_date == selected_date
-                    op = col.operator("bim.datepicker_setdate", text="{:2d}".format(i), depress=is_current_date)
+                    op = col.operator("wm.context_set_string", text="{:2d}".format(i), depress=is_current_date)
                     if self.include_time:
                         selected_date = selected_date.replace(
                             hour=props.selected_hour, minute=props.selected_min, second=props.selected_sec
                         )
-                    op.selected_date = tool.Sequence.isodate_datetime(selected_date, self.include_time)
+                    op.data_path = "scene.DatePickerProperties.selected_date"
+                    op.value = tool.Sequence.isodate_datetime(selected_date, self.include_time)
 
     def invoke(self, context, event):
         props = context.scene.DatePickerProperties
@@ -1281,36 +1287,6 @@ class Bonsai_DatePicker(bpy.types.Operator):
     def set_scene_prop(self, prop_path: str, value: str) -> None:
         scene = bpy.context.scene
         tool.Blender.set_prop_from_path(scene, prop_path, value)
-
-
-class Bonsai_DatePickerSetDate(bpy.types.Operator):
-    bl_label = "Set Date"
-    bl_idname = "bim.datepicker_setdate"
-    bl_options = {"REGISTER", "UNDO"}
-    selected_date: bpy.props.StringProperty()
-
-    def invoke(self, context, event):
-        context.scene.DatePickerProperties.selected_date = self.selected_date
-        return {"FINISHED"}
-
-
-class Bonsai_RedrawDatePicker(bpy.types.Operator):
-    bl_label = "Redraw Datepicker Window"
-    bl_idname = "bim.redraw_datepicker"
-    bl_options = {"REGISTER", "UNDO"}
-    action: bpy.props.StringProperty()
-
-    def invoke(self, context, event):
-        props = context.scene.DatePickerProperties
-        current_date = tool.Sequence.parse_isodate_datetime(props.display_date, False)
-
-        if self.action == "previous":
-            date_to_set = current_date - relativedelta.relativedelta(months=1)
-        else:  # "next".
-            date_to_set = current_date + relativedelta.relativedelta(months=1)
-
-        props.display_date = tool.Sequence.isodate_datetime(date_to_set, False)
-        return {"FINISHED"}
 
 
 class RecalculateSchedule(bpy.types.Operator, tool.Ifc.Operator):
