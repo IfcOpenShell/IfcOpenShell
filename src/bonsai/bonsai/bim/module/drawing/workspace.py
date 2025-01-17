@@ -306,7 +306,9 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
                 tool.Drawing,
                 drawing=tool.Ifc.get_entity(bpy.context.scene.camera),
                 object_type=object_type,
-                relating_type=tool.Ifc.get().by_id(int(props.relating_type_id)) if props.relating_type_id != "0" else None,
+                relating_type=(
+                    tool.Ifc.get().by_id(int(props.relating_type_id)) if props.relating_type_id != "0" else None
+                ),
                 enable_editing=False,
             )
             tool.Drawing.setup_annotation_object(obj, object_type, related_object)
