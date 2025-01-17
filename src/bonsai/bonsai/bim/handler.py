@@ -30,6 +30,9 @@ from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.owner.prop import get_user_person, get_user_organisation
 from bonsai.bim.module.model.data import AuthoringData
 from bonsai.bim.module.model.workspace import LIST_OF_TOOLS, TOOLS_TO_CLASSES_MAP
+from bonsai.bim.module.aggregate.decorator import AggregateDecorator
+from bonsai.bim.module.georeference.decorator import GeoreferenceDecorator
+from bonsai.bim.module.model.decorator import WallAxisDecorator, SlabDirectionDecorator
 from mathutils import Vector
 from math import cos, degrees
 from typing import Union, Callable
@@ -316,3 +319,18 @@ def load_post(scene):
 
     if tool.Ifc.get() and bpy.data.is_saved:
         bpy.context.scene.BIMProperties.has_blend_warning = True
+
+    # Bonsai overlays
+    georeference_props = bpy.context.scene.BIMGeoreferenceProperties
+    aggregate_props = bpy.context.scene.BIMAggregateProperties
+    model_props = bpy.context.scene.BIMModelProperties
+    if aggregate_props.aggregate_decorator:
+        AggregateDecorator.install(bpy.context)
+    if georeference_props.should_visualise:
+        GeoreferenceDecorator.install(bpy.context)
+    if model_props.show_wall_axis:
+        WallAxisDecorator.install(bpy.context)
+    if model_props.show_slab_direction:
+        SlabDirectionDecorator.install(bpy.context)
+        
+
