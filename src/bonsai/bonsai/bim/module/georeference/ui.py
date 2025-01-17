@@ -25,11 +25,20 @@ from bonsai.bim.module.georeference.data import GeoreferenceData
 class BIM_PT_gis(Panel):
     bl_label = "Georeferencing"
     bl_idname = "BIM_PT_gis"
-    bl_options = {"DEFAULT_CLOSED"}
+    bl_options = {"DEFAULT_CLOSED", "HEADER_LAYOUT_EXPAND"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_parent_id = "BIM_PT_tab_geometry"
+
+    def draw_header(self, context):
+        props = context.scene.BIMGeoreferenceProperties
+        row = self.layout.row(align=True)
+        icon = "HIDE_OFF" if props.should_visualise else "HIDE_ON"
+        row.label(text="")  # empty text occupies the left of the row
+        if props.should_visualise:
+            row.prop(props, "visualization_scale", text="Size", slider=True)
+        row.prop(props, "should_visualise", icon=icon, text="")
 
     def draw(self, context):
         self.layout.use_property_split = True
@@ -87,19 +96,14 @@ class BIM_PT_gis(Panel):
         if not GeoreferenceData.data["projected_crs"]:
             row = self.layout.row(align=True)
             row.label(text="Not Georeferenced", icon="ERROR")
-            row = self.layout.row(align=True)
-            row.prop(props, "should_visualise", icon="HIDE_OFF")
-            row.prop(props, "visualization_scale", text="Size", slider=True)
             if tool.Ifc.get_schema() != "IFC2X3":
+                row = self.layout.row(align=True)
                 row.prop(props, "coordinate_operation_class", text="")
                 row.operator("bim.add_georeferencing", icon="ADD", text="")
 
         if GeoreferenceData.data["projected_crs"]:
             row = self.layout.row(align=True)
             row.label(text="Projected CRS", icon="WORLD")
-            row = self.layout.row(align=True)
-            row.prop(props, "should_visualise", icon="HIDE_OFF")
-            row.prop(props, "visualization_scale", text="Size", slider=True)
             if tool.Ifc.get_schema() != "IFC2X3":
                 row.operator("bim.enable_editing_georeferencing", icon="GREASEPENCIL", text="")
                 row.operator("bim.remove_georeferencing", icon="X", text="")
