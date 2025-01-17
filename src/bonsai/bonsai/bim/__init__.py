@@ -259,6 +259,7 @@ def register():
     bpy.app.translations.register("bonsai", translations_dict)
 
     import bonsai.tool as tool
+
     tool.Blender.ensure_bin_in_path()
 
 

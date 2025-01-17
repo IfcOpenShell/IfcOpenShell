@@ -390,8 +390,8 @@ class ObjectLog(bpy.types.Operator):
 
 class InstallGit(bpy.types.Operator):
     """Install Git Version Control System from the
-Windows Package Manager Community Repository,
-requires restarting Blender after installation"""
+    Windows Package Manager Community Repository,
+    requires restarting Blender after installation"""
 
     bl_label = "Install Git"
     bl_idname = "ifcgit.install_git"
