@@ -1423,27 +1423,33 @@ class AddAnnotation(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_annotation"
     bl_label = "Add Annotation"
     bl_options = {"REGISTER", "UNDO"}
-    object_type: bpy.props.StringProperty()
-    data_type: bpy.props.StringProperty()
     description: bpy.props.StringProperty()
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file() and context.scene.camera
+        return tool.Ifc.get() and context.scene.camera
 
     @classmethod
     def description(cls, context, operator):
         return operator.description or ""
 
     def _execute(self, context):
-        drawing = tool.Ifc.get_entity(context.scene.camera)
-        if not drawing:
+        props = bpy.context.scene.BIMAnnotationProperties
+        if not (drawing := tool.Ifc.get_entity(context.scene.camera)):
             self.report({"WARNING"}, "Not a BIM camera")
             return
 
-        r = core.add_annotation(tool.Ifc, tool.Collector, tool.Drawing, drawing=drawing, object_type=self.object_type)
-        if isinstance(r, str):
-            self.report({"WARNING"}, r)
+        obj = core.add_annotation(
+            tool.Ifc,
+            tool.Collector,
+            tool.Drawing,
+            drawing=drawing,
+            object_type=props.object_type,
+            relating_type=tool.Ifc.get().by_id(int(props.relating_type_id)) if props.relating_type_id != "0" else None,
+            enable_editing=True,
+        )
+        if props.object_type == "IMAGE":
+            bpy.ops.bim.add_reference_image("INVOKE_DEFAULT", use_existing_object_by_name=obj.name)
 
 
 class AddSheet(bpy.types.Operator, tool.Ifc.Operator):

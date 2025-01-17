@@ -406,7 +406,9 @@ def add_annotation(
     drawing_tool: tool.Drawing,
     drawing: ifcopenshell.entity_instance,
     object_type: str,
-) -> None:
+    relating_type: ifcopenshell.entity_instance,
+    enable_editing: bool = False,
+) -> bpy.types.Object:
     target_view = drawing_tool.get_drawing_target_view(drawing)
     context = drawing_tool.get_annotation_context(target_view, object_type)
     if not context:
@@ -416,17 +418,24 @@ def add_annotation(
     obj = drawing_tool.create_annotation_object(drawing, object_type)
     element = ifc.get_entity(obj)
     if not element:
+        relating_type_rep = drawing_tool.get_annotation_representation(relating_type) if relating_type else None
         element = drawing_tool.run_root_assign_class(
             obj=obj,
             ifc_class="IfcAnnotation",
             predefined_type=object_type,
-            should_add_representation=True,
+            should_add_representation=not relating_type_rep,
             context=context,
             ifc_representation_class=drawing_tool.get_ifc_representation_class(object_type),
         )
+        if relating_type:
+            drawing_tool.run_type_assign_type(element=element, relating_type=relating_type)
         ifc.run("group.assign_group", group=drawing_tool.get_drawing_group(drawing), products=[element])
+    if representation := drawing_tool.get_representation(element, context):
+        drawing_tool.reload_representation(obj=obj, representation=representation)
     collector.assign(obj, should_clean_users_collection=True)
-    drawing_tool.enable_editing(obj)
+    if not relating_type_rep and object_type != "IMAGE" and enable_editing:
+        drawing_tool.enable_editing(obj)
+    return obj
 
 
 def build_schedule(drawing: tool.Drawing, schedule: ifcopenshell.entity_instance) -> None:

@@ -20,7 +20,9 @@
 import os
 import bpy
 import bonsai.core.type
+import bonsai.core.drawing as core
 import bonsai.tool as tool
+import ifcopenshell.util.representation
 from bonsai.bim.module.drawing.data import DecoratorData, AnnotationData
 from bonsai.bim.helper import prop_with_search
 from bpy.types import WorkSpaceTool
@@ -161,12 +163,12 @@ def create_annotation_occurrence(context):
     obj = tool.Drawing.create_annotation_object(drawing, object_type)
     obj.name = relating_type.Name
     ifc_context = tool.Drawing.get_annotation_context(tool.Drawing.get_drawing_target_view(drawing), object_type)
-    relating_type_repr = tool.Drawing.get_annotation_representation(relating_type)
+    relating_type_rep = tool.Drawing.get_annotation_representation(relating_type)
     element = tool.Drawing.run_root_assign_class(
         obj=obj,
         ifc_class="IfcAnnotation",
         predefined_type=object_type,
-        should_add_representation=not bool(relating_type_repr),
+        should_add_representation=not relating_type_rep,
         context=ifc_context,
         ifc_representation_class=tool.Drawing.get_ifc_representation_class(object_type),
     )
@@ -175,27 +177,23 @@ def create_annotation_occurrence(context):
 
     tool.Ifc.run("group.assign_group", group=tool.Drawing.get_drawing_group(drawing), products=[element])
     tool.Collector.assign(obj)
-    tool.Blender.select_and_activate_single_object(context, obj)
 
-    if relating_type_repr is None and props.object_type == "IMAGE":
+    if relating_type_rep is None and props.object_type == "IMAGE":
         bpy.ops.bim.add_reference_image("INVOKE_DEFAULT", use_existing_object_by_name=obj.name)
 
-
-def create_annotation():
-    props = bpy.context.scene.BIMAnnotationProperties
-    if props.relating_type_id != "0":
-        create_annotation_occurrence(bpy.context)
-    else:
-        object_type = props.object_type
-        if not bpy.ops.bim.add_annotation.poll():
-            return
-        bpy.ops.bim.add_annotation(
-            object_type=object_type, data_type=tool.Drawing.ANNOTATION_TYPES_DATA[object_type][-1]
+    if representation := ifcopenshell.util.representation.get_representation(element, ifc_context):
+        bonsai.core.geometry.switch_representation(
+            tool.Ifc,
+            tool.Geometry,
+            obj=obj,
+            representation=representation,
+            should_reload=True,
+            is_global=True,
+            should_sync_changes_first=False,
         )
-        if props.object_type == "IMAGE":
-            bpy.ops.bim.add_reference_image(
-                "INVOKE_DEFAULT", use_existing_object_by_name=bpy.context.active_object.name
-            )
+
+    if obj.data and not relating_type_rep:
+        tool.Drawing.enable_editing(obj)
 
 
 class AnnotationToolUI:
@@ -294,21 +292,28 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
 
     def hotkey_S_T(self):
         props = bpy.context.scene.BIMAnnotationProperties
-        annotation_type = props.object_type
+        object_type = props.object_type
 
-        if annotation_type not in tool.Drawing.ANNOTATION_TYPES_SUPPORT_SETUP:
-            self.report({"ERROR"}, f"Annotation type {annotation_type} is not supported for tagging.")
+        if object_type not in tool.Drawing.ANNOTATION_TYPES_SUPPORT_SETUP:
+            self.report({"ERROR"}, f"Annotation type {object_type} is not supported for tagging.")
             return
 
         related_objects = bpy.context.selected_objects
         for related_object in related_objects:
-            create_annotation()
-            obj = bpy.context.active_object
-            bpy.ops.object.mode_set(mode="OBJECT")
-            tool.Drawing.setup_annotation_object(obj, annotation_type, related_object)
+            obj = core.add_annotation(
+                tool.Ifc,
+                tool.Collector,
+                tool.Drawing,
+                drawing=tool.Ifc.get_entity(bpy.context.scene.camera),
+                object_type=object_type,
+                relating_type=tool.Ifc.get().by_id(int(props.relating_type_id)) if props.relating_type_id != "0" else None,
+                enable_editing=False,
+            )
+            tool.Drawing.setup_annotation_object(obj, object_type, related_object)
 
     def hotkey_S_A(self):
-        create_annotation()
+        if bpy.ops.bim.add_annotation.poll():
+            bpy.ops.bim.add_annotation()
 
     def hotkey_S_E(self):
         if not bpy.context.active_object:

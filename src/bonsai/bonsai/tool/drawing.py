@@ -348,11 +348,15 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def enable_editing(cls, obj: bpy.types.Object) -> None:
-        bpy.ops.object.select_all(action="DESELECT")
-        bpy.context.view_layer.objects.active = obj
-        obj.select_set(True)
-        if obj.data:
-            bpy.ops.object.mode_set(mode="EDIT")
+        from bonsai.bim.module.geometry.data import ViewportData
+
+        tool.Blender.select_and_activate_single_object(bpy.context, obj)
+        if not obj.data:
+            return
+        ViewportData.load()  # Reload valid modes
+        bpy.ops.bim.override_mode_set_edit()  # Enter item mode
+        ViewportData.load()  # Reload valid modes
+        bpy.ops.bim.override_mode_set_edit()  # Enter edit mode
 
     @classmethod
     def enable_editing_drawings(cls) -> None:
@@ -987,6 +991,26 @@ class Drawing(bonsai.core.tool.Drawing):
             context=context,
             ifc_representation_class=ifc_representation_class,
         )
+
+    @classmethod
+    def run_type_assign_type(cls, element: ifcopenshell.entity_instance, relating_type: ifcopenshell.entity_instance):
+        return bonsai.core.type.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
+
+    @classmethod
+    def reload_representation(cls, obj: bpy.types.Object, representation: ifcopenshell.entity_instance):
+        return bonsai.core.geometry.switch_representation(
+            tool.Ifc,
+            tool.Geometry,
+            obj=obj,
+            representation=representation,
+            should_reload=True,
+            is_global=True,
+            should_sync_changes_first=False,
+        )
+
+    @classmethod
+    def get_representation(cls, element, context):
+        return ifcopenshell.util.representation.get_representation(element, context)
 
     @classmethod
     def set_drawing_collection_name(
