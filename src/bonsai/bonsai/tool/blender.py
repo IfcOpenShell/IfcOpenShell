@@ -21,6 +21,7 @@ import bpy
 import bmesh
 import json
 import os
+import platform
 from ifcopenshell import entity_instance
 import ifcopenshell.api
 import ifcopenshell.util.element
@@ -429,6 +430,18 @@ class Blender(bonsai.core.tool.Blender):
         if blender_path.is_absolute():
             return blender_path
         return bpy.path.abspath("//") / blender_path
+
+    @classmethod
+    def ensure_bin_in_path(cls) -> None:
+        """Check 'bin' folder is in PATH, if not add for this session"""
+        bin_dir = str(Path(__file__).parent.parent.resolve() / "libs" / "bin")
+        current_path = os.environ["PATH"]
+        if bin_dir not in current_path:
+            if platform.system() == "Windows":
+                path_separator = ";"
+            else:
+                path_separator = ":"
+            os.environ["PATH"] = current_path + path_separator + bin_dir
 
     @classmethod
     def get_default_selection_keypmap(cls) -> tuple:

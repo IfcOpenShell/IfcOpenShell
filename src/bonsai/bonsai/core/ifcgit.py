@@ -138,12 +138,3 @@ def install_git(ifcgit: tool.IfcGit, operator: bpy.types.Operator) -> None:
         ifcgit.install_git_windows(operator=operator)
     else:
         print("install_git() not implemented")
-
-
-def install_ifcmerge(ifcgit: tool.IfcGit, operator: bpy.types.Operator) -> None:
-    if platform.system() == "Windows":
-        ifcgit.install_ifcmerge_windows(name_exe="ifcmerge.exe", operator=operator)
-    elif platform.system() == "Linux":
-        ifcgit.install_ifcmerge_linux(name_exe="ifcmerge", operator=operator)
-    elif platform.system() == "Darwin":
-        print("install_ifcmerge() not implemented")

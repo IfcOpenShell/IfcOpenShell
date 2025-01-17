@@ -30,19 +30,10 @@ class IFCGIT_PT_panel(bpy.types.Panel):
             if platform.system() == "Windows":
                 row.operator(
                     "ifcgit.install_git",
-                    text="Install Git from Microsoft Store",
+                    text="Install Git",
                     icon="PACKAGE",
                 )
             return
-        elif not IfcGitData.data["ifcmerge_exe"]:
-            # TODO check if ifcmerge is up-to-date
-            row = layout.row()
-            row.label(text="ifcmerge is not installed", icon="ERROR")
-            row.operator(
-                "ifcgit.install_ifcmerge",
-                text="Install ifcmerge",
-                icon="PACKAGE",
-            )
 
         props = context.scene.IfcGitProperties
 

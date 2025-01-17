@@ -389,7 +389,9 @@ class ObjectLog(bpy.types.Operator):
 
 
 class InstallGit(bpy.types.Operator):
-    """Installs Git if possible"""
+    """Install Git Version Control System from the
+Windows Package Manager Community Repository,
+requires restarting Blender after installation"""
 
     bl_label = "Install Git"
     bl_idname = "ifcgit.install_git"
@@ -404,18 +406,5 @@ class InstallGit(bpy.types.Operator):
 
     def execute(self, context):
         core.install_git(tool.IfcGit, self)
-        refresh()
-        return {"FINISHED"}
-
-
-class InstallIfcmerge(bpy.types.Operator):
-    """Installs ifcmerge if possible"""
-
-    bl_label = "Install ifcmerge"
-    bl_idname = "ifcgit.install_ifcmerge"
-    bl_options = {"REGISTER"}
-
-    def execute(self, context):
-        core.install_ifcmerge(tool.IfcGit, self)
         refresh()
         return {"FINISHED"}
