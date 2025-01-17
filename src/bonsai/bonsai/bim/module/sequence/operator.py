@@ -1236,6 +1236,9 @@ class Bonsai_DatePicker(bpy.types.Operator):
             col.label(text=title.strip())
 
         # Days calendar.
+        current_selected_date = tool.Sequence.parse_isodate_datetime(props.selected_date, self.include_time)
+        current_selected_date = current_selected_date.replace(hour=0, minute=0, second=0)
+
         for line in lines:
             row = layout.row(align=True)
             for i in line:
@@ -1244,7 +1247,8 @@ class Bonsai_DatePicker(bpy.types.Operator):
                     col.label(text="  ")
                 else:
                     selected_date = datetime(year=display_date.year, month=display_date.month, day=i)
-                    op = col.operator("bim.datepicker_setdate", text="{:2d}".format(i))
+                    is_current_date = current_selected_date == selected_date
+                    op = col.operator("bim.datepicker_setdate", text="{:2d}".format(i), depress=is_current_date)
                     if self.include_time:
                         selected_date = selected_date.replace(
                             hour=props.selected_hour, minute=props.selected_min, second=props.selected_sec
