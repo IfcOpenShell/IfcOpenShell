@@ -3032,6 +3032,8 @@ class OverrideMoveAggregate(bpy.types.Operator):
             if parts:
                 aggregates_to_move.append(tool.Ifc.get_object(element))
                 continue
+            if not parts and props.in_aggregate_mode:
+                continue                
             aggregate = ifcopenshell.util.element.get_aggregate(element)
             if aggregate:
                 aggregates_to_move.append(tool.Ifc.get_object(aggregate))
