@@ -3026,7 +3026,7 @@ class OverrideMoveAggregate(bpy.types.Operator):
                 obj.select_set(False)
                 continue
             element = tool.Ifc.get_entity(obj)
-            if not element or not element.is_a("IfcElement") or props.in_aggregate_mode:
+            if not element or not element.is_a("IfcElement"):
                 continue
             parts = ifcopenshell.util.element.get_parts(element)
             if parts:
@@ -3039,9 +3039,8 @@ class OverrideMoveAggregate(bpy.types.Operator):
         aggregates_to_move = set(aggregates_to_move)
         for obj in aggregates_to_move:
             obj.select_set(True)
-            if parts := ifcopenshell.util.element.get_parts(tool.Ifc.get_entity(obj)):
-                for part in parts:
-                    part_obj = tool.Ifc.get_object(part)
-                    part_obj.select_set(True)
+            for part in tool.Aggregate.get_parts_recursively(tool.Ifc.get_entity(obj)):
+                part_obj = tool.Ifc.get_object(part)
+                part_obj.select_set(True)
             self.new_active_obj = obj
         return {"FINISHED"}
