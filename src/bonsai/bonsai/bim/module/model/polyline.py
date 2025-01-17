@@ -81,7 +81,7 @@ def get_wall_preview_data(context, relating_type):
     unit_system = tool.Drawing.get_unit_system()
     factor = 1
     if unit_system == "IMPERIAL":
-        factor = 3.048
+        factor = 3.28084
     if unit_system == "METRIC":
         unit_length = context.scene.unit_settings.length_unit
         if unit_length == "MILLIMETERS":
