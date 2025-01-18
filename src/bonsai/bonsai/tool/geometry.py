@@ -1742,6 +1742,8 @@ class Geometry(bonsai.core.tool.Geometry):
             cls.unlock_object(props.representation_obj)
             tool.Blender.set_active_object(props.representation_obj)
             cls.sync_item_positions()
+            representation = cls.get_active_representation(props.representation_obj)
+            ifcopenshell.api.geometry.validate_type(tool.Ifc.get(), representation)
             props.is_changing_mode = True
             if props.mode != "OBJECT":
                 props.mode = "OBJECT"
