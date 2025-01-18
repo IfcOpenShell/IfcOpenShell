@@ -987,20 +987,8 @@ class ShapeBuilder:
         if not isinstance(items, collections.abc.Iterable):
             items = [items]
 
-        item_types = set([i.is_a() for i in items])
         if not representation_type:
-            if "IfcSweptDiskSolid" in item_types:
-                representation_type = "AdvancedSweptSolid"
-            elif "IfcExtrudedAreaSolid" in item_types:
-                representation_type = "SweptSolid"
-            elif "IfcCsgSolid" in item_types:
-                representation_type = "CSG"
-            elif items[0].is_a("IfcTessellatedItem"):
-                representation_type = "Tessellation"
-            elif items[0].is_a("IfcCurve") and items[0].Dim == 3:
-                representation_type = "Curve3D"
-            else:
-                representation_type = "Curve2D"
+            representation_type = ifcopenshell.util.representation.guess_type(items)
 
         representation = self.file.createIfcShapeRepresentation(
             ContextOfItems=context,

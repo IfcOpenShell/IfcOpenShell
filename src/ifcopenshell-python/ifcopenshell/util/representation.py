@@ -20,7 +20,7 @@ import numpy as np
 import numpy.typing as npt
 import ifcopenshell
 import ifcopenshell.util.placement
-from typing import Optional, Union, TypedDict, Literal, Iterator
+from typing import Optional, Union, TypedDict, Literal, Iterator, Iterable
 
 
 CONTEXT_TYPE = Literal["Model", "Plan", "NotDefined"]
@@ -142,6 +142,147 @@ def get_representation(
     for r in get_representations_iter(element):  # type: ignore
         if is_representation_of_context(r, context, subcontext, target_view):
             return r
+
+
+def guess_type(items: Iterable[ifcopenshell.entity_instance]) -> str | None:
+    """Guesses the appropriate RepresentationType attribute based on a list of items
+
+    :param items: A list of IfcRepresentationItem, typically in an IfcShapeRepresentation
+    :return: The appropriate RepresentationType value, or None if no valid value
+    """
+    if all([True if i.is_a("IfcMappedItem") else False for i in items]):
+        return "MappedRepresentation"
+    elif all([True if i.is_a("IfcPoint") or i.is_a("IfcCartesianPointList") else False for i in items]):
+        return "Point"
+    elif all([True if i.is_a("IfcCartesianPointList3d") else False for i in items]):
+        return "PointCloud"
+    elif all([True if i.is_a("IfcCurve") and i.Dim == 2 else False for i in items]):
+        return "Curve2D"
+    elif all([True if i.is_a("IfcCurve") and i.Dim == 3 else False for i in items]):
+        return "Curve3D"
+    elif all([True if i.is_a("IfcCurve") else False for i in items]):
+        return "Curve"
+    elif all([True if i.is_a("IfcSegment") else False for i in items]):
+        return "Segment"
+    elif all([True if i.is_a("IfcSurface") and i.Dim == 2 else False for i in items]):
+        return "Surface2D"
+    elif all([True if i.is_a("IfcSurface") and i.Dim == 3 else False for i in items]):
+        return "Surface3D"
+    elif all([True if i.is_a("IfcSurface") else False for i in items]):
+        return "Surface"
+    elif all([True if i.is_a("IfcSectionedSurface") else False for i in items]):
+        return "SectionedSurface"
+    elif all([True if i.is_a("IfcAnnotationFillArea") else False for i in items]):
+        return "FillArea"
+    elif all([True if i.is_a("IfcTextLiteral") else False for i in items]):
+        return "Text"
+    elif all([True if i.is_a("IfcBSplineSurface") else False for i in items]):
+        return "AdvancedSurface"
+    elif all(
+        [
+            (
+                True
+                if i.is_a("IfcGeometricSet") or i.is_a("IfcPoint") or i.is_a("IfcCurve") or i.is_a("IfcSurface")
+                else False
+            )
+            for i in items
+        ]
+    ):
+        return "GeometricSet"
+    elif all(
+        [
+            (
+                True
+                if i.is_a("IfcGeometricCurveSet")
+                or (i.is_a("IfcGeometricSet") and all([e.is_a("IfcSurface") for e in i.Elements]))
+                or i.is_a("IfcPoint")
+                or i.is_a("IfcCurve")
+                else False
+            )
+            for i in items
+        ]
+    ):
+        return "GeometricCurveSet"
+    elif all(
+        [
+            (
+                True
+                if i.is_a("IfcPoint")
+                or i.is_a("IfcCurve")
+                or i.is_a("IfcGeometricCurveSet")
+                or i.is_a("IfcAnnotationFillArea")
+                or i.is_a("IfcTextLiteral")
+                else False
+            )
+            for i in items
+        ]
+    ):
+        return "Annotation2D"
+    elif all([True if i.is_a("IfcTessellatedItem") else False for i in items]):
+        return "Tessellation"
+    elif all(
+        [
+            (
+                True
+                if i.is_a("IfcTessellatedItem")
+                or i.is_a("IfcShellBasedSurfaceModel")
+                or i.is_a("IfcFaceBasedSurfaceModel")
+                else False
+            )
+            for i in items
+        ]
+    ):
+        return "SurfaceModel"
+    elif all([True if i.is_a("IfcSolidModel") else False for i in items]):
+        return "SolidModel"
+    elif all(
+        [True if i.is_a() == "IfcExtrudedAreaSolid" or i.is_a() == "IfcRevolvedAreaSolid" else False for i in items]
+    ):
+        return "SweptSolid"
+    elif all(
+        [
+            (
+                True
+                if i.is_a("IfcTessellatedItem")
+                or i.is_a("IfcShellBasedSurfaceModel")
+                or i.is_a("IfcFaceBasedSurfaceModel")
+                or i.is_a("IfcSolidModel")
+                else False
+            )
+            for i in items
+        ]
+    ):
+        return "SurfaceOrSolidModel"
+    elif all(
+        [
+            (
+                True
+                if i.is_a("IfcSweptAreaSolid") or i.is_a("IfcSweptDiskSolid") or i.is_a("IfcSectionedSolidHorizontal")
+                else False
+            )
+            for i in items
+        ]
+    ):
+        return "AdvancedSweptSolid"
+    elif all([True if i.is_a("IfcCsgSolid") or i.is_a("IfcBooleanClippingResult") else False for i in items]):
+        return "Clipping"
+    elif all(
+        [
+            True if i.is_a("IfcBooleanResult") or i.is_a("IfcCsgPrimitive3d") or i.is_a("IfcCsgSolid") else False
+            for i in items
+        ]
+    ):
+        return "CSG"
+    elif all([True if i.is_a("IfcFacetedBrep") else False for i in items]):
+        return "Brep"
+    elif all([True if i.is_a("IfcManifoldSolidBrep") else False for i in items]):
+        return "AdvancedBrep"
+    elif all([True if i.is_a("IfcBoundingBox") else False for i in items]):
+        return "BoundingBox"
+    elif all([True if i.is_a("IfcSectionedSpine") else False for i in items]):
+        return "SectionedSpine"
+    elif all([True if i.is_a("IfcLightSource") else False for i in items]):
+        return "LightSource"
 
 
 def resolve_representation(representation: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
