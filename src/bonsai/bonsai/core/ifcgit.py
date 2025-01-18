@@ -17,6 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+import platform
 from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
@@ -130,3 +131,10 @@ def entity_log(ifcgit: tool.IfcGit, ifc: tool.Ifc, step_id: int, operator: bpy.t
     log_text = ifcgit.entity_log(path_ifc, step_id)
     # ERROR is only way to display a multi-line message
     operator.report({"ERROR"}, log_text)
+
+
+def install_git(ifcgit: tool.IfcGit, operator: bpy.types.Operator) -> None:
+    if platform.system() == "Windows":
+        ifcgit.install_git_windows(operator=operator)
+    else:
+        print("install_git() not implemented")

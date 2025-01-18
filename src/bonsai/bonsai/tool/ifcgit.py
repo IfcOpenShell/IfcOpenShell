@@ -19,6 +19,7 @@
 from __future__ import annotations
 import os
 import re
+import subprocess
 import bpy
 import logging
 from bonsai.bim import import_ifc
@@ -545,6 +546,17 @@ class IfcGit:
         except git.exc.CommandError:
             logtext = "No Git history found :("
         return logtext
+
+    @classmethod
+    def install_git_windows(cls, operator: bpy.types.Operator) -> None:
+        """Command to install Git on Windows using winget"""
+        command = ["winget", "install", "--id", "Git.Git", "-e", "--source", "winget"]
+        try:
+            subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        except subprocess.CalledProcessError as e:
+            operator.report({"ERROR"}, f"Called Process Error occurred: {e}")
+        except FileNotFoundError:
+            operator.report({"ERROR"}, "Winget is not available. Make sure Windows Package Manager is installed.")
 
 
 class IfcGitRepo:

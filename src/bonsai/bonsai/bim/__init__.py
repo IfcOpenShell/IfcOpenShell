@@ -259,6 +259,10 @@ def register():
     icons = icon_preview
     bpy.app.translations.register("bonsai", translations_dict)
 
+    import bonsai.tool as tool
+
+    tool.Blender.ensure_bin_in_path()
+
 
 def unregister():
     global icons

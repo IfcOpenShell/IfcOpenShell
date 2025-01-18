@@ -1,6 +1,7 @@
 import bpy
 import time
 import os
+import platform
 
 from bonsai.bim.module.ifcgit.data import IfcGitData
 
@@ -26,6 +27,12 @@ class IFCGIT_PT_panel(bpy.types.Panel):
         if not IfcGitData.data["git_exe"]:
             row = layout.row()
             row.label(text="Git is not installed", icon="ERROR")
+            if platform.system() == "Windows":
+                row.operator(
+                    "ifcgit.install_git",
+                    text="Install Git",
+                    icon="PACKAGE",
+                )
             return
 
         props = context.scene.IfcGitProperties

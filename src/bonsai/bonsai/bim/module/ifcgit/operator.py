@@ -386,3 +386,25 @@ class ObjectLog(bpy.types.Operator):
         step_id = context.active_object.BIMObjectProperties.ifc_definition_id
         core.entity_log(tool.IfcGit, tool.Ifc, step_id, self)
         return {"FINISHED"}
+
+
+class InstallGit(bpy.types.Operator):
+    """Install Git Version Control System from the
+    Windows Package Manager Community Repository,
+    requires restarting Blender after installation"""
+
+    bl_label = "Install Git"
+    bl_idname = "ifcgit.install_git"
+    bl_options = {"REGISTER"}
+
+    @classmethod
+    def poll(cls, context):
+        IfcGitData.make_sure_is_loaded()
+        if IfcGitData.data["git_exe"]:
+            return False
+        return True
+
+    def execute(self, context):
+        core.install_git(tool.IfcGit, self)
+        refresh()
+        return {"FINISHED"}
