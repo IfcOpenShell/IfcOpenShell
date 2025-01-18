@@ -229,7 +229,6 @@ class AggregateModeDecorator:
         cls.handlers.append(
             SpaceView3D.draw_handler_add(handler.draw_aggregate_empty, (context,), "WINDOW", "POST_VIEW")
         )
-        cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_new_objects, (context,), "WINDOW", "POST_VIEW"))
         cls.is_installed = True
 
     @classmethod
