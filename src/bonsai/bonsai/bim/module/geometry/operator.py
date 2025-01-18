@@ -3037,6 +3037,23 @@ class OverrideMove(bpy.types.Operator):
         return {"FINISHED"}
 
     def _execute(self, context):
+        # Get filling objects
+        selection = []
+        for obj in context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            selection.append(obj)
+            for rel in getattr(element, "HasOpenings", []) or []:
+                opening = rel.RelatedOpeningElement
+                for rel2 in getattr(opening, "HasFillings", []) or []:
+                    filling = rel2.RelatedBuildingElement
+                    selection.append(tool.Ifc.get_object(filling))
+        for obj in selection:
+            obj.select_set(True)
+            self.new_active_obj = obj
+
+         
         # Get aggregates
         props = context.scene.BIMAggregateProperties
         not_editing_objs = [o.obj for o in props.not_editing_objects]
