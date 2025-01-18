@@ -224,6 +224,12 @@ class Root(bonsai.core.tool.Root):
             return tool.Ifc.get_entity(props.editing_aggregate)
 
     @classmethod
+    def is_in_nest_mode(cls, element: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+        props = bpy.context.scene.BIMNestProperties
+        if props.editing_nest and props.in_nest_mode:
+            return tool.Ifc.get_entity(props.editing_nest)
+
+    @classmethod
     def reload_grid_decorator(cls) -> None:
         axes = bpy.context.scene.BIMGridProperties.grid_axes
         axes.clear()

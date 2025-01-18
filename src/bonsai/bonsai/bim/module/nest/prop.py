@@ -17,6 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import bonsai.tool as tool
 from bonsai.bim.prop import StrProperty, Attribute
 from bonsai.bim.module.spatial.data import SpatialData
 from bpy.types import PropertyGroup
@@ -30,6 +31,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+from bonsai.bim.module.nest.decorator import NestDecorator, NestModeDecorator
 
 
 def update_relating_object(self, context):
@@ -46,3 +48,33 @@ def update_relating_object(self, context):
 class BIMObjectNestProperties(PropertyGroup):
     is_editing: BoolProperty(name="Is Editing")
     relating_object: PointerProperty(name="Nest Host", type=bpy.types.Object, update=update_relating_object)
+
+def update_nest_decorator(self, context):
+    if self.nest_decorator:
+        NestDecorator.install(bpy.context)
+    else:
+        NestDecorator.uninstall()
+
+
+def update_nest_mode_decorator(self, context):
+    if self.in_nest_mode:
+        NestModeDecorator.install(bpy.context)
+    else:
+        NestModeDecorator.uninstall()
+
+
+class Objects(bpy.types.PropertyGroup):
+    obj: PointerProperty(type=bpy.types.Object)
+    previous_display_type: bpy.props.StringProperty(default="TEXTURED")
+
+
+class BIMNestProperties(PropertyGroup):
+    in_nest_mode: BoolProperty(name="In Edit Mode", update=update_nest_mode_decorator)
+    editing_nest: PointerProperty(name="Editing nest", type=bpy.types.Object)
+    editing_objects: CollectionProperty(type=Objects)
+    not_editing_objects: CollectionProperty(type=Objects)
+    nest_decorator: BoolProperty(
+        name="Display Nest",
+        default=False,
+        update=update_nest_decorator,
+    )

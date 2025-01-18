@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import bpy
 import bonsai.core.tool
 import bonsai.tool as tool
 import ifcopenshell.util.element
@@ -47,3 +48,75 @@ class Nest(bonsai.core.tool.Nest):
     @classmethod
     def get_relating_object(cls, related_element):
         return ifcopenshell.util.element.get_nest(related_element)
+
+    @classmethod
+    def get_components_recursively(cls, element: ifcopenshell.entity_instance) -> set[ifcopenshell.entity_instance]:
+        """Get elements components recursively, resulting set includes `element`."""
+        components = set()
+        queue = {element}
+        while queue:
+            element = queue.pop()
+            queue.update(new_components := set(ifcopenshell.util.element.get_components(element)))
+            components.update(new_components)
+        return components
+
+    @classmethod
+    def get_nest_mode(cls):
+        return bpy.context.scene.BIMNestProperties.in_nest_mode
+
+    @classmethod
+    def enable_nest_mode(cls, active_object: bpy.types.Object):
+        context = bpy.context
+        props = context.scene.BIMNestProperties
+
+        element = tool.Ifc.get_entity(active_object)
+        if not element:
+            return {"FINISHED"}
+        nest = ifcopenshell.util.element.get_nest(element)
+        components = ifcopenshell.util.element.get_components(element)
+        if not nest and not components:
+            return {"FINISHED"}
+        if not components:
+            components = ifcopenshell.util.element.get_components(nest)
+        if components:
+            props.editing_nest = tool.Ifc.get_object(nest) if nest else tool.Ifc.get_object(element)
+            components_objs = [tool.Ifc.get_object(component) for component in components]
+            objs = []
+            visible_objects = tool.Raycast.get_visible_objects(context)
+            for obj in visible_objects:
+                if obj.visible_in_viewport_get(context.space_data):
+                    objs.append(obj.original)
+            for obj in objs:
+                if obj.original not in components_objs:
+                    if obj == props.editing_nest:
+                        continue
+                    not_editing_obj = props.not_editing_objects.add()
+                    not_editing_obj.obj = obj.original
+                    not_editing_obj.previous_display_type = obj.original.display_type
+                    obj.original.display_type = "WIRE"
+                else:
+                    editing_obj = props.editing_objects.add()
+                    editing_obj.obj = obj.original
+
+        props.in_nest_mode = True
+        return {"FINISHED"}
+
+    @classmethod
+    def disable_nest_mode(cls):
+        context = bpy.context
+        props = context.scene.BIMNestProperties
+        for obj_prop in props.not_editing_objects:
+            obj = obj_prop.obj
+            obj.original.display_type = obj_prop.previous_display_type
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+
+        components = ifcopenshell.util.element.get_components(tool.Ifc.get_entity(props.editing_nest))
+        objs = [tool.Ifc.get_object(component) for component in components]
+        if context.space_data.local_view:
+            bpy.ops.view3d.localview()
+
+        props.in_nest_mode = False
+        props.not_editing_objects.clear()
+        props.editing_objects.clear()

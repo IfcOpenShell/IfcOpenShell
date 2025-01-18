@@ -1894,11 +1894,19 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
                 bonsai.core.aggregate.enable_aggregate_mode(tool.Aggregate, context.active_object)
                 return {"FINISHED"}
 
+        if self.has_nests(selected_objs):
+            if not context.scene.BIMNestProperties.in_nest_mode:
+                bonsai.core.nest.enable_nest_mode(tool.Nest, context.active_object)
+                return {"FINISHED"}
+
         if len(selected_objs) == 1 and context.active_object == selected_objs[0]:
             self.handle_single_object(context, context.active_object)
         elif len(selected_objs) == 0:
             if context.scene.BIMAggregateProperties.in_aggregate_mode:
                 bonsai.core.aggregate.disable_aggregate_mode(tool.Aggregate)
+                return {"FINISHED"}
+            if context.scene.BIMNestProperties.in_nest_mode:
+                bonsai.core.nest.disable_nest_mode(tool.Nest)
                 return {"FINISHED"}
             tool.Geometry.disable_item_mode()
         elif len(selected_objs) > 1:
@@ -2014,6 +2022,18 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
             aggregate = ifcopenshell.util.element.get_aggregate(element)
             parts = ifcopenshell.util.element.get_parts(element)
             if (aggregate or parts) and not bpy.context.scene.BIMAggregateProperties.in_aggregate_mode:
+                return True
+            else:
+                return False
+
+    def has_nests(self, objs):
+        for obj in objs:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            nest = ifcopenshell.util.element.get_nest(element)
+            components = ifcopenshell.util.element.get_components(element)
+            if (nest or components) and not bpy.context.scene.BIMNestProperties.in_nest_mode:
                 return True
             else:
                 return False
@@ -3017,6 +3037,7 @@ class OverrideMoveAggregate(bpy.types.Operator):
         return {"FINISHED"}
 
     def _execute(self, context):
+        # Get aggregates
         props = context.scene.BIMAggregateProperties
         not_editing_objs = [o.obj for o in props.not_editing_objects]
         aggregates_to_move = []
@@ -3039,10 +3060,47 @@ class OverrideMoveAggregate(bpy.types.Operator):
                 aggregates_to_move.append(tool.Ifc.get_object(aggregate))
                 obj.select_set(False)
         aggregates_to_move = set(aggregates_to_move)
-        for obj in aggregates_to_move:
-            obj.select_set(True)
-            for part in tool.Aggregate.get_parts_recursively(tool.Ifc.get_entity(obj)):
-                part_obj = tool.Ifc.get_object(part)
-                part_obj.select_set(True)
-            self.new_active_obj = obj
+
+        if aggregates_to_move:
+            for obj in aggregates_to_move:
+                obj.select_set(True)
+                for part in tool.Aggregate.get_parts_recursively(tool.Ifc.get_entity(obj)):
+                    part_obj = tool.Ifc.get_object(part)
+                    part_obj.select_set(True)
+                self.new_active_obj = obj
+            return {"FINISHED"}
+
+        # Get nests
+        props = context.scene.BIMNestProperties
+        not_editing_objs = [o.obj for o in props.not_editing_objects]
+        nests_to_move = []
+        for obj in context.selected_objects:
+            self.new_active_obj = None
+            if obj in not_editing_objs:
+                obj.select_set(False)
+                continue
+            element = tool.Ifc.get_entity(obj)
+            if not element or not element.is_a("IfcElement"):
+                continue
+            components = ifcopenshell.util.element.get_components(element)
+            if components:
+                nests_to_move.append(tool.Ifc.get_object(element))
+                continue
+            if not components and props.in_nest_mode:
+                continue                
+            nest = ifcopenshell.util.element.get_nest(element)
+            if nest:
+                nests_to_move.append(tool.Ifc.get_object(nest))
+                obj.select_set(False)
+        nests_to_move = set(nests_to_move)
+
+        if nests_to_move:
+            for obj in nests_to_move:
+                obj.select_set(True)
+                for component in tool.Nest.get_components_recursively(tool.Ifc.get_entity(obj)):
+                    component_obj = tool.Ifc.get_object(component)
+                    component_obj.select_set(True)
+                self.new_active_obj = obj
+            return {"FINISHED"}
+
         return {"FINISHED"}

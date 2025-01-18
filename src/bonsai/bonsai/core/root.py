@@ -90,5 +90,7 @@ def assign_class(
             ifc.run("spatial.assign_container", products=[element], relating_structure=default_container)
             if relating_obj := root.is_in_aggregate_mode(element):
                 ifc.run("aggregate.assign_object", products=[element], relating_object=relating_obj)
+            if relating_obj := root.is_in_nest_mode(element):
+                ifc.run("nest.assign_object", related_objects=[element], relating_object=relating_obj)
     collector.assign(obj)
     return element

@@ -16,6 +16,13 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+from typing import TYPE_CHECKING, Optional, Union
+
+if TYPE_CHECKING:
+    import bpy
+    import ifcopenshell
+    import bonsai.tool as tool
 
 def enable_editing_nest(nest, obj=None):
     nest.enable_editing(obj)
@@ -58,3 +65,17 @@ def add_part_to_object(ifc, nest, collector, blender, obj, part_class, part_name
     part_obj = blender.create_ifc_object(ifc_class=part_class, name=part_name)
     assign_object(ifc, nest, collector, relating_obj=obj, related_obj=part_obj)
     blender.set_active_object(obj)
+
+
+def enable_nest_mode(
+    nest: tool.Nest,
+    obj: bpy.types.Object,
+):
+    if nest.get_nest_mode():
+        disable_nest_mode(nest)
+
+    nest.enable_nest_mode(obj)
+
+
+def disable_nest_mode(nest: tool.Nest):
+    nest.disable_nest_mode()
