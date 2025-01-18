@@ -88,6 +88,7 @@ classes = (
     opening.HideOpenings,
     opening.PurgeUnusedOpenings,
     opening.RecalculateFill,
+    opening.RemoveBoolean,
     opening.RemoveBooleans,
     opening.ShowBooleans,
     opening.ShowOpenings,

@@ -140,3 +140,33 @@ class BIM_OT_select_nest(bpy.types.Operator):
             nest_obj.select_set(True)
             bpy.context.view_layer.objects.active = nest_obj
         return {"FINISHED"}
+
+
+class BIM_OT_disable_nest_mode(bpy.types.Operator):
+    bl_idname = "bim.disable_nest_mode"
+    bl_label = "Disable Nest Mode"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        bpy.ops.object.select_all(action="DESELECT")
+        core.disable_nest_mode(tool.Nest)
+        return {"FINISHED"}
+
+
+class BIM_OT_toggle_nest_mode_local_view(bpy.types.Operator):
+    bl_idname = "bim.toggle_nest_mode_local_view"
+    bl_label = "Toggle Nest Mode Local View"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        props = context.scene.BIMNestProperties
+        objs = [o.obj for o in props.editing_objects]
+        if props.in_nest_mode:
+            if context.space_data.local_view:
+                bpy.ops.view3d.localview()
+            else:
+                for obj in objs:
+                    obj.select_set(True)
+                bpy.ops.view3d.localview()
+
+        return {"FINISHED"}

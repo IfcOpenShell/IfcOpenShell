@@ -590,6 +590,11 @@ class EditObjectUI:
                 row = cls.layout.row(align=True)
                 op = row.operator("bim.disable_aggregate_mode", text="", icon="X")
                 op = row.operator("bim.toggle_aggregate_mode_local_view", text="", icon="ZOOM_SELECTED")
+            if context.scene.BIMNestProperties.in_nest_mode:
+                layout.label(text=f"Nest Mode", icon="EMPTY_AXIS")
+                row = cls.layout.row(align=True)
+                op = row.operator("bim.disable_nest_mode", text="", icon="X")
+                op = row.operator("bim.toggle_nest_mode_local_view", text="", icon="ZOOM_SELECTED")
 
             text = format_ifc_camel_case(AuthoringData.data["active_class"])
             layout.label(text=f"{text} Edit Tools:", icon="RESTRICT_SELECT_OFF")

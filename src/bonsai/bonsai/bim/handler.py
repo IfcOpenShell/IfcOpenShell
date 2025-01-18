@@ -33,6 +33,7 @@ from bonsai.bim.module.model.workspace import LIST_OF_TOOLS, TOOLS_TO_CLASSES_MA
 from bonsai.bim.module.aggregate.decorator import AggregateDecorator
 from bonsai.bim.module.georeference.decorator import GeoreferenceDecorator
 from bonsai.bim.module.model.decorator import WallAxisDecorator, SlabDirectionDecorator
+from bonsai.bim.module.nest.decorator import NestDecorator
 from mathutils import Vector
 from math import cos, degrees
 from typing import Union, Callable
@@ -323,11 +324,14 @@ def load_post(scene):
     # Bonsai overlays
     georeference_props = bpy.context.scene.BIMGeoreferenceProperties
     aggregate_props = bpy.context.scene.BIMAggregateProperties
+    nest_props = bpy.context.scene.BIMNestProperties
     model_props = bpy.context.scene.BIMModelProperties
-    if aggregate_props.aggregate_decorator:
-        AggregateDecorator.install(bpy.context)
     if georeference_props.should_visualise:
         GeoreferenceDecorator.install(bpy.context)
+    if aggregate_props.aggregate_decorator:
+        AggregateDecorator.install(bpy.context)
+    if nest_props.nest_decorator:
+        NestDecorator.install(bpy.context)
     if model_props.show_wall_axis:
         WallAxisDecorator.install(bpy.context)
     if model_props.show_slab_direction:

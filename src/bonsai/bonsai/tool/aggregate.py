@@ -145,3 +145,4 @@ class Aggregate(bonsai.core.tool.Aggregate):
         props.in_aggregate_mode = False
         props.not_editing_objects.clear()
         props.editing_objects.clear()
+        props.editing_aggregate = None

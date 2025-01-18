@@ -86,7 +86,7 @@ class NestDecorator:
         if cls.is_installed:
             cls.uninstall()
         handler = cls()
-        cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_aggregate, (context,), "WINDOW", "POST_VIEW"))
+        cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_nest, (context,), "WINDOW", "POST_VIEW"))
         cls.is_installed = True
 
     @classmethod
@@ -153,8 +153,8 @@ class NestDecorator:
         shader.uniform_float("color", color)
         batch.draw(shader)
 
-    def draw_aggregate(self, context):
-        if context.scene.BIMAggregateProperties.in_aggregate_mode:
+    def draw_nest(self, context):
+        if context.scene.BIMNestProperties.in_nest_mode:
             return
         self.addon_prefs = tool.Blender.get_addon_preferences()
         decorator_color_special = self.addon_prefs.decorator_color_special
@@ -165,11 +165,13 @@ class NestDecorator:
         theme = context.preferences.themes.items()[0][1]
         selected_object_color = (*theme.view_3d.object_active, 1)
 
+        self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
+        self.shader.bind()
         self.line_shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
         self.line_shader.bind()
         # POLYLINE_UNIFORM_COLOR specific uniforms
         self.line_shader.uniform_float("viewportSize", (context.region.width, context.region.height))
-        aggregates = []
+        nests = []
         if not (selected_objects := context.selected_objects):
             return
         for obj in selected_objects:
@@ -177,35 +179,39 @@ class NestDecorator:
             if not element or not element.is_a("IfcElement"):
                 return
 
-            parts = ifcopenshell.util.element.get_parts(element)
-            if parts:
-                aggregates.append(obj)
+            components = ifcopenshell.util.element.get_components(element)
+            if components:
+                nests.append(obj)
                 continue
 
-            aggregate = ifcopenshell.util.element.get_aggregate(element)
-            if aggregate:
-                aggregates.append(tool.Ifc.get_object(aggregate))
+            nest = ifcopenshell.util.element.get_nest(element)
+            if nest:
+                nests.append(tool.Ifc.get_object(nest))
 
-        aggregates = set(aggregates)
-        for aggregate in aggregates:
+        nests = set(nests)
+        for nest in nests:
             self.line_shader.uniform_float("lineWidth", 1.0)
             color = decorator_color_unselected
-            if aggregate in selected_objects:
+            if nest in selected_objects:
                 color = selected_object_color
-            size = aggregate.empty_display_size
-            location = aggregate.location
-            line_x = (location - Vector((size, 0.0, 0.0)), location + Vector((size, 0.0, 0.0)))
-            self.draw_batch("LINES", line_x, color, [(0, 1)])
-            line_y = (location - Vector((0.0, size, 0.0)), location + Vector((0.0, size, 0.0)))
-            self.draw_batch("LINES", line_y, color, [(0, 1)])
-            line_z = (location - Vector((0.0, 0.0, size)), location + Vector((0.0, 0.0, size)))
-            self.draw_batch("LINES", line_z, color, [(0, 1)])
-            if context.scene.BIMAggregateProperties.in_aggregate_mode:
-                return
-            parts = ifcopenshell.util.element.get_parts(tool.Ifc.get_entity(aggregate))
-            parts_objs = [tool.Ifc.get_object(p) for p in parts]
+            size = nest.empty_display_size
+            location = nest.location
+            if nest.type == "EMPTY":
+                line_x = (location - Vector((size, 0.0, 0.0)), location + Vector((size, 0.0, 0.0)))
+                self.draw_batch("LINES", line_x, color, [(0, 1)])
+                line_y = (location - Vector((0.0, size, 0.0)), location + Vector((0.0, size, 0.0)))
+                self.draw_batch("LINES", line_y, color, [(0, 1)])
+                line_z = (location - Vector((0.0, 0.0, size)), location + Vector((0.0, 0.0, size)))
+                self.draw_batch("LINES", line_z, color, [(0, 1)])
+            else:
+                self.draw_batch("POINTS", [location], color)
+            # if context.scene.BIMNestProperties.in_aggregate_mode:
+                # return
+            components = ifcopenshell.util.element.get_components(tool.Ifc.get_entity(nest))
+            components_objs = [tool.Ifc.get_object(p) for p in components]
+            components_objs.append(nest)
 
-            indices, edges = create_bounding_box(parts_objs)
+            indices, edges = create_bounding_box(components_objs)
             self.line_shader.uniform_float("lineWidth", 0.5)
             self.draw_batch("LINES", indices, color, edges)
             line = (Vector(indices[0]), location)

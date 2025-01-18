@@ -176,6 +176,10 @@ class BIM_PT_booleans(Panel):
         row.prop(props, "operator", text="")
         row.operator("bim.add_boolean", text="", icon="ADD")
 
+        row = layout.row(align=True)
+        row.alignment = "RIGHT"
+        row.operator("bim.remove_boolean", text="", icon="X")
+
         self.layout.template_list("BIM_UL_booleans", "", props, "booleans", props, "active_boolean_index")
 
 

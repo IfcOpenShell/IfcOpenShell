@@ -167,6 +167,8 @@ class AggregateDecorator:
         theme = context.preferences.themes.items()[0][1]
         selected_object_color = (*theme.view_3d.object_active, 1)
 
+        self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
+        self.shader.bind()
         self.line_shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
         self.line_shader.bind()
         # POLYLINE_UNIFORM_COLOR specific uniforms
