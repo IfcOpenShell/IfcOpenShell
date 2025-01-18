@@ -17,147 +17,60 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import ifcopenshell.util.unit
-import numpy as np
-import numpy.typing as npt
-from typing import Optional, TYPE_CHECKING, Literal
-
-if TYPE_CHECKING:
-    import bpy.types
-
-
-NPArrayOfFloats = npt.NDArray[np.float64]
+import ifcopenshell.util.element
 
 
 def add_boolean(
     file: ifcopenshell.file,
-    representation: ifcopenshell.entity_instance,
-    # A matrix to define a clipping Ifchalfspacesolid.
-    # The XY plane is the clipping boundary and +Z is removed.
+    first_item: ifcopenshell.entity_instance,
+    second_items: list[ifcopenshell.entity_instance],
     operator: str = "DIFFERENCE",
-    # IfcHalfSpaceSolid, Mesh
-    type: Literal["IfcHalfSpaceSolid", "Mesh"] = "IfcHalfSpaceSolid",
-    matrix: Optional[NPArrayOfFloats] = None,
-    # A Blender OBJ to define the voided OBJ for a "Mesh" type
-    blender_obj: Optional[bpy.types.Object] = None,
-    # A Blender OBJ to define the void OBJ for a "Mesh" type
-    blender_void: Optional[bpy.types.Object] = None,
-    should_force_faceted_brep: bool = False,
-    should_force_triangulation: bool = False,
-) -> list[ifcopenshell.entity_instance]:
-    """For `type` values:
-    - "IfcHalfSpaceSolid" - `matrix` is not optional.
-    - "Mesh" - `blender_obj` and `blender_void` are not optional
-    """
-    usecase = Usecase()
-    usecase.file = file
-    usecase.settings = {
-        "representation": representation,
-        "operator": operator,
-        "type": type,
-        "matrix": matrix,
-        "blender_obj": blender_obj,
-        "blender_void": blender_void,
-        "should_force_faceted_brep": should_force_faceted_brep,
-        "should_force_triangulation": should_force_triangulation,
-    }
-    return usecase.execute()
+) -> set[ifcopenshell.entity_instance]:
+    original_first_item = first_item
+    if first_item in second_items:
+        second_items.remove(first_item)
 
+    while True:
+        is_part_of_boolean = False
+        for inverse in file.get_inverse(first_item):
+            if inverse.is_a("IfcBooleanResult"):
+                is_part_of_boolean = True
+                first_item = inverse
+                if inverse.FirstOperand == original_first_item and inverse.SecondOperand in second_items:
+                    second_items.remove(inverse.SecondOperand)
+                elif inverse.SecondOperand == original_first_item and inverse.FirstOperand in second_items:
+                    second_items.remove(inverse.FirstOperand)
+                break
+        if not is_part_of_boolean:
+            break
 
-class Usecase:
-    def execute(self):
-        self.settings["unit_scale"] = ifcopenshell.util.unit.calculate_unit_scale(self.file)
-        if self.settings["type"] == "IfcHalfSpaceSolid":
-            result = self.create_half_space_solid()
-        elif self.settings["type"] == "Mesh":
-            if self.settings["blender_obj"]:
-                result = self.create_blender_mesh()
-        items = []
-        for item in self.settings["representation"].Items:
-            if (
-                self.settings["operator"] == "DIFFERENCE"
-                and result.is_a("IfcHalfSpaceSolid")
-                and (
-                    item.is_a("IfcSweptAreaSolid")
-                    or item.is_a("IfcSweptDiskSolid")
-                    or item.is_a("IfcBooleanClippingResult")
-                )
-            ):
-                items.append(self.file.createIfcBooleanClippingResult(self.settings["operator"], item, result))
-                representation_type = "Clipping"
-            else:
-                items.append(self.file.createIfcBooleanResult(self.settings["operator"], item, result))
-                representation_type = "CSG"
-        self.settings["representation"].RepresentationType = representation_type
-        self.settings["representation"].Items = items
-        return items
+    if not second_items:
+        return
 
-    def create_half_space_solid(self):
-        clipping = np.array(self.settings["matrix"])[:3]
-        local_z = self.file.createIfcDirection(clipping[:, 2].tolist())
-        local_x = self.file.createIfcDirection(clipping[:, 0].tolist())
-        point = self.file.createIfcCartesianPoint(self.convert_si_to_unit(clipping[:, 3]).tolist())
-        placement = self.file.createIfcAxis2Placement3D(point, local_z, local_x)
-        plane = self.file.createIfcPlane(placement)
-        return self.file.createIfcHalfSpaceSolid(plane, AgreementFlag=False)
+    # Don't replace style or aspect relationships.
+    to_replace = set(
+        [
+            i
+            for i in file.get_inverse(first_item)
+            if i.is_a("IfcShapeRepresentation") or i.is_a("IfcBooleanResult")
+        ]
+    )
 
-    def create_blender_mesh(self):
-        self.ifc_vertices = []
-        if self.file.schema == "IFC2X3" or self.settings["should_force_faceted_brep"]:
-            return self.create_faceted_brep()
-        if self.settings["should_force_triangulation"]:
-            return self.create_triangulated_face_set()
-        return self.create_polygonal_face_set()
+    first = first_item
 
-    def create_faceted_brep(self):
-        self.create_vertices()
-        faces = []
-        for polygon in self.settings["blender_void"].data.polygons:
-            faces.append(
-                self.file.createIfcFace(
-                    [
-                        self.file.createIfcFaceOuterBound(
-                            self.file.createIfcPolyLoop([self.ifc_vertices[vertice] for vertice in polygon.vertices]),
-                            True,
-                        )
-                    ]
-                )
-            )
-        # TODO: May not actually be a closed shell, but who checks anyway?
-        return self.file.createIfcFacetedBrep(self.file.createIfcClosedShell(faces))
+    booleans = set()
+    for second_item in second_items:
+        for inverse in file.get_inverse(second_item):
+            if inverse.is_a("IfcShapeRepresentation"):
+                inverse.Items = list(set(inverse.Items) - {second_item})
+        if first.is_a("IfcTesselatedFaceSet"):
+            first.Closed = True  # For now, trust the user to do the right thing.
+        if second_item.is_a("IfcTesselatedFaceSet"):
+            second_item.Closed = True  # For now, trust the user to do the right thing.
+        first = file.create_entity("IfcBooleanResult", operator, first, second_item)
+        booleans.add(first)
 
-    def create_triangulated_face_set(self):
-        faces = []
-        for polygon in self.settings["blender_void"].data.polygons:
-            faces.append([v + 1 for v in polygon.vertices])
+    for inverse in to_replace:
+        ifcopenshell.util.element.replace_attribute(inverse, first_item, first)
 
-        mat1 = self.settings["blender_void"].matrix_world
-        mat2 = self.settings["blender_obj"].matrix_world.inverted()
-        coordinates = self.file.createIfcCartesianPointList3D(
-            [self.convert_si_to_unit(mat2 @ mat1 @ v.co) for v in self.settings["blender_void"].data.vertices]
-        )
-        return self.file.createIfcTriangulatedFaceSet(coordinates, None, None, faces)
-
-    def create_polygonal_face_set(self):
-        faces = []
-        for polygon in self.settings["blender_void"].data.polygons:
-            faces.append(self.file.createIfcIndexedPolygonalFace([v + 1 for v in polygon.vertices]))
-        mat1 = self.settings["blender_void"].matrix_world
-        mat2 = self.settings["blender_obj"].matrix_world.inverted()
-        coordinates = self.file.createIfcCartesianPointList3D(
-            [self.convert_si_to_unit(mat2 @ mat1 @ v.co) for v in self.settings["blender_void"].data.vertices]
-        )
-        return self.file.createIfcPolygonalFaceSet(coordinates, None, faces)
-
-    def create_vertices(self):
-        mat1 = self.settings["blender_void"].matrix_world
-        mat2 = self.settings["blender_obj"].matrix_world.inverted()
-        self.ifc_vertices.extend(
-            [
-                self.file.createIfcCartesianPoint(self.convert_si_to_unit(mat2 @ mat1 @ v.co))
-                for v in self.settings["blender_void"].data.vertices
-            ]
-        )
-
-    def convert_si_to_unit(self, co):
-        return co / self.settings["unit_scale"]
+    return booleans

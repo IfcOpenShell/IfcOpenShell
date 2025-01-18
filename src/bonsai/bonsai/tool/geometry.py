@@ -979,6 +979,22 @@ class Geometry(bonsai.core.tool.Geometry):
         )
 
     @classmethod
+    def is_boolean_operand(cls, obj: bpy.types.Object) -> bool:
+        return bool(
+            (data := obj.data)
+            and isinstance(data, Geometry.TYPES_WITH_MESH_PROPERTIES)
+            and (ifc_id := data.BIMMeshProperties.ifc_definition_id)
+            and (item := tool.Ifc.get().by_id(ifc_id))
+            and (
+                item.is_a("IfcBooleanResult")
+                or item.is_a("IfcCsgPrimitive3D")
+                or item.is_a("IfcHalfSpaceSolid")
+                or item.is_a("IfcSolidModel")
+                or item.is_a("IfcTessellatedFaceSet")
+            )
+        )
+
+    @classmethod
     def is_text_literal(cls, representation: ifcopenshell.entity_instance) -> bool:
         items = ifcopenshell.util.representation.resolve_items(representation)
         return bool([i for i in items if i["item"].is_a("IfcTextLiteral")])
