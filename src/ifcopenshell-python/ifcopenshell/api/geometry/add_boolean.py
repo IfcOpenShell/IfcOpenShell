@@ -106,7 +106,18 @@ def add_boolean(
             first.Closed = True  # For now, trust the user to do the right thing.
         if second_item.is_a("IfcTesselatedFaceSet"):
             second_item.Closed = True  # For now, trust the user to do the right thing.
-        first = file.create_entity("IfcBooleanResult", operator, first, second_item)
+        if (
+            operator == "DIFFERENCE"
+            and second_item.is_a("IfcHalfSpaceSolid")
+            and (
+                first.is_a("IfcSweptAreaSolid")
+                or first.is_a("IfcSweptDiskSolid")
+                or first.is_a("IfcBooleanClippingResult")
+            )
+        ):
+            first = file.create_entity("IfcBooleanClippingResult", operator, first, second_item)
+        else:
+            first = file.create_entity("IfcBooleanResult", operator, first, second_item)
         booleans.append(first)
 
     for inverse in to_replace:

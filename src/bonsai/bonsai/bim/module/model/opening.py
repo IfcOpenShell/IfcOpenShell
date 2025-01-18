@@ -1144,6 +1144,27 @@ class PurgeUnusedOpenings(Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
+class RemoveBoolean(Operator, tool.Ifc.Operator):
+    bl_idname = "bim.remove_boolean"
+    bl_label = "Remove Boolean"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Removes the actively selected boolean"
+
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.BIMBooleanProperties
+        return props.active_boolean
+
+    def _execute(self, context):
+        props = context.scene.BIMBooleanProperties
+        ifcopenshell.api.geometry.remove_boolean(
+            tool.Ifc.get(), tool.Ifc.get().by_id(props.active_boolean.ifc_definition_id)
+        )
+        bpy.ops.bim.enable_editing_booleans()
+        rep_obj = bpy.context.scene.BIMGeometryProperties.representation_obj
+        tool.Geometry.reload_representation(rep_obj)
+
+
 # TODO: merge with ProfileDecorator?
 class DecorationsHandler:
     installed = None

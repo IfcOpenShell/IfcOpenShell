@@ -45,3 +45,8 @@ class BIMBooleanProperties(PropertyGroup):
         name="Operator",
         default="DIFFERENCE",
     )
+
+    @property
+    def active_boolean(self):
+        if self.booleans and self.active_boolean_index < len(self.booleans):
+            return self.booleans[self.active_boolean_index]
