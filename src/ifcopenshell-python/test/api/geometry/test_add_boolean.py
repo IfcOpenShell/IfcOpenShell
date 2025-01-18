@@ -59,7 +59,6 @@ class TestAddBoolean(test.bootstrap.IFC4):
         assert len(booleans) == 2
         assert len(rep.Items) == 1
         assert rep.Items[0].FirstOperand.is_a("IfcBooleanResult")
-        assert rep.Items[0].FirstOperand.is_a("IfcBooleanResult")
         assert rep.Items[0].SecondOperand == second2
         assert rep.Items[0].Operator == "DIFFERENCE"
         assert rep.Items[0].FirstOperand.FirstOperand == first
