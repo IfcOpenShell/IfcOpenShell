@@ -3011,14 +3011,14 @@ class AddHalfSpaceSolidItem(bpy.types.Operator, tool.Ifc.Operator):
         bpy.ops.bim.add_boolean()
 
 
-class OverrideMoveAggregateMacro(bpy.types.Macro):
-    bl_idname = "bim.override_move_aggregate_macro"
+class OverrideMoveMacro(bpy.types.Macro):
+    bl_idname = "bim.override_move_macro"
     bl_label = "IFC Move Aggregate"
     bl_options = {"REGISTER", "UNDO"}
 
 
-class OverrideMoveAggregate(bpy.types.Operator):
-    bl_idname = "bim.override_move_aggregate"
+class OverrideMove(bpy.types.Operator):
+    bl_idname = "bim.override_move"
     bl_label = "IFC Move"
     bl_options = {"REGISTER", "UNDO"}
 

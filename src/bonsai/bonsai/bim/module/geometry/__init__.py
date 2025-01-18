@@ -52,8 +52,8 @@ classes = (
     operator.OverrideMeshSeparate,
     operator.OverrideModeSetEdit,
     operator.OverrideModeSetObject,
-    operator.OverrideMoveAggregate,
-    operator.OverrideMoveAggregateMacro,
+    operator.OverrideMove,
+    operator.OverrideMoveMacro,
     operator.OverrideOriginSet,
     operator.OverrideOutlinerDelete,
     operator.OverridePasteBuffer,
@@ -111,8 +111,8 @@ def register():
     operator.OverrideDuplicateMoveLinkedMacro.define("TRANSFORM_OT_translate")
     operator.DuplicateMoveLinkedAggregateMacro.define("BIM_OT_object_duplicate_move_linked_aggregate")
     operator.DuplicateMoveLinkedAggregateMacro.define("TRANSFORM_OT_translate")
-    operator.OverrideMoveAggregateMacro.define("BIM_OT_override_move_aggregate")
-    operator.OverrideMoveAggregateMacro.define("TRANSFORM_OT_translate")
+    operator.OverrideMoveMacro.define("BIM_OT_override_move")
+    operator.OverrideMoveMacro.define("TRANSFORM_OT_translate")
 
     bpy.types.Object.BIMGeometryProperties = bpy.props.PointerProperty(type=prop.BIMObjectGeometryProperties)
     bpy.types.Scene.BIMGeometryProperties = bpy.props.PointerProperty(type=prop.BIMGeometryProperties)
@@ -135,7 +135,7 @@ def register():
             "bim.object_duplicate_move_linked_aggregate_macro", "D", "PRESS", ctrl=True, shift=True
         )
         addon_keymaps.append((km, kmi))
-        kmi = km.keymap_items.new("bim.override_move_aggregate_macro", "G", "PRESS")
+        kmi = km.keymap_items.new("bim.override_move_macro", "G", "PRESS")
         addon_keymaps.append((km, kmi))
         kmi = km.keymap_items.new("bim.override_paste_buffer", "V", "PRESS", ctrl=True)
         addon_keymaps.append((km, kmi))
