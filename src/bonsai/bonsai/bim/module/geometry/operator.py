@@ -3046,6 +3046,8 @@ class OverrideMove(bpy.types.Operator):
             if obj in not_editing_objs:
                 obj.select_set(False)
                 continue
+            if obj == props.editing_aggregate:
+                continue                
             element = tool.Ifc.get_entity(obj)
             if not element or not element.is_a("IfcElement"):
                 continue
@@ -3079,6 +3081,8 @@ class OverrideMove(bpy.types.Operator):
             if obj in not_editing_objs:
                 obj.select_set(False)
                 continue
+            if obj == props.editing_nest:
+                continue                
             element = tool.Ifc.get_entity(obj)
             if not element or not element.is_a("IfcElement"):
                 continue
