@@ -890,11 +890,27 @@ class ShapeBuilder:
         :param center: sphere position, defaults to `(0.0, 0.0, 0.0)`
 
         :return: IfcSphere
-        :rtype: ifcopenshell.entity_instance
         """
 
         ifc_position = self.create_axis2_placement_3d(position=center)
         return self.file.createIfcSphere(Radius=radius, Position=ifc_position)
+
+    def block(
+        self,
+        position: VectorType = (0.0, 0.0, 0.0),
+        x_length: float = 1.0,
+        y_length: float = 1.0,
+        z_length: float = 1.0,
+    ) -> ifcopenshell.entity_instance:
+        """
+        :param position: the bottom left (min X/Y of the cube).
+        :param x_length: the X length, in the +X direction
+        :param y_length: the Y length, in the +Y direction
+        :param z_length: the Z length, in the +Z direction
+
+        :return: IfcBlock
+        """
+        return self.file.createIfcBlock(self.create_axis2_placement_3d(position), x_length, y_length, z_length)
 
     def extrude(
         self,
