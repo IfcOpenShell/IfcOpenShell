@@ -21,7 +21,6 @@ import bpy
 import bmesh
 import json
 import os
-import platform
 from ifcopenshell import entity_instance
 import ifcopenshell.api
 import ifcopenshell.util.element
@@ -437,11 +436,7 @@ class Blender(bonsai.core.tool.Blender):
         bin_dir = str(Path(__file__).parent.parent.resolve() / "libs" / "bin")
         current_path = os.environ["PATH"]
         if bin_dir not in current_path:
-            if platform.system() == "Windows":
-                path_separator = ";"
-            else:
-                path_separator = ":"
-            os.environ["PATH"] = current_path + path_separator + bin_dir
+            os.environ["PATH"] = current_path + os.pathsep + bin_dir
 
     @classmethod
     def get_default_selection_keypmap(cls) -> tuple:
