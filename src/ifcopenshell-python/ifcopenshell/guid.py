@@ -16,46 +16,141 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Reads and writes encoded GlobalIds
+"""
+Reads and writes encoded GlobalIds.
 
-IFC entities may be identified using a unique ID (called a UUID or GUID). This
-128-bit label is often represented in the form
-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx. However, in IFC, it is also usually
-stored as a 22 character base 64 encoded string. This module lets you convert
-between these representations and generate new UUIDs.
+IFC entities may be identified using a unique ID (called a UUID or GUID).
+This 128-bit label is often represented in the form
+```
+xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx.
+```
+However, in IFC, it is also usually stored as a
+22 character base 64 encoded string.
+This module lets you convert between these representations and generate new UUIDs.
+
+NOTE: The Ifc convention for Base64 encoding differs from the standard.
+
+The "digits" of a standard Base64 encoding are as follows:
+```
+ABC...XYZ abc...XYZ 012...89 +/
+```
+(see <https://www.rfc-editor.org/rfc/rfc4648.txt>,
+<https://base64.guru/learn/base64-characters>),
+whereas the Ifc convention is
+```
+012...89 ABC...XYZ abc...XYZ _$
+```
+cf. <https://technical.buildingsmart.org/resources/ifcimplementationguidance/ifc-guid>.
 """
 
-import uuid
+# ----------------------------------------------------------------
+# IMPORTS
+# ----------------------------------------------------------------
+
+from base64 import b64encode
+from base64 import b64decode
+from uuid import uuid4
+import re
 import string
 
-from functools import reduce
+# ----------------------------------------------------------------
+# EXPORTS
+# ----------------------------------------------------------------
 
-chars = string.digits + string.ascii_uppercase + string.ascii_lowercase + "_$"
+__all__ = [
+    "compress",
+    "expand",
+    "split",
+    "new",
+]
+
+# ----------------------------------------------------------------
+# LOCAL CONSTANTS
+# ----------------------------------------------------------------
+
+# standard convention
+_CHARS64_STD = string.ascii_uppercase + string.ascii_lowercase + string.digits + "+/"
+
+# ifc convention
+_CHARS64_IFC = string.digits + string.ascii_uppercase + string.ascii_lowercase + "_$"
+
+# translators
+_TRANS_IFC_TO_STD = str.maketrans(_CHARS64_IFC, _CHARS64_STD)
+_TRANS_STD_TO_IFC = str.maketrans(_CHARS64_STD, _CHARS64_IFC)
+
+# ----------------------------------------------------------------
+# METHODS
+# ----------------------------------------------------------------
+
+def compress(uuid: str, /) -> str:
+    """
+    Converts a hex-encoded UUID to a base64-encoded GUID in IFC-format.
+
+    See <https://technical.buildingsmart.org/resources/ifcimplementationguidance/ifc-guid>
+    """
+    # remove possible separators
+    uuid = uuid.lower()
+    uuid = re.sub(pattern=r"\W", repl="", string=uuid)
+
+    # pad with hex "zeroes"
+    uuid = "0000" + uuid
+
+    # convert to standard base 64
+    uuid_bytes = bytes.fromhex(uuid)
+    guid = b64encode(uuid_bytes).decode()
+
+    # remove result of padding
+    guid = guid[2:]
+
+    # translate from standard-convention to ifc-convention
+    guid = guid.translate(_TRANS_STD_TO_IFC)
+
+    return guid
 
 
-def compress(g: str) -> str:
-    bs = [int(g[i : i + 2], 16) for i in range(0, len(g), 2)]
+def expand(guid: str, /) -> str:
+    """
+    Converts a base64-encoded GUID in IFC-format to a hex-encoded UUID.
 
-    def b64(v, l=4):
-        return "".join([chars[(v // (64**i)) % 64] for i in range(l)][::-1])
+    See <https://technical.buildingsmart.org/resources/ifcimplementationguidance/ifc-guid>
+    """
+    # translate from ifc-convention to standard-convention
+    guid = guid.translate(_TRANS_IFC_TO_STD)
 
-    return "".join([b64(bs[0], 2)] + [b64((bs[i] << 16) + (bs[i + 1] << 8) + bs[i + 2]) for i in range(1, 16, 3)])
+    # pad with base64 "zeroes"
+    guid = "AA" + guid
+
+    # convert to hex
+    uuid = b64decode(guid).hex()
+
+    # remove result of padding
+    uuid = uuid[4:]
+
+    return uuid
 
 
-def expand(g: str) -> str:
-    def b64(v):
-        return reduce(lambda a, b: a * 64 + b, map(lambda c: chars.index(c), v))
-
-    bs = [b64(g[0:2])]
-    for i in range(5):
-        d = b64(g[2 + 4 * i : 6 + 4 * i])
-        bs += [(d >> (8 * (2 - j))) % 256 for j in range(3)]
-    return "".join(["%02x" % b for b in bs])
-
-
-def split(g: str) -> str:
-    return "{%s-%s-%s-%s-%s}" % (g[:8], g[8:12], g[12:16], g[16:20], g[20:])
+def split(uuid: str, /) -> str:
+    """
+    Formats a UUID as
+    ```
+    xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+    ```
+    """
+    return "-".join(
+        [
+            uuid[:8],
+            uuid[8:12],
+            uuid[12:16],
+            uuid[16:20],
+            uuid[20:],
+        ]
+    )
 
 
 def new() -> str:
-    return compress(uuid.uuid4().hex)
+    """
+    Generates a random UUID and compresses it to a Base 64 IFC GUID.
+    """
+    uuid = uuid4().hex
+    guid = compress(uuid)
+    return guid
