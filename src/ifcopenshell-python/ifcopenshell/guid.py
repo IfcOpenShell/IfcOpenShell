@@ -82,6 +82,7 @@ _TRANS_STD_TO_IFC = str.maketrans(_CHARS64_STD, _CHARS64_IFC)
 # METHODS
 # ----------------------------------------------------------------
 
+
 def compress(uuid: str, /) -> str:
     """
     Converts a hex-encoded UUID to a base64-encoded GUID in IFC-format.
