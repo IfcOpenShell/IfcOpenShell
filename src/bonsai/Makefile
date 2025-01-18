@@ -226,9 +226,6 @@ endif
 		)" bdist_wheel
 	cp -r build/bpypolyskel-master/dist/*.whl build/wheels/
 
-	# Required for Desktop icon and file association
-	cp -r bonsai/libs/desktop build/bonsai/libs/
-
 	# folder for executable files
 	mkdir -p build/bonsai/libs/bin
 
@@ -359,6 +356,7 @@ endif
 	rm -rf build/bonsai/bim/
 	rm -rf build/bonsai/core/
 	rm -rf build/bonsai/tool/
+	rm -rf build/bonsai/libs/
 
 ifeq ($(IS_STABLE), TRUE)
 	cd build && zip -r bonsai_$(PYVERSION)-$(VERSION)-$(BLENDER_PLATFORM).zip ./bonsai
