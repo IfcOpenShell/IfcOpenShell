@@ -21,6 +21,7 @@ import bpy
 import bmesh
 import json
 import os
+import platform
 from ifcopenshell import entity_instance
 import ifcopenshell.api
 import ifcopenshell.util.element
@@ -437,6 +438,16 @@ class Blender(bonsai.core.tool.Blender):
         current_path = os.environ["PATH"]
         if bin_dir not in current_path:
             os.environ["PATH"] = current_path + os.pathsep + bin_dir
+            # files need to be executable
+            if platform.system() != "Windows":
+                for filename in os.listdir(bin_dir):
+                    file_path = os.path.join(bin_dir, filename)
+                    if os.path.isfile(file_path):
+                        current_permissions = os.stat(file_path).st_mode
+                        try:
+                            os.chmod(file_path, current_permissions | 0o100)
+                        except PermissionError:
+                            pass
 
     @classmethod
     def get_default_selection_keypmap(cls) -> tuple:
