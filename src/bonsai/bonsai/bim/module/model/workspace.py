@@ -205,26 +205,26 @@ class FurnitureTool(BimTool):
     ifc_element_type = "IfcFurnitureType"
 
 
+class SanitaryTerminalTool(BimTool):
+    bl_space_type = "VIEW_3D"
+    bl_context_mode = "OBJECT"
+    bl_idname = "bim.sanitary_terminal_tool"
+    bl_label = "Sanitary Terminal Tool"
+    bl_description = "Create and edit sanitary terminals"
+    bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.sanitaryterminal")
+    bl_widget = None
+    ifc_element_type = "IfcSanitaryTerminalType"
+
+
 class LightFixtureTool(BimTool):
     bl_space_type = "VIEW_3D"
     bl_context_mode = "OBJECT"
     bl_idname = "bim.light_fixture_tool"
-    bl_label = "Furniture Tool"
+    bl_label = "Light Fixture Tool"
     bl_description = "Create and edit light fixtures"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.lightfixture")
     bl_widget = None
     ifc_element_type = "IfcLightFixtureType"
-
-
-class OpeningTool(BimTool):
-    bl_space_type = "VIEW_3D"
-    bl_context_mode = "OBJECT"
-    bl_idname = "bim.opening_tool"
-    bl_label = "Opening Tool"
-    bl_description = "Create and edit openings"
-    bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.opening")
-    bl_widget = None
-    ifc_element_type = "IfcWindowType"
 
 
 class ColumnTool(BimTool):
