@@ -972,14 +972,15 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
 
         relating_type = tool.Ifc.get().by_id(int(relating_type_id))
 
-        has_only_walls_selected = tool.Blender.get_selected_objects() and all(
-            (e := tool.Ifc.get_entity(o)) and e.is_a("IfcWall") for o in tool.Blender.get_selected_objects()
+        has_only_walls_selected = tool.Blender.get_selected_objects(include_active=False) and all(
+            (e := tool.Ifc.get_entity(o)) and e.is_a("IfcWall")
+            for o in tool.Blender.get_selected_objects(include_active=False)
         )
 
         if tool.Model.get_usage_type(relating_type) == "LAYER3" and has_only_walls_selected:
             return bpy.ops.bim.draw_slab_from_wall("INVOKE_DEFAULT")
         elif (
-            (active_obj := tool.Blender.get_active_object())
+            (active_obj := tool.Blender.get_active_object(is_selected=True))
             and (active_element := tool.Ifc.get_entity(active_obj))
             and active_element.is_a("IfcSlab")
             and tool.Model.get_usage_type(relating_type) == "LAYER2"
