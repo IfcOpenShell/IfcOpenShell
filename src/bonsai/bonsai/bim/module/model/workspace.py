@@ -299,33 +299,40 @@ class BIM_MT_add_representation_item(Menu):
             ItemData.load()
 
         if ItemData.data["representation_type"] in ("Tessellation", "Brep", "AdvancedBrep"):
-            self.layout.operator("bim.add_meshlike_item", icon="MESH_PLANE", text="Mesh Plane").shape = "PLANE"
-            self.layout.operator("bim.add_meshlike_item", icon="MESH_CUBE", text="Mesh Cube").shape = "CUBE"
-            self.layout.operator("bim.add_meshlike_item", icon="MESH_CIRCLE", text="Mesh Circle").shape = "CIRCLE"
-            self.layout.operator("bim.add_meshlike_item", icon="MESH_UVSPHERE", text="Mesh UV Sphere").shape = (
-                "UVSPHERE"
-            )
-            self.layout.operator("bim.add_meshlike_item", icon="MESH_ICOSPHERE", text="Mesh Icosphere").shape = (
-                "ICOSPHERE"
-            )
-            self.layout.operator("bim.add_meshlike_item", icon="MESH_CYLINDER", text="Mesh Cylinder").shape = "CYLINDER"
+            self.draw_meshlike()
             self.layout.separator()
             self.layout.operator("bim.add_half_space_solid_item", icon="ORIENTATION_NORMAL", text="Half Space Solid")
-
-        if ItemData.data["representation_type"] in ("SolidModel", "SweptSolid"):
-            self.layout.operator(
-                "bim.add_swept_area_solid_item", icon="MESH_CUBE", text="Extruded Area Solid Cube"
-            ).shape = "CUBE"
-            self.layout.operator(
-                "bim.add_swept_area_solid_item", icon="MESH_CYLINDER", text="Extruded Area Solid Cylinder"
-            ).shape = "CYLINDER"
+        elif ItemData.data["representation_type"] in ("SolidModel", "SweptSolid"):
+            self.draw_swept_area()
             self.layout.separator()
             self.layout.operator("bim.add_half_space_solid_item", icon="ORIENTATION_NORMAL", text="Half Space Solid")
-
-        if ItemData.data["representation_type"] in ("Annotation2D"):
+        elif ItemData.data["representation_type"] in ("CSG"):
+            # Surprisingly, once something becomes a CSG, you can combine lots of things due to IfcBooleanOperand
+            self.draw_swept_area()
+            self.layout.separator()
+            self.draw_meshlike()
+            self.layout.separator()
+            self.layout.operator("bim.add_half_space_solid_item", icon="ORIENTATION_NORMAL", text="Half Space Solid")
+        elif ItemData.data["representation_type"] in ("Annotation2D"):
             self.layout.operator("bim.add_curvelike_item", icon="IPO_CONSTANT", text="Polycurve").shape = "LINE"
             self.layout.operator("bim.add_curvelike_item", icon="MESH_CIRCLE", text="Circle").shape = "CIRCLE"
             self.layout.operator("bim.add_curvelike_item", icon="MESH_CIRCLE", text="Ellipse").shape = "ELLIPSE"
+
+    def draw_meshlike(self):
+        self.layout.operator("bim.add_meshlike_item", icon="MESH_PLANE", text="Mesh Plane").shape = "PLANE"
+        self.layout.operator("bim.add_meshlike_item", icon="MESH_CUBE", text="Mesh Cube").shape = "CUBE"
+        self.layout.operator("bim.add_meshlike_item", icon="MESH_CIRCLE", text="Mesh Circle").shape = "CIRCLE"
+        self.layout.operator("bim.add_meshlike_item", icon="MESH_UVSPHERE", text="Mesh UV Sphere").shape = "UVSPHERE"
+        self.layout.operator("bim.add_meshlike_item", icon="MESH_ICOSPHERE", text="Mesh Icosphere").shape = "ICOSPHERE"
+        self.layout.operator("bim.add_meshlike_item", icon="MESH_CYLINDER", text="Mesh Cylinder").shape = "CYLINDER"
+
+    def draw_swept_area(self):
+        self.layout.operator(
+            "bim.add_swept_area_solid_item", icon="MESH_CUBE", text="Extruded Area Solid Cube"
+        ).shape = "CUBE"
+        self.layout.operator(
+            "bim.add_swept_area_solid_item", icon="MESH_CYLINDER", text="Extruded Area Solid Cylinder"
+        ).shape = "CYLINDER"
 
 
 class CreateObjectUI:
