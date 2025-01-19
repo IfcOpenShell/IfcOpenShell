@@ -95,6 +95,9 @@ class AddDefaultType(bpy.types.Operator, tool.Ifc.Operator):
         elif self.ifc_element_type == "IfcBeamType":
             props.ifc_predefined_type = "BEAM"
             props.representation_template = "PROFILESET"
+        elif self.ifc_element_type == "IfcMemberType":
+            props.ifc_predefined_type = "CHORD"
+            props.representation_template = "PROFILESET"
         elif self.ifc_element_type == "IfcDuctSegmentType":
             props.ifc_predefined_type = "RIGIDSEGMENT"
             props.representation_template = "FLOW_SEGMENT_RECTANGULAR"
@@ -110,6 +113,22 @@ class AddDefaultType(bpy.types.Operator, tool.Ifc.Operator):
         elif self.ifc_element_type == "IfcStairType":
             props.ifc_predefined_type = "STRAIGHT_RUN_STAIR"
             props.representation_template = "STAIR"
+        elif self.ifc_element_type == "IfcRampType":
+            props.ifc_predefined_type = "STRAIGHT_RUN_RAMP"
+            props.representation_template = "LAYERSET_AXIS3"
+        elif self.ifc_element_type == "IfcFurnitureType":
+            props.ifc_predefined_type = "CHAIR"
+            props.representation_template = "MESH"
+        elif self.ifc_element_type == "IfcSanitaryTerminalType":
+            props.ifc_predefined_type = "TOILETPAN"
+            props.representation_template = "MESH"
+        elif self.ifc_element_type == "IfcLightFixtureType":
+            props.ifc_predefined_type = "DIRECTIONSOURCE"
+            props.representation_template = "MESH"
+        elif self.ifc_element_type == "IfcElectricApplianceType":
+            props.ifc_predefined_type = "KITCHENMACHINE"
+            props.representation_template = "MESH"
+
         bpy.ops.bim.add_element()
 
 

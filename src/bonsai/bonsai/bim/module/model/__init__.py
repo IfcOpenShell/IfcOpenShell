@@ -219,10 +219,14 @@ def register():
         bpy.utils.register_tool(
             workspace.LightFixtureTool, after={"bim.sanitary_terminal_tool"}, separator=False, group=False
         )
+        bpy.utils.register_tool(
+            workspace.ElectricApplianceTool, after={"bim.light_fixture_tool"}, separator=False, group=False
+        )
         bpy.utils.register_tool(workspace.StairTool, after={"bim.explore_tool"}, separator=False, group=True)
         bpy.utils.register_tool(workspace.RampTool, after={"bim.stair_tool"}, separator=False, group=False)
         bpy.utils.register_tool(workspace.ColumnTool, after={"bim.explore_tool"}, separator=False, group=True)
         bpy.utils.register_tool(workspace.BeamTool, after={"bim.column_tool"}, separator=False, group=False)
+        bpy.utils.register_tool(workspace.MemberTool, after={"bim.column_tool"}, separator=False, group=False)
         bpy.utils.register_tool(workspace.DoorTool, after={"bim.explore_tool"}, separator=False, group=True)
         bpy.utils.register_tool(workspace.WindowTool, after={"bim.door_tool"}, separator=False, group=False)
         bpy.utils.register_tool(workspace.SlabTool, after={"bim.explore_tool"}, separator=False, group=True)
@@ -257,11 +261,13 @@ def unregister():
         bpy.utils.unregister_tool(workspace.WindowTool)
         bpy.utils.unregister_tool(workspace.ColumnTool)
         bpy.utils.unregister_tool(workspace.BeamTool)
+        bpy.utils.unregister_tool(workspace.MemberTool)
         bpy.utils.unregister_tool(workspace.StairTool)
         bpy.utils.unregister_tool(workspace.RampTool)
         bpy.utils.unregister_tool(workspace.FurnitureTool)
         bpy.utils.unregister_tool(workspace.SanitaryTerminalTool)
         bpy.utils.unregister_tool(workspace.LightFixtureTool)
+        bpy.utils.unregister_tool(workspace.ElectricApplianceTool)
         bpy.utils.unregister_tool(workspace.DuctTool)
         bpy.utils.unregister_tool(workspace.PipeTool)
         bpy.utils.unregister_tool(workspace.CableCarrierTool)

@@ -227,6 +227,17 @@ class LightFixtureTool(BimTool):
     ifc_element_type = "IfcLightFixtureType"
 
 
+class ElectricApplianceTool(BimTool):
+    bl_space_type = "VIEW_3D"
+    bl_context_mode = "OBJECT"
+    bl_idname = "bim.electric_appliance_tool"
+    bl_label = "Electric Appliance Tool"
+    bl_description = "Create and electric appliances"
+    bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.electricappliance")
+    bl_widget = None
+    ifc_element_type = "IfcElectricApplianceType"
+
+
 class ColumnTool(BimTool):
     bl_space_type = "VIEW_3D"
     bl_context_mode = "OBJECT"
@@ -247,6 +258,17 @@ class BeamTool(BimTool):
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.beam")
     bl_widget = None
     ifc_element_type = "IfcBeamType"
+
+
+class MemberTool(BimTool):
+    bl_space_type = "VIEW_3D"
+    bl_context_mode = "OBJECT"
+    bl_idname = "bim.member_tool"
+    bl_label = "Member Tool"
+    bl_description = "Create and edit members"
+    bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.member")
+    bl_widget = None
+    ifc_element_type = "IfcMemberType"
 
 
 class DuctTool(BimTool):
