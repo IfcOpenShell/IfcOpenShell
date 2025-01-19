@@ -1165,6 +1165,43 @@ class RemoveBoolean(Operator, tool.Ifc.Operator):
         tool.Geometry.reload_representation(rep_obj)
 
 
+class SelectBoolean(Operator):
+    bl_idname = "bim.select_boolean"
+    bl_label = "Remove Boolean"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Selects operands of the active boolean\nSHIFT-CLICK to select all operands recursively"
+    is_recursive: bpy.props.BoolProperty(name="Is Recursive", default=False, options={"SKIP_SAVE"})
+
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.BIMBooleanProperties
+        return props.active_boolean
+
+    def invoke(self, context, event):
+        if event.type == "LEFTMOUSE" and event.shift:
+            self.is_recursive = True
+        return self.execute(context)
+
+    def execute(self, context):
+        props = context.scene.BIMBooleanProperties
+        queue = [tool.Ifc.get().by_id(props.active_boolean.ifc_definition_id)]
+        items = {i.ifc_definition_id: i.obj for i in context.scene.BIMGeometryProperties.item_objs}
+        while queue:
+            item = queue.pop()
+            if item.is_a("IfcBooleanResult"):
+                if self.is_recursive:
+                    queue.append(item.FirstOperand)
+                    queue.append(item.SecondOperand)
+                else:
+                    if obj := items.get(item.FirstOperand.id()):
+                        tool.Blender.select_object(obj)
+                    if obj := items.get(item.SecondOperand.id()):
+                        tool.Blender.select_object(obj)
+            elif obj := items.get(item.id()):
+                tool.Blender.select_object(obj)
+        return {"FINISHED"}
+
+
 # TODO: merge with ProfileDecorator?
 class DecorationsHandler:
     installed = None

@@ -178,6 +178,7 @@ class BIM_PT_booleans(Panel):
 
         row = layout.row(align=True)
         row.alignment = "RIGHT"
+        row.operator("bim.select_boolean", text="", icon="RESTRICT_SELECT_OFF")
         row.operator("bim.remove_boolean", text="", icon="X")
 
         self.layout.template_list("BIM_UL_booleans", "", props, "booleans", props, "active_boolean_index")

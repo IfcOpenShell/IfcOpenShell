@@ -2737,6 +2737,7 @@ class ImportRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
             new = props.item_objs.add()
             new.obj = item_obj
             new.is_boolean = item_id in boolean_ids
+            new.ifc_definition_id = item_id
 
             tool.Geometry.import_item(item_obj)
             tool.Geometry.import_item_attributes(item_obj)
